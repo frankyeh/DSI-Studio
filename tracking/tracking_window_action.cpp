@@ -306,11 +306,11 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     if(cmd == "set_roi_view")
     {
         if(param == "0")
-            on_glSagView_clicked();
+            on_glSagView_toggled(true);
         if(param == "1")
-            on_glCorView_clicked();
+            on_glCorView_toggled(true);
         if(param == "2")
-            on_glAxiView_clicked();
+            on_glAxiView_toggled(true);
         return true;
     }
     if(cmd == "set_roi_view_index")
@@ -849,7 +849,7 @@ void tracking_window::on_actionInsert_Coronal_Pictures_triggered()
     reg_slice_ptr->update_image();
     ui->SliceModality->setCurrentIndex(0);
     ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
-    on_glCorView_clicked();
+    on_glCorView_toggled(true);
 }
 
 
@@ -874,7 +874,7 @@ void tracking_window::on_actionInsert_Sagittal_Picture_triggered()
     reg_slice_ptr->update_image();
     ui->SliceModality->setCurrentIndex(0);
     ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
-    on_glSagView_clicked();
+    on_glSagView_toggled(true);
 }
 
 

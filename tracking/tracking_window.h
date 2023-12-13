@@ -106,10 +106,20 @@ public:
 
 public slots:
     void restore_3D_window();
+    void on_show_track_toggled(bool checked);
+    void on_show_edge_toggled(bool checked);
     void on_show_fiber_toggled(bool checked);
     void on_show_r_toggled(bool checked);
     void on_show_position_toggled(bool checked);
     void on_show_ruler_toggled(bool checked);
+
+public slots:
+    void on_glAxiView_toggled(bool checked);
+    void on_glCorView_toggled(bool checked);
+    void on_glSagView_toggled(bool checked);
+    void on_show_3view_toggled(bool checked);
+    void on_show_mosaic_toggled(bool checked);
+
     void check_reg(void);
     void change_contrast();
     void on_enable_auto_track_clicked();
@@ -122,19 +132,11 @@ private slots:
     void on_actionPaint_triggered();
     void on_actionTracts_to_seeds_triggered();
     void on_actionEndpoints_to_seeding_triggered();
-    void on_tool4_clicked();
-    void on_glAxiView_clicked();
-    void on_glCorView_clicked();
-    void on_glSagView_clicked();
+
     void on_actionCut_triggered();
     void on_actionDelete_triggered();
     void on_actionSelect_Tracts_triggered();
-    void on_tool3_pressed();
-    void on_tool2_pressed();
-    void on_tool1_pressed();
-    void on_tool0_pressed();
-    void on_tool5_pressed();
-    void on_tool6_pressed();
+
     void SliderValueChanged(void);
 
     void on_deleteSlice_clicked();
@@ -166,7 +168,6 @@ private slots:
     void on_actionAdjust_Mapping_triggered();
     void on_actionSave_mapping_triggered();
     void on_actionLoad_mapping_triggered();
-    void on_zoom_3d_valueChanged(double arg1);
     void on_actionLoad_Color_Map_triggered();
     void on_track_style_currentIndexChanged(int index);
     void on_addSlices_clicked();
@@ -179,34 +180,25 @@ private slots:
     void on_actionOpen_Connectivity_Matrix_triggered();
     void on_SlicePos_valueChanged(int value);
     void on_actionKeep_Current_Slice_triggered();
-    void on_show_3view_toggled(bool checked);
-    void on_show_edge_toggled(bool checked);
+
+
     void on_actionFIB_protocol_triggered();
     void on_SliceModality_currentIndexChanged(int index);
     void on_actionSave_T1W_T2W_images_triggered();
     void on_actionMark_Region_on_T1W_T2W_triggered();
     void on_actionMark_Tracts_on_T1W_T2W_triggered();
     void on_actionSave_Slices_to_DICOM_triggered();
-    void on_zoom_valueChanged(double arg1);
-    void Move_Slice_X();
-    void Move_Slice_X2();
-    void Move_Slice_Y();
-    void Move_Slice_Y2();
-    void Move_Slice_Z();
-    void Move_Slice_Z2();
+
     void on_actionLoad_Parameter_ID_triggered();
     void on_actionMove_Objects_triggered();
     void on_actionLoad_Presentation_triggered();
     void on_actionSave_Presentation_triggered();
-    void on_actionZoom_In_triggered();
-    void on_actionZoom_Out_triggered();
     void on_min_value_gl_valueChanged(double arg1);
     void on_max_value_gl_valueChanged(double arg1);
     void on_min_slider_sliderMoved(int position);
     void on_max_slider_sliderMoved(int position);
     void on_actionInsert_Axial_Pictures_triggered();
     void on_actionInsert_Coronal_Pictures_triggered();
-    void on_show_track_toggled(bool checked);
     void on_actionInsert_Sagittal_Picture_triggered();
     void on_template_box_currentIndexChanged(int index);
     void on_actionManual_Atlas_Alignment_triggered();
@@ -217,6 +209,8 @@ private slots:
     void on_tract_target_1_currentIndexChanged(int index);
     void on_actionLoad_MNI_mapping_triggered();
     void on_actionSave_MNI_mapping_triggered();
+
+
 };
 
 #endif // TRACKING_WINDOW_H

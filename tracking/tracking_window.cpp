@@ -185,6 +185,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     tipl::out() << "connect signal and slots " << std::endl;
     // opengl
     {
+        connect(ui->zoom_3d,&QDoubleSpinBox::valueChanged,this,[this](void){glWidget->command("set_zoom",QString::number(ui->zoom_3d->value()));});
+
         connect(ui->glSagSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
         connect(ui->glCorSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
         connect(ui->glAxiSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
@@ -252,15 +254,24 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     // scene view
     {
 
-        connect(&scene,SIGNAL(need_update()),this,SLOT(update_scene_slice()));
+        connect(&scene,&slice_view_scene::need_update,this,[this](){slice_need_update = true;});
         connect(&scene,SIGNAL(need_update()),glWidget,SLOT(update()));
 
-        connect(ui->actionAxial_View,SIGNAL(triggered()),this,SLOT(on_glAxiView_clicked()));
-        connect(ui->actionCoronal_View,SIGNAL(triggered()),this,SLOT(on_glCorView_clicked()));
-        connect(ui->actionSagittal_view,SIGNAL(triggered()),this,SLOT(on_glSagView_clicked()));
+        connect(ui->actionAxial_View,&QAction::triggered,this,[this](){on_glAxiView_toggled(true);});
+        connect(ui->actionCoronal_View,&QAction::triggered,this,[this](){on_glCorView_toggled(true);});
+        connect(ui->actionSagittal_view,&QAction::triggered,this,[this](){on_glSagView_toggled(true);});
 
 
         connect(ui->actionSave_ROI_Screen,SIGNAL(triggered()),&scene,SLOT(catch_screen()));
+
+        connect(ui->tool0,&QPushButton::pressed,this,[this](void){scene.sel_mode = 0;scene.setFocus();});
+        connect(ui->tool1,&QPushButton::pressed,this,[this](void){scene.sel_mode = 1;scene.setFocus();});
+        connect(ui->tool2,&QPushButton::pressed,this,[this](void){scene.sel_mode = 2;scene.setFocus();});
+        connect(ui->tool3,&QPushButton::pressed,this,[this](void){scene.sel_mode = 3;scene.setFocus();});
+        connect(ui->tool4,&QPushButton::pressed,this,[this](void){scene.sel_mode = 4;scene.setFocus();});
+        connect(ui->tool5,&QPushButton::pressed,this,[this](void){scene.sel_mode = 5;scene.setFocus();});
+        connect(ui->tool6,&QPushButton::pressed,this,[this](void){scene.sel_mode = 6;slice_need_update = true;scene.setFocus();});
+        connect(ui->zoom,&QDoubleSpinBox::valueChanged,this,[this](double arg1){if(float(arg1) == (*this)["roi_zoom"].toFloat())return;set_data("roi_zoom",arg1);slice_need_update = true;});
 
     }
 
@@ -454,13 +465,14 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     } 
 
+
     {
-        connect(new QShortcut(QKeySequence(tr("Q", "X+")),this),SIGNAL(activated()),this,SLOT(Move_Slice_X()));
-        connect(new QShortcut(QKeySequence(tr("A", "X+")),this),SIGNAL(activated()),this,SLOT(Move_Slice_X2()));
-        connect(new QShortcut(QKeySequence(tr("W", "X+")),this),SIGNAL(activated()),this,SLOT(Move_Slice_Y()));
-        connect(new QShortcut(QKeySequence(tr("S", "X+")),this),SIGNAL(activated()),this,SLOT(Move_Slice_Y2()));
-        connect(new QShortcut(QKeySequence(tr("E", "X+")),this),SIGNAL(activated()),this,SLOT(Move_Slice_Z()));
-        connect(new QShortcut(QKeySequence(tr("D", "X+")),this),SIGNAL(activated()),this,SLOT(Move_Slice_Z2()));
+        connect(new QShortcut(QKeySequence(tr("Q", "X+")),this),&QShortcut::activated,this,[this](){ui->glSagSlider->setValue(ui->glSagSlider->value()+1);});
+        connect(new QShortcut(QKeySequence(tr("A", "X+")),this),&QShortcut::activated,this,[this](){ui->glSagSlider->setValue(ui->glSagSlider->value()-1);});
+        connect(new QShortcut(QKeySequence(tr("W", "X+")),this),&QShortcut::activated,this,[this](){ui->glCorSlider->setValue(ui->glCorSlider->value()+1);});
+        connect(new QShortcut(QKeySequence(tr("S", "X+")),this),&QShortcut::activated,this,[this](){ui->glCorSlider->setValue(ui->glCorSlider->value()-1);});
+        connect(new QShortcut(QKeySequence(tr("E", "X+")),this),&QShortcut::activated,this,[this](){ui->glAxiSlider->setValue(ui->glAxiSlider->value()+1);});
+        connect(new QShortcut(QKeySequence(tr("D", "X+")),this),&QShortcut::activated,this,[this](){ui->glAxiSlider->setValue(ui->glAxiSlider->value()-1);});
         connect(new QShortcut(QKeySequence(Qt::Key_F1),this),&QShortcut::activated,this,[this](void){on_show_fiber_toggled(!ui->show_fiber->isChecked());});
         connect(new QShortcut(QKeySequence(Qt::Key_F2),this),&QShortcut::activated,this,[this](void){on_show_track_toggled(!ui->show_track->isChecked());});
         connect(new QShortcut(QKeySequence(Qt::Key_F3),this),&QShortcut::activated,this,[this](void){on_show_ruler_toggled(!ui->show_ruler->isChecked());});
@@ -475,7 +487,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     {
         glWidget->no_update = false;
         scene.no_show = false;
-        on_glAxiView_clicked();
+        ui->glAxiView->setChecked(true);
         if((*this)["orientation_convention"].toInt() == 1)
             glWidget->set_view(2);
         ui->SliceModality->setCurrentIndex(0);
@@ -637,52 +649,6 @@ void tracking_window::SliderValueChanged(void)
     }
 }
 
-void tracking_window::on_tool0_pressed()
-{
-    scene.sel_mode = 0;
-    scene.setFocus();
-
-}
-
-void tracking_window::on_tool1_pressed()
-{
-    scene.sel_mode = 1;
-    scene.setFocus();
-
-}
-
-void tracking_window::on_tool2_pressed()
-{
-    scene.sel_mode = 2;
-    scene.setFocus();
-
-}
-
-void tracking_window::on_tool3_pressed()
-{
-    scene.sel_mode = 3;
-    scene.setFocus();
-}
-
-void tracking_window::on_tool4_clicked()
-{
-    scene.sel_mode = 4;
-    scene.setFocus();
-}
-void tracking_window::on_tool5_pressed()
-{
-    scene.sel_mode = 5;
-    scene.setFocus();
-}
-
-void tracking_window::on_tool6_pressed()
-{
-    scene.sel_mode = 6;
-    slice_need_update = true;
-    scene.setFocus();
-
-}
-
 void tracking_window::on_actionSelect_Tracts_triggered()
 {
     glWidget->setCursor(Qt::CrossCursor);
@@ -717,44 +683,6 @@ void tracking_window::on_actionMove_Objects_triggered()
 {
     glWidget->setCursor(Qt::CrossCursor);
     glWidget->editing_option = GLWidget::moving;
-}
-
-
-void tracking_window::on_glSagView_clicked()
-{
-    cur_dim = 0;
-    ui->SlicePos->setRange(0,current_slice->dim[cur_dim]-1);
-    ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
-    ui->show_3view->setChecked(false);
-    glWidget->set_view(0);
-    glWidget->update();
-    glWidget->setFocus();
-    slice_need_update = true;
-}
-
-void tracking_window::on_glCorView_clicked()
-{
-    cur_dim = 1;
-    ui->SlicePos->setRange(0,current_slice->dim[cur_dim]-1);
-    ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
-    ui->show_3view->setChecked(false);
-    glWidget->set_view(1);
-    glWidget->update();
-    glWidget->setFocus();
-    slice_need_update = true;
-}
-
-void tracking_window::on_glAxiView_clicked()
-{
-    cur_dim = 2;
-    ui->SlicePos->setRange(0,current_slice->dim[cur_dim]-1);
-    ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
-    ui->show_3view->setChecked(false);
-    glWidget->set_view(2);
-    glWidget->update();
-    glWidget->setFocus();
-    slice_need_update = true;
-
 }
 
 void tracking_window::move_slice_to(tipl::vector<3,float> slice_position)
@@ -886,13 +814,6 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
     QWidget::keyPressEvent(event);
 
 }
-
-
-void tracking_window::on_zoom_3d_valueChanged(double)
-{
-    glWidget->command("set_zoom",QString::number(ui->zoom_3d->value()));
-}
-
 
 void tracking_window::restore_3D_window()
 {
@@ -1120,15 +1041,72 @@ void tracking_window::on_show_r_toggled(bool checked)
         set_data("roi_label",ui->show_r->isChecked());
     slice_need_update = true;
 }
-void tracking_window::on_show_3view_toggled(bool checked)
+
+
+void tracking_window::on_glSagView_toggled(bool checked)
 {
-    ui->show_3view->setChecked(checked);
-    set_data("roi_layout",checked ? 1:0);
     if(checked)
+    {
+        cur_dim = 0;
+        ui->SlicePos->setRange(0,current_slice->dim[cur_dim]-1);
+        ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
+        glWidget->set_view(0);
         glWidget->update();
-    slice_need_update = true;
+        glWidget->setFocus();
+        slice_need_update = true;
+        set_data("roi_layout",0);
+    }
 }
 
+void tracking_window::on_glCorView_toggled(bool checked)
+{
+    if(checked)
+    {
+        cur_dim = 1;
+        ui->SlicePos->setRange(0,current_slice->dim[cur_dim]-1);
+        ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
+        glWidget->set_view(1);
+        glWidget->update();
+        glWidget->setFocus();
+        slice_need_update = true;
+        set_data("roi_layout",0);
+    }
+}
+
+void tracking_window::on_glAxiView_toggled(bool checked)
+{
+    if(checked)
+    {
+        cur_dim = 2;
+        ui->SlicePos->setRange(0,current_slice->dim[cur_dim]-1);
+        ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
+        glWidget->set_view(2);
+        glWidget->update();
+        glWidget->setFocus();
+        slice_need_update = true;
+        set_data("roi_layout",0);
+    }
+}
+
+void tracking_window::on_show_3view_toggled(bool checked)
+{
+    if(checked)
+    {
+        set_data("roi_layout",1);
+        glWidget->update();
+        slice_need_update = true;
+    }
+}
+
+void tracking_window::on_show_mosaic_toggled(bool checked)
+{
+    if(checked)
+    {
+        set_data("roi_layout",2);
+        glWidget->update();
+        slice_need_update = true;
+    }
+}
 void tracking_window::on_show_position_toggled(bool checked)
 {
     ui->show_position->setChecked(checked);
@@ -1390,43 +1368,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
 
 
 
-void tracking_window::on_zoom_valueChanged(double arg1)
-{
-    if(float(arg1) == (*this)["roi_zoom"].toFloat())
-        return;
-    set_data("roi_zoom",arg1);
-    slice_need_update = true;
-}
 
-void tracking_window::Move_Slice_X()
-{
-    ui->glSagSlider->setValue(ui->glSagSlider->value()+1);
-}
-
-void tracking_window::Move_Slice_X2()
-{
-    ui->glSagSlider->setValue(ui->glSagSlider->value()-1);
-}
-
-void tracking_window::Move_Slice_Y()
-{
-    ui->glCorSlider->setValue(ui->glCorSlider->value()+1);
-}
-
-void tracking_window::Move_Slice_Y2()
-{
-    ui->glCorSlider->setValue(ui->glCorSlider->value()-1);
-}
-
-void tracking_window::Move_Slice_Z()
-{
-    ui->glAxiSlider->setValue(ui->glAxiSlider->value()+1);
-}
-
-void tracking_window::Move_Slice_Z2()
-{
-    ui->glAxiSlider->setValue(ui->glAxiSlider->value()-1);
-}
 
 void tracking_window::on_actionLoad_Presentation_triggered()
 {
@@ -1444,16 +1386,6 @@ void tracking_window::on_actionSave_Presentation_triggered()
         return;
     command("save_workspace",dir);
     QMessageBox::information(this,"DSI Studio","File saved");
-}
-
-void tracking_window::on_actionZoom_In_triggered()
-{
-    ui->zoom_3d->setValue(ui->zoom_3d->value()+0.1);
-}
-
-void tracking_window::on_actionZoom_Out_triggered()
-{
-    ui->zoom_3d->setValue(ui->zoom_3d->value()-0.1);
 }
 
 void tracking_window::on_min_value_gl_valueChanged(double)
@@ -1523,4 +1455,10 @@ void tracking_window::on_actionSave_MNI_mapping_triggered()
     }
     QMessageBox::information(this,"DSI Studio","mapping saved");
 }
+
+
+
+
+
+
 
