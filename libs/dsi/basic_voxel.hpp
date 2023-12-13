@@ -91,7 +91,7 @@ public:
 public:
     std::string file_name;
     bool output_odf = false;
-    unsigned int max_fiber_number = 5;
+    unsigned int max_fiber_number = 3;
     std::vector<std::string> file_list;
 public:
     std::string other_output;
