@@ -466,8 +466,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(new QShortcut(QKeySequence(Qt::Key_F3),this),&QShortcut::activated,this,[this](void){on_show_ruler_toggled(!ui->show_ruler->isChecked());});
         connect(new QShortcut(QKeySequence(Qt::Key_F4),this),&QShortcut::activated,this,[this](void){on_show_position_toggled(!ui->show_position->isChecked());});
         connect(new QShortcut(QKeySequence(Qt::Key_F5),this),&QShortcut::activated,this,[this](void){on_show_r_toggled(!ui->show_r->isChecked());});
-        connect(new QShortcut(QKeySequence(Qt::Key_F6),this),&QShortcut::activated,this,[this](void){on_show_3view_toggled(!ui->show_3view->isChecked());});
-        connect(new QShortcut(QKeySequence(Qt::Key_F7),this),&QShortcut::activated,this,[this](void){on_show_edge_toggled(!ui->show_edge->isChecked());});
+        connect(new QShortcut(QKeySequence(Qt::Key_F6),this),&QShortcut::activated,this,[this](void){on_show_edge_toggled(!ui->show_edge->isChecked());});
     }
 
     qApp->installEventFilter(this);
