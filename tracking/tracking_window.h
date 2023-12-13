@@ -182,10 +182,7 @@ private slots:
     void on_actionLoad_Parameter_ID_triggered();
     void on_actionLoad_Presentation_triggered();
     void on_actionSave_Presentation_triggered();
-    void on_min_value_gl_valueChanged(double arg1);
-    void on_max_value_gl_valueChanged(double arg1);
-    void on_min_slider_sliderMoved(int position);
-    void on_max_slider_sliderMoved(int position);
+
     void on_actionInsert_Axial_Pictures_triggered();
     void on_actionInsert_Coronal_Pictures_triggered();
     void on_actionInsert_Sagittal_Picture_triggered();

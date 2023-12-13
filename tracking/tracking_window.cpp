@@ -197,6 +197,20 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->max_color_gl,SIGNAL(clicked()),this,SLOT(change_contrast()));
         connect(ui->min_color_gl,SIGNAL(clicked()),this,SLOT(change_contrast()));
 
+        connect(ui->min_value_gl,&QDoubleSpinBox::valueChanged,this,[this](){
+            ui->min_slider->setValue(int((ui->min_value_gl->value()-ui->min_value_gl->minimum())*double(ui->min_slider->maximum())/(ui->min_value_gl->maximum()-ui->min_value_gl->minimum())));
+            change_contrast();});
+        connect(ui->max_value_gl,&QDoubleSpinBox::valueChanged,this,[this](){
+            ui->max_slider->setValue(int((ui->max_value_gl->value()-ui->max_value_gl->minimum())*double(ui->max_slider->maximum())/(ui->max_value_gl->maximum()-ui->max_value_gl->minimum())));
+            change_contrast();});
+        connect(ui->min_slider,&QSlider::sliderMoved,this,[this](){
+            ui->min_value_gl->setValue(ui->min_value_gl->minimum()+(ui->min_value_gl->maximum()-ui->min_value_gl->minimum())*
+                              double(ui->min_slider->value())/double(ui->min_slider->maximum()));});
+        connect(ui->max_slider,&QSlider::sliderMoved,this,[this](){
+            ui->max_value_gl->setValue(ui->max_value_gl->minimum()+(ui->max_value_gl->maximum()-ui->max_value_gl->minimum())*
+                              double(ui->max_slider->value())/double(ui->max_slider->maximum()));});
+
+
         connect(ui->actionSave_Screen,SIGNAL(triggered()),glWidget,SLOT(catchScreen()));
         connect(ui->actionSave_3D_screen_in_high_resolution,SIGNAL(triggered()),glWidget,SLOT(catchScreen2()));
         connect(ui->actionLoad_Camera,SIGNAL(triggered()),glWidget,SLOT(loadCamera()));
@@ -1334,32 +1348,6 @@ void tracking_window::on_actionSave_Presentation_triggered()
         return;
     command("save_workspace",dir);
     QMessageBox::information(this,"DSI Studio","File saved");
-}
-
-void tracking_window::on_min_value_gl_valueChanged(double)
-{
-    ui->min_slider->setValue(int((ui->min_value_gl->value()-ui->min_value_gl->minimum())*double(ui->min_slider->maximum())/
-                             (ui->min_value_gl->maximum()-ui->min_value_gl->minimum())));
-    change_contrast();
-}
-
-void tracking_window::on_min_slider_sliderMoved(int)
-{
-    ui->min_value_gl->setValue(ui->min_value_gl->minimum()+(ui->min_value_gl->maximum()-ui->min_value_gl->minimum())*
-                      double(ui->min_slider->value())/double(ui->min_slider->maximum()));
-}
-
-void tracking_window::on_max_value_gl_valueChanged(double)
-{
-    ui->max_slider->setValue(int((ui->max_value_gl->value()-ui->max_value_gl->minimum())*double(ui->max_slider->maximum())/
-                             (ui->max_value_gl->maximum()-ui->max_value_gl->minimum())));
-    change_contrast();
-}
-
-void tracking_window::on_max_slider_sliderMoved(int)
-{
-    ui->max_value_gl->setValue(ui->max_value_gl->minimum()+(ui->max_value_gl->maximum()-ui->max_value_gl->minimum())*
-                      double(ui->max_slider->value())/double(ui->max_slider->maximum()));
 }
 
 void tracking_window::on_actionLoad_MNI_mapping_triggered()
