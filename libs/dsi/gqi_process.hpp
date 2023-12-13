@@ -306,7 +306,7 @@ private:
 public:
     virtual void init(Voxel& voxel)
     {
-        if(!voxel.needs("rdi"))
+        if(!voxel.needs("rdi") || voxel.shell.size() == 1)
             return;
         float sigma = voxel.param[0]; //optimal 1.24
         for(float L = 0.2f;L <= sigma;L+= 0.2f)
