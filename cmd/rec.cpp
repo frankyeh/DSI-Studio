@@ -45,10 +45,10 @@ int rec(tipl::program_option<tipl::out>& po)
             src.voxel.qsdr_reso = po.get("qsdr_reso",src.voxel.vs[2]);
 
     }
+    if(po.has("mask"))
     {
         tipl::progress prog("specify mask");
-        std::string mask_file = po.get("mask","1");
-
+        std::string mask_file = po.get("mask");
         if(mask_file == "1")
             src.voxel.mask = 1;
         else
