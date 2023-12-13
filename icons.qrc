@@ -39,6 +39,7 @@
         <file>icons/red_cross.xpm</file>
         <file>icons/tracts.xpm</file>
         <file>icons/console.xpm</file>
+        <file>icons/mosaic.xpm</file>
     </qresource>
     <qresource prefix="/data">
         <file>options.txt</file>
