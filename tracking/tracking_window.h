@@ -136,12 +136,7 @@ private slots:
     void on_actionTract_Analysis_Report_triggered();
     void on_actionConnectivity_matrix_triggered();
     void on_actionFloat_3D_window_triggered();
-    void on_actionSave_tracking_parameters_triggered();
-    void on_actionLoad_tracking_parameters_triggered();
-    void on_actionSave_Rendering_Parameters_triggered();
-    void on_actionLoad_Rendering_Parameters_triggered();
     void on_addRegionFromAtlas_clicked();
-    void on_actionRestore_Settings_triggered();
     void on_actionQuality_Assessment_triggered();
     void on_actionAuto_Rotate_triggered(bool checked);
     void on_action3D_Screen_3_Views_triggered();
