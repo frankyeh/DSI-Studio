@@ -184,7 +184,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     tipl::out() << "connect signal and slots " << std::endl;
     // opengl
     {
-        connect(ui->zoom_3d,qOverload<duble>(&QDoubleSpinBox::valueChanged),this,[this](double){glWidget->command("set_zoom",QString::number(ui->zoom_3d->value()));});
+        connect(ui->zoom_3d,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](double){glWidget->command("set_zoom",QString::number(ui->zoom_3d->value()));});
 
         connect(ui->glSagSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
         connect(ui->glCorSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
