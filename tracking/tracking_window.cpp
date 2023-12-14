@@ -184,7 +184,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     tipl::out() << "connect signal and slots " << std::endl;
     // opengl
     {
-        connect(ui->zoom_3d,&QDoubleSpinBox::valueChanged,this,[this](void){glWidget->command("set_zoom",QString::number(ui->zoom_3d->value()));});
+        connect(ui->zoom_3d,qOverload<duble>(&QDoubleSpinBox::valueChanged),this,[this](double){glWidget->command("set_zoom",QString::number(ui->zoom_3d->value()));});
 
         connect(ui->glSagSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
         connect(ui->glCorSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
@@ -196,10 +196,10 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->max_color_gl,SIGNAL(clicked()),this,SLOT(change_contrast()));
         connect(ui->min_color_gl,SIGNAL(clicked()),this,SLOT(change_contrast()));
 
-        connect(ui->min_value_gl,&QDoubleSpinBox::valueChanged,this,[this](void){
+        connect(ui->min_value_gl,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](double){
             ui->min_slider->setValue(int((ui->min_value_gl->value()-ui->min_value_gl->minimum())*double(ui->min_slider->maximum())/(ui->min_value_gl->maximum()-ui->min_value_gl->minimum())));
             change_contrast();});
-        connect(ui->max_value_gl,&QDoubleSpinBox::valueChanged,this,[this](void){
+        connect(ui->max_value_gl,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](double){
             ui->max_slider->setValue(int((ui->max_value_gl->value()-ui->max_value_gl->minimum())*double(ui->max_slider->maximum())/(ui->max_value_gl->maximum()-ui->max_value_gl->minimum())));
             change_contrast();});
         connect(ui->min_slider,&QSlider::sliderMoved,this,[this](void){
