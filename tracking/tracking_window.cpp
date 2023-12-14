@@ -184,7 +184,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     tipl::out() << "connect signal and slots " << std::endl;
     // opengl
     {
-        connect(ui->zoom_3d,&QDoubleSpinBox::valueChanged,this,[this](void){glWidget->command("set_zoom",QString::number(ui->zoom_3d->value()));});
+        connect(ui->zoom_3d,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](void){glWidget->command("set_zoom",QString::number(ui->zoom_3d->value()));});
 
         connect(ui->glSagSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
         connect(ui->glCorSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
@@ -196,10 +196,10 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->max_color_gl,SIGNAL(clicked()),this,SLOT(change_contrast()));
         connect(ui->min_color_gl,SIGNAL(clicked()),this,SLOT(change_contrast()));
 
-        connect(ui->min_value_gl,&QDoubleSpinBox::valueChanged,this,[this](){
+        connect(ui->min_value_gl,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](){
             ui->min_slider->setValue(int((ui->min_value_gl->value()-ui->min_value_gl->minimum())*double(ui->min_slider->maximum())/(ui->min_value_gl->maximum()-ui->min_value_gl->minimum())));
             change_contrast();});
-        connect(ui->max_value_gl,&QDoubleSpinBox::valueChanged,this,[this](){
+        connect(ui->max_value_gl,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](){
             ui->max_slider->setValue(int((ui->max_value_gl->value()-ui->max_value_gl->minimum())*double(ui->max_slider->maximum())/(ui->max_value_gl->maximum()-ui->max_value_gl->minimum())));
             change_contrast();});
         connect(ui->min_slider,&QSlider::sliderMoved,this,[this](){
@@ -296,7 +296,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->tool4,&QPushButton::pressed,this,[this](void){scene.sel_mode = 4;scene.setFocus();});
         connect(ui->tool5,&QPushButton::pressed,this,[this](void){scene.sel_mode = 5;scene.setFocus();});
         connect(ui->tool6,&QPushButton::pressed,this,[this](void){scene.sel_mode = 6;slice_need_update = true;scene.setFocus();});
-        connect(ui->zoom,&QDoubleSpinBox::valueChanged,this,[this](double arg1){if(float(arg1) == (*this)["roi_zoom"].toFloat())return;set_data("roi_zoom",arg1);slice_need_update = true;});
+        connect(ui->zoom,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](double arg1){if(float(arg1) == (*this)["roi_zoom"].toFloat())return;set_data("roi_zoom",arg1);slice_need_update = true;});
 
 
         auto roi_show_toggled = [this](bool checked)
