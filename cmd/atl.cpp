@@ -144,7 +144,7 @@ int atl(tipl::program_option<tipl::out>& po)
                 if(name_list[index].find(".db.fib.gz") != std::string::npos)
                     continue;
                 tipl::out() << "reading " << name_list[index] << std::endl;
-                if(!data->handle->db.add_subject_file(name_list[index],
+                if(!data->handle->db.add(name_list[index],
                     QFileInfo(name_list[index].c_str()).baseName().toStdString()))
                 {
                     tipl::out() << "ERROR: failed to load subject fib file " << data->handle->db.error_msg << std::endl;

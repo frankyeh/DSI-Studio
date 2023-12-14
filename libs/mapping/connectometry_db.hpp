@@ -49,7 +49,7 @@ public:
     bool is_odf_consistent(tipl::io::gz_mat_read& m);
     void sample_from_image(tipl::const_pointer_image<3,float> I,
                            const tipl::matrix<4,4>& trans,std::vector<float>& data);
-    bool add_subject_file(const std::string& file_name,
+    bool add(const std::string& file_name,
                             const std::string& subject_name);
     bool save_db(const char* output_name);
     void get_subject_slice(unsigned int subject_index,unsigned char dim,unsigned int pos,

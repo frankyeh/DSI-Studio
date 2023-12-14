@@ -327,7 +327,7 @@ void CreateDBDialog::on_create_data_base_clicked()
         for (unsigned int index = 0;prog(index,group.count());++index)
         {
             tipl::out() << QFileInfo(group[index]).baseName().toStdString() << std::endl;
-            if(!data->handle->db.add_subject_file(group[index].toStdString(),get_file_name(group[index]).toStdString()))
+            if(!data->handle->db.add(group[index].toStdString(),get_file_name(group[index]).toStdString()))
             {
                 QMessageBox::critical(this,"ERROR",data->handle->db.error_msg.c_str());
                 raise(); // for Mac

@@ -431,7 +431,7 @@ void connectometry_db::sample_from_image(tipl::const_pointer_image<3,float> I,
         data[si] = J[si2vi[si]];
     });
 }
-bool connectometry_db::add_subject_file(const std::string& file_name,
+bool connectometry_db::add(const std::string& file_name,
                                          const std::string& subject_name)
 {
     tipl::progress prog(file_name.c_str());
@@ -461,6 +461,10 @@ bool connectometry_db::add_subject_file(const std::string& file_name,
             error_msg += fib.error_msg;
             return false;
         }
+
+        if(fib.db.has_db())
+            return add_db(fib.db);
+
         if(subject_report.empty())
             subject_report = fib.report;
         fib.mat_reader.read("R2",subject_R2);

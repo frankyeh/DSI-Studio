@@ -293,42 +293,15 @@ void db_window::on_actionAdd_DB_triggered()
                            this,
                            "Open Database files",
                            windowTitle(),
-                           "Database files (*db?fib.gz *fib.gz);;All files (*)");
+                           "Database files (*db?fib.gz *fib.gz *nii.gz);;All files (*)");
     if (filenames.isEmpty())
         return;
     for(int i =0;i < filenames.count();++i)
-    {
-        std::shared_ptr<fib_data> handle(new fib_data);
-        tipl::progress prog_("adding data");
-        if(!handle->load_from_file(filenames[i].toStdString().c_str()))
+        if(!vbc->handle->db.add(filenames[i].toStdString(),QFileInfo(filenames[i]).baseName().toStdString()))
         {
-            QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-            return;
-        }
-        if(!handle->is_mni)
-        {
-            QMessageBox::critical(this,"ERROR",filenames[i] + " is not from the QSDR reconstruction.");
+            QMessageBox::information(this,"ERROR",vbc->handle->db.error_msg.c_str());
             break;
         }
-
-        if(handle->db.has_db())
-        {
-            if(!vbc->handle->db.add_db(handle->db))
-            {
-                QMessageBox::critical(this,"ERROR",vbc->handle->db.error_msg.c_str());
-                break;
-            }
-            continue;
-        }
-        if(handle->has_odfs())
-        {
-            if(!vbc->handle->db.add_subject_file(filenames[i].toStdString(),QFileInfo(filenames[i]).baseName().toStdString()))
-            {
-                QMessageBox::information(this,"ERROR",vbc->handle->db.error_msg.c_str());
-                break;
-            }
-        }
-    }
     update_db();
 }
 
