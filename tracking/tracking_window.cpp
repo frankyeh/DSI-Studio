@@ -286,7 +286,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->glAxiView,&QPushButton::toggled,this,slice_view_toggled);
 
         connect(ui->show_3view,qOverload<bool>(&QToolButton::toggled),this,[this](bool checked){if(checked){set_data("roi_layout",1);glWidget->update();slice_need_update = true;}});
-        connect(ui->show_mosaic,qOverload<bool>(&QToolButton::clicked),this,[this](void){set_data("roi_layout",std::min<int>(7,std::max<int>(2,(*this)["roi_layout"].toInt()+1)));glWidget->update();slice_need_update = true;});
+        connect(ui->show_mosaic,&QToolButton::clicked,this,[this](void){set_data("roi_layout",std::min<int>(7,std::max<int>(2,(*this)["roi_layout"].toInt()+1)));glWidget->update();slice_need_update = true;});
 
 
         connect(ui->tool0,&QPushButton::pressed,this,[this](void){scene.sel_mode = 0;scene.setFocus();});
