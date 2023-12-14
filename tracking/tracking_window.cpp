@@ -184,7 +184,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     tipl::out() << "connect signal and slots " << std::endl;
     // opengl
     {
-        connect(ui->zoom_3d,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](void){glWidget->command("set_zoom",QString::number(ui->zoom_3d->value()));});
+        connect(ui->zoom_3d,&QDoubleSpinBox::valueChanged,this,[this](void){glWidget->command("set_zoom",QString::number(ui->zoom_3d->value()));});
 
         connect(ui->glSagSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
         connect(ui->glCorSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
@@ -196,16 +196,16 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->max_color_gl,SIGNAL(clicked()),this,SLOT(change_contrast()));
         connect(ui->min_color_gl,SIGNAL(clicked()),this,SLOT(change_contrast()));
 
-        connect(ui->min_value_gl,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](){
+        connect(ui->min_value_gl,&QDoubleSpinBox::valueChanged,this,[this](void){
             ui->min_slider->setValue(int((ui->min_value_gl->value()-ui->min_value_gl->minimum())*double(ui->min_slider->maximum())/(ui->min_value_gl->maximum()-ui->min_value_gl->minimum())));
             change_contrast();});
-        connect(ui->max_value_gl,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](){
+        connect(ui->max_value_gl,&QDoubleSpinBox::valueChanged,this,[this](void){
             ui->max_slider->setValue(int((ui->max_value_gl->value()-ui->max_value_gl->minimum())*double(ui->max_slider->maximum())/(ui->max_value_gl->maximum()-ui->max_value_gl->minimum())));
             change_contrast();});
-        connect(ui->min_slider,&QSlider::sliderMoved,this,[this](){
+        connect(ui->min_slider,&QSlider::sliderMoved,this,[this](void){
             ui->min_value_gl->setValue(ui->min_value_gl->minimum()+(ui->min_value_gl->maximum()-ui->min_value_gl->minimum())*
                               double(ui->min_slider->value())/double(ui->min_slider->maximum()));});
-        connect(ui->max_slider,&QSlider::sliderMoved,this,[this](){
+        connect(ui->max_slider,&QSlider::sliderMoved,this,[this](void){
             ui->max_value_gl->setValue(ui->max_value_gl->minimum()+(ui->max_value_gl->maximum()-ui->max_value_gl->minimum())*
                               double(ui->max_slider->value())/double(ui->max_slider->maximum()));});
 
@@ -259,16 +259,16 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     // scene view
     {
 
-        connect(&scene,&slice_view_scene::need_update,this,[this](){slice_need_update = true;});
+        connect(&scene,&slice_view_scene::need_update,this,[this](void){slice_need_update = true;});
         connect(&scene,SIGNAL(need_update()),glWidget,SLOT(update()));
 
-        connect(ui->actionAxial_View,&QAction::triggered,this,[this](){ui->glAxiView->setChecked(true);});
-        connect(ui->actionCoronal_View,&QAction::triggered,this,[this](){ui->glCorView->setChecked(true);});
-        connect(ui->actionSagittal_view,&QAction::triggered,this,[this](){ui->glSagView->setChecked(true);});
+        connect(ui->actionAxial_View,&QAction::triggered,this,[this](void){ui->glAxiView->setChecked(true);});
+        connect(ui->actionCoronal_View,&QAction::triggered,this,[this](void){ui->glCorView->setChecked(true);});
+        connect(ui->actionSagittal_view,&QAction::triggered,this,[this](void){ui->glSagView->setChecked(true);});
 
-        connect(ui->glSagView,&QPushButton::toggled,this,[this](bool checked){if(checked)cur_dim = 0;});
-        connect(ui->glCorView,&QPushButton::toggled,this,[this](bool checked){if(checked)cur_dim = 1;});
-        connect(ui->glAxiView,&QPushButton::toggled,this,[this](bool checked){if(checked)cur_dim = 2;});
+        connect(ui->glSagView,qOverload<bool>(&QPushButton::toggled),this,[this](bool checked){if(checked)cur_dim = 0;});
+        connect(ui->glCorView,qOverload<bool>(&QPushButton::toggled),this,[this](bool checked){if(checked)cur_dim = 1;});
+        connect(ui->glAxiView,qOverload<bool>(&QPushButton::toggled),this,[this](bool checked){if(checked)cur_dim = 2;});
 
         auto slice_view_toggled = [this](bool checked){
         if(checked)
@@ -285,8 +285,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->glCorView,&QPushButton::toggled,this,slice_view_toggled);
         connect(ui->glAxiView,&QPushButton::toggled,this,slice_view_toggled);
 
-        connect(ui->show_3view,&QToolButton::toggled,this,[this](bool checked){if(checked){set_data("roi_layout",1);glWidget->update();slice_need_update = true;}});
-        connect(ui->show_mosaic,&QToolButton::clicked,this,[this](bool checked){set_data("roi_layout",std::min<int>(7,std::max<int>(2,(*this)["roi_layout"].toInt()+1)));glWidget->update();slice_need_update = true;});
+        connect(ui->show_3view,qOverload<bool>(&QToolButton::toggled),this,[this](bool checked){if(checked){set_data("roi_layout",1);glWidget->update();slice_need_update = true;}});
+        connect(ui->show_mosaic,qOverload<bool>(&QToolButton::clicked),this,[this](bool checked){set_data("roi_layout",std::min<int>(7,std::max<int>(2,(*this)["roi_layout"].toInt()+1)));glWidget->update();slice_need_update = true;});
 
 
         connect(ui->tool0,&QPushButton::pressed,this,[this](void){scene.sel_mode = 0;scene.setFocus();});
@@ -330,8 +330,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     // regions
     {
 
-        connect(regionWidget,&RegionTableWidget::need_update,this,[this](){slice_need_update = true;});
-        connect(regionWidget,&RegionTableWidget::itemSelectionChanged,this,[this](){slice_need_update = true;});
+        connect(regionWidget,&RegionTableWidget::need_update,this,[this](void){slice_need_update = true;});
+        connect(regionWidget,&RegionTableWidget::itemSelectionChanged,this,[this](void){slice_need_update = true;});
         connect(regionWidget,SIGNAL(need_update()),glWidget,SLOT(update()));
 
         connect(ui->actionNewRegion,SIGNAL(triggered()),regionWidget,SLOT(new_region()));
@@ -413,11 +413,11 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionLoad_Presentation,&QAction::triggered, this,[this](void){command("load_workspace");});
         connect(ui->actionSave_Presentation,&QAction::triggered, this,[this](void){if(command("save_workspace"))QMessageBox::information(this,"DSI Studio","File saved");});
 
-        connect(ui->action3D_Screen,&QAction::triggered,this,[this](){QApplication::clipboard()->setImage(tipl::qt::get_bounding_box(glWidget->grab_image()));});
-        connect(ui->action3D_Screen_3_Views,&QAction::triggered,this,[this](){QApplication::clipboard()->setImage(glWidget->get3View(0));});
-        connect(ui->action3D_Screen_3_Views_Horizontal,&QAction::triggered,this,[this](){QApplication::clipboard()->setImage(glWidget->get3View(1));});
-        connect(ui->action3D_Screen_3_Views_Vertical,&QAction::triggered,this,[this](){QApplication::clipboard()->setImage(glWidget->get3View(2));});
-        connect(ui->action3D_Screen_Each_Tract,&QAction::triggered,this,[this]()
+        connect(ui->action3D_Screen,&QAction::triggered,this,[this](void){QApplication::clipboard()->setImage(tipl::qt::get_bounding_box(glWidget->grab_image()));});
+        connect(ui->action3D_Screen_3_Views,&QAction::triggered,this,[this](void){QApplication::clipboard()->setImage(glWidget->get3View(0));});
+        connect(ui->action3D_Screen_3_Views_Horizontal,&QAction::triggered,this,[this](void){QApplication::clipboard()->setImage(glWidget->get3View(1));});
+        connect(ui->action3D_Screen_3_Views_Vertical,&QAction::triggered,this,[this](void){QApplication::clipboard()->setImage(glWidget->get3View(2));});
+        connect(ui->action3D_Screen_Each_Tract,&QAction::triggered,this,[this](void)
         {
             bool ok = true;
             int col_count = QInputDialog::getInt(this,"DSI Studio","Column Count",5,1,50,1&ok);
@@ -425,7 +425,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 return;
             glWidget->copyToClipboardEach(tractWidget,uint32_t(col_count));
         });
-        connect(ui->action3D_Screen_Each_Region,&QAction::triggered,this,[this]()
+        connect(ui->action3D_Screen_Each_Region,&QAction::triggered,this,[this](void)
         {
             bool ok = true;
             int col_count = QInputDialog::getInt(this,"DSI Studio","Column Count",5,1,50,1&ok);
@@ -436,7 +436,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionSave_Rotation_Images,SIGNAL(triggered()),glWidget,SLOT(saveRotationSeries()));
         connect(ui->actionSave_3D_screen_in_3_views,SIGNAL(triggered()),glWidget,SLOT(save3ViewImage()));
         connect(ui->actionRecord_Video,SIGNAL(triggered()),glWidget,SLOT(record_video()));
-        connect(ui->actionROI,&QAction::triggered,this,[this](){scene.copyClipBoard();});
+        connect(ui->actionROI,&QAction::triggered,this,[this](void){scene.copyClipBoard();});
 
 
     }
@@ -469,12 +469,12 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->perform_tracking,SIGNAL(clicked()),tractWidget,SLOT(start_tracking()));
         connect(ui->stop_tracking,SIGNAL(clicked()),tractWidget,SLOT(stop_tracking()));
         connect(tractWidget,SIGNAL(show_tracts()),glWidget,SLOT(update()));
-        connect(tractWidget,&TractTableWidget::show_tracts,this,[this](){slice_need_update = true;});
+        connect(tractWidget,&TractTableWidget::show_tracts,this,[this](void){slice_need_update = true;});
         connect(tractWidget,SIGNAL(cellChanged(int,int)),glWidget,SLOT(update())); //update label
         connect(tractWidget,SIGNAL(itemSelectionChanged()),tractWidget,SLOT(show_report()));
         connect(glWidget,SIGNAL(edited()),tractWidget,SLOT(edit_tracts()));
         connect(glWidget,SIGNAL(region_edited()),glWidget,SLOT(update()));
-        connect(glWidget,&GLWidget::region_edited,this,[this](){slice_need_update = true;});
+        connect(glWidget,&GLWidget::region_edited,this,[this](void){slice_need_update = true;});
 
         connect(ui->actionFilter_by_ROI,SIGNAL(triggered()),tractWidget,SLOT(filter_by_roi()));
 
@@ -593,12 +593,12 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     }
 
     {
-        connect(new QShortcut(QKeySequence(tr("Q", "X+")),this),&QShortcut::activated,this,[this](){ui->glSagSlider->setValue(ui->glSagSlider->value()+1);});
-        connect(new QShortcut(QKeySequence(tr("A", "X+")),this),&QShortcut::activated,this,[this](){ui->glSagSlider->setValue(ui->glSagSlider->value()-1);});
-        connect(new QShortcut(QKeySequence(tr("W", "X+")),this),&QShortcut::activated,this,[this](){ui->glCorSlider->setValue(ui->glCorSlider->value()+1);});
-        connect(new QShortcut(QKeySequence(tr("S", "X+")),this),&QShortcut::activated,this,[this](){ui->glCorSlider->setValue(ui->glCorSlider->value()-1);});
-        connect(new QShortcut(QKeySequence(tr("E", "X+")),this),&QShortcut::activated,this,[this](){ui->glAxiSlider->setValue(ui->glAxiSlider->value()+1);});
-        connect(new QShortcut(QKeySequence(tr("D", "X+")),this),&QShortcut::activated,this,[this](){ui->glAxiSlider->setValue(ui->glAxiSlider->value()-1);});
+        connect(new QShortcut(QKeySequence(tr("Q", "X+")),this),&QShortcut::activated,this,[this](void){ui->glSagSlider->setValue(ui->glSagSlider->value()+1);});
+        connect(new QShortcut(QKeySequence(tr("A", "X+")),this),&QShortcut::activated,this,[this](void){ui->glSagSlider->setValue(ui->glSagSlider->value()-1);});
+        connect(new QShortcut(QKeySequence(tr("W", "X+")),this),&QShortcut::activated,this,[this](void){ui->glCorSlider->setValue(ui->glCorSlider->value()+1);});
+        connect(new QShortcut(QKeySequence(tr("S", "X+")),this),&QShortcut::activated,this,[this](void){ui->glCorSlider->setValue(ui->glCorSlider->value()-1);});
+        connect(new QShortcut(QKeySequence(tr("E", "X+")),this),&QShortcut::activated,this,[this](void){ui->glAxiSlider->setValue(ui->glAxiSlider->value()+1);});
+        connect(new QShortcut(QKeySequence(tr("D", "X+")),this),&QShortcut::activated,this,[this](void){ui->glAxiSlider->setValue(ui->glAxiSlider->value()-1);});
 
     }
 
