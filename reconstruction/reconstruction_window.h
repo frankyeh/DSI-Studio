@@ -101,7 +101,6 @@ private slots:
     void on_actionRotate_triggered();
     void on_delete_2_clicked();
     void on_SlicePos_valueChanged(int value);
-    void on_add_t1t2_clicked();
     void on_actionManual_Rotation_triggered();
     void on_actionCorrect_AP_PA_scans_triggered();
     void on_actionSave_b0_triggered();
@@ -118,9 +117,10 @@ private slots:
     void on_align_slices_clicked();
     void on_edit_mask_clicked();
     void on_actionOverwrite_Voxel_Size_triggered();
-    void on_qsdr_manual_clicked();
     void on_mask_from_unet_clicked();
-    void on_qsdr_partial_fov_clicked();
+    void on_actionManual_Align_triggered();
+    void on_actionAttach_Images_triggered();
+    void on_actionPartial_FOV_triggered();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

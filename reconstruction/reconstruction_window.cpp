@@ -482,6 +482,8 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
     ui->qsdr_reso->setVisible(checked);
     ui->qsdr_reso_label->setVisible(checked);
 
+    ui->menuQSDR->setEnabled(checked);
+
 }
 
 void reconstruction_window::on_zoom_in_clicked()
@@ -697,7 +699,7 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
     return true;
 }
 
-void reconstruction_window::on_add_t1t2_clicked()
+void reconstruction_window::on_actionAttach_Images_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
             this,"Open Images files",absolute_path,
@@ -711,7 +713,7 @@ void reconstruction_window::on_add_t1t2_clicked()
 
 }
 
-void reconstruction_window::on_qsdr_partial_fov_clicked()
+void reconstruction_window::on_actionPartial_FOV_triggered()
 {
     QString values = QInputDialog::getText(this,"DSI Studio","Specify the range of MNI coordinates separated by spaces (minx miny minz maxx maxy maxz)",QLineEdit::Normal,
                                            QString("-36 -30 -20 36 30 24"));
@@ -984,7 +986,7 @@ void match_template_resolution(tipl::image<3>& VG,
 }
 
 
-void reconstruction_window::on_qsdr_manual_clicked()
+void reconstruction_window::on_actionManual_Align_triggered()
 {
     tipl::image<3> VG,VG2,VF(handle->dwi);
     tipl::vector<3> VGvs,VFvs(handle->voxel.vs);
@@ -1024,4 +1026,3 @@ void reconstruction_window::on_mask_from_unet_clicked()
     on_SlicePos_valueChanged(ui->SlicePos->value());
     raise();
 }
-

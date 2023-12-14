@@ -687,33 +687,6 @@
                       <property name="spacing">
                        <number>0</number>
                       </property>
-                      <item>
-                       <widget class="QPushButton" name="qsdr_manual">
-                        <property name="text">
-                         <string>Manual Align...</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QPushButton" name="add_t1t2">
-                        <property name="sizePolicy">
-                         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                          <horstretch>0</horstretch>
-                          <verstretch>0</verstretch>
-                         </sizepolicy>
-                        </property>
-                        <property name="text">
-                         <string>Attach Images...</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QPushButton" name="qsdr_partial_fov">
-                        <property name="text">
-                         <string>Partial FOV...</string>
-                        </property>
-                       </widget>
-                      </item>
                      </layout>
                     </item>
                    </layout>
@@ -1048,7 +1021,7 @@
                     <item>
                      <widget class="QLineEdit" name="other_output">
                       <property name="text">
-                       <string>fa,ad,rd,md,iso,rdi,nrdi</string>
+                       <string>fa,ad,rd,md,iso,rdi</string>
                       </property>
                      </widget>
                     </item>
@@ -1215,10 +1188,19 @@ Reconstruction</string>
     <addaction name="separator"/>
     <addaction name="actionEnable_TEST_features"/>
    </widget>
+   <widget class="QMenu" name="menuQSDR">
+    <property name="title">
+     <string>QSDR</string>
+    </property>
+    <addaction name="actionManual_Align"/>
+    <addaction name="actionAttach_Images"/>
+    <addaction name="actionPartial_FOV"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuB_table"/>
    <addaction name="menuCorrections"/>
+   <addaction name="menuQSDR"/>
   </widget>
   <action name="actionSave_4D_nifti">
    <property name="icon">
@@ -1426,6 +1408,21 @@ Reconstruction</string>
   <action name="actionCheck_b_table">
    <property name="text">
     <string>Check b-table</string>
+   </property>
+  </action>
+  <action name="actionManual_Align">
+   <property name="text">
+    <string>Manual Align...</string>
+   </property>
+  </action>
+  <action name="actionAttach_Images">
+   <property name="text">
+    <string>Attach Images...</string>
+   </property>
+  </action>
+  <action name="actionPartial_FOV">
+   <property name="text">
+    <string>Partial FOV...</string>
    </property>
   </action>
  </widget>
