@@ -376,7 +376,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
     QString bval_name,bvec_name;
     if(find_bval_bvec(file_name,bval_name,bvec_name))
     {
-        tipl::out() << "found bval and bvec file at " << std::filesystem::path(file_name).parent_path().string();
+        tipl::out() << "found bval and bvec file for " << file_name;
         std::string error_msg;
         if(!get_bval_bvec(bval_name.toStdString(),bvec_name.toStdString(),dwi_data.size(),bvals,bvecs,error_msg))
         {
