@@ -75,6 +75,7 @@ void ImageModel::calculate_dwi_sum(bool update_mask)
 
     if(update_mask)
     {
+        tipl::out() << "generating mask";
         tipl::threshold(dwi,voxel.mask,50,1,0);
         if(dwi.depth() < 200)
         {
@@ -2444,9 +2445,9 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
             error_msg += " is an invalid SRC file";
             return false;
         }
+
         save_idx(dwi_file_name,mat_reader.in);
         mat_reader.in->close();
-
 
         if (!mat_reader.read("dimension",voxel.dim) ||
             !mat_reader.read("voxel_size",voxel.vs) ||
@@ -2456,8 +2457,6 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
             return false;
         }
         mat_reader.read("steps",voxel.steps);
-        if(!mat_reader.read("report",voxel.report))
-            get_report(voxel.report);
 
         unsigned int row,col;
         const float* table;
@@ -2477,6 +2476,10 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
             src_bvectors[index].normalize();
             table += 4;
         }
+
+        if(!mat_reader.read("report",voxel.report))
+            get_report(voxel.report);
+
         src_dwi_data.resize(src_bvalues.size());
         for (size_t index = 0;index < src_bvalues.size();++index)
         {
@@ -2493,6 +2496,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         const unsigned char* mask_ptr = nullptr;
         if(mat_reader.read("mask",row,col,mask_ptr))
         {
+            tipl::out() << "loading built-in mask";
             voxel.mask.resize(voxel.dim);
             if(size_t(row)*size_t(col) == voxel.dim.size())
                 std::copy(mask_ptr,mask_ptr+size_t(row)*size_t(col),voxel.mask.begin());
@@ -2506,7 +2510,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
                mat_reader.read("grad_dev",row,col,grad_dev_ptr) &&
                size_t(row)*size_t(col) == voxel.dim.size()*9)
             {
-                tipl::out() << "apply gradient deviation correction";
+                tipl::out() << "loading gradient deviation correction";
 
                 for(unsigned int index = 0;index < 9;index++)
                     grad_dev.push_back(tipl::make_image(const_cast<float*>(grad_dev_ptr+index*voxel.dim.size()),voxel.dim));
