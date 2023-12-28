@@ -196,8 +196,8 @@ public:
         {
             tipl::multiply_constant(odf_data[index],voxel.z0);
         });
-
-        for (unsigned int index = 0;index < odf_data.size();++index)
+        tipl::progress prog("odf",true);
+        for (unsigned int index = 0;prog(index,odf_data.size());++index)
             mat_writer.write((std::string("odf")+std::to_string(index)).c_str(),odf_data[index],voxel.ti.half_vertices_count);
         odf_data.clear();
     }
