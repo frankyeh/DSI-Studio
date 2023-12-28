@@ -15,10 +15,11 @@ class BaseProcess
 {
 public:
     BaseProcess(void) {}
+    virtual bool needed(Voxel&) {return true;}
     virtual void init(Voxel&) {}
     virtual void run(Voxel&, VoxelData&) {}
     virtual void run_hist(Voxel&,HistData&) {}
-    virtual void end(Voxel&,tipl::io::gz_mat_write&) {}
+    virtual void end(Voxel&,tipl::io::gz_mat_write&) {}    
     virtual ~BaseProcess(void) {}
 };
 
@@ -69,6 +70,7 @@ class Voxel
 {
 private:
     std::vector<std::shared_ptr<BaseProcess> > process_list;
+    std::vector<std::string> process_name;
 public:
     tipl::shape<3> dim;
     tipl::vector<3> vs;
@@ -159,7 +161,12 @@ public:
     template<typename T,typename ...Ts>
     void add_process(void)
     {
-        process_list.push_back(std::make_shared<T>());
+        auto new_process = std::make_shared<T>();
+        if(new_process->needed(*this))
+        {
+            process_list.push_back(new_process);
+            process_name.push_back(std::string("initialize ") + typeid(T).name());
+        }
         if constexpr (sizeof...(Ts) > 0) {
             add_process<Ts...>();
         }
@@ -168,6 +175,7 @@ public:
     bool init_process(void)
     {
         process_list.clear();
+        process_name.clear();
         add_process<Ts...>();
         return init();
     }
