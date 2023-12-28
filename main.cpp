@@ -389,7 +389,6 @@ int run_cmd(int ac, char *av[])
 
 extern console_stream console;
 
-bool has_gui = false;
 int main(int ac, char *av[])
 {
     if(ac > 2)
@@ -403,7 +402,7 @@ int main(int ac, char *av[])
     try{
     QApplication a(ac,av);
 
-    has_gui = tipl::show_prog = true;
+    tipl::show_prog = true;
 
     console.attach();
 
