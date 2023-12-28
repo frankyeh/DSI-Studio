@@ -184,19 +184,19 @@ manual_alignment::~manual_alignment()
 
 void manual_alignment::load_param(void)
 {
-    tipl::affine_transform<float> b_upper,b_lower;
-    tipl::reg::get_bound(from,from_vs,arg,b_upper,b_lower,tipl::reg::affine,tipl::reg::large_bound);
-
     // translocation
     disconnect_arg_update();
-    ui->tx->setMaximum(b_upper.translocation[0]);
-    ui->tx->setMinimum(b_lower.translocation[0]);
+    auto max_x = std::max<float>(float(from.width())*from_vs[0],float(to.width())*to_vs[0]);
+    auto max_y = std::max<float>(float(from.height())*from_vs[1],float(to.height())*to_vs[1]);
+    auto max_z = std::max<float>(float(from.depth())*from_vs[2],float(to.depth())*to_vs[2]);
+    ui->tx->setMaximum(max_x*0.5f);
+    ui->tx->setMinimum(-max_x*0.5f);
     ui->tx->setValue(arg.translocation[0]);
-    ui->ty->setMaximum(b_upper.translocation[1]);
-    ui->ty->setMinimum(b_lower.translocation[1]);
+    ui->ty->setMaximum(max_y*0.5f);
+    ui->ty->setMinimum(-max_y*0.5f);
     ui->ty->setValue(arg.translocation[1]);
-    ui->tz->setMaximum(b_upper.translocation[2]);
-    ui->tz->setMinimum(b_lower.translocation[2]);
+    ui->tz->setMaximum(max_z*0.5f);
+    ui->tz->setMinimum(-max_z*0.5f);
     ui->tz->setValue(arg.translocation[2]);
     // rotation
     ui->rx->setMaximum(3.14159265358*1.2);
@@ -209,24 +209,24 @@ void manual_alignment::load_param(void)
     ui->rz->setMinimum(-3.14159265358*1.2);
     ui->rz->setValue(arg.rotation[2]);
     //scaling
-    ui->sx->setMaximum(b_upper.scaling[0]);
-    ui->sx->setMinimum(b_lower.scaling[0]);
+    ui->sx->setMaximum(5.0);
+    ui->sx->setMinimum(0.2);
     ui->sx->setValue(arg.scaling[0]);
-    ui->sy->setMaximum(b_upper.scaling[1]);
-    ui->sy->setMinimum(b_lower.scaling[1]);
+    ui->sy->setMaximum(5.0);
+    ui->sy->setMinimum(0.2);
     ui->sy->setValue(arg.scaling[1]);
-    ui->sz->setMaximum(b_upper.scaling[2]);
-    ui->sz->setMinimum(b_lower.scaling[2]);
+    ui->sz->setMaximum(5.0);
+    ui->sz->setMinimum(0.2);
     ui->sz->setValue(arg.scaling[2]);
     //tilting
-    ui->xy->setMaximum(double(b_upper.affine[0]));
-    ui->xy->setMinimum(double(b_lower.affine[0]));
+    ui->xy->setMaximum(0.5);
+    ui->xy->setMinimum(-0.5);
     ui->xy->setValue(double(arg.affine[0]));
-    ui->xz->setMaximum(double(b_upper.affine[1]));
-    ui->xz->setMinimum(double(b_lower.affine[1]));
+    ui->xz->setMaximum(0.5);
+    ui->xz->setMinimum(-0.5);
     ui->xz->setValue(double(arg.affine[1]));
-    ui->yz->setMaximum(double(b_upper.affine[2]));
-    ui->yz->setMinimum(double(b_lower.affine[2]));
+    ui->yz->setMaximum(0.5);
+    ui->yz->setMinimum(-0.5);
     ui->yz->setValue(double(arg.affine[2]));
     connect_arg_update();
 }
