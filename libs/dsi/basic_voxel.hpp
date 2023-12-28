@@ -126,7 +126,7 @@ public://used in GQI
     bool scheme_balance = false;
 public:// manual alignment used in QSDR
     bool manual_alignment = false;
-    tipl::transformation_matrix<float> qsdr_trans;
+    tipl::affine_transform<float> qsdr_arg;
 public:// used in QSDR
     tipl::matrix<4,4> trans_to_mni;
     size_t template_id = 0;
