@@ -891,14 +891,11 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
     bool failed = false;
     tipl::par_for(mat_reader.size(),[&](unsigned int i)
     {
-        if(tipl::is_main_thread<0>())
-            prog(p,mat_reader.size());
-        if(prog.aborted() || failed)
+        if(!prog(p++,mat_reader.size()) || failed)
             return;
         auto& mat = mat_reader[i];
         auto new_vs = vs;
         auto new_trans = trans;
-        ++p;
         if(size_t(mat.get_cols())*size_t(mat.get_rows()) == 3*dim.size())
         {
             for(size_t d = 0;d < 3;++d)
