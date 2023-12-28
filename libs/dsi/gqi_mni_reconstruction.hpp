@@ -269,9 +269,6 @@ public:
             VGvs[0] = VGvs[1] = VGvs[2] = voxel.qsdr_reso;
         }
 
-        tipl::out() << "output dimension: " << VG.shape() << std::endl;
-
-
         // assign mask
         {
             voxel.mask.resize(VG.shape());
