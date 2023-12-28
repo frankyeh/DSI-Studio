@@ -30,6 +30,7 @@ bool Voxel::init(void)
 void calculate_shell(std::vector<float> sorted_bvalues,
                      std::vector<unsigned int>& shell)
 {
+    shell.clear();
     std::sort(sorted_bvalues.begin(),sorted_bvalues.end());
     for(uint32_t i = 0;i < sorted_bvalues.size();++i)
         if(sorted_bvalues[i] > 100.0f)
@@ -125,7 +126,7 @@ bool Voxel::run_hist(void)
 }
 bool Voxel::run(const char* title)
 {
-    tipl::progress prog("processing voxel data",true);
+    tipl::progress prog(title,true);
     size_t total_size = 0;
     tipl::par_for(thread_count,[&](size_t thread_id)
     {
