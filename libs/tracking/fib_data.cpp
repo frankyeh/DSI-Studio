@@ -105,7 +105,6 @@ bool odf_data::read(tipl::io::gz_mat_read& mat_reader)
     return true;
 }
 
-extern bool has_gui;
 tipl::const_pointer_image<3,float> item::get_image(void)
 {
     if(!image_ready)
@@ -117,6 +116,7 @@ tipl::const_pointer_image<3,float> item::get_image(void)
         // delay read routine
         unsigned int row,col;
         const float* buf = nullptr;
+        auto prior_show_prog = tipl::show_prog;
         tipl::show_prog = false;
         if (!mat_reader->read(image_index,row,col,buf))
         {
@@ -130,7 +130,7 @@ tipl::const_pointer_image<3,float> item::get_image(void)
             mat_reader->in->flush();
             image_data = tipl::make_image(buf,image_data.shape());
         }
-        tipl::show_prog = has_gui;
+        tipl::show_prog = prior_show_prog;
         image_ready = true;
         if(max_value == 0.0f)
             get_minmax();
