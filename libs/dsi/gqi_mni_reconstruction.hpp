@@ -104,15 +104,15 @@ public:
 
             if(voxel.manual_alignment)
             {
-                tipl::out() << "manual alignment";
-                tipl::out() << (affine = voxel.qsdr_trans);
+                tipl::out() << "manual alignment:" << voxel.qsdr_arg;
+                affine = tipl::transformation_matrix<float>(voxel.qsdr_arg,VG.shape(),VGvs,VF.shape(),VFvs);
             }
             else
             {
                 bool terminated = false;
                 if(!tipl::run("linear registration",[&]()
                 {
-                    linear_with_mi(VG,VGvs,VF,VFvs,affine,tipl::reg::affine,terminated);
+                    affine = linear_with_mi(VG,VGvs,VF,VFvs,tipl::reg::affine,terminated);
                 },terminated))
                     throw std::runtime_error("reconstruction canceled");
             }
