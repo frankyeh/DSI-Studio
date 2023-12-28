@@ -1723,11 +1723,8 @@ bool fib_data::map_to_mni(bool background)
         }
 
         prog = 1;
-        if(!has_manual_atlas)
-            linear_with_mi(It,template_vs,Is,vs,T,tipl::reg::affine,terminated);
-        else
-            T = manual_template_T;
-
+        T = has_manual_atlas ? manual_template_T :
+                               linear_with_mi(It,template_vs,Is,vs,tipl::reg::affine,terminated);
         if(terminated)
             return;
         prog = 2;
