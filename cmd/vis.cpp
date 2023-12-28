@@ -5,14 +5,13 @@
 #include "opengl/glwidget.h"
 
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
-extern bool has_gui;
 int vis(tipl::program_option<tipl::out>& po)
 {
     std::shared_ptr<fib_data> new_handle = cmd_load_fib(po.get("source"));
     if(!new_handle.get())
         return 1;
-    bool has_gui_ = has_gui;
-    tipl::show_prog = has_gui = false;
+    auto prior_show_prog = tipl::show_prog;
+    tipl::show_prog = false;
     tipl::out() << "starting gui" << std::endl;
     tracking_window* new_mdi = new tracking_window(nullptr,new_handle);
     new_mdi->setAttribute(Qt::WA_DeleteOnClose);
@@ -49,6 +48,6 @@ int vis(tipl::program_option<tipl::out>& po)
         new_mdi->close();
         delete new_mdi;
     }
-    tipl::show_prog = has_gui = has_gui_;
+    tipl::show_prog = prior_show_prog;
     return 0;
 }
