@@ -296,17 +296,23 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ env.DATE_TAG }}"/dsi_studio_ubuntu2004.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2004.zip" | jar x
         curl -sL https://zenodo.org/record/6321169/files/mountsinai-S-sub-032156_dwi.src.gz?download=1 -o Rhesus.src.gz
         chmod 777 ./dsi-studio/dsi_studio
-    - name: Test DTI/GQI Recon
+    - name: Test DTI Recon
       run: |  
         ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=1 |& tee -a log.txt
         ls Rhesus.src.gz.dti.fib.gz
-        echo --------------------------------------------------------------------------------------------------
+        
+    - name: Test GQI Recon
+      run: |  
         ./dsi-studio/dsi_studio --source=*.src.gz --action=rec |& tee -a log.txt
         ls Rhesus.src.gz.gqi.1.25.fib.gz
 
+    - name: Test QSDR Recon
+      run: |  
+        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=7 |& tee -a log.txt
+        ls Rhesus.src.gz.*
     
   test_human_recon:
     needs: linux-build
@@ -319,16 +325,22 @@ jobs:
         curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_DTI64.src.gz?download=1 -o DTI.src.gz
         curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_HARDI.src.gz?download=1 -o HARDI.src.gz
         chmod 777 ./dsi-studio/dsi_studio
-    - name: Test GQI Recon
+    - name: Test DTI Recon
       run: |
         ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=1
         ls DSI.src.gz.dti.fib.gz 
         ls DTI.src.gz.dti.fib.gz 
         ls HARDI.src.gz.dti.fib.gz 
+        
+    - name: Test GQI Recon
+      run: |
         ./dsi-studio/dsi_studio --source=*.src.gz --action=rec
         ls DSI.src.gz.gqi.1.25.fib.gz
         ls DTI.src.gz.gqi.1.25.fib.gz
         ls HARDI.src.gz.gqi.1.25.fib.gz
+
+    - name: Test QSDR Recon
+      run: |
         ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=7 --template=0
         ls DSI.src.gz.icbm152_adult.qsdr.1.25.*
         ls DTI.src.gz.icbm152_adult.qsdr.1.25.*
