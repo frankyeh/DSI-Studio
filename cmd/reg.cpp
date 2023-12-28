@@ -181,15 +181,15 @@ int reg(tipl::program_option<tipl::out>& po)
     bool terminated = false;
     tipl::out() << "running linear registration." << std::endl;
 
-    tipl::transformation_matrix<float> T;
+    tipl::affine_transform<float> arg;
     auto cost_function = po.get("cost_function","mi");
     if(cost_function == std::string("mi"))
-        linear_with_mi(to,to_vs,from,from_vs,T,
+        linear_with_mi(to,to_vs,from,from_vs,arg,
                   po.get("reg_type",1) == 0 ? tipl::reg::rigid_body : tipl::reg::affine,terminated,
                   po.get("large_deform",0) == 1 ? tipl::reg::large_bound : tipl::reg::reg_bound);
     else
     if(cost_function == std::string("cc"))
-        linear_with_cc(to,to_vs,from,from_vs,T,
+        linear_with_cc(to,to_vs,from,from_vs,arg,
                   po.get("reg_type",1) == 0 ? tipl::reg::rigid_body : tipl::reg::affine,terminated,
                   po.get("large_deform",0) == 1 ? tipl::reg::large_bound : tipl::reg::reg_bound);
     else
@@ -197,6 +197,9 @@ int reg(tipl::program_option<tipl::out>& po)
         tipl::out() << "ERROR: unknown cost_function " << cost_function << std::endl;
         return 1;
     }
+    tipl::out() << arg;
+    auto T = tipl::transformation_matrix<float>(arg,to.shape(),to_vs,from.shape(),from_vs);
+
 
     tipl::image<3> from_(to.shape()),from2_;
 
