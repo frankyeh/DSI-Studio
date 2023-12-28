@@ -103,7 +103,7 @@ bool ImageModel::reconstruction(void)
         case 1://DTI
             voxel.step_report << "[Step T2b(1)]=DTI" << std::endl;
             if (!reconstruct2<ReadDWIData,
-                    Dwi2Tensor>("DTI"))
+                    Dwi2Tensor>("DTI reconstruction"))
                 return false;
             break;
         case 4://GQI
@@ -127,7 +127,7 @@ bool ImageModel::reconstruction(void)
                         DetermineFiberDirections,
                         SaveMetrics,
                         SaveDirIndex,
-                        OutputODF>("Reconstruction"))
+                        OutputODF>("GQI reconstruction"))
                     return false;
                 break;
             }
@@ -176,7 +176,7 @@ bool ImageModel::reconstruction(void)
                         BalanceScheme,
                         GQI_Recon,
                         DetermineFiberDirections,
-                        RecordQA>("QA/ISO map"))
+                        RecordQA>("Preparing QA/ISO maps for normalization"))
                     return false;
                 if (!reconstruct2<DWINormalization,
                         Dwi2Tensor,
@@ -186,7 +186,7 @@ bool ImageModel::reconstruction(void)
                         DetermineFiberDirections,
                         SaveMetrics,
                         SaveDirIndex,
-                        OutputODF>("QSDR"))
+                        OutputODF>("QSDR reconstruction"))
                     return false;
                 voxel.mask = mask;
             }
