@@ -41,6 +41,9 @@ tipl::vector<3> adjust_to_vs(const tipl::image<3,float>& from,
                const tipl::image<3,float>& to,
                const tipl::vector<3>& to_vs);
 
+size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<tipl::image<3,float>,tipl::image<3,float> > > reg,
+                     bool& terminated);
+
 inline float linear_with_cc(const tipl::image<3,float>& from,
                               const tipl::vector<3>& from_vs,
                               const tipl::image<3,float>& to,
@@ -56,7 +59,11 @@ inline float linear_with_cc(const tipl::image<3,float>& from,
 
     if(new_to_vs != to_vs)
         tipl::transformation_matrix<float>(arg,from,from_vs,to,to_vs).to_affine_transform(arg,from,from_vs,to,new_to_vs);
-    float result = tipl::reg::linear_mr<tipl::reg::correlation>(from,from_vs,to,new_to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},0.01,bound);
+    auto reg = tipl::reg::linear_reg(from,from_vs,to,new_to_vs,arg);
+    reg->type = reg_type;
+    reg->set_bound(bound);
+    float result = reg->optimize(std::make_shared<tipl::reg::correlation>(),terminated);
+
     if(new_to_vs != to_vs)
         tipl::transformation_matrix<float>(arg,from,from_vs,to,new_to_vs).to_affine_transform(arg,from,from_vs,to,to_vs);
     tipl::out() << "R: " << -result << std::endl;
@@ -64,22 +71,6 @@ inline float linear_with_cc(const tipl::image<3,float>& from,
     return -result;
 }
 
-size_t linear_cuda(const tipl::image<3,float>& from,
-                              tipl::vector<3> from_vs,
-                              const tipl::image<3,float>& to,
-                              tipl::vector<3> to_vs,
-                              tipl::affine_transform<float>& arg,
-                              tipl::reg::reg_type reg_type,
-                              bool& terminated,
-                              const float* bound = tipl::reg::reg_bound);
-size_t linear_cuda_refine(const tipl::image<3,float>& from,
-                          tipl::vector<3> from_vs,
-                          const tipl::image<3,float>& to,
-                          tipl::vector<3> to_vs,
-                          tipl::affine_transform<float>& arg,
-                          tipl::reg::reg_type reg_type,
-                          bool& terminated,
-                          double precision);
 
 inline size_t linear_with_mi_refine(const tipl::image<3,float>& from,
                             const tipl::vector<3>& from_vs,
@@ -87,15 +78,19 @@ inline size_t linear_with_mi_refine(const tipl::image<3,float>& from,
                             const tipl::vector<3>& to_vs,
                               tipl::affine_transform<float>& arg,
                               tipl::reg::reg_type reg_type,
-                              bool& terminated,
-                              double precision = 0.01)
+                              bool& terminated)
 {
+
+    auto reg = tipl::reg::linear_reg(from,from_vs,to,to_vs,arg);
+    reg->type = reg_type;
+    reg->set_bound(tipl::reg::narrow_bound,false);
+
     if(has_cuda)
     {
         if constexpr (tipl::use_cuda)
-            return linear_cuda_refine(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),terminated,precision);
+            return optimize_mi_cuda(reg,terminated);
     }
-    return tipl::reg::linear<tipl::reg::mutual_information>(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},precision,false,tipl::reg::narrow_bound,10);
+    return reg->optimize(std::make_shared<tipl::reg::mutual_information>(),terminated);
 }
 inline size_t linear_with_mi(const tipl::image<3,float>& from,
                             const tipl::vector<3>& from_vs,
@@ -112,54 +107,34 @@ inline size_t linear_with_mi(const tipl::image<3,float>& from,
     if(new_to_vs != to_vs)
         tipl::transformation_matrix<float>(arg,from,from_vs,to,to_vs).to_affine_transform(arg,from,from_vs,to,new_to_vs);
     float result = 0.0f;
+
+    auto reg = tipl::reg::linear_reg(from,from_vs,to,new_to_vs,arg);
+    reg->type = reg_type;
+    reg->set_bound(bound);
     if(has_cuda)
     {
         if constexpr (tipl::use_cuda)
-            result = linear_cuda(from,from_vs,to,new_to_vs,arg,tipl::reg::reg_type(reg_type),terminated,bound);
-
+            result = optimize_mi_cuda(reg,terminated);
     }
     if(result == 0.0f)
-        result = tipl::reg::linear_mr<tipl::reg::mutual_information>
-                (from,from_vs,to,new_to_vs,arg,tipl::reg::reg_type(reg_type),[&](void){return terminated;},
-                    0.01,bound != tipl::reg::narrow_bound,bound);
+        result = reg->optimize_mr(std::make_shared<tipl::reg::mutual_information>(),terminated);
+
     if(new_to_vs != to_vs)
         tipl::transformation_matrix<float>(arg,from,from_vs,to,new_to_vs).to_affine_transform(arg,from,from_vs,to,to_vs);
     tipl::out() << arg << std::endl;
     return result;
 }
-
-
-inline size_t linear_with_mi(const tipl::image<3,float>& from,
+inline tipl::transformation_matrix<float> linear_with_mi(const tipl::image<3,float>& from,
                             const tipl::vector<3>& from_vs,
                             const tipl::image<3,float>& to,
                             const tipl::vector<3>& to_vs,
-                              tipl::transformation_matrix<float>& T,
                               tipl::reg::reg_type reg_type,
                               bool& terminated,
                               const float* bound = tipl::reg::reg_bound)
 {
     tipl::affine_transform<float> arg;
-    size_t result = linear_with_mi(from,from_vs,to,to_vs,arg,reg_type,terminated,bound);
-    T = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
-    tipl::out() << T << std::endl;
-    return result;
-}
-
-inline size_t linear_with_cc(const tipl::image<3,float>& from,
-                            const tipl::vector<3>& from_vs,
-                            const tipl::image<3,float>& to,
-                            const tipl::vector<3>& to_vs,
-                              tipl::transformation_matrix<float>& T,
-                              tipl::reg::reg_type reg_type,
-                              bool& terminated,
-                              const float* bound = tipl::reg::reg_bound)
-{
-    tipl::affine_transform<float> arg;
-    size_t result = linear_with_cc(from,from_vs,to,to_vs,arg,reg_type,terminated,bound);
-    tipl::out() << arg << std::endl;
-    T = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
-    tipl::out() << T << std::endl;
-    return result;
+    linear_with_mi(from,from_vs,to,to_vs,arg,reg_type,terminated,bound);
+    return tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
 }
 
 
