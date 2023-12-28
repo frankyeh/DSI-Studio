@@ -32,6 +32,7 @@ protected:
 public:
     virtual void init(Voxel& voxel)
     {
+        tipl::progress prog("QA/ISO normalization");
         if(voxel.vs[0] == 0.0f ||
            voxel.vs[1] == 0.0f ||
            voxel.vs[2] == 0.0f)
