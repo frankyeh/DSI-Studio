@@ -2124,7 +2124,6 @@ QImage GLWidget::get3View(unsigned int type)
     }
     return QImage();
 }
-extern bool has_gui;
 bool GLWidget::command(QString cmd,QString param,QString param2)
 {
     if(cmd == "save_camera")
@@ -2277,7 +2276,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         if(!param2.isEmpty())
             threshold = param2.toFloat();
         else
-        if(has_gui)
+        if(tipl::show_prog)
         {
             bool ok;
             threshold = float(QInputDialog::getDouble(this,
