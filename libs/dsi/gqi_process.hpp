@@ -305,10 +305,12 @@ private:
     }
     std::vector<std::vector<float> > rdi_weightings;
 public:
+    virtual bool needed(Voxel& voxel)
+    {
+        return voxel.needs("rdi") && voxel.shell.size() > 1;
+    }
     virtual void init(Voxel& voxel)
     {
-        if(!voxel.needs("rdi") || voxel.shell.size() == 1)
-            return;
         float sigma = voxel.param[0]; //optimal 1.24
         for(float L = 0.2f;L <= sigma;L+= 0.2f)
         {
@@ -322,8 +324,6 @@ public:
     }
     virtual void run(Voxel&, VoxelData& data)
     {
-        if(rdi_weightings.empty())
-            return;
         float last_value = 0;
         std::vector<float> rdi_values(rdi_weightings.size());
         for(unsigned int index = 0;index < rdi_weightings.size();++index)
