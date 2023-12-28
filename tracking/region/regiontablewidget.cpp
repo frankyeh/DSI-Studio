@@ -573,7 +573,6 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::m
     }
     tipl::out() <<"no label file found. Use default ROI numbering." << std::endl;
 }
-extern bool has_gui;
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<SliceModel*>& transform_lookup,
@@ -755,7 +754,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         error_msg += " with FIB. If ";
         error_msg += nifti_name;
         error_msg += " is in the MNI space, ";
-        if(has_gui)
+        if(tipl::show_prog)
             error_msg += "open it using [Region][Open MNI Region]. If not, insert its reference T1W/T2W using [Slices][Insert T1WT2W] to guide the registration.";
         else
             error_msg += "specify mni in the file name (e.g. region_mni.nii.gz). If not, use --other_slices to load the reference T1W/T2W to guide the registration.";
