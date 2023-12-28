@@ -183,16 +183,14 @@ int rec(tipl::program_option<tipl::out>& po)
                 else
                     tipl::out() << "running affine transformation" << std::endl;
 
-                tipl::transformation_matrix<float> T;
                 bool terminated = false;
 
                 tipl::filter::gaussian(I);
                 tipl::filter::gaussian(src.dwi);
 
-                linear_with_mi(I,vs,src.dwi,src.voxel.vs,T,po.has("rotate_to") ? tipl::reg::rigid_body : tipl::reg::affine,terminated);
-
+                src.rotate(I.shape(),vs,
+                           linear_with_mi(I,vs,src.dwi,src.voxel.vs,po.has("rotate_to") ? tipl::reg::rigid_body : tipl::reg::affine,terminated));
                 tipl::out() << "DWI rotated." << std::endl;
-                src.rotate(I.shape(),vs,T);
             }
 
             if(po.has("align_acpc"))
