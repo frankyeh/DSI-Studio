@@ -5,31 +5,25 @@
 
 class ReadDWIData : public BaseProcess{
 public:
-    virtual void init(Voxel&) {}
     virtual void run(Voxel& voxel, VoxelData& data)
     {
         data.space.resize(voxel.dwi_data.size());
         for (unsigned int index = 0; index < data.space.size(); ++index)
             data.space[index] = voxel.dwi_data[index][data.voxel_index];
     }
-    virtual void end(Voxel&,tipl::io::gz_mat_write&) {}
 };
-
 class BalanceScheme : public BaseProcess{
     std::vector<float> trans;
     unsigned int new_q_count;
     unsigned int old_q_count;
-private:
-    Voxel* stored_voxel;
-    std::vector<tipl::vector<3,float> > old_bvectors;
-    std::vector<float> old_bvalues;
 public:
-    BalanceScheme(void):stored_voxel(nullptr){}
-
+    BalanceScheme(void){}
+    virtual bool needed(Voxel& voxel)
+    {
+        return voxel.scheme_balance;
+    }
     virtual void init(Voxel& voxel)
     {
-        if(!voxel.scheme_balance)
-            return;
         unsigned int b_count = uint32_t(voxel.bvalues.size());
         unsigned int total_signals = 0;
 
@@ -47,7 +41,6 @@ public:
             new_bvalues.resize(1);
             total_signals += 1;
         }
-
         for(unsigned int shell_index = 0;shell_index < voxel.shell.size();++shell_index)
         {
             unsigned int from = voxel.shell[shell_index];
@@ -103,22 +96,9 @@ public:
         new_q_count = total_signals;
         voxel.bvalues.swap(new_bvalues);
         voxel.bvectors.swap(new_bvectors);
-        new_bvalues.swap(old_bvalues);
-        new_bvectors.swap(old_bvectors);
-        stored_voxel = &voxel;
-
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-
-        if(!voxel.scheme_balance)
-            return;
-        if(stored_voxel)// restored btable here in case the user terminates the recon
-        {
-            stored_voxel = nullptr;
-            voxel.bvalues = old_bvalues;
-            voxel.bvectors = old_bvectors;
-        }
         std::vector<float> new_data(new_q_count);
         data.space.swap(new_data);
         tipl::mat::vector_product(trans.begin(),new_data.begin(),data.space.begin(),tipl::shape<2>(new_q_count,old_q_count));
@@ -154,10 +134,13 @@ protected:
     std::vector<std::vector<float> > odf_data;
     std::vector<size_t> odf_index_map;
 public:
+    virtual bool needed(Voxel& voxel)
+    {
+        return voxel.output_odf;
+    }
     virtual void init(Voxel& voxel)
     {
         odf_data.clear();
-        if (voxel.output_odf)
         {
             voxel.step_report << "[Step T2b(2)][ODFs]=checked" << std::endl;
             size_t total_count = 0;
@@ -199,8 +182,7 @@ public:
     }
     virtual void run(Voxel& voxel,VoxelData& data)
     {
-
-        if (voxel.output_odf && data.fa[0] != 0.0f)
+        if (data.fa[0] != 0.0f)
         {
             size_t odf_index = odf_index_map[data.voxel_index];
             std::copy(data.odf.begin(),data.odf.end(),
@@ -210,20 +192,14 @@ public:
     }
     virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
-
-        if (!voxel.output_odf)
-            return;
+        tipl::par_for (odf_data.size(),[&](unsigned int index)
         {
-            tipl::par_for (odf_data.size(),[&](unsigned int index)
-            {
-                tipl::multiply_constant(odf_data[index],voxel.z0);
-            });
+            tipl::multiply_constant(odf_data[index],voxel.z0);
+        });
 
-            for (unsigned int index = 0;index < odf_data.size();++index)
-                mat_writer.write((std::string("odf")+std::to_string(index)).c_str(),odf_data[index],voxel.ti.half_vertices_count);
-            odf_data.clear();
-        }
-
+        for (unsigned int index = 0;index < odf_data.size();++index)
+            mat_writer.write((std::string("odf")+std::to_string(index)).c_str(),odf_data[index],voxel.ti.half_vertices_count);
+        odf_data.clear();
     }
 };
 
@@ -305,10 +281,6 @@ public:
     {
         voxel.qa_map[data.voxel_index] = data.fa[0];
         voxel.iso_map[data.voxel_index] = data.min_odf;
-    }
-    virtual void end(Voxel&,tipl::io::gz_mat_write&)
-    {
-
     }
 };
 
@@ -416,14 +388,12 @@ protected:
 public:
     virtual void init(Voxel& voxel)
     {
-
         findex.resize(voxel.max_fiber_number);
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             findex[index].resize(voxel.dim.size());
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             findex[index][data.voxel_index] = short(data.dir_index[index]);
     }
@@ -449,7 +419,6 @@ protected:
 public:
     virtual void init(Voxel& voxel)
     {
-
         dir.resize(voxel.max_fiber_number);
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             dir[index].resize(voxel.dim.size()*3);
