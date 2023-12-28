@@ -139,7 +139,6 @@ void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in)
 void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
 bool parse_age_sex(const std::string& file_name,std::string& age,std::string& sex);
 QString get_matched_demo(QWidget *parent,std::shared_ptr<fib_data>);
-extern bool has_gui;
 bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is_mni)
 {
     if(files.empty())
@@ -254,7 +253,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
                 demo = age+" "+sex;
             if(!handle->demo.empty())
                 demo = handle->demo;
-            if(demo.empty() && has_gui)
+            if(demo.empty() && tipl::show_prog)
                 demo = get_matched_demo(nullptr,db_handle).toStdString();
             tipl::out() << "subject's demo: " << demo;
             if(!db_handle->db.get_demo_matched_volume(demo,source_images))
@@ -424,7 +423,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
     if(!has_transform)
     {
         tipl::out() << "running slice registration..." << std::endl;
-        if(has_gui)
+        if(tipl::show_prog)
         {
             thread.reset(new std::thread([this](){argmin();}));
             std::this_thread::sleep_for(std::chrono::seconds(1));
