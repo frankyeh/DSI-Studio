@@ -10,7 +10,7 @@ console_stream console;
 
 void console_stream::show_output(void)
 {
-    if(!tipl::is_main_thread<0>() || !log_window || !has_output)
+    if(!tipl::is_main_thread() || !log_window || !has_output)
         return;
     QStringList strSplitted;
     {
