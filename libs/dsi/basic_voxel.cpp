@@ -23,7 +23,10 @@ bool Voxel::init(void)
         }
     }
     for (unsigned int index = 0; prog(index,process_list.size()); ++index)
+    {
+        tipl::out() << process_name[index];
         process_list[index]->init(*this);
+    }
     return !prog.aborted();
 }
 
@@ -74,9 +77,6 @@ void Voxel::load_from_src(ImageModel& image_model)
     auto is_dsi = [this](void){return shell.size() > 4 && shell[1] - shell[0] <= 6;};
 
     scheme_balance = !is_dsi() && shell.size() < 5 && (method_id == 7 || method_id == 4);
-    if(scheme_balance)
-        tipl::out() << "scheme balance is applied to avoid directional bias";
-
     if(method_id == 1)
         max_fiber_number = 1;
 }
