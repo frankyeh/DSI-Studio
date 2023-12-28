@@ -301,7 +301,6 @@ public:
     bool reconstruct2(const char* prog_title)
     {
         // initialization
-        tipl::progress prog("reconstruction",true);
         voxel.load_from_src(*this);
         if(!voxel.init_process<ProcessList...>())
         {
