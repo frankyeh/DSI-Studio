@@ -2563,11 +2563,14 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
 
 bool ImageModel::save_fib(const std::string& output_name)
 {
-    tipl::progress prog_("saving ",std::filesystem::path(output_name).filename().string().c_str());
-    tipl::io::gz_mat_write mat_writer(output_name.c_str());
+    std::string tmp_file = output_name + ".tmp.gz";
+    while(std::filesystem::exists(tmp_file))
+        tmp_file += ".tmp.gz";
+
+    tipl::io::gz_mat_write mat_writer(tmp_file.c_str());
     if(!mat_writer)
     {
-        error_msg = "Cannot save fib file";
+        error_msg = "cannot save fib file";
         return false;
     }
 
@@ -2579,7 +2582,13 @@ bool ImageModel::save_fib(const std::string& output_name)
     voxel.ti.save_to_buffer(float_data,short_data);
     mat_writer.write("odf_vertices",float_data,3);
     mat_writer.write("odf_faces",short_data,3);
-    voxel.end(mat_writer);
+    if(!voxel.end(mat_writer))
+    {
+        mat_writer.close();
+        std::filesystem::remove(tmp_file);
+        error_msg = "aborted";
+        return false;
+    }
     std::string final_report = voxel.report;
     final_report += voxel.recon_report.str();
     mat_writer.write("report",final_report);
@@ -2587,6 +2596,9 @@ bool ImageModel::save_fib(const std::string& output_name)
     final_steps += voxel.step_report.str();
     final_steps += "[Step T2b][Run reconstruction]\n";
     mat_writer.write("steps",final_steps);
+    mat_writer.close();
+    std::filesystem::rename(tmp_file,output_name);
+    tipl::out() << "FIB file saved: " << output_name;
     return true;
 }
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);

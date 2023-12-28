@@ -130,7 +130,7 @@ bool Voxel::run(const char* title)
     size_t total_size = 0;
     tipl::par_for(thread_count,[&](size_t thread_id)
     {
-        for(size_t voxel_index = thread_id;voxel_index < mask.size() && prog(++total_size,mask.size());voxel_index += thread_count)
+        for(size_t voxel_index = thread_id;voxel_index < mask.size() && prog(total_size++,mask.size());voxel_index += thread_count)
         {
             if(!mask[voxel_index])
                 continue;
@@ -144,11 +144,15 @@ bool Voxel::run(const char* title)
 }
 
 
-void Voxel::end(tipl::io::gz_mat_write& writer)
+bool Voxel::end(tipl::io::gz_mat_write& writer)
 {
-    tipl::progress prog("saving results",true);
+    tipl::progress prog("output",true);
     for (size_t index = 0;prog(uint32_t(index),uint32_t(process_list.size())); ++index)
+    {
+        tipl::out() << process_name[index];
         process_list[index]->end(*this,writer);
+    }
+    return !prog.aborted();
 }
 
 BaseProcess* Voxel::get(unsigned int index)

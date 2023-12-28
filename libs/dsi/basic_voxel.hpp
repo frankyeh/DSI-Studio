@@ -165,7 +165,10 @@ public:
         if(new_process->needed(*this))
         {
             process_list.push_back(new_process);
-            process_name.push_back(std::string("initialize ") + typeid(T).name());
+            process_name.push_back(std::string());
+            std::istringstream in(typeid(T).name());
+            while(in)
+                in >> process_name.back();
         }
         if constexpr (sizeof...(Ts) > 0) {
             add_process<Ts...>();
@@ -183,7 +186,7 @@ public:
     bool init(void);
     bool run(const char* title);
     bool run_hist(void);
-    void end(tipl::io::gz_mat_write& writer);
+    bool end(tipl::io::gz_mat_write& writer);
     BaseProcess* get(unsigned int index);
 };
 
