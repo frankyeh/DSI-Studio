@@ -124,7 +124,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
     bool export_trk = po.get("export_trk",1);
     bool overwrite = po.get("overwrite",0);
     bool export_template_trk = po.get("export_template_trk",0);
-    uint32_t thread_count = tipl::available_thread_count<0>() = uint32_t(po.get("thread_count",std::thread::hardware_concurrency()));
+    uint32_t thread_count = tipl::available_thread_count = uint32_t(po.get("thread_count",std::thread::hardware_concurrency()));
     std::string trk_format = po.get("trk_format","tt.gz");
     std::string stat_format = po.get("stat_format","stat.txt");
     std::vector<float> tolerance;
