@@ -96,35 +96,13 @@ void cdm2_cuda(const tipl::image<3>& It,
 
 }
 
-size_t linear_cuda(const tipl::image<3,float>& from,
-                              tipl::vector<3> from_vs,
-                              const tipl::image<3,float>& to,
-                              tipl::vector<3> to_vs,
-                              tipl::affine_transform<float>& arg,
-                              tipl::reg::reg_type reg_type,
-                              bool& terminated,
-                              const float* bound)
+size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<tipl::image<3,float>,tipl::image<3,float> > > reg,
+                            bool& terminated)
 {
     distribute_gpu();
-    return tipl::reg::linear_mr<tipl::reg::mutual_information_cuda>
-            (from,from_vs,to,to_vs,arg,reg_type,[&](void){return terminated;},
-                0.01,bound != tipl::reg::narrow_bound,bound);
+    return reg->optimize(std::make_shared<tipl::reg::mutual_information_cuda>(),terminated);
 }
 
-size_t linear_cuda_refine(const tipl::image<3,float>& from,
-                              tipl::vector<3> from_vs,
-                              const tipl::image<3,float>& to,
-                              tipl::vector<3> to_vs,
-                              tipl::affine_transform<float>& arg,
-                              tipl::reg::reg_type reg_type,
-                              bool& terminated,
-                              double precision)
-{
-    distribute_gpu();
-    return tipl::reg::linear<tipl::reg::mutual_information_cuda>(
-                from,from_vs,to,to_vs,arg,reg_type,[&](void){return terminated;},
-                precision,false,tipl::reg::narrow_bound,10);
-}
 
 
 
