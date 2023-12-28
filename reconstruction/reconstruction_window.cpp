@@ -685,7 +685,7 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
         tipl::filter::gaussian(iso_fa);
         tipl::filter::gaussian(smoothed_ref);
         tipl::filter::gaussian(smoothed_ref);
-        linear_with_mi(iso_fa,handle->voxel.vs,smoothed_ref,vs,affine,tipl::reg::rigid_body,terminated);
+        affine = linear_with_mi(iso_fa,handle->voxel.vs,smoothed_ref,vs,tipl::reg::rigid_body,terminated);
     }
     else {
         if(has_registered)
@@ -1008,13 +1008,13 @@ void reconstruction_window::on_actionManual_Align_triggered()
 
     match_template_resolution(VG,VGvs,VF,VFvs);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-                                                                VF,VFvs,VG,VGvs,
+                                                                VG,VGvs,VF,VFvs,
                                                                 tipl::reg::affine,
                                                                 tipl::reg::cost_type::mutual_info));
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
         return;
-    handle->voxel.qsdr_trans = manual->get_iT();
+    handle->voxel.qsdr_arg = manual->arg;
     handle->voxel.manual_alignment = true;
 }
 
