@@ -1068,7 +1068,7 @@ bool ImageModel::correct_motion(void)
             tipl::image<3> to(dwi_at(i));
             preproc(to);
             bool terminated = false;
-            linear_with_mi(from,voxel.vs,to,voxel.vs,args[i],tipl::reg::rigid_body,terminated,tipl::reg::narrow_bound);
+            linear_with_mi_refine(from,voxel.vs,to,voxel.vs,args[i],tipl::reg::rigid_body,terminated);
             tipl::out() << "dwi (" << i+1 << "/" << src_bvalues.size() << ")" <<
                          " shift=" << tipl::vector<3>(args[i].translocation) <<
                          " rotation=" << tipl::vector<3>(args[i].rotation) << std::endl;
@@ -1128,7 +1128,7 @@ bool ImageModel::correct_motion(void)
             preproc(to);
 
             bool terminated = false;
-            linear_with_mi(from,voxel.vs,to,voxel.vs,new_args[i],tipl::reg::rigid_body,terminated,tipl::reg::narrow_bound);
+            linear_with_mi_refine(from,voxel.vs,to,voxel.vs,new_args[i],tipl::reg::rigid_body,terminated);
             tipl::out() << "dwi (" << i+1 << "/" << src_bvalues.size() << ") = "
                       << " shift=" << tipl::vector<3>(new_args[i].translocation)
                       << " rotation=" << tipl::vector<3>(new_args[i].rotation) << std::endl;
