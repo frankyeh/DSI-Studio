@@ -124,9 +124,7 @@ bool ImageModel::reconstruction(void)
                 if (!reconstruct2<
                         ReadDWIData,
                         HGQI_Recon,
-                        DetermineFiberDirections,
                         SaveMetrics,
-                        SaveDirIndex,
                         OutputODF>("GQI reconstruction"))
                     return false;
                 break;
@@ -138,9 +136,7 @@ bool ImageModel::reconstruction(void)
                     BalanceScheme,
                     GQI_Recon,
                     RDI_Recon,
-                    DetermineFiberDirections,
                     SaveMetrics,
-                    SaveDirIndex,
                     OutputODF>("GQI"))
                 return false;
             break;
@@ -175,7 +171,6 @@ bool ImageModel::reconstruction(void)
                         ReadDWIData,
                         BalanceScheme,
                         GQI_Recon,
-                        DetermineFiberDirections,
                         RecordQA>("Preparing QA/ISO maps for normalization"))
                     return false;
                 if (!reconstruct2<DWINormalization,
@@ -183,9 +178,7 @@ bool ImageModel::reconstruction(void)
                         BalanceScheme,
                         GQI_Recon,
                         RDI_Recon,
-                        DetermineFiberDirections,
                         SaveMetrics,
-                        SaveDirIndex,
                         OutputODF>("QSDR reconstruction"))
                     return false;
                 voxel.mask = mask;
@@ -254,9 +247,7 @@ bool output_odfs(const tipl::image<3,unsigned char>& mni_mask,
     image_model.voxel.other_output = "gfa";
     swap_data();
     if (!image_model.reconstruct2<ODFLoader,
-            DetermineFiberDirections,
-            SaveMetrics,
-            SaveDirIndex>("template"))
+            SaveMetrics>("template"))
     {
         error_msg = image_model.error_msg;
         swap_data();

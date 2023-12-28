@@ -279,172 +279,60 @@ public:
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        voxel.qa_map[data.voxel_index] = data.fa[0];
-        voxel.iso_map[data.voxel_index] = data.min_odf;
+        auto min_max = tipl::minmax_value(data.odf.begin(),data.odf.end());
+        voxel.qa_map[data.voxel_index] = min_max.second-min_max.first;
+        voxel.iso_map[data.voxel_index] = min_max.first;
     }
 };
 
-double base_function(double theta);
-struct SaveMetrics : public BaseProcess
+struct SearchLocalMaximum
 {
-protected:
-    std::vector<float> iso,gfa;
-    std::vector<std::vector<float> > fa,rdi;
-    tipl::shape<3> dim;
-
-    void output_anisotropy(tipl::io::gz_mat_write& mat_writer,
-                           const char* name,const std::vector<std::vector<float> >& metrics)
+    std::vector<std::vector<unsigned short> > neighbor;
+    void init(Voxel& voxel)
     {
-        for (unsigned int index = 0;index < metrics.size();++index)
+        unsigned int half_odf_size = voxel.ti.half_vertices_count;
+        unsigned int faces_count = uint32_t(voxel.ti.faces.size());
+        neighbor.resize(voxel.ti.half_vertices_count);
+        for (unsigned int index = 0;index < faces_count;++index)
         {
-            std::ostringstream out;
-            out << index;
-            std::string num = out.str();
-            std::string str = name + num;
-            mat_writer.write(str.c_str(),metrics[index],uint32_t(dim.plane_size()));
+            unsigned short i1 = voxel.ti.faces[index][0];
+            unsigned short i2 = voxel.ti.faces[index][1];
+            unsigned short i3 = voxel.ti.faces[index][2];
+            if (i1 >= half_odf_size)
+                i1 -= half_odf_size;
+            if (i2 >= half_odf_size)
+                i2 -= half_odf_size;
+            if (i3 >= half_odf_size)
+                i3 -= half_odf_size;
+            neighbor[i1].push_back(i2);
+            neighbor[i1].push_back(i3);
+            neighbor[i2].push_back(i1);
+            neighbor[i2].push_back(i3);
+            neighbor[i3].push_back(i1);
+            neighbor[i3].push_back(i2);
         }
     }
-public:
-    virtual void init(Voxel& voxel)
+    void search(const std::vector<float>& old_odf,std::map<float,unsigned short,std::greater<float> >& max_table)
     {
-        voxel.z0 = 1.0f;
-        dim = voxel.dim;
-        fa = std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(dim.size()));
-        if(voxel.needs("gfa"))
-            gfa = std::vector<float>(dim.size());
-        iso = std::vector<float>(dim.size());
-        if(voxel.needs("rdi") && voxel.shell.size() > 1)
+        max_table.clear();
+        for (uint32_t index = 0;index < neighbor.size();++index)
         {
-            float sigma = voxel.param[0]; //optimal 1.24
-            for(float L = 0.2f;L <= sigma;L+= 0.2f)
-                rdi.push_back(std::vector<float>(dim.size()));
-        }
-    }
-    virtual void run(Voxel& voxel, VoxelData& data)
-    {
-        iso[data.voxel_index] = data.min_odf;
-
-        if(!gfa.empty())
-            gfa[data.voxel_index] = GeneralizedFA()(data.odf);
-
-        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-            fa[index][data.voxel_index] = data.fa[index];
-
-        if(!rdi.empty())
-            for (unsigned int index = 0;index < data.rdi.size();++index)
-                rdi[index][data.voxel_index] = data.rdi[index];
-    }
-    virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
-    {
-        mat_writer.write("gfa",gfa,uint32_t(voxel.dim.plane_size()));
-
-        // output normalized qa
-        {
-            float max_qa = 0.0;
-            for (unsigned int i = 0;i < voxel.max_fiber_number;++i)
-                max_qa = std::max<float>(tipl::max_value(fa[i]),max_qa);
-            if(max_qa == 0.0f)
-                max_qa = 1.0f;
-            voxel.z0 = float(1.0/double(max_qa));
-        }
-        mat_writer.write("z0",{voxel.z0});
-        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-            tipl::multiply_constant(fa[index],voxel.z0);
-        output_anisotropy(mat_writer,"fa",fa);
-
-        tipl::multiply_constant(iso,voxel.z0);
-        mat_writer.write("iso",iso,uint32_t(voxel.dim.plane_size()));
-
-        if(!rdi.empty())
-        {
-            for(unsigned int i = 0;i < rdi.size();++i)
-                tipl::multiply_constant(rdi[i],voxel.z0);
-            float L = 0.2f;
-            mat_writer.write("rdi",rdi[0],uint32_t(voxel.dim.plane_size()));
-
+            float value = old_odf[index];
+            bool is_max = true;
+            std::vector<uint16_t>& nei = neighbor[index];
+            for (unsigned int j = 0;j < nei.size();++j)
             {
-                for(unsigned int i = 0;i < rdi[0].size();++i)
-                for(unsigned int j = 0;j < rdi.size();++j)
-                    rdi[j][i] = rdi.back()[i]-rdi[j][i];
-                L = 0.2f;
-                for(unsigned int i = 0;i < rdi.size() && L < 0.8f;++i,L += 0.2f)
+                if (value < old_odf[nei[j]])
                 {
-                    std::ostringstream out2;
-                    out2.precision(2);
-                    out2 << "nrdi" << std::setfill('0') << std::setw(2) << int(L*10) << "L";
-                    mat_writer.write(out2.str().c_str(),rdi[i],uint32_t(voxel.dim.plane_size()));
+                    is_max = false;
+                    break;
                 }
             }
+            if (is_max)
+                max_table[value] = index;
         }
     }
 };
-
-
-
-struct SaveDirIndex : public BaseProcess
-{
-protected:
-    std::vector<std::vector<short> > findex;
-public:
-    virtual void init(Voxel& voxel)
-    {
-        findex.resize(voxel.max_fiber_number);
-        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-            findex[index].resize(voxel.dim.size());
-    }
-    virtual void run(Voxel& voxel, VoxelData& data)
-    {
-        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-            findex[index][data.voxel_index] = short(data.dir_index[index]);
-    }
-    virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
-    {
-        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-        {
-            std::ostringstream out;
-            out << index;
-            std::string num = out.str();
-            std::string index_str = "index";
-            index_str += num;
-            mat_writer.write(index_str.c_str(),findex[index],uint32_t(voxel.dim.plane_size()));
-        }
-    }
-};
-
-
-struct SaveDir : public BaseProcess
-{
-protected:
-    std::vector<std::vector<float> > dir;
-public:
-    virtual void init(Voxel& voxel)
-    {
-        dir.resize(voxel.max_fiber_number);
-        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-            dir[index].resize(voxel.dim.size()*3);
-    }
-    virtual void run(Voxel& voxel, VoxelData& data)
-    {
-        int64_t dir_index = int64_t(data.voxel_index);
-        for (size_t index = 0;index < voxel.max_fiber_number;++index)
-            std::copy(data.dir[index].begin(),data.dir[index].end(),dir[index].begin() +
-                      dir_index + dir_index + dir_index);
-    }
-    virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
-    {
-        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-        {
-            std::ostringstream out;
-            out << index;
-            std::string num = out.str();
-            std::string index_str = "dir";
-            index_str += num;
-            mat_writer.write(index_str.c_str(),dir[index]);
-        }
-    }
-};
-
-
 
 struct ODFShaping
 {
@@ -520,70 +408,56 @@ struct ODFShaping
         }
     }*/
 };
-struct SearchLocalMaximum
-{
-    std::vector<std::vector<unsigned short> > neighbor;
-    void init(Voxel& voxel)
-    {
-        unsigned int half_odf_size = voxel.ti.half_vertices_count;
-        unsigned int faces_count = uint32_t(voxel.ti.faces.size());
-        neighbor.resize(voxel.ti.half_vertices_count);
-        for (unsigned int index = 0;index < faces_count;++index)
-        {
-            unsigned short i1 = voxel.ti.faces[index][0];
-            unsigned short i2 = voxel.ti.faces[index][1];
-            unsigned short i3 = voxel.ti.faces[index][2];
-            if (i1 >= half_odf_size)
-                i1 -= half_odf_size;
-            if (i2 >= half_odf_size)
-                i2 -= half_odf_size;
-            if (i3 >= half_odf_size)
-                i3 -= half_odf_size;
-            neighbor[i1].push_back(i2);
-            neighbor[i1].push_back(i3);
-            neighbor[i2].push_back(i1);
-            neighbor[i2].push_back(i3);
-            neighbor[i3].push_back(i1);
-            neighbor[i3].push_back(i2);
-        }
-    }
-    void search(const std::vector<float>& old_odf,std::map<float,unsigned short,std::greater<float> >& max_table)
-    {
-        max_table.clear();
-        for (uint32_t index = 0;index < neighbor.size();++index)
-        {
-            float value = old_odf[index];
-            bool is_max = true;
-            std::vector<uint16_t>& nei = neighbor[index];
-            for (unsigned int j = 0;j < nei.size();++j)
-            {
-                if (value < old_odf[nei[j]])
-                {
-                    is_max = false;
-                    break;
-                }
-            }
-            if (is_max)
-                max_table[value] = index;
-        }
-    }
-};
 
-
-struct DetermineFiberDirections : public BaseProcess
+double base_function(double theta);
+struct SaveMetrics : public BaseProcess
 {
+protected:
     SearchLocalMaximum lm;
     std::mutex mutex;
     ODFShaping shaping;
+    std::vector<std::vector<short> > findex;
+protected:
+    std::vector<float> iso,gfa;
+    std::vector<std::vector<float> > fa,rdi;
+    tipl::shape<3> dim;
+
+    void output_anisotropy(tipl::io::gz_mat_write& mat_writer,
+                           const char* name,const std::vector<std::vector<float> >& metrics)
+    {
+        for (unsigned int index = 0;index < metrics.size();++index)
+        {
+            std::ostringstream out;
+            out << index;
+            std::string num = out.str();
+            std::string str = name + num;
+            mat_writer.write(str.c_str(),metrics[index],uint32_t(dim.plane_size()));
+        }
+    }
 public:
     virtual void init(Voxel& voxel)
     {
         if(voxel.odf_resolving)
             shaping.init(voxel.ti);
         lm.init(voxel);
-    }
 
-    virtual void run(Voxel& voxel,VoxelData& data)
+        voxel.z0 = 1.0f;
+        dim = voxel.dim;
+        fa = std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(dim.size()));
+        if(voxel.needs("gfa"))
+            gfa = std::vector<float>(dim.size());
+        iso = std::vector<float>(dim.size());
+        if(voxel.needs("rdi") && voxel.shell.size() > 1)
+        {
+            float sigma = voxel.param[0]; //optimal 1.24
+            for(float L = 0.2f;L <= sigma;L+= 0.2f)
+                rdi.push_back(std::vector<float>(dim.size()));
+        }
+        findex.resize(voxel.max_fiber_number);
+        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
+            findex[index].resize(voxel.dim.size());
+    }
+    virtual void run(Voxel& voxel, VoxelData& data)
     {
         data.min_odf = tipl::min_value(data.odf);
         if(voxel.odf_resolving)
@@ -644,9 +518,75 @@ public:
             }
         }
 
+        iso[data.voxel_index] = data.min_odf;
+
+        if(!gfa.empty())
+            gfa[data.voxel_index] = GeneralizedFA()(data.odf);
+
+        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
+            fa[index][data.voxel_index] = data.fa[index];
+
+        if(!rdi.empty())
+            for (unsigned int index = 0;index < data.rdi.size();++index)
+                rdi[index][data.voxel_index] = data.rdi[index];
+
+        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
+            findex[index][data.voxel_index] = short(data.dir_index[index]);
+    }
+    virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
+    {
+        mat_writer.write("gfa",gfa,uint32_t(voxel.dim.plane_size()));
+
+        // output normalized qa
+        {
+            float max_qa = 0.0;
+            for (unsigned int i = 0;i < voxel.max_fiber_number;++i)
+                max_qa = std::max<float>(tipl::max_value(fa[i]),max_qa);
+            if(max_qa == 0.0f)
+                max_qa = 1.0f;
+            voxel.z0 = float(1.0/double(max_qa));
+        }
+        mat_writer.write("z0",{voxel.z0});
+        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
+            tipl::multiply_constant(fa[index],voxel.z0);
+        output_anisotropy(mat_writer,"fa",fa);
+
+        tipl::multiply_constant(iso,voxel.z0);
+        mat_writer.write("iso",iso,uint32_t(voxel.dim.plane_size()));
+
+        if(!rdi.empty())
+        {
+            for(unsigned int i = 0;i < rdi.size();++i)
+                tipl::multiply_constant(rdi[i],voxel.z0);
+            float L = 0.2f;
+            mat_writer.write("rdi",rdi[0],uint32_t(voxel.dim.plane_size()));
+
+            {
+                for(unsigned int i = 0;i < rdi[0].size();++i)
+                for(unsigned int j = 0;j < rdi.size();++j)
+                    rdi[j][i] = rdi.back()[i]-rdi[j][i];
+                L = 0.2f;
+                for(unsigned int i = 0;i < rdi.size() && L < 0.8f;++i,L += 0.2f)
+                {
+                    std::ostringstream out2;
+                    out2.precision(2);
+                    out2 << "nrdi" << std::setfill('0') << std::setw(2) << int(L*10) << "L";
+                    mat_writer.write(out2.str().c_str(),rdi[i],uint32_t(voxel.dim.plane_size()));
+                }
+            }
+        }
+
+        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
+        {
+            std::ostringstream out;
+            out << index;
+            std::string num = out.str();
+            std::string index_str = "index";
+            index_str += num;
+            mat_writer.write(index_str.c_str(),findex[index],uint32_t(voxel.dim.plane_size()));
+        }
     }
 };
-
 
 
 
