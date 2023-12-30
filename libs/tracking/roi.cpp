@@ -88,7 +88,7 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
         std::vector<std::vector<tipl::vector<3,short> > > limiting_points(thread_count),
                                                           seed_points(thread_count),
                                                           not_end_points(thread_count);
-        tipl::par_for(tipl::begin_index(limiting_mask),tipl::end_index(limiting_mask),
+        tipl::par_for(tipl::begin_index(limiting_mask.shape()),tipl::end_index(limiting_mask.shape()),
                       [&](const tipl::pixel_index<3>& pos,unsigned int thread_id)
         {
             if(!limiting_mask[pos.index()])
