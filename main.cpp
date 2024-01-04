@@ -455,13 +455,18 @@ int main(int ac, char *av[])
             if (clientSocket)
             {
                 clientSocket->waitForReadyRead(500);
+                auto file_name = clientSocket->readAll();
+                tipl::out() << "file name:" << file_name.begin();
+                if(std::filesystem::exists(file_name.begin()))
+                {
+                    w.openFile(QStringList() << file_name);
+                    w.show();
+                    w.setWindowState((w.windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
+                    w.raise();
+                    w.activateWindow();
+                }
                 clientSocket->disconnectFromServer();
                 clientSocket->deleteLater();
-                w.openFile(QStringList() << clientSocket->readAll());
-                w.show();
-                w.setWindowState((w.windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
-                w.raise();
-                w.activateWindow();
             }
         });
     }
