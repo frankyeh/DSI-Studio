@@ -3,6 +3,8 @@
 #include <string>
 #include <cstdio>
 #include <QApplication>
+#include <QLocalServer>
+#include <QLocalSocket>
 #include <QMessageBox>
 #include <QStyleFactory>
 #include <QFileInfo>
@@ -401,6 +403,20 @@ int main(int ac, char *av[])
 
     try{
     QApplication a(ac,av);
+    if(ac == 2)
+    {
+        QLocalSocket socket;
+        socket.connectToServer("dsi-studio");
+        if (socket.waitForConnected(500))
+        {
+            tipl::out() << "another instance is running, passing file name.";
+            socket.write(av[1]);
+            socket.flush();
+            socket.waitForBytesWritten(500);
+            socket.disconnectFromServer();
+            return 0;
+        }
+    }
 
     tipl::show_prog = true;
 
@@ -411,6 +427,7 @@ int main(int ac, char *av[])
         init_cuda();
         init_application();
     }
+
     MainWindow w;
     w.setWindowTitle(version_string() + " " + __DATE__);
     // presentation mode
@@ -424,9 +441,30 @@ int main(int ac, char *av[])
     else
         w.show();
 
+
     if(ac == 2)
         w.openFile(QStringList() << av[1]);
 
+    QLocalServer server;
+    if(server.listen("dsi-studio"))
+    {
+        QObject::connect(&server, &QLocalServer::newConnection, [&server,&w]()
+        {
+            tipl::out() << "received file name from another instance";
+            QLocalSocket *clientSocket = server.nextPendingConnection();
+            if (clientSocket)
+            {
+                clientSocket->waitForReadyRead(500);
+                clientSocket->disconnectFromServer();
+                clientSocket->deleteLater();
+                w.openFile(QStringList() << clientSocket->readAll());
+                w.show();
+                w.setWindowState((w.windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
+                w.raise();
+                w.activateWindow();
+            }
+        });
+    }
     return a.exec();
 
     }
