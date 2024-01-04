@@ -449,11 +449,12 @@ view_image::view_image(QWidget *parent) :
     connect(ui->min_color,SIGNAL(clicked()),this,SLOT(change_contrast()));
     connect(ui->orientation,SIGNAL(currentIndexChanged(int)),this,SLOT(change_contrast()));
     connect(ui->axis_grid,SIGNAL(currentIndexChanged(int)),this,SLOT(change_contrast()));
+    connect(ui->overlay_style,SIGNAL(currentIndexChanged(int)),this,SLOT(change_contrast()));
     connect(ui->menuOverlay, SIGNAL(aboutToShow()),this, SLOT(update_overlay_menu()));
 
 
     ui->tabWidget->setCurrentIndex(0);
-
+    ui->overlay_style->setVisible(false);
 
     qApp->installEventFilter(this);
     this_index = opened_images.size();
@@ -1051,6 +1052,7 @@ void view_image::update_overlay_menu(void)
         action->setText(opened_images[overlay_images[index]]->windowTitle());
         action->setChecked(overlay_images_visible[index]);
     }
+    ui->overlay_style->setVisible(!overlay_images.empty());
 }
 bool view_image::has_flip_x(void)
 {
@@ -1113,9 +1115,10 @@ void view_image::show_image(bool update_others)
     {
         v2c.convert(tipl::volume2slice_scaled(data,cur_dim, size_t(slice_pos[cur_dim]),ui->zoom->value()),buffer);
     });
-
+    if(ui->overlay_style->currentIndex() == 1)
+        std::fill(buffer.begin(),buffer.end(),tipl::rgb(0,0,0));
     // draw overlay
-    for(size_t i = 0;i < overlay_images.size();++i)
+    for(size_t i = 0;i < overlay_images.size() && ui->overlay_style->currentIndex() <= 1;++i)
     if(overlay_images_visible[i] && opened_images[overlay_images[i]])
         opened_images[overlay_images[i]]->apply([&](auto& data)
         {
