@@ -80,6 +80,31 @@
             </item>
            </widget>
           </item>
+          <item>
+           <widget class="QComboBox" name="overlay_style">
+            <property name="sizeAdjustPolicy">
+             <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
+            </property>
+            <property name="frame">
+             <bool>true</bool>
+            </property>
+            <item>
+             <property name="text">
+              <string>image+overlay</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>overlay only</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>image only</string>
+             </property>
+            </item>
+           </widget>
+          </item>
          </layout>
         </item>
         <item>
