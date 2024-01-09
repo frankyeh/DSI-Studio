@@ -1118,7 +1118,11 @@ bool dcm2src_and_nii(QStringList files)
         tipl::vector<3> vs;
         v >> I;
         v.get_voxel_size(vs);
-
+        if(I.empty())
+        {
+            tipl::out() << "cannot parse as image volume";
+            return false;
+        }
         //non isotropic
         if((vs[0] < vs[2] || vs[1] < vs[2]) &&
            (tipl::min_value(vs))/(tipl::max_value(vs)) > 0.5f)
