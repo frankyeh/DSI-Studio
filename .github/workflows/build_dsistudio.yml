@@ -221,7 +221,7 @@ jobs:
         move build\dsi_studio.exe dsi_studio_win
         windeployqt --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win\dsi_studio.exe
         move DSI-Studio-atlas dsi_studio_win\atlas
-        rmdir dsi_studio_win\atlas\.git /q
+        rmdir /S /Q dsi_studio_win\atlas\.git
         move UNet-Studio-Data\network dsi_studio_win\
         curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_win.zip"
         7z e tiny_fsl_win.zip -odsi_studio_win\plugin
