@@ -174,7 +174,7 @@ int src(tipl::program_option<tipl::out>& po)
         file_list.push_back(source);
 
     if(po.has("other_source"))
-        file_list.push_back(po.get("other_source"));
+        po.get_files("other_source",file_list);
 
     if(file_list.empty())
     {
