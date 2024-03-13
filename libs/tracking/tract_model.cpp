@@ -2920,7 +2920,10 @@ float TractModel::get_tract_length_in_mm(unsigned int index) const
 void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::string& result)
 {
     if(tract_data.empty())
+    {
+        result = "number of tracts\t0";
         return;
+    }
     std::ostringstream out;
     std::vector<std::string> titles;
     std::vector<float> data;
