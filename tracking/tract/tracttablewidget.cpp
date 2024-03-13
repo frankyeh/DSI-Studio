@@ -1053,6 +1053,7 @@ void get_track_statistics(std::shared_ptr<fib_data> handle,
     if(tract_models.empty())
         return;
     std::vector<std::vector<std::string> > track_results(tract_models.size());
+    std::vector<std::string> metrics_name;
     for(size_t index = 0;index < tract_models.size();++index)
     {
         std::string tmp,line;
@@ -1064,6 +1065,12 @@ void get_track_statistics(std::shared_ptr<fib_data> handle,
                 continue;
             track_results[index].push_back(line);
         }
+        if(metrics_name.size() < track_results[index].size())
+        {
+            metrics_name.clear();
+            for(unsigned int j = 0;j < track_results[index].size();++j)
+                metrics_name.push_back(track_results[index][j].substr(0,track_results[index][j].find("\t")));
+        }
     }
 
     std::ostringstream out;
@@ -1071,11 +1078,14 @@ void get_track_statistics(std::shared_ptr<fib_data> handle,
     for(unsigned int index = 0;index < tract_models.size();++index)
         out << track_name[index] << "\t";
     out << std::endl;
-    for(unsigned int index = 0;index < track_results[0].size();++index)
+    for(unsigned int index = 0;index < metrics_name.size();++index)
     {
-        out << track_results[0][index];
-        for(unsigned int i = 1;i < track_results.size();++i)
-            out << track_results[i][index].substr(track_results[i][index].find("\t"));
+        out << metrics_name[index];
+        for(unsigned int i = 0;i < track_results.size();++i)
+            if(index < track_results[i].size())
+                out << track_results[i][index].substr(track_results[i][index].find("\t"));
+            else
+                out << "\t";
         out << std::endl;
     }
     result = out.str();
