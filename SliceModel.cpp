@@ -365,14 +365,14 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         }
         volume.get_voxel_size(vs);
         volume.save_to_image(source_images);
+        if(source_images.empty())
+        {
+            error_msg = "failed to load image volume.";
+            return false;
+        }
         initial_LPS_nifti_srow(trans_to_mni,source_images.shape(),vs);
     }
 
-    if(source_images.empty())
-    {
-        error_msg = "failed to load image volume.";
-        return false;
-    }
     // add image to the view item lists
     {
         update_image();
@@ -381,34 +381,15 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         if(source_images.shape() == handle->dim)
             tipl::out() << "The slices have the same dimension as DWI." << std::endl;
         handle->view_item.push_back(item(name,&*source_images.begin(),source_images.shape()));
+        handle->view_item.back().T = to_dif;
+        handle->view_item.back().iT = to_slice;
         view_id = uint32_t(handle->view_item.size()-1);
     }
 
+    if(has_transform)
+        return true;
 
-    if(source_images.shape() == handle->dim && !has_transform)
-    {
-        if(handle->is_mni || QFileInfo(files[0].c_str()).fileName().toLower().contains("native"))
-        {
-            tipl::out() << "No registration required." << std::endl;
-            is_diffusion_space = true;
-            trans_to_mni = handle->trans_to_mni;
-            has_transform = true;
-        }
-        else
-            tipl::out() << "Registration will be applied. To disable registration, add 'native' to the file name." << std::endl;
-    }
-
-    if(!has_transform && handle->dim.depth() < 10) // 2d assume FOV is the same
-    {
-        to_slice[0] = float(source_images.width())/float(handle->dim.width());
-        to_slice[5] = float(source_images.height())/float(handle->dim.height());
-        to_slice[10] = float(source_images.depth())/float(handle->dim.depth());
-        to_slice[15] = 1.0;
-        to_dif = tipl::inverse(to_slice);
-        has_transform = true;
-    }
-
-    if(!has_transform && std::filesystem::exists(files[0]+".linear_reg.txt"))
+    if(std::filesystem::exists(files[0]+".linear_reg.txt"))
     {
         tipl::out() << "loading existing linear registration." << std::endl;
         if(!(load_mapping((files[0]+".linear_reg.txt").c_str())))
@@ -416,26 +397,38 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
             tipl::out() << "ERROR: invalid slice mapping file format" << std::endl;
             return false;
         }
-        has_transform = true;
+        return true;
+    }
+
+    if(handle->is_mni || QFileInfo(files[0].c_str()).fileName().toLower().contains("reg"))
+    {
+        tipl::out() << "'reg' found in the file name. no registration applied." << std::endl;
+        is_diffusion_space = true;
+        trans_to_mni = handle->trans_to_mni;
+        return true;
+    }
+
+    if(handle->dim.depth() < 10) // 2d assume FOV is the same
+    {
+        to_slice[0] = float(source_images.width())/float(handle->dim.width());
+        to_slice[5] = float(source_images.height())/float(handle->dim.height());
+        to_slice[10] = float(source_images.depth())/float(handle->dim.depth());
+        to_slice[15] = 1.0;
+        to_dif = tipl::inverse(to_slice);
+        handle->view_item.back().T = to_dif;
+        handle->view_item.back().iT = to_slice;
+        return true;
     }
 
     // handle registration
-    if(!has_transform)
+    tipl::out() << "running rigid body transformation to the slices. To disable it, add 'reg' to the file name." << std::endl;
+    if(tipl::show_prog)
     {
-        tipl::out() << "running slice registration..." << std::endl;
-        if(tipl::show_prog)
-        {
-            thread.reset(new std::thread([this](){argmin();}));
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
-        else
-            argmin();
+        thread.reset(new std::thread([this](){argmin();}));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
     else
-    {
-        handle->view_item.back().T = to_dif;
-        handle->view_item.back().iT = to_slice;
-    }
+        argmin();
     return true;
 }
 void CustomSliceModel::update_image(void)
