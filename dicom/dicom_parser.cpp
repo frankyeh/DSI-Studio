@@ -310,11 +310,12 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
             tipl::image<3> data;
             if(!nii.toLPS(data))
             {
-                src_error_msg = "Incomplete file. Only ";
+                src_error_msg = "failed to parse 4D NIFTI file at ";
                 src_error_msg += std::to_string(index+1);
-                src_error_msg += " of ";
+                src_error_msg += "/";
                 src_error_msg += std::to_string(nii.dim(4));
-                src_error_msg += " DWI are found.";
+                src_error_msg += ": ";
+                src_error_msg += nii.error_msg;
                 return false;
             }
             std::replace_if(data.begin(),data.end(),[](float v){return std::isnan(v) || std::isinf(v) || v < 0.0f;},0.0f);
