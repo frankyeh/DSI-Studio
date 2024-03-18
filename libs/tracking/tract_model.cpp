@@ -944,7 +944,7 @@ bool TractModel::save_tracts_in_native_space(std::shared_ptr<fib_data> handle,
 }
 //---------------------------------------------------------------------------
 // Native space FIB save tracts to the template space
-bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,const char* file_name)
+bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,const char* file_name,bool output_mni)
 {
     if(!handle->map_to_mni())
         return false;
@@ -957,7 +957,10 @@ bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,
         for(unsigned int j = 0;j < tract_data[i].size();j += 3)
         {
             tipl::vector<3> v(&(tract_data[i][j]));
-            handle->sub2temp(v);
+            if(output_mni)
+                handle->sub2mni(v);
+            else
+                handle->sub2temp(v);
             new_tract_data[i][j] = v[0];
             new_tract_data[i][j+1] = v[1];
             new_tract_data[i][j+2] = v[2];
@@ -965,6 +968,7 @@ bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,
     });
     tract_in_template->add_tracts(new_tract_data);
     tract_in_template->resample(0.5f);
+
     return tract_in_template->save_tracts_to_file(file_name);
 }
 
