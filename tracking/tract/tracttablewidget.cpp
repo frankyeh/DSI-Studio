@@ -968,11 +968,11 @@ void TractTableWidget::save_tracts_in_mni(void)
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save tracts as",item(currentRow(),0)->text() + "_in_mni" + output_format(),
-                 "NIFTI files (*.nii *nii.gz);;All files (*)");
+                "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;NIFTI files (*.nii *nii.gz);;All files (*)");
     if(filename.isEmpty())
         return;
     auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-    if(tract_models[uint32_t(currentRow())]->save_tracts_in_template_space(cur_tracking_window.handle,filename.toStdString().c_str()))
+    if(tract_models[uint32_t(currentRow())]->save_tracts_in_template_space(cur_tracking_window.handle,filename.toStdString().c_str(),true))
         QMessageBox::information(this,"DSI Studio","File saved");
     else
         QMessageBox::critical(this,"Error","File not saved. Please check write permission");
