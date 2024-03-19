@@ -271,7 +271,6 @@ public:
     bool distortion_correction(const char* file_name);
     std::string find_topup_reverse_pe(void);
     bool run_topup_eddy(const std::string& other_src,bool topup_only = false);
-    bool preprocessing(void);
 private:
     bool read_b0(tipl::image<3>& b0) const;
     bool read_rev_b0(const char* file_name,tipl::image<3>& rev_b0);
