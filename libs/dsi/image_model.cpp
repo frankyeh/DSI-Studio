@@ -2117,31 +2117,6 @@ bool ImageModel::run_topup_eddy(const std::string& other_src,bool topup_only)
 
 }
 
-bool ImageModel::preprocessing(void)
-{
-    std::string msg(" Preprocessing was conducted using DSI Studio.");
-    if(voxel.report.find(msg) != std::string::npos)
-        return true;
-
-    std::string reverse_pe = find_topup_reverse_pe();
-    auto new_file_name = (file_name+(reverse_pe.empty() ? ".mo_corrected.src.gz" : ".pe_mo_corrected.src.gz"));
-    // load previous run results
-    if(std::filesystem::exists(new_file_name))
-    {
-        tipl::out() << "found previous corrected result at " << new_file_name << " loading..." << std::endl;
-        tipl::progress prog_("read SRC file");
-        tipl::io::gz_mat_read new_reader;
-        mat_reader.swap(new_reader);
-        return load_from_file(new_file_name.c_str());
-    }   
-    if(!run_topup_eddy(reverse_pe))
-        return false;
-    voxel.report += msg;
-    if(!save_to_file(new_file_name.c_str()))
-        return false;
-    file_name = new_file_name;
-    return true;
-}
 
 void calculate_shell(std::vector<float> sorted_bvalues,
                      std::vector<unsigned int>& shell);
