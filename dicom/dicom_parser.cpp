@@ -119,8 +119,9 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
                 b_table.push_back(b[i]*float(bvec.length()));
                 if(bvec.length() > 0)
                     bvec.normalize();
-                b_table.push_back(bvec[0]);
+                // Philips bx and by is swapped
                 b_table.push_back(bvec[1]);
+                b_table.push_back(bvec[0]);
                 b_table.push_back(bvec[2]);
             }
         }
@@ -179,6 +180,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
         else
             T.identity();
     }
+    tipl::out() << "image rotation matrix: " << T;
 
     if(!slice_num)
         slice_num = 1;
