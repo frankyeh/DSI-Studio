@@ -405,6 +405,16 @@ bool reconstruction_window::command(std::string cmd,std::string param)
 }
 void reconstruction_window::on_doDTI_clicked()
 {
+    if(handle->voxel.vs[2] > handle->voxel.vs[0]*1.2f && handle->is_human_data()) // non isotropic resolution
+    {
+        auto result = QMessageBox::information(this,"DSI Studio",
+            QString("The slice thickness is much larger than slice resolution. This is not ideal for fiber tracking. Resample slice thickness to 2mm isotropic resolution?"),
+                QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+        if(result == QMessageBox::Cancel)
+            return;
+        if(result == QMessageBox::Yes)
+            handle->align_acpc(2.0f);
+    }
     std::string ref_file_name = handle->file_name;
     std::string ref_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
     std::shared_ptr<ImageModel> ref_handle = handle;
