@@ -79,22 +79,43 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
     std::vector<float> b_table;
     {
         std::vector<float> b,bx,by,bz;
-        dicom_header.get_values(0x2001,0x1003,b);
-        dicom_header.get_values(0x2005,0x10B0,bx);
-        dicom_header.get_values(0x2005,0x10B1,by);
-        dicom_header.get_values(0x2005,0x10B2,bz);
-        if(!b.empty())
+        if(dicom_header.get_values(0x2001,0x1003,b) ||
+           dicom_header.get_values(0x0018,0x9087,b))
         {
             if(!slice_num)
                 slice_num = 1;
             uint32_t b_count = uint32_t(buf_image.depth())/slice_num;
             b.resize(b_count);
-            bx.resize(b_count);
-            by.resize(b_count);
-            bz.resize(b_count);
-            for(size_t i = 0;i < b.size();++i)
+            if(dicom_header.get_values(0x2005,0x10B0,bx) &&
+               dicom_header.get_values(0x2005,0x10B1,by) &&
+               dicom_header.get_values(0x2005,0x10B2,bz))
             {
-                tipl::vector<3, float> bvec(bx[i],by[i],bz[i]);
+                bx.resize(b_count);
+                by.resize(b_count);
+                bz.resize(b_count);
+            }
+            else
+            {
+                bx.resize(b_count);
+                by.resize(b_count);
+                bz.resize(b_count);
+                std::vector<std::vector<float> > bvec;
+                dicom_header.get_values(0x0018,0x9089,bvec);
+                for(size_t i = 0,j = 0;i < b_count && j < bvec.size();++i)
+                {
+                    if(b[i] != 0.0f)
+                    {
+                        bx[i] = bvec[j][0];
+                        by[i] = bvec[j][1];
+                        bz[i] = bvec[j][2];
+                        ++j;
+                    }
+                }
+            }
+
+            for(size_t i = 0;i < b_count;++i)
+            {
+                tipl::vector<3> bvec(bx[i],by[i],bz[i]);
                 b_table.push_back(b[i]*float(bvec.length()));
                 if(bvec.length() > 0)
                     bvec.normalize();
@@ -115,7 +136,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
                 {
                     const auto& ge = dicom_header.data[i].sq_data[uint32_t(j)];
                     std::string pos;
-                    if(!tipl::io::dicom::get_values(ge,0x0020,0x0032,
+                    if(!tipl::io::dicom::get_value(ge,0x0020,0x0032,
                                                     j ? pos : slice_pos))
                         break;
                     if(j && pos != slice_pos)
@@ -126,7 +147,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
                     float b_value = 0;
                     tipl::io::dicom::get_value(ge,0x0018,0x9087,b_value);
                     b_table.push_back(b_value);
-                    if(b_value == 0.0f || !tipl::io::dicom::get_values(ge,0x0018,0x9089,b_table))
+                    if(b_value == 0.0f || !tipl::io::dicom::get_value(ge,0x0018,0x9089,b_table))
                     {
                         b_table.push_back(0.0f);
                         b_table.push_back(0.0f);
@@ -965,16 +986,14 @@ bool parse_dwi(QStringList file_list,
 
     std::sort(file_list.begin(),file_list.end(),compare_qstring());
     tipl::io::dicom dicom_header;
-    tipl::shape<3> geo;
     if(!dicom_header.load_from_file(file_list[0].toStdString().c_str()))
     {
         src_error_msg = "unsupported file format";
         return false;
     }
-    dicom_header.get_image_dimension(geo);
-    if(dicom_header.is_mosaic || geo[2] != 1)
+    if(dicom_header.is_mosaic)
     {
-        tipl::out()  << "handled as Siemens mosaic or multiframe";
+        tipl::out()  << "handled as Siemens mosaic";
         for (unsigned int index = 0;prog(index,file_list.size());++index)
         {
             std::shared_ptr<DwiHeader> new_file(new DwiHeader);
@@ -985,23 +1004,23 @@ bool parse_dwi(QStringList file_list,
         }
         return !prog.aborted() && !dwi_files.empty();
     }
-    if(geo[2] == 1)
-    {
-        if(file_list.size() > 256)
-        {
-            tipl::out()  << "handled as multiple single slice DWI";
-            return load_multiple_slice_dicom(file_list,dwi_files);
-        }
-        src_error_msg = "data are structure images";
-        return false;
-    }
-    for(int index = 0;prog(index,file_list.size());++index)
+    if(dicom_header.is_multi_frame)
     {
         tipl::out()  << "handled as Philips multiframe";
-        if(!load_dicom_multi_frame(file_list[index].toStdString().c_str(),dwi_files))
-            return false;
+        for(int index = 0;prog(index,file_list.size());++index)
+        {
+            if(!load_dicom_multi_frame(file_list[index].toStdString().c_str(),dwi_files))
+                return false;
+        }
+        return !prog.aborted() && !dwi_files.empty();
     }
-    return !prog.aborted() && !dwi_files.empty();
+    if(file_list.size() > 256)
+    {
+        tipl::out()  << "handled as multiple single slice DWI";
+        return load_multiple_slice_dicom(file_list,dwi_files);
+    }
+    src_error_msg = "data are structure images";
+    return false;
 }
 bool parse_dwi(const std::vector<std::string>& file_list,
                     std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
