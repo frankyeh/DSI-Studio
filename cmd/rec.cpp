@@ -79,19 +79,14 @@ int rec(tipl::program_option<tipl::out>& po)
         }
     }
     {
-        tipl::progress prog("preprocessing");
-        if(po.get("preprocessing",0))
-            src.preprocessing();
-        else
+        if(po.has("rev_pe") && !src.run_topup_eddy(po.get("rev_pe")))
         {
-            if(po.has("rev_pe") && !src.run_topup_eddy(po.get("rev_pe")))
-            {
-                tipl::out() << "ERROR: " << src.error_msg << std::endl;
-                return 1;
-            }
-            if(po.get("motion_correction",0))
-                src.correct_motion();
+            tipl::out() << "ERROR: " << src.error_msg << std::endl;
+            return 1;
         }
+        if(po.get("motion_correction",0))
+            src.correct_motion();
+
     }
 
     {
