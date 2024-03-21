@@ -816,7 +816,8 @@ bool read_fib_data(tipl::io::gz_mat_read& mat_reader)
         return false;
     return true;
 }
-
+bool img_command_float32_std(tipl::image<3>& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
+             const std::string& cmd,std::string param1,std::string& error_msg);
 bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 const std::string& cmd,
                 const std::string& param)
@@ -904,7 +905,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 auto ptr = mat.get_data<float>()+d;
                 for(size_t j = 0;j < dim.size();++j,ptr += 3)
                     new_image[j] = *ptr;
-                if(!tipl::command<tipl::io::gz_nifti>(new_image,new_vs,new_trans,is_mni,cmd,param,mat_reader.error_msg))
+                if(!img_command_float32_std(new_image,new_vs,new_trans,is_mni,cmd,param,mat_reader.error_msg))
                 {
                     failed = true;
                     return;
@@ -929,7 +930,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             else
                 new_image = tipl::make_image(mat.get_data<float>(),dim);
 
-            if(!tipl::command<tipl::io::gz_nifti>(new_image,new_vs,new_trans,is_mni,cmd,param,mat_reader.error_msg))
+            if(img_command_float32_std(new_image,new_vs,new_trans,is_mni,cmd,param,mat_reader.error_msg))
             {
                 failed = true;
                 return;
