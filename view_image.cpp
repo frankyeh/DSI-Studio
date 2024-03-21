@@ -102,6 +102,32 @@ void view_image::get_4d_buf(std::vector<unsigned char>& buf)
         std::memcpy(buf.data() + i*size_per_image,buf4d[i].data(),size_per_image);
     apply([&](auto& I){I.buf().swap(buf4d[cur_4d_index]);});
 }
+
+bool img_command_int8(tipl::image<3,unsigned char,tipl::buffer_container>& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
+             const std::string& cmd,std::string param1,std::string& error_msg);
+bool img_command_int16(tipl::image<3,unsigned short,tipl::buffer_container>& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
+             const std::string& cmd,std::string param1,std::string& error_msg);
+bool img_command_int32(tipl::image<3,unsigned int,tipl::buffer_container>& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
+             const std::string& cmd,std::string param1,std::string& error_msg);
+bool img_command_float32(tipl::image<3,float,tipl::buffer_container>& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
+             const std::string& cmd,std::string param1,std::string& error_msg);
+template<typename image_type>
+bool img_command(image_type& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
+             const std::string& cmd,std::string param1,std::string& error_msg)
+{
+    if constexpr(std::is_same_v<image_type,tipl::image<3,unsigned char,tipl::buffer_container> >)
+        return img_command_int8(data,vs,T,is_mni,cmd,param1,error_msg);
+    if constexpr(std::is_same_v<image_type,tipl::image<3,unsigned short,tipl::buffer_container> >)
+        return img_command_int16(data,vs,T,is_mni,cmd,param1,error_msg);
+    if constexpr(std::is_same_v<image_type,tipl::image<3,unsigned int,tipl::buffer_container> >)
+        return img_command_int32(data,vs,T,is_mni,cmd,param1,error_msg);
+    if constexpr(std::is_same_v<image_type,tipl::image<3,float,tipl::buffer_container> >)
+        return img_command_float32(data,vs,T,is_mni,cmd,param1,error_msg);
+    throw;
+}
+
+
+
 bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 const std::string& cmd,
                 const std::string& param);
@@ -240,7 +266,7 @@ bool view_image::command(std::string cmd,std::string param1)
             auto old_T = T;
             apply([&](auto& I)
             {
-                result = tipl::command<tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,error_msg);
+                result = img_command(I,vs,T,is_mni,cmd,param1,error_msg);
                 shape = I.shape();
             });
             if(!buf4d.empty())
@@ -255,7 +281,7 @@ bool view_image::command(std::string cmd,std::string param1)
                     read_4d_at(i);
                     apply([&](auto& I)
                     {
-                        result = tipl::command<tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,error_msg);
+                        result = img_command(I,vs,T,is_mni,cmd,param1,error_msg);
                     });
                 }
                 read_4d_at(old_4d_index);
