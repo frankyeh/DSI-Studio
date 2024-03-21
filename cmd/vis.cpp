@@ -51,3 +51,32 @@ int vis(tipl::program_option<tipl::out>& po)
     tipl::show_prog = prior_show_prog;
     return 0;
 }
+
+
+bool img_command_int8(tipl::image<3,unsigned char,tipl::buffer_container>& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
+             const std::string& cmd,std::string param1,std::string& error_msg)
+{
+    return tipl::command<tipl::io::gz_nifti>(data,vs,T,is_mni,cmd,param1,error_msg);
+}
+
+bool img_command_int16(tipl::image<3,unsigned short,tipl::buffer_container>& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
+             const std::string& cmd,std::string param1,std::string& error_msg)
+{
+    return tipl::command<tipl::io::gz_nifti>(data,vs,T,is_mni,cmd,param1,error_msg);
+}
+bool img_command_int32(tipl::image<3,unsigned int,tipl::buffer_container>& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
+             const std::string& cmd,std::string param1,std::string& error_msg)
+{
+    return tipl::command<tipl::io::gz_nifti>(data,vs,T,is_mni,cmd,param1,error_msg);
+}
+bool img_command_float32(tipl::image<3,float,tipl::buffer_container>& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
+             const std::string& cmd,std::string param1,std::string& error_msg)
+{
+    return tipl::command<tipl::io::gz_nifti>(data,vs,T,is_mni,cmd,param1,error_msg);
+}
+bool img_command_float32_std(tipl::image<3>& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
+             const std::string& cmd,std::string param1,std::string& error_msg)
+{
+    return tipl::command<tipl::io::gz_nifti>(data,vs,T,is_mni,cmd,param1,error_msg);
+}
+
