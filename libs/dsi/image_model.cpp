@@ -986,7 +986,11 @@ bool ImageModel::align_acpc(float reso)
         error_msg = "Failed to load/find MNI template.";
         return false;
     }
-
+    if(reso < Ivs[0])
+    {
+        tipl::out() << (error_msg = "invalid resolution");
+        return false;
+    }
 
     // create an isotropic subject image for alignment
     tipl::scale(dwi,J,tipl::v(voxel.vs[0]/reso,voxel.vs[1]/reso,voxel.vs[2]/reso));
