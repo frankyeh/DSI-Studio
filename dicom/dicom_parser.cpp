@@ -920,25 +920,44 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
     return true;
 }
 
+std::vector<QStringList> split_by_path(const QStringList &files)
+{
+    std::vector<QStringList> result;
+    QString currentPath;
+    QStringList currentList;
+
+    for (const auto &file : files)
+    {
+        auto path = QFileInfo(file).absolutePath();
+        if (path != currentPath)
+        {
+            if (!currentList.isEmpty())
+            {
+                result.push_back(currentList);
+                currentList.clear();
+            }
+            currentPath = path;
+        }
+        currentList << file;
+    }
+
+    if (!currentList.isEmpty())
+        result.push_back(currentList);
+    return result;
+}
+
 bool parse_dwi(QStringList file_list,
                     std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
     tipl::progress prog("reading ",std::filesystem::path(file_list[0].toStdString()).stem().string().c_str());
     if(QFileInfo(file_list.front()).absolutePath() != QFileInfo(file_list.back()).absolutePath())
     {
-        QStringList dwi_list;
-        dwi_list << file_list[0];
-        for(int i = 1;prog(i,file_list.size());++i)
-            if(QFileInfo(dwi_list.front()).absolutePath() == QFileInfo(file_list[i]).absolutePath())
-                dwi_list << file_list[i];
-            else
-            {
-                tipl::out() << dwi_list.size() << " files in " << QFileInfo(dwi_list[0]).absolutePath().toStdString() << std::endl;
-                if(!parse_dwi(dwi_list,dwi_files))
-                    return false;
-                dwi_list.clear();
-                dwi_list << file_list[i];
-            }
+        auto dwi_groups = split_by_path(file_list);
+        for(const auto& sub_file_list : dwi_groups)
+        {
+            if(!parse_dwi(sub_file_list,dwi_files))
+                return false;
+        }
         return true;
     }
     src_error_msg.clear();
