@@ -568,7 +568,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
         tipl::out() << "ERROR: failed to save file to " << po.get("template_track") << std::endl;
         return 1;
     }
-    if(po.has(("mni_track")) && !tract_model->save_tracts_in_template_space(handle,po.get("mni_track").c_str()),true)
+    if(po.has(("mni_track")) && !tract_model->save_tracts_in_template_space(handle,po.get("mni_track").c_str(),true))
     {
         tipl::out() << "ERROR: failed to save file to " << po.get("mni_track") << std::endl;
         return 1;
