@@ -490,7 +490,7 @@ std::pair<float,float> ImageModel::quality_control_neighboring_dwi_corr(void)
 
 float ImageModel::dwi_contrast(void)
 {
-    std::vector<size_t> dwi1,dwi2,dwi3;
+    std::vector<size_t> dwi_self,dwi_neighbor,dwi_ortho;
     for(size_t i = 0;i < src_bvalues.size();++i)
     {
         if(src_bvalues[i] == 0.0f)
@@ -536,18 +536,17 @@ float ImageModel::dwi_contrast(void)
                 min_j2 = j;
             }
         }
-        dwi1.push_back(i);
-        dwi2.push_back(min_j1);
-        dwi3.push_back(min_j2);
+        dwi_self.push_back(i);
+        dwi_neighbor.push_back(min_j1);
+        dwi_ortho.push_back(min_j2);
     }
-    std::vector<float> contrast(dwi1.size());
-    tipl::par_for(dwi1.size(),[&](size_t index)
+    std::vector<float> ndc(dwi_self.size()),odc(dwi_self.size());
+    tipl::par_for(dwi_self.size(),[&](size_t index)
     {
-        float c1 = masked_correlation(src_dwi_data[dwi1[index]],src_dwi_data[dwi2[index]],voxel.mask);
-        float c2 = masked_correlation(src_dwi_data[dwi1[index]],src_dwi_data[dwi3[index]],voxel.mask);
-        contrast[index] = c1/c2;
+        ndc[index] = masked_correlation(src_dwi_data[dwi_self[index]],src_dwi_data[dwi_neighbor[index]],voxel.mask);
+        odc[index] = masked_correlation(src_dwi_data[dwi_self[index]],src_dwi_data[dwi_ortho[index]],voxel.mask);
     });
-    return tipl::mean(contrast);
+    return tipl::mean(ndc)/tipl::mean(odc);
 
 }
 bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs);
