@@ -488,7 +488,68 @@ std::pair<float,float> ImageModel::quality_control_neighboring_dwi_corr(void)
     return std::make_pair(tipl::mean(ndc),tipl::mean(masked_ndc));
 }
 
+float ImageModel::dwi_contrast(void)
+{
+    std::vector<size_t> dwi1,dwi2,dwi3;
+    for(size_t i = 0;i < src_bvalues.size();++i)
+    {
+        if(src_bvalues[i] == 0.0f)
+            continue;
+        float min_dis1 = std::numeric_limits<float>::max();
+        size_t min_j1 = 0;
+        float min_dis2 = std::numeric_limits<float>::max();
+        size_t min_j2 = 0;
 
+        tipl::vector<3> v1(src_bvectors[i]);
+        v1 *= std::sqrt(src_bvalues[i]);
+        auto v1_length2 = v1.length2();
+        auto v1_length = std::sqrt(v1_length2);
+
+        for(size_t j = 0;j < src_bvalues.size();++j)
+        {
+            if(i == j || src_bvalues[j] == 0.0f)
+                continue;
+            tipl::vector<3> v2(src_bvectors[j]);
+            v2 *= std::sqrt(src_bvalues[j]);
+            // looking for the neighboring DWI
+            if(v1 == v2)
+                continue;
+            float dis1 = std::min<float>(float((v1-v2).length()),
+                                        float((v1+v2).length()));
+            if(dis1 < min_dis1)
+            {
+                min_dis1 = dis1;
+                min_j1 = j;
+            }
+
+            // looking for the contrast DWI
+            auto p1 = v1;
+            p1 *= v1*v2;
+            p1 /= v1_length2;
+            auto p2 = v2;
+            p2 -= p1;
+            p2 *= v1_length/p2.length();
+            float dis2 = (v2-p2).length();
+            if(dis2 < min_dis2)
+            {
+                min_dis2 = dis2;
+                min_j2 = j;
+            }
+        }
+        dwi1.push_back(i);
+        dwi2.push_back(min_j1);
+        dwi3.push_back(min_j2);
+    }
+    std::vector<float> contrast(dwi1.size());
+    tipl::par_for(dwi1.size(),[&](size_t index)
+    {
+        float c1 = masked_correlation(src_dwi_data[dwi1[index]],src_dwi_data[dwi2[index]],voxel.mask);
+        float c2 = masked_correlation(src_dwi_data[dwi1[index]],src_dwi_data[dwi3[index]],voxel.mask);
+        contrast[index] = c1/c2;
+    });
+    return tipl::mean(contrast);
+
+}
 bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs);
 bool ImageModel::is_human_data(void) const
 {

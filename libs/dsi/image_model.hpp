@@ -247,6 +247,7 @@ public:
 public:
     std::vector<std::pair<size_t,size_t> > get_bad_slices(void);
     std::pair<float,float> quality_control_neighboring_dwi_corr(void);
+    float dwi_contrast(void);
     bool is_human_data(void) const;
     std::vector<size_t> get_sorted_dwi_index(void);
     void flip_b_table(const unsigned char* order);

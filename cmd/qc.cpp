@@ -5,7 +5,7 @@
 #include "fib_data.hpp"
 
 QStringList search_files(QString dir,QString filter);
-const char* src_qc_title = "FileName\tImage dimension\tResolution\tDWI count\tMax b-value\tNeighboring DWI correlation\tNeighboring DWI correlation(masked)\t# Bad Slices";
+const char* src_qc_title = "FileName\tImage dimension\tResolution\tDWI count\tMax b-value\tDWI contrast\tNeighboring DWI correlation\tNeighboring DWI correlation(masked)\t# Bad Slices";
 float check_src(std::string file_name,std::vector<std::string>& output) // return masked_ndc
 {
     tipl::out() << "checking " << file_name << std::endl;
@@ -34,6 +34,9 @@ float check_src(std::string file_name,std::vector<std::string>& output) // retur
 
     // output max_b
     output.push_back(std::to_string(tipl::max_value(handle.src_bvalues)));
+
+    // dwi contrast
+    output.push_back(std::to_string(handle.dwi_contrast()));
 
     // calculate neighboring DWI correlation
     auto ndc = handle.quality_control_neighboring_dwi_corr();
