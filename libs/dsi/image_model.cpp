@@ -444,11 +444,15 @@ float ImageModel::quality_control_neighboring_dwi_corr(void)
             continue;
         float min_dis = std::numeric_limits<float>::max();
         size_t min_j = 0;
-        for(size_t j = i+1;j < src_bvalues.size();++j)
+        for(size_t j = 0;j < src_bvalues.size();++j)
         {
+            if(i == j || src_bvalues[j] == 0.0f)
+                continue;
             tipl::vector<3> v1(src_bvectors[i]),v2(src_bvectors[j]);
             v1 *= std::sqrt(src_bvalues[i]);
             v2 *= std::sqrt(src_bvalues[j]);
+            if(v1 == v2)
+                continue;
             float dis = std::min<float>(float((v1-v2).length()),
                                         float((v1+v2).length()));
             if(dis < min_dis)
@@ -457,28 +461,17 @@ float ImageModel::quality_control_neighboring_dwi_corr(void)
                 min_j = j;
             }
         }
-        corr_pairs.push_back(std::make_pair(i,min_j));
+        if(i > min_j)
+            corr_pairs.push_back(std::make_pair(i,min_j));
     }
-    float self_cor = 0.0f;
-    unsigned int count = 0;
+    std::vector<float> self_cor(corr_pairs.size());
     tipl::par_for(corr_pairs.size(),[&](size_t index)
     {
         size_t i1 = corr_pairs[index].first;
         size_t i2 = corr_pairs[index].second;
-        std::vector<float> I1,I2;
-        I1.reserve(voxel.dim.size());
-        I2.reserve(voxel.dim.size());
-        for(size_t i = 0;i < voxel.dim.size();++i)
-            if(voxel.mask[i])
-            {
-                I1.push_back(src_dwi_data[i1][i]);
-                I2.push_back(src_dwi_data[i2][i]);
-            }
-        self_cor += float(tipl::correlation(I1.begin(),I1.end(),I2.begin()));
-        ++count;
+        self_cor[index] = float(tipl::correlation(src_dwi_data[i1],src_dwi_data[i1]+voxel.dim.size(),src_dwi_data[i2]));
     });
-    self_cor/= float(count);
-    return self_cor;
+    return tipl::mean(self_cor);
 }
 bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs);
 bool ImageModel::is_human_data(void) const
