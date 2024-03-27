@@ -435,7 +435,7 @@ std::vector<std::pair<size_t,size_t> > ImageModel::get_bad_slices(void)
     return result;
 }
 
-float ImageModel::quality_control_neighboring_dwi_corr(void)
+std::pair<float,float> ImageModel::quality_control_neighboring_dwi_corr(void)
 {
     std::vector<std::pair<size_t,size_t> > corr_pairs;
     for(size_t i = 0;i < src_bvalues.size();++i)
@@ -464,14 +464,25 @@ float ImageModel::quality_control_neighboring_dwi_corr(void)
         if(i > min_j)
             corr_pairs.push_back(std::make_pair(i,min_j));
     }
-    std::vector<float> self_cor(corr_pairs.size());
+    std::vector<float> masked_ndc(corr_pairs.size()),ndc(corr_pairs.size());
     tipl::par_for(corr_pairs.size(),[&](size_t index)
     {
         size_t i1 = corr_pairs[index].first;
         size_t i2 = corr_pairs[index].second;
-        self_cor[index] = float(tipl::correlation(src_dwi_data[i1],src_dwi_data[i1]+voxel.dim.size(),src_dwi_data[i2]));
+        ndc[index] = float(tipl::correlation(src_dwi_data[i1],src_dwi_data[i1]+voxel.dim.size(),src_dwi_data[i2]));
+
+        std::vector<float> I1,I2;
+        I1.reserve(voxel.dim.size());
+        I2.reserve(voxel.dim.size());
+        for(size_t i = 0;i < voxel.dim.size();++i)
+            if(voxel.mask[i])
+            {
+                I1.push_back(src_dwi_data[i1][i]);
+                I2.push_back(src_dwi_data[i2][i]);
+            }
+        masked_ndc[index] = float(tipl::correlation(I1.begin(),I1.end(),I2.begin()));
     });
-    return tipl::mean(self_cor);
+    return std::make_pair(tipl::mean(ndc),tipl::mean(masked_ndc));
 }
 bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs);
 bool ImageModel::is_human_data(void) const

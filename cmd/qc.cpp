@@ -5,7 +5,8 @@
 #include "fib_data.hpp"
 
 QStringList search_files(QString dir,QString filter);
-bool check_src(std::string file_name,std::vector<std::string>& output,float& ndc)
+const char* src_qc_title = "FileName\tImage dimension\tResolution\tDWI count\tMax b-value\tNeighboring DWI correlation\tNeighboring DWI correlation(masked)\t# Bad Slices";
+float check_src(std::string file_name,std::vector<std::string>& output) // return masked_ndc
 {
     tipl::out() << "checking " << file_name << std::endl;
     output.push_back(QFileInfo(file_name.c_str()).baseName().toStdString());
@@ -13,7 +14,7 @@ bool check_src(std::string file_name,std::vector<std::string>& output,float& ndc
     if (!handle.load_from_file(file_name.c_str()))
     {
         tipl::out() << "cannot read SRC file" << std::endl;
-        return false;
+        return 0.0;
     }
     // output image dimension
     {
@@ -35,23 +36,39 @@ bool check_src(std::string file_name,std::vector<std::string>& output,float& ndc
     output.push_back(std::to_string(tipl::max_value(handle.src_bvalues)));
 
     // calculate neighboring DWI correlation
-    ndc = handle.quality_control_neighboring_dwi_corr();
-    output.push_back(std::to_string(ndc));
+    auto ndc = handle.quality_control_neighboring_dwi_corr();
+
+    output.push_back(std::to_string(ndc.first));
+    output.push_back(std::to_string(ndc.second)); // masked
     output.push_back(std::to_string(handle.get_bad_slices().size()));
-    return true;
+    return ndc.second; // masked ndc
 }
 std::string quality_check_src_files(QString dir)
 {
     std::ostringstream out;
-    QStringList filenames = search_files(dir,"*src.gz");
-    out << "directory: " << dir.toStdString() << std::endl;
-    if(filenames.empty())
+    QStringList filenames;
+    if(QFileInfo(dir).isDir())
     {
-        tipl::out() << "no SRC file found in the directory" << std::endl;
-        return std::string();
+
+        filenames = search_files(dir,"*src.gz");
+        out << "directory: " << dir.toStdString() << std::endl;
+        if(filenames.empty())
+        {
+            tipl::out() << "no SRC file found in " << dir.toStdString() << std::endl;
+            return std::string();
+        }
+        tipl::out() << "a total of " << filenames.size() << " SRC file(s) were found."<< std::endl;
     }
-    out << "FileName\tImage dimension\tResolution\tDWI count\tMax b-value\tNeighboring DWI correlation\t# Bad Slices" << std::endl;
-    tipl::out() << "a total of " << filenames.size() << " SRC file(s) were found."<< std::endl;
+    else
+    {
+        if(!QFileInfo(dir).exists())
+        {
+            tipl::out() << "Cannot find " << dir.toStdString() << std::endl;
+            return std::string();
+        }
+        filenames << dir;
+    }
+    out << src_qc_title << std::endl;
 
     std::vector<std::vector<std::string> > output;
     std::vector<float> ndc;
@@ -59,14 +76,14 @@ std::string quality_check_src_files(QString dir)
     for(int i = 0;prog(i,filenames.size());++i)
     {
         std::vector<std::string> output_each;
-        float ndc_each;
-        if(!check_src(filenames[i].toStdString(),output_each,ndc_each))
+        float mask_ndc_each = check_src(filenames[i].toStdString(),output_each);
+        if(mask_ndc_each == 0.0f)
         {
             out << "cannot load SRC file " << filenames[i].toStdString() << std::endl;
             continue;
         }
         output.push_back(std::move(output_each));
-        ndc.push_back(ndc_each);
+        ndc.push_back(mask_ndc_each);
     }
     auto ndc_copy = ndc;
     float m = tipl::median(ndc_copy.begin(),ndc_copy.end());
@@ -137,21 +154,20 @@ int qc(tipl::program_option<tipl::out>& po)
             std::string report_file_name = po.get("output",file_name + "/qc_src.txt");
             tipl::out() << "quality control checking src files in " << file_name << std::endl;
             auto result = quality_check_src_files(file_name.c_str());
-            if(!result.empty())
-            {
-                std::ofstream(report_file_name.c_str()) << result;
-                tipl::out() << "report saved to " << report_file_name << std::endl;
-            }
+            if(result.empty())
+                return 1;
+            std::ofstream(report_file_name.c_str()) << result;
+            tipl::out() << "report saved to " << report_file_name << std::endl;
         }
         {
             std::string report_file_name = po.get("output",file_name + "/qc_fib.txt");
             tipl::out() << "quality control checking fib files in " << file_name << std::endl;
             auto result = quality_check_fib_files(file_name.c_str());
-            if(!result.empty())
-            {
-                std::ofstream(report_file_name.c_str()) << result;
-                tipl::out() << "report saved to " << report_file_name << std::endl;
-            }
+            if(result.empty())
+                return 1;
+            std::ofstream(report_file_name.c_str()) << result;
+            tipl::out() << "report saved to " << report_file_name << std::endl;
+
         }
     }
     else {
@@ -171,17 +187,12 @@ int qc(tipl::program_option<tipl::out>& po)
         if(QString(file_name.c_str()).endsWith("src.gz") ||
            QString(file_name.c_str()).endsWith("nii.gz"))
         {
-            std::ofstream out(report_file_name.c_str());
-            out << "FileName\tImage dimension\tResolution\tDWI count\tMax b-value\tNeighboring DWI correlation\t# Bad Slices" << std::endl;
-            std::vector<std::string> output_each;
-            float ndc_each;
-            if(!check_src(file_name,output_each,ndc_each))
-            {
-                tipl::out() << "cannot load file " << file_name << std::endl;
+            auto result = quality_check_src_files(file_name.c_str());
+            if(result.empty())
                 return 1;
-            }
-            for(size_t j = 0 ;j < output_each.size();++j)
-                out << output_each[j] << "\t";
+
+            std::ofstream(report_file_name.c_str()) << result;
+            tipl::out() << "report saved to " << report_file_name << std::endl;
         }
     }
     return 0;
