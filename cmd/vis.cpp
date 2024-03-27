@@ -4,10 +4,10 @@
 #include "tracking/tracking_window.h"
 #include "opengl/glwidget.h"
 
-std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
+std::shared_ptr<fib_data> cmd_load_fib(tipl::program_option<tipl::out>& po);
 int vis(tipl::program_option<tipl::out>& po)
 {
-    std::shared_ptr<fib_data> new_handle = cmd_load_fib(po.get("source"));
+    std::shared_ptr<fib_data> new_handle = cmd_load_fib(po);
     if(!new_handle.get())
         return 1;
     auto prior_show_prog = tipl::show_prog;
