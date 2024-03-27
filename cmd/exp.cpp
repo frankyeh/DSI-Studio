@@ -8,7 +8,7 @@
 #include "libs/tracking/tracking_thread.hpp"
 #include "fib_data.hpp"
 
-std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
+std::shared_ptr<fib_data> cmd_load_fib(tipl::program_option<tipl::out>& po);
 bool trk2tt(const char* trk_file,const char* tt_file);
 bool tt2trk(const char* tt_file,const char* trk_file);
 int exp(tipl::program_option<tipl::out>& po)
@@ -55,7 +55,7 @@ int exp(tipl::program_option<tipl::out>& po)
     if(QString(file_name.c_str()).endsWith(".fib.gz"))
     {
         std::shared_ptr<fib_data> handle;
-        handle = cmd_load_fib(po.get("source"));
+        handle = cmd_load_fib(po);
         if(!handle.get())
         {
             tipl::out() << "ERROR: " << handle->error_msg << std::endl;
