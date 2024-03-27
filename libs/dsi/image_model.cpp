@@ -347,91 +347,36 @@ bool ImageModel::check_b_table(void)
     }
     return true;
 }
+
+size_t sum_dif(const unsigned short* I1,const unsigned short* I2,size_t size)
+{
+    size_t dif = 0;
+    for(size_t i = 0;i < size;++i)
+        dif += std::abs(int(I1[i])-int(I2[i]));
+    return dif;
+}
+
 std::vector<std::pair<size_t,size_t> > ImageModel::get_bad_slices(void)
 {
-    voxel.load_from_src(*this);
-    std::vector<size_t> sorted_index(get_sorted_dwi_index()),index_mapping;
-    for(size_t i = 0;i < sorted_index.size();++i)
-        if(i == 0 || src_bvalues[sorted_index[i]] != 0.0f)
-            index_mapping.push_back(sorted_index[i]);
-
-    std::vector<char> skip_slice(size_t(voxel.dim.depth()));
-    for(size_t i = 0,pos = 0;i < skip_slice.size();++i,pos += voxel.dim.plane_size())
-        if(std::accumulate(voxel.mask.begin()+long(pos),voxel.mask.begin()+long(pos)+voxel.dim.plane_size(),0) < voxel.dim.plane_size()/16)
-            skip_slice[i] = 1;
-        else
-            skip_slice[i] = 0
-                    ;
-    tipl::image<2,float> cor_values(
-                tipl::shape<2>(int(voxel.dwi_data.size()),voxel.dim.depth()));
-
-    tipl::par_for(voxel.dwi_data.size(),[&](size_t index)
-    {
-        auto I = dwi_at(index);
-        size_t value_index = index*size_t(voxel.dim.depth());
-        for(size_t z = 0,pos = 0;z < size_t(voxel.dim.depth());
-                                ++z,pos += voxel.dim.plane_size())
+    std::vector<std::pair<size_t,size_t> > result;
+    std::mutex result_mutex;
+    tipl::par_for(src_dwi_data.size(),[&](size_t index)
+    {        
+        for(size_t z = 1,pos = voxel.dim.plane_size();z + 1 < size_t(voxel.dim.depth());++z,pos += voxel.dim.plane_size())
         {
-            float cor = 0.0f;
-            if(z)
-                cor = float(tipl::correlation(&I[pos],&I[pos]+I.plane_size(),&I[pos]-I.plane_size()));
-            if(z+1 < size_t(voxel.dim.depth()))
-                cor = std::max<float>(cor,float(tipl::correlation(&I[pos],&I[pos]+I.plane_size(),&I[pos]+I.plane_size())));
-
-            if(index)
-                cor = std::max<float>(cor,float(tipl::correlation(voxel.dwi_data[index]+pos,
-                                        voxel.dwi_data[index]+pos+voxel.dim.plane_size(),
-                                        voxel.dwi_data[index-1]+pos)));
-            if(index+1 < voxel.dwi_data.size())
-                cor = std::max<float>(cor,float(tipl::correlation(voxel.dwi_data[index]+pos,
-                                                            voxel.dwi_data[index]+pos+voxel.dim.plane_size(),
-                                                            voxel.dwi_data[index+1]+pos)));
-
-            cor_values[value_index+z] = cor;
-        }
-    });
-    // check the difference with neighbors
-    std::vector<size_t> bad_i,bad_z;
-    std::vector<float> sum;
-    for(size_t i = 0,pos = 0;i < voxel.dwi_data.size();++i)
-    {
-        for(size_t z = 0;z < size_t(voxel.dim.depth());++z,++pos)
-        if(!skip_slice[z])
-        {
-            // ignore the top and bottom slices
-            if(z == 0 || z + 2 >= size_t(voxel.dim.depth()))
-                continue;
-            float v[4] = {0.0f,0.0f,0.0f,0.0f};
-
-            v[0] = cor_values[pos-1]-cor_values[pos];
-            if(z+1 < size_t(voxel.dim.depth()))
-                v[1] = cor_values[pos+1]-cor_values[pos];
-            if(i > 0)
-                v[2] = cor_values[pos-size_t(voxel.dim.depth())]-cor_values[pos];
-            if(i+1 < voxel.dwi_data.size())
-                v[3] = cor_values[pos+size_t(voxel.dim.depth())]-cor_values[pos];
-            float s = 0.0;
-            s = v[0]+v[1]+v[2]+v[3];
-            if(s > 0.4f)
+            auto dif_lower = sum_dif(src_dwi_data[index] + pos-voxel.dim.plane_size(),
+                                     src_dwi_data[index] + pos,voxel.dim.plane_size());
+            auto dif_upper = sum_dif(src_dwi_data[index] + pos+voxel.dim.plane_size(),
+                                     src_dwi_data[index] + pos,voxel.dim.plane_size());
+            auto dif_upper_lower = sum_dif(src_dwi_data[index] + pos+voxel.dim.plane_size(),
+                                      src_dwi_data[index] + pos-voxel.dim.plane_size(),voxel.dim.plane_size());
+            if(dif_lower + dif_upper > dif_upper_lower*2)
             {
-                bad_i.push_back(index_mapping[i]);
-                bad_z.push_back(z);
-                sum.push_back(s);
+                std::lock_guard<std::mutex> lock(result_mutex);
+                result.push_back(std::make_pair(index,z));
             }
         }
-    }
-
-    std::vector<std::pair<size_t,size_t> > result;
-
-    auto arg = tipl::arg_sort(sum,std::less<float>());
-    //tipl::image<3> bad_I(tipl::shape<3>(voxel.dim[0],voxel.dim[1],bad_i.size()));
-    for(size_t i = 0,out_pos = 0;i < bad_i.size();++i,out_pos += voxel.dim.plane_size())
-    {
-        result.push_back(std::make_pair(bad_i[arg[i]],bad_z[arg[i]]));
-        //int pos = bad_z[arg[i]]*voxel.dim.plane_size();
-    //    std::copy(voxel.dwi_data[bad_i[arg[i]]]+pos,voxel.dwi_data[bad_i[arg[i]]]+pos+voxel.dim.plane_size(),bad_I.begin()+out_pos);
-    }
-    //bad_I.save_to_file<tipl::io::gz_nifti>("D:/bad.nii.gz");
+    });
     return result;
 }
 
