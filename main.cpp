@@ -28,9 +28,6 @@ std::vector<std::vector<std::string> > atlas_file_name_list;
 
 
 class CustomSliceModel;
-extern std::shared_ptr<CustomSliceModel> t1t2_slices;
-std::shared_ptr<CustomSliceModel> t1t2_slices;
-extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 
 int rec(tipl::program_option<tipl::out>& po);
@@ -285,8 +282,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
 
         tipl::par_for(loop_files.size(),[&](size_t i)
         {
-            // clear --t1t2 and --other_slices
-            t1t2_slices.reset();
+            // clear --other_slices
             other_slices.clear();
             // apply '*' to other arguments
             for(const auto& wildcard : wildcard_list)
