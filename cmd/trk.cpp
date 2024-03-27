@@ -13,29 +13,30 @@
 #include "SliceModel.h"
 #include "connectometry/group_connectometry_analysis.h"
 
-extern std::shared_ptr<CustomSliceModel> t1t2_slices;
+
 extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
+
+std::shared_ptr<CustomSliceModel> load_slices(std::shared_ptr<fib_data> handle,std::string file_name)
+{
+    auto new_slice = std::make_shared<CustomSliceModel>(handle.get());
+    if(!new_slice->load_slices(file_name))
+    {
+        tipl::out() << "ERROR: fail to load " << file_name << " " << new_slice->error_msg << std::endl;
+        return std::shared_ptr<CustomSliceModel>();
+    }
+    new_slice->wait();
+    new_slice->update_transform();
+    tipl::out() << "size: " << new_slice->dim << "resolution: " << new_slice->vs << std::endl;
+    tipl::out() << "srow:";
+    tipl::out() << new_slice->trans_to_mni;
+    tipl::out() << "to_dif:";
+    tipl::out() << new_slice->to_dif;
+    return new_slice;
+}
+
 bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 {
-    if(!t1t2_slices.get() && po.has("t1t2"))
-    {
-        auto t1t2 = po.get("t1t2");
-        t1t2_slices = std::make_shared<CustomSliceModel>(handle.get());
-        if(!t1t2_slices->load_slices(t1t2))
-        {
-            tipl::out() << "ERROR: fail to load " << t1t2 << " " << t1t2_slices->error_msg << std::endl;
-            return false;
-        }
-        handle->view_item.pop_back(); // remove the new item added by initialize
-        t1t2_slices->wait();
-        tipl::out() << "size: " << t1t2_slices->dim << "resolution: " << t1t2_slices->vs << std::endl;
-        tipl::out() << "srow:";
-        tipl::out() << t1t2_slices->trans_to_mni;
-        tipl::out() << "to_dif:";
-        tipl::out() << t1t2_slices->to_dif;
-    }
-
-    if(!other_slices.empty())
+    if(!other_slices.empty() || !po.has("other_slices"))
         return true;
     std::vector<std::string> filenames;
     if(!po.get_files("other_slices",filenames))
@@ -46,18 +47,9 @@ bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_
     for(const auto& each : filenames)
     {
         tipl::out() << "add slice: " << each << std::endl;
-        auto new_slice = std::make_shared<CustomSliceModel>(handle.get());
-        if(!new_slice->load_slices(each))
-        {
-            tipl::out() << "ERROR: fail to load " << each << " " << new_slice->error_msg << std::endl;
+        auto new_slice = load_slices(handle,each);
+        if(!new_slice.get())
             return false;
-        }
-        new_slice->wait();
-        tipl::out() << "size: " << new_slice->dim << "resolution: " << new_slice->vs << std::endl;
-        tipl::out() << "srow:";
-        tipl::out() << new_slice->trans_to_mni;
-        tipl::out() << "to_dif:";
-        tipl::out() << new_slice->to_dif;
         other_slices.push_back(new_slice);
     }
     return true;
@@ -155,15 +147,15 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
             dim = handle->dim;
             vs = handle->vs;
 
-            // t1t2
-            if(po.has("t1t2"))
+            if(po.has("ref"))
             {
-                if(!check_other_slices(po,handle))
+                auto new_slice = load_slices(handle,po.get("ref"));
+                if(!new_slice.get())
                     return false;
-                dim = t1t2_slices->dim;
-                vs = t1t2_slices->vs;
-                trans_to_mni = t1t2_slices->trans_to_mni;
-                to_t1t2 = t1t2_slices->to_slice;
+                dim = new_slice->dim;
+                vs = new_slice->vs;
+                trans_to_mni = new_slice->trans_to_mni;
+                to_t1t2 = new_slice->to_slice;
             }
             else
             {
@@ -390,7 +382,13 @@ std::shared_ptr<fib_data> cmd_load_fib(std::string file_name)
     }
     return handle;
 }
-
+std::shared_ptr<fib_data> cmd_load_fib(tipl::program_option<tipl::out>& po)
+{
+    auto handle = cmd_load_fib(po.get("source"));
+    if(!handle.get() || !check_other_slices(po,handle))
+        return std::shared_ptr<fib_data>();
+    return handle;
+}
 bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text)
 {
@@ -533,17 +531,10 @@ int trk_post(tipl::program_option<tipl::out>& po,
         bool failed = false;
         if(po.has("ref")) // save track in T1W/T2W space
         {
-            CustomSliceModel new_slice(handle.get());
-            if(!new_slice.load_slices(po.get("ref")))
-            {
-                tipl::out() << "ERROR: reading ref image file" << std::endl;
+            auto new_slice = load_slices(handle,po.get("ref"));
+            if(!new_slice.get())
                 return 1;
-            }
-            new_slice.wait();
-            new_slice.update_transform();
-            tipl::out() << "applying linear registration." << std::endl;
-            tipl::out() << new_slice.to_dif << std::endl;
-            if(!tract_model->save_transformed_tracts_to_file(tract_file_name.c_str(),new_slice.dim,new_slice.vs,new_slice.trans_to_mni,new_slice.to_slice,false))
+            if(!tract_model->save_transformed_tracts_to_file(tract_file_name.c_str(),new_slice->dim,new_slice->vs,new_slice->trans_to_mni,new_slice->to_slice,false))
                 failed = true;
         }
         else
@@ -597,9 +588,6 @@ int trk_post(tipl::program_option<tipl::out>& po,
         }
     }
 
-    // allow adding other slices for connectivity and statistics
-    if(po.has("other_slices") && !check_other_slices(po,handle))
-        return 1;
     if(po.has("connectivity") && !get_connectivity_matrix(po,handle,tract_file_name,tract_model))
         return 1;
     if(po.has("export") && !export_track_info(po,handle,tract_file_name,tract_model))
@@ -663,7 +651,7 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle);
 int trk(tipl::program_option<tipl::out>& po)
 {
     try{
-        std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
+        std::shared_ptr<fib_data> handle = cmd_load_fib(po);
         if(!handle.get())
             return 1;
         return trk(po,handle);
@@ -767,8 +755,7 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
                 else
                     handle->demo = subject_demo;
             }
-            if(po.has("other_slices") && !check_other_slices(po,handle))
-                return 1;
+
         }
         auto metric_i = handle->get_name_index(po.get("dt_metric1"));
         auto metric_j = handle->get_name_index(po.get("dt_metric2"));
