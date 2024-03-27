@@ -36,7 +36,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               std::string& error_msg,
               bool is_mni);
 
-extern std::shared_ptr<CustomSliceModel> t1t2_slices;
+extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle);
 bool load_nii(tipl::program_option<tipl::out>& po,
               std::shared_ptr<fib_data> handle,
@@ -45,13 +45,10 @@ bool load_nii(tipl::program_option<tipl::out>& po,
               std::vector<std::string>& names)
 {
     std::vector<SliceModel*> transform_lookup;
-    // --t1t2 provide registration
-    if(po.has("t1t2"))
-    {
-        if(!check_other_slices(po,handle))
-            return false;
-        transform_lookup.push_back(t1t2_slices.get());
-    }
+    if(!check_other_slices(po,handle))
+        return false;
+    for(const auto& each : other_slices)
+        transform_lookup.push_back(each.get());
 
     QStringList str_list = QString(region_text.c_str()).split(",");// splitting actions
     QString file_name = str_list[0];
@@ -75,7 +72,7 @@ bool load_nii(tipl::program_option<tipl::out>& po,
 
 
 int trk_post(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::string tract_file_name,bool output_track);
-std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
+std::shared_ptr<fib_data> cmd_load_fib(tipl::program_option<tipl::out>& po);
 
 bool load_tracts(const char* file_name,std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::shared_ptr<RoiMgr> roi_mgr)
 {
@@ -98,12 +95,8 @@ bool load_tracts(const char* file_name,std::shared_ptr<fib_data> handle,std::sha
     }
     return true;
 }
-bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle);
-int ana_region(tipl::program_option<tipl::out>& po)
+int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 {
-    std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
-    if(!handle.get())
-        return 1;
     std::vector<std::string> region_list;
     std::vector<std::shared_ptr<ROIRegion> > regions;
     if(po.has("atlas"))
@@ -160,10 +153,6 @@ int ana_region(tipl::program_option<tipl::out>& po)
         return 1;
     }
 
-    // allow adding other slices for connectivity and statistics
-    if(po.has("other_slices") && !check_other_slices(po,handle))
-        return 1;
-
     std::string result;
     tipl::out() << "calculating region statistics at a total of " << regions.size() << " regions" << std::endl;
     get_regions_statistics(handle,regions,region_list,result);
@@ -189,15 +178,14 @@ void get_track_statistics(std::shared_ptr<fib_data> handle,
                           const std::vector<std::shared_ptr<TractModel> >& tract_models,
                           const std::vector<std::string>& track_name,
                           std::string& result);
-int ana_tract(tipl::program_option<tipl::out>& po)
+int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 {
-    std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
     std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
-    std::string output = po.get("output");
-    std::vector<std::string> tract_files;
-    if(!handle.get() || !load_roi(po,handle,roi_mgr))
+    if(!load_roi(po,handle,roi_mgr))
         return 1;
 
+    std::string output = po.get("output");
+    std::vector<std::string> tract_files;
     if(!po.get_files("tract",tract_files))
     {
         tipl::out() << "ERROR: " << po.error_msg << std::endl;
@@ -306,15 +294,15 @@ int ana_tract(tipl::program_option<tipl::out>& po)
 int exp(tipl::program_option<tipl::out>& po);
 int ana(tipl::program_option<tipl::out>& po)
 {
+    std::shared_ptr<fib_data> handle = cmd_load_fib(po);
+    if(!handle.get())
+        return 1;
     if(po.has("atlas") || po.has("region") || po.has("regions"))
-        return ana_region(po);
+        return ana_region(po,handle);
     if(po.has("tract"))
-        return ana_tract(po);
+        return ana_tract(po,handle);
     if(po.has("info"))
     {
-        std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
-        if(!handle.get())
-            return 1;
         auto result = evaluate_fib(handle->dim,handle->dir.fa_otsu*0.6f,handle->dir.fa,[handle](size_t pos,unsigned int fib)
                                         {return handle->dir.get_fib(pos,fib);});
         std::ofstream out(po.get("info"));
