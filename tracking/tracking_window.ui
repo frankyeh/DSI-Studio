@@ -4185,7 +4185,7 @@ Tracking</string>
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Open MNI-space Tracts...</string>
+    <string>Open Template-Space Tracts...</string>
    </property>
   </action>
   <action name="actionLoad_Built_In_Atlas">
