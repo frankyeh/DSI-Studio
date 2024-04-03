@@ -87,7 +87,7 @@ int exp(tipl::program_option<tipl::out>& po)
         {
             if(!handle->save_mapping(cmd,file_name + "." + cmd + ".nii.gz"))
             {
-                tipl::out() << "ERROR: cannot find "<< cmd.c_str() <<" in " << file_name.c_str() <<std::endl;
+                tipl::out() << "ERROR: cannot find "<< cmd <<" in " << file_name.c_str() <<std::endl;
                 return 1;
             }
             tipl::out() << cmd << ".nii.gz saved " << std::endl;
