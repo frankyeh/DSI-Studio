@@ -1228,7 +1228,7 @@ bool stat_model::select_feature(connectometry_db& db,std::string foi_text)
 
     if(!pre_process())
     {
-        error_msg = "Some demographic data are duplicated. Please check the demographics.";
+        error_msg = "The subject number is not enough, or some demographic are duplicated. Please check the demographics.";
         return false;
     }
     return true;
