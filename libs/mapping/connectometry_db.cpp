@@ -550,6 +550,8 @@ bool connectometry_db::add(const std::string& file_name,
             }
         }
     }
+    // remove negative values due to interpolation
+    tipl::lower_threshold(data,0.0f);
 
     // normalize QA
     if(index_name == "qa" || index_name == "nqa" || index_name.empty())
