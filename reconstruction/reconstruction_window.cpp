@@ -405,7 +405,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
 }
 void reconstruction_window::on_doDTI_clicked()
 {
-    if(handle->voxel.vs[2] > handle->voxel.vs[0]*1.2f && handle->is_human_data()) // non isotropic resolution
+    if(handle->voxel.vs[2] > handle->voxel.vs[0]*1.2f && handle->is_human_data() && !ui->QSDR->isChecked()) // non isotropic resolution
     {
         auto result = QMessageBox::information(this,"DSI Studio",
             QString("The slice thickness is much larger than slice resolution. This is not ideal for fiber tracking. Resample slice thickness to 2mm isotropic resolution?"),
