@@ -671,52 +671,48 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     bool need_trans = false;
     tipl::matrix<4,4> to_diffusion_space = tipl::identity_matrix();
 
+    tipl::out() << "FIB file dimension: " << handle->dim << " voxel size: " << handle->vs << (handle->is_mni ? " mni space": " not mni space") << std::endl;
+    tipl::out() << nifti_name << " dimension: " << from.shape() << " voxel size: " << vs << (is_mni ? " mni space": " not mni space (if mni space, add 'mni' in file name)") << std::endl;
+
     if(from.shape() != handle->dim)
     {
-        tipl::out() << "FIB file dimension: " << handle->dim << " voxel size: " << handle->vs << std::endl;
-        if(handle->is_mni)
-        {
-            for(unsigned int index = 0;index < handle->view_item.size();++index)
-                if(handle->view_item[index].native_geo.size())
-                {
-                    if(index && handle->view_item[index].native_geo == handle->view_item[index-1].native_geo)
-                        continue;
-                    tipl::out() << "FIB file native-space dimension: " << handle->view_item[index].native_geo
-                                    << " (" << handle->view_item[index].name << ")" <<  std::endl;
-                }
-        }
-        tipl::out() << nifti_name << " dimension: " << from.shape() << " voxel size: " << vs << std::endl;
         tipl::out() << nifti_name << " has a different dimension from the FIB file. need transformation or warping." << std::endl;
         if(handle->is_mni)
         {
             if(!is_mni)
-            for(unsigned int index = 0;index < handle->view_item.size();++index)
-                if(handle->view_item[index].native_geo == from.shape())
+            {
+                for(unsigned int index = 0;index < handle->view_item.size();++index)
+                if(handle->view_item[index].native_geo.size() && (index == 0 || handle->view_item[index].native_geo != handle->view_item[0].native_geo))
                 {
-                    tipl::out() << nifti_name << " has a dimension of " << from.shape() << ", matching the native space dimension of "
-                                    << handle->view_item[index].name << std::endl;
-                    tipl::out() << "warping " << nifti_name << " from the native space to the template space." << std::endl;
-                    if(handle->get_native_position().empty())
+                    tipl::out() << handle->view_item[index].name << " native space has a dimension of " << handle->view_item[index].native_geo << std::endl;
+                    if(handle->view_item[index].native_geo == from.shape())
                     {
-                        error_msg = "FIB file is obsolete. Please reconstruct FIB file again to enable native-to-template warping.";
-                        return false;
+                        tipl::out() << nifti_name << " dimension matches " << handle->view_item[index].name << "'s native space. assume they are from the same space. warping it now." << std::endl;
+                        if(handle->get_native_position().empty())
+                        {
+                            error_msg = "The FIB file is obsolete. Please reconstruct FIB file again to enable native-to-template warping.";
+                            return false;
+                        }
+                        auto T = handle->view_item[index].native_trans;
+                        tipl::image<3,unsigned int> new_from(handle->dim);
+                        tipl::par_for(new_from.size(),[&](size_t i)
+                        {
+                            auto pos = handle->get_native_position()[i];
+                            T(pos);
+                            tipl::estimate<tipl::interpolation::nearest>(from,pos,new_from[i]);
+                        });
+                        new_from.swap(from);
+                        trans_to_mni = handle->trans_to_mni;
+                        goto end;
                     }
-                    auto T = handle->view_item[index].native_trans;
-                    tipl::image<3,unsigned int> new_from(handle->dim);
-                    tipl::par_for(new_from.size(),[&](size_t i)
-                    {
-                        auto pos = handle->get_native_position()[i];
-                        T(pos);
-                        tipl::estimate<tipl::interpolation::nearest>(from,pos,new_from[i]);
-                    });
-                    new_from.swap(from);
-                    trans_to_mni = handle->trans_to_mni;
-                    goto end;
+                    else
+                        tipl::out() << nifti_name << " is not from the native space due to dimension mismatch" << std::endl;
                 }
-            if(is_mni)
-                tipl::out() << nifti_name << " is in the template space" << std::endl;
+                tipl::out() << "none of the native space dimension matches " << nifti_name << ". assume it is in the mni space (likely wrong. need to check)." << std::endl;
+            }
             else
-                tipl::out() << "assuming " << nifti_name << " is in the template space (please check)" << std::endl;
+                tipl::out() << nifti_name << " is in the mni space." << std::endl;
+
 
             tipl::out() <<"applying " << nifti_name << "'s header srow matrix to align." << std::endl;
             to_diffusion_space = tipl::from_space(trans_to_mni).to(handle->trans_to_mni);
