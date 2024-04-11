@@ -16,7 +16,8 @@ void match_template_resolution(tipl::image<3>& VG,
 class DWINormalization  : public BaseProcess
 {
 protected:
-    tipl::shape<3> src_geo;
+    tipl::shape<3> native_geo;
+    tipl::vector<3> native_vs;
 protected:
     tipl::image<3,tipl::vector<3> > cdm_dis,mapping;
 protected:
@@ -38,9 +39,8 @@ public:
            voxel.vs[2] == 0.0f)
             throw std::runtime_error("No spatial information found in src file. Recreate src file or contact developer for assistance");
 
-        // bookkeeping for restoration
-        src_geo = voxel.dim;
-
+        native_geo = voxel.dim;
+        native_vs = voxel.vs;
 
         // VG: FA TEMPLATE
         // VF: SUBJECT QA
@@ -322,7 +322,7 @@ public:
                     tipl::par_for(voxel.mask.size(),[&](size_t index)
                     {
                         tipl::vector<3,float> Jpos(mapping[index]);
-                        if(voxel.other_image[i].shape() != src_geo)
+                        if(voxel.other_image[i].shape() != native_geo)
                             voxel.other_image_trans[i](Jpos);
                         tipl::estimate<tipl::interpolation::cubic>(voxel.other_image[i],Jpos,other_image[i][index]);
                     });
@@ -333,7 +333,7 @@ public:
             // setup raw DWI
             ptr_images.clear();
             for (unsigned int index = 0; index < voxel.dwi_data.size(); ++index)
-                ptr_images.push_back(tipl::make_image(voxel.dwi_data[index],src_geo));
+                ptr_images.push_back(tipl::make_image(voxel.dwi_data[index],native_geo));
         }
     }
 
@@ -362,7 +362,7 @@ public:
         }
 
         tipl::interpolator::cubic<3> interpolation;
-        if(!interpolation.get_location(src_geo,mapping[data.voxel_index]))
+        if(!interpolation.get_location(native_geo,mapping[data.voxel_index]))
         {
             std::fill(data.space.begin(),data.space.end(),0);
             std::fill(data.jacobian.begin(),data.jacobian.end(),0.0);
@@ -381,8 +381,8 @@ public:
     {
         voxel.qsdr = false;
         mat_writer.write("jdet",jdet,uint32_t(voxel.dim.plane_size()));
-        mat_writer.write("native_dimension",src_geo);
-        mat_writer.write("native_voxel_size",voxel.vs);
+        mat_writer.write("native_dimension",native_geo);
+        mat_writer.write("native_voxel_size",native_vs);
         mat_writer.write("mapping",&mapping[0][0],3,mapping.size());
 
         // allow loading native space t1w-based ROI
