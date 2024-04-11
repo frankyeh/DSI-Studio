@@ -907,6 +907,8 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                     new_image[j] = *ptr;
                 if(!img_command_float32_std(new_image,new_vs,new_trans,is_mni,cmd,param,mat_reader.error_msg))
                 {
+                    mat_reader.error_msg = "cannot perform ";
+                    mat_reader.error_msg += cmd;
                     failed = true;
                     return;
                 }
@@ -930,8 +932,10 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             else
                 new_image = tipl::make_image(mat.get_data<float>(),dim);
 
-            if(img_command_float32_std(new_image,new_vs,new_trans,is_mni,cmd,param,mat_reader.error_msg))
+            if(!img_command_float32_std(new_image,new_vs,new_trans,is_mni,cmd,param,mat_reader.error_msg))
             {
+                mat_reader.error_msg = "cannot perform ";
+                mat_reader.error_msg += cmd;
                 failed = true;
                 return;
             }
