@@ -225,7 +225,7 @@ void db_window::on_actionCalculate_change_triggered()
 {
     if(vbc->handle->db.is_longitudinal)
     {
-        QMessageBox::critical(this,"ERROR","Cannot compute differences in longitudinal data");
+        QMessageBox::critical(this,"ERROR","Negative values found. The data cannot compute differences in longitudinal data");
         return;
     }
     std::unique_ptr<match_db> mdb(new match_db(this,vbc));
