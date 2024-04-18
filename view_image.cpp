@@ -682,6 +682,7 @@ void view_image::on_actionLoad_Image_to_4D_triggered()
     init_image();
 }
 void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
+QImage readImage(QString filename,std::string& error);
 bool view_image::open(QStringList file_names_)
 {
     if(file_names_.empty())
@@ -705,13 +706,9 @@ bool view_image::open(QStringList file_names_)
         QString(file_name).endsWith(".tif") ||
         QString(file_name).endsWith(".tiff")))
     {
-        QImage in;
-        if(!in.load(file_name))
-        {
-            error_msg = "invalid image format: ";
-            error_msg += file_name.toStdString();
+        QImage in = readImage(file_name,error_msg);
+        if(in.isNull())
             return false;
-        }
         pixel_type = int8;
         shape[0] = in.width();
         shape[1] = in.height();
@@ -725,13 +722,10 @@ bool view_image::open(QStringList file_names_)
 
         for(size_t file_index = 0;prog(file_index,shape[2]);++file_index)
         {
-            QImage I;
-            if(!I.load(file_names[file_index]))
-            {
-                error_msg = "invalid image format: ";
-                error_msg += file_names[file_index].toStdString();
+            QImage I = readImage(file_names[file_index],error_msg);
+            if(I.isNull())
                 return false;
-            }
+
             if(I.width() != shape[0] || I.height() != shape[1])
             {
                 error_msg = "inconsistent image size : ";
