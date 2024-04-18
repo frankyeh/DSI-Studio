@@ -9,6 +9,7 @@
 #include <QStyleFactory>
 #include <QFileInfo>
 #include <QDir>
+#include <QImageReader>
 #include "mapping/atlas.hpp"
 #include "mainwindow.h"
 #include "console.h"
@@ -66,6 +67,27 @@ size_t match_volume(float volume)
         }
     }
     return matched_index;
+}
+
+QImage readImage(QString filename,std::string& error)
+{
+    QImageReader im(filename);
+    if(!im.canRead())
+    {
+        error = im.errorString().toStdString();
+        return QImage();
+    }
+    tipl::out() << "loading image: " << filename.toStdString();
+    tipl::out() << "size:" << im.size().width() << " " << im.size().height();
+    im.setAllocationLimit(0);
+    im.setClipRect(QRect(0,0,im.size().width(),im.size().height()));
+    QImage in = im.read();
+    if(in.isNull())
+    {
+        error = im.errorString().toStdString();
+        return QImage();
+    }
+    return in;
 }
 
 QStringList search_files(QString dir,QString filter)
