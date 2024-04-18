@@ -20,8 +20,8 @@ Tracking/Tracking Index/tracking_index/fa:adc/0/The anisotropy metrics that will
 Tracking/Tracking Threshold (0=random)/fa_threshold/float:0:2:0.01:5/0.0/The anisotropy threshold to terminate tracking
 Tracking/Angular Threshold (0=random)/turning_angle/int:0:90:5/0/The angular threshold to terminate tracking
 Tracking/Step Size(mm)(0=random)/step_size/float:0.00:10:0.1:2/0/The propagation distance for each tracking iteration
-Tracking/Min Length(mm)/min_length/float:0:800:10:1/30/Remove tracks with length shorter than this threshold
-Tracking/Max Length(mm)/max_length/float:0:10000:10:1/300/Remove tracks with length longer than this threshold
+Tracking/Min Length(mm)/min_length/float:0:800:10:2/30/Remove tracks with length shorter than this threshold
+Tracking/Max Length(mm)/max_length/float:0:10000:10:2/300/Remove tracks with length longer than this threshold
 Tracking/Terminate if/track_count/int:1:100000000:1000/5000/Specify the number of seeds or tracks to generate
 Tracking/ /tracking_plan/Seeds:Tracts/1
 Tracking/Topology-Informed Pruning (iteration)/tip_iteration/int:0:100:2/4/The number of pruning iterations used to remove noisy tracks
