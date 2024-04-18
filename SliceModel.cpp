@@ -139,6 +139,7 @@ void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in)
 void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
 bool parse_age_sex(const std::string& file_name,std::string& age,std::string& sex);
 QString get_matched_demo(QWidget *parent,std::shared_ptr<fib_data>);
+QImage readImage(QString filename,std::string& error);
 bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is_mni)
 {
     if(files.empty())
@@ -163,13 +164,9 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         {
             uint32_t slices_count = 10;
             {
-                QImage in;
-                if(!in.load(files[0].c_str()))
-                {
-                    error_msg = "invalid image format: ";
-                    error_msg += files[0];
+                QImage in = readImage(files[0].c_str(),error_msg);
+                if(in.isNull())
                     return false;
-                }
                 QImage buf = in.convertToFormat(QImage::Format_RGB32);
                 picture.resize(tipl::shape<2>(uint32_t(in.width()),uint32_t(in.height())));
                 source_images.resize(tipl::shape<3>(uint32_t(in.width()),uint32_t(in.height()),slices_count));
@@ -192,13 +189,9 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         }
         else
         {
-            QImage in;
-            if(!in.load(files[0].c_str()))
-            {
-                error_msg = "invalid image format: ";
-                error_msg += files[0];
+            QImage in = readImage(files[0].c_str(),error_msg);
+            if(in.isNull())
                 return false;
-            }
 
             dim[0] = in.width();
             dim[1] = in.height();
@@ -216,13 +209,9 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
 
             for(size_t file_index = 0;prog(file_index,dim[2]);++file_index)
             {
-                QImage in;
-                if(!in.load(files[file_index].c_str()))
-                {
-                    error_msg = "invalid image format: ";
-                    error_msg += files[file_index];
+                QImage in = readImage(files[file_index].c_str(),error_msg);
+                if(in.isNull())
                     return false;
-                }
                 QImage buf = in.convertToFormat(QImage::Format_RGB32).mirrored();
                 tipl::image<2,short> I(tipl::shape<2>(in.width(),in.height()));
                 const uchar* ptr = buf.bits();
