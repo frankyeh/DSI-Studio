@@ -1136,7 +1136,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     ui->is_overlay->setChecked(current_slice->is_overlay);
     ui->stay->setChecked(current_slice->stay);
 
-    if(!current_slice->slice_points.empty())
+    if(!glWidget->slice_texture[index].empty())
     {
         ui->glSagCheck->setChecked(current_slice->slice_visible[0]);
         ui->glCorCheck->setChecked(current_slice->slice_visible[1]);
