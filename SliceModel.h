@@ -116,6 +116,7 @@ public:
     void terminate(void);
     void wait(void);
     void argmin(void);
+    void run_registration(void);
     void update_transform(void);
 public:
     CustomSliceModel(fib_data* new_handle);

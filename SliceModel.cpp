@@ -411,6 +411,12 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
 
     // handle registration
     tipl::out() << "running rigid body transformation to the slices. To disable it, add 'reg' to the file name." << std::endl;
+    run_registration();
+    return true;
+}
+
+void CustomSliceModel::run_registration(void)
+{
     if(tipl::show_prog)
     {
         thread.reset(new std::thread([this](){argmin();}));
@@ -418,7 +424,6 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
     }
     else
         argmin();
-    return true;
 }
 void CustomSliceModel::update_image(void)
 {
@@ -456,7 +461,8 @@ void CustomSliceModel::argmin(void)
     tipl::image<3> from;
     handle->get_iso_fa(from);
     auto from_vs = handle->vs;
-    match_template_resolution(to,to_vs,from,from_vs);
+    if(picture.empty())
+        match_template_resolution(to,to_vs,from,from_vs);
 
     tipl::lower_threshold(to,0.0f);
     tipl::lower_threshold(from,0.0f);
@@ -464,8 +470,11 @@ void CustomSliceModel::argmin(void)
     tipl::filter::gaussian(to);
     tipl::filter::gaussian(from);
 
-    tipl::out() << "registration started";
-    linear_with_mi(to,to_vs,from,from_vs,arg_min,tipl::reg::rigid_body,terminated);
+    tipl::out() << "registration started using " << (picture.empty() ? " rigid body with regular bound" : "affine transform with narrow bound");
+    if(picture.empty())
+        linear_with_mi(to,to_vs,from,from_vs,arg_min,tipl::reg::rigid_body,terminated);
+    else
+        linear_with_mi_refine(to,to_vs,from,from_vs,arg_min,tipl::reg::affine,terminated);
     update_transform();
     handle->view_item[view_id].registering = false;
     running = false;
