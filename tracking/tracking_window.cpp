@@ -120,6 +120,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         }
         tipl::out() << "initialize slices" << std::endl;
         {
+            glWidget->slice_texture.resize(slices.size());
             ui->SliceModality->clear();
             for (unsigned int index = 0;index < fib.view_item.size(); ++index)
                 ui->SliceModality->addItem(fib.view_item[index].name.c_str());
@@ -1066,12 +1067,25 @@ void tracking_window::on_track_style_currentIndexChanged(int index)
 
 void tracking_window::on_is_overlay_clicked()
 {
+    if(current_slice->is_overlay == ui->is_overlay->isChecked())
+        return;
     current_slice->is_overlay = (ui->is_overlay->isChecked());
     if(current_slice->is_overlay)
         overlay_slices.push_back(current_slice);
     else
         overlay_slices.erase(std::remove(overlay_slices.begin(),overlay_slices.end(),current_slice),overlay_slices.end());
 
+}
+
+void tracking_window::on_stay_clicked()
+{
+    if(current_slice->stay == ui->stay->isChecked())
+        return;
+    current_slice->stay = (ui->stay->isChecked());
+    if(current_slice->stay)
+        stay_slices.push_back(current_slice);
+    else
+        stay_slices.erase(std::remove(stay_slices.begin(),stay_slices.end(),current_slice),stay_slices.end());
 }
 
 
@@ -1093,21 +1107,6 @@ void tracking_window::on_SlicePos_valueChanged(int value)
             ui->glAxiSlider->setValue(value);
     }
 }
-
-void tracking_window::on_actionKeep_Current_Slice_triggered()
-{
-    if((cur_dim == 0 && !ui->glSagCheck->isChecked()) ||
-       (cur_dim == 1 && !ui->glCorCheck->isChecked()) ||
-       (cur_dim == 2 && !ui->glAxiCheck->isChecked()))
-    {
-        QMessageBox::critical(this,"DSI Studio","Current viewing slice is not visible. cannot make it stay in the 3D window.");
-        return;
-    }
-    glWidget->keep_slice = true;
-    glWidget->update();
-    QMessageBox::information(this,"DSI Studio","Current viewing slice will stay in the 3D window");
-}
-
 
 float tracking_window::get_fa_threshold(void)
 {
@@ -1135,6 +1134,14 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
 
 
     ui->is_overlay->setChecked(current_slice->is_overlay);
+    ui->stay->setChecked(current_slice->stay);
+
+    if(!current_slice->slice_points.empty())
+    {
+        ui->glSagCheck->setChecked(current_slice->slice_visible[0]);
+        ui->glCorCheck->setChecked(current_slice->slice_visible[1]);
+        ui->glAxiCheck->setChecked(current_slice->slice_visible[2]);
+    }
     ui->glSagSlider->setRange(0,int(current_slice->dim[0]-1));
     ui->glCorSlider->setRange(0,int(current_slice->dim[1]-1));
     ui->glAxiSlider->setRange(0,int(current_slice->dim[2]-1));
@@ -1213,6 +1220,7 @@ void tracking_window::on_actionSave_MNI_mapping_triggered()
     }
     QMessageBox::information(this,"DSI Studio","mapping saved");
 }
+
 
 
 

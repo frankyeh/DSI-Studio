@@ -17,10 +17,12 @@ public:
     tipl::matrix<4,4> trans_to_mni;
 public:
     bool is_overlay = false;
+    bool stay = false;
 public:
     // for directx
     tipl::vector<3,int> slice_pos;
     bool slice_visible[3];
+    std::vector<std::vector<tipl::vector<3> > > slice_points;
 public:
     SliceModel(fib_data* new_handle,uint32_t view_id_);
     virtual ~SliceModel(void){}

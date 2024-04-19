@@ -737,14 +737,14 @@ void tracking_window::check_reg(void)
 }
 
 
-bool tracking_window::addSlices(QStringList filenames,QString name,bool cmd)
+bool tracking_window::addSlices(QStringList filenames,QString name,bool cmd,bool mni)
 {
     std::vector<std::string> files(uint32_t(filenames.size()));
     for (int index = 0; index < filenames.size(); ++index)
         files[size_t(index)] = filenames[index].toStdString();
     CustomSliceModel* reg_slice_ptr = nullptr;
     std::shared_ptr<SliceModel> new_slice(reg_slice_ptr = new CustomSliceModel(handle.get()));
-    if(!reg_slice_ptr->load_slices(files))
+    if(!reg_slice_ptr->load_slices(files,mni))
     {
         if(!cmd)
             QMessageBox::critical(this,"ERROR",reg_slice_ptr->error_msg.c_str());
@@ -752,9 +752,12 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool cmd)
             tipl::out() << "ERROR: " << reg_slice_ptr->error_msg << std::endl;
         return false;
     }
+
     slices.push_back(new_slice);
+    glWidget->slice_texture.push_back(std::vector<std::shared_ptr<QOpenGLTexture> >());
     ui->SliceModality->addItem(name);
     updateSlicesMenu();
+
     if(!timer2.get() && reg_slice_ptr->running)
     {
         timer2.reset(new QTimer());
@@ -805,7 +808,7 @@ void tracking_window::on_addSlices_clicked()
     if(filenames[0].endsWith(".nii.gz"))
     {
         for(int i = 0;i < filenames.size();++i)
-            addSlices(QStringList() << filenames[i],QFileInfo(filenames[i]).fileName().remove(".nii.gz"),false);
+            addSlices(QStringList() << filenames[i],QFileInfo(filenames[i]).fileName().remove(".nii.gz"),false,false);
     }
     else
         addSlices(filenames,QFileInfo(filenames[0]).baseName(),false);
@@ -818,23 +821,7 @@ void tracking_window::on_actionInsert_MNI_images_triggered()
                 "Image files (*.hdr *.nii *nii.gz);;All files (*)" );
     if( filename.isEmpty() || !map_to_mni())
         return;
-
-    CustomSliceModel* reg_slice_ptr = nullptr;
-    std::shared_ptr<SliceModel> new_slice(reg_slice_ptr = new CustomSliceModel(handle.get()));
-    if(!reg_slice_ptr->load_slices(filename.toStdString(),true/* mni-space image*/))
-    {
-        QMessageBox::critical(this,"DSI Studio",reg_slice_ptr->error_msg.c_str());
-        return;
-    }
-    slices.push_back(new_slice);
-    ui->SliceModality->addItem(reg_slice_ptr->name.c_str());
-    updateSlicesMenu();
-    ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
-    set_data("show_slice",Qt::Checked);
-    ui->glSagCheck->setChecked(true);
-    ui->glCorCheck->setChecked(true);
-    ui->glAxiCheck->setChecked(true);
-    glWidget->update();
+    addSlices(QStringList() << filename,QFileInfo(filename).baseName(),false,true);
 }
 
 void tracking_window::insertPicture()
@@ -933,9 +920,12 @@ void tracking_window::on_deleteSlice_clicked()
         return;
     if(current_slice->is_overlay)
         on_is_overlay_clicked();
+    if(current_slice->stay)
+        on_stay_clicked();
     int index = ui->SliceModality->currentIndex();
     handle->view_item.erase(handle->view_item.begin()+index);
     slices.erase(slices.begin()+index);
+    glWidget->slice_texture.erase(glWidget->slice_texture.begin()+index);
     for(uint32_t i = uint32_t(index);i < slices.size();++i)
         slices[i]->view_id--;
     ui->SliceModality->removeItem(index);

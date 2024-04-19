@@ -11,9 +11,9 @@
 #include "reg.hpp"
 SliceModel::SliceModel(fib_data* handle_,uint32_t view_id_):handle(handle_),view_id(view_id_)
 {
-    slice_visible[0] = false;
-    slice_visible[1] = false;
-    slice_visible[2] = false;
+    slice_visible[0] = true;
+    slice_visible[1] = true;
+    slice_visible[2] = true;
     to_dif.identity();
     to_slice.identity();
     dim = handle_->dim;

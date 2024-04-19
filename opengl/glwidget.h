@@ -188,11 +188,7 @@ public:
      unsigned char odf_color = 0;
      float odf_scale = 0.0f;
 public:
-     bool keep_slice = false;
-     std::vector<tipl::vector<3,float> > keep_slice_points;
-
-public:
-     std::vector<std::shared_ptr<QOpenGLTexture> > slice_texture;
+     std::vector<std::vector<std::shared_ptr<QOpenGLTexture> > > slice_texture;
 
      int slice_pos[3] = {-1,-1,-1};
      QPoint lastPos,curPos,last_select_point;

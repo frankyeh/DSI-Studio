@@ -35,8 +35,7 @@ GLWidget::GLWidget(tracking_window& cur_tracking_window_,
                    RenderingTableWidget* renderWidget_,
                    QWidget *parent) : QOpenGLWidget(parent),
         cur_tracking_window(cur_tracking_window_),
-        renderWidget(renderWidget_),
-        slice_texture(3)
+        renderWidget(renderWidget_)
 {
     transformation_matrix.identity();
     rotation_matrix.identity();
@@ -803,81 +802,80 @@ void GLWidget::renderLR()
         glMultMatrixf(transformation_matrix.begin());
 
 
-        std::vector<tipl::vector<3,float> > points(4);
+        current_slice->slice_visible[0] = cur_tracking_window.ui->glSagCheck->isChecked();
+        current_slice->slice_visible[1] = cur_tracking_window.ui->glCorCheck->isChecked();
+        current_slice->slice_visible[2] = cur_tracking_window.ui->glAxiCheck->isChecked();
 
         bool changed_slice = check_change("slice_match_bkcolor",slice_match_bkcolor);
-        for(unsigned int dim = 0;dim < slice_texture.size();++dim)
+
+        for(size_t slice_index = 0;slice_index < slice_texture.size();++slice_index)
         {
-            if((dim == 0 && !cur_tracking_window.ui->glSagCheck->isChecked()) ||
-               (dim == 1 && !cur_tracking_window.ui->glCorCheck->isChecked()) ||
-               (dim == 2 && !cur_tracking_window.ui->glAxiCheck->isChecked()))
+            auto this_slice = cur_tracking_window.slices[slice_index];
+            if(!this_slice->stay && this_slice != current_slice)
                 continue;
-
-            if(dim < 3 && (slice_pos[dim] != current_slice->slice_pos[dim] || changed_slice))
+            if(this_slice->slice_points.size() != 3)
+                this_slice->slice_points.resize(3);
+            if(slice_texture[slice_index].size() != 3)
+                slice_texture[slice_index].resize(3);
+            for(unsigned int dim = 0;dim < 3;++dim)
             {
-                tipl::color_image texture;
-                if(current_slice->handle && current_slice->handle->has_high_reso)
-                    current_slice->get_high_reso_slice(texture,dim,current_slice->slice_pos[dim]);
-                else
-                    current_slice->get_slice(texture,dim,current_slice->slice_pos[dim],cur_tracking_window.overlay_slices);
-
-                if(get_param("slice_match_bkcolor"))
+                if(!this_slice->slice_visible[dim])
+                    continue;
+                if(this_slice == current_slice && (slice_pos[dim] != current_slice->slice_pos[dim] || changed_slice))
                 {
-                    auto slice_bk = texture[0];
-                    uint32_t bkcolor = get_param("bkg_color");
-                    for(size_t index = 0;index < texture.size();++index)
-                        if(texture[index] == slice_bk)
-                            texture[index] = bkcolor;
+                    tipl::color_image texture;
+                    if(current_slice->handle && current_slice->handle->has_high_reso)
+                        current_slice->get_high_reso_slice(texture,dim,current_slice->slice_pos[dim]);
+                    else
+                        current_slice->get_slice(texture,dim,current_slice->slice_pos[dim],cur_tracking_window.overlay_slices);
+                    if(get_param("slice_match_bkcolor"))
+                    {
+                        auto slice_bk = texture[0];
+                        uint32_t bkcolor = get_param("bkg_color");
+                        for(size_t index = 0;index < texture.size();++index)
+                            if(texture[index] == slice_bk)
+                                texture[index] = bkcolor;
+                    }
+
+                    for(unsigned int index = 0;index < texture.size();++index)
+                    {
+                        unsigned char value =
+                        255-texture[index].data[0];
+                        if(value >= 230)
+                            value -= (value-230)*10;
+                        texture[index].data[3] = value;
+                    }
+
+                    slice_texture[slice_index][dim] = std::make_shared<QOpenGLTexture>((QImage() << texture).mirrored());
+                    slice_pos[dim] = current_slice->slice_pos[dim];
                 }
 
-                for(unsigned int index = 0;index < texture.size();++index)
+                if(slice_texture[slice_index][dim].get())
                 {
-                    unsigned char value =
-                    255-texture[index].data[0];
-                    if(value >= 230)
-                        value -= (value-230)*10;
-                    texture[index].data[3] = value;
+                    slice_texture[slice_index][dim]->bind();
+                    int texparam[] = {GL_NEAREST,
+                                      GL_LINEAR};
+                    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,texparam[get_param("slice_mag_filter")]);
+
+                    glBegin(GL_QUADS);
+                    glColor4f(1.0,1.0,1.0,std::min(alpha+0.2,1.0));
+
+                    if(this_slice == current_slice)
+                        slice_location(dim,this_slice->slice_points[dim]);
+                    const auto& points = this_slice->slice_points[dim];
+                    glTexCoord2f(0.0f, 1.0f);
+                    glVertex3f(points[0][0],points[0][1],points[0][2]);
+                    glTexCoord2f(1.0f, 1.0f);
+                    glVertex3f(points[1][0],points[1][1],points[1][2]);
+                    glTexCoord2f(1.0f, 0.0f);
+                    glVertex3f(points[3][0],points[3][1],points[3][2]);
+                    glTexCoord2f(0.0f, 0.0f);
+                    glVertex3f(points[2][0],points[2][1],points[2][2]);
+                    glEnd();
+                    slice_texture[slice_index][dim]->release();
                 }
-
-                slice_texture[dim] = std::make_shared<QOpenGLTexture>((QImage() << texture).mirrored());
-                slice_pos[dim] = current_slice->slice_pos[dim];
-            }
-
-            if(slice_texture[dim].get())
-            {
-                slice_texture[dim]->bind();
-                int texparam[] = {GL_NEAREST,
-                                   GL_LINEAR};
-                glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,texparam[get_param("slice_mag_filter")]);
-
-                glBegin(GL_QUADS);
-                glColor4f(1.0,1.0,1.0,std::min(alpha+0.2,1.0));
-
-                if(dim < 3)
-                    slice_location(dim,points);
-                else
-                    points = keep_slice_points;
-                glTexCoord2f(0.0f, 1.0f);
-                glVertex3f(points[0][0],points[0][1],points[0][2]);
-                glTexCoord2f(1.0f, 1.0f);
-                glVertex3f(points[1][0],points[1][1],points[1][2]);
-                glTexCoord2f(1.0f, 0.0f);
-                glVertex3f(points[3][0],points[3][1],points[3][2]);
-                glTexCoord2f(0.0f, 0.0f);
-                glVertex3f(points[2][0],points[2][1],points[2][2]);
-                glEnd();
-            }
-            if(keep_slice && dim == cur_tracking_window.cur_dim)
-            {
-                if(slice_texture.size() > 3)
-                    slice_texture.pop_back();
-                slice_texture.push_back(slice_texture[dim]);
-                slice_texture[dim].reset();
-                keep_slice_points = points;
-                keep_slice = false;
             }
         }
-
         glPopMatrix();
         glDisable(GL_BLEND);
         glDisable(GL_TEXTURE_2D);

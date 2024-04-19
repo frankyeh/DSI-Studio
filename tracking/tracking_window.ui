@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1200</width>
-    <height>700</height>
+    <width>1352</width>
+    <height>834</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -153,6 +153,13 @@
            <property name="icon">
             <iconset resource="../icons.qrc">
              <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="stay">
+           <property name="text">
+            <string>Stay</string>
            </property>
           </widget>
          </item>
@@ -871,7 +878,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1200</width>
+     <width>1352</width>
      <height>22</height>
     </rect>
    </property>
@@ -1121,7 +1128,6 @@
     <addaction name="actionAdjust_Mapping"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_Color_Map"/>
-    <addaction name="actionKeep_Current_Slice"/>
     <addaction name="separator"/>
     <addaction name="actionMove_Slices_To_Current_Region"/>
    </widget>

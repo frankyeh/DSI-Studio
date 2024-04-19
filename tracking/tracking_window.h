@@ -63,7 +63,7 @@ public:
     float get_scene_zoom(std::shared_ptr<SliceModel> slice);
 public:
     unsigned char cur_dim = 2;
-    std::vector<std::shared_ptr<SliceModel> > overlay_slices;
+    std::vector<std::shared_ptr<SliceModel> > overlay_slices,stay_slices;
     bool slice_view_flip_x(unsigned char d) const {return d && (*this)["orientation_convention"].toInt();}
     bool slice_view_flip_y(unsigned char d) const {return d != 2;}
 public:
@@ -84,7 +84,7 @@ public:
     std::shared_ptr<fib_data> handle;
     std::vector<std::shared_ptr<SliceModel> > slices;
     std::shared_ptr<SliceModel> current_slice;
-    bool addSlices(QStringList filenames,QString name,bool cmd);
+    bool addSlices(QStringList filenames,QString name,bool cmd,bool mni = false);
     void updateSlicesMenu(void);
     float get_fa_threshold(void);
     bool no_update = false;
@@ -136,7 +136,6 @@ private slots:
     void on_actionInsert_MNI_images_triggered();
     void on_actionOpen_Connectivity_Matrix_triggered();
     void on_SlicePos_valueChanged(int value);
-    void on_actionKeep_Current_Slice_triggered();
 
 
     void on_actionFIB_protocol_triggered();
@@ -161,6 +160,7 @@ private slots:
     void on_actionSave_MNI_mapping_triggered();
 
 
+    void on_stay_clicked();
 };
 
 #endif // TRACKING_WINDOW_H
