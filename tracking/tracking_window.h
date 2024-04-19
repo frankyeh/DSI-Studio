@@ -98,6 +98,7 @@ public:
     void move_slice_to(tipl::vector<3,float> pos);
     bool map_to_mni(void);
     void set_roi_zoom(float zoom);
+    CustomSliceModel* insert_picture(void);
 public:
     std::string error_msg;
     bool command(QString cmd,QString param = "",QString param2 = "");

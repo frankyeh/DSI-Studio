@@ -808,9 +808,9 @@ void GLWidget::renderLR()
         bool changed_slice = check_change("slice_match_bkcolor",slice_match_bkcolor);
         for(unsigned int dim = 0;dim < slice_texture.size();++dim)
         {
-            if((dim == 0 && !cur_tracking_window.ui->glSagCheck->checkState()) ||
-               (dim == 1 && !cur_tracking_window.ui->glCorCheck->checkState()) ||
-               (dim == 2 && !cur_tracking_window.ui->glAxiCheck->checkState()))
+            if((dim == 0 && !cur_tracking_window.ui->glSagCheck->isChecked()) ||
+               (dim == 1 && !cur_tracking_window.ui->glCorCheck->isChecked()) ||
+               (dim == 2 && !cur_tracking_window.ui->glAxiCheck->isChecked()))
                 continue;
 
             if(dim < 3 && (slice_pos[dim] != current_slice->slice_pos[dim] || changed_slice))
@@ -1515,13 +1515,11 @@ void GLWidget::get_view_dir(QPoint p,tipl::vector<3,float>& dir)
     dir.normalize();
 }
 
-float GLWidget::get_slice_projection_point(unsigned char dim,
+float GLWidget::get_slice_projection_point(
                                 const tipl::vector<3,float>& pos,
                                 const tipl::vector<3,float>& dir,
                                 float& dx,float& dy)
 {
-    std::vector<tipl::vector<3,float> > slice_points(4);
-    slice_location(dim,slice_points);
     tipl::vector<3,float> pos_offset(pos),v1(slice_points[1]),v2(slice_points[2]),v3(dir);
     pos_offset -= slice_points[0];
     v1 -= slice_points[0];
@@ -1623,7 +1621,8 @@ bool GLWidget::select_object(void)
         {
             if(!show_slice[dim])
                 continue;
-            float d = get_slice_projection_point(dim,pos,dir1,slice_dx,slice_dy);
+            slice_location(dim,slice_points);
+            float d = get_slice_projection_point(pos,dir1,slice_dx,slice_dy);
             if(slice_dx > 0.0f && slice_dy > 0.0f &&
                slice_dx < 1.0f && slice_dy < 1.0f &&
                     d > 0 && d < slice_distance)
@@ -1710,7 +1709,8 @@ bool GLWidget::get_mouse_pos(QMouseEvent *event,tipl::vector<3,float>& position)
         {
             if(!show_slice[dim])
                 continue;
-            d[dim] = get_slice_projection_point(dim,pos,cur_dir,x[dim],y[dim]);
+            slice_location(dim,slice_points);
+            d[dim] = get_slice_projection_point(pos,cur_dir,x[dim],y[dim]);
             if(d[dim] == 0.0 || x[dim] < 0.0 || x[dim] > 1.0 || y[dim] < 0.0 || y[dim] > 1.0)
                 d[dim] = std::numeric_limits<float>::max();
         }
@@ -1785,7 +1785,8 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
                 angle[dim] = std::fabs(dir1*get_norm(points));
             }
             moving_at_slice_index = std::max_element(angle,angle+3)-angle;
-            if(get_slice_projection_point(moving_at_slice_index,pos,dir1,slice_dx,slice_dy) == 0.0)
+            slice_location(moving_at_slice_index,slice_points);
+            if(get_slice_projection_point(pos,dir1,slice_dx,slice_dy) == 0.0)
             {
                 editing_option = none;
                 setCursor(Qt::ArrowCursor);
@@ -1873,21 +1874,21 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
     if(editing_option == moving)
     {
-        std::vector<tipl::vector<3,float> > points(4);
-        slice_location(moving_at_slice_index,points);
         get_view_dir(curPos,dir2);
         float dx,dy;
-        if(get_slice_projection_point(moving_at_slice_index,pos,dir2,dx,dy) == 0.0f)
+        if(get_slice_projection_point(pos,dir2,dx,dy) == 0.0f)
             return;
-        tipl::vector<3,float> v1(points[1]),v2(points[2]),dis;
-        v1 -= points[0];
-        v2 -= points[0];
+        tipl::vector<3,float> v1(slice_points[1]),v2(slice_points[2]),dis;
+        v1 -= slice_points[0];
+        v2 -= slice_points[0];
         dis = v1*(dx-slice_dx)+v2*(dy-slice_dy);
         dis -= accumulated_dis;
+        tipl::out() << "dx:" << dx << " " << slice_dx << " dy:" << dy << " " << slice_dy << " dis:" << dis << " dir:" << dir2 << " pos:" << pos;
+
+        accumulated_dis += dis;
         if(device_selected && selected_index < cur_tracking_window.deviceWidget->devices.size())
         {
             cur_tracking_window.deviceWidget->devices[selected_index]->move(device_selected_length,dis);
-            accumulated_dis += dis;
             update();
             return;
         }
@@ -1897,7 +1898,6 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
             if(cur_tracking_window.regionWidget->regions[selected_index]->shift(dis))
             {
                 emit region_edited();
-                accumulated_dis += dis;
             }
             return;
         }
@@ -1906,6 +1906,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         if(slice_selected && dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get()))
         {
             auto slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
+
             if (event->buttons() & Qt::LeftButton)
             {
                 slice->arg_min.translocation[0] += dis[0]*0.05f;
@@ -1918,10 +1919,8 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
                 slice->arg_min.scaling[1] += dis[1]*0.005f;
                 slice->arg_min.scaling[2] += dis[2]*0.005f;
             }
-            emit region_edited();
             slice->update_transform();
             update();
-            accumulated_dis += dis;
         }
         return;
     }

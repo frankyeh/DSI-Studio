@@ -1094,9 +1094,16 @@ void tracking_window::on_SlicePos_valueChanged(int value)
 
 void tracking_window::on_actionKeep_Current_Slice_triggered()
 {
+    if((cur_dim == 0 && !ui->glSagCheck->isChecked()) ||
+       (cur_dim == 1 && !ui->glCorCheck->isChecked()) ||
+       (cur_dim == 2 && !ui->glAxiCheck->isChecked()))
+    {
+        QMessageBox::critical(this,"DSI Studio","Current viewing slice is not visible. cannot make it stay in the 3D window.");
+        return;
+    }
     glWidget->keep_slice = true;
     glWidget->update();
-    QMessageBox::information(this,"DSI Studio","Current viewing slice will reamin in the 3D window");
+    QMessageBox::information(this,"DSI Studio","Current viewing slice will stay in the 3D window");
 }
 
 
