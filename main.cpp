@@ -79,7 +79,9 @@ QImage readImage(QString filename,std::string& error)
     }
     tipl::out() << "loading image: " << filename.toStdString();
     tipl::out() << "size:" << im.size().width() << " " << im.size().height();
+#ifdef QT6_PATCH
     im.setAllocationLimit(0);
+#endif
     im.setClipRect(QRect(0,0,im.size().width(),im.size().height()));
     QImage in = im.read();
     if(in.isNull())
