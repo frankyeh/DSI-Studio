@@ -813,8 +813,6 @@ void GLWidget::renderLR()
             auto this_slice = cur_tracking_window.slices[slice_index];
             if(!this_slice->stay && this_slice != current_slice)
                 continue;
-            if(this_slice->slice_points.size() != 3)
-                this_slice->slice_points.resize(3);
             if(slice_texture[slice_index].size() != 3)
                 slice_texture[slice_index].resize(3);
             for(unsigned int dim = 0;dim < 3;++dim)
@@ -860,9 +858,8 @@ void GLWidget::renderLR()
                     glBegin(GL_QUADS);
                     glColor4f(1.0,1.0,1.0,std::min(alpha+0.2,1.0));
 
-                    if(this_slice == current_slice)
-                        slice_location(dim,this_slice->slice_points[dim]);
-                    const auto& points = this_slice->slice_points[dim];
+                    std::vector<tipl::vector<3> > points;
+                    this_slice->get_slice_positions(dim,points);
                     glTexCoord2f(0.0f, 1.0f);
                     glVertex3f(points[0][0],points[0][1],points[0][2]);
                     glTexCoord2f(1.0f, 1.0f);
