@@ -98,7 +98,6 @@ public:
     void move_slice_to(tipl::vector<3,float> pos);
     bool map_to_mni(void);
     void set_roi_zoom(float zoom);
-    CustomSliceModel* insert_picture(void);
 public:
     std::string error_msg;
     bool command(QString cmd,QString param = "",QString param2 = "");
@@ -149,9 +148,8 @@ private slots:
 
     void on_actionLoad_Parameter_ID_triggered();
 
-    void on_actionInsert_Axial_Pictures_triggered();
-    void on_actionInsert_Coronal_Pictures_triggered();
-    void on_actionInsert_Sagittal_Picture_triggered();
+    void insertPicture();
+
     void on_template_box_currentIndexChanged(int index);
     void on_actionManual_Atlas_Alignment_triggered();
 

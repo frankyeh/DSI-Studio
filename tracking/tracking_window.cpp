@@ -215,7 +215,9 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionLoad_Camera,SIGNAL(triggered()),glWidget,SLOT(loadCamera()));
         connect(ui->actionSave_Camera,SIGNAL(triggered()),glWidget,SLOT(saveCamera()));
 
-
+        connect(ui->actionInsert_Sagittal_Picture,SIGNAL(triggered()),this,SLOT(insertPicture()));
+        connect(ui->actionInsert_Coronal_Pictures,SIGNAL(triggered()),this,SLOT(insertPicture()));
+        connect(ui->actionInsert_Axial_Pictures,SIGNAL(triggered()),this,SLOT(insertPicture()));
 
 
         connect(ui->actionFull,SIGNAL(triggered()),this,SLOT(stripSkull()));

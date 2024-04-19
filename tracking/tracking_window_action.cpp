@@ -836,84 +836,93 @@ void tracking_window::on_actionInsert_MNI_images_triggered()
     ui->glAxiCheck->setChecked(true);
     glWidget->update();
 }
-CustomSliceModel* tracking_window::insert_picture(void)
+
+void tracking_window::insertPicture()
 {
+    QAction *action = qobject_cast<QAction *>(sender());
+    if(!action)
+        return;
+    if(action->text().contains("Sagittal"))
+        cur_dim = 2;
+    if(action->text().contains("Coronal"))
+        cur_dim = 1;
+    if(action->text().contains("Axial"))
+        cur_dim = 2;
+    glWidget->set_view(cur_dim);
+    float location = 0;
+    switch(cur_dim)
+    {
+        case 0:
+            location = (float(ui->glSagSlider->value())-0.5f*ui->glSagSlider->maximum())*handle->vs[0];
+            break;
+        case 1:
+            location = (float(ui->glCorSlider->value())-0.5f*ui->glCorSlider->maximum())*handle->vs[1];
+            break;
+        case 2:
+            location = (float(ui->glAxiSlider->value())-0.5f*ui->glAxiSlider->maximum())*handle->vs[2];
+            break;
+
+    }
     QString filename = QFileDialog::getOpenFileName(
         this,"Open Picture",QFileInfo(work_path).absolutePath(),"Pictures (*.jpg *.tif *.bmp *.png);;All files (*)" );
     if(filename.isEmpty())
-        return nullptr;
+        return;
     QStringList filenames;
     filenames << filename;
     if(!addSlices(filenames,QFileInfo(filename).baseName(),false))
-        return nullptr;
-    return dynamic_cast<CustomSliceModel*>(slices.back().get());
-}
-void tracking_window::on_actionInsert_Axial_Pictures_triggered()
-{
-    float location = (float(ui->glAxiSlider->value())-0.5f*ui->glAxiSlider->maximum())*handle->vs[1];
-    auto reg_slice_ptr = insert_picture();
+        return;
+    auto reg_slice_ptr = dynamic_cast<CustomSliceModel*>(slices.back().get());
     if(reg_slice_ptr == nullptr)
         return;
 
-    reg_slice_ptr->arg_min.rotation[1] = 3.1415926f;
-    reg_slice_ptr->arg_min.translocation[2] = location;
-    reg_slice_ptr->is_diffusion_space = false;
-    reg_slice_ptr->update_transform();
-
-    slice_need_update = true;
-    glWidget->update();
-    QMessageBox::information(this,"DSI Studio","Press Ctrl+A and then hold LEFT/RIGHT button to MOVE/RESIZE slice close to the target before using [Slices][Adjust Mapping]");
-
-}
-
-void tracking_window::on_actionInsert_Coronal_Pictures_triggered()
-{
-    float location = (float(ui->glCorSlider->value())-0.5f*ui->glCorSlider->maximum())*handle->vs[1];
-    auto reg_slice_ptr = insert_picture();
-    if(reg_slice_ptr == nullptr)
-        return;
-    tipl::flip_y(reg_slice_ptr->picture);
-    tipl::flip_y(reg_slice_ptr->source_images);
-    tipl::swap_yz(reg_slice_ptr->source_images);
-    reg_slice_ptr->update_image();
-    std::swap(reg_slice_ptr->vs[1],reg_slice_ptr->vs[2]);
+    switch(cur_dim)
+    {
+        case 0:
+            tipl::flip_y(reg_slice_ptr->picture);
+            tipl::flip_y(reg_slice_ptr->source_images);
+            tipl::swap_xy(reg_slice_ptr->source_images);
+            tipl::swap_xz(reg_slice_ptr->source_images);
+            std::swap(reg_slice_ptr->vs[0],reg_slice_ptr->vs[2]);
+            reg_slice_ptr->update_image();
+            reg_slice_ptr->arg_min.rotation[1] = 0.0f;
+            reg_slice_ptr->arg_min.translocation[0] = location;
+            break;
+        case 1:
+            tipl::flip_y(reg_slice_ptr->picture);
+            tipl::flip_y(reg_slice_ptr->source_images);
+            tipl::swap_yz(reg_slice_ptr->source_images);
+            std::swap(reg_slice_ptr->vs[1],reg_slice_ptr->vs[2]);
+            reg_slice_ptr->update_image();
+            reg_slice_ptr->arg_min.rotation[1] = 0.0f;
+            reg_slice_ptr->arg_min.translocation[1] = location;
+            break;
+        case 2:
+            reg_slice_ptr->arg_min.rotation[1] = 3.1415926f;
+            reg_slice_ptr->arg_min.translocation[2] = location;
+            break;
+    }
     handle->view_item.back().set_image(reg_slice_ptr->source_images.alias());
 
-    reg_slice_ptr->arg_min.rotation[1] = 0.0f;
-    reg_slice_ptr->arg_min.translocation[1] = location;
     reg_slice_ptr->is_diffusion_space = false;
     reg_slice_ptr->update_transform();
 
     slice_need_update = true;
     glWidget->update();
-    QMessageBox::information(this,"DSI Studio","Press Ctrl+A and then hold LEFT/RIGHT button to MOVE/RESIZE slice close to the target before using [Slices][Adjust Mapping]");
-}
+    if(QMessageBox::Yes == QMessageBox::question(this,"DSI Studio","Apply registration?",QMessageBox::No | QMessageBox::Yes))
+    {
+        reg_slice_ptr->run_registration();
+        if(!timer2.get() && reg_slice_ptr->running)
+        {
+            timer2.reset(new QTimer());
+            timer2->setInterval(1000);
+            connect(timer2.get(), SIGNAL(timeout()), this, SLOT(check_reg()));
+            timer2->start();
+            check_reg();
+        }
+    }
+    else
+        QMessageBox::information(this,"DSI Studio","Press Ctrl+A and then hold LEFT/RIGHT button to MOVE/RESIZE slice close to the target before using [Slices][Adjust Mapping]");
 
-
-
-void tracking_window::on_actionInsert_Sagittal_Picture_triggered()
-{
-    float location = (float(ui->glSagSlider->value())-0.5f*ui->glSagSlider->maximum())*handle->vs[1];
-    auto reg_slice_ptr = insert_picture();
-    if(reg_slice_ptr == nullptr)
-        return;
-    tipl::flip_y(reg_slice_ptr->picture);
-    tipl::flip_y(reg_slice_ptr->source_images);
-    tipl::swap_xy(reg_slice_ptr->source_images);
-    tipl::swap_xz(reg_slice_ptr->source_images);
-    reg_slice_ptr->update_image();
-    std::swap(reg_slice_ptr->vs[0],reg_slice_ptr->vs[2]);
-    handle->view_item.back().set_image(reg_slice_ptr->source_images.alias());
-
-    reg_slice_ptr->arg_min.rotation[1] = 0.0f;
-    reg_slice_ptr->arg_min.translocation[0] = location;
-    reg_slice_ptr->is_diffusion_space = false;
-    reg_slice_ptr->update_transform();
-
-
-    slice_need_update = true;
-    glWidget->update();
-    QMessageBox::information(this,"DSI Studio","Press Ctrl+A and then hold LEFT/RIGHT button to MOVE/RESIZE slice close to the target before using [Slices][Adjust Mapping]");
 
 }
 
