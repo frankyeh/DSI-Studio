@@ -686,7 +686,7 @@ bool fib_data::load_from_mat(void)
         return false;
     }
     tipl::out() << "initiating data" << std::endl;
-    if(has_high_reso)
+    /*
     {
         tipl::out() << "reading original mat file" << std::endl;
         if(!high_reso->load_from_mat())
@@ -695,6 +695,7 @@ bool fib_data::load_from_mat(void)
             return false;
         }
     }
+    */
 
     view_item.push_back(item(dir.fa.size() == 1 ? "fa":"qa",dir.fa[0],dim));
     for(unsigned int index = 1;index < dir.index_name.size();++index)
