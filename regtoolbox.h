@@ -88,6 +88,8 @@ private slots:
 
     void on_switch_view_clicked();
 
+    void on_actionDual_Modality_triggered();
+
 private:
     Ui::RegToolBox *ui;
     QGraphicsScene It_scene,I_scene,It_mix_scene;

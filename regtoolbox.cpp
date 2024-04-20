@@ -12,6 +12,8 @@ RegToolBox::RegToolBox(QWidget *parent) :
 {
     ui->setupUi(this);
     ui->options->hide();
+    ui->OpenSubject2->setVisible(false);
+    ui->OpenTemplate2->setVisible(false);
     ui->It_view->setScene(&It_scene);
     ui->It_mix_view->setScene(&It_mix_scene);
     ui->I_view->setScene(&I_scene);
@@ -719,5 +721,12 @@ void RegToolBox::on_switch_view_clicked()
     ui->rb_switch->setChecked(true);
     flash = !flash;
     show_image();
+}
+
+
+void RegToolBox::on_actionDual_Modality_triggered()
+{
+    ui->OpenSubject2->setVisible(true);
+    ui->OpenTemplate2->setVisible(true);
 }
 
