@@ -94,13 +94,16 @@ void SliceModel::get_slice(tipl::color_image& show_image,unsigned char cur_dim,i
             apply_overlay(show_image,cur_dim,overlay_slice);
 }
 // ---------------------------------------------------------------------------
-void SliceModel::get_high_reso_slice(tipl::color_image& show_image,unsigned char cur_dim,int pos) const
+void SliceModel::get_high_reso_slice(tipl::color_image& show_image,unsigned char cur_dim,int pos,
+                                     const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const
 {
-    if(handle && handle->has_high_reso)
+    if(handle && handle->high_reso.get())
     {
         handle->high_reso->view_item[view_id].v2c = handle->view_item[view_id].v2c;
         handle->high_reso->get_slice(view_id,cur_dim, pos*int(handle->high_reso->dim[cur_dim])/int(handle->dim[cur_dim]),show_image);
     }
+    else
+        get_slice(show_image,cur_dim,pos,overlay_slices);
 }
 // ---------------------------------------------------------------------------
 tipl::const_pointer_image<3> SliceModel::get_source(void) const
@@ -126,7 +129,16 @@ void CustomSliceModel::get_slice(tipl::color_image& image,
     if(!picture.empty() && (dim[cur_dim] != picture.width() && dim[cur_dim] != picture.height()))
         image = picture;
     else
-        return SliceModel::get_slice(image,cur_dim,pos,overlay_slices);
+        SliceModel::get_slice(image,cur_dim,pos,overlay_slices);
+}
+// ---------------------------------------------------------------------------
+void CustomSliceModel::get_high_reso_slice(tipl::color_image& image,unsigned char cur_dim,int pos,
+                                           const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const
+{
+    if(!high_reso_picture.empty() && (dim[cur_dim] != picture.width() && dim[cur_dim] != picture.height()))
+        image = high_reso_picture;
+    else
+        get_slice(image,cur_dim,pos,overlay_slices);
 }
 // ---------------------------------------------------------------------------
 tipl::const_pointer_image<3> CustomSliceModel::get_source(void) const
@@ -139,7 +151,7 @@ void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in)
 void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
 bool parse_age_sex(const std::string& file_name,std::string& age,std::string& sex);
 QString get_matched_demo(QWidget *parent,std::shared_ptr<fib_data>);
-QImage readImage(QString filename,std::string& error);
+QImage read_qimage(QString filename,std::string& error);
 bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is_mni)
 {
     if(files.empty())
@@ -164,19 +176,26 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         {
             uint32_t slices_count = 10;
             {
-                QImage in = readImage(files[0].c_str(),error_msg);
+                size_t max_width = tipl::max_value(handle->dim.begin(),handle->dim.end())*2;
+                QImage in = read_qimage(files[0].c_str(),error_msg);
                 if(in.isNull())
                     return false;
-                QImage buf = in.convertToFormat(QImage::Format_RGB32);
-                picture.resize(tipl::shape<2>(uint32_t(in.width()),uint32_t(in.height())));
-                source_images.resize(tipl::shape<3>(uint32_t(in.width()),uint32_t(in.height()),slices_count));
-                const uchar* ptr = buf.bits();
-                for(size_t j = 0;j < source_images.plane_size();++j,ptr += 4)
+                picture << in;
+                while(picture.width() > max_width)
                 {
-                    picture[j] = tipl::rgb(*(ptr+2),*(ptr+1),*ptr);
-                    for(size_t k = 0,pos = j;k < slices_count;++k,pos += source_images.plane_size())
-                        source_images[pos] = float(*ptr);
+                    tipl::out() << "downsampling slice to match current resolution";
+                    if(high_reso_picture.empty())
+                    {
+                        high_reso_picture.swap(picture);
+                        tipl::downsampling(high_reso_picture,picture);
+                    }
+                    else
+                        tipl::downsampling(picture);
                 }
+                source_images.resize(tipl::shape<3>(uint32_t(picture.width()),uint32_t(picture.height()),slices_count));
+                for(size_t j = 0;j < source_images.plane_size();++j)
+                    for(size_t k = 0,pos = j;k < slices_count;++k,pos += source_images.plane_size())
+                        source_images[pos] = float(picture[j][0]);
             }
 
             vs = handle->vs*(handle->dim.width())/(source_images.width());
@@ -189,7 +208,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         }
         else
         {
-            QImage in = readImage(files[0].c_str(),error_msg);
+            QImage in = read_qimage(files[0].c_str(),error_msg);
             if(in.isNull())
                 return false;
 
@@ -209,7 +228,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
 
             for(size_t file_index = 0;prog(file_index,dim[2]);++file_index)
             {
-                QImage in = readImage(files[file_index].c_str(),error_msg);
+                QImage in = read_qimage(files[file_index].c_str(),error_msg);
                 if(in.isNull())
                     return false;
                 QImage buf = in.convertToFormat(QImage::Format_RGB32).mirrored();

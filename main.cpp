@@ -69,12 +69,13 @@ size_t match_volume(float volume)
     return matched_index;
 }
 
-QImage readImage(QString filename,std::string& error)
+QImage read_qimage(QString filename,std::string& error)
 {
     QImageReader im(filename);
     if(!im.canRead())
     {
         error = im.errorString().toStdString();
+        tipl::out() << error;
         return QImage();
     }
     tipl::out() << "loading image: " << filename.toStdString();
@@ -87,6 +88,7 @@ QImage readImage(QString filename,std::string& error)
     if(in.isNull())
     {
         error = im.errorString().toStdString();
+        tipl::out() << error;
         return QImage();
     }
     return in;

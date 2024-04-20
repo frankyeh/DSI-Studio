@@ -34,7 +34,8 @@ public:
     virtual void get_slice(tipl::color_image& image,
                            unsigned char cur_dim,int pos,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
-    void get_high_reso_slice(tipl::color_image& image,unsigned char cur_dim,int pos) const;
+    virtual void get_high_reso_slice(tipl::color_image& image,unsigned char cur_dim,int pos,
+                           const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
     virtual tipl::const_pointer_image<3> get_source(void) const;
     std::string get_name(void) const;
 public:
@@ -133,10 +134,12 @@ public:
     bool is_mni = false;
     tipl::image<3> source_images;
     tipl::image<3> skull_removed_images;
-    tipl::color_image picture;
+    tipl::color_image picture,high_reso_picture;
     void update_image(void);
     virtual void get_slice(tipl::color_image& image,
                            unsigned char,int,
+                           const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
+    virtual void get_high_reso_slice(tipl::color_image& image,unsigned char cur_dim,int pos,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
     virtual tipl::const_pointer_image<3> get_source(void) const;
 public:

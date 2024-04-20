@@ -256,7 +256,6 @@ public:
     connectometry_db db;
     mutable std::vector<item> view_item;
 public:
-    bool has_high_reso = false;
     std::shared_ptr<fib_data> high_reso;
 public:
     int prog;

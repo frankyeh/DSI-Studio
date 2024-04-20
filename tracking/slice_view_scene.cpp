@@ -199,12 +199,11 @@ QImage slice_view_scene::get_view_image(std::shared_ptr<SliceModel> current_slic
     QImage scaled_image;
     {
         QImage slice_qimage;
-        tipl::color_image high_reso_slice_image;
-        if(!simple && current_slice->handle && current_slice->handle->has_high_reso)
+        if(!simple)
         {
-            current_slice->get_high_reso_slice(high_reso_slice_image,cur_dim,pos);
+            tipl::color_image high_reso_slice_image;
+            current_slice->get_high_reso_slice(high_reso_slice_image,cur_dim,pos,cur_tracking_window.overlay_slices);
             slice_qimage << high_reso_slice_image;
-
         }
         else
             slice_qimage << slice_image;

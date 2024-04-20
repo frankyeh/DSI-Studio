@@ -866,6 +866,7 @@ void tracking_window::insertPicture()
     {
         case 0:
             tipl::flip_y(reg_slice_ptr->picture);
+            tipl::flip_y(reg_slice_ptr->high_reso_picture);
             tipl::flip_y(reg_slice_ptr->source_images);
             tipl::swap_xy(reg_slice_ptr->source_images);
             tipl::swap_xz(reg_slice_ptr->source_images);
@@ -876,6 +877,7 @@ void tracking_window::insertPicture()
             break;
         case 1:
             tipl::flip_y(reg_slice_ptr->picture);
+            tipl::flip_y(reg_slice_ptr->high_reso_picture);
             tipl::flip_y(reg_slice_ptr->source_images);
             tipl::swap_yz(reg_slice_ptr->source_images);
             std::swap(reg_slice_ptr->vs[1],reg_slice_ptr->vs[2]);
