@@ -276,7 +276,10 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         auto slice_view_toggled = [this](bool checked){
         if(checked)
             {
+                auto keep_dim = cur_dim;
+                cur_dim = 3; // disable updates
                 ui->SlicePos->setRange(0,current_slice->dim[cur_dim]-1);
+                cur_dim = keep_dim;
                 ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
                 glWidget->set_view(cur_dim);
                 glWidget->update();
