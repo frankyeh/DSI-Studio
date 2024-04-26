@@ -985,11 +985,11 @@
     <addaction name="actionCheck_all_tracts"/>
     <addaction name="actionUncheck_all_tracts"/>
     <addaction name="separator"/>
-    <addaction name="actionMerge_All"/>
+    <addaction name="actionSeparate_Deleted"/>
     <addaction name="actionCopyTrack"/>
+    <addaction name="actionMerge_All"/>
     <addaction name="actionDeleteTract"/>
     <addaction name="actionDeleteTractAll"/>
-    <addaction name="actionSeparate_Deleted"/>
     <addaction name="separator"/>
     <addaction name="actionEndpoints_to_seeding"/>
     <addaction name="actionTracts_to_seeds"/>
@@ -2803,7 +2803,7 @@ Tracking</string>
     <string>&amp;Delete</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Alt+X</string>
+    <string>Ctrl+Shift+D</string>
    </property>
   </action>
   <action name="actionDeleteTractAll">
@@ -3019,6 +3019,9 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Merge All</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+M</string>
    </property>
   </action>
   <action name="actionSave_Screen">
@@ -3288,6 +3291,9 @@ Tracking</string>
    <property name="text">
     <string>Copy Tracts</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+C</string>
+   </property>
   </action>
   <action name="actionSave_3D_screen_in_high_resolution">
    <property name="icon">
@@ -3546,6 +3552,9 @@ Tracking</string>
   <action name="actionSeparate_Deleted">
    <property name="text">
     <string>Separate Deleted Tracts</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+S</string>
    </property>
   </action>
   <action name="actionDeep_Learning_Train">
