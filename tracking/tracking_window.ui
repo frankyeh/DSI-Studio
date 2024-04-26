@@ -2803,7 +2803,7 @@ Tracking</string>
     <string>&amp;Delete</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Shift+D</string>
+    <string>Ctrl+Alt+D</string>
    </property>
   </action>
   <action name="actionDeleteTractAll">
@@ -3021,7 +3021,7 @@ Tracking</string>
     <string>Merge All</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Shift+M</string>
+    <string>Ctrl+Alt+M</string>
    </property>
   </action>
   <action name="actionSave_Screen">
@@ -3292,7 +3292,7 @@ Tracking</string>
     <string>Copy Tracts</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Shift+C</string>
+    <string>Ctrl+Alt+C</string>
    </property>
   </action>
   <action name="actionSave_3D_screen_in_high_resolution">
@@ -3554,7 +3554,7 @@ Tracking</string>
     <string>Separate Deleted Tracts</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Shift+S</string>
+    <string>Ctrl+Alt+S</string>
    </property>
   </action>
   <action name="actionDeep_Learning_Train">
