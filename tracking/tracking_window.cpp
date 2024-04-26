@@ -265,9 +265,10 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(&scene,&slice_view_scene::need_update,this,[this](void){slice_need_update = true;});
         connect(&scene,SIGNAL(need_update()),glWidget,SLOT(update()));
 
-        connect(ui->actionAxial_View,&QAction::triggered,this,[this](void){ui->glAxiView->setChecked(true);});
-        connect(ui->actionCoronal_View,&QAction::triggered,this,[this](void){ui->glCorView->setChecked(true);});
-        connect(ui->actionSagittal_view,&QAction::triggered,this,[this](void){ui->glSagView->setChecked(true);});
+
+        connect(ui->actionAxial_View,&QAction::triggered,this,[this](void){if(ui->glAxiView->isChecked()){glWidget->set_view(cur_dim);glWidget->update();}else ui->glAxiView->setChecked(true);});
+        connect(ui->actionCoronal_View,&QAction::triggered,this,[this](void){if(ui->glCorView->isChecked()){glWidget->set_view(cur_dim);glWidget->update();}else ui->glCorView->setChecked(true);});
+        connect(ui->actionSagittal_view,&QAction::triggered,this,[this](void){if(ui->glSagView->isChecked()){glWidget->set_view(cur_dim);glWidget->update();}else ui->glSagView->setChecked(true);});
 
         connect(ui->glSagView,qOverload<bool>(&QPushButton::toggled),this,[this](bool checked){if(checked)cur_dim = 0;});
         connect(ui->glCorView,qOverload<bool>(&QPushButton::toggled),this,[this](bool checked){if(checked)cur_dim = 1;});
@@ -287,6 +288,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 slice_need_update = true;
                 set_data("roi_layout",0);}
         };
+
         connect(ui->glSagView,&QPushButton::toggled,this,slice_view_toggled);
         connect(ui->glCorView,&QPushButton::toggled,this,slice_view_toggled);
         connect(ui->glAxiView,&QPushButton::toggled,this,slice_view_toggled);
