@@ -2305,6 +2305,7 @@ void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in)
     }
 }
 size_t match_volume(float volume);
+QImage read_qimage(QString filename,std::string& error);
 bool ImageModel::load_from_file(const char* dwi_file_name)
 {
     tipl::progress prog("open SRC file ",std::filesystem::path(dwi_file_name).filename().string().c_str());
@@ -2327,13 +2328,9 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     {
         tipl::image<2,unsigned char> raw;
         {
-            QImage fig;
-            tipl::out() << "load picture";
-            if(!fig.load(dwi_file_name))
-            {
-                error_msg = "Unsupported image format";
+            QImage fig = read_qimage(dwi_file_name,error_msg);
+            if(fig.isNull())
                 return false;
-            }
             tipl::out() << "converting to grayscale";
             int pixel_bytes = fig.bytesPerLine()/fig.width();
             raw.resize(tipl::shape<2>(uint32_t(fig.width()),uint32_t(fig.height())));
