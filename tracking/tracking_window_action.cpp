@@ -766,13 +766,9 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool cmd,bool
         timer2->start();
         check_reg();
     }
-    ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
     if(!cmd)
     {
         set_data("show_slice",Qt::Checked);
-        ui->glSagCheck->setChecked(true);
-        ui->glCorCheck->setChecked(true);
-        ui->glAxiCheck->setChecked(true);
         glWidget->update();
     }
     return true;
@@ -812,6 +808,8 @@ void tracking_window::on_addSlices_clicked()
     }
     else
         addSlices(filenames,QFileInfo(filenames[0]).baseName(),false);
+    ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
+
 }
 
 void tracking_window::on_actionInsert_MNI_images_triggered()
@@ -822,6 +820,7 @@ void tracking_window::on_actionInsert_MNI_images_triggered()
     if( filename.isEmpty() || !map_to_mni())
         return;
     addSlices(QStringList() << filename,QFileInfo(filename).baseName(),false,true);
+    ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
 }
 
 void tracking_window::insertPicture()
@@ -896,7 +895,6 @@ void tracking_window::insertPicture()
     reg_slice_ptr->update_transform();
 
     slice_need_update = true;
-    glWidget->update();
     if(QMessageBox::Yes == QMessageBox::question(this,"DSI Studio","Apply registration?",QMessageBox::No | QMessageBox::Yes))
     {
         reg_slice_ptr->run_registration();
@@ -912,6 +910,8 @@ void tracking_window::insertPicture()
     else
         QMessageBox::information(this,"DSI Studio","Press Ctrl+A and then hold LEFT/RIGHT button to MOVE/RESIZE slice close to the target before using [Slices][Adjust Mapping]");
 
+    ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
+    glWidget->update();
 
 }
 
