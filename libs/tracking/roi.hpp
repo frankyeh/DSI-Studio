@@ -251,7 +251,7 @@ public:
         return true;
     }
 public:
-    std::vector<tipl::vector<3,short> > atlas_seed,atlas_limiting,atlas_not_end,atlas_roi;
+    std::vector<tipl::vector<3,short> > atlas_seed,atlas_limiting,atlas_not_end,atlas_roi,atlas_roa;
     std::vector<std::vector<float> > selected_atlas_tracts;
     std::vector<unsigned int> selected_atlas_cluster;
 public:
