@@ -277,7 +277,7 @@ public:
 public:
     std::string t1w_template_file_name,t2w_template_file_name,wm_template_file_name,mask_template_file_name;
     std::string tractography_atlas_file_name;
-    std::shared_ptr<atlas> tractography_atlas_roi;
+    std::shared_ptr<atlas> tractography_atlas_roi,tractography_atlas_roa;
 public:
     std::vector<std::string> tractography_name_list;
     std::vector<std::string> get_tractography_all_levels(void);
