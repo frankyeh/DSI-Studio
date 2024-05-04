@@ -134,6 +134,27 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
                 setRegions(atlas_roi,roi_id,regions[i].c_str());
             }
     }
+    if(handle->tractography_atlas_roa.get())
+    {
+        tipl::out() << "checking additional ROA for refining tracking";
+        const auto& regions = handle->tractography_atlas_roa->get_list();
+        for(size_t i = 0;i < regions.size();++i)
+            if(tipl::contains_case_insensitive(tract_name,regions[i]))
+            {
+                if(!handle->get_atlas_roi(handle->tractography_atlas_roa,i,atlas_roa))
+                {
+                    tipl::out() << "cannot add ROA: " << regions[i] << " " << handle->error_msg;
+                    return false;
+                }
+                if(atlas_roa.empty())
+                {
+                    tipl::out() << "no region in the ROA. skipping";
+                    continue;
+                }
+                tipl::out() << "additional ROA added: " << regions[i];
+                setRegions(atlas_roa,roa_id,regions[i].c_str());
+            }
+    }
     {
         std::vector<std::vector<std::vector<float> > > selected_atlas_tracts_threads(std::thread::hardware_concurrency());
         std::vector<std::vector<unsigned int> > selected_atlas_cluster_threads(std::thread::hardware_concurrency());
