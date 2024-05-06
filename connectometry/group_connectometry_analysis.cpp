@@ -442,14 +442,13 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     {
         std::ostringstream out;
 
-        out << "\nDiffusion MRI connectometry (Yeh et al. NeuroImage 125 (2016): 162-171) was used to derive the correlational tractography that has ";
+        out << "\nCorrelational tractography (Yeh, et al. Neuroimage 245 (2021): 118651) was derived to visualize pathways that have ";
         if(handle->db.is_longitudinal)
             out << "a longitudinal change of ";
         out << index_name;
         if(model->study_feature)
             out << " correlated with " << foi_str;
         out << ".";
-
         {
             auto items = model->variables;
             items.erase(items.begin()); // remove longitudinal change
@@ -463,14 +462,14 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
                     out << ", and the effect of " << iterate_items(items) << " was removed using a multiple regression model.";
             }
         }
+        out << " The statistical significance of the correlation was examined using a permutation test (Yeh et al. NeuroImage 125 (2016): 162-171).";
 
         // report subject cohort
         out << model->cohort_report;
         out << " A total of " << model->selected_subject.size() << " subjects were included in the analysis.";
 
         // report other parameters
-        out << " A T-score threshold of " << t_threshold;
-        out << " was assigned and tracked using a deterministic fiber tracking algorithm (Yeh et al. PLoS ONE 8(11): e80713, 2013) to obtain correlational tractography.";
+        out << " A T-score threshold of " << t_threshold << " was assigned in the fiber tracking algorithm (Yeh et al. PLoS ONE 8(11): e80713, 2013).";
 
         if(!roi_mgr->report.empty())
             out << roi_mgr->report << std::endl;
