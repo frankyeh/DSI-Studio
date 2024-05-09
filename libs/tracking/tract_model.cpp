@@ -793,9 +793,13 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
     if (loaded_tract_data.empty())
         return false;
     if(loaded_tract_cluster.size() == loaded_tract_data.size())
+    {
+        tipl::out() << "cluster information loaded";
         loaded_tract_cluster.swap(tract_cluster);
+    }
     else
         tract_cluster.clear();
+
 
     // handle trans_to_mni differences
     {
@@ -820,6 +824,14 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
                     tract[i+2] = p[2];
                 }
             });
+            tipl::out() << "old dim:" << geo << " vs:" << vs;
+            geo[0] *= std::abs(T[0]);
+            geo[1] *= std::abs(T[5]);
+            geo[2] *= std::abs(T[10]);
+            vs[0] /= std::abs(T[0]);
+            vs[1] /= std::abs(T[5]);
+            vs[2] /= std::abs(T[10]);
+            tipl::out() << "new dim:" << geo << " vs:" << vs;
         };
 
         // two conditions to transform tracts
