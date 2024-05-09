@@ -48,6 +48,7 @@ private:
             fun(regions[roi_index]);
         }
     }
+public:
     std::vector<std::shared_ptr<ROIRegion> > get_checked_regions(void)
     {
         std::vector<std::shared_ptr<ROIRegion> > checked_regions;
