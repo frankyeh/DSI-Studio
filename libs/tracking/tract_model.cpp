@@ -1076,17 +1076,12 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     }
     return save_tracts_to_file((std::string(file_name_) + ".tt.gz").c_str());
 }
-void TractModel::save_vrml(const std::string& file_name,
-                           unsigned char tract_style,
-                           unsigned char tract_color_style,
-                           float tube_diameter,
-                           unsigned char tract_tube_detail,
-                           const std::string&)
+std::string TractModel::get_obj(unsigned int& coordinate_count,
+                         unsigned char tract_style,
+                         float tube_diameter,
+                         unsigned char tract_tube_detail)
 {
-    std::ofstream out(file_name.c_str());
     std::vector<tipl::vector<3,float> > points(8),previous_points(8);
-    tipl::rgb paint_color;
-    tipl::vector<3,float> assign_color;
 
     const float detail_option[] = {1.0,0.5,0.25,0.0,0.0};
     const unsigned char end_sequence[8] = {4,3,5,2,6,1,7,0};
@@ -1096,17 +1091,11 @@ void TractModel::save_vrml(const std::string& file_name,
 
 
     std::string coordinate,coordinate_index;
-    unsigned int coordinate_count = 0;
-    auto push_vertices = [&](const tipl::vector<3,float>& pos,const tipl::vector<3,float>& color)
+    auto push_vertices = [&](const tipl::vector<3,float>& pos)
     {
         coordinate.push_back('v');
         coordinate.push_back(' ');
         coordinate += std::to_string(pos[0]);
-        coordinate.pop_back();
-        coordinate.pop_back();
-        coordinate.pop_back();
-        coordinate.back() = ' ';
-        coordinate += std::to_string(pos[1]);
         coordinate.pop_back();
         coordinate.pop_back();
         coordinate.pop_back();
@@ -1116,22 +1105,13 @@ void TractModel::save_vrml(const std::string& file_name,
         coordinate.pop_back();
         coordinate.pop_back();
         coordinate.back() = ' ';
-        coordinate += std::to_string(color[0]);
-        coordinate.pop_back();
-        coordinate.pop_back();
-        coordinate.pop_back();
-        coordinate.back() = ' ';
-        coordinate += std::to_string(color[1]);
-        coordinate.pop_back();
-        coordinate.pop_back();
-        coordinate.pop_back();
-        coordinate.back() = ' ';
-        coordinate += std::to_string(color[2]);
+        coordinate += std::to_string(-pos[1]);
         coordinate.pop_back();
         coordinate.pop_back();
         coordinate.pop_back();
         coordinate.back() = '\n';
     };
+
     for (unsigned int data_index = 0; data_index < tract_data.size(); ++data_index)
     {
         unsigned int vertex_count = uint32_t(tract_data[data_index].size()/3);
@@ -1140,18 +1120,11 @@ void TractModel::save_vrml(const std::string& file_name,
 
         const float* data_iter = &tract_data[data_index][0];
 
-        switch(tract_color_style)
-        {
-        case 1:
-            paint_color = get_tract_color(data_index);
-            assign_color = tipl::vector<3,float>(paint_color.r,paint_color.g,paint_color.b);
-            assign_color /= 255.0;
-            break;
-        }
+
         unsigned int prev_coordinate_count = coordinate_count;
         tipl::vector<3,float> last_pos(data_iter),
                 vec_a(1,0,0),vec_b(0,1,0),
-                vec_n,prev_vec_n,vec_ab,vec_ba,cur_color;
+                vec_n,prev_vec_n,vec_ab,vec_ba;
 
         for (unsigned int j = 0, index = 0; index < vertex_count;j += 3, data_iter += 3, ++index)
         {
@@ -1163,19 +1136,6 @@ void TractModel::save_vrml(const std::string& file_name,
                 vec_n[2] = data_iter[5] - data_iter[2];
                 vec_n.normalize();
             }
-
-            switch(tract_color_style)
-            {
-            case 0://directional
-                cur_color[0] = std::fabs(vec_n[0]);
-                cur_color[1] = std::fabs(vec_n[1]);
-                cur_color[2] = std::fabs(vec_n[2]);
-                break;
-            case 1://manual assigned
-                cur_color = assign_color;
-                break;
-            }
-
             if (index != 0 && index+1 != vertex_count)
             {
                 tipl::vector<3,float> displacement(data_iter+3);
@@ -1187,7 +1147,7 @@ void TractModel::save_vrml(const std::string& file_name,
             // add end
             if(tract_style == 0)// line
             {
-                push_vertices(pos,cur_color);
+                push_vertices(pos);
                 prev_vec_n = vec_n;
                 last_pos = pos;
                 ++coordinate_count;
@@ -1229,27 +1189,27 @@ void TractModel::save_vrml(const std::string& file_name,
                 for (unsigned int k = 0;k < 8;++k)
                 {
                     tipl::vector<3,float> pos(points[end_sequence[k]][0],points[end_sequence[k]][1],points[end_sequence[k]][2]);
-                    push_vertices(pos,cur_color);
+                    push_vertices(pos);
                 }
                 coordinate_count+=8;
             }
             else
             // add tube
             {
-                push_vertices(points[0],cur_color);
+                push_vertices(points[0]);
                 for (unsigned int k = 1;k < 8;++k)
                 {
-                    push_vertices(previous_points[k],cur_color);
-                    push_vertices(points[k],cur_color);
+                    push_vertices(previous_points[k]);
+                    push_vertices(points[k]);
                 }
-                push_vertices(points[0],cur_color);
+                push_vertices(points[0]);
                 coordinate_count+=16;
                 if(index +1 == vertex_count)
                 {
                     for (unsigned int k = 0;k < 8;++k)
                     {
                         tipl::vector<3,float> pos(points[end_sequence2[k]][0],points[end_sequence2[k]][1],points[end_sequence2[k]][2]);
-                        push_vertices(pos,cur_color);
+                        push_vertices(pos);
                     }
                     coordinate_count+=8;
                 }
@@ -1282,9 +1242,7 @@ void TractModel::save_vrml(const std::string& file_name,
             k = (k ? 0 :1);
         }
     }
-    out << "g" << std::endl;
-    out << coordinate;
-    out << coordinate_index;
+    return coordinate+coordinate_index;
 }
 
 //---------------------------------------------------------------------------
