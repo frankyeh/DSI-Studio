@@ -971,8 +971,6 @@
      <addaction name="actionSave_End_Points_All_Tracts_As"/>
      <addaction name="actionSave_Endpoints_in_Current_Mapping"/>
      <addaction name="actionSave_Endpoints_in_MNI_Coordinates"/>
-     <addaction name="separator"/>
-     <addaction name="actionSave_VMRL"/>
     </widget>
     <addaction name="actionOpenTract"/>
     <addaction name="actionOpen_MNI_space_Tracts"/>
@@ -1059,6 +1057,7 @@
     <addaction name="actionSave_3D_screen_in_3_views"/>
     <addaction name="actionSave_3D_screen_in_high_resolution"/>
     <addaction name="actionSave_ROI_Screen"/>
+    <addaction name="actionSave_3D_Model"/>
     <addaction name="menuCopy_to_Clipboard"/>
     <addaction name="separator"/>
     <addaction name="actionAuto_Rotate"/>
@@ -3717,11 +3716,6 @@ Tracking</string>
     <string>Visualize Graph...</string>
    </property>
   </action>
-  <action name="actionKeep_Current_Slice">
-   <property name="text">
-    <string>Keep Current Slice on Top</string>
-   </property>
-  </action>
   <action name="actionOpen_MNI_Region">
    <property name="icon">
     <iconset resource="../icons.qrc">
@@ -4253,6 +4247,15 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Save MNI mapping...</string>
+   </property>
+  </action>
+  <action name="actionSave_3D_Model">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save 3D Model...</string>
    </property>
   </action>
  </widget>
