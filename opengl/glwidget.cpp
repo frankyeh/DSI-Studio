@@ -1065,9 +1065,9 @@ void GLWidget::renderLR()
                         auto center = cur_tracking_window.regionWidget->regions[i]->get_center();
                         glPushMatrix();
                         glTranslatef(center[0],center[1],center[2]);
-                        glColor4f(cur_region->region_render.color.r/255.0f,
-                                  cur_region->region_render.color.g/255.0f,
-                                  cur_region->region_render.color.b/255.0f,1.0f);
+                        glColor4f(cur_region->region_render->color.r/255.0f,
+                                  cur_region->region_render->color.g/255.0f,
+                                  cur_region->region_render->color.b/255.0f,1.0f);
                         gluSphere(RegionSpheres->get(),
                                   std::pow(cur_tracking_window.regionWidget->regions[get_param("region_constant_node_size") ? 0:i]->region.size(),1.0f/3.0f)
                                   *(get_param("region_node_size")+5)/50.0f,10,10);
@@ -1098,7 +1098,7 @@ void GLWidget::renderLR()
                 if(regionWidget->item(int(index),0)->checkState() == Qt::Checked &&
                    !regions[index]->region.empty())
                 {
-                    regions[index]->region_render.draw(
+                    regions[index]->region_render->draw(
                                cur_view,alpha,get_param("region_bend1"),get_param("region_bend2"));
                     region_visualized[index] = true;
                 }
@@ -1185,7 +1185,7 @@ void GLWidget::renderLR()
                     auto p = regions[i]->get_center();
                     if(p[0] == 0.0f && p[1] == 0.0f && p[2] == 0.0f)
                     {
-                        const auto& p2 = regions[i]->region_render.center;
+                        const auto& p2 = regions[i]->region_render->center;
                         tipl::vector<3> p3(p2);
                         renderText(p3[0],p3[1],p3[2],item->text(),font);
                     }

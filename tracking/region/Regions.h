@@ -31,20 +31,20 @@ public:
         bool is_diffusion_space = true;
         tipl::matrix<4,4> to_diffusion_space = tipl::identity_matrix();
 public: // rendering options
-        RegionRender region_render;
+        std::shared_ptr<RegionRender> region_render;
         unsigned char regions_feature = default_id;
         bool modified = true;
 public: // rendering options
         ROIRegion(std::shared_ptr<fib_data> handle):
-            dim(handle->dim),vs(handle->vs),trans_to_mni(handle->trans_to_mni),is_mni(handle->is_mni){}
-        ROIRegion(tipl::shape<3> dim_,tipl::vector<3> vs_):dim(dim_),vs(vs_)
+            dim(handle->dim),vs(handle->vs),trans_to_mni(handle->trans_to_mni),is_mni(handle->is_mni),region_render(new RegionRender){}
+        ROIRegion(tipl::shape<3> dim_,tipl::vector<3> vs_):dim(dim_),vs(vs_),region_render(new RegionRender)
         {
             initial_LPS_nifti_srow(trans_to_mni,dim,vs);
         }
         ROIRegion(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4>& trans_to_mni_)
-            :dim(dim_),vs(vs_),trans_to_mni(trans_to_mni_){}
+            :dim(dim_),vs(vs_),trans_to_mni(trans_to_mni_),region_render(new RegionRender){}
 
-        ROIRegion(const ROIRegion& rhs)
+        ROIRegion(const ROIRegion& rhs):region_render(new RegionRender)
         {
             (*this) = rhs;
         }
@@ -60,8 +60,8 @@ public: // rendering options
             undo_backup = rhs.undo_backup;
             redo_backup = rhs.redo_backup;
             regions_feature = rhs.regions_feature;
-            region_render.color = rhs.region_render.color;
-            region_render.alpha = rhs.region_render.alpha;
+            region_render->color = rhs.region_render->color;
+            region_render->alpha = rhs.region_render->alpha;
             modified = true;
             is_diffusion_space = rhs.is_diffusion_space;
             to_diffusion_space = rhs.to_diffusion_space;
