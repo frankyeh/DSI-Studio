@@ -785,25 +785,6 @@ void TractTableWidget::save_tracts_in_native(void)
         QMessageBox::critical(this,"Error","Cannot write to file. Please check write permission.");
 }
 
-void TractTableWidget::save_vrml_as(void)
-{
-    if(currentRow() >= int(tract_models.size()) || currentRow() < 0)
-        return;
-    QString filename;
-    filename = QFileDialog::getSaveFileName(
-                this,"Save tracts as",item(currentRow(),0)->text().replace(':','_') + ".obj",
-                 "3D files (*.obj);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    std::string surface_text;
-    std::string sfilename = filename.toStdString().c_str();
-    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-    tract_models[uint32_t(currentRow())]->save_vrml(&*sfilename.begin(),
-                                                cur_tracking_window["tract_style"].toInt(),
-                                                cur_tracking_window["tract_color_style"].toInt(),
-                                                cur_tracking_window["tube_diameter"].toFloat(),
-                                                cur_tracking_window["tract_tube_detail"].toInt(),surface_text);
-}
 void TractTableWidget::save_all_tracts_end_point_as(void)
 {
     auto selected_tracts = get_checked_tracks();
