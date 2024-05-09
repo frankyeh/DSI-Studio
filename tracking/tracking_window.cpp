@@ -58,6 +58,7 @@ void tracking_window::set_data(QString name, QVariant value)
 tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_handle) :
         QMainWindow(parent),ui(new Ui::tracking_window),scene(*this),handle(new_handle),work_path(QFileInfo(new_handle->fib_file_name.c_str()).absolutePath()+"/")
 {
+    setAcceptDrops(true);
     tipl::progress prog("initializing tracking GUI");
     tipl::out() << "initiate image/slices" << std::endl;
     fib_data& fib = *new_handle;
@@ -1227,7 +1228,30 @@ void tracking_window::on_actionSave_MNI_mapping_triggered()
 
 
 
+void tracking_window::dragEnterEvent(QDragEnterEvent *event)
+{
+    if(event->mimeData()->hasUrls())
+        event->acceptProposedAction();
+}
 
+void tracking_window::dropEvent(QDropEvent *event)
+{
+    event->acceptProposedAction();
+    QList<QUrl> droppedUrls = event->mimeData()->urls();
+    QStringList tracts,regions;
+    for(auto each : droppedUrls)
+    {
+        auto file_name = each.toLocalFile();
+        if(file_name.endsWith("tt.gz"))
+            tracts << file_name;
+        if(file_name.endsWith("nii.gz"))
+            regions << file_name;
+    }
+    if(!tracts.empty())
+        tractWidget->load_tracts(tracts);
+    if(!regions.empty() && !regionWidget->command("load_region",regions.join(",")))
+        QMessageBox::critical(this,"ERROR",regionWidget->error_msg.c_str());
+}
 
 
 
