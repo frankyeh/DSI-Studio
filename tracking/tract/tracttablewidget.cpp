@@ -563,7 +563,8 @@ void TractTableWidget::load_cluster_label(const std::vector<unsigned int>& label
     tract_rendering[cur_row]->need_update = true;
     delete_row(currentRow());
     unsigned int cluster_count = uint32_t(Names.empty() ? int(1+tipl::max_value(labels)):int(Names.count()));
-    for(unsigned int cluster_index = 0;cluster_index < cluster_count;++cluster_index)
+    tipl::progress prog("loading clusters");
+    for(unsigned int cluster_index = 0;prog(cluster_index,cluster_count);++cluster_index)
     {
         unsigned int fiber_num = uint32_t(std::count(labels.begin(),labels.end(),cluster_index));
         if(!fiber_num)
