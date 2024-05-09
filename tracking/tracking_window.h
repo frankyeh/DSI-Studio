@@ -56,6 +56,9 @@ public:
     TractTableWidget *tractWidget = nullptr;
     RenderingTableWidget *renderWidget = nullptr;
     DeviceTableWidget *deviceWidget = nullptr;
+
+    void dragEnterEvent(QDragEnterEvent *event);
+    void dropEvent(QDropEvent *event);
 public:
     slice_view_scene scene;
     bool slice_need_update = false;
