@@ -1107,17 +1107,17 @@ std::string TractModel::get_obj(unsigned int& coordinate_count,
     {
         coordinate.push_back('v');
         coordinate.push_back(' ');
-        coordinate += std::to_string(pos[0]);
+        coordinate += std::to_string(pos[0]*vs[0]);
         coordinate.pop_back();
         coordinate.pop_back();
         coordinate.pop_back();
         coordinate.back() = ' ';
-        coordinate += std::to_string(pos[2]);
+        coordinate += std::to_string(pos[2]*vs[2]);
         coordinate.pop_back();
         coordinate.pop_back();
         coordinate.pop_back();
         coordinate.back() = ' ';
-        coordinate += std::to_string(-pos[1]);
+        coordinate += std::to_string(-pos[1]*vs[1]);
         coordinate.pop_back();
         coordinate.pop_back();
         coordinate.pop_back();
