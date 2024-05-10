@@ -1546,6 +1546,9 @@ void tracking_window::on_actionSave_3D_Model_triggered()
                 this,"Save tracts as",QFileInfo(windowTitle()).baseName()+".model.obj","3D files (*.obj);;All files (*)");
     if(filename.isEmpty())
         return;
+    tipl::progress prog("exporting models",true);
+    size_t total_prog = 3 + tracts.size() + regions.size()+1;
+    size_t cur_prog = 0;
     std::ofstream out(filename.toStdString()),mtl(filename.toStdString()+".mtl");
     out << "mtllib " << QFileInfo(filename).fileName().toStdString() << ".mtl" << std::endl;
     out << "g" << std::endl;
@@ -1556,7 +1559,7 @@ void tracking_window::on_actionSave_3D_Model_triggered()
     if ((*this)["show_slice"].toInt())
     {
 
-        for(size_t dim = 0;dim < 3;++dim)
+        for(size_t dim = 0;dim < 3 && prog(cur_prog++,total_prog);++dim)
         {
             if(!current_slice->slice_visible[dim])
                 continue;
@@ -1583,6 +1586,9 @@ void tracking_window::on_actionSave_3D_Model_triggered()
                 current_slice->get_slice_positions(dim,points);
                 for(size_t i = 0;i < 4;++i)
                 {
+                    points[i][0] *= handle->vs[0];
+                    points[i][1] *= handle->vs[1];
+                    points[i][2] *= handle->vs[2];
                     points[i][1] = -points[i][1];
                     std::swap(points[i][1],points[i][2]);
                     out << "v " << points[i] << std::endl;
@@ -1613,26 +1619,36 @@ void tracking_window::on_actionSave_3D_Model_triggered()
     size_t tract_count = 0;
     for(auto& each_tract : tracts)
     {
+        if(!prog(cur_prog++,total_prog))
+            break;
         if(each_tract->get_tracts().empty())
             continue;
         push_mtl(each_tract->get_tract_color(0),(*this)["tract_alpha"].toFloat(),"tract",tract_count++);
         out << each_tract->get_obj(coordinate_count,1/*tube*/,(*this)["tube_diameter"].toFloat(),0/*coarse*/) << std::endl;
     }
+    if(prog.aborted())
+        return;
     size_t render_count = 0;
     float region_alpha = (*this)["region_alpha"].toFloat();
     for(auto& each_region : regions)
     {
+        if(!prog(cur_prog++,total_prog))
+            break;
         if(each_region->region_render->object->point_list.empty())
             continue;
         push_mtl(each_region->region_render->color,float(each_region->region_render->color.a)/255.0f*region_alpha,"region",render_count++);
-        out << each_region->region_render->get_obj(coordinate_count) << std::endl;
+        out << each_region->region_render->get_obj(coordinate_count,handle->vs) << std::endl;
     }
+    if(prog.aborted())
+        return;
 
     if (glWidget->surface.get() && (*this)["show_surface"].toInt())
     {
         push_mtl(glWidget->surface->color,(*this)["surface_alpha"].toFloat(),"surface",0);
-        out << glWidget->surface->get_obj(coordinate_count) << std::endl;
+        out << glWidget->surface->get_obj(coordinate_count,handle->vs) << std::endl;
     }
+    if(prog.aborted())
+        return;
     QMessageBox::information(this,"DSI Studio","File Saved");
 }
 
