@@ -130,24 +130,24 @@ void RegionRender::transform_point_list(const tipl::matrix<4,4>& T)
         point_list[i].to(T);
     });
 }
-std::string RegionRender::get_obj(unsigned int& coordinate_count)
+std::string RegionRender::get_obj(unsigned int& coordinate_count,tipl::vector<3> vs)
 {
     std::string output;
     for(auto& pos : object->point_list)
     {
         output.push_back('v');
         output.push_back(' ');
-        output += std::to_string(pos[0]);
+        output += std::to_string(pos[0]*vs[0]);
         output.pop_back();
         output.pop_back();
         output.pop_back();
         output.back() = ' ';
-        output += std::to_string(pos[2]);
+        output += std::to_string(pos[2]*vs[2]);
         output.pop_back();
         output.pop_back();
         output.pop_back();
         output.back() = ' ';
-        output += std::to_string(-pos[1]);
+        output += std::to_string(-pos[1]*vs[1]);
         output.pop_back();
         output.pop_back();
         output.pop_back();
