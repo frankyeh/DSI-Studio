@@ -1076,6 +1076,13 @@ bool fib_data::set_dt_index(const std::pair<int,int>& pair,size_t type)
             for(size_t k = 0;k < I.size();++k)
                 if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
                     K[k] = I[k]-J[k];
+        case 3: // m1/max(m1)
+            {
+                float max_v = tipl::max_value(I);
+                if(max_v > 0.0f)
+                    for(size_t k = 0;k < I.size();++k)
+                        K[k] = I[k]/max_v;
+            }
         break;
     }
 
