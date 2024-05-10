@@ -577,9 +577,9 @@ void TractTableWidget::load_cluster_label(const std::vector<unsigned int>& label
                 ++i;
             }
         if(int(cluster_index) < Names.size())
-            addNewTracts(Names[int(cluster_index)],false);
+            addNewTracts(Names[int(cluster_index)],true);
         else
-            addNewTracts(QString("cluster")+QString::number(cluster_index),false);
+            addNewTracts(QString("cluster")+QString::number(cluster_index),true);
         tract_models.back()->add_tracts(add_tracts);
         tract_models.back()->report = tract_models[cur_row]->report;
         tract_models.back()->geo = tract_models[cur_row]->geo;
