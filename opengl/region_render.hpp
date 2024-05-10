@@ -18,7 +18,6 @@ public:
         std::shared_ptr<tipl::march_cube> object;
         tipl::vector<3,float> center;
 public:
-        float alpha = 0.6f;
         tipl::rgb color = uint32_t(0xFFFFFFFF);
 
 public:
@@ -26,7 +25,6 @@ public:
         void swap(RegionRender& rhs) {
             std::swap(object,rhs.object);
             std::swap(center,rhs.center);
-            std::swap(alpha,rhs.alpha);
             std::swap(color,rhs.color);
         }
         const RegionRender& operator = (const RegionRender & rhs) = delete;
