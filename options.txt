@@ -50,7 +50,7 @@ Slice/Opacity/slice_alpha/float:0:1:0.1:2/1
 Slice/Mag Filter/slice_mag_filter/NEAREST:LINEAR/1
 Slice/Smoothing/slice_smoothing/Off:On/0
 Slice/Match Background Color/slice_match_bkcolor/Off:On/0/Modify slice background color and match it with that of the 3D background
-Slice/Blend Func1/slice_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/4
+Slice/Blend Func1/slice_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/2
 Slice/Blend Func2/slice_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
 Tract/Opacity/tract_alpha/float:0:1:0.1:2/1
 Tract/Style/tract_style/Line:Tube:End:End1:End2/1
