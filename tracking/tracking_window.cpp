@@ -1238,14 +1238,25 @@ void tracking_window::dropEvent(QDropEvent *event)
 {
     event->acceptProposedAction();
     QList<QUrl> droppedUrls = event->mimeData()->urls();
-    QStringList tracts,regions;
+    QStringList tracts,regions,slices;
     for(auto each : droppedUrls)
     {
         auto file_name = each.toLocalFile();
         if(file_name.endsWith("tt.gz"))
             tracts << file_name;
-        if(file_name.endsWith("nii.gz"))
-            regions << file_name;
+        if(file_name.endsWith("nii.gz") || file_name.endsWith("nii"))
+        {
+            tipl::io::gz_nifti nii;
+            if(nii.load_from_file(file_name.toStdString()))
+            {
+                tipl::image<3> I;
+                nii >> I;
+                if(tipl::is_label_image(I))
+                    regions << file_name;
+                else
+                    command("add_slice",file_name);
+            }
+        }
     }
     if(!tracts.empty())
         tractWidget->load_tracts(tracts);
