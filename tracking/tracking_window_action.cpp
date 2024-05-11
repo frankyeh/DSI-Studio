@@ -395,7 +395,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "add_slice")
     {
-        if(!addSlices(QStringList() << param,param,true))
+        if(!addSlices(QStringList() << param,QFileInfo(param).baseName(),true))
         {
             error_msg = "cannot add slice ";
             error_msg += param.toStdString();
