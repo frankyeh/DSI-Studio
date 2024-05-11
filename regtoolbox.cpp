@@ -512,35 +512,66 @@ bool apply_warping(const char* from,
                    std::string& error)
 {
     tipl::out() << "apply warping to " << from << std::endl;
-    tipl::image<3> I3;
-    tipl::matrix<4,4> T;
-    tipl::vector<3> vs;
-    bool is_mni;
-    if(!load_nifti_file(from,I3,vs,T,is_mni))
+
+    tipl::io::gz_nifti nii;
+    if(!nii.load_from_file(from))
+    {
+        error = nii.error_msg;
         return false;
+    }
+    if(nii.dim(4) > 1)
+    {
+        // check data range
+        std::vector<tipl::image<3> > I(nii.dim(4));
+        for(unsigned int index = 0;index < nii.dim(4);++index)
+        {
+            if(!nii.toLPS(I[index]))
+            {
+                error = "failed to parse 4D NIFTI file";
+                return false;
+            }
+            std::replace_if(I[index].begin(),I[index].end(),[](float v){return std::isnan(v) || std::isinf(v) || v < 0.0f;},0.0f);
+        }
+        if(I_shape != I[0].shape())
+        {
+            error = std::filesystem::path(from).filename().string();
+            error += " has an image size or srow matrix from that of the original --from image.";
+            return false;
+        }
+        bool is_label = tipl::is_label_image(I[0]);
+        tipl::out() << (is_label ? "processed as labels using nearest assignment" : "processed as values using interpolation") << std::endl;
+        tipl::image<4> J(to2from.shape().expand(nii.dim(4)));
+        for(size_t i = 0;i < nii.dim(4);++i)
+        {
+            auto J_slice = J.slice_at(i);
+            if(is_label)
+                tipl::compose_mapping<tipl::interpolation::nearest>(I[i],to2from,J_slice);
+            else
+                tipl::compose_mapping<tipl::interpolation::cubic>(I[i],to2from,J_slice);
+        }
+        if(!tipl::io::gz_nifti::save_to_file(to,J,Itvs,ItR,It_is_mni))
+        {
+            error = "cannot write to file ";
+            error += to;
+            return false;
+        }
+        return true;
+    }
 
+    tipl::image<3> I3;
+    if(!nii.toLPS(I3))
+    {
+        error = nii.error_msg;
+        return false;
+    }
     bool is_label = tipl::is_label_image(I3);
-    if(is_label)
-        tipl::out() << std::filesystem::path(from).filename() << " is a ROI file. Use nearest neighbor for estimation.";
-    else
-        tipl::out() << std::filesystem::path(from).filename() << " is not a ROI file. Use linear interpolation for estimation.";
+    tipl::out() << (is_label ? "processed as labels using nearest assignment" : "processed as values using interpolation") << std::endl;
 
-    if(I_shape != I3.shape() || IR != T)
+    if(I_shape != I3.shape())
     {
         error = std::filesystem::path(from).filename().string();
         error += " has an image size or srow matrix from that of the original --from image.";
         return false;
-        /*
-        tipl::image<3> I3_(I_shape);
-        if(!T.inv())
-            return false;
-        T *= IR;
-        if(is_label)
-            tipl::resample_mt<tipl::interpolation::nearest>(I3,I3_,T);
-        else
-            tipl::resample_mt<tipl::interpolation::cubic>(I3,I3_,T);
-        I3_.swap(I3);
-        */
     }
 
     tipl::image<3> J3;
