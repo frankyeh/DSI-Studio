@@ -431,6 +431,26 @@ void connectometry_db::sample_from_image(tipl::const_pointer_image<3,float> I,
         data[si] = J[si2vi[si]];
     });
 }
+void connectometry_db::add(float subject_R2,std::vector<float>& data,
+                           const std::string& subject_name)
+{
+    // remove negative values due to interpolation
+    tipl::lower_threshold(data,0.0f);
+    // normalize QA
+    if(index_name == "qa" || index_name == "nqa" || index_name.empty())
+    {
+        float m = tipl::max_value(data);
+        if(m != 1.0f && m != 0.0f)
+            tipl::multiply_constant(data,1.0f/m);
+    }
+    R2.push_back(subject_R2);
+    subject_qa_length = std::min<size_t>(subject_qa_length,data.size());
+    subject_qa_buf.push_back(std::move(data));
+    subject_qa.push_back(&(subject_qa_buf.back()[0]));
+    subject_names.push_back(subject_name);
+    num_subjects++;
+    modified = true;
+}
 bool connectometry_db::add(const std::string& file_name,
                                          const std::string& subject_name)
 {
@@ -439,16 +459,36 @@ bool connectometry_db::add(const std::string& file_name,
     float subject_R2 = 1.0f;
     if(tipl::ends_with(file_name,".nii") || tipl::ends_with(file_name,".nii.gz"))
     {
-        tipl::vector<3> vs;
         tipl::image<3> I;
         tipl::matrix<4,4> trans;
-        if(!tipl::io::gz_nifti::load_from_file(file_name.c_str(),I,vs,trans))
+        tipl::io::gz_nifti nii;
+        if(!nii.load_from_file(file_name))
         {
             error_msg = "Cannot read file ";
             error_msg += file_name;
             return false;
         }
-        sample_from_image(I.alias(),trans,data);
+        nii.get_image_transformation(trans);
+        if(nii.dim(4) > 1)
+        {
+            for(size_t i = 0;prog(i,nii.dim(4));++i)
+            {
+                nii >> I;
+                sample_from_image(I.alias(),trans,data);
+                add(subject_R2,data,subject_name+std::to_string(i));
+            }
+            if(prog.aborted())
+            {
+                error_msg = "aborted";
+                return false;
+            }
+            return true;
+        }
+        else
+        {
+            nii >> I;
+            sample_from_image(I.alias(),trans,data);
+        }
     }
     else
     {
@@ -550,17 +590,6 @@ bool connectometry_db::add(const std::string& file_name,
             }
         }
     }
-    // remove negative values due to interpolation
-    tipl::lower_threshold(data,0.0f);
-
-    // normalize QA
-    if(index_name == "qa" || index_name == "nqa" || index_name.empty())
-    {
-        float m = tipl::max_value(data);
-        if(m != 1.0f && m != 0.0f)
-            tipl::multiply_constant(data,1.0f/m);
-    }
-
     if(data.empty())
     {
         error_msg = "failed to sample ";
@@ -569,19 +598,12 @@ bool connectometry_db::add(const std::string& file_name,
         error_msg += file_name;
         return false;
     }
-
-    R2.push_back(subject_R2);
-    subject_qa_length = std::min<size_t>(subject_qa_length,data.size());
-    subject_qa_buf.push_back(std::move(data));
-    subject_qa.push_back(&(subject_qa_buf.back()[0]));
-    subject_names.push_back(subject_name);
-    num_subjects++;
-    modified = true;
     if(prog.aborted())
     {
         error_msg = "aborted";
         return false;
     }
+    add(subject_R2,data,subject_name);
     return true;
 }
 
