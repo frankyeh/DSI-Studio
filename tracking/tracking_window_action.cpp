@@ -834,7 +834,8 @@ void tracking_window::insertPicture()
         cur_dim = 1;
     if(action->text().contains("Axial"))
         cur_dim = 2;
-    glWidget->set_view(cur_dim);
+
+
     float location = 0;
     switch(cur_dim)
     {
@@ -861,6 +862,7 @@ void tracking_window::insertPicture()
     if(reg_slice_ptr == nullptr)
         return;
 
+    glWidget->set_view(cur_dim);
     switch(cur_dim)
     {
         case 0:
@@ -873,6 +875,9 @@ void tracking_window::insertPicture()
             reg_slice_ptr->update_image();
             reg_slice_ptr->arg_min.rotation[1] = 0.0f;
             reg_slice_ptr->arg_min.translocation[0] = location;
+            ui->glSagCheck->setChecked(true);
+            ui->glCorCheck->setChecked(false);
+            ui->glAxiCheck->setChecked(false);
             break;
         case 1:
             tipl::flip_y(reg_slice_ptr->picture);
@@ -883,10 +888,16 @@ void tracking_window::insertPicture()
             reg_slice_ptr->update_image();
             reg_slice_ptr->arg_min.rotation[1] = 0.0f;
             reg_slice_ptr->arg_min.translocation[1] = location;
+            ui->glSagCheck->setChecked(false);
+            ui->glCorCheck->setChecked(true);
+            ui->glAxiCheck->setChecked(false);
             break;
         case 2:
             reg_slice_ptr->arg_min.rotation[1] = 3.1415926f;
             reg_slice_ptr->arg_min.translocation[2] = location;
+            ui->glSagCheck->setChecked(false);
+            ui->glCorCheck->setChecked(false);
+            ui->glAxiCheck->setChecked(true);
             break;
     }
     handle->view_item.back().set_image(reg_slice_ptr->source_images.alias());
