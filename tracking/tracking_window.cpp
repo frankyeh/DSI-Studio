@@ -1254,7 +1254,10 @@ void tracking_window::dropEvent(QDropEvent *event)
                 if(tipl::is_label_image(I))
                     regions << file_name;
                 else
-                    command("add_slice",file_name);
+                {
+                    addSlices(QStringList(file_name),QFileInfo(file_name).baseName(),true);
+                    ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
+                }
             }
         }
     }
