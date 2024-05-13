@@ -1040,7 +1040,8 @@ bool parse_dwi(QStringList file_list,
         tipl::out()  << "handled as multiple single slice DWI";
         return load_multiple_slice_dicom(file_list,dwi_files);
     }
-    src_error_msg = "data are not a complete set of diffusion images";
+    src_error_msg = "data are structure image or not a complete set of diffusion images";
+    tipl::out() << src_error_msg;
     return false;
 }
 bool parse_dwi(const std::vector<std::string>& file_list,
