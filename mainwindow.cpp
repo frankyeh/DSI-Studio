@@ -1101,8 +1101,6 @@ bool dcm2src_and_nii(QStringList files)
     std::vector<std::shared_ptr<DwiHeader> > dicom_files;
     if(!parse_dwi(files,dicom_files))
     {
-        if(src_error_msg.find("structure images") == std::string::npos)
-            return false;
         tipl::out() << "handled as structure images";
         std::sort(files.begin(),files.end(),compare_qstring());
         tipl::io::dicom_volume v;
