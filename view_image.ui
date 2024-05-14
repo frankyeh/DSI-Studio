@@ -467,9 +467,12 @@
     <addaction name="actionIntensity_scale"/>
     <addaction name="actionSelect_Value"/>
     <addaction name="actionEquation"/>
+    <addaction name="separator"/>
     <addaction name="actionNormalize_Intensity"/>
+    <addaction name="actionNormalize_Median"/>
     <addaction name="separator"/>
     <addaction name="actionThreshold"/>
+    <addaction name="actionOtsu_Threshold"/>
     <addaction name="actionUpper_Threshold"/>
     <addaction name="actionLower_threshold"/>
     <addaction name="separator"/>
@@ -1004,6 +1007,25 @@
    </property>
    <property name="statusTip">
     <string>0</string>
+   </property>
+  </action>
+  <action name="actionNormalize_Median">
+   <property name="text">
+    <string>Normalize Otsu Median</string>
+   </property>
+   <property name="toolTip">
+    <string>Scale the intensity so that its above otsu median is 0.5</string>
+   </property>
+  </action>
+  <action name="actionOtsu_Threshold">
+   <property name="text">
+    <string>Otsu Threshold...</string>
+   </property>
+   <property name="toolTip">
+    <string>Binarize the image using otsu threshold</string>
+   </property>
+   <property name="statusTip">
+    <string>1.0</string>
    </property>
   </action>
  </widget>
