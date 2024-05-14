@@ -168,11 +168,13 @@ bool view_image::command(std::string cmd,std::string param1)
             read_4d_at(old_4d_index);
         }
 
-        if(cmd =="change_type")
+        if(cmd =="change_type" || ((cmd == "normalize" || cmd == "normalize_otsu_median") && pixel_type != float32))
         {
-            auto new_type = decltype(pixel_type)(std::stoi(param1));
+            auto new_type = (cmd =="change_type" ? decltype(pixel_type)(std::stoi(param1)) : float32);
             if(pixel_type != new_type)
             {
+                if(new_type == int8 && pixel_type == float32 && ui->max->maximum() <= 1.0f)
+                    tipl::multiply_constant_mt(I_float32,255.99f);
                 if(!buf4d.empty())
                 {
                     // return image buffer to the 4d buffer
@@ -199,7 +201,11 @@ bool view_image::command(std::string cmd,std::string param1)
                 else
                     change_type(new_type);
             }
-            goto end_command;
+            no_update = true;
+            ui->type->setCurrentIndex(new_type);
+            no_update = false;
+            if(cmd =="change_type")
+                goto end_command;
         }
 
         if(cmd == "reshape")
