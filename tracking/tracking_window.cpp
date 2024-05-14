@@ -1121,7 +1121,6 @@ float tracking_window::get_fa_threshold(void)
     return threshold;
 }
 
-
 void tracking_window::on_SliceModality_currentIndexChanged(int index)
 {
     if(index == -1 || !current_slice.get())
@@ -1154,27 +1153,37 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     ui->glCorBox->setRange(0,int(current_slice->dim[1]-1));
     ui->glAxiBox->setRange(0,int(current_slice->dim[2]-1));
 
-    std::pair<float,float> range = current_slice->get_value_range();
-    std::pair<float,float> contrast_range = current_slice->get_contrast_range();
-    std::pair<unsigned int,unsigned int> contrast_color = current_slice->get_contrast_color();
-    float r = range.second-range.first;
-    float step = r/20.0f;
-    ui->min_value_gl->setMinimum(double(range.first-r));
-    ui->min_value_gl->setMaximum(double(range.second));
-    ui->min_value_gl->setSingleStep(double(step));
-    ui->min_color_gl->setColor(contrast_color.first);
+    // update contrast color
+    {
+        std::pair<unsigned int,unsigned int> contrast_color = current_slice->get_contrast_color();
+        ui->min_color_gl->setColor(contrast_color.first);
+        ui->max_color_gl->setColor(contrast_color.second);
+    }
 
-    ui->max_value_gl->setMinimum(double(range.first));
-    ui->max_value_gl->setMaximum(double(range.second+r));
-    ui->max_value_gl->setSingleStep(double(step));
-    ui->max_color_gl->setColor(contrast_color.second);
+    // setting up ranges
+    {
+        std::pair<float,float> range = current_slice->get_value_range();
+        float r = range.second-range.first;
+        float step = r/20.0f;
+        ui->min_value_gl->setMinimum(double(range.first-r*0.2f));
+        ui->min_value_gl->setMaximum(double(range.second));
+        ui->min_value_gl->setSingleStep(double(step));
+        ui->max_value_gl->setMinimum(double(range.first));
+        ui->max_value_gl->setMaximum(double(range.second+r*0.2f));
+        ui->max_value_gl->setSingleStep(double(step));
+        ui->draw_threshold->setValue(0.0);
+        ui->draw_threshold->setMaximum(range.second);
+        ui->draw_threshold->setSingleStep(range.second/50.0);
+    }
 
-    ui->min_value_gl->setValue(double(contrast_range.first));
-    ui->max_value_gl->setValue(double(contrast_range.second));
-
-    ui->draw_threshold->setValue(0.0);
-    ui->draw_threshold->setMaximum(range.second);
-    ui->draw_threshold->setSingleStep(range.second/50.0);
+    // setupping values
+    {
+        std::pair<float,float> contrast_range = current_slice->get_contrast_range();
+        ui->min_value_gl->setValue(double(contrast_range.first));
+        ui->max_value_gl->setValue(double(contrast_range.second));
+        ui->min_slider->setValue(int((contrast_range.first-ui->min_value_gl->minimum())*double(ui->min_slider->maximum())/(ui->min_value_gl->maximum()-ui->min_value_gl->minimum())));
+        ui->max_slider->setValue(int((contrast_range.second-ui->max_value_gl->minimum())*double(ui->max_slider->maximum())/(ui->max_value_gl->maximum()-ui->max_value_gl->minimum())));
+    }
 
     if(!current_slice->is_diffusion_space)
         slice_position.to(current_slice->to_slice);
