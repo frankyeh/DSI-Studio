@@ -496,7 +496,6 @@ bool fib_data::load_from_file(const char* file_name)
         else
         {
             header.toLPS(I);
-            tipl::normalize(I);
             header.get_voxel_size(vs);
             header.get_image_transformation(trans_to_mni);
             is_mni = QFileInfo(file_name).fileName().toLower().contains("mni");
@@ -542,6 +541,7 @@ bool fib_data::load_from_file(const char* file_name)
         load_from_mat();
         dir.index_name[0] = "image";
         view_item[0].name = "image";
+        view_item[0].max_value = 0.0;// this allows calculating the min and max contrast
         trackable = false;
         tipl::out() << "image file loaded" << std::endl;
         return true;
