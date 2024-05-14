@@ -165,7 +165,7 @@ public:
         image_data(tipl::make_image(pointer,dim_)),name(name_)
     {
         T.identity();iT.identity();
-        if(name.back() == 'a') // e.g., fa, qa
+        if(name == "dti_fa" || name == "qa") // e.g., fa, qa
         {
             contrast_min = min_value = 0.0f;
             contrast_max = max_value = 1.0f;
@@ -175,7 +175,7 @@ public:
         image_data(tipl::make_image((const float*)nullptr,dim_)),mat_reader(mat_reader_),image_index(index_),name(name_)
     {
         T.identity();iT.identity();
-        if(name.back() == 'a') // e.g., fa, qa
+        if(name == "dti_fa" || name == "qa") // e.g., fa, qa
         {
             contrast_min = min_value = 0.0f;
             contrast_max = max_value = 1.0f;
@@ -211,6 +211,8 @@ public:
         auto result = tipl::minmax_value_mt(I.begin(),I.end());
         contrast_min = min_value = result.first;
         contrast_max = max_value = result.second;
+        if(I.size() < 256*256*256)
+            contrast_max = min_value+(tipl::segmentation::otsu_median(I)-min_value)*2.0f;
         v2c.set_range(contrast_min,contrast_max);
         v2c.two_color(min_color,max_color);
     }
