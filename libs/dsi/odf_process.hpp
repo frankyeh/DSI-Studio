@@ -447,7 +447,7 @@ public:
         if(voxel.needs("gfa"))
             gfa = std::vector<float>(dim.size());
         iso = std::vector<float>(dim.size());
-        if(voxel.needs("rdi") && voxel.shell.size() > 1)
+        if(voxel.needs("rdi"))
         {
             float sigma = voxel.param[0]; //optimal 1.24
             for(float L = 0.2f;L <= sigma;L+= 0.2f)
