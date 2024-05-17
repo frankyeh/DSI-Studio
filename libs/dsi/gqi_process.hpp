@@ -307,7 +307,7 @@ private:
 public:
     virtual bool needed(Voxel& voxel)
     {
-        return voxel.needs("rdi") && voxel.shell.size() > 1;
+        return voxel.needs("rdi");
     }
     virtual void init(Voxel& voxel)
     {
