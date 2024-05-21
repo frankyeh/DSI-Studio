@@ -925,7 +925,9 @@ bool view_image::open(QStringList file_names_)
             info = info_.c_str();
         }
         else
-            if(QString(file_name).endsWith(".mat") || QString(file_name).endsWith("fib.gz") || QString(file_name).endsWith("src.gz"))
+            if(QString(file_name).endsWith(".mat") ||
+               QString(file_name).endsWith("fib.gz") ||
+               QString(file_name).endsWith("src.gz"))
             {
                 if(!mat.load_from_file(file_name.toStdString().c_str()))
                 {
