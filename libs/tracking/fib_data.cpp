@@ -543,7 +543,7 @@ bool fib_data::load_from_file(const char* file_name)
         view_item[0].name = "image";
         view_item[0].max_value = 0.0;// this allows calculating the min and max contrast
         trackable = false;
-        tipl::out() << "image file loaded" << std::endl;
+        tipl::out() << "image file loaded: " << I.shape() << std::endl;
         return true;
     }
     if(!QFileInfo(file_name).exists())
@@ -1747,7 +1747,10 @@ bool fib_data::map_to_mni(bool background)
         T = has_manual_atlas ? manual_template_T :
                                linear_with_mi(It,template_vs,Is,vs,tipl::reg::affine,terminated);
         if(terminated)
+        {
+            prog = 6;
             return;
+        }
         prog = 2;
         tipl::image<3> Iss(It.shape());
         tipl::resample_mt(Is,Iss,T);
@@ -1798,13 +1801,24 @@ bool fib_data::map_to_mni(bool background)
 
         tipl::displacement_to_mapping(dis,t2s,T);
         tipl::compose_mapping(Is,t2s,Iss);
-        tipl::out() << "R2: " << tipl::correlation(Iss.begin(),Iss.end(),It.begin()) << std::endl;
+        auto R2 = tipl::correlation(Iss.begin(),Iss.end(),It.begin());
+        tipl::out() << "R2: " << R2 << std::endl;
+
+        if(R2 < 0.2f)
+        {
+            error_msg = "cannot perform normalization";
+            terminated = true;
+        }
+        if(terminated)
+        {
+            prog = 6;
+            return;
+        }
 
         s2t.resize(dim);
         tipl::inv_displacement_to_mapping(inv_dis,s2t,T);
 
-        if(terminated)
-            return;
+
         prog = 5;
         constexpr int method_ver = 202308; // 999999 is for external loading mapping
         if(!save_mapping(output_file_name.c_str(),method_ver))
@@ -1823,14 +1837,12 @@ bool fib_data::map_to_mni(bool background)
             terminated = true;
         }
         t.join();
-        return !prog_.aborted();
+        return !terminated;
     }
-    else
-    {
-        tipl::out() << "Subject normalization to MNI space." << std::endl;
-        lambda();
-    }
-    return true;
+
+    tipl::out() << "Subject normalization to MNI space." << std::endl;
+    lambda();
+    return !terminated;
 }
 bool fib_data::load_mapping(const char* file_name,bool external)
 {
