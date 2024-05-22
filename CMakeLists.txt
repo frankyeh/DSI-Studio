@@ -85,6 +85,7 @@ set(DSI_STUDIO_HEADERS mainwindow.h
     libs/dsi/hist_process.hpp
     xnat_dialog.h
     console.h
+    cmd/img.hpp
     reg.hpp)
 
 set(DSI_STUDIO_FORMS mainwindow.ui
@@ -135,6 +136,7 @@ set(DSI_STUDIO_SOURCES
     cmd/trk.cpp
     cmd/rec.cpp
     cmd/src.cpp
+    cmd/img.cpp
     libs/mapping/atlas.cpp
     cmd/ana.cpp
     view_image.cpp
