@@ -1,6 +1,7 @@
 #include <QBuffer>
 #include <QImageReader>
 #include <QFile>
+#include <QTextStream>
 #include "img.hpp"
 std::map<std::string,std::string> dicom_dictionary;
 
