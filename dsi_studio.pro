@@ -82,6 +82,7 @@ HEADERS += mainwindow.h \
     tracking/device.h \
     tracking/devicetablewidget.h \
     libs/dsi/hist_process.hpp \
+    cmd/img.hpp \
     xnat_dialog.h
 
 FORMS += mainwindow.ui \
@@ -166,6 +167,7 @@ SOURCES += main.cpp \
     tracking/device.cpp \
     tracking/devicetablewidget.cpp \
     cmd/xnat.cpp \
+    cmd/img.cpp \
     xnat_dialog.cpp
 
 OTHER_FILES += \
