@@ -101,6 +101,7 @@ jobs:
         curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_${{ matrix.os }}.zip"
         7z e tiny_fsl_${{ matrix.os }}.zip -odsi_studio.app/Contents/MacOS/plugin
         rm -fr dsi_studio.app/Contents/MacOS/plugin/tiny_fsl
+        rm *.zip
         mv other/* dsi_studio.app/Contents/MacOS/
         mv DSI-Studio-atlas dsi_studio.app/Contents/MacOS/atlas
         mv UNet-Studio-Data/network dsi_studio.app/Contents/MacOS/
