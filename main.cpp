@@ -46,6 +46,7 @@ int qc(tipl::program_option<tipl::out>& po);
 int reg(tipl::program_option<tipl::out>& po);
 int atk(tipl::program_option<tipl::out>& po);
 int xnat(tipl::program_option<tipl::out>& po);
+int img(tipl::program_option<tipl::out>& po);
 
 
 size_t match_volume(float volume)
@@ -276,6 +277,8 @@ int run_action(tipl::program_option<tipl::out>& po)
         return reg(po);
     if(action == std::string("xnat"))
         return xnat(po);
+    if(action == std::string("img"))
+        return img(po);
     if(action == std::string("vis"))
         return vis(po);
     tipl::out() << "ERROR: unknown action: " << action << std::endl;
