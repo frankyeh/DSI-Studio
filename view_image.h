@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include "zlib.h"
-#include "TIPL/tipl.hpp"
+#include "cmd/img.hpp"
 namespace Ui {
 class view_image;
 }
@@ -21,17 +21,6 @@ public:
 };
 
 
-struct view_image_record{
-    tipl::image<3,unsigned char,tipl::buffer_container> I_int8;
-    tipl::image<3,unsigned short,tipl::buffer_container> I_int16;
-    tipl::image<3,unsigned int,tipl::buffer_container> I_int32;
-    tipl::image<3,float,tipl::buffer_container> I_float32;
-    int pixel_type = 0;
-    tipl::shape<3> shape;
-    bool is_mni = false;
-    tipl::vector<3,float> vs;
-    tipl::matrix<4,4> T;
-};
 
 class view_image : public QMainWindow
 {
@@ -106,36 +95,12 @@ private slots:
 private:
     Ui::view_image *ui;
 private:
-    std::vector<std::shared_ptr<view_image_record> > undo_list;
-    std::vector<std::shared_ptr<view_image_record> > redo_list;
+    std::shared_ptr<variant_image> cur_image;
+    std::vector<std::shared_ptr<variant_image> > undo_list;
+    std::vector<std::shared_ptr<variant_image> > redo_list;
     std::vector<std::string> redo_command_list;
     std::vector<std::string> redo_param_list;
-    void swap(std::shared_ptr<view_image_record> data);
-    void assign(std::shared_ptr<view_image_record> data);
 private:
-    size_t pixelbit[4] = {1,2,4,4};
-    tipl::image<3,unsigned char,tipl::buffer_container> I_int8;
-    tipl::image<3,unsigned short,tipl::buffer_container> I_int16;
-    tipl::image<3,unsigned int,tipl::buffer_container> I_int32;
-    tipl::image<3,float,tipl::buffer_container> I_float32;
-    enum {int8 = 0,int16 = 1,int32 = 2,float32 = 3} pixel_type = int8;
-    tipl::shape<3> shape;
-    bool is_mni = false;
-    tipl::vector<3,float> vs;
-    tipl::matrix<4,4> T;
-    template <typename T>
-    void apply(T&& fun)
-    {
-        switch(pixel_type)
-        {
-            case int8:fun(I_int8);return;
-            case int16:fun(I_int16);return;
-            case int32:fun(I_int32);return;
-            case float32:fun(I_float32);return;
-        }
-    }
-    void change_type(decltype(pixel_type));
-
 private:
     tipl::io::gz_mat_read mat;
     void read_mat_info(void);
