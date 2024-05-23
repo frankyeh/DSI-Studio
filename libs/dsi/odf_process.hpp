@@ -560,7 +560,7 @@ public:
                 tipl::multiply_constant(rdi[i],voxel.z0);
             float L = 0.2f;
             mat_writer.write("rdi",rdi[0],uint32_t(voxel.dim.plane_size()));
-
+            if(voxel.shell.size() > 1)
             {
                 for(unsigned int i = 0;i < rdi[0].size();++i)
                 for(unsigned int j = 0;j < rdi.size();++j)
