@@ -89,190 +89,17 @@ bool DwiHeader::open(const char* filename)
         has_orientation_info = true;
     }
 
-    unsigned char man_id = 0;
-    {
-        std::string manu = header.get_text(0x0008,0x0070);//Manufacturer
-        if (manu.size() > 2)
-        {
-            std::string name(manu.begin(),manu.begin()+2);
-            name[0] = ::toupper(name[0]);
-            name[1] = ::toupper(name[1]);
-            if (name == std::string("SI"))
-                man_id = 1;
-            if (name == std::string("GE"))
-                man_id = 2;
-            if (name == std::string("PH"))
-                man_id = 3;
-            if (name == std::string("TO"))
-                man_id = 4;
-            if (name == std::string("UI"))
-                man_id = 5;
-        }
-    }
+
     // get TE
-    header.get_value(0x0018,0x0081,te);
+    te = header.get_te();
 
+    float bx,by,bz;
+    if(!header.get_btable(bvalue,bvec[0],bvec[1],bvec[2]))
+        return false;
+    if(bvalue == 0.0f)
+        return true;
 
-    switch (man_id)
-    {
-    case 1://SIEMENS
-        // get b-table
-        /*
-        0019;XX0C;SIEMENS MR HEADER ;B_value ;1;IS;1
-        0019;XX0D;SIEMENS MR HEADER ;DiffusionDirectionality ;1;CS;1
-        0019;XX0E;SIEMENS MR HEADER ;DiffusionGradientDirection ;1;FD;3
-        0019;XX27;SIEMENS MR HEADER ;B_matrix ;1;FD;6
-
-        (0018,9075) DiffusionDirectionality
-        (0018,9087) DiffusionBValue
-         */
-    {
-        bool has_b = false;
-        if(header.get_value(0x0018,0x9087,bvalue))
-        {
-            has_b = true;
-            if(bvalue)
-            {
-                unsigned int gev_length = 0;
-                const double* gvec = (const double*)header.get_data(0x0018,0x9089,gev_length);// B-vector
-                if(gvec)
-                {
-                    bvec[0] = float(gvec[0]);
-                    bvec[1] = float(gvec[1]);
-                    bvec[2] = float(gvec[2]);
-                    bvec.normalize();
-                }
-                else
-                    has_b = false;
-            }
-
-        }
-        else
-        {
-            header.get_value(0x0019,0x100C,bvalue);
-            unsigned int gev_length = 0;
-            const double* gvec = (const double*)header.get_data(0x0019,0x100E,gev_length);// B-vector
-            if(gvec)
-            {
-                bvec[0] = float(gvec[0]);
-                bvec[1] = float(gvec[1]);
-                bvec[2] = float(gvec[2]);
-            }
-            else
-            // from b-matrix
-            {
-                gvec = (const double*)header.get_data(0x0019,0x1027,gev_length);// B-vector
-                if (gvec)
-                {
-                    if (gvec[0] != 0.0)
-                    {
-                        bvec[0] = float(gvec[0]);
-                        bvec[1] = float(gvec[1]);
-                        bvec[2] = float(gvec[2]);
-                    }
-                    else
-                        if (gvec[3] != 0.0)
-                        {
-                            bvec[0] = 0.0;
-                            bvec[1] = gvec[3];
-                            bvec[2] = gvec[4];
-                        }
-                        else
-                        {
-                            bvec[0] = 0;
-                            bvec[1] = 0;
-                            bvec[2] = gvec[5];
-                        }
-                }
-            }
-            has_b = gvec != 0;
-        }
-        if(!has_b)// get csa data
-        {
-            const char* b_value = header.get_csa_data("B_value",0);
-            const char* bx = header.get_csa_data("DiffusionGradientDirection",0);
-            const char* by = header.get_csa_data("DiffusionGradientDirection",1);
-            const char* bz = header.get_csa_data("DiffusionGradientDirection",2);
-            if (b_value && bx && by && bz)
-            {
-                std::istringstream(std::string(b_value)) >> bvalue;
-                std::istringstream(std::string(bx)) >> bvec[0];
-                std::istringstream(std::string(by)) >> bvec[1];
-                std::istringstream(std::string(bz)) >> bvec[2];
-            }
-        }
-    }
-    break;
-    default:
-    case 2://GE
-        // get b-table
-        header.get_value(0x0019,0x10BB,bvec[0]);
-        header.get_value(0x0019,0x10BC,bvec[1]);
-        header.get_value(0x0019,0x10BD,bvec[2]);
-        bvec[2] = -bvec[2];
-        header.get_value(0x0043,0x1039,bvalue);
-        bvalue *= bvec.length();
-        bvec.normalize();
-        break;
-    case 3://Phillips
-        // get b-table
-    {
-        unsigned int gvalue_length = 0;
-        // GE header
-        const double* gvalue = (const double*)header.get_data(0x0018,0x9089,gvalue_length);// B-vector
-        if(gvalue && gvalue_length == 24)
-        {
-            bvec[0] = float(gvalue[0]);
-            bvec[1] = float(gvalue[1]);
-            bvec[2] = float(gvalue[2]);
-        }
-        gvalue = (const double*)header.get_data(0x0018,0x9087,gvalue_length);//B-Value
-        if(gvalue && gvalue_length == 8)
-            bvalue = gvalue[0];
-
-    }
-
-    break;
-    case 4://TOSHIBA
-    {
-        unsigned int gvalue_length = 0;
-        const double* gvalue = (const double*)header.get_data(0x0018,0x9087,gvalue_length);//B-Value
-        if(gvalue && gvalue_length == 8)
-            bvalue = gvalue[0];
-    }
-    {
-        unsigned int gvalue_length = 0;
-        const char* str = (const char*)header.get_data(0x0020,0x4000,gvalue_length);
-        //B-Value string e.g.  b=2000(0.140,0.134,-0.981)
-        if(str)
-        {
-            std::string b_str(str+2);
-            std::replace(b_str.begin(),b_str.end(),'(',' ');
-            std::replace(b_str.begin(),b_str.end(),')',' ');
-            std::replace(b_str.begin(),b_str.end(),',',' ');
-            std::istringstream in(b_str);
-            in >> bvalue >> bvec[0] >> bvec[1] >> bvec[2];
-        }
-    }
-        break;
-    case 5://UIH
-    {
-        unsigned int gvalue_length = 0;
-        // GE header
-        const double* gvalue = (const double*)header.get_data(0x0065,0x1037,gvalue_length);// B-vector
-        if(gvalue && gvalue_length == 24)
-        {
-            bvec[0] = float(gvalue[0]);
-            bvec[1] = float(gvalue[1]);
-            bvec[2] = float(gvalue[2]);
-        }
-        gvalue = (const double*)header.get_data(0x0065,0x1009,gvalue_length);//B-Value
-        if(gvalue && gvalue_length == 8)
-            bvalue = gvalue[0];
-    }
-        break;
-    }
-
+    bvec.normalize();
     if(has_orientation_info)
     {
         {
@@ -287,8 +114,6 @@ bool DwiHeader::open(const char* filename)
         bvec.rotate(orientation_matrix);
     }
     bvec.normalize();
-    if(bvalue == 0.0f)
-        bvec[0] = bvec[1] = bvec[2] = 0.0f;
     return true;
 }
 
