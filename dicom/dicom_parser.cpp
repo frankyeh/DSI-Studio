@@ -79,16 +79,16 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
     std::vector<float> b_table;
     {
         std::vector<float> b,bx,by,bz;
-        if(dicom_header.get_values(0x2001,0x1003,b) ||
-           dicom_header.get_values(0x0018,0x9087,b))
+        if(dicom_header.get_frame_values(0x2001,0x1003,b) ||
+           dicom_header.get_frame_values(0x0018,0x9087,b))
         {
             if(!slice_num)
                 slice_num = 1;
             uint32_t b_count = uint32_t(buf_image.depth())/slice_num;
             b.resize(b_count);
-            if(dicom_header.get_values(0x2005,0x10B0,bx) &&
-               dicom_header.get_values(0x2005,0x10B1,by) &&
-               dicom_header.get_values(0x2005,0x10B2,bz))
+            if(dicom_header.get_frame_values(0x2005,0x10B0,bx) &&
+               dicom_header.get_frame_values(0x2005,0x10B1,by) &&
+               dicom_header.get_frame_values(0x2005,0x10B2,bz))
             {
                 bx.resize(b_count);
                 by.resize(b_count);
@@ -100,7 +100,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
                 by.resize(b_count);
                 bz.resize(b_count);
                 std::vector<std::vector<float> > bvec;
-                dicom_header.get_values(0x0018,0x9089,bvec);
+                dicom_header.get_frame_values(0x0018,0x9089,bvec);
                 for(size_t i = 0,j = 0;i < b_count && j < bvec.size();++i)
                 {
                     if(b[i] != 0.0f)
@@ -1012,6 +1012,14 @@ bool parse_dwi(QStringList file_list,
         src_error_msg = "unsupported file format";
         return false;
     }
+    float bv,bx,by,bz;
+    if(!dicom_header.get_btable(bv,bx,by,bz))
+    {
+        src_error_msg = "data are structure image";
+        tipl::out() << src_error_msg;
+        return false;
+    }
+
     if(dicom_header.is_mosaic)
     {
         tipl::out()  << "handled as Siemens mosaic";
@@ -1035,14 +1043,8 @@ bool parse_dwi(QStringList file_list,
         }
         return !prog.aborted() && !dwi_files.empty();
     }
-    if(file_list.size() > 256)
-    {
-        tipl::out()  << "handled as multiple single slice DWI";
-        return load_multiple_slice_dicom(file_list,dwi_files);
-    }
-    src_error_msg = "data are structure image or not a complete set of diffusion images";
-    tipl::out() << src_error_msg;
-    return false;
+    tipl::out()  << "handled as multiple single slice DWI";
+    return load_multiple_slice_dicom(file_list,dwi_files);
 }
 bool parse_dwi(const std::vector<std::string>& file_list,
                     std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
