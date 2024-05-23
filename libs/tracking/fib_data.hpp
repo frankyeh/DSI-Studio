@@ -211,7 +211,7 @@ public:
         auto result = tipl::minmax_value_mt(I.begin(),I.end());
         contrast_min = min_value = result.first;
         contrast_max = max_value = result.second;
-        if(I.size() < 256*256*256)
+        if(I.size() < 256*256*256 && contrast_min != contrast_max)
             contrast_max = min_value+(tipl::segmentation::otsu_median(I)-min_value)*2.0f;
         v2c.set_range(contrast_min,contrast_max);
         v2c.two_color(min_color,max_color);
