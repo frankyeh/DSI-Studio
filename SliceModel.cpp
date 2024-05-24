@@ -379,6 +379,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
             return false;
         }
         initial_LPS_nifti_srow(trans_to_mni,source_images.shape(),vs);
+        dicom_source = files;
     }
 
     // add image to the view item lists
