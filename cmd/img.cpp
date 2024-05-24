@@ -391,5 +391,14 @@ int img(tipl::program_option<tipl::out>& po)
             return 0;
         }
     }
+    if(po.has("output"))
+    {
+        tipl::out() << "saving output";
+        if(!var_image.command("save",po.get("output")))
+        {
+            tipl::out() << "ERROR: " << var_image.error_msg;
+            return 0;
+        }
+    }
     return 1;
 }
