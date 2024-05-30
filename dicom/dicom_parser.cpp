@@ -1043,8 +1043,14 @@ bool parse_dwi(QStringList file_list,
         }
         return !prog.aborted() && !dwi_files.empty();
     }
+    if(!load_multiple_slice_dicom(file_list,dwi_files) || dwi_files.size() == 1)
+    {
+        src_error_msg = "data are structure image";
+        tipl::out() << src_error_msg;
+        return false;
+    }
     tipl::out()  << "handled as multiple single slice DWI";
-    return load_multiple_slice_dicom(file_list,dwi_files);
+    return true;
 }
 bool parse_dwi(const std::vector<std::string>& file_list,
                     std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
