@@ -15,19 +15,9 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
         return false;
 
     {
-        report += " A tractography atlas (Yeh, Nat Commun 13(1), 4933, 2022) was used to automatically identify ";
-        report += tract_name;
-        report += "  with a distance tolerance of ";
-        report += std::to_string(tolerance_dis_in_icbm152_mm);
-        report += " (mm) in the ICBM152 space.";
-        report += " The track-to-voxel ratio was set to ";
-        report += QString::number(double(track_voxel_ratio),'g',1).toStdString();
-        report += ".";
-    }
-    {
         float tolerance_dis_in_icbm_voxels = tolerance_dis_in_icbm152_mm/handle->template_vs[0];
         tolerance_dis_in_subject_voxels = tolerance_dis_in_icbm_voxels/handle->tract_atlas_jacobian;
-        tipl::out() << "convert tolerance distance of " << tolerance_dis_in_icbm152_mm << " from ICBM mm to " <<
+        tipl::out() << "convert tolerance distance of " << std::fixed << std::setprecision(2) << tolerance_dis_in_icbm152_mm << " from ICBM mm to " <<
                                 tolerance_dis_in_subject_voxels << " subject voxels" << std::endl;
     }
 
