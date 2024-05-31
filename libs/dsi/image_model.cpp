@@ -2190,8 +2190,8 @@ void ImageModel::get_report(std::string& report)
                 << " The b-value was " << sorted_bvalues.back() << " s/mm².";
         }
 
-    out << " The in-plane resolution was " << voxel.vs[0] << " mm."
-        << " The slice thickness was " << voxel.vs[2] << " mm.";
+    out << " The in-plane resolution was " << std::fixed << std::setprecision(3) << voxel.vs[0] << " mm."
+        << " The slice thickness was " << std::fixed << std::setprecision(2) << tipl::max_value(voxel.vs.begin(),voxel.vs.end()) << " mm.";
     report = out.str();
 }
 bool ImageModel::save_to_file(const char* dwi_file_name)
