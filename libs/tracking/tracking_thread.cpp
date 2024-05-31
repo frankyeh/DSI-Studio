@@ -204,6 +204,16 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
     }
     else
         report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713, 2013) was used with augmented tracking strategies (Yeh, Neuroimage, 2020 Dec;223:117329) to improve reproducibility.";
+    if(roi_mgr->use_auto_track)
+    {
+        report << " Autotrack was used to automatically identify "
+               << roi_mgr->tract_name
+               << " with a distance tolerance of "
+               << std::fixed << std::setprecision(2) << roi_mgr->tolerance_dis_in_icbm152_mm
+               << " (mm) in the ICBM152 space by comparing trajectories with a tractography atlas (Yeh, Nat Commun 13(1), 4933, 2022).";
+        if(param.termination_count == 0)
+            report << " The track-to-voxel ratio was set to " << roi_mgr->track_voxel_ratio << ".";
+    }
     report << roi_mgr->report;
     report << param.get_report();
     report << " Shape analysis (Yeh, Neuroimage, 2020 Dec;223:117329) was conducted to derive shape metrics for tractography.";
