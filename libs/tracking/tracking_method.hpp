@@ -132,7 +132,7 @@ struct TrackingParam
             report << " The angular threshold was randomly selected from 45 degrees to 90 degrees.";
 
         if(step_size > 0.0f)
-            report << " The step size was " << step_size << " mm.";
+            report << " The step size was " << std::fixed << std::setprecision(2) << step_size << " mm.";
         else
         {
             if(step_size < 0.0f) // older versions before june 2023
