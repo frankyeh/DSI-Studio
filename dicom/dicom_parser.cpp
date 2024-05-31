@@ -326,7 +326,6 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
             return false;
         }
         dwi_data.resize(nii.dim(4));
-        nii.get_voxel_size(vs);
         // check data range
         for(unsigned int index = 0;index < nii.dim(4);++index)
         {
@@ -344,6 +343,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
             std::replace_if(data.begin(),data.end(),[](float v){return std::isnan(v) || std::isinf(v) || v < 0.0f;},0.0f);
             dwi_data[index].swap(data);
         }
+        nii.get_voxel_size(vs);
     }
 
 
