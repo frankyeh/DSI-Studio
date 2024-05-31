@@ -1112,46 +1112,23 @@ bool dcm2src_and_nii(QStringList files)
             tipl::out() << v.error_msg.c_str() << std::endl;
             return false;
         }
-        tipl::image<3> I;
+        tipl::image<3> source_images;
         tipl::vector<3> vs;
-        v >> I;
+        v >> source_images;
         v.get_voxel_size(vs);
-        if(I.empty())
+        if(source_images.empty())
         {
             tipl::out() << "cannot parse as image volume";
             return false;
         }
-        //non isotropic
-        if((vs[0] < vs[2] || vs[1] < vs[2]) &&
-           (tipl::min_value(vs))/(tipl::max_value(vs)) > 0.5f)
-        {
-            float reso = tipl::min_value(vs);
-            tipl::vector<3,float> new_vs(reso,reso,reso);
-            tipl::image<3> J(tipl::shape<3>(
-                    int(std::ceil(float(I.width())*vs[0]/new_vs[0])),
-                    int(std::ceil(float(I.height())*vs[1]/new_vs[1])),
-                    int(std::ceil(float(I.depth())*vs[2]/new_vs[2]))));
-
-            tipl::transformation_matrix<float> T1;
-            T1.sr[0] = new_vs[0]/vs[0];
-            T1.sr[4] = new_vs[1]/vs[1];
-            T1.sr[8] = new_vs[2]/vs[2];
-            tipl::resample_mt<tipl::interpolation::cubic>(I,J,T1);
-            vs = new_vs;
-            I.swap(J);
-        }
-
-        tipl::io::gz_nifti nii_out;
-        tipl::flip_xy(I);
-        nii_out << I;
-        nii_out.set_voxel_size(vs);
-        nii_out.set_descrip(report.c_str());
+        tipl::matrix<4,4,float> trans;
+        initial_LPS_nifti_srow(trans,source_images.shape(),vs);
         std::string suffix("_");
         suffix += sequence;
         suffix += ".nii.gz";
         QString output = get_dicom_output_name(files[0],suffix.c_str(),true);
         tipl::out() << "converted to NIFTI: " << std::filesystem::path(output.toStdString()).filename().string() << std::endl;
-        return nii_out.save_to_file(output.toStdString().c_str());
+        return tipl::io::gz_nifti::save_to_file(output.toStdString().c_str(),source_images,vs,trans);
     }
 
     for(unsigned int index = 0;index < dicom_files.size();++index)
