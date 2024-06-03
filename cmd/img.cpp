@@ -277,8 +277,6 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
         {
             pixel_type = int16;
             dicom.get_image_dimension(shape);
-            apply([&](auto& data){dicom >> data;});
-
             if(dicom.is_compressed)
             {
                 tipl::image<2,short> I;
@@ -290,7 +288,15 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
                 }
                 if(I.size() == shape.size())
                     std::copy(I.begin(),I.end(),I_int16.begin());
+                else
+                {
+                    error_msg = "Cannot decompress image ";
+                    error_msg += dicom.encoding;
+                    return false;
+                }
             }
+            else
+                apply([&](auto& data){dicom >> data;});
             dicom.get_voxel_size(vs);
             std::string info_;
             dicom >> info_;
