@@ -558,13 +558,6 @@
                </widget>
               </item>
               <item>
-               <widget class="QLabel" name="label_13">
-                <property name="text">
-                 <string>Move the slide bar to  view the overlap of two images</string>
-                </property>
-               </widget>
-              </item>
-              <item>
                <layout class="QHBoxLayout" name="horizontalLayout">
                 <property name="spacing">
                  <number>0</number>
@@ -616,6 +609,26 @@
                  </widget>
                 </item>
                 <item>
+                 <widget class="QCheckBox" name="grid">
+                  <property name="text">
+                   <string>Grid</string>
+                  </property>
+                  <property name="checked">
+                   <bool>false</bool>
+                  </property>
+                  <property name="tristate">
+                   <bool>true</bool>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QHBoxLayout" name="horizontalLayout_14">
+                <property name="topMargin">
+                 <number>0</number>
+                </property>
+                <item>
                  <widget class="QPushButton" name="switch_view">
                   <property name="text">
                    <string>Click to switch views</string>
@@ -635,6 +648,13 @@
                   </property>
                   <property name="orientation">
                    <enum>Qt::Horizontal</enum>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="label_13">
+                  <property name="text">
+                   <string>Move to  view  overlap </string>
                   </property>
                  </widget>
                 </item>
