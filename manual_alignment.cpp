@@ -62,8 +62,15 @@ manual_alignment::manual_alignment(QWidget *parent,
     warped_from.resize(to.shape());
 
 
-    tipl::normalize(from);
-    tipl::normalize(to);
+    float from_median = tipl::segmentation::otsu_median(from);
+    if(from_median != 0.0f)
+        tipl::multiply_constant_mt(from,0.5f/from_median);
+    float to_median = tipl::segmentation::otsu_median(to);
+    if(from_median != 0.0f)
+        tipl::multiply_constant_mt(to,0.5f/to_median);
+    tipl::upper_lower_threshold(from,0.0f,1.0f);
+    tipl::upper_lower_threshold(to,0.0f,1.0f);
+
     ui->setupUi(this);
     ui->options->hide();
     ui->menuBar->hide();
@@ -100,6 +107,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     connect(ui->zoom,SIGNAL(valueChanged(double)),this,SLOT(slice_pos_moved()));
     connect(ui->contrast,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(ui->blend_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
+    connect(ui->grid,SIGNAL(clicked(bool)),this,SLOT(slice_pos_moved()));
 
     timer = new QTimer(this);
     timer->stop();
@@ -306,8 +314,9 @@ void manual_alignment::slice_pos_moved()
         slice_image << buffer;
         slice_image = slice_image.mirrored(false,dim != 2);
         QPainter painter(&slice_image);
-        tipl::qt::draw_ruler(painter,to.shape(),nifti_srow,
-                        dim,dim,dim != 2,ratio,true);
+        if(ui->grid->checkState() != Qt::Unchecked)
+            tipl::qt::draw_ruler(painter,to.shape(),nifti_srow,
+                        dim,dim,dim != 2,ratio,ui->grid->checkState() == Qt::Checked);
         scene[dim] << slice_image;
     }
 }
