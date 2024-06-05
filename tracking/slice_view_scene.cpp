@@ -67,7 +67,7 @@ void slice_view_scene::show_ruler2(QPainter& paint)
 
 
 
-void slice_view_scene::show_ruler(QPainter& paint,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim)
+void slice_view_scene::show_ruler(QPainter& paint,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim,float tic_ratio)
 {
     auto trans = cur_tracking_window.handle->trans_to_mni;
     if(cur_tracking_window.handle->is_mni)
@@ -85,7 +85,7 @@ void slice_view_scene::show_ruler(QPainter& paint,std::shared_ptr<SliceModel> cu
     tipl::qt::draw_ruler(paint,current_slice->dim,trans,cur_dim,
                cur_tracking_window.slice_view_flip_x(cur_dim),
                cur_tracking_window.slice_view_flip_y(cur_dim),
-               cur_tracking_window.get_scene_zoom(current_slice),show_grid);
+               cur_tracking_window.get_scene_zoom(current_slice),show_grid,tic_ratio);
 
 }
 void slice_view_scene::show_fiber(QPainter& painter,std::shared_ptr<SliceModel> current_slice,const tipl::color_image& slice_image,unsigned char cur_dim)
@@ -251,7 +251,7 @@ QImage slice_view_scene::get_view_image(std::shared_ptr<SliceModel> current_slic
 
         QPainter painter2(&new_view_image);
         if(cur_tracking_window["roi_ruler"].toInt())
-            show_ruler(painter2,current_slice,cur_dim);
+            show_ruler(painter2,current_slice,cur_dim,float(cur_tracking_window["roi_tic"].toFloat()*0.5f));
         if(cur_tracking_window["roi_label"].toInt())
             add_R_label(painter2,current_slice,cur_dim);
     }
