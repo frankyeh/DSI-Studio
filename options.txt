@@ -11,7 +11,8 @@ ROI/Fiber Length/roi_fiber_length/float:0.1:4:0.1:2/2.0
 ROI/Fiber Antialiasing/roi_fiber_antialiasing/Off:On/0/Antialiasing
 ROI/"R" label/roi_label/Off:On/1
 ROI/Position Line/roi_position/Off:On/1
-ROI/Ruler/roi_ruler/Off:On/1
+ROI/Ruler/roi_ruler/Off:On/1/show ruler
+ROI/Ruler Tic/roi_tic/int:1:8:1/2/Tic distance on ruler
 ROI/Slice Layout/roi_layout/Single Slice:3 Slices:Mosaic:Mosaic 2:Mosaic 4:Mosaic 8:Mosaic 16:Mosaic 32/0
 ROI/Mosaic Column Number/roi_mosaic_column/int:0:30:5/0/Column count for the mosaic view (0 for default square number)
 ROI/Mosaic Skip Row/roi_mosaic_skip_row/int:0:2:1/1/Remove first and last row from the mosaic view
