@@ -93,7 +93,7 @@ bool view_image::command(std::string cmd,std::string param1)
         if(!buf4d.empty() || dim4 != 1)
         {
             std::vector<unsigned char> buf;
-            if(!buf4d.empty())
+            if(!buf4d.empty() && dim4 != 1)
                 get_4d_buf(buf);
             else
                 cur_image->apply([&](auto& I)
@@ -437,11 +437,6 @@ void view_image::read_mat_info(void)
     }
     show_info(info);
 }
-bool view_image::read_mat_image(void)
-{
-    cur_image->read_mat_image(ui->mat_images->currentText().toStdString(),mat);
-    ui->type->setCurrentIndex(cur_image->pixel_type);
-}
 void view_image::DeleteRowPressed(int row)
 {
     if(ui->info->currentRow() == -1)
@@ -467,16 +462,15 @@ bool view_image::read_mat(void)
         error_msg = "cannot find images";
         return false;
     }
-    ui->mat_images->setCurrentIndex(0);
 
     mat.get_voxel_size(cur_image->vs);
     if(mat.has("trans"))
         mat.read("trans",cur_image->T);
     else
         initial_LPS_nifti_srow(cur_image->T,cur_image->shape,cur_image->vs);
-    cur_image->pixel_type = variant_image::float32;
     read_mat_info();
-    ui->mat_images->show();    
+    ui->mat_images->setCurrentIndex(0);
+    ui->mat_images->show();
     return true;
 }
 
@@ -621,6 +615,7 @@ void view_image::init_image(void)
         min_value = minmax.first;
         max_value = minmax.second;
     });
+
     float range = max_value-min_value;
     QString dim_text = QString("%1,%2,%3").arg(cur_image->shape.width()).arg(cur_image->shape.height()).arg(cur_image->shape.depth());
     if(!buf4d.empty())
@@ -998,8 +993,11 @@ void view_image::on_info_cellDoubleClicked(int row, int column)
 
 void view_image::on_mat_images_currentIndexChanged(int index)
 {
-    if(read_mat_image())
-        init_image();
+    no_update = true;
+    if(!cur_image->read_mat_image(ui->mat_images->currentText().toStdString(),mat))
+        return;
+    ui->type->setCurrentIndex(cur_image->pixel_type);
+    init_image();
 }
 
 
