@@ -68,13 +68,6 @@ bool variant_image::read_mat_image(const std::string& metric_name,tipl::io::gz_m
     unsigned int row(0), col(0);
     if(!mat.get_col_row(metric_name.c_str(),row,col) || row*col != shape.size())
         return false;
-    if(mat.type_compatible<float>(metric_name.c_str()))
-    {
-        I_float32.resize(shape);
-        mat.read(metric_name.c_str(),I_float32.begin(),I_float32.end());
-        pixel_type = float32;
-        return true;
-    }
     if(mat.type_compatible<unsigned int>(metric_name.c_str()))
     {
         I_int32.resize(shape);
@@ -96,14 +89,10 @@ bool variant_image::read_mat_image(const std::string& metric_name,tipl::io::gz_m
         pixel_type = int8;
         return true;
     }
-    if(mat.type_compatible<double>(metric_name.c_str()))
-    {
-        I_float32.resize(shape);
-        mat.read(metric_name.c_str(),I_float32.begin(),I_float32.end());
-        pixel_type = float32;
-        return true;
-    }
-    return false;
+    I_float32.resize(shape);
+    mat.read(metric_name.c_str(),I_float32.begin(),I_float32.end());
+    pixel_type = float32;
+    return true;
 }
 
 void variant_image::change_type(decltype(pixel_type) new_type)
