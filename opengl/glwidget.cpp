@@ -1678,10 +1678,9 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
     }
 }
 
-bool GLWidget::get_mouse_pos(QMouseEvent *event,tipl::vector<3,float>& position)
+bool GLWidget::get_mouse_pos(QPoint cur_pos,tipl::vector<3,float>& position)
 {
     makeCurrent();
-    QPoint cur_pos = event->pos();
     if(edit_right)
         cur_pos.setX(cur_pos.x() - cur_width / 2);
 
@@ -1690,9 +1689,9 @@ bool GLWidget::get_mouse_pos(QMouseEvent *event,tipl::vector<3,float>& position)
     get_view_dir(cur_pos,cur_dir);
 
     bool show_slice[3];
-    show_slice[0] = cur_tracking_window.ui->glSagCheck->checkState();
-    show_slice[1] = cur_tracking_window.ui->glCorCheck->checkState();
-    show_slice[2] = cur_tracking_window.ui->glAxiCheck->checkState();
+    show_slice[0] = cur_tracking_window.ui->glSagCheck->isChecked();
+    show_slice[1] = cur_tracking_window.ui->glCorCheck->isChecked();
+    show_slice[2] = cur_tracking_window.ui->glAxiCheck->isChecked();
     // select slice
     {
         // now check whether the slices are selected
@@ -1875,7 +1874,6 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         v2 -= slice_points[0];
         dis = v1*(dx-slice_dx)+v2*(dy-slice_dy);
         dis -= accumulated_dis;
-        tipl::out() << "dx:" << dx << " " << slice_dx << " dy:" << dy << " " << slice_dy << " dis:" << dis << " dir:" << dir2 << " pos:" << pos;
 
         accumulated_dis += dis;
         if(device_selected && selected_index < cur_tracking_window.deviceWidget->devices.size())
@@ -1901,9 +1899,9 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
             if (event->buttons() & Qt::LeftButton)
             {
-                slice->arg_min.translocation[0] += dis[0]*0.05f;
-                slice->arg_min.translocation[1] += dis[1]*0.05f;
-                slice->arg_min.translocation[2] += dis[2]*0.05f;
+                slice->arg_min.translocation[0] += dis[0]*0.05f*cur_tracking_window.handle->vs[0];
+                slice->arg_min.translocation[1] += dis[1]*0.05f*cur_tracking_window.handle->vs[0];
+                slice->arg_min.translocation[2] += dis[2]*0.05f*cur_tracking_window.handle->vs[0];
             }
             else
             {

@@ -78,7 +78,7 @@ Q_OBJECT
  public:// other slices
      std::chrono::high_resolution_clock::time_point time;
      int last_time;
-     bool get_mouse_pos(QMouseEvent *mouseEvent,tipl::vector<3,float>& position);
+     bool get_mouse_pos(QPoint cur_pos,tipl::vector<3,float>& position);
      void paintGL() override;
      bool no_update = true;
 

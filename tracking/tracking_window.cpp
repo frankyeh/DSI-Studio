@@ -679,21 +679,22 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     if(scene.complete_view_ready)
         scene.show_complete_slice();
 
-    if (event->type() == QEvent::MouseMove)
+    if (event->type() == QEvent::MouseMove && obj->isWidgetType())
     {
-        if (obj == glWidget && glWidget->editing_option == GLWidget::none &&
-                (ui->glSagCheck->checkState() ||
-                 ui->glCorCheck->checkState() ||
-                 ui->glAxiCheck->checkState()))
-        {
-            has_info = glWidget->get_mouse_pos(static_cast<QMouseEvent*>(event),pos);
-        }
-        if (obj->parent() == ui->graphicsView)
-        {
-            QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
-            QPointF point = ui->graphicsView->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
-            has_info = scene.to_3d_space(point.x(),point.y(),pos);
-        }
+        if (obj == glWidget &&
+            glWidget->editing_option == GLWidget::moving &&
+                    (ui->glSagCheck->isChecked() ||
+                     ui->glCorCheck->isChecked() ||
+                     ui->glAxiCheck->isChecked()))
+            has_info = glWidget->get_mouse_pos(static_cast<QMouseEvent*>(event)->pos(),pos);
+        else
+            if (obj->parent() == ui->graphicsView)
+            {
+                QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+                QPointF point = ui->graphicsView->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
+                has_info = scene.to_3d_space(point.x(),point.y(),pos);
+            }
+
         // for connectivity matrix
         if(connectivity_matrix.get() && connectivity_matrix->is_graphic_view(obj->parent()))
             connectivity_matrix->mouse_move(static_cast<QMouseEvent*>(event));
@@ -707,7 +708,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
             .arg(std::round(pos[1]*10.0)/10.0)
             .arg(std::round(pos[2]*10.0)/10.0);
 
-    if((handle->template_id == handle->matched_template_id && handle->is_mni) || !handle->s2t.empty())
+    if((handle->template_id == handle->matched_template_id && handle->is_mni && !handle->template_I.empty()) || !handle->s2t.empty())
     {
         tipl::vector<3,float> mni(pos);
         handle->sub2mni(mni);
