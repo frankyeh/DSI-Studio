@@ -829,7 +829,7 @@ void tracking_window::insertPicture()
     if(!action)
         return;
     if(action->text().contains("Sagittal"))
-        cur_dim = 2;
+        cur_dim = 0;
     if(action->text().contains("Coronal"))
         cur_dim = 1;
     if(action->text().contains("Axial"))
