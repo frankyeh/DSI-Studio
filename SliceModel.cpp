@@ -127,7 +127,12 @@ void CustomSliceModel::get_slice(tipl::color_image& image,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const
 {
     if(!picture.empty() && (dim[cur_dim] != picture.width() && dim[cur_dim] != picture.height()))
+    {
         image = picture;
+        for(auto overlay_slice : overlay_slices)
+            if(this != overlay_slice.get())
+                apply_overlay(image,cur_dim,overlay_slice);
+    }
     else
         SliceModel::get_slice(image,cur_dim,pos,overlay_slices);
 }
