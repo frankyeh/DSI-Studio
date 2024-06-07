@@ -446,6 +446,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionSave_3D_screen_in_3_views,SIGNAL(triggered()),glWidget,SLOT(save3ViewImage()));
         connect(ui->actionRecord_Video,SIGNAL(triggered()),glWidget,SLOT(record_video()));
         connect(ui->actionROI,&QAction::triggered,this,[this](void){scene.copyClipBoard();});
+        connect(ui->actionSave_ROI_Screen,&QAction::triggered,this,[this](void){scene.catch_screen();});
 
 
     }
