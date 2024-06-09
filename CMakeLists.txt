@@ -15,15 +15,6 @@ find_package(OpenGL REQUIRED)
 find_package(CUDAToolkit)
 
 
-if (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    if (MSVC)
-      add_compile_options(/bigobj)
-    else ()
-      add_compile_options(-Wa,-mbig-obj)
-    endif ()
-endif()
-
-
 if(CUDAToolkit_FOUND)
     project(DSI_Studio VERSION "2023.07.19" LANGUAGES CUDA CXX;C)
 endif()
