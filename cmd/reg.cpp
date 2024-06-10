@@ -34,7 +34,7 @@ int after_warp(tipl::program_option<tipl::out>& po,
     std::vector<std::string> filename_cmds;
     if(!tipl::search_filesystem(po.get("apply_warp"),filename_cmds))
     {
-        tipl::out() << "ERROR: cannot find " << po.get("apply_warp") <<std::endl;
+        tipl::out() << "ERROR: cannot find file " << po.get("apply_warp") <<std::endl;
         return 1;
     }
     for(const auto& each_file: filename_cmds)
@@ -96,6 +96,11 @@ void edge_for_cdm(tipl::image<3>& sIt,
                   tipl::image<3>& sJ,
                   tipl::image<3>& sIt2,
                   tipl::image<3>& sJ2);
+
+
+
+
+
 int reg(tipl::program_option<tipl::out>& po)
 {
     tipl::image<3> from,to,from2,to2;
@@ -108,7 +113,7 @@ int reg(tipl::program_option<tipl::out>& po)
     {
         if(!po.has("apply_warp"))
         {
-            tipl::out() << "ERROR: please specify the images to be warped using --apply_warp";
+            tipl::out() << "ERROR: please specify the images or tracts to be warped using --apply_warp";
             return 1;
         }
         tipl::out() << "loading warping field";
