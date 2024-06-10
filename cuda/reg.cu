@@ -1,6 +1,4 @@
 #include "TIPL/tipl.hpp"
-#include "TIPL/cuda/mem.hpp"
-#include "TIPL/cuda/basic_image.hpp"
 #include <iostream>
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -78,7 +76,7 @@ void cdm2_cuda(const tipl::image<3>& It,
     tipl::device_image<3> dIt(It),dIt2(It2),dIs(Is),dIs2(Is2);
     tipl::device_image<3,tipl::vector<3> > dd(It.shape()),inv_dd(It.shape());
     try{
-        tipl::reg::cdm2_cuda(dIt,dIt2,dIs,dIs2,dd,inv_dd,terminated,param);
+        tipl::reg::cdm2(dIt,dIt2,dIs,dIs2,dd,inv_dd,terminated,param);
     }
     catch(std::runtime_error& er)
     {
@@ -102,8 +100,5 @@ size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<tipl::image<
     distribute_gpu();
     return reg->optimize(std::make_shared<tipl::reg::mutual_information_cuda>(),terminated);
 }
-
-
-
 
 
