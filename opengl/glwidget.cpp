@@ -2343,8 +2343,8 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
                 tipl::morphology::negate(mask);
                 tipl::morphology::defragment(mask);
                 tipl::morphology::negate(mask);
-                tipl::morphology::smoothing_mt(mask);
-                tipl::morphology::dilation_mt(mask);
+                tipl::morphology::smoothing(mask);
+                tipl::morphology::dilation(mask);
                 for(size_t index = 0;index < crop_image.size();++index)
                     if(mask[index] == 0)
                         crop_image[index] *= 0.2f;
