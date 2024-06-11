@@ -2942,7 +2942,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
 
             // now next convert point list to volume
             tipl::vector<3,short> max_value(points[0]), min_value(points[0]);
-            tipl::bounding_box_mt(points,max_value,min_value);
+            tipl::bounding_box(points,max_value,min_value);
 
             max_value += tipl::vector<3,short>(1, 1, 1);
             min_value -= tipl::vector<3,short>(1, 1, 1);
