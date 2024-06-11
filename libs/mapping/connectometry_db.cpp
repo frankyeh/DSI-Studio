@@ -421,7 +421,7 @@ void connectometry_db::sample_from_image(tipl::const_pointer_image<3,float> I,
                        const tipl::matrix<4,4>& trans,std::vector<float>& data)
 {
     tipl::image<3> J(handle->dim);
-    tipl::resample_mt<tipl::interpolation::cubic>(I,J,
+    tipl::resample<tipl::interpolation::cubic>(I,J,
             tipl::transformation_matrix<float>(tipl::from_space(handle->trans_to_mni).to(trans)));
 
     data.clear();
