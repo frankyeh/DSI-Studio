@@ -105,19 +105,19 @@ void variant_image::change_type(decltype(pixel_type) new_type)
         {
             case int8:
                 I_int8.resize(shape);
-                tipl::copy_mt(I.begin(),I.end(),&I_int8[0]);
+                std::copy(I.begin(),I.end(),&I_int8[0]);
                 break;
             case int16:
                 I_int16.resize(shape);
-                tipl::copy_mt(I.begin(),I.end(),&I_int16[0]);
+                std::copy(I.begin(),I.end(),&I_int16[0]);
                 break;
             case int32:
                 I_int32.resize(shape);
-                tipl::copy_mt(I.begin(),I.end(),&I_int32[0]);
+                std::copy(I.begin(),I.end(),&I_int32[0]);
                 break;
             case float32:
                 I_float32.resize(shape);
-                tipl::copy_mt(I.begin(),I.end(),&I_float32[0]);
+                std::copy(I.begin(),I.end(),&I_float32[0]);
         }
         I.clear();
     });
