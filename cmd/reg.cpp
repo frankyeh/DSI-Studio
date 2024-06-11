@@ -210,18 +210,18 @@ int reg(tipl::program_option<tipl::out>& po)
 
 
     if(tipl::is_label_image(from))
-        tipl::resample_mt<tipl::interpolation::nearest>(from,from_,T);
+        tipl::resample<tipl::interpolation::nearest>(from,from_,T);
     else
-        tipl::resample_mt<tipl::interpolation::cubic>(from,from_,T);
+        tipl::resample<tipl::interpolation::cubic>(from,from_,T);
 
 
     if(!from2.empty())
     {
         from2_.resize(to.shape());
         if(tipl::is_label_image(from2))
-            tipl::resample_mt<tipl::interpolation::nearest>(from2,from2_,T);
+            tipl::resample<tipl::interpolation::nearest>(from2,from2_,T);
         else
-            tipl::resample_mt<tipl::interpolation::cubic>(from2,from2_,T);
+            tipl::resample<tipl::interpolation::cubic>(from2,from2_,T);
     }
     auto r2 = tipl::correlation(from_.begin(),from_.end(),to.begin());
     tipl::out() << "correlation cofficient: " << r2 << std::endl;
@@ -241,9 +241,9 @@ int reg(tipl::program_option<tipl::out>& po)
             }
             from2_.resize(to.shape());;
             if(tipl::is_label_image(from2))
-                tipl::resample_mt<tipl::interpolation::nearest>(from2,from2_,T);
+                tipl::resample<tipl::interpolation::nearest>(from2,from2_,T);
             else
-                tipl::resample_mt<tipl::interpolation::cubic>(from2,from2_,T);
+                tipl::resample<tipl::interpolation::cubic>(from2,from2_,T);
             tipl::io::gz_nifti::save_to_file((po.get("apply_warp")+".wp.nii.gz").c_str(),from2_,to_vs,to_trans,to_is_mni);
         }
         return 0;
