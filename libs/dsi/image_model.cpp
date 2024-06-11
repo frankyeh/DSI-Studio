@@ -256,7 +256,7 @@ bool ImageModel::check_b_table(void)
                     T = tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs);
 
                     tipl::image<3> VFF(iso.shape());
-                    tipl::resample_mt<tipl::interpolation::linear>(dwi_f,VFF,T);
+                    tipl::resample<tipl::interpolation::linear>(dwi_f,VFF,T);
                     R = tipl::correlation(VFF.begin(),VFF.end(),iso.begin());
 
                 },terminated))
@@ -589,9 +589,9 @@ bool ImageModel::command(std::string cmd,std::string param)
     if(cmd == "[Step T2a][Dilation]")
     {
         if(voxel.mask.depth() == 1)
-            tipl::morphology::dilation_mt(voxel.mask.slice_at(0));
+            tipl::morphology::dilation(voxel.mask.slice_at(0));
         else
-            tipl::morphology::dilation_mt(voxel.mask);
+            tipl::morphology::dilation(voxel.mask);
         voxel.steps += cmd+"\n";
         return true;
     }
@@ -612,10 +612,10 @@ bool ImageModel::command(std::string cmd,std::string param)
         if(voxel.mask.depth() == 1)
         {
             auto slice = voxel.mask.slice_at(0);
-            tipl::morphology::smoothing_mt(slice);
+            tipl::morphology::smoothing(slice);
         }
         else
-            tipl::morphology::smoothing_mt(voxel.mask);
+            tipl::morphology::smoothing(voxel.mask);
         voxel.steps += cmd+"\n";
         return true;
     }
@@ -892,7 +892,7 @@ tipl::matrix<3,3,float> get_inv_rotation(const Voxel& voxel,const tipl::transfor
 void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_matrix<double>& T)
 {
     tipl::image<3> tmp(voxel.dim);
-    tipl::resample_mt<tipl::interpolation::cubic>(dwi_at(dwi_index),tmp,T);
+    tipl::resample<tipl::interpolation::cubic>(dwi_at(dwi_index),tmp,T);
     tipl::lower_threshold(tmp,0.0f);
     std::copy(tmp.begin(),tmp.end(),dwi_at(dwi_index).begin());
     // rotate b-table
@@ -1020,7 +1020,7 @@ bool ImageModel::align_acpc(float reso)
     tipl::out() << arg << std::endl;
     prog(1,3);
     tipl::image<3> I2(I.shape());
-    tipl::resample_mt<tipl::interpolation::cubic>(J,I2,
+    tipl::resample<tipl::interpolation::cubic>(J,I2,
             tipl::transformation_matrix<float>(arg,I.shape(),Ivs,J.shape(),Jvs));
     float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
     tipl::out() << "R2 for ac-pc alignment: " << r*r << std::endl;
@@ -1136,7 +1136,7 @@ bool ImageModel::correct_motion(void)
                 if(dis_list[j] <= min_dis)
                 {
                     tipl::image<3> from_(dwi.shape());
-                    tipl::resample_mt<tipl::interpolation::cubic>(dwi_at(j),from_,
+                    tipl::resample<tipl::interpolation::cubic>(dwi_at(j),from_,
                         tipl::transformation_matrix<double>(args[j],voxel.dim,voxel.vs,voxel.dim,voxel.vs));
                     from += from_;
                 }
@@ -1575,7 +1575,7 @@ void ImageModel::get_volume_range(size_t dim,int extra_space)
     auto temp_mask = voxel.mask;
     if(rev_pe_src.get())
         temp_mask += rev_pe_src->voxel.mask;
-    tipl::morphology::dilation2_mt(temp_mask,std::max<int>(voxel.dim[0]/20,2));
+    tipl::morphology::dilation2(temp_mask,std::max<int>(voxel.dim[0]/20,2));
     tipl::bounding_box(temp_mask,topup_from,topup_to);
 
     if(extra_space)
@@ -2373,7 +2373,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
         for(int i = 0;i < int(dwi.width()/200);++i)
         {
             auto slice = voxel.mask.slice_at(0);
-            tipl::morphology::dilation_mt(slice);
+            tipl::morphology::dilation(slice);
         }
         for(int i = 0;i < int(dwi.width()/200);++i)
         {
