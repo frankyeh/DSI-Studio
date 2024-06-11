@@ -64,10 +64,10 @@ manual_alignment::manual_alignment(QWidget *parent,
 
     float from_median = tipl::segmentation::otsu_median(from);
     if(from_median != 0.0f)
-        tipl::multiply_constant_mt(from,0.5f/from_median);
+        tipl::multiply_constant(from,0.5f/from_median);
     float to_median = tipl::segmentation::otsu_median(to);
     if(from_median != 0.0f)
-        tipl::multiply_constant_mt(to,0.5f/to_median);
+        tipl::multiply_constant(to,0.5f/to_median);
     tipl::upper_lower_threshold(from,0.0f,1.0f);
     tipl::upper_lower_threshold(to,0.0f,1.0f);
 
@@ -127,7 +127,7 @@ void manual_alignment::warp_image(void)
         if(image_need_update && warped_from.shape() == to.shape())
         {
             warp_image_ready = false;
-            tipl::resample_mt(from,warped_from,iT);
+            tipl::resample(from,warped_from,iT);
             image_need_update = false;
             warp_image_ready = true;
         }
@@ -461,9 +461,9 @@ void manual_alignment::on_actionSave_Warped_Image_triggered()
 
     tipl::image<3> I(to.shape());
     if(tipl::is_label_image(from_original))
-        tipl::resample_mt<tipl::interpolation::nearest>(from_original,I,iT);
+        tipl::resample<tipl::interpolation::nearest>(from_original,I,iT);
     else
-        tipl::resample_mt<tipl::interpolation::cubic>(from_original,I,iT);
+        tipl::resample<tipl::interpolation::cubic>(from_original,I,iT);
     tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),I,to_vs,nifti_srow);
 }
 
@@ -541,9 +541,9 @@ void manual_alignment::on_actionApply_Transformation_triggered()
 
     tipl::image<3> I(to.shape());
     if(tipl::is_label_image(from))
-        tipl::resample_mt<tipl::interpolation::nearest>(from,I,iT);
+        tipl::resample<tipl::interpolation::nearest>(from,I,iT);
     else
-        tipl::resample_mt<tipl::interpolation::cubic>(from,I,iT);
+        tipl::resample<tipl::interpolation::cubic>(from,I,iT);
     tipl::io::gz_nifti::save_to_file(to_filename.toStdString().c_str(),I,to_vs,nifti_srow);
 
 
