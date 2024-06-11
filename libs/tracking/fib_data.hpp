@@ -208,7 +208,7 @@ public:
     void get_minmax(void)
     {
         auto I = get_image();
-        auto result = tipl::minmax_value_mt(I.begin(),I.end());
+        auto result = tipl::minmax_value(I.begin(),I.end());
         contrast_min = min_value = result.first;
         contrast_max = max_value = result.second;
         if(I.size() < 256*256*256 && contrast_min != contrast_max)
