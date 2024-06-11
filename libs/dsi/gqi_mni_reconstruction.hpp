@@ -118,7 +118,7 @@ public:
             }
 
             tipl::image<3> VFF(VG.shape()),VFF2;
-            tipl::resample_mt<tipl::interpolation::cubic>(VF,VFF,affine);
+            tipl::resample<tipl::interpolation::cubic>(VF,VFF,affine);
             float linear_r = tipl::correlation(VFF.begin(),VFF.end(),VG.begin());
             linear_r = linear_r*linear_r;
             tipl::out() << "linear R2: " << linear_r << std::endl;
@@ -128,7 +128,7 @@ public:
             if(dual_modality)
             {
                 VFF2.resize(VG.shape());
-                tipl::resample_mt<tipl::interpolation::cubic>(VF2,VFF2,affine);
+                tipl::resample<tipl::interpolation::cubic>(VF2,VFF2,affine);
             }
 
             if(export_intermediate)
