@@ -27,7 +27,7 @@ bool reconstruction_window::load_src(int index)
     if(handle->voxel.is_histology)
         return true;
     update_dimension();
-    double m = double(tipl::max_value_mt(tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim)));
+    double m = double(tipl::max_value(tipl::make_image(handle->src_dwi_data[0],handle->voxel.dim)));
     ui->max_value->setMaximum(m*1.5);
     ui->max_value->setMinimum(0.0);
     ui->max_value->setSingleStep(m*0.05);
@@ -223,7 +223,7 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
     if(!handle.get())
         return;
 
-    if (tipl::max_value_mt(handle->voxel.mask) == 0)
+    if (tipl::max_value(handle->voxel.mask) == 0)
     {
         QMessageBox::critical(this,"ERROR","Please select mask for reconstruction");
         return;
@@ -608,7 +608,7 @@ void reconstruction_window::on_actionRotate_triggered()
     tipl::progress prog_("rotating");
     tipl::image<3> ref2(ref);
     float m = tipl::median(ref2.begin(),ref2.end());
-    tipl::multiply_constant_mt(ref,0.5f/m);
+    tipl::multiply_constant(ref,0.5f/m);
     handle->rotate(ref.shape(),vs,manual->get_iT());
     handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";
     handle->voxel.report += QFileInfo(filenames[0]).baseName().toStdString();
