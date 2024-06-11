@@ -88,7 +88,7 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >&& points, bool de
     }
 
     tipl::vector<3,short> min_value,max_value,geo_size;
-    tipl::bounding_box_mt(region,max_value,min_value);
+    tipl::bounding_box(region,max_value,min_value);
     geo_size = max_value-min_value;
 
     tipl::shape<3> mask_geo(geo_size[0]+1,geo_size[1]+1,geo_size[2]+1);
@@ -110,7 +110,7 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >&& points, bool de
             mask.at(p) = 0;
     });
     region = tipl::volume2points(mask);
-    tipl::add_constant_mt(region,min_value);
+    tipl::add_constant(region,min_value);
 }
 
 // ---------------------------------------------------------------------------
@@ -253,7 +253,7 @@ void ROIRegion::save_region_to_buffer(tipl::image<3,unsigned char>& mask,const t
         return;
     }
     mask.resize(dim_to);
-    tipl::resample_mt<tipl::interpolation::nearest>(m,mask,
+    tipl::resample<tipl::interpolation::nearest>(m,mask,
             tipl::transformation_matrix<float>(tipl::from_space(trans_to).to(to_diffusion_space)));
 }
 // ---------------------------------------------------------------------------
