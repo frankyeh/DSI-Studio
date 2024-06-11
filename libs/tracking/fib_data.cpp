@@ -141,7 +141,7 @@ tipl::const_pointer_image<3,float> item::get_image(void)
 void item::get_image_in_dwi(tipl::image<3>& I)
 {
     if(iT != tipl::identity_matrix())
-        tipl::resample_mt(get_image(),I,iT);
+        tipl::resample(get_image(),I,iT);
     else
         I = get_image();
 }
@@ -648,7 +648,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
         if(view_item[index].get_image().shape() != dim)
         {
             tipl::image<3> new_buf(dim);
-            tipl::resample_mt<tipl::interpolation::cubic>(buf,new_buf,view_item[index].iT);
+            tipl::resample<tipl::interpolation::cubic>(buf,new_buf,view_item[index].iT);
             new_buf.swap(buf);
         }
         return tipl::io::gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
@@ -1753,10 +1753,10 @@ bool fib_data::map_to_mni(bool background)
         }
         prog = 2;
         tipl::image<3> Iss(It.shape());
-        tipl::resample_mt(Is,Iss,T);
+        tipl::resample(Is,Iss,T);
         tipl::image<3> Iss2(It2.shape());
         if(!no_iso)
-            tipl::resample_mt(Is2,Iss2,T);
+            tipl::resample(Is2,Iss2,T);
         prog = 3;
 
         if(dir.index_name[0] == "image")
