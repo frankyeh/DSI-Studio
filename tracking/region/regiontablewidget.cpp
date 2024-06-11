@@ -1826,7 +1826,7 @@ void RegionTableWidget::do_action(QString action)
                 prog(p++,region_to_be_processed.size());
                 tipl::image<3,unsigned char> mask;
                 region->save_region_to_buffer(mask);
-                tipl::morphology::dilation2_mt(mask,threshold);
+                tipl::morphology::dilation2(mask,threshold);
                 region->load_region_from_buffer(mask);
             }
         }
