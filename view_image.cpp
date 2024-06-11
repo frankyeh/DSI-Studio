@@ -611,7 +611,7 @@ void view_image::init_image(void)
     float max_value = 0.0f;
     cur_image->apply([&](auto& data)
     {
-        auto minmax = tipl::minmax_value_mt(data);
+        auto minmax = tipl::minmax_value(data);
         min_value = minmax.first;
         max_value = minmax.second;
     });
