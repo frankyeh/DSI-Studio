@@ -20,7 +20,7 @@ bool RegionRender::load(const std::vector<tipl::vector<3,short> >& seeds, tipl::
     bool need_trans = (trans != tipl::identity_matrix());
 
     tipl::vector<3,short> max_value(seeds[0]), min_value(seeds[0]);
-    tipl::bounding_box_mt(seeds,max_value,min_value);
+    tipl::bounding_box(seeds,max_value,min_value);
 
     center = max_value;
     center += min_value;
