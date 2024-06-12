@@ -104,7 +104,8 @@ public:
     }
     void apply_overlay(tipl::color_image& show_image,
                        unsigned char dim,
-                       std::shared_ptr<SliceModel> other_slice) const;
+                       std::shared_ptr<SliceModel> other_slice,
+                       float zoom = 1.0f) const;
 };
 
 class CustomSliceModel : public SliceModel {
@@ -135,7 +136,13 @@ public:
     bool is_mni = false;
     tipl::image<3> source_images;
     tipl::image<3> skull_removed_images;
+public:
     tipl::color_image picture,high_reso_picture;
+public:
+    tipl::image<2,tipl::vector<2> > warp_field,warp_field_high_reso;
+    tipl::color_image picture_warped,high_reso_picture_warped;
+    void warp_picture(tipl::vector<2> from,tipl::vector<2> to);
+public:
     void update_image(void);
     virtual void get_slice(tipl::color_image& image,
                            unsigned char,int,

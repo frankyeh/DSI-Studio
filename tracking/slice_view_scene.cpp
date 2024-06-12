@@ -1177,6 +1177,22 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     }
     case 6:
     {
+        auto slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
+        if(slice && !slice->picture.empty())
+        {
+            tipl::vector<2> from = sel_point.front();
+            tipl::vector<2> to = sel_point.back();
+            from /= display_ratio;
+            to /= display_ratio;
+            if(cur_tracking_window.cur_dim == 0)
+            {
+                from[1] = float(slice->dim.depth()) - from[1];
+                to[1] = float(slice->dim.depth()) - to[1];
+            }
+            tipl::out() << "warping picture: " << from << " to " << to;
+            slice->warp_picture(from,to);
+        }
+        need_update();
         return;
     }
     }

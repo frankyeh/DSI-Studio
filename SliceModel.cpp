@@ -26,7 +26,8 @@ SliceModel::SliceModel(fib_data* handle_,uint32_t view_id_):handle(handle_),view
 // ---------------------------------------------------------------------------
 void SliceModel::apply_overlay(tipl::color_image& show_image,
                     unsigned char cur_dim,
-                    std::shared_ptr<SliceModel> other_slice) const
+                    std::shared_ptr<SliceModel> other_slice,
+                               float zoom) const
 {
     if(show_image.empty())
         return;
@@ -36,9 +37,10 @@ void SliceModel::apply_overlay(tipl::color_image& show_image,
     for(int y = 0,pos = 0;y < show_image.height();++y)
         for(int x = 0;x < show_image.width();++x,++pos)
         {
-            auto v = toOtherSlice(other_slice,cur_dim,x,y);
             float value = 0;
-            if(!tipl::estimate(other_slice->get_source(),v,value))
+            if(!tipl::estimate(other_slice->get_source(),toOtherSlice(other_slice,cur_dim,
+                                                                      zoom != 1.0f ? float(x)*zoom : float(x),
+                                                                      zoom != 1.0f ? float(y)*zoom : float(y)),value))
                 continue;
             if((value > 0.0f && value > range.first) ||
                (value < 0.0f && value < range.second))
@@ -128,7 +130,10 @@ void CustomSliceModel::get_slice(tipl::color_image& image,
 {
     if(!picture.empty() && (dim[cur_dim] != picture.width() && dim[cur_dim] != picture.height()))
     {
-        image = picture;
+        if(picture_warped.empty())
+            image = picture;
+        else
+            image = picture_warped;
         for(auto overlay_slice : overlay_slices)
             if(this != overlay_slice.get())
                 apply_overlay(image,cur_dim,overlay_slice);
@@ -141,9 +146,49 @@ void CustomSliceModel::get_high_reso_slice(tipl::color_image& image,unsigned cha
                                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const
 {
     if(!high_reso_picture.empty() && (dim[cur_dim] != picture.width() && dim[cur_dim] != picture.height()))
-        image = high_reso_picture;
+    {
+        if(high_reso_picture_warped.empty())
+            image = high_reso_picture;
+        else
+            image = high_reso_picture_warped;
+        for(auto overlay_slice : overlay_slices)
+            if(this != overlay_slice.get())
+                apply_overlay(image,cur_dim,overlay_slice,float(picture.width())/float(high_reso_picture.width()));
+    }
     else
         get_slice(image,cur_dim,pos,overlay_slices);
+}
+// ---------------------------------------------------------------------------
+void point_warp(const tipl::color_image& in,tipl::color_image& out,
+                  tipl::image<2,tipl::vector<2> >& field,tipl::vector<2> from,tipl::vector<2> to)
+{
+    if(field.empty())
+        field.resize(in.shape());
+
+    auto dis = from-to;
+    float dis_length = dis.length()*4.0f;
+    if(dis_length < 0.2f)
+        return;
+    tipl::for_each_neighbors(tipl::pixel_index<2>(from[0],from[1],field.shape()),field.shape(),dis_length,
+            [&](const tipl::pixel_index<2>& pos)
+    {
+        float weighting = (from-tipl::vector<2>(pos)).length()/dis_length;
+        if(weighting <= 1.0f)
+            field[pos.index()] += dis*(1.0f-weighting);//(0.5f*std::cos(weighting*3.1415926f)+0.5f);
+    });
+    tipl::filter::mean(field);
+    tipl::compose_displacement<tipl::nearest>(in,field,out);
+}
+void CustomSliceModel::warp_picture(tipl::vector<2> from,tipl::vector<2> to)
+{
+    point_warp(picture,picture_warped,warp_field,from,to);
+    if(!high_reso_picture.empty())
+    {
+        warp_field_high_reso.resize(high_reso_picture.shape());
+        tipl::scale(warp_field,warp_field_high_reso);
+        warp_field_high_reso *= float(high_reso_picture.width())/float(picture.width());
+        tipl::compose_displacement<tipl::nearest>(high_reso_picture,warp_field_high_reso,high_reso_picture_warped);
+    }
 }
 // ---------------------------------------------------------------------------
 tipl::const_pointer_image<3> CustomSliceModel::get_source(void) const
