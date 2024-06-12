@@ -70,7 +70,7 @@ void ImageModel::calculate_dwi_sum(bool update_mask)
         }
         tipl::upper_threshold(dwi_sum,max_value);
         dwi.resize(voxel.dim);
-        tipl::normalize_upper_lower(dwi_sum,dwi);
+        tipl::normalize_upper_lower2(dwi_sum,dwi);
     }
 
     if(update_mask)
