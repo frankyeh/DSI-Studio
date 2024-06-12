@@ -150,6 +150,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
         auto list = fib.get_tractography_all_levels();
         auto selections = tipl::split(po.get("track_id","Arcuate,Cingulum,Aslant,InferiorFronto,InferiorLongitudinal,SuperiorLongitudinal,Uncinate,Fornix,Corticos,ThalamicR,Optic,Lemniscus,Reticular,Corpus"),',');
         std::vector<bool> selected(list.size());
+        std::vector<size_t> backup_subcomponents;
         for(const auto& each : selections)
         {
             auto sep_count = std::count(each.begin(),each.end(),'_');
@@ -159,10 +160,21 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     continue;
                 if(tipl::equal_case_insensitive(list[i],each))
                     selected[i] = true;
-                if(tipl::contains_case_insensitive(list[i],each) &&
-                   std::count(list[i].begin(),list[i].end(),'_') < 2)  // not subbundle then contain also work
-                    selected[i] = true;
+                if(tipl::contains_case_insensitive(list[i],each))
+                {
+                    if(std::count(list[i].begin(),list[i].end(),'_') < 2)  // not subbundle then contain also work
+                        selected[i] = true;
+                    else
+                        backup_subcomponents.push_back(i);
+                }
             }
+        }
+
+        if(std::all_of(selected.begin(), selected.end(), [](bool s){return !s; }))
+        {
+            tipl::out() << "no primary bundle matches. select subcomponents...";
+            for(auto each : backup_subcomponents)
+                selected[each] = true;
         }
 
         std::string selected_list;
@@ -179,7 +191,6 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
         if(tract_name_list.empty())
             return "cannot find any tract matching --track_id";
         tipl::out() << "selected tracts: " << selected_list;
-
     }
 
     std::vector<std::vector<std::string> > stat_files(tract_name_list.size());
