@@ -5,7 +5,7 @@ on:
       tag:
         description: 'Tag'
         required: true
-        default: '2024.05.22'
+        default: '2024.06.12'
       release_name:
         description: 'Release Name'
         required: true
