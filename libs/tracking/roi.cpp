@@ -74,7 +74,7 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
         if(terminated)
             return false;
 
-        unsigned char thread_count = std::min<int>(8,std::thread::hardware_concurrency());
+        unsigned char thread_count = std::min<int>(8,tipl::max_thread_count);
         std::vector<std::vector<tipl::vector<3,short> > > limiting_points(thread_count),
                                                           seed_points(thread_count),
                                                           not_end_points(thread_count);
@@ -146,8 +146,6 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
             }
     }
     {
-        std::vector<std::vector<std::vector<float> > > selected_atlas_tracts_threads(std::thread::hardware_concurrency());
-        std::vector<std::vector<unsigned int> > selected_atlas_cluster_threads(std::thread::hardware_concurrency());
         const auto& atlas_tract = handle->track_atlas->get_tracts();
         const auto& atlas_cluster = handle->track_atlas->tract_cluster;
         auto tolerance_dis_in_subject_voxels2 = tolerance_dis_in_subject_voxels*2;
@@ -158,6 +156,8 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
             is_target[i] = (std::find(track_ids.begin(),track_ids.end(),atlas_cluster[i]) != track_ids.end());
         });
 
+        std::vector<std::vector<std::vector<float> > > selected_atlas_tracts_threads(tipl::max_thread_count);
+        std::vector<std::vector<unsigned int> > selected_atlas_cluster_threads(tipl::max_thread_count);
         tipl::par_for(atlas_tract.size(),[&](unsigned int i,unsigned int id)
         {
             if(!is_target[i])

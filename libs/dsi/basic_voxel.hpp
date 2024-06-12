@@ -84,7 +84,7 @@ public:
 
     std::string report,steps;
     std::ostringstream recon_report, step_report;
-    unsigned int thread_count = std::thread::hardware_concurrency();
+    unsigned int thread_count = tipl::max_thread_count;
     void load_from_src(ImageModel& image_model);
 public:
     unsigned char method_id;

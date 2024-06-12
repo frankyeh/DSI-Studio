@@ -50,7 +50,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     if(!load_src(0))
         throw std::runtime_error(handle->error_msg.c_str());
     setWindowTitle(filenames[0]);
-    ui->ThreadCount->setMaximum(std::thread::hardware_concurrency());
+    ui->ThreadCount->setMaximum(tipl::max_thread_count);
     ui->toolBox->setCurrentIndex(1);
     ui->graphicsView->setScene(&scene);
     ui->view_source->setScene(&source);
@@ -90,7 +90,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->odf_resolving->setVisible(false);
 
     ui->AdvancedWidget->setVisible(false);
-    ui->ThreadCount->setValue(settings.value("rec_thread_count",std::thread::hardware_concurrency()).toInt());
+    ui->ThreadCount->setValue(settings.value("rec_thread_count",tipl::max_thread_count).toInt());
 
     ui->odf_resolving->setChecked(settings.value("odf_resolving",0).toInt());
 

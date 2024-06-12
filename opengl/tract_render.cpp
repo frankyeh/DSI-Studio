@@ -442,7 +442,7 @@ void TractRender::render_tracts(std::shared_ptr<TractModel>& active_tract_model,
     if(param.tract_shader)
         shader.add_shade(active_tract_model,visible);
 
-    auto thread_count = std::min<int>(6,std::thread::hardware_concurrency());
+    auto thread_count = std::min<int>(6,tipl::max_thread_count);
     data.clear();
     data.resize(thread_count);
     tipl::par_for (thread_count,[&](unsigned int thread)

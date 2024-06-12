@@ -67,7 +67,7 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
 {
 
     ui->setupUi(this);
-    ui->thread_count->setValue(std::thread::hardware_concurrency());
+    ui->thread_count->setValue(tipl::max_thread_count);
     ui->chart_widget_layout->addWidget(null_pos_chart_view);
     ui->chart_widget_layout->addWidget(null_neg_chart_view);
     ui->chart_widget_layout->addWidget(fdr_chart_view);

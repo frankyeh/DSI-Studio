@@ -67,7 +67,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     current_slice = slices[0];
 
     ui->setupUi(this);
-    ui->thread_count->setValue(std::thread::hardware_concurrency() >> 1);
+    ui->thread_count->setValue(tipl::max_thread_count >> 1);
 
     // setup GUI
     {

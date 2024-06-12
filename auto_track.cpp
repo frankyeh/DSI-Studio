@@ -13,8 +13,8 @@ auto_track::auto_track(QWidget *parent) :
     ui(new Ui::auto_track)
 {
     ui->setupUi(this);
-    ui->thread_count->setMaximum(std::thread::hardware_concurrency()*2);
-    ui->thread_count->setValue(std::thread::hardware_concurrency());
+    ui->thread_count->setMaximum(tipl::max_thread_count);
+    ui->thread_count->setValue(tipl::max_thread_count);
     progress_bar = new QProgressBar(this);
     progress_bar->setVisible(false);
     ui->statusbar->addPermanentWidget(progress_bar);
@@ -124,7 +124,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
     bool export_trk = po.get("export_trk",1);
     bool overwrite = po.get("overwrite",0);
     bool export_template_trk = po.get("export_template_trk",0);
-    uint32_t thread_count = po.get("thread_count",uint32_t(tipl::available_thread_count()));
+    uint32_t thread_count = tipl::max_thread_count = po.get("thread_count",tipl::max_thread_count);
     std::string trk_format = po.get("trk_format","tt.gz");
     std::string stat_format = po.get("stat_format","stat.txt");
     std::vector<float> tolerance;

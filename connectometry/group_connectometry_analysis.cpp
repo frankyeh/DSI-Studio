@@ -535,9 +535,9 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         {
             std::vector<std::vector<float> > tracks;
             fib->dt_fa = spm_map->dec_ptr;
-            run_track(fib,tracks,seed_count,0,std::thread::hardware_concurrency());
+            run_track(fib,tracks,seed_count,0,tipl::max_thread_count);
             fib->dt_fa = spm_map->inc_ptr;
-            run_track(fib,tracks,seed_count,0,std::thread::hardware_concurrency());
+            run_track(fib,tracks,seed_count,0,tipl::max_thread_count);
             if(tracks.size() > expected_tract_per_permutation)
                 break;
             seed_count *= 2;

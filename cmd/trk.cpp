@@ -789,7 +789,7 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
     std::shared_ptr<TractModel> tract_model(new TractModel(handle));
     {
         tipl::progress prog("start fiber tracking");
-        tracking_thread.run(uint32_t(po.get("thread_count",int(std::thread::hardware_concurrency()))),true);
+        tracking_thread.run(tipl::max_thread_count = po.get("thread_count",tipl::max_thread_count),true);
         tract_model->report += tracking_thread.report.str();
         if(po.has("report"))
         {
@@ -814,7 +814,7 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
         tracking_thread.roi_mgr->setRegions(points,3/*seed*/,"refine seeding region");
 
         tipl::out() << "restart tracking..." << std::endl;
-        tracking_thread.run(po.get("thread_count",uint32_t(std::thread::hardware_concurrency())),true);
+        tracking_thread.run(tipl::max_thread_count,true);
         tracking_thread.fetchTracks(tract_model.get());
         tipl::out() << "finished tracking." << std::endl;
 

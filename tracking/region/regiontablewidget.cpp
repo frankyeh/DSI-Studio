@@ -1673,7 +1673,7 @@ void RegionTableWidget::do_action(QString action)
             {
                 std::vector<size_t> need_fill_up;
                 {
-                    std::vector<std::vector<size_t> > need_fill_ups(std::thread::hardware_concurrency());
+                    std::vector<std::vector<size_t> > need_fill_ups(tipl::max_thread_count);
                     tipl::par_for(A.size(),[&](size_t index,int id)
                     {
                         if(A[index] && !A_labels[index])
