@@ -818,7 +818,7 @@ bool read_fib_data(tipl::io::gz_mat_read& mat_reader)
     return true;
 }
 bool img_command_float32_std(tipl::image<3>& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
-             const std::string& cmd,std::string param1,std::string& error_msg);
+             const std::string& cmd,const std::string& param1,std::string& error_msg);
 bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 const std::string& cmd,
                 const std::string& param)
