@@ -5,6 +5,7 @@
 #include "regtoolbox.h"
 #include "ui_regtoolbox.h"
 #include "basic_voxel.hpp"
+#include "console.h"
 extern bool has_cuda;
 RegToolBox::RegToolBox(QWidget *parent) :
     QMainWindow(parent),
@@ -32,7 +33,7 @@ RegToolBox::RegToolBox(QWidget *parent) :
 
     timer.reset(new QTimer());
     connect(timer.get(), SIGNAL(timeout()), this, SLOT(on_timer()));
-    timer->setInterval(2000);
+    timer->setInterval(500);
 
     QMovie *movie = new QMovie(":/icons/icons/ajax-loader.gif");
     ui->running_label->setMovie(movie);
@@ -341,12 +342,14 @@ void RegToolBox::show_image(void)
         I_scene << warp_image;
     }
 }
+extern console_stream console;
 
 void RegToolBox::on_timer()
 {
+    console.show_output();
     if(old_arg != arg)
     {
-        std::cout << arg << std::endl;
+        tipl::out() << arg;
         show_image();
         old_arg = arg;
     }
@@ -394,17 +397,17 @@ void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
             linear_with_cc(It,Itvs,I,Ivs,arg,reg_type,thread.terminated,ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound);
         tipl::out() << "linear registration completed" << std::endl;
         T = tipl::transformation_matrix<float>(arg,It.shape(),Itvs,I.shape(),Ivs);
-        tipl::resample_mt<tipl::interpolation::cubic>(I,J_,T);
+        tipl::resample<tipl::interpolation::cubic>(I,J_,T);
         if(I2.shape() == I.shape())
         {
             tipl::image<3> J2_(It.shape());
-            tipl::resample_mt<tipl::interpolation::cubic>(I2,J2_,T);
-            tipl::normalize_mt(J2);
+            tipl::resample<tipl::interpolation::cubic>(I2,J2_,T);
+            tipl::normalize(J2);
             J2.swap(J2_);
         }
 
     }
-    auto r = tipl::correlation_mt(J_.begin(),J_.end(),It.begin());
+    auto r = tipl::correlation(J_.begin(),J_.end(),It.begin());
     tipl::out() << "linear: " << r << std::endl;
     J.swap(J_);
 }
@@ -429,6 +432,7 @@ void edge_for_cdm(tipl::image<3>& sIt,
         tipl::filter::mean(sJ2);
     }
 }
+
 
 void RegToolBox::nonlinear_reg(void)
 {
@@ -456,10 +460,9 @@ void RegToolBox::nonlinear_reg(void)
         tipl::inv_displacement_to_mapping(f2t_dis,from2to,T);
         tipl::displacement_to_mapping(t2f_dis,to2from,T);
     }
-    tipl::compose_mapping(I,to2from,JJ);
-    auto r = tipl::correlation_mt(JJ.begin(),JJ.end(),It.begin());
-    tipl::out() << "nonlinear: " << r;
 }
+
+
 
 void RegToolBox::on_run_reg_clicked()
 {
