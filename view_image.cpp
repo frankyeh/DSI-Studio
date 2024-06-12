@@ -63,11 +63,6 @@ bool view_image::command(std::string cmd,std::string param1)
 {
     if(cur_image->empty())
         return true;
-    if(param1.empty())
-        tipl::out() << cmd;
-    else
-        tipl::out() << cmd << ":" << param1;
-
     error_msg.clear();
     bool result = true;
 
@@ -81,7 +76,7 @@ bool view_image::command(std::string cmd,std::string param1)
     }
 
     if((cmd == "normalize" || cmd == "normalize_otsu_median") && cur_image->pixel_type != variant_image::float32)
-        command("change_type",std::to_string(int(variant_image::float32)));
+        result = command("change_type",std::to_string(int(variant_image::float32)));
 
 
     if(cmd == "reshape")
@@ -172,12 +167,13 @@ bool view_image::command(std::string cmd,std::string param1)
 
 
     undo_list.push_back(std::make_shared<variant_image>(*cur_image.get()));
-    cur_image->command(cmd,param1);
+    result = cur_image->command(cmd,param1);
 
     end_command:
 
     if(!result)
     {
+        error_msg += cur_image->error_msg;
         tipl::out() << "ERROR: " << error_msg << std::endl;
         if(!undo_list.empty())
         {
@@ -261,7 +257,6 @@ bool view_image::command(std::string cmd,std::string param1)
             param_list.pop_back();
             return true;
         }
-
         command_list.clear();
         param_list.clear();
     }
