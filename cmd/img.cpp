@@ -5,58 +5,22 @@
 #include "img.hpp"
 std::map<std::string,std::string> dicom_dictionary;
 
-bool img_command_int8(tipl::image<3,unsigned char,tipl::buffer_container>& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
-             const std::string& cmd,std::string param1,std::string& error_msg)
-{
-    return tipl::command<tipl::io::gz_nifti>(data,vs,T,is_mni,cmd,param1,error_msg);
-}
-
-bool img_command_int16(tipl::image<3,unsigned short,tipl::buffer_container>& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
-             const std::string& cmd,std::string param1,std::string& error_msg)
-{
-    return tipl::command<tipl::io::gz_nifti>(data,vs,T,is_mni,cmd,param1,error_msg);
-}
-bool img_command_int32(tipl::image<3,unsigned int,tipl::buffer_container>& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
-             const std::string& cmd,std::string param1,std::string& error_msg)
-{
-    return tipl::command<tipl::io::gz_nifti>(data,vs,T,is_mni,cmd,param1,error_msg);
-}
-bool img_command_float32(tipl::image<3,float,tipl::buffer_container>& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
-             const std::string& cmd,std::string param1,std::string& error_msg)
-{
-    return tipl::command<tipl::io::gz_nifti>(data,vs,T,is_mni,cmd,param1,error_msg);
-}
 bool img_command_float32_std(tipl::image<3>& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
-             const std::string& cmd,std::string param1,std::string& error_msg)
+             const std::string& cmd,const std::string& param1,std::string& error_msg)
 {
-    return tipl::command<tipl::io::gz_nifti>(data,vs,T,is_mni,cmd,param1,error_msg);
-}
-
-
-template<typename image_type>
-bool img_command(image_type& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
-             const std::string& cmd,std::string param1,std::string& error_msg)
-{
-    if constexpr(std::is_same_v<image_type,tipl::image<3,unsigned char,tipl::buffer_container> >)
-        return img_command_int8(data,vs,T,is_mni,cmd,param1,error_msg);
-    if constexpr(std::is_same_v<image_type,tipl::image<3,unsigned short,tipl::buffer_container> >)
-        return img_command_int16(data,vs,T,is_mni,cmd,param1,error_msg);
-    if constexpr(std::is_same_v<image_type,tipl::image<3,unsigned int,tipl::buffer_container> >)
-        return img_command_int32(data,vs,T,is_mni,cmd,param1,error_msg);
-    if constexpr(std::is_same_v<image_type,tipl::image<3,float,tipl::buffer_container> >)
-        return img_command_float32(data,vs,T,is_mni,cmd,param1,error_msg);
-    throw;
+    return tipl::command<tipl::out,tipl::io::gz_nifti>(data,vs,T,is_mni,cmd,param1,error_msg);
 }
 
 bool variant_image::command(std::string cmd,std::string param1)
 {
     bool result = true;
+    error_msg.clear();
     if(cmd == "change_type")
         change_type(decltype(pixel_type)(std::stoi(param1)));
     else
     apply([&](auto& I)
     {
-        result = img_command(I,vs,T,is_mni,cmd,param1,error_msg);
+        result = tipl::command<tipl::out,tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,error_msg);
         shape = I.shape();
     });
     return result;
