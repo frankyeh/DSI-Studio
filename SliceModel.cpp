@@ -516,35 +516,34 @@ void CustomSliceModel::update_transform(void)
     }
 }
 // ---------------------------------------------------------------------------
-void match_template_resolution(tipl::image<3>& VG,
-                               tipl::vector<3>& VGvs,
-                               tipl::image<3>& VF,
-                               tipl::vector<3>& VFvs);
 void CustomSliceModel::argmin(void)
 {
     terminated = false;
     running = true;
     handle->view_item[view_id].registering = true;
 
-    auto to = source_images;
-    auto to_vs = vs;
-    tipl::image<3> from;
-    handle->get_iso_fa(from);
-    auto from_vs = handle->vs;
-    if(picture.empty())
-        match_template_resolution(to,to_vs,from,from_vs);
-
-    tipl::lower_threshold(to,0.0f);
-    tipl::lower_threshold(from,0.0f);
-
+    tipl::image<3> to(source_images);
+    tipl::segmentation::otsu_median_regulzried(to);
     tipl::filter::gaussian(to);
-    tipl::filter::gaussian(from);
 
-    tipl::out() << "registration started using " << (picture.empty() ? " rigid body with regular bound" : "affine transform with narrow bound");
+    auto to_vs = vs;
+    auto from = handle->get_iso_fa();
+    auto from_vs = handle->vs;
+    tipl::image<3> from1(from.first),from2(from.second);
+    tipl::filter::gaussian(from1);
+    tipl::filter::gaussian(from2);
+
     if(picture.empty())
-        linear_with_mi(to,to_vs,from,from_vs,arg_min,tipl::reg::rigid_body,terminated);
-    else
-        linear_with_mi_refine(to,to_vs,from,from_vs,arg_min,tipl::reg::affine,terminated);
+    {
+        while(to_vs[0]*0.5f >= from_vs[0])
+        {
+            tipl::downsampling(to);
+            to_vs *= 0.5f;
+        }
+    }
+
+    tipl::out() << "registration started using " << (picture.empty() ? "rigid body with regular bound" : "affine transform with narrow bound");
+    linear_with_mi({tipl::make_shared(to),tipl::make_shared(to)},to_vs,{tipl::make_shared(from1),tipl::make_shared(from2)},from_vs,arg_min,picture.empty() ? tipl::reg::rigid_body : tipl::reg::affine,terminated);
     update_transform();
     handle->view_item[view_id].registering = false;
     running = false;

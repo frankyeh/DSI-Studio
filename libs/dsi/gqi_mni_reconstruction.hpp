@@ -12,7 +12,7 @@ void match_template_resolution(tipl::image<3>& VG,
                                tipl::vector<3>& VGvs,
                                tipl::image<3>& VF,
                                tipl::image<3>& VF2,
-                               tipl::vector<3>& VFvs);
+                               tipl::vector<3>& VFvs,bool rigid_body);
 class DWINormalization  : public BaseProcess
 {
 protected:
@@ -45,48 +45,30 @@ public:
         // VG: FA TEMPLATE
         // VF: SUBJECT QA
         // VF2: SUBJECT ISO
-        tipl::image<3> VG,VF(voxel.qa_map),VG2,VF2;
+        tipl::image<3> VG,VF(voxel.qa_map),VG2,VF2(voxel.iso_map);
         tipl::vector<3> VGvs, VFvs(voxel.vs);
 
 
         bool is_human_template = QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().contains("ICBM");
         bool export_intermediate = voxel.needs("debug");
-        bool dual_modality = false;
 
-        if(fa_template_list[voxel.template_id].empty())
-            throw std::runtime_error("Invalid external template");
-        {
-            tipl::io::gz_nifti read;
-            if(!read.load_from_file(fa_template_list[voxel.template_id].c_str()))
-                throw std::runtime_error("Cannot load template");
+        if(fa_template_list[voxel.template_id].empty() ||
+           !tipl::io::gz_nifti::load_from_file(fa_template_list[voxel.template_id].c_str(),VG,VGvs,voxel.trans_to_mni))
+            throw std::runtime_error("Cannot load anisotropy template");
 
-            read.toLPS(VG);
-            read.get_voxel_size(VGvs);
-            read.get_image_transformation(voxel.trans_to_mni);
-        }
-        if(!iso_template_list[voxel.template_id].empty())
-        {
-            tipl::io::gz_nifti read2;
-            if(read2.load_from_file(iso_template_list[voxel.template_id].c_str()))
-            {
-                read2.toLPS(VG2);
-                VF2.swap(voxel.iso_map);
-                dual_modality = true;
-            }
-        }
+        if(iso_template_list[voxel.template_id].empty() ||
+           !tipl::io::gz_nifti::load_from_file(iso_template_list[voxel.template_id].c_str(),VG2))
+            throw std::runtime_error("Cannot load isotropy template");
 
-
+        std::vector<tipl::const_pointer_image<3> > VG_list({VG,VG2}),VF_list({VF,VF2});
 
         {
-            match_template_resolution(VG,VG2,VGvs,VF,VF2,VFvs);
-            tipl::normalize(VG);
+            match_template_resolution(VG,VG2,VGvs,VF,VF2,VFvs,false);
             tipl::normalize(VF);
-            if(dual_modality)
-                tipl::normalize(VF2);
+            tipl::normalize(VF2);
 
             tipl::filter::gaussian(VF);
-            if(dual_modality)
-                tipl::filter::gaussian(VF2);
+            tipl::filter::gaussian(VF2);
 
             if(export_intermediate)
             {
@@ -112,30 +94,27 @@ public:
                 bool terminated = false;
                 if(!tipl::run("linear registration",[&]()
                 {
-                    affine = linear_with_mi(VG,VGvs,VF,VFvs,tipl::reg::affine,terminated);
+                    affine = linear_with_mi(VG_list,VGvs,VF_list,VFvs,tipl::reg::affine,terminated);
                 },terminated))
                     throw std::runtime_error("reconstruction canceled");
             }
 
-            tipl::image<3> VFF(VG.shape()),VFF2;
+            tipl::image<3> VFF(VG.shape()),VFF2(VG.shape());
             tipl::resample<tipl::interpolation::cubic>(VF,VFF,affine);
+            tipl::resample<tipl::interpolation::cubic>(VF2,VFF2,affine);
+
             float linear_r = tipl::correlation(VFF.begin(),VFF.end(),VG.begin());
             linear_r = linear_r*linear_r;
             tipl::out() << "linear R2: " << linear_r << std::endl;
+            
             if(linear_r < 0.3f)
                 throw std::runtime_error("ERROR: Poor R2 found in linear registration. Please check image orientation or use manual alignment.");
 
-            if(dual_modality)
-            {
-                VFF2.resize(VG.shape());
-                tipl::resample<tipl::interpolation::cubic>(VF2,VFF2,affine);
-            }
-
+            
             if(export_intermediate)
             {
                 tipl::io::gz_nifti::save_to_file("Subject_QA_linear_reg.nii.gz",VFF,VGvs,voxel.trans_to_mni);
-                if(dual_modality)
-                    tipl::io::gz_nifti::save_to_file("Subject_ISO_linear_reg.nii.gz",VFF2,VGvs,voxel.trans_to_mni);
+                tipl::io::gz_nifti::save_to_file("Subject_ISO_linear_reg.nii.gz",VFF2,VGvs,voxel.trans_to_mni);
             }
 
             tipl::reg::cdm_pre(VG,VG2,VFF,VFF2);
@@ -144,9 +123,8 @@ public:
 
             if(!tipl::run("normalization",[&]()
                 {
-                    tipl::reg::cdm_param param;
                     tipl::image<3,tipl::vector<3> > cdm_dis_inv;
-                    cdm_common(VG,VG2,VFF,VFF2,cdm_dis,cdm_dis_inv,terminated,param);
+                    cdm_common(VG,VG2,VFF,VFF2,cdm_dis,cdm_dis_inv,terminated);
                     if(export_intermediate)
                     {
                         tipl::image<4> buffer(tipl::shape<4>(VG.width(),VG.height(),VG.depth(),6));
@@ -171,10 +149,9 @@ public:
                 },terminated))
                 throw std::runtime_error("reconstruction canceled");
 
-            tipl::image<3> VFFF;
-            tipl::compose_displacement(VFF,cdm_dis,VFFF);
+            tipl::image<3> VFFF(tipl::compose_displacement(VFF,cdm_dis));
 
-            float r = float(tipl::correlation(VG.begin(),VG.end(),VFFF.begin()));
+            float r = tipl::correlation(VG,VFFF);
             voxel.R2 = r*r;
             tipl::out() << "linear+nonlinear R2: " << voxel.R2 << std::endl;
             if(voxel.R2 < 0.3f)

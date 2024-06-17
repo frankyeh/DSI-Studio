@@ -17,6 +17,7 @@ class manual_alignment : public QDialog
 private:
     tipl::image<3> from_original;
     tipl::image<3> from,to,warped_from;
+    tipl::image<3> from2,to2,warped_from2;
     tipl::vector<3> from_vs,to_vs;
     QGraphicsScene scene[3];
     float from_downsample = 1.0f;
@@ -40,11 +41,14 @@ public:
     QTimer* timer;
     explicit manual_alignment(QWidget *parent,
                               tipl::image<3> from_,
+                              tipl::image<3> from2_,
                               const tipl::vector<3>& from_vs,
                               tipl::image<3> to_,
+                              tipl::image<3> to2_,
                               const tipl::vector<3>& to_vs,
                               tipl::reg::reg_type reg_type,
                               tipl::reg::cost_type cost_function);
+
     ~manual_alignment();
     void connect_arg_update();
     void disconnect_arg_update();

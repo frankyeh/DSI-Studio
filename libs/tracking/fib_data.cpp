@@ -1168,29 +1168,8 @@ void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) 
     }
 }
 
-void fib_data::get_iso_fa(tipl::image<3>& iso_fa_) const
-{
-    size_t index = get_name_index("iso");
-    if(view_item.size() == index)
-        index = get_name_index("md");
-    if(view_item.size() == index)
-        index = 0;
-    tipl::image<3> fa_(view_item[0].get_image()),iso_(view_item[index].get_image());
-    tipl::normalize(fa_);
-    tipl::normalize(iso_);
-    fa_ += iso_;
-    iso_fa_.swap(fa_);
-}
 
-void fib_data::get_iso(tipl::image<3>& iso_) const
-{
-    size_t index = get_name_index("iso");
-    if(view_item.size() == index)
-        index = get_name_index("md");
-    if(view_item.size() == index)
-        index = 0;
-    iso_ = view_item[index].get_image();
-}
+
 
 extern std::vector<std::string> fa_template_list,iso_template_list;
 extern std::vector<std::vector<std::string> > atlas_file_name_list;
@@ -1709,102 +1688,58 @@ bool fib_data::map_to_mni(bool background)
     bool terminated = false;
     auto lambda = [this,output_file_name,&terminated]()
     {
-        tipl::transformation_matrix<float> T;
+        dual_reg reg;
+        reg.It = template_I;
+        reg.It2 = template_I2;
+        reg.Itvs = template_vs;
+        reg.ItR = template_to_mni;
 
+        reg.I = tipl::image<3>(dir.fa[0],dim);
+        reg.Ivs = vs;
+        reg.IR = trans_to_mni;
 
-        auto It = template_I;
-        auto It2 = template_I2;
-
-        if(dir.index_name[0] == "image" && // not FIB file
-           tipl::io::gz_nifti::load_to_space(t1w_template_file_name.c_str(),It,template_to_mni)) // not FIB file, use t1w as template
+        // not FIB file, use t1w as template
+        if(dir.index_name[0] == "image")
         {
+            if(!tipl::io::gz_nifti::load_to_space(t1w_template_file_name.c_str(),reg.It,template_to_mni))
+            {
+                prog = 6;
+                error_msg = "cannot perform normalization";
+                terminated = true;
+                return;
+            }
             tipl::out() << "using structure image for normalization" << std::endl;
-            It2.clear();
+            reg.It2.clear();
         }
-
-
-        tipl::image<3> Is(dir.fa[0],dim);
-        tipl::image<3> Is2;
 
         {
             size_t iso_index = get_name_index("iso");
-            if(view_item.size() == iso_index)
-                iso_index = get_name_index("md");
             if(view_item.size() != iso_index)
-                Is2 = view_item[iso_index].get_image();
-        }
-        bool no_iso = Is2.empty() || It2.empty();
-
-        tipl::filter::gaussian(Is);
-        tipl::filter::gaussian(Is);
-        if(!no_iso)
-        {
-            tipl::filter::gaussian(Is2);
-            tipl::filter::gaussian(Is2);
+                reg.I2 = view_item[iso_index].get_image();
         }
 
         prog = 1;
-        T = has_manual_atlas ? manual_template_T :
-                               linear_with_mi(It,template_vs,Is,vs,tipl::reg::affine,terminated);
+        if(has_manual_atlas)
+            reg.arg = manual_template_T;
+        else
+            reg.linear_reg(tipl::reg::affine,0/*mutual info*/,terminated);
+
         if(terminated)
         {
             prog = 6;
             return;
         }
-        prog = 2;
-        tipl::image<3> Iss(It.shape());
-        tipl::resample(Is,Iss,T);
-        tipl::image<3> Iss2(It2.shape());
-        if(!no_iso)
-            tipl::resample(Is2,Iss2,T);
         prog = 3;
-
         if(dir.index_name[0] == "image")
         {
             tipl::out() << "matching t1w t2w contrast" << std::endl;
-            tipl::image<3> t2w(It.shape());
-            if(tipl::io::gz_nifti::load_to_space(t2w_template_file_name.c_str(),t2w,template_to_mni))
-            {
-                std::vector<float> X(It.size()*3);
-                tipl::par_for(It.size(),[&](size_t pos)
-                {
-                    if(Iss[pos] == 0.0f)
-                        return;
-                    size_t i = pos;
-                    pos = pos+pos+pos;
-                    X[pos] = 1;
-                    X[pos+1] = It[i];
-                    X[pos+2] = t2w[i];
-                });
-                tipl::multiple_regression<float> m;
-                if(m.set_variables(X.begin(),3,It.size()))
-                {
-                    float b[3] = {0.0f,0.0f,0.0f};
-                    m.regress(Iss.begin(),b);
-                    tipl::out() << "image=" << b[0] << " + " << b[1] << " × t1w + " << b[2] << " × t2w ";
-                    tipl::par_for(It.size(),[&](size_t pos)
-                    {
-                        if(Iss[pos] == 0.0f)
-                            return;
-                        It[pos] = b[0] + b[1]*It[pos] + b[2]*t2w[pos];
-                        if(It[pos] < 0.0f)
-                            It[pos] = 0.0f;
-                    });
-                }
-            }
+            if(tipl::io::gz_nifti::load_to_space(t2w_template_file_name.c_str(),reg.It2,template_to_mni))
+                reg.matching_contrast();
+            else
+                reg.It2.clear();
         }
-        tipl::image<3,tipl::vector<3> > dis,inv_dis;
-        tipl::reg::cdm_pre(It,It2,Iss,Iss2);
-
-        cdm_common(It,It2,Iss,Iss2,dis,inv_dis,terminated);
         prog = 4;
-
-        tipl::displacement_to_mapping(dis,t2s,T);
-        tipl::compose_mapping(Is,t2s,Iss);
-        auto R2 = tipl::correlation(Iss.begin(),Iss.end(),It.begin());
-        tipl::out() << "R2: " << R2 << std::endl;
-
-        if(R2 < 0.2f)
+        if(reg.nonlinear_reg(terminated,true) < 0.3f)
         {
             error_msg = "cannot perform normalization";
             terminated = true;
@@ -1814,15 +1749,11 @@ bool fib_data::map_to_mni(bool background)
             prog = 6;
             return;
         }
-
-        s2t.resize(dim);
-        tipl::inv_displacement_to_mapping(inv_dis,s2t,T);
-
-
         prog = 5;
-        constexpr int method_ver = 202308; // 999999 is for external loading mapping
-        if(!save_mapping(output_file_name.c_str(),method_ver))
-            tipl::out() << "mapping file not saved: " << error_msg;
+        if(!reg.save_warping(output_file_name.c_str()))
+            tipl::out() << reg.error_msg;
+        s2t.swap(reg.from2to);
+        t2s.swap(reg.to2from);
         prog = 6;
     };
 
@@ -1940,30 +1871,6 @@ bool fib_data::load_mapping(const char* file_name,bool external)
 
     });
     tipl::out() << s2t[0];
-    return true;
-}
-bool fib_data::save_mapping(const char* output_file_name,int method_ver)
-{
-    if(s2t.empty() || t2s.empty())
-    {
-        error_msg = "no mapping matrix to save";
-        return false;
-    }
-    tipl::io::gz_mat_write out(output_file_name);
-    if(!out)
-    {
-        error_msg = "cannot save to ";
-        error_msg = output_file_name;
-        return false;
-    }
-    out.write("to_dim",template_I.shape());
-    out.write("to_vs",template_vs);
-    out.write("from_dim",dim);
-    out.write("from_vs",vs);
-    out.write("steps",steps);
-    out.write("method_ver",std::to_string(method_ver));
-    out.write("to2from",&t2s[0][0],3,t2s.size());
-    out.write("from2to",&s2t[0][0],3,s2t.size());
     return true;
 }
 

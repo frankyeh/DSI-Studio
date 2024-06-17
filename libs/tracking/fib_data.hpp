@@ -275,7 +275,7 @@ public:
     std::vector<std::shared_ptr<atlas> > atlas_list;
     tipl::matrix<4,4> template_to_mni;
     bool has_manual_atlas = false;
-    tipl::transformation_matrix<float> manual_template_T;
+    tipl::affine_transform<float> manual_template_T;
 public:
     std::string t1w_template_file_name,t2w_template_file_name,wm_template_file_name,mask_template_file_name;
     std::string tractography_atlas_file_name;
@@ -356,7 +356,6 @@ public:
     }
     const tipl::image<3,tipl::vector<3,float> >& get_sub2temp_mapping(void);
     bool load_mapping(const char* file_name,bool external = true);
-    bool save_mapping(const char* file_name,int method_ver = 999999);
 public:
     fib_data(void)
     {
@@ -383,8 +382,19 @@ public:
                    tipl::color_image& show_image);
     void get_voxel_info2(int x,int y,int z,std::vector<float>& buf) const;
     void get_voxel_information(int x,int y,int z,std::vector<float>& buf) const;
-    void get_iso_fa(tipl::image<3>& iso_fa_) const;
-    void get_iso(tipl::image<3>& iso_fa_) const;
+    auto get_iso(void) const
+    {
+        size_t index = get_name_index("iso");
+        if(view_item.size() == index)
+            index = get_name_index("md");
+        if(view_item.size() == index)
+            index = 0;
+        return view_item[index].get_image();
+    }
+    auto get_iso_fa(void) const
+    {
+        return std::make_pair(view_item[0].get_image(),get_iso());
+    }
 };
 
 

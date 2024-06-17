@@ -5,32 +5,15 @@
 #include "ui_manual_alignment.h"
 #include "tracking/tracking_window.h"
 
-tipl::vector<3> adjust_to_vs(const tipl::image<3,float>& from,
-               const tipl::vector<3>& from_vs,
-               const tipl::image<3,float>& to,
-               const tipl::vector<3>& to_vs)
-{
-    auto from_otsu = tipl::segmentation::otsu_threshold(from)*0.6f;
-    auto to_otsu = tipl::segmentation::otsu_threshold(to)*0.6f;
-    tipl::vector<3> from_min,from_max,to_min,to_max;
-    tipl::bounding_box(from,from_min,from_max,from_otsu);
-    tipl::bounding_box(to,to_min,to_max,to_otsu);
-    from_max -= from_min;
-    to_max -= to_min;
-    tipl::vector<3> new_vs(to_vs);
-    float rx = (to_max[0] > 0.0f) ? from_max[0]*from_vs[0]/(to_max[0]*to_vs[0]) : 1.0f;
-    float ry = (to_max[1] > 0.0f) ? from_max[1]*from_vs[1]/(to_max[1]*to_vs[1]) : 1.0f;
 
-    new_vs[0] *= rx;
-    new_vs[1] *= ry;
-    new_vs[2] *= (rx+ry)*0.5f; // z direction bounding box is largely affected by slice number, thus use rx and ry
-    return new_vs;
-}
+
 
 manual_alignment::manual_alignment(QWidget *parent,
                                    tipl::image<3> from_,
+                                   tipl::image<3> from2_,
                                    const tipl::vector<3>& from_vs_,
                                    tipl::image<3> to_,
+                                   tipl::image<3> to2_,
                                    const tipl::vector<3>& to_vs_,
                                    tipl::reg::reg_type reg_type,
                                    tipl::reg::cost_type cost_function) :
@@ -39,21 +22,23 @@ manual_alignment::manual_alignment(QWidget *parent,
     from_original = from_;
     from.swap(from_);
     to.swap(to_);
+    from2.swap(from2_);
+    to2.swap(to2_);
 
     while(from.size() < to.size()/8)
     {
-        tipl::image<3> new_to;
-        tipl::downsample_with_padding(to,new_to);
-        to.swap(new_to);
+        tipl::downsample_with_padding(to);
+        if(!to2.empty())
+            tipl::downsample_with_padding(to2);
         to_vs *= 2.0f;
         to_downsample *= 0.5f;
         tipl::out() << "downsampling template image by 2 dim=" << to.shape() << std::endl;
     }
     while(to.size() < from.size()/8)
     {
-        tipl::image<3> new_from;
-        tipl::downsample_with_padding(from,new_from);
-        from.swap(new_from);
+        tipl::downsample_with_padding(from);
+        if(!from2.empty())
+            tipl::downsample_with_padding(from2);
         from_vs *= 2.0f;
         from_downsample *= 2.0f;
         tipl::out() << "downsampling subject image by 2 dim=" << from.shape() << std::endl;
@@ -62,14 +47,10 @@ manual_alignment::manual_alignment(QWidget *parent,
     warped_from.resize(to.shape());
 
 
-    float from_median = tipl::segmentation::otsu_median(from);
-    if(from_median != 0.0f)
-        tipl::multiply_constant(from,0.5f/from_median);
-    float to_median = tipl::segmentation::otsu_median(to);
-    if(from_median != 0.0f)
-        tipl::multiply_constant(to,0.5f/to_median);
-    tipl::upper_lower_threshold(from,0.0f,1.0f);
-    tipl::upper_lower_threshold(to,0.0f,1.0f);
+    tipl::segmentation::otsu_median_regulzried(from);
+    tipl::segmentation::otsu_median_regulzried(from2);
+    tipl::segmentation::otsu_median_regulzried(to);
+    tipl::segmentation::otsu_median_regulzried(to2);
 
     ui->setupUi(this);
     ui->options->hide();
@@ -397,9 +378,24 @@ void manual_alignment::on_rerun_clicked()
     thread.run([this,cost,reg_type]()
     {
         if(cost == tipl::reg::mutual_info)
-            linear_with_mi(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
+        {
+            if(from2.empty() || to2.empty())
+                linear_with_mi({tipl::make_shared(from)},from_vs,
+                                  {tipl::make_shared(to)},to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
+            else
+                linear_with_mi({tipl::make_shared(from),tipl::make_shared(from2)},from_vs,
+                                  {tipl::make_shared(to),tipl::make_shared(to2)},to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
+        }
         else
-            linear_with_cc(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
+        {
+            if(from2.empty() || to2.empty())
+                linear_with_cc({tipl::make_shared(from)},from_vs,
+                           {tipl::make_shared(to)},to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
+            else
+                linear_with_cc({tipl::make_shared(from),tipl::make_shared(from2)},from_vs,
+                               {tipl::make_shared(to),tipl::make_shared(to2)},to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
+        }
+
         thread.running = false;
     });
     ui->rerun->setText("Stop");
@@ -434,10 +430,25 @@ void manual_alignment::on_refine_clicked()
 
     thread.run([this,cost,reg_type]()
     {
+
         if(cost == tipl::reg::mutual_info)
-            linear_with_mi_refine(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
+        {
+            if(from2.empty() || to2.empty())
+                linear_with_mi_refine({tipl::make_shared(from)},from_vs,
+                                  {tipl::make_shared(to)},to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
+            else
+                linear_with_mi_refine({tipl::make_shared(from),tipl::make_shared(from2)},from_vs,
+                                  {tipl::make_shared(to),tipl::make_shared(to2)},to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
+        }
         else
-            linear_with_cc(from,from_vs,to,to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
+        {
+            if(from2.empty() || to2.empty())
+                linear_with_cc({tipl::make_shared(from)},from_vs,
+                           {tipl::make_shared(to)},to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
+            else
+                linear_with_cc({tipl::make_shared(from),tipl::make_shared(from2)},from_vs,
+                               {tipl::make_shared(to),tipl::make_shared(to2)},to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
+        }
         thread.running = false;
     });
     ui->refine->setText("Stop");

@@ -598,7 +598,8 @@ void reconstruction_window::on_actionRotate_triggered()
     if(!load_image_from_files(filenames,ref,vs,t))
         return;
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-                                                                handle->dwi,handle->voxel.vs,ref,vs,
+                                                                handle->dwi,tipl::image<3>(),handle->voxel.vs,
+                                                                ref,tipl::image<3>(),vs,
                                                                 tipl::reg::rigid_body,
                                                                 tipl::reg::cost_type::mutual_info));
     manual->on_rerun_clicked();
@@ -695,7 +696,8 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
         tipl::filter::gaussian(iso_fa);
         tipl::filter::gaussian(smoothed_ref);
         tipl::filter::gaussian(smoothed_ref);
-        affine = linear_with_mi(iso_fa,handle->voxel.vs,smoothed_ref,vs,tipl::reg::rigid_body,terminated);
+        affine = linear_with_mi({tipl::make_shared(iso_fa)},handle->voxel.vs,
+                                {tipl::make_shared(smoothed_ref)},vs,tipl::reg::rigid_body,terminated);
     }
     else {
         if(has_registered)
@@ -735,7 +737,8 @@ void reconstruction_window::on_actionPartial_FOV_triggered()
 void reconstruction_window::on_actionManual_Rotation_triggered()
 {
     std::shared_ptr<manual_alignment> manual(
-                new manual_alignment(this,handle->dwi,handle->voxel.vs,handle->dwi,handle->voxel.vs,tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
+                new manual_alignment(this,handle->dwi,tipl::image<3>(),handle->voxel.vs,
+                                          handle->dwi,tipl::image<3>(),handle->voxel.vs,tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
     if(manual->exec() != QDialog::Accepted)
         return;
     tipl::progress prog_("rotating");
@@ -830,7 +833,8 @@ void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
     if(!load_image_from_files(filenames,ref,vs,t))
         return;
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-                                                                handle->dwi,handle->voxel.vs,ref,vs,
+                                                                handle->dwi,tipl::image<3>(),handle->voxel.vs,
+                                                                ref,tipl::image<3>(),vs,
                                                                 tipl::reg::rigid_body,
                                                                 tipl::reg::cost_type::mutual_info));
     manual->on_rerun_clicked();
@@ -907,8 +911,8 @@ void reconstruction_window::on_align_slices_clicked()
     tipl::normalize(from);
     tipl::normalize(to);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-                                                                from,handle->voxel.vs,
-                                                                to,handle->voxel.vs,
+                                                                from,tipl::image<3>(),handle->voxel.vs,
+                                                                to,tipl::image<3>(),handle->voxel.vs,
                                                                 tipl::reg::rigid_body,
                                                                 tipl::reg::cost_type::mutual_info));
     manual->on_rerun_clicked();
@@ -951,9 +955,9 @@ void match_template_resolution(tipl::image<3>& VG,
                                tipl::vector<3>& VGvs,
                                tipl::image<3>& VF,
                                tipl::image<3>& VF2,
-                               tipl::vector<3>& VFvs)
+                               tipl::vector<3>& VFvs,bool rigid_body)
 {    
-    float ratio = float(VF.width())/float(VG.width());
+    float ratio = rigid_body ? VFvs[0]/VGvs[0] : float(VF.width())/float(VG.width());
     while(ratio < 0.5f)   // if subject resolution is substantially lower, downsample template
     {
         tipl::downsampling(VG);
@@ -1010,15 +1014,12 @@ void reconstruction_window::on_actionManual_Align_triggered()
         read.toLPS(VG);
         read.get_voxel_size(VGvs);
         if(read2.load_from_file(iso_template_list[handle->voxel.template_id]))
-        {
             read2.toLPS(VG2);
-            VG += VG2;
-        }
     }
 
     match_template_resolution(VG,VGvs,VF,VFvs);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-                                                                VG,VGvs,VF,VFvs,
+                                                                VG,VG2,VGvs,VF,VF,VFvs,
                                                                 tipl::reg::affine,
                                                                 tipl::reg::cost_type::mutual_info));
     manual->on_rerun_clicked();

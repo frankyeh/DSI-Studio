@@ -7,6 +7,7 @@
 #include <QProgressBar>
 #include "zlib.h"
 #include "TIPL/tipl.hpp"
+#include "reg.hpp"
 namespace Ui {
 class RegToolBox;
 }
@@ -18,19 +19,14 @@ class RegToolBox : public QMainWindow
 
 public:
     uint8_t cur_view = 2;
-    tipl::image<3> It,I,J,JJ,I2,It2,J2;
-    tipl::image<3,tipl::vector<3> > t2f_dis,to2from,f2t_dis,from2to;
-    tipl::vector<3> Itvs,Ivs;
-    tipl::matrix<4,4> ItR,IR;
-    bool It_is_mni;
+    dual_reg reg;
 public:
     tipl::transformation_matrix<float> T;
     tipl::value_to_color<float> v2c_I,v2c_It;
 public:
-    tipl::affine_transform<float> arg,old_arg;
     tipl::thread thread;
     std::shared_ptr<QTimer> timer;
-    std::string status;
+    tipl::affine_transform<float> old_arg;
 public:
     std::shared_ptr<tipl::reg::bfnorm_mapping<float,3> > bnorm_data;
     bool reg_done;
@@ -38,9 +34,10 @@ public:
 private:
     void clear(void);
     void setup_slice_pos(void);
-    void linear_reg(tipl::reg::reg_type reg_type,int cost_type);
-    void nonlinear_reg(void);
-
+private:
+    std::string template2_name,subject2_name;
+    void load_subject2(const std::string& file_name);
+    void load_template2(const std::string& file_name);
 public:
     explicit RegToolBox(QWidget *parent = nullptr);
     ~RegToolBox();

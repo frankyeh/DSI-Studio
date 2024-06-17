@@ -956,11 +956,10 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
         return;
     }
     reg_slice->terminate();
-    tipl::image<3> iso_fa;
-    handle->get_iso_fa(iso_fa);
+    auto iso_fa = handle->get_iso_fa();
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-        reg_slice->get_source(),reg_slice->vs,
-        iso_fa,slices[0]->vs,
+        reg_slice->get_source(),reg_slice->get_source(),reg_slice->vs,
+        iso_fa.first,iso_fa.second,slices[0]->vs,
         tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
 
     {
@@ -1286,15 +1285,14 @@ void tracking_window::on_actionManual_Atlas_Alignment_triggered()
         QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
         return ;
     }
-    tipl::image<3> iso_fa;
-    handle->get_iso_fa(iso_fa);
+    auto iso_fa = handle->get_iso_fa();
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-        iso_fa,handle->vs,
-        handle->template_I2.empty() ? handle->template_I: handle->template_I2,handle->template_vs,
+        iso_fa.first,iso_fa.second,handle->vs,
+        handle->template_I,handle->template_I2,handle->template_vs,
         tipl::reg::affine,tipl::reg::cost_type::mutual_info));
     if(manual->exec() != QDialog::Accepted)
         return;
-    handle->manual_template_T = manual->get_iT();
+    handle->manual_template_T = manual->arg;
     handle->has_manual_atlas = true;
 
 
@@ -1365,7 +1363,7 @@ void tracking_window::stripSkull()
 
 
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-            It,vs,J,vsJ,tipl::reg::affine,tipl::reg::cost_type::mutual_info));
+            It,tipl::image<3>(),vs,J,tipl::image<3>(),vsJ,tipl::reg::affine,tipl::reg::cost_type::mutual_info));
 
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)

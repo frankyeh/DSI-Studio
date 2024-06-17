@@ -33,7 +33,7 @@ RegToolBox::RegToolBox(QWidget *parent) :
 
     timer.reset(new QTimer());
     connect(timer.get(), SIGNAL(timeout()), this, SLOT(on_timer()));
-    timer->setInterval(500);
+    timer->setInterval(1500);
 
     QMovie *movie = new QMovie(":/icons/icons/ajax-loader.gif");
     ui->running_label->setMovie(movie);
@@ -57,22 +57,14 @@ void RegToolBox::clear(void)
 {
     thread.clear();
     reg_done = false;
-    J.clear();
-    JJ.clear();
-    J2.clear();
-
-    t2f_dis.clear();
-    to2from.clear();
-    f2t_dis.clear();
-    from2to.clear();
-    arg.clear();
+    reg.clear();
     ui->run_reg->setText("run");
 }
 void RegToolBox::setup_slice_pos(void)
 {
-    if(!It.empty())
+    if(!reg.It.empty())
     {
-        int range = int(It.shape()[cur_view]);
+        int range = int(reg.It.shape()[cur_view]);
         ui->slice_pos->setMaximum(range-1);
         ui->slice_pos->setValue(range/2);
     }
@@ -91,23 +83,45 @@ void RegToolBox::on_OpenTemplate_clicked()
     if(filename.isEmpty())
         return;
 
-    tipl::io::gz_nifti nifti;
-    if(!nifti.load_from_file(filename.toStdString()))
+    if(!reg.load_template(filename.toStdString().c_str()))
     {
-        QMessageBox::critical(this,"ERROR","Invalid file format");
+        QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
         return;
     }
-    nifti.toLPS(It);
-    nifti.get_image_transformation(ItR);
-    tipl::normalize(It);
-    nifti.get_voxel_size(Itvs);
-    It_is_mni = nifti.is_mni();
     setup_slice_pos();
     clear();
     show_image();
     ui->template_filename->setText(QFileInfo(filename).baseName());
+    ui->template_filename->setToolTip(filename);
+    ui->cost_fun->setCurrentIndex(reg.It.shape() == reg.I.shape() ? 2:0);
 
-    ui->cost_fun->setCurrentIndex(It.shape() == I.shape() ? 2:0);
+    std::string new_file_name;
+    if(!reg.I2.empty() && tipl::match_files(ui->subject_filename->toolTip().toStdString(),
+                         subject2_name,filename.toStdString(),new_file_name) &&
+           QFileInfo(new_file_name.c_str()).exists())
+    {
+        if(QMessageBox::question(this,"DSI Studio",QString("load ") + new_file_name.c_str() + "?\n",
+                    QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
+            load_template2(new_file_name);
+    }
+}
+void RegToolBox::load_template2(const std::string& filename)
+{
+    if(!reg.load_template2(filename.c_str()))
+    {
+        QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
+        return;
+    }
+    template2_name = filename;
+}
+void RegToolBox::on_OpenTemplate2_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(
+            this,"Open Template Image","",
+            "Images (*.nii *nii.gz);;All files (*)" );
+    if(filename.isEmpty())
+        return;
+    load_template2(filename.toStdString());
 }
 
 void RegToolBox::on_OpenSubject_clicked()
@@ -118,22 +132,46 @@ void RegToolBox::on_OpenSubject_clicked()
     if(filename.isEmpty())
         return;
 
-    tipl::io::gz_nifti nifti;
-    if(!nifti.load_from_file(filename.toStdString()))
+    if(!reg.load_subject(filename.toStdString().c_str()))
     {
-        QMessageBox::critical(this,"ERROR","Invalid file format");
+        QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
         return;
     }
-    nifti.toLPS(I);
-    nifti.get_image_transformation(IR);
-    tipl::normalize(I);
-    nifti.get_voxel_size(Ivs);
     clear();
     show_image();
     ui->subject_filename->setText(QFileInfo(filename).baseName());
-    ui->cost_fun->setCurrentIndex(It.shape() == I.shape() ? 2:0);
-}
+    ui->subject_filename->setToolTip(filename);
+    ui->cost_fun->setCurrentIndex(reg.It.shape() == reg.I.shape() ? 2:0);
 
+    std::string new_file_name;
+    if(!reg.It2.empty() && tipl::match_files(ui->template_filename->toolTip().toStdString(),
+                         template2_name,filename.toStdString(),new_file_name) &&
+           QFileInfo(new_file_name.c_str()).exists())
+    {
+        if(QMessageBox::question(this,"DSI Studio",QString("load ") + new_file_name.c_str() + "?\n",
+                    QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
+            load_subject2(new_file_name);
+    }
+}
+void RegToolBox::load_subject2(const std::string& file_name)
+{
+    if(!reg.load_subject2(file_name.c_str()))
+    {
+        QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
+        return;
+    }
+    subject2_name = file_name;
+    std::string new_file_name;
+    if(reg.It2.empty() && !reg.It.empty() &&
+       tipl::match_files(ui->subject_filename->toolTip().toStdString(),
+                          subject2_name,ui->template_filename->toolTip().toStdString(),new_file_name) &&
+       QFileInfo(new_file_name.c_str()).exists())
+    {
+        if(QMessageBox::question(this,"DSI Studio",QString("load ") + new_file_name.c_str() + "?\n",
+                    QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
+            load_template2(new_file_name);
+    }
+}
 
 void RegToolBox::on_OpenSubject2_clicked()
 {
@@ -142,33 +180,7 @@ void RegToolBox::on_OpenSubject2_clicked()
             "Images (*.nii *nii.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
-
-    tipl::io::gz_nifti nifti;
-    if(!nifti.load_from_file(filename.toStdString()))
-    {
-        QMessageBox::critical(this,"ERROR","Invalid file format");
-        return;
-    }
-    nifti.toLPS(I2);
-    tipl::normalize(I2);
-}
-
-void RegToolBox::on_OpenTemplate2_clicked()
-{
-    QString filename = QFileDialog::getOpenFileName(
-            this,"Open Template Image","",
-            "Images (*.nii *nii.gz);;All files (*)" );
-    if(filename.isEmpty())
-        return;
-
-    tipl::io::gz_nifti nifti;
-    if(!nifti.load_from_file(filename.toStdString()))
-    {
-        QMessageBox::critical(this,"ERROR","Invalid file format");
-        return;
-    }
-    nifti.toLPS(It2);
-    tipl::normalize(It2);
+    load_subject2(filename.toStdString());
 }
 
 
@@ -262,10 +274,11 @@ void show_blend_slice_at(QGraphicsScene& scene,
 void RegToolBox::show_image(void)
 {
     float ratio = ui->zoom->value();
-    if(!It.empty())
+    if(!reg.It.empty())
     {
-        image_fascade I_to_show(I,It,t2f_dis,tipl::transformation_matrix<float>(arg,It.shape(),Itvs,I.shape(),Ivs));
-        const auto& It_to_show = (ui->show_second->isChecked() && It2.shape() == It.shape() ? It2 : It);
+        image_fascade I_to_show(reg.show_subject(ui->show_second->isChecked()),
+                                reg.It,reg.t2f_dis,reg.T());
+        const auto& It_to_show = reg.show_template(ui->show_second->isChecked());
         // show template image on the right
         show_slice_at(It_scene,It_to_show,v2c_It,ui->slice_pos->value(),ratio,cur_view);
 
@@ -286,22 +299,22 @@ void RegToolBox::show_image(void)
 
 
     // Show subject image on the left
-    if(!I.empty())
+    if(!reg.I.empty())
     {
-        const auto& I_to_show = (J.empty() ? I:J);
+        const auto& I_to_show = reg.show_subject_warped(ui->show_second->isChecked());
         int pos = std::min(I_to_show.depth()-1,I_to_show.depth()*ui->slice_pos->value()/ui->slice_pos->maximum());
         tipl::color_image cJ(v2c_I[tipl::volume2slice_scaled(I_to_show,cur_view,pos,ratio)]);
         QImage warp_image;
         warp_image << cJ;
 
-        if(ui->show_warp->isChecked() && ui->dis_spacing->currentIndex() && !t2f_dis.empty())
+        if(ui->show_warp->isChecked() && ui->dis_spacing->currentIndex() && !reg.t2f_dis.empty())
         {
-            float sub_ratio = float(t2f_dis.width())/float(I_to_show.width());
+            float sub_ratio = float(reg.t2f_dis.width())/float(I_to_show.width());
             QPainter paint(&warp_image);
             paint.setBrush(Qt::NoBrush);
             paint.setPen(Qt::red);
             tipl::image<2,tipl::vector<3> > dis_slice;
-            tipl::volume2slice(t2f_dis,dis_slice,cur_view,pos*sub_ratio);
+            tipl::volume2slice(reg.t2f_dis,dis_slice,cur_view,pos*sub_ratio);
 
             int cur_dis = 1 << (ui->dis_spacing->currentIndex()-1);
             sub_ratio = ratio/sub_ratio;
@@ -347,11 +360,11 @@ extern console_stream console;
 void RegToolBox::on_timer()
 {
     console.show_output();
-    if(old_arg != arg)
+    on_switch_view_clicked();
+    if(old_arg != reg.arg)
     {
-        tipl::out() << arg;
         show_image();
-        old_arg = arg;
+        old_arg = reg.arg;
     }
     if(reg_done)
     {
@@ -365,108 +378,9 @@ void RegToolBox::on_timer()
     }
 }
 
-void RegToolBox::linear_reg(tipl::reg::reg_type reg_type,int cost_type)
-{
-    status = "linear registration";
-    tipl::image<3> J_(It.shape());
-    if(cost_type == 2) // skip nonlinear registration
-    {
-        if(I.shape() == It.shape())
-            J_ = I;
-        else
-            tipl::draw(I,J_,tipl::vector<3,int>(0,0,0));
-
-        if(I2.shape() == I.shape())
-        {
-            tipl::image<3> J2_(It.shape());
-            if(I.shape() == It.shape())
-                J2_ = I2;
-            else
-                tipl::draw(I2,J2_,tipl::vector<3,int>(0,0,0));
-            J2.swap(J2_);
-        }
-        arg.clear();
-        T = tipl::transformation_matrix<float>(arg,It.shape(),Itvs,I.shape(),Ivs);
-    }
-    else
-    {
-        if(cost_type == 0)// mutual information
-            linear_with_mi(It,Itvs,I,Ivs,arg,reg_type,thread.terminated,ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound);
-        else
-        if(cost_type == 1)// correlation
-            linear_with_cc(It,Itvs,I,Ivs,arg,reg_type,thread.terminated,ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound);
-        tipl::out() << "linear registration completed" << std::endl;
-        T = tipl::transformation_matrix<float>(arg,It.shape(),Itvs,I.shape(),Ivs);
-        tipl::resample<tipl::interpolation::cubic>(I,J_,T);
-        if(I2.shape() == I.shape())
-        {
-            tipl::image<3> J2_(It.shape());
-            tipl::resample<tipl::interpolation::cubic>(I2,J2_,T);
-            tipl::normalize(J2);
-            J2.swap(J2_);
-        }
-
-    }
-    auto r = tipl::correlation(J_.begin(),J_.end(),It.begin());
-    tipl::out() << "linear: " << r << std::endl;
-    J.swap(J_);
-}
-
-void edge_for_cdm(tipl::image<3>& sIt,
-                  tipl::image<3>& sJ,
-                  tipl::image<3>& sIt2,
-                  tipl::image<3>& sJ2)
-{
-    tipl::filter::sobel(sIt);
-    tipl::filter::sobel(sJ);
-    tipl::filter::mean(sIt);
-    tipl::filter::mean(sJ);
-    if(!sIt2.empty())
-    {
-        tipl::filter::sobel(sIt2);
-        tipl::filter::mean(sIt2);
-    }
-    if(!sJ2.empty())
-    {
-        tipl::filter::sobel(sJ2);
-        tipl::filter::mean(sJ2);
-    }
-}
-
-
-void RegToolBox::nonlinear_reg(void)
-{
-    status = "nonlinear registration";
-    tipl::out() << "begin nonlinear registration" << std::endl;
-    {
-        tipl::reg::cdm_param param;
-        param.resolution = ui->resolution->value();
-        param.min_dimension = uint32_t(ui->min_reso->value());
-        param.smoothing = float(ui->smoothing->value());
-        param.speed = float(ui->speed->value());
-        if(ui->edge->isChecked())
-        {
-            tipl::image<3> sIt(It),sJ(J),sIt2(It2),sJ2(J2);
-            edge_for_cdm(sIt,sJ,sIt2,sJ2);
-            cdm_common(sIt,sIt2,sJ,sJ2,t2f_dis,f2t_dis,thread.terminated,param,ui->use_cuda->isChecked());
-        }
-        else
-            cdm_common(It,It2,J,J2,t2f_dis,f2t_dis,thread.terminated,param,ui->use_cuda->isChecked());
-    }
-    tipl::out() << "nonlinear registration completed.";
-    // calculate inverted to2from
-    {
-        from2to.resize(I.shape());
-        tipl::inv_displacement_to_mapping(f2t_dis,from2to,T);
-        tipl::displacement_to_mapping(t2f_dis,to2from,T);
-    }
-}
-
-
-
 void RegToolBox::on_run_reg_clicked()
 {
-    if(I.empty() || It.empty())
+    if(!reg.data_ready())
     {
         QMessageBox::critical(this,"ERROR","Please load image first");
         return;
@@ -477,20 +391,19 @@ void RegToolBox::on_run_reg_clicked()
     thread.run([this]()
     {
         // adjust Ivs for affine
-        linear_reg(tipl::reg::affine,ui->cost_fun->currentIndex());
-        /*
-        // This skip affine registration
-        else
-        {
-            J = I;
-            if(I2.shape() == I.shape())
-                J2 = I2;
-        }
-        */
+        reg.bound = ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound;
+        reg.linear_reg(tipl::reg::affine,
+                       ui->cost_fun->currentIndex(),
+                       thread.terminated);
 
-        nonlinear_reg();
+        reg.param.resolution = ui->resolution->value();
+        reg.param.min_dimension = uint32_t(ui->min_reso->value());
+        reg.param.smoothing = float(ui->smoothing->value());
+        reg.param.speed = float(ui->speed->value());
+
+        reg.nonlinear_reg(thread.terminated,ui->use_cuda->isChecked());
         reg_done = true;
-        status = "registration done";
+
     });
 
     ui->running_label->movie()->start();
@@ -504,93 +417,7 @@ bool load_nifti_file(std::string file_name_cmd,
                      tipl::vector<3>& vs,
                      tipl::matrix<4,4>& trans,
                      bool& is_mni);
-bool apply_warping(const char* from,
-                   const char* to,
-                   const tipl::shape<3>& I_shape,
-                   const tipl::matrix<4,4>& IR,
-                   tipl::image<3,tipl::vector<3> >& to2from,
-                   tipl::vector<3> Itvs,
-                   const tipl::matrix<4,4>& ItR,
-                   bool It_is_mni,
-                   std::string& error)
-{
-    tipl::out() << "apply warping to " << from << std::endl;
 
-    tipl::io::gz_nifti nii;
-    if(!nii.load_from_file(from))
-    {
-        error = nii.error_msg;
-        return false;
-    }
-    if(nii.dim(4) > 1)
-    {
-        // check data range
-        std::vector<tipl::image<3> > I(nii.dim(4));
-        for(unsigned int index = 0;index < nii.dim(4);++index)
-        {
-            if(!nii.toLPS(I[index]))
-            {
-                error = "failed to parse 4D NIFTI file";
-                return false;
-            }
-            std::replace_if(I[index].begin(),I[index].end(),[](float v){return std::isnan(v) || std::isinf(v) || v < 0.0f;},0.0f);
-        }
-        if(I_shape != I[0].shape())
-        {
-            error = std::filesystem::path(from).filename().string();
-            error += " has an image size or srow matrix from that of the original --from image.";
-            return false;
-        }
-        bool is_label = tipl::is_label_image(I[0]);
-        tipl::out() << (is_label ? "processed as labels using nearest assignment" : "processed as values using interpolation") << std::endl;
-        tipl::image<4> J(to2from.shape().expand(nii.dim(4)));
-        for(size_t i = 0;i < nii.dim(4);++i)
-        {
-            auto J_slice = J.slice_at(i);
-            if(is_label)
-                tipl::compose_mapping<tipl::interpolation::nearest>(I[i],to2from,J_slice);
-            else
-                tipl::compose_mapping<tipl::interpolation::cubic>(I[i],to2from,J_slice);
-        }
-        if(!tipl::io::gz_nifti::save_to_file(to,J,Itvs,ItR,It_is_mni))
-        {
-            error = "cannot write to file ";
-            error += to;
-            return false;
-        }
-        return true;
-    }
-
-    tipl::image<3> I3;
-    if(!nii.toLPS(I3))
-    {
-        error = nii.error_msg;
-        return false;
-    }
-    bool is_label = tipl::is_label_image(I3);
-    tipl::out() << (is_label ? "processed as labels using nearest assignment" : "processed as values using interpolation") << std::endl;
-
-    if(I_shape != I3.shape())
-    {
-        error = std::filesystem::path(from).filename().string();
-        error += " has an image size or srow matrix from that of the original --from image.";
-        return false;
-    }
-
-    tipl::image<3> J3;
-    if(is_label)
-        tipl::compose_mapping<tipl::interpolation::nearest>(I3,to2from,J3);
-    else
-        tipl::compose_mapping<tipl::interpolation::cubic>(I3,to2from,J3);
-    tipl::out() << "save as to " << to;
-    if(!tipl::io::gz_nifti::save_to_file(to,J3,Itvs,ItR,It_is_mni))
-    {
-        error = "cannot write to file ";
-        error += to;
-        return false;
-    }
-    return true;
-}
 void RegToolBox::on_actionApply_Warping_triggered()
 {
     QStringList from = QFileDialog::getOpenFileNames(
@@ -606,9 +433,8 @@ void RegToolBox::on_actionApply_Warping_triggered()
         if(to.isEmpty())
             return;
         std::string error;
-        if(!apply_warping(from[0].toStdString().c_str(),
-                          to.toStdString().c_str(),
-                          I.shape(),IR,to2from,Itvs,ItR,It_is_mni,error))
+        if(!reg.apply_warping(from[0].toStdString().c_str(),
+                              to.toStdString().c_str()))
             QMessageBox::critical(this,"ERROR",error.c_str());
         else
             QMessageBox::information(this,"DSI Studio","Saved");
@@ -619,9 +445,8 @@ void RegToolBox::on_actionApply_Warping_triggered()
         for(int i = 0;prog(i,from.size());++i)
         {
             std::string error;
-            if(!apply_warping(from[i].toStdString().c_str(),
-                          (from[i]+".wp.nii.gz").toStdString().c_str(),
-                          I.shape(),IR,to2from,Itvs,ItR,It_is_mni,error))
+            if(!reg.apply_warping(from[i].toStdString().c_str(),
+                          (from[i]+".wp.nii.gz").toStdString().c_str()))
 
             {
                 QMessageBox::critical(this,"ERROR",error.c_str());
@@ -645,20 +470,20 @@ void RegToolBox::on_stop_clicked()
 
 void RegToolBox::on_actionMatch_Intensity_triggered()
 {
-    if(I.shape() == It.shape())
+    if(reg.I.shape() == reg.It.shape())
     {
-        tipl::homogenize(I,It);
+        tipl::homogenize(reg.I,reg.It);
         show_image();
     }
 }
 
 void RegToolBox::on_actionRemove_Background_triggered()
 {
-    if(!I.empty())
+    if(!reg.I.empty())
     {
-        I -= tipl::segmentation::otsu_threshold(I);
-        tipl::lower_threshold(I,0.0);
-        tipl::normalize(I);
+        reg.I -= tipl::segmentation::otsu_threshold(reg.I);
+        tipl::lower_threshold(reg.I,0.0);
+        tipl::normalize(reg.I);
         show_image();
     }
 }
@@ -667,28 +492,15 @@ void RegToolBox::on_actionRemove_Background_triggered()
 
 void RegToolBox::on_actionSave_Warping_triggered()
 {
-    if(to2from.empty())
+    if(reg.to2from.empty())
         return;
     QString filename = QFileDialog::getSaveFileName(
             this,"Save Mapping","",
             "Images (*map.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
-    tipl::io::gz_mat_write out(filename.toStdString().c_str());
-    if(!out)
-    {
-        QMessageBox::critical(this,"ERROR","Cannot write to file");
-        return;
-    }
-    out.write("to2from",&to2from[0][0],3,to2from.size());
-    out.write("to_dim",to2from.shape());
-    out.write("to_vs",Itvs);
-    out.write("to_trans",ItR);
-
-    out.write("from2to",&from2to[0][0],3,from2to.size());
-    out.write("from_dim",from2to.shape());
-    out.write("from_vs",Ivs);
-    out.write("from_trans",IR);
+    if(!reg.save_warping(filename.toStdString().c_str()))
+        QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
 }
 
 
@@ -723,15 +535,15 @@ void RegToolBox::on_sag_view_clicked()
 
 void RegToolBox::on_actionSmooth_Subject_triggered()
 {
-    if(!I.empty())
+    if(!reg.I.empty())
     {
-        tipl::filter::gaussian(I);
-        tipl::normalize(I);
+        tipl::filter::gaussian(reg.I);
+        tipl::normalize(reg.I);
     }
-    if(!I2.empty())
+    if(!reg.I2.empty())
     {
-        tipl::filter::gaussian(I2);
-        tipl::normalize(I2);
+        tipl::filter::gaussian(reg.I2);
+        tipl::normalize(reg.I2);
     }
     clear();
     show_image();
@@ -739,15 +551,15 @@ void RegToolBox::on_actionSmooth_Subject_triggered()
 
 void RegToolBox::on_actionSave_Transformed_Image_triggered()
 {
-    if(JJ.empty())
+    if(reg.JJ.empty())
         return;
     QString to = QFileDialog::getSaveFileName(
             this,"Save Transformed Image","",
             "Images (*.nii *nii.gz);;All files (*)" );
     if(to.isEmpty())
         return;
-    tipl::io::gz_nifti::save_to_file(to.toStdString().c_str(),JJ,Itvs,ItR,It_is_mni);
-
+    if(!reg.save_transformed_image(to.toStdString().c_str()))
+        QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
 }
 
 void RegToolBox::on_switch_view_clicked()

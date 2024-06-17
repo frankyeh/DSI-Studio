@@ -637,16 +637,6 @@
           </widget>
          </item>
          <item>
-          <widget class="QCheckBox" name="edge">
-           <property name="toolTip">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Edge-based registration for cross modalities mapping&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="text">
-            <string>Use Edge</string>
-           </property>
-          </widget>
-         </item>
-         <item>
           <widget class="QCheckBox" name="large_deform">
            <property name="text">
             <string>Large Deform</string>

@@ -724,7 +724,8 @@ void MainWindow::on_linear_reg_clicked()
     if(!load_image_from_files(filename1,ref1,vs1,t1) ||
        !load_image_from_files(filename2,ref2,vs2,t2))
         return;
-    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,ref1,vs1,ref2,vs2,tipl::reg::affine,tipl::reg::mutual_info));
+    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,ref1,tipl::image<3>(),vs1,
+                                                                       ref2,tipl::image<3>(),vs2,tipl::reg::affine,tipl::reg::mutual_info));
     manual->nifti_srow = t2;
     if(manual->exec() != QDialog::Accepted)
         return;

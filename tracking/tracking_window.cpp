@@ -1228,9 +1228,16 @@ void tracking_window::on_actionSave_MNI_mapping_triggered()
         return;
     {
         tipl::progress prog("saving mapping",true);
-        if(!handle->save_mapping(filename.toStdString().c_str()))
+        dual_reg reg;
+        reg.Itvs = handle->template_vs;
+        reg.ItR = handle->template_to_mni;
+        reg.Ivs = handle->vs;
+        reg.IR = handle->trans_to_mni;
+        reg.from2to = handle->s2t;
+        reg.to2from = handle->t2s;
+        if(!reg.save_warping(filename.toStdString().c_str()))
         {
-            QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
+            QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
             return;
         }
     }
