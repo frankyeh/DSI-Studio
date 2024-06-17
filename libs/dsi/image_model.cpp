@@ -250,7 +250,7 @@ bool ImageModel::check_b_table(void)
                     tipl::image<3> dwi_f(dwi);
                     auto iso = template_fib->get_iso();
 
-                    linear_with_mi({iso},template_fib->vs,
+                    linear({iso},template_fib->vs,
                                    {tipl::make_shared(dwi_f)},voxel.vs,arg,tipl::reg::affine,terminated);
                     tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
                     r.inv();
@@ -1017,8 +1017,7 @@ bool ImageModel::align_acpc(float reso)
     bool terminated = false;
     prog(0,3);
     tipl::affine_transform<float> arg;
-    linear_with_mi({tipl::make_shared(I)},Ivs,
-                   {tipl::make_shared(J)},Jvs,arg,tipl::reg::rigid_scaling,terminated);
+    linear({tipl::make_shared(I)},Ivs,{tipl::make_shared(J)},Jvs,arg,tipl::reg::rigid_scaling,terminated);
     tipl::out() << arg << std::endl;
     prog(1,3);
     tipl::image<3> I2(I.shape());
@@ -1088,7 +1087,7 @@ bool ImageModel::correct_motion(void)
             tipl::image<3> to(dwi_at(i));
             preproc(to);
             bool terminated = false;
-            linear_with_mi_refine({tipl::make_shared(from)},voxel.vs,
+            linear_refine({tipl::make_shared(from)},voxel.vs,
                                   {tipl::make_shared(to)},voxel.vs,args[i],tipl::reg::rigid_body,terminated);
             tipl::out() << "dwi (" << i+1 << "/" << src_bvalues.size() << ")" <<
                          " shift=" << tipl::vector<3>(args[i].translocation) <<
@@ -1149,7 +1148,7 @@ bool ImageModel::correct_motion(void)
             preproc(to);
 
             bool terminated = false;
-            linear_with_mi_refine({tipl::make_shared(from)},voxel.vs,
+            linear_refine({tipl::make_shared(from)},voxel.vs,
                                   {tipl::make_shared(to)},voxel.vs,new_args[i],tipl::reg::rigid_body,terminated);
             tipl::out() << "dwi (" << i+1 << "/" << src_bvalues.size() << ") = "
                       << " shift=" << tipl::vector<3>(new_args[i].translocation)

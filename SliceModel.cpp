@@ -543,7 +543,8 @@ void CustomSliceModel::argmin(void)
     }
 
     tipl::out() << "registration started using " << (picture.empty() ? "rigid body with regular bound" : "affine transform with narrow bound");
-    linear_with_mi({tipl::make_shared(to),tipl::make_shared(to)},to_vs,{tipl::make_shared(from1),tipl::make_shared(from2)},from_vs,arg_min,picture.empty() ? tipl::reg::rigid_body : tipl::reg::affine,terminated);
+    linear(make_list(to,to),to_vs,make_list(from1,from2),from_vs,
+           arg_min,picture.empty() ? tipl::reg::rigid_body : tipl::reg::affine,terminated);
     update_transform();
     handle->view_item[view_id].registering = false;
     running = false;

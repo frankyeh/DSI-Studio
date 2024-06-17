@@ -377,25 +377,7 @@ void manual_alignment::on_rerun_clicked()
 
     thread.run([this,cost,reg_type]()
     {
-        if(cost == tipl::reg::mutual_info)
-        {
-            if(from2.empty() || to2.empty())
-                linear_with_mi({tipl::make_shared(from)},from_vs,
-                                  {tipl::make_shared(to)},to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
-            else
-                linear_with_mi({tipl::make_shared(from),tipl::make_shared(from2)},from_vs,
-                                  {tipl::make_shared(to),tipl::make_shared(to2)},to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
-        }
-        else
-        {
-            if(from2.empty() || to2.empty())
-                linear_with_cc({tipl::make_shared(from)},from_vs,
-                           {tipl::make_shared(to)},to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
-            else
-                linear_with_cc({tipl::make_shared(from),tipl::make_shared(from2)},from_vs,
-                               {tipl::make_shared(to),tipl::make_shared(to2)},to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
-        }
-
+        linear(make_list(from,from2),from_vs,make_list(to,to2),to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,tipl::reg::reg_bound,cost);
         thread.running = false;
     });
     ui->rerun->setText("Stop");
@@ -430,25 +412,8 @@ void manual_alignment::on_refine_clicked()
 
     thread.run([this,cost,reg_type]()
     {
+        linear_refine(make_list(from,from2),from_vs,make_list(to,to2),to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,cost);
 
-        if(cost == tipl::reg::mutual_info)
-        {
-            if(from2.empty() || to2.empty())
-                linear_with_mi_refine({tipl::make_shared(from)},from_vs,
-                                  {tipl::make_shared(to)},to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
-            else
-                linear_with_mi_refine({tipl::make_shared(from),tipl::make_shared(from2)},from_vs,
-                                  {tipl::make_shared(to),tipl::make_shared(to2)},to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
-        }
-        else
-        {
-            if(from2.empty() || to2.empty())
-                linear_with_cc({tipl::make_shared(from)},from_vs,
-                           {tipl::make_shared(to)},to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
-            else
-                linear_with_cc({tipl::make_shared(from),tipl::make_shared(from2)},from_vs,
-                               {tipl::make_shared(to),tipl::make_shared(to2)},to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated);
-        }
         thread.running = false;
     });
     ui->refine->setText("Stop");

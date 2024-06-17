@@ -696,7 +696,7 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
         tipl::filter::gaussian(iso_fa);
         tipl::filter::gaussian(smoothed_ref);
         tipl::filter::gaussian(smoothed_ref);
-        affine = linear_with_mi({tipl::make_shared(iso_fa)},handle->voxel.vs,
+        affine = linear({tipl::make_shared(iso_fa)},handle->voxel.vs,
                                 {tipl::make_shared(smoothed_ref)},vs,tipl::reg::rigid_body,terminated);
     }
     else {

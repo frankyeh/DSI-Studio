@@ -60,7 +60,6 @@ public:
            !tipl::io::gz_nifti::load_from_file(iso_template_list[voxel.template_id].c_str(),VG2))
             throw std::runtime_error("Cannot load isotropy template");
 
-        std::vector<tipl::const_pointer_image<3> > VG_list({VG,VG2}),VF_list({VF,VF2});
 
         {
             match_template_resolution(VG,VG2,VGvs,VF,VF2,VFvs,false);
@@ -94,7 +93,7 @@ public:
                 bool terminated = false;
                 if(!tipl::run("linear registration",[&]()
                 {
-                    affine = linear_with_mi(VG_list,VGvs,VF_list,VFvs,tipl::reg::affine,terminated);
+                    affine = linear(make_list(VG,VG2),VGvs,make_list(VF,VF2),VFvs,tipl::reg::affine,terminated);
                 },terminated))
                     throw std::runtime_error("reconstruction canceled");
             }

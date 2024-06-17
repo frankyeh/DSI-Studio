@@ -392,8 +392,11 @@ void RegToolBox::on_run_reg_clicked()
     {
         // adjust Ivs for affine
         reg.bound = ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound;
-        reg.linear_reg(tipl::reg::affine,
-                       ui->cost_fun->currentIndex(),
+        if(ui->cost_fun->currentIndex() == 2) // skip linear
+            reg.skip_linear();
+        else
+            reg.linear_reg(tipl::reg::affine,
+                       ui->cost_fun->currentIndex() == 0 ? tipl::reg::mutual_info : tipl::reg::corr,
                        thread.terminated);
 
         reg.param.resolution = ui->resolution->value();

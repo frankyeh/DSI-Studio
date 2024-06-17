@@ -138,78 +138,60 @@ bool dual_reg::load_template(const char* file_name)
 }
 bool dual_reg::load_template2(const char* file_name)
 {
-    tipl::io::gz_nifti nifti;
-    if(!nifti.load_from_file(file_name))
+    It2.resize(It.shape());
+    if(!tipl::io::gz_nifti::load_to_space(file_name,It2,ItR))
     {
         error_msg = "invalid nifti format";
-        return false;
-    }
-    nifti.toLPS(It2);
-    if(It2.shape() != It.shape())
-    {
-        error_msg = "inconsistent template image size";
+        It2.clear();
         return false;
     }
     return true;
 }
-void dual_reg::linear_reg(tipl::reg::reg_type reg_type,int cost_type,bool& terminated)
+void dual_reg::skip_linear(void)
 {
-    tipl::image<3> J_(It.shape());
-    if(cost_type == 2) // skip nonlinear registration
-    {
-        if(I.shape() == It.shape())
-            J_ = I;
-        else
-            tipl::draw(I,J_,tipl::vector<3,int>(0,0,0));
-
-        if(I2.shape() == I.shape())
-        {
-            tipl::image<3> J2_(It.shape());
-            if(I.shape() == It.shape())
-                J2_ = I2;
-            else
-                tipl::draw(I2,J2_,tipl::vector<3,int>(0,0,0));
-            J2.swap(J2_);
-        }
-        arg.clear();
-    }
+    tipl::image<3> J_,J2_;
+    if(I.shape() == It.shape())
+        J_ = I;
     else
     {
-        if(It2.empty() || I2.empty())
-        {
-            if(cost_type == 0)// mutual information
-                linear_with_mi({tipl::make_shared(It)},Itvs,
-                               {tipl::make_shared(I)},Ivs,
-                               arg,reg_type,terminated,bound);
-            else
-                linear_with_cc({tipl::make_shared(It)},Itvs,
-                               {tipl::make_shared(I)},Ivs,
-                               arg,reg_type,terminated,bound);
-        }
+        J_.resize(It.shape());
+        tipl::draw(I,J_,tipl::vector<3,int>(0,0,0));
+    }
+
+    if(I2.shape() == I.shape())
+    {
+        if(I.shape() == It.shape())
+            J2_ = I2;
         else
         {
-            if(cost_type == 0)// mutual information
-                linear_with_mi({tipl::make_shared(It),tipl::make_shared(It2)},Itvs,
-                               {tipl::make_shared(I),tipl::make_shared(I2)},Ivs,
-                               arg,reg_type,terminated,bound);
-            else
-                linear_with_cc({tipl::make_shared(It),tipl::make_shared(It2)},Itvs,
-                               {tipl::make_shared(I),tipl::make_shared(I2)},Ivs,
-                               arg,reg_type,terminated,bound);
+            J2_.resize(It.shape());
+            tipl::draw(I2,J2_,tipl::vector<3,int>(0,0,0));
         }
-        tipl::out() << "linear registration completed" << std::endl;
-        auto trans = T();
-        tipl::resample<tipl::interpolation::cubic>(I,J_,trans);
-        if(I2.shape() == I.shape())
-        {
-            tipl::image<3> J2_(It.shape());
-            tipl::resample<tipl::interpolation::cubic>(I2,J2_,trans);
-            J2.swap(J2_);
-        }
-
     }
+    arg.clear();
+    J2.swap(J2_);
+    J.swap(J_);
+}
+void dual_reg::linear_reg(tipl::reg::reg_type reg_type,tipl::reg::cost_type cost_type,bool& terminated)
+{
+    tipl::image<3> J_,J2_;
+    linear(make_list(It,It2),Itvs,make_list(I,I2),Ivs,
+           arg,reg_type,terminated,bound,cost_type);
+
+    tipl::out() << "linear registration completed" << std::endl;
+    auto trans = T();
+    J_.resize(It.shape());
+    tipl::resample(I,J_,trans);
+
+    if(I2.shape() == I.shape())
+    {
+        J2.resize(It.shape());
+        tipl::resample(I2,J2,trans);
+    }
+
     auto r = tipl::correlation(J_,It);
     tipl::out() << "linear: " << r << std::endl;
+    J2.swap(J2_);
     J.swap(J_);
 }
 bool dual_reg::nonlinear_reg(bool& terminated,bool use_cuda)
@@ -219,12 +201,11 @@ bool dual_reg::nonlinear_reg(bool& terminated,bool use_cuda)
     cdm_common(It,It2,J,J2,t2f_dis,f2t_dis,terminated,param,use_cuda);
 
     tipl::out() << "nonlinear registration completed.";
-    // calculate inverted to2from
-    {
-        from2to.resize(I.shape());
-        tipl::inv_displacement_to_mapping(f2t_dis,from2to,T());
-        tipl::displacement_to_mapping(t2f_dis,to2from,T());
-    }
+
+    auto trans = T();
+    from2to.resize(I.shape());
+    tipl::inv_displacement_to_mapping(f2t_dis,from2to,trans);
+    tipl::displacement_to_mapping(t2f_dis,to2from,trans);
     tipl::compose_mapping(I,to2from,JJ);
     auto r = tipl::correlation(JJ,It);
     tipl::out() << "nonlinear: " << r;
@@ -478,23 +459,10 @@ int reg(tipl::program_option<tipl::out>& po)
     tipl::out() << "running linear registration." << std::endl;
 
     tipl::affine_transform<float> arg;
-    auto cost_function = po.get("cost_function","mi");
-    if(cost_function == std::string("mi"))
-        linear_with_mi({tipl::make_shared(to),tipl::make_shared(to2)},to_vs,
-                       {tipl::make_shared(from),tipl::make_shared(from2)},from_vs,arg,
+    linear(make_list(to,to2),to_vs,make_list(from,from2),from_vs,arg,
                   po.get("reg_type",1) == 0 ? tipl::reg::rigid_body : tipl::reg::affine,terminated,
-                  po.get("large_deform",0) == 1 ? tipl::reg::large_bound : tipl::reg::reg_bound);
-    else
-    if(cost_function == std::string("cc"))
-        linear_with_cc({tipl::make_shared(to),tipl::make_shared(to2)},to_vs,
-                       {tipl::make_shared(from),tipl::make_shared(from2)},from_vs,arg,
-                  po.get("reg_type",1) == 0 ? tipl::reg::rigid_body : tipl::reg::affine,terminated,
-                  po.get("large_deform",0) == 1 ? tipl::reg::large_bound : tipl::reg::reg_bound);
-    else
-    {
-        tipl::out() << "ERROR: unknown cost_function " << cost_function << std::endl;
-        return 1;
-    }
+                  po.get("large_deform",0) == 1 ? tipl::reg::large_bound : tipl::reg::reg_bound,
+                  po.get("cost_function","mi") == std::string("mi") ? tipl::reg::mutual_info : tipl::reg::corr);
     auto T = tipl::transformation_matrix<float>(arg,to.shape(),to_vs,from.shape(),from_vs);
 
 

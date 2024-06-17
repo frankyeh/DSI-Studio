@@ -1701,15 +1701,15 @@ bool fib_data::map_to_mni(bool background)
         // not FIB file, use t1w as template
         if(dir.index_name[0] == "image")
         {
-            if(!tipl::io::gz_nifti::load_to_space(t1w_template_file_name.c_str(),reg.It,template_to_mni))
+            if(!reg.load_template2(t1w_template_file_name.c_str()))
             {
                 prog = 6;
                 error_msg = "cannot perform normalization";
                 terminated = true;
                 return;
             }
+            reg.It2.swap(reg.It);
             tipl::out() << "using structure image for normalization" << std::endl;
-            reg.It2.clear();
         }
 
         {
@@ -1722,7 +1722,7 @@ bool fib_data::map_to_mni(bool background)
         if(has_manual_atlas)
             reg.arg = manual_template_T;
         else
-            reg.linear_reg(tipl::reg::affine,0/*mutual info*/,terminated);
+            reg.linear_reg(tipl::reg::affine,tipl::reg::mutual_info,terminated);
 
         if(terminated)
         {
@@ -1733,10 +1733,8 @@ bool fib_data::map_to_mni(bool background)
         if(dir.index_name[0] == "image")
         {
             tipl::out() << "matching t1w t2w contrast" << std::endl;
-            if(tipl::io::gz_nifti::load_to_space(t2w_template_file_name.c_str(),reg.It2,template_to_mni))
+            if(reg.load_template2(t2w_template_file_name.c_str()))
                 reg.matching_contrast();
-            else
-                reg.It2.clear();
         }
         prog = 4;
         if(reg.nonlinear_reg(terminated,true) < 0.3f)
