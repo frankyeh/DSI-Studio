@@ -343,7 +343,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
             if(run_action(po))
                 return 1;
             return 0;
-        },po.get("loop_thread",1));
+        });
     }
     return 0;
 }
