@@ -74,10 +74,9 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
         if(terminated)
             return false;
 
-        unsigned char thread_count = std::min<int>(8,tipl::max_thread_count);
-        std::vector<std::vector<tipl::vector<3,short> > > limiting_points(thread_count),
-                                                          seed_points(thread_count),
-                                                          not_end_points(thread_count);
+        std::vector<std::vector<tipl::vector<3,short> > > limiting_points(tipl::max_thread_count),
+                                                          seed_points(tipl::max_thread_count),
+                                                          not_end_points(tipl::max_thread_count);
         tipl::par_for(tipl::begin_index(limiting_mask.shape()),tipl::end_index(limiting_mask.shape()),
                       [&](const tipl::pixel_index<3>& pos,unsigned int thread_id)
         {
@@ -89,7 +88,7 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
                 seed_points[thread_id].push_back(point);
             if(not_end_threshold != 0.0f && fa0[pos.index()] >= not_end_threshold)
                 not_end_points[thread_id].push_back(point);
-        },thread_count);
+        });
 
         tipl::aggregate_results(std::move(limiting_points),atlas_limiting);
         tipl::aggregate_results(std::move(seed_points),atlas_seed);
