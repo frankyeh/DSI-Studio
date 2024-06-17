@@ -108,7 +108,7 @@ bool nii2src(tipl::program_option<tipl::out>& po)
     auto source = po.get("source");
     auto output_dir = po.get("output",source);
     int overwrite = po.get("overwrite",0);
-    size_t thread_count = tipl::max_thread_count = po.get("thread_count",tipl::max_thread_count);
+    tipl::max_thread_count = po.get("thread_count",tipl::max_thread_count);
 
     std::vector<std::string> dwi_nii_files;
     tipl::out() << "checking BIDS format";
@@ -142,7 +142,7 @@ bool nii2src(tipl::program_option<tipl::out>& po)
             return;
         }
         create_src(dwi_nii_files[index],src_name);
-    },thread_count);
+    });
     return true;
 }
 
