@@ -696,8 +696,8 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
         tipl::filter::gaussian(iso_fa);
         tipl::filter::gaussian(smoothed_ref);
         tipl::filter::gaussian(smoothed_ref);
-        affine = linear({tipl::make_shared(iso_fa)},handle->voxel.vs,
-                                {tipl::make_shared(smoothed_ref)},vs,tipl::reg::rigid_body,terminated);
+        affine = linear(make_list(iso_fa),handle->voxel.vs,
+                        make_list(smoothed_ref),vs,tipl::reg::rigid_body,terminated);
     }
     else {
         if(has_registered)
@@ -950,33 +950,6 @@ void reconstruction_window::on_actionOverwrite_Voxel_Size_triggered()
     ui->report->setText(handle->voxel.report.c_str());
 }
 
-void match_template_resolution(tipl::image<3>& VG,
-                               tipl::image<3>& VG2,
-                               tipl::vector<3>& VGvs,
-                               tipl::image<3>& VF,
-                               tipl::image<3>& VF2,
-                               tipl::vector<3>& VFvs,bool rigid_body)
-{    
-    float ratio = rigid_body ? VFvs[0]/VGvs[0] : float(VF.width())/float(VG.width());
-    while(ratio < 0.5f)   // if subject resolution is substantially lower, downsample template
-    {
-        tipl::downsampling(VG);
-        if(!VG2.empty())
-            tipl::downsampling(VG2);
-        VGvs *= 2.0f;
-        ratio *= 2.0f;
-        tipl::out() << "ratio lower than 0.5, downsampling template to " << VGvs[0] << " mm resolution" << std::endl;
-    }
-    while(ratio > 2.5f)  // if subject resolution is higher, downsample it for registration
-    {
-        tipl::downsampling(VF);
-        if(!VF2.empty())
-            tipl::downsampling(VF2);
-        VFvs *= 2.0f;
-        ratio /= 2.0f;
-        tipl::out() << "ratio larger than 2.5, register using subject resolution of " << VFvs[0] << " mm resolution" << std::endl;
-    }
-}
 void match_template_resolution(tipl::image<3>& VG,
                                tipl::vector<3>& VGvs,
                                tipl::image<3>& VF,
