@@ -459,19 +459,19 @@ public:
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        data.min_odf = tipl::min_value(data.odf);
+        data.min_odf = tipl::min_value(data.odf.begin(),data.odf.end());
         if(voxel.odf_resolving)
         {
             std::vector<float> odf(data.odf);
-            tipl::minus_constant(odf,data.min_odf);
-            float sum = std::accumulate(odf.begin(),odf.end(),0.0f);
+            tipl::minus_constant(odf.begin(),odf.end(),data.min_odf);
+            float sum = tipl::sum(odf.begin(),odf.end());
             float last_fiber_sum = 0.0f;
             for(unsigned int i = 0;i < voxel.max_fiber_number;++i)
             {
                 uint16_t peak = uint16_t(std::max_element(odf.begin(),odf.end())-odf.begin());
                 float qa = odf[peak];
                 shaping.shape(odf,peak);
-                float new_sum = std::accumulate(odf.begin(),odf.end(),0.0f);
+                float new_sum = tipl::sum(odf.begin(),odf.end());
                 if(i && last_fiber_sum*0.2f > sum-new_sum)
                     break;
                 last_fiber_sum = sum-new_sum;
