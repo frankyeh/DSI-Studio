@@ -58,18 +58,25 @@ tipl::vector<3> adjust_to_vs(const image_type& from,
     return new_vs;
 }
 
-size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<tipl::const_pointer_image<3,float>,tipl::const_pointer_image<3,float> > > reg,
+size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,float> > reg,
                      bool& terminated);
-
-inline size_t linear_refine(std::vector<tipl::const_pointer_image<3> > from,
+size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char> > reg,
+                     bool& terminated);
+size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,float> > reg,
+                     bool& terminated);
+size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char> > reg,
+                     bool& terminated);
+template<typename value_type>
+inline size_t linear_refine(std::vector<tipl::const_pointer_image<3,value_type> > from,
                                     tipl::vector<3> from_vs,
-                                    std::vector<tipl::const_pointer_image<3> > to,
+                                    std::vector<tipl::const_pointer_image<3,value_type> > to,
                                     tipl::vector<3> to_vs,
                               tipl::affine_transform<float>& arg,
                               tipl::reg::reg_type reg_type,
                               bool& terminated,tipl::reg::cost_type cost_type = tipl::reg::mutual_info)
 {
     auto reg = tipl::reg::linear_reg(from,from_vs,to,to_vs,arg);
+    reg->line_search = false;
     reg->type = reg_type;
     reg->set_bound(tipl::reg::narrow_bound,false);
     size_t result = 0;
@@ -88,17 +95,28 @@ inline size_t linear_refine(std::vector<tipl::const_pointer_image<3> > from,
 template<typename image_type>
 inline auto make_list(const image_type& I,const image_type& I2)
 {
-    return (I2.empty()) ? std::vector<tipl::const_pointer_image<3>>({tipl::make_shared(I)}) :
-                          std::vector<tipl::const_pointer_image<3>>({tipl::make_shared(I),tipl::make_shared(I2)});
+    auto pI = tipl::make_shared(I);
+    if(I2.empty())
+        return std::vector<decltype(pI)>({pI});
+    auto pI2 = tipl::make_shared(I2);
+    return std::vector<decltype(pI)>({pI,pI2});
 }
-inline size_t linear(std::vector<tipl::const_pointer_image<3> > from,
+template<typename image_type>
+inline auto make_list(const image_type& I)
+{
+    auto pI = tipl::make_shared(I);
+    return std::vector<decltype(pI)>({pI});
+}
+template<typename value_type>
+size_t linear(std::vector<tipl::const_pointer_image<3,value_type> > from,
                              tipl::vector<3> from_vs,
-                             std::vector<tipl::const_pointer_image<3> > to,
+                             std::vector<tipl::const_pointer_image<3,value_type> > to,
                              tipl::vector<3> to_vs,
                               tipl::affine_transform<float>& arg,
                               tipl::reg::reg_type reg_type,
                               bool& terminated,
-                              const float* bound = tipl::reg::reg_bound,tipl::reg::cost_type cost_type = tipl::reg::mutual_info)
+                              const float* bound = tipl::reg::reg_bound,
+                              tipl::reg::cost_type cost_type = tipl::reg::mutual_info)
 {
     auto new_to_vs = to_vs;
     if(reg_type == tipl::reg::affine)
@@ -114,11 +132,15 @@ inline size_t linear(std::vector<tipl::const_pointer_image<3> > from,
     if constexpr (tipl::use_cuda)
     {
         if(has_cuda && cost_type == tipl::reg::mutual_info)
-            result = optimize_mi_cuda(reg,terminated);
+            result = optimize_mi_cuda_mr(reg,terminated);
     }
     if(result == 0.0f)
-        result = (cost_type == tipl::reg::mutual_info ? reg->optimize<tipl::reg::mutual_information>(terminated):
-                                                        reg->optimize<tipl::reg::correlation>(terminated));
+    {
+        result = (cost_type == tipl::reg::mutual_info ? reg->optimize_mr<tipl::reg::mutual_information>(terminated):
+                                                        reg->optimize_mr<tipl::reg::correlation>(terminated));
+        tipl::out() << arg;
+
+    }
 
     if(new_to_vs != to_vs)
         tipl::transformation_matrix<float>(arg,from[0],from_vs,to[0],new_to_vs).to_affine_transform(arg,from[0],from_vs,to[0],to_vs);
@@ -126,14 +148,15 @@ inline size_t linear(std::vector<tipl::const_pointer_image<3> > from,
     tipl::out() << arg << std::endl;
     return linear_refine(from,from_vs,to,to_vs,arg,reg_type,terminated,cost_type);
 }
-inline tipl::transformation_matrix<float> linear(std::vector<tipl::const_pointer_image<3> > from,
-                                                         tipl::vector<3> from_vs,
-                                                         std::vector<tipl::const_pointer_image<3> > to,
-                                                         tipl::vector<3> to_vs,
-                              tipl::reg::reg_type reg_type,
-                              bool& terminated,
-                              const float* bound = tipl::reg::reg_bound,
-                              tipl::reg::cost_type cost_type = tipl::reg::mutual_info)
+template<typename value_type>
+tipl::transformation_matrix<float> linear(std::vector<tipl::const_pointer_image<3,value_type> > from,
+                                          tipl::vector<3> from_vs,
+                                          std::vector<tipl::const_pointer_image<3,value_type> > to,
+                                          tipl::vector<3> to_vs,
+                                          tipl::reg::reg_type reg_type,
+                                          bool& terminated,
+                                          const float* bound = tipl::reg::reg_bound,
+                                          tipl::reg::cost_type cost_type = tipl::reg::mutual_info)
 {
     tipl::affine_transform<float> arg;
     linear(from,from_vs,to,to_vs,arg,reg_type,terminated,bound,cost_type);
@@ -164,6 +187,12 @@ struct dual_reg{
         f2t_dis.clear();
         from2to.clear();
         arg.clear();
+    }
+    void inv_warping(void)
+    {
+        ItR.swap(IR);
+        std::swap(Itvs,Ivs);
+        to2from.swap(from2to);
     }
     bool load_subject(const char* file_name);
     bool load_subject2(const char* file_name);
@@ -196,6 +225,7 @@ struct dual_reg{
     void matching_contrast(void);
 public:
     bool apply_warping(const char* from,const char* to) const;
+    bool load_warping(const char* filename);
     bool save_warping(const char* filename) const;
     bool save_transformed_image(const char* filename) const;
 };
