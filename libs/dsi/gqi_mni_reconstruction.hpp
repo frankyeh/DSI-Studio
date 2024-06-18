@@ -7,12 +7,6 @@
 #include "gqi_process.hpp"
 #include "reg.hpp"
 extern std::vector<std::string> fa_template_list,iso_template_list;
-void match_template_resolution(tipl::image<3>& VG,
-                               tipl::image<3>& VG2,
-                               tipl::vector<3>& VGvs,
-                               tipl::image<3>& VF,
-                               tipl::image<3>& VF2,
-                               tipl::vector<3>& VFvs,bool rigid_body);
 class DWINormalization  : public BaseProcess
 {
 protected:
