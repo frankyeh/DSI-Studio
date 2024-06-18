@@ -97,7 +97,7 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
                 return false;
             }
             auto I = reg_slice->source_images;
-            tipl::normalize_upper_lower(I);
+            tipl::normalize_upper_lower(I,255.99);
             tipl::image<3,unsigned char> II(I.shape());
             std::copy(I.begin(),I.end(),II.begin());
             tipl::io::gz_nifti::save_to_file((param+"/slices/" + ui->SliceModality->currentText() + ".nii.gz").toStdString().c_str(),
