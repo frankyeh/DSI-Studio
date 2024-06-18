@@ -116,7 +116,7 @@ public:
 public:
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        if(voxel.fib_fa.empty())
+        if(voxel.fib_fa.empty() || data.space.front() == 0.0f)
             return;
         std::vector<double> signal(b_count);
         {
