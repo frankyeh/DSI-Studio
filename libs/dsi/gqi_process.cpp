@@ -41,6 +41,11 @@ void GQI_Recon::init(Voxel& voxel)
 
 void GQI_Recon::run(Voxel& voxel, VoxelData& data)
 {
+    if(data.space.front() == 0.0f)
+    {
+        std::fill(data.odf.begin(),data.odf.end(),0.0f);
+        return;
+    }
     if(dsi_half_sphere)
         data.space[0] *= 0.5f;
     // add rotation from QSDR or gradient nonlinearity
