@@ -45,44 +45,35 @@ public:
         // VG: FA TEMPLATE
         // VF: SUBJECT QA
         // VF2: SUBJECT ISO
-        tipl::image<3> VG,VF(voxel.qa_map),VG2,VF2(voxel.iso_map);
-        tipl::vector<3> VGvs, VFvs(voxel.vs);
+        dual_reg reg;
+        reg.export_intermediate = voxel.needs("debug");
+        auto& VG = reg.It;
+        auto& VG2 = reg.It2;
+        auto& VGvs = reg.Itvs;
+        auto& VF = reg.I;
+        auto& VF2 = reg.I2;
+        auto& VFvs = reg.Ivs = voxel.vs;
+
+        VF.swap(voxel.qa_map);
+        VF2.swap(voxel.iso_map);
 
 
         bool is_human_template = QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().contains("ICBM");
-        bool export_intermediate = voxel.needs("debug");
 
-        if(fa_template_list[voxel.template_id].empty() ||
-           !tipl::io::gz_nifti::load_from_file(fa_template_list[voxel.template_id].c_str(),VG,VGvs,voxel.trans_to_mni))
-            throw std::runtime_error("Cannot load anisotropy template");
+        if(!reg.load_template(fa_template_list[voxel.template_id].c_str()) ||
+           !reg.load_template2(iso_template_list[voxel.template_id].c_str()))
+            throw std::runtime_error("cannot load anisotropy/isotropy template");
 
-        if(iso_template_list[voxel.template_id].empty() ||
-           !tipl::io::gz_nifti::load_from_file(iso_template_list[voxel.template_id].c_str(),VG2))
-            throw std::runtime_error("Cannot load isotropy template");
-
+        reg.match_resolution(false);
+        voxel.trans_to_mni = reg.ItR;
 
         {
-            match_template_resolution(VG,VG2,VGvs,VF,VF2,VFvs,false);
             tipl::normalize(VF);
             tipl::normalize(VF2);
-
             tipl::filter::gaussian(VF);
             tipl::filter::gaussian(VF2);
 
-            if(export_intermediate)
-            {
-                tipl::io::gz_nifti::save_to_file("Template_QA.nii.gz",VG,VGvs,voxel.trans_to_mni);
-                if(!VG2.empty())
-                    tipl::io::gz_nifti::save_to_file("Template_ISO.nii.gz",VG2,VGvs,voxel.trans_to_mni);
-                tipl::matrix<4,4> trans = {-VFvs[0],0.0f,0.0f,0.0f,
-                                           0.0f,-VFvs[1],0.0f,0.0f,
-                                           0.0f,0.0f,VFvs[2],0.0f,
-                                           0.0f,0.0f,0.0f,1.0f};
-                tipl::io::gz_nifti::save_to_file("Subject_QA.nii.gz",VF,VFvs,trans);
-                if(!VF2.empty())
-                    tipl::io::gz_nifti::save_to_file("Subject_ISO.nii.gz",VF2,VFvs,trans);
-            }
-
+            float r = 0.5f;
             if(voxel.manual_alignment)
             {
                 tipl::out() << "manual alignment:" << voxel.qsdr_arg;
@@ -93,75 +84,38 @@ public:
                 bool terminated = false;
                 if(!tipl::run("linear registration",[&]()
                 {
-                    affine = linear(make_list(VG,VG2),VGvs,make_list(VF,VF2),VFvs,tipl::reg::affine,terminated);
+                    r = reg.linear_reg(tipl::reg::affine,tipl::reg::mutual_info,terminated);
+                    r = r*r;
+                    affine = reg.T();
                 },terminated))
                     throw std::runtime_error("reconstruction canceled");
             }
 
-            tipl::image<3> VFF(VG.shape()),VFF2(VG.shape());
-            tipl::resample<tipl::interpolation::cubic>(VF,VFF,affine);
-            tipl::resample<tipl::interpolation::cubic>(VF2,VFF2,affine);
-
-            float linear_r = tipl::correlation(VFF.begin(),VFF.end(),VG.begin());
-            linear_r = linear_r*linear_r;
-            tipl::out() << "linear R2: " << linear_r << std::endl;
-            
-            if(linear_r < 0.3f)
+            if(r < 0.3f)
                 throw std::runtime_error("ERROR: Poor R2 found in linear registration. Please check image orientation or use manual alignment.");
 
-            
-            if(export_intermediate)
-            {
-                tipl::io::gz_nifti::save_to_file("Subject_QA_linear_reg.nii.gz",VFF,VGvs,voxel.trans_to_mni);
-                tipl::io::gz_nifti::save_to_file("Subject_ISO_linear_reg.nii.gz",VFF2,VGvs,voxel.trans_to_mni);
-            }
-
-            tipl::reg::cdm_pre(VG,VG2,VFF,VFF2);
+            auto& VFF = reg.J;
+            auto& VFF2 = reg.J2;
 
             bool terminated = false;
-
             if(!tipl::run("normalization",[&]()
                 {
-                    tipl::image<3,tipl::vector<3> > cdm_dis_inv;
-                    cdm_common(VG,VG2,VFF,VFF2,cdm_dis,cdm_dis_inv,terminated);
-                    if(export_intermediate)
-                    {
-                        tipl::image<4> buffer(tipl::shape<4>(VG.width(),VG.height(),VG.depth(),6));
-                        tipl::par_for(6,[&](unsigned int d)
-                        {
-                            if(d < 3)
-                            {
-                                size_t shift = d*VG.size();
-                                for(size_t i = 0;i < VG.size();++i)
-                                    buffer[i+shift] = cdm_dis_inv[i][d];
-                            }
-                            else
-                            {
-                                size_t shift = d*VG.size();
-                                d -= 3;
-                                for(size_t i = 0;i < VG.size();++i)
-                                    buffer[i+shift] = cdm_dis[i][d];
-                            }
-                        });
-                        tipl::io::gz_nifti::save_to_file("Subject_displacement.nii.gz",buffer,voxel.vs,voxel.trans_to_mni);
-                    }
+                    r = reg.nonlinear_reg(terminated,true);
+                    cdm_dis.swap(reg.t2f_dis);
+
                 },terminated))
                 throw std::runtime_error("reconstruction canceled");
 
-            tipl::image<3> VFFF(tipl::compose_displacement(VFF,cdm_dis));
 
-            float r = tipl::correlation(VG,VFFF);
-            voxel.R2 = r*r;
-            tipl::out() << "linear+nonlinear R2: " << voxel.R2 << std::endl;
+            tipl::out() << "nonlinear R2: " << (voxel.R2 = r*r) << std::endl;
             if(voxel.R2 < 0.3f)
                 throw std::runtime_error("ERROR: Poor R2 found. Please check image orientation or use manual alignment.");
 
-            if(export_intermediate)
-                VFFF.save_to_file<tipl::io::gz_nifti>("Subject_QA_nonlinear_reg.nii.gz");
 
             // check if partial reconstruction
             size_t total_voxel_count = 0;
             size_t subject_voxel_count = 0;
+            auto& VFFF = reg.JJ;
             for(size_t index = 0;index < VG.size();++index)
             {
                 if(VG[index] > 0.0f)

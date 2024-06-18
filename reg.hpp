@@ -152,6 +152,7 @@ struct dual_reg{
     tipl::vector<3> Itvs,Ivs;
     tipl::matrix<4,4> ItR,IR;
     bool It_is_mni;
+    bool export_intermediate = false;
     mutable std::string error_msg;
     void clear(void)
     {
@@ -189,8 +190,9 @@ struct dual_reg{
         return !I.empty() && !It.empty();
     }
     void skip_linear(void);
-    void linear_reg(tipl::reg::reg_type reg_type,tipl::reg::cost_type cost_type,bool& terminated);
-    bool nonlinear_reg(bool& terminated,bool use_cuda);
+    void match_resolution(bool rigid_body);
+    float linear_reg(tipl::reg::reg_type reg_type,tipl::reg::cost_type cost_type,bool& terminated);
+    float nonlinear_reg(bool& terminated,bool use_cuda = true);
     void matching_contrast(void);
 public:
     bool apply_warping(const char* from,const char* to) const;

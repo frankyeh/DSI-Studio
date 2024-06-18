@@ -172,33 +172,111 @@ void dual_reg::skip_linear(void)
     J2.swap(J2_);
     J.swap(J_);
 }
-void dual_reg::linear_reg(tipl::reg::reg_type reg_type,tipl::reg::cost_type cost_type,bool& terminated)
+void dual_reg::match_resolution(bool rigid_body)
 {
-    tipl::image<3> J_,J2_;
+    float ratio = (rigid_body ? Ivs[0]/Itvs[0] : float(I.width())/float(It.width()));
+    while(ratio < 0.5f)   // if subject resolution is substantially lower, downsample template
+    {
+        tipl::downsampling(It);
+        if(!It2.empty())
+            tipl::downsampling(It2);
+        Itvs *= 2.0f;
+        for(auto each : {0,1,2,
+                         4,5,6,
+                         8,9,10})
+            ItR[each] *= 2.0f;
+        ratio *= 2.0f;
+        tipl::out() << "downsampling template to " << Itvs[0] << " mm resolution" << std::endl;
+    }
+    while(ratio > 2.5f)  // if subject resolution is higher, downsample it for registration
+    {
+        tipl::downsampling(I);
+        if(!I2.empty())
+            tipl::downsampling(I2);
+        Ivs *= 2.0f;
+        for(auto each : {0,1,2,
+                         4,5,6,
+                         8,9,10})
+            IR[each] *= 2.0f;
+        ratio /= 2.0f;
+        tipl::out() << "downsample subject to " << Ivs[0] << " mm resolution" << std::endl;
+    }
+}
+float dual_reg::linear_reg(tipl::reg::reg_type reg_type,tipl::reg::cost_type cost_type,bool& terminated)
+{
+
+    if(export_intermediate)
+    {
+        tipl::io::gz_nifti::save_to_file("Template_QA.nii.gz",It,Itvs,ItR);
+        if(!It2.empty())
+            tipl::io::gz_nifti::save_to_file("Template_ISO.nii.gz",It2,Itvs,ItR);
+        tipl::matrix<4,4> trans = {-Ivs[0],0.0f,0.0f,0.0f,
+                                   0.0f,-Ivs[1],0.0f,0.0f,
+                                   0.0f,0.0f,Ivs[2],0.0f,
+                                   0.0f,0.0f,0.0f,1.0f};
+        tipl::io::gz_nifti::save_to_file("Subject_QA.nii.gz",I,Ivs,IR);
+        if(!I2.empty())
+            tipl::io::gz_nifti::save_to_file("Subject_ISO.nii.gz",I2,Ivs,IR);
+    }
+
     linear(make_list(It,It2),Itvs,make_list(I,I2),Ivs,
            arg,reg_type,terminated,bound,cost_type);
 
     tipl::out() << "linear registration completed" << std::endl;
     auto trans = T();
+
+    tipl::image<3> J_,J2_;
     J_.resize(It.shape());
     tipl::resample(I,J_,trans);
 
     if(I2.shape() == I.shape())
     {
-        J2.resize(It.shape());
-        tipl::resample(I2,J2,trans);
+        J2_.resize(It.shape());
+        tipl::resample(I2,J2_,trans);
     }
 
     auto r = tipl::correlation(J_,It);
     tipl::out() << "linear: " << r << std::endl;
+
+    if(export_intermediate)
+    {
+        tipl::io::gz_nifti::save_to_file("Subject_QA_linear_reg.nii.gz",J_,Itvs,ItR);
+        if(!J2_.empty())
+            tipl::io::gz_nifti::save_to_file("Subject_ISO_linear_reg.nii.gz",J2_,Itvs,ItR);
+    }
+
     J2.swap(J2_);
     J.swap(J_);
+
+    return r;
 }
-bool dual_reg::nonlinear_reg(bool& terminated,bool use_cuda)
+float dual_reg::nonlinear_reg(bool& terminated,bool use_cuda)
 {
     tipl::out() << "begin nonlinear registration" << std::endl;
 
     cdm_common(It,It2,J,J2,t2f_dis,f2t_dis,terminated,param,use_cuda);
+
+    if(export_intermediate)
+    {
+        tipl::image<4> buffer(tipl::shape<4>(It.width(),It.height(),It.depth(),6));
+        tipl::par_for(6,[&](unsigned int d)
+        {
+            if(d < 3)
+            {
+                size_t shift = d*It.size();
+                for(size_t i = 0;i < It.size();++i)
+                    buffer[i+shift] = f2t_dis[i][d];
+            }
+            else
+            {
+                size_t shift = d*It.size();
+                d -= 3;
+                for(size_t i = 0;i < It.size();++i)
+                    buffer[i+shift] = t2f_dis[i][d];
+            }
+        });
+        tipl::io::gz_nifti::save_to_file("Subject_displacement.nii.gz",buffer,Itvs,ItR);
+    }
 
     tipl::out() << "nonlinear registration completed.";
 
@@ -207,6 +285,10 @@ bool dual_reg::nonlinear_reg(bool& terminated,bool use_cuda)
     tipl::inv_displacement_to_mapping(f2t_dis,from2to,trans);
     tipl::displacement_to_mapping(t2f_dis,to2from,trans);
     tipl::compose_mapping(I,to2from,JJ);
+
+    if(export_intermediate)
+        JJ.save_to_file<tipl::io::gz_nifti>("Subject_QA_nonlinear_reg.nii.gz");
+
     auto r = tipl::correlation(JJ,It);
     tipl::out() << "nonlinear: " << r;
     return r;
