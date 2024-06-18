@@ -86,8 +86,8 @@ inline size_t linear_refine(std::vector<tipl::const_pointer_image<3,value_type> 
             result = optimize_mi_cuda(reg,terminated);
     }
     if(!result)
-        result = (cost_type == tipl::reg::mutual_info ? reg->optimize<tipl::reg::mutual_information>(terminated):
-                                                        reg->optimize<tipl::reg::correlation>(terminated));
+        result = (cost_type == tipl::reg::mutual_info ? reg->template optimize<tipl::reg::mutual_information>(terminated):
+                                                        reg->template optimize<tipl::reg::correlation>(terminated));
     tipl::out() << "refine registration" << std::endl;
     tipl::out() << arg;
     return result;
@@ -136,8 +136,8 @@ size_t linear(std::vector<tipl::const_pointer_image<3,value_type> > from,
     }
     if(result == 0.0f)
     {
-        result = (cost_type == tipl::reg::mutual_info ? reg->optimize_mr<tipl::reg::mutual_information>(terminated):
-                                                        reg->optimize_mr<tipl::reg::correlation>(terminated));
+        result = (cost_type == tipl::reg::mutual_info ? reg->template optimize_mr<tipl::reg::mutual_information>(terminated):
+                                                        reg->template optimize_mr<tipl::reg::correlation>(terminated));
         tipl::out() << arg;
 
     }
