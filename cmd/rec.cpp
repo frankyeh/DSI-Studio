@@ -184,8 +184,7 @@ int rec(tipl::program_option<tipl::out>& po)
                 tipl::filter::gaussian(src.dwi);
 
                 src.rotate(I.shape(),vs,
-                           linear({tipl::make_shared(I)},vs,
-                                  {tipl::make_shared(src.dwi)},src.voxel.vs,
+                           linear(make_list(I),vs,make_list(src.dwi),src.voxel.vs,
                                   po.has("rotate_to") ? tipl::reg::rigid_body : tipl::reg::affine,terminated));
                 tipl::out() << "DWI rotated." << std::endl;
             }
