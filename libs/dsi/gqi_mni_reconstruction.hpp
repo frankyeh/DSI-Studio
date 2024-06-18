@@ -302,7 +302,7 @@ public:
         for (unsigned int i = 0; i < ptr_images.size(); ++i)
             interpolation.estimate(ptr_images[i],data.space[i]);
 
-        tipl::lower_threshold(data.space,0.0f);
+        tipl::lower_threshold(data.space.begin(),data.space.end(),0.0f);
 
         if(!jdet.empty())
             jdet[data.voxel_index] = std::abs(data.jacobian.det());
