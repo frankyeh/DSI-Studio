@@ -17,7 +17,7 @@
 #include "tract_cluster.hpp"
 #include "../../tracking/region/Regions.h"
 #include "tracking_method.hpp"
-
+#include "reg.hpp"
 #include <filesystem>
 
 void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
@@ -633,31 +633,25 @@ void TractModel::add(const TractModel& rhs)
     is_cut.insert(is_cut.end(),rhs.is_cut.begin(),rhs.is_cut.end());
 }
 //---------------------------------------------------------------------------
-bool apply_unwarping_tt(const char* from,
-                        const char* to,
-                        const tipl::image<3,tipl::vector<3> >& from2to,
-                        tipl::shape<3> new_geo,
-                        tipl::vector<3> new_vs,
-                        const tipl::matrix<4,4>& from_trans_to_mni,
-                        const tipl::matrix<4,4>& to_trans_to_mni,
-                        std::string& error)
+bool dual_reg::apply_warping_tt(const char* from,const char* to) const
 {
-    tipl::out() << "apply warping to " << from << std::endl;
     std::vector<std::vector<float> > loaded_tract_data;
     std::vector<uint16_t> cluster;
     unsigned int color;
+    std::string report, parameter_id;
+
     tipl::shape<3> geo;
     tipl::vector<3> vs;
-    tipl::matrix<4,4> trans_to_mni;
-    std::string report, parameter_id;
+    tipl::matrix<4,4,float> trans_to_mni;
     if(!TinyTrack::load_from_file(from,loaded_tract_data,cluster,geo,vs,trans_to_mni,report,parameter_id,color))
     {
-        error = "Failed to read file";
-        return false;
+        error_msg = "Failed to read file";
+        return 1;
     }
+
     tipl::vector<3> max_pos(from2to.shape());
     max_pos -= 1.0f;
-    auto T = tipl::from_space(trans_to_mni).to(from_trans_to_mni);
+    auto T = tipl::from_space(ItR).to(IR);
     tipl::par_for(loaded_tract_data.size(),[&](size_t i)
     {
         for(size_t j = 0;j < loaded_tract_data[i].size();j += 3)
@@ -674,13 +668,13 @@ bool apply_unwarping_tt(const char* from,
             loaded_tract_data[i][j+2] = new_pos[2];
         }
     });
-    tipl::out() << "save as " << to << std::endl;
-    if(!TinyTrack::save_to_file(to,new_geo,new_vs,to_trans_to_mni,loaded_tract_data,cluster,report,parameter_id,color))
+    tipl::out() << "save as " << to;
+    if(!TinyTrack::save_to_file(to,It.shape(),Itvs,ItR,loaded_tract_data,cluster,report,parameter_id,color))
     {
-        error = "Failed to save file";
-        return false;
+        error_msg = "Failed to save file";
+        return 1;
     }
-    return true;
+    return 0;
 }
 bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,bool tract_is_mni)
 {
