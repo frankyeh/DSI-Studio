@@ -94,11 +94,30 @@ void cdm2_cuda(const tipl::image<3>& It,
 
 }
 
-size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<tipl::const_pointer_image<3,float>,tipl::const_pointer_image<3,float> > > reg,
+size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,float> > reg,
                         bool& terminated)
 {
     distribute_gpu();
     return reg->optimize<tipl::reg::mutual_information_cuda>(terminated);
+}
+size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char> > reg,
+                        bool& terminated)
+{
+    distribute_gpu();
+    return reg->optimize_mr<tipl::reg::mutual_information_cuda>(terminated);
+}
+
+size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,float> > reg,
+                        bool& terminated)
+{
+    distribute_gpu();
+    return reg->optimize<tipl::reg::mutual_information_cuda>(terminated);
+}
+size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char> > reg,
+                        bool& terminated)
+{
+    distribute_gpu();
+    return reg->optimize_mr<tipl::reg::mutual_information_cuda>(terminated);
 }
 
 
