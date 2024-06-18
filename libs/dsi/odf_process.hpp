@@ -460,6 +460,8 @@ public:
     virtual void run(Voxel& voxel, VoxelData& data)
     {
         data.min_odf = tipl::min_value(data.odf.begin(),data.odf.end());
+        if(std::isnan(data.min_odf) || std::isinf(data.min_odf) || data.min_odf < 0.0f)
+            return;
         if(voxel.odf_resolving)
         {
             std::vector<float> odf(data.odf);
