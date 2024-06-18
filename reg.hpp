@@ -224,7 +224,9 @@ struct dual_reg{
     float nonlinear_reg(bool& terminated,bool use_cuda = true);
     void matching_contrast(void);
 public:
+    void apply_warping(const tipl::image<3>& from,tipl::image<3>& to,bool is_label) const;
     bool apply_warping(const char* from,const char* to) const;
+    bool apply_warping_tt(const char* from,const char* to) const;
     bool load_warping(const char* filename);
     bool save_warping(const char* filename) const;
     bool save_transformed_image(const char* filename) const;
