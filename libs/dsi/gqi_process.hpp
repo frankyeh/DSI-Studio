@@ -324,6 +324,11 @@ public:
     }
     virtual void run(Voxel&, VoxelData& data)
     {
+        if(data.space.front() == 0.0f)
+        {
+            data.rdi = std::vector<float>(rdi_weightings.size());
+            return;
+        }
         float last_value = 0;
         std::vector<float> rdi_values(rdi_weightings.size());
         for(unsigned int index = 0;index < rdi_weightings.size();++index)
