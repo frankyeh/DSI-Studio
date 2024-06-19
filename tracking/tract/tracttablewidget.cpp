@@ -995,7 +995,7 @@ void TractTableWidget::load_tracts_value(void)
     {
         QMessageBox::information(this,"Inconsistent track number",
                                  QString("The text file has %1 values, but there are %2 tracks.").
-                                 arg(values.size()).arg(tract_models[uint32_t(currentRow())]->get_visible_track_count()),0);
+                                 arg(values.size()).arg(tract_models[uint32_t(currentRow())]->get_visible_track_count()));
         return;
     }
     color_bar_dialog dialog(nullptr);
