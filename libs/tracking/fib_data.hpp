@@ -208,16 +208,15 @@ public:
     void get_minmax(void)
     {
         auto I = get_image();
-        auto result = tipl::minmax_value(I.begin(),I.end());
-        contrast_min = min_value = result.first;
-        contrast_max = max_value = result.second;
-        if(std::isnan(contrast_min) || std::isinf(contrast_min) ||
-           std::isnan(contrast_max) || std::isinf(contrast_max))
+        tipl::minmax_value(I.begin(),I.end(),min_value,max_value);
+        if(std::isnan(min_value) || std::isinf(min_value) ||
+           std::isnan(max_value) || std::isinf(max_value))
         {
-            contrast_min = 0.0f;
-            contrast_max = 1.0f;
+            min_value = 0.0f;
+            max_value = 1.0f;
         }
-        else
+        contrast_min = min_value;
+        contrast_max = max_value;
         if(I.size() < 256*256*256 && contrast_min != contrast_max)
             contrast_max = min_value+(tipl::segmentation::otsu_median(I)-min_value)*2.0f;
         v2c.set_range(contrast_min,contrast_max);
