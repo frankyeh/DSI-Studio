@@ -4,34 +4,30 @@
 #include "zlib.h"
 #include "TIPL/tipl.hpp"
 extern bool has_cuda;
-void cdm2_cuda(const tipl::image<3>& It,
-               const tipl::image<3>& It2,
-               const tipl::image<3>& Is,
-               const tipl::image<3>& Is2,
+void cdm_cuda(const std::vector<tipl::const_pointer_image<3,float> >& It,
+               const std::vector<tipl::const_pointer_image<3,float> >& Is,
                tipl::image<3,tipl::vector<3> >& d,
                tipl::image<3,tipl::vector<3> >& inv_d,
                bool& terminated,
                tipl::reg::cdm_param param);
 
-inline void cdm_common(const tipl::image<3>& It,
-         const tipl::image<3>& It2,
-               const tipl::image<3>& Is,
-               const tipl::image<3>& Is2,
-               tipl::image<3,tipl::vector<3> >& dis,
-               tipl::image<3,tipl::vector<3> >& inv_dis,
-               bool& terminated,
-               tipl::reg::cdm_param param = tipl::reg::cdm_param(),
-               bool use_cuda = true)
+inline void cdm_common(std::vector<tipl::const_pointer_image<3,float> > It,
+                       std::vector<tipl::const_pointer_image<3,float> > Is,
+                       tipl::image<3,tipl::vector<3> >& dis,
+                       tipl::image<3,tipl::vector<3> >& inv_dis,
+                       bool& terminated,
+                       tipl::reg::cdm_param param = tipl::reg::cdm_param(),
+                       bool use_cuda = true)
 {
     if(use_cuda && has_cuda)
     {
         if constexpr (tipl::use_cuda)
         {
-            cdm2_cuda(It,It2,Is,Is2,dis,inv_dis,terminated,param);
+            cdm_cuda(It,Is,dis,inv_dis,terminated,param);
             return;
         }
     }
-    tipl::reg::cdm2(It,It2,Is,Is2,dis,inv_dis,terminated,param);
+    tipl::reg::cdm(It,Is,dis,inv_dis,terminated,param);
 }
 
 
