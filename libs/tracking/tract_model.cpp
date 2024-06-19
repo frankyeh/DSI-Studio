@@ -613,7 +613,7 @@ bool load_fib_from_tracks(const char* file_name,
 void TractModel::add(const TractModel& rhs)
 {
     for(unsigned int index = 0;index < rhs.redo_size.size();++index)
-        redo_size.push_back(std::make_pair(rhs.redo_size[index].first + tract_data.size(),
+        redo_size.push_back(std::make_pair(rhs.redo_size[index].first + uint32_t(tract_data.size()),
                                            rhs.redo_size[index].second));
     tract_data.insert(tract_data.end(),rhs.tract_data.begin(),rhs.tract_data.end());
     tract_color.insert(tract_color.end(),rhs.tract_color.begin(),rhs.tract_color.end());
