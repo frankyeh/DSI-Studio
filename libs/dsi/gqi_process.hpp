@@ -1,7 +1,6 @@
 #ifndef DDI_PROCESS_HPP
 #define DDI_PROCESS_HPP
-#define _USE_MATH_DEFINES
-#include <math.h>
+#include <cmath>
 #include "basic_process.hpp"
 #include "basic_voxel.hpp"
 #include "image_model.hpp"
