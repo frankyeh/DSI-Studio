@@ -1023,13 +1023,13 @@ void fib_data::get_index_list(std::vector<std::string>& index_list) const
             index_list.push_back(view_item[index].name);
 }
 
-bool fib_data::set_dt_index(const std::pair<int,int>& pair,size_t type)
+bool fib_data::set_dt_index(const std::pair<size_t,size_t>& pair,size_t type)
 {
     tipl::image<3> I(dim),J(dim);
     std::string name;
-    int i = pair.first;
-    int j = pair.second;
-    if(i >= 0 && i < view_item.size())
+    auto i = pair.first;
+    auto j = pair.second;
+    if(i < view_item.size())
     {
         if(view_item[i].registering)
         {
@@ -1040,7 +1040,7 @@ bool fib_data::set_dt_index(const std::pair<int,int>& pair,size_t type)
         view_item[i].get_image_in_dwi(I);
     }
 
-    if(j >= 0 && j < view_item.size())
+    if(j < view_item.size())
     {
         if(view_item[j].registering)
         {

@@ -382,7 +382,7 @@ public:
     size_t get_name_index(const std::string& index_name) const;
     void get_index_list(std::vector<std::string>& index_list) const;
 public:
-    bool set_dt_index(const std::pair<int,int>& pair,size_t type);
+    bool set_dt_index(const std::pair<size_t,size_t>& pair,size_t type);
 public:
     void get_slice(unsigned int view_index,
                    unsigned char d_index,unsigned int pos,
