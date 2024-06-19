@@ -64,30 +64,38 @@ void check_cuda(std::string& error_msg)
     has_cuda = true;
 }
 
-void cdm2_cuda(const tipl::image<3>& It,
-               const tipl::image<3>& It2,
-               const tipl::image<3>& Is,
-               const tipl::image<3>& Is2,
-               tipl::image<3,tipl::vector<3> >& d,
-               tipl::image<3,tipl::vector<3> >& inv_d,
-               bool& terminated,
-               tipl::reg::cdm_param param)
+void cdm_cuda(const std::vector<tipl::const_pointer_image<3,float> >& It,
+              const std::vector<tipl::const_pointer_image<3,float> >& Is,
+              tipl::image<3,tipl::vector<3> >& d,
+              tipl::image<3,tipl::vector<3> >& inv_d,
+              bool& terminated,
+              tipl::reg::cdm_param param)
 {
-    tipl::device_image<3> dIt(It),dIt2(It2),dIs(Is),dIs2(Is2);
-    tipl::device_image<3,tipl::vector<3> > dd(It.shape()),inv_dd(It.shape());
+    distribute_gpu();
+    tipl::device_image<3,tipl::vector<3> > dd(It[0].shape()),inv_dd(It[0].shape());
+    std::vector<tipl::device_image<3> > dIt(It.size()),dIs(Is.size());
+    std::vector<tipl::const_pointer_device_image<3> > pIt,pIs;
+    std::copy(It.begin(),It.end(),dIt.begin());
+    std::copy(Is.begin(),Is.end(),dIs.begin());
+    for(auto& each : dIt)
+        pIt.push_back(tipl::make_device_shared(each));
+    for(auto& each : dIs)
+        pIs.push_back(tipl::make_device_shared(each));
+
     try{
-        tipl::reg::cdm2(dIt,dIt2,dIs,dIs2,dd,inv_dd,terminated,param);
+        tipl::reg::cdm(pIt,pIs,dd,inv_dd,terminated,param);
     }
+
     catch(std::runtime_error& er)
     {
         std::cout << "ERROR: " << er.what() << std::endl;
         std::cout << "switch to CPU" << std::endl;
-        tipl::reg::cdm2(It,It2,Is,Is2,d,inv_d,terminated,param);
+        tipl::reg::cdm(It,Is,d,inv_d,terminated,param);
         return;
     }
-    d.resize(It.shape());
+    d.resize(It[0].shape());
     dd.buf().copy_to(d);
-    inv_d.resize(It.shape());
+    inv_d.resize(It[0].shape());
     inv_dd.buf().copy_to(inv_d);
 
     cudaDeviceSynchronize();
