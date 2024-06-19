@@ -232,7 +232,7 @@ float dual_reg::nonlinear_reg(bool& terminated,bool use_cuda)
 {
     tipl::out() << "begin nonlinear registration" << std::endl;
 
-    cdm_common(It,It2,J,J2,t2f_dis,f2t_dis,terminated,param,use_cuda);
+    cdm_common(make_list(It,It2),make_list(J,J2),t2f_dis,f2t_dis,terminated,param,use_cuda);
 
     if(export_intermediate)
     {
