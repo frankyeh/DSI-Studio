@@ -20,7 +20,7 @@ public:
     variant_image(void){}
     variant_image(const variant_image& rhs)
     {copy_from(rhs);}
-    variant_image& operator=(const variant_image& rhs){copy_from(rhs);}
+    variant_image& operator=(const variant_image& rhs){copy_from(rhs);return *this;}
 private:
     void copy_from(const variant_image& rhs)
     {
