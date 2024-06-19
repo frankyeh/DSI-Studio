@@ -1,3 +1,4 @@
+#define _MATH_DEFINES_DEFINED
 #include "tessellated_icosahedron.hpp"
 #include "basic_voxel.hpp"
 #include "odf_process.hpp"
