@@ -279,9 +279,11 @@ public:
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
-        auto min_max = tipl::minmax_value(data.odf.begin(),data.odf.end());
-        voxel.qa_map[data.voxel_index] = min_max.second-min_max.first;
-        voxel.iso_map[data.voxel_index] = min_max.first;
+        auto min_v = data.odf[0];
+        auto max_v = data.odf[0];
+        tipl::minmax_value(data.odf.begin(),data.odf.end(),min_v,max_v);
+        voxel.qa_map[data.voxel_index] = max_v-min_v;
+        voxel.iso_map[data.voxel_index] = min_v;
     }
 };
 
