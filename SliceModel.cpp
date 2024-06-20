@@ -45,10 +45,12 @@ void SliceModel::apply_overlay(tipl::color_image& show_image,
             if((value > 0.0f && value > range.first) ||
                (value < 0.0f && value < range.second))
             {
-                if(op)
-                    show_image[pos] |= v2c[value];
-                else
-                    show_image[pos] &= v2c[value];
+                show_image[pos][0] >>= 1;
+                show_image[pos][1] >>= 1;
+                show_image[pos][2] >>= 1;
+                show_image[pos][0] += v2c[value][0] >> 1;
+                show_image[pos][1] += v2c[value][1] >> 1;
+                show_image[pos][2] += v2c[value][2] >> 1;
             }
 
         }
