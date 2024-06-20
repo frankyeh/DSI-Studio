@@ -784,7 +784,11 @@ void view_image::show_image(bool update_others)
             tipl::color_image buffer2(
                 opened_images[overlay_images[i]]->v2c[tipl::volume2slice_scaled(data,cur_dim, size_t(slice_pos[cur_dim]),ui->zoom->value())]);
             for(size_t j = 0;j < buffer.size();++j)
-                buffer[j] |= buffer2[j];
+            {
+                buffer[j][0] = (buffer2[j][0]>>1) + (buffer[j][0]>>1);
+                buffer[j][1] = (buffer2[j][1]>>1) + (buffer[j][1]>>1);
+                buffer[j][2] = (buffer2[j][2]>>1) + (buffer[j][2]>>1);
+            }
         });
     source_image << buffer;
     source_image = source_image.mirrored(has_flip_x(),has_flip_y());
