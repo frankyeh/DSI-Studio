@@ -80,6 +80,34 @@ bool dual_reg<3>::load_subject(const char* file_name)
     return true;
 }
 
+QImage read_qimage(QString filename,std::string& error);
+template<>
+bool dual_reg<2>::load_template(const char* file_name)
+{
+    QImage in = read_qimage(file_name,error_msg);
+    if(in.isNull())
+        return false;
+    tipl::color_image Ic;
+    Ic << in;
+    It = Ic;
+    Itvs = {1.0f,1.0f};
+    return true;
+}
+template<>
+bool dual_reg<2>::load_subject(const char* file_name)
+{
+    QImage in = read_qimage(file_name,error_msg);
+    if(in.isNull())
+        return false;
+    tipl::color_image Ic;
+    Ic << in;
+    I = Ic;
+    Ivs = {1.0f,1.0f};
+    return true;
+}
+
+
+
 template<>
 bool dual_reg<3>::load_subject2(const char* file_name)
 {
