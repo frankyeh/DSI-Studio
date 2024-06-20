@@ -19,6 +19,7 @@ class RegToolBox : public QMainWindow
 
 public:
     uint8_t cur_view = 2;
+    dual_reg<2> reg_2d;
     dual_reg<3> reg;
 public:
     tipl::transformation_matrix<float> T;
@@ -87,9 +88,13 @@ private slots:
 
     void on_actionDual_Modality_triggered();
 
+    void on_subject_slice_pos_valueChanged(int value);
+
+    void on_template_slice_pos_valueChanged(int value);
+
 private:
     Ui::RegToolBox *ui;
-    QGraphicsScene It_scene,I_scene,It_mix_scene;
+    QGraphicsScene It_scene,I_scene;
 };
 
 #endif // REGTOOLBOX_H
