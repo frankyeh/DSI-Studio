@@ -1688,7 +1688,7 @@ bool fib_data::map_to_mni(bool background)
     bool terminated = false;
     auto lambda = [this,output_file_name,&terminated]()
     {
-        dual_reg reg;
+        dual_reg<3> reg;
         reg.It = template_I;
         reg.It2 = template_I2;
         reg.Itvs = template_vs;

@@ -39,7 +39,7 @@ public:
         // VG: FA TEMPLATE
         // VF: SUBJECT QA
         // VF2: SUBJECT ISO
-        dual_reg reg;
+        dual_reg<3> reg;
         reg.export_intermediate = voxel.needs("debug");
         auto& VG = reg.It;
         auto& VG2 = reg.It2;

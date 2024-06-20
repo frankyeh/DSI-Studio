@@ -19,7 +19,7 @@ class RegToolBox : public QMainWindow
 
 public:
     uint8_t cur_view = 2;
-    dual_reg reg;
+    dual_reg<3> reg;
 public:
     tipl::transformation_matrix<float> T;
     tipl::value_to_color<float> v2c_I,v2c_It;

@@ -159,17 +159,17 @@ tipl::transformation_matrix<float> linear(std::vector<tipl::const_pointer_image<
     return tipl::transformation_matrix<float>(arg,from[0],from_vs,to[0],to_vs);
 }
 
-
+template<int dim>
 struct dual_reg{
-
-    tipl::affine_transform<float> arg;
+    static constexpr int dimension = dim;
+    tipl::affine_transform<float,dimension> arg;
     const float* bound = tipl::reg::reg_bound;
     tipl::reg::cdm_param param;
 
-    tipl::image<3> It,I,J,JJ,I2,It2,J2;
-    tipl::image<3,tipl::vector<3> > t2f_dis,to2from,f2t_dis,from2to;
-    tipl::vector<3> Itvs,Ivs;
-    tipl::matrix<4,4> ItR,IR;
+    tipl::image<dimension> It,I,J,JJ,I2,It2,J2;
+    tipl::image<dimension,tipl::vector<dimension> > t2f_dis,to2from,f2t_dis,from2to;
+    tipl::vector<dimension> Itvs,Ivs;
+    tipl::matrix<dimension+1,dimension+1> ItR,IR;
     bool It_is_mni;
     bool export_intermediate = false;
     mutable std::string error_msg;
@@ -196,7 +196,7 @@ struct dual_reg{
     bool load_template2(const char* file_name);
     auto T(void) const
     {
-        return tipl::transformation_matrix<float>(arg,It.shape(),Itvs,I.shape(),Ivs);
+        return tipl::transformation_matrix<float,dimension>(arg,It.shape(),Itvs,I.shape(),Ivs);
     }
     const auto& show_subject(bool second) const
     {
@@ -214,18 +214,244 @@ struct dual_reg{
     {
         return !I.empty() && !It.empty();
     }
-    void skip_linear(void);
+    void skip_linear(void)
+    {
+        tipl::image<dimension> J_,J2_;
+        if(I.shape() == It.shape())
+            J_ = I;
+        else
+        {
+            J_.resize(It.shape());
+            tipl::draw(I,J_,tipl::vector<dimension,int>());
+        }
+
+        if(I2.shape() == I.shape())
+        {
+            if(I.shape() == It.shape())
+                J2_ = I2;
+            else
+            {
+                J2_.resize(It.shape());
+                tipl::draw(I2,J2_,tipl::vector<dimension,int>());
+            }
+        }
+        arg.clear();
+        J2.swap(J2_);
+        J.swap(J_);
+    }
     void match_resolution(bool rigid_body);
-    float linear_reg(tipl::reg::reg_type reg_type,tipl::reg::cost_type cost_type,bool& terminated);
-    float nonlinear_reg(bool& terminated,bool use_cuda = true);
-    void matching_contrast(void);
+    float linear_reg(tipl::reg::reg_type reg_type,
+                     tipl::reg::cost_type cost_type,
+                     bool& terminated)
+    {
+        if(export_intermediate)
+        {
+            tipl::io::gz_nifti::save_to_file("Template_QA.nii.gz",It,Itvs,ItR);
+            if(!It2.empty())
+                tipl::io::gz_nifti::save_to_file("Template_ISO.nii.gz",It2,Itvs,ItR);
+            tipl::io::gz_nifti::save_to_file("Subject_QA.nii.gz",I,Ivs,IR);
+            if(!I2.empty())
+                tipl::io::gz_nifti::save_to_file("Subject_ISO.nii.gz",I2,Ivs,IR);
+        }
+
+        linear(make_list(It,It2),Itvs,make_list(I,I2),Ivs,
+               arg,reg_type,terminated,bound,cost_type);
+
+        tipl::out() << "linear registration completed" << std::endl;
+        auto trans = T();
+
+        tipl::image<dimension> J_,J2_;
+        J_.resize(It.shape());
+        tipl::resample(I,J_,trans);
+
+        if(I2.shape() == I.shape())
+        {
+            J2_.resize(It.shape());
+            tipl::resample(I2,J2_,trans);
+        }
+
+        auto r = tipl::correlation(J_,It);
+        tipl::out() << "linear: " << r << std::endl;
+
+        if(export_intermediate)
+        {
+            tipl::io::gz_nifti::save_to_file("Subject_QA_linear_reg.nii.gz",J_,Itvs,ItR);
+            if(!J2_.empty())
+                tipl::io::gz_nifti::save_to_file("Subject_ISO_linear_reg.nii.gz",J2_,Itvs,ItR);
+        }
+
+        J2.swap(J2_);
+        J.swap(J_);
+
+        return r;
+    }
+    float nonlinear_reg(bool& terminated,bool use_cuda = true)
+    {
+        tipl::out() << "begin nonlinear registration" << std::endl;
+
+        cdm_common(make_list(It,It2),make_list(J,J2),t2f_dis,f2t_dis,terminated,param,use_cuda);
+
+        if(export_intermediate)
+        {
+            tipl::image<dimension+1> buffer(It.shape().expand(2*dimension));
+            tipl::par_for(2*dimension,[&](unsigned int d)
+            {
+                if(d < dimension)
+                {
+                    size_t shift = d*It.size();
+                    for(size_t i = 0;i < It.size();++i)
+                        buffer[i+shift] = f2t_dis[i][d];
+                }
+                else
+                {
+                    size_t shift = d*It.size();
+                    d -= 3;
+                    for(size_t i = 0;i < It.size();++i)
+                        buffer[i+shift] = t2f_dis[i][d];
+                }
+            });
+            tipl::io::gz_nifti::save_to_file("Subject_displacement.nii.gz",buffer,Itvs,ItR);
+        }
+
+        tipl::out() << "nonlinear registration completed.";
+
+        auto trans = T();
+        from2to.resize(I.shape());
+        tipl::inv_displacement_to_mapping(f2t_dis,from2to,trans);
+        tipl::displacement_to_mapping(t2f_dis,to2from,trans);
+        tipl::compose_mapping(I,to2from,JJ);
+
+        if(export_intermediate)
+            JJ.save_to_file<tipl::io::gz_nifti>("Subject_QA_nonlinear_reg.nii.gz");
+
+        auto r = tipl::correlation(JJ,It);
+        tipl::out() << "nonlinear: " << r;
+        return r;
+    }
+    void matching_contrast(void)
+    {
+        std::vector<float> X(It.size()*3);
+        tipl::par_for(It.size(),[&](size_t pos)
+        {
+            if(J[pos] == 0.0f)
+                return;
+            size_t i = pos;
+            pos = pos+pos+pos;
+            X[pos] = 1;
+            X[pos+1] = It[i];
+            X[pos+2] = It2[i];
+        });
+        tipl::multiple_regression<float> m;
+        if(m.set_variables(X.begin(),3,It.size()))
+        {
+            float b[3] = {0.0f,0.0f,0.0f};
+            m.regress(J.begin(),b);
+            tipl::out() << "image=" << b[0] << " + " << b[1] << " × t1w + " << b[2] << " × t2w ";
+            tipl::par_for(It.size(),[&](size_t pos)
+            {
+                if(J[pos] == 0.0f)
+                    return;
+                It[pos] = b[0] + b[1]*It[pos] + b[2]*It2[pos];
+                if(It[pos] < 0.0f)
+                    It[pos] = 0.0f;
+            });
+        }
+        It2.clear();
+    }
 public:
-    void apply_warping(const tipl::image<3>& from,tipl::image<3>& to,bool is_label) const;
+    void apply_warping(const tipl::image<dimension>& from,tipl::image<dimension>& to,bool is_label) const
+    {
+        to.resize(It.shape());
+        if(is_label)
+        {
+            if(to2from.empty())
+                tipl::resample<tipl::interpolation::nearest>(from,to,T());
+            else
+                tipl::compose_mapping<tipl::interpolation::nearest>(from,to2from,to);
+        }
+        else
+        {
+            if(to2from.empty())
+                tipl::resample<tipl::interpolation::cubic>(from,to,T());
+            else
+                tipl::compose_mapping<tipl::interpolation::cubic>(from,to2from,to);
+        }
+    }
     bool apply_warping(const char* from,const char* to) const;
     bool apply_warping_tt(const char* from,const char* to) const;
-    bool load_warping(const char* filename);
-    bool save_warping(const char* filename) const;
-    bool save_transformed_image(const char* filename) const;
+    bool load_warping(const char* filename)
+    {
+        tipl::io::gz_mat_read in;
+        if(!in.load_from_file(filename))
+        {
+            error_msg = "cannot read file ";
+            error_msg += filename;
+            return false;
+        }
+        tipl::shape<dimension> to_dim,from_dim;
+        const float* to2from_ptr = nullptr;
+        const float* from2to_ptr = nullptr;
+        unsigned int row,col;
+        if (!in.read("to_dim",to_dim) ||
+            !in.read("to_vs",Itvs) ||
+            !in.read("from_dim",from_dim) ||
+            !in.read("from_vs",Ivs) ||
+            !in.read("from_trans",IR) ||
+            !in.read("to_trans",ItR) ||
+            !in.read("to2from",row,col,to2from_ptr) ||
+            !in.read("from2to",row,col,from2to_ptr))
+        {
+            error_msg = "invalid warp file format";
+            return false;
+        }
+        to2from.resize(to_dim);
+        std::copy(to2from_ptr,to2from_ptr+to2from.size()*dimension,&to2from[0][0]);
+        from2to.resize(from_dim);
+        std::copy(from2to_ptr,from2to_ptr+from2to.size()*dimension,&from2to[0][0]);
+        return true;
+    }
+
+    bool save_warping(const char* filename) const
+    {
+        if(from2to.empty() || to2from.empty())
+        {
+            error_msg = "no mapping matrix to save";
+            return false;
+        }
+        tipl::io::gz_mat_write out(tipl::ends_with(filename,".map.gz") ?
+                                   filename : (std::string(filename)+".map.gz").c_str());
+        if(!out)
+        {
+            error_msg = "cannot write to file ";
+            error_msg += filename;
+            return false;
+        }
+        out.write("to2from",&to2from[0][0],dimension,to2from.size());
+        out.write("to_dim",to2from.shape());
+        out.write("to_vs",Itvs);
+        out.write("to_trans",ItR);
+
+        out.write("from2to",&from2to[0][0],dimension,from2to.size());
+        out.write("from_dim",from2to.shape());
+        out.write("from_vs",Ivs);
+        out.write("from_trans",IR);
+
+        constexpr int method_ver = 202406;
+        out.write("method_ver",std::to_string(method_ver));
+
+        return out;
+    }
+    bool save_transformed_image(const char* filename) const
+    {
+        if(!tipl::io::gz_nifti::save_to_file(filename,JJ.empty() ? J : JJ,Itvs,ItR,It_is_mni))
+        {
+            error_msg = "cannot write to file ";
+            error_msg += filename;
+            return false;
+        }
+        return true;
+    }
+
 };
 
 

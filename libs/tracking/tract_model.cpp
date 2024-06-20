@@ -633,7 +633,8 @@ void TractModel::add(const TractModel& rhs)
     is_cut.insert(is_cut.end(),rhs.is_cut.begin(),rhs.is_cut.end());
 }
 //---------------------------------------------------------------------------
-bool dual_reg::apply_warping_tt(const char* from,const char* to) const
+template<>
+bool dual_reg<3>::apply_warping_tt(const char* from,const char* to) const
 {
     std::vector<std::vector<float> > loaded_tract_data;
     std::vector<uint16_t> cluster;

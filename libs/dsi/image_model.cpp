@@ -1137,7 +1137,7 @@ bool ImageModel::correct_motion(void)
                 {
                     tipl::image<3> from_(dwi.shape());
                     tipl::resample<tipl::interpolation::cubic>(dwi_at(j),from_,
-                        tipl::transformation_matrix<double>(args[j],voxel.dim,voxel.vs,voxel.dim,voxel.vs));
+                        tipl::transformation_matrix<float>(args[j],voxel.dim,voxel.vs,voxel.dim,voxel.vs));
                     from += from_;
                 }
             }
@@ -1167,7 +1167,7 @@ bool ImageModel::correct_motion(void)
         {
             if(!id)
                 prog(i,src_bvalues.size());
-            rotate_one_dwi(i,tipl::transformation_matrix<double>(new_args[i],voxel.dim,voxel.vs,voxel.dim,voxel.vs));
+            rotate_one_dwi(i,tipl::transformation_matrix<float>(new_args[i],voxel.dim,voxel.vs,voxel.dim,voxel.vs));
         });
     }
     voxel.report += msg;

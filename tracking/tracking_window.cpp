@@ -1228,7 +1228,7 @@ void tracking_window::on_actionSave_MNI_mapping_triggered()
         return;
     {
         tipl::progress prog("saving mapping",true);
-        dual_reg reg;
+        dual_reg<3> reg;
         reg.Itvs = handle->template_vs;
         reg.ItR = handle->template_to_mni;
         reg.Ivs = handle->vs;
