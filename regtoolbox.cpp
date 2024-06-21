@@ -341,7 +341,6 @@ void RegToolBox::show_image(void)
     {
         auto invT = reg_2d.T();
         invT.inverse();
-
         auto It2d = reg_2d.show_template(ui->show_second->isChecked());
         if(It2d.empty() && !reg.It.empty())
         {
@@ -453,7 +452,19 @@ void RegToolBox::on_timer()
 
 void RegToolBox::on_run_reg_clicked()
 {
-    if(!reg.data_ready())
+    // 2d to 3D registration
+    if(!reg_2d.I.empty() && reg_2d.It.empty() && !reg.It.empty())
+    {
+        auto shape_2d = tipl::space2slice<tipl::vector<2> >(cur_view,reg.It.shape());
+        reg_2d.Itvs = reg_2d.Ivs = tipl::space2slice<tipl::vector<2> >(cur_view,reg.Itvs);
+        reg_2d.Ivs[0] *= shape_2d[0]/float(reg_2d.I.shape()[0]);
+        reg_2d.Ivs[1] *= shape_2d[1]/float(reg_2d.I.shape()[1]);
+
+        reg_2d.It = tipl::volume2slice(reg.show_template(ui->show_second->isChecked()),cur_view,ui->template_slice_pos->value());
+        if(cur_view != 2)
+            tipl::flip_y(reg_2d.It);
+    }
+    if(!reg.data_ready() && !reg_2d.data_ready())
     {
         QMessageBox::critical(this,"ERROR","Please load image first");
         return;
@@ -463,6 +474,18 @@ void RegToolBox::on_run_reg_clicked()
 
     thread.run([this]()
     {
+        if(reg_2d.data_ready())
+        {
+            reg_2d.bound = ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound;
+            if(ui->cost_fun->currentIndex() == 2) // skip linear
+                reg_2d.skip_linear();
+            else
+                reg_2d.linear_reg(tipl::reg::affine,
+                           ui->cost_fun->currentIndex() == 0 ? tipl::reg::mutual_info : tipl::reg::corr,
+                           thread.terminated);
+            reg_done = true;
+            return;
+        }
         // adjust Ivs for affine
         reg.bound = ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound;
         if(ui->cost_fun->currentIndex() == 2) // skip linear
