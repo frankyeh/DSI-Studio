@@ -224,37 +224,30 @@ void RegToolBox::on_OpenSubject2_clicked()
 }
 
 
-
+template<int dim>
 struct image_fascade{
+    static constexpr int dimension = dim;
     typedef float value_type;
-    const tipl::image<3>& I;
-    const tipl::image<3>& It;
-    const tipl::image<3,tipl::vector<3> >& t2f_dis;
+    const tipl::image<dimension>& I;
+    const tipl::image<dimension>& It;
+    const tipl::image<dimension,tipl::vector<dimension> >& t2f_dis;
     tipl::transformation_matrix<float> T;
-    image_fascade(const tipl::image<3>& I_,
-                  const tipl::image<3>& It_,
-                  const tipl::image<3,tipl::vector<3> >& t2f_dis_,
+    image_fascade(const tipl::image<dimension>& I_,
+                  const tipl::image<dimension>& It_,
+                  const tipl::image<dimension,tipl::vector<dimension> >& t2f_dis_,
                   const tipl::transformation_matrix<float>& T_):I(I_),It(It_),t2f_dis(t2f_dis_),T(T_){;}
 
-    float at(float x,float y, float z) const
+    float at(const tipl::vector<dimension,int> xyz) const
     {
-        if(!It.shape().is_valid(x,y,z))
+        if(!It.shape().is_valid(xyz))
             return 0.0f;
-        tipl::vector<3> pos;
-        if(!t2f_dis.empty() && t2f_dis.shape() == It.shape() &&
-                !tipl::estimate(t2f_dis,tipl::vector<3>(x,y,z),pos))
-            return 0.0f;
-
-        pos += tipl::vector<3>(x,y,z);
+        tipl::vector<dimension> pos(xyz);
+        if(!t2f_dis.empty() && t2f_dis.shape() == It.shape())
+            pos += t2f_dis.at(xyz);
         T(pos);
 
         if(!t2f_dis.empty() && t2f_dis.shape() == I.shape())
-        {
-            tipl::vector<3> dis;
-            if(!tipl::estimate(t2f_dis,pos,dis))
-                return 0.0f;
-            pos += dis;
-        }
+            pos += tipl::estimate(t2f_dis,pos);
         return tipl::estimate(I,pos);
     }
     auto width(void) const{return It.width();}
@@ -550,11 +543,15 @@ void RegToolBox::on_actionDual_Modality_triggered()
 
 void RegToolBox::on_subject_slice_pos_valueChanged(int value)
 {
+    if(!reg_2d.I.empty())
+    {
+
+    }
     if(!reg.I.empty())
     {
         auto invT = reg.T();
         invT.inverse();
-        image_fascade It_to_show(reg.show_template(ui->show_second->isChecked()),
+        image_fascade<3> It_to_show(reg.show_template(ui->show_second->isChecked()),
                                  reg.show_subject(ui->show_second->isChecked()),
                                  reg.f2t_dis,invT);
         uint8_t style = 0;
@@ -636,7 +633,7 @@ void RegToolBox::on_template_slice_pos_valueChanged(int value)
 {
     if(!reg.It.empty())
     {
-        image_fascade I_to_show(reg.show_subject(ui->show_second->isChecked()),
+        image_fascade<3> I_to_show(reg.show_subject(ui->show_second->isChecked()),
                                 reg.show_template(ui->show_second->isChecked()),reg.t2f_dis,reg.T());
 
         uint8_t style = 0;
