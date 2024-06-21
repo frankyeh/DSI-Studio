@@ -35,6 +35,7 @@ public:
 private:
     void clear(void);
     void setup_slice_pos(void);
+    uint8_t blend_style(void);
 private:
     std::string template2_name,subject2_name;
     void load_subject2(const std::string& file_name);
