@@ -90,6 +90,7 @@ bool dual_reg<2>::load_template(const char* file_name)
     tipl::color_image Ic;
     Ic << in;
     It = Ic;
+    tipl::segmentation::otsu_median_regulzried(I);
     Itvs = {1.0f,1.0f};
     return true;
 }
@@ -102,6 +103,7 @@ bool dual_reg<2>::load_subject(const char* file_name)
     tipl::color_image Ic;
     Ic << in;
     I = Ic;
+    tipl::segmentation::otsu_median_regulzried(I);
     Ivs = {1.0f,1.0f};
     return true;
 }
