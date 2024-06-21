@@ -97,7 +97,6 @@ void RegToolBox::on_OpenTemplate_clicked()
             QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
             return;
         }
-        reg_2d.clear();
         reg_2d.It.clear();
     }
     else
@@ -107,7 +106,6 @@ void RegToolBox::on_OpenTemplate_clicked()
             QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
             return;
         }
-        reg.clear();
         reg.It.clear();
     }
 
@@ -162,7 +160,6 @@ void RegToolBox::on_OpenSubject_clicked()
             QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
             return;
         }
-        reg_2d.clear();
         reg_2d.I.clear();
     }
     else
@@ -172,7 +169,6 @@ void RegToolBox::on_OpenSubject_clicked()
             QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
             return;
         }
-        reg.clear();
         reg.I.clear();
     }
 
@@ -231,11 +227,11 @@ struct image_fascade{
     const tipl::image<dimension>& I;
     const tipl::image<dimension>& It;
     const tipl::image<dimension,tipl::vector<dimension> >& t2f_dis;
-    tipl::transformation_matrix<float> T;
+    tipl::transformation_matrix<float,dimension> T;
     image_fascade(const tipl::image<dimension>& I_,
                   const tipl::image<dimension>& It_,
                   const tipl::image<dimension,tipl::vector<dimension> >& t2f_dis_,
-                  const tipl::transformation_matrix<float>& T_):I(I_),It(It_),t2f_dis(t2f_dis_),T(T_){;}
+                  const tipl::transformation_matrix<float,dimension>& T_):I(I_),It(It_),t2f_dis(t2f_dis_),T(T_){;}
 
     float at(const tipl::vector<dimension,int> xyz) const
     {
@@ -557,7 +553,15 @@ void RegToolBox::on_subject_slice_pos_valueChanged(int value)
     {
         auto invT = reg_2d.T();
         invT.inverse();
-        show_slice_at(I_scene,
+        if(reg_2d.It.empty())
+            show_slice_at(I_scene,
+                    reg_2d.show_subject(ui->show_second->isChecked()),
+                    image_fascade<2>(reg_2d.show_template(ui->show_second->isChecked()),
+                    reg_2d.show_subject(ui->show_second->isChecked()),reg_2d.f2t_dis,invT),
+                          v2c_I,v2c_It,ui->subject_slice_pos->value(),ui->zoom_subject->value(),
+                          cur_view,blend_style());
+        else
+            show_slice_at(I_scene,
                       reg_2d.show_subject(ui->show_second->isChecked()),
                       image_fascade<2>(reg_2d.show_template(ui->show_second->isChecked()),
                                        reg_2d.show_subject(ui->show_second->isChecked()),reg_2d.f2t_dis,invT),
