@@ -31,26 +31,27 @@ inline void cdm_common(std::vector<tipl::const_pointer_image<3,float> > It,
 }
 
 
-template<typename image_type>
-tipl::vector<3> adjust_to_vs(const image_type& from,
-               const tipl::vector<3>& from_vs,
+template<typename image_type,int dim>
+tipl::vector<dim> adjust_to_vs(const image_type& from,
+               const tipl::vector<dim>& from_vs,
                const image_type& to,
-               const tipl::vector<3>& to_vs)
+               const tipl::vector<dim>& to_vs)
 {
     auto from_otsu = tipl::segmentation::otsu_threshold(from)*0.6f;
     auto to_otsu = tipl::segmentation::otsu_threshold(to)*0.6f;
-    tipl::vector<3> from_min,from_max,to_min,to_max;
+    tipl::vector<dim> from_min,from_max,to_min,to_max;
     tipl::bounding_box(from,from_min,from_max,from_otsu);
     tipl::bounding_box(to,to_min,to_max,to_otsu);
     from_max -= from_min;
     to_max -= to_min;
-    tipl::vector<3> new_vs(to_vs);
+    tipl::vector<dim> new_vs(to_vs);
     float rx = (to_max[0] > 0.0f) ? from_max[0]*from_vs[0]/(to_max[0]*to_vs[0]) : 1.0f;
     float ry = (to_max[1] > 0.0f) ? from_max[1]*from_vs[1]/(to_max[1]*to_vs[1]) : 1.0f;
 
     new_vs[0] *= rx;
     new_vs[1] *= ry;
-    new_vs[2] *= (rx+ry)*0.5f; // z direction bounding box is largely affected by slice number, thus use rx and ry
+    if constexpr(dim == 3)
+        new_vs[2] *= (rx+ry)*0.5f; // z direction bounding box is largely affected by slice number, thus use rx and ry
     return new_vs;
 }
 
@@ -62,12 +63,12 @@ size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,float> 
                      bool& terminated);
 size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char> > reg,
                      bool& terminated);
-template<typename value_type>
-inline size_t linear_refine(std::vector<tipl::const_pointer_image<3,value_type> > from,
-                                    tipl::vector<3> from_vs,
-                                    std::vector<tipl::const_pointer_image<3,value_type> > to,
-                                    tipl::vector<3> to_vs,
-                              tipl::affine_transform<float>& arg,
+template<typename value_type,int dim>
+inline size_t linear_refine(std::vector<tipl::const_pointer_image<dim,value_type> > from,
+                                    tipl::vector<dim> from_vs,
+                                    std::vector<tipl::const_pointer_image<dim,value_type> > to,
+                                    tipl::vector<dim> to_vs,
+                              tipl::affine_transform<float,dim>& arg,
                               tipl::reg::reg_type reg_type,
                               bool& terminated,tipl::reg::cost_type cost_type = tipl::reg::mutual_info)
 {
@@ -76,7 +77,7 @@ inline size_t linear_refine(std::vector<tipl::const_pointer_image<3,value_type> 
     reg->type = reg_type;
     reg->set_bound(tipl::reg::narrow_bound,false);
     size_t result = 0;
-    if constexpr (tipl::use_cuda)
+    if constexpr (tipl::use_cuda && dim == 3)
     {
         if(has_cuda && cost_type == tipl::reg::mutual_info)
             result = optimize_mi_cuda(reg,terminated);
@@ -103,29 +104,33 @@ inline auto make_list(const image_type& I)
     auto pI = tipl::make_shared(I);
     return std::vector<decltype(pI)>({pI});
 }
-template<typename value_type>
-size_t linear(std::vector<tipl::const_pointer_image<3,value_type> > from,
-                             tipl::vector<3> from_vs,
-                             std::vector<tipl::const_pointer_image<3,value_type> > to,
-                             tipl::vector<3> to_vs,
-                              tipl::affine_transform<float>& arg,
+template<typename value_type,int dim>
+size_t linear(std::vector<tipl::const_pointer_image<dim,value_type> > from,
+                             tipl::vector<dim> from_vs,
+                             std::vector<tipl::const_pointer_image<dim,value_type> > to,
+                             tipl::vector<dim> to_vs,
+                              tipl::affine_transform<float,dim>& arg,
                               tipl::reg::reg_type reg_type,
                               bool& terminated,
                               const float* bound = tipl::reg::reg_bound,
                               tipl::reg::cost_type cost_type = tipl::reg::mutual_info)
 {
     auto new_to_vs = to_vs;
-    if(reg_type == tipl::reg::affine)
-        new_to_vs = adjust_to_vs(from[0],from_vs,to[0],to_vs);
-    if(new_to_vs != to_vs)
-        tipl::transformation_matrix<float>(arg,from[0],from_vs,to[0],to_vs).to_affine_transform(arg,from[0],from_vs,to[0],new_to_vs);
+    if constexpr(dim == 3)
+    {
+        if(reg_type == tipl::reg::affine)
+            new_to_vs = adjust_to_vs(from[0],from_vs,to[0],to_vs);
+        if(new_to_vs != to_vs)
+            tipl::transformation_matrix<float,dim>(arg,from[0],from_vs,to[0],to_vs).
+                    to_affine_transform(arg,from[0],from_vs,to[0],new_to_vs);
+    }
     float result = 0.0f;
 
     auto reg = tipl::reg::linear_reg(from,from_vs,to,new_to_vs,arg);
     reg->type = reg_type;
     reg->set_bound(bound);
 
-    if constexpr (tipl::use_cuda)
+    if constexpr (tipl::use_cuda && dim == 3)
     {
         if(has_cuda && cost_type == tipl::reg::mutual_info)
             result = optimize_mi_cuda_mr(reg,terminated);
@@ -134,29 +139,30 @@ size_t linear(std::vector<tipl::const_pointer_image<3,value_type> > from,
     {
         result = (cost_type == tipl::reg::mutual_info ? reg->template optimize_mr<tipl::reg::mutual_information>(terminated):
                                                         reg->template optimize_mr<tipl::reg::correlation>(terminated));
-        tipl::out() << arg;
-
     }
 
-    if(new_to_vs != to_vs)
-        tipl::transformation_matrix<float>(arg,from[0],from_vs,to[0],new_to_vs).to_affine_transform(arg,from[0],from_vs,to[0],to_vs);
+    if constexpr(dim == 3)
+    {
+        if(new_to_vs != to_vs)
+            tipl::transformation_matrix<float,dim>(arg,from[0],from_vs,to[0],new_to_vs).to_affine_transform(arg,from[0],from_vs,to[0],to_vs);
+    }
     tipl::out() << "initial registration" << std::endl;
     tipl::out() << arg << std::endl;
     return linear_refine(from,from_vs,to,to_vs,arg,reg_type,terminated,cost_type);
 }
-template<typename value_type>
-tipl::transformation_matrix<float> linear(std::vector<tipl::const_pointer_image<3,value_type> > from,
-                                          tipl::vector<3> from_vs,
-                                          std::vector<tipl::const_pointer_image<3,value_type> > to,
-                                          tipl::vector<3> to_vs,
+template<typename value_type,int dim>
+tipl::transformation_matrix<float> linear(std::vector<tipl::const_pointer_image<dim,value_type> > from,
+                                          tipl::vector<dim> from_vs,
+                                          std::vector<tipl::const_pointer_image<dim,value_type> > to,
+                                          tipl::vector<dim> to_vs,
                                           tipl::reg::reg_type reg_type,
                                           bool& terminated,
                                           const float* bound = tipl::reg::reg_bound,
                                           tipl::reg::cost_type cost_type = tipl::reg::mutual_info)
 {
-    tipl::affine_transform<float> arg;
+    tipl::affine_transform<float,dim> arg;
     linear(from,from_vs,to,to_vs,arg,reg_type,terminated,bound,cost_type);
-    return tipl::transformation_matrix<float>(arg,from[0],from_vs,to[0],to_vs);
+    return tipl::transformation_matrix<float,dim>(arg,from[0],from_vs,to[0],to_vs);
 }
 
 template<int dim>
