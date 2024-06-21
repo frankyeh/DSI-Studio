@@ -98,6 +98,8 @@ void RegToolBox::on_OpenTemplate_clicked()
             return;
         }
         reg_2d.It.clear();
+        ui->cost_fun->setCurrentIndex(reg.It.shape() == reg.I.shape() ? 2:0);
+        ui->zoom_template->setValue(width()*0.2f/(1.0f+reg.It.width()));
     }
     else
     {
@@ -107,6 +109,8 @@ void RegToolBox::on_OpenTemplate_clicked()
             return;
         }
         reg.It.clear();
+        ui->cost_fun->setCurrentIndex(reg_2d.It.shape() == reg_2d.I.shape() ? 2:0);
+        ui->zoom_template->setValue(width()*0.2f/(1.0f+reg_2d.It.width()));
     }
 
     setup_slice_pos();
@@ -114,8 +118,7 @@ void RegToolBox::on_OpenTemplate_clicked()
     show_image();
     ui->template_filename->setText(QFileInfo(filename).baseName());
     ui->template_filename->setToolTip(filename);
-    ui->cost_fun->setCurrentIndex(reg.It.shape() == reg.I.shape() ? 2:0);
-    ui->zoom_template->setValue(width()*0.2f/(1.0f+reg.It.width()));
+
 
     std::string new_file_name;
     if(!reg.I2.empty() && tipl::match_files(ui->subject_filename->toolTip().toStdString(),
@@ -161,6 +164,8 @@ void RegToolBox::on_OpenSubject_clicked()
             return;
         }
         reg_2d.I.clear();
+        ui->cost_fun->setCurrentIndex(reg.It.shape() == reg.I.shape() ? 2:0);
+        ui->zoom_subject->setValue(width()*0.2f/(1.0f+reg.I.width()));
     }
     else
     {
@@ -170,14 +175,14 @@ void RegToolBox::on_OpenSubject_clicked()
             return;
         }
         reg.I.clear();
+        ui->cost_fun->setCurrentIndex(reg_2d.It.shape() == reg_2d.I.shape() ? 2:0);
+        ui->zoom_subject->setValue(width()*0.2f/(1.0f+reg_2d.I.width()));
     }
 
     clear();
     show_image();
     ui->subject_filename->setText(QFileInfo(filename).baseName());
     ui->subject_filename->setToolTip(filename);
-    ui->cost_fun->setCurrentIndex(reg.It.shape() == reg.I.shape() ? 2:0);
-    ui->zoom_subject->setValue(width()*0.2f/(1.0f+reg.I.width()));
 
     std::string new_file_name;
     if(!reg.It2.empty() && tipl::match_files(ui->template_filename->toolTip().toStdString(),
@@ -258,6 +263,8 @@ inline void show_slice_at(QGraphicsScene& scene,const T& source1,const U& source
                    const tipl::value_to_color<float>& v2c_2,
                    int slice_pos,float ratio,uint8_t cur_view,uint8_t style)
 {
+    tipl::out() << "source1.shape()" << source1.shape();
+    tipl::out() << "ratio" << ratio;
     auto I1 = v2c_1[tipl::volume2slice_scaled(source1,cur_view,slice_pos,ratio)];
     auto I2 = v2c_2[tipl::volume2slice_scaled(source2,cur_view,slice_pos,ratio)];
     switch(style)
@@ -553,20 +560,22 @@ void RegToolBox::on_subject_slice_pos_valueChanged(int value)
     {
         auto invT = reg_2d.T();
         invT.inverse();
-        if(reg_2d.It.empty())
-            show_slice_at(I_scene,
-                    reg_2d.show_subject(ui->show_second->isChecked()),
-                    image_fascade<2>(reg_2d.show_template(ui->show_second->isChecked()),
-                    reg_2d.show_subject(ui->show_second->isChecked()),reg_2d.f2t_dis,invT),
-                          v2c_I,v2c_It,ui->subject_slice_pos->value(),ui->zoom_subject->value(),
-                          cur_view,blend_style());
-        else
+        if(!reg_2d.It.empty())
             show_slice_at(I_scene,
                       reg_2d.show_subject(ui->show_second->isChecked()),
                       image_fascade<2>(reg_2d.show_template(ui->show_second->isChecked()),
                                        reg_2d.show_subject(ui->show_second->isChecked()),reg_2d.f2t_dis,invT),
                       v2c_I,v2c_It,ui->subject_slice_pos->value(),ui->zoom_subject->value(),
                       cur_view,blend_style());
+        else
+            if(!reg.It.empty())
+                show_slice_at(I_scene,
+                      reg_2d.show_subject(ui->show_second->isChecked()),
+                      reg.show_template(ui->show_second->isChecked()),
+                              v2c_I,v2c_It,ui->subject_slice_pos->value(),ui->zoom_subject->value(),
+                              cur_view,blend_style());
+
+
     }
     if(!reg.I.empty())
     {
