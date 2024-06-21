@@ -245,7 +245,6 @@ struct image_fascade{
         if(!t2f_dis.empty() && t2f_dis.shape() == It.shape())
             pos += t2f_dis.at(xyz);
         T(pos);
-
         if(!t2f_dis.empty() && t2f_dis.shape() == I.shape())
             pos += tipl::estimate(t2f_dis,pos);
         return tipl::estimate(I,pos);
@@ -540,33 +539,41 @@ void RegToolBox::on_actionDual_Modality_triggered()
     ui->OpenTemplate2->setVisible(true);
 }
 
+uint8_t RegToolBox::blend_style(void)
+{
+    uint8_t style = 0;
+    if(ui->rb_switch->isChecked() && flash)
+        style = 1;
+    if(ui->rb_mosaic->isChecked())
+        style = 2;
+    if(ui->rb_blend->isChecked())
+        style = 3;
+    return style;
+}
 
 void RegToolBox::on_subject_slice_pos_valueChanged(int value)
 {
     if(!reg_2d.I.empty())
     {
-
+        auto invT = reg_2d.T();
+        invT.inverse();
+        show_slice_at(I_scene,
+                      reg_2d.show_subject(ui->show_second->isChecked()),
+                      image_fascade<2>(reg_2d.show_template(ui->show_second->isChecked()),
+                                       reg_2d.show_subject(ui->show_second->isChecked()),reg_2d.f2t_dis,invT),
+                      v2c_I,v2c_It,ui->subject_slice_pos->value(),ui->zoom_subject->value(),
+                      cur_view,blend_style());
     }
     if(!reg.I.empty())
     {
         auto invT = reg.T();
         invT.inverse();
-        image_fascade<3> It_to_show(reg.show_template(ui->show_second->isChecked()),
-                                 reg.show_subject(ui->show_second->isChecked()),
-                                 reg.f2t_dis,invT);
-        uint8_t style = 0;
-        if(ui->rb_switch->isChecked() && flash)
-            style = 1;
-        if(ui->rb_mosaic->isChecked())
-            style = 2;
-        if(ui->rb_blend->isChecked())
-            style = 3;
-
         show_slice_at(I_scene,
                       reg.show_subject(ui->show_second->isChecked()),
-                      It_to_show,
+                      image_fascade<3>(reg.show_template(ui->show_second->isChecked()),
+                                       reg.show_subject(ui->show_second->isChecked()),reg.f2t_dis,invT),
                       v2c_I,v2c_It,ui->subject_slice_pos->value(),ui->zoom_subject->value(),
-                      cur_view,style);
+                      cur_view,blend_style());
     }
 
     // Show subject image on the left
@@ -632,24 +639,11 @@ void RegToolBox::on_subject_slice_pos_valueChanged(int value)
 void RegToolBox::on_template_slice_pos_valueChanged(int value)
 {
     if(!reg.It.empty())
-    {
-        image_fascade<3> I_to_show(reg.show_subject(ui->show_second->isChecked()),
-                                reg.show_template(ui->show_second->isChecked()),reg.t2f_dis,reg.T());
-
-        uint8_t style = 0;
-        if(ui->rb_switch->isChecked() && flash)
-            style = 1;
-        if(ui->rb_mosaic->isChecked())
-            style = 2;
-        if(ui->rb_blend->isChecked())
-            style = 3;
-
         show_slice_at(It_scene,
                       reg.show_template(ui->show_second->isChecked()),
-                      I_to_show,
+                      image_fascade<3>(reg.show_subject(ui->show_second->isChecked()),
+                                       reg.show_template(ui->show_second->isChecked()),reg.t2f_dis,reg.T()),
                       v2c_It,v2c_I,ui->template_slice_pos->value(),
-                      ui->zoom_template->value(),cur_view,style);
-    }
-
+                      ui->zoom_template->value(),cur_view,blend_style());
 }
 
