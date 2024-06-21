@@ -89,9 +89,6 @@ private slots:
 
     void on_actionDual_Modality_triggered();
 
-    void on_subject_slice_pos_valueChanged(int value);
-
-    void on_template_slice_pos_valueChanged(int value);
 
 private:
     Ui::RegToolBox *ui;

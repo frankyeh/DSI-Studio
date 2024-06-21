@@ -25,6 +25,8 @@ RegToolBox::RegToolBox(QWidget *parent) :
     connect(ui->mosaic_size, SIGNAL(valueChanged(int)), this, SLOT(show_image()));
     connect(ui->zoom_template, SIGNAL(valueChanged(double)), this, SLOT(show_image()));
     connect(ui->zoom_subject, SIGNAL(valueChanged(double)), this, SLOT(show_image()));
+    connect(ui->template_slice_pos, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
+    connect(ui->subject_slice_pos, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
     connect(ui->min1, SIGNAL(valueChanged(double)), this, SLOT(change_contrast()));
     connect(ui->min2, SIGNAL(valueChanged(double)), this, SLOT(change_contrast()));
     connect(ui->max1, SIGNAL(valueChanged(double)), this, SLOT(change_contrast()));
@@ -67,12 +69,26 @@ void RegToolBox::setup_slice_pos(void)
         int range = int(reg.It.shape()[cur_view]);
         ui->template_slice_pos->setMaximum(range-1);
         ui->template_slice_pos->setValue(range/2);
+        ui->template_slice_pos->show();
+    }
+    else
+    {
+        ui->template_slice_pos->setMaximum(0);
+        ui->template_slice_pos->setValue(0);
+        ui->template_slice_pos->hide();
     }
     if(!reg.I.empty())
     {
         int range = int(reg.I.shape()[cur_view]);
         ui->subject_slice_pos->setMaximum(range-1);
         ui->subject_slice_pos->setValue(range/2);
+        ui->subject_slice_pos->show();
+    }
+    else
+    {
+        ui->subject_slice_pos->setMaximum(0);
+        ui->subject_slice_pos->setValue(0);
+        ui->subject_slice_pos->hide();
     }
 
 }
@@ -263,8 +279,6 @@ inline void show_slice_at(QGraphicsScene& scene,const T& source1,const U& source
                    const tipl::value_to_color<float>& v2c_2,
                    int slice_pos,float ratio,uint8_t cur_view,uint8_t style)
 {
-    tipl::out() << "source1.shape()" << source1.shape();
-    tipl::out() << "ratio" << ratio;
     auto I1 = v2c_1[tipl::volume2slice_scaled(source1,cur_view,slice_pos,ratio)];
     auto I2 = v2c_2[tipl::volume2slice_scaled(source2,cur_view,slice_pos,ratio)];
     switch(style)
@@ -314,8 +328,104 @@ inline void show_slice_at(QGraphicsScene& scene,const T& source1,const U& source
 
 void RegToolBox::show_image(void)
 {
-    on_template_slice_pos_valueChanged(ui->template_slice_pos->value());
-    on_subject_slice_pos_valueChanged(ui->subject_slice_pos->value());
+    // paint the template side
+    if(!reg.It.empty())
+        show_slice_at(It_scene,
+                      reg.show_template(ui->show_second->isChecked()),
+                      image_fascade<3>(reg.show_subject(ui->show_second->isChecked()),
+                                       reg.show_template(ui->show_second->isChecked()),reg.t2f_dis,reg.T()),
+                      v2c_It,v2c_I,ui->template_slice_pos->value(),
+                      ui->zoom_template->value(),cur_view,blend_style());
+    // paint the subject side
+    if(!reg_2d.I.empty())
+    {
+        auto invT = reg_2d.T();
+        invT.inverse();
+
+        auto It2d = reg_2d.show_template(ui->show_second->isChecked());
+        if(It2d.empty() && !reg.It.empty())
+        {
+            It2d = tipl::volume2slice(reg.show_template(ui->show_second->isChecked()),cur_view,ui->template_slice_pos->value());
+            invT.identity();
+            invT[0] = float(It2d.width())/float(reg_2d.I.width());
+            invT[3] = float(It2d.height())/float(reg_2d.I.height());
+            if(cur_view != 2)
+                tipl::flip_y(It2d);
+        }
+        show_slice_at(I_scene,
+                      reg_2d.show_subject(ui->show_second->isChecked()),
+                      image_fascade<2>(It2d,reg_2d.show_subject(ui->show_second->isChecked()),reg_2d.f2t_dis,invT),
+                      v2c_I,v2c_It,0,ui->zoom_subject->value(),2,blend_style());
+    }
+    if(!reg.I.empty())
+    {
+        auto invT = reg.T();
+        invT.inverse();
+        show_slice_at(I_scene,
+                      reg.show_subject(ui->show_second->isChecked()),
+                      image_fascade<3>(reg.show_template(ui->show_second->isChecked()),
+                                       reg.show_subject(ui->show_second->isChecked()),reg.f2t_dis,invT),
+                      v2c_I,v2c_It,ui->subject_slice_pos->value(),ui->zoom_subject->value(),
+                      cur_view,blend_style());
+    }
+
+    // Show subject image on the left
+    /*
+    if(!reg.I.empty())
+    {
+        const auto& I_to_show = reg.show_subject_warped(ui->show_second->isChecked());
+        int pos = std::min(I_to_show.depth()-1,I_to_show.depth()*ui->slice_pos->value()/ui->slice_pos->maximum());
+        tipl::color_image cJ(v2c_I[tipl::volume2slice_scaled(I_to_show,cur_view,pos,ratio)]);
+        QImage warp_image;
+        warp_image << cJ;
+
+        if(ui->show_warp->isChecked() && ui->dis_spacing->currentIndex() && !reg.t2f_dis.empty())
+        {
+            float sub_ratio = float(reg.t2f_dis.width())/float(I_to_show.width());
+            QPainter paint(&warp_image);
+            paint.setBrush(Qt::NoBrush);
+            paint.setPen(Qt::red);
+            tipl::image<2,tipl::vector<3> > dis_slice;
+            tipl::volume2slice(reg.t2f_dis,dis_slice,cur_view,pos*sub_ratio);
+
+            int cur_dis = 1 << (ui->dis_spacing->currentIndex()-1);
+            sub_ratio = ratio/sub_ratio;
+            for(int x = 0;x < dis_slice.width();x += cur_dis)
+            {
+                for(int y = 1,index = x;
+                        y < dis_slice.height()-1;++y,index += dis_slice.width())
+                {
+                    auto vfrom = dis_slice[index];
+                    auto vto = dis_slice[index+dis_slice.width()];
+                    vfrom[0] += x;
+                    vfrom[1] += y-1;
+                    vto[0] += x;
+                    vto[1] += y;
+                    paint.drawLine(vfrom[0]*sub_ratio,vfrom[1]*sub_ratio,
+                                   vto[0]*sub_ratio,vto[1]*sub_ratio);
+                }
+            }
+
+            for(int y = 0;y < dis_slice.height();y += cur_dis)
+            {
+                for(int x = 1,index = y*dis_slice.width();
+                        x < dis_slice.width()-1;++x,++index)
+                {
+                    auto vfrom = dis_slice[index];
+                    auto vto = dis_slice[index+1];
+                    vfrom[0] += x-1;
+                    vfrom[1] += y;
+                    vto[0] += x;
+                    vto[1] += y;
+                    paint.drawLine(vfrom[0]*sub_ratio,vfrom[1]*sub_ratio,
+                                   vto[0]*sub_ratio,vto[1]*sub_ratio);
+                }
+            }
+        }
+        if(cur_view != 2)
+            warp_image = warp_image.mirrored(false,true);
+        I_scene << warp_image;
+    }*/
 }
 extern console_stream console;
 
@@ -554,109 +664,4 @@ uint8_t RegToolBox::blend_style(void)
     return style;
 }
 
-void RegToolBox::on_subject_slice_pos_valueChanged(int value)
-{
-    if(!reg_2d.I.empty())
-    {
-        auto invT = reg_2d.T();
-        invT.inverse();
-        if(!reg_2d.It.empty())
-            show_slice_at(I_scene,
-                      reg_2d.show_subject(ui->show_second->isChecked()),
-                      image_fascade<2>(reg_2d.show_template(ui->show_second->isChecked()),
-                                       reg_2d.show_subject(ui->show_second->isChecked()),reg_2d.f2t_dis,invT),
-                      v2c_I,v2c_It,ui->subject_slice_pos->value(),ui->zoom_subject->value(),
-                      cur_view,blend_style());
-        else
-            if(!reg.It.empty())
-                show_slice_at(I_scene,
-                      reg_2d.show_subject(ui->show_second->isChecked()),
-                      reg.show_template(ui->show_second->isChecked()),
-                              v2c_I,v2c_It,ui->subject_slice_pos->value(),ui->zoom_subject->value(),
-                              cur_view,blend_style());
-
-
-    }
-    if(!reg.I.empty())
-    {
-        auto invT = reg.T();
-        invT.inverse();
-        show_slice_at(I_scene,
-                      reg.show_subject(ui->show_second->isChecked()),
-                      image_fascade<3>(reg.show_template(ui->show_second->isChecked()),
-                                       reg.show_subject(ui->show_second->isChecked()),reg.f2t_dis,invT),
-                      v2c_I,v2c_It,ui->subject_slice_pos->value(),ui->zoom_subject->value(),
-                      cur_view,blend_style());
-    }
-
-    // Show subject image on the left
-    /*
-    if(!reg.I.empty())
-    {
-        const auto& I_to_show = reg.show_subject_warped(ui->show_second->isChecked());
-        int pos = std::min(I_to_show.depth()-1,I_to_show.depth()*ui->slice_pos->value()/ui->slice_pos->maximum());
-        tipl::color_image cJ(v2c_I[tipl::volume2slice_scaled(I_to_show,cur_view,pos,ratio)]);
-        QImage warp_image;
-        warp_image << cJ;
-
-        if(ui->show_warp->isChecked() && ui->dis_spacing->currentIndex() && !reg.t2f_dis.empty())
-        {
-            float sub_ratio = float(reg.t2f_dis.width())/float(I_to_show.width());
-            QPainter paint(&warp_image);
-            paint.setBrush(Qt::NoBrush);
-            paint.setPen(Qt::red);
-            tipl::image<2,tipl::vector<3> > dis_slice;
-            tipl::volume2slice(reg.t2f_dis,dis_slice,cur_view,pos*sub_ratio);
-
-            int cur_dis = 1 << (ui->dis_spacing->currentIndex()-1);
-            sub_ratio = ratio/sub_ratio;
-            for(int x = 0;x < dis_slice.width();x += cur_dis)
-            {
-                for(int y = 1,index = x;
-                        y < dis_slice.height()-1;++y,index += dis_slice.width())
-                {
-                    auto vfrom = dis_slice[index];
-                    auto vto = dis_slice[index+dis_slice.width()];
-                    vfrom[0] += x;
-                    vfrom[1] += y-1;
-                    vto[0] += x;
-                    vto[1] += y;
-                    paint.drawLine(vfrom[0]*sub_ratio,vfrom[1]*sub_ratio,
-                                   vto[0]*sub_ratio,vto[1]*sub_ratio);
-                }
-            }
-
-            for(int y = 0;y < dis_slice.height();y += cur_dis)
-            {
-                for(int x = 1,index = y*dis_slice.width();
-                        x < dis_slice.width()-1;++x,++index)
-                {
-                    auto vfrom = dis_slice[index];
-                    auto vto = dis_slice[index+1];
-                    vfrom[0] += x-1;
-                    vfrom[1] += y;
-                    vto[0] += x;
-                    vto[1] += y;
-                    paint.drawLine(vfrom[0]*sub_ratio,vfrom[1]*sub_ratio,
-                                   vto[0]*sub_ratio,vto[1]*sub_ratio);
-                }
-            }
-        }
-        if(cur_view != 2)
-            warp_image = warp_image.mirrored(false,true);
-        I_scene << warp_image;
-    }*/
-}
-
-
-void RegToolBox::on_template_slice_pos_valueChanged(int value)
-{
-    if(!reg.It.empty())
-        show_slice_at(It_scene,
-                      reg.show_template(ui->show_second->isChecked()),
-                      image_fascade<3>(reg.show_subject(ui->show_second->isChecked()),
-                                       reg.show_template(ui->show_second->isChecked()),reg.t2f_dis,reg.T()),
-                      v2c_It,v2c_I,ui->template_slice_pos->value(),
-                      ui->zoom_template->value(),cur_view,blend_style());
-}
 
