@@ -19,7 +19,7 @@ public:
     TableKeyEventWatcher(QTableWidget* table);
     Q_SIGNAL void DeleteRowPressed(int row);
 };
-
+class CustomSliceModel;
 class view_image : public QMainWindow
 {
     Q_OBJECT
@@ -36,6 +36,7 @@ public:
     std::vector<std::string> command_list;
     std::vector<std::string> param_list;
     bool command(std::string cmd,std::string param1 = std::string());
+    void init_image(void);
 private:
     void update_other_images(void);
     bool has_flip_x(void);
@@ -44,7 +45,6 @@ private slots:
     void DeleteRowPressed(int row);
     void show_info(QString info);
     void show_image(bool update_others);
-    void init_image(void);
     void update_overlay_menu(void);
     void set_overlay(void);
 
@@ -94,6 +94,8 @@ private:
     Ui::view_image *ui;
 public:
     std::shared_ptr<variant_image> cur_image;
+public:
+    CustomSliceModel* slice = nullptr;
     bool regtool_subject = true;
 private:
     std::vector<std::shared_ptr<variant_image> > undo_list;
@@ -126,7 +128,7 @@ private: // visualization
     bool no_update = true;
     tipl::value_to_color<float> v2c;
     unsigned char cur_dim = 2;
-    int slice_pos[3];
+    int slice_pos[3] = {0,0,0};
     QGraphicsScene source;
     QImage source_image;
 public:
