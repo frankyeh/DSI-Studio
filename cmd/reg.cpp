@@ -62,6 +62,7 @@ bool load_nifti_file(std::string file_name_cmd,tipl::image<3>& data,tipl::vector
     bool is_mni;
     return load_nifti_file(file_name_cmd,data,vs,trans,is_mni);
 }
+
 template<>
 bool dual_reg<3>::load_subject(const char* file_name)
 {
@@ -90,7 +91,7 @@ bool dual_reg<2>::load_template(const char* file_name)
     tipl::color_image Ic;
     Ic << in;
     It = Ic;
-    tipl::segmentation::otsu_median_regulzried(I);
+    tipl::segmentation::otsu_median_regulzried(It);
     Itvs = {1.0f,1.0f};
     return true;
 }
@@ -139,6 +140,7 @@ bool dual_reg<3>::load_template(const char* file_name)
         return false;
     }
     nifti.toLPS(It);
+    tipl::segmentation::otsu_median_regulzried(It);
     nifti.get_image_transformation(ItR);
     nifti.get_voxel_size(Itvs);
     It_is_mni = nifti.is_mni();
@@ -155,6 +157,7 @@ bool dual_reg<3>::load_template2(const char* file_name)
         It2.clear();
         return false;
     }
+    tipl::segmentation::otsu_median_regulzried(It2);
     return true;
 }
 template<>
