@@ -20,8 +20,6 @@ public:
     Q_SIGNAL void DeleteRowPressed(int row);
 };
 
-
-
 class view_image : public QMainWindow
 {
     Q_OBJECT
@@ -94,8 +92,10 @@ private slots:
 
 private:
     Ui::view_image *ui;
-private:
+public:
     std::shared_ptr<variant_image> cur_image;
+    bool regtool_subject = true;
+private:
     std::vector<std::shared_ptr<variant_image> > undo_list;
     std::vector<std::shared_ptr<variant_image> > redo_list;
     std::vector<std::string> redo_command_list;
