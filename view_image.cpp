@@ -10,6 +10,8 @@
 #include <QBuffer>
 #include <QImageReader>
 #include "regtoolbox.h"
+#include "SliceModel.h"
+#include "tracking/tracking_window.h"
 #include <filesystem>
 
 std::vector<view_image*> opened_images;
@@ -590,11 +592,9 @@ bool view_image::open(QStringList file_names_)
         nifti.input_stream->sample_access_point = true;
         ui->dwi_volume->setValue(0);
     }
+    ui->zoom->setValue(0.9f*width()/cur_image->shape.width());
     if(!info.empty())
         show_info(info.c_str());
-    ui->type->setCurrentIndex(cur_image->pixel_type);
-    ui->zoom->setValue(0.9f*width()/cur_image->shape.width());
-
     if(cur_image->shape.size())
         init_image();
     return cur_image->shape.size() || !!info.empty();
@@ -603,6 +603,7 @@ bool view_image::open(QStringList file_names_)
 void view_image::init_image(void)
 {
     no_update = true;
+    ui->type->setCurrentIndex(cur_image->pixel_type);
     float min_value = 0.0f;
     float max_value = 0.0f;
     cur_image->apply([&](auto& data)
@@ -829,6 +830,7 @@ void view_image::on_actionSave_triggered()
     auto regtool = dynamic_cast<RegToolBox*>(parent());
     if(regtool)
     {
+        cur_image->change_type(variant_image::float32);
         if(regtool_subject)
         {
             regtool->reg.I = cur_image->I_float32;
@@ -843,6 +845,17 @@ void view_image::on_actionSave_triggered()
         }
         regtool->clear();
         regtool->show_image();
+        QMessageBox::information(this,"DSI Studio","Image Updated");
+        return;
+    }
+    auto tracking = dynamic_cast<tracking_window*>(parent());
+    if(tracking && slice)
+    {
+        cur_image->change_type(variant_image::float32);
+        slice->update_image(tipl::image<3>(cur_image->I_float32));
+        slice->vs = cur_image->vs;
+        slice->trans_to_mni = cur_image->T;
+        tracking->slice_need_update = true;
         QMessageBox::information(this,"DSI Studio","Image Updated");
         return;
     }
