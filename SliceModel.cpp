@@ -505,6 +505,13 @@ void CustomSliceModel::update_image(void)
     slice_pos[2] = source_images.depth() >> 1;
 }
 // ---------------------------------------------------------------------------
+void CustomSliceModel::update_image(tipl::image<3>&& new_image)
+{
+    dim = new_image.shape();
+    handle->view_item[view_id].set_image(new_image);
+    source_images.swap(new_image);
+}
+// ---------------------------------------------------------------------------
 void CustomSliceModel::update_transform(void)
 {
     tipl::transformation_matrix<float> M(arg_min,dim,vs,handle->dim,handle->vs);
