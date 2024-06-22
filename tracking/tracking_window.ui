@@ -1119,6 +1119,7 @@
     <addaction name="separator"/>
     <addaction name="actionSave_T1W_T2W_images"/>
     <addaction name="actionSave_Slices_to_DICOM"/>
+    <addaction name="actionEdit_Slices"/>
     <addaction name="actionMark_Tracts_on_T1W_T2W"/>
     <addaction name="actionMark_Region_on_T1W_T2W"/>
     <addaction name="separator"/>
@@ -4256,6 +4257,11 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Save 3D Model...</string>
+   </property>
+  </action>
+  <action name="actionEdit_Slices">
+   <property name="text">
+    <string>Edit Slices...</string>
    </property>
   </action>
  </widget>
