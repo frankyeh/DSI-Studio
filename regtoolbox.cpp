@@ -470,40 +470,25 @@ void RegToolBox::on_run_reg_clicked()
         return;
     }
     clear();
+
+
     thread.terminated = false;
-
-    thread.run([this]()
+    auto run_reg = [this](auto& reg)
     {
-        if(reg_2d.data_ready())
-        {
-            reg_2d.bound = ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound;
-            if(ui->cost_fun->currentIndex() == 2) // skip linear
-                reg_2d.skip_linear();
-            else
-                reg_2d.linear_reg(tipl::reg::affine,
-                           ui->cost_fun->currentIndex() == 0 ? tipl::reg::mutual_info : tipl::reg::corr,
-                           thread.terminated);
-            reg_done = true;
-            return;
-        }
-        // adjust Ivs for affine
-        reg.bound = ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound;
-        if(ui->cost_fun->currentIndex() == 2) // skip linear
-            reg.skip_linear();
-        else
-            reg.linear_reg(tipl::reg::affine,
-                       ui->cost_fun->currentIndex() == 0 ? tipl::reg::mutual_info : tipl::reg::corr,
-                       thread.terminated);
-
         reg.param.resolution = ui->resolution->value();
         reg.param.min_dimension = uint32_t(ui->min_reso->value());
         reg.param.smoothing = float(ui->smoothing->value());
         reg.param.speed = float(ui->speed->value());
-
-        reg.nonlinear_reg(thread.terminated,ui->use_cuda->isChecked());
+        reg.bound = ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound;
+        reg.run(ui->cost_fun->currentIndex() == 2, // skip linear
+                ui->cost_fun->currentIndex() == 0 ? tipl::reg::mutual_info : tipl::reg::corr,
+                ui->use_cuda->isChecked(),thread.terminated);
         reg_done = true;
-
-    });
+    };
+    if(reg_2d.data_ready())
+        thread.run([this,run_reg](void){run_reg(reg_2d);});
+    else
+        thread.run([this,run_reg](void){run_reg(reg);});
 
     ui->running_label->movie()->start();
     ui->running_label->show();
