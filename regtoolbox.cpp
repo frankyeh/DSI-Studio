@@ -654,6 +654,7 @@ void RegToolBox::on_actionSubject_Image_triggered()
     dialog->cur_image->vs = reg.Ivs;
     dialog->cur_image->T = reg.IR;
     dialog->cur_image->pixel_type = variant_image::float32;
+    dialog->init_image();
     dialog->show();
 }
 
@@ -668,6 +669,7 @@ void RegToolBox::on_actionTemplate_Image_triggered()
     dialog->cur_image->T = reg.ItR;
     dialog->cur_image->pixel_type = variant_image::float32;
     dialog->regtool_subject = false;
+    dialog->init_image();
     dialog->show();
 }
 
