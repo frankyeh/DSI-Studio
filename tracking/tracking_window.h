@@ -165,6 +165,7 @@ private slots:
 
     void on_stay_clicked();
     void on_actionSave_3D_Model_triggered();
+    void on_actionEdit_Slices_triggered();
 };
 
 #endif // TRACKING_WINDOW_H
