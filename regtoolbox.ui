@@ -960,10 +960,10 @@
     <property name="title">
      <string>Edit</string>
     </property>
-    <addaction name="actionRemove_Skull"/>
+    <addaction name="actionSubject_Image"/>
+    <addaction name="actionTemplate_Image"/>
+    <addaction name="separator"/>
     <addaction name="actionMatch_Intensity"/>
-    <addaction name="actionRemove_Background"/>
-    <addaction name="actionSmooth_Subject"/>
    </widget>
    <widget class="QMenu" name="menu_Option">
     <property name="title">
@@ -1013,6 +1013,16 @@
   <action name="actionDual_Modality">
    <property name="text">
     <string>Dual Modality</string>
+   </property>
+  </action>
+  <action name="actionSubject_Image">
+   <property name="text">
+    <string>Subject Image...</string>
+   </property>
+  </action>
+  <action name="actionTemplate_Image">
+   <property name="text">
+    <string>Template Image...</string>
    </property>
   </action>
  </widget>
