@@ -9,6 +9,7 @@
 #include <QMessageBox>
 #include <QBuffer>
 #include <QImageReader>
+#include "regtoolbox.h"
 #include <filesystem>
 
 std::vector<view_image*> opened_images;
@@ -825,6 +826,26 @@ void view_image::change_contrast()
 
 void view_image::on_actionSave_triggered()
 {
+    auto regtool = dynamic_cast<RegToolBox*>(parent());
+    if(regtool)
+    {
+        if(regtool_subject)
+        {
+            regtool->reg.I = cur_image->I_float32;
+            regtool->reg.Ivs = cur_image->vs;
+            regtool->reg.IR = cur_image->T;
+        }
+        else
+        {
+            regtool->reg.It = cur_image->I_float32;
+            regtool->reg.Itvs = cur_image->vs;
+            regtool->reg.ItR = cur_image->T;
+        }
+        regtool->clear();
+        regtool->show_image();
+        QMessageBox::information(this,"DSI Studio","Image Updated");
+        return;
+    }
     if(command("save",file_name.toStdString()))
         QMessageBox::information(this,"DSI Studio","Saved");
     else
