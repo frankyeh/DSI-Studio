@@ -20,6 +20,7 @@
 #include "opengl/glwidget.h"
 #include "opengl/renderingtablewidget.h"
 #include "mapping/atlas.hpp"
+#include "view_image.h"
 
 #include "devicetablewidget.h"
 #include "fib_data.hpp"
@@ -1286,4 +1287,22 @@ void tracking_window::dropEvent(QDropEvent *event)
 }
 
 
+
+
+void tracking_window::on_actionEdit_Slices_triggered()
+{
+    CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
+    if(!slice)
+        return;
+    view_image* dialog = new view_image(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->cur_image->I_float32 = slice->get_source();
+    dialog->cur_image->shape = slice->dim;
+    dialog->cur_image->vs = slice->vs;
+    dialog->cur_image->T = slice->trans_to_mni;
+    dialog->cur_image->pixel_type = variant_image::float32;
+    dialog->slice = slice;
+    dialog->init_image();
+    dialog->show();
+}
 
