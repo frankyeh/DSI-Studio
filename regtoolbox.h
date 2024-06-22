@@ -32,8 +32,8 @@ public:
     std::shared_ptr<tipl::reg::bfnorm_mapping<float,3> > bnorm_data;
     bool reg_done;
     bool flash = false;
-private:
     void clear(void);
+private:
     void setup_slice_pos(void);
     uint8_t blend_style(void);
 private:
@@ -43,7 +43,8 @@ private:
 public:
     explicit RegToolBox(QWidget *parent = nullptr);
     ~RegToolBox();
-
+public slots:
+    void show_image();
 private slots:
 
     void change_contrast();
@@ -55,15 +56,12 @@ private slots:
     void on_run_reg_clicked();
     void on_timer();
 
-    void show_image();
 
 
 
     void on_stop_clicked();
 
     void on_actionMatch_Intensity_triggered();
-
-    void on_actionRemove_Background_triggered();
 
     void on_OpenSubject2_clicked();
 
@@ -81,14 +79,16 @@ private slots:
 
     void on_sag_view_clicked();
 
-    void on_actionSmooth_Subject_triggered();
-
     void on_actionSave_Transformed_Image_triggered();
 
     void on_switch_view_clicked();
 
     void on_actionDual_Modality_triggered();
 
+
+    void on_actionSubject_Image_triggered();
+
+    void on_actionTemplate_Image_triggered();
 
 private:
     Ui::RegToolBox *ui;
