@@ -6,6 +6,7 @@
 #include "ui_regtoolbox.h"
 #include "basic_voxel.hpp"
 #include "console.h"
+#include "view_image.h"
 extern bool has_cuda;
 RegToolBox::RegToolBox(QWidget *parent) :
     QMainWindow(parent),
@@ -561,19 +562,6 @@ void RegToolBox::on_actionMatch_Intensity_triggered()
     }
 }
 
-void RegToolBox::on_actionRemove_Background_triggered()
-{
-    if(!reg.I.empty())
-    {
-        reg.I -= tipl::segmentation::otsu_threshold(reg.I);
-        tipl::lower_threshold(reg.I,0.0);
-        tipl::normalize(reg.I);
-        show_image();
-    }
-}
-
-
-
 void RegToolBox::on_actionSave_Warping_triggered()
 {
     if(reg.to2from.empty())
@@ -616,23 +604,6 @@ void RegToolBox::on_sag_view_clicked()
     show_image();
 }
 
-
-void RegToolBox::on_actionSmooth_Subject_triggered()
-{
-    if(!reg.I.empty())
-    {
-        tipl::filter::gaussian(reg.I);
-        tipl::normalize(reg.I);
-    }
-    if(!reg.I2.empty())
-    {
-        tipl::filter::gaussian(reg.I2);
-        tipl::normalize(reg.I2);
-    }
-    clear();
-    show_image();
-}
-
 void RegToolBox::on_actionSave_Transformed_Image_triggered()
 {
     if(reg.JJ.empty())
@@ -672,4 +643,31 @@ uint8_t RegToolBox::blend_style(void)
     return style;
 }
 
+
+
+void RegToolBox::on_actionSubject_Image_triggered()
+{
+    view_image* dialog = new view_image(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->cur_image->I_float32 = reg.I;
+    dialog->cur_image->shape = reg.I.shape();
+    dialog->cur_image->vs = reg.Ivs;
+    dialog->cur_image->T = reg.IR;
+    dialog->cur_image->pixel_type = variant_image::float32;
+    dialog->show();
+}
+
+
+void RegToolBox::on_actionTemplate_Image_triggered()
+{
+    view_image* dialog = new view_image(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->cur_image->I_float32 = reg.It;
+    dialog->cur_image->shape = reg.It.shape();
+    dialog->cur_image->vs = reg.Itvs;
+    dialog->cur_image->T = reg.ItR;
+    dialog->cur_image->pixel_type = variant_image::float32;
+    dialog->regtool_subject = false;
+    dialog->show();
+}
 
