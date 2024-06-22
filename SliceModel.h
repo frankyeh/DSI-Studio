@@ -128,14 +128,14 @@ public:
     {
         terminate();
     }
-
-
     bool save_mapping(const char* file_name);
     bool load_mapping(const char* file_name);
 public:
     bool is_mni = false;
     tipl::image<3> source_images;
     tipl::image<3> skull_removed_images;
+    void update_image(tipl::image<3>&& new_image);
+    void update_image(void);
 public:
     tipl::color_image picture,high_reso_picture;
 public:
@@ -143,7 +143,6 @@ public:
     tipl::color_image picture_warped,high_reso_picture_warped;
     void warp_picture(tipl::vector<2> from,tipl::vector<2> to);
 public:
-    void update_image(void);
     virtual void get_slice(tipl::color_image& image,
                            unsigned char,int,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
