@@ -649,10 +649,24 @@ void RegToolBox::on_actionSubject_Image_triggered()
 {
     view_image* dialog = new view_image(this);
     dialog->setAttribute(Qt::WA_DeleteOnClose);
-    dialog->cur_image->I_float32 = reg.I;
-    dialog->cur_image->shape = reg.I.shape();
-    dialog->cur_image->vs = reg.Ivs;
-    dialog->cur_image->T = reg.IR;
+    if(!reg_2d.I.empty())
+    {
+        dialog->cur_image->I_float32.resize(reg_2d.I.shape().expand(1));
+        std::copy(reg_2d.I.begin(),reg_2d.I.end(),dialog->cur_image->I_float32.begin());
+        dialog->cur_image->shape = reg_2d.I.shape().expand(1);
+        dialog->cur_image->vs = tipl::vector<3>(reg_2d.Ivs[0],reg_2d.Ivs[1],reg_2d.Ivs[1]);
+        dialog->cur_image->T.identity();
+        dialog->cur_image->T[0] = reg_2d.Ivs[0];
+        dialog->cur_image->T[5] = reg_2d.Ivs[1];
+        dialog->cur_image->T[10] = reg_2d.Ivs[1];
+    }
+    else
+    {
+        dialog->cur_image->I_float32 = reg.I;
+        dialog->cur_image->shape = reg.I.shape();
+        dialog->cur_image->vs = reg.Ivs;
+        dialog->cur_image->T = reg.IR;
+    }
     dialog->cur_image->pixel_type = variant_image::float32;
     dialog->init_image();
     dialog->show();
@@ -663,10 +677,24 @@ void RegToolBox::on_actionTemplate_Image_triggered()
 {
     view_image* dialog = new view_image(this);
     dialog->setAttribute(Qt::WA_DeleteOnClose);
-    dialog->cur_image->I_float32 = reg.It;
-    dialog->cur_image->shape = reg.It.shape();
-    dialog->cur_image->vs = reg.Itvs;
-    dialog->cur_image->T = reg.ItR;
+    if(!reg_2d.It.empty())
+    {
+        dialog->cur_image->I_float32.resize(reg_2d.It.shape().expand(1));
+        std::copy(reg_2d.It.begin(),reg_2d.It.end(),dialog->cur_image->I_float32.begin());
+        dialog->cur_image->shape = reg_2d.It.shape().expand(1);
+        dialog->cur_image->vs = tipl::vector<3>(reg_2d.Itvs[0],reg_2d.Itvs[1],reg_2d.Itvs[1]);
+        dialog->cur_image->T.identity();
+        dialog->cur_image->T[0] = reg_2d.Itvs[0];
+        dialog->cur_image->T[5] = reg_2d.Itvs[1];
+        dialog->cur_image->T[10] = reg_2d.Itvs[1];
+    }
+    else
+    {
+        dialog->cur_image->I_float32 = reg.It;
+        dialog->cur_image->shape = reg.It.shape();
+        dialog->cur_image->vs = reg.Itvs;
+        dialog->cur_image->T = reg.ItR;
+    }
     dialog->cur_image->pixel_type = variant_image::float32;
     dialog->regtool_subject = false;
     dialog->init_image();
