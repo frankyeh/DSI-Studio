@@ -18,12 +18,10 @@ RegToolBox::RegToolBox(QWidget *parent) :
     ui->OpenTemplate2->setVisible(false);
     ui->It_view->setScene(&It_scene);
     ui->I_view->setScene(&I_scene);
-    connect(ui->rb_mosaic, SIGNAL(clicked()), this, SLOT(show_image()));
     connect(ui->rb_switch, SIGNAL(clicked()), this, SLOT(show_image()));
     connect(ui->rb_blend, SIGNAL(clicked()), this, SLOT(show_image()));
     connect(ui->show_warp, SIGNAL(clicked()), this, SLOT(show_image()));
     connect(ui->dis_spacing, SIGNAL(currentIndexChanged(int)), this, SLOT(show_image()));
-    connect(ui->mosaic_size, SIGNAL(valueChanged(int)), this, SLOT(show_image()));
     connect(ui->zoom_template, SIGNAL(valueChanged(double)), this, SLOT(show_image()));
     connect(ui->zoom_subject, SIGNAL(valueChanged(double)), this, SLOT(show_image()));
     connect(ui->template_slice_pos, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
@@ -636,8 +634,6 @@ uint8_t RegToolBox::blend_style(void)
     uint8_t style = 0;
     if(ui->rb_switch->isChecked() && flash)
         style = 1;
-    if(ui->rb_mosaic->isChecked())
-        style = 2;
     if(ui->rb_blend->isChecked())
         style = 3;
     return style;
