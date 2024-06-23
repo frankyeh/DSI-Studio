@@ -7,6 +7,7 @@
 #include "gqi_process.hpp"
 #include "reg.hpp"
 extern std::vector<std::string> fa_template_list,iso_template_list;
+void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 class DWINormalization  : public BaseProcess
 {
 protected:
@@ -59,6 +60,7 @@ public:
             throw std::runtime_error("cannot load anisotropy/isotropy template");
 
         reg.match_resolution(false);
+        initial_LPS_nifti_srow(reg.IR,reg.I.shape(),reg.Ivs);
         voxel.trans_to_mni = reg.ItR;
 
         {
@@ -69,10 +71,7 @@ public:
 
             float r = 0.5f;
             if(voxel.manual_alignment)
-            {
-                tipl::out() << "manual alignment:" << voxel.qsdr_arg;
-                affine = tipl::transformation_matrix<float>(voxel.qsdr_arg,VG.shape(),VGvs,VF.shape(),VFvs);
-            }
+                tipl::out() << "manual alignment:" << (reg.arg = voxel.qsdr_arg);
             else
             {
                 bool terminated = false;
@@ -80,10 +79,11 @@ public:
                 {
                     r = reg.linear_reg(tipl::reg::affine,tipl::reg::mutual_info,terminated);
                     r = r*r;
-                    affine = reg.T();
                 },terminated))
                     throw std::runtime_error("reconstruction canceled");
             }
+            affine = reg.T();
+
 
             if(r < 0.3f)
                 throw std::runtime_error("ERROR: Poor R2 found in linear registration. Please check image orientation or use manual alignment.");
