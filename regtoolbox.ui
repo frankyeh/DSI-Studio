@@ -315,7 +315,7 @@
            <widget class="QGraphicsView" name="I_view"/>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_14" stretch="0,0,0,0">
+           <layout class="QHBoxLayout" name="horizontalLayout_14" stretch="0,0,0,0,0">
             <property name="spacing">
              <number>0</number>
             </property>
@@ -359,7 +359,26 @@
              </widget>
             </item>
             <item>
+             <spacer name="horizontalSpacer_5">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
              <widget class="QSlider" name="subject_slice_pos">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>1</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="value">
                <number>50</number>
               </property>
@@ -524,7 +543,7 @@
            <widget class="QGraphicsView" name="It_view"/>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_15" stretch="0,0,0,0">
+           <layout class="QHBoxLayout" name="horizontalLayout_15" stretch="0,0,0,0,0">
             <property name="spacing">
              <number>0</number>
             </property>
@@ -565,7 +584,26 @@
              </widget>
             </item>
             <item>
+             <spacer name="horizontalSpacer_6">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
              <widget class="QSlider" name="template_slice_pos">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>1</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>

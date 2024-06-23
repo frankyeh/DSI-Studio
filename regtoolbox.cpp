@@ -61,11 +61,11 @@ void RegToolBox::clear(void)
     reg_2d.clear();
     ui->run_reg->setText("run");
 }
-void RegToolBox::setup_slice_pos(void)
+void RegToolBox::setup_slice_pos(bool subject)
 {
-    if(!reg.It.empty())
+    if(!reg.It.empty() && !subject)
     {
-        int range = int(reg.It.shape()[cur_view]);
+        int range = int(reg.It.shape()[template_cur_view]);
         ui->template_slice_pos->setMaximum(range-1);
         ui->template_slice_pos->setValue(range/2);
         ui->template_slice_pos->show();
@@ -76,9 +76,9 @@ void RegToolBox::setup_slice_pos(void)
         ui->template_slice_pos->setValue(0);
         ui->template_slice_pos->hide();
     }
-    if(!reg.I.empty())
+    if(!reg.I.empty() && subject)
     {
-        int range = int(reg.I.shape()[cur_view]);
+        int range = int(reg.I.shape()[subject_cur_view]);
         ui->subject_slice_pos->setMaximum(range-1);
         ui->subject_slice_pos->setValue(range/2);
         ui->subject_slice_pos->show();
@@ -128,7 +128,7 @@ void RegToolBox::on_OpenTemplate_clicked()
         ui->zoom_template->setValue(width()*0.2f/(1.0f+reg_2d.It.width()));
     }
 
-    setup_slice_pos();
+    setup_slice_pos(false);
     clear();
     show_image();
     ui->template_filename->setText(QFileInfo(filename).baseName());
@@ -194,6 +194,7 @@ void RegToolBox::on_OpenSubject_clicked()
         ui->zoom_subject->setValue(width()*0.2f/(1.0f+reg_2d.I.width()));
     }
 
+    setup_slice_pos(true);
     clear();
     show_image();
     ui->subject_filename->setText(QFileInfo(filename).baseName());
@@ -334,7 +335,7 @@ void RegToolBox::show_image(void)
                       image_fascade<3>(reg.show_subject(ui->show_second->isChecked()),
                                        reg.show_template(ui->show_second->isChecked()),reg.t2f_dis,reg.T()),
                       v2c_It,v2c_I,ui->template_slice_pos->value(),
-                      ui->zoom_template->value(),cur_view,blend_style());
+                      ui->zoom_template->value(),template_cur_view,blend_style());
     // paint the subject side
     if(!reg_2d.I.empty())
     {
@@ -343,11 +344,11 @@ void RegToolBox::show_image(void)
         auto It2d = reg_2d.show_template(ui->show_second->isChecked());
         if(It2d.empty() && !reg.It.empty())
         {
-            It2d = tipl::volume2slice(reg.show_template(ui->show_second->isChecked()),cur_view,ui->template_slice_pos->value());
+            It2d = tipl::volume2slice(reg.show_template(ui->show_second->isChecked()),template_cur_view,ui->template_slice_pos->value());
             invT.identity();
             invT[0] = float(It2d.width())/float(reg_2d.I.width());
             invT[3] = float(It2d.height())/float(reg_2d.I.height());
-            if(cur_view != 2)
+            if(template_cur_view != 2)
                 tipl::flip_y(It2d);
         }
         show_slice_at(I_scene,
@@ -364,7 +365,7 @@ void RegToolBox::show_image(void)
                       image_fascade<3>(reg.show_template(ui->show_second->isChecked()),
                                        reg.show_subject(ui->show_second->isChecked()),reg.f2t_dis,invT),
                       v2c_I,v2c_It,ui->subject_slice_pos->value(),ui->zoom_subject->value(),
-                      cur_view,blend_style());
+                      subject_cur_view,blend_style());
     }
 
     // Show subject image on the left
@@ -454,13 +455,13 @@ void RegToolBox::on_run_reg_clicked()
     // 2d to 3D registration
     if(!reg_2d.I.empty() && reg_2d.It.empty() && !reg.It.empty())
     {
-        auto shape_2d = tipl::space2slice<tipl::vector<2> >(cur_view,reg.It.shape());
-        reg_2d.Itvs = reg_2d.Ivs = tipl::space2slice<tipl::vector<2> >(cur_view,reg.Itvs);
+        auto shape_2d = tipl::space2slice<tipl::vector<2> >(template_cur_view,reg.It.shape());
+        reg_2d.Itvs = reg_2d.Ivs = tipl::space2slice<tipl::vector<2> >(template_cur_view,reg.Itvs);
         reg_2d.Ivs[0] *= shape_2d[0]/float(reg_2d.I.shape()[0]);
         reg_2d.Ivs[1] *= shape_2d[1]/float(reg_2d.I.shape()[1]);
 
-        reg_2d.It = tipl::volume2slice(reg.show_template(ui->show_second->isChecked()),cur_view,ui->template_slice_pos->value());
-        if(cur_view != 2)
+        reg_2d.It = tipl::volume2slice(reg.show_template(ui->show_second->isChecked()),template_cur_view,ui->template_slice_pos->value());
+        if(template_cur_view != 2)
             tipl::flip_y(reg_2d.It);
     }
     if(!reg.data_ready() && !reg_2d.data_ready())
@@ -582,25 +583,49 @@ void RegToolBox::on_show_option_clicked()
 
 void RegToolBox::on_axial_view_clicked()
 {
-    cur_view = 2;
-    setup_slice_pos();
+    subject_cur_view = 2;
+    setup_slice_pos(true);
     show_image();
 }
 
 
 void RegToolBox::on_coronal_view_clicked()
 {
-    cur_view = 1;
-    setup_slice_pos();
+    subject_cur_view = 1;
+    setup_slice_pos(true);
     show_image();
 }
 
 void RegToolBox::on_sag_view_clicked()
 {
-    cur_view = 0;
-    setup_slice_pos();
+    subject_cur_view = 0;
+    setup_slice_pos(true);
     show_image();
 }
+
+void RegToolBox::on_sag_view_2_clicked()
+{
+    template_cur_view = 0;
+    setup_slice_pos(false);
+    show_image();
+}
+
+
+void RegToolBox::on_coronal_view_2_clicked()
+{
+    template_cur_view = 1;
+    setup_slice_pos(false);
+    show_image();
+}
+
+
+void RegToolBox::on_axial_view_2_clicked()
+{
+    template_cur_view = 2;
+    setup_slice_pos(false);
+    show_image();
+}
+
 
 void RegToolBox::on_actionSave_Transformed_Image_triggered()
 {
@@ -696,4 +721,5 @@ void RegToolBox::on_actionTemplate_Image_triggered()
     dialog->init_image();
     dialog->show();
 }
+
 
