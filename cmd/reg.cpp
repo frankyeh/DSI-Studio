@@ -140,7 +140,6 @@ bool dual_reg<3>::load_template(const char* file_name)
         return false;
     }
     nifti.toLPS(It);
-    tipl::segmentation::otsu_median_regulzried(It);
     nifti.get_image_transformation(ItR);
     nifti.get_voxel_size(Itvs);
     It_is_mni = nifti.is_mni();
@@ -157,7 +156,6 @@ bool dual_reg<3>::load_template2(const char* file_name)
         It2.clear();
         return false;
     }
-    tipl::segmentation::otsu_median_regulzried(It2);
     return true;
 }
 template<>
