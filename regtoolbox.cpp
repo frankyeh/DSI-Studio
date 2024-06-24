@@ -63,33 +63,38 @@ void RegToolBox::clear(void)
 }
 void RegToolBox::setup_slice_pos(bool subject)
 {
-    if(!reg.It.empty() && !subject)
+    if(!subject)
     {
-        int range = int(reg.It.shape()[template_cur_view]);
-        ui->template_slice_pos->setMaximum(range-1);
-        ui->template_slice_pos->setValue(range/2);
-        ui->template_slice_pos->show();
+        if(!reg.It.empty())
+        {
+            int range = int(reg.It.shape()[template_cur_view]);
+            ui->template_slice_pos->setMaximum(range-1);
+            ui->template_slice_pos->setValue(range/2);
+            ui->template_slice_pos->show();
+        }
+        else
+        {
+            ui->template_slice_pos->setMaximum(0);
+            ui->template_slice_pos->setValue(0);
+            ui->template_slice_pos->hide();
+        }
     }
-    else
+    if(subject)
     {
-        ui->template_slice_pos->setMaximum(0);
-        ui->template_slice_pos->setValue(0);
-        ui->template_slice_pos->hide();
+        if(!reg.I.empty())
+        {
+            int range = int(reg.I.shape()[subject_cur_view]);
+            ui->subject_slice_pos->setMaximum(range-1);
+            ui->subject_slice_pos->setValue(range/2);
+            ui->subject_slice_pos->show();
+        }
+        else
+        {
+            ui->subject_slice_pos->setMaximum(0);
+            ui->subject_slice_pos->setValue(0);
+            ui->subject_slice_pos->hide();
+        }
     }
-    if(!reg.I.empty() && subject)
-    {
-        int range = int(reg.I.shape()[subject_cur_view]);
-        ui->subject_slice_pos->setMaximum(range-1);
-        ui->subject_slice_pos->setValue(range/2);
-        ui->subject_slice_pos->show();
-    }
-    else
-    {
-        ui->subject_slice_pos->setMaximum(0);
-        ui->subject_slice_pos->setValue(0);
-        ui->subject_slice_pos->hide();
-    }
-
 }
 void RegToolBox::change_contrast()
 {
