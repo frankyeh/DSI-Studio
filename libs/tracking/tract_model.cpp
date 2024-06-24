@@ -2670,7 +2670,7 @@ void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,const tipl
     }
 
     std::vector<std::set<tipl::vector<3,short> > > pass_map(tipl::max_thread_count);
-    tipl::par_for(tract_data.size(),[&](size_t i,size_t thread)
+    tipl::par_for<tipl::sequential_with_id>(tract_data.size(),[&](size_t i,size_t thread)
     {
         if(tract_data[i].size() < 6)
             return;

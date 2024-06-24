@@ -111,16 +111,16 @@ bool Voxel::run_hist(void)
         }
 
     size_t p = 0;
-    tipl::par_for(from_list.size(),[&](size_t i,size_t thread_id)
+    tipl::par_for(thread_count,[&](size_t thread_id)
     {
-        prog(p++,from_list.size());
-        if(prog.aborted())
-            return;
         hist_data[thread_id].init();
-        hist_data[thread_id].from = from_list[i];
-        hist_data[thread_id].to = to_list[i];
-        for (unsigned int j = 0; j < process_list.size(); ++j)
-            process_list[j]->run_hist(*this,hist_data[thread_id]);
+        for(size_t i = thread_id;i < from_list.size() && prog(p++,from_list.size());i += thread_count)
+        {
+            hist_data[thread_id].from = from_list[i];
+            hist_data[thread_id].to = to_list[i];
+            for (unsigned int j = 0; j < process_list.size(); ++j)
+                process_list[j]->run_hist(*this,hist_data[thread_id]);
+        }
     });
     return !prog.aborted();
 }

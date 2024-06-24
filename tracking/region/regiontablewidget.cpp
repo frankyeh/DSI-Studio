@@ -1028,7 +1028,7 @@ void RegionTableWidget::merge_all(void)
     tipl::image<3,unsigned char> mask(regions[merge_list[0]]->dim);
     tipl::progress prog("merging regions",true);
     size_t p = 0;
-    tipl::par_for(merge_list.size(),[&](size_t index,unsigned int id)
+    tipl::par_for(merge_list.size(),[&](size_t index)
     {
         if(prog.aborted())
             return;
@@ -1674,7 +1674,7 @@ void RegionTableWidget::do_action(QString action)
                 std::vector<size_t> need_fill_up;
                 {
                     std::vector<std::vector<size_t> > need_fill_ups(tipl::max_thread_count);
-                    tipl::par_for(A.size(),[&](size_t index,int id)
+                    tipl::par_for<tipl::sequential_with_id>(A.size(),[&](size_t index,int id)
                     {
                         if(A[index] && !A_labels[index])
                             need_fill_ups[id].push_back(index);

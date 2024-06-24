@@ -1163,7 +1163,7 @@ bool ImageModel::correct_motion(void)
     // get ndc list
     {
         tipl::progress prog("estimate and registering...");
-        tipl::par_for(src_bvalues.size(),[&](size_t i,size_t id)
+        tipl::par_for<tipl::sequential_with_id>(src_bvalues.size(),[&](size_t i,size_t id)
         {
             if(!id)
                 prog(i,src_bvalues.size());

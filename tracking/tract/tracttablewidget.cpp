@@ -90,7 +90,7 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
     std::vector<std::vector<std::vector<unsigned int> > > colors_threaded(thread_count);
     tipl::matrix<4,4>* pt = (cur_tracking_window.current_slice->is_diffusion_space ? nullptr : &(cur_tracking_window.current_slice->to_slice));
     max_count /= selected_tracts.size();
-    tipl::par_for(selected_tracts.size(),[&](unsigned int index,unsigned int thread)
+    tipl::par_for<tipl::sequential_with_id>(selected_tracts.size(),[&](unsigned int index,unsigned int thread)
     {
         if(cur_tracking_window.slice_need_update)
             return;
