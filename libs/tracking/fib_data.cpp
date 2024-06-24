@@ -1714,6 +1714,8 @@ bool fib_data::map_to_mni(bool background)
 
         {
             size_t iso_index = get_name_index("iso");
+            if(view_item.size() == iso_index)
+                iso_index = get_name_index("md");
             if(view_item.size() != iso_index)
                 reg.I2 = view_item[iso_index].get_image();
         }
