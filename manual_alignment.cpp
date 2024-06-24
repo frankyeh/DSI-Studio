@@ -378,7 +378,6 @@ void manual_alignment::on_rerun_clicked()
     thread.run([this,cost,reg_type]()
     {
         linear(make_list(from,from2),from_vs,make_list(to,to2),to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,tipl::reg::reg_bound,cost);
-        thread.running = false;
     });
     ui->rerun->setText("Stop");
     ui->refine->setEnabled(false);
