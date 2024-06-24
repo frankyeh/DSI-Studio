@@ -666,6 +666,7 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
 
 bool add_other_image(ImageModel* handle,QString name,QString filename)
 {
+    tipl::progress prog("add other images");
     tipl::image<3> ref;
     tipl::vector<3> vs;
     tipl::io::gz_nifti in;
@@ -690,14 +691,15 @@ bool add_other_image(ImageModel* handle,QString name,QString filename)
         std::cout << " and register image with DWI." << std::endl;
         in.get_voxel_size(vs);
         tipl::image<3> iso_fa(handle->dwi);
-        bool terminated = false;
         auto smoothed_ref = ref;
         tipl::filter::gaussian(iso_fa);
         tipl::filter::gaussian(iso_fa);
         tipl::filter::gaussian(smoothed_ref);
         tipl::filter::gaussian(smoothed_ref);
         affine = linear(make_list(iso_fa),handle->voxel.vs,
-                        make_list(smoothed_ref),vs,tipl::reg::rigid_body,terminated);
+                        make_list(smoothed_ref),vs,tipl::reg::rigid_body);
+        if(prog.aborted())
+            return false;
     }
     else {
         if(has_registered)
