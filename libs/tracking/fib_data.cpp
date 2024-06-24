@@ -1685,8 +1685,7 @@ bool fib_data::map_to_mni(bool background)
 
     tipl::progress prog_("running normalization");
     prog = 0;
-    bool terminated = false;
-    auto lambda = [this,output_file_name,&terminated]()
+    auto lambda = [this,output_file_name]()
     {
         dual_reg<3> reg;
         reg.It = template_I;
@@ -1705,7 +1704,7 @@ bool fib_data::map_to_mni(bool background)
             {
                 prog = 6;
                 error_msg = "cannot perform normalization";
-                terminated = true;
+                tipl::prog_aborted = true;
                 return;
             }
             reg.It2.swap(reg.It);
@@ -1724,9 +1723,9 @@ bool fib_data::map_to_mni(bool background)
         if(has_manual_atlas)
             reg.arg = manual_template_T;
         else
-            reg.linear_reg(tipl::reg::affine,tipl::reg::mutual_info,terminated);
+            reg.linear_reg(tipl::reg::affine,tipl::reg::mutual_info);
 
-        if(terminated)
+        if(tipl::prog_aborted)
         {
             prog = 6;
             return;
@@ -1739,12 +1738,12 @@ bool fib_data::map_to_mni(bool background)
                 reg.matching_contrast();
         }
         prog = 4;
-        if(reg.nonlinear_reg(terminated,true) < 0.3f)
+        if(reg.nonlinear_reg(tipl::prog_aborted,true) < 0.3f)
         {
             error_msg = "cannot perform normalization";
-            terminated = true;
+            tipl::prog_aborted = true;
         }
-        if(terminated)
+        if(tipl::prog_aborted)
         {
             prog = 6;
             return;
@@ -1765,15 +1764,15 @@ bool fib_data::map_to_mni(bool background)
         if(prog_.aborted())
         {
             error_msg = "aborted.";
-            terminated = true;
+            tipl::prog_aborted = true;
         }
         t.join();
-        return !terminated;
+        return !prog_.aborted();
     }
 
     tipl::out() << "Subject normalization to MNI space." << std::endl;
     lambda();
-    return !terminated;
+    return !prog_.aborted();
 }
 bool fib_data::load_mapping(const char* file_name,bool external)
 {
