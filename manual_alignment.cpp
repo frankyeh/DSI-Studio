@@ -479,7 +479,7 @@ void manual_alignment::on_actionLoad_Transformation_triggered()
     if(thread.running)
     {
         thread.terminated = true;
-        thread.wait();
+        thread.join();
     }
     if(!(std::ifstream(filename.toStdString().c_str()) >> arg))
     {
