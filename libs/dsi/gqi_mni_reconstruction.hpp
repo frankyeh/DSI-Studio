@@ -74,12 +74,9 @@ public:
                 tipl::out() << "manual alignment:" << (reg.arg = voxel.qsdr_arg);
             else
             {
-                bool terminated = false;
-                if(!tipl::run("linear registration",[&]()
-                {
-                    r = reg.linear_reg(tipl::reg::affine,tipl::reg::mutual_info,terminated);
-                    r = r*r;
-                },terminated))
+                r = reg.linear_reg(tipl::reg::affine,tipl::reg::mutual_info);
+                r = r*r;
+                if(tipl::prog_aborted)
                     throw std::runtime_error("reconstruction canceled");
             }
             affine = reg.T();
@@ -91,15 +88,13 @@ public:
             auto& VFF = reg.J;
             auto& VFF2 = reg.J2;
 
-            bool terminated = false;
-            if(!tipl::run("normalization",[&]()
-                {
-                    r = reg.nonlinear_reg(terminated,true);
-                    cdm_dis.swap(reg.t2f_dis);
 
-                },terminated))
+            r = reg.nonlinear_reg(tipl::prog_aborted);
+
+            if(tipl::prog_aborted)
                 throw std::runtime_error("reconstruction canceled");
 
+            cdm_dis.swap(reg.t2f_dis);
 
             tipl::out() << "nonlinear R2: " << (voxel.R2 = r*r) << std::endl;
             if(voxel.R2 < 0.3f)
