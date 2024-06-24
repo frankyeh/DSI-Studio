@@ -56,7 +56,6 @@ RegToolBox::~RegToolBox()
 void RegToolBox::clear(void)
 {
     thread.clear();
-    reg_done = false;
     reg.clear();
     reg_2d.clear();
     ui->run_reg->setText("run");
