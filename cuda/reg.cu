@@ -83,14 +83,14 @@ void cdm_cuda(const std::vector<tipl::const_pointer_image<3,float> >& It,
         pIs.push_back(tipl::make_device_shared(each));
 
     try{
-        tipl::reg::cdm(pIt,pIs,dd,inv_dd,terminated,param);
+        tipl::reg::cdm<tipl::progress>(pIt,pIs,dd,inv_dd,terminated,param);
     }
 
     catch(std::runtime_error& er)
     {
         std::cout << "ERROR: " << er.what() << std::endl;
         std::cout << "switch to CPU" << std::endl;
-        tipl::reg::cdm(It,Is,d,inv_d,terminated,param);
+        tipl::reg::cdm<tipl::progress>(It,Is,d,inv_d,terminated,param);
         return;
     }
     d.resize(It[0].shape());
@@ -102,26 +102,26 @@ void cdm_cuda(const std::vector<tipl::const_pointer_image<3,float> >& It,
 
 }
 
-size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,float> > reg,
+size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,float,tipl::progress> > reg,
                         bool& terminated)
 {
     distribute_gpu();
     return reg->optimize<tipl::reg::mutual_information_cuda>(terminated);
 }
-size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char> > reg,
+size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char,tipl::progress> > reg,
+                        bool& terminated)
+{
+    distribute_gpu();
+    return reg->optimize<tipl::reg::mutual_information_cuda>(terminated);
+}
+
+size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,float,tipl::progress> > reg,
                         bool& terminated)
 {
     distribute_gpu();
     return reg->optimize_mr<tipl::reg::mutual_information_cuda>(terminated);
 }
-
-size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,float> > reg,
-                        bool& terminated)
-{
-    distribute_gpu();
-    return reg->optimize<tipl::reg::mutual_information_cuda>(terminated);
-}
-size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char> > reg,
+size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char,tipl::progress> > reg,
                         bool& terminated)
 {
     distribute_gpu();
