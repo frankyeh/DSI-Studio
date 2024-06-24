@@ -230,7 +230,7 @@ bool ImageModel::check_b_table(void)
 
     std::shared_ptr<fib_data> template_fib;
     tipl::transformation_matrix<float> T;
-    tipl::matrix<3,3,float> r;
+    tipl::matrix<3,3,float> jacobian;
 
     //if(is_human_data())
     {
@@ -243,27 +243,23 @@ bool ImageModel::check_b_table(void)
                 template_fib->resample_to(voxel.vs[0]);
 
             tipl::affine_transform<float> arg;
-            float R = 0;
-            if(!tipl::run("comparing subject fibers to template fibers",[&](void)
-                {
-                    tipl::image<3> dwi_f(dwi);
-                    auto iso = template_fib->get_iso();
+            tipl::progress prog("comparing subject fibers to template fibers");
 
-                    linear(make_list(iso),template_fib->vs,make_list(dwi_f),voxel.vs,arg,tipl::reg::affine);
-                    tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
-                    r.inv();
-                    T = tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs);
-
-                    tipl::image<3> VFF(iso.shape());
-                    tipl::resample<tipl::interpolation::linear>(dwi_f,VFF,T);
-                    R = tipl::correlation(VFF.begin(),VFF.end(),iso.begin());
-
-                }))
+            tipl::image<3> dwi_f(dwi);
+            auto iso = template_fib->get_iso();
+            tipl::segmentation::otsu_median_regulzried(dwi_f);
+            linear(make_list(iso),template_fib->vs,make_list(dwi_f),voxel.vs,arg,tipl::reg::affine);
+            if(prog.aborted())
                 return false;
+            tipl::rotation_matrix(arg.rotation,jacobian.begin(),tipl::vdim<3>());
+            jacobian.inv();
+            T = tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs);
 
-            tipl::out() << arg << std::endl;
-            tipl::out() << "goodness-of-fit R2: " << R*R << std::endl;
-            if(R*R < 0.3f)
+            tipl::image<3> VFF(iso.shape());
+            tipl::resample<tipl::interpolation::linear>(dwi_f,VFF,T);
+            float r = tipl::correlation(VFF.begin(),VFF.end(),iso.begin());
+            tipl::out() << "linear r: " << r << std::endl;
+            if(r < 0.6f)
                 template_fib.reset();
         }
         else
@@ -304,7 +300,7 @@ bool ImageModel::check_b_table(void)
                 if(subject_geo.is_valid(pos))
                 {
                     auto sub_dir = new_dir[0][tipl::pixel_index<3>(pos.begin(),subject_geo).index()];
-                    sub_dir.rotate(r);
+                    sub_dir.rotate(jacobian);
                     sum_cos += std::abs(double(sub_dir*template_fib->dir.get_fib(index.index(),0)));
                     ++ncount;
                 }
