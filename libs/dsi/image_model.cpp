@@ -243,14 +243,13 @@ bool ImageModel::check_b_table(void)
                 template_fib->resample_to(voxel.vs[0]);
 
             tipl::affine_transform<float> arg;
-            bool terminated = false;
             float R = 0;
             if(!tipl::run("comparing subject fibers to template fibers",[&](void)
                 {
                     tipl::image<3> dwi_f(dwi);
                     auto iso = template_fib->get_iso();
 
-                    linear(make_list(iso),template_fib->vs,make_list(dwi_f),voxel.vs,arg,tipl::reg::affine,terminated);
+                    linear(make_list(iso),template_fib->vs,make_list(dwi_f),voxel.vs,arg,tipl::reg::affine);
                     tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
                     r.inv();
                     T = tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs);
@@ -259,7 +258,7 @@ bool ImageModel::check_b_table(void)
                     tipl::resample<tipl::interpolation::linear>(dwi_f,VFF,T);
                     R = tipl::correlation(VFF.begin(),VFF.end(),iso.begin());
 
-                },terminated))
+                }))
                 return false;
 
             tipl::out() << arg << std::endl;
@@ -1013,10 +1012,15 @@ bool ImageModel::align_acpc(float reso)
 
     match_template_resolution(I,Ivs,J,Jvs);
 
-    bool terminated = false;
     prog(0,3);
     tipl::affine_transform<float> arg;
-    linear(make_list(I),Ivs,make_list(J),Jvs,arg,tipl::reg::rigid_scaling,terminated);
+    {
+        tipl::progress prog("linear registration");
+        linear(make_list(I),Ivs,make_list(J),Jvs,arg,tipl::reg::rigid_scaling);
+        if(prog.aborted())
+            return false;
+    }
+
     tipl::out() << arg << std::endl;
     prog(1,3);
     tipl::image<3> I2(I.shape());
@@ -1085,13 +1089,11 @@ bool ImageModel::correct_motion(void)
             args[i] = args[i-1];
             tipl::image<3> to(dwi_at(i));
             preproc(to);
-            bool terminated = false;
-            linear_refine(make_list(from),voxel.vs,make_list(to),voxel.vs,args[i],tipl::reg::rigid_body,terminated);
+            linear_refine(make_list(from),voxel.vs,make_list(to),voxel.vs,args[i],tipl::reg::rigid_body);
             tipl::out() << "dwi (" << i+1 << "/" << src_bvalues.size() << ")" <<
                          " shift=" << tipl::vector<3>(args[i].translocation) <<
                          " rotation=" << tipl::vector<3>(args[i].rotation) << std::endl;
         });
-
         if(prog.aborted())
         {
             error_msg = "aborted";
@@ -1145,8 +1147,7 @@ bool ImageModel::correct_motion(void)
             preproc(from);
             preproc(to);
 
-            bool terminated = false;
-            linear_refine(make_list(from),voxel.vs,make_list(to),voxel.vs,new_args[i],tipl::reg::rigid_body,terminated);
+            linear_refine(make_list(from),voxel.vs,make_list(to),voxel.vs,new_args[i],tipl::reg::rigid_body);
             tipl::out() << "dwi (" << i+1 << "/" << src_bvalues.size() << ") = "
                       << " shift=" << tipl::vector<3>(new_args[i].translocation)
                       << " rotation=" << tipl::vector<3>(new_args[i].rotation) << std::endl;
