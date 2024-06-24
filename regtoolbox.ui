@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1448</width>
-    <height>921</height>
+    <width>1200</width>
+    <height>662</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -74,6 +74,13 @@
        </widget>
       </item>
       <item>
+       <widget class="QCheckBox" name="show_second">
+        <property name="text">
+         <string>Show 2nd Modality</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer_4">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
@@ -85,13 +92,6 @@
          </size>
         </property>
        </spacer>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="show_second">
-        <property name="text">
-         <string>Show 2nd Modality</string>
-        </property>
-       </widget>
       </item>
       <item>
        <widget class="QRadioButton" name="rb_blend">
@@ -942,7 +942,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1448</width>
+     <width>1200</width>
      <height>26</height>
     </rect>
    </property>
