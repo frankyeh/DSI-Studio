@@ -270,7 +270,6 @@ bool dual_reg<3>::apply_warping(const char* from,const char* to) const
 
 int reg(tipl::program_option<tipl::out>& po)
 {
-    bool terminated = false;
     dual_reg<3> r;
 
     if(po.has("warp") || po.has("inv_warp"))
@@ -321,7 +320,7 @@ int reg(tipl::program_option<tipl::out>& po)
         r.bound = tipl::reg::large_bound;
 
     r.linear_reg(po.get("reg_type",1) == 0 ? tipl::reg::rigid_body : tipl::reg::affine,
-                 po.get("cost_function","mi") == std::string("mi") ? tipl::reg::mutual_info : tipl::reg::corr,terminated);
+                 po.get("cost_function","mi") == std::string("mi") ? tipl::reg::mutual_info : tipl::reg::corr);
 
 
     if(po.get("reg_type",1) != 0)
@@ -331,7 +330,7 @@ int reg(tipl::program_option<tipl::out>& po)
         r.param.smoothing = po.get("smoothing",r.param.smoothing);
         r.param.iterations = po.get("iteration",r.param.iterations);
         r.param.min_dimension = po.get("min_dimension",r.param.min_dimension);
-        r.nonlinear_reg(terminated);
+        r.nonlinear_reg(tipl::prog_aborted);
     }
 
     if(po.has("output") && !r.save_transformed_image(po.get("output").c_str()))
