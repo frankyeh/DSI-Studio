@@ -11,23 +11,35 @@ void cdm_cuda(const std::vector<tipl::const_pointer_image<3,float> >& It,
                bool& terminated,
                tipl::reg::cdm_param param);
 
-inline void cdm_common(std::vector<tipl::const_pointer_image<3,float> > It,
-                       std::vector<tipl::const_pointer_image<3,float> > Is,
-                       tipl::image<3,tipl::vector<3> >& dis,
-                       tipl::image<3,tipl::vector<3> >& inv_dis,
+template<int dim>
+inline void cdm_common(std::vector<tipl::const_pointer_image<dim,float> > It,
+                       std::vector<tipl::const_pointer_image<dim,float> > Is,
+                       tipl::image<dim,tipl::vector<dim> >& dis,
+                       tipl::image<dim,tipl::vector<dim> >& inv_dis,
                        bool& terminated,
                        tipl::reg::cdm_param param = tipl::reg::cdm_param(),
                        bool use_cuda = true)
 {
     if(use_cuda && has_cuda)
     {
-        if constexpr (tipl::use_cuda)
+        if constexpr (tipl::use_cuda && dim == 3)
         {
             cdm_cuda(It,Is,dis,inv_dis,terminated,param);
             return;
         }
     }
-    tipl::reg::cdm(It,Is,dis,inv_dis,terminated,param);
+    /*
+    if(It.size() == 1)
+    {
+        tipl::image<dim> sIt(It[0]),sJ(Is[0]);
+        sIt *= 32.0f/tipl::segmentation::otsu_median(sIt);
+        sJ *= 32.0f/tipl::segmentation::otsu_median(sJ);
+        tipl::upper_lower_threshold(sIt,0.0f,63.0f);
+        tipl::upper_lower_threshold(sJ,0.0f,63.0f);
+        tipl::reg::cdm_mi(sIt,sJ,dis,inv_dis,terminated,param);
+    }
+    else
+    */    tipl::reg::cdm<tipl::progress,tipl::out>(It,Is,dis,inv_dis,terminated,param);
 }
 
 
@@ -55,27 +67,26 @@ tipl::vector<dim> adjust_to_vs(const image_type& from,
     return new_vs;
 }
 
-size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,float> > reg,
+size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,float,tipl::progress> > reg,
                      bool& terminated);
-size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char> > reg,
+size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char,tipl::progress> > reg,
                      bool& terminated);
-size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,float> > reg,
+size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,float,tipl::progress> > reg,
                      bool& terminated);
-size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char> > reg,
+size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char,tipl::progress> > reg,
                      bool& terminated);
 template<typename value_type,int dim>
 inline size_t linear_refine(std::vector<tipl::const_pointer_image<dim,value_type> > from,
-                                    tipl::vector<dim> from_vs,
-                                    std::vector<tipl::const_pointer_image<dim,value_type> > to,
-                                    tipl::vector<dim> to_vs,
-                              tipl::affine_transform<float,dim>& arg,
-                              tipl::reg::reg_type reg_type,
-                              bool& terminated,tipl::reg::cost_type cost_type = tipl::reg::mutual_info)
+                            tipl::vector<dim> from_vs,
+                            std::vector<tipl::const_pointer_image<dim,value_type> > to,
+                            tipl::vector<dim> to_vs,
+                            tipl::affine_transform<float,dim>& arg,
+                            tipl::reg::reg_type reg_type,
+                            bool& terminated = tipl::prog_aborted,
+                            tipl::reg::cost_type cost_type = tipl::reg::mutual_info)
 {
-    auto reg = tipl::reg::linear_reg(from,from_vs,to,to_vs,arg);
-    reg->line_search = false;
-    reg->type = reg_type;
-    reg->set_bound(tipl::reg::narrow_bound,false);
+    auto reg = tipl::reg::linear_reg<tipl::progress>(from,from_vs,to,to_vs,arg);
+    reg->set_bound(reg_type,tipl::reg::narrow_bound,false);
     size_t result = 0;
     if constexpr (tipl::use_cuda && dim == 3)
     {
@@ -111,7 +122,7 @@ size_t linear(std::vector<tipl::const_pointer_image<dim,value_type> > from,
                              tipl::vector<dim> to_vs,
                               tipl::affine_transform<float,dim>& arg,
                               tipl::reg::reg_type reg_type,
-                              bool& terminated,
+                              bool& terminated = tipl::prog_aborted,
                               const float* bound = tipl::reg::reg_bound,
                               tipl::reg::cost_type cost_type = tipl::reg::mutual_info)
 {
@@ -126,9 +137,8 @@ size_t linear(std::vector<tipl::const_pointer_image<dim,value_type> > from,
     }
     float result = 0.0f;
 
-    auto reg = tipl::reg::linear_reg(from,from_vs,to,new_to_vs,arg);
-    reg->type = reg_type;
-    reg->set_bound(bound);
+    auto reg = tipl::reg::linear_reg<tipl::progress>(from,from_vs,to,new_to_vs,arg);
+    reg->set_bound(reg_type,bound);
 
     if constexpr (tipl::use_cuda && dim == 3)
     {
@@ -156,7 +166,7 @@ tipl::transformation_matrix<float> linear(std::vector<tipl::const_pointer_image<
                                           std::vector<tipl::const_pointer_image<dim,value_type> > to,
                                           tipl::vector<dim> to_vs,
                                           tipl::reg::reg_type reg_type,
-                                          bool& terminated,
+                                          bool& terminated = tipl::prog_aborted,
                                           const float* bound = tipl::reg::reg_bound,
                                           tipl::reg::cost_type cost_type = tipl::reg::mutual_info)
 {
@@ -178,6 +188,7 @@ struct dual_reg{
     tipl::matrix<dimension+1,dimension+1> ItR,IR;
     bool It_is_mni;
     bool export_intermediate = false;
+    bool use_cuda = true;
     mutable std::string error_msg;
     void clear(void)
     {
@@ -246,10 +257,15 @@ struct dual_reg{
         J.swap(J_);
     }
     void match_resolution(bool rigid_body);
-    float linear_reg(tipl::reg::reg_type reg_type,
-                     tipl::reg::cost_type cost_type,
-                     bool& terminated)
+    inline float linear_reg(tipl::reg::reg_type reg_type,
+                     tipl::reg::cost_type cost_type)
     {
+        return linear_reg(reg_type,cost_type,tipl::prog_aborted);
+    }
+    float linear_reg(tipl::reg::reg_type reg_type,
+                     tipl::reg::cost_type cost_type,bool& terminated)
+    {
+        tipl::progress prog("linear registration");
         if(export_intermediate)
         {
             tipl::io::gz_nifti::save_to_file("Template_QA.nii.gz",It,Itvs,ItR);
@@ -263,7 +279,6 @@ struct dual_reg{
         linear(make_list(It,It2),Itvs,make_list(I,I2),Ivs,
                arg,reg_type,terminated,bound,cost_type);
 
-        tipl::out() << "linear registration completed" << std::endl;
         auto trans = T();
 
         tipl::image<dimension> J_,J2_;
@@ -291,10 +306,13 @@ struct dual_reg{
 
         return r;
     }
-    float nonlinear_reg(bool& terminated,bool use_cuda = true)
+    inline float nonlinear_reg(void)
     {
-        tipl::out() << "begin nonlinear registration" << std::endl;
-
+        return nonlinear_reg(tipl::prog_aborted);
+    }
+    float nonlinear_reg(bool& terminated)
+    {
+        tipl::progress prog("nonlinear registration");
         cdm_common(make_list(It,It2),make_list(J,J2),t2f_dis,f2t_dis,terminated,param,use_cuda);
 
         if(export_intermediate)
@@ -318,9 +336,6 @@ struct dual_reg{
             });
             tipl::io::gz_nifti::save_to_file("Subject_displacement.nii.gz",buffer,Itvs,ItR);
         }
-
-        tipl::out() << "nonlinear registration completed.";
-
         auto trans = T();
         from2to.resize(I.shape());
         tipl::inv_displacement_to_mapping(f2t_dis,from2to,trans);
@@ -328,7 +343,7 @@ struct dual_reg{
         tipl::compose_mapping(I,to2from,JJ);
 
         if(export_intermediate)
-            JJ.save_to_file<tipl::io::gz_nifti>("Subject_QA_nonlinear_reg.nii.gz");
+            JJ.template save_to_file<tipl::io::gz_nifti>("Subject_QA_nonlinear_reg.nii.gz");
 
         auto r = tipl::correlation(JJ,It);
         tipl::out() << "nonlinear: " << r;
