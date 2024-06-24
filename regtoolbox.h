@@ -30,7 +30,6 @@ public:
     tipl::affine_transform<float> old_arg;
 public:
     std::shared_ptr<tipl::reg::bfnorm_mapping<float,3> > bnorm_data;
-    bool reg_done;
     bool flash = false;
     void clear(void);
 private:
