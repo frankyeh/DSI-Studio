@@ -442,7 +442,7 @@ void RegToolBox::on_timer()
         show_image();
         old_arg = reg.arg;
     }
-    if(reg_done)
+    if(thread.running)
     {
         tipl::out() << "registration completed";
         timer->stop();
@@ -477,7 +477,6 @@ void RegToolBox::on_run_reg_clicked()
     clear();
 
 
-    thread.terminated = false;
     auto run_reg = [this](auto& reg)
     {
         reg.param.resolution = ui->resolution->value();
@@ -488,7 +487,6 @@ void RegToolBox::on_run_reg_clicked()
         reg.run(ui->cost_fun->currentIndex() == 2, // skip linear
                 ui->cost_fun->currentIndex() == 0 ? tipl::reg::mutual_info : tipl::reg::corr,
                 ui->use_cuda->isChecked(),thread.terminated);
-        reg_done = true;
     };
     if(reg_2d.data_ready())
         thread.run([this,run_reg](void){run_reg(reg_2d);});
