@@ -441,9 +441,8 @@ void RegToolBox::on_timer()
         show_image();
         old_arg = reg.arg;
     }
-    if(thread.running)
+    if(!thread.running)
     {
-        tipl::out() << "registration completed";
         timer->stop();
         ui->running_label->movie()->stop();
         ui->running_label->hide();
@@ -451,6 +450,7 @@ void RegToolBox::on_timer()
         ui->run_reg->show();
         ui->run_reg->setText("re-run");
         flash = false;
+        tipl::out() << "registration completed";
     }
 }
 
