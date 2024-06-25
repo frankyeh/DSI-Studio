@@ -10,6 +10,12 @@ void cdm_cuda(const std::vector<tipl::const_pointer_image<3,float> >& It,
                tipl::image<3,tipl::vector<3> >& inv_d,
                bool& terminated,
                tipl::reg::cdm_param param);
+void cdm_cuda(const std::vector<tipl::const_pointer_image<2,float> >& It,
+               const std::vector<tipl::const_pointer_image<2,float> >& Is,
+               tipl::image<2,tipl::vector<2> >& d,
+               tipl::image<2,tipl::vector<2> >& inv_d,
+               bool& terminated,
+               tipl::reg::cdm_param param);
 
 template<int dim>
 inline void cdm_common(std::vector<tipl::const_pointer_image<dim,float> > It,
@@ -22,7 +28,7 @@ inline void cdm_common(std::vector<tipl::const_pointer_image<dim,float> > It,
 {
     if(use_cuda && has_cuda)
     {
-        if constexpr (tipl::use_cuda && dim == 3)
+        if constexpr (tipl::use_cuda)
         {
             cdm_cuda(It,Is,dis,inv_dis,terminated,param);
             return;
