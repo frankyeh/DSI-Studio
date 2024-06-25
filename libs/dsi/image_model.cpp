@@ -1872,7 +1872,6 @@ bool eddy_check_shell(const std::vector<float>& bvalues)
     }
     return true;
 }
-extern bool has_cuda;
 bool ImageModel::run_eddy(std::string exec)
 {
     if(voxel.report.find("rotated") != std::string::npos)
