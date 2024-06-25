@@ -125,29 +125,41 @@ void cdm_cuda(const std::vector<tipl::const_pointer_image<2,float> >& It,
 
 
 size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,float,tipl::progress> > reg,
+                        tipl::reg::cost_type cost_type,
                         bool& terminated)
 {
     distribute_gpu();
-    return reg->optimize<tipl::reg::mutual_information_cuda>(terminated);
+    return  cost_type == tipl::reg::mutual_info ?
+            reg->optimize<tipl::reg::mutual_information_cuda>(terminated):
+            reg->optimize<tipl::reg::correlation>(terminated);
 }
 size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char,tipl::progress> > reg,
+                        tipl::reg::cost_type cost_type,
                         bool& terminated)
 {
     distribute_gpu();
-    return reg->optimize<tipl::reg::mutual_information_cuda>(terminated);
+    return  cost_type == tipl::reg::mutual_info ?
+            reg->optimize<tipl::reg::mutual_information_cuda>(terminated):
+            reg->optimize<tipl::reg::correlation>(terminated);
 }
 
 size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,float,tipl::progress> > reg,
+                        tipl::reg::cost_type cost_type,
                         bool& terminated)
 {
     distribute_gpu();
-    return reg->optimize_mr<tipl::reg::mutual_information_cuda>(terminated);
+    return  cost_type == tipl::reg::mutual_info ?
+            reg->optimize_mr<tipl::reg::mutual_information_cuda>(terminated):
+            reg->optimize_mr<tipl::reg::correlation>(terminated);
 }
 size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char,tipl::progress> > reg,
+                        tipl::reg::cost_type cost_type,
                         bool& terminated)
 {
     distribute_gpu();
-    return reg->optimize_mr<tipl::reg::mutual_information_cuda>(terminated);
+    return  cost_type == tipl::reg::mutual_info ?
+            reg->optimize_mr<tipl::reg::mutual_information_cuda>(terminated):
+            reg->optimize_mr<tipl::reg::correlation>(terminated);
 }
 
 
