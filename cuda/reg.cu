@@ -64,17 +64,18 @@ void check_cuda(std::string& error_msg)
     has_cuda = true;
 }
 
-void cdm_cuda(const std::vector<tipl::const_pointer_image<3,float> >& It,
-              const std::vector<tipl::const_pointer_image<3,float> >& Is,
-              tipl::image<3,tipl::vector<3> >& d,
-              tipl::image<3,tipl::vector<3> >& inv_d,
+template<int dim>
+void cdm_cuda_base(const std::vector<tipl::const_pointer_image<dim,float> >& It,
+              const std::vector<tipl::const_pointer_image<dim,float> >& Is,
+              tipl::image<dim,tipl::vector<dim> >& d,
+              tipl::image<dim,tipl::vector<dim> >& inv_d,
               bool& terminated,
-              tipl::reg::cdm_param param)
+              const tipl::reg::cdm_param& param)
 {
     distribute_gpu();
-    tipl::device_image<3,tipl::vector<3> > dd(It[0].shape()),inv_dd(It[0].shape());
-    std::vector<tipl::device_image<3> > dIt(It.size()),dIs(Is.size());
-    std::vector<tipl::const_pointer_device_image<3> > pIt,pIs;
+    tipl::device_image<dim,tipl::vector<dim> > dd(It[0].shape()),inv_dd(It[0].shape());
+    std::vector<tipl::device_image<dim> > dIt(It.size()),dIs(Is.size());
+    std::vector<tipl::const_pointer_device_image<dim> > pIt,pIs;
     std::copy(It.begin(),It.end(),dIt.begin());
     std::copy(Is.begin(),Is.end(),dIs.begin());
     for(auto& each : dIt)
@@ -101,6 +102,27 @@ void cdm_cuda(const std::vector<tipl::const_pointer_image<3,float> >& It,
     cudaDeviceSynchronize();
 
 }
+
+void cdm_cuda(const std::vector<tipl::const_pointer_image<3,float> >& It,
+              const std::vector<tipl::const_pointer_image<3,float> >& Is,
+              tipl::image<3,tipl::vector<3> >& d,
+              tipl::image<3,tipl::vector<3> >& inv_d,
+              bool& terminated,
+              tipl::reg::cdm_param param)
+{
+    cdm_cuda_base(It,Is,d,inv_d,terminated,param);
+}
+
+void cdm_cuda(const std::vector<tipl::const_pointer_image<2,float> >& It,
+              const std::vector<tipl::const_pointer_image<2,float> >& Is,
+              tipl::image<2,tipl::vector<2> >& d,
+              tipl::image<2,tipl::vector<2> >& inv_d,
+              bool& terminated,
+              tipl::reg::cdm_param param)
+{
+    cdm_cuda_base(It,Is,d,inv_d,terminated,param);
+}
+
 
 size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,float,tipl::progress> > reg,
                         bool& terminated)
