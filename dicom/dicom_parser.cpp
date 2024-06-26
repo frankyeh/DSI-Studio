@@ -73,6 +73,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
     tipl::io::dicom dicom_header;// multiple frame image
     if(!dicom_header.load_from_file(file_name))
         return false;
+    tipl::out()  << "handled as 3D volume (multiframe)";
     tipl::image<3> buf_image;
     dicom_header >> buf_image;
     unsigned int slice_num = dicom_header.get_int(0x2001,0x1018);
@@ -182,8 +183,8 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
     }
     tipl::out() << "image rotation matrix: " << T;
 
-    if(!slice_num)
-        slice_num = 1;
+    if(slice_num <= 1)
+        slice_num = buf_image.depth();
     size_t num_gradient = uint32_t(buf_image.depth())/slice_num;
 
 
@@ -571,6 +572,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
     tipl::io::dicom dicom_header2;
     if(file_list.size() < 2 || !dicom_header2.load_from_file(file_list[1].toStdString().c_str()))
         return false;
+    tipl::out()  << "handled as multiple single slice DWI";
     float s1 = dicom_header.get_slice_location();
     bool iterate_slice_first = true;
     unsigned int slice_num = 2;
@@ -1035,7 +1037,7 @@ bool parse_dwi(QStringList file_list,
     }
     if(dicom_header.is_multi_frame)
     {
-        tipl::out()  << "handled as Philips multiframe";
+
         for(int index = 0;prog(index,file_list.size());++index)
         {
             if(!load_dicom_multi_frame(file_list[index].toStdString().c_str(),dwi_files))
@@ -1049,7 +1051,6 @@ bool parse_dwi(QStringList file_list,
         tipl::out() << src_error_msg;
         return false;
     }
-    tipl::out()  << "handled as multiple single slice DWI";
     return true;
 }
 bool parse_dwi(const std::vector<std::string>& file_list,
