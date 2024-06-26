@@ -1103,20 +1103,35 @@ bool dcm2src_and_nii(QStringList files)
     if(!parse_dwi(files,dicom_files))
     {
         tipl::out() << "handled as structure images";
-        std::sort(files.begin(),files.end(),compare_qstring());
-        tipl::io::dicom_volume v;
-        std::vector<std::string> file_list;
-        for(int index = 0;index < files.size();++index)
-            file_list.push_back(files[index].toStdString().c_str());
-        if(!v.load_from_files(file_list))
-        {
-            tipl::out() << v.error_msg.c_str() << std::endl;
-            return false;
-        }
         tipl::image<3> source_images;
         tipl::vector<3> vs;
-        v >> source_images;
-        v.get_voxel_size(vs);
+
+        if(files.size()==1)
+        {
+            tipl::io::dicom v;
+            if(!v.load_from_file(files[0].toStdString()))
+            {
+                tipl::out() << "ERROR: cannot parse dicom file" << std::endl;
+                return false;
+            }
+            v >> source_images;
+            v.get_voxel_size(vs);
+        }
+        else
+        {
+            std::sort(files.begin(),files.end(),compare_qstring());
+            tipl::io::dicom_volume v;
+            std::vector<std::string> file_list;
+            for(int index = 0;index < files.size();++index)
+                file_list.push_back(files[index].toStdString().c_str());
+            if(!v.load_from_files(file_list))
+            {
+                tipl::out() << v.error_msg.c_str() << std::endl;
+                return false;
+            }
+            v >> source_images;
+            v.get_voxel_size(vs);
+        }
         if(source_images.empty())
         {
             tipl::out() << "cannot parse as image volume";
