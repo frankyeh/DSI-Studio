@@ -236,7 +236,7 @@
             <item>
              <widget class="QLabel" name="subject_filename">
               <property name="text">
-               <string>                   </string>
+               <string/>
               </property>
              </widget>
             </item>
@@ -464,7 +464,7 @@
             <item>
              <widget class="QLabel" name="template_filename">
               <property name="text">
-               <string>                       </string>
+               <string/>
               </property>
              </widget>
             </item>
@@ -825,10 +825,10 @@
                <item>
                 <widget class="QDoubleSpinBox" name="speed">
                  <property name="decimals">
-                  <number>1</number>
+                  <number>2</number>
                  </property>
                  <property name="minimum">
-                  <double>0.100000000000000</double>
+                  <double>0.010000000000000</double>
                  </property>
                  <property name="maximum">
                   <double>10.000000000000000</double>
