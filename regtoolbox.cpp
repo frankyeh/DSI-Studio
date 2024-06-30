@@ -266,7 +266,7 @@ struct image_fascade{
         if(!t2f_dis.empty() && t2f_dis.shape() == It.shape())
             pos += t2f_dis.at(xyz);
         T(pos);
-        if(!t2f_dis.empty() && t2f_dis.shape() == I.shape())
+        if(!t2f_dis.empty() && t2f_dis.shape() != It.shape() && t2f_dis.shape() == I.shape())
             pos += tipl::estimate(t2f_dis,pos);
         return tipl::estimate(I,pos);
     }
