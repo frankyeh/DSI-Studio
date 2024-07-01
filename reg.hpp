@@ -7,13 +7,11 @@ extern bool has_cuda;
 void cdm_cuda(const std::vector<tipl::const_pointer_image<3,float> >& It,
                const std::vector<tipl::const_pointer_image<3,float> >& Is,
                tipl::image<3,tipl::vector<3> >& d,
-               tipl::image<3,tipl::vector<3> >& inv_d,
                bool& terminated,
                tipl::reg::cdm_param param);
 void cdm_cuda(const std::vector<tipl::const_pointer_image<2,float> >& It,
                const std::vector<tipl::const_pointer_image<2,float> >& Is,
                tipl::image<2,tipl::vector<2> >& d,
-               tipl::image<2,tipl::vector<2> >& inv_d,
                bool& terminated,
                tipl::reg::cdm_param param);
 
@@ -21,7 +19,6 @@ template<int dim>
 inline void cdm_common(std::vector<tipl::const_pointer_image<dim,float> > It,
                        std::vector<tipl::const_pointer_image<dim,float> > Is,
                        tipl::image<dim,tipl::vector<dim> >& dis,
-                       tipl::image<dim,tipl::vector<dim> >& inv_dis,
                        bool& terminated,
                        tipl::reg::cdm_param param = tipl::reg::cdm_param(),
                        bool use_cuda = true)
@@ -30,11 +27,11 @@ inline void cdm_common(std::vector<tipl::const_pointer_image<dim,float> > It,
     {
         if constexpr (tipl::use_cuda)
         {
-            cdm_cuda(It,Is,dis,inv_dis,terminated,param);
+            cdm_cuda(It,Is,dis,terminated,param);
             return;
         }
     }
-    tipl::reg::cdm(It,Is,dis,inv_dis,terminated,param);
+    tipl::reg::cdm(It,Is,dis,terminated,param);
 }
 
 
@@ -90,7 +87,7 @@ inline size_t linear_refine(std::vector<tipl::const_pointer_image<dim,value_type
             result = optimize_mi_cuda(reg,cost_type,terminated);
     }
     if(!result)
-        result = (cost_type == tipl::reg::mutual_info ? reg->template optimize<tipl::reg::mutual_information>(terminated):
+        result = (cost_type == tipl::reg::mutual_info ? reg->template optimize<tipl::reg::mutual_information<> >(terminated):
                                                         reg->template optimize<tipl::reg::correlation>(terminated));
     tipl::out() << "refine registration" << std::endl;
     tipl::out() << arg;
@@ -144,7 +141,7 @@ size_t linear(std::vector<tipl::const_pointer_image<dim,value_type> > from,
     }
     if(result == 0.0f)
     {
-        result = (cost_type == tipl::reg::mutual_info ? reg->template optimize_mr<tipl::reg::mutual_information>(terminated):
+        result = (cost_type == tipl::reg::mutual_info ? reg->template optimize_mr<tipl::reg::mutual_information<> >(terminated):
                                                         reg->template optimize_mr<tipl::reg::correlation>(terminated));
     }
 
@@ -311,8 +308,13 @@ struct dual_reg{
     float nonlinear_reg(bool& terminated)
     {
         tipl::progress prog("nonlinear registration");
-        cdm_common(make_list(It,It2),make_list(J,J2),t2f_dis,f2t_dis,terminated,param,use_cuda);
-
+        tipl::par_for(2,[&](int id)
+        {
+            if(id)
+                cdm_common(make_list(It,It2),make_list(J,J2),t2f_dis,terminated,param,use_cuda);
+            else
+                cdm_common(make_list(J,J2),make_list(It,It2),f2t_dis,terminated,param,use_cuda);
+        },2);
         if(export_intermediate)
         {
             tipl::image<dimension+1> buffer(It.shape().expand(2*dimension));

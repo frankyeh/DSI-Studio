@@ -68,7 +68,6 @@ template<int dim>
 void cdm_cuda_base(const std::vector<tipl::const_pointer_image<dim,float> >& It,
               const std::vector<tipl::const_pointer_image<dim,float> >& Is,
               tipl::image<dim,tipl::vector<dim> >& d,
-              tipl::image<dim,tipl::vector<dim> >& inv_d,
               bool& terminated,
               const tipl::reg::cdm_param& param)
 {
@@ -84,21 +83,18 @@ void cdm_cuda_base(const std::vector<tipl::const_pointer_image<dim,float> >& It,
         pIs.push_back(tipl::make_device_shared(each));
 
     try{
-        tipl::reg::cdm<tipl::progress>(pIt,pIs,dd,inv_dd,terminated,param);
+        tipl::reg::cdm<tipl::progress>(pIt,pIs,dd,terminated,param);
     }
 
     catch(std::runtime_error& er)
     {
         std::cout << "ERROR: " << er.what() << std::endl;
         std::cout << "switch to CPU" << std::endl;
-        tipl::reg::cdm<tipl::progress>(It,Is,d,inv_d,terminated,param);
+        tipl::reg::cdm<tipl::progress>(It,Is,d,terminated,param);
         return;
     }
     d.resize(It[0].shape());
     dd.buf().copy_to(d);
-    inv_d.resize(It[0].shape());
-    inv_dd.buf().copy_to(inv_d);
-
     cudaDeviceSynchronize();
 
 }
@@ -106,21 +102,19 @@ void cdm_cuda_base(const std::vector<tipl::const_pointer_image<dim,float> >& It,
 void cdm_cuda(const std::vector<tipl::const_pointer_image<3,float> >& It,
               const std::vector<tipl::const_pointer_image<3,float> >& Is,
               tipl::image<3,tipl::vector<3> >& d,
-              tipl::image<3,tipl::vector<3> >& inv_d,
               bool& terminated,
               tipl::reg::cdm_param param)
 {
-    cdm_cuda_base(It,Is,d,inv_d,terminated,param);
+    cdm_cuda_base(It,Is,d,terminated,param);
 }
 
 void cdm_cuda(const std::vector<tipl::const_pointer_image<2,float> >& It,
               const std::vector<tipl::const_pointer_image<2,float> >& Is,
               tipl::image<2,tipl::vector<2> >& d,
-              tipl::image<2,tipl::vector<2> >& inv_d,
               bool& terminated,
               tipl::reg::cdm_param param)
 {
-    cdm_cuda_base(It,Is,d,inv_d,terminated,param);
+    cdm_cuda_base(It,Is,d,terminated,param);
 }
 
 
@@ -130,7 +124,7 @@ size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,float,tipl
 {
     distribute_gpu();
     return  cost_type == tipl::reg::mutual_info ?
-            reg->optimize<tipl::reg::mutual_information_cuda>(terminated):
+            reg->optimize<tipl::reg::mutual_information<tipl::device_vector> >(terminated):
             reg->optimize<tipl::reg::correlation>(terminated);
 }
 size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char,tipl::progress> > reg,
@@ -139,7 +133,7 @@ size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned c
 {
     distribute_gpu();
     return  cost_type == tipl::reg::mutual_info ?
-            reg->optimize<tipl::reg::mutual_information_cuda>(terminated):
+            reg->optimize<tipl::reg::mutual_information<tipl::device_vector> >(terminated):
             reg->optimize<tipl::reg::correlation>(terminated);
 }
 
@@ -149,7 +143,7 @@ size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,float,t
 {
     distribute_gpu();
     return  cost_type == tipl::reg::mutual_info ?
-            reg->optimize_mr<tipl::reg::mutual_information_cuda>(terminated):
+            reg->optimize_mr<tipl::reg::mutual_information<tipl::device_vector> >(terminated):
             reg->optimize_mr<tipl::reg::correlation>(terminated);
 }
 size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char,tipl::progress> > reg,
@@ -158,7 +152,7 @@ size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigne
 {
     distribute_gpu();
     return  cost_type == tipl::reg::mutual_info ?
-            reg->optimize_mr<tipl::reg::mutual_information_cuda>(terminated):
+            reg->optimize_mr<tipl::reg::mutual_information<tipl::device_vector> >(terminated):
             reg->optimize_mr<tipl::reg::correlation>(terminated);
 }
 
