@@ -118,6 +118,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             {
                 ui->perform_tracking->hide();
                 ui->stop_tracking->hide();
+                ui->enable_auto_track->setText("Enable Tractography...");
             }            
         }
         tipl::out() << "initialize slices" << std::endl;
