@@ -215,7 +215,7 @@ public:
             min_value = 0.0f;
             max_value = 1.0f;
         }
-        contrast_min = min_value;
+        contrast_min = 0;
         contrast_max = max_value;
         if(I.size() < 256*256*256 && contrast_min != contrast_max)
             contrast_max = min_value+(tipl::segmentation::otsu_median(I)-min_value)*2.0f;
