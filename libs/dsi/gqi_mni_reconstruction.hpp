@@ -64,39 +64,37 @@ public:
         voxel.trans_to_mni = reg.ItR;
 
         {
-            tipl::normalize(VF);
-            tipl::normalize(VF2);
+            tipl::segmentation::otsu_median_regulzried(VF);
+            tipl::segmentation::otsu_median_regulzried(VF2);
             tipl::filter::gaussian(VF);
             tipl::filter::gaussian(VF2);
 
-            float r = 0.5f;
             if(voxel.manual_alignment)
                 tipl::out() << "manual alignment:" << (reg.arg = voxel.qsdr_arg);
             else
             {
-                r = reg.linear_reg(tipl::reg::affine,tipl::reg::mutual_info);
-                r = r*r;
+                voxel.R2 = reg.linear_reg(tipl::reg::affine,tipl::reg::mutual_info);
                 if(tipl::prog_aborted)
                     throw std::runtime_error("reconstruction canceled");
+                if(voxel.R2 < 0.4f)
+                    throw std::runtime_error("ERROR: Poor R2 found in linear registration. Please check image orientation or use manual alignment.");
             }
             affine = reg.T();
 
 
-            if(r < 0.3f)
-                throw std::runtime_error("ERROR: Poor R2 found in linear registration. Please check image orientation or use manual alignment.");
 
             auto& VFF = reg.J;
             auto& VFF2 = reg.J2;
 
 
-            r = reg.nonlinear_reg(tipl::prog_aborted);
-
+            voxel.R2 = reg.nonlinear_reg(tipl::prog_aborted);
             if(tipl::prog_aborted)
                 throw std::runtime_error("reconstruction canceled");
 
             cdm_dis.swap(reg.t2f_dis);
 
-            tipl::out() << "nonlinear R2: " << (voxel.R2 = r*r) << std::endl;
+            voxel.R2 = voxel.R2*voxel.R2;
+            tipl::out() << "nonlinear R2: " << voxel.R2 << std::endl;
             if(voxel.R2 < 0.3f)
                 throw std::runtime_error("ERROR: Poor R2 found. Please check image orientation or use manual alignment.");
 
