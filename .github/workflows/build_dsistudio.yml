@@ -9,7 +9,7 @@ on:
       release_name:
         description: 'Release Name'
         required: true
-        default: '2024 "Chen" Release'
+        default: '2024 "Hou" Release'
       build_windows:
         type: boolean
         description: 'Build Windows'
