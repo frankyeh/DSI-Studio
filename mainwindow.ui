@@ -54,6 +54,12 @@
       <property name="spacing">
        <number>0</number>
       </property>
+      <property name="leftMargin">
+       <number>5</number>
+      </property>
+      <property name="rightMargin">
+       <number>5</number>
+      </property>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_6">
         <property name="topMargin">
@@ -147,7 +153,7 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>4</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideNone</enum>
@@ -736,7 +742,8 @@
          <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
         </property>
         <property name="text">
-         <string>Population-averaged FIB Templates</string>
+         <string>Population-averaged
+FIB Templates</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignCenter</set>
