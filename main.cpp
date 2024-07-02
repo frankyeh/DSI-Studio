@@ -202,11 +202,9 @@ bool load_file_name(void)
 
 QString version_string(void)
 {
-    QString base = "DSI Studio version: ";
-
-    base += DSISTUDIO_RELEASE_NAME;
+    QString base = "DSI Studio version: Hou ";
     base += "\"";
-    unsigned int code = DSISTUDIO_RELEASE_CODE;
+    unsigned int code = 0x00AFBEE4;
     #ifdef QT6_PATCH
         base += QStringDecoder(QStringDecoder::Utf8)(reinterpret_cast<const char*>(&code));
     #else
