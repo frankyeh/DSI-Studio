@@ -52,7 +52,7 @@
        <item>
         <widget class="QLineEdit" name="url">
          <property name="text">
-          <string>https://central.xnat.org/</string>
+          <string/>
          </property>
         </widget>
        </item>
@@ -256,7 +256,7 @@
      <x>0</x>
      <y>0</y>
      <width>949</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
   </widget>
