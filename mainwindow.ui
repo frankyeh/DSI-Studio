@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1048</width>
-    <height>700</height>
+    <width>1309</width>
+    <height>810</height>
    </rect>
   </property>
   <property name="maximumSize">
@@ -66,23 +66,23 @@
        </property>
        <property name="maximumSize">
         <size>
-         <width>350</width>
+         <width>375</width>
          <height>16777215</height>
         </size>
        </property>
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <property name="tabSpacing">
-        <number>0</number>
+        <number>7</number>
        </property>
        <widget class="QWidget" name="page">
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>0</y>
-          <width>350</width>
-          <height>628</height>
+          <y>-8</y>
+          <width>354</width>
+          <height>678</height>
          </rect>
         </property>
         <property name="maximumSize">
@@ -92,38 +92,13 @@
          </size>
         </property>
         <attribute name="label">
-         <string>Diffusion MRI Analysis</string>
+         <string>Conventional Tractography</string>
         </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_6">
-         <property name="spacing">
-          <number>0</number>
-         </property>
-         <property name="leftMargin">
-          <number>0</number>
-         </property>
-         <property name="topMargin">
-          <number>0</number>
-         </property>
-         <property name="rightMargin">
-          <number>0</number>
-         </property>
-         <property name="bottomMargin">
-          <number>0</number>
-         </property>
-         <item>
-          <widget class="QLabel" name="label_4">
-           <property name="text">
-            <string>Tractography</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-          </widget>
-         </item>
+        <layout class="QVBoxLayout" name="verticalLayout_4">
          <item>
           <widget class="QCommandLinkButton" name="OpenDICOM">
            <property name="text">
-            <string>Step T1: Open Source Images</string>
+            <string>Step T1: Create SRC File</string>
            </property>
            <property name="description">
             <string>Open diffusion MR images to create a SRC file
@@ -134,10 +109,17 @@
          <item>
           <widget class="QCommandLinkButton" name="SRC_qc">
            <property name="text">
-            <string>Step T1a: Quality Control</string>
+            <string>Step T1a: SRC File Quality Control</string>
            </property>
            <property name="description">
-            <string>Select a directory of SRC files to run a quality check</string>
+            <string>Select a directory of SRC files to run quality check</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="Line" name="line_3">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
            </property>
           </widget>
          </item>
@@ -152,20 +134,53 @@
           </widget>
          </item>
          <item>
+          <widget class="Line" name="line_2">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QCommandLinkButton" name="FiberTracking">
            <property name="text">
-            <string>Step T3: Fiber Tracking &amp;&amp; Visualization</string>
+            <string>Step T3: Fiber Tracking</string>
            </property>
            <property name="autoRepeatDelay">
             <number>296</number>
            </property>
            <property name="description">
-            <string>Open a local FIB file or a built-in FIB template</string>
+            <string>Open a FIB file to run fiber tracking</string>
            </property>
           </widget>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_7">
+          <widget class="QCommandLinkButton" name="T1WFiberTracking">
+           <property name="text">
+            <string>Step T3a: T1W &amp;&amp; Tractography Atlas</string>
+           </property>
+           <property name="autoRepeatDelay">
+            <number>296</number>
+           </property>
+           <property name="description">
+            <string>Open T1W with tractography atlas</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCommandLinkButton" name="TemplateFiberTracking">
+           <property name="text">
+            <string>Step T3b: Template-Based Tractography</string>
+           </property>
+           <property name="autoRepeatDelay">
+            <number>296</number>
+           </property>
+           <property name="description">
+            <string>Open built-in template for fiber tracking</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_3">
            <property name="spacing">
             <number>0</number>
            </property>
@@ -179,65 +194,17 @@
             <number>0</number>
            </property>
            <item>
-            <widget class="QLabel" name="label_13">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>Action: </string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QComboBox" name="fib_action">
-             <property name="sizeAdjustPolicy">
-              <enum>QComboBox::AdjustToContents</enum>
-             </property>
-             <item>
-              <property name="text">
-               <string>Open a local FIB file...</string>
-              </property>
-             </item>
-            </widget>
+            <widget class="QListWidget" name="template_list"/>
            </item>
           </layout>
          </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_8">
-           <property name="topMargin">
-            <number>20</number>
-           </property>
-          </layout>
-         </item>
-         <item>
-          <widget class="Line" name="line_4">
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_5">
-           <property name="text">
-            <string>Correlational Tractography</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-          </widget>
-         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="page_4">
+        <attribute name="label">
+         <string>Correlational Tractography</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
           <widget class="QCommandLinkButton" name="vbc">
            <property name="text">
@@ -269,14 +236,7 @@
           </widget>
          </item>
          <item>
-          <widget class="Line" name="line_3">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <spacer name="verticalSpacer_4">
+          <spacer name="verticalSpacer">
            <property name="orientation">
             <enum>Qt::Vertical</enum>
            </property>
@@ -294,9 +254,9 @@
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>0</y>
-          <width>350</width>
-          <height>628</height>
+          <y>-22</y>
+          <width>354</width>
+          <height>692</height>
          </rect>
         </property>
         <attribute name="label">
@@ -484,8 +444,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>350</width>
-          <height>628</height>
+          <width>375</width>
+          <height>670</height>
          </rect>
         </property>
         <attribute name="label">

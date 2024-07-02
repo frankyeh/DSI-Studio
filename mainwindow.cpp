@@ -61,7 +61,18 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->toolBox->setCurrentIndex(0);
 
     for(auto& temp : fib_template_list)
-        ui->fib_action->addItem(QString("Open ") + QFileInfo(temp.c_str()).baseName() + " template");
+    {
+        QString name = QFileInfo(temp.c_str()).baseName();
+        if(name.contains("adult") || name.contains("neonate"))
+            name = QString("Human\t") + name;
+        if(name.contains("rhesus") || name.contains("marmoset") || name.contains("chimp"))
+            name = QString("Primate\t") + name;
+        if(name.contains("mouse") || name.contains("rat"))
+            name = QString("Rodent\t") + name;
+        ui->template_list->addItem(name);
+        ui->template_list->sortItems();
+    }
+    ui->template_list->setCurrentRow(1);
 }
 
 
@@ -282,7 +293,6 @@ void MainWindow::loadFib(QString filename,bool presentation_mode)
         tracking_windows.back()->command("presentation_mode");
     }
     else
-    if(ui->fib_action->currentIndex() == 0)
     {
         addFib(filename);
         add_work_dir(QFileInfo(filename).absolutePath());
@@ -437,23 +447,47 @@ void MainWindow::on_Reconstruction_clicked()
 
 void MainWindow::on_FiberTracking_clicked()
 {
-    if(ui->fib_action->currentIndex() > 0)
-    {
-        loadFib(fib_template_list[ui->fib_action->currentIndex()-1].c_str());
-        tracking_windows.back()->work_path.clear();
-        return;
-    }
 
     QString filename = QFileDialog::getOpenFileName(
                            this,
                            "Open Fib files",
                            ui->workDir->currentText(),
-                           "Fib files (*fib.gz *.fib);;Image files (*nii.gz *.nii 2dseq);;All files (*)");
+                           "Fib files (*fib.gz *.fib);;All files (*)");
     if (filename.isEmpty())
         return;
     add_work_dir(QFileInfo(filename).absolutePath());
     loadFib(filename);
 }
+
+void MainWindow::on_T1WFiberTracking_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(
+                           this,
+                           "Open T1W files",
+                           ui->workDir->currentText(),
+                           "Image files (*nii.gz *.nii 2dseq);;All files (*)");
+    if (filename.isEmpty())
+        return;
+    add_work_dir(QFileInfo(filename).absolutePath());
+    loadFib(filename);
+}
+
+
+
+void MainWindow::on_TemplateFiberTracking_clicked()
+{
+    if(ui->template_list->currentRow() >= 0)
+    {
+        auto name = ui->template_list->item(ui->template_list->currentRow())->text();
+        for(auto& each : fib_template_list)
+            if(name.contains(QFileInfo(each.c_str()).baseName()))
+            {
+                loadFib(each.c_str());
+                tracking_windows.back()->work_path.clear();
+            }
+    }
+}
+
 
 void check_name(std::string& name)
 {
@@ -1276,4 +1310,7 @@ void MainWindow::on_console_clicked()
     con->setAttribute(Qt::WA_DeleteOnClose);
     con->showNormal();
 }
+
+
+
 

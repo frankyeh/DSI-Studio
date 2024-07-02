@@ -66,6 +66,8 @@ private slots:
     void on_styles_activated(int index);
     void on_clear_settings_clicked();
     void on_console_clicked();
+    void on_T1WFiberTracking_clicked();
+    void on_TemplateFiberTracking_clicked();
 };
 
 #endif // MAINWINDOW_H
