@@ -188,8 +188,6 @@ endif()
 
 add_executable(dsi_studio ${DSI_STUDIO_EXEC} ${DSI_STUDIO_SOURCES} ${DSI_STUDIO_CUDA} ${DSI_STUDIO_FORMS} ${DSI_STUDIO_HEADERS} ${DSI_STUDIO_RESOURCES})
 set_target_properties(dsi_studio PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS NONE)
-target_compile_definitions(dsi_studio PUBLIC DSISTUDIO_RELEASE_NAME="Chen")
-target_compile_definitions(dsi_studio PUBLIC DSISTUDIO_RELEASE_CODE=11770345)
 target_compile_definitions(dsi_studio PUBLIC QT6_PATCH)
 if(CUDAToolkit_FOUND)
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -allow-unsupported-compiler --extended-lambda")
