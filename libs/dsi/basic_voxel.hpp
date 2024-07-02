@@ -132,7 +132,7 @@ public:// used in QSDR
     size_t template_id = 0;
     bool qsdr = false;
     tipl::vector<3,int> csf_pos1,csf_pos2,csf_pos3,csf_pos4;
-    float R2;
+    float R2 = 0.9f;
     float qsdr_reso = 1.0f;
 public:
     tipl::vector<3> partial_min,partial_max;
