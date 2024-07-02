@@ -328,7 +328,6 @@ int reg(tipl::program_option<tipl::out>& po)
         r.param.resolution = po.get("resolution",r.param.resolution);
         r.param.speed = po.get("speed",r.param.speed);
         r.param.smoothing = po.get("smoothing",r.param.smoothing);
-        r.param.iterations = po.get("iteration",r.param.iterations);
         r.param.min_dimension = po.get("min_dimension",r.param.min_dimension);
         r.nonlinear_reg(tipl::prog_aborted);
     }
