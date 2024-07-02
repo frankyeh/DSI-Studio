@@ -83,14 +83,14 @@ void cdm_cuda_base(const std::vector<tipl::const_pointer_image<dim,float> >& It,
         pIs.push_back(tipl::make_device_shared(each));
 
     try{
-        tipl::reg::cdm<tipl::progress>(pIt,pIs,dd,terminated,param);
+        tipl::reg::cdm(pIt,pIs,dd,terminated,param);
     }
 
     catch(std::runtime_error& er)
     {
         std::cout << "ERROR: " << er.what() << std::endl;
         std::cout << "switch to CPU" << std::endl;
-        tipl::reg::cdm<tipl::progress>(It,Is,d,terminated,param);
+        tipl::reg::cdm(It,Is,d,terminated,param);
         return;
     }
     d.resize(It[0].shape());
