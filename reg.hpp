@@ -23,6 +23,10 @@ inline void cdm_common(std::vector<tipl::const_pointer_image<dim,float> > It,
                        tipl::reg::cdm_param param = tipl::reg::cdm_param(),
                        bool use_cuda = true)
 {
+    if(It.size() < Is.size())
+        Is.resize(It.size());
+    if(Is.size() < It.size())
+        It.resize(Is.size());
     if(use_cuda && has_cuda)
     {
         if constexpr (tipl::use_cuda)
