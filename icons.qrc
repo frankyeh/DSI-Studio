@@ -40,6 +40,9 @@
         <file>icons/tracts.xpm</file>
         <file>icons/console.xpm</file>
         <file>icons/mosaic.xpm</file>
+        <file>icons/dwi.png</file>
+        <file>icons/fib.png</file>
+        <file>icons/tractogram.png</file>
     </qresource>
     <qresource prefix="/data">
         <file>options.txt</file>

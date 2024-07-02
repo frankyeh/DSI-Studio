@@ -58,8 +58,6 @@ MainWindow::MainWindow(QWidget *parent) :
     else
         ui->workDir->addItem(QDir::currentPath());
 
-    ui->toolBox->setCurrentIndex(0);
-
     for(auto& temp : fib_template_list)
     {
         QString name = QFileInfo(temp.c_str()).baseName();
@@ -73,6 +71,7 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->template_list->sortItems();
     }
     ui->template_list->setCurrentRow(1);
+    ui->tabWidget->setCurrentIndex(0);
 }
 
 
@@ -472,21 +471,6 @@ void MainWindow::on_T1WFiberTracking_clicked()
     loadFib(filename);
 }
 
-
-
-void MainWindow::on_TemplateFiberTracking_clicked()
-{
-    if(ui->template_list->currentRow() >= 0)
-    {
-        auto name = ui->template_list->item(ui->template_list->currentRow())->text();
-        for(auto& each : fib_template_list)
-            if(name.contains(QFileInfo(each.c_str()).baseName()))
-            {
-                loadFib(each.c_str());
-                tracking_windows.back()->work_path.clear();
-            }
-    }
-}
 
 
 void check_name(std::string& name)
@@ -1267,17 +1251,7 @@ void MainWindow::on_dicom2nii_clicked()
     dicom2src_and_nii(dir.toStdString());
 }
 
-void MainWindow::on_clear_src_history_clicked()
-{
-    ui->recentSrc->setRowCount(0);
-    settings.setValue("recentSRCFileList", QStringList());
-}
 
-void MainWindow::on_clear_fib_history_clicked()
-{
-    ui->recentFib->setRowCount(0);
-    settings.setValue("recentFibFileList", QStringList());
-}
 
 
 void MainWindow::on_xnat_download_clicked()
@@ -1312,5 +1286,64 @@ void MainWindow::on_console_clicked()
 }
 
 
+
+
+
+void MainWindow::on_recentFib_cellClicked(int row, int column)
+{
+    ui->open_selected_fib->setEnabled(true);
+}
+
+void MainWindow::on_recentSrc_cellClicked(int row, int column)
+{
+    ui->open_selected_src->setEnabled(true);
+}
+
+void MainWindow::on_clear_src_history_clicked()
+{
+    ui->recentSrc->setRowCount(0);
+    ui->open_selected_src->setEnabled(false);
+    settings.setValue("recentSRCFileList", QStringList());
+}
+
+void MainWindow::on_open_selected_src_clicked()
+{
+     open_src_at(ui->recentSrc->currentRow(),0);
+}
+
+void MainWindow::on_clear_fib_history_clicked()
+{
+    ui->recentFib->setRowCount(0);
+    ui->open_selected_fib->setEnabled(false);
+    settings.setValue("recentFibFileList", QStringList());
+}
+
+void MainWindow::on_open_selected_fib_clicked()
+{
+    open_fib_at(ui->recentFib->currentRow(),0);
+}
+
+
+void MainWindow::on_template_list_itemDoubleClicked(QListWidgetItem *item)
+{
+    open_template(item->text());
+}
+
+void MainWindow::open_template(QString name)
+{
+    for(auto& each : fib_template_list)
+        if(name.contains(QFileInfo(each.c_str()).baseName()))
+        {
+            loadFib(each.c_str());
+            tracking_windows.back()->work_path.clear();
+        }
+}
+
+
+void MainWindow::on_TemplateFiberTracking_clicked()
+{
+    if(ui->template_list->currentRow() >= 0)
+        open_template(ui->template_list->item(ui->template_list->currentRow())->text());
+}
 
 

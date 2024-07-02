@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QSettings>
 #include <memory>
+#include <QListWidgetItem>
 
 namespace Ui {
     class MainWindow;
@@ -29,6 +30,7 @@ public:
     void batch_create_src(const std::vector<std::string>& dwi_nii_files,const std::string& output_dir);
     void loadFib(QString Filename,bool presentation_mode = false);
     void loadSrc(QStringList filenames);
+    void open_template(QString name);
     void add_work_dir(QString dir);
     bool load_db(std::shared_ptr<group_connectometry_analysis>& database,QString& file_name);
 private slots:
@@ -68,6 +70,11 @@ private slots:
     void on_console_clicked();
     void on_T1WFiberTracking_clicked();
     void on_TemplateFiberTracking_clicked();
+    void on_recentFib_cellClicked(int row, int column);
+    void on_open_selected_fib_clicked();
+    void on_template_list_itemDoubleClicked(QListWidgetItem *item);
+    void on_open_selected_src_clicked();
+    void on_recentSrc_cellClicked(int row, int column);
 };
 
 #endif // MAINWINDOW_H
