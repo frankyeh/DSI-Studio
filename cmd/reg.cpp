@@ -169,7 +169,7 @@ bool dual_reg<2>::load_template(const char* file_name)
     tipl::color_image Ic;
     Ic << in;
     It = Ic;
-    tipl::segmentation::otsu_median_regulzried(It);
+    tipl::normalize(It);
     Itvs = {1.0f,1.0f};
     return true;
 }
@@ -218,6 +218,7 @@ bool dual_reg<3>::load_template(const char* file_name)
         return false;
     }
     nifti.toLPS(It);
+    tipl::normalize(It);
     nifti.get_image_transformation(ItR);
     nifti.get_voxel_size(Itvs);
     It_is_mni = nifti.is_mni();
@@ -234,6 +235,7 @@ bool dual_reg<3>::load_template2(const char* file_name)
         It2.clear();
         return false;
     }
+    tipl::normalize(It2);
     return true;
 }
 template<>
