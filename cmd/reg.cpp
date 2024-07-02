@@ -1,4 +1,5 @@
 #include <QString>
+#include <QImage>
 #include "reg.hpp"
 #include "tract_model.hpp"
 
