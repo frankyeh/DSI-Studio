@@ -1702,6 +1702,7 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
 
 bool load_bval(const char* file_name,std::vector<double>& bval);
 bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by = true);
+QString version_string(void);
 bool ImageModel::load_topup_eddy_result(void)
 {
     std::string corrected_file = file_name+".corrected.nii.gz";
@@ -1757,9 +1758,9 @@ bool ImageModel::load_topup_eddy_result(void)
         voxel.report += " The susceptibility artifact was estimated using reversed phase-encoding b0 by TOPUP from the Tiny FSL package (http://github.com/frankyeh/TinyFSL), a re-compiled version of FSL TOPUP (FMRIB, Oxford) with multi-thread support.";
     if(is_eddy)
         voxel.report += " FSL eddy was used to correct for eddy current distortion.";
-    voxel.report += " The correction was conducted through the integrated interface in DSI Studio (\"";
-    voxel.report += DSISTUDIO_RELEASE_NAME;
-    voxel.report += "\" release)(http://dsi-studio.labsolver.org).";
+    voxel.report += " The correction was conducted through the integrated interface in ";
+    voxel.report += version_string().toStdString();
+    voxel.report += "(http://dsi-studio.labsolver.org).";
     calculate_dwi_sum(true);
     return true;
 }
