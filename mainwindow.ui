@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1319</width>
-    <height>744</height>
+    <height>736</height>
    </rect>
   </property>
   <property name="maximumSize">
@@ -153,7 +153,7 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>4</number>
+       <number>0</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideNone</enum>
@@ -169,8 +169,8 @@
        <widget class="QPushButton" name="clear_fib_history">
         <property name="geometry">
          <rect>
-          <x>430</x>
-          <y>620</y>
+          <x>440</x>
+          <y>590</y>
           <width>93</width>
           <height>29</height>
          </rect>
@@ -189,7 +189,7 @@
         <property name="geometry">
          <rect>
           <x>150</x>
-          <y>10</y>
+          <y>20</y>
           <width>261</width>
           <height>171</height>
          </rect>
@@ -208,7 +208,7 @@
         <property name="geometry">
          <rect>
           <x>560</x>
-          <y>240</y>
+          <y>300</y>
           <width>271</width>
           <height>81</height>
          </rect>
@@ -234,7 +234,7 @@
         <property name="geometry">
          <rect>
           <x>220</x>
-          <y>70</y>
+          <y>80</y>
           <width>121</width>
           <height>61</height>
          </rect>
@@ -263,9 +263,9 @@
         <property name="geometry">
          <rect>
           <x>20</x>
-          <y>190</y>
+          <y>200</y>
           <width>521</width>
-          <height>471</height>
+          <height>431</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -304,7 +304,7 @@
         <property name="geometry">
          <rect>
           <x>140</x>
-          <y>260</y>
+          <y>320</y>
           <width>941</width>
           <height>31</height>
          </rect>
@@ -326,7 +326,7 @@
         <property name="geometry">
          <rect>
           <x>840</x>
-          <y>110</y>
+          <y>170</y>
           <width>251</width>
           <height>321</height>
          </rect>
@@ -345,9 +345,9 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>0</y>
+          <y>10</y>
           <width>541</width>
-          <height>671</height>
+          <height>631</height>
          </rect>
         </property>
         <property name="styleSheet">
@@ -364,7 +364,7 @@
         <property name="geometry">
          <rect>
           <x>440</x>
-          <y>130</y>
+          <y>140</y>
           <width>101</width>
           <height>51</height>
          </rect>
@@ -387,7 +387,7 @@
         <property name="geometry">
          <rect>
           <x>440</x>
-          <y>80</y>
+          <y>90</y>
           <width>101</width>
           <height>51</height>
          </rect>
@@ -1041,7 +1041,7 @@ FIB Templates</string>
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>290</y>
+          <y>280</y>
           <width>151</width>
           <height>171</height>
          </rect>
@@ -1060,7 +1060,7 @@ FIB Templates</string>
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>310</y>
+          <y>300</y>
           <width>151</width>
           <height>131</height>
          </rect>
@@ -1091,7 +1091,7 @@ NIFTI (*.nii.gz)
         <property name="geometry">
          <rect>
           <x>750</x>
-          <y>620</y>
+          <y>610</y>
           <width>93</width>
           <height>29</height>
          </rect>
@@ -1110,7 +1110,7 @@ NIFTI (*.nii.gz)
         <property name="geometry">
          <rect>
           <x>540</x>
-          <y>30</y>
+          <y>20</y>
           <width>151</width>
           <height>171</height>
          </rect>
@@ -1129,7 +1129,7 @@ NIFTI (*.nii.gz)
         <property name="geometry">
          <rect>
           <x>880</x>
-          <y>330</y>
+          <y>320</y>
           <width>211</width>
           <height>81</height>
          </rect>
@@ -1152,7 +1152,7 @@ NIFTI (*.nii.gz)
         <property name="geometry">
          <rect>
           <x>360</x>
-          <y>210</y>
+          <y>200</y>
           <width>501</width>
           <height>451</height>
          </rect>
@@ -1193,7 +1193,7 @@ NIFTI (*.nii.gz)
         <property name="geometry">
          <rect>
           <x>160</x>
-          <y>330</y>
+          <y>320</y>
           <width>181</width>
           <height>81</height>
          </rect>
@@ -1222,7 +1222,7 @@ NIFTI (*.nii.gz)
         <property name="geometry">
          <rect>
           <x>550</x>
-          <y>80</y>
+          <y>70</y>
           <width>141</width>
           <height>61</height>
          </rect>
@@ -1250,7 +1250,7 @@ NIFTI (*.nii.gz)
         <property name="geometry">
          <rect>
           <x>1100</x>
-          <y>290</y>
+          <y>280</y>
           <width>201</width>
           <height>171</height>
          </rect>
@@ -1269,7 +1269,7 @@ NIFTI (*.nii.gz)
         <property name="geometry">
          <rect>
           <x>90</x>
-          <y>360</y>
+          <y>350</y>
           <width>1081</width>
           <height>31</height>
          </rect>
@@ -1291,7 +1291,7 @@ NIFTI (*.nii.gz)
         <property name="geometry">
          <rect>
           <x>1110</x>
-          <y>340</y>
+          <y>330</y>
           <width>171</width>
           <height>61</height>
          </rect>
@@ -1320,7 +1320,7 @@ NIFTI (*.nii.gz)
         <property name="geometry">
          <rect>
           <x>350</x>
-          <y>20</y>
+          <y>10</y>
           <width>521</width>
           <height>651</height>
          </rect>
@@ -1339,7 +1339,7 @@ NIFTI (*.nii.gz)
         <property name="geometry">
          <rect>
           <x>750</x>
-          <y>140</y>
+          <y>130</y>
           <width>101</width>
           <height>51</height>
          </rect>
@@ -1362,7 +1362,7 @@ NIFTI (*.nii.gz)
         <property name="geometry">
          <rect>
           <x>750</x>
-          <y>90</y>
+          <y>80</y>
           <width>101</width>
           <height>51</height>
          </rect>
