@@ -1711,6 +1711,14 @@ bool fib_data::map_to_mni(bool background)
                 tipl::prog_aborted = true;
                 return;
             }
+            if(reg.It.shape() != template_I.shape() || reg.ItR != template_to_mni)
+            {
+                tipl::image<3,unsigned char> It(template_I.shape()),It2(template_I.shape());
+                tipl::resample(reg.It,It,tipl::from_space(template_to_mni).to(reg.ItR));
+                tipl::resample(reg.It2,It2,tipl::from_space(template_to_mni).to(reg.ItR));
+                reg.It.swap(It);
+                reg.It2.swap(It2);
+            }
             tipl::out() << "using structure image for normalization" << std::endl;
         }
         else
