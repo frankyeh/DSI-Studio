@@ -73,16 +73,10 @@ void cdm_cuda_base(const std::vector<tipl::const_pointer_image<dim,unsigned char
 {
     distribute_gpu();
     tipl::device_image<dim,tipl::vector<dim> > dd(It[0].shape()),inv_dd(It[0].shape());
-    std::vector<tipl::device_image<dim> > dIt(It.size()),dIs(Is.size());
-    std::vector<tipl::const_pointer_device_image<dim> > pIt,pIs;
-    for(size_t i = 0;i < It.size();++i)
-    {
-        tipl::image<dim> It_(It[i]),Is_(Is[i]);
-        dIt[i] = It_;
-        dIs[i] = Is_;
-    }
-    //std::copy(It.begin(),It.end(),dIt.begin());
-    //std::copy(Is.begin(),Is.end(),dIs.begin());
+    std::vector<tipl::device_image<dim,unsigned char> > dIt(It.size()),dIs(Is.size());
+    std::vector<tipl::const_pointer_device_image<dim,unsigned char> > pIt,pIs;
+    std::copy(It.begin(),It.end(),dIt.begin());
+    std::copy(Is.begin(),Is.end(),dIs.begin());
     for(auto& each : dIt)
         pIt.push_back(tipl::make_device_shared(each));
     for(auto& each : dIs)
