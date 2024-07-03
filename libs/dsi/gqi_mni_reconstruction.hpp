@@ -49,8 +49,8 @@ public:
         auto& VF2 = reg.I2;
         auto& VFvs = reg.Ivs = voxel.vs;
 
-        VF.swap(voxel.qa_map);
-        VF2.swap(voxel.iso_map);
+        reg.load_subject(std::move(voxel.qa_map));
+        reg.load_subject2(std::move(voxel.iso_map));
 
 
         bool is_human_template = QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().contains("ICBM");
@@ -64,10 +64,6 @@ public:
         voxel.trans_to_mni = reg.ItR;
 
         {
-            tipl::segmentation::otsu_median_regulzried(VF);
-            tipl::segmentation::otsu_median_regulzried(VF2);
-            tipl::filter::gaussian(VF);
-            tipl::filter::gaussian(VF2);
 
             if(voxel.manual_alignment)
                 tipl::out() << "manual alignment:" << (reg.arg = voxel.qsdr_arg);
@@ -117,7 +113,7 @@ public:
             if(VFratio != 1.0f)
                 tipl::multiply_constant(affine.data,affine.data+12,VFratio);
 
-        }       
+        }
         // if subject data is only a fragment of FOV, crop images
         if(voxel.partial_min != voxel.partial_max)
         {
@@ -156,7 +152,7 @@ public:
             voxel.trans_to_mni[7] -= bmin[1]*VGvs[1];
             voxel.trans_to_mni[11] += bmin[2]*VGvs[2];
 
-        }        
+        }
 
         // output resolution = acquisition resolution
         float VG_ratio = voxel.qsdr_reso/VGvs[0];
@@ -168,7 +164,7 @@ public:
                                    uint32_t(float(VG.height())*VGvs[0]/voxel.qsdr_reso),
                                    uint32_t(float(VG.depth())*VGvs[0]/voxel.qsdr_reso));
             // update VG,VFFF (for mask) and cdm_dis (for mapping)
-            tipl::image<3> new_VG(new_geo);
+            tipl::image<3,unsigned char> new_VG(new_geo);
             tipl::image<3,tipl::vector<3> > new_cdm_dis(new_geo);
             tipl::par_for(tipl::begin_index(new_geo),tipl::end_index(new_geo),
                           [&](const tipl::pixel_index<3>& pos)
@@ -255,7 +251,7 @@ public:
     }
 
     tipl::vector<3,int> mni_to_voxel_index(Voxel& voxel,int x,int y,int z) const
-    {               
+    {
         x = int(voxel.trans_to_mni[3])-x;
         y = int(voxel.trans_to_mni[7])-y;
         z -= int(voxel.trans_to_mni[11]);
