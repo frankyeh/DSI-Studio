@@ -141,6 +141,21 @@ bool load_nifti_file(std::string file_name_cmd,tipl::image<3>& data,tipl::vector
     return load_nifti_file(file_name_cmd,data,vs,trans,is_mni);
 }
 
+auto load_template(tipl::io::gz_nifti& nifti)
+{
+    tipl::image<3,unsigned char> I;
+    if(nifti.is_int8())
+        nifti >> I;
+    else
+    {
+        tipl::image<3> I_float;
+        nifti >> I_float;
+        tipl::normalize_upper_lower2(I_float,I,255.999f);
+    }
+    return I;
+}
+
+
 template<>
 bool dual_reg<3>::load_subject(const char* file_name)
 {
@@ -150,10 +165,11 @@ bool dual_reg<3>::load_subject(const char* file_name)
         error_msg = "invalid nifti format";
         return false;
     }
-    nifti.toLPS(I);
+    if(nifti.is_int8())
+        nifti >> I;
+    else
+        load_subject(nifti.toImage<tipl::image<3> >());
     nifti.get_image_transformation(IR);
-    tipl::filter::gaussian(I);
-    tipl::segmentation::otsu_median_regulzried(I);
     nifti.get_voxel_size(Ivs);
     I2.clear();
     return true;
@@ -198,14 +214,16 @@ bool dual_reg<3>::load_subject2(const char* file_name)
         error_msg = "invalid nifti format";
         return false;
     }
-    nifti.toLPS(I2);
+    if(nifti.is_int8())
+        nifti >> I2;
+    else
+        load_subject2(nifti.toImage<tipl::image<3> >());
     if(I2.shape() != I.shape())
     {
-        error_msg = "inconsistent subject image size";
+        error_msg = "inconsistent image size";
+        I2.clear();
         return false;
     }
-    tipl::filter::gaussian(I2);
-    tipl::segmentation::otsu_median_regulzried(I2);
     return true;
 }
 template<>
@@ -217,8 +235,7 @@ bool dual_reg<3>::load_template(const char* file_name)
         error_msg = "invalid nifti format";
         return false;
     }
-    nifti.toLPS(It);
-    tipl::normalize(It);
+    It = std::move(::load_template(nifti));
     nifti.get_image_transformation(ItR);
     nifti.get_voxel_size(Itvs);
     It_is_mni = nifti.is_mni();
@@ -228,14 +245,19 @@ bool dual_reg<3>::load_template(const char* file_name)
 template<>
 bool dual_reg<3>::load_template2(const char* file_name)
 {
-    It2.resize(It.shape());
-    if(!tipl::io::gz_nifti::load_to_space(file_name,It2,ItR))
+    tipl::io::gz_nifti nifti;
+    if(!nifti.load_from_file(file_name))
     {
         error_msg = "invalid nifti format";
+        return false;
+    }
+    It2 = std::move(::load_template(nifti));
+    if(It2.shape() != It.shape())
+    {
+        error_msg = "inconsistent image size";
         It2.clear();
         return false;
     }
-    tipl::normalize(It2);
     return true;
 }
 template<>
