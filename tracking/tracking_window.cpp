@@ -422,7 +422,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             glWidget->update();});
         connect(ui->actionStereoscopic,&QAction::triggered, this,[this](void){glWidget->view_mode = GLWidget::view_mode_type::stereo;glWidget->update();});
         connect(ui->actionLoad_Presentation,&QAction::triggered, this,[this](void){command("load_workspace");});
-        connect(ui->actionSave_Presentation,&QAction::triggered, this,[this](void){if(command("save_workspace"))QMessageBox::information(this,"DSI Studio","File saved");});
+        connect(ui->actionSave_Presentation,&QAction::triggered, this,[this](void){if(command("save_workspace"))QMessageBox::information(this,QApplication::applicationName(),"File saved");});
 
         connect(ui->action3D_Screen,&QAction::triggered,this,[this](void){QApplication::clipboard()->setImage(tipl::qt::get_bounding_box(glWidget->grab_image()));});
         connect(ui->action3D_Screen_3_Views,&QAction::triggered,this,[this](void){QApplication::clipboard()->setImage(glWidget->get3View(0));});
@@ -431,7 +431,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->action3D_Screen_Each_Tract,&QAction::triggered,this,[this](void)
         {
             bool ok = true;
-            int col_count = QInputDialog::getInt(this,"DSI Studio","Column Count",5,1,50,1&ok);
+            int col_count = QInputDialog::getInt(this,QApplication::applicationName(),"Column Count",5,1,50,1&ok);
             if(!ok)
                 return;
             glWidget->copyToClipboardEach(tractWidget,uint32_t(col_count));
@@ -439,7 +439,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->action3D_Screen_Each_Region,&QAction::triggered,this,[this](void)
         {
             bool ok = true;
-            int col_count = QInputDialog::getInt(this,"DSI Studio","Column Count",5,1,50,1&ok);
+            int col_count = QInputDialog::getInt(this,QApplication::applicationName(),"Column Count",5,1,50,1&ok);
             if(!ok)
                 return;
             glWidget->copyToClipboardEach(regionWidget,uint32_t(col_count));
@@ -632,7 +632,7 @@ void tracking_window::closeEvent(QCloseEvent *event)
     for(size_t index = 0;index < tractWidget->tract_models.size();++index)
         if(!tractWidget->tract_models[index]->saved)
         {
-            if (QMessageBox::question( this, "DSI Studio",
+            if (QMessageBox::question( this, QApplication::applicationName(),
                 "Tractography not saved. Close?\n",QMessageBox::No | QMessageBox::Yes,QMessageBox::No) == QMessageBox::No)
             {
                 event->ignore();
@@ -866,7 +866,7 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
                 << ui->glAxiSlider->value() << " ";
             std::copy(glWidget->transformation_matrix.begin(),glWidget->transformation_matrix.end(),std::ostream_iterator<float>(out," "));
             settings.setValue(key_str,QString(out.str().c_str()));
-            QMessageBox::information(this,"DSI Studio","View position and slice location memorized");
+            QMessageBox::information(this,QApplication::applicationName(),"View position and slice location memorized");
         }
         else
         {
@@ -1212,7 +1212,7 @@ void tracking_window::on_actionLoad_MNI_mapping_triggered()
             return;
         }
     }
-    QMessageBox::information(this,"DSI Studio","mapping loaded");
+    QMessageBox::information(this,QApplication::applicationName(),"mapping loaded");
 }
 
 
@@ -1243,7 +1243,7 @@ void tracking_window::on_actionSave_MNI_mapping_triggered()
             return;
         }
     }
-    QMessageBox::information(this,"DSI Studio","mapping saved");
+    QMessageBox::information(this,QApplication::applicationName(),"mapping saved");
 }
 
 

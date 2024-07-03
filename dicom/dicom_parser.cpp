@@ -1078,7 +1078,7 @@ void dicom_parser::load_table(void)
         max_b = std::max(max_b,(double)dwi_files[index]->bvalue);
     }
     if(max_b == 0.0)
-        QMessageBox::critical(this,"DSI Studio","Cannot find matching bval and bvec files. You can load them using the [File] menu");
+        QMessageBox::critical(this,QApplication::applicationName(),"Cannot find matching bval and bvec files. You can load them using the [File] menu");
 }
 extern std::string src_error_msg;
 void dicom_parser::load_files(QStringList file_list)
@@ -1129,7 +1129,7 @@ void dicom_parser::on_buttonBox_accepted()
         ((MainWindow*)parent())->addSrc(ui->SrcName->text()+".gz");
     else
         ((MainWindow*)parent())->addSrc(ui->SrcName->text());
-    QMessageBox::information(this,"DSI Studio","SRC file created");
+    QMessageBox::information(this,QApplication::applicationName(),"SRC file created");
     close();
 }
 void dicom_parser::on_buttonBox_rejected()

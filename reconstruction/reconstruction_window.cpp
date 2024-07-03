@@ -276,7 +276,7 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
         handle->calculate_dwi_sum(true);
     if(!prompt)
         return;
-    QMessageBox::information(this,"DSI Studio","FIB file created.");
+    QMessageBox::information(this,QApplication::applicationName(),"FIB file created.");
     raise(); // for Mac
     QString filename = handle->file_name.c_str();
     filename += handle->get_file_ext().c_str();
@@ -311,7 +311,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
     {
         bool ok;
         float nv = float(QInputDialog::getDouble(this,
-            "DSI Studio","Assign output resolution in (mm):", double(handle->voxel.vs[0]),0.0,3.0,4, &ok));
+            QApplication::applicationName(),"Assign output resolution in (mm):", double(handle->voxel.vs[0]),0.0,3.0,4, &ok));
         if (!ok || nv == 0.0f)
             return false;
         param = std::to_string(nv);
@@ -336,7 +336,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
     }
     if(tipl::contains_case_insensitive(cmd,"topup") && !std::filesystem::exists(handle->file_name+".corrected.nii.gz"))
     {
-        QMessageBox::information(this,"DSI Studio","Please specify another NIFTI or SRC.GZ file with reversed phase encoding data");
+        QMessageBox::information(this,QApplication::applicationName(),"Please specify another NIFTI or SRC.GZ file with reversed phase encoding data");
         auto other_src = QFileDialog::getOpenFileName(
                     this,"Open SRC file",absolute_path,
                     "Images (*src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
@@ -366,9 +366,9 @@ bool reconstruction_window::command(std::string cmd,std::string param)
     else
     {
         if(tipl::contains(cmd,"Corrections"))
-            QMessageBox::information(this,"DSI Studio","correction result loaded");
+            QMessageBox::information(this,QApplication::applicationName(),"correction result loaded");
         if(tipl::contains(cmd,"B-table"))
-            QMessageBox::information(this,"DSI Studio",cmd.find("Check") ? handle->error_msg.c_str() : "b-table updated");
+            QMessageBox::information(this,QApplication::applicationName(),cmd.find("Check") ? handle->error_msg.c_str() : "b-table updated");
     }
     update_dimension();
     load_b_table();
@@ -376,7 +376,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
 
 
     if(filenames.size() > 1 && tipl::contains_case_insensitive(cmd,"save") &&
-        QMessageBox::information(this,"DSI Studio","Apply to other SRC files?",
+        QMessageBox::information(this,QApplication::applicationName(),"Apply to other SRC files?",
         QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel) == QMessageBox::Yes)
     {
         tipl::progress prog("apply to other SRC files");
@@ -394,7 +394,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
             if (!model.load_from_file(filenames[index].toStdString().c_str()) ||
                 !model.run_steps(handle->file_name,steps))
             {
-                if(QMessageBox::information(this,"DSI Studio",
+                if(QMessageBox::information(this,QApplication::applicationName(),
                     QFileInfo(filenames[index]).fileName() + " : " + model.error_msg.c_str() + " Continue?",
                                 QMessageBox::Yes|QMessageBox::No) == QMessageBox::No)
                     return false;
@@ -407,7 +407,7 @@ void reconstruction_window::on_doDTI_clicked()
 {
     if(handle->voxel.vs[2] > handle->voxel.vs[0]*1.2f && handle->is_human_data() && !ui->QSDR->isChecked()) // non isotropic resolution
     {
-        auto result = QMessageBox::information(this,"DSI Studio",
+        auto result = QMessageBox::information(this,QApplication::applicationName(),
             QString("The slice thickness is much larger than slice resolution. This is not ideal for fiber tracking. Resample slice thickness to 2mm isotropic resolution?"),
                 QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
         if(result == QMessageBox::Cancel)
@@ -721,7 +721,7 @@ void reconstruction_window::on_actionAttach_Images_triggered()
     if( filename.isEmpty())
         return;
     if(add_other_image(handle.get(),QFileInfo(filename).baseName(),filename))
-        QMessageBox::information(this,"DSI Studio","File added");
+        QMessageBox::information(this,QApplication::applicationName(),"File added");
     else
         QMessageBox::critical(this,"ERROR","Not a valid nifti file");
 
@@ -729,7 +729,7 @@ void reconstruction_window::on_actionAttach_Images_triggered()
 
 void reconstruction_window::on_actionPartial_FOV_triggered()
 {
-    QString values = QInputDialog::getText(this,"DSI Studio","Specify the range of MNI coordinates separated by spaces (minx miny minz maxx maxy maxz)",QLineEdit::Normal,
+    QString values = QInputDialog::getText(this,QApplication::applicationName(),"Specify the range of MNI coordinates separated by spaces (minx miny minz maxx maxy maxz)",QLineEdit::Normal,
                                            QString("-36 -30 -20 36 30 24"));
     if(values.isEmpty())
         return;
@@ -798,7 +798,7 @@ bool get_src(std::string filename,ImageModel& src2,std::string& error_msg)
 
 void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
 {
-    QMessageBox::information(this,"DSI Studio","Please specify another SRC/DICOM/NIFTI file with an opposite phase encoding");
+    QMessageBox::information(this,QApplication::applicationName(),"Please specify another SRC/DICOM/NIFTI file with an opposite phase encoding");
     QString filename = QFileDialog::getOpenFileName(
             this,"Open SRC file",absolute_path,
             "Images (*src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
@@ -895,7 +895,7 @@ void reconstruction_window::on_show_bad_slice_clicked()
     }
     if(bad_slices.size() == 0)
     {
-        QMessageBox::information(this,"DSI Studio","No bad slice found in this data");
+        QMessageBox::information(this,QApplication::applicationName(),"No bad slice found in this data");
         return;
     }
     on_b_table_itemSelectionChanged();
@@ -940,7 +940,7 @@ void reconstruction_window::on_edit_mask_clicked()
 void reconstruction_window::on_actionOverwrite_Voxel_Size_triggered()
 {
     bool ok;
-    QString result = QInputDialog::getText(this,"DSI Studio","Assign voxel size in mm",
+    QString result = QInputDialog::getText(this,QApplication::applicationName(),"Assign voxel size in mm",
                                            QLineEdit::Normal,
                                            QString("%1 %2 %3").arg(double(handle->voxel.vs[0]))
                                                               .arg(double(handle->voxel.vs[1]))

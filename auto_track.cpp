@@ -539,12 +539,12 @@ void auto_track::on_run_clicked()
 
     if(tract_names.empty())
     {
-        QMessageBox::information(this,"DSI Studio","Please select target tracks");
+        QMessageBox::information(this,QApplication::applicationName(),"Please select target tracks");
         return;
     }
     if(file_list2.empty())
     {
-        QMessageBox::information(this,"DSI Studio","Please assign FIB files");
+        QMessageBox::information(this,QApplication::applicationName(),"Please assign FIB files");
         return;
     }
     ui->run->setEnabled(false);

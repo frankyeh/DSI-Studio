@@ -28,7 +28,7 @@ public:
     void openFile(QStringList file_name);
 public:
     void batch_create_src(const std::vector<std::string>& dwi_nii_files,const std::string& output_dir);
-    void loadFib(QString Filename,bool presentation_mode = false);
+    void loadFib(QString Filename);
     void loadSrc(QStringList filenames);
     void open_template(QString name);
     void add_work_dir(QString dir);

@@ -448,7 +448,7 @@ void RegionTableWidget::new_region(void)
 void RegionTableWidget::new_region_from_mni_coordinate(void)
 {
     bool ok;
-    QString param = QInputDialog::getText(this,"DSI Studio",
+    QString param = QInputDialog::getText(this,QApplication::applicationName(),
             "Please specify the MNI Coordinate and radius of the region, separated by spaces (e.g. 0 -10 21 10)",
                                                 QLineEdit::Normal,"0 0 0 10",&ok);
     if(!ok)
@@ -981,7 +981,7 @@ void RegionTableWidget::save_region_color(void)
         tipl::rgb c(regions[index]->region_render->color);
         out << int(c[2]) << " " << int(c[1]) << " " << int(c[0]) << " " << int(c[3]) << std::endl;
     }
-    QMessageBox::information(this,"DSI Studio","File saved");
+    QMessageBox::information(this,QApplication::applicationName(),"File saved");
 }
 
 void RegionTableWidget::load_region(void)
@@ -1230,7 +1230,7 @@ void RegionTableWidget::save_all_regions_to_4dnifti(void)
                               cur_tracking_window.handle->is_mni))
     {
         save_checked_region_label_file(filename,0);  // 4d nifti index starts from 0
-        QMessageBox::information(this,"DSI Studio","saved");
+        QMessageBox::information(this,QApplication::applicationName(),"saved");
     }
     else
         QMessageBox::critical(this,"ERROR","cannot write to file");
@@ -1284,7 +1284,7 @@ void RegionTableWidget::save_all_regions(void)
     if(result)
     {
         save_checked_region_label_file(filename,1); // 3d nifti index starts from 1
-        QMessageBox::information(this,"DSI Studio","saved");
+        QMessageBox::information(this,QApplication::applicationName(),"saved");
     }
     else
         QMessageBox::critical(this,"ERROR","cannot write to file");
@@ -1817,7 +1817,7 @@ void RegionTableWidget::do_action(QString action)
         if(action == "dilation_by_voxel")
         {
             bool ok;
-            int threshold = float(QInputDialog::getInt(this,"DSI Studio","Voxel distance",10,1,100,1,&ok));
+            int threshold = float(QInputDialog::getInt(this,QApplication::applicationName(),"Voxel distance",10,1,100,1,&ok));
             if(!ok)
                 return;
             size_t p = 0;
@@ -1839,7 +1839,7 @@ void RegionTableWidget::do_action(QString action)
             bool ok;
             bool flip = false;
             float threshold = float(QInputDialog::getDouble(this,
-                "DSI Studio","Threshold (assign negative value to get low pass):",
+                QApplication::applicationName(),"Threshold (assign negative value to get low pass):",
                 double(tipl::segmentation::otsu_threshold(I)),-m,m,4, &ok));
             if(!ok)
                 return;

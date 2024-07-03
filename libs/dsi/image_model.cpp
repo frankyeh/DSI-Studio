@@ -627,10 +627,10 @@ bool ImageModel::command(std::string cmd,std::string param)
         {
             bool ok = true;
             threshold = (voxel.dim[2] < 200) ?
-                    QInputDialog::getInt(nullptr,"DSI Studio","Please assign the threshold",
+                    QInputDialog::getInt(nullptr,QApplication::applicationName(),"Please assign the threshold",
                                                          int(tipl::segmentation::otsu_threshold(dwi)),
                                                          0,255,10,&ok)
-                    :QInputDialog::getInt(nullptr,"DSI Studio","Please assign the threshold");
+                    :QInputDialog::getInt(nullptr,QApplication::applicationName(),"Please assign the threshold");
             if (!ok)
                 return true;
         }

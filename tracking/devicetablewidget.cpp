@@ -173,7 +173,7 @@ void DeviceTableWidget::newDevice()
     static bool show_hint = true;
     if(show_hint)
     {
-        QMessageBox::information(this,"DSI Studio","Click Ctrl+A and Press on Tip/Shaft to Rotate/Move");
+        QMessageBox::information(this,QApplication::applicationName(),"Click Ctrl+A and Press on Tip/Shaft to Rotate/Move");
         show_hint = false;
     }
 
@@ -378,7 +378,7 @@ void DeviceTableWidget::detect_electrodes(void)
         return;
     }
     if(slice->running)
-        QMessageBox::information(this,"DSI Studio","Slice registration is undergoing, and the alignment may change.");
+        QMessageBox::information(this,QApplication::applicationName(),"Slice registration is undergoing, and the alignment may change.");
 
 
     bool ok;
@@ -705,7 +705,7 @@ void DeviceTableWidget::lead_to_roi(void)
         return;
     bool okay = true;
     float resolution = 8.0f;
-    short radius = short(QInputDialog::getDouble(this,"DSI Studio","Input region radius (mm)",2.0,1.0,10.0,1,&okay)*resolution);
+    short radius = short(QInputDialog::getDouble(this,QApplication::applicationName(),"Input region radius (mm)",2.0,1.0,10.0,1,&okay)*resolution);
     if (!okay)
         return;
     auto& cur_device = devices[uint32_t(currentRow())];

@@ -174,7 +174,7 @@ void AtlasDialog::on_add_all_regions_clicked()
 void AtlasDialog::on_select_clicked()
 {
     bool ok;
-    QString sel = QInputDialog::getText(this,"DSI Studio","Please specify the select text",QLineEdit::Normal,"",&ok);
+    QString sel = QInputDialog::getText(this,QApplication::applicationName(),"Please specify the select text",QLineEdit::Normal,"",&ok);
     if(!ok)
         return;
     ui->region_list->clearSelection();

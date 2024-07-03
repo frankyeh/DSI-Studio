@@ -54,7 +54,7 @@ void db_window::closeEvent (QCloseEvent *event)
         return;
     }
 
-    QMessageBox::StandardButton r = QMessageBox::question( this, "DSI Studio",
+    QMessageBox::StandardButton r = QMessageBox::question( this, QApplication::applicationName(),
                                                                 tr("Modification not saved. Save now?\n"),
                                                                 QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,
                                                                 QMessageBox::Cancel);
@@ -254,11 +254,11 @@ void db_window::on_actionSave_DB_as_triggered()
         return;
     tipl::progress prog_("saving ",std::filesystem::path(filename.toStdString()).filename().string().c_str());
     if(!vbc->handle->db.demo.empty() && !vbc->handle->db.parse_demo())
-        QMessageBox::information(this,"DSI Studio",
+        QMessageBox::information(this,QApplication::applicationName(),
         QString("demographics not saved due to mismatch: ") + vbc->handle->db.error_msg.c_str());
 
     if(vbc->handle->db.save_db(filename.toStdString().c_str()))
-        QMessageBox::information(this,"DSI Studio","File saved");
+        QMessageBox::information(this,QApplication::applicationName(),"File saved");
     else
         QMessageBox::critical(this,"ERROR",vbc->handle->db.error_msg.c_str());
 }
@@ -371,7 +371,7 @@ void db_window::on_actionAll_Subjects_triggered()
             return;
         }
     }
-    QMessageBox::information(this,"DSI Studio","Files exported");
+    QMessageBox::information(this,QApplication::applicationName(),"Files exported");
 }
 
 void db_window::on_actionOpen_Demographics_triggered()
@@ -385,7 +385,7 @@ void db_window::on_actionOpen_Demographics_triggered()
         return;
     if(vbc->handle->db.parse_demo(filename.toStdString()))
     {
-        QMessageBox::information(this,"DSI Studio","Demographics Loaded");
+        QMessageBox::information(this,QApplication::applicationName(),"Demographics Loaded");
         update_subject_list();
     }
     else
@@ -453,7 +453,7 @@ void db_window::on_actionSave_DemoMatched_Image_as_triggered()
     if (filename.isEmpty())
         return;
     if(vbc->handle->db.save_demo_matched_image(param.toStdString(),filename.toStdString()))
-        QMessageBox::information(this,"DSI Studio","File Saved");
+        QMessageBox::information(this,QApplication::applicationName(),"File Saved");
     else
         QMessageBox::critical(this,"ERROR",vbc->handle->db.error_msg.c_str());
 

@@ -51,7 +51,7 @@ void match_db::on_buttonBox_accepted()
     if(ui->dif_type2->isChecked())
         dif_type = 1;
     vbc->handle->db.calculate_change(dif_type,ui->inc_dec_filter->currentIndex());
-    QMessageBox::information(this,"DSI Studio","Connectometry DB updated");
+    QMessageBox::information(this,QApplication::applicationName(),"Connectometry DB updated");
     accept();
 }
 

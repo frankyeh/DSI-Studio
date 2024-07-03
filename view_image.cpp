@@ -198,7 +198,7 @@ bool view_image::command(std::string cmd,std::string param1)
 
     if(cmd == "save" && !file_names.empty())
     {
-        if(QMessageBox::question(nullptr,"DSI Studio","Applying processing to other images and save them?",
+        if(QMessageBox::question(nullptr,QApplication::applicationName(),"Applying processing to other images and save them?",
                                  QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::No)
         {
             file_names.clear();
@@ -861,7 +861,7 @@ void view_image::on_actionSave_triggered()
         }
         regtool->clear();
         regtool->show_image();
-        QMessageBox::information(this,"DSI Studio","Image Updated");
+        QMessageBox::information(this,QApplication::applicationName(),"Image Updated");
         return;
     }
     auto tracking = dynamic_cast<tracking_window*>(parent());
@@ -872,11 +872,11 @@ void view_image::on_actionSave_triggered()
         slice->vs = cur_image->vs;
         slice->trans_to_mni = cur_image->T;
         tracking->slice_need_update = true;
-        QMessageBox::information(this,"DSI Studio","Image Updated");
+        QMessageBox::information(this,QApplication::applicationName(),"Image Updated");
         return;
     }
     if(command("save",file_name.toStdString()))
-        QMessageBox::information(this,"DSI Studio","Saved");
+        QMessageBox::information(this,QApplication::applicationName(),"Saved");
     else
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
@@ -987,7 +987,7 @@ void view_image::run_action2()
     else
     {
         bool ok;
-        value = QInputDialog::getText(this,"DSI Studio",action->toolTip(),QLineEdit::Normal,action->statusTip(),&ok);
+        value = QInputDialog::getText(this,QApplication::applicationName(),action->toolTip(),QLineEdit::Normal,action->statusTip(),&ok);
         if(!ok || value.isEmpty())
             return;
     }
@@ -1019,7 +1019,7 @@ void view_image::on_info_cellDoubleClicked(int row, int column)
     if(column == 1 && mat[row].is_type<char>())
     {
         bool okay = false;
-        auto text = QInputDialog::getMultiLineText(this,"DSI Studio","Input Content",
+        auto text = QInputDialog::getMultiLineText(this,QApplication::applicationName(),"Input Content",
                                                    mat[row].get_data<char>(),&okay);
         if(!okay)
             return;
@@ -1030,7 +1030,7 @@ void view_image::on_info_cellDoubleClicked(int row, int column)
     if(column == 0)
     {
         bool okay = false;
-        auto text = QInputDialog::getMultiLineText(this,"DSI Studio","Input New Name",ui->info->item(row,0)->text(),&okay);
+        auto text = QInputDialog::getMultiLineText(this,QApplication::applicationName(),"Input New Name",ui->info->item(row,0)->text(),&okay);
         if(!okay)
             return;
         command("rename",std::to_string(row)+" "+text.toStdString());

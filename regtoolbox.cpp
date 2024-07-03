@@ -144,7 +144,7 @@ void RegToolBox::on_OpenTemplate_clicked()
                          subject2_name,filename.toStdString(),new_file_name) &&
            QFileInfo(new_file_name.c_str()).exists())
     {
-        if(QMessageBox::question(this,"DSI Studio",QString("load ") + new_file_name.c_str() + "?\n",
+        if(QMessageBox::question(this,QApplication::applicationName(),QString("load ") + new_file_name.c_str() + "?\n",
                     QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
             load_template2(new_file_name);
     }
@@ -209,7 +209,7 @@ void RegToolBox::on_OpenSubject_clicked()
                          template2_name,filename.toStdString(),new_file_name) &&
            QFileInfo(new_file_name.c_str()).exists())
     {
-        if(QMessageBox::question(this,"DSI Studio",QString("load ") + new_file_name.c_str() + "?\n",
+        if(QMessageBox::question(this,QApplication::applicationName(),QString("load ") + new_file_name.c_str() + "?\n",
                     QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
             load_subject2(new_file_name);
     }
@@ -228,7 +228,7 @@ void RegToolBox::load_subject2(const std::string& file_name)
                           subject2_name,ui->template_filename->toolTip().toStdString(),new_file_name) &&
        QFileInfo(new_file_name.c_str()).exists())
     {
-        if(QMessageBox::question(this,"DSI Studio",QString("load ") + new_file_name.c_str() + "?\n",
+        if(QMessageBox::question(this,QApplication::applicationName(),QString("load ") + new_file_name.c_str() + "?\n",
                     QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
             load_template2(new_file_name);
     }
@@ -526,7 +526,7 @@ void RegToolBox::on_actionApply_Warping_triggered()
                               to.toStdString().c_str()))
             QMessageBox::critical(this,"ERROR",error.c_str());
         else
-            QMessageBox::information(this,"DSI Studio","Saved");
+            QMessageBox::information(this,QApplication::applicationName(),"Saved");
     }
     else
     {
@@ -542,7 +542,7 @@ void RegToolBox::on_actionApply_Warping_triggered()
                 return;
             }
         }
-        QMessageBox::information(this,"DSI Studio","Saved");
+        QMessageBox::information(this,QApplication::applicationName(),"Saved");
     }
 }
 

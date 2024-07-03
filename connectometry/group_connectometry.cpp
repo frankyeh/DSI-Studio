@@ -390,7 +390,7 @@ void group_connectometry::on_run_clicked()
 
     if(!model.get())
     {
-        QMessageBox::information(this,"DSI Studio","Load demographic file first");
+        QMessageBox::information(this,QApplication::applicationName(),"Load demographic file first");
         return;
     }
 

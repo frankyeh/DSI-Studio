@@ -84,7 +84,7 @@ void CreateDBDialog::update_list(void)
         if(group[0].endsWith("nii") || group[0].endsWith("nii.gz"))
         {
             bool ok;
-            QString metrics = QInputDialog::getText(this,"DSI Studio","Please specify the name of the metrics",QLineEdit::Normal,"metrics",&ok);
+            QString metrics = QInputDialog::getText(this,QApplication::applicationName(),"Please specify the name of the metrics",QLineEdit::Normal,"metrics",&ok);
             if(!ok)
                 metrics = "metrics";
             ui->index_of_interest->clear();

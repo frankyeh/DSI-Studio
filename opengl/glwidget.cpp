@@ -2054,7 +2054,7 @@ void GLWidget::copyToClipboardEach(QTableWidget* widget,unsigned int col_size)
     for (int i = 0;i < widget->rowCount();++i)
         if(is_checked[uint32_t(i)])
             widget->item(i,0)->setCheckState(Qt::Checked);
-    QMessageBox::information(this,"DSI Studio","Images captured to clipboard");
+    QMessageBox::information(this,QApplication::applicationName(),"Images captured to clipboard");
 
 }
 QImage GLWidget::get3View(unsigned int type)
@@ -2269,7 +2269,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
         {
             bool ok;
             threshold = float(QInputDialog::getDouble(this,
-                "DSI Studio","Threshold:", double(threshold),
+                QApplication::applicationName(),"Threshold:", double(threshold),
                 double(tipl::min_value(crop_image)),
                 double(tipl::max_value(crop_image)),
                 4, &ok));
@@ -2469,7 +2469,7 @@ void GLWidget::catchScreen(void)
 void GLWidget::catchScreen2(void)
 {
     bool ok;
-    QString result = QInputDialog::getText(this,"DSI Studio","Assign image dimension (width height)",QLineEdit::Normal,
+    QString result = QInputDialog::getText(this,QApplication::applicationName(),"Assign image dimension (width height)",QLineEdit::Normal,
                                            QString::number(cur_width)+" "+QString::number(cur_height),&ok);
     if(!ok)
         return;
@@ -2551,7 +2551,7 @@ void GLWidget::record_video(void)
     {
         video_timer->stop();
         video_handle->close();
-        QMessageBox::information(this,"DSI Studio","Video saved");
+        QMessageBox::information(this,QApplication::applicationName(),"Video saved");
         video_handle.reset();
     }
     else
@@ -2563,7 +2563,7 @@ void GLWidget::record_video(void)
                                     "Report file (*.avi);;All files (*)");
         if(file.isEmpty())
             return;
-        QMessageBox::information(this,"DSI Studio","Press Ctrl+Shift+R again to stop recording.");
+        QMessageBox::information(this,QApplication::applicationName(),"Press Ctrl+Shift+R again to stop recording.");
         QImage I = grabFramebuffer();
         video_handle = std::make_shared<tipl::io::avi>();
         video_handle->open(file.toStdString().c_str(),I.width(),I.height(), "MJPG", 10/*fps*/);

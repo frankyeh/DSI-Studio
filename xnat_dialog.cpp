@@ -390,8 +390,8 @@ void xnat_dialog::download_status()
         if(cur_download_index >= ui->experiment_list->selectionModel()->selectedRows().size())
         {
             on_download_clicked();
-            QMessageBox::information(this,"DSI Studio","Download Completed");
-            if(QMessageBox::information(this,"DSI Studio","Rename DICOM files?",QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
+            QMessageBox::information(this,QApplication::applicationName(),"Download Completed");
+            if(QMessageBox::information(this,QApplication::applicationName(),"Rename DICOM files?",QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
             {
                 QStringList subject_dirs;
                 {
@@ -401,7 +401,7 @@ void xnat_dialog::download_status()
                     if(prog.aborted())
                         return;
                 }
-                if(QMessageBox::information(this,"DSI Studio","Convert DICOM to SRC/NII?",QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
+                if(QMessageBox::information(this,QApplication::applicationName(),"Convert DICOM to SRC/NII?",QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
                 {
                     tipl::progress prog("Converting DICOM to SRC/NII?");
                     for(size_t i = 0;prog(i,subject_dirs.size());++i)

@@ -210,7 +210,8 @@ QString version_string(void)
     #else
         base += QTextCodec::codecForName("UTF-8")->toUnicode(reinterpret_cast<const char*>(&code));
     #endif
-    base += "\"";
+    base += "\" ";
+    base += __DATE__;
     return base;
 }
 
@@ -364,7 +365,7 @@ int run_cmd(int ac, char *av[])
     tipl::program_option<tipl::out> po;
     try
     {
-        tipl::progress prog((version_string().toStdString()+" ").c_str(),__DATE__);
+        tipl::progress prog(version_string().toStdString().c_str());
         init_cuda();
 
         if(!po.parse(ac,av))
@@ -420,7 +421,7 @@ int main(int ac, char *av[])
         return run_cmd(ac,av);
     if(ac == 2 && std::string(av[1]) == "--version")
     {
-        std::cout << version_string().toStdString() << " " <<  __DATE__ << std::endl;
+        std::cout << version_string().toStdString() << std::endl;
         return 1;
     }
 
@@ -446,20 +447,20 @@ int main(int ac, char *av[])
     console.attach();
 
     {
-        tipl::progress prog((version_string().toStdString()+" ").c_str(),__DATE__);
+        tipl::progress prog(version_string().toStdString().c_str());
         init_cuda();
         init_application();
     }
 
     MainWindow w;
-    w.setWindowTitle(version_string() + " " + __DATE__);
+    w.setWindowTitle(version_string());
     // presentation mode
     QStringList fib_list = QDir(QCoreApplication::applicationDirPath()+ "/presentation").
                             entryList(QStringList("*fib.gz") << QString("*_qa.nii.gz"),QDir::Files|QDir::NoSymLinks);
     if(fib_list.size())
     {
         w.hide();
-        w.loadFib(QCoreApplication::applicationDirPath() + "/presentation/" + fib_list[0],true);
+        w.loadFib(QCoreApplication::applicationDirPath() + "/presentation/" + fib_list[0]);
     }
     else
         w.show();

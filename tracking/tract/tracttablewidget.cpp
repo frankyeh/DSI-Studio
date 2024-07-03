@@ -511,7 +511,7 @@ void TractTableWidget::save_all_tracts_to_dir(void)
     if(!command("save_all_tracts_to_dir",dir))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
     else
-        QMessageBox::information(this,"DSI Studio","file saved");
+        QMessageBox::information(this,QApplication::applicationName(),"file saved");
 }
 void TractTableWidget::save_all_tracts_as(void)
 {
@@ -526,7 +526,7 @@ void TractTableWidget::save_all_tracts_as(void)
     if(!command("save_tracks",filename))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
     else
-        QMessageBox::information(this,"DSI Studio","file saved");
+        QMessageBox::information(this,QApplication::applicationName(),"file saved");
 }
 
 void TractTableWidget::set_color(void)
@@ -646,7 +646,7 @@ void TractTableWidget::save_cluster_color(void)
             else
                 out << "0 0 0" << std::endl;
         }
-    QMessageBox::information(this,"DSI Studio","saved");
+    QMessageBox::information(this,QApplication::applicationName(),"saved");
 }
 
 
@@ -721,13 +721,13 @@ void TractTableWidget::clustering(int method_id)
         return;
     bool ok = false;
     int n = QInputDialog::getInt(this,
-            "DSI Studio",
+            QApplication::applicationName(),
             "Assign the maximum number of groups",50,1,5000,10,&ok);
     if(!ok)
         return;
     ok = true;
     double detail = method_id ? 0.0 : QInputDialog::getDouble(this,
-            "DSI Studio","Clustering detail (mm):",cur_tracking_window.handle->vs[0],0.2,50.0,2,&ok);
+            QApplication::applicationName(),"Clustering detail (mm):",cur_tracking_window.handle->vs[0],0.2,50.0,2,&ok);
     if(!ok)
         return;
     std::vector<unsigned int> c;
@@ -753,7 +753,7 @@ void TractTableWidget::save_tracts_as(void)
     std::string sfilename = filename.toStdString().c_str();
     auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     if(tract_models[uint32_t(currentRow())]->save_tracts_to_file(&*sfilename.begin()))
-        QMessageBox::information(this,"DSI Studio","file saved");
+        QMessageBox::information(this,QApplication::applicationName(),"file saved");
     else
         QMessageBox::critical(this,"Error","Cannot write to file. Please check write permission.");
 }
@@ -781,7 +781,7 @@ void TractTableWidget::save_tracts_in_native(void)
         return;
     auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     if(tract_models[uint32_t(currentRow())]->save_tracts_in_native_space(cur_tracking_window.handle,filename.toStdString().c_str()))
-        QMessageBox::information(this,"DSI Studio","file saved");
+        QMessageBox::information(this,QApplication::applicationName(),"file saved");
     else
         QMessageBox::critical(this,"Error","Cannot write to file. Please check write permission.");
 }
@@ -800,7 +800,7 @@ void TractTableWidget::save_all_tracts_end_point_as(void)
         return;
     bool ok;
     float dis = float(QInputDialog::getDouble(this,
-        "DSI Studio","Assign end segment length in voxel distance:",3.0,0.0,10.0,1,&ok));
+        QApplication::applicationName(),"Assign end segment length in voxel distance:",3.0,0.0,10.0,1,&ok));
     if (!ok)
         return;
 
@@ -890,7 +890,7 @@ void TractTableWidget::save_transformed_tracts(void)
     slice->update_transform();
     auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     if(tract_models[uint32_t(currentRow())]->save_transformed_tracts_to_file(filename.toStdString().c_str(),slice->dim,slice->vs,slice->trans_to_mni,slice->to_slice,false))
-        QMessageBox::information(this,"DSI Studio","File saved");
+        QMessageBox::information(this,QApplication::applicationName(),"File saved");
     else
         QMessageBox::critical(this,"Error","File not saved. Please check write permission");
 }
@@ -917,7 +917,7 @@ void TractTableWidget::save_transformed_endpoints(void)
     }
     auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     if(tract_models[uint32_t(currentRow())]->save_transformed_tracts_to_file(filename.toStdString().c_str(),slice->dim,slice->vs,slice->trans_to_mni,slice->to_slice,true))
-        QMessageBox::information(this,"DSI Studio","File saved");
+        QMessageBox::information(this,QApplication::applicationName(),"File saved");
     else
         QMessageBox::critical(this,"Error","File not saved. Please check write permission");
 }
@@ -937,7 +937,7 @@ void TractTableWidget::save_tracts_in_template(void)
         return;
     auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     if(tract_models[uint32_t(currentRow())]->save_tracts_in_template_space(cur_tracking_window.handle,filename.toStdString().c_str()))
-        QMessageBox::information(this,"DSI Studio","File saved");
+        QMessageBox::information(this,QApplication::applicationName(),"File saved");
     else
         QMessageBox::critical(this,"Error","File not saved. Please check write permission");
 }
@@ -955,7 +955,7 @@ void TractTableWidget::save_tracts_in_mni(void)
         return;
     auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     if(tract_models[uint32_t(currentRow())]->save_tracts_in_template_space(cur_tracking_window.handle,filename.toStdString().c_str(),true))
-        QMessageBox::information(this,"DSI Studio","File saved");
+        QMessageBox::information(this,QApplication::applicationName(),"File saved");
     else
         QMessageBox::critical(this,"Error","File not saved. Please check write permission");
 }
@@ -1279,7 +1279,7 @@ void TractTableWidget::save_tracts_data_as(void)
         QMessageBox::information(this,"error","fail to save information");
     }
     else
-        QMessageBox::information(this,"DSI Studio","file saved");
+        QMessageBox::information(this,QApplication::applicationName(),"file saved");
 }
 
 
@@ -1467,7 +1467,7 @@ void TractTableWidget::delete_repeated(void)
     float distance = 1.0;
     bool ok;
     distance = QInputDialog::getDouble(this,
-        "DSI Studio","Distance threshold (voxels)", distance,0,500,1,&ok);
+        QApplication::applicationName(),"Distance threshold (voxels)", distance,0,500,1,&ok);
     if (!ok)
         return;
     for_each_bundle("delete repeated",[&](unsigned int index)
@@ -1483,7 +1483,7 @@ void TractTableWidget::resample_step_size(void)
     float new_step = 0.5f;
     bool ok;
     new_step = float(QInputDialog::getDouble(this,
-        "DSI Studio","New step size (voxels)",double(new_step),0.0,5.0,1,&ok));
+        QApplication::applicationName(),"New step size (voxels)",double(new_step),0.0,5.0,1,&ok));
     if (!ok)
         return;
     for_each_bundle("resample tracks",[&](unsigned int index)
@@ -1500,7 +1500,7 @@ void TractTableWidget::delete_by_length(void)
     float threshold = 60;
     bool ok;
     threshold = QInputDialog::getDouble(this,
-        "DSI Studio","Length threshold in mm:", threshold,0,500,1,&ok);
+        QApplication::applicationName(),"Length threshold in mm:", threshold,0,500,1,&ok);
     if (!ok)
         return;
     for_each_bundle("delete by length",[&](unsigned int index)
@@ -1513,7 +1513,7 @@ void TractTableWidget::reconnect_track(void)
     for_current_bundle([&](void)
     {
         bool ok;
-        QString result = QInputDialog::getText(this,"DSI Studio","Assign maximum bridging distance (in voxels) and angles (degrees)",
+        QString result = QInputDialog::getText(this,QApplication::applicationName(),"Assign maximum bridging distance (in voxels) and angles (degrees)",
                                                QLineEdit::Normal,"4 30",&ok);
 
         if(!ok)
@@ -1596,7 +1596,7 @@ void TractTableWidget::export_tract_density(tipl::shape<3> dim,
             return;
     }
     if(TractModel::export_tdi(filename.toStdString().c_str(),get_checked_tracks(),dim,vs,trans_to_mni,T,color,end_point))
-        QMessageBox::information(this,"DSI Studio","File saved");
+        QMessageBox::information(this,QApplication::applicationName(),"File saved");
     else
         QMessageBox::critical(this,"ERROR","Failed to save file");
 }

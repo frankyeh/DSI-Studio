@@ -439,7 +439,7 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
 
 void tracking_window::on_actionLoad_Parameter_ID_triggered()
 {
-    QString id = QInputDialog::getText(this,"DSI Studio","Please assign parameter ID");
+    QString id = QInputDialog::getText(this,QApplication::applicationName(),"Please assign parameter ID");
     if(id.isEmpty())
         return;
     TrackingParam param;
@@ -554,7 +554,7 @@ void tracking_window::on_actionTDI_Subvoxel_Diffusion_Space_triggered()
         return;
     bool ok;
     int ratio = QInputDialog::getInt(this,
-            "DSI Studio",
+            QApplication::applicationName(),
             "Input super-resolution ratio (e.g. 2, 3, or 4):",2,2,8,1,&ok);
     if(!ok)
         return;
@@ -592,7 +592,7 @@ void tracking_window::on_actionConnectivity_matrix_triggered()
 {
     if(!tractWidget->tract_models.size())
     {
-        QMessageBox::information(this,"DSI Studio","Run fiber tracking first");
+        QMessageBox::information(this,QApplication::applicationName(),"Run fiber tracking first");
         return;
     }
     std::ostringstream out;
@@ -906,7 +906,7 @@ void tracking_window::insertPicture()
     reg_slice_ptr->update_transform();
 
     slice_need_update = true;
-    if(QMessageBox::Yes == QMessageBox::question(this,"DSI Studio","Apply registration?",QMessageBox::No | QMessageBox::Yes))
+    if(QMessageBox::Yes == QMessageBox::question(this,QApplication::applicationName(),"Apply registration?",QMessageBox::No | QMessageBox::Yes))
     {
         reg_slice_ptr->run_registration();
         if(!timer2.get() && reg_slice_ptr->running)
@@ -919,7 +919,7 @@ void tracking_window::insertPicture()
         }
     }
     else
-        QMessageBox::information(this,"DSI Studio","Press Ctrl+A and then hold LEFT/RIGHT button to MOVE/RESIZE slice close to the target before using [Slices][Adjust Mapping]");
+        QMessageBox::information(this,QApplication::applicationName(),"Press Ctrl+A and then hold LEFT/RIGHT button to MOVE/RESIZE slice close to the target before using [Slices][Adjust Mapping]");
 
     ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
     glWidget->update();
@@ -979,7 +979,7 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
 
 bool tracking_window::run_unet(void)
 {
-    QMessageBox::information(this,"DSI Studio","Specify the UNet model");
+    QMessageBox::information(this,QApplication::applicationName(),"Specify the UNet model");
     QString filename = QFileDialog::getOpenFileName(this,
                 "Select model",QCoreApplication::applicationDirPath()+"/network/",
                 "Text files (*.net.gz);;All files|(*)");
@@ -1113,7 +1113,7 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
         return;
     }
 
-    QMessageBox::information(this,"DSI Studio","Please assign the output directory");
+    QMessageBox::information(this,QApplication::applicationName(),"Please assign the output directory");
     QString dir = QFileDialog::getExistingDirectory(
                                 this,
                                 "Assign output directory",slice->dicom_source[0].c_str());
@@ -1202,7 +1202,7 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
         }
         out.write(&buf[0],int64_t(buf.size()));
     }
-    QMessageBox::information(this,"DSI Studio","File Saved");
+    QMessageBox::information(this,QApplication::applicationName(),"File Saved");
 }
 
 
@@ -1345,7 +1345,7 @@ void tracking_window::stripSkull()
         return;
     if(!in2.load_from_file(handle->mask_template_file_name.c_str()) || !in2.toLPS(Iw))
         return;
-    if(QMessageBox::information(this,"DSI Studio",
+    if(QMessageBox::information(this,QApplication::applicationName(),
                                 QString("Does %1 need to remove tissues outside the brain?").
                                 arg(ui->SliceModality->currentText()),
                                 QMessageBox::Yes|QMessageBox::No) == QMessageBox::No)
@@ -1434,7 +1434,7 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
     if(!slice || slice->source_images.empty())
         return;
     bool ok = true;
-    double ratio = QInputDialog::getDouble(this,"DSI Studio",
+    double ratio = QInputDialog::getDouble(this,QApplication::applicationName(),
             "Assign intensity (ratio to the maximum, e.g., 1.2 = 1.2*max)",1.0,0.0,10.0,1,&ok);
     if(!ok)
         return;
@@ -1464,7 +1464,7 @@ void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
     if(!slice || slice->source_images.empty() || tractWidget->tract_models.empty())
         return;
     bool ok = true;
-    double ratio = QInputDialog::getDouble(this,"DSI Studio",
+    double ratio = QInputDialog::getDouble(this,QApplication::applicationName(),
             "Assign intensity (ratio to the maximum, e.g., 1.2 = 1.2*max)",1.0,0.0,10.0,1,&ok);
     if(!ok)
         return;
@@ -1664,6 +1664,6 @@ void tracking_window::on_actionSave_3D_Model_triggered()
     }
     if(prog.aborted())
         return;
-    QMessageBox::information(this,"DSI Studio","File Saved");
+    QMessageBox::information(this,QApplication::applicationName(),"File Saved");
 }
 

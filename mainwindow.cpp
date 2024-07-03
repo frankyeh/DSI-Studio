@@ -273,7 +273,7 @@ void MainWindow::addSrc(QString filename)
     updateRecentList();
 }
 void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::shape<3>& geo);
-void MainWindow::loadFib(QString filename,bool presentation_mode)
+void MainWindow::loadFib(QString filename)
 {
     std::string file_name = filename.toStdString();
     std::shared_ptr<fib_data> new_handle(new fib_data);
@@ -286,12 +286,13 @@ void MainWindow::loadFib(QString filename,bool presentation_mode)
     tracking_windows.push_back(new tracking_window(this,new_handle));
     tracking_windows.back()->setAttribute(Qt::WA_DeleteOnClose);
     tracking_windows.back()->setWindowTitle(filename);
-    if(presentation_mode)
+    if(filename.contains("/presentation/"))
     {
         tracking_windows.back()->command("load_workspace",QFileInfo(filename).absolutePath());
         tracking_windows.back()->command("presentation_mode");
     }
     else
+    if(!filename.contains(QCoreApplication::applicationDirPath()))
     {
         addFib(filename);
         add_work_dir(QFileInfo(filename).absolutePath());
@@ -841,7 +842,7 @@ void MainWindow::on_parse_network_measures_clicked()
     for(size_t i = 0;i < line_output.size();++i)
         out << line_output[i] << std::endl;
 
-    QMessageBox::information(this,"DSI Studio",QString("File saved to")+filename[0]+".collected.txt");
+    QMessageBox::information(this,QApplication::applicationName(),QString("File saved to")+filename[0]+".collected.txt");
 
 }
 
@@ -1010,7 +1011,7 @@ void MainWindow::batch_create_src(const std::vector<std::string>& dwi_nii_files,
                 {
                     if(no_to_all)
                         continue;
-                    int result = QMessageBox::information(this,"DSI Studio",
+                    int result = QMessageBox::information(this,QApplication::applicationName(),
                                     QString("%1 exists, overwrite?").arg(std::filesystem::path(src_name).filename().c_str()),
                                     QMessageBox::Yes|QMessageBox::YesToAll|QMessageBox::No|QMessageBox::NoToAll|QMessageBox::Cancel);
                     if(result == QMessageBox::Cancel)
@@ -1267,14 +1268,14 @@ void MainWindow::on_styles_activated(int)
     if(ui->styles->currentText() != settings.value("styles","Fusion").toString())
     {
         settings.setValue("styles",ui->styles->currentText());
-        QMessageBox::information(this,"DSI Studio","You will need to restart DSI Studio to see the change");
+        QMessageBox::information(this,QApplication::applicationName(),"You will need to restart DSI Studio to see the change");
     }
 }
 
 void MainWindow::on_clear_settings_clicked()
 {
     QSettings(QSettings::SystemScope,"LabSolver").clear();
-    QMessageBox::information(this,"DSI Studio","Setting Cleared");
+    QMessageBox::information(this,QApplication::applicationName(),"Setting Cleared");
 }
 
 
