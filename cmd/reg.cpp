@@ -252,11 +252,14 @@ bool dual_reg<3>::load_template2(const char* file_name)
         return false;
     }
     It2 = std::move(::load_template(nifti));
-    if(It2.shape() != It.shape())
+
+    tipl::matrix<dimension+1,dimension+1> It2R;
+    nifti.get_image_transformation(It2R);
+    if(It2.shape() != It.shape() || It2R != ItR)
     {
-        error_msg = "inconsistent image size";
-        It2.clear();
-        return false;
+        image_type It2_(It.shape());
+        tipl::resample(It2,It2_,tipl::from_space(ItR).to(It2R));
+        It2_.swap(It2);
     }
     return true;
 }
