@@ -1697,6 +1697,8 @@ bool fib_data::map_to_mni(bool background)
             if(view_item.size() != iso_index)
                 reg.load_subject2(tipl::image<3>(view_item[iso_index].get_image()));
         }
+        reg.Ivs = vs;
+        reg.IR = trans_to_mni;
 
         // not FIB file, use t1w as template
         if(dir.index_name[0] == "image")
@@ -1709,21 +1711,18 @@ bool fib_data::map_to_mni(bool background)
                 tipl::prog_aborted = true;
                 return;
             }
-            tipl::out() << "matching t1w t2w contrast" << std::endl;
-            reg.matching_contrast();
             tipl::out() << "using structure image for normalization" << std::endl;
         }
         else
         {
             reg.It = template_image_pre(tipl::image<3>(template_I));
             reg.It2 = template_image_pre(tipl::image<3>(template_I2));
+            reg.Itvs = template_vs;
+            reg.ItR = template_to_mni;
         }
 
 
-        reg.Itvs = template_vs;
-        reg.ItR = template_to_mni;
-        reg.Ivs = vs;
-        reg.IR = trans_to_mni;
+
         prog = 2;
 
 
@@ -1731,6 +1730,12 @@ bool fib_data::map_to_mni(bool background)
             reg.arg = manual_template_T;
         else
             reg.linear_reg(tipl::reg::affine,tipl::reg::mutual_info);
+
+        if(dir.index_name[0] == "image")
+        {
+            tipl::out() << "matching t1w t2w contrast" << std::endl;
+            reg.matching_contrast();
+        }
 
         if(tipl::prog_aborted)
         {
