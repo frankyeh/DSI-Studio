@@ -210,8 +210,7 @@ QString version_string(void)
     #else
         base += QTextCodec::codecForName("UTF-8")->toUnicode(reinterpret_cast<const char*>(&code));
     #endif
-    base += "\" ";
-    base += __DATE__;
+    base += "\"";
     return base;
 }
 
@@ -421,7 +420,7 @@ int main(int ac, char *av[])
         return run_cmd(ac,av);
     if(ac == 2 && std::string(av[1]) == "--version")
     {
-        std::cout << version_string().toStdString() << std::endl;
+        std::cout << version_string().toStdString() << " " << __DATE__ << std::endl;
         return 1;
     }
 
@@ -453,7 +452,7 @@ int main(int ac, char *av[])
     }
 
     MainWindow w;
-    w.setWindowTitle(version_string());
+    w.setWindowTitle(version_string() + " " + __DATE__);
     // presentation mode
     QStringList fib_list = QDir(QCoreApplication::applicationDirPath()+ "/presentation").
                             entryList(QStringList("*fib.gz") << QString("*_qa.nii.gz"),QDir::Files|QDir::NoSymLinks);
