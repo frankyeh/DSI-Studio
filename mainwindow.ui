@@ -153,7 +153,7 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideNone</enum>
@@ -169,10 +169,10 @@
        <widget class="QPushButton" name="clear_fib_history">
         <property name="geometry">
          <rect>
-          <x>440</x>
-          <y>590</y>
+          <x>20</x>
+          <y>150</y>
           <width>93</width>
-          <height>29</height>
+          <height>41</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -180,6 +180,9 @@
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
         </property>
         <property name="text">
          <string>Clear All</string>
@@ -1090,10 +1093,10 @@ NIFTI (*.nii.gz)
        <widget class="QPushButton" name="clear_src_history">
         <property name="geometry">
          <rect>
-          <x>750</x>
-          <y>610</y>
+          <x>360</x>
+          <y>150</y>
           <width>93</width>
-          <height>29</height>
+          <height>41</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -1101,6 +1104,9 @@ NIFTI (*.nii.gz)
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
         </property>
         <property name="text">
          <string>Clear All</string>
@@ -1339,7 +1345,7 @@ NIFTI (*.nii.gz)
         <property name="geometry">
          <rect>
           <x>750</x>
-          <y>130</y>
+          <y>140</y>
           <width>101</width>
           <height>51</height>
          </rect>
@@ -1362,7 +1368,7 @@ NIFTI (*.nii.gz)
         <property name="geometry">
          <rect>
           <x>750</x>
-          <y>80</y>
+          <y>90</y>
           <width>101</width>
           <height>51</height>
          </rect>
