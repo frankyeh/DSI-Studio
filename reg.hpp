@@ -230,15 +230,15 @@ struct dual_reg{
     }
     const auto& show_subject(bool second) const
     {
-        return second && I2.shape() == I.shape() ? I2 : I;
+        return second ? I2 : I;
     }
     const auto& show_template(bool second) const
     {
-        return second && It2.shape() == It.shape() ? It2 : It;
+        return second ? It2 : It;
     }
     const auto& show_subject_warped(bool second) const
     {
-        return (second && I2.shape() == I.shape() ? (J2.empty() ? I2:J2) : (J.empty() ? I:J));
+        return second ? J2 : J;
     }
     bool data_ready(void) const
     {
