@@ -16,6 +16,7 @@
 #include "manual_alignment.h"
 #include "devicetablewidget.h"
 #include "libs/tracking/tracking_thread.hpp"
+#include "reg.hpp"
 
 extern std::vector<std::string> fa_template_list;
 void show_info_dialog(const std::string& title,const std::string& result)
@@ -958,8 +959,8 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
     reg_slice->terminate();
     auto iso_fa = handle->get_iso_fa();
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-        reg_slice->get_source(),reg_slice->get_source(),reg_slice->vs,
-        iso_fa.first,iso_fa.second,slices[0]->vs,
+        subject_image_pre(tipl::image<3>(reg_slice->get_source())),subject_image_pre(tipl::image<3>(reg_slice->get_source())),reg_slice->vs,
+        subject_image_pre(tipl::image<3>(iso_fa.first)),subject_image_pre(tipl::image<3>(iso_fa.second)),slices[0]->vs,
         tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
 
     {
@@ -1287,8 +1288,8 @@ void tracking_window::on_actionManual_Atlas_Alignment_triggered()
     }
     auto iso_fa = handle->get_iso_fa();
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-        iso_fa.first,iso_fa.second,handle->vs,
-        handle->template_I,handle->template_I2,handle->template_vs,
+        subject_image_pre(tipl::image<3>(iso_fa.first)),subject_image_pre(tipl::image<3>(iso_fa.second)),handle->vs,
+        template_image_pre(tipl::image<3>(handle->template_I)),template_image_pre(tipl::image<3>(handle->template_I2)),handle->template_vs,
         tipl::reg::affine,tipl::reg::cost_type::mutual_info));
     if(manual->exec() != QDialog::Accepted)
         return;
@@ -1363,7 +1364,8 @@ void tracking_window::stripSkull()
 
 
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-            It,tipl::image<3>(),vs,J,tipl::image<3>(),vsJ,tipl::reg::affine,tipl::reg::cost_type::mutual_info));
+            template_image_pre(tipl::image<3>(It)),tipl::image<3,unsigned char>(),vs,
+            subject_image_pre(tipl::image<3>(J)),tipl::image<3,unsigned char>(),vsJ,tipl::reg::affine,tipl::reg::cost_type::mutual_info));
 
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)

@@ -531,16 +531,12 @@ void CustomSliceModel::argmin(void)
     running = true;
     handle->view_item[view_id].registering = true;
 
-    tipl::image<3> to(source_images);
-    tipl::segmentation::otsu_median_regulzried(to);
-    tipl::filter::gaussian(to);
-
+    auto to = subject_image_pre(tipl::image<3>(source_images));
     auto to_vs = vs;
     auto from = handle->get_iso_fa();
     auto from_vs = handle->vs;
-    tipl::image<3> from1(from.first),from2(from.second);
-    tipl::filter::gaussian(from1);
-    tipl::filter::gaussian(from2);
+    auto from1 = subject_image_pre(tipl::image<3>(from.first));
+    auto from2 = subject_image_pre(tipl::image<3>(from.second));
 
     if(picture.empty())
     {

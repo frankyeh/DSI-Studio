@@ -71,10 +71,10 @@ size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,float,t
                      tipl::reg::cost_type cost_type,bool& terminated);
 size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char,tipl::progress> > reg,
                      tipl::reg::cost_type cost_type,bool& terminated);
-template<typename value_type,int dim>
-inline size_t linear_refine(std::vector<tipl::const_pointer_image<dim,value_type> > from,
+template<int dim>
+inline size_t linear_refine(std::vector<tipl::const_pointer_image<dim,unsigned char> > from,
                             tipl::vector<dim> from_vs,
-                            std::vector<tipl::const_pointer_image<dim,value_type> > to,
+                            std::vector<tipl::const_pointer_image<dim,unsigned char> > to,
                             tipl::vector<dim> to_vs,
                             tipl::affine_transform<float,dim>& arg,
                             tipl::reg::reg_type reg_type,
@@ -112,10 +112,10 @@ inline auto make_list(const image_type& I)
     auto pI = tipl::make_shared(I);
     return std::vector<decltype(pI)>({pI});
 }
-template<typename value_type,int dim>
-size_t linear(std::vector<tipl::const_pointer_image<dim,value_type> > from,
+template<int dim>
+size_t linear(std::vector<tipl::const_pointer_image<dim,unsigned char> > from,
                              tipl::vector<dim> from_vs,
-                             std::vector<tipl::const_pointer_image<dim,value_type> > to,
+                             std::vector<tipl::const_pointer_image<dim,unsigned char> > to,
                              tipl::vector<dim> to_vs,
                               tipl::affine_transform<float,dim>& arg,
                               tipl::reg::reg_type reg_type,
@@ -158,10 +158,10 @@ size_t linear(std::vector<tipl::const_pointer_image<dim,value_type> > from,
     tipl::out() << arg << std::endl;
     return linear_refine(from,from_vs,to,to_vs,arg,reg_type,terminated,cost_type,use_cuda);
 }
-template<typename value_type,int dim>
-tipl::transformation_matrix<float> linear(std::vector<tipl::const_pointer_image<dim,value_type> > from,
+template<int dim>
+tipl::transformation_matrix<float> linear(std::vector<tipl::const_pointer_image<dim,unsigned char> > from,
                                           tipl::vector<dim> from_vs,
-                                          std::vector<tipl::const_pointer_image<dim,value_type> > to,
+                                          std::vector<tipl::const_pointer_image<dim,unsigned char> > to,
                                           tipl::vector<dim> to_vs,
                                           tipl::reg::reg_type reg_type,
                                           bool& terminated = tipl::prog_aborted,
@@ -172,6 +172,33 @@ tipl::transformation_matrix<float> linear(std::vector<tipl::const_pointer_image<
     tipl::affine_transform<float,dim> arg;
     linear(from,from_vs,to,to_vs,arg,reg_type,terminated,bound,cost_type,use_cuda);
     return tipl::transformation_matrix<float,dim>(arg,from[0],from_vs,to[0],to_vs);
+}
+
+template<int dim>
+inline auto subject_image_pre(tipl::image<dim>&& I)
+{
+    tipl::image<dim,unsigned char> out;
+    tipl::filter::gaussian(I);
+    tipl::segmentation::otsu_median_regulzried(I);
+    tipl::normalize_upper_lower2(I,out,255.999f);
+    return out;
+}
+template<int dim>
+inline auto subject_image_pre(const tipl::image<dim>& I)
+{
+    return subject_image_pre(tipl::image<dim>(I));
+}
+template<int dim>
+inline auto template_image_pre(tipl::image<dim>&& I)
+{
+    tipl::image<dim,unsigned char> out;
+    tipl::normalize_upper_lower2(I,out,255.999f);
+    return out;
+}
+template<int dim>
+inline auto template_image_pre(const tipl::image<dim>& I)
+{
+    return template_image_pre(tipl::image<dim>(I));
 }
 
 template<int dim>
@@ -209,15 +236,11 @@ struct dual_reg{
     }
     void load_subject(tipl::image<dimension>&& in)
     {
-        tipl::filter::gaussian(in);
-        tipl::segmentation::otsu_median_regulzried(in);
-        tipl::normalize_upper_lower2(in,I,255.999f);
+        I = subject_image_pre(in);
     }
     void load_subject2(tipl::image<dimension>&& in)
     {
-        I.swap(I2);
-        load_subject(std::move(in));
-        I.swap(I2);
+        I2 = subject_image_pre(in);
     }
 
     bool load_subject(const char* file_name);

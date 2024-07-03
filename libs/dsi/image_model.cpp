@@ -246,10 +246,9 @@ bool ImageModel::check_b_table(void)
             tipl::affine_transform<float> arg;
             tipl::progress prog("comparing subject fibers to template fibers");
 
-            tipl::image<3> dwi_f(dwi);
             auto iso = template_fib->get_iso();
-            tipl::segmentation::otsu_median_regulzried(dwi_f);
-            linear(make_list(iso),template_fib->vs,make_list(dwi_f),voxel.vs,arg,tipl::reg::affine);
+            linear(make_list(template_image_pre(tipl::image<3>(iso))),template_fib->vs,
+                   make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,arg,tipl::reg::affine);
             if(prog.aborted())
                 return false;
             tipl::rotation_matrix(arg.rotation,jacobian.begin(),tipl::vdim<3>());
@@ -257,7 +256,7 @@ bool ImageModel::check_b_table(void)
             T = tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs);
 
             tipl::image<3> VFF(iso.shape());
-            tipl::resample<tipl::interpolation::linear>(dwi_f,VFF,T);
+            tipl::resample<tipl::interpolation::linear>(dwi,VFF,T);
             float r = tipl::correlation(VFF.begin(),VFF.end(),iso.begin());
             tipl::out() << "linear r: " << r << std::endl;
             if(r < 0.6f)
@@ -1004,7 +1003,7 @@ bool ImageModel::align_acpc(float reso)
 
     // create an isotropic subject image for alignment
     tipl::scale(dwi,J,tipl::v(voxel.vs[0]/reso,voxel.vs[1]/reso,voxel.vs[2]/reso));
-    tipl::filter::gaussian(J);
+
 
 
     match_template_resolution(I,Ivs,J,Jvs);
@@ -1013,7 +1012,8 @@ bool ImageModel::align_acpc(float reso)
     tipl::affine_transform<float> arg;
     {
         tipl::progress prog("linear registration");
-        linear(make_list(I),Ivs,make_list(J),Jvs,arg,tipl::reg::rigid_scaling);
+        linear(make_list(template_image_pre(tipl::image<3>(I))),Ivs,
+               make_list(subject_image_pre(tipl::image<3>(J))),Jvs,arg,tipl::reg::rigid_scaling);
         if(prog.aborted())
             return false;
     }
@@ -1063,19 +1063,10 @@ bool ImageModel::correct_motion(void)
     if(voxel.report.find(msg) != std::string::npos)
         return true;
 
-    auto preproc = [&](tipl::image<3>& I)
-    {
-        tipl::filter::gaussian(I);
-        tipl::normalize(I);
-        tipl::lower_threshold(I,0.05f);
-        I -= 0.05f;
-    };
 
 
     std::vector<tipl::affine_transform<float> > args(src_bvalues.size());
     {
-        tipl::image<3> from(dwi_at(0));
-        preproc(from);
         tipl::progress prog("apply motion correction...");
         unsigned int p = 0;
         tipl::par_for(src_bvalues.size(),[&](int i)
@@ -1084,9 +1075,10 @@ bool ImageModel::correct_motion(void)
             if(prog.aborted() || !i)
                 return;
             args[i] = args[i-1];
-            tipl::image<3> to(dwi_at(i));
-            preproc(to);
-            linear_refine(make_list(from),voxel.vs,make_list(to),voxel.vs,args[i],tipl::reg::rigid_body);
+
+
+            linear_refine(make_list(subject_image_pre(tipl::image<3>(dwi_at(0)))),voxel.vs,
+                          make_list(subject_image_pre(tipl::image<3>(dwi_at(i)))),voxel.vs,args[i],tipl::reg::rigid_body);
             tipl::out() << "dwi (" << i+1 << "/" << src_bvalues.size() << ")" <<
                          " shift=" << tipl::vector<3>(args[i].translocation) <<
                          " rotation=" << tipl::vector<3>(args[i].rotation) << std::endl;
@@ -1140,11 +1132,9 @@ bool ImageModel::correct_motion(void)
                     from += from_;
                 }
             }
-            tipl::image<3> to(dwi_at(i));
-            preproc(from);
-            preproc(to);
 
-            linear_refine(make_list(from),voxel.vs,make_list(to),voxel.vs,new_args[i],tipl::reg::rigid_body);
+            linear_refine(make_list(subject_image_pre(std::move(from))),voxel.vs,
+                          make_list(subject_image_pre(tipl::image<3>(dwi_at(i)))),voxel.vs,new_args[i],tipl::reg::rigid_body);
             tipl::out() << "dwi (" << i+1 << "/" << src_bvalues.size() << ") = "
                       << " shift=" << tipl::vector<3>(new_args[i].translocation)
                       << " rotation=" << tipl::vector<3>(new_args[i].rotation) << std::endl;

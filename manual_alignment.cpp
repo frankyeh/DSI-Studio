@@ -9,22 +9,21 @@
 
 
 manual_alignment::manual_alignment(QWidget *parent,
-                                   tipl::image<3> from_,
-                                   tipl::image<3> from2_,
+                                   tipl::image<3,unsigned char>&& from_,
+                                   tipl::image<3,unsigned char>&& from2_,
                                    const tipl::vector<3>& from_vs_,
-                                   tipl::image<3> to_,
-                                   tipl::image<3> to2_,
+                                   tipl::image<3,unsigned char>&& to_,
+                                   tipl::image<3,unsigned char>&& to2_,
                                    const tipl::vector<3>& to_vs_,
                                    tipl::reg::reg_type reg_type,
                                    tipl::reg::cost_type cost_function) :
     QDialog(parent),from_vs(from_vs_),to_vs(to_vs_),timer(nullptr),ui(new Ui::manual_alignment),warp_image_thread([&](void){warp_image();})
 {
-    from_original = from_;
     from.swap(from_);
     to.swap(to_);
     from2.swap(from2_);
     to2.swap(to2_);
-
+    from_original = from;
     while(from.size() < to.size()/8)
     {
         tipl::downsample_with_padding(to);
@@ -274,21 +273,18 @@ void manual_alignment::slice_pos_moved()
     double ratio = ui->zoom->value();
     float w1 = ui->blend_pos->value()/10.0;
     float w2 = 1.0-w1;
-    w1 *= 255.0;
-    w2 *= 255.0;
     w1 *= 1.0+(ui->contrast->value()*0.2f);
     w2 *= 1.0+(ui->contrast->value()*0.2f);
     for(unsigned char dim = 0;dim < 3;++dim)
     {
-        tipl::image<2,float> slice,slice2;
+        tipl::image<2,unsigned char> slice,slice2;
         tipl::volume2slice_scaled(warped_from,slice,dim,slice_pos[dim],ratio);
         tipl::volume2slice_scaled(to,slice2,dim,slice_pos[dim],ratio);
 
         tipl::color_image buffer(slice.shape());
         for (unsigned int index = 0; index < slice.size(); ++index)
         {
-            float value = slice[index]*w2+slice2[index]*w1;
-            value = std::min<float>(255,value);
+            float value = std::min<float>(255.0f,slice[index]*w2+slice2[index]*w1);
             buffer[index] = tipl::rgb(value,value,value);
         }
         QImage slice_image;
