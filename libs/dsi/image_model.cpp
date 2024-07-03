@@ -4,6 +4,7 @@
 #include <QDateTime>
 #include <QImage>
 #include <QProcess>
+#include <QApplication>
 #include "image_model.hpp"
 #include "odf_process.hpp"
 #include "dti_process.hpp"
