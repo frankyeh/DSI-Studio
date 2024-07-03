@@ -65,8 +65,8 @@ void check_cuda(std::string& error_msg)
 }
 
 template<int dim>
-void cdm_cuda_base(const std::vector<tipl::const_pointer_image<dim,float> >& It,
-              const std::vector<tipl::const_pointer_image<dim,float> >& Is,
+void cdm_cuda_base(const std::vector<tipl::const_pointer_image<dim,unsigned char> >& It,
+              const std::vector<tipl::const_pointer_image<dim,unsigned char> >& Is,
               tipl::image<dim,tipl::vector<dim> >& d,
               bool& terminated,
               const tipl::reg::cdm_param& param)
@@ -75,8 +75,14 @@ void cdm_cuda_base(const std::vector<tipl::const_pointer_image<dim,float> >& It,
     tipl::device_image<dim,tipl::vector<dim> > dd(It[0].shape()),inv_dd(It[0].shape());
     std::vector<tipl::device_image<dim> > dIt(It.size()),dIs(Is.size());
     std::vector<tipl::const_pointer_device_image<dim> > pIt,pIs;
-    std::copy(It.begin(),It.end(),dIt.begin());
-    std::copy(Is.begin(),Is.end(),dIs.begin());
+    for(size_t i = 0;i < It.size();++i)
+    {
+        tipl::image<dim> It_(It[i]),Is_(Is[i]);
+        dIt[i] = It_;
+        dIs[i] = Is_;
+    }
+    //std::copy(It.begin(),It.end(),dIt.begin());
+    //std::copy(Is.begin(),Is.end(),dIs.begin());
     for(auto& each : dIt)
         pIt.push_back(tipl::make_device_shared(each));
     for(auto& each : dIs)
@@ -99,8 +105,8 @@ void cdm_cuda_base(const std::vector<tipl::const_pointer_image<dim,float> >& It,
 
 }
 
-void cdm_cuda(const std::vector<tipl::const_pointer_image<3,float> >& It,
-              const std::vector<tipl::const_pointer_image<3,float> >& Is,
+void cdm_cuda(const std::vector<tipl::const_pointer_image<3,unsigned char> >& It,
+              const std::vector<tipl::const_pointer_image<3,unsigned char> >& Is,
               tipl::image<3,tipl::vector<3> >& d,
               bool& terminated,
               tipl::reg::cdm_param param)
@@ -108,8 +114,8 @@ void cdm_cuda(const std::vector<tipl::const_pointer_image<3,float> >& It,
     cdm_cuda_base(It,Is,d,terminated,param);
 }
 
-void cdm_cuda(const std::vector<tipl::const_pointer_image<2,float> >& It,
-              const std::vector<tipl::const_pointer_image<2,float> >& Is,
+void cdm_cuda(const std::vector<tipl::const_pointer_image<2,unsigned char> >& It,
+              const std::vector<tipl::const_pointer_image<2,unsigned char> >& Is,
               tipl::image<2,tipl::vector<2> >& d,
               bool& terminated,
               tipl::reg::cdm_param param)
@@ -124,7 +130,7 @@ size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,float,tipl
 {
     distribute_gpu();
     return  cost_type == tipl::reg::mutual_info ?
-            reg->optimize<tipl::reg::mutual_information<tipl::device_vector> >(terminated):
+            reg->optimize<tipl::reg::mutual_information<3,tipl::device_vector> >(terminated):
             reg->optimize<tipl::reg::correlation>(terminated);
 }
 size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char,tipl::progress> > reg,
@@ -133,7 +139,7 @@ size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned c
 {
     distribute_gpu();
     return  cost_type == tipl::reg::mutual_info ?
-            reg->optimize<tipl::reg::mutual_information<tipl::device_vector> >(terminated):
+            reg->optimize<tipl::reg::mutual_information<3,tipl::device_vector> >(terminated):
             reg->optimize<tipl::reg::correlation>(terminated);
 }
 
@@ -143,7 +149,7 @@ size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,float,t
 {
     distribute_gpu();
     return  cost_type == tipl::reg::mutual_info ?
-            reg->optimize_mr<tipl::reg::mutual_information<tipl::device_vector> >(terminated):
+            reg->optimize_mr<tipl::reg::mutual_information<3,tipl::device_vector> >(terminated):
             reg->optimize_mr<tipl::reg::correlation>(terminated);
 }
 size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char,tipl::progress> > reg,
@@ -152,7 +158,7 @@ size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigne
 {
     distribute_gpu();
     return  cost_type == tipl::reg::mutual_info ?
-            reg->optimize_mr<tipl::reg::mutual_information<tipl::device_vector> >(terminated):
+            reg->optimize_mr<tipl::reg::mutual_information<3,tipl::device_vector> >(terminated):
             reg->optimize_mr<tipl::reg::correlation>(terminated);
 }
 
