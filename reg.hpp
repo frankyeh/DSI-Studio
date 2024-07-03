@@ -4,20 +4,20 @@
 #include "zlib.h"
 #include "TIPL/tipl.hpp"
 extern bool has_cuda;
-void cdm_cuda(const std::vector<tipl::const_pointer_image<3,float> >& It,
-               const std::vector<tipl::const_pointer_image<3,float> >& Is,
+void cdm_cuda(const std::vector<tipl::const_pointer_image<3,unsigned char> >& It,
+               const std::vector<tipl::const_pointer_image<3,unsigned char> >& Is,
                tipl::image<3,tipl::vector<3> >& d,
                bool& terminated,
                tipl::reg::cdm_param param);
-void cdm_cuda(const std::vector<tipl::const_pointer_image<2,float> >& It,
-               const std::vector<tipl::const_pointer_image<2,float> >& Is,
+void cdm_cuda(const std::vector<tipl::const_pointer_image<2,unsigned char> >& It,
+               const std::vector<tipl::const_pointer_image<2,unsigned char> >& Is,
                tipl::image<2,tipl::vector<2> >& d,
                bool& terminated,
                tipl::reg::cdm_param param);
 
 template<int dim>
-inline void cdm_common(std::vector<tipl::const_pointer_image<dim,float> > It,
-                       std::vector<tipl::const_pointer_image<dim,float> > Is,
+inline void cdm_common(std::vector<tipl::const_pointer_image<dim,unsigned char> > It,
+                       std::vector<tipl::const_pointer_image<dim,unsigned char> > Is,
                        tipl::image<dim,tipl::vector<dim> >& dis,
                        bool& terminated,
                        tipl::reg::cdm_param param = tipl::reg::cdm_param(),
@@ -91,7 +91,7 @@ inline size_t linear_refine(std::vector<tipl::const_pointer_image<dim,value_type
             result = optimize_mi_cuda(reg,cost_type,terminated);
     }
     if(!result)
-        result = (cost_type == tipl::reg::mutual_info ? reg->template optimize<tipl::reg::mutual_information<> >(terminated):
+        result = (cost_type == tipl::reg::mutual_info ? reg->template optimize<tipl::reg::mutual_information<dim> >(terminated):
                                                         reg->template optimize<tipl::reg::correlation>(terminated));
     tipl::out() << "refine registration" << std::endl;
     tipl::out() << arg;
@@ -145,7 +145,7 @@ size_t linear(std::vector<tipl::const_pointer_image<dim,value_type> > from,
     }
     if(result == 0.0f)
     {
-        result = (cost_type == tipl::reg::mutual_info ? reg->template optimize_mr<tipl::reg::mutual_information<> >(terminated):
+        result = (cost_type == tipl::reg::mutual_info ? reg->template optimize_mr<tipl::reg::mutual_information<dim> >(terminated):
                                                         reg->template optimize_mr<tipl::reg::correlation>(terminated));
     }
 
@@ -177,11 +177,12 @@ tipl::transformation_matrix<float> linear(std::vector<tipl::const_pointer_image<
 template<int dim>
 struct dual_reg{
     static constexpr int dimension = dim;
+    using image_type = tipl::image<dimension,unsigned char>;
     tipl::affine_transform<float,dimension> arg;
     const float* bound = tipl::reg::reg_bound;
     tipl::reg::cdm_param param;
 
-    tipl::image<dimension> It,I,J,JJ,I2,It2,J2;
+    image_type It,I,J,JJ,I2,It2,J2;
     tipl::image<dimension,tipl::vector<dimension> > t2f_dis,to2from,f2t_dis,from2to;
     tipl::vector<dimension> Itvs,Ivs;
     tipl::matrix<dimension+1,dimension+1> ItR,IR;
@@ -206,6 +207,19 @@ struct dual_reg{
         std::swap(Itvs,Ivs);
         to2from.swap(from2to);
     }
+    void load_subject(tipl::image<dimension>&& in)
+    {
+        tipl::filter::gaussian(in);
+        tipl::segmentation::otsu_median_regulzried(in);
+        tipl::normalize_upper_lower2(in,I,255.999f);
+    }
+    void load_subject2(tipl::image<dimension>&& in)
+    {
+        I.swap(I2);
+        load_subject(std::move(in));
+        I.swap(I2);
+    }
+
     bool load_subject(const char* file_name);
     bool load_subject2(const char* file_name);
     bool load_template(const char* file_name);
@@ -232,7 +246,7 @@ struct dual_reg{
     }
     void skip_linear(void)
     {
-        tipl::image<dimension> J_,J2_;
+        image_type J_,J2_;
         if(I.shape() == It.shape())
             J_ = I;
         else
@@ -280,7 +294,7 @@ struct dual_reg{
 
         auto trans = T();
 
-        tipl::image<dimension> J_,J2_;
+        image_type J_,J2_;
         J_.resize(It.shape());
         tipl::resample(I,J_,trans);
 
