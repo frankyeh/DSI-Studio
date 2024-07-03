@@ -75,6 +75,7 @@ private slots:
     void on_template_list_itemDoubleClicked(QListWidgetItem *item);
     void on_open_selected_src_clicked();
     void on_recentSrc_cellClicked(int row, int column);
+    void on_tabWidget_currentChanged(int index);
 };
 
 #endif // MAINWINDOW_H

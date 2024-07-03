@@ -72,6 +72,7 @@ MainWindow::MainWindow(QWidget *parent) :
     }
     ui->template_list->setCurrentRow(1);
     ui->tabWidget->setCurrentIndex(0);
+    QTimer::singleShot(0, this, [=]{ on_tabWidget_currentChanged(0); });
 }
 
 
@@ -1347,4 +1348,26 @@ void MainWindow::on_TemplateFiberTracking_clicked()
         open_template(ui->template_list->item(ui->template_list->currentRow())->text());
 }
 
+
+
+void MainWindow::on_tabWidget_currentChanged(int index)
+{
+    QWidget *currentTab = ui->tabWidget->widget(index);
+
+    if (!currentTab)
+        return;
+    int maxWidth = 0;
+    int maxHeight = 0;
+    for (auto child : currentTab->children())
+    {
+        QWidget *childWidget = qobject_cast<QWidget*>(child);
+        if (childWidget)
+        {
+            QRect childGeometry = childWidget->geometry();
+            maxWidth = std::max(maxWidth, childGeometry.right());
+            maxHeight = std::max(maxHeight, childGeometry.bottom());
+        }
+    }
+    resize(QSize(40+maxWidth, 80+maxHeight));
+}
 

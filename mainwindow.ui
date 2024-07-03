@@ -153,7 +153,7 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>5</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideNone</enum>
@@ -2008,8 +2008,8 @@ NIFTI (*.nii.gz)
        <widget class="QCommandLinkButton" name="nonlinear_reg">
         <property name="geometry">
          <rect>
-          <x>30</x>
-          <y>210</y>
+          <x>290</x>
+          <y>120</y>
           <width>251</width>
           <height>81</height>
          </rect>
@@ -2030,8 +2030,8 @@ NIFTI (*.nii.gz)
        <widget class="QCommandLinkButton" name="linear_reg">
         <property name="geometry">
          <rect>
-          <x>30</x>
-          <y>120</y>
+          <x>290</x>
+          <y>30</y>
           <width>251</width>
           <height>81</height>
          </rect>
@@ -2052,8 +2052,8 @@ NIFTI (*.nii.gz)
        <widget class="QCommandLinkButton" name="parse_network_measures">
         <property name="geometry">
          <rect>
-          <x>30</x>
-          <y>390</y>
+          <x>550</x>
+          <y>120</y>
           <width>321</width>
           <height>81</height>
          </rect>
@@ -2074,8 +2074,8 @@ NIFTI (*.nii.gz)
        <widget class="QCommandLinkButton" name="averagefib">
         <property name="geometry">
          <rect>
-          <x>30</x>
-          <y>300</y>
+          <x>550</x>
+          <y>30</y>
           <width>321</width>
           <height>81</height>
          </rect>
@@ -2097,7 +2097,7 @@ NIFTI (*.nii.gz)
         <property name="geometry">
          <rect>
           <x>170</x>
-          <y>500</y>
+          <y>320</y>
           <width>80</width>
           <height>26</height>
          </rect>
@@ -2107,7 +2107,7 @@ NIFTI (*.nii.gz)
         <property name="geometry">
          <rect>
           <x>50</x>
-          <y>500</y>
+          <y>320</y>
           <width>101</width>
           <height>20</height>
          </rect>
@@ -2126,7 +2126,7 @@ NIFTI (*.nii.gz)
         <property name="geometry">
          <rect>
           <x>160</x>
-          <y>530</y>
+          <y>350</y>
           <width>93</width>
           <height>29</height>
          </rect>
@@ -2139,7 +2139,7 @@ NIFTI (*.nii.gz)
         <property name="geometry">
          <rect>
           <x>30</x>
-          <y>480</y>
+          <y>300</y>
           <width>241</width>
           <height>91</height>
          </rect>
