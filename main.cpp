@@ -301,7 +301,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
         if(!tipl::search_filesystem(loop,loop_files))
         {
             tipl::out() << "ERROR: invalid file path " << loop << std::endl;;
-            return false;
+            return 1;
         }
         tipl::out() << "a total of " << loop_files.size() << " files found" << std::endl;
         std::vector<std::pair<std::string,std::string> > wildcard_list;
@@ -361,29 +361,25 @@ void init_cuda(void)
 }
 int run_cmd(int ac, char *av[])
 {
-    tipl::program_option<tipl::out> po;
     try
     {
-        tipl::progress prog(version_string().toStdString().c_str());
-        init_cuda();
 
-        if(!po.parse(ac,av))
+        tipl::program_option<tipl::out> po;
+        if(!po.parse(ac,av) || !po.check("action"))
         {
             tipl::out() << po.error_msg << std::endl;
             return 1;
         }
-        if (!po.check("action"))
-            return 1;
 
-        std::shared_ptr<QApplication> gui;
         std::shared_ptr<QCoreApplication> cmd;
-
         std::string action = po.get("action");
+        bool has_gui = false;
         if ((action == "cnt" && po.get("no_tractogram",1) == 0) || action == "vis")
         {
             tipl::out() << "Starting GUI-based command line interface." << std::endl;
-            gui.reset(new QApplication(ac, av));
+            cmd.reset(new QApplication(ac, av));
             init_application();
+            has_gui = true;
         }
         else
         {
@@ -396,11 +392,12 @@ int run_cmd(int ac, char *av[])
                 return 1;
             }
         }
-
+        tipl::progress prog(version_string().toStdString().c_str());
+        init_cuda();
         if(run_action_with_wildcard(po))
             return 1;
-        if(gui.get() && po.get("stay_open",0))
-            gui->exec();
+        if(has_gui && po.get("stay_open",0))
+            cmd->exec();
     }
     catch(const std::exception& e ) {
         std::cout << e.what() << std::endl;
