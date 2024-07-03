@@ -1687,39 +1687,46 @@ bool fib_data::map_to_mni(bool background)
     prog = 0;
     auto lambda = [this,output_file_name]()
     {
+        prog = 1;
         dual_reg<3> reg;
-        reg.It = template_I;
-        reg.It2 = template_I2;
-        reg.Itvs = template_vs;
-        reg.ItR = template_to_mni;
-
-        reg.I = tipl::image<3>(dir.fa[0],dim);
-        reg.Ivs = vs;
-        reg.IR = trans_to_mni;
+        reg.load_subject(tipl::image<3>(dir.fa[0],dim));
+        {
+            size_t iso_index = get_name_index("iso");
+            if(view_item.size() == iso_index)
+                iso_index = get_name_index("md");
+            if(view_item.size() != iso_index)
+                reg.load_subject2(tipl::image<3>(view_item[iso_index].get_image()));
+        }
 
         // not FIB file, use t1w as template
         if(dir.index_name[0] == "image")
         {
-            if(!reg.load_template2(t1w_template_file_name.c_str()))
+            if(!reg.load_template(t1w_template_file_name.c_str()) ||
+               !reg.load_template2(t2w_template_file_name.c_str()))
             {
                 prog = 6;
                 error_msg = "cannot perform normalization";
                 tipl::prog_aborted = true;
                 return;
             }
-            reg.It2.swap(reg.It);
+            tipl::out() << "matching t1w t2w contrast" << std::endl;
+            reg.matching_contrast();
             tipl::out() << "using structure image for normalization" << std::endl;
         }
-
+        else
         {
-            size_t iso_index = get_name_index("iso");
-            if(view_item.size() == iso_index)
-                iso_index = get_name_index("md");
-            if(view_item.size() != iso_index)
-                reg.I2 = view_item[iso_index].get_image();
+            reg.It = template_image_pre(tipl::image<3>(template_I));
+            reg.It2 = template_image_pre(tipl::image<3>(template_I2));
         }
 
-        prog = 1;
+
+        reg.Itvs = template_vs;
+        reg.ItR = template_to_mni;
+        reg.Ivs = vs;
+        reg.IR = trans_to_mni;
+        prog = 2;
+
+
         if(has_manual_atlas)
             reg.arg = manual_template_T;
         else
@@ -1731,13 +1738,6 @@ bool fib_data::map_to_mni(bool background)
             return;
         }
         prog = 3;
-        if(dir.index_name[0] == "image")
-        {
-            tipl::out() << "matching t1w t2w contrast" << std::endl;
-            if(reg.load_template2(t2w_template_file_name.c_str()))
-                reg.matching_contrast();
-        }
-        prog = 4;
         if(reg.nonlinear_reg(tipl::prog_aborted) < 0.3f)
         {
             error_msg = "cannot perform normalization";
