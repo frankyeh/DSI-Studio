@@ -153,7 +153,7 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>0</y>
+         <y>-1076</y>
          <width>1260</width>
          <height>1900</height>
         </rect>
@@ -1262,7 +1262,7 @@ Files</string>
            <widget class="QLabel" name="label_30">
             <property name="geometry">
              <rect>
-              <x>680</x>
+              <x>690</x>
               <y>150</y>
               <width>171</width>
               <height>61</height>
