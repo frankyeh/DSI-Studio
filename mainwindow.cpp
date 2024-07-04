@@ -71,8 +71,6 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->template_list->sortItems();
     }
     ui->template_list->setCurrentRow(1);
-    ui->tabWidget->setCurrentIndex(0);
-    QTimer::singleShot(0, this, [=]{ on_tabWidget_currentChanged(0); });
 }
 
 
@@ -350,13 +348,8 @@ void MainWindow::openRecentSrcFile(void)
     loadSrc(QStringList() << action->data().toString());
 }
 
-void MainWindow::on_OpenDICOM_clicked()
+void MainWindow::open_DWI(QStringList filenames)
 {
-    QStringList filenames = QFileDialog::getOpenFileNames(
-                                this,
-                                "Open Images files",
-                                ui->workDir->currentText(),
-                                "Image files (*.dcm *.hdr *.nii *nii.gz *.fdf *.nhdr 2dseq subject);;All files (*)" );
     if ( filenames.isEmpty() )
         return;
     tipl::progress prog("[Step T1][Open Source Images]");
@@ -1350,24 +1343,24 @@ void MainWindow::on_TemplateFiberTracking_clicked()
 
 
 
-void MainWindow::on_tabWidget_currentChanged(int index)
+void MainWindow::on_OpenDWI_NIFTI_clicked()
 {
-    QWidget *currentTab = ui->tabWidget->widget(index);
-
-    if (!currentTab)
-        return;
-    int maxWidth = 0;
-    int maxHeight = 0;
-    for (auto child : currentTab->children())
-    {
-        QWidget *childWidget = qobject_cast<QWidget*>(child);
-        if (childWidget)
-        {
-            QRect childGeometry = childWidget->geometry();
-            maxWidth = std::max(maxWidth, childGeometry.right());
-            maxHeight = std::max(maxHeight, childGeometry.bottom());
-        }
-    }
-    resize(QSize(40+maxWidth, 80+maxHeight));
+    open_DWI(QStringList() << QFileDialog::getOpenFileName(
+                         this,
+                         "Open NIFTI file",
+                         ui->workDir->currentText(),
+                         "NIFTI files (*.nii *.nii.gz);;All files (*)" ));
 }
+
+
+void MainWindow::on_OpenDWI_DICOM_clicked()
+{
+    open_DWI(QFileDialog::getOpenFileNames(
+                         this,
+                         "Open DICOM files",
+                         ui->workDir->currentText(),
+                         "DICOM files (*.dcm);;All files (*)" ));
+}
+
+
 

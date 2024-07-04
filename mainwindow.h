@@ -27,6 +27,7 @@ public:
     void dropEvent(QDropEvent *event);
     void openFile(QStringList file_name);
 public:
+    void open_DWI(QStringList files);
     void batch_create_src(const std::vector<std::string>& dwi_nii_files,const std::string& output_dir);
     void loadFib(QString Filename);
     void loadSrc(QStringList filenames);
@@ -40,7 +41,6 @@ private slots:
     void on_browseDir_clicked();
     void on_FiberTracking_clicked();
     void on_Reconstruction_clicked();
-    void on_OpenDICOM_clicked();
     void on_RenameDICOM_clicked();
     void openRecentFibFile();
     void openRecentSrcFile();
@@ -75,7 +75,8 @@ private slots:
     void on_template_list_itemDoubleClicked(QListWidgetItem *item);
     void on_open_selected_src_clicked();
     void on_recentSrc_cellClicked(int row, int column);
-    void on_tabWidget_currentChanged(int index);
+    void on_OpenDWI_NIFTI_clicked();
+    void on_OpenDWI_DICOM_clicked();
 };
 
 #endif // MAINWINDOW_H
