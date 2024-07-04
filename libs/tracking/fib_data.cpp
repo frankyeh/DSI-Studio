@@ -1810,13 +1810,7 @@ bool fib_data::load_mapping(const char* file_name,bool external)
                 tipl::out() << "The mapping file was previously created.";
                 return false;
             }
-            //       2. the recon steps are the same
-            if(in.read<std::string>("steps") != steps)
-            {
-                tipl::out() << "FIB file has different recon steps.";
-                return false;
-            }
-            //       3. check method version (new after Aug 2023)
+            // 2. check method version (new after Aug 2023)
             constexpr int method_ver = 202406; // 999999 is for external loading mapping
             if(!in.has("method_ver") || std::stoi(in.read<std::string>("method_ver")) < method_ver)
             {
