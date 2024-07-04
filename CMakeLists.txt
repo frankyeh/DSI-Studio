@@ -182,7 +182,10 @@ endif()
 
 if(CUDAToolkit_FOUND)
     set(DSI_STUDIO_CUDA
-        cuda/reg.cu)
+        cuda/reg.cu
+        cuda/reg_linear.cu
+        cuda/reg_cdm.cu
+        )
 endif()
 
 

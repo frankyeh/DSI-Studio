@@ -63,11 +63,7 @@ tipl::vector<dim> adjust_to_vs(const image_type& from,
     return new_vs;
 }
 
-size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,float,tipl::progress> > reg,
-                     tipl::reg::cost_type cost_type,bool& terminated);
 size_t optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char,tipl::progress> > reg,
-                     tipl::reg::cost_type cost_type,bool& terminated);
-size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,float,tipl::progress> > reg,
                      tipl::reg::cost_type cost_type,bool& terminated);
 size_t optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char,tipl::progress> > reg,
                      tipl::reg::cost_type cost_type,bool& terminated);
