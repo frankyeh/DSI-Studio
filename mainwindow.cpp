@@ -70,6 +70,7 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->template_list->addItem(name);
         ui->template_list->sortItems();
     }
+    ui->tabWidget->setCurrentIndex(0);
     ui->template_list->setCurrentRow(1);
 }
 

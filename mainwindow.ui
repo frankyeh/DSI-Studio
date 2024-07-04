@@ -142,23 +142,19 @@
      </layout>
     </item>
     <item>
-     <widget class="QScrollArea" name="scrollArea">
-      <property name="verticalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOn</enum>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>1</number>
       </property>
-      <property name="widgetResizable">
-       <bool>true</bool>
-      </property>
-      <widget class="QWidget" name="scrollAreaWidgetContents">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>-1076</y>
-         <width>1260</width>
-         <height>1900</height>
-        </rect>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_3">
+      <widget class="QWidget" name="tab">
+       <attribute name="icon">
+        <iconset resource="icons.qrc">
+         <normaloff>:/icons/icons/tracts.xpm</normaloff>:/icons/icons/tracts.xpm</iconset>
+       </attribute>
+       <attribute name="title">
+        <string>Tractography</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_8">
         <property name="spacing">
          <number>0</number>
         </property>
@@ -175,1917 +171,970 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="QWidget" name="widget" native="true">
-          <property name="minimumSize">
-           <size>
-            <width>1200</width>
-            <height>1900</height>
-           </size>
+         <widget class="QScrollArea" name="scrollArea">
+          <property name="verticalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOn</enum>
           </property>
-          <property name="styleSheet">
-           <string notr="true">QWidget { background-color : white; }</string>
+          <property name="widgetResizable">
+           <bool>true</bool>
           </property>
-          <widget class="QTableWidget" name="recentFib">
-           <property name="geometry">
-            <rect>
-             <x>655</x>
-             <y>330</y>
-             <width>270</width>
-             <height>311</height>
-            </rect>
-           </property>
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-           </property>
-           <property name="selectionMode">
-            <enum>QAbstractItemView::SingleSelection</enum>
-           </property>
-           <property name="selectionBehavior">
-            <enum>QAbstractItemView::SelectRows</enum>
-           </property>
-           <column>
-            <property name="text">
-             <string>File Name</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Directory</string>
-            </property>
-           </column>
-          </widget>
-          <widget class="QCommandLinkButton" name="batch_reconstruction">
-           <property name="geometry">
-            <rect>
-             <x>345</x>
-             <y>255</y>
-             <width>250</width>
-             <height>61</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-           </property>
-           <property name="text">
-            <string>Step B3: SRC(s) to FIB(s)...</string>
-           </property>
-           <property name="icon">
-            <iconset resource="icons.qrc">
-             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-           </property>
-           <property name="autoRepeatDelay">
-            <number>296</number>
-           </property>
-           <property name="description">
-            <string>Select a SRC file folder for reconstruction</string>
-           </property>
-          </widget>
-          <widget class="QPushButton" name="clear_fib_history">
-           <property name="geometry">
-            <rect>
-             <x>745</x>
-             <y>279</y>
-             <width>81</width>
-             <height>41</height>
-            </rect>
-           </property>
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-           </property>
-           <property name="text">
-            <string>Clear All</string>
-           </property>
-          </widget>
-          <widget class="QTableWidget" name="recentSrc">
-           <property name="geometry">
-            <rect>
-             <x>335</x>
-             <y>390</y>
-             <width>270</width>
-             <height>251</height>
-            </rect>
-           </property>
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-           </property>
-           <property name="selectionMode">
-            <enum>QAbstractItemView::SingleSelection</enum>
-           </property>
-           <property name="selectionBehavior">
-            <enum>QAbstractItemView::SelectRows</enum>
-           </property>
-           <column>
-            <property name="text">
-             <string>File Name</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Directory</string>
-            </property>
-           </column>
-          </widget>
-          <widget class="QLabel" name="label_17">
-           <property name="geometry">
-            <rect>
-             <x>690</x>
-             <y>80</y>
-             <width>191</width>
-             <height>61</height>
-            </rect>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>15</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
-           </property>
-           <property name="text">
-            <string>FIB File (*.fib.gz)</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-           <property name="wordWrap">
-            <bool>true</bool>
-           </property>
-          </widget>
-          <widget class="QLabel" name="label_57">
-           <property name="geometry">
-            <rect>
-             <x>650</x>
-             <y>10</y>
-             <width>280</width>
-             <height>641</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-          <widget class="QLabel" name="label_55">
-           <property name="geometry">
-            <rect>
-             <x>330</x>
-             <y>10</y>
-             <width>280</width>
-             <height>641</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-          <widget class="QCommandLinkButton" name="SRC_qc">
-           <property name="geometry">
-            <rect>
-             <x>330</x>
-             <y>660</y>
-             <width>280</width>
-             <height>71</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-           </property>
-           <property name="text">
-            <string>Step T2a: SRC Quality Control...</string>
-           </property>
-           <property name="icon">
-            <iconset resource="icons.qrc">
-             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-           </property>
-           <property name="autoRepeatDelay">
-            <number>296</number>
-           </property>
-           <property name="description">
-            <string>Select a directory of SRC files to run quality check</string>
-           </property>
-          </widget>
-          <widget class="QCommandLinkButton" name="FiberTracking">
-           <property name="geometry">
-            <rect>
-             <x>665</x>
-             <y>197</y>
-             <width>250</width>
-             <height>61</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-           </property>
-           <property name="text">
-            <string>Step T3: Fiber Tracking</string>
-           </property>
-           <property name="icon">
-            <iconset resource="icons.qrc">
-             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-           </property>
-           <property name="autoRepeatDelay">
-            <number>296</number>
-           </property>
-           <property name="description">
-            <string>Open a FIB file to run fiber tracking</string>
-           </property>
-          </widget>
-          <widget class="QCommandLinkButton" name="auto_track">
-           <property name="geometry">
-            <rect>
-             <x>650</x>
-             <y>660</y>
-             <width>280</width>
-             <height>71</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-           </property>
-           <property name="text">
-            <string>Step B4: Automatic Tracking...</string>
-           </property>
-           <property name="autoRepeatDelay">
-            <number>296</number>
-           </property>
-           <property name="description">
-            <string>Select FIB files for automatic tracking (Batch)</string>
-           </property>
-          </widget>
-          <widget class="QPushButton" name="clear_src_history">
-           <property name="geometry">
-            <rect>
-             <x>435</x>
-             <y>339</y>
-             <width>81</width>
-             <height>41</height>
-            </rect>
-           </property>
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-           </property>
-           <property name="text">
-            <string>Clear All</string>
-           </property>
-          </widget>
-          <widget class="QLabel" name="label_13">
-           <property name="geometry">
-            <rect>
-             <x>346</x>
-             <y>20</y>
-             <width>171</width>
-             <height>170</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-           <property name="pixmap">
-            <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-          </widget>
-          <widget class="QCommandLinkButton" name="OpenDWI_NIFTI">
-           <property name="geometry">
-            <rect>
-             <x>23</x>
-             <y>172</y>
-             <width>250</width>
-             <height>61</height>
-            </rect>
-           </property>
-           <property name="autoFillBackground">
-            <bool>false</bool>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-           </property>
-           <property name="text">
-            <string>Step T1: NIFTI to SRC...</string>
-           </property>
-           <property name="icon">
-            <iconset resource="icons.qrc">
-             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-           </property>
-           <property name="autoDefault">
-            <bool>false</bool>
-           </property>
-           <property name="description">
-            <string>Convert a NIFTI to an SRC file</string>
-           </property>
-          </widget>
-          <widget class="QCommandLinkButton" name="Reconstruction">
-           <property name="geometry">
-            <rect>
-             <x>345</x>
-             <y>195</y>
-             <width>250</width>
-             <height>61</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-           </property>
-           <property name="text">
-            <string>Step T2: Reconstruction</string>
-           </property>
-           <property name="icon">
-            <iconset resource="icons.qrc">
-             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-           </property>
-           <property name="description">
-            <string>Open SRC file(s) for reconstruction</string>
-           </property>
-          </widget>
-          <widget class="QLabel" name="label_15">
-           <property name="geometry">
-            <rect>
-             <x>660</x>
-             <y>20</y>
-             <width>261</width>
-             <height>170</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-           <property name="pixmap">
-            <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-          <widget class="QLabel" name="label_14">
-           <property name="geometry">
-            <rect>
-             <x>370</x>
-             <y>80</y>
-             <width>191</width>
-             <height>61</height>
-            </rect>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>15</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
-           </property>
-           <property name="text">
-            <string>SRC File (*.src.gz)</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-           <property name="wordWrap">
-            <bool>true</bool>
-           </property>
-          </widget>
-          <widget class="Line" name="line_4">
-           <property name="geometry">
-            <rect>
-             <x>130</x>
-             <y>160</y>
-             <width>941</width>
-             <height>21</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">Line { background-color: rgba(0, 0, 0, 255); }</string>
-           </property>
-           <property name="frameShadow">
-            <enum>QFrame::Plain</enum>
-           </property>
-           <property name="lineWidth">
-            <number>20</number>
-           </property>
-           <property name="midLineWidth">
-            <number>0</number>
-           </property>
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-          </widget>
-          <widget class="QLabel" name="label_16">
-           <property name="geometry">
-            <rect>
-             <x>970</x>
-             <y>10</y>
-             <width>250</width>
-             <height>321</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-           <property name="pixmap">
-            <pixmap resource="icons.qrc">:/icons/icons/tractogram.png</pixmap>
-           </property>
-          </widget>
-          <widget class="QPushButton" name="open_selected_fib">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="geometry">
-            <rect>
-             <x>825</x>
-             <y>279</y>
-             <width>81</width>
-             <height>41</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-           </property>
-           <property name="text">
-            <string>Load...</string>
-           </property>
-           <property name="icon">
-            <iconset resource="icons.qrc">
-             <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
-           </property>
-          </widget>
-          <widget class="QPushButton" name="open_selected_src">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="geometry">
-            <rect>
-             <x>515</x>
-             <y>339</y>
-             <width>81</width>
-             <height>41</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-           </property>
-           <property name="text">
-            <string>Load...</string>
-           </property>
-           <property name="icon">
-            <iconset resource="icons.qrc">
-             <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
-           </property>
-          </widget>
-          <widget class="QLabel" name="label_64">
-           <property name="geometry">
-            <rect>
-             <x>10</x>
-             <y>10</y>
-             <width>280</width>
-             <height>641</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-          <widget class="QLabel" name="label_43">
-           <property name="geometry">
-            <rect>
-             <x>80</x>
-             <y>20</y>
-             <width>140</width>
-             <height>150</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-           <property name="pixmap">
-            <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
-           </property>
-           <property name="scaledContents">
-            <bool>true</bool>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-           </property>
-          </widget>
-          <widget class="QLabel" name="label_45">
-           <property name="geometry">
-            <rect>
-             <x>50</x>
-             <y>60</y>
-             <width>211</width>
-             <height>61</height>
-            </rect>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>15</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
-           </property>
-           <property name="text">
-            <string>DWI NIFTI
-(*.nii.gz + bval/bvec)</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-           <property name="wordWrap">
-            <bool>true</bool>
-           </property>
-          </widget>
-          <widget class="QCommandLinkButton" name="nii2src_bids">
-           <property name="geometry">
-            <rect>
-             <x>23</x>
-             <y>232</y>
-             <width>250</width>
-             <height>61</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-           </property>
-           <property name="text">
-            <string>Step B2a: NIFTI to SRC (BIDS)...</string>
-           </property>
-           <property name="icon">
-            <iconset resource="icons.qrc">
-             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-           </property>
-           <property name="autoRepeatDelay">
-            <number>296</number>
-           </property>
-           <property name="description">
-            <string>Convert a BIDS folder to SRC(s)</string>
-           </property>
-          </widget>
-          <widget class="QCommandLinkButton" name="nii2src_sf">
-           <property name="geometry">
-            <rect>
-             <x>23</x>
-             <y>292</y>
-             <width>250</width>
-             <height>61</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-           </property>
-           <property name="text">
-            <string>Step B2b: NIFTI(s) to SRC(s)...</string>
-           </property>
-           <property name="icon">
-            <iconset resource="icons.qrc">
-             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-           </property>
-           <property name="autoRepeatDelay">
-            <number>296</number>
-           </property>
-           <property name="description">
-            <string>Convert a folder of NIFTI to SRC(s)</string>
-           </property>
-          </widget>
-          <widget class="QLabel" name="label_10">
-           <property name="geometry">
-            <rect>
-             <x>79</x>
-             <y>369</y>
-             <width>140</width>
-             <height>150</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-           <property name="pixmap">
-            <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
-           </property>
-           <property name="scaledContents">
-            <bool>true</bool>
-           </property>
-          </widget>
-          <widget class="QLabel" name="label_44">
-           <property name="geometry">
-            <rect>
-             <x>69</x>
-             <y>419</y>
-             <width>151</width>
-             <height>31</height>
-            </rect>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>15</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
-           </property>
-           <property name="text">
-            <string>DICOM (*.dcm)</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-           <property name="wordWrap">
-            <bool>true</bool>
-           </property>
-          </widget>
-          <widget class="QCommandLinkButton" name="dicom2nii">
-           <property name="geometry">
-            <rect>
-             <x>22</x>
-             <y>581</y>
-             <width>250</width>
-             <height>61</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-           </property>
-           <property name="text">
-            <string>Step B1c: DICOM to SRC...</string>
-           </property>
-           <property name="icon">
-            <iconset resource="icons.qrc">
-             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-           </property>
-           <property name="autoRepeatDelay">
-            <number>296</number>
-           </property>
-           <property name="description">
-            <string>Convert a DICOM folder to SRC</string>
-           </property>
-          </widget>
-          <widget class="QCommandLinkButton" name="RenameDICOM">
-           <property name="geometry">
-            <rect>
-             <x>10</x>
-             <y>660</y>
-             <width>280</width>
-             <height>61</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-           </property>
-           <property name="text">
-            <string>Step B1a: Rename DICOM...</string>
-           </property>
-           <property name="icon">
-            <iconset resource="icons.qrc">
-             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-           </property>
-           <property name="autoRepeatDelay">
-            <number>296</number>
-           </property>
-           <property name="description">
-            <string>Rename DICOM files </string>
-           </property>
-          </widget>
-          <widget class="QCommandLinkButton" name="RenameDICOMDir">
-           <property name="geometry">
-            <rect>
-             <x>10</x>
-             <y>720</y>
-             <width>280</width>
-             <height>61</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-           </property>
-           <property name="text">
-            <string>Step B1b: Rename DICOM in Folders...</string>
-           </property>
-           <property name="icon">
-            <iconset resource="icons.qrc">
-             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-           </property>
-           <property name="autoRepeatDelay">
-            <number>296</number>
-           </property>
-           <property name="description">
-            <string>Rename all DICOM of a folder</string>
-           </property>
-          </widget>
-          <widget class="QCommandLinkButton" name="OpenDWI_DICOM">
-           <property name="geometry">
-            <rect>
-             <x>22</x>
-             <y>521</y>
-             <width>250</width>
-             <height>61</height>
-            </rect>
-           </property>
-           <property name="autoFillBackground">
-            <bool>false</bool>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-           </property>
-           <property name="text">
-            <string>Step T1: DICOM(s) to SRC...</string>
-           </property>
-           <property name="icon">
-            <iconset resource="icons.qrc">
-             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-           </property>
-           <property name="autoDefault">
-            <bool>false</bool>
-           </property>
-           <property name="description">
-            <string>Convert DICOM to an SRC file</string>
-           </property>
-          </widget>
-          <widget class="Line" name="line">
-           <property name="geometry">
-            <rect>
-             <x>141</x>
-             <y>550</y>
-             <width>16</width>
-             <height>191</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">Line { background-color: rgba(0, 0, 0, 255); }</string>
-           </property>
-           <property name="frameShadow">
-            <enum>QFrame::Plain</enum>
-           </property>
-           <property name="lineWidth">
-            <number>10</number>
-           </property>
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-          </widget>
-          <widget class="QLabel" name="label_28">
-           <property name="geometry">
-            <rect>
-             <x>1010</x>
-             <y>140</y>
-             <width>171</width>
-             <height>61</height>
-            </rect>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>15</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
-           </property>
-           <property name="text">
-            <string>Tractography</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-           <property name="wordWrap">
-            <bool>true</bool>
-           </property>
-          </widget>
-          <widget class="QLabel" name="label_2">
-           <property name="geometry">
-            <rect>
-             <x>655</x>
-             <y>279</y>
-             <width>91</width>
-             <height>41</height>
-            </rect>
-           </property>
-           <property name="text">
-            <string>Recent
-Files</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-          </widget>
-          <widget class="QLabel" name="label_3">
-           <property name="geometry">
-            <rect>
-             <x>345</x>
-             <y>339</y>
-             <width>91</width>
-             <height>41</height>
-            </rect>
-           </property>
-           <property name="text">
-            <string>Recent
-Files</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-          </widget>
-          <widget class="QWidget" name="widget_2" native="true">
-           <property name="geometry">
-            <rect>
-             <x>10</x>
-             <y>1140</y>
-             <width>921</width>
-             <height>451</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true"/>
-           </property>
-           <widget class="QLabel" name="label_19">
-            <property name="geometry">
-             <rect>
-              <x>650</x>
-              <y>20</y>
-              <width>250</width>
-              <height>320</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="pixmap">
-             <pixmap resource="icons.qrc">:/icons/icons/tractogram.png</pixmap>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_25">
-            <property name="geometry">
-             <rect>
-              <x>355</x>
-              <y>54</y>
-              <width>250</width>
-              <height>171</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="pixmap">
-             <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
-            </property>
-           </widget>
-           <widget class="QCommandLinkButton" name="group_connectometry">
-            <property name="geometry">
-             <rect>
-              <x>344</x>
-              <y>230</y>
-              <width>251</width>
-              <height>91</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-            </property>
-            <property name="text">
-             <string>Step C3: Correlational Tracking</string>
-            </property>
-            <property name="icon">
-             <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-            </property>
-            <property name="description">
-             <string>Generate correlational tractography and test the results using connectometry analysis</string>
-            </property>
-           </widget>
-           <widget class="QCommandLinkButton" name="vbc">
-            <property name="geometry">
-             <rect>
-              <x>30</x>
-              <y>210</y>
-              <width>250</width>
-              <height>81</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-            </property>
-            <property name="text">
-             <string>Step C1: Create a Database</string>
-            </property>
-            <property name="icon">
-             <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-            </property>
-            <property name="description">
-             <string>Aggregate FIB files to create a database</string>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_62">
-            <property name="geometry">
-             <rect>
-              <x>330</x>
-              <y>20</y>
-              <width>280</width>
-              <height>321</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_23">
-            <property name="geometry">
-             <rect>
-              <x>360</x>
-              <y>100</y>
-              <width>221</width>
-              <height>61</height>
-             </rect>
-            </property>
-            <property name="font">
-             <font>
-              <pointsize>12</pointsize>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel { border: 0px; background-color: rgba(255, 255, 255, 127); }</string>
-            </property>
-            <property name="text">
-             <string>Database File
-(*.db.fib.gz)</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-            <property name="wordWrap">
-             <bool>true</bool>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_22">
-            <property name="geometry">
-             <rect>
-              <x>45</x>
-              <y>30</y>
-              <width>220</width>
-              <height>170</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="pixmap">
-             <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_21">
-            <property name="geometry">
-             <rect>
-              <x>339</x>
-              <y>30</y>
-              <width>250</width>
-              <height>171</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="pixmap">
-             <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_20">
-            <property name="geometry">
-             <rect>
-              <x>90</x>
-              <y>90</y>
-              <width>141</width>
-              <height>61</height>
-             </rect>
-            </property>
-            <property name="font">
-             <font>
-              <pointsize>12</pointsize>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel { border: 0px; background-color: rgba(255, 255, 255, 127); }</string>
-            </property>
-            <property name="text">
-             <string>FIB File
-(*.fib.gz)</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-            <property name="wordWrap">
-             <bool>true</bool>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_30">
-            <property name="geometry">
-             <rect>
-              <x>690</x>
-              <y>150</y>
-              <width>171</width>
-              <height>61</height>
-             </rect>
-            </property>
-            <property name="font">
-             <font>
-              <pointsize>12</pointsize>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel { border: 0px; background-color: rgba(255, 255, 255, 127); }</string>
-            </property>
-            <property name="text">
-             <string>Correlational
-Tractography</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-            <property name="wordWrap">
-             <bool>true</bool>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_61">
-            <property name="geometry">
-             <rect>
-              <x>15</x>
-              <y>20</y>
-              <width>280</width>
-              <height>281</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_24">
-            <property name="geometry">
-             <rect>
-              <x>347</x>
-              <y>42</y>
-              <width>250</width>
-              <height>171</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="pixmap">
-             <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
-            </property>
-           </widget>
-           <widget class="QCommandLinkButton" name="open_db">
-            <property name="geometry">
-             <rect>
-              <x>350</x>
-              <y>350</y>
-              <width>250</width>
-              <height>81</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-            </property>
-            <property name="text">
-             <string>Step C2: View/Edit Database</string>
-            </property>
-            <property name="icon">
-             <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-            </property>
-            <property name="description">
-             <string>Add or remove subjects, calculate longitudinal change</string>
-            </property>
-           </widget>
-           <widget class="Line" name="line_5">
-            <property name="geometry">
-             <rect>
-              <x>150</x>
-              <y>170</y>
-              <width>671</width>
-              <height>21</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QWidget {border: 4px solid black;border-radius: 0px;padding: 0px;background-color: black}</string>
-            </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_5">
-            <property name="geometry">
-             <rect>
-              <x>0</x>
-              <y>10</y>
-              <width>921</width>
-              <height>431</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel { border: 0px; background-color: rgba(155, 225, 225, 127); }</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-           <zorder>label_5</zorder>
-           <zorder>line_5</zorder>
-           <zorder>label_61</zorder>
-           <zorder>label_62</zorder>
-           <zorder>label_19</zorder>
-           <zorder>label_25</zorder>
-           <zorder>group_connectometry</zorder>
-           <zorder>vbc</zorder>
-           <zorder>label_22</zorder>
-           <zorder>label_21</zorder>
-           <zorder>label_20</zorder>
-           <zorder>label_30</zorder>
-           <zorder>label_24</zorder>
-           <zorder>open_db</zorder>
-           <zorder>label_23</zorder>
-          </widget>
-          <widget class="Line" name="line_2">
-           <property name="geometry">
-            <rect>
-             <x>450</x>
-             <y>460</y>
-             <width>20</width>
-             <height>231</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">Line { background-color: rgba(0, 0, 0, 255); }</string>
-           </property>
-           <property name="frameShadow">
-            <enum>QFrame::Plain</enum>
-           </property>
-           <property name="lineWidth">
-            <number>10</number>
-           </property>
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-          </widget>
-          <widget class="QLabel" name="label_6">
+          <widget class="QWidget" name="scrollAreaWidgetContents">
            <property name="geometry">
             <rect>
              <x>0</x>
-             <y>0</y>
-             <width>1251</width>
-             <height>791</height>
+             <y>-1105</y>
+             <width>1254</width>
+             <height>1900</height>
             </rect>
            </property>
-           <property name="font">
-            <font>
-             <pointsize>11</pointsize>
-             <bold>true</bold>
-            </font>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QLabel { border: 0px; background-color: rgba(225, 225, 225, 127); }</string>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-          </widget>
-          <widget class="QWidget" name="widget_3" native="true">
-           <property name="geometry">
-            <rect>
-             <x>610</x>
-             <y>790</y>
-             <width>661</width>
-             <height>351</height>
-            </rect>
-           </property>
-           <widget class="QLabel" name="label_53">
-            <property name="geometry">
-             <rect>
-              <x>410</x>
-              <y>140</y>
-              <width>151</width>
-              <height>91</height>
-             </rect>
-            </property>
-            <property name="font">
-             <font>
-              <pointsize>12</pointsize>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
-            </property>
-            <property name="text">
-             <string>Tractography
-Atlas</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-            <property name="wordWrap">
-             <bool>true</bool>
-            </property>
-           </widget>
-           <widget class="Line" name="line_6">
-            <property name="geometry">
-             <rect>
-              <x>80</x>
-              <y>170</y>
-              <width>501</width>
-              <height>21</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">Line { background-color: rgba(0, 0, 0, 255); }</string>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Plain</enum>
-            </property>
-            <property name="lineWidth">
-             <number>20</number>
-            </property>
-            <property name="midLineWidth">
+           <layout class="QVBoxLayout" name="verticalLayout_3">
+            <property name="spacing">
              <number>0</number>
             </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_26">
-            <property name="geometry">
-             <rect>
-              <x>360</x>
-              <y>20</y>
-              <width>250</width>
-              <height>320</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="pixmap">
-             <pixmap resource="icons.qrc">:/icons/icons/tractogram.png</pixmap>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_9">
-            <property name="geometry">
-             <rect>
-              <x>110</x>
-              <y>50</y>
-              <width>151</width>
-              <height>171</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="pixmap">
-             <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_60">
-            <property name="geometry">
-             <rect>
-              <x>40</x>
-              <y>20</y>
-              <width>280</width>
-              <height>320</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-           <widget class="QCommandLinkButton" name="T1WFiberTracking">
-            <property name="geometry">
-             <rect>
-              <x>60</x>
-              <y>240</y>
-              <width>250</width>
-              <height>81</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-            </property>
-            <property name="text">
-             <string>T1W-Aligned Tractography</string>
-            </property>
-            <property name="icon">
-             <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-            </property>
-            <property name="autoRepeatDelay">
-             <number>296</number>
-            </property>
-            <property name="description">
-             <string>Open T1W/T2W with aligned tractography atlas</string>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_52">
-            <property name="geometry">
-             <rect>
-              <x>110</x>
-              <y>90</y>
-              <width>151</width>
-              <height>91</height>
-             </rect>
-            </property>
-            <property name="font">
-             <font>
-              <pointsize>12</pointsize>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
-            </property>
-            <property name="text">
-             <string>T1W T2W
-(*.nii.gz)</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-            <property name="wordWrap">
-             <bool>true</bool>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_7">
-            <property name="geometry">
-             <rect>
-              <x>20</x>
-              <y>10</y>
-              <width>621</width>
-              <height>341</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel { border: 0px; background-color: rgba(225, 225,125, 127); }</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-           <zorder>label_7</zorder>
-           <zorder>line_6</zorder>
-           <zorder>label_26</zorder>
-           <zorder>label_60</zorder>
-           <zorder>label_53</zorder>
-           <zorder>label_9</zorder>
-           <zorder>T1WFiberTracking</zorder>
-           <zorder>label_52</zorder>
-          </widget>
-          <widget class="QWidget" name="widget_4" native="true">
-           <property name="geometry">
-            <rect>
-             <x>10</x>
-             <y>790</y>
-             <width>601</width>
-             <height>351</height>
-            </rect>
-           </property>
-           <widget class="QLabel" name="label_58">
-            <property name="geometry">
-             <rect>
-              <x>10</x>
-              <y>20</y>
-              <width>280</width>
-              <height>320</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_18">
-            <property name="geometry">
-             <rect>
-              <x>330</x>
-              <y>20</y>
-              <width>250</width>
-              <height>320</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="pixmap">
-             <pixmap resource="icons.qrc">:/icons/icons/tractogram.png</pixmap>
-            </property>
-           </widget>
-           <widget class="QListWidget" name="template_list">
-            <property name="geometry">
-             <rect>
-              <x>20</x>
-              <y>80</y>
-              <width>261</width>
-              <height>251</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QListWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_4">
-            <property name="geometry">
-             <rect>
-              <x>30</x>
-              <y>30</y>
-              <width>141</width>
-              <height>41</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>Population-averaged FIB templates</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-            <property name="wordWrap">
-             <bool>true</bool>
-            </property>
-           </widget>
-           <widget class="Line" name="line_7">
-            <property name="geometry">
-             <rect>
-              <x>140</x>
-              <y>160</y>
-              <width>411</width>
-              <height>21</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">Line { background-color: rgba(0, 0, 0, 255); }</string>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Plain</enum>
-            </property>
-            <property name="lineWidth">
-             <number>20</number>
-            </property>
-            <property name="midLineWidth">
+            <property name="leftMargin">
              <number>0</number>
             </property>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
+            <property name="topMargin">
+             <number>0</number>
             </property>
-           </widget>
-           <widget class="QPushButton" name="TemplateFiberTracking">
-            <property name="enabled">
-             <bool>true</bool>
+            <property name="rightMargin">
+             <number>0</number>
             </property>
-            <property name="geometry">
-             <rect>
-              <x>190</x>
-              <y>30</y>
-              <width>81</width>
-              <height>41</height>
-             </rect>
+            <property name="bottomMargin">
+             <number>0</number>
             </property>
-            <property name="styleSheet">
-             <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-            </property>
-            <property name="text">
-             <string>Load...</string>
-            </property>
-            <property name="icon">
-             <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_29">
-            <property name="geometry">
-             <rect>
-              <x>380</x>
-              <y>150</y>
-              <width>171</width>
-              <height>61</height>
-             </rect>
-            </property>
-            <property name="font">
-             <font>
-              <pointsize>12</pointsize>
-              <bold>true</bold>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
-            </property>
-            <property name="text">
-             <string>Template-Based
-Tractography</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-            <property name="wordWrap">
-             <bool>true</bool>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_8">
-            <property name="geometry">
-             <rect>
-              <x>-10</x>
-              <y>10</y>
-              <width>611</width>
-              <height>341</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel { border: 0px; background-color: rgba(225, 125,125, 127); }</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-           <zorder>label_8</zorder>
-           <zorder>line_7</zorder>
-           <zorder>label_58</zorder>
-           <zorder>label_18</zorder>
-           <zorder>template_list</zorder>
-           <zorder>label_4</zorder>
-           <zorder>TemplateFiberTracking</zorder>
-           <zorder>label_29</zorder>
-          </widget>
-          <widget class="QWidget" name="widget_5" native="true">
-           <property name="geometry">
-            <rect>
-             <x>10</x>
-             <y>1590</y>
-             <width>1251</width>
-             <height>241</height>
-            </rect>
-           </property>
-           <widget class="QCommandLinkButton" name="parse_network_measures">
-            <property name="geometry">
-             <rect>
-              <x>640</x>
-              <y>120</y>
-              <width>321</width>
-              <height>81</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-            </property>
-            <property name="text">
-             <string>Parse Network Measure Text Files</string>
-            </property>
-            <property name="autoRepeatDelay">
-             <number>296</number>
-            </property>
-            <property name="description">
-             <string>Select a list of network measure files and parse them into one data sheet</string>
-            </property>
-           </widget>
-           <widget class="QCommandLinkButton" name="linear_reg">
-            <property name="geometry">
-             <rect>
-              <x>330</x>
-              <y>30</y>
-              <width>300</width>
-              <height>81</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-            </property>
-            <property name="text">
-             <string>R1: Linear Registration...</string>
-            </property>
-            <property name="autoRepeatDelay">
-             <number>296</number>
-            </property>
-            <property name="description">
-             <string>Perform linear registration</string>
-            </property>
-           </widget>
-           <widget class="QCommandLinkButton" name="xnat_download">
-            <property name="geometry">
-             <rect>
-              <x>20</x>
-              <y>120</y>
-              <width>300</width>
-              <height>81</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-            </property>
-            <property name="text">
-             <string>Step B0: XNAT Download...</string>
-            </property>
-            <property name="icon">
-             <iconset resource="icons.qrc">
-              <normaloff>:/icons/icons/preferences.xpm</normaloff>:/icons/icons/preferences.xpm</iconset>
-            </property>
-            <property name="autoRepeatDelay">
-             <number>296</number>
-            </property>
-            <property name="description">
-             <string>connect to a XNAT server to download and process data</string>
-            </property>
-           </widget>
-           <widget class="QCommandLinkButton" name="averagefib">
-            <property name="geometry">
-             <rect>
-              <x>640</x>
-              <y>30</y>
-              <width>321</width>
-              <height>81</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-            </property>
-            <property name="text">
-             <string>Create Population-Averaged Template</string>
-            </property>
-            <property name="autoRepeatDelay">
-             <number>296</number>
-            </property>
-            <property name="description">
-             <string>Average the ODFs to create a template</string>
-            </property>
-           </widget>
-           <widget class="QCommandLinkButton" name="nonlinear_reg">
-            <property name="geometry">
-             <rect>
-              <x>330</x>
-              <y>120</y>
-              <width>300</width>
-              <height>81</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-            </property>
-            <property name="text">
-             <string>R2: Nonlinear Registration...</string>
-            </property>
-            <property name="autoRepeatDelay">
-             <number>296</number>
-            </property>
-            <property name="description">
-             <string>Perform nonlinear registration</string>
-            </property>
-           </widget>
-           <widget class="QCommandLinkButton" name="view_image">
-            <property name="geometry">
-             <rect>
-              <x>20</x>
-              <y>30</y>
-              <width>300</width>
-              <height>81</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
-            </property>
-            <property name="text">
-             <string>Step O1: View Images...</string>
-            </property>
-            <property name="autoRepeatDelay">
-             <number>296</number>
-            </property>
-            <property name="description">
-             <string>Open NIFTI/DICOM/2dseq files for inspection or processing</string>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_63">
-            <property name="geometry">
-             <rect>
-              <x>980</x>
-              <y>30</y>
-              <width>241</width>
-              <height>91</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_11">
-            <property name="geometry">
-             <rect>
-              <x>1000</x>
-              <y>50</y>
-              <width>101</width>
-              <height>20</height>
-             </rect>
-            </property>
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Window Style:</string>
-            </property>
-           </widget>
-           <widget class="QPushButton" name="clear_settings">
-            <property name="geometry">
-             <rect>
-              <x>1110</x>
-              <y>80</y>
-              <width>93</width>
-              <height>29</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>Reset</string>
-            </property>
-           </widget>
-           <widget class="QComboBox" name="styles">
-            <property name="geometry">
-             <rect>
-              <x>1120</x>
-              <y>50</y>
-              <width>80</width>
-              <height>26</height>
-             </rect>
-            </property>
-           </widget>
-           <widget class="QLabel" name="label_12">
-            <property name="geometry">
-             <rect>
-              <x>0</x>
-              <y>10</y>
-              <width>1231</width>
-              <height>211</height>
-             </rect>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QLabel { border: 0px; background-color: rgba(225, 225, 225, 127); }</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-           <zorder>label_12</zorder>
-           <zorder>parse_network_measures</zorder>
-           <zorder>linear_reg</zorder>
-           <zorder>xnat_download</zorder>
-           <zorder>averagefib</zorder>
-           <zorder>nonlinear_reg</zorder>
-           <zorder>view_image</zorder>
-           <zorder>label_63</zorder>
-           <zorder>label_11</zorder>
-           <zorder>clear_settings</zorder>
-           <zorder>styles</zorder>
-          </widget>
-          <widget class="Line" name="line_3">
-           <property name="geometry">
-            <rect>
-             <x>770</x>
-             <y>470</y>
-             <width>20</width>
-             <height>231</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">Line { background-color: rgba(0, 0, 0, 255); }</string>
-           </property>
-           <property name="frameShadow">
-            <enum>QFrame::Plain</enum>
-           </property>
-           <property name="lineWidth">
-            <number>10</number>
-           </property>
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-          </widget>
-          <widget class="QLabel" name="label_27">
-           <property name="geometry">
-            <rect>
-             <x>516</x>
-             <y>20</y>
-             <width>81</width>
-             <height>171</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: rgba(128, 128, 128, 127);}</string>
-           </property>
-           <property name="text">
-            <string>B-Table
+            <item>
+             <widget class="QWidget" name="widget" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>800</height>
+               </size>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QWidget { background-color : white; }</string>
+              </property>
+              <widget class="QTableWidget" name="recentFib">
+               <property name="geometry">
+                <rect>
+                 <x>670</x>
+                 <y>340</y>
+                 <width>270</width>
+                 <height>311</height>
+                </rect>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="selectionMode">
+                <enum>QAbstractItemView::SingleSelection</enum>
+               </property>
+               <property name="selectionBehavior">
+                <enum>QAbstractItemView::SelectRows</enum>
+               </property>
+               <column>
+                <property name="text">
+                 <string>File Name</string>
+                </property>
+               </column>
+               <column>
+                <property name="text">
+                 <string>Directory</string>
+                </property>
+               </column>
+              </widget>
+              <widget class="QCommandLinkButton" name="batch_reconstruction">
+               <property name="geometry">
+                <rect>
+                 <x>360</x>
+                 <y>265</y>
+                 <width>250</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Step B3: SRC(s) to FIB(s)...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="autoRepeatDelay">
+                <number>296</number>
+               </property>
+               <property name="description">
+                <string>Select a SRC file folder for reconstruction</string>
+               </property>
+              </widget>
+              <widget class="QPushButton" name="clear_fib_history">
+               <property name="geometry">
+                <rect>
+                 <x>760</x>
+                 <y>289</y>
+                 <width>81</width>
+                 <height>41</height>
+                </rect>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Clear All</string>
+               </property>
+              </widget>
+              <widget class="QTableWidget" name="recentSrc">
+               <property name="geometry">
+                <rect>
+                 <x>350</x>
+                 <y>400</y>
+                 <width>270</width>
+                 <height>251</height>
+                </rect>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="selectionMode">
+                <enum>QAbstractItemView::SingleSelection</enum>
+               </property>
+               <property name="selectionBehavior">
+                <enum>QAbstractItemView::SelectRows</enum>
+               </property>
+               <column>
+                <property name="text">
+                 <string>File Name</string>
+                </property>
+               </column>
+               <column>
+                <property name="text">
+                 <string>Directory</string>
+                </property>
+               </column>
+              </widget>
+              <widget class="QLabel" name="label_17">
+               <property name="geometry">
+                <rect>
+                 <x>705</x>
+                 <y>90</y>
+                 <width>191</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>15</pointsize>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+               </property>
+               <property name="text">
+                <string>FIB File (*.fib.gz)</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_57">
+               <property name="geometry">
+                <rect>
+                 <x>665</x>
+                 <y>20</y>
+                 <width>280</width>
+                 <height>641</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_55">
+               <property name="geometry">
+                <rect>
+                 <x>345</x>
+                 <y>20</y>
+                 <width>280</width>
+                 <height>641</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+              <widget class="QCommandLinkButton" name="SRC_qc">
+               <property name="geometry">
+                <rect>
+                 <x>345</x>
+                 <y>670</y>
+                 <width>280</width>
+                 <height>71</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Step T2a: SRC Quality Control...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="autoRepeatDelay">
+                <number>296</number>
+               </property>
+               <property name="description">
+                <string>Select a directory of SRC files to run quality check</string>
+               </property>
+              </widget>
+              <widget class="QCommandLinkButton" name="FiberTracking">
+               <property name="geometry">
+                <rect>
+                 <x>680</x>
+                 <y>207</y>
+                 <width>250</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Step T3: Fiber Tracking</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="autoRepeatDelay">
+                <number>296</number>
+               </property>
+               <property name="description">
+                <string>Open a FIB file to run fiber tracking</string>
+               </property>
+              </widget>
+              <widget class="QCommandLinkButton" name="auto_track">
+               <property name="geometry">
+                <rect>
+                 <x>665</x>
+                 <y>670</y>
+                 <width>280</width>
+                 <height>71</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Step B4: Automatic Tracking...</string>
+               </property>
+               <property name="autoRepeatDelay">
+                <number>296</number>
+               </property>
+               <property name="description">
+                <string>Select FIB files for automatic tracking (Batch)</string>
+               </property>
+              </widget>
+              <widget class="QPushButton" name="clear_src_history">
+               <property name="geometry">
+                <rect>
+                 <x>450</x>
+                 <y>349</y>
+                 <width>81</width>
+                 <height>41</height>
+                </rect>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Clear All</string>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_13">
+               <property name="geometry">
+                <rect>
+                 <x>361</x>
+                 <y>30</y>
+                 <width>171</width>
+                 <height>170</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+              <widget class="QCommandLinkButton" name="OpenDWI_NIFTI">
+               <property name="geometry">
+                <rect>
+                 <x>38</x>
+                 <y>182</y>
+                 <width>250</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="autoFillBackground">
+                <bool>false</bool>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Step T1: NIFTI to SRC...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="autoDefault">
+                <bool>false</bool>
+               </property>
+               <property name="description">
+                <string>Convert a NIFTI to an SRC file</string>
+               </property>
+              </widget>
+              <widget class="QCommandLinkButton" name="Reconstruction">
+               <property name="geometry">
+                <rect>
+                 <x>360</x>
+                 <y>205</y>
+                 <width>250</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Step T2: Reconstruction</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="description">
+                <string>Open SRC file(s) for reconstruction</string>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_15">
+               <property name="geometry">
+                <rect>
+                 <x>675</x>
+                 <y>30</y>
+                 <width>261</width>
+                 <height>170</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_14">
+               <property name="geometry">
+                <rect>
+                 <x>385</x>
+                 <y>90</y>
+                 <width>191</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>15</pointsize>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+               </property>
+               <property name="text">
+                <string>SRC File (*.src.gz)</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
+              </widget>
+              <widget class="Line" name="line_4">
+               <property name="geometry">
+                <rect>
+                 <x>145</x>
+                 <y>170</y>
+                 <width>941</width>
+                 <height>21</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">Line { background-color: rgba(0, 0, 0, 255); }</string>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Plain</enum>
+               </property>
+               <property name="lineWidth">
+                <number>20</number>
+               </property>
+               <property name="midLineWidth">
+                <number>0</number>
+               </property>
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_16">
+               <property name="geometry">
+                <rect>
+                 <x>985</x>
+                 <y>20</y>
+                 <width>250</width>
+                 <height>321</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="icons.qrc">:/icons/icons/tractogram.png</pixmap>
+               </property>
+              </widget>
+              <widget class="QPushButton" name="open_selected_fib">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="geometry">
+                <rect>
+                 <x>840</x>
+                 <y>289</y>
+                 <width>81</width>
+                 <height>41</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Load...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+               </property>
+              </widget>
+              <widget class="QPushButton" name="open_selected_src">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="geometry">
+                <rect>
+                 <x>530</x>
+                 <y>349</y>
+                 <width>81</width>
+                 <height>41</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Load...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_64">
+               <property name="geometry">
+                <rect>
+                 <x>25</x>
+                 <y>20</y>
+                 <width>280</width>
+                 <height>641</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_43">
+               <property name="geometry">
+                <rect>
+                 <x>95</x>
+                 <y>30</y>
+                 <width>140</width>
+                 <height>150</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
+               </property>
+               <property name="scaledContents">
+                <bool>true</bool>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_45">
+               <property name="geometry">
+                <rect>
+                 <x>65</x>
+                 <y>70</y>
+                 <width>211</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>15</pointsize>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+               </property>
+               <property name="text">
+                <string>DWI NIFTI
+(*.nii.gz + bval/bvec)</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
+              </widget>
+              <widget class="QCommandLinkButton" name="nii2src_bids">
+               <property name="geometry">
+                <rect>
+                 <x>38</x>
+                 <y>242</y>
+                 <width>250</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Step B2a: NIFTI to SRC (BIDS)...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="autoRepeatDelay">
+                <number>296</number>
+               </property>
+               <property name="description">
+                <string>Convert a BIDS folder to SRC(s)</string>
+               </property>
+              </widget>
+              <widget class="QCommandLinkButton" name="nii2src_sf">
+               <property name="geometry">
+                <rect>
+                 <x>38</x>
+                 <y>302</y>
+                 <width>250</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Step B2b: NIFTI(s) to SRC(s)...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="autoRepeatDelay">
+                <number>296</number>
+               </property>
+               <property name="description">
+                <string>Convert a folder of NIFTI to SRC(s)</string>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_10">
+               <property name="geometry">
+                <rect>
+                 <x>94</x>
+                 <y>379</y>
+                 <width>140</width>
+                 <height>150</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
+               </property>
+               <property name="scaledContents">
+                <bool>true</bool>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_44">
+               <property name="geometry">
+                <rect>
+                 <x>84</x>
+                 <y>429</y>
+                 <width>151</width>
+                 <height>31</height>
+                </rect>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>15</pointsize>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+               </property>
+               <property name="text">
+                <string>DICOM (*.dcm)</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
+              </widget>
+              <widget class="QCommandLinkButton" name="dicom2nii">
+               <property name="geometry">
+                <rect>
+                 <x>37</x>
+                 <y>591</y>
+                 <width>250</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Step B1c: DICOM to SRC...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="autoRepeatDelay">
+                <number>296</number>
+               </property>
+               <property name="description">
+                <string>Convert a DICOM folder to SRC</string>
+               </property>
+              </widget>
+              <widget class="QCommandLinkButton" name="RenameDICOM">
+               <property name="geometry">
+                <rect>
+                 <x>25</x>
+                 <y>670</y>
+                 <width>280</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Step B1a: Rename DICOM...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="autoRepeatDelay">
+                <number>296</number>
+               </property>
+               <property name="description">
+                <string>Rename DICOM files </string>
+               </property>
+              </widget>
+              <widget class="QCommandLinkButton" name="RenameDICOMDir">
+               <property name="geometry">
+                <rect>
+                 <x>25</x>
+                 <y>730</y>
+                 <width>280</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Step B1b: Rename DICOM in Folders...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="autoRepeatDelay">
+                <number>296</number>
+               </property>
+               <property name="description">
+                <string>Rename all DICOM of a folder</string>
+               </property>
+              </widget>
+              <widget class="QCommandLinkButton" name="OpenDWI_DICOM">
+               <property name="geometry">
+                <rect>
+                 <x>37</x>
+                 <y>531</y>
+                 <width>250</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="autoFillBackground">
+                <bool>false</bool>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Step T1: DICOM(s) to SRC...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="autoDefault">
+                <bool>false</bool>
+               </property>
+               <property name="description">
+                <string>Convert DICOM to an SRC file</string>
+               </property>
+              </widget>
+              <widget class="Line" name="line">
+               <property name="geometry">
+                <rect>
+                 <x>156</x>
+                 <y>560</y>
+                 <width>16</width>
+                 <height>191</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">Line { background-color: rgba(0, 0, 0, 255); }</string>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Plain</enum>
+               </property>
+               <property name="lineWidth">
+                <number>10</number>
+               </property>
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_28">
+               <property name="geometry">
+                <rect>
+                 <x>1025</x>
+                 <y>150</y>
+                 <width>171</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>15</pointsize>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+               </property>
+               <property name="text">
+                <string>Tractography</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_2">
+               <property name="geometry">
+                <rect>
+                 <x>670</x>
+                 <y>289</y>
+                 <width>91</width>
+                 <height>41</height>
+                </rect>
+               </property>
+               <property name="text">
+                <string>Recent
+Files</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_3">
+               <property name="geometry">
+                <rect>
+                 <x>360</x>
+                 <y>349</y>
+                 <width>91</width>
+                 <height>41</height>
+                </rect>
+               </property>
+               <property name="text">
+                <string>Recent
+Files</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+              <widget class="Line" name="line_2">
+               <property name="geometry">
+                <rect>
+                 <x>465</x>
+                 <y>470</y>
+                 <width>20</width>
+                 <height>231</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">Line { background-color: rgba(0, 0, 0, 255); }</string>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Plain</enum>
+               </property>
+               <property name="lineWidth">
+                <number>10</number>
+               </property>
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+              </widget>
+              <widget class="Line" name="line_3">
+               <property name="geometry">
+                <rect>
+                 <x>785</x>
+                 <y>480</y>
+                 <width>20</width>
+                 <height>231</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">Line { background-color: rgba(0, 0, 0, 255); }</string>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Plain</enum>
+               </property>
+               <property name="lineWidth">
+                <number>10</number>
+               </property>
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_27">
+               <property name="geometry">
+                <rect>
+                 <x>531</x>
+                 <y>30</y>
+                 <width>81</width>
+                 <height>171</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: rgba(128, 128, 128, 127);}</string>
+               </property>
+               <property name="text">
+                <string>B-Table
 
 0 0 0 0 
  1000 1 0 0
@@ -2094,57 +1143,1162 @@ Tractography</string>
 1000 0.4 0.4 0
 1000 0 0 1
 ...</string>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+              <zorder>line_3</zorder>
+              <zorder>line_2</zorder>
+              <zorder>line</zorder>
+              <zorder>line_4</zorder>
+              <zorder>label_57</zorder>
+              <zorder>auto_track</zorder>
+              <zorder>label_15</zorder>
+              <zorder>FiberTracking</zorder>
+              <zorder>label_64</zorder>
+              <zorder>label_17</zorder>
+              <zorder>label_55</zorder>
+              <zorder>SRC_qc</zorder>
+              <zorder>label_13</zorder>
+              <zorder>OpenDWI_NIFTI</zorder>
+              <zorder>Reconstruction</zorder>
+              <zorder>label_16</zorder>
+              <zorder>label_43</zorder>
+              <zorder>label_45</zorder>
+              <zorder>nii2src_bids</zorder>
+              <zorder>nii2src_sf</zorder>
+              <zorder>batch_reconstruction</zorder>
+              <zorder>label_10</zorder>
+              <zorder>label_44</zorder>
+              <zorder>dicom2nii</zorder>
+              <zorder>RenameDICOM</zorder>
+              <zorder>RenameDICOMDir</zorder>
+              <zorder>OpenDWI_DICOM</zorder>
+              <zorder>label_28</zorder>
+              <zorder>label_2</zorder>
+              <zorder>label_3</zorder>
+              <zorder>label_27</zorder>
+              <zorder>label_14</zorder>
+              <zorder>clear_src_history</zorder>
+              <zorder>clear_fib_history</zorder>
+              <zorder>open_selected_src</zorder>
+              <zorder>open_selected_fib</zorder>
+              <zorder>recentFib</zorder>
+              <zorder>recentSrc</zorder>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="icon">
+        <iconset resource="icons.qrc">
+         <normaloff>:/icons/icons/tracts.xpm</normaloff>:/icons/icons/tracts.xpm</iconset>
+       </attribute>
+       <attribute name="title">
+        <string>Template Tractography</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QScrollArea" name="scrollArea_2">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scrollAreaWidgetContents_2">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>1254</width>
+             <height>800</height>
+            </rect>
            </property>
-           <property name="pixmap">
-            <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
+           <layout class="QVBoxLayout" name="verticalLayout_4">
+            <property name="spacing">
+             <number>0</number>
+            </property>
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QWidget" name="widget_6" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>800</height>
+               </size>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QWidget { background-color : white; }</string>
+              </property>
+              <widget class="QWidget" name="widget_4" native="true">
+               <property name="geometry">
+                <rect>
+                 <x>10</x>
+                 <y>0</y>
+                 <width>601</width>
+                 <height>351</height>
+                </rect>
+               </property>
+               <widget class="QLabel" name="label_58">
+                <property name="geometry">
+                 <rect>
+                  <x>10</x>
+                  <y>20</y>
+                  <width>280</width>
+                  <height>320</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+               <widget class="QLabel" name="label_18">
+                <property name="geometry">
+                 <rect>
+                  <x>330</x>
+                  <y>20</y>
+                  <width>250</width>
+                  <height>320</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="pixmap">
+                 <pixmap resource="icons.qrc">:/icons/icons/tractogram.png</pixmap>
+                </property>
+               </widget>
+               <widget class="QListWidget" name="template_list">
+                <property name="geometry">
+                 <rect>
+                  <x>20</x>
+                  <y>80</y>
+                  <width>261</width>
+                  <height>251</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QListWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                </property>
+               </widget>
+               <widget class="QLabel" name="label_4">
+                <property name="geometry">
+                 <rect>
+                  <x>30</x>
+                  <y>30</y>
+                  <width>141</width>
+                  <height>41</height>
+                 </rect>
+                </property>
+                <property name="text">
+                 <string>Population-averaged FIB templates</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+                <property name="wordWrap">
+                 <bool>true</bool>
+                </property>
+               </widget>
+               <widget class="Line" name="line_7">
+                <property name="geometry">
+                 <rect>
+                  <x>140</x>
+                  <y>160</y>
+                  <width>411</width>
+                  <height>21</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">Line { background-color: rgba(0, 0, 0, 255); }</string>
+                </property>
+                <property name="frameShadow">
+                 <enum>QFrame::Plain</enum>
+                </property>
+                <property name="lineWidth">
+                 <number>20</number>
+                </property>
+                <property name="midLineWidth">
+                 <number>0</number>
+                </property>
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+               </widget>
+               <widget class="QPushButton" name="TemplateFiberTracking">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="geometry">
+                 <rect>
+                  <x>190</x>
+                  <y>30</y>
+                  <width>81</width>
+                  <height>41</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                </property>
+                <property name="text">
+                 <string>Load...</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="icons.qrc">
+                  <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+                </property>
+               </widget>
+               <widget class="QLabel" name="label_29">
+                <property name="geometry">
+                 <rect>
+                  <x>380</x>
+                  <y>150</y>
+                  <width>171</width>
+                  <height>61</height>
+                 </rect>
+                </property>
+                <property name="font">
+                 <font>
+                  <pointsize>12</pointsize>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+                </property>
+                <property name="text">
+                 <string>Template-Based
+Tractography</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+                <property name="wordWrap">
+                 <bool>true</bool>
+                </property>
+               </widget>
+               <widget class="QLabel" name="label_8">
+                <property name="geometry">
+                 <rect>
+                  <x>-10</x>
+                  <y>10</y>
+                  <width>611</width>
+                  <height>341</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel { border: 0px; background-color: rgba(225, 125,125, 127); }</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+               <zorder>label_8</zorder>
+               <zorder>line_7</zorder>
+               <zorder>label_58</zorder>
+               <zorder>label_18</zorder>
+               <zorder>template_list</zorder>
+               <zorder>label_4</zorder>
+               <zorder>TemplateFiberTracking</zorder>
+               <zorder>label_29</zorder>
+              </widget>
+              <widget class="QWidget" name="widget_3" native="true">
+               <property name="geometry">
+                <rect>
+                 <x>-10</x>
+                 <y>360</y>
+                 <width>661</width>
+                 <height>351</height>
+                </rect>
+               </property>
+               <widget class="QLabel" name="label_53">
+                <property name="geometry">
+                 <rect>
+                  <x>390</x>
+                  <y>140</y>
+                  <width>151</width>
+                  <height>91</height>
+                 </rect>
+                </property>
+                <property name="font">
+                 <font>
+                  <pointsize>12</pointsize>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+                </property>
+                <property name="text">
+                 <string>Tractography
+Atlas</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+                <property name="wordWrap">
+                 <bool>true</bool>
+                </property>
+               </widget>
+               <widget class="Line" name="line_6">
+                <property name="geometry">
+                 <rect>
+                  <x>80</x>
+                  <y>170</y>
+                  <width>501</width>
+                  <height>21</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">Line { background-color: rgba(0, 0, 0, 255); }</string>
+                </property>
+                <property name="frameShadow">
+                 <enum>QFrame::Plain</enum>
+                </property>
+                <property name="lineWidth">
+                 <number>20</number>
+                </property>
+                <property name="midLineWidth">
+                 <number>0</number>
+                </property>
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+               </widget>
+               <widget class="QLabel" name="label_26">
+                <property name="geometry">
+                 <rect>
+                  <x>350</x>
+                  <y>20</y>
+                  <width>250</width>
+                  <height>320</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="pixmap">
+                 <pixmap resource="icons.qrc">:/icons/icons/tractogram.png</pixmap>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                </property>
+               </widget>
+               <widget class="QLabel" name="label_9">
+                <property name="geometry">
+                 <rect>
+                  <x>100</x>
+                  <y>50</y>
+                  <width>151</width>
+                  <height>171</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="pixmap">
+                 <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
+                </property>
+               </widget>
+               <widget class="QLabel" name="label_60">
+                <property name="geometry">
+                 <rect>
+                  <x>30</x>
+                  <y>20</y>
+                  <width>280</width>
+                  <height>320</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+               <widget class="QCommandLinkButton" name="T1WFiberTracking">
+                <property name="geometry">
+                 <rect>
+                  <x>50</x>
+                  <y>240</y>
+                  <width>250</width>
+                  <height>81</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                </property>
+                <property name="text">
+                 <string>T1W-Aligned Tractography</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="icons.qrc">
+                  <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                </property>
+                <property name="autoRepeatDelay">
+                 <number>296</number>
+                </property>
+                <property name="description">
+                 <string>Open T1W/T2W with aligned tractography atlas</string>
+                </property>
+               </widget>
+               <widget class="QLabel" name="label_52">
+                <property name="geometry">
+                 <rect>
+                  <x>100</x>
+                  <y>90</y>
+                  <width>151</width>
+                  <height>91</height>
+                 </rect>
+                </property>
+                <property name="font">
+                 <font>
+                  <pointsize>12</pointsize>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+                </property>
+                <property name="text">
+                 <string>T1W T2W
+(*.nii.gz)</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+                <property name="wordWrap">
+                 <bool>true</bool>
+                </property>
+               </widget>
+               <widget class="QLabel" name="label_7">
+                <property name="geometry">
+                 <rect>
+                  <x>20</x>
+                  <y>10</y>
+                  <width>601</width>
+                  <height>341</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel { border: 0px; background-color: rgba(225, 225,125, 127); }</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+               <zorder>label_7</zorder>
+               <zorder>line_6</zorder>
+               <zorder>label_26</zorder>
+               <zorder>label_60</zorder>
+               <zorder>label_53</zorder>
+               <zorder>label_9</zorder>
+               <zorder>T1WFiberTracking</zorder>
+               <zorder>label_52</zorder>
+              </widget>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_3">
+       <attribute name="icon">
+        <iconset resource="icons.qrc">
+         <normaloff>:/icons/icons/tracts.xpm</normaloff>:/icons/icons/tracts.xpm</iconset>
+       </attribute>
+       <attribute name="title">
+        <string>Correlational Tractography</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_5">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QScrollArea" name="scrollArea_3">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scrollAreaWidgetContents_3">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>1275</width>
+             <height>795</height>
+            </rect>
            </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
+           <layout class="QVBoxLayout" name="verticalLayout_6">
+            <property name="spacing">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QWidget" name="widget_7" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>500</height>
+               </size>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QWidget { background-color : white; }</string>
+              </property>
+              <widget class="QWidget" name="widget_2" native="true">
+               <property name="geometry">
+                <rect>
+                 <x>10</x>
+                 <y>0</y>
+                 <width>921</width>
+                 <height>451</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true"/>
+               </property>
+               <widget class="QLabel" name="label_19">
+                <property name="geometry">
+                 <rect>
+                  <x>650</x>
+                  <y>20</y>
+                  <width>250</width>
+                  <height>320</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="pixmap">
+                 <pixmap resource="icons.qrc">:/icons/icons/tractogram.png</pixmap>
+                </property>
+               </widget>
+               <widget class="QLabel" name="label_25">
+                <property name="geometry">
+                 <rect>
+                  <x>355</x>
+                  <y>54</y>
+                  <width>250</width>
+                  <height>171</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="pixmap">
+                 <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
+                </property>
+               </widget>
+               <widget class="QCommandLinkButton" name="group_connectometry">
+                <property name="geometry">
+                 <rect>
+                  <x>344</x>
+                  <y>230</y>
+                  <width>251</width>
+                  <height>91</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                </property>
+                <property name="text">
+                 <string>Step C3: Correlational Tracking</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="icons.qrc">
+                  <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                </property>
+                <property name="description">
+                 <string>Generate correlational tractography and test the results using connectometry analysis</string>
+                </property>
+               </widget>
+               <widget class="QCommandLinkButton" name="vbc">
+                <property name="geometry">
+                 <rect>
+                  <x>30</x>
+                  <y>210</y>
+                  <width>250</width>
+                  <height>81</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                </property>
+                <property name="text">
+                 <string>Step C1: Create a Database</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="icons.qrc">
+                  <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                </property>
+                <property name="description">
+                 <string>Aggregate FIB files to create a database</string>
+                </property>
+               </widget>
+               <widget class="QLabel" name="label_62">
+                <property name="geometry">
+                 <rect>
+                  <x>330</x>
+                  <y>20</y>
+                  <width>280</width>
+                  <height>321</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+               <widget class="QLabel" name="label_23">
+                <property name="geometry">
+                 <rect>
+                  <x>360</x>
+                  <y>100</y>
+                  <width>221</width>
+                  <height>61</height>
+                 </rect>
+                </property>
+                <property name="font">
+                 <font>
+                  <pointsize>12</pointsize>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel { border: 0px; background-color: rgba(255, 255, 255, 127); }</string>
+                </property>
+                <property name="text">
+                 <string>Database File
+(*.db.fib.gz)</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+                <property name="wordWrap">
+                 <bool>true</bool>
+                </property>
+               </widget>
+               <widget class="QLabel" name="label_22">
+                <property name="geometry">
+                 <rect>
+                  <x>45</x>
+                  <y>30</y>
+                  <width>220</width>
+                  <height>170</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="pixmap">
+                 <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                </property>
+               </widget>
+               <widget class="QLabel" name="label_21">
+                <property name="geometry">
+                 <rect>
+                  <x>339</x>
+                  <y>30</y>
+                  <width>250</width>
+                  <height>171</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="pixmap">
+                 <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
+                </property>
+               </widget>
+               <widget class="QLabel" name="label_20">
+                <property name="geometry">
+                 <rect>
+                  <x>90</x>
+                  <y>90</y>
+                  <width>141</width>
+                  <height>61</height>
+                 </rect>
+                </property>
+                <property name="font">
+                 <font>
+                  <pointsize>12</pointsize>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel { border: 0px; background-color: rgba(255, 255, 255, 127); }</string>
+                </property>
+                <property name="text">
+                 <string>FIB File
+(*.fib.gz)</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+                <property name="wordWrap">
+                 <bool>true</bool>
+                </property>
+               </widget>
+               <widget class="QLabel" name="label_30">
+                <property name="geometry">
+                 <rect>
+                  <x>690</x>
+                  <y>150</y>
+                  <width>171</width>
+                  <height>61</height>
+                 </rect>
+                </property>
+                <property name="font">
+                 <font>
+                  <pointsize>12</pointsize>
+                  <bold>true</bold>
+                 </font>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel { border: 0px; background-color: rgba(255, 255, 255, 127); }</string>
+                </property>
+                <property name="text">
+                 <string>Correlational
+Tractography</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+                <property name="wordWrap">
+                 <bool>true</bool>
+                </property>
+               </widget>
+               <widget class="QLabel" name="label_61">
+                <property name="geometry">
+                 <rect>
+                  <x>15</x>
+                  <y>20</y>
+                  <width>280</width>
+                  <height>281</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+               <widget class="QLabel" name="label_24">
+                <property name="geometry">
+                 <rect>
+                  <x>347</x>
+                  <y>42</y>
+                  <width>250</width>
+                  <height>171</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="pixmap">
+                 <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
+                </property>
+               </widget>
+               <widget class="QCommandLinkButton" name="open_db">
+                <property name="geometry">
+                 <rect>
+                  <x>350</x>
+                  <y>350</y>
+                  <width>250</width>
+                  <height>81</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                </property>
+                <property name="text">
+                 <string>Step C2: View/Edit Database</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="icons.qrc">
+                  <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                </property>
+                <property name="description">
+                 <string>Add or remove subjects, calculate longitudinal change</string>
+                </property>
+               </widget>
+               <widget class="Line" name="line_5">
+                <property name="geometry">
+                 <rect>
+                  <x>150</x>
+                  <y>170</y>
+                  <width>671</width>
+                  <height>21</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QWidget {border: 4px solid black;border-radius: 0px;padding: 0px;background-color: black}</string>
+                </property>
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+               </widget>
+               <widget class="QLabel" name="label_5">
+                <property name="geometry">
+                 <rect>
+                  <x>0</x>
+                  <y>10</y>
+                  <width>921</width>
+                  <height>431</height>
+                 </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel { border: 0px; background-color: rgba(155, 225, 225, 127); }</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+               <zorder>label_5</zorder>
+               <zorder>line_5</zorder>
+               <zorder>label_61</zorder>
+               <zorder>label_62</zorder>
+               <zorder>label_19</zorder>
+               <zorder>label_25</zorder>
+               <zorder>group_connectometry</zorder>
+               <zorder>vbc</zorder>
+               <zorder>label_22</zorder>
+               <zorder>label_21</zorder>
+               <zorder>label_20</zorder>
+               <zorder>label_30</zorder>
+               <zorder>label_24</zorder>
+               <zorder>open_db</zorder>
+               <zorder>label_23</zorder>
+              </widget>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_4">
+       <attribute name="icon">
+        <iconset resource="icons.qrc">
+         <normaloff>:/icons/icons/preferences.xpm</normaloff>:/icons/icons/preferences.xpm</iconset>
+       </attribute>
+       <attribute name="title">
+        <string>Tools</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_7">
+        <item>
+         <widget class="QWidget" name="widget_5" native="true">
+          <property name="styleSheet">
+           <string notr="true">QWidget { background-color : white; }</string>
+          </property>
+          <widget class="QCommandLinkButton" name="parse_network_measures">
+           <property name="geometry">
+            <rect>
+             <x>640</x>
+             <y>120</y>
+             <width>321</width>
+             <height>81</height>
+            </rect>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+           </property>
+           <property name="text">
+            <string>Parse Network Measure Text Files</string>
+           </property>
+           <property name="autoRepeatDelay">
+            <number>296</number>
+           </property>
+           <property name="description">
+            <string>Select a list of network measure files and parse them into one data sheet</string>
            </property>
           </widget>
-          <zorder>label_6</zorder>
-          <zorder>line_3</zorder>
-          <zorder>line_2</zorder>
-          <zorder>line</zorder>
-          <zorder>line_4</zorder>
-          <zorder>label_57</zorder>
-          <zorder>auto_track</zorder>
-          <zorder>label_15</zorder>
-          <zorder>FiberTracking</zorder>
-          <zorder>label_64</zorder>
-          <zorder>label_17</zorder>
-          <zorder>label_55</zorder>
-          <zorder>SRC_qc</zorder>
-          <zorder>label_13</zorder>
-          <zorder>OpenDWI_NIFTI</zorder>
-          <zorder>Reconstruction</zorder>
-          <zorder>label_16</zorder>
-          <zorder>label_43</zorder>
-          <zorder>label_45</zorder>
-          <zorder>nii2src_bids</zorder>
-          <zorder>nii2src_sf</zorder>
-          <zorder>batch_reconstruction</zorder>
-          <zorder>label_10</zorder>
-          <zorder>label_44</zorder>
-          <zorder>dicom2nii</zorder>
-          <zorder>RenameDICOM</zorder>
-          <zorder>RenameDICOMDir</zorder>
-          <zorder>OpenDWI_DICOM</zorder>
-          <zorder>label_28</zorder>
-          <zorder>label_2</zorder>
-          <zorder>label_3</zorder>
-          <zorder>widget_2</zorder>
-          <zorder>widget_3</zorder>
-          <zorder>widget_4</zorder>
-          <zorder>widget_5</zorder>
-          <zorder>label_27</zorder>
-          <zorder>label_14</zorder>
-          <zorder>clear_src_history</zorder>
-          <zorder>clear_fib_history</zorder>
-          <zorder>open_selected_src</zorder>
-          <zorder>open_selected_fib</zorder>
-          <zorder>recentFib</zorder>
-          <zorder>recentSrc</zorder>
+          <widget class="QCommandLinkButton" name="linear_reg">
+           <property name="geometry">
+            <rect>
+             <x>330</x>
+             <y>30</y>
+             <width>300</width>
+             <height>81</height>
+            </rect>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+           </property>
+           <property name="text">
+            <string>R1: Linear Registration...</string>
+           </property>
+           <property name="autoRepeatDelay">
+            <number>296</number>
+           </property>
+           <property name="description">
+            <string>Perform linear registration</string>
+           </property>
+          </widget>
+          <widget class="QCommandLinkButton" name="xnat_download">
+           <property name="geometry">
+            <rect>
+             <x>20</x>
+             <y>120</y>
+             <width>300</width>
+             <height>81</height>
+            </rect>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+           </property>
+           <property name="text">
+            <string>Step B0: XNAT Download...</string>
+           </property>
+           <property name="icon">
+            <iconset resource="icons.qrc">
+             <normaloff>:/icons/icons/preferences.xpm</normaloff>:/icons/icons/preferences.xpm</iconset>
+           </property>
+           <property name="autoRepeatDelay">
+            <number>296</number>
+           </property>
+           <property name="description">
+            <string>connect to a XNAT server to download and process data</string>
+           </property>
+          </widget>
+          <widget class="QCommandLinkButton" name="averagefib">
+           <property name="geometry">
+            <rect>
+             <x>640</x>
+             <y>30</y>
+             <width>321</width>
+             <height>81</height>
+            </rect>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+           </property>
+           <property name="text">
+            <string>Create Population-Averaged Template</string>
+           </property>
+           <property name="autoRepeatDelay">
+            <number>296</number>
+           </property>
+           <property name="description">
+            <string>Average the ODFs to create a template</string>
+           </property>
+          </widget>
+          <widget class="QCommandLinkButton" name="nonlinear_reg">
+           <property name="geometry">
+            <rect>
+             <x>330</x>
+             <y>120</y>
+             <width>300</width>
+             <height>81</height>
+            </rect>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+           </property>
+           <property name="text">
+            <string>R2: Nonlinear Registration...</string>
+           </property>
+           <property name="autoRepeatDelay">
+            <number>296</number>
+           </property>
+           <property name="description">
+            <string>Perform nonlinear registration</string>
+           </property>
+          </widget>
+          <widget class="QCommandLinkButton" name="view_image">
+           <property name="geometry">
+            <rect>
+             <x>20</x>
+             <y>30</y>
+             <width>300</width>
+             <height>81</height>
+            </rect>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+           </property>
+           <property name="text">
+            <string>Step O1: View Images...</string>
+           </property>
+           <property name="autoRepeatDelay">
+            <number>296</number>
+           </property>
+           <property name="description">
+            <string>Open NIFTI/DICOM/2dseq files for inspection or processing</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="label_63">
+           <property name="geometry">
+            <rect>
+             <x>980</x>
+             <y>30</y>
+             <width>241</width>
+             <height>91</height>
+            </rect>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+          <widget class="QLabel" name="label_11">
+           <property name="geometry">
+            <rect>
+             <x>1000</x>
+             <y>50</y>
+             <width>101</width>
+             <height>20</height>
+            </rect>
+           </property>
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Window Style:</string>
+           </property>
+          </widget>
+          <widget class="QPushButton" name="clear_settings">
+           <property name="geometry">
+            <rect>
+             <x>1110</x>
+             <y>80</y>
+             <width>93</width>
+             <height>29</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Reset</string>
+           </property>
+          </widget>
+          <widget class="QComboBox" name="styles">
+           <property name="geometry">
+            <rect>
+             <x>1120</x>
+             <y>50</y>
+             <width>80</width>
+             <height>26</height>
+            </rect>
+           </property>
+          </widget>
+          <widget class="QLabel" name="label_12">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>10</y>
+             <width>1231</width>
+             <height>211</height>
+            </rect>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QLabel { border: 0px; background-color: rgba(225, 225, 225, 127); }</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+          <zorder>label_12</zorder>
+          <zorder>parse_network_measures</zorder>
+          <zorder>linear_reg</zorder>
+          <zorder>xnat_download</zorder>
+          <zorder>averagefib</zorder>
+          <zorder>nonlinear_reg</zorder>
+          <zorder>view_image</zorder>
+          <zorder>label_63</zorder>
+          <zorder>label_11</zorder>
+          <zorder>clear_settings</zorder>
+          <zorder>styles</zorder>
          </widget>
         </item>
        </layout>
