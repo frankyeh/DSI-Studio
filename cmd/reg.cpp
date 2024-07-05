@@ -86,7 +86,7 @@ int after_warp(tipl::program_option<tipl::out>& po,dual_reg<3>& r)
         return 0;
 
     std::vector<std::string> filename_cmds;
-    if(!tipl::search_filesystem(po.get("apply_warp"),filename_cmds))
+    if(!po.get_files("apply_warp",filename_cmds))
     {
         tipl::out() << "ERROR: cannot find file " << po.get("apply_warp") <<std::endl;
         return 1;
