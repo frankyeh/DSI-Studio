@@ -356,8 +356,9 @@ void init_cuda(void)
         check_cuda(cuda_msg);
         if(!has_cuda)
             tipl::out() << cuda_msg << std::endl;
+        else
+            tipl::out() << "CPU/GPU computation enabled "<< std::endl;
     }
-    tipl::out() << version_string().toStdString() << ((has_cuda) ? " CPU/GPU computation enabled " : "") << std::endl;
 }
 int run_cmd(int ac, char *av[])
 {
@@ -392,7 +393,7 @@ int run_cmd(int ac, char *av[])
                 return 1;
             }
         }
-        tipl::progress prog(version_string().toStdString().c_str());
+        tipl::progress prog((version_string()+ " " + __DATE__).toStdString().c_str());
         init_cuda();
         if(run_action_with_wildcard(po))
             return 1;
