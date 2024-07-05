@@ -144,7 +144,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -182,7 +182,7 @@
            <property name="geometry">
             <rect>
              <x>0</x>
-             <y>-1105</y>
+             <y>0</y>
              <width>1254</width>
              <height>1900</height>
             </rect>
@@ -774,7 +774,7 @@
                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
                </property>
                <property name="text">
-                <string>DWI NIFTI
+                <string>NIFTI
 (*.nii.gz + bval/bvec)</string>
                </property>
                <property name="alignment">
@@ -861,10 +861,10 @@
               <widget class="QLabel" name="label_44">
                <property name="geometry">
                 <rect>
-                 <x>84</x>
-                 <y>429</y>
+                 <x>90</x>
+                 <y>430</y>
                  <width>151</width>
-                 <height>31</height>
+                 <height>61</height>
                 </rect>
                </property>
                <property name="font">
@@ -877,7 +877,8 @@
                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
                </property>
                <property name="text">
-                <string>DICOM (*.dcm)</string>
+                <string>DICOM
+(*.dcm)</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
@@ -1127,7 +1128,7 @@ Files</string>
                  <x>531</x>
                  <y>30</y>
                  <width>81</width>
-                 <height>171</height>
+                 <height>170</height>
                 </rect>
                </property>
                <property name="styleSheet">
@@ -1683,7 +1684,7 @@ Atlas</string>
              <x>0</x>
              <y>0</y>
              <width>1275</width>
-             <height>795</height>
+             <height>798</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_6">
