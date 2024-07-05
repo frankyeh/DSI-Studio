@@ -335,10 +335,6 @@ int img(tipl::program_option<tipl::out>& po)
             param = cmd.substr(sep_pos+1);
             cmd = cmd.substr(0,sep_pos);
         }
-        if(param.empty())
-            tipl::out() << cmd;
-        else
-            tipl::out() << cmd << ":" << param;
         if(cmd == "info")
         {
             tipl::out() << info;
