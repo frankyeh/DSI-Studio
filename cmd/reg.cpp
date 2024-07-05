@@ -364,7 +364,7 @@ int reg(tipl::program_option<tipl::out>& po)
 
     if(po.has("output") && !r.save_transformed_image(po.get("output").c_str()))
         goto error;
-    if(po.has("output_warp") && !r.save_transformed_image(po.get("output_warp").c_str()))
+    if(po.has("output_warp") && !r.save_warping(po.get("output_warp").c_str()))
         goto error;
     return after_warp(po,r);
 
