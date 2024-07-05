@@ -54,13 +54,45 @@ int atl(tipl::program_option<tipl::out>& po)
     if(cmd=="template")
     {
         tipl::out() << "constructing a group average template" << std::endl;
-        const char* msg = odf_average(po.get("output",(QFileInfo(name_list[0].c_str()).absolutePath()+"/template").toStdString()).c_str(),name_list);
-        if(msg)
+        if(tipl::ends_with(name_list[0],".fib.gz"))
         {
-            tipl::out() << "ERROR: " << msg << std::endl;
-            return 1;
+            const char* msg = odf_average(po.get("output",(QFileInfo(name_list[0].c_str()).absolutePath()+"/template").toStdString()).c_str(),name_list);
+            if(msg)
+            {
+                tipl::out() << "ERROR: " << msg << std::endl;
+                return 1;
+            }
         }
-        return 0;
+        if(tipl::ends_with(name_list[0],".nii.gz"))
+        {
+            tipl::image<3,double> sum;
+            tipl::image<3> each;
+            tipl::vector<3> vs;
+            tipl::matrix<4,4> T;
+            bool is_mni;
+            for(auto name : name_list)
+            {
+                tipl::out() << "adding " << name;
+                if(!tipl::io::gz_nifti::load_from_file(name.c_str(),each,vs,T,is_mni))
+                {
+                    tipl::out() << "ERROR: cannot load file" << name_list[0] << std::endl;
+                    return 1;
+                }
+                if(sum.empty())
+                    sum.resize(each.shape());
+                sum += each;
+            }
+            sum /= name_list.size();
+            auto output = po.get("output",name_list[0] + "avg.nii.gz");
+            if(!tipl::io::gz_nifti::save_to_file(output.c_str(),sum,vs,T,is_mni))
+            {
+                tipl::out() << "ERROR: cannot save file" << output << std::endl;
+                return 1;
+            }
+            return 0;
+        }
+        tipl::out() << "ERROR: unsupported format" << std::endl;
+        return 1;
     }
     if(cmd=="db")
     {        
