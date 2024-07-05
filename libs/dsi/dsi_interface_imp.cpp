@@ -10,7 +10,7 @@
 #include "hist_process.hpp"
 
 extern std::vector<std::string> fa_template_list;
-std::string ImageModel::get_file_ext(void)
+std::string src_data::get_file_ext(void)
 {
     std::ostringstream out;
     if(voxel.is_histology)
@@ -51,7 +51,7 @@ std::string ImageModel::get_file_ext(void)
 
 
 bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs);
-bool ImageModel::reconstruction_hist(void)
+bool src_data::reconstruction_hist(void)
 {
     if(!voxel.init_process<
             ReadImages,
@@ -85,7 +85,7 @@ bool ImageModel::reconstruction_hist(void)
     mat_writer.write("steps",voxel.steps+voxel.step_report.str()+"[Step T2b][Run reconstruction]\n");
     return true;
 }
-bool ImageModel::reconstruction(void)
+bool src_data::reconstruction(void)
 {
     voxel.recon_report.clear();
     voxel.recon_report.str("");
@@ -228,7 +228,7 @@ bool output_odfs(const tipl::image<3,unsigned char>& mni_mask,
                  bool record_odf = true)
 {
     tipl::progress prog_("generating template");
-    ImageModel image_model;
+    src_data image_model;
     auto swap_data = [&](void)
     {
         image_model.voxel.template_odfs.swap(odfs);
@@ -266,7 +266,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     tessellated_icosahedron ti;
     tipl::vector<3> vs;
     tipl::shape<3> dim;
-    std::vector<std::vector<float> > odfs;
+    std::vector<std::vector<double> > odfs;
     tipl::image<3,unsigned int> odf_count;
     tipl::matrix<4,4> mni;
     std::string file_name;
@@ -340,7 +340,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                 if(odf_data == nullptr)
                     return;
                 if(odfs[i].empty())
-                    odfs[i] = std::vector<float>(odf_data,odf_data+ti.half_vertices_count);
+                    odfs[i] = std::vector<double>(odf_data,odf_data+ti.half_vertices_count);
                 else
                     tipl::add(odfs[i].begin(),odfs[i].end(),odf_data);
                 odf_count[i]++;
@@ -406,8 +406,13 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     report = out.str();
     if (prog.aborted())
         return nullptr;
-    if(!output_odfs(mask,out_name,".mean.fib.gz",odfs,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg,false) ||
-       !output_odfs(mask,out_name,".mean.odf.fib.gz",odfs,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg))
+
+    std::vector<std::vector<float> > odfs_float(odfs.size());
+    for(size_t i = 0; i < odfs.size();++i)
+        std::copy(odfs[i].begin(),odfs[i].end(),odfs_float[i].begin());
+
+    if(!output_odfs(mask,out_name,".mean.fib.gz",odfs_float,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg,false) ||
+       !output_odfs(mask,out_name,".mean.odf.fib.gz",odfs_float,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg))
     {
         tipl::out() << error_msg;
         return nullptr;

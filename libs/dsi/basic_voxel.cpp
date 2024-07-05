@@ -49,7 +49,7 @@ void calculate_shell(std::vector<float> sorted_bvalues,
 }
 
 
-void Voxel::load_from_src(ImageModel& image_model)
+void Voxel::load_from_src(src_data& image_model)
 {
     if(image_model.src_bvalues.empty()) // e.g. template recon
         return;

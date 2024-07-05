@@ -10,7 +10,7 @@ float check_src(std::string file_name,std::vector<std::string>& output) // retur
 {
     tipl::out() << "checking " << file_name << std::endl;
     output.push_back(QFileInfo(file_name.c_str()).baseName().toStdString());
-    ImageModel handle;
+    src_data handle;
     if (!handle.load_from_file(file_name.c_str()))
     {
         tipl::out() << "cannot read SRC file" << std::endl;

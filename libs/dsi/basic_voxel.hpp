@@ -6,7 +6,7 @@
 #include "tessellated_icosahedron.hpp"
 
 
-struct ImageModel;
+struct src_data;
 struct VoxelParam;
 class Voxel;
 struct VoxelData;
@@ -65,7 +65,7 @@ public:
     }
 };
 
-struct ImageModel;
+struct src_data;
 class Voxel
 {
 private:
@@ -85,7 +85,7 @@ public:
     std::string report,steps;
     std::ostringstream recon_report, step_report;
     unsigned int thread_count = tipl::max_thread_count;
-    void load_from_src(ImageModel& image_model);
+    void load_from_src(src_data& image_model);
 public:
     unsigned char method_id;
     float param[3] = {1.25f,3000.0f,0.05f};

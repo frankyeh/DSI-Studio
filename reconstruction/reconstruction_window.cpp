@@ -18,7 +18,7 @@ void populate_templates(QComboBox* combo,size_t index);
 void move_current_dir_to(const std::string& file_name);
 bool reconstruction_window::load_src(int index)
 {
-    handle = std::make_shared<ImageModel>();
+    handle = std::make_shared<src_data>();
     if (!handle->load_from_file(filenames[index].toStdString().c_str()))
         return false;
     move_current_dir_to(filenames[index].toStdString());
@@ -390,7 +390,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
         }
         for(int index = 1;prog(index,filenames.size());++index)
         {
-            ImageModel model;
+            src_data model;
             if (!model.load_from_file(filenames[index].toStdString().c_str()) ||
                 !model.run_steps(handle->file_name,steps))
             {
@@ -417,7 +417,7 @@ void reconstruction_window::on_doDTI_clicked()
     }
     std::string ref_file_name = handle->file_name;
     std::string ref_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
-    std::shared_ptr<ImageModel> ref_handle = handle;
+    std::shared_ptr<src_data> ref_handle = handle;
     tipl::progress prog("process SRC files");
     for(int index = 0;prog(index,filenames.size());++index)
     {
@@ -664,49 +664,6 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
     scene << view;
 }
 
-bool add_other_image(ImageModel* handle,QString name,QString filename)
-{
-    tipl::progress prog("add other images");
-    tipl::image<3> ref;
-    tipl::vector<3> vs;
-    tipl::io::gz_nifti in;
-    if(!in.load_from_file(filename.toStdString().c_str()) || !in.toLPS(ref))
-    {
-        std::cout << "ERROR: not a valid nifti file " << filename.toStdString() << std::endl;
-        return false;
-    }
-
-    std::cout << "add " << filename.toStdString() << " as " << name.toStdString();
-
-    tipl::transformation_matrix<float> affine;
-    bool has_registered = false;
-    for(unsigned int index = 0;index < handle->voxel.other_image.size();++index)
-        if(ref.shape() == handle->voxel.other_image[index].shape())
-        {
-            affine = handle->voxel.other_image_trans[index];
-            has_registered = true;
-        }
-    if(!has_registered && ref.shape() != handle->voxel.dim)
-    {
-        std::cout << " and register image with DWI." << std::endl;
-        in.get_voxel_size(vs);
-        affine = linear(make_list(subject_image_pre(tipl::image<3>(handle->dwi))),handle->voxel.vs,
-                        make_list(subject_image_pre(tipl::image<3>(ref))),vs,tipl::reg::rigid_body);
-        if(prog.aborted())
-            return false;
-    }
-    else {
-        if(has_registered)
-            std::cout << " using previous registration." << std::endl;
-        else
-            std::cout << " treated as DWI space images." << std::endl;
-    }
-    handle->voxel.other_image.push_back(std::move(ref));
-    handle->voxel.other_image_name.push_back(name.toStdString());
-    handle->voxel.other_image_trans.push_back(affine);
-    return true;
-}
-
 void reconstruction_window::on_actionAttach_Images_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
@@ -714,7 +671,7 @@ void reconstruction_window::on_actionAttach_Images_triggered()
             "Images (*.nii *nii.gz);;All files (*)" );
     if( filename.isEmpty())
         return;
-    if(add_other_image(handle.get(),QFileInfo(filename).baseName(),filename))
+    if(handle->add_other_image(QFileInfo(filename).baseName().toStdString(),filename.toStdString()))
         QMessageBox::information(this,QApplication::applicationName(),"File added");
     else
         QMessageBox::critical(this,"ERROR","Not a valid nifti file");
@@ -746,7 +703,7 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
 }
 
 
-bool get_src(std::string filename,ImageModel& src2,std::string& error_msg)
+bool get_src(std::string filename,src_data& src2,std::string& error_msg)
 {
     tipl::progress prog_("load ",filename.c_str());
     tipl::image<3,unsigned short> I;

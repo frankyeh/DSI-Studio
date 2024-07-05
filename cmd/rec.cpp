@@ -12,14 +12,14 @@
 #include "reg.hpp"
 
 extern std::vector<std::string> fa_template_list;
-bool get_src(std::string filename,ImageModel& src2,std::string& error_msg);
+bool get_src(std::string filename,src_data& src2,std::string& error_msg);
 /**
  perform reconstruction
  */
 int rec(tipl::program_option<tipl::out>& po)
 {
     std::string file_name = po.get("source");
-    ImageModel src;
+    src_data src;
     if (!src.load_from_file(file_name.c_str()))
     {
         tipl::out() << "ERROR: " << src.error_msg << std::endl;
@@ -221,7 +221,7 @@ int rec(tipl::program_option<tipl::out>& po)
                 name_value[1] += name_value[2];
             }
             tipl::out() << name_value[0].toStdString() << ":" << name_value[1].toStdString() << std::endl;
-            if(!add_other_image(&src,name_value[0],name_value[1]))
+            if(!src.add_other_image(name_value[0].toStdString(),name_value[1].toStdString()))
                 return 1;
         }
     }

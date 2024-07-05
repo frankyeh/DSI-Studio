@@ -298,7 +298,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
         std::string report1 = dwi_files.front()->report;
         std::string report2;
         {
-            ImageModel image_model;
+            src_data image_model;
             for (unsigned int index = 0;index < dwi_files.size();++index)
                 image_model.src_bvalues.push_back(dwi_files[index]->bvalue);
             image_model.voxel.vs = tipl::vector<3>(dwi_files.front()->voxel_size);

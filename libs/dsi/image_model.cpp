@@ -17,7 +17,7 @@
 extern std::string src_error_msg;
 bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec);
 
-void ImageModel::draw_mask(tipl::color_image& buffer,int position)
+void src_data::draw_mask(tipl::color_image& buffer,int position)
 {
     if (!dwi.size())
         return;
@@ -40,7 +40,7 @@ void ImageModel::draw_mask(tipl::color_image& buffer,int position)
 }
 extern std::vector<std::string> model_list_t2w;
 
-void ImageModel::calculate_dwi_sum(bool update_mask)
+void src_data::calculate_dwi_sum(bool update_mask)
 {
     if(src_dwi_data.empty())
         return;
@@ -89,7 +89,7 @@ void ImageModel::calculate_dwi_sum(bool update_mask)
         }
     }
 }
-bool ImageModel::mask_from_unet(void)
+bool src_data::mask_from_unet(void)
 {
     tipl::image<3> b0;
     if(!read_b0(b0))
@@ -120,7 +120,7 @@ bool ImageModel::mask_from_unet(void)
         error_msg =  "no applicable unet model for generating a mask";
     return false;
 }
-void ImageModel::remove(unsigned int index)
+void src_data::remove(unsigned int index)
 {
     if(index >= src_dwi_data.size())
         return;
@@ -146,7 +146,7 @@ void flip_fib_dir(std::vector<tipl::vector<3> >& fib_dir,const unsigned char* or
     }
 }
 
-std::vector<size_t> ImageModel::get_sorted_dwi_index(void)
+std::vector<size_t> src_data::get_sorted_dwi_index(void)
 {
     std::vector<size_t> sorted_index(src_bvalues.size());
     std::iota(sorted_index.begin(),sorted_index.end(),0);
@@ -159,7 +159,7 @@ std::vector<size_t> ImageModel::get_sorted_dwi_index(void)
     );
     return sorted_index;
 }
-void ImageModel::flip_b_table(const unsigned char* order)
+void src_data::flip_b_table(const unsigned char* order)
 {
     for(unsigned int index = 0;index < src_bvectors.size();++index)
     {
@@ -181,7 +181,7 @@ void ImageModel::flip_b_table(const unsigned char* order)
 
 
 extern std::vector<std::string> fib_template_list;
-bool ImageModel::check_b_table(void)
+bool src_data::check_b_table(void)
 {
     if(!new_dwi.empty())
     {
@@ -351,7 +351,7 @@ size_t sum_dif(const unsigned short* I1,const unsigned short* I2,size_t size)
     return dif;
 }
 
-std::vector<std::pair<size_t,size_t> > ImageModel::get_bad_slices(void)
+std::vector<std::pair<size_t,size_t> > src_data::get_bad_slices(void)
 {
     std::vector<std::pair<size_t,size_t> > result;
     std::mutex result_mutex;
@@ -388,7 +388,7 @@ float masked_correlation(const unsigned short* I1_ptr,const unsigned short* I2_p
         }
     return float(tipl::correlation(I1.begin(),I1.end(),I2.begin()));
 }
-std::pair<float,float> ImageModel::quality_control_neighboring_dwi_corr(void)
+std::pair<float,float> src_data::quality_control_neighboring_dwi_corr(void)
 {
     std::vector<std::pair<size_t,size_t> > corr_pairs;
     for(size_t i = 0;i < src_bvalues.size();++i)
@@ -428,7 +428,7 @@ std::pair<float,float> ImageModel::quality_control_neighboring_dwi_corr(void)
     return std::make_pair(tipl::mean(ndc),tipl::mean(masked_ndc));
 }
 
-float ImageModel::dwi_contrast(void)
+float src_data::dwi_contrast(void)
 {
     std::vector<size_t> dwi_self,dwi_neighbor,dwi_ortho;
     for(size_t i = 0;i < src_bvalues.size();++i)
@@ -490,11 +490,11 @@ float ImageModel::dwi_contrast(void)
 
 }
 bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs);
-bool ImageModel::is_human_data(void) const
+bool src_data::is_human_data(void) const
 {
     return is_human_size(voxel.dim,voxel.vs);
 }
-bool ImageModel::run_steps(const std::string& reg_file_name,const std::string& ref_steps)
+bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref_steps)
 {
     std::istringstream in(ref_steps);
     std::string step;
@@ -538,7 +538,7 @@ bool ImageModel::run_steps(const std::string& reg_file_name,const std::string& r
     }
     return true;
 }
-bool ImageModel::command(std::string cmd,std::string param)
+bool src_data::command(std::string cmd,std::string param)
 {
     if(cmd == "[Step T2][Reconstruction]")
         return true;
@@ -835,13 +835,13 @@ bool ImageModel::command(std::string cmd,std::string param)
     error_msg += cmd;
     return false;
 }
-void ImageModel::flip_b_table(unsigned char dim)
+void src_data::flip_b_table(unsigned char dim)
 {
     for(unsigned int index = 0;index < src_bvectors.size();++index)
         src_bvectors[index][dim] = -src_bvectors[index][dim];
 }
 // 0:xy 1:yz 2: xz
-void ImageModel::swap_b_table(unsigned char dim)
+void src_data::swap_b_table(unsigned char dim)
 {
     std::swap(voxel.vs[dim],voxel.vs[(dim+1)%3]);
     for (unsigned int index = 0;index < src_bvectors.size();++index)
@@ -850,7 +850,7 @@ void ImageModel::swap_b_table(unsigned char dim)
 
 // 0: x  1: y  2: z
 // 3: xy 4: yz 5: xz
-void ImageModel::flip_dwi(unsigned char type)
+void src_data::flip_dwi(unsigned char type)
 {
     if(type < 3)
         flip_b_table(type);
@@ -884,7 +884,7 @@ tipl::matrix<3,3,float> get_inv_rotation(const Voxel& voxel,const tipl::transfor
     return r;
 }
 // used in eddy correction for each dwi
-void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_matrix<double>& T)
+void src_data::rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_matrix<double>& T)
 {
     tipl::image<3> tmp(voxel.dim);
     tipl::resample<tipl::interpolation::cubic>(dwi_at(dwi_index),tmp,T);
@@ -895,7 +895,7 @@ void ImageModel::rotate_one_dwi(unsigned int dwi_index,const tipl::transformatio
     src_bvectors[dwi_index].normalize();
 }
 
-void ImageModel::rotate(const tipl::shape<3>& new_geo,
+void src_data::rotate(const tipl::shape<3>& new_geo,
                         const tipl::vector<3>& new_vs,
                         const tipl::transformation_matrix<double>& T,
                         const tipl::image<3,tipl::vector<3> >& cdm_dis)
@@ -934,7 +934,7 @@ void ImageModel::rotate(const tipl::shape<3>& new_geo,
     tipl::resample<tipl::interpolation::nearest>(voxel.mask,mask,T);
     mask.swap(voxel.mask);
 }
-void ImageModel::resample(float nv)
+void src_data::resample(float nv)
 {
     if(voxel.vs[0] == nv &&
        voxel.vs[1] == nv &&
@@ -956,7 +956,7 @@ void ImageModel::resample(float nv)
     out << " The images were resampled to " << std::fixed << std::setprecision(2) << nv << " mm isotropic resolution.";
     voxel.report += out.str();
 }
-void ImageModel::smoothing(void)
+void src_data::smoothing(void)
 {
     size_t p = 0;
     tipl::progress prog("smoothing");
@@ -967,12 +967,55 @@ void ImageModel::smoothing(void)
     });
     calculate_dwi_sum(false);
 }
+
+bool src_data::add_other_image(const std::string& name,const std::string& filename)
+{
+    tipl::progress prog("add other images");
+    tipl::image<3> ref;
+    tipl::vector<3> vs;
+    tipl::io::gz_nifti in;
+    if(!in.load_from_file(filename.c_str()) || !in.toLPS(ref))
+    {
+        std::cout << "ERROR: not a valid nifti file " << filename << std::endl;
+        return false;
+    }
+
+    std::cout << "add " << filename << " as " << name;
+
+    tipl::transformation_matrix<float> affine;
+    bool has_registered = false;
+    for(unsigned int index = 0;index < voxel.other_image.size();++index)
+        if(ref.shape() == voxel.other_image[index].shape())
+        {
+            affine = voxel.other_image_trans[index];
+            has_registered = true;
+        }
+    if(!has_registered && ref.shape() != voxel.dim)
+    {
+        std::cout << " and register image with DWI." << std::endl;
+        in.get_voxel_size(vs);
+        affine = linear(make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,
+                        make_list(subject_image_pre(tipl::image<3>(ref))),vs,tipl::reg::rigid_body);
+        if(prog.aborted())
+            return false;
+    }
+    else {
+        if(has_registered)
+            std::cout << " using previous registration." << std::endl;
+        else
+            std::cout << " treated as DWI space images." << std::endl;
+    }
+    voxel.other_image.push_back(std::move(ref));
+    voxel.other_image_name.push_back(name);
+    voxel.other_image_trans.push_back(affine);
+    return true;
+}
 extern std::vector<std::string> fa_template_list,iso_template_list;
 void match_template_resolution(tipl::image<3>& VG,
                                tipl::vector<3>& VGvs,
                                tipl::image<3>& VF,
                                tipl::vector<3>& VFvs);
-bool ImageModel::align_acpc(float reso)
+bool src_data::align_acpc(float reso)
 {
     tipl::progress prog("align acpc",true);
     std::string msg = " The diffusion MRI data were rotated to align with the AC-PC line";
@@ -1057,7 +1100,7 @@ bool ImageModel::align_acpc(float reso)
 
 extern bool has_cuda;
 extern int gpu_count;
-bool ImageModel::correct_motion(void)
+bool src_data::correct_motion(void)
 {
     std::string msg = " Motion correction was conducted with b-table rotated.";
     if(voxel.report.find(msg) != std::string::npos)
@@ -1161,7 +1204,7 @@ bool ImageModel::correct_motion(void)
     voxel.report += msg;
     return true;
 }
-void ImageModel::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
+void src_data::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
 {
     tipl::progress prog("Removing background region");
     size_t p = 0;
@@ -1177,7 +1220,7 @@ void ImageModel::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
     tipl::crop(dwi,range_min,range_max);
     voxel.dim = voxel.mask.shape();
 }
-void ImageModel::trim(void)
+void src_data::trim(void)
 {
     tipl::shape<3> range_min,range_max;
     tipl::bounding_box(voxel.mask,range_min,range_max);
@@ -1306,7 +1349,7 @@ void apply_distortion_map2(const image_type& v1,
     );
 }
 
-bool ImageModel::read_b0(tipl::image<3>& b0) const
+bool src_data::read_b0(tipl::image<3>& b0) const
 {
     for(size_t index = 0;index < src_bvalues.size();++index)
         if(src_bvalues[index] == 0.0f)
@@ -1317,7 +1360,7 @@ bool ImageModel::read_b0(tipl::image<3>& b0) const
     error_msg = "No b0 found in DWI data";
     return false;
 }
-bool ImageModel::read_rev_b0(const char* filename,tipl::image<3>& rev_b0)
+bool src_data::read_rev_b0(const char* filename,tipl::image<3>& rev_b0)
 {
     if(QString(filename).endsWith(".nii.gz") || QString(filename).endsWith(".nii"))
     {
@@ -1333,7 +1376,7 @@ bool ImageModel::read_rev_b0(const char* filename,tipl::image<3>& rev_b0)
     }
     if(QString(filename).endsWith("src.gz"))
     {
-        std::shared_ptr<ImageModel> src2(new ImageModel);
+        std::shared_ptr<src_data> src2(new src_data);
         if(!src2->load_from_file(filename))
         {
             error_msg = src2->error_msg;
@@ -1370,7 +1413,7 @@ tipl::vector<3> phase_direction_at_AP_PA(const tipl::image<3>& v1,const tipl::im
     return c;
 }
 
-bool ImageModel::distortion_correction(const char* filename)
+bool src_data::distortion_correction(const char* filename)
 {
     tipl::image<3> v1,v2;
     if(!read_b0(v1) || !read_rev_b0(filename,v2))
@@ -1448,7 +1491,7 @@ bool ImageModel::distortion_correction(const char* filename)
 
 #include <QCoreApplication>
 #include <QRegularExpression>
-bool ImageModel::run_plugin(std::string exec_name,
+bool src_data::run_plugin(std::string exec_name,
                             std::string keyword,
                             size_t total_keyword_count,std::vector<std::string> param,std::string working_dir,std::string exec)
 {
@@ -1557,7 +1600,7 @@ bool ImageModel::run_plugin(std::string exec_name,
     return error_msg.empty();
 }
 
-void ImageModel::get_volume_range(size_t dim,int extra_space)
+void src_data::get_volume_range(size_t dim,int extra_space)
 {
     tipl::out() << "get the bounding box for speeding up topup/eddy" << std::endl;
     auto temp_mask = voxel.mask;
@@ -1584,7 +1627,7 @@ void ImageModel::get_volume_range(size_t dim,int extra_space)
     }
 }
 
-bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
+bool src_data::generate_topup_b0_acq_files(tipl::image<3>& b0,
                                              tipl::image<3>& rev_b0,
                                              std::string& b0_appa_file)
 {
@@ -1694,7 +1737,7 @@ bool ImageModel::generate_topup_b0_acq_files(tipl::image<3>& b0,
 bool load_bval(const char* file_name,std::vector<double>& bval);
 bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by = true);
 QString version_string(void);
-bool ImageModel::load_topup_eddy_result(void)
+bool src_data::load_topup_eddy_result(void)
 {
     std::string corrected_file = file_name+".corrected.nii.gz";
     if(!std::filesystem::exists(corrected_file))
@@ -1756,7 +1799,7 @@ bool ImageModel::load_topup_eddy_result(void)
     return true;
 }
 
-bool ImageModel::run_applytopup(std::string exec)
+bool src_data::run_applytopup(std::string exec)
 {
     tipl::out() << "run applytopup";
     std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
@@ -1864,7 +1907,7 @@ bool eddy_check_shell(const std::vector<float>& bvalues)
     }
     return true;
 }
-bool ImageModel::run_eddy(std::string exec)
+bool src_data::run_eddy(std::string exec)
 {
     if(voxel.report.find("rotated") != std::string::npos)
     {
@@ -1978,7 +2021,7 @@ bool ImageModel::run_eddy(std::string exec)
     std::filesystem::remove(mask_nifti);
     return true;
 }
-std::string ImageModel::find_topup_reverse_pe(void)
+std::string src_data::find_topup_reverse_pe(void)
 {
     tipl::progress prog("searching for opposite direction scans..");
     // locate rsrc.gz file
@@ -2029,7 +2072,7 @@ std::string ImageModel::find_topup_reverse_pe(void)
     return candidates.begin()->second;
 }
 extern std::string topup_param_file;
-bool ImageModel::run_topup_eddy(const std::string& other_src,bool topup_only)
+bool src_data::run_topup_eddy(const std::string& other_src,bool topup_only)
 {
     tipl::progress prog("run topup/eddy");
     if(voxel.report.find("rotated") != std::string::npos)
@@ -2126,7 +2169,7 @@ bool ImageModel::run_topup_eddy(const std::string& other_src,bool topup_only)
 
 void calculate_shell(std::vector<float> sorted_bvalues,
                      std::vector<unsigned int>& shell);
-void ImageModel::get_report(std::string& report)
+void src_data::get_report(std::string& report)
 {
     std::vector<float> sorted_bvalues(src_bvalues);
     std::sort(sorted_bvalues.begin(),sorted_bvalues.end());
@@ -2182,7 +2225,7 @@ void ImageModel::get_report(std::string& report)
         << " The slice thickness was " << std::fixed << std::setprecision(2) << tipl::max_value(voxel.vs.begin(),voxel.vs.end()) << " mm.";
     report = out.str();
 }
-bool ImageModel::save_to_file(const char* dwi_file_name)
+bool src_data::save_to_file(const char* dwi_file_name)
 {
     tipl::progress prog_("saving ",std::filesystem::path(dwi_file_name).filename().string().c_str());
     std::string filename(dwi_file_name);
@@ -2294,7 +2337,7 @@ void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in)
 }
 size_t match_volume(float volume);
 QImage read_qimage(QString filename,std::string& error);
-bool ImageModel::load_from_file(const char* dwi_file_name)
+bool src_data::load_from_file(const char* dwi_file_name)
 {
     tipl::progress prog("open SRC file ",std::filesystem::path(dwi_file_name).filename().string().c_str());
     if(voxel.steps.empty())
@@ -2539,7 +2582,7 @@ bool ImageModel::load_from_file(const char* dwi_file_name)
     return true;
 }
 
-bool ImageModel::save_fib(const std::string& output_name)
+bool src_data::save_fib(const std::string& output_name)
 {
     std::string tmp_file = output_name + ".tmp.gz";
     while(std::filesystem::exists(tmp_file))
@@ -2580,7 +2623,7 @@ bool ImageModel::save_fib(const std::string& output_name)
     return true;
 }
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
-bool ImageModel::save_nii_for_applytopup_or_eddy(bool include_rev) const
+bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
 {
     tipl::progress prog("saving results");
     tipl::out() << "trim " << std::filesystem::path(file_name).filename() << " for " << (include_rev ? "eddy":"applytopup") << std::endl;
@@ -2619,7 +2662,7 @@ bool ImageModel::save_nii_for_applytopup_or_eddy(bool include_rev) const
     }
     return true;
 }
-bool ImageModel::save_b0_to_nii(const char* nifti_file_name) const
+bool src_data::save_b0_to_nii(const char* nifti_file_name) const
 {
     tipl::matrix<4,4> trans;
     initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
@@ -2627,14 +2670,14 @@ bool ImageModel::save_b0_to_nii(const char* nifti_file_name) const
     std::copy(src_dwi_data[0],src_dwi_data[0]+buffer.size(),buffer.begin());
     return tipl::io::gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans);
 }
-bool ImageModel::save_mask_nii(const char* nifti_file_name) const
+bool src_data::save_mask_nii(const char* nifti_file_name) const
 {
     tipl::matrix<4,4> trans;
     initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
     return tipl::io::gz_nifti::save_to_file(nifti_file_name,voxel.mask,voxel.vs,trans);
 }
 
-bool ImageModel::save_dwi_sum_to_nii(const char* nifti_file_name) const
+bool src_data::save_dwi_sum_to_nii(const char* nifti_file_name) const
 {
     tipl::matrix<4,4> trans;
     initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
@@ -2642,7 +2685,7 @@ bool ImageModel::save_dwi_sum_to_nii(const char* nifti_file_name) const
     return tipl::io::gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans);
 }
 
-bool ImageModel::save_b_table(const char* file_name) const
+bool src_data::save_b_table(const char* file_name) const
 {
     std::ofstream out(file_name);
     for(unsigned int index = 0;index < src_bvalues.size();++index)
@@ -2654,7 +2697,7 @@ bool ImageModel::save_b_table(const char* file_name) const
     }
     return out.good();
 }
-bool ImageModel::save_bval(const char* file_name) const
+bool src_data::save_bval(const char* file_name) const
 {
     std::ofstream out(file_name);
     for(unsigned int index = 0;index < src_bvalues.size();++index)
@@ -2665,7 +2708,7 @@ bool ImageModel::save_bval(const char* file_name) const
     }
     return out.good();
 }
-bool ImageModel::save_bvec(const char* file_name) const
+bool src_data::save_bvec(const char* file_name) const
 {
     std::ofstream out(file_name);
     for(unsigned int index = 0;index < src_bvalues.size();++index)

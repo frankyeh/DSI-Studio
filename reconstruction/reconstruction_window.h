@@ -12,8 +12,7 @@ namespace Ui {
     class reconstruction_window;
 }
 
-struct ImageModel;
-bool add_other_image(ImageModel* handle,QString name,QString filename);
+struct src_data;
 class reconstruction_window : public QMainWindow
 {
     Q_OBJECT
@@ -41,7 +40,7 @@ private: //bad slices
     std::vector<std::pair<size_t,size_t> > bad_slices;
 private:
     Ui::reconstruction_window *ui;
-    std::shared_ptr<ImageModel> handle;
+    std::shared_ptr<src_data> handle;
     std::string existing_steps;
     bool load_src(int index);
     void update_dimension(void);

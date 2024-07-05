@@ -1730,7 +1730,7 @@ bool fib_data::map_to_mni(bool background)
         }
 
 
-
+        reg.match_resolution(false);
         prog = 2;
 
 

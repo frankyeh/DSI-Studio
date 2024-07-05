@@ -215,11 +215,11 @@ void distortion_estimate(const image_type& v1,const image_type& v2,
     }
 }
 
-struct ImageModel
+struct src_data
 {
-    ImageModel(void){}
-    ImageModel(const ImageModel&) = delete;
-    ImageModel operator=(const ImageModel&) = delete;
+    src_data(void){}
+    src_data(const src_data&) = delete;
+    src_data operator=(const src_data&) = delete;
 public:
     std::vector<tipl::image<3,unsigned short> > new_dwi; //used in rotated volume
     std::vector<tipl::image<3,unsigned short> > nifti_dwi; // if load directly from nifti
@@ -265,8 +265,9 @@ public:
     void crop(tipl::shape<3> range_min,tipl::shape<3> range_max);
     void trim(void);
     bool correct_motion(void);
+    bool add_other_image(const std::string& name,const std::string& filename);
 public:
-    std::shared_ptr<ImageModel> rev_pe_src;
+    std::shared_ptr<src_data> rev_pe_src;
     tipl::shape<3> topup_from,topup_to;
     void get_volume_range(size_t dim = 0,int extra_space = 0);
     bool distortion_correction(const char* file_name);
