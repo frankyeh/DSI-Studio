@@ -973,41 +973,50 @@ bool src_data::add_other_image(const std::string& name,const std::string& filena
     tipl::progress prog("add other images");
     tipl::image<3> ref;
     tipl::vector<3> vs;
+    tipl::transformation_matrix<float> trans;
+
     tipl::io::gz_nifti in;
     if(!in.load_from_file(filename.c_str()) || !in.toLPS(ref))
     {
-        std::cout << "ERROR: not a valid nifti file " << filename << std::endl;
+        error_msg = "ERROR: not a valid nifti file ";
+        error_msg += filename;
         return false;
     }
+    in.get_voxel_size(vs);
 
-    std::cout << "add " << filename << " as " << name;
+    tipl::out() << "add " << filename << " as " << name;
 
-    tipl::transformation_matrix<float> affine;
     bool has_registered = false;
     for(unsigned int index = 0;index < voxel.other_image.size();++index)
         if(ref.shape() == voxel.other_image[index].shape())
         {
-            affine = voxel.other_image_trans[index];
+            trans = voxel.other_image_trans[index];
             has_registered = true;
         }
     if(!has_registered && ref.shape() != voxel.dim)
     {
-        std::cout << " and register image with DWI." << std::endl;
-        in.get_voxel_size(vs);
-        affine = linear(make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,
+        tipl::out() << " and register image with DWI." << std::endl;
+        trans = linear(make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,
                         make_list(subject_image_pre(tipl::image<3>(ref))),vs,tipl::reg::rigid_body);
-        if(prog.aborted())
-            return false;
     }
     else {
         if(has_registered)
-            std::cout << " using previous registration." << std::endl;
+            tipl::out() << " using previous registration." << std::endl;
         else
-            std::cout << " treated as DWI space images." << std::endl;
+            tipl::out()<< " treated as DWI space images." << std::endl;
     }
-    voxel.other_image.push_back(std::move(ref));
-    voxel.other_image_name.push_back(name);
-    voxel.other_image_trans.push_back(affine);
+    if(name == "reg")
+    {
+        voxel.other_modality_subject.swap(ref);
+        voxel.other_modality_trans = trans;
+        voxel.other_modality_vs = vs;
+    }
+    else
+    {
+        voxel.other_image.push_back(std::move(ref));
+        voxel.other_image_name.push_back(name);
+        voxel.other_image_trans.push_back(trans);
+    }
     return true;
 }
 extern std::vector<std::string> fa_template_list,iso_template_list;
