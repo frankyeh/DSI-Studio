@@ -1689,38 +1689,38 @@ bool fib_data::map_to_mni(bool background)
     {
         prog = 1;
         dual_reg<3> reg;
-        reg.load_subject(tipl::image<3>(dir.fa[0],dim));
+        reg.load_subject(0,tipl::image<3>(dir.fa[0],dim));
         {
             size_t iso_index = get_name_index("iso");
             if(view_item.size() == iso_index)
                 iso_index = get_name_index("md");
             if(view_item.size() != iso_index)
-                reg.load_subject2(tipl::image<3>(view_item[iso_index].get_image()));
+                reg.load_subject(1,tipl::image<3>(view_item[iso_index].get_image()));
         }
         reg.Ivs = vs;
         reg.IR = trans_to_mni;
 
+        reg.It[0] = template_image_pre(tipl::image<3>(template_I));
+        reg.It[1] = template_image_pre(tipl::image<3>(template_I2));
+        reg.Itvs = template_vs;
+        reg.ItR = template_to_mni;
+
         // not FIB file, use t1w as template
         if(dir.index_name[0] == "image")
         {
-            if(!reg.load_template(t1w_template_file_name.c_str(),vs,template_I.shape(),template_to_mni) ||
-               !reg.load_template2(t2w_template_file_name.c_str(),template_I.shape(),template_to_mni))
+            if(!reg.load_template(1,t1w_template_file_name.c_str()) ||
+               !reg.load_template(2,t2w_template_file_name.c_str()))
             {
-                prog = 6;
+                prog = 4;
                 error_msg = "cannot perform normalization";
                 tipl::prog_aborted = true;
                 return;
             }
+            reg.It[0].swap(reg.It[1]);
+            reg.It[1].swap(reg.It[2]);
+            reg.It[2].clear();
             tipl::out() << "using structure image for normalization" << std::endl;
         }
-        else
-        {
-            reg.It = template_image_pre(tipl::image<3>(template_I));
-            reg.It2 = template_image_pre(tipl::image<3>(template_I2));
-            reg.Itvs = template_vs;
-            reg.ItR = template_to_mni;
-        }
-
 
         reg.match_resolution(false);
         prog = 2;
@@ -1739,7 +1739,7 @@ bool fib_data::map_to_mni(bool background)
 
         if(tipl::prog_aborted)
         {
-            prog = 6;
+            prog = 4;
             return;
         }
         prog = 3;
@@ -1750,28 +1750,31 @@ bool fib_data::map_to_mni(bool background)
         }
         if(tipl::prog_aborted)
         {
-            prog = 6;
+            prog = 4;
             return;
         }
-        prog = 5;
+        s2t = reg.from2to;
+        t2s = reg.to2from;
+        prog = 4;
         if(!reg.save_warping(output_file_name.c_str()))
             tipl::out() << reg.error_msg;
-        s2t.swap(reg.from2to);
-        t2s.swap(reg.to2from);
-        prog = 6;
+
     };
 
     if(background)
     {
-        std::thread t(lambda);
-        while(prog_(prog,6))
+        auto t = std::make_shared<std::thread>(lambda);
+        while(prog_(prog,4))
             std::this_thread::yield();
         if(prog_.aborted())
         {
             error_msg = "aborted.";
             tipl::prog_aborted = true;
         }
-        t.join();
+        if(!tipl::prog_aborted)
+            reg_threads.push_back(t);
+        else
+            t->join();
         return !prog_.aborted();
     }
 
