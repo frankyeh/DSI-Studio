@@ -241,6 +241,8 @@ struct dual_reg{
 
     bool load_subject(const char* file_name);
     bool load_subject2(const char* file_name);
+    bool load_template(const char* file_name,const tipl::vector<3>& vs,const tipl::shape<dim>& sp,const tipl::matrix<dim+1,dim+1>& trans);
+    bool load_template2(const char* file_name,const tipl::shape<dim>& sp,const tipl::matrix<dim+1,dim+1>& trans);
     bool load_template(const char* file_name);
     bool load_template2(const char* file_name);
     auto T(void) const
