@@ -141,18 +141,12 @@ bool load_nifti_file(std::string file_name_cmd,tipl::image<3>& data,tipl::vector
     return load_nifti_file(file_name_cmd,data,vs,trans,is_mni);
 }
 
-auto load_template(tipl::io::gz_nifti& nifti)
+inline auto load_template(tipl::io::gz_nifti& nifti)
 {
-    tipl::image<3,unsigned char> I;
     if(nifti.is_int8())
-        nifti >> I;
+        return nifti.toImage<tipl::image<3,unsigned char>>();
     else
-    {
-        tipl::image<3> I_float;
-        nifti >> I_float;
-        tipl::normalize_upper_lower2(I_float,I,255.999f);
-    }
-    return I;
+        return template_image_pre(nifti.toImage<tipl::image<3> >());
 }
 
 
@@ -263,6 +257,34 @@ bool dual_reg<3>::load_template2(const char* file_name)
     }
     return true;
 }
+template<>
+bool dual_reg<3>::load_template(const char* file_name,const tipl::vector<3>& vs,const tipl::shape<3>& sp,const tipl::matrix<4,4>& trans)
+{
+    tipl::image<3> buf(sp);
+    if(!tipl::io::gz_nifti::load_to_space(file_name,buf,trans))
+    {
+        error_msg = "invalid nifti format";
+        return false;
+    }
+    It = template_image_pre(std::move(buf));
+    ItR = trans;
+    Itvs = vs;
+    It2.clear();
+    return true;
+}
+template<>
+bool dual_reg<3>::load_template2(const char* file_name,const tipl::shape<3>& sp,const tipl::matrix<4,4>& trans)
+{
+    tipl::image<3> buf(sp);
+    if(!tipl::io::gz_nifti::load_to_space(file_name,buf,trans))
+    {
+        error_msg = "invalid nifti format";
+        return false;
+    }
+    It2 = template_image_pre(std::move(buf));
+    return true;
+}
+
 template<>
 void dual_reg<3>::match_resolution(bool rigid_body)
 {
