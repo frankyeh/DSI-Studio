@@ -1703,21 +1703,13 @@ bool fib_data::map_to_mni(bool background)
         // not FIB file, use t1w as template
         if(dir.index_name[0] == "image")
         {
-            if(!reg.load_template(t1w_template_file_name.c_str()) ||
-               !reg.load_template2(t2w_template_file_name.c_str()))
+            if(!reg.load_template(t1w_template_file_name.c_str(),vs,template_I.shape(),template_to_mni) ||
+               !reg.load_template2(t2w_template_file_name.c_str(),template_I.shape(),template_to_mni))
             {
                 prog = 6;
                 error_msg = "cannot perform normalization";
                 tipl::prog_aborted = true;
                 return;
-            }
-            if(reg.It.shape() != template_I.shape() || reg.ItR != template_to_mni)
-            {
-                tipl::image<3,unsigned char> It(template_I.shape()),It2(template_I.shape());
-                tipl::resample(reg.It,It,tipl::from_space(template_to_mni).to(reg.ItR));
-                tipl::resample(reg.It2,It2,tipl::from_space(template_to_mni).to(reg.ItR));
-                reg.It.swap(It);
-                reg.It2.swap(It2);
             }
             tipl::out() << "using structure image for normalization" << std::endl;
         }
