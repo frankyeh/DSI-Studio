@@ -160,9 +160,6 @@ bool src_data::reconstruction(void)
             // run gqi to get the spin quantity
 
 
-            if(voxel.qsdr_reso < voxel.vs[0])
-                resample(voxel.qsdr_reso);
-
             // obtain QA map for normalization
             {
                 auto mask = voxel.mask;
