@@ -215,7 +215,7 @@ int rec(tipl::program_option<tipl::out>& po)
                 tipl::out() << "invalid parameter: " << file_list[i].toStdString() << std::endl;
                 return 1;
             }
-            if(name_value.size() == 3) // handle windows directory with drive letter
+            if(name_value.size() == 3 && name_value[1].size() == 1) // handle windows directory with drive letter --other_image=t1w:c:/t1w.nii.gz
             {
                 name_value[1] += ":";
                 name_value[1] += name_value[2];
