@@ -6,7 +6,7 @@
 #include "basic_process.hpp"
 #include "gqi_process.hpp"
 #include "reg.hpp"
-extern std::vector<std::string> fa_template_list,iso_template_list;
+extern std::vector<std::string> fa_template_list,iso_template_list,t1w_template_list;
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 class DWINormalization  : public BaseProcess
 {
@@ -48,16 +48,26 @@ public:
         auto& VF = reg.I;
         auto& VF2 = reg.I2;
         auto& VFvs = reg.Ivs = voxel.vs;
-
-        reg.load_subject(std::move(voxel.qa_map));
-        reg.load_subject2(std::move(voxel.iso_map));
-
-
-        bool is_human_template = QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().contains("ICBM");
-
+        bool t1w_reg = false;
         if(!reg.load_template(fa_template_list[voxel.template_id].c_str()) ||
            !reg.load_template2(iso_template_list[voxel.template_id].c_str()))
             throw std::runtime_error("cannot load anisotropy/isotropy template");
+
+        if(!voxel.other_modality_template.empty())
+        {
+            tipl::out() << "using " << voxel.other_modality_template << " as template for registration";
+            reg.Ivs = voxel.vs = voxel.other_modality_vs;
+            reg.load_subject(tipl::image<3>(voxel.other_modality_subject));
+            if(!reg.load_template(voxel.other_modality_template.c_str(),reg.Itvs,reg.It.shape(),reg.ItR))
+                throw std::runtime_error(std::string("cannot load template: ") + voxel.other_modality_template);
+            reg.It2.clear();
+            t1w_reg = true;
+        }
+        else
+        {
+            reg.load_subject(std::move(voxel.qa_map));
+            reg.load_subject2(std::move(voxel.iso_map));
+        }
 
         reg.match_resolution(false);
         initial_LPS_nifti_srow(reg.IR,reg.I.shape(),reg.Ivs);
@@ -75,9 +85,19 @@ public:
                 if(voxel.R2 < 0.4f)
                     throw std::runtime_error("ERROR: Poor R2 found in linear registration. Please check image orientation or use manual alignment.");
             }
-            affine = reg.T();
 
-
+            {
+                affine = reg.T();
+                float VFratio = VFvs[0]/voxel.vs[0]; // if subject data are downsampled, then VFratio=2, 4, 8, ...etc
+                if(VFratio != 1.0f)
+                    tipl::multiply_constant(affine.data,affine.data+12,VFratio);
+                if(t1w_reg)
+                {
+                    auto T = voxel.other_modality_trans;
+                    T.inverse();
+                    affine *= T;
+                }
+            }
 
             auto& VFF = reg.J;
             auto& VFF2 = reg.J2;
@@ -109,9 +129,7 @@ public:
                 }
             }
 
-            float VFratio = VFvs[0]/voxel.vs[0]; // if subject data are downsampled, then VFratio=2, 4, 8, ...etc
-            if(VFratio != 1.0f)
-                tipl::multiply_constant(affine.data,affine.data+12,VFratio);
+
 
         }
         // if subject data is only a fragment of FOV, crop images
@@ -217,14 +235,6 @@ public:
             tipl::out() << "output resolution: " << VGvs[0] << std::endl;
             tipl::out() << "output dimension: " << VG.shape() << std::endl;
 
-
-            if(is_human_template && voxel.partial_min == voxel.partial_max) // if default template is used
-            {
-                voxel.csf_pos1 = mni_to_voxel_index(voxel,6,0,18);
-                voxel.csf_pos2 = mni_to_voxel_index(voxel,-6,0,18);
-                voxel.csf_pos3 = mni_to_voxel_index(voxel,4,18,10);
-                voxel.csf_pos4 = mni_to_voxel_index(voxel,-4,18,10);
-            }
             // other image
             if(!voxel.other_image.empty())
             {
