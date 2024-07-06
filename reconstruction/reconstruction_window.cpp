@@ -678,6 +678,28 @@ void reconstruction_window::on_actionAttach_Images_triggered()
 
 }
 
+void reconstruction_window::on_actionT1W_based_QSDR_triggered()
+{
+    QString subject_image = QFileDialog::getOpenFileName(
+            this,"Open Subject Image",absolute_path,
+            "Images (*.nii *nii.gz);;All files (*)" );
+    if(subject_image.isEmpty())
+        return;
+    QString template_image = QFileDialog::getOpenFileName(
+            this,"Open Template Image",absolute_path,
+            "Images (*.nii *nii.gz);;All files (*)" );
+    if(template_image.isEmpty())
+        return;
+    if(handle->add_other_image("reg",subject_image.toStdString()))
+    {
+        handle->voxel.other_modality_template = template_image.toStdString();
+        QMessageBox::information(this,QApplication::applicationName(),"Registration images added");
+    }
+    else
+        QMessageBox::critical(this,"ERROR","Not a valid nifti file");
+
+}
+
 void reconstruction_window::on_actionPartial_FOV_triggered()
 {
     QString values = QInputDialog::getText(this,QApplication::applicationName(),"Specify the range of MNI coordinates separated by spaces (minx miny minz maxx maxy maxz)",QLineEdit::Normal,
@@ -964,3 +986,5 @@ void reconstruction_window::on_mask_from_unet_clicked()
     on_SlicePos_valueChanged(ui->SlicePos->value());
     raise();
 }
+
+
