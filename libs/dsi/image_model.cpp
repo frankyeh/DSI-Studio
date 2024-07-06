@@ -996,8 +996,8 @@ bool src_data::add_other_image(const std::string& name,const std::string& filena
     if(!has_registered && ref.shape() != voxel.dim)
     {
         tipl::out() << " and register image with DWI." << std::endl;
-        trans = linear(make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,
-                        make_list(subject_image_pre(tipl::image<3>(ref))),vs,tipl::reg::rigid_body);
+        trans = linear(make_list(subject_image_pre(tipl::image<3>(ref))),vs,
+                       make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,tipl::reg::rigid_body);
     }
     else {
         if(has_registered)
@@ -1015,6 +1015,7 @@ bool src_data::add_other_image(const std::string& name,const std::string& filena
     {
         voxel.other_image.push_back(std::move(ref));
         voxel.other_image_name.push_back(name);
+        trans.inverse();
         voxel.other_image_trans.push_back(trans);
     }
     return true;
