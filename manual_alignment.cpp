@@ -426,7 +426,7 @@ void manual_alignment::on_switch_view_clicked()
 void manual_alignment::on_actionSave_Warped_Image_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
-            this,"Save Warping Image","","Images (*.nii *nii.gz);;All files (*)" );
+            this,"Save Warping Image",QDir::currentPath(),"Images (*.nii *nii.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
 
@@ -487,7 +487,7 @@ void manual_alignment::on_actionLoad_Transformation_triggered()
 void manual_alignment::on_actionApply_Transformation_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
-            this,"Open NIFTI image","","Images (*.nii *nii.gz);;All files (*)");
+            this,"Open NIFTI image",QDir::currentPath(),"Images (*.nii *nii.gz);;All files (*)");
     if(filename.isEmpty())
         return;
 
