@@ -1191,7 +1191,7 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
         QString output_name = dir + "/mod_" + QFileInfo(slice->dicom_source[i].c_str()).completeBaseName() + ".dcm";
 
         if(i == 0 && QFileInfo(output_name).exists() &&
-           QMessageBox::information(this,"","Previous modifications found. Overwrite?",
+           QMessageBox::information(this,QApplication::applicationName(),"Previous modifications found. Overwrite?",
            QMessageBox::Yes|QMessageBox::Cancel) == QMessageBox::Cancel)
                 return;
 
