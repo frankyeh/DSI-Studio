@@ -948,14 +948,13 @@
      <x>0</x>
      <y>0</y>
      <width>1208</width>
-     <height>26</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Open">
     <property name="title">
      <string>&amp;File</string>
     </property>
-    <addaction name="actionSave_Transformed_Image"/>
     <addaction name="actionApply_Warping"/>
     <addaction name="separator"/>
     <addaction name="actionSave_Warping"/>
@@ -967,7 +966,6 @@
     <addaction name="actionSubject_Image"/>
     <addaction name="actionTemplate_Image"/>
     <addaction name="separator"/>
-    <addaction name="actionMatch_Intensity"/>
    </widget>
    <widget class="QMenu" name="menu_Option">
     <property name="title">
