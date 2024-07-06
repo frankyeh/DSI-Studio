@@ -666,9 +666,9 @@ void MainWindow::on_view_image_clicked()
 
 void MainWindow::on_workDir_currentTextChanged(const QString &arg1)
 {
+    tipl::out() << "set current dir:" << arg1.toStdString();
     QDir::setCurrent(arg1);
 }
-
 
 bool MainWindow::load_db(std::shared_ptr<group_connectometry_analysis>& database,QString& filename)
 {
@@ -1362,6 +1362,8 @@ void MainWindow::on_OpenDWI_DICOM_clicked()
                          ui->workDir->currentText(),
                          "DICOM files (*.dcm);;All files (*)" ));
 }
+
+
 
 
 
