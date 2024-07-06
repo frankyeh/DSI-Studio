@@ -204,6 +204,21 @@ int rec(tipl::program_option<tipl::out>& po)
         return 0;
     }
 
+    if(po.has("reg"))
+    {
+        auto file_list = tipl::split(po.get("reg"),',');
+        if(file_list.size() != 2)
+        {
+            tipl::out() << "ERROR: invalid reg setting ";
+            return 1;
+        }
+        if(!src.add_other_image("reg",file_list[0]))
+        {
+            tipl::out() << "ERROR: " << src.error_msg;
+            return 1;
+        }
+        tipl::out() << "other modality template: " << (src.voxel.other_modality_template = file_list[1]);
+    }
     if(po.has("other_image"))
     {
         QStringList file_list = QString(po.get("other_image").c_str()).split(",");
@@ -212,7 +227,7 @@ int rec(tipl::program_option<tipl::out>& po)
             QStringList name_value = file_list[i].split(":");
             if(name_value.size() == 1)
             {
-                tipl::out() << "invalid parameter: " << file_list[i].toStdString() << std::endl;
+                tipl::out() << "ERROR: invalid parameter: " << file_list[i].toStdString() << std::endl;
                 return 1;
             }
             if(name_value.size() == 3 && name_value[1].size() == 1) // handle windows directory with drive letter --other_image=t1w:c:/t1w.nii.gz
@@ -222,7 +237,10 @@ int rec(tipl::program_option<tipl::out>& po)
             }
             tipl::out() << name_value[0].toStdString() << ":" << name_value[1].toStdString() << std::endl;
             if(!src.add_other_image(name_value[0].toStdString(),name_value[1].toStdString()))
+            {
+                tipl::out() << "ERROR: " << src.error_msg;
                 return 1;
+            }
         }
     }
 
