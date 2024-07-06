@@ -833,28 +833,28 @@ void view_image::on_actionSave_triggered()
         cur_image->change_type(variant_image::float32);
         if(regtool_subject)
         {
-            if(!regtool->reg_2d.I.empty())
+            if(!regtool->reg_2d.I[0].empty())
             {
-                regtool->reg_2d.I = tipl::volume2slice(cur_image->I_float32,2,0);
+                regtool->reg_2d.I[0] = tipl::volume2slice(cur_image->I_float32,2,0);
                 regtool->reg.Ivs = cur_image->vs;
             }
             else
             {
-                regtool->reg.I = cur_image->I_float32;
+                regtool->reg.I[0] = cur_image->I_float32;
                 regtool->reg.Ivs = cur_image->vs;
                 regtool->reg.IR = cur_image->T;
             }
         }
         else
         {
-            if(!regtool->reg_2d.It.empty())
+            if(!regtool->reg_2d.It[0].empty())
             {
-                regtool->reg_2d.It = tipl::volume2slice(cur_image->I_float32,2,0);
+                regtool->reg_2d.It[0] = tipl::volume2slice(cur_image->I_float32,2,0);
                 regtool->reg.Itvs = cur_image->vs;
             }
             else
             {
-                regtool->reg.It = cur_image->I_float32;
+                regtool->reg.It[0] = cur_image->I_float32;
                 regtool->reg.Itvs = cur_image->vs;
                 regtool->reg.ItR = cur_image->T;
             }
