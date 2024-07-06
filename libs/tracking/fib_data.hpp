@@ -282,6 +282,7 @@ public:
     tipl::matrix<4,4> template_to_mni;
     bool has_manual_atlas = false;
     tipl::affine_transform<float> manual_template_T;
+    std::vector<std::shared_ptr<std::thread> > reg_threads;
 public:
     std::string t1w_template_file_name,t2w_template_file_name,wm_template_file_name,mask_template_file_name;
     std::string tractography_atlas_file_name;
@@ -367,6 +368,11 @@ public:
     {
         vs[0] = vs[1] = vs[2] = 1.0;
         trans_to_mni.identity();
+    }
+    ~fib_data(void)
+    {
+        for(auto& each : reg_threads)
+            each->join();
     }
     fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_);
     fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4>& trans_to_mni_);
