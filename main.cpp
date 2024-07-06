@@ -23,6 +23,7 @@
 std::string device_content_file,topup_param_file;
 std::vector<std::string> fa_template_list,
                          iso_template_list,
+                         t1w_template_list,
                          fib_template_list,
                          model_list_t2w;
 std::vector<std::vector<std::string> > atlas_file_name_list;
@@ -150,6 +151,7 @@ bool load_file_name(void)
             QDir template_dir = dir.absolutePath() + "/" + name_list[i];
             QString qa_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".QA.nii.gz";
             QString iso_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".ISO.nii.gz";
+            QString t1w_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".T1W.nii.gz";
             QString tt_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".tt.gz";
             QString fib_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".fib.gz";
             if(!QFileInfo(qa_file_path).exists())
@@ -160,6 +162,11 @@ bool load_file_name(void)
                 iso_template_list.push_back(iso_file_path.toStdString());
             else
                 iso_template_list.push_back(std::string());
+            if(QFileInfo(t1w_file_path).exists())
+                t1w_template_list.push_back(t1w_file_path.toStdString());
+            else
+                t1w_template_list.push_back(std::string());
+
             // not all have FIB template
             if(QFileInfo(fib_file_path).exists())
                 fib_template_list.push_back(fib_file_path.toStdString());
