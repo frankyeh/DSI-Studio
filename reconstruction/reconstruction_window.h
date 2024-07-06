@@ -120,6 +120,7 @@ private slots:
     void on_actionManual_Align_triggered();
     void on_actionAttach_Images_triggered();
     void on_actionPartial_FOV_triggered();
+    void on_actionT1W_based_QSDR_triggered();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H
