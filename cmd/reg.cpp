@@ -28,7 +28,7 @@ bool dual_reg<3>::apply_warping(const char* from,const char* to) const
             }
             std::replace_if(I_list[index].begin(),I_list[index].end(),[](float v){return std::isnan(v) || std::isinf(v) || v < 0.0f;},0.0f);
         }
-        if(I.shape() != I_list[0].shape())
+        if(from2to.shape() != I_list[0].shape())
         {
             error_msg = std::filesystem::path(from).filename().string();
             error_msg += " has an image size or srow matrix from that of the original --from image.";
@@ -36,14 +36,13 @@ bool dual_reg<3>::apply_warping(const char* from,const char* to) const
         }
         bool is_label = tipl::is_label_image(I_list[0]);
         tipl::out() << (is_label ? "processed as labels using nearest assignment" : "processed as values using interpolation") << std::endl;
-        tipl::image<4> J(to2from.shape().expand(nii.dim(4)));
+        tipl::image<4> J4(to2from.shape().expand(nii.dim(4)));
         tipl::par_for(nii.dim(4),[&](size_t z)
         {
-            tipl::image<3> out;
-            apply_warping(I_list[z],out,is_label);
-            std::copy(out.begin(),out.end(),J.slice_at(z).begin());
+            tipl::image<3> out(apply_warping(I_list[z],is_label));
+            std::copy(out.begin(),out.end(),J4.slice_at(z).begin());
         });
-        if(!tipl::io::gz_nifti::save_to_file(to,J,Itvs,ItR,It_is_mni))
+        if(!tipl::io::gz_nifti::save_to_file(to,J4,Itvs,ItR,It_is_mni))
         {
             error_msg = "cannot write to file ";
             error_msg += to;
@@ -61,17 +60,15 @@ bool dual_reg<3>::apply_warping(const char* from,const char* to) const
     bool is_label = tipl::is_label_image(I3);
     tipl::out() << (is_label ? "processed as labels using nearest assignment" : "processed as values using interpolation") << std::endl;
 
-    if(I.shape() != I3.shape())
+    if(from2to.shape() != I3.shape())
     {
         error_msg = std::filesystem::path(from).filename().string();
         error_msg += " has an image size or srow matrix from that of the original --from image.";
         return false;
     }
 
-    tipl::image<3> J3(It.shape());
-    apply_warping(I3,J3,is_label);
     tipl::out() << "save as to " << to;
-    if(!tipl::io::gz_nifti::save_to_file(to,J3,Itvs,ItR,It_is_mni))
+    if(!tipl::io::gz_nifti::save_to_file(to,apply_warping(I3,is_label),Itvs,ItR,It_is_mni))
     {
         error_msg = "cannot write to file ";
         error_msg += to;
@@ -141,181 +138,9 @@ bool load_nifti_file(std::string file_name_cmd,tipl::image<3>& data,tipl::vector
     return load_nifti_file(file_name_cmd,data,vs,trans,is_mni);
 }
 
-inline auto load_template(tipl::io::gz_nifti& nifti)
-{
-    if(nifti.is_int8())
-        return nifti.toImage<tipl::image<3,unsigned char>>();
-    else
-        return template_image_pre(nifti.toImage<tipl::image<3> >());
-}
-
-
-template<>
-bool dual_reg<3>::load_subject(const char* file_name)
-{
-    tipl::io::gz_nifti nifti;
-    if(!nifti.load_from_file(file_name))
-    {
-        error_msg = "invalid nifti format";
-        return false;
-    }
-    if(nifti.is_int8())
-        nifti >> I;
-    else
-        load_subject(nifti.toImage<tipl::image<3> >());
-    nifti.get_image_transformation(IR);
-    nifti.get_voxel_size(Ivs);
-    I2.clear();
-    return true;
-}
-
-QImage read_qimage(QString filename,std::string& error);
-template<>
-bool dual_reg<2>::load_template(const char* file_name)
-{
-    QImage in = read_qimage(file_name,error_msg);
-    if(in.isNull())
-        return false;
-    tipl::color_image Ic;
-    Ic << in;
-    It = Ic;
-    tipl::normalize(It);
-    Itvs = {1.0f,1.0f};
-    return true;
-}
-template<>
-bool dual_reg<2>::load_subject(const char* file_name)
-{
-    QImage in = read_qimage(file_name,error_msg);
-    if(in.isNull())
-        return false;
-    tipl::color_image Ic;
-    Ic << in;
-    I = Ic;
-    tipl::segmentation::otsu_median_regulzried(I);
-    Ivs = {1.0f,1.0f};
-    return true;
-}
 
 
 
-template<>
-bool dual_reg<3>::load_subject2(const char* file_name)
-{
-    tipl::io::gz_nifti nifti;
-    if(!nifti.load_from_file(file_name))
-    {
-        error_msg = "invalid nifti format";
-        return false;
-    }
-    if(nifti.is_int8())
-        nifti >> I2;
-    else
-        load_subject2(nifti.toImage<tipl::image<3> >());
-    if(I2.shape() != I.shape())
-    {
-        error_msg = "inconsistent image size";
-        I2.clear();
-        return false;
-    }
-    return true;
-}
-template<>
-bool dual_reg<3>::load_template(const char* file_name)
-{
-    tipl::io::gz_nifti nifti;
-    if(!nifti.load_from_file(file_name))
-    {
-        error_msg = "invalid nifti format";
-        return false;
-    }
-    It = std::move(::load_template(nifti));
-    nifti.get_image_transformation(ItR);
-    nifti.get_voxel_size(Itvs);
-    It_is_mni = nifti.is_mni();
-    It2.clear();
-    return true;
-}
-template<>
-bool dual_reg<3>::load_template2(const char* file_name)
-{
-    tipl::io::gz_nifti nifti;
-    if(!nifti.load_from_file(file_name))
-    {
-        error_msg = "invalid nifti format";
-        return false;
-    }
-    It2 = std::move(::load_template(nifti));
-
-    tipl::matrix<dimension+1,dimension+1> It2R;
-    nifti.get_image_transformation(It2R);
-    if(It2.shape() != It.shape() || It2R != ItR)
-    {
-        image_type It2_(It.shape());
-        tipl::resample(It2,It2_,tipl::from_space(ItR).to(It2R));
-        It2_.swap(It2);
-    }
-    return true;
-}
-template<>
-bool dual_reg<3>::load_template(const char* file_name,const tipl::vector<3>& vs,const tipl::shape<3>& sp,const tipl::matrix<4,4>& trans)
-{
-    tipl::image<3> buf(sp);
-    if(!tipl::io::gz_nifti::load_to_space(file_name,buf,trans))
-    {
-        error_msg = "invalid nifti format";
-        return false;
-    }
-    It = template_image_pre(std::move(buf));
-    ItR = trans;
-    Itvs = vs;
-    It2.clear();
-    return true;
-}
-template<>
-bool dual_reg<3>::load_template2(const char* file_name,const tipl::shape<3>& sp,const tipl::matrix<4,4>& trans)
-{
-    tipl::image<3> buf(sp);
-    if(!tipl::io::gz_nifti::load_to_space(file_name,buf,trans))
-    {
-        error_msg = "invalid nifti format";
-        return false;
-    }
-    It2 = template_image_pre(std::move(buf));
-    return true;
-}
-
-template<>
-void dual_reg<3>::match_resolution(bool rigid_body)
-{
-    float ratio = (rigid_body ? Ivs[0]/Itvs[0] : float(I.width())/float(It.width()));
-    while(ratio < 0.5f)   // if subject resolution is substantially lower, downsample template
-    {
-        tipl::downsampling(It);
-        if(!It2.empty())
-            tipl::downsampling(It2);
-        Itvs *= 2.0f;
-        for(auto each : {0,1,2,
-                         4,5,6,
-                         8,9,10})
-            ItR[each] *= 2.0f;
-        ratio *= 2.0f;
-        tipl::out() << "downsampling template to " << Itvs[0] << " mm resolution" << std::endl;
-    }
-    while(ratio > 2.5f)  // if subject resolution is higher, downsample it for registration
-    {
-        tipl::downsampling(I);
-        if(!I2.empty())
-            tipl::downsampling(I2);
-        Ivs *= 2.0f;
-        for(auto each : {0,1,2,
-                         4,5,6,
-                         8,9,10})
-            IR[each] *= 2.0f;
-        ratio /= 2.0f;
-        tipl::out() << "downsample subject to " << Ivs[0] << " mm resolution" << std::endl;
-    }
-}
 
 
 
@@ -345,25 +170,14 @@ int reg(tipl::program_option<tipl::out>& po)
         return 1;
     }
 
-    if(!r.load_subject(po.get("from").c_str()) ||
-       !r.load_template(po.get("to").c_str()))
+    if(!r.load_subject(0,po.get("from").c_str()) ||
+       !r.load_template(0,po.get("to").c_str()))
         goto error;
     if(po.has("from2") && po.has("to2"))
     {
-        if(!r.load_subject2(po.get("from2").c_str()) ||
-           !r.load_template2(po.get("to2").c_str()))
+        if(!r.load_subject(1,po.get("from2").c_str()) ||
+           !r.load_template(1,po.get("to2").c_str()))
             goto error;
-    }
-
-    if(!r.I2.empty() && r.I2.shape() != r.I.shape())
-    {
-        tipl::out() << "ERROR: --from2 and --from images have different dimension" << std::endl;
-        return 1;
-    }
-    if(!r.It2.empty() && r.It2.shape() != r.It.shape())
-    {
-        tipl::out() << "ERROR: --to2 and --to images have different dimension" << std::endl;
-        return 1;
     }
 
     tipl::out() << "running linear registration." << std::endl;
@@ -384,8 +198,6 @@ int reg(tipl::program_option<tipl::out>& po)
         r.nonlinear_reg(tipl::prog_aborted);
     }
 
-    if(po.has("output") && !r.save_transformed_image(po.get("output").c_str()))
-        goto error;
     if(po.has("output_warp") && !r.save_warping(po.get("output_warp").c_str()))
         goto error;
     return after_warp(po,r);
