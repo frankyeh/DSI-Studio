@@ -1195,6 +1195,7 @@ Reconstruction</string>
     <addaction name="actionManual_Align"/>
     <addaction name="actionAttach_Images"/>
     <addaction name="actionPartial_FOV"/>
+    <addaction name="actionT1W_based_QSDR"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -1423,6 +1424,11 @@ Reconstruction</string>
   <action name="actionPartial_FOV">
    <property name="text">
     <string>Partial FOV...</string>
+   </property>
+  </action>
+  <action name="actionT1W_based_QSDR">
+   <property name="text">
+    <string>T1W-based QSDR...</string>
    </property>
   </action>
  </widget>
