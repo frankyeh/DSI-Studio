@@ -131,7 +131,6 @@ public:// used in QSDR
     tipl::matrix<4,4> trans_to_mni;
     size_t template_id = 0;
     bool qsdr = false;
-    tipl::vector<3,int> csf_pos1,csf_pos2,csf_pos3,csf_pos4;
     float R2 = 0.9f;
     float qsdr_reso = 1.0f;
 public:
@@ -140,7 +139,11 @@ public: // for QSDR associated T1WT2W
     std::vector<tipl::image<3> > other_image;
     std::vector<std::string> other_image_name;
     std::vector<tipl::transformation_matrix<float> > other_image_trans;
-
+public: // for t1w qsdr
+    tipl::image<3> other_modality_subject;
+    std::string other_modality_template;
+    tipl::transformation_matrix<float> other_modality_trans;
+    tipl::vector<3> other_modality_vs;
 public: // for fib evaluation
     tipl::image<3> fib_fa;
     std::vector<tipl::vector<3> > fib_dir;
