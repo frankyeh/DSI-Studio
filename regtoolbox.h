@@ -60,8 +60,6 @@ private slots:
 
     void on_stop_clicked();
 
-    void on_actionMatch_Intensity_triggered();
-
     void on_OpenSubject2_clicked();
 
     void on_OpenTemplate2_clicked();
@@ -77,8 +75,6 @@ private slots:
     void on_coronal_view_clicked();
 
     void on_sag_view_clicked();
-
-    void on_actionSave_Transformed_Image_triggered();
 
     void on_switch_view_clicked();
 
