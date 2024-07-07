@@ -37,44 +37,44 @@ public:
         native_geo = voxel.dim;
         native_vs = voxel.vs;
 
-        // VG: FA TEMPLATE
-        // VF: SUBJECT QA
-        // VF2: SUBJECT ISO
+
         dual_reg<3> reg;
         reg.export_intermediate = voxel.needs("debug");
-        auto& VG = reg.It;
-        auto& VG2 = reg.It2;
-        auto& VGvs = reg.Itvs;
-        auto& VF = reg.I;
-        auto& VF2 = reg.I2;
-        auto& VFvs = reg.Ivs = voxel.vs;
-        bool t1w_reg = false;
-        if(!reg.load_template(fa_template_list[voxel.template_id].c_str()) ||
-           !reg.load_template2(iso_template_list[voxel.template_id].c_str()))
-            throw std::runtime_error("cannot load anisotropy/isotropy template");
 
+        if(!reg.load_template(0,fa_template_list[voxel.template_id].c_str()) ||
+           !reg.load_template(1,iso_template_list[voxel.template_id].c_str()))
+            throw std::runtime_error("cannot load anisotropy/isotropy template");
+        voxel.trans_to_mni = reg.ItR;
+
+        reg.load_subject(0,std::move(voxel.qa_map));
+        reg.load_subject(1,std::move(voxel.iso_map));
+        reg.Ivs = voxel.vs;
+
+
+        bool t1w_reg = false;
         if(!voxel.other_modality_template.empty())
         {
-            tipl::out() << "using " << voxel.other_modality_template << " as template for registration";
-            reg.Ivs = voxel.vs = voxel.other_modality_vs;
-            reg.load_subject(tipl::image<3>(voxel.other_modality_subject));
-            if(!reg.load_template(voxel.other_modality_template.c_str(),reg.Itvs,reg.It.shape(),reg.ItR))
+            tipl::out() << "adding " << voxel.other_modality_template << " as template for registration";
+            if(!reg.load_template(2,voxel.other_modality_template.c_str()))
                 throw std::runtime_error(std::string("cannot load template: ") + voxel.other_modality_template);
-            reg.It2.clear();
+
+            tipl::out() << "moving QA/ISO to the registration modality space";
+            reg.load_subject(2,tipl::image<3>(voxel.other_modality_subject));
+            reg.Ivs = voxel.vs = voxel.other_modality_vs;
+            for(size_t i = 0;i < 2;++i)
+            {
+                tipl::image<3,unsigned char> to_t1w(voxel.other_modality_subject.shape());
+                tipl::resample(reg.I[i],to_t1w,voxel.other_modality_trans);
+                to_t1w.swap(reg.I[i]);
+            }
             t1w_reg = true;
-        }
-        else
-        {
-            reg.load_subject(std::move(voxel.qa_map));
-            reg.load_subject2(std::move(voxel.iso_map));
         }
 
         reg.match_resolution(false);
-        initial_LPS_nifti_srow(reg.IR,reg.I.shape(),reg.Ivs);
-        voxel.trans_to_mni = reg.ItR;
 
+
+        // linear registration
         {
-
             if(voxel.manual_alignment)
                 tipl::out() << "manual alignment:" << (reg.arg = voxel.qsdr_arg);
             else
@@ -88,22 +88,17 @@ public:
 
             {
                 affine = reg.T();
-                float VFratio = VFvs[0]/voxel.vs[0]; // if subject data are downsampled, then VFratio=2, 4, 8, ...etc
+                float VFratio = reg.Ivs[0]/voxel.vs[0]; // if subject data are downsampled, then VFratio=2, 4, 8, ...etc
                 if(VFratio != 1.0f)
                     tipl::multiply_constant(affine.data,affine.data+12,VFratio);
                 if(t1w_reg)
-                {
-                    auto T = voxel.other_modality_trans;
-                    T.inverse();
-                    affine *= T;
-                }
+                    affine *= voxel.other_modality_trans;
             }
-
-            auto& VFF = reg.J;
-            auto& VFF2 = reg.J2;
-
-
-            voxel.R2 = reg.nonlinear_reg(tipl::prog_aborted);
+        }
+        // nonlinear registration
+        {
+            reg.nonlinear_reg(tipl::prog_aborted);
+            voxel.R2 = reg.r[0];
             if(tipl::prog_aborted)
                 throw std::runtime_error("reconstruction canceled");
 
@@ -113,25 +108,21 @@ public:
             tipl::out() << "nonlinear R2: " << voxel.R2 << std::endl;
             if(voxel.R2 < 0.3f)
                 throw std::runtime_error("ERROR: Poor R2 found. Please check image orientation or use manual alignment.");
-
-
-            // check if partial reconstruction
-            size_t total_voxel_count = 0;
-            size_t subject_voxel_count = 0;
-            auto& VFFF = reg.JJ;
-            for(size_t index = 0;index < VG.size();++index)
-            {
-                if(VG[index] > 0.0f)
-                {
-                    ++total_voxel_count;
-                    if(VFFF[index] > 0.0f)
-                        ++subject_voxel_count;
-                }
-            }
-
-
-
         }
+
+
+        // VG: FA TEMPLATE
+        // VF: SUBJECT QA
+        // VF2: SUBJECT ISO
+        auto& VG = reg.It[0];
+        auto& VG2 = reg.It[1];
+        auto& VGvs = reg.Itvs;
+        auto& VF = reg.I[0];
+        auto& VF2 = reg.I[1];
+        auto& VFvs = reg.Ivs;
+
+
+
         // if subject data is only a fragment of FOV, crop images
         if(voxel.partial_min != voxel.partial_max)
         {
