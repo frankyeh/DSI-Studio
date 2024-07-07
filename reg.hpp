@@ -502,7 +502,7 @@ public:
             image_type JJ0;
             tipl::compose_mapping(I[i],to2from,JJ0);
             if(export_intermediate)
-                JJ0.template save_to_file<tipl::io::gz_nifti>((std::string("JJ") + std::to_string(i) + ".nii.gz").c_str(),Itvs,ItR);
+                tipl::io::gz_nifti::save_to_file((std::string("JJ") + std::to_string(i) + ".nii.gz").c_str(),JJ0,Itvs,ItR);
             r[i] = tipl::correlation(JJ0,It[i]);
         },modality_count);
 
