@@ -45,12 +45,6 @@ manual_alignment::manual_alignment(QWidget *parent,
 
     warped_from.resize(to.shape());
 
-
-    tipl::segmentation::otsu_median_regulzried(from);
-    tipl::segmentation::otsu_median_regulzried(from2);
-    tipl::segmentation::otsu_median_regulzried(to);
-    tipl::segmentation::otsu_median_regulzried(to2);
-
     ui->setupUi(this);
     ui->options->hide();
     ui->menuBar->hide();
