@@ -196,7 +196,7 @@ inline auto template_image_pre(const tipl::image<dim>& I)
 {
     return template_image_pre(tipl::image<dim>(I));
 }
-QImage read_qimage(QString filename,std::string& error);
+tipl::color_image read_color_image(const std::string& filename,std::string& error);
 template<int dim>
 struct dual_reg{
     static constexpr int dimension = dim;
@@ -254,11 +254,9 @@ public:
     {
         if constexpr(dim == 2)
         {
-            QImage in = read_qimage(file_name,error_msg);
-            if(in.isNull())
+            tipl::color_image Ic = read_color_image(file_name,error_msg);
+            if(Ic.empty())
                 return false;
-            tipl::color_image Ic;
-            Ic << in;
             if(id == 0)
             {
                 I.clear();
@@ -309,11 +307,9 @@ public:
     {
         if constexpr(dim == 2)
         {
-            QImage in = read_qimage(file_name,error_msg);
-            if(in.isNull())
+            tipl::color_image Ic = read_color_image(file_name,error_msg);
+            if(Ic.empty())
                 return false;
-            tipl::color_image Ic;
-            Ic << in;
             if(id == 0)
             {
                 It.clear();
