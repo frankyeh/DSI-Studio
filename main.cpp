@@ -96,6 +96,16 @@ QImage read_qimage(QString filename,std::string& error)
     return in;
 }
 
+tipl::color_image read_color_image(const std::string& filename,std::string& error)
+{
+    tipl::color_image I;
+    auto qimage = read_qimage(filename.c_str(),error);
+    if(qimage.isNull())
+        return I;
+    I << qimage;
+    return I;
+}
+
 QStringList search_files(QString dir,QString filter)
 {
     QStringList dir_list,src_list;
