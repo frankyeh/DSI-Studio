@@ -405,8 +405,13 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
         return nullptr;
 
     std::vector<std::vector<float> > odfs_float(odfs.size());
-    for(size_t i = 0; i < odfs.size();++i)
-        std::copy(odfs[i].begin(),odfs[i].end(),odfs_float[i].begin());
+    tipl::par_for(odfs.size(),[&](size_t i)
+    {
+        odfs_float[i].resize(odfs[i].size());
+        std::transform(odfs[i].begin(), odfs[i].end(), odfs_float[i].begin(),
+                           [](double d) { return static_cast<float>(d); });
+
+    },4);
 
     if(!output_odfs(mask,out_name,".mean.fib.gz",odfs_float,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg,false) ||
        !output_odfs(mask,out_name,".mean.odf.fib.gz",odfs_float,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg))
