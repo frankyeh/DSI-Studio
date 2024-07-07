@@ -196,16 +196,21 @@ inline auto template_image_pre(const tipl::image<dim>& I)
 {
     return template_image_pre(tipl::image<dim>(I));
 }
-
+QImage read_qimage(QString filename,std::string& error);
 template<int dim>
 struct dual_reg{
     static constexpr int dimension = dim;
+    static constexpr int max_modality = 5;
     using image_type = tipl::image<dimension,unsigned char>;
     tipl::affine_transform<float,dimension> arg;
     const float* bound = tipl::reg::reg_bound;
     tipl::reg::cdm_param param;
-
-    image_type It,I,J,JJ,I2,It2,J2;
+public:
+    dual_reg(void):I(max_modality),J(max_modality),It(max_modality),r(max_modality)
+    {
+    }
+    std::vector<image_type> I,J,It;
+    std::vector<float> r;
     tipl::image<dimension,tipl::vector<dimension> > t2f_dis,to2from,f2t_dis,from2to;
     tipl::vector<dimension> Itvs,Ivs;
     tipl::matrix<dimension+1,dimension+1> ItR,IR;
@@ -216,8 +221,11 @@ struct dual_reg{
     void clear(void)
     {
         J.clear();
-        JJ.clear();
-        J2.clear();
+        J.resize(max_modality);
+        I.clear();
+        I.resize(max_modality);
+        It.clear();
+        It.resize(max_modality);
         t2f_dis.clear();
         to2from.clear();
         f2t_dis.clear();
@@ -230,114 +238,244 @@ struct dual_reg{
         std::swap(Itvs,Ivs);
         to2from.swap(from2to);
     }
-    void load_subject(tipl::image<dimension>&& in)
+    void load_subject(size_t id,tipl::image<dimension>&& in)
     {
-        I = subject_image_pre(in);
+        if(id == 0)
+        {
+            I.clear();
+            I.resize(max_modality);
+        }
+        I[id] = subject_image_pre(in);
     }
-    void load_subject2(tipl::image<dimension>&& in)
+    bool load_subject(size_t id,const char* file_name)
     {
-        I2 = subject_image_pre(in);
+        if constexpr(dim == 2)
+        {
+            QImage in = read_qimage(file_name,error_msg);
+            if(in.isNull())
+                return false;
+            tipl::color_image Ic;
+            Ic << in;
+            if(id == 0)
+            {
+                I.clear();
+                I.resize(max_modality);
+            }
+            I[id] = Ic;
+            tipl::segmentation::otsu_median_regulzried(I[id]);
+            Ivs = {1.0f,1.0f};
+            return true;
+        }
+        else
+        {
+            tipl::io::gz_nifti nifti;
+            if(!nifti.load_from_file(file_name))
+            {
+                error_msg = "invalid nifti format";
+                return false;
+            }
+            if(id == 0)
+            {
+                I.clear();
+                I.resize(max_modality);
+            }
+            if(nifti.is_int8())
+                nifti >> I[id];
+            else
+                I[id] = subject_image_pre(nifti.toImage<tipl::image<3> >());
+            if(id == 0)
+            {
+                nifti.get_image_transformation(IR);
+                nifti.get_voxel_size(Ivs);
+                for(size_t i = id+1;i < I.size();++i)
+                    I[i].clear();
+            }
+            else
+            {
+                if(I[id].shape() != I[0].shape())
+                {
+                    error_msg = "inconsistent image size:";
+                    I[id].clear();
+                    return false;
+                }
+            }
+            return true;
+        }
     }
-
-    bool load_subject(const char* file_name);
-    bool load_subject2(const char* file_name);
-    bool load_template(const char* file_name,const tipl::vector<3>& vs,const tipl::shape<dim>& sp,const tipl::matrix<dim+1,dim+1>& trans);
-    bool load_template2(const char* file_name,const tipl::shape<dim>& sp,const tipl::matrix<dim+1,dim+1>& trans);
-    bool load_template(const char* file_name);
-    bool load_template2(const char* file_name);
+    bool load_template(size_t id,const char* file_name)
+    {
+        if constexpr(dim == 2)
+        {
+            QImage in = read_qimage(file_name,error_msg);
+            if(in.isNull())
+                return false;
+            tipl::color_image Ic;
+            Ic << in;
+            if(id == 0)
+            {
+                It.clear();
+                It.resize(max_modality);
+            }
+            It[id] = Ic;
+            tipl::normalize(It[id]);
+            Itvs = {1.0f,1.0f};
+            return true;
+        }
+        else
+        {
+            tipl::io::gz_nifti nifti;
+            if(!nifti.load_from_file(file_name))
+            {
+                error_msg = "invalid nifti format";
+                return false;
+            }
+            if(id == 0)
+            {
+                It.clear();
+                It.resize(max_modality);
+            }
+            if(nifti.is_int8())
+                nifti >> It[id];
+            else
+                It[id] = template_image_pre(nifti.toImage<tipl::image<dim> >());
+            if(id == 0)
+            {
+                nifti.get_image_transformation(ItR);
+                nifti.get_voxel_size(Itvs);
+                for(size_t i = id+1;i < It.size();++i)
+                    It[i].clear();
+                It_is_mni = nifti.is_mni();
+            }
+            else
+            {
+                tipl::matrix<dimension+1,dimension+1> It2R;
+                nifti.get_image_transformation(It2R);
+                if(It[id].shape() != It[0].shape() || It2R != ItR)
+                {
+                    image_type It2_(It[0].shape());
+                    tipl::resample(It[id],It2_,tipl::from_space(ItR).to(It2R));
+                    It2_.swap(It[id]);
+                }
+            }
+            return true;
+        }
+    }
     auto T(void) const
     {
-        return tipl::transformation_matrix<float,dimension>(arg,It.shape(),Itvs,I.shape(),Ivs);
-    }
-    const auto& show_subject(bool second) const
-    {
-        return second ? I2 : I;
-    }
-    const auto& show_template(bool second) const
-    {
-        return second ? It2 : It;
-    }
-    const auto& show_subject_warped(bool second) const
-    {
-        return second ? J2 : J;
+        return tipl::transformation_matrix<float,dimension>(arg,It[0].shape(),Itvs,I[0].shape(),Ivs);
     }
     bool data_ready(void) const
     {
-        return !I.empty() && !It.empty();
+        return !I[0].empty() && !It[0].empty();
     }
     void skip_linear(void)
     {
-        image_type J_,J2_;
-        if(I.shape() == It.shape())
-            J_ = I;
-        else
+        J.clear();
+        J.resize(max_modality);
+        for(size_t i = 0;i < J.size();++i)
         {
-            J_.resize(It.shape());
-            tipl::draw(I,J_,tipl::vector<dimension,int>());
-        }
-
-        if(I2.shape() == I.shape())
-        {
-            if(I.shape() == It.shape())
-                J2_ = I2;
+            if(I[i].empty() || It[i].empty())
+                break;
+            if(I[i].shape() == It[i].shape())
+                J[i] = I[i];
             else
             {
-                J2_.resize(It.shape());
-                tipl::draw(I2,J2_,tipl::vector<dimension,int>());
+                J[i].resize(It[i].shape());
+                tipl::draw(I[i],J[i],tipl::vector<dimension,int>());
             }
         }
         arg.clear();
-        J2.swap(J2_);
-        J.swap(J_);
     }
-    void match_resolution(bool rigid_body);
+    void match_resolution(bool rigid_body)
+    {
+        if(!data_ready())
+            return;
+        float ratio = (rigid_body ? Ivs[0]/Itvs[0] : float(I[0].width())/float(It[0].width()));
+
+        auto downsample = [](auto& I,auto& vs,auto& trans)
+        {
+            for(auto& each : I)
+            {
+                if(each.empty())
+                    break;
+                tipl::downsampling(each);
+            }
+            vs *= 2.0f;
+            for(auto each : {0,1,2,
+                             4,5,6,
+                             8,9,10})
+                trans[each] *= 2.0f;
+        };
+        while(ratio < 0.5f)   // if subject resolution is substantially lower, downsample template
+        {
+            downsample(It,Itvs,ItR);
+            ratio *= 2.0f;
+            tipl::out() << "downsampling template to " << Itvs[0] << " mm resolution" << std::endl;
+        }
+        while(ratio > 2.5f)  // if subject resolution is higher, downsample it for registration
+        {
+            downsample(I,Ivs,IR);
+            ratio /= 2.0f;
+            tipl::out() << "downsample subject to " << Ivs[0] << " mm resolution" << std::endl;
+        }
+    }
+
     inline float linear_reg(tipl::reg::reg_type reg_type,
                      tipl::reg::cost_type cost_type)
     {
         return linear_reg(reg_type,cost_type,tipl::prog_aborted);
     }
+    auto make_list(const std::vector<image_type>& data)
+    {
+        std::vector<tipl::const_pointer_image<dim,unsigned char> > ptr;
+        for(const auto& each : data)
+        {
+            if(each.empty())
+                break;
+            ptr.push_back(tipl::make_shared(each));
+        }
+        return ptr;
+    }
     float linear_reg(tipl::reg::reg_type reg_type,
                      tipl::reg::cost_type cost_type,bool& terminated)
     {
+        if(!data_ready())
+            return 0.0f;
         tipl::progress prog("linear registration");
         if(export_intermediate)
         {
-            tipl::io::gz_nifti::save_to_file("Template_QA.nii.gz",It,Itvs,ItR);
-            if(!It2.empty())
-                tipl::io::gz_nifti::save_to_file("Template_ISO.nii.gz",It2,Itvs,ItR);
-            tipl::io::gz_nifti::save_to_file("Subject_QA.nii.gz",I,Ivs,IR);
-            if(!I2.empty())
-                tipl::io::gz_nifti::save_to_file("Subject_ISO.nii.gz",I2,Ivs,IR);
+            tipl::io::gz_nifti::save_to_file("It0.nii.gz",It[0],Itvs,ItR);
+            if(!It[1].empty())
+                tipl::io::gz_nifti::save_to_file("It1.nii.gz",It[1],Itvs,ItR);
+            tipl::io::gz_nifti::save_to_file("I0.nii.gz",I[0],Ivs,IR);
+            if(!I[1].empty())
+                tipl::io::gz_nifti::save_to_file("I1.nii.gz",I[1],Ivs,IR);
         }
 
-        linear(make_list(It,It2),Itvs,make_list(I,I2),Ivs,
+        linear(make_list(It),Itvs,make_list(I),Ivs,
                arg,reg_type,terminated,bound,cost_type,use_cuda);
 
         auto trans = T();
 
-        image_type J_,J2_;
-        J_.resize(It.shape());
-        tipl::resample(I,J_,trans);
-
-        if(I2.shape() == I.shape())
+        J.clear();
+        J.resize(max_modality);
+        for(size_t i = 0;i < J.size();++i)
         {
-            J2_.resize(It.shape());
-            tipl::resample(I2,J2_,trans);
+            if(I[i].empty() || It[i].empty())
+                break;
+            J[i].resize(It[i].shape());
+            tipl::resample(I[i],J[i],trans);
         }
 
-        auto r = tipl::correlation(J_,It);
+        auto r = tipl::correlation(J[0],It[0]);
         tipl::out() << "linear: " << r << std::endl;
 
         if(export_intermediate)
         {
-            tipl::io::gz_nifti::save_to_file("Subject_QA_linear_reg.nii.gz",J_,Itvs,ItR);
-            if(!J2_.empty())
-                tipl::io::gz_nifti::save_to_file("Subject_ISO_linear_reg.nii.gz",J2_,Itvs,ItR);
+            tipl::io::gz_nifti::save_to_file("J0.nii.gz",J[0],Itvs,ItR);
+            if(!J[1].empty())
+                tipl::io::gz_nifti::save_to_file("J1.nii.gz",J[1],Itvs,ItR);
         }
-
-        J2.swap(J2_);
-        J.swap(J_);
-
         return r;
     }
     inline float nonlinear_reg(void)
@@ -350,78 +488,86 @@ struct dual_reg{
         tipl::par_for(2,[&](int id)
         {
             if(id)
-                cdm_common(make_list(It,It2),make_list(J,J2),t2f_dis,terminated,param,use_cuda);
+                cdm_common(make_list(It),make_list(J),t2f_dis,terminated,param,use_cuda);
             else
-                cdm_common(make_list(J,J2),make_list(It,It2),f2t_dis,terminated,param,use_cuda);
+                cdm_common(make_list(J),make_list(It),f2t_dis,terminated,param,use_cuda);
         },2);
         if(export_intermediate)
         {
-            tipl::image<dimension+1> buffer(It.shape().expand(2*dimension));
+            tipl::image<dimension+1> buffer(f2t_dis.shape().expand(2*dimension));
             tipl::par_for(2*dimension,[&](unsigned int d)
             {
                 if(d < dimension)
                 {
-                    size_t shift = d*It.size();
-                    for(size_t i = 0;i < It.size();++i)
+                    size_t shift = d*f2t_dis.size();
+                    for(size_t i = 0;i < f2t_dis.size();++i)
                         buffer[i+shift] = f2t_dis[i][d];
                 }
                 else
                 {
-                    size_t shift = d*It.size();
+                    size_t shift = d*t2f_dis.size();
                     d -= 3;
-                    for(size_t i = 0;i < It.size();++i)
+                    for(size_t i = 0;i < t2f_dis.size();++i)
                         buffer[i+shift] = t2f_dis[i][d];
                 }
             });
             tipl::io::gz_nifti::save_to_file("Subject_displacement.nii.gz",buffer,Itvs,ItR);
         }
         auto trans = T();
-        from2to.resize(I.shape());
+        from2to.resize(I[0].shape());
         tipl::inv_displacement_to_mapping(f2t_dis,from2to,trans);
         tipl::displacement_to_mapping(t2f_dis,to2from,trans);
-        tipl::compose_mapping(I,to2from,JJ);
 
+
+        std::vector
+        image_type JJ0;
+        tipl::compose_mapping(I[0],to2from,JJ0);
         if(export_intermediate)
-            JJ.template save_to_file<tipl::io::gz_nifti>("Subject_QA_nonlinear_reg.nii.gz");
-
-        auto r = tipl::correlation(JJ,It);
+            JJ0.template save_to_file<tipl::io::gz_nifti>("JJ0.nii.gz");
+        auto r = tipl::correlation(JJ0,It[0]);
         tipl::out() << "nonlinear: " << r;
         return r;
     }
-    void matching_contrast(void)
+    bool matching_contrast(void)
     {
-        std::vector<float> X(It.size()*3);
-        tipl::par_for(It.size(),[&](size_t pos)
+        if(data_ready())
+            return false;
+        auto& J0 = J[0];
+        auto& It0 = It[0];
+        auto& It1 = It[1];
+        std::vector<float> X(It0.size()*3);
+        tipl::par_for(It0.size(),[&](size_t pos)
         {
-            if(J[pos] == 0.0f)
+            if(J0[pos] == 0.0f)
                 return;
             size_t i = pos;
             pos = pos+pos+pos;
             X[pos] = 1;
-            X[pos+1] = It[i];
-            X[pos+2] = It2[i];
+            X[pos+1] = It0[i];
+            X[pos+2] = It1[i];
         });
         tipl::multiple_regression<float> m;
-        if(m.set_variables(X.begin(),3,It.size()))
+        if(m.set_variables(X.begin(),3,It0.size()))
         {
             float b[3] = {0.0f,0.0f,0.0f};
-            m.regress(J.begin(),b);
+            m.regress(J0.begin(),b);
             tipl::out() << "image=" << b[0] << " + " << b[1] << " × t1w + " << b[2] << " × t2w ";
-            tipl::par_for(It.size(),[&](size_t pos)
+            tipl::par_for(It0.size(),[&](size_t pos)
             {
-                if(J[pos] == 0.0f)
+                if(J0[pos] == 0.0f)
                     return;
-                It[pos] = b[0] + b[1]*It[pos] + b[2]*It2[pos];
-                if(It[pos] < 0.0f)
-                    It[pos] = 0.0f;
+                It0[pos] = b[0] + b[1]*It0[pos] + b[2]*It1[pos];
+                if(It0[pos] < 0.0f)
+                    It0[pos] = 0.0f;
             });
         }
-        It2.clear();
+        It[1].clear();
+        return true;
     }
 public:
-    void apply_warping(const tipl::image<dimension>& from,tipl::image<dimension>& to,bool is_label) const
+    auto apply_warping(const tipl::image<dimension>& from,bool is_label) const
     {
-        to.resize(It.shape());
+        tipl::image<dimension> to(to2from.shape());
         if(is_label)
         {
             if(to2from.empty())
@@ -436,11 +582,13 @@ public:
             else
                 tipl::compose_mapping<tipl::interpolation::cubic>(from,to2from,to);
         }
+        return to;
     }
     bool apply_warping(const char* from,const char* to) const;
     bool apply_warping_tt(const char* from,const char* to) const;
     bool load_warping(const char* filename)
     {
+        tipl::out() << "load warping " << filename;
         tipl::io::gz_mat_read in;
         if(!in.load_from_file(filename))
         {
@@ -473,13 +621,16 @@ public:
 
     bool save_warping(const char* filename) const
     {
+        tipl::out() << "save warping " << filename;
         if(from2to.empty() || to2from.empty())
         {
             error_msg = "no mapping matrix to save";
             return false;
         }
-        tipl::io::gz_mat_write out(tipl::ends_with(filename,".map.gz") ?
-                                   filename : (std::string(filename)+".map.gz").c_str());
+        std::string output_name(filename);
+        if(!tipl::ends_with(output_name,".map.gz"))
+            output_name += ".map.gz";
+        tipl::io::gz_mat_write out((output_name + ".tmp.gz").c_str());
         if(!out)
         {
             error_msg = "cannot write to file ";
@@ -498,20 +649,10 @@ public:
 
         constexpr int method_ver = 202406;
         out.write("method_ver",std::to_string(method_ver));
-
-        return out;
-    }
-    bool save_transformed_image(const char* filename) const
-    {
-        if(!tipl::io::gz_nifti::save_to_file(filename,JJ.empty() ? J : JJ,Itvs,ItR,It_is_mni))
-        {
-            error_msg = "cannot write to file ";
-            error_msg += filename;
-            return false;
-        }
+        out.close();
+        std::filesystem::rename((output_name + ".tmp.gz").c_str(),output_name);
         return true;
     }
-
 };
 
 
