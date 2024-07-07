@@ -211,6 +211,7 @@ public:
     }
     std::vector<image_type> I,J,It;
     std::vector<float> r;
+    size_t modality_count = 0;
     tipl::image<dimension,tipl::vector<dimension> > t2f_dis,to2from,f2t_dis,from2to;
     tipl::vector<dimension> Itvs,Ivs;
     tipl::matrix<dimension+1,dimension+1> ItR,IR;
@@ -226,6 +227,8 @@ public:
         I.resize(max_modality);
         It.clear();
         It.resize(max_modality);
+        r.clear();
+        r.resize(max_modality);
         t2f_dis.clear();
         to2from.clear();
         f2t_dis.clear();
@@ -434,6 +437,7 @@ public:
                 break;
             ptr.push_back(tipl::make_shared(each));
         }
+        modality_count = ptr.size();
         return ptr;
     }
     float linear_reg(tipl::reg::reg_type reg_type,
@@ -478,11 +482,11 @@ public:
         }
         return r;
     }
-    inline float nonlinear_reg(void)
+    inline void nonlinear_reg(void)
     {
-        return nonlinear_reg(tipl::prog_aborted);
+        nonlinear_reg(tipl::prog_aborted);
     }
-    float nonlinear_reg(bool& terminated)
+    void nonlinear_reg(bool& terminated)
     {
         tipl::progress prog("nonlinear registration");
         tipl::par_for(2,[&](int id)
@@ -519,14 +523,18 @@ public:
         tipl::displacement_to_mapping(t2f_dis,to2from,trans);
 
 
-        std::vector
-        image_type JJ0;
-        tipl::compose_mapping(I[0],to2from,JJ0);
-        if(export_intermediate)
-            JJ0.template save_to_file<tipl::io::gz_nifti>("JJ0.nii.gz");
-        auto r = tipl::correlation(JJ0,It[0]);
-        tipl::out() << "nonlinear: " << r;
-        return r;
+        std::fill(r.begin(),r.end(),0.0f);
+        tipl::par_for(modality_count,[&](size_t i)
+        {
+            image_type JJ0;
+            tipl::compose_mapping(I[i],to2from,JJ0);
+            if(export_intermediate && i == 0)
+                JJ0.template save_to_file<tipl::io::gz_nifti>("JJ0.nii.gz");
+            r[i] = tipl::correlation(JJ0,It[i]);
+        },modality_count);
+
+        for(size_t i = 0;i < modality_count;++i)
+            tipl::out() << "nonlinear: " << r[i];
     }
     bool matching_contrast(void)
     {
