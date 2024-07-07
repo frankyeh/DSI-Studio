@@ -446,15 +446,6 @@ public:
         if(!data_ready())
             return 0.0f;
         tipl::progress prog("linear registration");
-        if(export_intermediate)
-        {
-            tipl::io::gz_nifti::save_to_file("It0.nii.gz",It[0],Itvs,ItR);
-            if(!It[1].empty())
-                tipl::io::gz_nifti::save_to_file("It1.nii.gz",It[1],Itvs,ItR);
-            tipl::io::gz_nifti::save_to_file("I0.nii.gz",I[0],Ivs,IR);
-            if(!I[1].empty())
-                tipl::io::gz_nifti::save_to_file("I1.nii.gz",I[1],Ivs,IR);
-        }
 
         linear(make_list(It),Itvs,make_list(I),Ivs,
                arg,reg_type,terminated,bound,cost_type,use_cuda);
@@ -476,9 +467,12 @@ public:
 
         if(export_intermediate)
         {
-            tipl::io::gz_nifti::save_to_file("J0.nii.gz",J[0],Itvs,ItR);
-            if(!J[1].empty())
-                tipl::io::gz_nifti::save_to_file("J1.nii.gz",J[1],Itvs,ItR);
+            for(size_t i = 0;i < modality_count;++i)
+            {
+                tipl::io::gz_nifti::save_to_file((std::string("I") + std::to_string(i) + ".nii.gz").c_str(),I[i],Itvs,ItR);
+                tipl::io::gz_nifti::save_to_file((std::string("It") + std::to_string(i) + ".nii.gz").c_str(),It[i],Itvs,ItR);
+                tipl::io::gz_nifti::save_to_file((std::string("J") + std::to_string(i) + ".nii.gz").c_str(),J[i],Itvs,ItR);
+            }
         }
         return r;
     }
@@ -496,6 +490,25 @@ public:
             else
                 cdm_common(make_list(J),make_list(It),f2t_dis,terminated,param,use_cuda);
         },2);
+        auto trans = T();
+        from2to.resize(I[0].shape());
+        tipl::inv_displacement_to_mapping(f2t_dis,from2to,trans);
+        tipl::displacement_to_mapping(t2f_dis,to2from,trans);
+
+
+        std::fill(r.begin(),r.end(),0.0f);
+        tipl::par_for(modality_count,[&](size_t i)
+        {
+            image_type JJ0;
+            tipl::compose_mapping(I[i],to2from,JJ0);
+            if(export_intermediate)
+                JJ0.template save_to_file<tipl::io::gz_nifti>((std::string("JJ") + std::to_string(i) + ".nii.gz").c_str(),Itvs,ItR);
+            r[i] = tipl::correlation(JJ0,It[i]);
+        },modality_count);
+
+        for(size_t i = 0;i < modality_count;++i)
+            tipl::out() << "nonlinear: " << r[i];
+
         if(export_intermediate)
         {
             tipl::image<dimension+1> buffer(f2t_dis.shape().expand(2*dimension));
@@ -515,26 +528,8 @@ public:
                         buffer[i+shift] = t2f_dis[i][d];
                 }
             });
-            tipl::io::gz_nifti::save_to_file("Subject_displacement.nii.gz",buffer,Itvs,ItR);
+            tipl::io::gz_nifti::save_to_file("dis.nii.gz",buffer,Itvs,ItR);
         }
-        auto trans = T();
-        from2to.resize(I[0].shape());
-        tipl::inv_displacement_to_mapping(f2t_dis,from2to,trans);
-        tipl::displacement_to_mapping(t2f_dis,to2from,trans);
-
-
-        std::fill(r.begin(),r.end(),0.0f);
-        tipl::par_for(modality_count,[&](size_t i)
-        {
-            image_type JJ0;
-            tipl::compose_mapping(I[i],to2from,JJ0);
-            if(export_intermediate && i == 0)
-                JJ0.template save_to_file<tipl::io::gz_nifti>("JJ0.nii.gz");
-            r[i] = tipl::correlation(JJ0,It[i]);
-        },modality_count);
-
-        for(size_t i = 0;i < modality_count;++i)
-            tipl::out() << "nonlinear: " << r[i];
     }
     bool matching_contrast(void)
     {
