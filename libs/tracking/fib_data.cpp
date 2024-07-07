@@ -1743,7 +1743,8 @@ bool fib_data::map_to_mni(bool background)
             return;
         }
         prog = 3;
-        if(reg.nonlinear_reg(tipl::prog_aborted) < 0.3f)
+        reg.nonlinear_reg(tipl::prog_aborted);
+        if(reg.r[0] < 0.3f)
         {
             error_msg = "cannot perform normalization";
             tipl::prog_aborted = true;
