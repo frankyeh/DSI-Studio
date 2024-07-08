@@ -379,6 +379,7 @@ void init_cuda(void)
 }
 int run_cmd(int ac, char *av[])
 {
+    tipl::progress prog((version_string()+ " " + __DATE__).toStdString().c_str());
     tipl::program_option<tipl::out> po;
     try
     {
@@ -410,7 +411,6 @@ int run_cmd(int ac, char *av[])
                 return 1;
             }
         }
-        tipl::progress prog((version_string()+ " " + __DATE__).toStdString().c_str());
         init_cuda();
         if(run_action_with_wildcard(po))
             return 1;
