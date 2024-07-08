@@ -319,7 +319,7 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
     {
         if(!load_multiple_roi_nii(param,false))
         {
-            tipl::out() << "ERROR: " << error_msg;
+            tipl::error() << error_msg;
             return false;
         }
         emit need_update();
@@ -329,7 +329,7 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
     {
         if(!load_multiple_roi_nii(param,true))
         {
-            tipl::out() << "ERROR: " << error_msg;
+            tipl::error() << error_msg;
             return false;
         }
         emit need_update();

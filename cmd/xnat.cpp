@@ -23,7 +23,7 @@ int xnat(tipl::program_option<tipl::out>& po)
             output = QDir::current().path().toStdString();
         if(!QFileInfo(output.c_str()).isDir())
         {
-            tipl::out() << "ERROR: please specify output directory using --output" << std::endl;
+            tipl::error() << "please specify output directory using --output" << std::endl;
             return 1;
         }
         tipl::out() << "writing output to " << output << std::endl;
@@ -35,7 +35,7 @@ int xnat(tipl::program_option<tipl::out>& po)
 
     if (xnat_connection.has_error())
     {
-        tipl::out() << "ERROR: " << xnat_connection.error_msg << std::endl;
+        tipl::error() << xnat_connection.error_msg << std::endl;
         return 1;
     }
 

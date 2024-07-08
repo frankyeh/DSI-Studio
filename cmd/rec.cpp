@@ -22,7 +22,7 @@ int rec(tipl::program_option<tipl::out>& po)
     src_data src;
     if (!src.load_from_file(file_name.c_str()))
     {
-        tipl::out() << "ERROR: " << src.error_msg << std::endl;
+        tipl::error() << src.error_msg << std::endl;
         return 1;
     }
     {
@@ -57,7 +57,7 @@ int rec(tipl::program_option<tipl::out>& po)
             {
                 if(!src.mask_from_unet())
                 {
-                    tipl::out() << "ERROR: " << src.error_msg;
+                    tipl::error() << src.error_msg;
                     return 1;
                 }
             }
@@ -67,12 +67,12 @@ int rec(tipl::program_option<tipl::out>& po)
                 tipl::io::gz_nifti nii;
                 if(!nii.load_from_file(mask_file) || !nii.toLPS(src.voxel.mask))
                 {
-                    tipl::out() << "ERROR: " << nii.error_msg << std::endl;
+                    tipl::error() << nii.error_msg << std::endl;
                     return 1;
                 }
                 if(src.voxel.mask.shape() != src.voxel.dim)
                 {
-                    tipl::out() << "ERROR: The mask dimension is different. terminating..." << std::endl;
+                    tipl::error() << "The mask dimension is different. terminating..." << std::endl;
                     return 1;
                 }
             }
@@ -81,7 +81,7 @@ int rec(tipl::program_option<tipl::out>& po)
     {
         if(po.has("rev_pe") && !src.run_topup_eddy(po.get("rev_pe")))
         {
-            tipl::out() << "ERROR: " << src.error_msg << std::endl;
+            tipl::error() << src.error_msg << std::endl;
             return 1;
         }
         if(po.get("motion_correction",0))
@@ -102,7 +102,7 @@ int rec(tipl::program_option<tipl::out>& po)
                     QStringList range = str.split(":");
                     if(range.size() != 2)
                     {
-                        tipl::out() << "ERROR: invalid index specified at --remove: " << str.toStdString() << std::endl;
+                        tipl::error() << "invalid index specified at --remove: " << str.toStdString() << std::endl;
                         return 1;
                     }
                     int from = range[0].toInt();
@@ -118,7 +118,7 @@ int rec(tipl::program_option<tipl::out>& po)
 
             if(remove_index.empty())
             {
-                tipl::out() << "ERROR: invalid index specified at --remove " << std::endl;
+                tipl::error() << "invalid index specified at --remove " << std::endl;
                 return 1;
             }
             std::sort(remove_index.begin(),remove_index.end(),std::greater<int>());
@@ -140,7 +140,7 @@ int rec(tipl::program_option<tipl::out>& po)
         {
             if(!src.check_b_table())
             {
-                tipl::out() << "ERROR: " << src.error_msg;
+                tipl::error() << src.error_msg;
                 return 1;
             }
         }
@@ -153,7 +153,7 @@ int rec(tipl::program_option<tipl::out>& po)
                 if(!src.command(run_list[0].toStdString(),
                                     run_list.count() > 1 ? run_list[1].toStdString():std::string()))
                 {
-                    tipl::out() << "ERROR: " << src.error_msg << std::endl;
+                    tipl::error() << src.error_msg << std::endl;
                     return 1;
                 }
             }
@@ -198,7 +198,7 @@ int rec(tipl::program_option<tipl::out>& po)
         std::string new_src_file = po.has("save_src") ? po.get("save_src") : po.get("save_nii");
         if(!src.save_to_file(new_src_file.c_str()))
         {
-            tipl::out() << "ERROR: " << src.error_msg << std::endl;
+            tipl::error() << src.error_msg << std::endl;
             return -1;
         }
         return 0;
@@ -209,12 +209,12 @@ int rec(tipl::program_option<tipl::out>& po)
         auto file_list = tipl::split(po.get("reg"),',');
         if(file_list.size() != 2)
         {
-            tipl::out() << "ERROR: invalid reg setting ";
+            tipl::error() << "invalid reg setting ";
             return 1;
         }
         if(!src.add_other_image("reg",file_list[0]))
         {
-            tipl::out() << "ERROR: " << src.error_msg;
+            tipl::error() << src.error_msg;
             return 1;
         }
         tipl::out() << "other modality template: " << (src.voxel.other_modality_template = file_list[1]);
@@ -227,7 +227,7 @@ int rec(tipl::program_option<tipl::out>& po)
             QStringList name_value = file_list[i].split(":");
             if(name_value.size() == 1)
             {
-                tipl::out() << "ERROR: invalid parameter: " << file_list[i].toStdString() << std::endl;
+                tipl::error() << "invalid parameter: " << file_list[i].toStdString() << std::endl;
                 return 1;
             }
             if(name_value.size() == 3 && name_value[1].size() == 1) // handle windows directory with drive letter --other_image=t1w:c:/t1w.nii.gz
@@ -238,7 +238,7 @@ int rec(tipl::program_option<tipl::out>& po)
             tipl::out() << name_value[0].toStdString() << ":" << name_value[1].toStdString() << std::endl;
             if(!src.add_other_image(name_value[0].toStdString(),name_value[1].toStdString()))
             {
-                tipl::out() << "ERROR: " << src.error_msg;
+                tipl::error() << src.error_msg;
                 return 1;
             }
         }
@@ -254,7 +254,7 @@ int rec(tipl::program_option<tipl::out>& po)
     }
     if (!src.reconstruction())
     {
-        tipl::out() << "ERROR: " << src.error_msg << std::endl;
+        tipl::error() << src.error_msg << std::endl;
         return 1;
     }
     return 0;

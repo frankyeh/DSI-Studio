@@ -63,7 +63,7 @@ void create_src(const std::vector<std::string>& nii_names,std::string src_name)
         }
     }
     if(!DwiHeader::output_src(src_name.c_str(),dwi_files,0,false))
-        tipl::out() << "ERROR: " << src_name << " : " << src_error_msg;
+        tipl::error() << src_name << " : " << src_error_msg;
 }
 void create_src(std::string nii_name,std::string src_name)
 {
@@ -125,12 +125,12 @@ bool nii2src(tipl::program_option<tipl::out>& po)
     }
     if(!std::filesystem::exists(output_dir) && !std::filesystem::create_directory(output_dir))
     {
-        tipl::out() << "ERROR: cannot create the output folder. please check write privileges";
+        tipl::error() << "cannot create the output folder. please check write privileges";
         return false;
     }
     if(!std::filesystem::is_directory(output_dir))
     {
-        tipl::out() << "ERROR: " << output_dir << " is not a valid output directory.";
+        tipl::error() << output_dir << " is not a valid output directory.";
         return false;
     }
     tipl::par_for(dwi_nii_files.size(),[&](unsigned int index)
@@ -178,14 +178,14 @@ int src(tipl::program_option<tipl::out>& po)
 
     if(file_list.empty())
     {
-        tipl::out() << "no file found for creating src" << std::endl;
+        tipl::error() << "no file found for creating src" << std::endl;
         return 1;
     }
 
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     if(!parse_dwi(file_list,dwi_files))
     {
-        tipl::out() << "ERROR: cannot read dwi file: " << src_error_msg << std::endl;
+        tipl::error() << "cannot read dwi file: " << src_error_msg << std::endl;
         return 1;
     }
     if(po.has("b_table"))
@@ -194,7 +194,7 @@ int src(tipl::program_option<tipl::out>& po)
         std::ifstream in(table_file_name.c_str());
         if(!in)
         {
-            tipl::out() << "failed to open b-table" <<std::endl;
+            tipl::error() << "failed to open b-table" <<std::endl;
             return 1;
         }
         std::string line;
@@ -208,7 +208,7 @@ int src(tipl::program_option<tipl::out>& po)
         }
         if(b_table.size() != dwi_files.size()*4)
         {
-            tipl::out() << "mismatch between b-table and the loaded images" << std::endl;
+            tipl::error() << "mismatch between b-table and the loaded images" << std::endl;
             return 1;
         }
         for(unsigned int index = 0,b_index = 0;index < dwi_files.size();++index,b_index += 4)
@@ -224,7 +224,7 @@ int src(tipl::program_option<tipl::out>& po)
         std::string error_msg;
         if(!get_bval_bvec(po.get("bval"),po.get("bvec"),dwi_files.size(),bval,bvec,error_msg))
         {
-            tipl::out() << "ERROR: " << error_msg;
+            tipl::error() << error_msg;
             return 1;
         }
         for(unsigned int index = 0;index < dwi_files.size();++index)
@@ -235,7 +235,7 @@ int src(tipl::program_option<tipl::out>& po)
     }
     if(dwi_files.empty())
     {
-        tipl::out() << "no file readed. Abort." << std::endl;
+        tipl::error() << "no file readed. Abort." << std::endl;
         return 1;
     }
 
@@ -248,7 +248,7 @@ int src(tipl::program_option<tipl::out>& po)
     }
     if(max_b == 0.0)
     {
-        tipl::out() << "cannot create SRC file: " << src_error_msg;
+        tipl::error() << "cannot create SRC file: " << src_error_msg;
         return 1;
     }
 
@@ -272,7 +272,7 @@ int src(tipl::program_option<tipl::out>& po)
                           po.get<int>("up_sampling",0),
                           po.get<int>("sort_b_table",0)))
     {
-        tipl::out() << "ERROR: " << src_error_msg << std::endl;
+        tipl::error() << src_error_msg << std::endl;
         return 1;
     }
     return 0;

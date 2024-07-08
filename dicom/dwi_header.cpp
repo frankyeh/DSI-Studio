@@ -66,7 +66,7 @@ bool DwiHeader::open(const char* filename)
         tipl::image<2,short> I;
         if(!get_compressed_image(header,I))
         {
-            tipl::out() << "ERROR: unsupported transfer syntax: " << header.encoding << std::endl;
+            tipl::error() << "unsupported transfer syntax: " << header.encoding << std::endl;
             return false;
         }
         if(I.size() == image.size())

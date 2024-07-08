@@ -75,7 +75,7 @@ void Console::on_run_cmd_clicked()
     }
     if (!po.has("action"))
     {
-        std::cout << "ERROR: invalid command, use --help for more detail" << std::endl;
+        std::cout << "❌️invalid command, use --help for more detail" << std::endl;
         return;
     }
     run_action_with_wildcard(po);

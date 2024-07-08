@@ -21,7 +21,7 @@ std::shared_ptr<CustomSliceModel> load_slices(std::shared_ptr<fib_data> handle,s
     auto new_slice = std::make_shared<CustomSliceModel>(handle.get());
     if(!new_slice->load_slices(file_name))
     {
-        tipl::out() << "ERROR: fail to load " << file_name << " " << new_slice->error_msg << std::endl;
+        tipl::error() << "fail to load " << file_name << " " << new_slice->error_msg << std::endl;
         return std::shared_ptr<CustomSliceModel>();
     }
     new_slice->wait();
@@ -41,7 +41,7 @@ bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_
     std::vector<std::string> filenames;
     if(!po.get_files("other_slices",filenames))
     {
-        tipl::out() << "ERROR: " << po.error_msg << std::endl;
+        tipl::error() << po.error_msg << std::endl;
         return false;
     }
     for(const auto& each : filenames)
@@ -179,7 +179,7 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
             tipl::out() << std::endl;
             if(!TractModel::export_tdi(file_name_stat.c_str(),tract,dim,vs,trans_to_mni,to_t1t2,output_color,output_end))
             {
-                tipl::out() << "ERROR: failed to save file. Please check write permission." << std::endl;
+                tipl::error() << "failed to save file. Please check write permission." << std::endl;
                 return false;
             }
             continue;
@@ -246,7 +246,7 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
             auto at = handle->get_atlas(roi_file_name);
             if(!at.get())
             {
-                tipl::out() << "ERROR: " << handle->error_msg << std::endl;
+                tipl::error() << handle->error_msg << std::endl;
                 return false;
             }
             data.set_atlas(at,handle);
@@ -256,7 +256,7 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
         {
             if(!std::filesystem::exists(roi_file_name))
             {
-                tipl::out() << "ERROR: cannot open file " << roi_file_name << std::endl;
+                tipl::error() << "cannot open file " << roi_file_name << std::endl;
                 return false;
             }
 
@@ -278,7 +278,7 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                         fn = dir + line;
                     if(!region->load_region_from_file(fn.c_str()))
                     {
-                        tipl::out() << "ERROR: failed to open file as a region: " << fn << std::endl;
+                        tipl::error() << "failed to open file as a region: " << fn << std::endl;
                         return false;
                     }
                     regions.push_back(region);
@@ -311,7 +311,7 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                                connectivity_value,
                                use_end_only,po.get("connectivity_threshold",0.001f)))
             {
-                tipl::out() << "ERROR: " << data.error_msg << std::endl;
+                tipl::error() << data.error_msg << std::endl;
                 return false;
             }
             if(data.overlap_ratio > 0.5f)
@@ -372,12 +372,12 @@ std::shared_ptr<fib_data> cmd_load_fib(std::string file_name)
         file_name = fib_template_list[file_name[0]-'0'];
     if(!std::filesystem::exists(file_name))
     {
-        tipl::out() << file_name << " does not exist. terminating..." << std::endl;
+        tipl::error() << file_name << " does not exist. terminating..." << std::endl;
         return std::shared_ptr<fib_data>();
     }
     if (!handle->load_from_file(file_name.c_str()))
     {
-        tipl::out() << "ERROR: " << handle->error_msg << std::endl;
+        tipl::error() << handle->error_msg << std::endl;
         return std::shared_ptr<fib_data>();
     }
     return handle;
@@ -429,7 +429,7 @@ bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> h
                 }
             if(!found)
             {
-                tipl::out() << "ERROR: cannot find " << region_name << " in the NIFTI file." << std::endl;
+                tipl::error() << "cannot find " << region_name << " in the NIFTI file." << std::endl;
                 return false;
             }
         }
@@ -441,7 +441,7 @@ bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> h
             std::vector<tipl::vector<3,short> > points;
             if(!handle->get_atlas_roi(file_name,region_name,points))
             {
-                tipl::out() << "ERROR: " << handle->error_msg << std::endl;
+                tipl::error() << handle->error_msg << std::endl;
                 return false;
             }
             roi.add_points(std::move(points));
@@ -449,7 +449,7 @@ bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> h
         else
             if(!roi.load_region_from_file(file_name.c_str()))
             {
-                tipl::out() << "ERROR: cannot open file as a region" << file_name << std::endl;
+                tipl::error() << "cannot open file as a region" << file_name << std::endl;
                 return false;
             }
     }
@@ -461,7 +461,7 @@ bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> h
         roi.perform(str_list[i].toStdString());
     }
     if(roi.region.empty())
-        tipl::out() << "WARNING: " << file_name << " is an empty region file" << std::endl;
+        tipl::warning() << file_name << " is an empty region file" << std::endl;
 
     return true;
 }
@@ -543,7 +543,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
 
         if(failed)
         {
-            tipl::out() << "ERROR: cannot save tracks as " << tract_file_name << ". Please check write permission, directory, and disk space." << std::endl;
+            tipl::error() << "cannot save tracks as " << tract_file_name << ". Please check write permission, directory, and disk space." << std::endl;
             return 1;
         }
     }
@@ -551,22 +551,22 @@ int trk_post(tipl::program_option<tipl::out>& po,
 
     if(po.has(("native_track")) && !tract_model->save_tracts_in_native_space(handle,po.get("native_track").c_str()))
     {
-        tipl::out() << "ERROR: failed to save file to " << po.get("native_track") << std::endl;
+        tipl::error() << "failed to save file to " << po.get("native_track") << std::endl;
         return 1;
     }
     if(po.has(("template_track")) && !tract_model->save_tracts_in_template_space(handle,po.get("template_track").c_str()))
     {
-        tipl::out() << "ERROR: failed to save file to " << po.get("template_track") << std::endl;
+        tipl::error() << "failed to save file to " << po.get("template_track") << std::endl;
         return 1;
     }
     if(po.has(("mni_track")) && !tract_model->save_tracts_in_template_space(handle,po.get("mni_track").c_str(),true))
     {
-        tipl::out() << "ERROR: failed to save file to " << po.get("mni_track") << std::endl;
+        tipl::error() << "failed to save file to " << po.get("mni_track") << std::endl;
         return 1;
     }
     if(po.has(("end_point")) && !tract_model->save_end_points(po.get("end_point").c_str()))
     {
-        tipl::out() << "ERROR: failed to save file to " << po.get("end_point") << std::endl;
+        tipl::error() << "failed to save file to " << po.get("end_point") << std::endl;
         return 1;
     }
     if(po.has(("end_point1")) || po.has(("end_point2")))
@@ -578,12 +578,12 @@ int trk_post(tipl::program_option<tipl::out>& po,
         end2.add_points(std::move(points2));
         if(po.has(("end_point1")) && !end1.save_region_to_file(po.get("end_point1").c_str()))
         {
-            tipl::out() << "ERROR: failed to save file to " << po.get("end_point1") << std::endl;
+            tipl::error() << "failed to save file to " << po.get("end_point1") << std::endl;
             return 1;
         }
         if(po.has(("end_point2")) && !end2.save_region_to_file(po.get("end_point2").c_str()))
         {
-            tipl::out() << "ERROR: failed to save file to " << po.get("end_point2") << std::endl;
+            tipl::error() << "failed to save file to " << po.get("end_point2") << std::endl;
             return 1;
         }
     }
@@ -626,7 +626,7 @@ bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         tipl::out() << "Consider using action atk for automatic fiber tracking" << std::endl;
         if(!handle->load_track_atlas())
         {
-            tipl::out() << handle->error_msg << std::endl;
+            tipl::error() << handle->error_msg << std::endl;
             return false;
         }
         std::string name = po.get("track_id");
@@ -635,7 +635,7 @@ bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
             size_t track_id = std::stoi(name);
             if(track_id >= handle->tractography_name_list.size())
             {
-                tipl::out() << "ERROR: invalid track_id";
+                tipl::error() << "invalid track_id";
                 return false;
             }
             roi_mgr->tract_name = handle->tractography_name_list[track_id];
@@ -659,11 +659,11 @@ int trk(tipl::program_option<tipl::out>& po)
     }
     catch(std::exception const&  ex)
     {
-        tipl::out() << "ERROR: program terminated due to exception: " << ex.what() << std::endl;
+        tipl::error() << "program terminated due to exception: " << ex.what() << std::endl;
     }
     catch(...)
     {
-        tipl::out() << "ERROR: program terminated due to unknown exception" << std::endl;
+        tipl::error() << "program terminated due to unknown exception" << std::endl;
     }
     return 0;
 }
@@ -717,7 +717,7 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
     {
         if(!handle->dir.set_tracking_index(po.get("threshold_index")))
         {
-            tipl::out() << "ERROR: cannot find the index" << std::endl;
+            tipl::error() << "cannot find the index" << std::endl;
             return 1;
         }
     }
@@ -749,7 +749,7 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
                     }
                     if(!found)
                     {
-                        tipl::out() << "ERROR: cannot find subject in " << subject_demo << ". Please make sure that the FIB or NIFTI file name includes subject's id." << std::endl;
+                        tipl::error() << "cannot find subject in " << subject_demo << ". Please make sure that the FIB or NIFTI file name includes subject's id." << std::endl;
                         return 1;
                     }
                 }
@@ -762,16 +762,16 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
         auto metric_j = handle->get_name_index(po.get("dt_metric2"));
         if(metric_i == handle->view_item.size() || metric_j == handle->view_item.size())
         {
-            tipl::out() << "ERROR: invalid dt_metric" << std::endl;
-            tipl::out() << "available metrics are " << std::endl;
+            tipl::error() << "invalid dt_metric";
+            tipl::out() << "available metrics are ";
             for(size_t i = 0;i < handle->view_item.size();++i)
-                tipl::out() << handle->view_item[i].name << std::endl;
+                tipl::out() << handle->view_item[i].name;
             return 1;
         }
         if(handle->view_item[metric_i].name != po.get("dt_metric1"))
-            tipl::out() << "WARNING: specified " << po.get("dt_metric1") << " but it was not found. The analysis will use " << handle->view_item[metric_i].name;
+            tipl::warning() << "specified " << po.get("dt_metric1") << " but it was not found. The analysis will use " << handle->view_item[metric_i].name;
         if(handle->view_item[metric_j].name != po.get("dt_metric2"))
-            tipl::out() << "WARNING: specified " << po.get("dt_metric2") << " but it was not found. The analysis will use " << handle->view_item[metric_j].name;
+            tipl::warning() << "specified " << po.get("dt_metric2") << " but it was not found. The analysis will use " << handle->view_item[metric_j].name;
         handle->set_dt_index(std::make_pair(metric_i,metric_j),po.get("dt_threshold_type",0));
     }
 

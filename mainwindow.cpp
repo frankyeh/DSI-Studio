@@ -504,11 +504,11 @@ QString RenameDICOMToDir(QString FileName, QString ToDir)
         ToDir += "/";
         ToDir += Person;
         if (!QDir(ToDir).exists() && !std::filesystem::create_directory(std::filesystem::path(ToDir.toStdString())))
-            tipl::out() << "ERROR: cannot create dir " << ToDir.toStdString() << std::endl;
+            tipl::error() << "cannot create dir " << ToDir.toStdString() << std::endl;
         ToDir += "/";
         ToDir += Sequence;
         if (!QDir(ToDir).exists() && !std::filesystem::create_directory(std::filesystem::path(ToDir.toStdString())))
-            tipl::out() << "ERROR: cannot create dir " << ToDir.toStdString() << std::endl;
+            tipl::error() << "cannot create dir " << ToDir.toStdString() << std::endl;
         ToDir += "/";
         ToDir += ImageName;
         NewName = ToDir;
@@ -517,7 +517,7 @@ QString RenameDICOMToDir(QString FileName, QString ToDir)
     {
         tipl::out() << FileName.toStdString() << "->" << NewName.toStdString() << std::endl;
         if(!QFile::rename(FileName,NewName))
-            tipl::out() << "ERROR: cannot rename the file." << std::endl;
+            tipl::error() << "cannot rename the file." << std::endl;
     }
     return NewName;
 }
@@ -859,7 +859,7 @@ void create_src(const std::vector<std::string>& nii1,
     {
         if(!load_4d_nii(nii_name.c_str(),dwi_files1,true))
         {
-            tipl::out() << "ERROR: " << src_error_msg << std::endl;
+            tipl::error() << src_error_msg << std::endl;
             return;
         }
     }
@@ -867,7 +867,7 @@ void create_src(const std::vector<std::string>& nii1,
     {
         if(!load_4d_nii(nii_name.c_str(),dwi_files2,true))
         {
-            tipl::out() << "ERROR: " << src_error_msg << std::endl;
+            tipl::error() << src_error_msg << std::endl;
             return;
         }
     }
@@ -875,10 +875,10 @@ void create_src(const std::vector<std::string>& nii1,
         dwi_files1.swap(dwi_files2);
 
     if(!DwiHeader::output_src((src_name+".src.gz").c_str(),dwi_files1,0,false))
-        tipl::out() << "ERROR: " << src_error_msg << std::endl;
+        tipl::error() << src_error_msg << std::endl;
 
     if(!DwiHeader::output_src((src_name+".rsrc.gz").c_str(),dwi_files2,0,false))
-        tipl::out() << "ERROR: " << src_error_msg << std::endl;
+        tipl::error() << src_error_msg << std::endl;
 }
 */
 bool get_pe_dir(const std::string& nii_name,size_t& pe_dir,bool& is_neg)
@@ -1096,7 +1096,7 @@ bool dcm2src_and_nii(QStringList files)
         tipl::io::dicom header;
         if(!header.load_from_file(files[0].toStdString().c_str()))
         {
-            tipl::out() << "ERROR: cannot read image volume. skip" << std::endl;
+            tipl::error() << "cannot read image volume. skip" << std::endl;
             return false;
         }
         header.get_sequence_id(sequence);
@@ -1125,7 +1125,7 @@ bool dcm2src_and_nii(QStringList files)
             tipl::io::dicom v;
             if(!v.load_from_file(files[0].toStdString()))
             {
-                tipl::out() << "ERROR: cannot parse dicom file" << std::endl;
+                tipl::error() << "cannot parse dicom file" << std::endl;
                 return false;
             }
             v >> source_images;
@@ -1170,7 +1170,7 @@ bool dcm2src_and_nii(QStringList files)
         }
         if(dicom_files[index]->image.shape() != dicom_files[0]->image.shape())
         {
-            tipl::out() << "ERROR: inconsistent image dimensions among DWI." << std::endl;
+            tipl::error() << "inconsistent image dimensions among DWI." << std::endl;
             return false;
         }
     }
@@ -1202,7 +1202,7 @@ bool dcm2src_and_nii(QStringList files)
     QString src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".src.gz").c_str(),true);
     tipl::out() << "Create SRC file: " << std::filesystem::path(src_name.toStdString()).filename().string() << std::endl;
     if(!DwiHeader::output_src(src_name.toStdString().c_str(),dicom_files,0,false))
-        tipl::out() << "ERROR: " << src_error_msg << std::endl;
+        tipl::error() << src_error_msg << std::endl;
 
     return true;
 }

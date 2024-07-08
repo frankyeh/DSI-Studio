@@ -85,14 +85,14 @@ int after_warp(tipl::program_option<tipl::out>& po,dual_reg<3>& r)
     std::vector<std::string> filename_cmds;
     if(!po.get_files("apply_warp",filename_cmds))
     {
-        tipl::out() << "ERROR: cannot find file " << po.get("apply_warp") <<std::endl;
+        tipl::error() << "cannot find file " << po.get("apply_warp") <<std::endl;
         return 1;
     }
 
     for(const auto& each_file: filename_cmds)
         if(!r.apply_warping(each_file.c_str(),
                         (each_file+(tipl::ends_with(each_file,".tt.gz") ? ".wp.tt.gz" : ".wp.nii.gz")).c_str()))
-            tipl::out() << "ERROR: " <<r.error_msg;
+            tipl::error() << r.error_msg;
 
     return 0;
 }
@@ -109,7 +109,7 @@ bool load_nifti_file(std::string file_name_cmd,
     std::getline(in,file_name,'+');
     if(!tipl::io::gz_nifti::load_from_file(file_name.c_str(),data,vs,trans,is_mni))
     {
-        tipl::out() << "ERROR: cannot load file " << file_name << std::endl;
+        tipl::error() << "cannot load file " << file_name << std::endl;
         return false;
     }
     while(std::getline(in,cmd,'+'))
@@ -125,7 +125,7 @@ bool load_nifti_file(std::string file_name_cmd,
             tipl::filter::mean(data);
         else
         {
-            tipl::out() << "ERROR: unknown command " << cmd << std::endl;
+            tipl::error() << "unknown command " << cmd << std::endl;
             return false;
         }
     }
@@ -153,7 +153,7 @@ int reg(tipl::program_option<tipl::out>& po)
     {
         if(!po.has("apply_warp"))
         {
-            tipl::out() << "ERROR: please specify the images or tracts to be warped using --apply_warp";
+            tipl::error() << "please specify the images or tracts to be warped using --apply_warp";
             return 1;
         }
         tipl::out() << "loading warping field";
@@ -166,7 +166,7 @@ int reg(tipl::program_option<tipl::out>& po)
 
     if(!po.has("from") || !po.has("to"))
     {
-        tipl::out() << "ERROR: please specify the images to normalize using --from and --to";
+        tipl::error() << "please specify the images to normalize using --from and --to";
         return 1;
     }
 
@@ -203,6 +203,6 @@ int reg(tipl::program_option<tipl::out>& po)
     return after_warp(po,r);
 
     error:
-    tipl::out() << "ERROR: " << r.error_msg;
+    tipl::error() << r.error_msg;
     return 1;
 }

@@ -177,7 +177,7 @@ bool view_image::command(std::string cmd,std::string param1)
     if(!result)
     {
         error_msg += cur_image->error_msg;
-        tipl::out() << "ERROR: " << error_msg << std::endl;
+        tipl::error() << error_msg << std::endl;
         if(!undo_list.empty())
         {
             swap(cur_image,undo_list.back());

@@ -55,7 +55,7 @@ bool load_nii(tipl::program_option<tipl::out>& po,
     std::string error_msg;
     if(!load_nii(handle,file_name.toStdString(),transform_lookup,regions,names,error_msg,QFileInfo(file_name).baseName().toLower().contains("mni")))
     {
-        tipl::out() << "ERROR: " << error_msg << std::endl;
+        tipl::error() << error_msg << std::endl;
         return false;
     }
 
@@ -78,12 +78,12 @@ bool load_tracts(const char* file_name,std::shared_ptr<fib_data> handle,std::sha
 {
     if(!std::filesystem::exists(file_name))
     {
-        tipl::out() << "ERROR: " << file_name << " does not exist. terminating..." << std::endl;
-        return 1;
+        tipl::error() << file_name << " does not exist. terminating..." << std::endl;
+        return false;
     }
     if(!tract_model->load_tracts_from_file(file_name,handle.get(),std::string(file_name).find("mni") != std::string::npos))
     {
-        tipl::out() << "ERROR: cannot read or parse " << file_name << std::endl;
+        tipl::error() << "cannot read or parse " << file_name << std::endl;
         return false;
     }
     tipl::out() << "A total of " << tract_model->get_visible_track_count() << " tracks loaded" << std::endl;
@@ -103,7 +103,10 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
     {
         std::vector<std::shared_ptr<atlas> > atlas_list;
         if(!atl_load_atlas(handle,po.get("atlas"),atlas_list))
+        {
+            tipl::out() << "fail to load atlas" << std::endl;
             return 1;
+        }
         for(unsigned int i = 0;i < atlas_list.size();++i)
         {
             for(unsigned int j = 0;j < atlas_list[i]->get_list().size();++j)
@@ -131,7 +134,7 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
             std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
             if(!load_region(po,handle,*region.get(),roi_list[i].toStdString()))
             {
-                tipl::out() << "fail to load the ROI file." << std::endl;
+                tipl::error() << "fail to load the ROI file." << std::endl;
                 return 1;
             }
             region_list.push_back(roi_list[i].toStdString());
@@ -149,7 +152,7 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
     }
     if(regions.empty())
     {
-        tipl::out() << "ERROR: no region assigned" << std::endl;
+        tipl::error() << "no region assigned" << std::endl;
         return 1;
     }
 
@@ -188,13 +191,13 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
     std::vector<std::string> tract_files;
     if(!po.get_files("tract",tract_files))
     {
-        tipl::out() << "ERROR: " << po.error_msg << std::endl;
+        tipl::error() << po.error_msg << std::endl;
         return 1;
     }
 
     if(tract_files.size() == 0)
     {
-        tipl::out() << "No tract file assign to --tract" << std::endl;
+        tipl::error() << "No tract file assign to --tract" << std::endl;
         return 1;
     }
 
@@ -230,7 +233,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         pdi *= 1.0f/float(tract_files.size());
         if(!tipl::io::gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni,handle->is_mni))
         {
-            tipl::out() << "ERROR: cannot write to " << output << std::endl;
+            tipl::error() << "cannot write to " << output << std::endl;
             return 1;
         }
         tipl::out() << "file saved at " << output << std::endl;
@@ -258,7 +261,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
             tipl::out() << "save all tracts to " << output << std::endl;
             if(!TractModel::save_all(output.c_str(),tracts,tract_files))
             {
-                tipl::out() << "ERROR: cannot write to " << output << std::endl;
+                tipl::error() << "cannot write to " << output << std::endl;
                 return 1;
             }
             tipl::out() << "file saved at " << output << std::endl;
@@ -311,6 +314,6 @@ int ana(tipl::program_option<tipl::out>& po)
     }
     if(po.has("export"))
         return exp(po);
-    tipl::out() << "no tract file or ROI file assigned." << std::endl;
+    tipl::error() << "no tract file or ROI file assigned." << std::endl;
     return 1;
 }

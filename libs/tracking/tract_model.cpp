@@ -647,7 +647,7 @@ bool dual_reg<3>::apply_warping_tt(const char* from,const char* to) const
     if(!TinyTrack::load_from_file(from,loaded_tract_data,cluster,geo,vs,trans_to_mni,report,parameter_id,color))
     {
         error_msg = "Failed to read file";
-        return 1;
+        return false;
     }
 
     tipl::vector<3> max_pos(from2to.shape());
@@ -673,9 +673,9 @@ bool dual_reg<3>::apply_warping_tt(const char* from,const char* to) const
     if(!TinyTrack::save_to_file(to,to2from.shape(),Itvs,ItR,loaded_tract_data,cluster,report,parameter_id,color))
     {
         error_msg = "Failed to save file";
-        return 1;
+        return false;
     }
-    return 0;
+    return true;
 }
 bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,bool tract_is_mni)
 {

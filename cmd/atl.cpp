@@ -17,7 +17,7 @@ bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std:
         auto at = handle->get_atlas(name_list[index].toStdString());
         if(!at.get())
         {
-            tipl::out() << "ERROR: " << handle->error_msg << std::endl;
+            tipl::error() << handle->error_msg << std::endl;
             return false;
         }
         atlas_list.push_back(at);
@@ -47,7 +47,7 @@ int atl(tipl::program_option<tipl::out>& po)
 
     if(name_list.empty())
     {
-        tipl::out() << "ERROR: no file found in " << source << std::endl;
+        tipl::error() << "no file found in " << source << std::endl;
         return 1;
     }
 
@@ -59,7 +59,7 @@ int atl(tipl::program_option<tipl::out>& po)
             const char* msg = odf_average(po.get("output",(QFileInfo(name_list[0].c_str()).absolutePath()+"/template").toStdString()).c_str(),name_list);
             if(msg)
             {
-                tipl::out() << "ERROR: " << msg << std::endl;
+                tipl::error() << msg << std::endl;
                 return 1;
             }
         }
@@ -75,7 +75,7 @@ int atl(tipl::program_option<tipl::out>& po)
                 tipl::out() << "adding " << name;
                 if(!tipl::io::gz_nifti::load_from_file(name.c_str(),each,vs,T,is_mni))
                 {
-                    tipl::out() << "ERROR: cannot load file" << name_list[0] << std::endl;
+                    tipl::error() << "cannot load file" << name_list[0] << std::endl;
                     return 1;
                 }
                 if(sum.empty())
@@ -86,12 +86,12 @@ int atl(tipl::program_option<tipl::out>& po)
             auto output = po.get("output",name_list[0] + "avg.nii.gz");
             if(!tipl::io::gz_nifti::save_to_file(output.c_str(),sum,vs,T,is_mni))
             {
-                tipl::out() << "ERROR: cannot save file" << output << std::endl;
+                tipl::error() << "cannot save file" << output << std::endl;
                 return 1;
             }
             return 0;
         }
-        tipl::out() << "ERROR: unsupported format" << std::endl;
+        tipl::error() << "unsupported format" << std::endl;
         return 1;
     }
     if(cmd=="db")
@@ -103,19 +103,19 @@ int atl(tipl::program_option<tipl::out>& po)
         auto template_id = po.get("template",0);
         if(template_id >= fib_template_list.size())
         {
-            tipl::out() << "ERROR: invalid template value" << std::endl;
+            tipl::error() << "invalid template value" << std::endl;
             return 1;
         }
         if(fib_template_list[template_id].empty())
         {
-            tipl::out() << "ERROR: no FIB template for " <<  std::filesystem::path(fa_template_list[template_id]).stem() << std::endl;
+            tipl::error() << "no FIB template for " <<  std::filesystem::path(fa_template_list[template_id]).stem() << std::endl;
             return 1;
         }
 
         std::shared_ptr<fib_data> template_fib(new fib_data);
         if(!template_fib->load_from_file(fib_template_list[template_id].c_str()))
         {
-            tipl::out() << "ERROR: " <<  template_fib->error_msg << std::endl;
+            tipl::error() <<  template_fib->error_msg << std::endl;
             return 1;
         }
         template_fib->set_template_id(template_id);
@@ -131,7 +131,7 @@ int atl(tipl::program_option<tipl::out>& po)
             fib_data fib;
             if(!fib.load_from_file(name_list[0].c_str()))
             {
-                tipl::out() << "ERROR: cannot load subject fib " << name_list[0] << std::endl;
+                tipl::error() << "cannot load subject fib " << name_list[0] << std::endl;
                 return 1;
             }
             reso = po.get("resolution",std::floor((fib.vs[0] + fib.vs[2])*0.5f*100.0f)/100.0f);
@@ -157,7 +157,7 @@ int atl(tipl::program_option<tipl::out>& po)
 
         if(reso > template_fib->vs[0] && !template_fib->resample_to(reso))
         {
-            tipl::out() << "ERROR: " << template_fib->error_msg << std::endl;
+            tipl::error() << template_fib->error_msg << std::endl;
             return 1;
         }
 
@@ -166,7 +166,7 @@ int atl(tipl::program_option<tipl::out>& po)
             std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);
             if(!data->create_database(template_fib))
             {
-                tipl::out() << "ERROR: " << data->error_msg << std::endl;
+                tipl::error() << data->error_msg << std::endl;
                 return 1;
             }
             tipl::out() << "extracting " << index_name[i] << std::endl;
@@ -179,7 +179,7 @@ int atl(tipl::program_option<tipl::out>& po)
                 if(!data->handle->db.add(name_list[index],
                     QFileInfo(name_list[index].c_str()).baseName().toStdString()))
                 {
-                    tipl::out() << "ERROR: failed to load subject fib file " << data->handle->db.error_msg << std::endl;
+                    tipl::error() << "failed to load subject fib file " << data->handle->db.error_msg << std::endl;
                     return 1;
                 }
             }
@@ -187,7 +187,7 @@ int atl(tipl::program_option<tipl::out>& po)
 
             if(po.has("demo") && !data->handle->db.parse_demo(po.get("demo")))
             {
-                tipl::out() << "ERROR: " << data->handle->db.error_msg <<std::endl;
+                tipl::error() << data->handle->db.error_msg <<std::endl;
                 return 1;
             }
             std::string output = std::string(name_list.front().begin(),
@@ -196,7 +196,7 @@ int atl(tipl::program_option<tipl::out>& po)
                                                name_list.back().begin()).first) + "." + index_name[i] + ".db.fib.gz";
             if(!data->handle->db.save_db(po.get("output",output).c_str()))
             {
-                tipl::out() << "ERROR: cannot save db file " << data->handle->db.error_msg << std::endl;
+                tipl::error() << "cannot save db file " << data->handle->db.error_msg << std::endl;
                 return 1;
             }
             tipl::out() << "connectometry db created: " << output << std::endl;
@@ -209,7 +209,7 @@ int atl(tipl::program_option<tipl::out>& po)
         std::shared_ptr<fib_data> handle = cmd_load_fib(source);
         if(!handle.get())
         {
-            tipl::out() << "ERROR: " << handle->error_msg << std::endl;
+            tipl::error() << handle->error_msg << std::endl;
             return 1;
         }
         if(cmd=="roi")
@@ -220,7 +220,7 @@ int atl(tipl::program_option<tipl::out>& po)
                 return 1;
             if(handle->get_sub2temp_mapping().empty())
             {
-                tipl::out() << "ERROR: cannot output connectivity: no mni mapping" << std::endl;
+                tipl::error() << "cannot output connectivity: no mni mapping" << std::endl;
                 return 1;
             }
             std::string file_name = po.get("source");
@@ -263,12 +263,12 @@ int atl(tipl::program_option<tipl::out>& po)
         {
             if(!handle->is_mni)
             {
-                tipl::out() << "ERROR: only QSDR reconstructed FIB file is supported." << std::endl;
+                tipl::error() << "only QSDR reconstructed FIB file is supported." << std::endl;
                 return 1;
             }
             if(handle->get_native_position().empty())
             {
-                tipl::out() << "ERROR: no mapping information found. Please reconstruct QSDR with 'mapping' included in the output." << std::endl;
+                tipl::error() << "no mapping information found. Please reconstruct QSDR with 'mapping' included in the output." << std::endl;
                 return 1;
             }
             std::shared_ptr<TractModel> tract_model(new TractModel(handle));
@@ -277,7 +277,7 @@ int atl(tipl::program_option<tipl::out>& po)
                 tipl::out() << "loading " << file_name << "..." <<std::endl;
                 if (!tract_model->load_tracts_from_file(file_name.c_str(),handle.get(),file_name.find("mni") != std::string::npos))
                 {
-                    tipl::out() << "ERROR: cannot open file " << file_name << std::endl;
+                    tipl::error() << "cannot open file " << file_name << std::endl;
                     return 1;
                 }
                 tipl::out() << file_name << " loaded" << std::endl;
@@ -288,6 +288,6 @@ int atl(tipl::program_option<tipl::out>& po)
             return 0;
         }
     }
-    tipl::out() << "ERROR: unknown command: " << cmd << std::endl;
+    tipl::error() << "unknown command: " << cmd << std::endl;
     return 1;
 }

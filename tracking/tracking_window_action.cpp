@@ -750,7 +750,7 @@ bool tracking_window::addSlices(QStringList filenames,QString name,bool cmd,bool
         if(!cmd)
             QMessageBox::critical(this,"ERROR",reg_slice_ptr->error_msg.c_str());
         else
-            tipl::out() << "ERROR: " << reg_slice_ptr->error_msg << std::endl;
+            tipl::error() << reg_slice_ptr->error_msg << std::endl;
         return false;
     }
 

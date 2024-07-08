@@ -24,7 +24,7 @@ int vis(tipl::program_option<tipl::out>& po)
         std::vector<std::string> filenames;
         if(!po.get_files("tract",filenames))
         {
-            tipl::out() << "ERROR: " << po.error_msg << std::endl;
+            tipl::error() << po.error_msg << std::endl;
             return 1;
         }
         QStringList tracts;
@@ -39,7 +39,7 @@ int vis(tipl::program_option<tipl::out>& po)
         QStringList param = cmd[index].split(',');
         if(!new_mdi->command(param[0],param.size() > 1 ? param[1]:QString(),param.size() > 2 ? param[2]:QString()))
         {
-            tipl::out() << "ERROR: " << new_mdi->error_msg << std::endl;
+            tipl::error() << new_mdi->error_msg << std::endl;
             break;
         }
     }

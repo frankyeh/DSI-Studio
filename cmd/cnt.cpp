@@ -10,7 +10,7 @@ int cnt(tipl::program_option<tipl::out>& po)
     std::shared_ptr<group_connectometry_analysis> vbc(new group_connectometry_analysis);
     if(!vbc->load_database(po.get("source").c_str()))
     {
-        tipl::out() << "ERROR: " << vbc->error_msg << std::endl;
+        tipl::error() << vbc->error_msg << std::endl;
         return 1;
     }
 
@@ -23,7 +23,7 @@ int cnt(tipl::program_option<tipl::out>& po)
             return 1;
         if(!db.parse_demo(po.get("demo")))
         {
-            tipl::out() << "ERROR: " << db.error_msg << std::endl;
+            tipl::error() << db.error_msg << std::endl;
             return 1;
         }
         if(po.has("save_db"))
@@ -59,7 +59,7 @@ int cnt(tipl::program_option<tipl::out>& po)
         for(auto v : variable_list)
             if(v >= db.feature_titles.size())
             {
-                tipl::out() << "ERROR: invalid variable value: " << v << std::endl;
+                tipl::error() << "invalid variable value: " << v << std::endl;
                 return 1;
             }
 
@@ -68,7 +68,7 @@ int cnt(tipl::program_option<tipl::out>& po)
         {
             if(!db.is_longitudinal)
             {
-                tipl::out() << "ERROR: The longitudinal change can only be studied in a longitudinal database." << std::endl;
+                tipl::error() << "The longitudinal change can only be studied in a longitudinal database." << std::endl;
                 return 1;
             }
             foi_str = "longitudinal change";
@@ -78,7 +78,7 @@ int cnt(tipl::program_option<tipl::out>& po)
             unsigned int voi_index = po.get("voi",uint32_t(0));
             if(voi_index >= db.feature_titles.size())
             {
-                tipl::out() << "invalid variable of interest: " << voi_index << std::endl;
+                tipl::error() << "invalid variable of interest: " << voi_index << std::endl;
                 return 1;
             }
             // the variable to study needs to be included in the model
@@ -111,7 +111,7 @@ int cnt(tipl::program_option<tipl::out>& po)
         vbc->model->read_demo(db);
         if(!vbc->model->select_cohort(db,po.get("select")) || !vbc->model->select_feature(db,vbc->foi_str))
         {
-            tipl::out() << "ERROR: " << vbc->model->error_msg.c_str() << std::endl;
+            tipl::error() << vbc->model->error_msg.c_str() << std::endl;
             return 1;
         }
 

@@ -99,7 +99,7 @@ bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<2,short>& I)
     QImage img;
     if(!qimg.read(&img))
     {
-        std::cout << "ERROR: unsupported transfer syntax " << dicom.encoding;
+        std::cout << "❌️unsupported transfer syntax " << dicom.encoding;
         return false;
     }
     QImage buf = img.convertToFormat(QImage::Format_RGB32);
@@ -323,7 +323,7 @@ int img(tipl::program_option<tipl::out>& po)
     variant_image var_image;
     if(!var_image.load_from_file(source.c_str(),info))
     {
-        tipl::out() << "ERROR: " << var_image.error_msg;
+        tipl::error() << var_image.error_msg;
         return 0;
     }
     for(auto& cmd : tipl::split(po.get("cmd"),','))
@@ -342,8 +342,8 @@ int img(tipl::program_option<tipl::out>& po)
         }
         if(!var_image.command(cmd,param))
         {
-            tipl::out() << "ERROR: " << var_image.error_msg;
-            return 0;
+            tipl::error() << var_image.error_msg;
+            return 1;
         }
     }
     if(po.has("output"))
@@ -351,9 +351,9 @@ int img(tipl::program_option<tipl::out>& po)
         tipl::out() << "saving output";
         if(!var_image.command("save",po.get("output")))
         {
-            tipl::out() << "ERROR: " << var_image.error_msg;
-            return 0;
+            tipl::error() << var_image.error_msg;
+            return 1;
         }
     }
-    return 1;
+    return 0;
 }

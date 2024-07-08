@@ -19,14 +19,14 @@ int atk(tipl::program_option<tipl::out>& po)
     std::vector<std::string> file_list;
     if(!po.get_files("source",file_list))
     {
-        tipl::out() << "ERROR: " << po.error_msg << std::endl;
+        tipl::error() << po.error_msg << std::endl;
         return 1;
     }
 
 
     if(file_list.empty())
     {
-        tipl::out() << "no file listed in --source" << std::endl;
+        tipl::error() << "no file listed in --source" << std::endl;
         return 1;
     }
 
@@ -41,6 +41,6 @@ int atk(tipl::program_option<tipl::out>& po)
         }
         return 0;
     }
-    tipl::out() << "ERROR: " << error << std::endl;
+    tipl::error() << error << std::endl;
     return 1;
 }

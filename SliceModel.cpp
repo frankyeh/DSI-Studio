@@ -455,7 +455,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         tipl::out() << "loading existing linear registration." << std::endl;
         if(!(load_mapping((files[0]+".linear_reg.txt").c_str())))
         {
-            tipl::out() << "ERROR: invalid slice mapping file format" << std::endl;
+            tipl::error() << "invalid slice mapping file format" << std::endl;
             return false;
         }
         return true;

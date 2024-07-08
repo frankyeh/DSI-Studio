@@ -26,11 +26,11 @@ int exp(tipl::program_option<tipl::out>& po)
             }
             else
             {
-                tipl::out() << "ERROR: cannot write to " << output_name << std::endl;
+                tipl::error() << "cannot write to " << output_name << std::endl;
                 return 1;
             }
         }
-        tipl::out() << "ERROR: unsupported file format" << std::endl;
+        tipl::error() << "unsupported file format" << std::endl;
         return 1;
     }
     if(QString(file_name.c_str()).endsWith(".tt.gz"))
@@ -45,11 +45,11 @@ int exp(tipl::program_option<tipl::out>& po)
             }
             else
             {
-                tipl::out() << "ERROR: cannot write to " << output_name << std::endl;
+                tipl::error() << "cannot write to " << output_name << std::endl;
                 return 1;
             }
         }
-        tipl::out() << "ERROR: unsupported file format" << std::endl;
+        tipl::error() << "unsupported file format" << std::endl;
         return 1;
     }
     if(QString(file_name.c_str()).endsWith(".fib.gz"))
@@ -58,24 +58,24 @@ int exp(tipl::program_option<tipl::out>& po)
         handle = cmd_load_fib(po);
         if(!handle.get())
         {
-            tipl::out() << "ERROR: " << handle->error_msg << std::endl;
+            tipl::error() << handle->error_msg << std::endl;
             return 1;
         }
         if(po.has("match"))
         {
             if(!handle->db.has_db())
             {
-                tipl::out() << "ERROR: the FIB file is not a connectometry database" << std::endl;
+                tipl::error() << "the FIB file is not a connectometry database" << std::endl;
                 return 1;
             }
             if(handle->db.demo.empty())
             {
-                tipl::out() << "ERROR: the connectometry database does not include demographics for matching." << std::endl;
+                tipl::error() << "the connectometry database does not include demographics for matching." << std::endl;
                 return 1;
             }
             if(!handle->db.save_demo_matched_image(po.get("match"),po.get("output",po.get("source")+".matched.nii.gz")))
             {
-                tipl::out() << "ERROR: " << handle->db.error_msg << std::endl;
+                tipl::error() << handle->db.error_msg << std::endl;
                 return 1;
             }
             return 0;
@@ -87,7 +87,7 @@ int exp(tipl::program_option<tipl::out>& po)
         {
             if(!handle->save_mapping(cmd,file_name + "." + cmd + ".nii.gz"))
             {
-                tipl::out() << "ERROR: cannot find "<< cmd <<" in " << file_name.c_str() <<std::endl;
+                tipl::error() << "cannot find "<< cmd <<" in " << file_name.c_str() <<std::endl;
                 return 1;
             }
             tipl::out() << cmd << ".nii.gz saved " << std::endl;
@@ -95,6 +95,6 @@ int exp(tipl::program_option<tipl::out>& po)
         return 0;
     }
 
-    tipl::out() << "unsupported file format" << std::endl;
+    tipl::error() << "unsupported file format" << std::endl;
     return 1;
 }

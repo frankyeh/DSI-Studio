@@ -38,7 +38,7 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
                 if(!roi_mgr->setAtlas(joining,fa_threshold1,param.check_ending ? fa_threshold2+fa_threshold2-fa_threshold1 : 0.0f))
                 {
                     if(!roi_mgr->handle->error_msg.empty())
-                        tipl::out() << "ERROR: " << roi_mgr->handle->error_msg;
+                        tipl::error() << roi_mgr->handle->error_msg;
                     joining = true;
                 }
             }

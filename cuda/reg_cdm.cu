@@ -27,7 +27,7 @@ void cdm_cuda_base(const std::vector<tipl::const_pointer_image<dim,unsigned char
 
     catch(std::runtime_error& er)
     {
-        std::cout << "ERROR: " << er.what() << std::endl;
+        std::cout << "❌️" << er.what() << std::endl;
         std::cout << "switch to CPU" << std::endl;
         tipl::reg::cdm(It,Is,d,terminated,param);
         return;

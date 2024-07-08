@@ -120,7 +120,7 @@ tipl::const_pointer_image<3,float> item::get_image(void)
         tipl::show_prog = false;
         if (!mat_reader->read(image_index,row,col,buf))
         {
-            tipl::out() << "ERROR: reading " << name << std::endl;
+            tipl::error() << "reading " << name << std::endl;
             dummy.resize(image_data.shape());
             image_data = dummy.alias();
         }

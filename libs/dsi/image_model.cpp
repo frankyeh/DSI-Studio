@@ -978,7 +978,7 @@ bool src_data::add_other_image(const std::string& name,const std::string& filena
     tipl::io::gz_nifti in;
     if(!in.load_from_file(filename.c_str()) || !in.toLPS(ref))
     {
-        error_msg = "ERROR: not a valid nifti file ";
+        error_msg = "❌️not a valid nifti file ";
         error_msg += filename;
         return false;
     }

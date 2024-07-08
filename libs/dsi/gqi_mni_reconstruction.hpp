@@ -83,7 +83,7 @@ public:
                 if(tipl::prog_aborted)
                     throw std::runtime_error("reconstruction canceled");
                 if(voxel.R2 < 0.4f)
-                    throw std::runtime_error("ERROR: Poor R2 found in linear registration. Please check image orientation or use manual alignment.");
+                    throw std::runtime_error("❌️Poor R2 found in linear registration. Please check image orientation or use manual alignment.");
             }
 
             {
@@ -107,7 +107,7 @@ public:
             voxel.R2 = voxel.R2*voxel.R2;
             tipl::out() << "nonlinear R2: " << voxel.R2 << std::endl;
             if(voxel.R2 < 0.3f)
-                throw std::runtime_error("ERROR: Poor R2 found. Please check image orientation or use manual alignment.");
+                throw std::runtime_error("❌️Poor R2 found. Please check image orientation or use manual alignment.");
         }
 
 

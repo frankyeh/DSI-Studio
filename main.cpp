@@ -296,7 +296,7 @@ int run_action(tipl::program_option<tipl::out>& po)
         return img(po);
     if(action == std::string("vis"))
         return vis(po);
-    tipl::out() << "ERROR: unknown action: " << action << std::endl;
+    tipl::error() << "unknown action: " << action << std::endl;
     return 1;
 }
 int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
@@ -317,7 +317,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
         std::vector<std::string> loop_files;
         if(!tipl::search_filesystem(loop,loop_files))
         {
-            tipl::out() << "ERROR: invalid file path " << loop << std::endl;;
+            tipl::error() << "invalid file path " << loop << std::endl;;
             return 1;
         }
         tipl::out() << "a total of " << loop_files.size() << " files found" << std::endl;
@@ -342,7 +342,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
                     else
                     if(!tipl::match_files(loop,loop_files[i],each,apply_wildcard_each))
                     {
-                        tipl::out() << "ERROR: cannot translate " << wildcard.second <<
+                        tipl::error() << "cannot translate " << wildcard.second <<
                                      " at --" << wildcard.first << std::endl;
                         return 1;
                     }
@@ -379,13 +379,13 @@ void init_cuda(void)
 }
 int run_cmd(int ac, char *av[])
 {
+    tipl::program_option<tipl::out> po;
     try
     {
 
-        tipl::program_option<tipl::out> po;
         if(!po.parse(ac,av) || !po.check("action"))
         {
-            tipl::out() << po.error_msg << std::endl;
+            tipl::error() << po.error_msg << std::endl;
             return 1;
         }
 
@@ -406,7 +406,7 @@ int run_cmd(int ac, char *av[])
             cmd->setApplicationName(version_string());
             if(!load_file_name())
             {
-                tipl::out() << "ERROR: Cannot find template data." << std::endl;
+                tipl::error() << "Cannot find template data." << std::endl;
                 return 1;
             }
         }
@@ -418,12 +418,15 @@ int run_cmd(int ac, char *av[])
             cmd->exec();
     }
     catch(const std::exception& e ) {
-        std::cout << e.what() << std::endl;
+        tipl::error() << e.what() << std::endl;
+        return 1;
     }
     catch(...)
     {
-        std::cout << "unknown error occurred" << std::endl;
+        tipl::error() <<"unknown error occurred" << std::endl;
+        return 1;
     }
+    po.check_end_param();
     return 0;
 }
 
@@ -432,11 +435,14 @@ extern console_stream console;
 int main(int ac, char *av[])
 {
     if(ac > 2)
+    {
+        std::locale::global(std::locale("en_US.UTF-8"));
         return run_cmd(ac,av);
+    }
     if(ac == 2 && std::string(av[1]) == "--version")
     {
         std::cout << version_string().toStdString() << " " << __DATE__ << std::endl;
-        return 1;
+        return 0;
     }
 
     try{
