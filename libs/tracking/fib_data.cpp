@@ -572,55 +572,61 @@ bool fib_data::load_from_file(const char* file_name)
 }
 bool fib_data::save_mapping(const std::string& index_name,const std::string& file_name)
 {
+    tipl::progress prog("saving ",file_name.c_str());
+    auto save = [this,file_name](const auto& buf)->bool
+    {
+        if(!tipl::io::gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni))
+        {
+            error_msg = "cannot save file ";
+            error_msg += file_name;
+            return false;
+        }
+        return true;
+    };
+
     if(index_name == "fiber" || index_name == "dirs") // command line exp use "dirs"
     {
-        tipl::image<4,float> buf(tipl::shape<4>(
-                                 dim.width(),
-                                 dim.height(),
-                                 dim.depth(),3*uint32_t(dir.num_fiber)));
-
+        tipl::image<4,float> buf(dim.expand(3*uint32_t(dir.num_fiber)));
         for(unsigned int j = 0,index = 0;j < dir.num_fiber;++j)
         for(int k = 0;k < 3;++k)
         for(size_t i = 0;i < dim.size();++i,++index)
             buf[index] = dir.get_fib(i,j)[k];
-
-        return tipl::io::gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
+        return save(buf);
     }
     if(index_name.length() == 4 && index_name.substr(0,3) == "dir" && index_name[3]-'0' >= 0 && index_name[3]-'0' < int(dir.num_fiber))
     {
+        tipl::image<4,float> buf(dim.expand(3));
         unsigned char dir_index = uint8_t(index_name[3]-'0');
-        tipl::image<4,float> buf(tipl::shape<4>(dim[0],dim[1],dim[2],3));
         for(unsigned int j = 0,ptr = 0;j < 3;++j)
         for(size_t index = 0;index < dim.size();++index,++ptr)
             if(dir.fa[dir_index][index] > 0.0f)
                 buf[ptr] = dir.get_fib(index,dir_index)[j];
-        return tipl::io::gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
+        return save(buf);
     }
     if(index_name == "odfs")
     {
-        tipl::image<4,float> buf(tipl::shape<4>(
-                                 dim.width(),
-                                 dim.height(),
-                                 dim.depth(),
-                                 dir.half_odf_size));
         odf_data odf;
         if(!odf.read(mat_reader))
         {
             error_msg = odf.error_msg;
             return false;
         }
+        tipl::image<4,float> buf(dim.expand(dir.half_odf_size));
         for(size_t pos = 0;pos < dim.size();++pos)
         {
             auto* ptr = odf.get_odf_data(pos);
             if(ptr!= nullptr)
                 std::copy(ptr,ptr+dir.half_odf_size,buf.begin()+int64_t(pos)*dir.half_odf_size);
-
         }
-        return tipl::io::gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
+        return save(buf);
     }
     size_t index = get_name_index(index_name);
     if(index >= view_item.size())
+    {
+        error_msg = "cannot find metrics ";
+        error_msg += index_name;
         return false;
+    }
 
     if(index_name == "color")
     {
@@ -631,13 +637,19 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
             get_slice(uint32_t(index),uint8_t(2),uint32_t(z),I);
             std::copy(I.begin(),I.end(),buf.begin()+size_t(z)*buf.plane_size());
         }
-        return tipl::io::gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
+        return save(buf);
     }
 
 
     if(QFileInfo(QString(file_name.c_str())).completeSuffix().toLower() == "mat")
     {
         tipl::io::mat_write file(file_name.c_str());
+        if(!file)
+        {
+            error_msg = "cannot save file ";
+            error_msg += file_name;
+            return false;
+        }
         file << view_item[index].get_image();
         return true;
     }
@@ -650,8 +662,8 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
             tipl::resample<tipl::interpolation::cubic>(buf,new_buf,view_item[index].iT);
             new_buf.swap(buf);
         }
-        return tipl::io::gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni);
-    }
+        return save(buf);
+    }    
 }
 bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs)
 {

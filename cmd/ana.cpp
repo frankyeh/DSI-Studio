@@ -231,12 +231,12 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         }
         tipl::image<3> pdi(accumulate_map);
         pdi *= 1.0f/float(tract_files.size());
+        tipl::out() << "saving " << output << std::endl;
         if(!tipl::io::gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni,handle->is_mni))
         {
             tipl::error() << "cannot write to " << output << std::endl;
             return 1;
         }
-        tipl::out() << "file saved at " << output << std::endl;
         return 0;
     }
 
@@ -258,13 +258,11 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         if(QString(output.c_str()).endsWith(".trk.gz") ||
            QString(output.c_str()).endsWith(".tt.gz"))
         {
-            tipl::out() << "save all tracts to " << output << std::endl;
             if(!TractModel::save_all(output.c_str(),tracts,tract_files))
             {
                 tipl::error() << "cannot write to " << output << std::endl;
                 return 1;
             }
-            tipl::out() << "file saved at " << output << std::endl;
             return 0;
         }
         if(po.get("export") == "stat")

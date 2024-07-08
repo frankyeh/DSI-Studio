@@ -26,7 +26,7 @@ int xnat(tipl::program_option<tipl::out>& po)
             tipl::error() << "please specify output directory using --output" << std::endl;
             return 1;
         }
-        tipl::out() << "writing output to " << output << std::endl;
+        tipl::out() << "saving output to " << output << std::endl;
         xnat_connection.get_scans_data(po.get("source","https://central.xnat.org/"),po.get("auth"),po.get("id"),output);
     }
 
@@ -43,10 +43,6 @@ int xnat(tipl::program_option<tipl::out>& po)
     {
         tipl::out() << "write experiment info to " << output << std::endl;
         std::ofstream(output) << xnat_connection.result;
-    }
-    else
-    {
-        tipl::out() << "data saved to " << output << std::endl;
     }
     return 0;
 }

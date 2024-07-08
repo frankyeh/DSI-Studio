@@ -151,8 +151,8 @@ int cnt(tipl::program_option<tipl::out>& po)
             tipl::out() << "cannot output file to " << report_file_name << std::endl;
         else
         {
+            tipl::out() << "saving " << report_file_name;
             out << output << std::endl;
-            tipl::out() << "report saved to " << report_file_name << std::endl;
         }
     }
     return 0;

@@ -159,8 +159,8 @@ int qc(tipl::program_option<tipl::out>& po)
             auto result = quality_check_src_files(file_name.c_str());
             if(result.empty())
                 return 1;
+            tipl::out() << "saving " << report_file_name << std::endl;
             std::ofstream(report_file_name.c_str()) << result;
-            tipl::out() << "report saved to " << report_file_name << std::endl;
         }
         {
             std::string report_file_name = po.get("output",file_name + "/qc_fib.txt");
@@ -168,9 +168,8 @@ int qc(tipl::program_option<tipl::out>& po)
             auto result = quality_check_fib_files(file_name.c_str());
             if(result.empty())
                 return 1;
+            tipl::out() << "saving " << report_file_name << std::endl;
             std::ofstream(report_file_name.c_str()) << result;
-            tipl::out() << "report saved to " << report_file_name << std::endl;
-
         }
     }
     else {
@@ -194,8 +193,8 @@ int qc(tipl::program_option<tipl::out>& po)
             if(result.empty())
                 return 1;
 
+            tipl::out() << "saving " << report_file_name << std::endl;
             std::ofstream(report_file_name.c_str()) << result;
-            tipl::out() << "report saved to " << report_file_name << std::endl;
         }
     }
     return 0;

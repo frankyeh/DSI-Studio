@@ -283,8 +283,8 @@ int atl(tipl::program_option<tipl::out>& po)
                 tipl::out() << file_name << " loaded" << std::endl;
             }
             file_name += "native.tt.gz";
+            tipl::out() << "saving tracks to " << file_name << std::endl;
             tract_model->save_tracts_in_native_space(handle,file_name.c_str());
-            tipl::out() << "native tracks saved to " << file_name << " loaded" << std::endl;
             return 0;
         }
     }
