@@ -366,7 +366,6 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
 extern std::vector<std::string> fib_template_list;
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name)
 {
-    tipl::progress prog("opening ",file_name.c_str());
     std::shared_ptr<fib_data> handle(new fib_data);
     if(file_name.length() == 1 && file_name[0] >= '0' && file_name[0] <= '5')
         file_name = fib_template_list[file_name[0]-'0'];
