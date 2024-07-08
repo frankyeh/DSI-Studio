@@ -398,7 +398,7 @@ void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in)
 void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
 bool fib_data::load_from_file(const char* file_name)
 {
-    tipl::progress prog("open FIB file ",std::filesystem::path(file_name).filename().string().c_str());
+    tipl::progress prog("opening ",std::filesystem::path(file_name).filename().string().c_str());
     tipl::image<3> I;
     tipl::io::gz_nifti header;
     fib_file_name = file_name;
