@@ -72,11 +72,10 @@ class TinyTrack{
                              const std::string& parameter_id,
                              unsigned int color = 0)
     {
+        tipl::progress prog0("saving ",std::filesystem::path(file_name).filename().string().c_str());
         tipl::io::gz_mat_write out(file_name);
         if (!out)
             return false;
-        tipl::progress prog("save trajectories to ",std::filesystem::path(file_name).filename().string().c_str());
-
         out.write("dimension",geo);
         out.write("voxel_size",vs);
         out.write("trans_to_mni",trans_to_mni);
@@ -92,11 +91,11 @@ class TinyTrack{
         std::vector<size_t> buf_size(track32.size());
 
         {
-            tipl::progress prog("compressing trajectories");
+            tipl::progress prog1("compressing trajectories");
             size_t p = 0;
             tipl::par_for(track32.size(),[&](size_t i)
             {
-                prog(p++,tract_data.size());
+                prog1(p++,tract_data.size());
                 auto& t32 = track32[i];
                 t32.resize(tract_data[i].size());
                 // all coordinates multiply by 32 and convert to integer
@@ -147,12 +146,11 @@ class TinyTrack{
                 }
                 buf_size[i] = sizeof(tract_header)+t32.size()-3;
             });
-            if(prog.aborted())
+            if(prog1.aborted())
                 return false;
         }
         {
-            tipl::progress prog("saving file");
-            for(size_t block = 0,cur_track_block = 0;prog(cur_track_block,track32.size());++block)
+            for(size_t block = 0,cur_track_block = 0;prog0(cur_track_block,track32.size());++block)
             {
                 // record write position for each track
                 size_t total_size = 0;
@@ -187,10 +185,8 @@ class TinyTrack{
                     out.write((std::string("track")+std::to_string(block)).c_str(),&out_buf[0],total_size,1);
                 cur_track_block += pos.size();
             }
-            if(prog.aborted())
-                return false;
         }
-        return true;
+        return !prog0.aborted();
     }
     static bool load_from_file(const char* file_name,
                                std::vector<std::vector<float> >& tract_data,
@@ -199,7 +195,7 @@ class TinyTrack{
                                tipl::matrix<4,4>& trans_to_mni,
                                std::string& report,std::string& parameter_id,unsigned int& color)
     {
-        tipl::progress prog_("opening ",std::filesystem::path(file_name).filename().c_str());
+        tipl::progress prog("opening ",std::filesystem::path(file_name).filename().c_str());
         tipl::io::gz_mat_read in;
         prepare_idx(file_name,in.in);
         if (!in.load_from_file(file_name))

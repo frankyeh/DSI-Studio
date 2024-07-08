@@ -381,8 +381,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 if(export_stat &&
                    (overwrite || !std::filesystem::exists(stat_file_name) || !std::filesystem::file_size(stat_file_name)))
                 {
-                    tipl::progress prog2("export tracts statistics");
-                    tipl::out() << "saving " << stat_file_name << std::endl;
+                    tipl::out() << "saving " << stat_file_name;
                     std::ofstream out_stat(stat_file_name.c_str());
                     std::string result;
                     tract_model.get_quantitative_info(handle,result);

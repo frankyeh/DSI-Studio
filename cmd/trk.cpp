@@ -101,7 +101,7 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
 
             std::replace(cmd.begin(),cmd.end(),' ','.');
             std::string file_name_stat = file_name + "." + cmd + ".txt";
-            tipl::out() << "output report: " << file_name_stat << std::endl;
+            tipl::out() << "saving " << file_name_stat << std::endl;
             std::ofstream report(file_name_stat.c_str());
             report << "position\t";
             std::copy(values.begin(),values.end(),std::ostream_iterator<float>(report,"\t"));
@@ -134,7 +134,7 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
                 digit.erase(std::remove_if(digit.begin(),digit.end(),[](char ch){return (ch < '0' || ch > '9') && ch != '.';}),digit.end());
                 if(!digit.empty())
                     (std::istringstream(digit)) >> ratio;
-                tipl::out() << "export tdi at x" << ratio << " resolution" << std::endl;
+                tipl::out() << "calculating TDI at x" << ratio << " resolution" << std::endl;
             }
 
             bool output_color = QString(cmd.c_str()).contains("color");
@@ -168,7 +168,6 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
             }
             std::vector<std::shared_ptr<TractModel> > tract;
             tract.push_back(tract_model);
-            tipl::out() << "export TDI to " << file_name_stat;
             if(output_color)
                 tipl::out() << " in RGB color";
             if(output_end)
@@ -177,6 +176,7 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
             tipl::out() << "TDI dimension: " << dim << std::endl;
             tipl::out() << "TDI voxel size: " << vs << std::endl;
             tipl::out() << std::endl;
+            tipl::out() << "saving " << file_name_stat;
             if(!TractModel::export_tdi(file_name_stat.c_str(),tract,dim,vs,trans_to_mni,to_t1t2,output_color,output_end))
             {
                 tipl::error() << "failed to save file. Please check write permission." << std::endl;
@@ -189,7 +189,7 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
         if(cmd == "stat")
         {
             file_name_stat += ".txt";
-            tipl::out() << "export statistics to " << file_name_stat << std::endl;
+            tipl::out() << "saving " << file_name_stat << std::endl;
             std::ofstream out_stat(file_name_stat.c_str());
             if(!out_stat)
             {
@@ -336,21 +336,21 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
             if(connectivity_output.find("matrix") != std::string::npos)
             {
                 std::string matrix = file_name_stat + ".connectivity.mat";
-                tipl::out() << "export connectivity matrix to " << matrix << std::endl;
+                tipl::out() << "saving " << matrix << std::endl;
                 data.save_to_file(matrix.c_str());
             }
 
             if(connectivity_output.find("connectogram") != std::string::npos)
             {
                 std::string connectogram = file_name_stat + ".connectogram.txt";
-                tipl::out() << "export connectogram to " << connectogram << std::endl;
+                tipl::out() << "saving " << connectogram << std::endl;
                 data.save_to_connectogram(connectogram.c_str());
             }
 
             if(connectivity_output.find("measure") != std::string::npos)
             {
                 std::string measure = file_name_stat + ".network_measures.txt";
-                tipl::out() << "export network measures to " << measure << std::endl;
+                tipl::out() << "saving " << measure << std::endl;
                 std::string report;
                 data.network_property(report);
                 std::ofstream out(measure.c_str());

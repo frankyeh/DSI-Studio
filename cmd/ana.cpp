@@ -172,7 +172,7 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
         if(file_name.find(".txt") == std::string::npos)
             file_name += ".txt";
     }
-    tipl::out() << "export ROI statistics to " << file_name << std::endl;
+    tipl::out() << "saving " << file_name << std::endl;
     std::ofstream out(file_name.c_str());
     out << result <<std::endl;
     return 0;
