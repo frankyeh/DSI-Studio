@@ -67,7 +67,7 @@ bool dual_reg<3>::apply_warping(const char* from,const char* to) const
         return false;
     }
 
-    tipl::out() << "save as to " << to;
+    tipl::out() << "saving " << to;
     if(!tipl::io::gz_nifti::save_to_file(to,apply_warping(I3,is_label),Itvs,ItR,It_is_mni))
     {
         error_msg = "cannot write to file ";

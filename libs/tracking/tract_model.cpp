@@ -665,7 +665,7 @@ bool dual_reg<3>::apply_warping_tt(const char* from,const char* to) const
             loaded_tract_data[i][j+2] = new_pos[2];
         }
     });
-    tipl::out() << "save as " << to;
+    tipl::out() << "saving " << to;
     if(!TinyTrack::save_to_file(to,to2from.shape(),Itvs,ItR,loaded_tract_data,cluster,report,parameter_id,color))
     {
         error_msg = "Failed to save file";

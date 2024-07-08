@@ -121,7 +121,7 @@ void xnat_facade::get_data(std::string site,std::string auth,
             break;
         }
 
-        tipl::out() << "save to " << download_name;
+        tipl::out() << "saving " << download_name;
         QByteArray buf = cur_response->readAll();
         std::ofstream out(download_name.c_str(),std::ios::binary);
         if(!tipl::io::save_stream_with_prog(prog_,out,buf.begin(),buf.size(),error_msg))
