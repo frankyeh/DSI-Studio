@@ -2629,7 +2629,7 @@ bool src_data::save_fib(const std::string& output_name)
     mat_writer.write("steps",final_steps);
     mat_writer.close();
     std::filesystem::rename(tmp_file,output_name);
-    tipl::out() << "FIB file saved: " << output_name;
+    tipl::out() << "saving " << output_name;
     return true;
 }
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
