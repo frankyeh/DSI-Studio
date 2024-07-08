@@ -155,7 +155,7 @@ int src(tipl::program_option<tipl::out>& po)
         if(nii2src(po))
             return 0;
 
-        tipl::out() << "load files in directory " << source.c_str() << std::endl;
+        tipl::out() << "open files in directory " << source.c_str() << std::endl;
         if(po.get("recursive",1))
         {
             tipl::out() << "search recursively in the subdir" << std::endl;

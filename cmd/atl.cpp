@@ -274,7 +274,7 @@ int atl(tipl::program_option<tipl::out>& po)
             std::shared_ptr<TractModel> tract_model(new TractModel(handle));
             std::string file_name = po.get("tract");
             {
-                tipl::out() << "loading " << file_name << "..." <<std::endl;
+                tipl::out() << "opening " << file_name << "..." <<std::endl;
                 if (!tract_model->load_tracts_from_file(file_name.c_str(),handle.get(),file_name.find("mni") != std::string::npos))
                 {
                     tipl::error() << "cannot open file " << file_name << std::endl;

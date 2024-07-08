@@ -727,7 +727,7 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
 
 bool get_src(std::string filename,src_data& src2,std::string& error_msg)
 {
-    tipl::progress prog_("load ",filename.c_str());
+    tipl::progress prog_("opening ",filename.c_str());
     tipl::image<3,unsigned short> I;
     if(QString(filename.c_str()).endsWith(".dcm"))
     {

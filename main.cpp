@@ -80,7 +80,7 @@ QImage read_qimage(QString filename,std::string& error)
         tipl::out() << error;
         return QImage();
     }
-    tipl::out() << "loading image: " << filename.toStdString();
+    tipl::out() << "opening " << filename.toStdString();
     tipl::out() << "size:" << im.size().width() << " " << im.size().height();
 #ifdef QT6_PATCH
     im.setAllocationLimit(0);

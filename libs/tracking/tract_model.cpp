@@ -199,7 +199,7 @@ class TinyTrack{
                                tipl::matrix<4,4>& trans_to_mni,
                                std::string& report,std::string& parameter_id,unsigned int& color)
     {
-        tipl::progress prog_("loading ",std::filesystem::path(file_name).filename().c_str());
+        tipl::progress prog_("opening ",std::filesystem::path(file_name).filename().c_str());
         tipl::io::gz_mat_read in;
         prepare_idx(file_name,in.in);
         if (!in.load_from_file(file_name))
@@ -307,7 +307,7 @@ struct TrackVis
                 tipl::matrix<4,4>& trans_to_mni,
                 std::string& info)
     {
-        tipl::progress prog("loading ",std::filesystem::path(file_name).filename().string().c_str());
+        tipl::progress prog("opening ",std::filesystem::path(file_name).filename().string().c_str());
         tipl::io::gz_istream in;
         if (!in.open(file_name))
             return false;

@@ -237,7 +237,7 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
     for(int i = 0;i < connectivity_list.size();++i)
     {
         std::string roi_file_name = connectivity_list[i].toStdString();
-        tipl::out() << "loading " << roi_file_name << std::endl;
+        tipl::out() << "opening " << roi_file_name << std::endl;
         ConnectivityMatrix data;
 
         // specify atlas name (e.g. --connectivity=AAL2)
@@ -366,8 +366,8 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
 extern std::vector<std::string> fib_template_list;
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name)
 {
+    tipl::progress prog("opening ",file_name.c_str());
     std::shared_ptr<fib_data> handle(new fib_data);
-    tipl::out() << "loading " << file_name << "..." <<std::endl;
     if(file_name.length() == 1 && file_name[0] >= '0' && file_name[0] <= '5')
         file_name = fib_template_list[file_name[0]-'0'];
     if(!std::filesystem::exists(file_name))

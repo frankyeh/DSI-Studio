@@ -214,7 +214,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
     name = QFileInfo(files[0].c_str()).completeBaseName().remove(".nii").toStdString();
     to_dif.identity();
     to_slice.identity();
-    tipl::progress prog("load slices ",std::filesystem::path(files[0]).filename().string().c_str());
+    tipl::progress prog("open ",std::filesystem::path(files[0]).filename().string().c_str());
     // picture as slice
     if(QFileInfo(files[0].c_str()).suffix() == "bmp" ||
        QFileInfo(files[0].c_str()).suffix() == "jpg" ||

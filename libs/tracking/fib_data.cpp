@@ -568,7 +568,6 @@ bool fib_data::load_from_file(const char* file_name)
 
     if(!load_from_mat())
         return false;
-    tipl::out() << "FIB file loaded" << std::endl;
     return true;
 }
 bool fib_data::save_mapping(const std::string& index_name,const std::string& file_name)
@@ -1846,7 +1845,7 @@ bool fib_data::load_mapping(const char* file_name,bool external)
     }
 
     tipl::io::gz_nifti nii;
-    tipl::out() << "loading " << file_name;
+    tipl::out() << "opening " << file_name;
     if(!nii.load_from_file(file_name))
     {
         error_msg = nii.error_msg;
