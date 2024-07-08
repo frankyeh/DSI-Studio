@@ -426,7 +426,7 @@ int run_cmd(int ac, char *av[])
         tipl::error() <<"unknown error occurred" << std::endl;
         return 1;
     }
-    po.check_end_param();
+    po.check_end_param<tipl::warning>();
     return 0;
 }
 
