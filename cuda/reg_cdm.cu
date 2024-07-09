@@ -1,7 +1,7 @@
 #include <vector>
 #include "TIPL/reg/cdm.hpp"
 #include "TIPL/cu.hpp"
-void distribute_gpu(void);
+bool distribute_gpu(void);
 
 template<int dim>
 void cdm_cuda_base(const std::vector<tipl::const_pointer_image<dim,unsigned char> >& It,
