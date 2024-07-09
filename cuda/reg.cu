@@ -17,7 +17,7 @@ void distribute_gpu(void)
     if(gpu_count <= 1)
         return;
     if(cudaSetDevice(cur_gpu) != cudaSuccess)
-        std::cout << "│  │  cudaSetDevice error: " << cudaSetDevice(cur_gpu) << std::endl;
+        tipl::error() << "cudaSetDevice error " << cudaSetDevice(cur_gpu) << std::endl;
     ++cur_gpu;
     if(cur_gpu >= gpu_count)
         cur_gpu = 0;
@@ -44,10 +44,10 @@ void check_cuda(std::string& error_msg)
         return;
     }
 
-    std::cout << "│  │  device count: " << gpu_count << std::endl;
+    std::cout << "│  ├──device count: " << gpu_count << std::endl;
     for (int i = 0; i < gpu_count; i++)
     {
-        std::cout << "│  │  device number: " << std::to_string(i) << std::endl;
+        std::cout << "│  ├──device number: " << std::to_string(i) << std::endl;
         cudaDeviceProp prop;
         if(cudaGetDeviceProperties(&prop, i) != cudaSuccess)
         {
@@ -55,11 +55,11 @@ void check_cuda(std::string& error_msg)
             return;
         }
         auto arch = prop.major*10+prop.minor;
-        std::cout << "│  │  arch: " << arch << std::endl;
-        std::cout << "│  │  device name: " << prop.name << std::endl;
-        std::cout << "│  │  memory clock rate (KHz): " << prop.memoryClockRate << std::endl;
-        std::cout << "│  │  memory bus width (bits): " << prop.memoryBusWidth << std::endl;
-        std::cout << "│  │  peak memory bandwidth (GB/s): " << 2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6 << std::endl;
+        std::cout << "│  ├──arch: " << arch << std::endl;
+        std::cout << "│  ├──device name: " << prop.name << std::endl;
+        std::cout << "│  ├──memory clock rate (KHz): " << prop.memoryClockRate << std::endl;
+        std::cout << "│  ├──memory bus width (bits): " << prop.memoryBusWidth << std::endl;
+        std::cout << "│  ├──peak memory bandwidth (GB/s): " << 2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6 << std::endl;
 
     }
     has_cuda = true;
