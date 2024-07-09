@@ -9,6 +9,8 @@ bool dual_reg<3>::apply_warping(const char* from,const char* to) const
     tipl::out() << "apply warping to " << from;
     if(tipl::ends_with(from,".tt.gz"))
         return apply_warping_tt(from,to);
+
+    tipl::out() << "opening " << from;
     tipl::io::gz_nifti nii;
     if(!nii.load_from_file(from))
     {
@@ -28,7 +30,7 @@ bool dual_reg<3>::apply_warping(const char* from,const char* to) const
             }
             std::replace_if(I_list[index].begin(),I_list[index].end(),[](float v){return std::isnan(v) || std::isinf(v) || v < 0.0f;},0.0f);
         }
-        if(from2to.shape() != I_list[0].shape())
+        if(I[0].shape() != I_list[0].shape())
         {
             error_msg = std::filesystem::path(from).filename().string();
             error_msg += " has an image size or srow matrix from that of the original --from image.";
@@ -36,7 +38,7 @@ bool dual_reg<3>::apply_warping(const char* from,const char* to) const
         }
         bool is_label = tipl::is_label_image(I_list[0]);
         tipl::out() << (is_label ? "processed as labels using nearest assignment" : "processed as values using interpolation") << std::endl;
-        tipl::image<4> J4(to2from.shape().expand(nii.dim(4)));
+        tipl::image<4> J4(It[0].shape().expand(nii.dim(4)));
         tipl::par_for(nii.dim(4),[&](size_t z)
         {
             tipl::image<3> out(apply_warping(I_list[z],is_label));
@@ -60,8 +62,10 @@ bool dual_reg<3>::apply_warping(const char* from,const char* to) const
     bool is_label = tipl::is_label_image(I3);
     tipl::out() << (is_label ? "processed as labels using nearest assignment" : "processed as values using interpolation") << std::endl;
 
-    if(from2to.shape() != I3.shape())
+    tipl::out() << "dim: " << I3.shape();
+    if(I[0].shape() != I3.shape())
     {
+        tipl::out() << "--from dim: " << I[0].shape();
         error_msg = std::filesystem::path(from).filename().string();
         error_msg += " has an image size or srow matrix from that of the original --from image.";
         return false;
@@ -179,6 +183,9 @@ int reg(tipl::program_option<tipl::out>& po)
            !r.load_template(1,po.get("to2").c_str()))
             goto error;
     }
+
+    tipl::out() << "from dim: " << r.I[0].shape();
+    tipl::out() << "to dim: " << r.It[0].shape();
 
     tipl::out() << "running linear registration." << std::endl;
 
