@@ -4,7 +4,7 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QFileDialog>
-xnat_facade xnat_connection;
+
 
 std::string jsonarray2tsv(QJsonArray data)
 {
