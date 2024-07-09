@@ -952,6 +952,7 @@ void reconstruction_window::on_actionManual_Align_triggered()
 {
     tipl::image<3> VG,VG2,VF(handle->dwi);
     tipl::vector<3> VGvs,VFvs(handle->voxel.vs);
+    handle->voxel.template_id = ui->primary_template->currentIndex();
     {
         tipl::io::gz_nifti read,read2;
         if(!read.load_from_file(fa_template_list[handle->voxel.template_id]))
