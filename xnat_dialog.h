@@ -34,7 +34,6 @@ public:
     bool is_running(void)const{return cur_response;}
     bool has_error(void)const{return !error_msg.empty();}
 };
-extern xnat_facade xnat_connection;
 
 namespace Ui {
 class xnat_dialog;
@@ -45,6 +44,7 @@ class xnat_dialog : public QMainWindow
     Q_OBJECT
 
 public:
+    xnat_facade xnat_connection;
     explicit xnat_dialog(QWidget *parent = nullptr);
     ~xnat_dialog();
 private:
