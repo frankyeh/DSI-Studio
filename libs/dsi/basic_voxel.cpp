@@ -3,7 +3,7 @@
 
 bool Voxel::init(void)
 {
-    tipl::progress prog("initializing",true);
+    tipl::progress prog("pre-reconstruction",true);
     if(is_histology)
     {
         hist_data.resize(thread_count);
@@ -146,7 +146,7 @@ bool Voxel::run(const char* title)
 
 bool Voxel::end(tipl::io::gz_mat_write& writer)
 {
-    tipl::progress prog("output",true);
+    tipl::progress prog("post-reconstruction",true);
     for (size_t index = 0;prog(uint32_t(index),uint32_t(process_list.size())); ++index)
     {
         tipl::out() << process_name[index];
