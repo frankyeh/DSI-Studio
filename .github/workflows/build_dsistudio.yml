@@ -410,7 +410,7 @@ jobs:
         ls 100206.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectogram.txt
         ls 100206.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.network_measures.txt
         echo --------------------------------------------------------------------------------------------------
-        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --other_slices=template_qa.nii.gz --threshold_index=template_qa-qa --seed_count=1000000 --dt_threshold=0.1 --output=dt.tt.gz
+        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --other_slices=template_qa.nii.gz --dt_metric1=template_qa --dt_metric2=qa --seed_count=1000000 --dt_threshold=0.1 --output=dt.tt.gz
         ls dt.tt.gz
   test_export_registration:
     needs: linux-build
