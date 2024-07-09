@@ -397,7 +397,6 @@ void GLWidget::initializeGL()
         QMessageBox::critical(this,"ERROR","System has no OpenGL support. 3D visualization is disabled. Please update or install graphic card driver.");
         return;
     }
-    tipl::out() << "openGL information" << std::endl;
     tipl::out() << "version: " << glGetString(GL_VERSION) << std::endl;
     tipl::out() << "vendor: " << glGetString(GL_VENDOR) << std::endl;
     tipl::out() << "renderer: " << glGetString(GL_RENDERER) << std::endl;
