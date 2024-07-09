@@ -4,6 +4,7 @@
 
 int xnat(tipl::program_option<tipl::out>& po)
 {
+    xnat_facade xnat_connection;
     std::string output = po.get("output");
     if(QFileInfo(output.c_str()).isDir() && output.back() != '\\' && output.back() != '/')
         output += '/';
