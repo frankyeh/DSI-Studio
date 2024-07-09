@@ -15,6 +15,7 @@ void cdm_cuda(const std::vector<tipl::const_pointer_image<2,unsigned char> >& It
                bool& terminated,
                tipl::reg::cdm_param param);
 
+
 template<int dim>
 inline void cdm_common(std::vector<tipl::const_pointer_image<dim,unsigned char> > It,
                        std::vector<tipl::const_pointer_image<dim,unsigned char> > Is,
@@ -485,7 +486,7 @@ public:
                 cdm_common(make_list(It),make_list(J),t2f_dis,terminated,param,use_cuda);
             else
                 cdm_common(make_list(J),make_list(It),f2t_dis,terminated,param,use_cuda);
-        },2);
+        },1);
         auto trans = T();
         from2to.resize(I[0].shape());
         tipl::inv_displacement_to_mapping(f2t_dis,from2to,trans);
@@ -566,7 +567,7 @@ public:
 public:
     auto apply_warping(const tipl::image<dimension>& from,bool is_label) const
     {
-        tipl::image<dimension> to(to2from.shape());
+        tipl::image<dimension> to(It[0].shape());
         if(is_label)
         {
             if(to2from.empty())
@@ -620,7 +621,7 @@ public:
 
     bool save_warping(const char* filename) const
     {
-        tipl::out() << "save warping " << filename;
+        tipl::progress prog("saving ",filename);
         if(from2to.empty() || to2from.empty())
         {
             error_msg = "no mapping matrix to save";
