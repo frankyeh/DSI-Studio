@@ -301,6 +301,7 @@ int run_action(tipl::program_option<tipl::out>& po)
 }
 int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
 {
+    tipl::progress prog("command line");
     std::string source = po.get("source");
     std::string action = po.get("action");
     std::string loop = po.get("loop",source);
@@ -313,7 +314,6 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
     else
     // loop
     {
-        tipl::progress prog("processing loop");
         std::vector<std::string> loop_files;
         if(!tipl::search_filesystem(loop,loop_files))
         {
@@ -324,7 +324,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
         std::vector<std::pair<std::string,std::string> > wildcard_list;
         po.get_wildcard_list(wildcard_list);
 
-        tipl::par_for(loop_files.size(),[&](size_t i)
+        for(size_t i = 0;prog(i,loop_files.size());++i)
         {
             // clear --other_slices
             other_slices.clear();
@@ -355,12 +355,11 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
             }
             po.set_used(0);
             po.get("loop");
-            if(run_action(po))
+            if(run_action(po) == 1)
                 return 1;
-            return 0;
-        });
+        }
     }
-    return 0;
+    return prog.aborted() ? 1 : 0;
 }
 void check_cuda(std::string& error_msg);
 bool has_cuda = false;
