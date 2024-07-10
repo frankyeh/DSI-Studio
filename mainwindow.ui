@@ -144,7 +144,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -2509,9 +2509,9 @@ Tractography</string>
               <widget class="QCommandLinkButton" name="xnat_download">
                <property name="geometry">
                 <rect>
-                 <x>20</x>
+                 <x>26</x>
                  <y>660</y>
-                 <width>281</width>
+                 <width>280</width>
                  <height>81</height>
                 </rect>
                </property>
