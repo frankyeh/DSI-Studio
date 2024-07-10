@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1283</width>
-    <height>857</height>
+    <width>1272</width>
+    <height>758</height>
    </rect>
   </property>
   <property name="maximumSize">
@@ -183,8 +183,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>1275</width>
-             <height>800</height>
+             <width>1264</width>
+             <height>701</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -208,7 +208,7 @@
               <property name="minimumSize">
                <size>
                 <width>1250</width>
-                <height>800</height>
+                <height>700</height>
                </size>
               </property>
               <property name="styleSheet">
@@ -1047,7 +1047,7 @@ Files</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>1275</width>
+             <width>1247</width>
              <height>800</height>
             </rect>
            </property>
@@ -1498,8 +1498,8 @@ Atlas</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>1275</width>
-             <height>800</height>
+             <width>1264</width>
+             <height>701</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -1917,8 +1917,8 @@ Tractography</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>1275</width>
-             <height>800</height>
+             <width>1264</width>
+             <height>701</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_10">
@@ -1942,7 +1942,7 @@ Tractography</string>
               <property name="minimumSize">
                <size>
                 <width>1250</width>
-                <height>800</height>
+                <height>700</height>
                </size>
               </property>
               <property name="styleSheet">
@@ -2509,8 +2509,8 @@ Tractography</string>
               <widget class="QCommandLinkButton" name="xnat_download">
                <property name="geometry">
                 <rect>
-                 <x>26</x>
-                 <y>660</y>
+                 <x>345</x>
+                 <y>550</y>
                  <width>280</width>
                  <height>81</height>
                 </rect>
@@ -2532,31 +2532,6 @@ Tractography</string>
                 <string>connect to a XNAT server to download and process data</string>
                </property>
               </widget>
-              <widget class="Line" name="line_9">
-               <property name="geometry">
-                <rect>
-                 <x>150</x>
-                 <y>530</y>
-                 <width>21</width>
-                 <height>171</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">Line { background-color: rgba(0, 0, 0, 255); }</string>
-               </property>
-               <property name="frameShadow">
-                <enum>QFrame::Plain</enum>
-               </property>
-               <property name="lineWidth">
-                <number>20</number>
-               </property>
-               <property name="midLineWidth">
-                <number>0</number>
-               </property>
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
-               </property>
-              </widget>
               <widget class="QLabel" name="label_41">
                <property name="geometry">
                 <rect>
@@ -2574,7 +2549,6 @@ Tractography</string>
                </property>
               </widget>
               <zorder>label_41</zorder>
-              <zorder>line_9</zorder>
               <zorder>line_8</zorder>
               <zorder>label_65</zorder>
               <zorder>label_59</zorder>
