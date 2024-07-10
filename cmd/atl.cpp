@@ -83,7 +83,8 @@ int atl(tipl::program_option<tipl::out>& po)
                 sum += each;
             }
             sum /= name_list.size();
-            auto output = po.get("output",name_list[0] + "avg.nii.gz");
+            auto output = po.get("output",name_list[0] + ".avg.nii.gz");
+            tipl::out() << "saving " << output;
             if(!tipl::io::gz_nifti::save_to_file(output.c_str(),sum,vs,T,is_mni))
             {
                 tipl::error() << "cannot save file" << output << std::endl;
