@@ -834,7 +834,7 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
         // 2. subject FIB loading MNI space tracts
         if(!is_mni && tract_is_mni)
         {
-            if(!handle->map_to_mni())
+            if(!handle->map_to_mni(tipl::show_prog))
             {
                 tipl::out() << "cannot run normalization" << std::endl;;
                 return false;
@@ -949,7 +949,7 @@ bool TractModel::save_tracts_in_native_space(std::shared_ptr<fib_data> handle,
 // Native space FIB save tracts to the template space
 bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,const char* file_name,bool output_mni)
 {
-    if(!handle->map_to_mni())
+    if(!handle->map_to_mni(tipl::show_prog))
         return false;
     std::shared_ptr<TractModel> tract_in_template(
                 new TractModel(handle->template_I.shape(),handle->template_vs,handle->template_to_mni));
