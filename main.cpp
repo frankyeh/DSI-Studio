@@ -379,7 +379,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *a
         }
     }
 
-    if(po.get("stay_open",0) && cmd.get())
+    if(po.has("stay_open") && cmd.get())
         cmd->exec();
     return prog.aborted() ? 1 : 0;
 }
