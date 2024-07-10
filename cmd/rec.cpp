@@ -141,7 +141,7 @@ int rec(tipl::program_option<tipl::out>& po)
                 return 1;
             }
         }
-        if (po.has("cmd"))
+        if(po.has("cmd"))
         {
             QStringList cmd_list = QString(po.get("cmd").c_str()).split("+");
             for(int i = 0;i < cmd_list.size();++i)
@@ -155,7 +155,9 @@ int rec(tipl::program_option<tipl::out>& po)
                 }
             }
         }
-
+        if(po.get("align_acpc",0))
+            src.align_acpc(po.get("align_acpc",src.voxel.vs[0]));
+        else
         {
             if(po.has("rotate_to") || po.has("align_to"))
             {
@@ -183,10 +185,8 @@ int rec(tipl::program_option<tipl::out>& po)
                                   po.has("rotate_to") ? tipl::reg::rigid_body : tipl::reg::affine));
                 tipl::out() << "DWI rotated." << std::endl;
             }
-
-            if(po.has("align_acpc"))
-                src.align_acpc(po.get("align_acpc",src.voxel.vs[0]));
         }
+
     }
 
 
