@@ -993,8 +993,7 @@ void TractTableWidget::load_tracts_value(void)
     auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     if(tract_models[uint32_t(currentRow())]->get_visible_track_count() != values.size())
     {
-        QMessageBox::information(this,"Inconsistent track number",
-                                 QString("The text file has %1 values, but there are %2 tracks.").
+        QMessageBox::critical(this,"ERROR",QString("Inconsistent track number: The text file has %1 values, but there are %2 tracks.").
                                  arg(values.size()).arg(tract_models[uint32_t(currentRow())]->get_visible_track_count()));
         return;
     }
@@ -1276,7 +1275,7 @@ void TractTableWidget::save_tracts_data_as(void)
                     cur_tracking_window.handle,filename.toStdString().c_str(),
                     action->data().toString().toStdString().c_str()))
     {
-        QMessageBox::information(this,"error","fail to save information");
+        QMessageBox::critical(this,"ERROR","fail to save information");
     }
     else
         QMessageBox::information(this,QApplication::applicationName(),"file saved");

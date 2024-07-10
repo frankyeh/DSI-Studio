@@ -571,7 +571,7 @@ void auto_track::on_run_clicked()
     progress_bar->setVisible(false);
 
     if(error.empty())
-        QMessageBox::information(this,"AutoTrack","Completed");
+        QMessageBox::information(this,QApplication::applicationName(),"Completed");
     else
         QMessageBox::critical(this,"ERROR",error.c_str());
     raise(); //  for mac

@@ -299,7 +299,7 @@ void db_window::on_actionAdd_DB_triggered()
     for(int i =0;i < filenames.count();++i)
         if(!vbc->handle->db.add(filenames[i].toStdString(),QFileInfo(filenames[i]).baseName().toStdString()))
         {
-            QMessageBox::information(this,"ERROR",vbc->handle->db.error_msg.c_str());
+            QMessageBox::critical(this,"ERROR",vbc->handle->db.error_msg.c_str());
             break;
         }
     update_db();
@@ -340,7 +340,7 @@ void db_window::on_actionCurrent_Subject_triggered()
     tipl::image<3> I;
     vbc->handle->db.get_subject_volume(uint32_t(ui->subject_list->currentRow()),I);
     if(tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),I,vbc->handle->vs,vbc->handle->trans_to_mni,true))
-        QMessageBox::information(this,"File saved",filename);
+        QMessageBox::information(this,QApplication::applicationName(),"file saved");
     else
         QMessageBox::critical(this,"ERROR","Cannot save file.");
 }

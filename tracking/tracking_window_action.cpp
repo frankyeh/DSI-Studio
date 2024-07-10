@@ -623,12 +623,12 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
         const float* buf = nullptr;
         if(!in.read("connectivity",row,col,buf))
         {
-            QMessageBox::information(this,"error","Cannot find a matrix named connectivity");
+            QMessageBox::critical(this,"ERROR","Cannot find a matrix named connectivity");
             return;
         }
         if(row != col)
         {
-            QMessageBox::information(this,"error","The connectivity matrix should be a square matrix");
+            QMessageBox::critical(this,"ERROR","The connectivity matrix should be a square matrix");
             return;
         }
         tipl::image<2,float> connectivity(tipl::shape<2>(row,col));
@@ -654,7 +654,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
     }
     if(regionWidget->regions.empty())
     {
-        QMessageBox::information(this,"error","Please load the regions first for visualization");
+        QMessageBox::critical(this,"ERROR","Please load the regions first for visualization");
         return;
     }
     if(filename.endsWith(".txt"))
@@ -674,7 +674,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
         size_t dim = size_t(std::sqrt(buf.size()));
         if(dim*dim != buf.size())
         {
-            QMessageBox::information(this,"error",
+            QMessageBox::critical(this,"ERROR",
             QString("There are %1 values in the file. The matrix in the text file is not a square matrix.").arg(buf.size()));
             return;
         }
@@ -684,7 +684,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
 
     if(int(regionWidget->regions.size()) != glWidget->connectivity.width())
     {
-        QMessageBox::information(this,"error",
+        QMessageBox::critical(this,"ERROR",
             QString("The connectivity matrix is %1-by-%2, but there are %3 regions. Please make sure the sizes are matched.").
                 arg(glWidget->connectivity.width()).
                 arg(glWidget->connectivity.height()).

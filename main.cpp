@@ -217,24 +217,12 @@ bool load_file_name(void)
     return true;
 }
 
-QString version_string(void)
-{
-    QString base = "DSI Studio version: Hou ";
-    base += "\"";
-    unsigned int code = 0x00AFBEE4;
-    #ifdef QT6_PATCH
-        base += QStringDecoder(QStringDecoder::Utf8)(reinterpret_cast<const char*>(&code));
-    #else
-        base += QTextCodec::codecForName("UTF-8")->toUnicode(reinterpret_cast<const char*>(&code));
-    #endif
-    base += "\"";
-    return base;
-}
+const char* version_string = "DSI Studio version: Hou \"\xe4\xbe\xaf\"";
 
 bool init_application(void)
 {
     QCoreApplication::setOrganizationName("LabSolver");
-    QCoreApplication::setApplicationName(version_string());
+    QCoreApplication::setApplicationName(version_string);
 
     if(tipl::show_prog)
     {
@@ -416,7 +404,7 @@ int main(int ac, char *av[])
     std::locale::global(std::locale("en_US.UTF-8"));
     if(ac == 2 && std::string(av[1]) == "--version")
     {
-        std::cout << version_string().toStdString() << " " << __DATE__ << std::endl;
+        std::cout << version_string << " " << __DATE__ << std::endl;
         return 0;
     }
 
@@ -471,14 +459,14 @@ int main(int ac, char *av[])
         console.attach();
 
         {
-            tipl::progress prog(version_string().toStdString().c_str());
+            tipl::progress prog(version_string);
             init_cuda();
             if(!init_application())
                 return 1;
         }
 
         MainWindow w;
-        w.setWindowTitle(version_string() + " " + __DATE__);
+        w.setWindowTitle(QString(version_string) + " " + __DATE__);
         // presentation mode
         QStringList fib_list = QDir(QCoreApplication::applicationDirPath()+ "/presentation").
                                 entryList(QStringList("*fib.gz") << QString("*_qa.nii.gz"),QDir::Files|QDir::NoSymLinks);

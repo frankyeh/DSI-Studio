@@ -256,7 +256,7 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
     {
         if(fa_template_list.empty())
         {
-            QMessageBox::information(this,"error","Cannot find template files");
+            QMessageBox::critical(this,"ERROR","Cannot find template files");
             return;
         }
         handle->voxel.qsdr_reso = ui->qsdr_reso->value();

@@ -150,7 +150,7 @@ void MainWindow::openFile(QStringList file_names)
             dialog->show();
         }
         else {
-            QMessageBox::information(this,"error","Unsupported file extension");
+            QMessageBox::critical(this,"ERROR","Unsupported file extension");
         }
     }
 }
@@ -280,7 +280,7 @@ void MainWindow::loadFib(QString filename)
     if (!new_handle->load_from_file(&*file_name.begin()))
     {
         if(!new_handle->error_msg.empty())
-            QMessageBox::information(this,"ERROR",new_handle->error_msg.c_str());
+            QMessageBox::critical(this,"ERROR",new_handle->error_msg.c_str());
         return;
     }
     tracking_windows.push_back(new tracking_window(this,new_handle));

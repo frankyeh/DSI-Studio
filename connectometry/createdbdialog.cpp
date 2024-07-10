@@ -339,7 +339,7 @@ void CreateDBDialog::on_create_data_base_clicked()
         if(!data->handle->db.save_db(ui->output_file_name->text().toStdString().c_str()))
             QMessageBox::critical(this,"ERROR",data->handle->db.error_msg.c_str());
         else
-            QMessageBox::information(this,"Connectometry database created",ui->output_file_name->text());
+            QMessageBox::information(this,QApplication::applicationName(),"database created");
     }
     else
     {
@@ -350,7 +350,7 @@ void CreateDBDialog::on_create_data_base_clicked()
         if(error_msg)
             QMessageBox::critical(this,"ERROR",error_msg);
         else
-            QMessageBox::information(this,"completed","File created");
+            QMessageBox::information(this,QApplication::applicationName(),"File created");
     }
     raise(); // for Mac
 }

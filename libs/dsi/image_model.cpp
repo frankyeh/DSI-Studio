@@ -1746,7 +1746,7 @@ bool src_data::generate_topup_b0_acq_files(tipl::image<3>& b0,
 
 bool load_bval(const char* file_name,std::vector<double>& bval);
 bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by = true);
-QString version_string(void);
+extern const char* version_string;
 bool src_data::load_topup_eddy_result(void)
 {
     std::string corrected_file = file_name+".corrected.nii.gz";
@@ -1803,7 +1803,7 @@ bool src_data::load_topup_eddy_result(void)
     if(is_eddy)
         voxel.report += " FSL eddy was used to correct for eddy current distortion.";
     voxel.report += " The correction was conducted through the integrated interface in ";
-    voxel.report += version_string().toStdString();
+    voxel.report += version_string;
     voxel.report += "(http://dsi-studio.labsolver.org).";
     calculate_dwi_sum(true);
     return true;

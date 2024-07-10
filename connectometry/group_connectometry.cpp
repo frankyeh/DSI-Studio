@@ -116,7 +116,7 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
 
     if(!check_quality.empty())
     {
-        QMessageBox::information(this,"Warning",check_quality.c_str());
+        QMessageBox::critical(this,"Warning",check_quality.c_str());
         tipl::out() << check_quality << std::endl;
     }
     ui->subject_demo->clear();
@@ -355,9 +355,9 @@ void group_connectometry::calculate_FDR(void)
 
         if(vbc->inc_track->get_visible_track_count() ||
            vbc->dec_track->get_visible_track_count())
-            QMessageBox::information(this,"Finished","Trk files saved.");
+            QMessageBox::information(this,QApplication::applicationName(),"tractography saved");
         else
-            QMessageBox::information(this,"Finished","No significant finding.");
+            QMessageBox::information(this,QApplication::applicationName(),"no significant finding");
 
         // save report in text
         {
