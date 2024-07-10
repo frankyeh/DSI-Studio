@@ -666,7 +666,6 @@ void MainWindow::on_view_image_clicked()
 
 void MainWindow::on_workDir_currentTextChanged(const QString &arg1)
 {
-    tipl::out() << "set current dir:" << arg1.toStdString();
     QDir::setCurrent(arg1);
 }
 
