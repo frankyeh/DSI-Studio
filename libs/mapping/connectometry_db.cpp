@@ -575,7 +575,7 @@ bool connectometry_db::add(const std::string& file_name,
                 else
                 {
                     fib.set_template_id(handle->template_id);
-                    fib.map_to_mni();
+                    fib.map_to_mni(tipl::show_prog);
                     while(!prog.aborted() && fib.prog != 6)
                         std::this_thread::yield();
                     if(prog.aborted())
