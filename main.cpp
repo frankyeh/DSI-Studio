@@ -231,23 +231,39 @@ QString version_string(void)
     return base;
 }
 
-void init_application(void)
+bool init_application(void)
 {
-    QApplication::setOrganizationName("LabSolver");
-    QApplication::setApplicationName(version_string());
+    QCoreApplication::setOrganizationName("LabSolver");
+    QCoreApplication::setApplicationName(version_string());
 
-    #ifdef __APPLE__
-    QFont font;
-    font.setFamily(QString::fromUtf8("Arial"));
-    QApplication::setFont(font);
-    #endif
-    QSettings settings;
-    QString style = settings.value("styles","Fusion").toString();
-    if(style != "default" && !style.isEmpty())
-        QApplication::setStyle(style);
+    if(tipl::show_prog)
+    {
+        #ifdef __APPLE__
+        QFont font;
+        font.setFamily(QString::fromUtf8("Arial"));
+        QApplication::setFont(font);
+        #endif
+        QSettings settings;
+        QString style = settings.value("styles","Fusion").toString();
+        if(style != "default" && !style.isEmpty())
+            QApplication::setStyle(style);
 
-    if(!load_file_name())
-        QMessageBox::information(nullptr,"Error","Cannot find template data.");
+        if(!load_file_name())
+        {
+            QMessageBox::critical(nullptr,"ERROR","Cannot find template data.");
+            return false;
+        }
+
+    }
+    else
+    {
+        if(!load_file_name())
+        {
+            tipl::error() << "cannot find template data." << std::endl;
+            return false;
+        }
+    }
+    return true;
 }
 
 void move_current_dir_to(const std::string& file_name)
@@ -307,26 +323,19 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *a
     std::string loop = po.get("loop",source);
 
 
-    static std::shared_ptr<QCoreApplication> cmd;
-    if(av && !cmd.get())
+    std::shared_ptr<QCoreApplication> cmd;
+    if(av)
     {
         if ((action == "cnt" && po.get("no_tractogram",1) == 0) || action == "vis")
         {
             tipl::out() << "Starting GUI-based command line interface." << std::endl;
             cmd.reset(new QApplication(ac, av));
-            init_application();
+            tipl::show_prog = true;
         }
         else
-        {
             cmd.reset(new QCoreApplication(ac, av));
-            cmd->setOrganizationName("LabSolver");
-            cmd->setApplicationName(version_string());
-            if(!load_file_name())
-            {
-                tipl::error() << "Cannot find template data." << std::endl;
-                return 1;
-            }
-        }
+        if(!init_application())
+            return 1;
     }
 
 
@@ -382,7 +391,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *a
         }
     }
 
-    if(cmd.get() && po.get("stay_open",0))
+    if(po.get("stay_open",0) && cmd.get())
         cmd->exec();
     return prog.aborted() ? 1 : 0;
 }
@@ -401,36 +410,7 @@ void init_cuda(void)
             tipl::out() << "CPU/GPU computation enabled "<< std::endl;
     }
 }
-int run_cmd(int ac, char *av[])
-{
-    tipl::program_option<tipl::out> po;
-    try
-    {
-        if(!po.parse(ac,av) || !po.check("action"))
-        {
-            tipl::error() << po.error_msg << std::endl;
-            return 1;
-        }
-        init_cuda();
-        if(run_action_with_wildcard(po,ac,av))
-            return 1;
-        po.check_end_param<tipl::warning>();
-        return 0;
-    }
-    catch(const std::exception& e ) {
-        tipl::error() << e.what() << std::endl;
-        return 1;
-    }
-    catch(...)
-    {
-        tipl::error() <<"unknown error occurred" << std::endl;
-        return 1;
-    }
-    return 0;
-}
-
 extern console_stream console;
-
 int main(int ac, char *av[])
 {
     std::locale::global(std::locale("en_US.UTF-8"));
@@ -441,7 +421,32 @@ int main(int ac, char *av[])
     }
 
     if(ac > 2)
-        return run_cmd(ac,av);
+    {
+        tipl::program_option<tipl::out> po;
+        try
+        {
+            if(!po.parse(ac,av) || !po.check("action"))
+            {
+                tipl::error() << po.error_msg << std::endl;
+                return 1;
+            }
+            init_cuda();
+            if(run_action_with_wildcard(po,ac,av))
+                return 1;
+            po.check_end_param<tipl::warning>();
+            return 0;
+        }
+        catch(const std::exception& e ) {
+            tipl::error() << e.what() << std::endl;
+            return 1;
+        }
+        catch(...)
+        {
+            tipl::error() <<"unknown error occurred" << std::endl;
+            return 1;
+        }
+        return 0;
+    }
 
     try
     {
@@ -468,7 +473,8 @@ int main(int ac, char *av[])
         {
             tipl::progress prog(version_string().toStdString().c_str());
             init_cuda();
-            init_application();
+            if(!init_application())
+                return 1;
         }
 
         MainWindow w;
