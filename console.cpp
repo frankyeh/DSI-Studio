@@ -3,12 +3,95 @@
 #include <QMessageBox>
 #include <QProcess>
 #include <QKeyEvent>
+#include <QTextCursor>
 #include "console.h"
 #include "ui_console.h"
 #include "zlib.h"
 #include "TIPL/tipl.hpp"
 
 console_stream console;
+
+// Function to map ANSI color codes to Qt colors
+QColor colorFromAnsiCode(int code) {
+    switch (code) {
+        case 31: return QColor(161,67,76);
+        case 32: return QColor(67,161,76);
+        case 33: return QColor(207,151,45);
+        case 34: return QColor(95,168,253);
+        case 35: return QColor(179,137,243);
+        default: return QColor(230,237,243);
+    }
+}
+
+// Function to append text to QTextEdit with ANSI color and bold support
+void appendColoredText(QTextEdit &textEdit, const QString &text)
+{
+    QTextCursor cursor = textEdit.textCursor();
+    cursor.movePosition(QTextCursor::End);
+
+    QString currentPart;
+    int index = 0;
+
+    while (index < text.length())
+        if (text[index] == '\033' && index + 1 < text.length() && text[index + 1] == '[')
+        {
+            // Found start of escape sequence, find end of sequence
+            int endIndex = text.indexOf('m', index);
+            if (endIndex != -1)
+            {
+                // Append the current regular text part
+                if (!currentPart.isEmpty())
+                {
+                    cursor.insertText(currentPart);
+                    currentPart.clear();
+                }
+
+                // Get the ANSI escape sequence
+                QString escapeSequence = text.mid(index, endIndex - index + 1);
+                QStringList parts = escapeSequence.mid(2, endIndex - index - 2).split(';');
+                if (parts.isEmpty())
+                    // Invalid escape sequence, treat as regular text
+                    currentPart += text.mid(index, endIndex - index + 1);
+                else
+                {
+                    QTextCharFormat format;
+                    for (const QString& part : parts)
+                    {
+                        int code = part.toInt();
+                        if (code == 1)
+                            format.setFontWeight(QFont::Bold);
+                        else
+                            format.setForeground(colorFromAnsiCode(code));
+                    }
+
+                    // Move cursor to end and apply format
+                    cursor.movePosition(QTextCursor::End);
+                    cursor.setCharFormat(format);
+                }
+
+                // Move index to end of escape sequence
+                index = endIndex + 1;
+            }
+            else
+            {
+                // Invalid escape sequence, treat as regular text
+                currentPart += text[index];
+                index++;
+            }
+        }
+        else
+        {
+            // Regular text
+            currentPart += text[index];
+            index++;
+        }
+
+    // Append any remaining regular text
+    if (!currentPart.isEmpty())
+        cursor.insertText(currentPart);
+    cursor.insertText("\n");
+}
+
 
 void console_stream::show_output(void)
 {
@@ -21,7 +104,7 @@ void console_stream::show_output(void)
         buf = strSplitted.back();
     }
     for(int i = 0; i+1 < strSplitted.size(); i++)
-        log_window->append(strSplitted[i]);
+        appendColoredText(*log_window,strSplitted[i]);
     QApplication::processEvents();
     has_output = false;
 }
