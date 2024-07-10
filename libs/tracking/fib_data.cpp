@@ -671,7 +671,6 @@ bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs)
 }
 bool fib_data::load_from_mat(void)
 {
-    tipl::out() << "loading fiber and image data" << std::endl;
     mat_reader.read("report",report);
     mat_reader.read("steps",steps);
     if (!mat_reader.read("dimension",dim))
@@ -990,16 +989,13 @@ size_t match_volume(float volume);
 void fib_data::match_template(void)
 {
     if(is_human_size(dim,vs))
-    {
-        tipl::out() << "default template set to young adult";
         set_template_id(0);
-    }
     else
     {
         tipl::out() << "image volume smaller than human young adult. try matching a template...";
         set_template_id(match_volume(std::count_if(dir.fa[0],dir.fa[0]+dim.size(),[](float v){return v > 0.0f;})*2.0f*vs[0]*vs[1]*vs[2]));
-        tipl::out() << "default template: " << template_id;
     }
+    tipl::out() << "matched template: " << tipl::split(std::filesystem::path(fa_template_list[template_id]).filename().string(),'.').front();
 }
 
 const tipl::image<3,tipl::vector<3,float> >& fib_data::get_native_position(void) const
@@ -1424,7 +1420,7 @@ bool fib_data::load_track_atlas()
     }
     if(!track_atlas.get())
     {
-        if(!map_to_mni())
+        if(!map_to_mni(tipl::show_prog))
             return false;
         // load the tract to the template space
         track_atlas = std::make_shared<TractModel>(template_I.shape(),template_vs,template_to_mni);
@@ -1790,7 +1786,6 @@ bool fib_data::map_to_mni(bool background)
         return !prog_.aborted();
     }
 
-    tipl::out() << "Subject normalization to MNI space." << std::endl;
     lambda();
     return !prog_.aborted();
 }
@@ -2105,7 +2100,7 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,
 const tipl::image<3,tipl::vector<3,float> >& fib_data::get_sub2temp_mapping(void)
 {
     if(s2t.empty() &&
-       map_to_mni(false) &&
+       map_to_mni(tipl::show_prog) &&
        is_mni && template_id == matched_template_id)
     {
         s2t.resize(dim);
