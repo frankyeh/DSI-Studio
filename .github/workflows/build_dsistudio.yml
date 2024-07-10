@@ -63,59 +63,6 @@ jobs:
         tag: ${{ github.event.inputs.tag }}
         name: ${{ github.event.inputs.release_name }}
         prerelease: false
-
-  macos-build-qt5:
-    if: ${{ github.event.inputs.build_mac == 'true' }}
-    strategy:
-      matrix:
-        os: [macos-14,macos-13,macos-12]
-      fail-fast: false
-    runs-on: ${{ matrix.os }}
-    env:
-      CFLAGS: -Werror
-    steps:
-    - uses: actions/checkout@v4.1.1
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v3.3.0
-      with:
-        modules: qtcharts
-    - name: Download TIPL and Atlases
-      run: |
-        git clone https://github.com/frankyeh/TIPL.git
-        git clone https://github.com/frankyeh/DSI-Studio-atlas.git
-        git clone https://github.com/frankyeh/UNet-Studio-Data.git
-        rm -fr DSI-Studio-atlas/.git
-    - name: Build DSI Studio
-      run: |
-        mkdir -p build
-        cd build
-        export PATH="$Qt5_DIR/bin:$PATH" && export LDFLAGS="-L$Qt5_DIR/lib" && export CPPFLAGS="-I$Qt5_DIR/include" && export PKG_CONFIG_PATH="$Qt5_DIR/lib/pkgconfig"
-        qmake ../dsi_studio.pro DEFINES+="QMAKE_DEFAULT_INCDIRS=/usr/include QMAKE_DEFAULT_LIBDIRS=/usr/lib"
-        make
-        cd ..
-        
-    - name: Packaging
-      run: |
-        mv build/dsi_studio.app .
-        macdeployqt dsi_studio.app
-        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_${{ matrix.os }}.zip"
-        7z e tiny_fsl_${{ matrix.os }}.zip -odsi_studio.app/Contents/MacOS/plugin
-        rm -fr dsi_studio.app/Contents/MacOS/plugin/tiny_fsl
-        rm *.zip
-        mv other/* dsi_studio.app/Contents/MacOS/
-        mv DSI-Studio-atlas dsi_studio.app/Contents/MacOS/atlas
-        mv UNet-Studio-Data/network dsi_studio.app/Contents/MacOS/
-        mv dsi_studio.icns dsi_studio.app/Contents/Resources/
-        zip -r dsi_studio_${{ matrix.os }}.zip dsi_studio.app
-    
-    - name: Create Release
-      uses: ncipollo/release-action@v1.13.0
-      with:
-        allowUpdates: true
-        artifacts: "*.zip"
-        tag: ${{ github.event.inputs.tag }}
-        name: ${{ github.event.inputs.release_name }}
-        prerelease: false
         
   macos-build-qt6:
     if: ${{ github.event.inputs.build_mac == 'true' }}
