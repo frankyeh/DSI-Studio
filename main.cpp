@@ -299,12 +299,36 @@ int run_action(tipl::program_option<tipl::out>& po)
     tipl::error() << "unknown action: " << action << std::endl;
     return 1;
 }
-int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
+int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *av[])
 {
     tipl::progress prog("command line");
     std::string source = po.get("source");
     std::string action = po.get("action");
     std::string loop = po.get("loop",source);
+
+
+    static std::shared_ptr<QCoreApplication> cmd;
+    if(av && !cmd.get())
+    {
+        if ((action == "cnt" && po.get("no_tractogram",1) == 0) || action == "vis")
+        {
+            tipl::out() << "Starting GUI-based command line interface." << std::endl;
+            cmd.reset(new QApplication(ac, av));
+            init_application();
+        }
+        else
+        {
+            cmd.reset(new QCoreApplication(ac, av));
+            cmd->setOrganizationName("LabSolver");
+            cmd->setApplicationName(version_string());
+            if(!load_file_name())
+            {
+                tipl::error() << "Cannot find template data." << std::endl;
+                return 1;
+            }
+        }
+    }
+
 
     if(action == "atk" || action == "atl" || loop.find('*') == std::string::npos) // atk, atl handle * by itself
     {
@@ -353,12 +377,13 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
                 tipl::out() << wildcard.second << "->" << apply_wildcard << std::endl;
                 po.set(wildcard.first.c_str(),apply_wildcard);
             }
-            po.set_used(0);
-            po.get("loop");
             if(run_action(po) == 1)
                 return 1;
         }
     }
+
+    if(cmd.get() && po.get("stay_open",0))
+        cmd->exec();
     return prog.aborted() ? 1 : 0;
 }
 void check_cuda(std::string& error_msg);
@@ -378,43 +403,19 @@ void init_cuda(void)
 }
 int run_cmd(int ac, char *av[])
 {
-    tipl::progress prog((version_string()+ " " + __DATE__).toStdString().c_str());
     tipl::program_option<tipl::out> po;
     try
     {
-
         if(!po.parse(ac,av) || !po.check("action"))
         {
             tipl::error() << po.error_msg << std::endl;
             return 1;
         }
-
-        std::shared_ptr<QCoreApplication> cmd;
-        std::string action = po.get("action");
-        bool has_gui = false;
-        if ((action == "cnt" && po.get("no_tractogram",1) == 0) || action == "vis")
-        {
-            tipl::out() << "Starting GUI-based command line interface." << std::endl;
-            cmd.reset(new QApplication(ac, av));
-            init_application();
-            has_gui = true;
-        }
-        else
-        {
-            cmd.reset(new QCoreApplication(ac, av));
-            cmd->setOrganizationName("LabSolver");
-            cmd->setApplicationName(version_string());
-            if(!load_file_name())
-            {
-                tipl::error() << "Cannot find template data." << std::endl;
-                return 1;
-            }
-        }
         init_cuda();
-        if(run_action_with_wildcard(po))
+        if(run_action_with_wildcard(po,ac,av))
             return 1;
-        if(has_gui && po.get("stay_open",0))
-            cmd->exec();
+        po.check_end_param<tipl::warning>();
+        return 0;
     }
     catch(const std::exception& e ) {
         tipl::error() << e.what() << std::endl;
@@ -425,7 +426,6 @@ int run_cmd(int ac, char *av[])
         tipl::error() <<"unknown error occurred" << std::endl;
         return 1;
     }
-    po.check_end_param<tipl::warning>();
     return 0;
 }
 
@@ -433,92 +433,91 @@ extern console_stream console;
 
 int main(int ac, char *av[])
 {
-    if(ac > 2)
-    {
-        std::locale::global(std::locale("en_US.UTF-8"));
-        return run_cmd(ac,av);
-    }
+    std::locale::global(std::locale("en_US.UTF-8"));
     if(ac == 2 && std::string(av[1]) == "--version")
     {
         std::cout << version_string().toStdString() << " " << __DATE__ << std::endl;
         return 0;
     }
 
-    try{
-    QApplication a(ac,av);
-    if(ac == 2)
+    if(ac > 2)
+        return run_cmd(ac,av);
+
+    try
     {
-        QLocalSocket socket;
-        socket.connectToServer("dsi-studio");
-        if (socket.waitForConnected(500))
+        QApplication a(ac,av);
+        if(ac == 2)
         {
-            tipl::out() << "another instance is running, passing file name.";
-            socket.write(av[1]);
-            socket.flush();
-            socket.waitForBytesWritten(500);
-            socket.disconnectFromServer();
-            return 0;
-        }
-    }
-
-    tipl::show_prog = true;
-
-    console.attach();
-
-    {
-        tipl::progress prog(version_string().toStdString().c_str());
-        init_cuda();
-        init_application();
-    }
-
-    MainWindow w;
-    w.setWindowTitle(version_string() + " " + __DATE__);
-    // presentation mode
-    QStringList fib_list = QDir(QCoreApplication::applicationDirPath()+ "/presentation").
-                            entryList(QStringList("*fib.gz") << QString("*_qa.nii.gz"),QDir::Files|QDir::NoSymLinks);
-    if(fib_list.size())
-    {
-        w.hide();
-        w.loadFib(QCoreApplication::applicationDirPath() + "/presentation/" + fib_list[0]);
-    }
-    else
-        w.show();
-
-
-    if(ac == 2)
-        w.openFile(QStringList() << av[1]);
-
-    QLocalServer server;
-    if(server.listen("dsi-studio"))
-    {
-        QObject::connect(&server, &QLocalServer::newConnection, [&server,&w]()
-        {
-            tipl::out() << "received file name from another instance";
-            QLocalSocket *clientSocket = server.nextPendingConnection();
-            if (clientSocket)
+            QLocalSocket socket;
+            socket.connectToServer("dsi-studio");
+            if (socket.waitForConnected(500))
             {
-                clientSocket->waitForReadyRead(500);
-                auto file_name = clientSocket->readAll();
-                tipl::out() << "file name:" << file_name.begin();
-                if(std::filesystem::exists(file_name.begin()))
-                {
-                    w.openFile(QStringList() << file_name);
-                    w.show();
-                    w.setWindowState((w.windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
-                    w.raise();
-                    w.activateWindow();
-                }
-                clientSocket->disconnectFromServer();
-                clientSocket->deleteLater();
+                tipl::out() << "another instance is running, passing file name.";
+                socket.write(av[1]);
+                socket.flush();
+                socket.waitForBytesWritten(500);
+                socket.disconnectFromServer();
+                return 0;
             }
-        });
-    }
-    return a.exec();
+        }
 
+        tipl::show_prog = true;
+
+        console.attach();
+
+        {
+            tipl::progress prog(version_string().toStdString().c_str());
+            init_cuda();
+            init_application();
+        }
+
+        MainWindow w;
+        w.setWindowTitle(version_string() + " " + __DATE__);
+        // presentation mode
+        QStringList fib_list = QDir(QCoreApplication::applicationDirPath()+ "/presentation").
+                                entryList(QStringList("*fib.gz") << QString("*_qa.nii.gz"),QDir::Files|QDir::NoSymLinks);
+        if(fib_list.size())
+        {
+            w.hide();
+            w.loadFib(QCoreApplication::applicationDirPath() + "/presentation/" + fib_list[0]);
+        }
+        else
+            w.show();
+
+
+        if(ac == 2)
+            w.openFile(QStringList() << av[1]);
+
+        QLocalServer server;
+        if(server.listen("dsi-studio"))
+        {
+            QObject::connect(&server, &QLocalServer::newConnection, [&server,&w]()
+            {
+                tipl::out() << "received file name from another instance";
+                QLocalSocket *clientSocket = server.nextPendingConnection();
+                if (clientSocket)
+                {
+                    clientSocket->waitForReadyRead(500);
+                    auto file_name = clientSocket->readAll();
+                    tipl::out() << "file name:" << file_name.begin();
+                    if(std::filesystem::exists(file_name.begin()))
+                    {
+                        w.openFile(QStringList() << file_name);
+                        w.show();
+                        w.setWindowState((w.windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
+                        w.raise();
+                        w.activateWindow();
+                    }
+                    clientSocket->disconnectFromServer();
+                    clientSocket->deleteLater();
+                }
+            });
+        }
+        return a.exec();
     }
     catch(const std::bad_alloc&)
     {
-        QMessageBox::critical(0,"ERROR","Crash due to insufficient memory.");
+        QMessageBox::critical(0,"ERROR","insufficient memory.");
     }
     catch(const std::runtime_error& error)
     {

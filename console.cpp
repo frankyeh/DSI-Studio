@@ -62,7 +62,7 @@ Console::~Console()
     delete ui;
 }
 
-int run_action_with_wildcard(tipl::program_option<tipl::out>& po);
+int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *av[]);
 void Console::on_run_cmd_clicked()
 {
     tipl::program_option<tipl::out> po;
@@ -75,10 +75,10 @@ void Console::on_run_cmd_clicked()
     }
     if (!po.has("action"))
     {
-        std::cout << "❌️invalid command, use --help for more detail" << std::endl;
+        tipl::error() << "invalid command, use --help for more detail" << std::endl;
         return;
     }
-    run_action_with_wildcard(po);
+    run_action_with_wildcard(po,0,nullptr);
 }
 
 
