@@ -99,7 +99,7 @@ bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<2,short>& I)
     QImage img;
     if(!qimg.read(&img))
     {
-        std::cout << "❌️unsupported transfer syntax " << dicom.encoding;
+        tipl::error() << "unsupported transfer syntax " << dicom.encoding;
         return false;
     }
     QImage buf = img.convertToFormat(QImage::Format_RGB32);
