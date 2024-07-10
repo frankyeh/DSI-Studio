@@ -1,6 +1,8 @@
 #include <QFileDialog>
 #include <QDir>
 #include <QMessageBox>
+#include <QProcess>
+#include <QKeyEvent>
 #include "console.h"
 #include "ui_console.h"
 #include "zlib.h"
@@ -53,7 +55,10 @@ Console::Console(QWidget *parent) :
     ui->pwd->setText(QString("[%1]$ ./dsi_studio ").arg(QDir().current().absolutePath()));
     console.log_window = ui->console;
     console.show_output();
-
+    ui->cmd_line->installEventFilter(this);
+    ui->cmd_line->addItem("--action=rec --source=*.src.gz");
+    ui->cmd_line->addItem("--action=trk --source=*.fib.gz");
+    ui->cmd_line->addItem("--action=atk --source=*.fib.gz");
 }
 
 Console::~Console()
@@ -63,24 +68,6 @@ Console::~Console()
 }
 
 int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *av[]);
-void Console::on_run_cmd_clicked()
-{
-    tipl::program_option<tipl::out> po;
-    if(ui->cmd_line->text().startsWith("dsi_studio "))
-        ui->cmd_line->setText(ui->cmd_line->text().remove("dsi_studio "));
-    if(!po.parse(ui->cmd_line->text().toStdString()))
-    {
-        QMessageBox::critical(this,"ERROR",po.error_msg.c_str());
-        return;
-    }
-    if (!po.has("action"))
-    {
-        tipl::error() << "invalid command, use --help for more detail" << std::endl;
-        return;
-    }
-    run_action_with_wildcard(po,0,nullptr);
-}
-
 
 void Console::on_set_dir_clicked()
 {
@@ -92,4 +79,54 @@ void Console::on_set_dir_clicked()
     ui->pwd->setText(QString("[%1]$ ./dsi_studio ").arg(QDir().current().absolutePath()));
 
 }
+
+bool Console::eventFilter(QObject *obj, QEvent *event)
+{
+    if (obj == ui->cmd_line && event->type() == QEvent::KeyPress)
+    {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+        if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter)
+        {
+            ui->pwd->setText(QString("[%1]$ ./dsi_studio ").arg(QDir().current().absolutePath()));
+            QString text = ui->cmd_line->currentText();
+            tipl::program_option<tipl::out> po;
+            if(ui->cmd_line->currentText().isEmpty())
+                return true;
+            if(ui->cmd_line->currentText().startsWith("dsi_studio "))
+                ui->cmd_line->setCurrentText(ui->cmd_line->currentText().remove("dsi_studio "));
+            if(!ui->cmd_line->currentText().startsWith("--"))
+            {
+                QProcess process;
+                #ifdef Q_OS_WIN
+                    process.start("cmd.exe", QStringList() << "/c" << ui->cmd_line->currentText());
+                #else
+                    process.start(command);
+                #endif
+                process.waitForFinished(); // Wait for the process to finish
+                ui->console->append(QString::fromUtf8(process.readAllStandardOutput()));
+                ui->pwd->setText(QString("[%1]$ ./dsi_studio ").arg(QDir().current().absolutePath()));
+                ui->cmd_line->addItem(ui->cmd_line->currentText());
+                ui->cmd_line->setCurrentText(QString());
+                return true;
+
+            }
+            if(!po.parse(ui->cmd_line->currentText().toStdString()))
+            {
+                QMessageBox::critical(this,"ERROR",po.error_msg.c_str());
+                return true;
+            }
+            if (!po.has("action"))
+            {
+                tipl::error() << "invalid command, use --help for more detail" << std::endl;
+                return true;
+            }
+            run_action_with_wildcard(po,0,nullptr);
+            ui->cmd_line->addItem(ui->cmd_line->currentText());
+            ui->cmd_line->setCurrentText(QString());
+            return true; // Consume the event
+        }
+    }
+    return QObject::eventFilter(obj, event);
+}
+
 

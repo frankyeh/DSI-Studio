@@ -46,19 +46,21 @@
        </widget>
       </item>
       <item>
-       <widget class="QLineEdit" name="cmd_line">
-        <property name="text">
-         <string/>
+       <widget class="QComboBox" name="cmd_line">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <horstretch>1</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
-        <property name="clearButtonEnabled">
-         <bool>false</bool>
+        <property name="editable">
+         <bool>true</bool>
         </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="run_cmd">
-        <property name="text">
-         <string>Execute</string>
+        <property name="insertPolicy">
+         <enum>QComboBox::InsertAtTop</enum>
+        </property>
+        <property name="duplicatesEnabled">
+         <bool>true</bool>
         </property>
        </widget>
       </item>

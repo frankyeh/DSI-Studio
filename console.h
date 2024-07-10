@@ -46,12 +46,12 @@ public:
     ~Console();
 
 private slots:
-    void on_run_cmd_clicked();
 
     void on_set_dir_clicked();
 
 private:
     Ui::Console *ui;
+    bool eventFilter(QObject *obj, QEvent *event) override;
 };
 
 #endif // CONSOLE_H
