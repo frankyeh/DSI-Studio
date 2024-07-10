@@ -402,11 +402,10 @@ extern console_stream console;
 int main(int ac, char *av[])
 {
     std::locale::global(std::locale("en_US.UTF-8"));
-    if(ac == 2 && std::string(av[1]) == "--version")
-    {
-        std::cout << version_string << " " << __DATE__ << std::endl;
+    std::cout << version_string << " " << __DATE__ << std::endl;
+
+    if(std::string(av[1]) == "--version")
         return 0;
-    }
 
     if(ac > 2)
     {
@@ -454,12 +453,10 @@ int main(int ac, char *av[])
             }
         }
 
-        tipl::show_prog = true;
-
-        console.attach();
-
         {
-            tipl::progress prog(version_string);
+            tipl::progress prog("initialize program");
+            tipl::show_prog = true;
+            console.attach();
             init_cuda();
             if(!init_application())
                 return 1;
