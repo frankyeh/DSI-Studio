@@ -100,7 +100,7 @@ bool Console::eventFilter(QObject *obj, QEvent *event)
                 #ifdef Q_OS_WIN
                     process.start("cmd.exe", QStringList() << "/c" << ui->cmd_line->currentText());
                 #else
-                    process.start(command);
+                    process.start(ui->cmd_line->currentText());
                 #endif
                 process.waitForFinished(); // Wait for the process to finish
                 ui->console->append(QString::fromUtf8(process.readAllStandardOutput()));
