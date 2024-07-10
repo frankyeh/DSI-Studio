@@ -77,6 +77,7 @@ private slots:
     void on_recentSrc_cellClicked(int row, int column);
     void on_OpenDWI_NIFTI_clicked();
     void on_OpenDWI_DICOM_clicked();
+    void on_OpenDWI_2dseq_clicked();
 };
 
 #endif // MAINWINDOW_H

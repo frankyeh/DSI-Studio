@@ -1364,6 +1364,12 @@ void MainWindow::on_OpenDWI_DICOM_clicked()
 }
 
 
-
-
+void MainWindow::on_OpenDWI_2dseq_clicked()
+{
+    open_DWI(QFileDialog::getOpenFileNames(
+                         this,
+                         "Open 2dseq or Variant files",
+                         ui->workDir->currentText(),
+                         "2dseq files (2dseq *.fdf);;All files (*)" ));
+}
 
