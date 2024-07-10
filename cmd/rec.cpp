@@ -78,7 +78,9 @@ int rec(tipl::program_option<tipl::out>& po)
             }
         }
     }
+
     {
+        tipl::progress prog("pre-processing steps");
         if(po.has("rev_pe") && !src.run_topup_eddy(po.get("rev_pe")))
         {
             tipl::error() << src.error_msg << std::endl;
@@ -86,12 +88,7 @@ int rec(tipl::program_option<tipl::out>& po)
         }
         if(po.get("motion_correction",0))
             src.correct_motion();
-
-    }
-
-    {
-        tipl::progress prog("additional processing steps");
-        if (po.has("remove"))
+        if(po.has("remove"))
         {
             std::vector<int> remove_index;
             QStringList remove_list = QString(po.get("remove").c_str()).split(",");
