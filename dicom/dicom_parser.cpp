@@ -406,7 +406,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         if(!get_bval_bvec(bval_name.toStdString(),bvec_name.toStdString(),dwi_data.size(),bvals,bvecs,error_msg))
         {
             src_error_msg = error_msg;
-            tipl::out() << error_msg;
+            tipl::error() << error_msg;
         }
     }
     else
@@ -1018,7 +1018,7 @@ bool parse_dwi(QStringList file_list,
     if(!dicom_header.get_btable(bv,bx,by,bz))
     {
         src_error_msg = "data are structure image";
-        tipl::out() << src_error_msg;
+        tipl::error() << src_error_msg;
         return false;
     }
 
@@ -1048,7 +1048,7 @@ bool parse_dwi(QStringList file_list,
     if(!load_multiple_slice_dicom(file_list,dwi_files) || dwi_files.size() == 1)
     {
         src_error_msg = "data are structure image";
-        tipl::out() << src_error_msg;
+        tipl::error() << src_error_msg;
         return false;
     }
     return true;
