@@ -132,7 +132,7 @@ int qc(tipl::program_option<tipl::out>& po)
         return 1;
     }
 
-    std::string report_file_name = po.get("output",source + "/qc.txt");
+    std::string report_file_name = po.get("output","qc.txt");
     tipl::out() << "saving " << report_file_name << std::endl;
     std::ofstream(report_file_name.c_str()) <<
         (is_fib ? quality_check_fib_files(file_list) : quality_check_src_files(file_list));
