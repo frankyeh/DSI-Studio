@@ -168,7 +168,6 @@ void ThreadData::run(unsigned int thread_count,
 
 void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_count,bool wait)
 {
-    tipl::progress prog("initiating fiber tracking");
     trk = trk_;
     if(param.threshold == 0.0f)
     {
