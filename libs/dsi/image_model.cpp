@@ -2541,7 +2541,7 @@ bool src_data::load_from_file(const char* dwi_file_name)
                mat_reader.read("grad_dev",row,col,grad_dev_ptr) &&
                size_t(row)*size_t(col) == voxel.dim.size()*9)
             {
-                tipl::out() << "loading gradient deviation correction";
+                tipl::progress prog2("gradient deviation correction");
 
                 for(unsigned int index = 0;index < 9;index++)
                     grad_dev.push_back(tipl::make_image(const_cast<float*>(grad_dev_ptr+index*voxel.dim.size()),voxel.dim));
@@ -2552,8 +2552,11 @@ bool src_data::load_from_file(const char* dwi_file_name)
                     tipl::add_constant(grad_dev[8].begin(),grad_dev[8].end(),1.0);
                 }
                 // correct signals
+                size_t progress = 0;
                 tipl::par_for(voxel.dim.size(),[&](size_t voxel_index)
                 {
+                    if(!prog2(++progress,voxel.dim.size()))
+                        return;
                     tipl::matrix<3,3,float> G;
                     for(unsigned int i = 0;i < 9;++i)
                         G[i] = grad_dev[i][voxel_index];
@@ -2572,6 +2575,11 @@ bool src_data::load_from_file(const char* dwi_file_name)
                                     std::pow(double(src_dwi_data[index][voxel_index]),inv_l2));
                         }
                 });
+                if(prog2.aborted())
+                {
+                    error_msg = "aborted";
+                    return false;
+                }
             }
         }
     }
