@@ -266,7 +266,7 @@ public:
 public:
     std::shared_ptr<fib_data> high_reso;
 public:
-    int prog;
+    int prog = 0;
     tipl::image<3,tipl::vector<3,float> > s2t,t2s;
 private:
     mutable tipl::image<3,tipl::vector<3,float> > native_position;
