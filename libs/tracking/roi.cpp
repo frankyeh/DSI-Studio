@@ -2,6 +2,7 @@
 
 bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_threshold)
 {
+    tipl::progress prog("loading tractography atlas");
     if(!handle->load_track_atlas())
         return false;
     track_ids = handle->get_track_ids(tract_name);
