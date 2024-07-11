@@ -31,7 +31,7 @@ void appendColoredText(QTextEdit &textEdit, const QString &text)
 
     QString currentPart;
     int endIndex = -1;
-    for(size_t index = 0;index < text.length();++index)
+    for(int index = 0;index < text.length();++index)
     {
         // Found start of escape sequence, find end of sequence
         if (text[index] == '\033' && index + 1 < text.length() && text[index + 1] == '[' &&
