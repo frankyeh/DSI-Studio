@@ -2096,7 +2096,7 @@ bool src_data::run_topup_eddy(const std::string& other_src,bool topup_only)
         if(load_topup_eddy_result())
             return eddy_check_shell(src_bvalues) ? true : correct_motion(); // if not eddy corrected, then run motion correction.
 
-        tipl::out() << error_msg << std::endl;
+        tipl::error() << error_msg << std::endl;
         if(!std::filesystem::exists(other_src))
         {
             error_msg = "failed to load previous results. please re-run correction again.";
