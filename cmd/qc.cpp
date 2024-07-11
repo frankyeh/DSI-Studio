@@ -5,7 +5,6 @@
 #include "fib_data.hpp"
 
 QStringList search_files(QString dir,QString filter);
-const char* src_qc_title = "FileName\tImage dimension\tResolution\tDWI count\tMax b-value\tDWI contrast\tNeighboring DWI correlation\tNeighboring DWI correlation(masked)\t# Bad Slices";
 float check_src(std::string file_name,std::vector<std::string>& output) // return masked_ndc
 {
     tipl::out() << "checking " << file_name << std::endl;
@@ -46,43 +45,20 @@ float check_src(std::string file_name,std::vector<std::string>& output) // retur
     output.push_back(std::to_string(handle.get_bad_slices().size()));
     return ndc.second; // masked ndc
 }
-std::string quality_check_src_files(QString dir)
+std::string quality_check_src_files(const std::vector<std::string>& file_list)
 {
     std::ostringstream out;
-    QStringList filenames;
-    if(QFileInfo(dir).isDir())
-    {
-
-        filenames = search_files(dir,"*src.gz");
-        out << "directory: " << dir.toStdString() << std::endl;
-        if(filenames.empty())
-        {
-            tipl::out() << "no SRC file found in " << dir.toStdString() << std::endl;
-            return std::string();
-        }
-        tipl::out() << "a total of " << filenames.size() << " SRC file(s) were found."<< std::endl;
-    }
-    else
-    {
-        if(!QFileInfo(dir).exists())
-        {
-            tipl::out() << "Cannot find " << dir.toStdString() << std::endl;
-            return std::string();
-        }
-        filenames << dir;
-    }
-    out << src_qc_title << std::endl;
-
+    out << "FileName\tImage dimension\tResolution\tDWI count\tMax b-value\tDWI contrast\tNeighboring DWI correlation\tNeighboring DWI correlation(masked)\t# Bad Slices" << std::endl;
     std::vector<std::vector<std::string> > output;
     std::vector<float> ndc;
     tipl::progress prog("checking SRC files");
-    for(int i = 0;prog(i,filenames.size());++i)
+    for(int i = 0;prog(i,file_list.size());++i)
     {
         std::vector<std::string> output_each;
-        float mask_ndc_each = check_src(filenames[i].toStdString(),output_each);
+        float mask_ndc_each = check_src(file_list[i],output_each);
         if(mask_ndc_each == 0.0f)
         {
-            out << "cannot load SRC file " << filenames[i].toStdString() << std::endl;
+            out << "cannot load SRC file " << file_list[i] << std::endl;
             continue;
         }
         output.push_back(std::move(output_each));
@@ -111,35 +87,25 @@ std::string quality_check_src_files(QString dir)
     return out.str();
 }
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
-std::string quality_check_fib_files(QString dir)
+std::string quality_check_fib_files(const std::vector<std::string>& file_list)
 {
     std::ostringstream out;
-    QStringList filenames = search_files(dir,"*fib.gz");
-    out << "directory: " << dir.toStdString() << std::endl;
-    if(filenames.empty())
-    {
-        tipl::out() << "no FIB file found in the directory" << std::endl;
-        return std::string();
-    }
     out << "FileName\tImage dimension\tResolution\tCoherence Index" << std::endl;
-    tipl::out() << "a total of " << filenames.size() << " FIB file(s) were found."<< std::endl;
-
     std::vector<std::vector<std::string> > output;
     std::vector<float> ndc;
     tipl::progress prog("checking FIB files");
-    for(int i = 0;prog(i,filenames.size());++i)
+    for(int i = 0;prog(i,file_list.size());++i)
     {
-        std::shared_ptr<fib_data> handle = cmd_load_fib(filenames[i].toStdString());
+        std::shared_ptr<fib_data> handle = cmd_load_fib(file_list[i]);
         if(!handle.get())
-            return QString("Failed to open ").toStdString() + filenames[i].toStdString();
+            return QString("Failed to open ").toStdString() + file_list[i];
         std::pair<float,float> result = evaluate_fib(handle->dim,handle->dir.fa_otsu*0.6f,handle->dir.fa,
                                                      [&](int pos,char fib)
                                                      {return handle->dir.get_fib(size_t(pos),uint32_t(fib));});
-        out << QFileInfo(filenames[i]).baseName().toStdString() << "\t";
+        out << file_list[i] << "\t";
         out << handle->dim << "\t";
         out << handle->vs << "\t";
         out << result.first << std::endl;
-
     }
     out << "total scans: " << output.size() << std::endl;
     return out.str();
@@ -150,52 +116,26 @@ std::string quality_check_fib_files(QString dir)
  */
 int qc(tipl::program_option<tipl::out>& po)
 {
-    std::string file_name = po.get("source");
-    if(QFileInfo(file_name.c_str()).isDir())
-    {
-        {
-            std::string report_file_name = po.get("output",file_name + "/qc_src.txt");
-            tipl::out() << "quality control checking src files in " << file_name << std::endl;
-            auto result = quality_check_src_files(file_name.c_str());
-            if(result.empty())
-                return 0;
-            tipl::out() << "saving " << report_file_name << std::endl;
-            std::ofstream(report_file_name.c_str()) << result;
-        }
-        {
-            std::string report_file_name = po.get("output",file_name + "/qc_fib.txt");
-            tipl::out() << "quality control checking fib files in " << file_name << std::endl;
-            auto result = quality_check_fib_files(file_name.c_str());
-            if(result.empty())
-                return 0;
-            tipl::out() << "saving " << report_file_name << std::endl;
-            std::ofstream(report_file_name.c_str()) << result;
-        }
-    }
-    else {
-        std::string report_file_name = po.get("output",file_name.substr(0,file_name.size()-7) + ".qc.txt");
-        if(QString(file_name.c_str()).endsWith("fib.gz"))
-        {
-            std::shared_ptr<fib_data> handle = cmd_load_fib(po.get("source"));
-            if(!handle.get())
-                return 1;
-            std::pair<float,float> result = evaluate_fib(handle->dim,handle->dir.fa_otsu*0.6f,handle->dir.fa,
-                                                         [&](int pos,char fib)
-                                                         {return handle->dir.get_fib(size_t(pos),uint32_t(fib));});
-            std::ofstream out(report_file_name.c_str());
-            out << "Fiber coherence index: " << result.first << std::endl;
-            out << "Fiber incoherent index: " << result.second << std::endl;
-        }
-        if(QString(file_name.c_str()).endsWith("src.gz") ||
-           QString(file_name.c_str()).endsWith("nii.gz"))
-        {
-            auto result = quality_check_src_files(file_name.c_str());
-            if(result.empty())
-                return 1;
+    std::string source = po.get("source");
+    bool is_fib = po.get("is_fib",source.find("fib.gz") != std::string::npos ? 1:0);
 
-            tipl::out() << "saving " << report_file_name << std::endl;
-            std::ofstream(report_file_name.c_str()) << result;
-        }
+    std::vector<std::string> file_list;
+    if(QFileInfo(source.c_str()).isDir())
+        tipl::search_files(source,is_fib ? "*.fib.gz" : "*.src.gz",file_list);
+    else
+        po.get_files(source.c_str(),file_list);
+
+
+    if(file_list.empty())
+    {
+        tipl::error() << "no " << (is_fib ? "FIB" : "SRC") << " file found ";
+        return 1;
     }
+
+    std::string report_file_name = po.get("output",source + "/qc.txt");
+    tipl::out() << "saving " << report_file_name << std::endl;
+    std::ofstream(report_file_name.c_str()) <<
+        (is_fib ? quality_check_fib_files(file_list) : quality_check_src_files(file_list));
     return 0;
+
 }
