@@ -325,7 +325,6 @@ public:
         {
             error_msg = "unknown error";
         }
-        tipl::out() << error_msg << std::endl;
         return false;
     }
     std::string get_file_ext(void);
