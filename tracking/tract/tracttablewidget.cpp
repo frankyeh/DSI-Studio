@@ -293,6 +293,7 @@ void TractTableWidget::start_tracking(void)
     thread_data.back() = std::make_shared<ThreadData>(cur_tracking_window.handle);
     cur_tracking_window.set_tracking_param(*thread_data.back());
     cur_tracking_window.regionWidget->setROIs(thread_data.back().get());
+    tipl::progress prog("initiating fiber tracking");
     thread_data.back()->run(cur_tracking_window.ui->thread_count->value(),false);
     tract_models.back()->report = cur_tracking_window.handle->report;
     tract_models.back()->report += thread_data.back()->report.str();
