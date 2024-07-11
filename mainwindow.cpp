@@ -751,7 +751,7 @@ void MainWindow::on_nonlinear_reg_clicked()
     rt->showNormal();
 }
 
-std::string quality_check_src_files(QString dir);
+std::string quality_check_src_files(const std::vector<std::string>& file_list);
 void show_info_dialog(const std::string& title,const std::string& result);
 void MainWindow::on_SRC_qc_clicked()
 {
@@ -762,7 +762,7 @@ void MainWindow::on_SRC_qc_clicked()
     if(dir.isEmpty())
         return;
     tipl::progress prog_("checking SRC files");
-    show_info_dialog("SRC report",quality_check_src_files(dir));
+    show_info_dialog("SRC report",quality_check_src_files(tipl::search_files(dir.toStdString(),"*src.gz")));
 }
 
 void MainWindow::on_parse_network_measures_clicked()
