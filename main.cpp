@@ -457,12 +457,12 @@ int main(int ac, char *av[])
         tipl::show_prog = true;
         console.attach();
 
-        {
-            tipl::progress prog("initialize program");
-            init_cuda();
-            if(!init_application())
-                return 1;
-        }
+        tipl::progress prog(version_string,__DATE__);
+
+
+        init_cuda();
+        if(!init_application())
+            return 1;
 
         MainWindow w;
         w.setWindowTitle(QString(version_string) + " " + __DATE__);
