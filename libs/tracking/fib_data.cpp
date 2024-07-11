@@ -1682,7 +1682,7 @@ bool fib_data::map_to_mni(bool background)
 
     if(std::filesystem::exists(output_file_name))
     {
-        tipl::progress prog("checking existing mapping file");
+        tipl::progress p("checking existing mapping file");
         if(load_mapping(output_file_name.c_str(),false/* not external*/))
             return true;
         if(!error_msg.empty())
@@ -1692,8 +1692,7 @@ bool fib_data::map_to_mni(bool background)
         }
     }
 
-    tipl::progress prog_("running normalization");
-    prog = 0;
+    tipl::progress p("running normalization");
     auto lambda = [this,output_file_name]()
     {
         prog = 1;
@@ -1720,7 +1719,6 @@ bool fib_data::map_to_mni(bool background)
             if(!reg.load_template(1,t1w_template_file_name.c_str()) ||
                !reg.load_template(2,t2w_template_file_name.c_str()))
             {
-                prog = 4;
                 error_msg = "cannot perform normalization";
                 tipl::prog_aborted = true;
                 return;
@@ -1747,10 +1745,7 @@ bool fib_data::map_to_mni(bool background)
         }
 
         if(tipl::prog_aborted)
-        {
-            prog = 4;
             return;
-        }
         prog = 3;
         reg.nonlinear_reg(tipl::prog_aborted);
         if(reg.r[0] < 0.3f)
@@ -1759,37 +1754,30 @@ bool fib_data::map_to_mni(bool background)
             tipl::prog_aborted = true;
         }
         if(tipl::prog_aborted)
-        {
-            prog = 4;
             return;
-        }
         s2t = reg.from2to;
         t2s = reg.to2from;
         prog = 4;
         if(!reg.save_warping(output_file_name.c_str()))
-            tipl::out() << reg.error_msg;
+            tipl::error() << reg.error_msg;
 
     };
 
     if(background)
     {
-        auto t = std::make_shared<std::thread>(lambda);
-        while(prog_(prog,4))
+        if(prog == 0)
+            reg_threads.push_back(std::make_shared<std::thread>(lambda));
+        while(p(prog,4))
             std::this_thread::yield();
-        if(prog_.aborted())
+        if(p.aborted())
         {
             error_msg = "aborted.";
-            tipl::prog_aborted = true;
+            prog = 0;
         }
-        if(!tipl::prog_aborted)
-            reg_threads.push_back(t);
-        else
-            t->join();
-        return !prog_.aborted();
+        return !p.aborted();
     }
-
     lambda();
-    return !prog_.aborted();
+    return !p.aborted();
 }
 bool fib_data::load_mapping(const char* file_name,bool external)
 {
