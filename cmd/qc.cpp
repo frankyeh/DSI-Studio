@@ -158,7 +158,7 @@ int qc(tipl::program_option<tipl::out>& po)
             tipl::out() << "quality control checking src files in " << file_name << std::endl;
             auto result = quality_check_src_files(file_name.c_str());
             if(result.empty())
-                return 1;
+                return 0;
             tipl::out() << "saving " << report_file_name << std::endl;
             std::ofstream(report_file_name.c_str()) << result;
         }
@@ -167,7 +167,7 @@ int qc(tipl::program_option<tipl::out>& po)
             tipl::out() << "quality control checking fib files in " << file_name << std::endl;
             auto result = quality_check_fib_files(file_name.c_str());
             if(result.empty())
-                return 1;
+                return 0;
             tipl::out() << "saving " << report_file_name << std::endl;
             std::ofstream(report_file_name.c_str()) << result;
         }
