@@ -105,7 +105,6 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
 
     if(handle->tractography_atlas_roi.get())
     {
-        tipl::out() << "checking additional ROI for refining tracking";
         const auto& regions = handle->tractography_atlas_roi->get_list();
         for(size_t i = 0;i < regions.size();++i)
             if(tipl::contains_case_insensitive(tract_name,regions[i]))
@@ -126,7 +125,6 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
     }
     if(handle->tractography_atlas_roa.get())
     {
-        tipl::out() << "checking additional ROA for refining tracking";
         const auto& regions = handle->tractography_atlas_roa->get_list();
         for(size_t i = 0;i < regions.size();++i)
             if(tipl::contains_case_insensitive(tract_name,regions[i]))
