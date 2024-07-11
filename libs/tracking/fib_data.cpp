@@ -1686,8 +1686,11 @@ bool fib_data::map_to_mni(bool background)
         tipl::progress prog("checking existing mapping file");
         if(load_mapping(output_file_name.c_str(),false/* not external*/))
             return true;
-        tipl::out() << "new mapping file needed: " << error_msg;
-        error_msg.clear();
+        if(!error_msg.empty())
+        {
+            tipl::out() << error_msg;
+            error_msg.clear();
+        }
     }
 
     tipl::progress prog_("running normalization");
@@ -1809,15 +1812,17 @@ bool fib_data::load_mapping(const char* file_name,bool external)
             // check 1. mapping files was created later than the FIB file
             if(QFileInfo(file_name).lastModified() < QFileInfo(fib_file_name.c_str()).lastModified())
             {
-                tipl::out() << "The mapping file was previously created.";
+                error_msg = "The mapping file was previously created.";
                 return false;
             }
             // 2. check method version (new after Aug 2023)
             constexpr int method_ver = 202406; // 999999 is for external loading mapping
             if(!in.has("method_ver") || std::stoi(in.read<std::string>("method_ver")) < method_ver)
             {
-                tipl::out() << "Existing registration version outdated: " << in.read<std::string>("method_ver") <<
-                               " older than " << method_ver;
+                error_msg = "existing registration version outdated: ";
+                error_msg += in.read<std::string>("method_ver");
+                error_msg += " older than ";
+                error_msg += std::to_string(method_ver);
                 return false;
             }
         }
