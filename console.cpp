@@ -30,66 +30,52 @@ void appendColoredText(QTextEdit &textEdit, const QString &text)
     cursor.movePosition(QTextCursor::End);
 
     QString currentPart;
-    int index = 0;
-
-    while (index < text.length())
-        if (text[index] == '\033' && index + 1 < text.length() && text[index + 1] == '[')
+    int endIndex = -1;
+    for(size_t index = 0;index < text.length();++index)
+    {
+        // Found start of escape sequence, find end of sequence
+        if (text[index] == '\033' && index + 1 < text.length() && text[index + 1] == '[' &&
+            (endIndex = text.indexOf('m', index)) != -1)
         {
-            // Found start of escape sequence, find end of sequence
-            int endIndex = text.indexOf('m', index);
-            if (endIndex != -1)
+            if (!currentPart.isEmpty())
             {
-                // Append the current regular text part
-                if (!currentPart.isEmpty())
-                {
-                    cursor.insertText(currentPart);
-                    currentPart.clear();
-                }
-
-                // Get the ANSI escape sequence
-                QString escapeSequence = text.mid(index, endIndex - index + 1);
-                QStringList parts = escapeSequence.mid(2, endIndex - index - 2).split(';');
-                if (parts.isEmpty())
-                    // Invalid escape sequence, treat as regular text
-                    currentPart += text.mid(index, endIndex - index + 1);
-                else
-                {
-                    QTextCharFormat format;
-                    for (const QString& part : parts)
-                    {
-                        int code = part.toInt();
-                        if (code == 1)
-                            format.setFontWeight(QFont::Bold);
-                        else
-                            format.setForeground(colorFromAnsiCode(code));
-                    }
-
-                    // Move cursor to end and apply format
-                    cursor.movePosition(QTextCursor::End);
-                    cursor.setCharFormat(format);
-                }
-
-                // Move index to end of escape sequence
-                index = endIndex + 1;
+                cursor.insertText(currentPart);
+                currentPart.clear();
             }
+
+            // Get the ANSI escape sequence
+            QString escapeSequence = text.mid(index, endIndex - index + 1);
+            QStringList parts = escapeSequence.mid(2, endIndex - index - 2).split(';');
+            if (parts.isEmpty())
+                // Invalid escape sequence, treat as regular text
+                currentPart += text.mid(index, endIndex - index + 1);
             else
             {
-                // Invalid escape sequence, treat as regular text
-                currentPart += text[index];
-                index++;
+                QTextCharFormat format;
+                for (const QString& part : parts)
+                {
+                    int code = part.toInt();
+                    if (code == 1)
+                        format.setFontWeight(QFont::Bold);
+                    else
+                        format.setForeground(colorFromAnsiCode(code));
+                }
+
+                // Move cursor to end and apply format
+                cursor.movePosition(QTextCursor::End);
+                cursor.setCharFormat(format);
             }
+            // Move index to end of escape sequence
+            index = endIndex;
+            continue;
+
         }
-        else
-        {
-            // Regular text
-            currentPart += text[index];
-            index++;
-        }
+        currentPart.push_back(text[index]);// Regular text
+    }
 
     // Append any remaining regular text
-    if (!currentPart.isEmpty())
-        cursor.insertText(currentPart);
-    cursor.insertText("\n");
+    currentPart.push_back("\n");
+    cursor.insertText(currentPart);
 }
 
 
@@ -105,7 +91,7 @@ void console_stream::show_output(void)
     }
     for(int i = 0; i+1 < strSplitted.size(); i++)
         appendColoredText(*log_window,strSplitted[i]);
-    QApplication::processEvents();
+    log_window->ensureCursorVisible();
     has_output = false;
 }
 std::basic_streambuf<char>::int_type console_stream::overflow(std::basic_streambuf<char>::int_type v)
