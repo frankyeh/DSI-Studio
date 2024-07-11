@@ -267,6 +267,7 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
     auto vs = handle->voxel.vs; // for QSDR
     if (!handle->reconstruction())
     {
+        tipl::error() << handle->error_msg << std::endl;
         QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
         return;
     }
