@@ -91,9 +91,11 @@ void console_stream::show_output(void)
     }
     for(int i = 0; i+1 < strSplitted.size(); i++)
         appendColoredText(*log_window,strSplitted[i]);
+
+    has_output = false; // avoid reentry of show_output due to ensureCursorVisible
     log_window->ensureCursorVisible();
     QApplication::processEvents();
-    has_output = false;
+
 }
 std::basic_streambuf<char>::int_type console_stream::overflow(std::basic_streambuf<char>::int_type v)
 {
