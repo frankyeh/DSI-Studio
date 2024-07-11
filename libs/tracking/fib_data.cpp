@@ -1687,7 +1687,7 @@ bool fib_data::map_to_mni(bool background)
             return true;
         if(!error_msg.empty())
         {
-            tipl::error() << error_msg;
+            tipl::out() << "cannot use existing mapping file: " << error_msg;
             error_msg.clear();
         }
     }
