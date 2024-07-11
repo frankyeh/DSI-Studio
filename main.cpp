@@ -457,7 +457,7 @@ int main(int ac, char *av[])
         tipl::show_prog = true;
         console.attach();
 
-        tipl::progress prog(version_string,__DATE__);
+        tipl::progress prog(version_string);
 
 
         init_cuda();
