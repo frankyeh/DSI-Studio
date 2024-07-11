@@ -30,7 +30,6 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
             std::this_thread::yield();
             continue;
         }
-        // configure seedings
         {
             seed = std::mt19937(param.random_seed);  // always 0, except in connectometry for changing seed sequence
             if(roi_mgr->use_auto_track)
@@ -169,6 +168,7 @@ void ThreadData::run(unsigned int thread_count,
 
 void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_count,bool wait)
 {
+    tipl::progress prog("initiating fiber tracking");
     trk = trk_;
     if(param.threshold == 0.0f)
     {
@@ -249,5 +249,8 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
         buffer_switch = !buffer_switch;
     }
     else
+    {
+        tipl::out() << "tracking in threads";
         threads.push_back(std::thread([=](){run_thread(thread_count-1,thread_count);}));
+    }
 }
