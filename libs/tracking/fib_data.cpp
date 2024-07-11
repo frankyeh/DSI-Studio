@@ -695,7 +695,6 @@ bool fib_data::load_from_mat(void)
         error_msg = dir.error_msg;
         return false;
     }
-    tipl::out() << "initiating data" << std::endl;
     /*
     {
         tipl::out() << "reading original mat file" << std::endl;
@@ -1688,7 +1687,7 @@ bool fib_data::map_to_mni(bool background)
             return true;
         if(!error_msg.empty())
         {
-            tipl::out() << error_msg;
+            tipl::error() << error_msg;
             error_msg.clear();
         }
     }
