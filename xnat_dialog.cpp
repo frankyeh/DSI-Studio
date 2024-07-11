@@ -52,7 +52,7 @@ bool xnat_facade::good(void)
             error_msg = "XNAT Server not found";
         if(cur_response->error() == 6)
             error_msg = "SSL Failed. Please update SSL library";
-        tipl::out() << error_msg;
+        tipl::error() << error_msg;
         cur_response = nullptr;
     }
     return cur_response != nullptr;
