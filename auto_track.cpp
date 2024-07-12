@@ -274,6 +274,9 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         if(!handle->load_track_atlas())
                             return handle->error_msg + " at " + fib_file_name;
 
+                        if (po.has("threshold_index") && !handle->dir.set_tracking_index(po.get("threshold_index")))
+                            return std::string("invalid threshold index");
+
                         thread.param.default_otsu = po.get("otsu_threshold",thread.param.default_otsu);
                         thread.param.threshold = po.get("fa_threshold",thread.param.threshold);
                         thread.param.cull_cos_angle = float(std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0));
