@@ -401,7 +401,6 @@ void init_cuda(void)
 extern console_stream console;
 int main(int ac, char *av[])
 {
-    std::locale::global(std::locale("en_US.UTF-8"));
     std::cout << version_string << " " << __DATE__ << std::endl;
 
     if(ac == 2 && std::string(av[1]) == "--version")
