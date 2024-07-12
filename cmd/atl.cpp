@@ -195,12 +195,15 @@ int atl(tipl::program_option<tipl::out>& po)
                                              std::mismatch(name_list.front().begin(),name_list.front().begin()+
                                              int64_t(std::min(name_list.front().length(),name_list.back().length())),
                                                name_list.back().begin()).first) + "." + index_name[i] + ".db.fib.gz";
+            tipl::out() << "saving " << po.get("output",output);
             if(!data->handle->db.save_db(po.get("output",output).c_str()))
             {
                 tipl::error() << "cannot save db file " << data->handle->db.error_msg << std::endl;
                 return 1;
             }
-            tipl::out() << "connectometry db created: " << output << std::endl;
+            tipl::out() << "saving " << (po.get("output",output)+".R2.txt");
+            std::ofstream out((po.get("output",output)+".R2.txt").c_str());
+            std::copy(data->handle->db.R2.begin(),data->handle->db.R2.end(),std::ostream_iterator<float>(out,"\n"));
         }
         return 0;
     }
