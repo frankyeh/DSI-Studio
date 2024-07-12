@@ -1559,7 +1559,7 @@ bool src_data::run_plugin(std::string exec_name,
         p << s.c_str();
     }
     program.start(exec.c_str(),p);
-    if(!program.waitForStarted() || program.waitForFinished(3000))
+    if(!program.waitForStarted())
     {
         switch(program.error())
         {
@@ -1576,9 +1576,10 @@ bool src_data::run_plugin(std::string exec_name,
             error_msg = "An error occurred when attempting to read from the process. For example, the process may not be running.";
         break;
         default:
-            error_msg = "Unknown error";
+            error_msg = program.readAllStandardError().toStdString() + program.readAllStandardOutput().toStdString();
         break;
         }
+        tipl::error() << error_msg;
         return false;
     }
     unsigned int keyword_seen = 0;
@@ -1605,9 +1606,18 @@ bool src_data::run_plugin(std::string exec_name,
         error_msg = "process aborted";
         return false;
     }
-    tipl::out() << "completed." << std::endl;
-    error_msg = QString::fromLocal8Bit(program.readAllStandardError()).toStdString();
-    return error_msg.empty();
+
+    if(program.exitCode() == 1)
+    {
+        error_msg = program.readAllStandardError().toStdString() + program.readAllStandardOutput().toStdString();
+        if(error_msg.empty())
+            error_msg = "process failed";
+        tipl::error() << error_msg;
+        return false;
+    }
+    tipl::out() << "process completed." << std::endl;
+    error_msg.clear();
+    return true;
 }
 
 void src_data::get_volume_range(size_t dim,int extra_space)
@@ -2012,14 +2022,14 @@ bool src_data::run_eddy(std::string exec)
             std::string("--bvecs=") + std::filesystem::path(bvec_file.c_str()).filename().string(),
             std::string("--bvals=") + std::filesystem::path(bval_file.c_str()).filename().string(),
             std::string("--out=") + std::filesystem::path(corrected_file.c_str()).filename().string(),
-            "--verbose=1"
+            "--verbose=1",
+            "--data_is_shelled"
             };
     if(has_topup)
         param.push_back(QString("--topup=%1").arg(topup_result.c_str()).toStdString().c_str());
 
     if(!run_plugin(has_cuda ? "eddy_cuda" : "eddy","model",16,param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
     {
-        tipl::out() << "eddy cannot process this data: " << error_msg << std::endl;
         if(!has_topup)
             return false;
         return run_applytopup();
