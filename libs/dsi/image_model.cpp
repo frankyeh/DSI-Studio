@@ -2022,8 +2022,7 @@ bool src_data::run_eddy(std::string exec)
             std::string("--bvecs=") + std::filesystem::path(bvec_file.c_str()).filename().string(),
             std::string("--bvals=") + std::filesystem::path(bval_file.c_str()).filename().string(),
             std::string("--out=") + std::filesystem::path(corrected_file.c_str()).filename().string(),
-            "--verbose=1",
-            "--data_is_shelled"
+            "--verbose=1"
             };
     if(has_topup)
         param.push_back(QString("--topup=%1").arg(topup_result.c_str()).toStdString().c_str());
