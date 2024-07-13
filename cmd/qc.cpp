@@ -123,7 +123,7 @@ int qc(tipl::program_option<tipl::out>& po)
     if(QFileInfo(source.c_str()).isDir())
         tipl::search_files(source,is_fib ? "*.fib.gz" : "*.src.gz",file_list);
     else
-        po.get_files(source.c_str(),file_list);
+        po.get_files("source",file_list);
 
 
     if(file_list.empty())
