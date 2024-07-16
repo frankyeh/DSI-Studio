@@ -174,21 +174,13 @@ extern std::string src_error_msg;
 bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                            int upsampling,bool sort_btable)
 {
-    tipl::progress prog("saving ",std::filesystem::path(di_file).filename().string().c_str());
-    if(!has_b_table(dwi_files))
-    {
-        src_error_msg = "invalid b-table";
-        return false;
-    }
     if(dwi_files.empty())
     {
         src_error_msg = "no DWI data for output";
         return false;
     }
     if(sort_btable)
-    {
         sort_dwi(dwi_files);
-    }
     auto temp_file = std::string(di_file) + ".tmp.gz";
     {
         tipl::io::gz_mat_write write_mat(temp_file.c_str());
@@ -198,6 +190,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
             src_error_msg += di_file;
             return false;
         }
+        tipl::progress prog("saving ",std::filesystem::path(di_file).filename().string().c_str());
         tipl::shape<3> geo = dwi_files.front()->image.shape();
 
         //store dimension
