@@ -45,10 +45,9 @@ int rec(tipl::program_option<tipl::out>& po)
             src.voxel.qsdr_reso = po.get("qsdr_reso",src.voxel.vs[2]);
 
     }
-    if(po.has("mask"))
+
     {
-        tipl::progress prog("specify mask");
-        std::string mask_file = po.get("mask");
+        std::string mask_file = po.get("mask","1");
         if(mask_file == "1")
             src.voxel.mask = 1;
         else
@@ -62,8 +61,9 @@ int rec(tipl::program_option<tipl::out>& po)
                 }
             }
             else
+            if(mask_file != "default")
             {
-                tipl::out() << "reading mask file: " << mask_file << std::endl;
+                tipl::out() << "opening mask file: " << mask_file << std::endl;
                 tipl::io::gz_nifti nii;
                 if(!nii.load_from_file(mask_file) || !nii.toLPS(src.voxel.mask))
                 {
