@@ -951,6 +951,10 @@ void MainWindow::batch_create_src(const std::vector<std::string>& dwi_nii_files,
         }
     },8);
 }
+bool nii2src(const std::vector<std::string>& dwi_nii_files,
+             const std::string& output_dir,
+             bool is_bids,
+             bool overwrite);
 void MainWindow::on_nii2src_bids_clicked()
 {
     QString dir = QFileDialog::getExistingDirectory(
@@ -966,7 +970,9 @@ void MainWindow::on_nii2src_bids_clicked()
     if(output_dir.isEmpty())
         return;
     add_work_dir(dir);
-    batch_create_src(search_dwi_nii_bids(dir.toStdString()),output_dir.toStdString());
+    auto dwi_nii_files = search_dwi_nii_bids(dir.toStdString());
+    std::sort(dwi_nii_files.begin(),dwi_nii_files.end());
+    nii2src(dwi_nii_files,output_dir.toStdString(),true,true);
 }
 void MainWindow::on_nii2src_sf_clicked()
 {
