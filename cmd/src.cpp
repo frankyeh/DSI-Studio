@@ -133,36 +133,20 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
             error_msg += each;
             return false;
         }
-        std::string json(each);
+        std::string json(each),phase_str;
         json.replace(json.size() - 7, 7, ".json");
         QFile input_file(json.c_str());
-        if (!input_file.open(QIODevice::ReadOnly | QIODevice::Text))
+        if (input_file.open(QIODevice::ReadOnly | QIODevice::Text))
         {
-            error_msg = "cannot find or open json file: ";
-            error_msg += json;
-            return false;
+            tipl::out () << "read jaon file : " << json;
+            QJsonDocument json_doc = QJsonDocument::fromJson(input_file.readAll());
+            if (json_doc.isObject())
+            {
+                QJsonObject json_obj = json_doc.object();
+                if (json_obj.contains("Phase Encoding Direction"))
+                    phase_str = json_obj["Phase Encoding Direction"].toString().toStdString();
+            }
         }
-        QByteArray file_content = input_file.readAll();
-        input_file.close();
-
-        QJsonDocument json_doc = QJsonDocument::fromJson(file_content);
-        if (json_doc.isNull() || !json_doc.isObject())
-        {
-            error_msg = "invalid JSON content";
-            error_msg += json;
-            return false;
-        }
-
-        QJsonObject json_obj = json_doc.object();
-        if (!json_obj.contains("Phase Encoding Direction"))
-        {
-            error_msg = "cannot find phase encoding information: ";
-            error_msg += json;
-            return false;
-        }
-        phase_dir.push_back(json_obj["Phase Encoding Direction"].toString().toStdString());
-
-
         tipl::io::gz_nifti nii;
         if(!nii.load_from_file(each))
         {
@@ -173,6 +157,7 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
         tipl::shape<3> s;
         nii.get_image_dimension(s);
         image_size.push_back(s);
+        phase_dir.push_back(phase_str);
 
         dwi_file.push_back(each);
         tipl::out() << std::filesystem::path(dwi_file.back()).filename().string();
