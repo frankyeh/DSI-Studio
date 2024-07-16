@@ -174,18 +174,24 @@ bool connectometry_db::parse_demo(void)
         size_t row_count = 0,last_item_size = 0;
         std::string line;
         bool is_csv = true;
+        bool is_tsv = true;
         std::istringstream in(saved_demo);
         while(std::getline(in,line))
         {
             if(row_count == 0)
+            {
                 is_csv = line.find(',') != std::string::npos;
-            if(is_csv)
+                if(!is_csv)
+                    is_tsv = line.find('\t') != std::string::npos;
+            }
+
+            if(is_csv || is_tsv)
             {
                 std::string col;
                 std::istringstream in2(line);
-                while(std::getline(in2,col,','))
+                while(std::getline(in2,col,is_csv ? ',' : '\t'))
                     items.push_back(col);
-                if(line.back() == ',')
+                if((line.back() == ',' && is_csv) || (line.back() == '\t' && is_csv))
                     items.push_back(std::string());
             }
             else
