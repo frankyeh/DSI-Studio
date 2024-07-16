@@ -46,11 +46,6 @@ bool get_bval_bvec(const std::string& bval_file,const std::string& bvec_file,siz
         error_msg = "bval and bvec does not match";
         return false;
     }
-    if(tipl::max_value(bvals) == 0.0)
-    {
-        error_msg = "only have b0 image(s)";
-        return false;
-    }
     bvals_out.swap(bvals);
     bvecs_out.swap(bvecs);
     return true;
@@ -143,8 +138,8 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
             if (json_doc.isObject())
             {
                 QJsonObject json_obj = json_doc.object();
-                if (json_obj.contains("Phase Encoding Direction"))
-                    phase_str = json_obj["Phase Encoding Direction"].toString().toStdString();
+                if (json_obj.contains("PhaseEncodingDirection"))
+                    phase_str = json_obj["PhaseEncodingDirection"].toString().toStdString();
             }
         }
         tipl::io::gz_nifti nii;
