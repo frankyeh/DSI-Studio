@@ -179,6 +179,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
         src_error_msg = "no DWI data for output";
         return false;
     }
+    tipl::progress prog("saving ",di_file);
     if(sort_btable)
         sort_dwi(dwi_files);
     auto temp_file = std::string(di_file) + ".tmp.gz";
@@ -190,7 +191,6 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
             src_error_msg += di_file;
             return false;
         }
-        tipl::progress prog("saving ",std::filesystem::path(di_file).filename().string().c_str());
         tipl::shape<3> geo = dwi_files.front()->image.shape();
 
         //store dimension
@@ -302,8 +302,18 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
     }
     if(std::filesystem::exists(di_file))
         std::filesystem::remove(di_file);
-    std::filesystem::rename(temp_file,di_file);
-    return true;
+    try{
+        std::filesystem::rename(temp_file,di_file);
+        return true;
+    }
+    catch(...)
+    {
+        std::filesystem::remove(temp_file);
+        src_error_msg = "cannot write to ";
+        src_error_msg += di_file;
+        return false;
+    }
+
 
     delete_file:
     std::filesystem::remove(temp_file);
