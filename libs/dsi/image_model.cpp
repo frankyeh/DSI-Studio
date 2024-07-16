@@ -85,7 +85,18 @@ void src_data::calculate_dwi_sum(bool update_mask)
             tipl::morphology::defragment(voxel.mask);
             tipl::morphology::negate(voxel.mask);
             tipl::morphology::defragment(voxel.mask);
-            tipl::morphology::negate(voxel.mask);
+            tipl::par_for(voxel.mask.depth(),[&](size_t z)
+            {
+                auto I = voxel.mask.slice_at(z);
+                std::vector<std::vector<size_t> > regions;
+                tipl::image<2,size_t> labels;
+                tipl::morphology::connected_component_labeling(I,labels,regions);
+                for(size_t i = 0;i < labels.size();++i)
+                    if(labels[i] != labels[0])
+                        I[i] = 1;
+                    else
+                        I[i] = 0;
+            },4);
         }
     }
 }
@@ -2308,7 +2319,6 @@ bool src_data::save_to_file(const char* dwi_file_name)
             mat_writer.write(out.str().c_str(),src_dwi_data[index],
                              uint32_t(voxel.dim.plane_size()),uint32_t(voxel.dim.depth()));
         }
-        mat_writer.write("mask",voxel.mask,uint32_t(voxel.dim.plane_size()));
         mat_writer.write("report",voxel.report);
         mat_writer.write("steps",voxel.steps);
         return true;
