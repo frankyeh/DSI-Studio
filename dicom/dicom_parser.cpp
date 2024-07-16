@@ -1120,7 +1120,7 @@ void dicom_parser::on_buttonBox_accepted()
                           ui->upsampling->currentIndex(),
                           ui->sort_btable->isChecked()))
     {
-        QMessageBox::critical(this,"Error",src_error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",src_error_msg.c_str());
         close();
     }
 

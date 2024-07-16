@@ -848,38 +848,7 @@ void MainWindow::on_auto_track_clicked()
 }
 
 
-/*
-void create_src(const std::vector<std::string>& nii1,
-             const std::vector<std::string>& nii2,
-             std::string src_name)
-{
-    std::vector<std::shared_ptr<DwiHeader> > dwi_files1,dwi_files2;
-    for(auto& nii_name : nii1)
-    {
-        if(!load_4d_nii(nii_name.c_str(),dwi_files1,true))
-        {
-            tipl::error() << src_error_msg << std::endl;
-            return;
-        }
-    }
-    for(auto& nii_name : nii2)
-    {
-        if(!load_4d_nii(nii_name.c_str(),dwi_files2,true))
-        {
-            tipl::error() << src_error_msg << std::endl;
-            return;
-        }
-    }
-    if(dwi_files2.size() > dwi_files1.size())
-        dwi_files1.swap(dwi_files2);
 
-    if(!DwiHeader::output_src((src_name+".src.gz").c_str(),dwi_files1,0,false))
-        tipl::error() << src_error_msg << std::endl;
-
-    if(!DwiHeader::output_src((src_name+".rsrc.gz").c_str(),dwi_files2,0,false))
-        tipl::error() << src_error_msg << std::endl;
-}
-*/
 bool get_pe_dir(const std::string& nii_name,size_t& pe_dir,bool& is_neg)
 {
     const char pe_coding[3][2][5] = { { "\"i\"","\"i-\"" },
@@ -907,75 +876,8 @@ bool get_pe_dir(const std::string& nii_name,size_t& pe_dir,bool& is_neg)
     }
     return false;
 }
-/*
-void nii2src(QStringList nifti_file_list,std::string output_dir,bool overwrite)
-{
-    if(nifti_file_list.empty())
-        return;
-    tipl::progress prog((std::string("creating SRC file from ")+std::filesystem::path(nifti_file_list[0].toStdString()).stem().string()+
-            (nifti_file_list.size() == 1 ? "" : " and others")).c_str());
-    std::string output_file_base_name = output_dir + "/" + std::filesystem::path(nifti_file_list[0].toStdString()).stem().string();
-    std::string output_file_src_gz = output_file_base_name + ".src.gz";
-
-    if(nifti_file_list.size() == 1)
-    {
-        create_src(nifti_file_list[0].toStdString(),output_file_src_gz);
-        return;
-    }
-    std::vector<std::string> nii1,nii2;
-    size_t pe_dir = 4;
-    tipl::out() << "multiple DWI files shared the same dimension. aggregating" << std::endl;
-    tipl::out() << "checking phase encoding directions" << std::endl;
-    for (QString nii_file_name : nifti_file_list)
-    {
-        std::string nii_name = nii_file_name.toStdString();
-        size_t cur_pe_dir;
-        bool is_neg;
-        if(!get_pe_dir(nii_name,cur_pe_dir,is_neg))
-        {
-            tipl::out() << "cannot parse phase encoding direction for " << nii_file_name.toStdString() << std::endl;
-            nii1.clear();
-            break;
-        }
-        if(pe_dir == 4)
-            pe_dir = cur_pe_dir;
-        else
-        {
-            if(pe_dir != cur_pe_dir)
-            {
-                tipl::out() << "[WARNING] inconsistent phase encoding directions found at " << nii_file_name.toStdString() << std::endl;
-                nii1.clear();
-                break;
-            }
-        }
-        tipl::out() << nii_file_name.toStdString() << " pe dir=" << cur_pe_dir << " neg=" << (is_neg ? "true":"false") << std::endl;
-        if(is_neg)
-            nii1.push_back(nii_name);
-        else
-            nii2.push_back(nii_name);
-    }
-
-    if(nii1.empty() || nii2.empty())
-    {
-        nii1.clear();
-        for(auto& file : nifti_file_list)
-        {
-            nii1.push_back(file.toStdString());
-            tipl::out() << nii1.back() << std::endl;
-        }
-
-        tipl::out() << "no reversed phase encoding direction dataset found. Create one SRC file.";
-        create_src(nii1,output_file_src_gz);
-    }
-    else
-    {
-        tipl::out() << "reversed phase encoding direction data found. Create SRC and RSRC files.";
-        create_src(nii1,nii2,output_file_base_name);
-    }
-}
-*/
-void search_dwi_nii_bids(const std::string& dir,std::vector<std::string>& dwi_nii_files);
-void create_src(std::string nii_name,std::string src_name);
+std::vector<std::string> search_dwi_nii_bids(const std::string& dir);
+bool create_src(std::string nii_name,std::string src_name);
 void search_dwi_nii(const std::string& dir,std::vector<std::string>& dwi_nii_files);
 void MainWindow::batch_create_src(const std::vector<std::string>& dwi_nii_files,const std::string& output_dir)
 {
@@ -1064,9 +966,7 @@ void MainWindow::on_nii2src_bids_clicked()
     if(output_dir.isEmpty())
         return;
     add_work_dir(dir);
-    std::vector<std::string> dwi_nii_files;
-    search_dwi_nii_bids(dir.toStdString(),dwi_nii_files);
-    batch_create_src(dwi_nii_files,output_dir.toStdString());
+    batch_create_src(search_dwi_nii_bids(dir.toStdString()),output_dir.toStdString());
 }
 void MainWindow::on_nii2src_sf_clicked()
 {
@@ -1199,10 +1099,11 @@ bool dcm2src_and_nii(QStringList files)
     }
 
     QString src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".src.gz").c_str(),true);
-    tipl::out() << "Create SRC file: " << std::filesystem::path(src_name.toStdString()).filename().string() << std::endl;
     if(!DwiHeader::output_src(src_name.toStdString().c_str(),dicom_files,0,false))
+    {
         tipl::error() << src_error_msg << std::endl;
-
+        return false;
+    }
     return true;
 }
 
