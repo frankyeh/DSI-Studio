@@ -420,6 +420,10 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
         tipl::image<3> data;
         data.swap(dwi_data[index]);
+        if(mask.size() == data.size())
+            for(size_t i = 0;i < mask.size();++i)
+                if(!mask[i])
+                    data[i] = 0;
         new_file->image = data;
         new_file->file_name = file_name;
         new_file->file_name += ":";
@@ -440,8 +444,6 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         }
         if(index == 0 && !grad_dev.empty())
             new_file->grad_dev.swap(grad_dev);
-        if(index == 0 && !mask.empty())
-            new_file->mask.swap(mask);
         dwi_files.push_back(new_file);
     }
     return true;
