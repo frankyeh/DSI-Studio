@@ -522,10 +522,10 @@ void RegToolBox::on_run_reg_clicked()
         reg.param.speed = float(ui->speed->value());
         reg.bound = ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound;
         reg.use_cuda = ui->use_cuda->isChecked();
-        if(ui->cost_fun->currentIndex() == 2)
-            reg.skip_linear();
-        else
-            reg.linear_reg(tipl::reg::affine,ui->cost_fun->currentIndex() == 0 ? tipl::reg::mutual_info : tipl::reg::corr,thread.terminated);
+        reg.linear_reg(tipl::reg::affine,
+                       ui->cost_fun->currentIndex() == 0 ? tipl::reg::mutual_info : tipl::reg::corr,
+                       thread.terminated,
+                       ui->cost_fun->currentIndex() == 2);
         reg.nonlinear_reg(thread.terminated);
     };
     if(reg_2d.data_ready())
