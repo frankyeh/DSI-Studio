@@ -268,8 +268,8 @@ public:
     bool add_other_image(const std::string& name,const std::string& filename);
 public:
     std::shared_ptr<src_data> rev_pe_src;
-    tipl::shape<3> topup_from,topup_to;
-    void get_volume_range(size_t dim = 0,int extra_space = 0);
+    tipl::shape<3> topup_size;
+    void setup_topup_eddy_volume(void);
     bool distortion_correction(const char* file_name);
     std::string find_topup_reverse_pe(void);
     bool run_topup_eddy(const std::string& other_src,bool topup_only = false);

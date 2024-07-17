@@ -1636,31 +1636,15 @@ bool src_data::run_plugin(std::string exec_name,
     return true;
 }
 
-void src_data::get_volume_range(size_t dim,int extra_space)
+void src_data::setup_topup_eddy_volume(void)
 {
-    tipl::out() << "get the bounding box for speeding up topup/eddy" << std::endl;
-    auto temp_mask = voxel.mask;
-    if(rev_pe_src.get())
-        temp_mask += rev_pe_src->voxel.mask;
-    tipl::morphology::dilation2(temp_mask,std::max<int>(voxel.dim[0]/20,2));
-    tipl::bounding_box(temp_mask,topup_from,topup_to);
-
-    if(extra_space)
-    {
-        topup_from[dim] = uint32_t(std::max<int>(0,int(topup_from[dim])-extra_space));
-        topup_to[dim] = uint32_t(std::min<int>(int(temp_mask.shape()[dim]),int(topup_to[dim])+extra_space));
-    }
-
+    topup_size = voxel.mask.shape();
     // ensure even number in the dimension for topup
     for(int d = 0;d < 3;++d)
-        if((topup_to[d]-topup_from[d]) % 2 != 0)
-            topup_to[d]--;
-
+        if(topup_size[d] & 1)
+            topup_size[d]++;
     if(rev_pe_src.get())
-    {
-        rev_pe_src->topup_from = topup_from;
-        rev_pe_src->topup_to = topup_to;
-    }
+        rev_pe_src->topup_size = topup_size;
 }
 
 bool src_data::generate_topup_b0_acq_files(tipl::image<3>& b0,
@@ -1736,15 +1720,9 @@ bool src_data::generate_topup_b0_acq_files(tipl::image<3>& b0,
 
     {
         // allow for more space in the PE direction
-        if(!rev_pe_src.get())
-        {
-            size_t dim = is_appa ? 1:0;
-            get_volume_range(dim,int(topup_to[dim]-topup_from[dim])/5);
-        }
-        else
-            get_volume_range();
-        tipl::crop(b0,topup_from,topup_to);
-        tipl::crop(rev_b0,topup_from,topup_to);
+        setup_topup_eddy_volume();
+        tipl::reshape(b0,topup_size);
+        tipl::reshape(rev_b0,topup_size);
     }
 
     {
@@ -1819,11 +1797,10 @@ bool src_data::load_topup_eddy_result(void)
     src_bvectors.resize(dwi_files.size());
     for(size_t index = 0;index < dwi_files.size();++index)
     {
+        tipl::reshape(dwi_files[index]->image,voxel.dim);
         nifti_dwi[index].swap(dwi_files[index]->image);
         src_dwi_data[index] = &nifti_dwi[index][0];
     }
-    voxel.vs = dwi_files[0]->voxel_size;
-    voxel.dim = nifti_dwi[0].shape();
     if(has_topup)
         voxel.report += " The susceptibility artifact was estimated using reversed phase-encoding b0 by TOPUP from the Tiny FSL package (http://github.com/frankyeh/TinyFSL), a re-compiled version of FSL TOPUP (FMRIB, Oxford) with multi-thread support.";
     if(is_eddy)
@@ -1981,7 +1958,7 @@ bool src_data::run_eddy(std::string exec)
     if(!has_topup)
     {
         tipl::out() << "eddy without topup" << std::endl;
-        get_volume_range();
+        setup_topup_eddy_volume();
         std::ofstream out(acqparam_file);
         out << "0 -1 0 0.05" << std::endl;
     }
@@ -1989,8 +1966,8 @@ bool src_data::run_eddy(std::string exec)
         return false;
 
     {
-        tipl::image<3,unsigned char> I;
-        tipl::crop(voxel.mask,I,topup_from,topup_to);
+        tipl::image<3,unsigned char> I(topup_size);
+        tipl::reshape(voxel.mask,I);
         tipl::matrix<4,4> trans;
         initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
         if(!tipl::io::gz_nifti::save_to_file(mask_nifti.c_str(),I,voxel.vs,trans))
@@ -2659,9 +2636,8 @@ bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
 {
     tipl::progress prog("saving results");
     tipl::out() << "trim " << std::filesystem::path(file_name).filename() << " for " << (include_rev ? "eddy":"applytopup") << std::endl;
-    tipl::out() << "range: " << topup_from << " to " << topup_to << std::endl;
-    tipl::image<4> buffer(tipl::shape<4>(topup_to[0]-topup_from[0],topup_to[1]-topup_from[1],topup_to[2]-topup_from[2],
-                                         uint32_t(src_bvalues.size()) + uint32_t(rev_pe_src.get() && include_rev ? rev_pe_src->src_bvalues.size():0)));
+    tipl::image<4> buffer(topup_size.expand(src_bvalues.size() +
+                          uint32_t(rev_pe_src.get() && include_rev ? rev_pe_src->src_bvalues.size():0)));
     if(buffer.empty())
     {
         error_msg = "cannot create trimmed volume for applytopup or eddy";
@@ -2671,7 +2647,8 @@ bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
     tipl::par_for(src_bvalues.size(),[&](unsigned int index)
     {
         prog(p++,src_bvalues.size());
-        tipl::crop(dwi_at(index),buffer.slice_at(index),topup_from,topup_to);
+        auto out = buffer.slice_at(index);
+        tipl::reshape(dwi_at(index),out);
     });
 
     p = 0;
@@ -2679,7 +2656,8 @@ bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
         tipl::par_for(rev_pe_src->src_bvalues.size(),[&](unsigned int index)
         {
             prog(p++,rev_pe_src->src_bvalues.size());
-            tipl::crop(rev_pe_src->dwi_at(index),buffer.slice_at(index+uint32_t(src_bvalues.size())),topup_from,topup_to);
+            auto out = buffer.slice_at(index+uint32_t(src_bvalues.size()));
+            tipl::reshape(rev_pe_src->dwi_at(index),out);
         });
 
     std::string temp_nifti = file_name+".nii.gz";
