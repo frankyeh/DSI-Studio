@@ -78,25 +78,18 @@ void src_data::calculate_dwi_sum(bool update_mask)
     {
         tipl::out() << "generating mask";
         tipl::threshold(dwi,voxel.mask,50,1,0);
-        if(dwi.depth() < 200)
+        if(dwi.depth() < 300)
         {
             tipl::morphology::defragment(voxel.mask);
-            tipl::morphology::recursive_smoothing(voxel.mask,10);
+            for(size_t i = 0;i < 6;++i)
+                tipl::morphology::fit(voxel.mask,dwi);
             tipl::morphology::defragment(voxel.mask);
-            tipl::morphology::negate(voxel.mask);
+            tipl::morphology::smoothing(voxel.mask);
+            tipl::morphology::defragment_slice(voxel.mask);
+            for(size_t i = 0;i < 6;++i)
+                tipl::morphology::fit(voxel.mask,dwi);
             tipl::morphology::defragment(voxel.mask);
-            tipl::par_for(voxel.mask.depth(),[&](size_t z)
-            {
-                auto I = voxel.mask.slice_at(z);
-                std::vector<std::vector<size_t> > regions;
-                tipl::image<2,size_t> labels;
-                tipl::morphology::connected_component_labeling(I,labels,regions);
-                for(size_t i = 0;i < labels.size();++i)
-                    if(labels[i] != labels[0])
-                        I[i] = 1;
-                    else
-                        I[i] = 0;
-            },4);
+
         }
     }
 }
@@ -613,6 +606,12 @@ bool src_data::command(std::string cmd,std::string param)
         voxel.steps += cmd+"\n";
         return true;
     }
+    if(cmd == "[Step T2a][Slice Defragment]")
+    {
+        tipl::morphology::defragment_slice(voxel.mask);
+        voxel.steps += cmd+"\n";
+        return true;
+    }
     if(cmd == "[Step T2a][Smoothing]")
     {
         if(voxel.mask.depth() == 1)
@@ -622,6 +621,12 @@ bool src_data::command(std::string cmd,std::string param)
         }
         else
             tipl::morphology::smoothing(voxel.mask);
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2a][Fit]")
+    {
+        tipl::morphology::fit(voxel.mask,dwi);
         voxel.steps += cmd+"\n";
         return true;
     }
@@ -2542,16 +2547,6 @@ bool src_data::load_from_file(const char* dwi_file_name)
                 return false;
             }
         }
-
-        const unsigned char* mask_ptr = nullptr;
-        if(mat_reader.read("mask",row,col,mask_ptr))
-        {
-            tipl::out() << "loading built-in mask";
-            voxel.mask.resize(voxel.dim);
-            if(size_t(row)*size_t(col) == voxel.dim.size())
-                std::copy(mask_ptr,mask_ptr+size_t(row)*size_t(col),voxel.mask.begin());
-        }
-
         {
             const float* grad_dev_ptr = nullptr;
             std::vector<tipl::pointer_image<3,float> > grad_dev;
@@ -2665,7 +2660,7 @@ bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
     tipl::progress prog("saving results");
     tipl::out() << "trim " << std::filesystem::path(file_name).filename() << " for " << (include_rev ? "eddy":"applytopup") << std::endl;
     tipl::out() << "range: " << topup_from << " to " << topup_to << std::endl;
-    tipl::image<4,unsigned short> buffer(tipl::shape<4>(topup_to[0]-topup_from[0],topup_to[1]-topup_from[1],topup_to[2]-topup_from[2],
+    tipl::image<4> buffer(tipl::shape<4>(topup_to[0]-topup_from[0],topup_to[1]-topup_from[1],topup_to[2]-topup_from[2],
                                          uint32_t(src_bvalues.size()) + uint32_t(rev_pe_src.get() && include_rev ? rev_pe_src->src_bvalues.size():0)));
     if(buffer.empty())
     {
