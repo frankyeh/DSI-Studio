@@ -79,11 +79,10 @@ public:
                 tipl::out() << "manual alignment:" << (reg.arg = voxel.qsdr_arg);
             else
             {
-                voxel.R2 = reg.linear_reg(tipl::reg::affine,tipl::reg::mutual_info);
                 if(tipl::prog_aborted)
                     throw std::runtime_error("reconstruction canceled");
-                if(voxel.R2 < 0.4f)
-                    throw std::runtime_error("poor R2 found in linear registration. Please check image orientation or use manual alignment.");
+                if((voxel.R2 = reg.linear_reg(tipl::reg::affine,tipl::reg::mutual_info)) < 0.4f)
+                    tipl::warning() << "poor registration found in linear registration. Please check image quality or orientation. consider using manual alignment.";
             }
 
             {
@@ -107,7 +106,7 @@ public:
             voxel.R2 = voxel.R2*voxel.R2;
             tipl::out() << "nonlinear R2: " << voxel.R2 << std::endl;
             if(voxel.R2 < 0.3f)
-                tipl::warning() << "poor R2 found. Please check image quality or image orientation";
+                tipl::warning() << "poor registration found in nonlinear registration. Please check image quality or image orientation";
         }
 
 
