@@ -32,10 +32,12 @@ inline void cdm_common(std::vector<tipl::const_pointer_image<dim,unsigned char> 
     {
         if constexpr (tipl::use_cuda)
         {
+            tipl::out() << "nonlinear registration using gpu";
             cdm_cuda(It,Is,dis,terminated,param);
             return;
         }
     }
+    tipl::out() << "nonlinear registration using cpu";
     tipl::reg::cdm(It,Is,dis,terminated,param);
 }
 
