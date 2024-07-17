@@ -980,13 +980,9 @@ void reconstruction_window::on_actionManual_Align_triggered()
     handle->voxel.manual_alignment = true;
 }
 
-void reconstruction_window::on_mask_from_unet_clicked()
-{
-    handle->voxel.template_id = ui->primary_template->currentIndex();
-    if(!handle->mask_from_unet())
-        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-    raise();
-}
+
+
+
+
 
 
