@@ -56,7 +56,10 @@ private slots:
     void on_actionSave_4D_nifti_triggered()     {command("[Step T2][File][Save 4D NIFTI]");}
 
     void on_smoothing_clicked(){command("[Step T2a][Smoothing]");}
+
+    void on_fit_clicked(){command("[Step T2a][Fit]");}
     void on_defragment_clicked(){command("[Step T2a][Defragment]");}
+    void on_slice_defragment_clicked(){command("[Step T2a][Slice Defragment]");}
     void on_dilation_clicked(){command("[Step T2a][Dilation]");}
     void on_erosion_clicked(){command("[Step T2a][Erosion]");}
     void on_negate_clicked(){command("[Step T2a][Negate]");}
@@ -116,7 +119,6 @@ private slots:
     void on_align_slices_clicked();
     void on_edit_mask_clicked();
     void on_actionOverwrite_Voxel_Size_triggered();
-    void on_mask_from_unet_clicked();
     void on_actionManual_Align_triggered();
     void on_actionAttach_Images_triggered();
     void on_actionPartial_FOV_triggered();
