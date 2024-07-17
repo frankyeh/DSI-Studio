@@ -14,7 +14,6 @@ public:
     tipl::image<3,unsigned short> image;
 public:// for HCP dataset
     tipl::image<4> grad_dev;
-    tipl::image<3,unsigned char> mask;
 public:
     tipl::vector<3,float> bvec;
     float bvalue,te;
