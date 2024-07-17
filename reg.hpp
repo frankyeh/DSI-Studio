@@ -48,21 +48,20 @@ tipl::vector<dim> adjust_to_vs(const image_type& from,
                const image_type& to,
                const tipl::vector<dim>& to_vs)
 {
-    auto from_otsu = tipl::segmentation::otsu_threshold(from)*0.6f;
-    auto to_otsu = tipl::segmentation::otsu_threshold(to)*0.6f;
     tipl::vector<dim> from_min,from_max,to_min,to_max;
-    tipl::bounding_box(from,from_min,from_max,from_otsu);
-    tipl::bounding_box(to,to_min,to_max,to_otsu);
+    tipl::bounding_box(from,from_min,from_max,0);
+    tipl::bounding_box(to,to_min,to_max,0);
     from_max -= from_min;
     to_max -= to_min;
     tipl::vector<dim> new_vs(to_vs);
-    float rx = (to_max[0] > 0.0f) ? from_max[0]*from_vs[0]/(to_max[0]*to_vs[0]) : 1.0f;
-    float ry = (to_max[1] > 0.0f) ? from_max[1]*from_vs[1]/(to_max[1]*to_vs[1]) : 1.0f;
-
-    new_vs[0] *= rx;
-    new_vs[1] *= ry;
-    if constexpr(dim == 3)
-        new_vs[2] *= (rx+ry)*0.5f; // z direction bounding box is largely affected by slice number, thus use rx and ry
+    float r = (to_max[0] > 0.0f) ? from_max[0]*from_vs[0]/(to_max[0]*to_vs[0]) : 1.0f;
+    tipl::out() << "fov ratio: " << r;
+    if(r > 1.5f || r < 1.0f/1.5f)
+    {
+        new_vs *= r;
+        tipl::out() << "large differences in fov found. adjust voxel size to perform linear registration";
+        tipl::out() << "old vs: " << to_vs << " new vs:" << new_vs;
+    }
     return new_vs;
 }
 
@@ -119,10 +118,11 @@ size_t linear(std::vector<tipl::const_pointer_image<dim,unsigned char> > from,
                               tipl::affine_transform<float,dim>& arg,
                               tipl::reg::reg_type reg_type,
                               bool& terminated = tipl::prog_aborted,
-                              const float* bound = tipl::reg::reg_bound,
+                              const float bound[3][8] = tipl::reg::reg_bound,
                               tipl::reg::cost_type cost_type = tipl::reg::mutual_info,
                               bool use_cuda = true)
 {
+    tipl::out() << "initial registration" << std::endl;
     auto new_to_vs = to_vs;
     if constexpr(dim == 3)
     {
@@ -132,7 +132,7 @@ size_t linear(std::vector<tipl::const_pointer_image<dim,unsigned char> > from,
             tipl::transformation_matrix<float,dim>(arg,from[0],from_vs,to[0],to_vs).
                     to_affine_transform(arg,from[0],from_vs,to[0],new_to_vs);
     }
-    float result = 0.0f;
+    float result = std::numeric_limits<float>::max();
 
     auto reg = tipl::reg::linear_reg<tipl::progress>(from,from_vs,to,new_to_vs,arg);
     reg->set_bound(reg_type,bound);
@@ -140,12 +140,29 @@ size_t linear(std::vector<tipl::const_pointer_image<dim,unsigned char> > from,
     if constexpr (tipl::use_cuda && dim == 3)
     {
         if(has_cuda && use_cuda && cost_type == tipl::reg::mutual_info)
-            result = optimize_mi_cuda_mr(reg,cost_type,terminated);
+        {
+            do{
+                auto cost = optimize_mi_cuda_mr(reg,cost_type,terminated);
+                tipl::out() << arg << std::endl;
+                tipl::out() << "cost: " << cost;
+                if(cost >= result)
+                    break;
+                result = cost;
+            }while(1);
+        }
     }
-    if(result == 0.0f)
+    if(result == std::numeric_limits<float>::max())
     {
-        result = (cost_type == tipl::reg::mutual_info ? reg->template optimize_mr<tipl::reg::mutual_information<dim> >(terminated):
+        do{
+            auto cost = (cost_type == tipl::reg::mutual_info ? reg->template optimize_mr<tipl::reg::mutual_information<dim> >(terminated):
                                                         reg->template optimize_mr<tipl::reg::correlation>(terminated));
+
+            tipl::out() << arg << std::endl;
+            tipl::out() << "cost: " << cost;
+            if(cost >= result)
+                break;
+            result = cost;
+        }while(1);
     }
 
     if constexpr(dim == 3)
@@ -153,8 +170,6 @@ size_t linear(std::vector<tipl::const_pointer_image<dim,unsigned char> > from,
         if(new_to_vs != to_vs)
             tipl::transformation_matrix<float,dim>(arg,from[0],from_vs,to[0],new_to_vs).to_affine_transform(arg,from[0],from_vs,to[0],to_vs);
     }
-    tipl::out() << "initial registration" << std::endl;
-    tipl::out() << arg << std::endl;
     return linear_refine(from,from_vs,to,to_vs,arg,reg_type,terminated,cost_type,use_cuda);
 }
 template<int dim>
@@ -164,7 +179,7 @@ tipl::transformation_matrix<float> linear(std::vector<tipl::const_pointer_image<
                                           tipl::vector<dim> to_vs,
                                           tipl::reg::reg_type reg_type,
                                           bool& terminated = tipl::prog_aborted,
-                                          const float* bound = tipl::reg::reg_bound,
+                                          const float bound[3][8] = tipl::reg::reg_bound,
                                           tipl::reg::cost_type cost_type = tipl::reg::mutual_info,
                                           bool use_cuda = true)
 {
@@ -206,7 +221,7 @@ struct dual_reg{
     static constexpr int max_modality = 5;
     using image_type = tipl::image<dimension,unsigned char>;
     tipl::affine_transform<float,dimension> arg;
-    const float* bound = tipl::reg::reg_bound;
+    const float (*bound)[8] = tipl::reg::reg_bound;
     tipl::reg::cdm_param param;
 public:
     dual_reg(void):I(max_modality),J(max_modality),It(max_modality),r(max_modality)
@@ -224,12 +239,16 @@ public:
     mutable std::string error_msg;
     void clear(void)
     {
-        J.clear();
-        J.resize(max_modality);
         I.clear();
         I.resize(max_modality);
         It.clear();
         It.resize(max_modality);
+        clear_reg();
+    }
+    void clear_reg(void)
+    {
+        J.clear();
+        J.resize(max_modality);
         r.clear();
         r.resize(max_modality);
         t2f_dis.clear();
@@ -268,6 +287,7 @@ public:
             I[id] = Ic;
             tipl::segmentation::otsu_median_regulzried(I[id]);
             Ivs = {1.0f,1.0f};
+            clear_reg();
             return true;
         }
         else
@@ -303,6 +323,7 @@ public:
                     return false;
                 }
             }
+            clear_reg();
             return true;
         }
     }
@@ -321,6 +342,7 @@ public:
             It[id] = Ic;
             tipl::normalize(It[id]);
             Itvs = {1.0f,1.0f};
+            clear_reg();
             return true;
         }
         else
@@ -359,6 +381,7 @@ public:
                     It2_.swap(It[id]);
                 }
             }
+            clear_reg();
             return true;
         }
     }
@@ -369,24 +392,6 @@ public:
     bool data_ready(void) const
     {
         return !I[0].empty() && !It[0].empty();
-    }
-    void skip_linear(void)
-    {
-        J.clear();
-        J.resize(max_modality);
-        for(size_t i = 0;i < J.size();++i)
-        {
-            if(I[i].empty() || It[i].empty())
-                break;
-            if(I[i].shape() == It[i].shape())
-                J[i] = I[i];
-            else
-            {
-                J[i].resize(It[i].shape());
-                tipl::draw(I[i],J[i],tipl::vector<dimension,int>());
-            }
-        }
-        arg.clear();
     }
     void match_resolution(bool rigid_body)
     {
@@ -440,15 +445,15 @@ public:
         return ptr;
     }
     float linear_reg(tipl::reg::reg_type reg_type,
-                     tipl::reg::cost_type cost_type,bool& terminated)
+                     tipl::reg::cost_type cost_type,bool& terminated,bool skip_linear = false)
     {
         if(!data_ready())
             return 0.0f;
         tipl::progress prog("linear registration");
 
-        linear(make_list(It),Itvs,make_list(I),Ivs,
-               arg,reg_type,terminated,bound,cost_type,use_cuda);
-
+        if(!skip_linear)
+            linear(make_list(It),Itvs,make_list(I),Ivs,
+                   arg,reg_type,terminated,bound,cost_type,use_cuda);
         auto trans = T();
 
         J.clear();
