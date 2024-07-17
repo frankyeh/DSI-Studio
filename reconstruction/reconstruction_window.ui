@@ -420,7 +420,7 @@
                <property name="spacing">
                 <number>0</number>
                </property>
-               <item row="0" column="1">
+               <item row="0" column="0">
                 <widget class="QWidget" name="mask_edit" native="true">
                  <property name="minimumSize">
                   <size>
@@ -495,9 +495,23 @@
                    </widget>
                   </item>
                   <item>
+                   <widget class="QPushButton" name="fit">
+                    <property name="text">
+                     <string>Fit</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
                    <widget class="QPushButton" name="defragment">
                     <property name="text">
                      <string>Defragment</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="slice_defragment">
+                    <property name="text">
+                     <string>Slice Defrag</string>
                     </property>
                    </widget>
                   </item>
@@ -511,14 +525,14 @@
                  </layout>
                 </widget>
                </item>
-               <item row="0" column="11">
+               <item row="0" column="10">
                 <widget class="QPushButton" name="edit_mask">
                  <property name="text">
                   <string>Edit&gt;&gt;</string>
                  </property>
                 </widget>
                </item>
-               <item row="0" column="9">
+               <item row="0" column="8">
                 <spacer name="horizontalSpacer_2">
                  <property name="orientation">
                   <enum>Qt::Horizontal</enum>
@@ -530,13 +544,6 @@
                   </size>
                  </property>
                 </spacer>
-               </item>
-               <item row="0" column="0">
-                <widget class="QPushButton" name="mask_from_unet">
-                 <property name="text">
-                  <string>U-Net Mask...</string>
-                 </property>
-                </widget>
                </item>
               </layout>
              </item>
