@@ -125,6 +125,8 @@ jobs:
         curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2004.zip" | jar x
         curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
         chmod 777 ./dsi-studio/dsi_studio
+        git clone https://github.com/frankyeh/DSI-Studio-atlas.git
+        mv DSI-Studio-atlas atlas
     - name: Export
       run: |
         ./dsi-studio/dsi_studio --source=100206.fib.gz --action=exp --export=qa,iso 
@@ -132,13 +134,10 @@ jobs:
         ls 100206.fib.gz.iso.nii.gz
     - name: Registration
       run: |
-        curl -sL https://zenodo.org/record/6324701/files/HCP1065_qa.nii.gz?download=1 -o HCP1065_qa.nii.gz
-        curl -sL https://zenodo.org/record/6324701/files/HCP1065_iso.nii.gz?download=1 -o HCP1065_iso.nii.gz
-        ./dsi-studio/dsi_studio --action=reg --from=100206.fib.gz.qa.nii.gz --to=HCP1065_qa.nii.gz --apply_warp=100206.fib.gz.qa.nii.gz
+        ./dsi-studio/dsi_studio --action=reg --from=100206.fib.gz.qa.nii.gz --to=./atlas/ICBM152_adult/ICBM152_adult.QA.nii.gz --apply_warp=100206.fib.gz.qa.nii.gz
         ls 100206.fib.gz.qa.nii.gz.wp.nii.gz
-        ./dsi-studio/dsi_studio --action=reg --from=100206.fib.gz.qa.nii.gz --to=HCP1065_qa.nii.gz --from2=100206.fib.gz.iso.nii.gz --to2=HCP1065_iso.nii.gz --apply_warp=100206.fib.gz.qa.nii.gz
+        ./dsi-studio/dsi_studio --action=reg --from=100206.fib.gz.qa.nii.gz --to=./atlas/ICBM152_adult/ICBM152_adult.QA.nii.gz --from2=100206.fib.gz.iso.nii.gz --to2=./atlas/ICBM152_adult/ICBM152_adult.ISO.nii.gz --apply_warp=100206.fib.gz.qa.nii.gz
         ls 100206.fib.gz.qa.nii.gz.wp.nii.gz
-
 
   test_connectometry:
     runs-on: ubuntu-20.04
