@@ -509,7 +509,10 @@ void RegToolBox::on_run_reg_clicked()
         return;
     }
 
-
+    reg.match_resolution(false);
+    setup_slice_pos(true);
+    setup_slice_pos(false);
+    show_image();
 
     auto run_reg = [this](auto& reg)
     {
@@ -535,6 +538,7 @@ void RegToolBox::on_run_reg_clicked()
     timer->start();
     ui->stop->show();
     ui->run_reg->hide();
+
 }
 bool load_nifti_file(std::string file_name_cmd,
                      tipl::image<3>& data,
