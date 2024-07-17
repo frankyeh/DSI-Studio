@@ -98,7 +98,7 @@ public:
         // nonlinear registration
         {
             reg.nonlinear_reg(tipl::prog_aborted);
-            voxel.R2 = reg.r[0];
+            voxel.R2 = reg.r[1];
             if(tipl::prog_aborted)
                 throw std::runtime_error("reconstruction canceled");
 
@@ -107,7 +107,7 @@ public:
             voxel.R2 = voxel.R2*voxel.R2;
             tipl::out() << "nonlinear R2: " << voxel.R2 << std::endl;
             if(voxel.R2 < 0.3f)
-                throw std::runtime_error("poor R2 found. Please check image orientation or use manual alignment.");
+                tipl::warning() << "poor R2 found. Please check image quality or image orientation";
         }
 
 
