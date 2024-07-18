@@ -42,7 +42,7 @@ int rec(tipl::program_option<tipl::out>& po)
         src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
 
         if(src.voxel.method_id == 7) // is qsdr
-            src.voxel.qsdr_reso = po.get("qsdr_reso",src.voxel.vs[2]);
+            src.voxel.qsdr_reso = po.get("qsdr_reso",src.is_human_data() ? 2.0f : src.voxel.vs[2]);
 
     }
 
@@ -156,11 +156,12 @@ int rec(tipl::program_option<tipl::out>& po)
             }
         }
 
-        if(po.get("ensure_isotropic",
-                  src.voxel.method_id != 7 &&
-                  src.voxel.vs[2] > src.voxel.vs[0]*1.1f &&
-                  src.is_human_data() ? 1:0))
-            src.resample(2.0f);
+        if(po.has("make_isotropic") ||
+           (src.voxel.method_id != 7 &&
+            src.voxel.vs[2] > src.voxel.vs[0]*1.1f &&
+            src.is_human_data()))
+            src.resample(po.get("make_isotropic",src.is_human_data() ? 2.0f : src.voxel.vs[2]));
+
         if(po.get("align_acpc",0))
             src.align_acpc(po.get("align_acpc",src.voxel.vs[0]));
         else
