@@ -685,12 +685,21 @@
           </widget>
          </item>
          <item>
+          <widget class="QCheckBox" name="skip_linear">
+           <property name="text">
+            <string>Skip Linear</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="skip_nonlinear">
+           <property name="text">
+            <string>Skip Nonlinear</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QComboBox" name="cost_fun">
-           <item>
-            <property name="text">
-             <string>Mutual Information</string>
-            </property>
-           </item>
            <item>
             <property name="text">
              <string>Correlation</string>
@@ -698,7 +707,7 @@
            </item>
            <item>
             <property name="text">
-             <string>No Linear Registration</string>
+             <string>Mutual Information</string>
             </property>
            </item>
           </widget>
