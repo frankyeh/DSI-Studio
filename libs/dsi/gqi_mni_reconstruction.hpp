@@ -62,11 +62,7 @@ public:
             reg.load_subject(2,tipl::image<3>(voxel.other_modality_subject));
             reg.Ivs = voxel.vs = voxel.other_modality_vs;
             for(size_t i = 0;i < 2;++i)
-            {
-                tipl::image<3,unsigned char> to_t1w(voxel.other_modality_subject.shape());
-                tipl::resample(reg.I[i],to_t1w,voxel.other_modality_trans);
-                to_t1w.swap(reg.I[i]);
-            }
+                reg.I[i] = tipl::resample(reg.I[i],voxel.other_modality_subject.shape(),voxel.other_modality_trans);
             t1w_reg = true;
         }
 
