@@ -9,7 +9,7 @@ float optimize_mi_cuda(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned ch
     distribute_gpu();
     return cost_type == tipl::reg::mutual_info ?
                 reg->optimize<tipl::reg::mutual_information<3,tipl::device_vector> >(terminated) :
-                reg->optimize<tipl::reg::correlation>(terminated);
+                reg->optimize<tipl::reg::correlation_cuda<3,tipl::device_vector> >(terminated);
 }
 
 float optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned char,tipl::progress> > reg,
@@ -19,7 +19,7 @@ float optimize_mi_cuda_mr(std::shared_ptr<tipl::reg::linear_reg_param<3,unsigned
     distribute_gpu();
     return cost_type == tipl::reg::mutual_info ?
                 reg->optimize_mr<tipl::reg::mutual_information<3,tipl::device_vector> >(terminated) :
-                reg->optimize_mr<tipl::reg::correlation>(terminated);
+                reg->optimize_mr<tipl::reg::correlation_cuda<3,tipl::device_vector> >(terminated);
 }
 
 
