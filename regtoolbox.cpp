@@ -165,7 +165,7 @@ void RegToolBox::on_OpenTemplate2_clicked()
         return;
     load_template2(filename.toStdString());
 }
-extern std::vector<std::string> fa_template_list;
+extern std::vector<std::string> fa_template_list,iso_template_list;
 void RegToolBox::on_OpenSubject_clicked()
 {
     QString filename = QFileDialog::getOpenFileName(
@@ -210,7 +210,11 @@ void RegToolBox::on_OpenSubject_clicked()
             load_subject2(QString(filename).replace("qa","iso").toStdString());
 
     if(filename.contains("qa") && reg.It[0].empty())
+    {
         load_template(fa_template_list[0]);
+        if(reg.It[1].empty())
+            load_template2(iso_template_list[0]);
+    }
 }
 void RegToolBox::load_subject2(const std::string& file_name)
 {
