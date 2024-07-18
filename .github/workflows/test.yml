@@ -1,6 +1,7 @@
 name: Test DSI Studio
 on:
   workflow_dispatch:
+  workflow_call:
 jobs:    
   test_animal_recon:
     runs-on: ubuntu-20.04
