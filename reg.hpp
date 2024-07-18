@@ -91,7 +91,6 @@ inline size_t linear_refine(std::vector<tipl::const_pointer_image<dim,unsigned c
     if(!result)
         result = (cost_type == tipl::reg::mutual_info ? reg->template optimize<tipl::reg::mutual_information<dim> >(terminated):
                                                         reg->template optimize<tipl::reg::correlation>(terminated));
-    tipl::out() << "refine registration" << std::endl;
     tipl::out() << arg;
     return result;
 }
@@ -122,7 +121,11 @@ size_t linear(std::vector<tipl::const_pointer_image<dim,unsigned char> > from,
                               tipl::reg::cost_type cost_type = tipl::reg::mutual_info,
                               bool use_cuda = true)
 {
-    tipl::out() << "initial registration" << std::endl;
+    tipl::out() << (reg_type == tipl::reg::affine? "affine" : "rigid body")
+                << " registration using "
+                << (cost_type == tipl::reg::mutual_info? "mutual info" : "correlation")
+                << " on "
+                << (has_cuda && use_cuda ? "gpu":"cpu");
     auto new_to_vs = to_vs;
     if constexpr(dim == 3)
     {
