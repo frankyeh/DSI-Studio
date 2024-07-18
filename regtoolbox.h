@@ -39,6 +39,7 @@ private:
     std::string template2_name,subject2_name;
     void load_subject2(const std::string& file_name);
     void load_template2(const std::string& file_name);
+    void load_template(const std::string& file_name);
 public:
     explicit RegToolBox(QWidget *parent = nullptr);
     ~RegToolBox();

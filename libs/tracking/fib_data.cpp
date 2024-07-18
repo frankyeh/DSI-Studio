@@ -1736,7 +1736,7 @@ bool fib_data::map_to_mni(bool background)
         if(has_manual_atlas)
             reg.arg = manual_template_T;
         else
-            reg.linear_reg(tipl::reg::affine,tipl::reg::mutual_info);
+            reg.linear_reg();
 
         if(dir.index_name[0] == "image")
         {

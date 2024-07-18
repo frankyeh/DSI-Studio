@@ -81,7 +81,7 @@ public:
             {
                 if(tipl::prog_aborted)
                     throw std::runtime_error("reconstruction canceled");
-                if((voxel.R2 = reg.linear_reg(tipl::reg::affine,tipl::reg::mutual_info)) < 0.4f)
+                if((voxel.R2 = reg.linear_reg()) < 0.4f)
                     tipl::warning() << "poor registration found in linear registration. Please check image quality or orientation. consider using manual alignment.";
             }
 

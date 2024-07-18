@@ -106,8 +106,13 @@ void RegToolBox::on_OpenTemplate_clicked()
             "Images (*.nii *nii.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
-    clear();
 
+    load_template(filename.toStdString());
+}
+void RegToolBox::load_template(const std::string& file_name)
+{
+    QString filename = file_name.c_str();
+    clear();
     if(filename.endsWith("nii.gz") || filename.endsWith("nii"))
     {
         if(!reg.load_template(0,filename.toStdString().c_str()))
@@ -136,15 +141,10 @@ void RegToolBox::on_OpenTemplate_clicked()
 
 
     std::string new_file_name;
-    if(!reg.I[1].empty() && tipl::match_files(ui->subject_filename->toolTip().toStdString(),
-                         subject2_name,filename.toStdString(),new_file_name) &&
+    if(!reg.I[1].empty() && tipl::match_files(ui->subject_filename->toolTip().toLower().toStdString(),
+                         subject2_name,filename.toLower().toStdString(),new_file_name) &&
            QFileInfo(new_file_name.c_str()).exists())
-    {
-        if(QMessageBox::question(this,QApplication::applicationName(),QString("load ") + new_file_name.c_str() + "?\n",
-                    QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
-            load_template2(new_file_name);
-    }
-
+        load_template2(new_file_name);
 }
 void RegToolBox::load_template2(const std::string& filename)
 {
@@ -165,7 +165,7 @@ void RegToolBox::on_OpenTemplate2_clicked()
         return;
     load_template2(filename.toStdString());
 }
-
+extern std::vector<std::string> fa_template_list;
 void RegToolBox::on_OpenSubject_clicked()
 {
     QString filename = QFileDialog::getOpenFileName(
@@ -204,12 +204,13 @@ void RegToolBox::on_OpenSubject_clicked()
     if(!reg.It[1].empty() && tipl::match_files(ui->template_filename->toolTip().toStdString(),
                          template2_name,filename.toStdString(),new_file_name) &&
            QFileInfo(new_file_name.c_str()).exists())
-    {
-        if(QMessageBox::question(this,QApplication::applicationName(),QString("load ") + new_file_name.c_str() + "?\n",
-                    QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
-            load_subject2(new_file_name);
-    }
+        load_subject2(new_file_name);
+    else
+        if(QFileInfo(QString(filename).replace("qa","iso")).exists())
+            load_subject2(QString(filename).replace("qa","iso").toStdString());
 
+    if(filename.contains("qa") && reg.It[0].empty())
+        load_template(fa_template_list[0]);
 }
 void RegToolBox::load_subject2(const std::string& file_name)
 {
@@ -510,28 +511,29 @@ void RegToolBox::on_run_reg_clicked()
     }
 
     reg.match_resolution(false);
+
     setup_slice_pos(true);
     setup_slice_pos(false);
     show_image();
 
-    auto run_reg = [this](auto& reg)
-    {
-        reg.param.resolution = ui->resolution->value();
-        reg.param.min_dimension = uint32_t(ui->min_reso->value());
-        reg.param.smoothing = float(ui->smoothing->value());
-        reg.param.speed = float(ui->speed->value());
-        reg.bound = ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound;
-        reg.use_cuda = ui->use_cuda->isChecked();
-        reg.linear_reg(tipl::reg::affine,
-                       ui->cost_fun->currentIndex() == 0 ? tipl::reg::mutual_info : tipl::reg::corr,
-                       thread.terminated,
-                       ui->cost_fun->currentIndex() == 2);
-        reg.nonlinear_reg(thread.terminated);
-    };
+    reg_2d.param.resolution = reg.param.resolution = ui->resolution->value();
+    reg_2d.param.min_dimension = reg.param.min_dimension = uint32_t(ui->min_reso->value());
+    reg_2d.param.smoothing = reg.param.smoothing = float(ui->smoothing->value());
+    reg_2d.param.speed = reg.param.speed = float(ui->speed->value());
+    reg_2d.bound = reg.bound = ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound;
+    reg_2d.cost_type = reg.cost_type = ui->cost_fun->currentIndex() == 0 ? tipl::reg::corr : tipl::reg::mutual_info;
+    reg_2d.use_cuda = reg.use_cuda = ui->use_cuda->isChecked();
+    reg_2d.skip_linear = reg.skip_linear = ui->skip_linear->isChecked();
+    reg_2d.skip_nonlinear = reg.skip_nonlinear = ui->skip_nonlinear->isChecked();
+
     if(reg_2d.data_ready())
-        thread.run([this,run_reg](void){run_reg(reg_2d);});
+        thread.run([this](void){
+            reg_2d.linear_reg(thread.terminated);
+            reg_2d.nonlinear_reg(thread.terminated);});
     else
-        thread.run([this,run_reg](void){run_reg(reg);});
+        thread.run([this](void){
+            reg.linear_reg(thread.terminated);
+            reg.nonlinear_reg(thread.terminated);});
 
     ui->running_label->movie()->start();
     ui->running_label->show();

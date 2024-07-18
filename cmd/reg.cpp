@@ -191,12 +191,12 @@ int reg(tipl::program_option<tipl::out>& po)
 
     if(po.get("large_deform",0) == 1)
         r.bound = tipl::reg::large_bound;
+    r.reg_type = po.get("reg_type",1) == 0 ? tipl::reg::rigid_body : tipl::reg::affine;
+    r.cost_type = po.get("cost_function",r.reg_type==tipl::reg::rigid_body ? "mi" : "corr") == std::string("mi") ? tipl::reg::mutual_info : tipl::reg::corr;
+    r.linear_reg();
 
-    r.linear_reg(po.get("reg_type",1) == 0 ? tipl::reg::rigid_body : tipl::reg::affine,
-                 po.get("cost_function","mi") == std::string("mi") ? tipl::reg::mutual_info : tipl::reg::corr);
 
-
-    if(po.get("reg_type",1) != 0)
+    if(r.reg_type == tipl::reg::rigid_body)
     {
         r.param.resolution = po.get("resolution",r.param.resolution);
         r.param.speed = po.get("speed",r.param.speed);
