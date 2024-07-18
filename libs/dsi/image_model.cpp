@@ -259,9 +259,7 @@ bool src_data::check_b_table(void)
             jacobian.inv();
             T = tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs);
 
-            tipl::image<3> VFF(iso.shape());
-            tipl::resample<tipl::interpolation::linear>(dwi,VFF,T);
-            float r = tipl::correlation(VFF.begin(),VFF.end(),iso.begin());
+            float r = tipl::correlation(iso,tipl::resample<tipl::interpolation::linear>(dwi,iso.shape(),T));
             tipl::out() << "linear r: " << r << std::endl;
             if(r < 0.6f)
                 template_fib.reset();
@@ -1089,10 +1087,8 @@ bool src_data::align_acpc(float reso)
 
     tipl::out() << arg << std::endl;
     prog(1,3);
-    tipl::image<3> I2(I.shape());
-    tipl::resample<tipl::interpolation::cubic>(J,I2,
-            tipl::transformation_matrix<float>(arg,I.shape(),Ivs,J.shape(),Jvs));
-    float r = float(tipl::correlation(I.begin(),I.end(),I2.begin()));
+    float r = tipl::correlation(I,tipl::resample<tipl::interpolation::cubic>(J,I.shape(),
+                                  tipl::transformation_matrix<float>(arg,I.shape(),Ivs,J.shape(),Jvs)));
     tipl::out() << "R2 for ac-pc alignment: " << r*r << std::endl;
     prog(2,3);
     if(r*r < 0.3f)
