@@ -510,8 +510,6 @@ void RegToolBox::on_run_reg_clicked()
         return;
     }
 
-    reg.match_resolution(false);
-
     setup_slice_pos(true);
     setup_slice_pos(false);
     show_image();
@@ -527,13 +525,19 @@ void RegToolBox::on_run_reg_clicked()
     reg_2d.skip_nonlinear = reg.skip_nonlinear = ui->skip_nonlinear->isChecked();
 
     if(reg_2d.data_ready())
+    {
         thread.run([this](void){
             reg_2d.linear_reg(thread.terminated);
             reg_2d.nonlinear_reg(thread.terminated);});
+    }
     else
+    {
+        reg.match_resolution(false);
+        ui->zoom_template->setValue(width()*0.2f/(1.0f+reg.It[0].width()));
         thread.run([this](void){
             reg.linear_reg(thread.terminated);
             reg.nonlinear_reg(thread.terminated);});
+    }
 
     ui->running_label->movie()->start();
     ui->running_label->show();
