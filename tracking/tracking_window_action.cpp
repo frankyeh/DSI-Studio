@@ -1374,11 +1374,8 @@ void tracking_window::stripSkull()
     tipl::filter::mean(Iw);
     tipl::filter::mean(Iw);
 
-    tipl::image<3> Iw_(reg_slice->source_images.shape());
-    tipl::resample(Iw,Iw_,manual->get_iT());
-
     reg_slice->skull_removed_images = reg_slice->source_images;
-    reg_slice->skull_removed_images *= Iw_;
+    reg_slice->skull_removed_images *= tipl::resample(Iw,reg_slice->source_images.shape(),manual->get_iT());
     slice_need_update = true;
 }
 
