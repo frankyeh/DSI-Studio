@@ -2630,8 +2630,7 @@ bool src_data::save_fib(const std::string& output_name)
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
 {
-    tipl::progress prog("saving results");
-    tipl::out() << "trim " << std::filesystem::path(file_name).filename() << " for " << (include_rev ? "eddy":"applytopup") << std::endl;
+    tipl::progress prog("prepare file for tupup/eddy");
     tipl::image<4> buffer(topup_size.expand(src_bvalues.size() +
                           uint32_t(rev_pe_src.get() && include_rev ? rev_pe_src->src_bvalues.size():0)));
     if(buffer.empty())
