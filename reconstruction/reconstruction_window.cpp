@@ -414,7 +414,7 @@ void reconstruction_window::on_doDTI_clicked()
         if(result == QMessageBox::Cancel)
             return;
         if(result == QMessageBox::Yes)
-            handle->align_acpc(2.0f);
+            handle->resample(2.0f);
     }
     std::string ref_file_name = handle->file_name;
     std::string ref_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
