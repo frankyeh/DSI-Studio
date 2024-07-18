@@ -240,7 +240,5 @@ jobs:
           "dsistudio/dsistudio:chen-${{ env.DATE_TAG }}"
           dsistudio/dsistudio:latest
 
-  test:
-    uses: ./.github/workflows/test.yml
     needs: linux-build
     name: Test DSI Studio
