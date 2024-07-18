@@ -127,7 +127,19 @@ void MainWindow::openFile(QStringList file_names)
         if(QString(file_name).endsWith("fib.gz") ||
            QString(file_name).endsWith("tck"))
         {
-            loadFib(file_name);
+            if(QString(file_name).endsWith("db.fib.gz"))
+            {
+                std::shared_ptr<group_connectometry_analysis> database(new group_connectometry_analysis);
+                if(database->load_database(file_name.toStdString().c_str()))
+                {
+                    db_window* db = new db_window(this,database);
+                    db->setWindowTitle(file_name);
+                    db->setAttribute(Qt::WA_DeleteOnClose);
+                    db->show();
+                }
+            }
+            else
+                loadFib(file_name);
         }
         else
         if(QString(file_name).endsWith("src.gz"))
