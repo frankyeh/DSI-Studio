@@ -382,11 +382,7 @@ public:
                 tipl::matrix<dimension+1,dimension+1> It2R;
                 nifti.get_image_transformation(It2R);
                 if(It[id].shape() != It[0].shape() || It2R != ItR)
-                {
-                    image_type It2_(It[0].shape());
-                    tipl::resample(It[id],It2_,tipl::from_space(ItR).to(It2R));
-                    It2_.swap(It[id]);
-                }
+                    It[id] = tipl::resample(It[id],It[0].shape(),tipl::from_space(ItR).to(It2R));
             }
             clear_reg();
             return true;
