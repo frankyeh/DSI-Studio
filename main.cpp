@@ -338,7 +338,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *a
         std::vector<std::string> loop_files;
         if(!tipl::search_filesystem(loop,loop_files))
         {
-            tipl::error() << "invalid file path " << loop << std::endl;;
+            tipl::error() << "no file found: " << loop << std::endl;;
             return 1;
         }
         tipl::out() << "a total of " << loop_files.size() << " files found" << std::endl;
