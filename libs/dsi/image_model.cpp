@@ -2037,18 +2037,20 @@ std::string src_data::find_topup_reverse_pe(void)
                 continue;
             if(nii.width()*nii.height()*nii.depth() != dwi.size())
             {
-                tipl::out() << path << " not in DWI space" << std::endl;
+                tipl::out() << path << " has different image size" << std::endl;
                 continue;
             }
-            if(nii.dim(4) != 1)
+            if(nii.dim(4) < 7)
             {
-                tipl::out() << path << " is 4d nifti, skipping (need to extract only the b0)" << std::endl;
+                tipl::out() << path << " is likely non-b0 4d nifti, skipping" << std::endl;
                 continue;
             }
             tipl::out() << "candidate found: " << path << std::endl;
-            tipl::image<3> b0_op;
+            tipl::image<3> b0_op,each;
             if(!(nii >> b0_op))
                 continue;
+            while(nii >> each)
+                b0_op += each;
             auto c = phase_direction_at_AP_PA(b0,b0_op);
             if(c[0] + c[1] < 1.8f) // 0.9 + 0.9
                 tipl::out() << "correlation with b0 is low. skipping..." << std::endl;
