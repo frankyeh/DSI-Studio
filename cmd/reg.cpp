@@ -196,7 +196,7 @@ int reg(tipl::program_option<tipl::out>& po)
     r.linear_reg();
 
 
-    if(r.reg_type == tipl::reg::rigid_body)
+    if(r.reg_type != tipl::reg::rigid_body)
     {
         r.param.resolution = po.get("resolution",r.param.resolution);
         r.param.speed = po.get("speed",r.param.speed);
