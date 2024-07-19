@@ -28,8 +28,11 @@ float check_src(std::string file_name,std::vector<std::string>& output) // retur
         output.push_back(out1.str());
     }
     // output DWI count
-    size_t cur_dwi_count = handle.src_bvalues.size();
-    output.push_back(std::to_string(cur_dwi_count));
+    {
+        size_t cur_dwi_count = handle.src_bvalues.size();
+        size_t b0_count = std::count(handle.src_bvalues.begin(),handle.src_bvalues.end(),0.0f);
+        output.push_back(std::to_string(b0_count)+"/" + std::to_string(cur_dwi_count-b0_count));
+    }
 
     // output max_b
     output.push_back(std::to_string(tipl::max_value(handle.src_bvalues)));
@@ -48,7 +51,7 @@ float check_src(std::string file_name,std::vector<std::string>& output) // retur
 std::string quality_check_src_files(const std::vector<std::string>& file_list)
 {
     std::ostringstream out;
-    out << "FileName\tImage dimension\tResolution\tDWI count\tMax b-value\tDWI contrast\tNeighboring DWI correlation\tNeighboring DWI correlation(masked)\t# Bad Slices" << std::endl;
+    out << "file name\tdimension\tresolution\tdwi count(b0/dwi)\tmax b-value\tDWI contrast\tneighboring DWI correlation\tneighboring DWI correlation(masked)\t#bad slices" << std::endl;
     std::vector<std::vector<std::string> > output;
     std::vector<float> ndc;
     tipl::progress prog("checking SRC files");
