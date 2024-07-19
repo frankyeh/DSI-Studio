@@ -734,7 +734,7 @@ bool src_data::command(std::string cmd,std::string param)
     {
         if(!align_acpc(param.empty() ? voxel.vs[0] : std::stof(param)))
             return false;
-        voxel.steps += cmd+"\n";
+        voxel.steps += param.empty() ? (cmd+"\n") : (cmd+"="+param+"\n");
         return true;
     }
     if(cmd.find("[Step T2][B-table]") == 0 && !new_dwi.empty())
@@ -794,35 +794,17 @@ bool src_data::command(std::string cmd,std::string param)
     }
     if(cmd == "[Step T2][Corrections][TOPUP]")
     {
-        auto step = param.empty() ? (cmd+"\n") : (cmd+"="+param+"\n");
-        if(param.empty())
-            param = find_topup_reverse_pe();
-        if(param.empty())
-        {
-            tipl::out() << "cannot find reversed phase encoding files." << std::endl;
-            return false;
-        }
-        else
         if(!run_topup_eddy(param,true))
             return false;
-        voxel.steps += step;
+        voxel.steps += param.empty() ? (cmd+"\n") : (cmd+"="+param+"\n");
         return true;
     }
     if(cmd == "[Step T2][Corrections][TOPUP EDDY]")
     {
         auto step = param.empty() ? (cmd+"\n") : (cmd+"="+param+"\n");
-        if(param.empty())
-            param = find_topup_reverse_pe();
-        if(param.empty())
-        {
-            tipl::out() << "cannot find reversed phase encoding files. run eddy without topup..." << std::endl;
-            if(!run_eddy())
-                return false;
-        }
-        else
         if(!run_topup_eddy(param))
             return false;
-        voxel.steps += step;
+        voxel.steps += param.empty() ? (cmd+"\n") : (cmd+"="+param+"\n");
         return true;
     }
     if(cmd == "[Step T2][Corrections][EDDY]")
@@ -2080,9 +2062,20 @@ std::string src_data::find_topup_reverse_pe(void)
     return candidates.begin()->second;
 }
 extern std::string topup_param_file;
-bool src_data::run_topup_eddy(const std::string& other_src,bool topup_only)
+bool src_data::run_topup_eddy(std::string other_src,bool topup_only)
 {
     tipl::progress prog("run topup/eddy");
+    if(other_src.empty() && (other_src = find_topup_reverse_pe()).empty())
+    {
+        if(topup_only)
+        {
+            error_msg = "cannot find reversed phase encoding files.";
+            return false;
+        }
+        tipl::out() << "no reversed phase encoding files. run eddy without topup...";
+        return run_eddy();
+    }
+
     if(voxel.report.find("rotated") != std::string::npos)
     {
         error_msg = "topup/eddy cannot be applied to motion corrected or rotated images";
