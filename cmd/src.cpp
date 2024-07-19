@@ -79,15 +79,6 @@ bool is_dwi_nii(const std::string& nii_name)
     QString bval_name,bvec_name;
     return find_bval_bvec(nii_name.c_str(),bval_name,bvec_name);
 }
-void search_dwi_nii(const std::string& dir,std::vector<std::string>& dwi_nii_files)
-{
-    std::vector<std::string> nii_files;
-    tipl::search_files(dir,"*.nii.gz",nii_files);
-    tipl::search_files(dir,"*.nii",nii_files);
-    for(auto& each : nii_files)
-        if(is_dwi_nii(each))
-            dwi_nii_files.push_back(each);
-}
 
 std::vector<std::string> search_dwi_nii_bids(const std::string& dir)
 {
@@ -102,7 +93,7 @@ std::vector<std::string> search_dwi_nii_bids(const std::string& dir)
         if(j < subject_num)
             tipl::search_dirs(sub_dir[j],"ses-*",sub_dir);
         tipl::out() << "searching " << sub_dir[j];
-        search_dwi_nii(sub_dir[j] + "/dwi",dwi_nii_files);
+        tipl::search_files(sub_dir[j] + "/dwi","*.nii.gz",dwi_nii_files);
     }
     return dwi_nii_files;
 }
@@ -253,7 +244,16 @@ int src(tipl::program_option<tipl::out>& po)
             if(dwi_nii_files.empty())
             {
                 tipl::out() << "searching NIFTI files in the folder";
-                search_dwi_nii(source,dwi_nii_files);
+                tipl::search_files(source,"*.nii.gz",dwi_nii_files);
+                // if not bids, then check bval and bvec
+                if(!is_bids)
+                {
+                    std::vector<std::string> nii_files;
+                    for(auto& each : dwi_nii_files)
+                        if(is_dwi_nii(each))
+                            nii_files.push_back(each);
+                    nii_files.swap(dwi_nii_files);
+                }
             }
 
             if(!dwi_nii_files.empty())
