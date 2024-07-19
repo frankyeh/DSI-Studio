@@ -2040,7 +2040,7 @@ std::string src_data::find_topup_reverse_pe(void)
                 tipl::out() << path << " has different image size" << std::endl;
                 continue;
             }
-            if(nii.dim(4) < 7)
+            if(nii.dim(4) != 1)
             {
                 tipl::out() << path << " is likely non-b0 4d nifti, skipping" << std::endl;
                 continue;
@@ -2049,8 +2049,6 @@ std::string src_data::find_topup_reverse_pe(void)
             tipl::image<3> b0_op,each;
             if(!(nii >> b0_op))
                 continue;
-            while(nii >> each)
-                b0_op += each;
             auto c = phase_direction_at_AP_PA(b0,b0_op);
             if(c[0] + c[1] < 1.8f) // 0.9 + 0.9
                 tipl::out() << "correlation with b0 is low. skipping..." << std::endl;
