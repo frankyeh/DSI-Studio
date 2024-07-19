@@ -81,13 +81,6 @@ int rec(tipl::program_option<tipl::out>& po)
 
     {
         tipl::progress prog("pre-processing steps");
-        if(po.has("rev_pe") && !src.run_topup_eddy(po.get("rev_pe")))
-        {
-            tipl::error() << src.error_msg << std::endl;
-            return 1;
-        }
-        if(po.get("motion_correction",0))
-            src.correct_motion();
         if(po.has("remove"))
         {
             std::vector<int> remove_index;
@@ -133,14 +126,33 @@ int rec(tipl::program_option<tipl::out>& po)
             std::copy(src.src_bvalues.begin(),src.src_bvalues.end(),std::ostream_iterator<float>(bvalue_list," "));
             tipl::out() << "current DWI b values: " << bvalue_list.str() << std::endl;
         }
+        if(po.has("rev_pe"))
+        {
+            if(!src.command("[Step T2][Corrections][TOPUP EDDY]",po.get("rev_pe")))
+            {
+                tipl::error() << src.error_msg << std::endl;
+                return 1;
+            }
+        }
+
+        if(po.get("motion_correction",0))
+        {
+            if(!src.command("[Step T2][Corrections][Motion Correction]"))
+            {
+                tipl::error() << src.error_msg << std::endl;
+                return 1;
+            }
+        }
+
         if(po.get("check_btable",0))
         {
-            if(!src.check_b_table())
+            if(!src.command("[Step T2][B-table][Check B-table]"))
             {
                 tipl::error() << src.error_msg;
                 return 1;
             }
         }
+
         if(po.has("cmd"))
         {
             QStringList cmd_list = QString(po.get("cmd").c_str()).split("+");
@@ -160,10 +172,10 @@ int rec(tipl::program_option<tipl::out>& po)
            (src.voxel.method_id != 7 &&
             src.voxel.vs[2] > src.voxel.vs[0]*1.1f &&
             src.is_human_data()))
-            src.resample(po.get("make_isotropic",src.is_human_data() ? 2.0f : src.voxel.vs[2]));
+            src.command("[Step T2][Edit][Resample]",po.get("make_isotropic",std::to_string(src.is_human_data() ? 2.0f : src.voxel.vs[2])));
 
         if(po.get("align_acpc",0))
-            src.align_acpc(po.get("align_acpc",src.voxel.vs[0]));
+            src.command("[Step T2][Edit][Align ACPC]",po.get("align_acpc",std::to_string(src.voxel.vs[0])));
         else
         {
             if(po.has("rotate_to") || po.has("align_to"))
@@ -193,7 +205,6 @@ int rec(tipl::program_option<tipl::out>& po)
                 tipl::out() << "DWI rotated." << std::endl;
             }
         }
-
     }
 
 
