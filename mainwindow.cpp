@@ -890,6 +890,7 @@ bool get_pe_dir(const std::string& nii_name,size_t& pe_dir,bool& is_neg)
 }
 std::vector<std::string> search_dwi_nii_bids(const std::string& dir);
 bool create_src(std::string nii_name,std::string src_name);
+void search_dwi_nii(const std::string& dir,std::vector<std::string>& dwi_nii_files);
 void MainWindow::batch_create_src(const std::vector<std::string>& dwi_nii_files,const std::string& output_dir)
 {
     if(dwi_nii_files.empty())
@@ -985,7 +986,6 @@ void MainWindow::on_nii2src_bids_clicked()
     std::sort(dwi_nii_files.begin(),dwi_nii_files.end());
     nii2src(dwi_nii_files,output_dir.toStdString(),true,true);
 }
-bool is_dwi_nii(const std::string& nii_name);
 void MainWindow::on_nii2src_sf_clicked()
 {
     QString dir = QFileDialog::getExistingDirectory(
@@ -995,13 +995,8 @@ void MainWindow::on_nii2src_sf_clicked()
     if(dir.isEmpty())
         return;
     add_work_dir(dir);
-    std::vector<std::string> nii_files;
-    tipl::search_files(dir.toStdString(),"*.nii.gz",nii_files);
-    tipl::search_files(dir.toStdString(),"*.nii",nii_files);
     std::vector<std::string> dwi_nii_files;
-    for(auto& each : nii_files)
-        if(is_dwi_nii(each))
-            dwi_nii_files.push_back(each);
+    search_dwi_nii(dir.toStdString(),dwi_nii_files);
     batch_create_src(dwi_nii_files,dir.toStdString());
 }
 
