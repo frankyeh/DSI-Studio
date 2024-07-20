@@ -272,6 +272,7 @@ int src(tipl::program_option<tipl::out>& po)
                 std::sort(dwi_nii_files.begin(),dwi_nii_files.end());
                 if(nii2src(dwi_nii_files,output_dir,is_bids,po.get("overwrite",0)))
                     return 0;
+                return 1;
             }
         }
 
