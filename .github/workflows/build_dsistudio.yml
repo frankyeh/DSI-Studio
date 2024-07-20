@@ -30,12 +30,51 @@ on:
         description: 'Build Docker'
         required: false
         default: 'true'
-jobs:      
+      build_redhat:
+        type: boolean
+        description: 'Build Redhat'
+        required: false
+        default: 'true'        
+jobs:    
+
   linux-build:
     if: ${{ github.event.inputs.build_linux == 'true' }}
     strategy:
       matrix:
         os: [ubuntu2204,ubuntu2004,ubuntu1804,ubuntu1604,centos7]
+      fail-fast: false
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4.1.1
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3.0.0
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3.0.0
+    - name: Build and push
+      uses: docker/build-push-action@v5.1.0
+      with:
+        context: .
+        file: build_packages/${{ matrix.os }}/Dockerfile
+        push: false
+        outputs: dsi-studio
+    - name: Packaging
+      run: |
+        zip -r dsi_studio_${{ matrix.os }}.zip dsi-studio
+    - name: Create Release
+      uses: ncipollo/release-action@v1.13.0
+      with:
+        allowUpdates: true
+        artifacts: "*.zip"
+        tag: ${{ github.event.inputs.tag }}
+        name: ${{ github.event.inputs.release_name }}
+        prerelease: false
+
+  redhat-build:
+    if: ${{ github.event.inputs.build_redhat == 'true' }}
+    strategy:
+      matrix:
+        os: [redhat8]
       fail-fast: false
     runs-on: ubuntu-20.04
     steps:
