@@ -9,10 +9,10 @@ RUN dnf update -y && \
   ninja-build \
   git \
   zlib-devel \
-  mesa-libGLU-devel \
-  qt6-qtbase-devel \
-  qt6-qtcharts-devel \
-  qt6-qtopengl-devel \
+  mesa-libGL-devel \
+  qt6-qtbase \
+  qt6-qtcharts \
+  qt6-qtopengl \
   qt6-qtimageformats \
   gcc \
   gcc-c++ && \
