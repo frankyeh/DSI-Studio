@@ -1,5 +1,10 @@
 FROM redhat/ubi8:8.10-1020 as builder-stage
 
+ARG PLATFORM=x86_64
+ENV PREFIX=/devel
+ENV RELEASEVER=8
+ENV PLATFORM=${PLATFORM}
+
 # Prepare environment
 RUN dnf update -y && \
   dnf install -y \
@@ -13,11 +18,18 @@ RUN dnf update -y && \
   gcc-c++ && \
   dnf clean all && rm -rf /var/cache/yum
 
+# Set up environment
+RUN dnf -y install 'dnf-command(config-manager)'
+RUN dnf -y config-manager --set-enabled powertools
+RUN dnf -y install epel-release
+RUN dnf -y install gcc-toolset-13
+RUN dnf -y install pkg-config
+
 
 # Get Qt 6
 RUN git clone --branch 6.7.1 --depth 1 git://code.qt.io/qt/qt5.git qt6 \
 	&& cd qt6 \
-	&& perl init-repository --module-subset=qtbase,qtmultimedia,qtshadertools
+	&& perl init-repository --module-subset=qtbase,qtmultimedia,qtshadertools,qtcharts
 
 RUN dnf -y install pulseaudio-libs-devel mesa-libGL-devel \
         xcb-util-renderutil-devel xcb-util-cursor-devel xcb-util-image-devel \
