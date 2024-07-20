@@ -14,7 +14,11 @@ RUN dnf update -y && \
   python3 python3-pip && \
   dnf clean all && rm -rf /var/cache/yum
 
-RUN pip3 install --upgrade pip
-RUN pip3 install aqtinstall
-RUN aqt install-qt linux desktop 6.5 -m qtcharts
+RUN mkdir /opt/qt6 && RUN cd /opt/qt6
+
+RUN pip3 install --upgrade pip && pip3 install aqtinstall && aqt install-qt linux desktop 6.5.3 -m qtcharts
+
+ENV QTDIR="/opt/qt6/6.5.3/gcc_64"
+ENV PATH="$QTDIR/bin:$PATH"
+ENV LD_LIBRARY_PATH="$QTDIR/lib:$LD_LIBRARY_PATH"
 
