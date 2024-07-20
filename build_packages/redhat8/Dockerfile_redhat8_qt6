@@ -1,10 +1,5 @@
 FROM redhat/ubi8:8.10-1020 as builder-stage
 
-ARG PLATFORM=x86_64
-ENV PREFIX=/devel
-ENV RELEASEVER=8
-ENV PLATFORM=${PLATFORM}
-
 # Prepare environment
 RUN dnf update -y && \
   dnf install -y \
@@ -28,28 +23,16 @@ RUN dnf -y install pulseaudio-libs-devel mesa-libGL-devel \
         xcb-util-renderutil-devel xcb-util-cursor-devel xcb-util-image-devel \
         libX11-devel xcb-util-wm-devel xcb-util-keysyms-devel libxkbcommon-x11-devel \
         wayland-devel fontconfig-devel gcc-toolset-12-libstdc++-devel \
-        glibc-devel pcre2-devel \
-        --forcearch ${PLATFORM} --releasever ${RELEASEVER} --installroot ${PREFIX}
-
-ENV CC=${PLATFORM}-linux-gnu-gcc
-ENV CXX=${PLATFORM}-linux-gnu-g++
-ENV LD=${PLATFORM}-linux-gnu-ld
-ENV CFLAGS="-I${PREFIX}/usr/include -I${PREFIX}/usr/local/include -I/usr/lib/gcc/${PLATFORM}-linux-gnu/12/include --sysroot ${PREFIX}"
-ENV CXXFLAGS="-I${PREFIX}/usr/include -I${PREFIX}/usr/local/include -I${PREFIX}/opt/rh/gcc-toolset-12/root/usr/include/c++/12 -I${PREFIX}/opt/rh/gcc-toolset-12/root/usr/include/c++/12/${PLATFORM}-redhat-linux --sysroot ${PREFIX}"
-ENV LDFLAGS="-L${PREFIX}/opt/rh/gcc-toolset-12/root/usr/lib/gcc/${PLATFORM}-redhat-linux/12 -L${PREFIX}/usr/lib64 -L${PREFIX}/usr/local/lib64 --sysroot ${PREFIX}"
-ENV PKG_CONFIG_PATH="${PREFIX}/usr/lib64/pkgconfig:${PREFIX}/usr/share/pkgconfig:${PREFIX}/opt/rh/gcc-toolset-12/root/usr/lib64/pkgconfig"
-ENV QEMU_LD_PREFIX=${PREFIX}
-ENV PKG_CONFIG_LIBDIR="${PREFIX}/usr/lib64/pkgconfig"
-ENV PKG_CONFIG_SYSROOT_DIR=${PREFIX}
+        glibc-devel pcre2-devel
 
 # HACK: Helps prevent subsequent builds from trying to link with the system libraries
 RUN dnf -y install pkg-config
 
-ENV LD_LIBRARY_PATH=${PREFIX}/usr/lib64
+ENV LD_LIBRARY_PATH=/usr/lib64
 RUN cd qt6 \
         && mkdir qt6-build \
         && cd qt6-build \
-        && ../configure -xcb -feature-wayland -verbose -no-feature-gssapi -no-feature-ffmpeg -no-feature-system-zlib -no-feature-forkfd_pidfd -prefix ${PREFIX}/usr -sysroot ${PREFIX} \
+        && ../configure -xcb -feature-wayland -verbose -no-feature-gssapi -no-feature-ffmpeg -no-feature-system-zlib -no-feature-forkfd_pidfd \
         && cmake --build . --parallel \
         && cmake --install . \
         && cd ../.. \
