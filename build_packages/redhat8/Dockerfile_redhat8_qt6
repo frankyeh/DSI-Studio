@@ -1,4 +1,4 @@
-FROM registry.redhat.io/ubi8/ubi:latest as builder-stage
+FROM ubi8/ubi:latest as builder-stage
 
 # Prepare environment
 RUN dnf update -y && \
