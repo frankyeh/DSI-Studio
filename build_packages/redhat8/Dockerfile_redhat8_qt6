@@ -16,6 +16,9 @@ RUN dnf update -y && \
 
 RUN dnf search mesa | grep devel
 RUN dnf search opengl | grep devel
+RUN dnf install epel-release
+RUN dnf install mesa-libGL-devel
+
 
 RUN mkdir /opt/qt6 && cd /opt/qt6
 
