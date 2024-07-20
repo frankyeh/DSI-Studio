@@ -10,8 +10,7 @@ RUN dnf update -y && \
   git \
   zlib-devel \
   gcc \
-  gcc-c++ \
-  xcb-util-cursor && \
+  gcc-c++ && \
   dnf clean all && rm -rf /var/cache/yum
 
 
