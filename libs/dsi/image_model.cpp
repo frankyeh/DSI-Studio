@@ -1918,11 +1918,6 @@ bool src_data::run_eddy(std::string exec)
             return false;
         }
     }
-    if(!eddy_check_shell(src_bvalues))
-    {
-        error_msg = "FSL eddy cannot process this data due to shell requirements";
-        return false;
-    }
 
     std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
     std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
@@ -2072,8 +2067,16 @@ bool src_data::run_topup_eddy(std::string other_src,bool topup_only)
             error_msg = "cannot find reversed phase encoding files.";
             return false;
         }
-        tipl::out() << "no reversed phase encoding files. run eddy without topup...";
-        return run_eddy();
+        if(!eddy_check_shell(src_bvalues))
+        {
+            tipl::out() << "no reversed phase encoding files. run motion correction...";
+            return correct_motion();
+        }
+        else
+        {
+            tipl::out() << "no reversed phase encoding files. run eddy without topup...";
+            return run_eddy();
+        }
     }
 
     if(voxel.report.find("rotated") != std::string::npos)
