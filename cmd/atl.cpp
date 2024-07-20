@@ -203,7 +203,8 @@ int atl(tipl::program_option<tipl::out>& po)
             }
             tipl::out() << "saving " << (po.get("output",output)+".R2.txt");
             std::ofstream out((po.get("output",output)+".R2.txt").c_str());
-            std::copy(data->handle->db.R2.begin(),data->handle->db.R2.end(),std::ostream_iterator<float>(out,"\n"));
+            for(size_t i = 0;i < data->handle->db.subject_names.size();++i)
+                out << data->handle->db.subject_names[i] << "\t" << data->handle->db.R2 << std::endl;
         }
         return 0;
     }
