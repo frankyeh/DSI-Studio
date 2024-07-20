@@ -1,4 +1,4 @@
-FROM ubi8/ubi:latest as builder-stage
+FROM redhat/ubi8:8.10-1020 as builder-stage
 
 # Prepare environment
 RUN dnf update -y && \
