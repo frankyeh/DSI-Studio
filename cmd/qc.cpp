@@ -122,14 +122,11 @@ int qc(tipl::program_option<tipl::out>& po)
     if(QFileInfo(source.c_str()).isDir())
         tipl::search_files(source,is_fib ? "*.fib.gz" : "*.src.gz",file_list);
     else
-        po.get_files("source",file_list);
-
-
-    if(file_list.empty())
-    {
-        tipl::error() << "no " << (is_fib ? "FIB" : "SRC") << " file found ";
-        return 1;
-    }
+        if(!po.get_files("source",file_list))
+        {
+            tipl::error() << po.error_msg;
+            return 1;
+        }
 
     std::string report_file_name = po.get("output","qc.txt");
     tipl::out() << "saving " << report_file_name << std::endl;
