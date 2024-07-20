@@ -10,24 +10,12 @@ RUN dnf update -y && \
   git \
   zlib-devel \
   gcc \
-  gcc-c++ && \
+  gcc-c++ \
+  xcb-util-cursor && \
   dnf clean all && rm -rf /var/cache/yum
 
 
 # Get Qt 6
-RUN git clone --branch 6.7.1 --depth 1 git://code.qt.io/qt/qt5.git qt6 \
-	&& cd qt6 \
-	&& perl init-repository --module-subset=qtbase,qtmultimedia,qtshadertools,qtcharts
+RUN pip install aqtinstall
+RUN aqt install-qt Linux desktop 6.5.3
 
-
-RUN dnf -y install pkg-config
-
-ENV LD_LIBRARY_PATH=/usr/lib64
-RUN cd qt6 \
-        && mkdir qt6-build \
-        && cd qt6-build \
-        && ../configure -xcb -feature-wayland -verbose -no-feature-gssapi -no-feature-ffmpeg -no-feature-system-zlib -no-feature-forkfd_pidfd \
-        && cmake --build . --parallel \
-        && cmake --install . \
-        && cd ../.. \
-        && rm -rf qt6
