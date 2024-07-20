@@ -35,7 +35,7 @@ RUN cd /opt/dsi-studio \
 
 
 # FSL
-RUN curl -sSL https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.4-centos7_64.tar.gz | tar zxv --no-same-owner -C /opt \
+RUN curl -sSL https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.5.2-centos7_64.tar.gz | tar zxv --no-same-owner -C /opt \
     --exclude='fsl/doc' \
     --exclude='fsl/refdoc' \
     --exclude='fsl/python/oxford_asl' \
