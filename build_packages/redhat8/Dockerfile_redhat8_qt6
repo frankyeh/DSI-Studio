@@ -17,5 +17,5 @@ RUN dnf update -y && \
 
 # Get Qt 6
 RUN pip install aqtinstall
-RUN aqt install-qt Linux desktop 6.5.3
+RUN aqt install-qt Linux desktop 6.5.3 -m qtcharts qtnetworking
 
