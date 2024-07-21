@@ -1519,6 +1519,8 @@ bool src_data::run_plugin(std::string exec_name,
             if(exec_name == "eddy" && !std::filesystem::exists(exec))
                 exec = fsl_path + "/bin/eddy_openmp";
             if(!std::filesystem::exists(exec))
+                exec = fsl_path + "/bin/eddy_cpu";
+            if(!std::filesystem::exists(exec))
             {
                 error_msg = "cannot find ";
                 error_msg += exec;
