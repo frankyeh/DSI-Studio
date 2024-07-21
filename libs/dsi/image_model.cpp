@@ -1516,10 +1516,13 @@ bool src_data::run_plugin(std::string exec_name,
             std::string fsl_path = QProcess::systemEnvironment()[index].split("=")[1].toStdString();
             tipl::out() << "FSL installation found at " << fsl_path << std::endl;
             exec = fsl_path + "/bin/" + exec_name;
-            if(exec_name == "eddy" && !std::filesystem::exists(exec))
-                exec = fsl_path + "/bin/eddy_openmp";
-            if(!std::filesystem::exists(exec))
-                exec = fsl_path + "/bin/eddy_cpu";
+            if(exec_name == "eddy")
+            {
+                if(std::filesystem::exists(fsl_path + "/bin/eddy_openmp"))
+                    exec = fsl_path + "/bin/eddy_openmp";
+                if(std::filesystem::exists(fsl_path + "/bin/eddy_cpu"))
+                    exec = fsl_path + "/bin/eddy_cpu";
+            }
             if(!std::filesystem::exists(exec))
             {
                 error_msg = "cannot find ";
