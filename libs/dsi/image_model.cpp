@@ -1606,7 +1606,7 @@ bool src_data::run_plugin(std::string exec_name,
         return false;
     }
 
-    if(program.exitCode() == 1)
+    if(program.exitCode() == QProcess::CrashExit)
     {
         error_msg = program.readAllStandardError().toStdString() + program.readAllStandardOutput().toStdString();
         if(error_msg.empty())
@@ -1739,7 +1739,7 @@ bool src_data::load_topup_eddy_result(void)
     std::string corrected_file = file_name+".corrected.nii.gz";
     if(!std::filesystem::exists(corrected_file))
     {
-        error_msg = "eddy failed to process data";
+        error_msg = "cannot find corrected output";
         return false;
     }
 
@@ -1846,7 +1846,10 @@ bool src_data::run_applytopup(std::string exec)
     if(!run_plugin("applytopup"," ",10,param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
         return false;
     if(!load_topup_eddy_result())
+    {
+        error_msg += " please check if memory is enough to run applytopup";
         return false;
+    }
     std::filesystem::remove(temp_nifti);
     if(rev_pe_src.get())
         std::filesystem::remove(rev_pe_src->file_name+".nii.gz");
@@ -2004,8 +2007,13 @@ bool src_data::run_eddy(std::string exec)
             return false;
         return run_applytopup();
     }
+
     if(!load_topup_eddy_result())
+    {
+        error_msg += " please check if memory is enough to run eddy";
         return false;
+    }
+
 
     std::filesystem::remove(temp_nifti);
     std::filesystem::remove(mask_nifti);
