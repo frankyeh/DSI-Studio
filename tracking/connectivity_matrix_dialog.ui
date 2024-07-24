@@ -85,6 +85,11 @@
          <string>mean_length</string>
         </property>
        </item>
+       <item>
+        <property name="text">
+         <string>trk_area</string>
+        </property>
+       </item>
       </widget>
      </item>
      <item>
