@@ -39,7 +39,7 @@ bool dual_reg<3>::apply_warping(const char* from,const char* to) const
         bool is_label = tipl::is_label_image(I_list[0]);
         tipl::out() << (is_label ? "processed as labels using nearest assignment" : "processed as values using interpolation") << std::endl;
         tipl::image<4> J4(It[0].shape().expand(nii.dim(4)));
-        tipl::par_for(nii.dim(4),[&](size_t z)
+        tipl::adaptive_par_for(nii.dim(4),[&](size_t z)
         {
             tipl::image<3> out(apply_warping(I_list[z],is_label));
             std::copy(out.begin(),out.end(),J4.slice_at(z).begin());
