@@ -170,7 +170,7 @@ public:
             // update VG,VFFF (for mask) and cdm_dis (for mapping)
             tipl::image<3,unsigned char> new_VG(new_geo);
             tipl::image<3,tipl::vector<3> > new_cdm_dis(new_geo);
-            tipl::par_for(tipl::begin_index(new_geo),tipl::end_index(new_geo),
+            tipl::adaptive_par_for(tipl::begin_index(new_geo),tipl::end_index(new_geo),
                           [&](const tipl::pixel_index<3>& pos)
             {
                 tipl::vector<3> p(pos);
@@ -197,7 +197,7 @@ public:
         // compute mappings
         {
             mapping.resize(cdm_dis.shape());
-            tipl::par_for(tipl::begin_index(cdm_dis.shape()),tipl::end_index(cdm_dis.shape()),
+            tipl::adaptive_par_for(tipl::begin_index(cdm_dis.shape()),tipl::end_index(cdm_dis.shape()),
             [&](const tipl::pixel_index<3>& pos)
             {
                 tipl::vector<3> Jpos(pos);
@@ -228,13 +228,14 @@ public:
                 for(unsigned int i = 0;i < voxel.other_image.size();++i)
                 {
                     other_image[i].resize(VG.shape());
-                    tipl::par_for(voxel.mask.size(),[&](size_t index)
+                    tipl::adaptive_par_for(voxel.mask.size(),[&](size_t index)
                     {
                         tipl::vector<3,float> Jpos(mapping[index]);
                         if(voxel.other_image[i].shape() != native_geo)
                             voxel.other_image_trans[i](Jpos);
                         tipl::estimate<tipl::interpolation::cubic>(voxel.other_image[i],Jpos,other_image[i][index]);
                     });
+                    tipl::lower_threshold(other_image[i],0);
                 }
             }
             if(voxel.needs("jdet"))
