@@ -76,6 +76,8 @@ void TractTableWidget::check_check_status(int row, int col)
     }
 }
 
+
+
 void TractTableWidget::draw_tracts(unsigned char dim,int pos,
                                    QImage& scaled_image,float display_ratio)
 {
@@ -134,19 +136,14 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
         });
     };
 
-    tipl::par_for(lines.size(),[&](unsigned int i)
+    tipl::adaptive_par_for(lines.size(),[&](unsigned int i)
     {
         auto& line = lines[i];
         auto& color = colors[i];
         tipl::add_constant(line,0.5f);
         tipl::multiply_constant(line,display_ratio);
-        if(line.size() >= 2)
-        {
-            for(size_t j = 1;j < line.size();++j)
-            {
-                draw_line(int(line[j-1][0]),int(line[j-1][1]),int(line[j][0]),int(line[j][1]),color[j]);
-            }
-        }
+        for(size_t j = 1;j < line.size();++j)
+            draw_line(int(line[j-1][0]),int(line[j-1][1]),int(line[j][0]),int(line[j][1]),color[j]);
     });
 }
 
