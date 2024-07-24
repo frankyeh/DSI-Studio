@@ -76,7 +76,7 @@ public:
         {
             tipl::progress prog(prog_name,!silence);
             size_t p = 0;
-            tipl::par_for(checked_index.size(),[&](unsigned int i)
+            tipl::adaptive_par_for(checked_index.size(),[&](unsigned int i)
             {
                 prog(p++,checked_index.size());
                 if(prog.aborted())

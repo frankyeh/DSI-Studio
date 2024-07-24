@@ -93,7 +93,7 @@ class TinyTrack{
         {
             tipl::progress prog1("compressing trajectories");
             size_t p = 0;
-            tipl::par_for(track32.size(),[&](size_t i)
+            tipl::adaptive_par_for(track32.size(),[&](size_t i)
             {
                 prog1(p++,tract_data.size());
                 auto& t32 = track32[i];
@@ -164,7 +164,7 @@ class TinyTrack{
                 }
 
                 std::vector<char> out_buf(total_size);
-                tipl::par_for(pos.size(),[&](size_t i)
+                tipl::adaptive_par_for(pos.size(),[&](size_t i)
                 {
                     auto& t32 = track32[cur_track_block+i];
                     auto out = &out_buf[pos[i]];
@@ -242,7 +242,7 @@ class TinyTrack{
             }
             size_t add_tract_index = tract_data.size();
             tract_data.resize(add_tract_index+pos.size());
-            tipl::par_for(pos.size(),[&](size_t i)
+            tipl::adaptive_par_for(pos.size(),[&](size_t i)
             {
                 auto& cur_tract = tract_data[i+add_tract_index];
                 tract_header hr;
@@ -519,7 +519,7 @@ bool trk2tt(const char* trk_file,const char* tt_file)
 void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::shape<3>& geo)
 {
     tipl::vector<3> min_xyz(0.0f,0.0f,0.0f),max_xyz(0.0f,0.0f,0.0f);
-    tipl::par_for(loaded_tract_data.size(),[&](size_t i)
+    tipl::adaptive_par_for(loaded_tract_data.size(),[&](size_t i)
     {
         for(unsigned int k = 0;k < 3;++k)
         for(size_t j = k;j < loaded_tract_data[i].size();j += 3)
@@ -535,7 +535,7 @@ void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tip
         geo[k] = uint32_t(max_xyz[k]-min_xyz[k]+2);
         min_xyz[k] -= 1;
     }
-    tipl::par_for(loaded_tract_data.size(),[&](size_t i)
+    tipl::adaptive_par_for(loaded_tract_data.size(),[&](size_t i)
     {
         for(unsigned int k = 0;k < 2;++k)
         for(size_t j = k;j < loaded_tract_data[i].size();j += 3)
@@ -592,7 +592,7 @@ bool load_fib_from_tracks(const char* file_name,
         return false;
     I.clear();
     I.resize(geo);
-    tipl::par_for(loaded_tract_data.size(),[&](size_t i)
+    tipl::adaptive_par_for(loaded_tract_data.size(),[&](size_t i)
     {
         for(size_t j = 0;j < loaded_tract_data[i].size();j += 3)
         {
@@ -649,7 +649,7 @@ bool dual_reg<3>::apply_warping_tt(const char* from,const char* to) const
     tipl::vector<3> max_pos(from2to.shape());
     max_pos -= 1.0f;
     auto T = tipl::from_space(ItR).to(IR);
-    tipl::par_for(loaded_tract_data.size(),[&](size_t i)
+    tipl::adaptive_par_for(loaded_tract_data.size(),[&](size_t i)
     {
         for(size_t j = 0;j < loaded_tract_data[i].size();j += 3)
         {
@@ -803,7 +803,7 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
         {
             tipl::out() << "apply transform to tracts: " << std::endl;
             tipl::out() << T << std::endl;
-            tipl::par_for(loaded_tract_data.size(),[&](size_t index)
+            tipl::adaptive_par_for(loaded_tract_data.size(),[&](size_t index)
             {
                 auto& tract = loaded_tract_data[index];
                 for(size_t i = 0;i < tract.size();i += 3)
@@ -930,7 +930,7 @@ bool TractModel::save_tracts_in_native_space(std::shared_ptr<fib_data> handle,
         return false;
     std::shared_ptr<TractModel> tract_in_native(new TractModel(handle->native_geo,handle->native_vs));
     std::vector<std::vector<float> > new_tract_data = tract_data;
-    tipl::par_for(new_tract_data.size(),[&](size_t i)
+    tipl::adaptive_par_for(new_tract_data.size(),[&](size_t i)
     {
         for(size_t j = 0;j < new_tract_data[i].size();j += 3)
         {
@@ -954,7 +954,7 @@ bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,
     std::shared_ptr<TractModel> tract_in_template(
                 new TractModel(handle->template_I.shape(),handle->template_vs,handle->template_to_mni));
     std::vector<std::vector<float> > new_tract_data(tract_data.size());
-    tipl::par_for(tract_data.size(),[&](unsigned int i)
+    tipl::adaptive_par_for(tract_data.size(),[&](unsigned int i)
     {
         new_tract_data[i].resize(tract_data[i].size());
         for(unsigned int j = 0;j < tract_data[i].size();j += 3)
@@ -1469,7 +1469,7 @@ bool TractModel::save_end_points(const char* file_name_) const
 //---------------------------------------------------------------------------
 void TractModel::resample(float new_step)
 {
-    tipl::par_for(tract_data.size(),[&](size_t i)
+    tipl::adaptive_par_for(tract_data.size(),[&](size_t i)
     {
         if(tract_data[i].size() <= 6)
             return;
@@ -1720,7 +1720,7 @@ bool TractModel::delete_repeated(float d)
         }
     }min_min_fun;
     std::vector<bool> repeated(tract_data.size());
-    tipl::par_for(tract_data.size(),[&](size_t i)
+    tipl::adaptive_par_for(tract_data.size(),[&](size_t i)
     {
         if(repeated[i])
             return;
@@ -1852,7 +1852,7 @@ void get_cut_points(const std::vector<std::vector<float> >& tract_data,
                     std::vector<std::vector<bool> >& has_cut)
 {
     has_cut.resize(tract_data.size());
-    tipl::par_for(tract_data.size(),[&](unsigned int i)
+    tipl::adaptive_par_for(tract_data.size(),[&](unsigned int i)
     {
         has_cut[i].resize(tract_data[i].size()/3);
         for(unsigned int j = 0,t = 0;j < tract_data[i].size();j += 3,++t)
@@ -1870,7 +1870,7 @@ void get_cut_points(const std::vector<std::vector<float> >& tract_data,
     has_cut.resize(tract_data.size());
     tipl::vector<3> sr(T.begin()+dim*4);
     float shift = T[3+dim*4];
-    tipl::par_for(tract_data.size(),[&](unsigned int i)
+    tipl::adaptive_par_for(tract_data.size(),[&](unsigned int i)
     {
         has_cut[i].resize(tract_data[i].size()/3);
         for(unsigned int j = 0,t = 0;j < tract_data[i].size();j += 3,++t)
@@ -1934,7 +1934,7 @@ void TractModel::cut_end_portion(float from,float to)
     std::vector<unsigned int> new_tract_color(tract_color);
     std::vector<unsigned int> tract_to_delete(tract_data.size());
 
-    tipl::par_for(tract_data.size(),[&](size_t i)
+    tipl::adaptive_par_for(tract_data.size(),[&](size_t i)
     {
         tract_to_delete[i] = i;
         auto from = tract_data[i].data()+find_location(tract_data[i],dir[i] ? from_point16 : to_point16);
@@ -2037,7 +2037,7 @@ bool TractModel::reconnect_track(float distance,float angular_threshold)
             if(geo.is_valid(end2))
                 endpoint_map[tipl::pixel_index<3>(end2[0],end2[1],end2[2],geo).index()].push_back(index);
         }
-    tipl::par_for(endpoint_map.size(),[&](size_t index)
+    tipl::adaptive_par_for(endpoint_map.size(),[&](size_t index)
     {
         if(endpoint_map[index].size() <= 1)
             return;
@@ -2238,7 +2238,7 @@ bool TractModel::trim(void)
     /*
     std::vector<char> continuous(tract_data.size());
         float epsilon = 2.0f;
-        tipl::par_for(tract_data.size(),[&](int i)
+        tipl::adaptive_par_for(tract_data.size(),[&](int i)
         {
             if(tract_data[i].empty())
                 return;
@@ -2334,7 +2334,7 @@ bool TractModel::trim(void)
     std::fill(label3.begin(),label3.end(),no_fiber_label);
 
     int shift[8] = {0,1,width,wh,1+width,1+wh,width+wh,1+width+wh};
-    tipl::par_for(total_track_number,[&](int index)
+    tipl::adaptive_par_for(total_track_number,[&](int index)
     {
         const float* ptr = &*tract_data[index].begin();
         const float* end = ptr + tract_data[index].size();
@@ -2496,7 +2496,7 @@ void TractModel::get_density_map(tipl::image<3,unsigned int>& mapping,
                                  const tipl::matrix<4,4>& to_t1t2,bool endpoint)
 {
     tipl::shape<3> geo = mapping.shape();
-    tipl::par_for(tract_data.size(),[&](unsigned int i)
+    tipl::adaptive_par_for(tract_data.size(),[&](unsigned int i)
     {
         std::set<size_t> point_set;
         for (unsigned int j = 0;j < tract_data[i].size();j+=3)
@@ -2550,7 +2550,7 @@ void TractModel::get_density_map(
     for(size_t index = 0;index < mapping.size();++index)
         max_value = std::max<float>(max_value,map_r[index]+map_g[index]+map_b[index]);
 
-    tipl::par_for(mapping.size(),[&](size_t index)
+    tipl::adaptive_par_for(mapping.size(),[&](size_t index)
     {
         float sum = map_r[index]+map_g[index]+map_b[index];
         if(sum == 0.0f)
@@ -2576,13 +2576,13 @@ bool TractModel::export_end_pdi(
     {
         std::vector<tipl::vector<3,short> > p1,p2;
         tract_models[index]->to_end_point_voxels(p1,p2,tipl::identity_matrix(),end_distance);
-        tipl::par_for(p1.size(),[&](size_t j)
+        tipl::adaptive_par_for(p1.size(),[&](size_t j)
         {
             tipl::vector<3,short> p = p1[j];
             if(dim.is_valid(p))
                 p1_map[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]++;
         });
-        tipl::par_for(p2.size(),[&](size_t j)
+        tipl::adaptive_par_for(p2.size(),[&](size_t j)
         {
             tipl::vector<3,short> p = p2[j];
             if(dim.is_valid(p))
@@ -2614,7 +2614,7 @@ bool TractModel::export_pdi(const char* file_name,
     {
         std::vector<tipl::vector<3,short> > points;
         tract_models[index]->to_voxel(points);
-        tipl::par_for(points.size(),[&](size_t j)
+        tipl::adaptive_par_for(points.size(),[&](size_t j)
         {
             tipl::vector<3,short> p = points[j];
             if(dim.is_valid(p))
@@ -2721,7 +2721,7 @@ tipl::vector<3> get_tract_dir(const std::vector<std::vector<float> >& tract_data
     // categorize endpoints using the mid point direction
     total_dis.normalize();
     dir.resize(tract_data.size());
-    tipl::par_for(tract_data.size(),[&](size_t i)
+    tipl::adaptive_par_for(tract_data.size(),[&](size_t i)
     {
         if(tract_data[i].size() < 6)
             return;
@@ -2943,7 +2943,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
                                   max_value[2] - min_value[2]);
 
             volume.resize(geo);
-            tipl::par_for(points.size(),[&](unsigned int index)
+            tipl::adaptive_par_for(points.size(),[&](unsigned int index)
             {
                 tipl::vector<3,short> point(points[index]);
                 point -= min_value;
@@ -3035,7 +3035,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
     // output mean and std of each index
     {
         std::vector<float> mean_values(handle->view_item.size());
-        tipl::par_for(handle->view_item.size(),[&](size_t data_index)
+        tipl::adaptive_par_for(handle->view_item.size(),[&](size_t data_index)
         {
             if(handle->view_item[data_index].name == "color")
                 return;
@@ -3292,7 +3292,7 @@ bool TractModel::get_tracts_data(std::shared_ptr<fib_data> handle,
         return false;
     data.clear();
     data.resize(tract_data.size());
-    tipl::par_for(tract_data.size(),[&](unsigned int i)
+    tipl::adaptive_par_for(tract_data.size(),[&](unsigned int i)
     {
          get_tract_data(handle,i,index_num,data[i]);
     });
@@ -3326,7 +3326,7 @@ void TractModel::get_passing_list(const tipl::image<3,std::vector<short> >& regi
     passing_list2.resize(tract_data.size());
     // create regions maps
 
-    tipl::par_for(tract_data.size(),[&](unsigned int index)
+    tipl::adaptive_par_for(tract_data.size(),[&](unsigned int index)
     {
         if(tract_data[index].size() < 6)
             return;
@@ -3359,7 +3359,7 @@ void TractModel::get_end_list(const tipl::image<3,std::vector<short> >& region_m
     end_pair1.resize(tract_data.size());
     end_pair2.clear();
     end_pair2.resize(tract_data.size());
-    tipl::par_for(tract_data.size(),[&](unsigned int index)
+    tipl::adaptive_par_for(tract_data.size(),[&](unsigned int index)
     {
         if(tract_data[index].size() < 6)
             return;

@@ -347,7 +347,7 @@ public:
 
         // from template space to mni image's space
         auto T = tipl::from_space(template_to_mni).to(trans);
-        tipl::par_for(tipl::begin_index(J.shape()),tipl::end_index(J.shape()),
+        tipl::adaptive_par_for(tipl::begin_index(J.shape()),tipl::end_index(J.shape()),
         [&](const tipl::pixel_index<3>& index)
         {
             tipl::vector<3> pos;
@@ -431,7 +431,7 @@ void evaluate_connection(
         dis[i] = tipl::vector<3>(dx[i],dy[i],dz[i]);
         dis[i].normalize();
     }
-    tipl::par_for(tipl::begin_index(dim),tipl::end_index(dim),
+    tipl::adaptive_par_for(tipl::begin_index(dim),tipl::end_index(dim),
                 [&](const tipl::pixel_index<3>& index)
     {
         if(fib_fa[0][index.index()] <= otsu)

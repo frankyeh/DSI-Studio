@@ -1033,7 +1033,7 @@ void tracking_window::on_actionSegment_Tissue_triggered()
         return;
     // soft_max
     {
-        tipl::par_for(current_slice->dim.size(),[&](size_t pos)
+        tipl::adaptive_par_for(current_slice->dim.size(),[&](size_t pos)
         {
             float m = 0.0f;
             for(size_t i = pos;i < unet->out.size();i += current_slice->dim.size())
@@ -1053,7 +1053,7 @@ void tracking_window::on_actionSegment_Tissue_triggered()
     {
         // to 3d label
         tipl::image<3> I(current_slice->dim);
-        tipl::par_for(current_slice->dim.size(),[&](size_t pos)
+        tipl::adaptive_par_for(current_slice->dim.size(),[&](size_t pos)
         {
             for(size_t i = pos,label = 1;i < unet->out.size();i += current_slice->dim.size(),++label)
                 if(unet->out[i])
@@ -1063,7 +1063,7 @@ void tracking_window::on_actionSegment_Tissue_triggered()
                 }
         });
         std::vector<std::vector<tipl::vector<3,short> > > regions(unet->out_channels_);
-        tipl::par_for(unet->out_channels_,[&](size_t label)
+        tipl::adaptive_par_for(unet->out_channels_,[&](size_t label)
         {
             for(tipl::pixel_index<3> p(current_slice->dim);p < current_slice->dim.size();++p)
             {
@@ -1382,7 +1382,7 @@ void tracking_window::stripSkull()
 
 void paint_track_on_volume(tipl::image<3,unsigned char>& track_map,const std::vector<std::vector<float> >& all_tracts,SliceModel* slice)
 {
-    tipl::par_for(all_tracts.size(),[&](unsigned int i)
+    tipl::adaptive_par_for(all_tracts.size(),[&](unsigned int i)
     {
         auto tracks = all_tracts[i];
         for(size_t k = 0;k < tracks.size();k +=3)

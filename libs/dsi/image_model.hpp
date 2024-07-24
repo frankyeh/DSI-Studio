@@ -13,7 +13,7 @@ struct distortion_map{
         w1.resize(d.shape());
         w2.resize(d.shape());
         int max_n = n-1;
-        tipl::par_for(d.height()*d.depth(),[&](int pos)
+        tipl::adaptive_par_for(d.height()*d.depth(),[&](int pos)
         {
             pos *= n;
             int* i1p = &i1[0]+pos;
@@ -49,7 +49,7 @@ struct distortion_map{
         j2.clear();
         j1.resize(v.shape());
         j2.resize(v.shape());
-        tipl::par_for(v.height()*v.depth(),[&](int pos)
+        tipl::adaptive_par_for(v.height()*v.depth(),[&](int pos)
         {
             pos *= n;
             const int* i1p = &i1[0]+pos;
@@ -86,7 +86,7 @@ struct distortion_map{
         int block2 = n*n;
         v.clear();
         v.resize(v1.shape());
-        tipl::par_for(v1.height()*v1.depth(),[&](int pos)
+        tipl::adaptive_par_for(v1.height()*v1.depth(),[&](int pos)
         {
             pos *= n;
             const int* i1p = &i1[0]+pos;
@@ -120,7 +120,7 @@ struct distortion_map{
         int n = g1.width();
         new_g.clear();
         new_g.resize(g1.shape());
-        tipl::par_for(g1.height()*g1.depth(),[&](int pos)
+        tipl::adaptive_par_for(g1.height()*g1.depth(),[&](int pos)
         {
             pos *= n;
             const int* i1p = &i1[0]+pos;

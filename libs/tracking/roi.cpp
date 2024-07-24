@@ -57,7 +57,7 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
 
         tipl::image<3,char> limiting_mask(handle->dim);
         const float *fa0 = handle->dir.fa[0];
-        tipl::par_for(tract_coverage.size(),[&](unsigned int i)
+        tipl::adaptive_par_for(tract_coverage.size(),[&](unsigned int i)
         {
             tipl::for_each_neighbors(tipl::pixel_index<3>(tract_coverage[i].begin(),handle->dim),
                                 handle->dim,int(std::ceil(tolerance_dis_in_subject_voxels)),
@@ -149,7 +149,7 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
         auto tolerance_dis_in_subject_voxels2 = tolerance_dis_in_subject_voxels*2;
 
         std::vector<bool> is_target(atlas_tract.size());
-        tipl::par_for(atlas_tract.size(),[&](unsigned int i)
+        tipl::adaptive_par_for(atlas_tract.size(),[&](unsigned int i)
         {
             is_target[i] = (std::find(track_ids.begin(),track_ids.end(),atlas_cluster[i]) != track_ids.end());
         });

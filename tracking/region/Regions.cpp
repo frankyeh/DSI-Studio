@@ -15,7 +15,7 @@ void ROIRegion::new_from_mni_sphere(std::shared_ptr<fib_data> handle,tipl::vecto
         mni.to(T);
     }
     tipl::image<3,unsigned char> mask(dim);
-    tipl::par_for(tipl::begin_index(dim),tipl::end_index(dim),
+    tipl::adaptive_par_for(tipl::begin_index(dim),tipl::end_index(dim),
                   [&](const tipl::pixel_index<3>& pos)
     {
         if(std::abs((float(pos[0])-mni[0])) > radius)

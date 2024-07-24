@@ -39,7 +39,7 @@ bool RegionRender::load(const std::vector<tipl::vector<3,short> >& seeds, tipl::
 
 
     tipl::image<3,unsigned char> buffer(geo);
-    tipl::par_for(seeds.size(),[&](unsigned int index)
+    tipl::adaptive_par_for(seeds.size(),[&](unsigned int index)
     {
         tipl::vector<3,short> point(seeds[index]);
         point -= min_value;
@@ -57,7 +57,7 @@ bool RegionRender::load(const std::vector<tipl::vector<3,short> >& seeds, tipl::
     }
     object.reset(new tipl::march_cube(buffer, uint8_t(20)));
     tipl::vector<3,float> shift(min_value);
-    tipl::par_for(object->point_list.size(),[&](unsigned int index)
+    tipl::adaptive_par_for(object->point_list.size(),[&](unsigned int index)
     {
         if (cur_scale != 1.0f)
             object->point_list[index] *= cur_scale;
@@ -126,7 +126,7 @@ void RegionRender::transform_point_list(const tipl::matrix<4,4>& T)
     if(!object.get())
         return;
     auto& point_list = object->point_list;
-    tipl::par_for(point_list.size(),[&](unsigned int i){
+    tipl::adaptive_par_for(point_list.size(),[&](unsigned int i){
         point_list[i].to(T);
     });
 }

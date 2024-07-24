@@ -680,7 +680,7 @@ void DeviceTableWidget::detect_electrodes(void)
         cur_tracking_window.regionWidget->add_region((std::string("Electrode ") + std::to_string(i+1)).c_str());
         new_regions.push_back(cur_tracking_window.regionWidget->regions.back());
     }
-    tipl::par_for(contact_group.size(),[&](unsigned int i)
+    tipl::adaptive_par_for(contact_group.size(),[&](unsigned int i)
     {
         std::vector<tipl::vector<3,float> > voxels;
         for(const auto contact: contact_group[i])
@@ -726,7 +726,7 @@ void DeviceTableWidget::lead_to_roi(void)
             for (short x = -radius,yy_zz = y*y+zz; x <= radius; ++x)
                 if (x*x + yy_zz <= distance2)
                     voxels.push_back(tipl::vector<3,short>(x,y,z));
-    tipl::par_for(lead_pos.size(),[&](unsigned int i)
+    tipl::adaptive_par_for(lead_pos.size(),[&](unsigned int i)
     {
         auto points = voxels;
         tipl::add_constant(points,tipl::vector<3,short>(lead_pos[i]*resolution+0.5f));

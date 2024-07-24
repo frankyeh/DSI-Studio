@@ -774,7 +774,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
             move_slice = false;
             bool find_region = false;
             size_t found_index = 0;
-            tipl::par_for(cur_tracking_window.regionWidget->regions.size(),[&](size_t index)
+            tipl::adaptive_par_for(cur_tracking_window.regionWidget->regions.size(),[&](size_t index)
             {
                 if(find_region || cur_tracking_window.regionWidget->item(int(index),0)->checkState() != Qt::Checked)
                     return;

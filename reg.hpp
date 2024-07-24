@@ -540,7 +540,7 @@ public:
                     for(size_t i = 0;i < t2f_dis.size();++i)
                         buffer[i+shift] = t2f_dis[i][d];
                 }
-            });
+            },2*dimension);
             tipl::io::gz_nifti::save_to_file("dis.nii.gz",buffer,Itvs,ItR);
         }
     }
@@ -561,7 +561,7 @@ public:
             X[pos] = 1;
             X[pos+1] = It0[i];
             X[pos+2] = It1[i];
-        });
+        },It0.size());
         tipl::multiple_regression<float> m;
         if(m.set_variables(X.begin(),3,It0.size()))
         {
@@ -575,7 +575,7 @@ public:
                 It0[pos] = b[0] + b[1]*It0[pos] + b[2]*It1[pos];
                 if(It0[pos] < 0.0f)
                     It0[pos] = 0.0f;
-            });
+            },It0.size());
         }
         It[1].clear();
         return true;

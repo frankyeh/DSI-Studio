@@ -429,7 +429,7 @@ bool fib_data::load_from_file(const char* file_name)
             dir.odf_faces = ti.faces;
             dir.odf_table = ti.vertices;
             dir.half_odf_size = ti.half_vertices_count;
-            tipl::par_for(x.size(),[&](int i)
+            tipl::adaptive_par_for(x.size(),[&](int i)
             {
                 tipl::vector<3> v(-x[i],y[i],z[i]);
                 float length = v.length();
@@ -474,7 +474,7 @@ bool fib_data::load_from_file(const char* file_name)
                 dir.odf_faces = ti.faces;
                 dir.odf_table = ti.vertices;
                 dir.half_odf_size = ti.half_vertices_count;
-                tipl::par_for(x.size(),[&](uint32_t j)
+                tipl::adaptive_par_for(x.size(),[&](uint32_t j)
                 {
                     tipl::vector<3> v(x[j],y[j],-z[j]);
                     float length = float(v.length());
@@ -900,7 +900,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
     tipl::progress prog(cmd.c_str());
     size_t p = 0;
     bool failed = false;
-    tipl::par_for(mat_reader.size(),[&](unsigned int i)
+    tipl::adaptive_par_for(mat_reader.size(),[&](unsigned int i)
     {
         if(!prog(p++,mat_reader.size()) || failed)
             return;
@@ -1386,7 +1386,7 @@ bool fib_data::load_template(void)
 }
 void fib_data::temp2sub(std::vector<std::vector<float> >&tracts) const
 {
-    tipl::par_for(tracts.size(),[&](size_t i)
+    tipl::adaptive_par_for(tracts.size(),[&](size_t i)
     {
         if(tracts.size() < 6)
             return;
@@ -1477,7 +1477,7 @@ bool fib_data::load_track_atlas()
         auto& tract_data = track_atlas->get_tracts();
         // get min max length
         std::vector<float> min_length(tractography_name_list.size()),max_length(tractography_name_list.size());
-        tipl::par_for(tract_data.size(),[&](size_t i)
+        tipl::adaptive_par_for(tract_data.size(),[&](size_t i)
         {
             if(tract_data.size() <= 6)
                 return;
@@ -1590,7 +1590,7 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,
     if(!load_track_atlas())
         return false;
     labels.resize(trk->get_tracts().size());
-    tipl::par_for(trk->get_tracts().size(),[&](size_t i)
+    tipl::adaptive_par_for(trk->get_tracts().size(),[&](size_t i)
     {
         if(trk->get_tracts()[i].empty())
             return;
@@ -1869,7 +1869,7 @@ bool fib_data::load_mapping(const char* file_name,bool external)
     s2t.resize(dim);
     t2s.resize(template_I.shape());
     tipl::out() << s2t[0];
-    tipl::par_for(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
+    tipl::adaptive_par_for(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
                   [&](const tipl::pixel_index<3>& index)
     {
         s2t[index.index()] = index;
@@ -2077,7 +2077,7 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,
 
     // aggregating results from all threads
     labels.resize(at->get_list().size());
-    tipl::par_for(at->get_list().size(),[&](size_t i)
+    tipl::adaptive_par_for(at->get_list().size(),[&](size_t i)
     {
         labels[i] = at->get_list()[i];
         for(size_t j = 1;j < region_voxels.size();++j)
@@ -2096,7 +2096,7 @@ const tipl::image<3,tipl::vector<3,float> >& fib_data::get_sub2temp_mapping(void
        is_mni && template_id == matched_template_id)
     {
         s2t.resize(dim);
-        tipl::par_for(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
+        tipl::adaptive_par_for(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
                       [&](const tipl::pixel_index<3>& index)
         {
             s2t[index.index()] = index.begin();

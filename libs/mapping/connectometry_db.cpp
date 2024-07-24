@@ -90,7 +90,7 @@ bool connectometry_db::read_db(fib_data* handle_)
         if(max_qa != 1.0f)
         {
             tipl::out() << "converting raw QA to normalized QA" << std::endl;
-            tipl::par_for(subject_qa.size(),[&](size_t i)
+            tipl::adaptive_par_for(subject_qa.size(),[&](size_t i)
             {
                 auto max_qa = tipl::max_value(subject_qa[i],subject_qa[i]+subject_qa_length);
                 if(max_qa != 0.0f)
@@ -432,7 +432,7 @@ void connectometry_db::sample_from_image(tipl::const_pointer_image<3,float> I,
 
     data.clear();
     data.resize(si2vi.size());
-    tipl::par_for(si2vi.size(),[&](size_t si)
+    tipl::adaptive_par_for(si2vi.size(),[&](size_t si)
     {
         data[si] = J[si2vi[si]];
     });
@@ -538,7 +538,7 @@ bool connectometry_db::add(const std::string& file_name,
             tipl::out() << "loading";
             data.clear();
             data.resize(si2vi.size()*size_t(handle->dir.num_fiber));
-            tipl::par_for(si2vi.size(),[&](size_t si)
+            tipl::adaptive_par_for(si2vi.size(),[&](size_t si)
             {
                 size_t vi = si2vi[si];
                 if(handle->dir.fa[0][vi] == 0.0f)
@@ -716,7 +716,7 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
     mr.set_variables(X.begin(),uint32_t(feature_size),uint32_t(subject_qa.size()));
 
     tipl::image<3> I(handle->dim);
-    tipl::par_for(I.size(),[&](size_t index)
+    tipl::adaptive_par_for(I.size(),[&](size_t index)
     {
         if(vi2si[index])
         {
@@ -766,7 +766,7 @@ void connectometry_db::get_subject_fa(unsigned int subject_index,std::vector<std
     fa_data.resize(handle->dir.num_fiber);
     for(char index = 0;index < handle->dir.num_fiber;++index)
         fa_data[index].resize(handle->dim.size());
-    tipl::par_for(si2vi.size(),[&](unsigned int s_index)
+    tipl::adaptive_par_for(si2vi.size(),[&](unsigned int s_index)
     {
         size_t cur_index = si2vi[s_index];
         size_t fib_offset = 0;

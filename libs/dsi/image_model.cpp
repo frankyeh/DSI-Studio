@@ -46,7 +46,7 @@ void src_data::calculate_dwi_sum(bool update_mask)
         return;
     {
         tipl::image<3> dwi_sum(voxel.dim);
-        tipl::par_for(dwi_sum.size(),[&](size_t i)
+        tipl::adaptive_par_for(dwi_sum.size(),[&](size_t i)
         {
             for(size_t j = 0;j < src_dwi_data.size();++j)
             {
@@ -357,7 +357,7 @@ std::vector<std::pair<size_t,size_t> > src_data::get_bad_slices(void)
 {
     std::vector<std::pair<size_t,size_t> > result;
     std::mutex result_mutex;
-    tipl::par_for(src_dwi_data.size(),[&](size_t index)
+    tipl::adaptive_par_for(src_dwi_data.size(),[&](size_t index)
     {        
         for(size_t z = 1,pos = voxel.dim.plane_size();z + 1 < size_t(voxel.dim.depth());++z,pos += voxel.dim.plane_size())
         {
@@ -420,7 +420,7 @@ std::pair<float,float> src_data::quality_control_neighboring_dwi_corr(void)
             corr_pairs.push_back(std::make_pair(i,min_j));
     }
     std::vector<float> masked_ndc(corr_pairs.size()),ndc(corr_pairs.size());
-    tipl::par_for(corr_pairs.size(),[&](size_t index)
+    tipl::adaptive_par_for(corr_pairs.size(),[&](size_t index)
     {
         size_t i1 = corr_pairs[index].first;
         size_t i2 = corr_pairs[index].second;
@@ -483,7 +483,7 @@ float src_data::dwi_contrast(void)
         dwi_ortho.push_back(min_j2);
     }
     std::vector<float> ndc(dwi_self.size()),odc(dwi_self.size());
-    tipl::par_for(dwi_self.size(),[&](size_t index)
+    tipl::adaptive_par_for(dwi_self.size(),[&](size_t index)
     {
         ndc[index] = masked_correlation(src_dwi_data[dwi_self[index]],src_dwi_data[dwi_neighbor[index]],voxel.mask);
         odc[index] = masked_correlation(src_dwi_data[dwi_self[index]],src_dwi_data[dwi_ortho[index]],voxel.mask);
@@ -860,7 +860,7 @@ void src_data::flip_dwi(unsigned char type)
     else
     {
         size_t p = 0;
-        tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
+        tipl::adaptive_par_for(src_dwi_data.size(),[&](unsigned int index)
         {
             prog(p++,src_dwi_data.size());
             tipl::flip(dwi_at(index),type);
@@ -899,7 +899,7 @@ void src_data::rotate(const tipl::shape<3>& new_geo,
     std::vector<tipl::image<3,unsigned short> > rotated_dwi(src_dwi_data.size());
     tipl::progress prog("rotating");
     size_t p = 0;
-    tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
+    tipl::adaptive_par_for(src_dwi_data.size(),[&](unsigned int index)
     {
         if(prog.aborted())
             return;
@@ -956,7 +956,7 @@ void src_data::smoothing(void)
 {
     size_t p = 0;
     tipl::progress prog("smoothing");
-    tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
+    tipl::adaptive_par_for(src_dwi_data.size(),[&](unsigned int index)
     {
         prog(p++,src_dwi_data.size());
         tipl::filter::gaussian(dwi_at(index));
@@ -1116,7 +1116,7 @@ bool src_data::correct_motion(void)
     {
         tipl::progress prog("apply motion correction...");
         unsigned int p = 0;
-        tipl::par_for(src_bvalues.size(),[&](int i)
+        tipl::adaptive_par_for(src_bvalues.size(),[&](int i)
         {
             prog(++p,src_bvalues.size());
             if(prog.aborted() || !i)
@@ -1144,7 +1144,7 @@ bool src_data::correct_motion(void)
     {
         tipl::progress prog("estimate and registering...");
         unsigned int p = 0;
-        tipl::par_for(src_bvalues.size(),[&](int i)
+        tipl::adaptive_par_for(src_bvalues.size(),[&](int i)
         {
             prog(++p,src_bvalues.size());
             if(prog.aborted() || !i)
@@ -1198,10 +1198,10 @@ bool src_data::correct_motion(void)
     // get ndc list
     {
         tipl::progress prog("estimate and registering...");
-        tipl::par_for<tipl::sequential_with_id>(src_bvalues.size(),[&](size_t i,size_t id)
+        size_t total = 0;
+        tipl::adaptive_par_for(src_bvalues.size(),[&](size_t i)
         {
-            if(!id)
-                prog(i,src_bvalues.size());
+            prog(total++,src_bvalues.size());
             rotate_one_dwi(i,tipl::transformation_matrix<float>(new_args[i],voxel.dim,voxel.vs,voxel.dim,voxel.vs));
         });
     }
@@ -1213,7 +1213,7 @@ void src_data::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
     tipl::progress prog("Removing background region");
     size_t p = 0;
     tipl::out() << "from: " << range_min << " to: " << range_max << std::endl;
-    tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
+    tipl::adaptive_par_for(src_dwi_data.size(),[&](unsigned int index)
     {
         prog(p++,src_dwi_data.size());
         tipl::image<3,unsigned short> I0;
@@ -1244,7 +1244,7 @@ void get_distortion_map(const image_type& v1,
 {
     int h = v1.height(),w = v1.width();
     dis_map.resize(v1.shape());
-    tipl::par_for(v1.depth()*h,[&](int z)
+    tipl::adaptive_par_for(v1.depth()*h,[&](int z)
     {
         int base_pos = z*w;
         std::vector<float> line1(v1.begin()+base_pos,v1.begin()+base_pos+w),
@@ -1335,7 +1335,7 @@ void apply_distortion_map2(const image_type& v1,
 {
     int w = v1.width();
     v1_out.resize(v1.shape());
-    tipl::par_for(v1.depth()*v1.height(),[&](int z)
+    tipl::adaptive_par_for(v1.depth()*v1.height(),[&](int z)
     {
         std::vector<float> cdf_x1,cdf;
         cdf_x1.resize(size_t(w));
@@ -2258,7 +2258,7 @@ bool src_data::save_to_file(const char* dwi_file_name)
         nifti_dim[3] = uint32_t(src_bvalues.size());
 
         tipl::image<4,unsigned short> buffer(nifti_dim);
-        tipl::par_for(src_bvalues.size(),[&](size_t index)
+        tipl::adaptive_par_for(src_bvalues.size(),[&](size_t index)
         {
             std::copy(src_dwi_data[index],
                       src_dwi_data[index]+voxel.dim.size(),
@@ -2381,7 +2381,7 @@ bool src_data::load_from_file(const char* dwi_file_name)
             tipl::out() << "converting to grayscale";
             int pixel_bytes = fig.bytesPerLine()/fig.width();
             raw.resize(tipl::shape<2>(uint32_t(fig.width()),uint32_t(fig.height())));
-            tipl::par_for(raw.height(),[&](int y){
+            tipl::adaptive_par_for(raw.height(),[&](int y){
                 auto line = fig.scanLine(y);
                 auto out = raw.begin() + int64_t(y)*raw.width();
                 for(int x = 0;x < raw.width();++x,line += pixel_bytes)
@@ -2549,7 +2549,7 @@ bool src_data::load_from_file(const char* dwi_file_name)
                 }
                 // correct signals
                 size_t progress = 0;
-                tipl::par_for(voxel.dim.size(),[&](size_t voxel_index)
+                tipl::adaptive_par_for(voxel.dim.size(),[&](size_t voxel_index)
                 {
                     if(!prog2(++progress,voxel.dim.size()))
                         return;
@@ -2648,7 +2648,7 @@ bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
         return false;
     }
     size_t p = 0;
-    tipl::par_for(src_bvalues.size(),[&](unsigned int index)
+    tipl::adaptive_par_for(src_bvalues.size(),[&](unsigned int index)
     {
         prog(p++,src_bvalues.size());
         auto out = buffer.slice_at(index);
@@ -2657,7 +2657,7 @@ bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
 
     p = 0;
     if(rev_pe_src.get() && include_rev)
-        tipl::par_for(rev_pe_src->src_bvalues.size(),[&](unsigned int index)
+        tipl::adaptive_par_for(rev_pe_src->src_bvalues.size(),[&](unsigned int index)
         {
             prog(p++,rev_pe_src->src_bvalues.size());
             auto out = buffer.slice_at(index+uint32_t(src_bvalues.size()));
