@@ -348,10 +348,8 @@ bool ROIRegion::shift(tipl::vector<3,float> dx) // shift in region's voxel space
     }
     else
         region_render->move_object(dx);
-    tipl::par_for(region.size(),[&](unsigned int index)
-    {
+    for(size_t index = 0;index < region.size();++index)
         region[index] += dx;
-    });
     return true;
 }
 // ---------------------------------------------------------------------------
