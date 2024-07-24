@@ -70,7 +70,7 @@ class TinyTrack{
                              const std::vector<uint16_t>& cluster,
                              const std::string& report,
                              const std::string& parameter_id,
-                             unsigned int color = 0)
+                             const std::vector<unsigned int>& color)
     {
         tipl::progress prog0("saving ",std::filesystem::path(file_name).filename().string().c_str());
         tipl::io::gz_mat_write out(file_name);
@@ -80,13 +80,9 @@ class TinyTrack{
         out.write("voxel_size",vs);
         out.write("trans_to_mni",trans_to_mni);
         out.write("report",report);
-        if(!parameter_id.empty())
-            out.write("parameter_id",parameter_id);
-        if(color)
-            out.write("color",&color,1,1);
-        if(!cluster.empty())
-            out.write("cluster",&cluster[0],cluster.size(),1);
-
+        out.write("parameter_id",parameter_id);
+        out.write("color",color);
+        out.write("cluster",cluster);
         std::vector<std::vector<int32_t> > track32(tract_data.size());
         std::vector<size_t> buf_size(track32.size());
 
@@ -193,7 +189,8 @@ class TinyTrack{
                                std::vector<uint16_t>& tract_cluster,
                                tipl::shape<3>& geo,tipl::vector<3>& vs,
                                tipl::matrix<4,4>& trans_to_mni,
-                               std::string& report,std::string& parameter_id,unsigned int& color)
+                               std::string& report,std::string& parameter_id,
+                               std::vector<unsigned int>& color)
     {
         tipl::progress prog("opening ",std::filesystem::path(file_name).filename().c_str());
         tipl::io::gz_mat_read in;
@@ -205,17 +202,9 @@ class TinyTrack{
         in.read("trans_to_mni",trans_to_mni);
         in.read("report",report);
         in.read("parameter_id",parameter_id);
+        color = in.read_as_vector<unsigned int>("color");
+        tract_cluster = in.read_as_vector<uint16_t>("cluster");
         unsigned int row,col;
-        const unsigned int* c_ptr = nullptr;
-        if(in.read("color",row,col,c_ptr))
-            color = *c_ptr;
-        const uint16_t* cluster = nullptr;
-        if(in.read("cluster",row,col,cluster))
-        {
-            tract_cluster.resize(size_t(row)*size_t(col));
-            std::copy(cluster,cluster+tract_cluster.size(),tract_cluster.begin());
-        }
-
         for(unsigned int block = 0;1;block++)
         {
             const char* track_buf = nullptr;
@@ -475,14 +464,14 @@ bool tt2trk(const char* tt_file,const char* trk_file)
     tipl::vector<3> vs;
     tipl::shape<3> geo;
     tipl::matrix<4,4> trans_to_mni;
-    unsigned int color = default_tract_color;
+    std::vector<unsigned int> color;
     if(!TinyTrack::load_from_file(tt_file,tract_data,cluster,geo,vs,trans_to_mni,report,pid,color))
     {
         std::cout << "cannot read " << tt_file << std::endl;
         return false;
     }
     std::vector<std::vector<float> > scalar;
-    return TrackVis::save_to_file(trk_file,geo,vs,trans_to_mni,tract_data,scalar,report,color);
+    return TrackVis::save_to_file(trk_file,geo,vs,trans_to_mni,tract_data,scalar,report,color.empty() ? 0 : color[0]);
 }
 
 bool trk2tt(const char* trk_file,const char* tt_file)
@@ -512,8 +501,8 @@ bool trk2tt(const char* trk_file,const char* tt_file)
             loaded_tract_data[index][i+2] /= vs[2];
         }
     std::string p_id;
-    std::vector<uint16_t> cluster(loaded_tract_cluster.begin(),loaded_tract_cluster.end());
-    return TinyTrack::save_to_file(tt_file,geo,vs,trans_to_mni,loaded_tract_data,cluster,info,p_id,color);
+    return TinyTrack::save_to_file(tt_file,geo,vs,trans_to_mni,loaded_tract_data,
+                                   std::vector<uint16_t>(loaded_tract_cluster.begin(),loaded_tract_cluster.end()),info,p_id,std::vector<unsigned int>({color}));
 }
 //---------------------------------------------------------------------------
 void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::shape<3>& geo)
@@ -581,7 +570,7 @@ bool load_fib_from_tracks(const char* file_name,
         {
             std::vector<unsigned short> loaded_tract_cluster;
             std::string report,pid;
-            unsigned int color;
+            std::vector<unsigned int> color;
             if(!TinyTrack::load_from_file(file_name,loaded_tract_data,loaded_tract_cluster,geo,vs,trans_to_mni,report,pid,color))
             {
                 std::cout << "cannot read " << file_name << std::endl;
@@ -634,7 +623,7 @@ bool dual_reg<3>::apply_warping_tt(const char* from,const char* to) const
 {
     std::vector<std::vector<float> > loaded_tract_data;
     std::vector<uint16_t> cluster;
-    unsigned int color;
+    std::vector<unsigned int> color;
     std::string report, parameter_id;
 
     tipl::shape<3> geo;
@@ -678,6 +667,7 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
     std::string file_name(file_name_);
     std::vector<std::vector<float> > loaded_tract_data;
     std::vector<unsigned int> loaded_tract_cluster;
+    std::vector<unsigned int> colors;
     unsigned int color = default_tract_color;
     if(file_name.find(".dec") != std::string::npos)
         color = 0x004040F0;
@@ -690,7 +680,7 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
     {
         unsigned int old_color = color;
         std::vector<uint16_t> cluster;
-        if(!TinyTrack::load_from_file(file_name_,loaded_tract_data,cluster,geo,vs,source_trans_to_mni,report,parameter_id,color))
+        if(!TinyTrack::load_from_file(file_name_,loaded_tract_data,cluster,geo,vs,source_trans_to_mni,report,parameter_id,colors))
             return false;
         if(geo == handle->dim && vs == handle->vs && !tract_is_mni && source_trans_to_mni != handle->trans_to_mni)
         {
@@ -698,8 +688,8 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
             source_trans_to_mni = handle->trans_to_mni;
         }
         std::copy(cluster.begin(),cluster.end(),std::back_inserter(loaded_tract_cluster));
-        if(color != old_color)
-            color_changed = true;
+        if(!colors.empty())
+            color = colors[0];
     }
     if(QString(file_name_).endsWith("trk.gz") || QString(file_name_).endsWith("trk"))
     {
@@ -853,10 +843,12 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
 
 
     loaded_tract_data.swap(tract_data);
-    tract_color.clear();
-    tract_color.resize(tract_data.size());
-    if(color)
-        std::fill(tract_color.begin(),tract_color.end(),color);
+
+    tract_color.resize(tract_data.size(),color);
+    for(size_t i = 0;i < tract_cluster.size();++i)
+        if(tract_cluster[i] < colors.size())
+            tract_color[i] = colors[tract_cluster[i]];
+
     tract_tag.clear();
     tract_tag.resize(tract_data.size());
     deleted_tract_data.clear();
@@ -881,8 +873,9 @@ bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const char* 
     std::string file_name_s(file_name);
     if(tipl::ends_with(file_name_s,"tt.gz"))
     {
-        bool result = TinyTrack::save_to_file(file_name,geo,vs,trans_to_mni,tract_data,std::vector<uint16_t>(tract_cluster.begin(),tract_cluster.end()),report,parameter_id,
-                                            color_changed ? tract_color.front():0);
+        bool result = TinyTrack::save_to_file(file_name,geo,vs,trans_to_mni,tract_data,
+                                              std::vector<uint16_t>(tract_cluster.begin(),tract_cluster.end()),report,parameter_id,
+                                              std::vector<unsigned int>{tract_color.front()});
         return result;
     }
     if(tipl::ends_with(file_name_s,".trk"))
@@ -1004,8 +997,8 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     if(tipl::ends_with(file_name,"tt.gz"))
     {
         return TinyTrack::save_to_file(file_name.c_str(),geo,vs,trans_to_mni,
-                                            tract_data,std::vector<uint16_t>(tract_cluster.begin(),tract_cluster.end()),report,parameter_id,
-                                            color_changed ? tract_color.front():0);
+                                       tract_data,std::vector<uint16_t>(tract_cluster.begin(),tract_cluster.end()),report,parameter_id,
+                                       std::vector<unsigned int>{tract_color.front()});
     }
     if(tipl::ends_with(file_name,".trk") || tipl::ends_with(file_name,".trk.gz"))
     {
@@ -1268,18 +1261,22 @@ bool TractModel::save_all(const char* file_name,
         // collect all tract together
         std::vector<std::vector<float> > all_tract(total_size);
         std::vector<uint16_t> cluster(total_size);
-        for(size_t i = 0,pos = 0;i < all.size();++i)
+        std::vector<unsigned int> colors(all.size());
+        for(size_t cluster_index = 0,pos = 0;cluster_index < all.size();++cluster_index)
         {
-            auto& tract = all[i]->tract_data;
+            auto& tract = all[cluster_index]->tract_data;
+            if(tract.empty())
+                continue;
             for (size_t j = 0;j < tract.size();++j,++pos)
             {
                 all_tract[pos].swap(tract[j]);
-                cluster[pos] = uint16_t(i);
+                cluster[pos] = uint16_t(cluster_index);
             }
+            colors[cluster_index] = all[cluster_index]->tract_color.front();
         }
         // save file
         bool result = TinyTrack::save_to_file(file_name,all[0]->geo,all[0]->vs,all[0]->trans_to_mni,
-                    all_tract,cluster,all[0]->report,all[0]->parameter_id);
+                    all_tract,cluster,all[0]->report,all[0]->parameter_id,colors);
         // restore tracts
         for(size_t i = 0,pos = 0;i < all.size();++i)
         {
@@ -2173,7 +2170,6 @@ bool TractModel::paint(float select_angle,
     for (unsigned int index = 0;index < selected.size();++index)
         if (selected[index] > 0)
             tract_color[index] = color;
-    color_changed = true;
     return true;
 }
 
