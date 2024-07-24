@@ -3528,6 +3528,7 @@ void ConnectivityMatrix::set_regions(const tipl::shape<3>& geo,
 bool ConnectivityMatrix::set_atlas(std::shared_ptr<atlas> data,
                                    std::shared_ptr<fib_data> handle)
 {
+    tipl::progress p("open and load ",data->filename.c_str());
     if(handle->get_sub2temp_mapping().empty())
     {
         error_msg = handle->error_msg;
@@ -3547,7 +3548,7 @@ bool ConnectivityMatrix::set_atlas(std::shared_ptr<atlas> data,
     const auto& s2t = handle->get_sub2temp_mapping();
     region_map.clear();
     region_map.resize(handle->dim);
-    tipl::par_for(region_map.size(),[&](size_t index)
+    tipl::adaptive_par_for(region_map.size(),[&](size_t index)
     {
         for(unsigned int i = 0;i < region_count;++i)
         {
@@ -3611,7 +3612,6 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
     tipl::out() << "tract count: " << tract_model.get_visible_track_count();
     tipl::out() << "value: " << matrix_value_type;
     tipl::out() << "use_end_only: " << (use_end_only ? "yes":"no");
-    tipl::out() << "threshold: " << threshold;
     if(!atlas_name.empty())
         tipl::out() << "atlas_name: " << atlas_name;
 
@@ -3626,7 +3626,11 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
         tract_model.get_end_list(region_map,end_list1,end_list2);
     else
         tract_model.get_passing_list(region_map,uint32_t(region_count),end_list1,end_list2);
-    if(matrix_value_type == "trk")
+
+    matrix_value.clear();
+    matrix_value.resize(tipl::shape<2>(uint32_t(region_count),uint32_t(region_count)));
+
+    if(tipl::begins_with(matrix_value_type,"trk"))
     {
         std::vector<std::vector<std::vector<unsigned int> > > region_passing_list;
         init_matrix(region_passing_list,uint32_t(region_count));
@@ -3636,35 +3640,62 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
             region_passing_list[i][j].push_back(index);
         });
 
+        const float resolution_ratio = 2.0f;
+        tipl::matrix<4,4> resolution_trans((tipl::identity_matrix()));
+        resolution_trans[0] = resolution_trans[5] = resolution_trans[10] = 2.0f;
+
+        std::vector<std::pair<size_t,size_t> > ij_pair;
         for(unsigned int i = 0;i < region_passing_list.size();++i)
             for(unsigned int j = i+1;j < region_passing_list.size();++j)
+                if(!region_passing_list[i][j].empty())
+                    ij_pair.push_back(std::make_pair(i,j));
+
+        bool return_value = true;
+        tipl::adaptive_par_for(ij_pair.size(),[&](size_t index)
+        {
+            auto i = ij_pair[index].first;
+            auto j = ij_pair[index].second;
+            TractModel tm(tract_model.geo,tract_model.vs);
+            tm.report = tract_model.report;
+            tm.trans_to_mni = tract_model.trans_to_mni;
+            tm.is_mni = tract_model.is_mni;
+
+            std::vector<std::vector<float> > new_tracts;
+            for (unsigned int k = 0;k < region_passing_list[i][j].size();++k)
+                new_tracts.push_back(tract_model.get_tract(region_passing_list[i][j][k]));
+            tm.add_tracts(new_tracts);
+            if(matrix_value_type == "trk")
             {
-                if(region_passing_list[i][j].empty())
-                    continue;
-                std::string file_name = region_name[i]+"_"+region_name[j]+".tt.gz";
-                TractModel tm(tract_model.geo,tract_model.vs);
-                tm.report = tract_model.report;
-                tm.trans_to_mni = tract_model.trans_to_mni;
-                std::vector<std::vector<float> > new_tracts;
-                for (unsigned int k = 0;k < region_passing_list[i][j].size();++k)
-                    new_tracts.push_back(tract_model.get_tract(region_passing_list[i][j][k]));
-                tm.add_tracts(new_tracts);
+                auto file_name = region_name[i]+"_"+region_name[j]+".tt.gz";
                 if(!tm.save_tracts_to_file(file_name.c_str()))
-                    return false;
+                {
+                    tipl::error() << "cannot write to file: " << file_name;
+                    return_value = false;
+                    return;
+                }
+                matrix_value[i+j*region_count] = matrix_value[j+i*region_count] = tm.get_visible_track_count();
             }
-        return true;
+            if(tipl::ends_with(matrix_value_type,"area"))
+            {
+                std::vector<tipl::vector<3,short> > endpoint1,endpoint2;
+                tm.to_end_point_voxels(endpoint1,endpoint2,resolution_trans);
+                // end point surface 1 and 2
+                matrix_value[i+j*region_count] = matrix_value[j+i*region_count] =
+                    float(endpoint1.size()+endpoint2.size())*tract_model.vs[0]*tract_model.vs[1]/resolution_ratio/resolution_ratio;
+            }
+        });
+        return return_value;
     }
-    matrix_value.clear();
-    matrix_value.resize(tipl::shape<2>(uint32_t(region_count),uint32_t(region_count)));
+
     std::vector<std::vector<unsigned int> > count;
     init_matrix(count,uint32_t(region_count));
-
     for_each_connectivity(end_list1,end_list2,
                           [&](unsigned int,unsigned int i,unsigned int j){
         ++count[i][j];
     });
 
     // determine the threshold for counting the connectivity
+    tipl::out() << "threshold: " << threshold;
     unsigned int threshold_count = 0;
     for (const auto& inner : count)
         for (const auto& val : inner)
