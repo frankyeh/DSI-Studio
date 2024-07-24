@@ -114,6 +114,10 @@ struct file_holder{
 };
 
 void set_template(std::shared_ptr<fib_data> handle,tipl::program_option<tipl::out>& po);
+bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
+                             std::shared_ptr<fib_data> handle,
+                             std::string output_name,
+                             std::shared_ptr<TractModel> tract_model);
 std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector<std::string>& file_list,int& prog)
 {
     std::string tolerance_string = po.get("tolerance","22,26,30");
@@ -261,13 +265,13 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                        return handle->error_msg;
                     set_template(handle,po);
                 }
-                TractModel tract_model(handle);
+                std::shared_ptr<TractModel> tract_model(new TractModel(handle));
                 if(!overwrite && has_trk_file)
-                    tract_model.load_tracts_from_file(trk_file_name.c_str(),handle.get());
+                    tract_model->load_tracts_from_file(trk_file_name.c_str(),handle.get());
 
                 // each iteration increases tolerance
                 for(size_t tracking_iteration = 0;tracking_iteration < tolerance.size() &&
-                                                  !tract_model.get_visible_track_count();++tracking_iteration)
+                                                  !tract_model->get_visible_track_count();++tracking_iteration)
                 {
                     ThreadData thread(handle);
                     {
@@ -344,38 +348,40 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     if(prog2.aborted())
                         return std::string("aborted.");
                     // fetch both front and back buffer
-                    thread.fetchTracks(&tract_model);
-                    thread.fetchTracks(&tract_model);
+                    thread.fetchTracks(tract_model.get());
+                    thread.fetchTracks(tract_model.get());
 
-                    thread.apply_tip(&tract_model);
+                    thread.apply_tip(tract_model.get());
 
                     // if trim removes too many tract, undo to at least get the smallest possible bundle.
-                    if(thread.param.tip_iteration && tract_model.get_visible_track_count() == 0)
-                        tract_model.undo();
+                    if(thread.param.tip_iteration && tract_model->get_visible_track_count() == 0)
+                        tract_model->undo();
 
-                    if(no_result || tract_model.get_visible_track_count() == 0)
+                    if(no_result || tract_model->get_visible_track_count() == 0)
                     {
-                        tract_model.clear();
+                        tract_model->clear();
                         continue;
                     }
 
                     if(thread.param.step_size != 0.0f)
-                        tract_model.resample(1.0f);
-                    tract_model.delete_repeated(1.0f);
+                        tract_model->resample(1.0f);
+                    tract_model->delete_repeated(1.0f);
 
                     if(export_trk)
                     {
-                        tract_model.report = report;
-                        if(!tract_model.save_tracts_to_file(trk_file_name.c_str()))
+                        tract_model->report = report;
+                        if(!tract_model->save_tracts_to_file(trk_file_name.c_str()))
                             return std::string("fail to save ")+trk_file_name;
                         if(export_template_trk &&
-                           !tract_model.save_tracts_in_template_space(handle,template_trk_file_name.c_str()))
-                                return std::string("fail to save ")+trk_file_name;
+                           !tract_model->save_tracts_in_template_space(handle,template_trk_file_name.c_str()))
+                                return std::string("fail to save ")+template_trk_file_name;
                     }
+                    if(po.has("connectivity") && !get_connectivity_matrix(po,handle,trk_file_name,tract_model))
+                        return std::string("fail to output connectivity matrix");
                     break;
                 }
 
-                if(tract_model.get_visible_track_count() == 0)
+                if(tract_model->get_visible_track_count() == 0)
                 {
                     std::ofstream out(no_result_file_name.c_str());
                     continue;
@@ -387,7 +393,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     tipl::out() << "saving " << stat_file_name;
                     std::ofstream out_stat(stat_file_name.c_str());
                     std::string result;
-                    tract_model.get_quantitative_info(handle,result);
+                    tract_model->get_quantitative_info(handle,result);
                     out_stat << result;
                 }
             }
