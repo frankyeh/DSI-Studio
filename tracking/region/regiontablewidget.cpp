@@ -1811,7 +1811,10 @@ void RegionTableWidget::do_action(QString action)
                 region_to_be_processed.push_back(regions[size_t(roi_index)]);
         }
 
-        tipl::par_for(region_to_be_processed.size(),[&](unsigned int i){region_to_be_processed[i]->perform(action.toStdString());});
+        tipl::adaptive_par_for(region_to_be_processed.size(),[&](unsigned int i)
+        {
+            region_to_be_processed[i]->perform(action.toStdString());
+        });
 
 
         if(action == "dilation_by_voxel")
