@@ -85,7 +85,7 @@ public:
                 affine = reg.T();
                 float VFratio = reg.Ivs[0]/voxel.vs[0]; // if subject data are downsampled, then VFratio=2, 4, 8, ...etc
                 if(VFratio != 1.0f)
-                    tipl::multiply_constant(affine.data,affine.data+12,VFratio);
+                    tipl::multiply_constant(affine.data(),affine.data()+12,VFratio);
                 if(t1w_reg)
                     affine *= voxel.other_modality_trans;
             }
@@ -261,7 +261,7 @@ public:
     {
         // calculate jacobian
         {
-            std::copy(affine.data,affine.data+9,data.jacobian.begin());
+            std::copy(affine.data(),affine.data()+9,data.jacobian.begin());
             tipl::pixel_index<3> pos_index(data.voxel_index,voxel.dim);
             if(!cdm_dis.shape().is_edge(pos_index))
             {
