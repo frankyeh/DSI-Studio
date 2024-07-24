@@ -8,8 +8,7 @@ class RoiMgr;
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 class TractModel{
 public:
-        std::string report;
-        std::string parameter_id;
+        std::string report,name,parameter_id;
         bool saved = true;
         bool color_changed = false;
 public:
@@ -47,6 +46,62 @@ public:
         bool delete_branch(void);
         bool delete_by_length(float length);
 public:
+        static std::vector<std::shared_ptr<TractModel> >
+        load_from_file(const char* file_name,std::shared_ptr<fib_data> handle,bool tract_is_mni = false)
+        {
+            tipl::progress prog("open ",file_name);
+            std::vector<std::shared_ptr<TractModel> > all_tracts;
+            auto tract_model = std::make_shared<TractModel>(handle);
+            if(!tract_model->load_tracts_from_file(file_name,handle.get(),tract_is_mni))
+                return all_tracts;
+            if(tract_model->tract_cluster.empty())
+            {
+                auto name = std::filesystem::path(std::string(file_name)).filename().string();
+                tract_model->name = name.substr(0,name.find('.'));
+                all_tracts.push_back(tract_model);
+                return all_tracts;
+            }
+
+            std::vector<std::string> name;
+            if(std::filesystem::exists(std::string(file_name)+".txt"))
+            {
+                std::ifstream in(std::string(file_name)+".txt");
+                name = std::vector<std::string>((std::istream_iterator<std::string>(in)),(std::istream_iterator<std::string>()));
+            }
+
+            std::vector<std::vector<float> > tracts;
+            std::vector<unsigned int> labels;
+            tract_model->tract_cluster.swap(labels);
+            tract_model->release_tracts(tracts);
+            all_tracts.resize(tipl::max_value(labels) + 1);
+            name.resize(all_tracts.size());
+            tipl::adaptive_par_for(all_tracts.size(),[&](size_t cluster_index)
+            {
+                auto fiber_num = std::count(labels.begin(),labels.end(),cluster_index);
+                if(!fiber_num)
+                    return;
+                std::vector<std::vector<float> > add_tracts(fiber_num);
+                for(unsigned int index = 0,i = 0;index < labels.size();++index)
+                    if(labels[index] == cluster_index)
+                    {
+                        add_tracts[i].swap(tracts[index]);
+                        ++i;
+                    }
+                all_tracts[cluster_index] = std::make_shared<TractModel>(handle);
+                all_tracts[cluster_index]->add_tracts(add_tracts);
+                all_tracts[cluster_index]->geo = tract_model->geo;
+                all_tracts[cluster_index]->vs = tract_model->vs;
+                all_tracts[cluster_index]->trans_to_mni = tract_model->trans_to_mni;
+                all_tracts[cluster_index]->is_mni = tract_model->is_mni;
+
+                all_tracts[cluster_index]->report = tract_model->report;
+                all_tracts[cluster_index]->parameter_id = tract_model->parameter_id;
+                all_tracts[cluster_index]->name = name[cluster_index];
+            });
+            return all_tracts;
+        }
+
+public:
         TractModel(std::shared_ptr<fib_data> handle):geo(handle->dim),vs(handle->vs),trans_to_mni(handle->trans_to_mni),is_mni(handle->is_mni){}
         TractModel(tipl::shape<3> dim_,tipl::vector<3> vs_):geo(dim_),vs(vs_)
         {
@@ -70,6 +125,8 @@ public:
             tract_color = rhs.tract_color;
             tract_tag = rhs.tract_tag;
             report = rhs.report;
+            parameter_id = rhs.parameter_id;
+            name = rhs.name;
             saved = true;
             return *this;
         }
