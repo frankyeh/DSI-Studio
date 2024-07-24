@@ -308,7 +308,7 @@ inline void show_slice_at(QGraphicsScene& scene,const T& source1,const U& source
                     int y = index[1] >> 6;
                     I2[index.index()] = ((x&1) ^ (y&1)) ? I1[index.index()] : I2[index.index()];
                 });
-            tipl::par_for(tipl::begin_index(I3.shape()),tipl::end_index(I1.shape()),
+            tipl::par_for(tipl::begin_index(I3.shape()),tipl::end_index(I3.shape()),
                 [&](const tipl::pixel_index<2>& index)
                 {
                     int x = index[0] >> 6;
