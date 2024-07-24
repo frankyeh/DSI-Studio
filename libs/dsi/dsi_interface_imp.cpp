@@ -330,7 +330,8 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             odf_data odf;
             if(!odf.read(fib.mat_reader))
                 throw std::runtime_error(odf.error_msg);
-            tipl::par_for(dim.size(),[&](size_t i){
+            tipl::par_for(dim.size(),[&](size_t i)
+            {
                 if(fib.dir.fa[0][i] == 0.0f)
                     return;
                 const float* odf_data = odf.get_odf_data(i);
@@ -341,7 +342,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                 else
                     tipl::add(odfs[i].begin(),odfs[i].end(),odf_data);
                 odf_count[i]++;
-            });
+            },tipl::max_thread_count);
 
 
             tipl::out() << "accumulating other metrics";
@@ -374,13 +375,13 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     {
         if(other_metrics_count[i])
             other_metrics_images[i] *= 1.0f/other_metrics_count[i];
-    });
+    },tipl::max_thread_count);
 
     prog(0,3);
     tipl::par_for(dim.size(),[&](size_t i){
         if(odf_count[i] > 1)
             tipl::divide_constant(odfs[i],float(odf_count[i]));
-    });
+    },tipl::max_thread_count);
 
     // eliminate ODF if missing more than half of the population
     tipl::out() << "preparing ODFs";
@@ -411,7 +412,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
         std::transform(odfs[i].begin(), odfs[i].end(), odfs_float[i].begin(),
                            [](double d) { return static_cast<float>(d); });
 
-    },4);
+    },tipl::max_thread_count);
 
     if(!output_odfs(mask,out_name,".mean.fib.gz",odfs_float,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg,false) ||
        !output_odfs(mask,out_name,".mean.odf.fib.gz",odfs_float,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg))
