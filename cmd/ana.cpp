@@ -212,23 +212,33 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         }
         auto dim = handle->dim;
         tipl::image<3,uint32_t> accumulate_map(dim);
-        for(size_t i = 0;i < tract_files.size();++i)
+        std::mutex add_lock;
+        bool failed = false;
+        tipl::adaptive_par_for(tract_files.size(),[&](size_t i)
         {
+            if(failed)
+                return;
             tipl::out() << "accumulating " << tract_files[i] << "..." <<std::endl;
             std::shared_ptr<TractModel> tract(new TractModel(handle));
             if(!load_tracts(tract_files[i].c_str(),handle,tract,roi_mgr))
-                return 1;
+            {
+                failed = true;
+                return;
+            }
             std::vector<tipl::vector<3,short> > points;
             tract->to_voxel(points);
             tipl::image<3,char> tract_mask(dim);
-            tipl::par_for(points.size(),[&](size_t j)
+            for(size_t j = 0;j < points.size();++j)
             {
                 auto p = points[j];
                 if(dim.is_valid(p))
                     tract_mask[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]=1;
-            });
+            }
+            std::scoped_lock lock(add_lock);
             accumulate_map += tract_mask;
-        }
+        });
+        if(failed)
+            return 1;
         tipl::image<3> pdi(accumulate_map);
         pdi *= 1.0f/float(tract_files.size());
         tipl::out() << "saving " << output << std::endl;
