@@ -149,21 +149,27 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
 
 void TractTableWidget::addNewTracts(QString tract_name,bool checked)
 {
+    auto new_model = std::make_shared<TractModel>(cur_tracking_window.handle);
+    new_model->name = tract_name.toStdString();
+    addNewTracts(new_model,checked);
+}
+void TractTableWidget::addNewTracts(std::shared_ptr<TractModel> new_tract,bool checked)
+{
     thread_data.push_back(nullptr);
     tract_rendering.push_back(std::make_shared<TractRender>());
-    tract_models.push_back(std::make_shared<TractModel>(cur_tracking_window.handle));
+    tract_models.push_back(new_tract);
     insertRow(tract_models.size()-1);
-    QTableWidgetItem *item0 = new QTableWidgetItem(tract_name);
+    QTableWidgetItem *item0 = new QTableWidgetItem(QString(new_tract->name.c_str()));
     item0->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
     item0->setData(Qt::ForegroundRole,checked ? QBrush(Qt::black) : QBrush(Qt::gray));
     setItem(tract_models.size()-1, 0, item0);
     for(unsigned int index = 1;index <= 3;++index)
     {
-        QTableWidgetItem *item1 = new QTableWidgetItem(QString());
+        QTableWidgetItem *item1 = new QTableWidgetItem(index == 1 && new_tract->get_visible_track_count() ?
+                                                       QString::number(new_tract->get_visible_track_count()) : QString());
         item1->setFlags(item1->flags() & ~Qt::ItemIsEditable);
         setItem(tract_models.size()-1, index, item1);
     }
-
     setRowHeight(tract_models.size()-1,22);
     setCurrentCell(tract_models.size()-1,0);
 }
@@ -400,39 +406,20 @@ void TractTableWidget::load_tracts(QStringList filenames,bool tract_is_mni)
         return;
     if(tract_is_mni && !cur_tracking_window.map_to_mni())
         return;
-    tipl::progress prog("load tracts");
+    tipl::progress prog("open tracts");
     for(unsigned int index = 0;prog(index,filenames.size());++index)
     {
-        QString filename = filenames[index];
-        if(!filename.size())
-            continue;
-        QString label = QFileInfo(filename).fileName();
-        label.remove(".tt.gz");
-        label.remove(".trk.gz");
-        label.remove(".txt");
-        int pos = label.indexOf(".fib.gz");
-        if(pos != -1)
-            label = label.right(label.length()-pos-8);
-        std::string sfilename = filename.toStdString();
-        addNewTracts(label,filenames.size() == 1);
-        if(!tract_models.back()->load_tracts_from_file(sfilename.c_str(),cur_tracking_window.handle.get(),tract_is_mni))
+        auto models = TractModel::load_from_file(filenames[index].toStdString().c_str(),
+                    cur_tracking_window.handle,tract_is_mni);
+        if(models.empty())
         {
-            QMessageBox::critical(this,"ERROR",QString("Cannot load tracks from %1").arg(QFileInfo(filename).baseName()));
+            QMessageBox::critical(this,"ERROR",QString("Cannot load tracks from %1").arg(QFileInfo(filenames[index]).baseName()));
             continue;
         }
-        if(tract_models.back()->tract_cluster.empty()) // not multiple cluster file
-        {
-            item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
-        }
-        else
-        {
-            std::vector<unsigned int> labels;
-            labels.swap(tract_models.back()->tract_cluster);
-            load_cluster_label(labels);
-            if(QFileInfo(filename+".txt").exists())
-                load_tract_label(filename+".txt");
-        }
+        for(auto& each : models)
+            addNewTracts(each,models.size() == 1);
     }
+    emit show_tracts();
 }
 
 void TractTableWidget::load_tracts(void)
