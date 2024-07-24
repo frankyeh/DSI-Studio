@@ -35,6 +35,7 @@ public:
     std::vector<std::string> get_checked_tracks_name(void) const;
     enum {none = 0,select = 1,del = 2,cut = 3,paint = 4,move = 5}edit_option;
     void addNewTracts(QString tract_name,bool checked = true);
+    void addNewTracts(std::shared_ptr<TractModel> new_tract,bool checked = true);
     void addConnectometryResults(std::vector<std::vector<std::vector<float> > >& greater,
                                  std::vector<std::vector<std::vector<float> > >& lesser);
     void export_tract_density(tipl::shape<3> dim,
