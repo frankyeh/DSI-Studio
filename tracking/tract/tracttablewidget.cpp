@@ -417,7 +417,8 @@ void TractTableWidget::load_tracts(QStringList filenames,bool tract_is_mni)
             continue;
         }
         for(auto& each : models)
-            addNewTracts(each,models.size() == 1);
+            if(each.get())
+                addNewTracts(each,models.size() == 1);
     }
     emit show_tracts();
 }
