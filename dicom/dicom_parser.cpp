@@ -686,7 +686,7 @@ void scale_image_buf_to_uint16(std::vector<tipl::image<3> >& image_buf)
     float max_value = 0.0f;
     for(size_t i = 0;i < image_buf.size();++i)
         max_value = std::max<float>(max_value,tipl::max_value(image_buf[i]));
-    tipl::par_for(image_buf.size(),[&](int i)
+    tipl::adaptive_par_for(image_buf.size(),[&](int i)
     {
         image_buf[i] *= float(std::numeric_limits<unsigned short>::max()-1)/max_value;
         tipl::lower_threshold(image_buf[i],0);
