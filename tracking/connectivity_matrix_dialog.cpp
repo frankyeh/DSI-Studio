@@ -93,6 +93,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
 {
     if(cur_tracking_window->tractWidget->tract_models.size() == 0)
         return;
+    tipl::progress p("calculating connectivity matrix");
     if(ui->region_list->currentIndex() == 0)
         {
             cm.clear();
