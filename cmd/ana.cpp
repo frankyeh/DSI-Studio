@@ -295,6 +295,9 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
     for(unsigned int i = 1;i < tracts.size();++i)
         tract_model->add(*tracts[i].get());
 
+    if(po.has("tip_iteration"))
+        tract_model->trim(po.get("tip_iteration",0));
+
     if(po.has("output") && QFileInfo(output.c_str()).isDir())
         return trk_post(po,handle,tract_model,output + "/" + QFileInfo(tract_files[0].c_str()).baseName().toStdString(),false);
     if(po.has("output"))
