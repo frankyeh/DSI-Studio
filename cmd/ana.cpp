@@ -187,7 +187,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
     if(!load_roi(po,handle,roi_mgr))
         return 1;
 
-    std::string output = po.get("output");
+
     std::vector<std::string> tract_files;
     if(!po.get_files("tract",tract_files))
     {
@@ -201,55 +201,6 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         return 1;
     }
 
-    // accumulate multiple tracts into one probabilistic nifti volume
-    if(tract_files.size() > 1 && QString(output.c_str()).endsWith(".nii.gz"))
-    {
-        tipl::out() << "computing tract probability to " << output << std::endl;
-        if(std::filesystem::exists(output))
-        {
-            tipl::out() << output << " exists. terminating..." << std::endl;
-            return 0;
-        }
-        auto dim = handle->dim;
-        tipl::image<3,uint32_t> accumulate_map(dim);
-        std::mutex add_lock;
-        bool failed = false;
-        tipl::adaptive_par_for(tract_files.size(),[&](size_t i)
-        {
-            if(failed)
-                return;
-            tipl::out() << "accumulating " << tract_files[i] << "..." <<std::endl;
-            std::shared_ptr<TractModel> tract(new TractModel(handle));
-            if(!load_tracts(tract_files[i].c_str(),handle,tract,roi_mgr))
-            {
-                failed = true;
-                return;
-            }
-            std::vector<tipl::vector<3,short> > points;
-            tract->to_voxel(points);
-            tipl::image<3,char> tract_mask(dim);
-            for(size_t j = 0;j < points.size();++j)
-            {
-                auto p = points[j];
-                if(dim.is_valid(p))
-                    tract_mask[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]=1;
-            }
-            std::scoped_lock lock(add_lock);
-            accumulate_map += tract_mask;
-        });
-        if(failed)
-            return 1;
-        tipl::image<3> pdi(accumulate_map);
-        pdi *= 1.0f/float(tract_files.size());
-        tipl::out() << "saving " << output << std::endl;
-        if(!tipl::io::gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni,handle->is_mni))
-        {
-            tipl::error() << "cannot write to " << output << std::endl;
-            return 1;
-        }
-        return 0;
-    }
-
 
     std::vector<std::shared_ptr<TractModel> > tracts;
     std::vector<std::string> tract_name;
@@ -260,25 +211,96 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
             return 1;
         tract_name.push_back(std::filesystem::path(tract_files[i]).filename().string());
     }
-
     tipl::out() << "a total of " << tract_files.size() << " tract file(s) loaded" << std::endl;
-    // load multiple track files and save as one multi-cluster tract file
+
+
+    auto tract_cluster = tracts[0]->tract_cluster;
+    if(tracts.size() == 1 && !tracts[0]->tract_cluster.empty())
+    {
+        tipl::out() << "loading cluster information";
+        tracts = TractModel::separate_tracts(tracts[0],tracts[0]->tract_cluster,tract_name);
+        if(!po.has("name") && !std::filesystem::exists(tract_files[0]+".txt"))
+            tipl::warning() << "please use --name to specify the text file storing tract names";
+    }
+
+    if(po.has("name"))
+    {
+        std::ifstream in(po.get("name"));
+        if(!in)
+        {
+            tipl::error() << "cannot open file:" << po.get("name");
+            return 1;
+        }
+        tract_name.clear();
+        std::string line;
+        while(std::getline(in,line))
+            tract_name.push_back(line);
+        if(tract_name.size() != tracts.size())
+        {
+            tipl::error() << "number of labels in " << po.get("name") << " does not match.";
+            return 1;
+        }
+    }
+
     if(tracts.size() > 1)
     {
-        if(QString(output.c_str()).endsWith(".trk.gz") ||
-           QString(output.c_str()).endsWith(".tt.gz"))
+        if(po.has("output"))
         {
-            if(!TractModel::save_all(output.c_str(),tracts,tract_files))
+            std::string output = po.get("output");
+            // accumulate multiple tracts into one probabilistic nifti volume
+            if(QString(output.c_str()).endsWith(".nii.gz"))
             {
-                tipl::error() << "cannot write to " << output << std::endl;
-                return 1;
+                tipl::out() << "computing tract probability to " << output << std::endl;
+                if(std::filesystem::exists(output))
+                    tipl::out() << output << " exists." << std::endl;
+                else
+                {
+                    auto dim = handle->dim;
+                    tipl::image<3,uint32_t> accumulate_map(dim);
+                    std::mutex add_lock;
+                    tipl::adaptive_par_for(tract_files.size(),[&](size_t i)
+                    {
+                        tipl::out() << "accumulating " << tract_files[i] << "..." <<std::endl;
+                        std::vector<tipl::vector<3,short> > points;
+                        tracts[i]->to_voxel(points);
+                        tipl::image<3,char> tract_mask(dim);
+                        for(size_t j = 0;j < points.size();++j)
+                        {
+                            auto p = points[j];
+                            if(dim.is_valid(p))
+                                tract_mask[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]=1;
+                        }
+                        std::scoped_lock lock(add_lock);
+                        accumulate_map += tract_mask;
+                    });
+                    tipl::image<3> pdi(accumulate_map);
+                    pdi *= 1.0f/float(tract_files.size());
+                    tipl::out() << "saving " << output << std::endl;
+                    if(!tipl::io::gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni,handle->is_mni))
+                    {
+                        tipl::error() << "cannot write to " << output << std::endl;
+                        return 1;
+                    }
+                }
             }
-            return 0;
+            if(QString(output.c_str()).endsWith(".trk.gz") ||
+               QString(output.c_str()).endsWith(".tt.gz"))
+            {
+                tipl::out() << "saving multiple tracts into one file: " << output;
+                if(!TractModel::save_all(output.c_str(),tracts,tract_files))
+                {
+                    tipl::error() << "cannot write to " << output << std::endl;
+                    return 1;
+                }
+            }
         }
+
+
         if(po.get("export") == "stat")
         {
             std::string result,file_name_stat("stat.txt");
             get_track_statistics(handle,tracts,tract_name,result);
+            tipl::out() << "saving " << file_name_stat;
             std::ofstream out_stat(file_name_stat.c_str());
             if(!out_stat)
             {
@@ -286,24 +308,15 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
                 return false;
             }
             out_stat << result;
-            return 0;
         }
     }
-
-    tipl::out() << "merging all tracts into one for post-tract analysis";
-    std::shared_ptr<TractModel> tract_model = tracts[0];
-    for(unsigned int i = 1;i < tracts.size();++i)
-        tract_model->add(*tracts[i].get());
-
-    if(po.has("tip_iteration"))
-        tract_model->trim(po.get("tip_iteration",0));
-
-    if(po.has("output") && QFileInfo(output.c_str()).isDir())
-        return trk_post(po,handle,tract_model,output + "/" + QFileInfo(tract_files[0].c_str()).baseName().toStdString(),false);
-    if(po.has("output"))
-        return trk_post(po,handle,tract_model,output,true);
-    return trk_post(po,handle,tract_model,tract_files[0],false);
-
+    if(tracts.size() == 1)
+    {
+        if(po.has("tip_iteration"))
+            tracts[0]->trim(po.get("tip_iteration",0));
+        return trk_post(po,handle,tracts[0],tract_files[0],false);
+    }
+    return 0;
 }
 int exp(tipl::program_option<tipl::out>& po);
 int ana(tipl::program_option<tipl::out>& po)
