@@ -175,6 +175,7 @@ public:
         bool undo(void);
         bool redo(void);
         bool trim(void);
+        void trim(unsigned int iterations);
         void flip(char dim);
 
         void resample(float new_step);
