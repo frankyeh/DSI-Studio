@@ -351,7 +351,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     thread.fetchTracks(tract_model.get());
                     thread.fetchTracks(tract_model.get());
 
-                    thread.apply_tip(tract_model.get());
+                    tract_model->trim(thread.param.tip_iteration);
 
                     // if trim removes too many tract, undo to at least get the smallest possible bundle.
                     if(thread.param.tip_iteration && tract_model->get_visible_track_count() == 0)
