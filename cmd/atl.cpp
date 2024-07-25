@@ -36,7 +36,7 @@ int atl(tipl::program_option<tipl::out>& po)
     if(QFileInfo(source.c_str()).isDir())
     {
         tipl::out() << "Searching all fib files in directory " << source << std::endl;
-        if(!tipl::search_filesystem(source + "/*.fib.gz",name_list))
+        if(!tipl::search_filesystem<tipl::out,tipl::error>(source + "/*.fib.gz",name_list))
             return 1;
     }
     else
