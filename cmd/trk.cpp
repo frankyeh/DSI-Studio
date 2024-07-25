@@ -512,7 +512,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
 
         tipl::out() << "saving " << (po.get("recognize") + ".name.txt") << std::endl;
         std::ofstream out2(po.get("recognize") + ".name.txt");
-        std::copy(names.begin(),names.end(),std::ostream_iterator<std::string>(out2," "));
+        std::copy(names.begin(),names.end(),std::ostream_iterator<std::string>(out2,"\n"));
         tract_model->tract_cluster = labels;
     }
 
