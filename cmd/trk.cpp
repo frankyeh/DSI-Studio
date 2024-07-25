@@ -476,6 +476,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
         tipl::out() << "no tract for post-track analysis" << std::endl;
         return 0;
     }
+
     if (po.has("delete_repeat"))
     {
         tipl::out() << "deleting repeat tracks..." << std::endl;
@@ -514,6 +515,28 @@ int trk_post(tipl::program_option<tipl::out>& po,
         std::copy(names.begin(),names.end(),std::ostream_iterator<std::string>(out2," "));
         tract_model->tract_cluster = labels;
     }
+
+    if (po.has("output"))
+    {
+        std::string output = po.get("output");
+        if(output == "no_file")
+            output_track = false;
+        else
+        {
+            if(QFileInfo(output.c_str()).isDir())
+            {
+                tract_file_name = output+"/"+QFileInfo(po.get("source").c_str()).baseName().toStdString();
+                if(output_track)
+                    tract_file_name += ".tt.gz";
+            }
+            else
+            {
+                tract_file_name = output;
+                output_track = true;
+            }
+        }
+    }
+
     if(output_track)
     {
         bool failed = false;
@@ -816,21 +839,5 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 
     tipl::out() << tract_model->get_visible_track_count() << " tracts are generated using " << tracking_thread.get_total_seed_count() << " seeds."<< std::endl;
 
-    std::string tract_file_name = po.get("source")+".tt.gz";
-    bool output_track = true;
-    if (po.has("output"))
-    {
-        std::string output = po.get("output");
-        if(output == "no_file")
-            output_track = false;
-        else
-        {
-            if(QFileInfo(output.c_str()).isDir())
-                tract_file_name = output+"/"+QFileInfo(po.get("source").c_str()).baseName().toStdString() + ".tt.gz";
-            else
-                tract_file_name = output;
-        }
-    }
-
-    return trk_post(po,handle,tract_model,tract_file_name,output_track);
+    return trk_post(po,handle,tract_model,po.get("source")+".tt.gz",true);
 }
