@@ -2399,6 +2399,17 @@ bool TractModel::trim(void)
     return delete_tracts(std::vector<unsigned int>(tracts_to_delete.begin(),tracts_to_delete.end()));
 }
 //---------------------------------------------------------------------------
+void TractModel::trim(unsigned int tip_iteration)
+{
+    if(!tip_iteration)
+        return;
+    auto last = get_deleted_track_count();
+    for(size_t i = 0;i < tip_iteration && get_visible_track_count() && trim();++i)
+                ;
+    tipl::out() << get_deleted_track_count()-last << " tracts removed by pruning.";
+    tipl::out() << "tract count after pruning: " << get_visible_track_count();
+}
+//---------------------------------------------------------------------------
 void TractModel::clear_deleted(void)
 {
     deleted_count.clear();
