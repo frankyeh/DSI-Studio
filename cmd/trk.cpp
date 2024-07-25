@@ -471,20 +471,9 @@ int trk_post(tipl::program_option<tipl::out>& po,
              std::string tract_file_name,bool output_track)
 {
     tipl::progress prog("post-tracking analysis");
-
-    auto tip_iteration = uint8_t(po.get("tip_iteration", (po.has("track_id") | po.has("dt_metric1") ) ? 4 : 0));
-    if(tip_iteration)
-    {
-        for(size_t i = 0;i < tip_iteration &&
-            tract_model->get_visible_track_count() &&
-            tract_model->trim();++i)
-            ;
-        tipl::out() << tract_model->get_deleted_track_count() << " tracts are removed by pruning." << std::endl;
-        tipl::out() << "Total tract count after pruning is " << tract_model->get_visible_track_count() << " tracts." << std::endl;
-    }
     if(tract_model->get_visible_track_count() == 0)
     {
-        tipl::out() << "No tract for further processing" << std::endl;
+        tipl::out() << "no tract for post-track analysis" << std::endl;
         return 0;
     }
     if (po.has("delete_repeat"))
@@ -816,13 +805,15 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
         tracking_thread.run(tipl::max_thread_count,true);
         tracking_thread.fetchTracks(tract_model.get());
         tipl::out() << "finished tracking." << std::endl;
-
         if(tract_model->get_visible_track_count() == 0)
         {
-            tipl::out() << "no tract generated. Terminating..." << std::endl;
+            tipl::out() << "no tract produced. terminating..." << std::endl;
             return 0;
         }
     }
+
+    tract_model->trim(tracking_thread.param.tip_iteration);
+
     tipl::out() << tract_model->get_visible_track_count() << " tracts are generated using " << tracking_thread.get_total_seed_count() << " seeds."<< std::endl;
 
     std::string tract_file_name = po.get("source")+".tt.gz";
