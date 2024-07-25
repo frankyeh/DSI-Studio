@@ -152,7 +152,7 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
         phase_dir.push_back(phase_str);
 
         dwi_file.push_back(each);
-        tipl::out() << std::filesystem::path(dwi_file.back()).filename().string();
+        tipl::out() << std::filesystem::path(dwi_file.back()).filename().u8string();
         tipl::out() << "image size: " << image_size.back();
         tipl::out() << "dwi count: " << dwi_count.back();
         tipl::out() << "phase encoding: " << phase_dir.back();
@@ -180,8 +180,8 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
             }
         image_size[i] = tipl::shape<3>();
         dwi_file[i].erase(dwi_file[i].length() - 7, 7); // remove .nii.gz
-        auto src_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).filename().string() + ".src.gz";
-        auto rsrc_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).filename().string() + ".rsrc.gz";
+        auto src_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).filename().u8string() + ".src.gz";
+        auto rsrc_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).filename().u8string() + ".rsrc.gz";
         if(!overwrite && std::filesystem::exists(src_name))
             tipl::out() << "skipping " << src_name << " already exists";
         else
@@ -227,7 +227,7 @@ bool nii2src(const std::vector<std::string>& dwi_nii_files,
         }
         else
         {
-            auto src_name = output_dir + "/" + std::filesystem::path(dwi_nii_files[i]).filename().string() + ".src.gz";
+            auto src_name = output_dir + "/" + std::filesystem::path(dwi_nii_files[i]).filename().u8string() + ".src.gz";
             if(!overwrite && std::filesystem::exists(src_name))
                 tipl::out() << "skipping " << src_name << " already exists";
             else
@@ -372,7 +372,7 @@ int src(tipl::program_option<tipl::out>& po)
     auto output = po.get("output",file_list.front() + ".src.gz");
 
     if(std::filesystem::is_directory(output))
-        output += std::string("/") + std::filesystem::path(file_list[0]).filename().string() + ".src.gz";
+        output += std::string("/") + std::filesystem::path(file_list[0]).filename().u8string() + ".src.gz";
     if(!tipl::ends_with(output,".src.gz"))
         output += ".src.gz";
 

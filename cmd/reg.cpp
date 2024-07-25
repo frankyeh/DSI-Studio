@@ -32,7 +32,7 @@ bool dual_reg<3>::apply_warping(const char* from,const char* to) const
         }
         if(I[0].shape() != I_list[0].shape())
         {
-            error_msg = std::filesystem::path(from).filename().string();
+            error_msg = std::filesystem::path(from).filename().u8string();
             error_msg += " has an image size or srow matrix from that of the original --from image.";
             return false;
         }
@@ -66,7 +66,7 @@ bool dual_reg<3>::apply_warping(const char* from,const char* to) const
     if(I[0].shape() != I3.shape())
     {
         tipl::out() << "--from dim: " << I[0].shape();
-        error_msg = std::filesystem::path(from).filename().string();
+        error_msg = std::filesystem::path(from).filename().u8string();
         error_msg += " has an image size or srow matrix from that of the original --from image.";
         return false;
     }

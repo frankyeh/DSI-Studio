@@ -635,9 +635,9 @@ void group_connectometry_analysis::generate_report(std::string& output)
     {
         if(fdr.empty())
             return;
-        html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+"."+name+"_map.jpg").filename().string() << "\" width=\"600\"/>" << std::endl;
-        html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+"."+name+"_map2.jpg").filename().string() << "\" width=\"600\"/>" << std::endl;
-        html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+"."+name+".jpg").filename().string() << "\" width=\"1200\"/>" << std::endl;
+        html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+"."+name+"_map.jpg").filename().u8string() << "\" width=\"600\"/>" << std::endl;
+        html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+"."+name+"_map2.jpg").filename().u8string() << "\" width=\"600\"/>" << std::endl;
+        html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+"."+name+".jpg").filename().u8string() << "\" width=\"1200\"/>" << std::endl;
         html_report << "<p><b>Fig.</b> Tracks with " << hypo << " " << fdr << "</p>" << std::endl;
     };
     auto report_fdr = [&](bool sig,std::string hypo,std::string result){
@@ -687,7 +687,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
     {
         if(fdr_inc[length_threshold_voxels] < 0.2f || fdr_dec[length_threshold_voxels] < 0.2f)
         {
-            html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+".pos_neg.jpg").filename().string() << "\" width=\"1200\"/>" << std::endl;
+            html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+".pos_neg.jpg").filename().u8string() << "\" width=\"1200\"/>" << std::endl;
             html_report << "<p><b>Fig.</b> Correlational tractography showing " << hypothesis_inc << " (red)" << fdr_result_pos
                     << " and " << hypothesis_dec << " (blue)" << fdr_result_neg << ".</p>" << std::endl;
         }
@@ -701,15 +701,15 @@ void group_connectometry_analysis::generate_report(std::string& output)
 
         html_report << "<h3>False discovery rate analysis</h3>" << std::endl;
 
-        html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+".inc.dist.jpg").filename().string() << "\" width=\"320\"/>" << std::endl;
+        html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+".inc.dist.jpg").filename().u8string() << "\" width=\"320\"/>" << std::endl;
         html_report << "<p><b>Fig.</b> Permutation test showing the histograms of track counts with "<< hypothesis_inc << ".</p>";
 
 
-        html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+".dec.dist.jpg").filename().string() << "\" width=\"320\"/>" << std::endl;
+        html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+".dec.dist.jpg").filename().u8string() << "\" width=\"320\"/>" << std::endl;
         html_report << "<p><b>Fig.</b> Permutation test showing the histograms of track counts with "<< hypothesis_dec << ".</p>";
 
         html_report << permutation_explained << std::endl;
-        html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+".fdr.jpg").filename().string() << "\" width=\"320\"/>" << std::endl;
+        html_report << "<p></p><img src = \""<< std::filesystem::path(output_file_name+".fdr.jpg").filename().u8string() << "\" width=\"320\"/>" << std::endl;
         html_report << "<p><b>Fig.</b> The False discovery rate (FDR) at different track length </p>";
     }
 

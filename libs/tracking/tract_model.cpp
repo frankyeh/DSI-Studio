@@ -72,7 +72,7 @@ class TinyTrack{
                              const std::string& parameter_id,
                              const std::vector<unsigned int>& color)
     {
-        tipl::progress prog0("saving ",std::filesystem::path(file_name).filename().string().c_str());
+        tipl::progress prog0("saving ",std::filesystem::path(file_name).filename().u8string().c_str());
         tipl::io::gz_mat_write out(file_name);
         if (!out)
             return false;
@@ -292,7 +292,7 @@ struct TrackVis
                 tipl::matrix<4,4>& trans_to_mni,
                 std::string& info)
     {
-        tipl::progress prog("opening ",std::filesystem::path(file_name).filename().string().c_str());
+        tipl::progress prog("opening ",std::filesystem::path(file_name).filename().u8string().c_str());
         tipl::io::gz_istream in;
         if (!in.open(file_name))
             return false;
@@ -347,7 +347,7 @@ struct TrackVis
                              const std::string& info,
                              unsigned int color)
     {
-        tipl::progress prog("saving ",std::filesystem::path(file_name).filename().string().c_str());
+        tipl::progress prog("saving ",std::filesystem::path(file_name).filename().u8string().c_str());
         tipl::io::gz_ostream out;
         if (!out.open(file_name))
             return false;
@@ -1248,7 +1248,7 @@ bool TractModel::save_all(const char* file_name,
 {    
     if(all.empty())
         return false;
-    tipl::progress prog("saving ",std::filesystem::path(file_name).filename().string().c_str());
+    tipl::progress prog("saving ",std::filesystem::path(file_name).filename().u8string().c_str());
     for(unsigned int index = 0;index < all.size();++index)
         all[index]->saved = true;
     if (tipl::ends_with(file_name,".tt.gz"))

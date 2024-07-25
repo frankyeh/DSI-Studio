@@ -554,7 +554,7 @@ bool src_data::command(std::string cmd,std::string param)
             error_msg = " please assign file name ";
             return false;
         }
-        tipl::progress prog_("saving ",std::filesystem::path(param).filename().string().c_str());
+        tipl::progress prog_("saving ",std::filesystem::path(param).filename().u8string().c_str());
         return save_to_file(param.c_str());
     }
     if(cmd == "[Step T2a][Open]")
@@ -1989,13 +1989,13 @@ bool src_data::run_eddy(std::string exec)
     }
 
     std::vector<std::string> param = {
-            std::string("--imain=") + std::filesystem::path(temp_nifti).filename().string(),
-            std::string("--mask=") + std::filesystem::path(mask_nifti).filename().string(),
+            std::string("--imain=") + std::filesystem::path(temp_nifti).filename().u8string(),
+            std::string("--mask=") + std::filesystem::path(mask_nifti).filename().u8string(),
             std::string("--acqp=") + acqparam_file,
-            std::string("--index=") + std::filesystem::path(index_file.c_str()).filename().string(),
-            std::string("--bvecs=") + std::filesystem::path(bvec_file.c_str()).filename().string(),
-            std::string("--bvals=") + std::filesystem::path(bval_file.c_str()).filename().string(),
-            std::string("--out=") + std::filesystem::path(corrected_file.c_str()).filename().string(),
+            std::string("--index=") + std::filesystem::path(index_file.c_str()).filename().u8string(),
+            std::string("--bvecs=") + std::filesystem::path(bvec_file.c_str()).filename().u8string(),
+            std::string("--bvals=") + std::filesystem::path(bval_file.c_str()).filename().u8string(),
+            std::string("--out=") + std::filesystem::path(corrected_file.c_str()).filename().u8string(),
             "--verbose=1"
             };
     if(has_topup)
@@ -2244,7 +2244,7 @@ void src_data::get_report(std::string& report)
 }
 bool src_data::save_to_file(const char* dwi_file_name)
 {
-    tipl::progress prog_("saving ",std::filesystem::path(dwi_file_name).filename().string().c_str());
+    tipl::progress prog_("saving ",std::filesystem::path(dwi_file_name).filename().u8string().c_str());
     std::string filename(dwi_file_name);
     if(!tipl::ends_with(filename,".gz"))
         filename += ".gz";
@@ -2347,7 +2347,7 @@ void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in)
     idx_name += ".idx";
     if(in->has_access_points() && in->sample_access_point && !std::filesystem::exists(idx_name))
     {
-        tipl::out() << "saving index file for accelerated loading: " << std::filesystem::path(idx_name).filename().string() << std::endl;
+        tipl::out() << "saving index file for accelerated loading: " << std::filesystem::path(idx_name).filename().u8string() << std::endl;
         in->save_index(idx_name.c_str());
     }
 }
@@ -2355,11 +2355,11 @@ size_t match_volume(float volume);
 QImage read_qimage(QString filename,std::string& error);
 bool src_data::load_from_file(const char* dwi_file_name)
 {
-    tipl::progress prog("open SRC file ",std::filesystem::path(dwi_file_name).filename().string().c_str());
+    tipl::progress prog("open SRC file ",std::filesystem::path(dwi_file_name).filename().u8string().c_str());
     if(voxel.steps.empty())
     {
         voxel.steps = "[Step T2][Reconstruction] open ";
-        voxel.steps += std::filesystem::path(dwi_file_name).filename().string();
+        voxel.steps += std::filesystem::path(dwi_file_name).filename().u8string();
         voxel.steps += "\n";
     }
 

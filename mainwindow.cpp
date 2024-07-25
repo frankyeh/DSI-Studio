@@ -912,7 +912,7 @@ void MainWindow::batch_create_src(const std::vector<std::string>& dwi_nii_files,
             for(int j = 0;j < dwi_nii_files.size();++j)
             {
                 std::string nii_name = dwi_nii_files[j];
-                std::string src_name = output_dir + "/" + std::filesystem::path(nii_name).filename().string() + ".src.gz";
+                std::string src_name = output_dir + "/" + std::filesystem::path(nii_name).filename().u8string() + ".src.gz";
                 std::vector<std::shared_ptr<DwiHeader> > dwi_files;
 
                 if(std::filesystem::exists(src_name) && !yes_to_all)
@@ -1006,7 +1006,7 @@ bool dcm2src_and_nii(QStringList files)
     if(files.empty())
         return false;
     files.sort();
-    tipl::progress p("processing DICOM at ",std::filesystem::path(files[0].toStdString()).parent_path().string().c_str());
+    tipl::progress p("processing DICOM at ",std::filesystem::path(files[0].toStdString()).parent_path().u8string().c_str());
     // extract information
     std::string manu,make,report,sequence;
     {
@@ -1074,7 +1074,7 @@ bool dcm2src_and_nii(QStringList files)
         suffix += sequence;
         suffix += ".nii.gz";
         QString output = get_dicom_output_name(files[0],suffix.c_str(),true);
-        tipl::out() << "converted to NIFTI: " << std::filesystem::path(output.toStdString()).filename().string() << std::endl;
+        tipl::out() << "converted to NIFTI: " << std::filesystem::path(output.toStdString()).filename().u8string() << std::endl;
         return tipl::io::gz_nifti::save_to_file(output.toStdString().c_str(),source_images,vs,trans);
     }
 

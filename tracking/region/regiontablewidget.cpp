@@ -581,7 +581,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               std::string& error_msg,
               bool is_mni)
 {
-    tipl::progress prog("opening file ",std::filesystem::path(file_name).stem().string().c_str());
+    tipl::progress prog("opening file ",std::filesystem::path(file_name).stem().u8string().c_str());
 
     if(QFileInfo(file_name.c_str()).baseName().toLower().contains("mni") && is_mni)
     {
@@ -597,7 +597,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     }
     bool is_4d = header.dim(4) > 1;
     tipl::image<3,unsigned int> from;
-    std::string nifti_name = std::filesystem::path(file_name).stem().string();
+    std::string nifti_name = std::filesystem::path(file_name).stem().u8string();
     nifti_name = nifti_name.substr(0,nifti_name.find('.'));
 
     if(is_4d)

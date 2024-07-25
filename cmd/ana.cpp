@@ -166,7 +166,7 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
     {
         std::string output = po.get("output");
         if(QFileInfo(output.c_str()).isDir())
-            file_name = output + std::string("/") + std::filesystem::path(file_name).filename().string();
+            file_name = output + std::string("/") + std::filesystem::path(file_name).filename().u8string();
         else
             file_name = output;
         if(file_name.find(".txt") == std::string::npos)
@@ -209,7 +209,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         tracts.push_back(std::make_shared<TractModel>(handle));
         if(!load_tracts(tract_files[i].c_str(),handle,tracts.back(),roi_mgr))
             return 1;
-        tract_name.push_back(std::filesystem::path(tract_files[i]).filename().string());
+        tract_name.push_back(std::filesystem::path(tract_files[i]).filename().u8string());
     }
     tipl::out() << "a total of " << tract_files.size() << " tract file(s) loaded" << std::endl;
 

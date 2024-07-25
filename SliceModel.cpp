@@ -214,7 +214,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
     name = QFileInfo(files[0].c_str()).completeBaseName().remove(".nii").toStdString();
     to_dif.identity();
     to_slice.identity();
-    tipl::progress prog("open ",std::filesystem::path(files[0]).filename().string().c_str());
+    tipl::progress prog("open ",std::filesystem::path(files[0]).filename().u8string().c_str());
     // picture as slice
     if(QFileInfo(files[0].c_str()).suffix() == "bmp" ||
        QFileInfo(files[0].c_str()).suffix() == "jpg" ||
@@ -360,7 +360,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
             {
                 if(QFileInfo(files[0].c_str()).fileName().toLower().contains("mni"))
                 {
-                    tipl::out() << std::filesystem::path(files[0]).filename().string() <<
+                    tipl::out() << std::filesystem::path(files[0]).filename().u8string() <<
                                  " has 'mni' in the file name and has a different image size from DWI. It will be spatially normalized from template space to native space." << std::endl;
                     is_mni = true;
                 }

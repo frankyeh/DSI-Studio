@@ -22,7 +22,7 @@ auto_track::auto_track(QWidget *parent) :
     // populate tractography atlas list
     ui->template_list->clear();
     for(const auto& each : fa_template_list)
-        ui->template_list->addItem(tipl::split(std::filesystem::path(each).filename().string(),'.').front().c_str());
+        ui->template_list->addItem(tipl::split(std::filesystem::path(each).filename().u8string(),'.').front().c_str());
     ui->template_list->setCurrentIndex(0);
     timer = std::make_shared<QTimer>(this);
     timer->stop();
@@ -206,7 +206,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
     {
         prog = int(i);
         std::string fib_file_name = file_list[i];
-        std::string cur_file_base_name = std::filesystem::path(fib_file_name).filename().string();
+        std::string cur_file_base_name = std::filesystem::path(fib_file_name).filename().u8string();
         scan_names.push_back(cur_file_base_name);
         tipl::out() << "processing " << cur_file_base_name << std::endl;
         std::shared_ptr<fib_data> handle;
@@ -470,7 +470,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 if(lines.size() < metrics_names.size())
                 {
                     std::string error("inconsistent stat file (remove it and rerun): ");
-                    error += std::filesystem::path(stat_files[t][s]).filename().string();
+                    error += std::filesystem::path(stat_files[t][s]).filename().u8string();
                     error += " metrics count: ";
                     error += std::to_string(lines.size());
                     error += " others: ";

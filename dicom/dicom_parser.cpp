@@ -953,7 +953,7 @@ std::vector<QStringList> split_by_path(const QStringList &files)
 bool parse_dwi(QStringList file_list,
                     std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
-    tipl::progress prog("opening ",std::filesystem::path(file_list[0].toStdString()).stem().string().c_str());
+    tipl::progress prog("opening ",std::filesystem::path(file_list[0].toStdString()).stem().u8string().c_str());
     if(QFileInfo(file_list.front()).absolutePath() != QFileInfo(file_list.back()).absolutePath())
     {
         auto dwi_groups = split_by_path(file_list);

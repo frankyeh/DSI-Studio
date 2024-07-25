@@ -7,8 +7,8 @@ void dicom2src_and_nii(std::string dir_);
 int ren(tipl::program_option<tipl::out>& po)
 {
     tipl::progress prog("run ren");
-    auto source = std::filesystem::path(po.get("source")).string();
-    auto output = std::filesystem::path(po.get("output",po.get("source"))).string();
+    auto source = std::filesystem::path(po.get("source")).u8string();
+    auto output = std::filesystem::path(po.get("output",po.get("source"))).u8string();
     auto subject_dir = rename_dicom_at_dir(source.c_str(),output.c_str());
     if(po.get("to_src_nii",0))
     {

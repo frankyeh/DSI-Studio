@@ -398,7 +398,7 @@ void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in)
 void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
 bool fib_data::load_from_file(const char* file_name)
 {
-    tipl::progress prog("opening ",std::filesystem::path(file_name).filename().string().c_str());
+    tipl::progress prog("opening ",std::filesystem::path(file_name).filename().u8string().c_str());
     tipl::image<3> I;
     tipl::io::gz_nifti header;
     fib_file_name = file_name;
@@ -994,7 +994,7 @@ void fib_data::match_template(void)
         tipl::out() << "image volume smaller than human young adult. try matching a template...";
         set_template_id(match_volume(std::count_if(dir.fa[0],dir.fa[0]+dim.size(),[](float v){return v > 0.0f;})*2.0f*vs[0]*vs[1]*vs[2]));
     }
-    tipl::out() << "matched template: " << tipl::split(std::filesystem::path(fa_template_list[template_id]).filename().string(),'.').front();
+    tipl::out() << "matched template: " << tipl::split(std::filesystem::path(fa_template_list[template_id]).filename().u8string(),'.').front();
 }
 
 const tipl::image<3,tipl::vector<3,float> >& fib_data::get_native_position(void) const

@@ -88,7 +88,7 @@ public:
                 return all_tracts;
             if(tract_model->tract_cluster.empty())
             {
-                auto name = std::filesystem::path(std::string(file_name)).filename().string();
+                auto name = std::filesystem::path(std::string(file_name)).filename().u8string();
                 tract_model->name = name.substr(0,name.find('.'));
                 all_tracts.push_back(tract_model);
                 return all_tracts;

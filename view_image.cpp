@@ -228,8 +228,8 @@ bool view_image::command(std::string cmd,std::string param1)
                     if(tipl::match_files(original_file_name.toStdString(),param_list[i],
                                 file_name2.toStdString(),param2))
                     {
-                        tipl::out() << "matched path: " << std::filesystem::path(param2).parent_path().string() << std::endl;
-                        tipl::out() << "matched file name: " << std::filesystem::path(param2).filename().string() << std::endl;
+                        tipl::out() << "matched path: " << std::filesystem::path(param2).parent_path().u8string() << std::endl;
+                        tipl::out() << "matched file name: " << std::filesystem::path(param2).filename().u8string() << std::endl;
                     }
                 }
                 if(!dialog->command(command_list[i],param2))
@@ -530,7 +530,7 @@ bool view_image::open(QStringList file_names_)
         buf4d.resize(3);
         for(size_t i = 1;i < 3;++i)
             buf4d[i].resize(cur_image->shape.size());
-        tipl::progress prog("open image file ",std::filesystem::path(file_name.toStdString()).filename().string().c_str());
+        tipl::progress prog("open image file ",std::filesystem::path(file_name.toStdString()).filename().u8string().c_str());
         for(size_t file_index = 0;prog(file_index,cur_image->shape[2]);++file_index)
         {
             QImage I = read_qimage(file_names[file_index],error_msg);
@@ -563,7 +563,7 @@ bool view_image::open(QStringList file_names_)
            QString(file_name).endsWith("fib.gz") ||
            QString(file_name).endsWith("src.gz"))
         {
-            tipl::progress prog("open file ",std::filesystem::path(file_name.toStdString()).filename().string().c_str());
+            tipl::progress prog("open file ",std::filesystem::path(file_name.toStdString()).filename().u8string().c_str());
             if(!mat.load_from_file(file_name.toStdString().c_str()))
             {
                 error_msg = "invalid format";

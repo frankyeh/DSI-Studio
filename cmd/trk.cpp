@@ -718,7 +718,7 @@ void set_template(std::shared_ptr<fib_data> handle,tipl::program_option<tipl::ou
     if(po.has("template"))
     {
         for(size_t id = 0;id < fa_template_list.size();++id)
-            tipl::out() << "template " << id << ": " << tipl::split(std::filesystem::path(fa_template_list[id]).filename().string(),'.').front() << std::endl;
+            tipl::out() << "template " << id << ": " << tipl::split(std::filesystem::path(fa_template_list[id]).filename().u8string(),'.').front() << std::endl;
         handle->set_template_id(po.get("template",size_t(0)));
     }
 }
