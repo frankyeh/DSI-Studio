@@ -221,6 +221,8 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         tracts = TractModel::separate_tracts(tracts[0],tracts[0]->tract_cluster,tract_name);
         if(!po.has("name") && !std::filesystem::exists(tract_files[0]+".txt"))
             tipl::warning() << "please use --name to specify the text file storing tract names";
+        tipl::out() << "cluster count: " << tracts.size();
+
     }
 
     if(po.has("name"))
@@ -237,7 +239,9 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
             tract_name.push_back(line);
         if(tract_name.size() != tracts.size())
         {
-            tipl::error() << "number of labels in " << po.get("name") << " does not match.";
+            tipl::error() << "number of labels does not match: "
+                          << tract_name.size() << " names in " << po.get("name")
+                          << " vs " << tracts.size() << "clusters ";
             return 1;
         }
     }
