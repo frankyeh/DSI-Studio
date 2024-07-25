@@ -78,6 +78,11 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
               !(param.max_seed_count > 0 && seed_count[thread_id] >= max_seed_per_thread))
         {
             ++seed_count[thread_id];
+            tipl::vector<3> sub_voxel_shift;
+            uint32_t seed_index;
+            unsigned char fiber_order = 0;
+
+            // random generators
             {
                 // this ensure consistency
                 std::lock_guard<std::mutex> lock(lock_seed_function);
@@ -101,17 +106,22 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
                     method->current_min_steps3 = 3*uint32_t(std::round(param.min_length/step_size_in_mm));
                 }
 
-                uint32_t seed_index = std::min<uint32_t>(uint32_t(roi_mgr->seeds.size()-1),uint32_t(rand_gen(seed)*float(roi_mgr->seeds.size())));
-                tipl::vector<3> pos = roi_mgr->seeds[seed_index];
-                pos[0] += subvoxel_gen(seed);
-                pos[1] += subvoxel_gen(seed);
-                pos[2] += subvoxel_gen(seed);
-                if(roi_mgr->need_trans[roi_mgr->seed_space[seed_index]])
-                    pos.to(roi_mgr->to_diffusion_space[roi_mgr->seed_space[seed_index]]);
-                method->position = pos;
+                seed_index = rand(roi_mgr->seeds.size());
+                sub_voxel_shift = tipl::vector<3>(subvoxel_gen(seed),subvoxel_gen(seed),subvoxel_gen(seed));
+                if(param.max_length == param.min_length && method->trk->fib_num > 1)
+                    fiber_order = rand(method->trk->fib_num);
             }
 
-            if(!method->initialize_direction())
+            //initialize seeding
+            {
+                tipl::vector<3> seed_pos = roi_mgr->seeds[seed_index];
+                seed_pos += sub_voxel_shift;
+                if(roi_mgr->need_trans[roi_mgr->seed_space[seed_index]])
+                    seed_pos.to(roi_mgr->to_diffusion_space[roi_mgr->seed_space[seed_index]]);
+                method->position = seed_pos;
+            }
+
+            if(!method->initialize_direction(fiber_order))
                 continue;
 
             unsigned int point_count;
@@ -150,12 +160,6 @@ bool ThreadData::fetchTracks(TractModel* handle)
         }
     buffer_switch = !buffer_switch;
     return has_track;
-}
-
-void ThreadData::apply_tip(TractModel* handle)
-{
-    for(size_t i = 0;i < param.tip_iteration && handle->get_visible_track_count() && handle->trim();++i)
-        ;
 }
 
 void ThreadData::run(unsigned int thread_count,
