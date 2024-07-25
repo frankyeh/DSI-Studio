@@ -378,7 +378,7 @@ void TractTableWidget::fetch_tracts(void)
                 auto lock = tract_rendering[index]->start_writing();
                 has_tracts |= thread_data[index]->fetchTracks(tract_models[index].get()); // clear both front and back buffer
                 has_tracts |= thread_data[index]->fetchTracks(tract_models[index].get()); // clear both front and back buffer
-                thread_data[index]->apply_tip(tract_models[index].get());
+                tract_models[index]->trim(thread_data[index]->param.tip_iteration);
                 item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
                 item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
                 item(int(index),3)->setText(QString::number(thread_data[index]->get_total_seed_count()));
