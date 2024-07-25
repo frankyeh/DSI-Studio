@@ -219,13 +219,13 @@ private:
                get_buffer_size() < current_max_steps3;
     }
 public:
-    bool initialize_direction(void)
+    bool initialize_direction(unsigned char fib_order = 0)
     {
         auto round_pos = position;
         round_pos.round();
         if(!trk->dim.is_valid(round_pos))
             return false;
-        return get_dir(position,trk->get_fib(tipl::pixel_index<3>(round_pos[0],round_pos[1],round_pos[2],trk->dim).index(),0),dir);
+        return get_dir(position,trk->get_fib(tipl::pixel_index<3>(round_pos[0],round_pos[1],round_pos[2],trk->dim).index(),fib_order),dir);
     }
     template<typename tracking_algo>
     bool start_tracking(tracking_algo track)
