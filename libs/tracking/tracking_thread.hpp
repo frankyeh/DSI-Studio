@@ -17,6 +17,11 @@ struct ThreadData
 private:
     std::mt19937 seed;
     std::uniform_real_distribution<float> rand_gen,subvoxel_gen,angle_gen,angle_gen2,smoothing_gen,step_gen,step_gen2,threshold_gen;
+    template<typename T>
+    T rand(T size)
+    {
+        return std::min<T>(size-1,T(rand_gen(seed)*float(size)));
+    }
 public:
     std::shared_ptr<tracking_data> trk;
     std::shared_ptr<RoiMgr> roi_mgr;
@@ -27,9 +32,9 @@ public:
     bool ready_to_track = false;
 public:
     ThreadData(std::shared_ptr<fib_data> handle):seed(0),
-        rand_gen(0,1),subvoxel_gen(-0.5f,0.5f),
-        angle_gen(float(45.0*M_PI/180.0),float(90.0*M_PI/180.0)),
-        smoothing_gen(0.0f,0.95f),step_gen(0.5f,1.5f),threshold_gen(0.0,1.0),
+        rand_gen(0.0f,1.0f),subvoxel_gen(-0.5f,0.5f),
+        angle_gen(float(45.0f*M_PI/180.0f),float(90.0f*M_PI/180.0f)),
+        smoothing_gen(0.0f,0.95f),step_gen(0.5f,1.5f),threshold_gen(0.0f,1.0f),
         roi_mgr(new RoiMgr(handle)){}
     ~ThreadData(void)
     {
@@ -62,7 +67,6 @@ public:
 public:
     void run_thread(unsigned int thread_id,unsigned int thread_count);
     bool fetchTracks(TractModel* handle);
-    void apply_tip(TractModel* handle);
     void run(std::shared_ptr<tracking_data> trk,unsigned int thread_count,bool wait);
     void run(unsigned int thread_count,bool wait);
 
