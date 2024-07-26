@@ -1306,7 +1306,7 @@ void MainWindow::on_tabWidget_currentChanged(int index)
     if(index == 4)
     {
         if(QMessageBox::question( this, QApplication::applicationName(),
-                        "Get the data list from DSI Studio Cloud?",
+                        "Get repository lists (requires internet connection)?",
                         QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
             on_load_tags_clicked();
     }
@@ -1569,10 +1569,9 @@ void MainWindow::on_github_select_all_clicked()
 
 void MainWindow::on_github_download_clicked()
 {
-    // Get the selected rows
     QList<QTableWidgetSelectionRange> ranges = ui->github_release_files->selectedRanges();
     if (ranges.isEmpty()) {
-        QMessageBox::critical(this, "Error", "No files selected for download");
+        QMessageBox::critical(this, "ERROR", "No files selected for download");
         return;
     }
 
