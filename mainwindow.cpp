@@ -1306,7 +1306,7 @@ void MainWindow::on_tabWidget_currentChanged(int index)
     if(index == 4)
     {
         if(QMessageBox::question( this, QApplication::applicationName(),
-                        "Get repository lists (requires internet connection)?",
+                        "Fetch repository lists (requires internet connection)?",
                         QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
             on_load_tags_clicked();
     }
