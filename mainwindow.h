@@ -112,6 +112,7 @@ private slots:
     void on_github_download_clicked();
     void on_github_select_matching_clicked();
     void on_github_release_note_currentChanged(int index);
+    void on_github_repo_currentIndexChanged(int index);
 };
 
 #endif // MAINWINDOW_H

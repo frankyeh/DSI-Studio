@@ -1324,8 +1324,9 @@ void MainWindow::on_load_tags_clicked()
 
     ui->github_tags->setSortingEnabled(false);
     ui->github_tags->setRowCount(0);
-    ui->github_tags->setColumnWidth(0,100);
-    ui->github_tags->setColumnWidth(1,200);
+    ui->github_tags->setColumnWidth(0,75);
+    ui->github_tags->setColumnWidth(1,50);
+    ui->github_tags->setColumnWidth(2,200);
     notes.clear();
 
     loadTags(QUrl(url));
@@ -1353,7 +1354,8 @@ void MainWindow::loadTags(QUrl url)
                 int row = ui->github_tags->rowCount();
                 ui->github_tags->insertRow(row);
                 ui->github_tags->setItem(row, 0, new QTableWidgetItem(releaseObject.value("tag_name").toString()));
-                ui->github_tags->setItem(row, 1, new QTableWidgetItem(releaseObject.value("name").toString()));
+                ui->github_tags->setItem(row, 1, new QTableWidgetItem(QString::number(releaseObject.value("assets").toArray().size())));
+                ui->github_tags->setItem(row, 2, new QTableWidgetItem(releaseObject.value("name").toString()));
                 notes << releaseObject.value("body").toString();
             }
 
@@ -1448,7 +1450,7 @@ void MainWindow::on_github_tags_itemSelectionChanged()
 {
     if(ui->github_tags->currentRow() >= 0 && ui->github_tags->currentRow() < notes.count())
     {
-        QString repoTitle = ui->github_tags->item(ui->github_tags->currentRow(), 1)->text();
+        QString repoTitle = ui->github_tags->item(ui->github_tags->currentRow(), 2)->text();
         ui->github_repo_title->setText(repoTitle);
 
         QString note = notes[ui->github_tags->currentRow()];
@@ -1683,3 +1685,10 @@ void MainWindow::on_github_release_note_currentChanged(int index)
     }
 
 }
+
+void MainWindow::on_github_repo_currentIndexChanged(int index)
+{
+    ui->github_tags->setSortingEnabled(false);
+    ui->github_tags->setRowCount(0);
+}
+
