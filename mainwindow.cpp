@@ -7,6 +7,13 @@
 #include <QMimeData>
 #include <QAction>
 #include <QStyleFactory>
+
+
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QRegularExpression>
+
 #include <filesystem>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -57,6 +64,7 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->workDir->addItems(settings.value("WORK_PATH").toStringList());
     else
         ui->workDir->addItem(QDir::currentPath());
+    ui->download_dir->setText(ui->workDir->currentText());
 
     for(auto& temp : fib_template_list)
     {
@@ -71,6 +79,8 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->template_list->sortItems();
     }
     ui->tabWidget->setCurrentIndex(0);
+    ui->github_release_note->setCurrentIndex(0);
+    ui->github_release_note->setTabVisible(1,false);
     ui->template_list->setCurrentRow(1);
 }
 
@@ -557,6 +567,7 @@ void MainWindow::add_work_dir(QString dir)
     ui->workDir->insertItem(0,dir);
     ui->workDir->setCurrentIndex(0);
 }
+
 
 
 void MainWindow::on_browseDir_clicked()
@@ -1290,4 +1301,386 @@ void MainWindow::on_OpenDWI_2dseq_clicked()
                          ui->workDir->currentText(),
                          "2dseq files (2dseq *.fdf);;All files (*)" ));
 }
+void MainWindow::on_tabWidget_currentChanged(int index)
+{
+    if(index == 4)
+    {
+        if(QMessageBox::question( this, QApplication::applicationName(),
+                        "Get the data list from DSI Studio Cloud?",
+                        QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
+            on_load_tags_clicked();
+    }
+}
 
+void MainWindow::on_load_tags_clicked()
+{
+    QString repoName = ui->github_repo->currentText().split(' ').first();
+    tipl::out() << "loading " << repoName.toStdString();
+
+    QNetworkRequest request;
+    QString url = QString("https://api.github.com/repos/%1/releases").arg(repoName);
+    request.setUrl(QUrl(url));
+    request.setRawHeader("Accept", "application/json");
+
+    ui->github_tags->setSortingEnabled(false);
+    ui->github_tags->setRowCount(0);
+    ui->github_tags->setColumnWidth(0,100);
+    ui->github_tags->setColumnWidth(1,200);
+    notes.clear();
+
+    loadTags(QUrl(url));
+}
+
+void MainWindow::loadTags(QUrl url)
+{
+
+    tipl::out() << "loading " << url.toString().toStdString();
+
+    auto reply = get(url);
+
+    QObject::connect(reply.get(), &QNetworkReply::finished, this, [this,reply]()
+    {
+        if (reply->error() != QNetworkReply::NoError)
+        {
+            if(reply->error() != QNetworkReply::OperationCanceledError)
+                QMessageBox::critical(this,"ERROR",reply->errorString());
+        }
+        else
+        {
+            foreach (const QJsonValue& release, QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).array())
+            {
+                QJsonObject releaseObject = release.toObject();
+                int row = ui->github_tags->rowCount();
+                ui->github_tags->insertRow(row);
+                ui->github_tags->setItem(row, 0, new QTableWidgetItem(releaseObject.value("tag_name").toString()));
+                ui->github_tags->setItem(row, 1, new QTableWidgetItem(releaseObject.value("name").toString()));
+                notes << releaseObject.value("body").toString();
+            }
+
+            QString linkHeader = reply->rawHeader("Link");
+            if (!linkHeader.isEmpty())
+            {
+                QRegularExpressionMatch match = QRegularExpression("<([^>]+)>; rel=\"next\"").match(linkHeader);
+                if (match.hasMatch())
+                {
+                    QUrl nextPageUrl = match.captured(1);
+                    if (nextPageUrl.isValid())
+                    {
+                        loadTags(nextPageUrl);
+                        return;
+                    }
+                }
+            }
+            ui->github_tags->sortByColumn(0,Qt::AscendingOrder);
+            ui->github_tags->setSortingEnabled(true);
+        }
+    });
+}
+
+
+void MainWindow::on_load_release_files_clicked()
+{
+    int row = ui->github_tags->currentRow();
+    if (row < 0)
+        return;
+
+    QString url = QString("https://api.github.com/repos/%1/releases/tags/%2").
+                        arg(ui->github_repo->currentText().split(' ').first()).
+                        arg(ui->github_tags->item(row, 0)->text());
+
+
+    ui->github_release_files->setSortingEnabled(false);
+    ui->github_release_files->setRowCount(0);
+    ui->github_release_files->setColumnWidth(0,200);
+    ui->github_release_files->setColumnWidth(1,100);
+    ui->github_release_files->setColumnWidth(2,200);
+    ui->github_release_files->setColumnWidth(3,400);
+    loadFiles(QUrl(url));
+}
+
+void MainWindow::loadFiles(QUrl url)
+{
+    tipl::out() << "loading " << url.toString().toStdString();
+    qc_link.clear();
+    auto reply = get(url);
+    QObject::connect(reply.get(), &QNetworkReply::finished, this, [this,reply]()
+    {
+        if (reply->error() != QNetworkReply::NoError)
+        {
+            if(reply->error() != QNetworkReply::OperationCanceledError)
+                QMessageBox::critical(this,"ERROR",reply->errorString());
+        }
+        else
+        {
+            QStringList units = {" bytes", " KB", " MB", " GB"};
+            foreach (const QJsonValue& asset,
+                     QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).object().value("assets").toArray())
+            {
+                QJsonObject assetObject = asset.toObject();
+                size_t size = assetObject.value("size").toInteger();
+                int i = 0;
+                while (size >= 1024 && i < units.size() - 1)
+                {
+                    size /= 1024;
+                    i++;
+                }
+                int row = ui->github_release_files->rowCount();
+                ui->github_release_files->insertRow(row);
+                ui->github_release_files->setItem(row, 0, new QTableWidgetItem(assetObject.value("name").toString()));
+                ui->github_release_files->setItem(row, 1, new QTableWidgetItem(QString::number(size)+units[i]));
+                ui->github_release_files->setItem(row, 2, new QTableWidgetItem(assetObject.value("created_at").toString()));
+                ui->github_release_files->setItem(row, 3, new QTableWidgetItem(assetObject.value("browser_download_url").toString()));
+                ui->github_release_files->item(row,1)->setData(Qt::UserRole, assetObject.value("size").toInteger()); // Save the original size
+                if(assetObject.value("name").toString().contains("qc.txt"))
+                    qc_link = assetObject.value("browser_download_url").toString();
+            }
+            ui->github_release_files->sortByColumn(0,Qt::AscendingOrder);
+            ui->github_release_files->setSortingEnabled(true);
+            ui->file_count->setText(QString("%1 files").arg(ui->github_release_files->rowCount()));
+            ui->github_release_note->setTabVisible(1,!qc_link.isEmpty());
+        }
+    });
+}
+
+
+
+void MainWindow::on_github_tags_itemSelectionChanged()
+{
+    if(ui->github_tags->currentRow() >= 0 && ui->github_tags->currentRow() < notes.count())
+    {
+        QString repoTitle = ui->github_tags->item(ui->github_tags->currentRow(), 1)->text();
+        ui->github_repo_title->setText(repoTitle);
+
+        QString note = notes[ui->github_tags->currentRow()];
+        QStringList lines = note.split("\n");
+
+        // Check if the first line includes the title
+        if (!lines.isEmpty() && lines.first().startsWith("# ") && lines.first().mid(2).trimmed() == repoTitle)
+            lines.removeFirst();
+
+        QString formattedNote;
+        foreach (QString line, lines)
+        {
+            if (line.startsWith("# "))
+                formattedNote += "<h1>" + line.mid(2) + "</h1>";
+            else if (line.startsWith("## "))
+                formattedNote += "<h2>" + line.mid(3) + "</h2>";
+            else
+                formattedNote += line + "<br>";
+        }
+        ui->github_note->setHtml(formattedNote);
+        ui->load_release_files->setEnabled(true);
+        on_load_release_files_clicked();
+        ui->github_release_note->setCurrentIndex(0);
+    }
+    else
+        ui->load_release_files->setEnabled(false);
+}
+
+void MainWindow::on_browseDownloadDir_clicked()
+{
+    QString filename =
+        QFileDialog::getExistingDirectory(this,"Browse Download Directory",
+                                          ui->workDir->currentText());
+    if ( filename.isEmpty() )
+        return;
+    ui->download_dir->setText(filename);
+}
+
+void MainWindow::on_github_release_files_cellDoubleClicked(int row, int column)
+{
+    if(!QDir(ui->download_dir->text()).exists())
+    {
+        QMessageBox::critical(this,"ERROR","Download directory does not exist");
+        return;
+    }
+
+    QString filePath = ui->download_dir->text() + "/" + ui->github_release_files->item(row, 0)->text();
+    if (QFile::exists(filePath) && !ui->download_overwrite->isChecked())
+    {
+        openFile(QStringList() << filePath);
+        return;
+    }
+
+    auto reply = get(ui->github_release_files->item(row, 3)->text());
+
+    // Create a progress dialog
+    QProgressDialog progressDialog("Downloading...", "Cancel", 0, 100, this);
+    progressDialog.setModal(true);
+    progressDialog.show();
+
+    qint64 bytesReceived = 0;
+    qint64 bytesTotal = ui->github_release_files->item(row, 1)->data(Qt::UserRole).toLongLong();
+    QEventLoop loop;
+
+    QObject::connect(reply.get(), &QNetworkReply::readyRead, this,
+                     [this, row, &progressDialog, &bytesReceived, bytesTotal,reply]()
+    {
+        progressDialog.setValue((reply->bytesAvailable() * 100) / (bytesTotal));
+    });
+    QObject::connect(reply.get(), &QNetworkReply::finished, this,
+                     [this, row, filePath, &progressDialog, &loop,reply]() // Pass the loop to the lambda
+    {
+        if (reply->error() != QNetworkReply::NoError)
+        {
+            if(reply->error() != QNetworkReply::OperationCanceledError)
+                QMessageBox::critical(this, "ERROR", reply->errorString());
+        }
+        else
+        {
+            auto downloadFile = std::make_shared<QFile>(filePath);
+            if (!downloadFile->open(QFile::WriteOnly))
+            {
+                QMessageBox::critical(this, "ERROR", "Failed to open file for writing");
+                return;
+            }
+            downloadFile->write(reply->readAll());
+            downloadFile->close();
+            QTimer::singleShot(0, this, [this, filePath](){openFile(QStringList() << filePath);});
+        }
+        progressDialog.close();
+        loop.quit();
+    });
+
+    QObject::connect(&progressDialog, &QProgressDialog::canceled, this, [this,&loop,reply]() // Pass the loop to the lambda
+    {
+        if (reply && reply->isRunning())
+            reply->abort();
+    });
+
+    loop.exec();
+
+}
+
+void MainWindow::on_github_release_files_itemSelectionChanged()
+{
+    int selectedRows = ui->github_release_files->selectionModel()->selectedRows().size();
+    ui->github_download->setEnabled(selectedRows > 0);
+    ui->github_download->setText(selectedRows > 0 ? QString("Download %1 File(s)...").arg(selectedRows) : QString("Download"));
+    ui->file_count->setText(QString("%1/%2 files").arg(selectedRows).arg(ui->github_release_files->rowCount()));
+}
+
+
+void MainWindow::on_github_select_all_clicked()
+{
+    ui->github_release_files->selectAll();
+}
+
+
+void MainWindow::on_github_download_clicked()
+{
+    // Get the selected rows
+    QList<QTableWidgetSelectionRange> ranges = ui->github_release_files->selectedRanges();
+    if (ranges.isEmpty()) {
+        QMessageBox::critical(this, "Error", "No files selected for download");
+        return;
+    }
+
+    std::vector<int> row_list;
+    for (int i = 0; i < ranges.size();++i)
+        for (int row = ranges[i].topRow(); row <= ranges[i].bottomRow(); ++row)
+            row_list.push_back(row);
+
+    tipl::progress p("downloading...");
+    for (int i = 0; p(i,row_list.size());++i)
+    {
+        QString url = ui->github_release_files->item(row_list[i], 3)->text();
+        QString filePath = ui->download_dir->text() + "/" + ui->github_release_files->item(row_list[i], 0)->text();
+        tipl::progress p2(filePath.toStdString().c_str(),true);
+        tipl::out() << url.toStdString();
+
+        auto reply = get(url);
+
+        qint64 bytesTotal = ui->github_release_files->item(row_list[i], 1)->data(Qt::UserRole).toLongLong();
+        while (!reply->isFinished() && p2(reply->bytesAvailable(),bytesTotal+1))
+        {
+            QCoreApplication::processEvents();
+            QThread::msleep(100); // Check every 100ms
+        }
+        if (reply->error() != QNetworkReply::NoError)
+        {
+            QMessageBox::critical(this, "ERROR", reply->errorString());
+            return;
+        }
+        if (p2.aborted())
+            return;
+
+        {
+            auto file = std::make_shared<QFile>(filePath);
+            if (!file->open(QFile::WriteOnly))
+            {
+                QMessageBox::critical(this, "ERROR", "Failed to save file to disk");
+                return;
+            }
+            QTimer::singleShot(0, this, [file, reply]()
+            {
+                file->write(reply->readAll());
+            });
+        }
+    }
+}
+
+
+void MainWindow::on_github_select_matching_clicked()
+{
+    ui->github_release_files->clearSelection();
+    tipl::progress p("select matching");
+    QString pattern = QInputDialog::getText(this, "Select Matching", "Enter a sub text (fib.gz), wild card (*.fib.gz) or regex pattern:");
+    if (pattern.isEmpty())
+        return;
+    Qt::MatchFlag flags = Qt::MatchContains;
+    if(pattern.contains("*"))
+        flags = Qt::MatchWildcard;
+    else
+    if(pattern.contains(QRegularExpression("[.^$|()\\[\\]{}*+?\\\\]")))
+    {
+        QRegularExpression regex(pattern);
+        if (regex.isValid())
+            flags = Qt::MatchRegularExpression;
+        else
+        {
+            QMessageBox::critical(this,"ERROR","Invalid regular expression pattern");
+            return;
+        }
+    }
+    QList<QTableWidgetItem*> items = ui->github_release_files->findItems(pattern, flags);
+    for (int i = 0; p(i, items.size()); ++i)
+        ui->github_release_files->setRangeSelected(QTableWidgetSelectionRange(items[i]->row(), 0, items[i]->row(), ui->github_release_files->columnCount() - 1), true);
+}
+
+
+void MainWindow::on_github_release_note_currentChanged(int index)
+{
+    if(index == 1 && !qc_link.isEmpty())
+    {
+        auto reply = get(qc_link);
+        QEventLoop loop;
+        ui->github_release_qc->setSortingEnabled(false);
+        ui->github_release_qc->setRowCount(0);
+        QObject::connect(reply.get(), &QNetworkReply::finished, this, [&loop, this, reply]() {
+            loop.quit();
+            if (reply->error() == QNetworkReply::NoError)
+            {
+                QString data = reply->readAll();
+                QStringList rows = data.split("\n");
+                while(rows.count() && rows.back().isEmpty())
+                    rows.pop_back();
+                QStringList headers = rows.takeFirst().split("\t");
+                ui->github_release_qc->setRowCount(rows.size());
+                ui->github_release_qc->setColumnCount(headers.size());
+                ui->github_release_qc->setHorizontalHeaderLabels(headers);
+
+                for (int i = 0; i < rows.size(); ++i) {
+                    QStringList cols = rows.at(i).split("\t");
+                    for (int j = 0; j < cols.size(); ++j) {
+                        QTableWidgetItem* item = new QTableWidgetItem(cols.at(j));
+                        ui->github_release_qc->setItem(i, j, item);
+                    }
+                }
+                ui->github_release_qc->setSortingEnabled(true);
+            }
+        });
+        loop.exec();
+    }
+
+}

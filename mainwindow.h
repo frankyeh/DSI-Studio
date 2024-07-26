@@ -5,6 +5,10 @@
 #include <QSettings>
 #include <memory>
 #include <QListWidgetItem>
+#include <QFile>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
 
 namespace Ui {
     class MainWindow;
@@ -16,6 +20,23 @@ class MainWindow : public QMainWindow
     enum { MaxRecentFiles = 50 };
     void updateRecentList(void);
     QSettings settings;
+    QStringList notes;
+    QString qc_link;
+public:
+    QNetworkAccessManager manager;
+    auto get(QUrl url)
+    {
+        QNetworkRequest request;
+        request.setUrl(url);
+        request.setRawHeader("Accept", "application/json");
+        return QSharedPointer<QNetworkReply>(manager.get(request),
+                [](QNetworkReply* reply)
+                {
+                    if(reply->isRunning())
+                        reply->abort();
+                    reply->deleteLater();
+                });
+    }
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
@@ -34,6 +55,8 @@ public:
     void open_template(QString name);
     void add_work_dir(QString dir);
     bool load_db(std::shared_ptr<group_connectometry_analysis>& database,QString& file_name);
+    void loadTags(QUrl url);
+    void loadFiles(QUrl url);
 private slots:
     void on_averagefib_clicked();
     void on_vbc_clicked();
@@ -78,6 +101,17 @@ private slots:
     void on_OpenDWI_NIFTI_clicked();
     void on_OpenDWI_DICOM_clicked();
     void on_OpenDWI_2dseq_clicked();
+    void on_load_tags_clicked();
+    void on_github_tags_itemSelectionChanged();
+    void on_load_release_files_clicked();
+    void on_tabWidget_currentChanged(int index);
+    void on_github_release_files_cellDoubleClicked(int row, int column);
+    void on_browseDownloadDir_clicked();
+    void on_github_release_files_itemSelectionChanged();
+    void on_github_select_all_clicked();
+    void on_github_download_clicked();
+    void on_github_select_matching_clicked();
+    void on_github_release_note_currentChanged(int index);
 };
 
 #endif // MAINWINDOW_H
