@@ -20,7 +20,7 @@ class MainWindow : public QMainWindow
     enum { MaxRecentFiles = 50 };
     void updateRecentList(void);
     QSettings settings;
-    QStringList notes;
+    std::map<QString,QString> notes;
     QString qc_link;
 public:
     QNetworkAccessManager manager;

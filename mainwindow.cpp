@@ -1356,7 +1356,7 @@ void MainWindow::loadTags(QUrl url)
                 ui->github_tags->setItem(row, 0, new QTableWidgetItem(releaseObject.value("tag_name").toString()));
                 ui->github_tags->setItem(row, 1, new QTableWidgetItem(QString::number(releaseObject.value("assets").toArray().size())));
                 ui->github_tags->setItem(row, 2, new QTableWidgetItem(releaseObject.value("name").toString()));
-                notes << releaseObject.value("body").toString();
+                notes[releaseObject.value("tag_name").toString()] = releaseObject.value("body").toString();
             }
 
             QString linkHeader = reply->rawHeader("Link");
@@ -1448,16 +1448,17 @@ void MainWindow::loadFiles(QUrl url)
 
 void MainWindow::on_github_tags_itemSelectionChanged()
 {
-    if(ui->github_tags->currentRow() >= 0 && ui->github_tags->currentRow() < notes.count())
+    if(ui->github_tags->currentRow() >= 0)
     {
-        QString repoTitle = ui->github_tags->item(ui->github_tags->currentRow(), 2)->text();
-        ui->github_repo_title->setText(repoTitle);
+        QString tag = ui->github_tags->item(ui->github_tags->currentRow(), 0)->text();
+        QString title = ui->github_tags->item(ui->github_tags->currentRow(), 2)->text();
+        ui->github_repo_title->setText(title);
 
-        QString note = notes[ui->github_tags->currentRow()];
+        QString note = notes[tag];
         QStringList lines = note.split("\n");
 
         // Check if the first line includes the title
-        if (!lines.isEmpty() && lines.first().startsWith("# ") && lines.first().mid(2).trimmed() == repoTitle)
+        if (!lines.isEmpty() && lines.first().startsWith("# ") && lines.first().mid(2).trimmed() == title)
             lines.removeFirst();
 
         QString formattedNote;
@@ -1468,7 +1469,18 @@ void MainWindow::on_github_tags_itemSelectionChanged()
             else if (line.startsWith("## "))
                 formattedNote += "<h2>" + line.mid(3) + "</h2>";
             else
+            {
+                // Use QRegularExpression to find HTTP links and make them clickable
+                QRegularExpression re("(https?://[^\\s]+)");
+                QRegularExpressionMatchIterator iterator = re.globalMatch(line);
+                while (iterator.hasNext())
+                {
+                    QRegularExpressionMatch match = iterator.next();
+                    QString link = match.captured(0);
+                    line.replace(match.capturedStart(), match.capturedLength(), "<a href=\"" + link + "\">" + link + "</a>");
+                }
                 formattedNote += line + "<br>";
+            }
         }
         ui->github_note->setHtml(formattedNote);
         ui->load_release_files->setEnabled(true);
