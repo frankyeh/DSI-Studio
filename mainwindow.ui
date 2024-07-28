@@ -3244,7 +3244,6 @@ p, li { white-space: pre-wrap; }
      </widget>
     </item>
    </layout>
-   <zorder></zorder>
    <zorder>tabWidget</zorder>
   </widget>
  </widget>
