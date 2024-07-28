@@ -420,7 +420,7 @@ void group_connectometry::on_run_clicked()
         *(vbc->model.get()) = *(model.get());
         if(!vbc->model->select_feature(db,ui->foi->currentText().toStdString()))
         {
-            QMessageBox::critical(this,"Error",vbc->model->error_msg.c_str());
+            QMessageBox::critical(this,"ERROR",vbc->model->error_msg.c_str());
             return;
         }
     }
@@ -596,7 +596,7 @@ void group_connectometry::on_show_cohort_clicked()
         return;
     if(!model->select_cohort(db,ui->select_text->text().toStdString()))
     {
-        QMessageBox::critical(this,"Error",model->error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",model->error_msg.c_str());
         return;
     }
     size_t selected_count = 0;

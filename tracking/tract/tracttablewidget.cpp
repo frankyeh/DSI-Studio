@@ -741,7 +741,7 @@ void TractTableWidget::save_tracts_as(void)
     if(tract_models[uint32_t(currentRow())]->save_tracts_to_file(&*sfilename.begin()))
         QMessageBox::information(this,QApplication::applicationName(),"file saved");
     else
-        QMessageBox::critical(this,"Error","Cannot write to file. Please check write permission.");
+        QMessageBox::critical(this,"ERROR","Cannot write to file. Please check write permission.");
 }
 
 void TractTableWidget::save_tracts_in_native(void)
@@ -769,7 +769,7 @@ void TractTableWidget::save_tracts_in_native(void)
     if(tract_models[uint32_t(currentRow())]->save_tracts_in_native_space(cur_tracking_window.handle,filename.toStdString().c_str()))
         QMessageBox::information(this,QApplication::applicationName(),"file saved");
     else
-        QMessageBox::critical(this,"Error","Cannot write to file. Please check write permission.");
+        QMessageBox::critical(this,"ERROR","Cannot write to file. Please check write permission.");
 }
 
 void TractTableWidget::save_all_tracts_end_point_as(void)
@@ -869,7 +869,7 @@ void TractTableWidget::save_transformed_tracts(void)
     CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
     if(!slice)
     {
-        QMessageBox::critical(this,"Error","Current slice is in the DWI space. Please use regular tract saving function");
+        QMessageBox::critical(this,"ERROR","Current slice is in the DWI space. Please use regular tract saving function");
         return;
     }
 
@@ -878,7 +878,7 @@ void TractTableWidget::save_transformed_tracts(void)
     if(tract_models[uint32_t(currentRow())]->save_transformed_tracts_to_file(filename.toStdString().c_str(),slice->dim,slice->vs,slice->trans_to_mni,slice->to_slice,false))
         QMessageBox::information(this,QApplication::applicationName(),"File saved");
     else
-        QMessageBox::critical(this,"Error","File not saved. Please check write permission");
+        QMessageBox::critical(this,"ERROR","File not saved. Please check write permission");
 }
 
 
@@ -898,14 +898,14 @@ void TractTableWidget::save_transformed_endpoints(void)
     CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
     if(!slice)
     {
-        QMessageBox::critical(this,"Error","Current slice is in the DWI space. Please use regular tract saving function");
+        QMessageBox::critical(this,"ERROR","Current slice is in the DWI space. Please use regular tract saving function");
         return;
     }
     auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     if(tract_models[uint32_t(currentRow())]->save_transformed_tracts_to_file(filename.toStdString().c_str(),slice->dim,slice->vs,slice->trans_to_mni,slice->to_slice,true))
         QMessageBox::information(this,QApplication::applicationName(),"File saved");
     else
-        QMessageBox::critical(this,"Error","File not saved. Please check write permission");
+        QMessageBox::critical(this,"ERROR","File not saved. Please check write permission");
 }
 extern std::vector<std::string> fa_template_list;
 void TractTableWidget::save_tracts_in_template(void)
@@ -925,7 +925,7 @@ void TractTableWidget::save_tracts_in_template(void)
     if(tract_models[uint32_t(currentRow())]->save_tracts_in_template_space(cur_tracking_window.handle,filename.toStdString().c_str()))
         QMessageBox::information(this,QApplication::applicationName(),"File saved");
     else
-        QMessageBox::critical(this,"Error","File not saved. Please check write permission");
+        QMessageBox::critical(this,"ERROR","File not saved. Please check write permission");
 }
 
 void TractTableWidget::save_tracts_in_mni(void)
@@ -943,7 +943,7 @@ void TractTableWidget::save_tracts_in_mni(void)
     if(tract_models[uint32_t(currentRow())]->save_tracts_in_template_space(cur_tracking_window.handle,filename.toStdString().c_str(),true))
         QMessageBox::information(this,QApplication::applicationName(),"File saved");
     else
-        QMessageBox::critical(this,"Error","File not saved. Please check write permission");
+        QMessageBox::critical(this,"ERROR","File not saved. Please check write permission");
 }
 
 void TractTableWidget::load_tracts_color(void)

@@ -482,7 +482,7 @@ void view_image::on_actionLoad_Image_to_4D_triggered()
     tipl::image<3> new_image(cur_image->shape);
     if(!tipl::io::gz_nifti::load_to_space(filename.toStdString().c_str(),new_image,cur_image->T))
     {
-        QMessageBox::critical(this,"Error","Invalid NIFTI file");
+        QMessageBox::critical(this,"ERROR","Invalid NIFTI file");
         return;
     }
     if(buf4d.empty())

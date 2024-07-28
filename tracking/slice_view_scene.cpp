@@ -733,7 +733,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
 {
     if(cur_tracking_window["roi_layout"].toInt() > 1)// mosaic
     {
-        QMessageBox::information(0,"Error","Switch to regular view to edit ROI. (Right side under Options, change [Region Window][Slice Layout] to Single Slice) ");
+        QMessageBox::critical(0,"ERROR","Switch to regular view to edit ROI. (Right side under Options, change [Region Window][Slice Layout] to Single Slice) ");
         return;
     }
 

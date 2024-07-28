@@ -823,7 +823,7 @@ bool tracking_window::map_to_mni(void)
 {
     if(!handle->map_to_mni())
     {
-        QMessageBox::critical(this,"Error",handle->error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
         return false;
     }
     return true;

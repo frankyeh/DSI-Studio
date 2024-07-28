@@ -781,7 +781,7 @@ void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
 
     if(!handle->distortion_correction(filename.toStdString().c_str()))
     {
-        QMessageBox::critical(this,"Error",handle->error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
         return;
     }
     on_SlicePos_valueChanged(ui->SlicePos->value());
@@ -958,7 +958,7 @@ void reconstruction_window::on_actionManual_Align_triggered()
         tipl::io::gz_nifti read,read2;
         if(!read.load_from_file(fa_template_list[handle->voxel.template_id]))
         {
-            QMessageBox::critical(this,"Error",QString("Cannot load template:"));
+            QMessageBox::critical(this,"ERROR",QString("Cannot load template:"));
             return;
         }
         read.toLPS(VG);
