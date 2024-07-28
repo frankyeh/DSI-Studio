@@ -572,7 +572,7 @@ public:
                 L = 0.2f;
                 for(unsigned int i = 0;i+1 < rdi.size();++i,L += 0.2f)
                 {
-                    if(tipl::max_value(rdi[i]) < 0.01f)
+                    if(tipl::max_value(rdi[i]) < 0.1f)
                         break;
                     std::ostringstream out2;
                     out2.precision(2);
