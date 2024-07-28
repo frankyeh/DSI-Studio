@@ -24,6 +24,7 @@ class MainWindow : public QMainWindow
     QString qc_link;
 public:
     QNetworkAccessManager manager;
+    QSharedPointer<QNetworkReply> read_tag;
     auto get(QUrl url)
     {
         QNetworkRequest request;
