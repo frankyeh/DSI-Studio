@@ -693,30 +693,29 @@ void slice_view_scene::send_event_to_3D(QEvent::Type type,
 
     if(type == QEvent::MouseMove)
     {
-        QMouseEvent me(QEvent::MouseMove, QPointF(x,y),
-            mouseEvent->button(),mouseEvent->buttons(),mouseEvent->modifiers());
+        QMouseEvent me(QEvent::MouseMove, QPointF(x,y), QPointF(x,y), QPointF(x,y),
+            mouseEvent->button(), mouseEvent->buttons(), mouseEvent->modifiers(), Qt::MouseEventNotSynthesized);
         cur_tracking_window.glWidget->mouseMoveEvent(&me);
     }
     if(type == QEvent::MouseButtonPress)
     {
-        QMouseEvent me(QEvent::MouseButtonPress, QPointF(x,y),
-            mouseEvent->button(),mouseEvent->buttons(),mouseEvent->modifiers());
+        QMouseEvent me(QEvent::MouseButtonPress, QPointF(x,y), QPointF(x,y), QPointF(x,y),
+            mouseEvent->button(), mouseEvent->buttons(), mouseEvent->modifiers(), Qt::MouseEventNotSynthesized);
         cur_tracking_window.glWidget->mousePressEvent(&me);
     }
 
     if(type == QEvent::MouseButtonRelease)
     {
-        QMouseEvent me(QEvent::MouseButtonRelease, QPointF(x,y),
-            mouseEvent->button(),mouseEvent->buttons(),mouseEvent->modifiers());
+        QMouseEvent me(QEvent::MouseButtonRelease, QPointF(x,y), QPointF(x,y), QPointF(x,y),
+            mouseEvent->button(), mouseEvent->buttons(), mouseEvent->modifiers(), Qt::MouseEventNotSynthesized);
         cur_tracking_window.glWidget->mouseReleaseEvent(&me);
-
     }
+
     if(type == QEvent::MouseButtonDblClick)
     {
-        QMouseEvent me(QEvent::MouseButtonDblClick, QPointF(x,y),
-            mouseEvent->button(),mouseEvent->buttons(),mouseEvent->modifiers());
+        QMouseEvent me(QEvent::MouseButtonDblClick, QPointF(x,y), QPointF(x,y), QPointF(x,y),
+            mouseEvent->button(), mouseEvent->buttons(), mouseEvent->modifiers(), Qt::MouseEventNotSynthesized);
         cur_tracking_window.glWidget->mouseDoubleClickEvent(&me);
-
     }
 
 }
