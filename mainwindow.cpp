@@ -1303,7 +1303,7 @@ void MainWindow::on_OpenDWI_2dseq_clicked()
 }
 void MainWindow::on_tabWidget_currentChanged(int index)
 {
-    if(index == 4)
+    if(index == 4 && !ui->github_tags->rowCount())
     {
         if(QMessageBox::question( this, QApplication::applicationName(),
                         "Fetch repository lists (requires internet connection)?",
@@ -1337,18 +1337,18 @@ void MainWindow::loadTags(QUrl url)
 
     tipl::out() << "loading " << url.toString().toStdString();
 
-    auto reply = get(url);
+    read_tag = get(url);
 
-    QObject::connect(reply.get(), &QNetworkReply::finished, this, [this,reply]()
+    QObject::connect(read_tag.get(), &QNetworkReply::finished, this, [this]()
     {
-        if (reply->error() != QNetworkReply::NoError)
+        if (read_tag->error() != QNetworkReply::NoError)
         {
-            if(reply->error() != QNetworkReply::OperationCanceledError)
-                QMessageBox::critical(this,"ERROR",reply->errorString());
+            if(read_tag->error() != QNetworkReply::OperationCanceledError)
+                QMessageBox::critical(this,"ERROR",read_tag->errorString());
         }
         else
         {
-            foreach (const QJsonValue& release, QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).array())
+            foreach (const QJsonValue& release, QJsonDocument::fromJson(QString(read_tag->readAll()).toUtf8()).array())
             {
                 QJsonObject releaseObject = release.toObject();
                 int row = ui->github_tags->rowCount();
@@ -1359,7 +1359,7 @@ void MainWindow::loadTags(QUrl url)
                 notes[releaseObject.value("tag_name").toString()] = releaseObject.value("body").toString();
             }
 
-            QString linkHeader = reply->rawHeader("Link");
+            QString linkHeader = read_tag->rawHeader("Link");
             if (!linkHeader.isEmpty())
             {
                 QRegularExpressionMatch match = QRegularExpression("<([^>]+)>; rel=\"next\"").match(linkHeader);
@@ -1375,6 +1375,7 @@ void MainWindow::loadTags(QUrl url)
             }
             ui->github_tags->sortByColumn(0,Qt::AscendingOrder);
             ui->github_tags->setSortingEnabled(true);
+            read_tag.reset();
         }
     });
 }
@@ -1671,6 +1672,8 @@ void MainWindow::on_github_release_note_currentChanged(int index)
 
 void MainWindow::on_github_repo_currentIndexChanged(int index)
 {
+    if(read_tag.get() && read_tag->isRunning())
+        read_tag->abort();
     ui->github_tags->setSortingEnabled(false);
     ui->github_tags->setRowCount(0);
 }
