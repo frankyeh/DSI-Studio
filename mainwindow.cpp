@@ -1453,36 +1453,7 @@ void MainWindow::on_github_tags_itemSelectionChanged()
         QString tag = ui->github_tags->item(ui->github_tags->currentRow(), 0)->text();
         QString title = ui->github_tags->item(ui->github_tags->currentRow(), 2)->text();
         ui->github_repo_title->setText(title);
-
-        QString note = notes[tag];
-        QStringList lines = note.split("\n");
-
-        // Check if the first line includes the title
-        if (!lines.isEmpty() && lines.first().startsWith("# ") && lines.first().mid(2).trimmed() == title)
-            lines.removeFirst();
-
-        QString formattedNote;
-        foreach (QString line, lines)
-        {
-            if (line.startsWith("# "))
-                formattedNote += "<h1>" + line.mid(2) + "</h1>";
-            else if (line.startsWith("## "))
-                formattedNote += "<h2>" + line.mid(3) + "</h2>";
-            else
-            {
-                // Use QRegularExpression to find HTTP links and make them clickable
-                QRegularExpression re("(https?://[^\\s]+)");
-                QRegularExpressionMatchIterator iterator = re.globalMatch(line);
-                while (iterator.hasNext())
-                {
-                    QRegularExpressionMatch match = iterator.next();
-                    QString link = match.captured(0);
-                    line.replace(match.capturedStart(), match.capturedLength(), "<a href=\"" + link + "\">" + link + "</a>");
-                }
-                formattedNote += line + "<br>";
-            }
-        }
-        ui->github_note->setHtml(formattedNote);
+        ui->github_note->setMarkdown(notes[tag]);
         ui->load_release_files->setEnabled(true);
         on_load_release_files_clicked();
         ui->github_release_note->setCurrentIndex(0);
