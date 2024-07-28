@@ -570,8 +570,10 @@ public:
                 for(unsigned int j = 0;j < rdi.size();++j)
                     rdi[j][i] = rdi.back()[i]-rdi[j][i];
                 L = 0.2f;
-                for(unsigned int i = 0;i < rdi.size() && L < 0.8f;++i,L += 0.2f)
+                for(unsigned int i = 0;i+1 < rdi.size();++i,L += 0.2f)
                 {
+                    if(tipl::max_value(rdi[i]) < 0.01f)
+                        break;
                     std::ostringstream out2;
                     out2.precision(2);
                     out2 << "nrdi" << std::setfill('0') << std::setw(2) << int(L*10) << "L";
