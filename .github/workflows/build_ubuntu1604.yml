@@ -26,9 +26,9 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         context: .
-        file: build_packages/ubuntu1604/Dockerfile_ubuntu1604_qt5
+        file: build_packages/ubuntu1604/Dockerfile_ubuntu1604_qt6
         push: true
         tags: |
-          dsistudio/ubuntu1604_qt5:latest
+          dsistudio/ubuntu1604_qt6:latest
 
 
