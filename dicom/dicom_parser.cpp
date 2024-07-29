@@ -332,14 +332,10 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         {
             tipl::image<3> data;
             if(!nii.toLPS(data))
-            {
                 tipl::warning() << "failed to parse 4D NIFTI file at "
                                 << std::to_string(index+1) << "/"
-                                << std::to_string(nii.dim(4)) << nii.error_msg;
-                if(index)
-                    dwi_data.resize(index-1);
-                break;
-            }
+                                << std::to_string(nii.dim(4))
+                                << " " <<  nii.error_msg;
             std::replace_if(data.begin(),data.end(),[](float v){return std::isnan(v) || std::isinf(v) || v < 0.0f;},0.0f);
             dwi_data[index].swap(data);
         }
@@ -364,7 +360,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
                 dwi_data[index] *= scale;
             });
         }
-        if(max_value < 256.0f)
+        if(max_value < 256.0f && max_value != 0.0f)
         {
             tipl::out() << "The maximum singal is only " << max_value << std::endl;
             float scale = 1.0f;
