@@ -37,7 +37,7 @@ jobs:
     if: ${{ github.event.inputs.build_linux == 'true' }}
     strategy:
       matrix:
-        os: [ubuntu2204,ubuntu2004,ubuntu1804,centos7]
+        os: [ubuntu2204,ubuntu2004,ubuntu1804]
       fail-fast: false
     runs-on: ubuntu-20.04
     steps:
