@@ -23,7 +23,6 @@ RUN apt update && apt full-upgrade -y && \
 
 # install cmake
 RUN apt update && apt full-upgrade -y && \
-  add-apt-repository -y ppa:george-edison55/cmake-3.x && \
   apt install -y --no-install-recommends cmake ninja-build
 
 #install Qt6
