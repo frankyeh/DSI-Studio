@@ -601,7 +601,7 @@ QStringList GetSubDir(QString Dir,bool recursive = true)
 
 QStringList rename_dicom_at_dir(QString path,QString output)
 {
-    tipl::progress prog("Renaming DICOM");
+    tipl::progress prog("Renaming DICOM",true);
     tipl::out() << "current directory is " << std::filesystem::current_path() << std::endl
                     << "source directory is " << path.toStdString() << std::endl
                     << "output directory is " << output.toStdString() << std::endl;
@@ -630,6 +630,7 @@ void MainWindow::on_RenameDICOMDir_clicked()
         return;
     add_work_dir(path);
     rename_dicom_at_dir(path,path);
+    QMessageBox::information(this,QApplication::applicationName(),"renaming complete");
 }
 
 void MainWindow::on_vbc_clicked()
@@ -646,13 +647,8 @@ void MainWindow::on_averagefib_clicked()
     new_mdi->show();
 }
 
-bool parse_dwi(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
-bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec);
+bool parse_dwi(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg);
 QString get_dicom_output_name(QString file_name,QString file_extension,bool add_path);
-
-
-
-
 QStringList search_files(QString dir,QString filter);
 void MainWindow::on_batch_reconstruction_clicked()
 {
@@ -1011,7 +1007,6 @@ void MainWindow::on_nii2src_sf_clicked()
     batch_create_src(dwi_nii_files,dir.toStdString());
 }
 
-extern std::string src_error_msg;
 bool dcm2src_and_nii(QStringList files)
 {
     if(files.empty())
@@ -1042,8 +1037,16 @@ bool dcm2src_and_nii(QStringList files)
 
 
     std::vector<std::shared_ptr<DwiHeader> > dicom_files;
-    if(!parse_dwi(files,dicom_files))
+    std::string error_msg;
+    if(!parse_dwi(files,dicom_files,error_msg) || dicom_files.size() == 1)
     {
+        if(tipl::prog_aborted)
+            return false;
+        if(!error_msg.empty())
+        {
+            tipl::error() << error_msg;
+            return false;
+        }
         tipl::out() << "handled as structure images";
         tipl::image<3> source_images;
         tipl::vector<3> vs;
@@ -1089,20 +1092,6 @@ bool dcm2src_and_nii(QStringList files)
         return tipl::io::gz_nifti::save_to_file(output.toStdString().c_str(),source_images,vs,trans);
     }
 
-    for(unsigned int index = 0;index < dicom_files.size();++index)
-    {
-        if(dicom_files[index]->bvalue < 100.0f)
-        {
-            dicom_files[index]->bvalue = 0.0f;
-            dicom_files[index]->bvec = tipl::vector<3>(0.0f,0.0f,0.0f);
-        }
-        if(dicom_files[index]->image.shape() != dicom_files[0]->image.shape())
-        {
-            tipl::error() << "inconsistent image dimensions among DWI." << std::endl;
-            return false;
-        }
-    }
-
     if(!DwiHeader::has_b_table(dicom_files))
     {
         tipl::out() << "The images do not have b-table. Save as 4D NIFTI" << std::endl;
@@ -1128,9 +1117,9 @@ bool dcm2src_and_nii(QStringList files)
     }
 
     QString src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".src.gz").c_str(),true);
-    if(!DwiHeader::output_src(src_name.toStdString().c_str(),dicom_files,0,false))
+    if(!DwiHeader::output_src(src_name.toStdString().c_str(),dicom_files,0,false,error_msg))
     {
-        tipl::error() << src_error_msg << std::endl;
+        tipl::error() << error_msg << std::endl;
         return false;
     }
     return true;

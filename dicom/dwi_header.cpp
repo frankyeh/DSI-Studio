@@ -176,25 +176,44 @@ bool DwiHeader::has_b_table(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
     return false;
 }
 // upsampling 1: upsampling 2: downsampling
-extern std::string src_error_msg;
 bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
-                           int upsampling,bool sort_btable)
+                           int upsampling,bool sort_btable,std::string& error_msg)
 {
     if(dwi_files.empty())
     {
-        src_error_msg = "no DWI data for output";
+        error_msg = "no DWI data for output";
         return false;
     }
-    tipl::progress prog("saving ",di_file);
     if(sort_btable)
         sort_dwi(dwi_files);
+
+    // removing inconsistent dwi
+    for(unsigned int index = 0;index < dwi_files.size();++index)
+    {
+        if(dwi_files[index]->bvalue < 100.0f)
+        {
+            dwi_files[index]->bvalue = 0.0f;
+            dwi_files[index]->bvec = tipl::vector<3>(0.0f,0.0f,0.0f);
+        }
+        if(dwi_files[index]->image.shape() != dwi_files[0]->image.shape())
+        {
+            tipl::warning() << " removing inconsistent image dimensions found at dwi " << index
+                          << " size=" << dwi_files[index]->image.shape()
+                          << " versus " << dwi_files[0]->image.shape();
+            dwi_files.erase(dwi_files.begin() + index);
+            --index;
+        }
+    }
+
+
     auto temp_file = std::string(di_file) + ".tmp.gz";
     {
+        tipl::progress prog("saving ",di_file);
         tipl::io::gz_mat_write write_mat(temp_file.c_str());
         if(!write_mat)
         {
-            src_error_msg = "cannot output file to ";
-            src_error_msg += di_file;
+            error_msg = "cannot output file to ";
+            error_msg += di_file;
             return false;
         }
         tipl::shape<3> geo = dwi_files.front()->image.shape();
@@ -288,7 +307,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
 
         if(prog.aborted())
         {
-            src_error_msg = "output aborted";
+            error_msg = "output aborted";
             goto delete_file;
         }
         std::string report1 = dwi_files.front()->report;
@@ -312,8 +331,8 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
     catch(...)
     {
         std::filesystem::remove(temp_file);
-        src_error_msg = "cannot write to ";
-        src_error_msg += di_file;
+        error_msg = "cannot write to ";
+        error_msg += di_file;
         return false;
     }
 

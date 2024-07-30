@@ -14,8 +14,7 @@
 #include <filesystem>
 #include "reg.hpp"
 
-extern std::string src_error_msg;
-bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec);
+bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec,std::string& error_msg);
 
 void src_data::draw_mask(tipl::color_image& buffer,int position)
 {
@@ -1769,11 +1768,8 @@ bool src_data::load_topup_eddy_result(void)
     }
     tipl::out() << "load topup/eddy results" << std::endl;
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-    if(!load_4d_nii(corrected_file.c_str(),dwi_files,false))
-    {
-        error_msg = src_error_msg;
+    if(!load_4d_nii(corrected_file.c_str(),dwi_files,false,error_msg))
         return false;
-    }
     nifti_dwi.resize(dwi_files.size());
     src_dwi_data.resize(dwi_files.size());
     src_bvalues.resize(dwi_files.size());
@@ -2434,11 +2430,8 @@ bool src_data::load_from_file(const char* dwi_file_name)
     if(QString(dwi_file_name).toLower().endsWith(".nii.gz"))
     {
         std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-        if(!load_4d_nii(dwi_file_name,dwi_files,true))
-        {
-            error_msg = src_error_msg;
+        if(!load_4d_nii(dwi_file_name,dwi_files,true,error_msg))
             return false;
-        }
         nifti_dwi.resize(dwi_files.size());
         src_dwi_data.resize(dwi_files.size());
         src_bvalues.resize(dwi_files.size());

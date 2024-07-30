@@ -60,7 +60,7 @@ public:
 	}
 
 public:
-    static bool output_src(const char* file_name, std::vector<std::shared_ptr<DwiHeader> >& dwi_files, int upsampling,bool sort_btable);
+    static bool output_src(const char* file_name, std::vector<std::shared_ptr<DwiHeader> >& dwi_files, int upsampling,bool sort_btable,std::string& error_msg);
     static bool has_b_table(std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 };
 

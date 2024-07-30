@@ -8,14 +8,13 @@
 #include <iterator>
 #include <string>
 #include "dicom/dwi_header.hpp"
-extern std::string src_error_msg;
 QStringList search_files(QString dir,QString filter);
 bool load_bval(const char* file_name,std::vector<double>& bval);
 bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by = true);
 bool parse_dwi(const std::vector<std::string>& file_list,
-                    std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
+                    std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg);
 void dicom2src_and_nii(std::string dir_);
-bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec);
+bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec,std::string& error_msg);
 
 bool get_bval_bvec(const std::string& bval_file,const std::string& bvec_file,size_t dwi_count,
                    std::vector<double>& bvals_out,std::vector<double>& bvecs_out,
@@ -53,15 +52,16 @@ bool get_bval_bvec(const std::string& bval_file,const std::string& bvec_file,siz
 bool create_src(const std::vector<std::string>& nii_names,std::string src_name)
 {
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
+    std::string error_msg;
     for(auto& nii_name : nii_names)
     {
         tipl::out() << "opening " << nii_name;
-        if(!load_4d_nii(nii_name.c_str(),dwi_files,true))
-            tipl::warning() << "skipping " << nii_name << ": " << src_error_msg;
+        if(!load_4d_nii(nii_name.c_str(),dwi_files,true,error_msg))
+            tipl::warning() << "skipping " << nii_name << ": " << error_msg;
     }
-    if(!DwiHeader::output_src(src_name.c_str(),dwi_files,0,false))
+    if(!DwiHeader::output_src(src_name.c_str(),dwi_files,0,false,error_msg))
     {
-        tipl::error() << src_error_msg;
+        tipl::error() << error_msg;
         return false;
     }
     return true;
@@ -300,9 +300,10 @@ int src(tipl::program_option<tipl::out>& po)
     }
 
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-    if(!parse_dwi(file_list,dwi_files))
+    std::string error_msg;
+    if(!parse_dwi(file_list,dwi_files,error_msg))
     {
-        tipl::error() << "cannot read dwi file: " << src_error_msg << std::endl;
+        tipl::error() << error_msg << std::endl;
         return 1;
     }
     if(po.has("b_table"))
@@ -338,7 +339,6 @@ int src(tipl::program_option<tipl::out>& po)
     if(po.has("bval") && po.has("bvec"))
     {
         std::vector<double> bval,bvec;
-        std::string error_msg;
         if(!get_bval_bvec(po.get("bval"),po.get("bvec"),dwi_files.size(),bval,bvec,error_msg))
         {
             tipl::error() << error_msg;
@@ -365,7 +365,7 @@ int src(tipl::program_option<tipl::out>& po)
     }
     if(max_b == 0.0)
     {
-        tipl::error() << "cannot create SRC file: " << src_error_msg;
+        tipl::error() << "cannot create SRC file: " << error_msg;
         return 1;
     }
 
@@ -381,9 +381,9 @@ int src(tipl::program_option<tipl::out>& po)
         tipl::out() << "skipping " << output << " already exists";
         return 0;
     }
-    if(!DwiHeader::output_src(output.c_str(),dwi_files,po.get<int>("up_sampling",0),po.get<int>("sort_b_table",0)))
+    if(!DwiHeader::output_src(output.c_str(),dwi_files,po.get<int>("up_sampling",0),po.get<int>("sort_b_table",0),error_msg))
     {
-        tipl::error() << src_error_msg << std::endl;
+        tipl::error() << error_msg << std::endl;
         return 1;
     }
     return 0;

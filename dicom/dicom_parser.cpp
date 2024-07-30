@@ -7,8 +7,6 @@
 #include "ui_dicom_parser.h"
 #include "mainwindow.h"
 
-std::string src_error_msg;
-
 void get_report_from_dicom(const tipl::io::dicom& header,std::string& report_);
 void get_report_from_bruker(const tipl::io::bruker_info& header,std::string& report_);
 void get_report_from_bruker2(const tipl::io::bruker_info& header,std::string& report_);
@@ -73,7 +71,6 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
     tipl::io::dicom dicom_header;// multiple frame image
     if(!dicom_header.load_from_file(file_name))
         return false;
-    tipl::out()  << "handled as 3D volume (multiframe)";
     tipl::image<3> buf_image;
     dicom_header >> buf_image;
     unsigned int slice_num = dicom_header.get_int(0x2001,0x1018);
@@ -121,9 +118,12 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
                 if(bvec.length() > 0)
                     bvec.normalize();
                 // Philips bx and by is swapped
-                b_table.push_back(bvec[1]);
-                b_table.push_back(bvec[0]);
-                b_table.push_back(bvec[2]);
+                if(b_count > 1)
+                {
+                    b_table.push_back(bvec[1]);
+                    b_table.push_back(bvec[0]);
+                    b_table.push_back(bvec[2]);
+                }
             }
         }
     }
@@ -181,7 +181,6 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
         else
             T.identity();
     }
-    tipl::out() << "image rotation matrix: " << T;
 
     if(slice_num <= 1)
         slice_num = buf_image.depth();
@@ -190,8 +189,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
 
     size_t plane_size = size_t(buf_image.width()*buf_image.height());
     b_table.resize(num_gradient*4);
-    tipl::progress prog("reading multi-frame DWI");
-    for(size_t index = 0;prog(index,num_gradient);++index)
+    for(size_t index = 0;index < num_gradient;++index)
     {
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
         if(index == 0)
@@ -213,7 +211,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
         new_file->bvec.rotate(T);
         dwi_files.push_back(new_file);
     }
-    return !prog.aborted();
+    return true;
 }
 
 
@@ -309,8 +307,10 @@ bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
 bool get_bval_bvec(const std::string& bval_file,const std::string& bvec_file,size_t dwi_count,
                    std::vector<double>& bvals,std::vector<double>& bvecs,
                    std::string& error_msg);
-bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec)
+bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec,
+                 std::string& error_msg)
 {
+    tipl::progress prog("opening ",file_name);
     tipl::vector<3,float> vs;
     std::vector<tipl::image<3> > dwi_data;
     {
@@ -318,12 +318,12 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         nii.input_stream->buffer_all = true;
         if(!nii.load_from_file(file_name))
         {
-            src_error_msg = nii.error_msg;
+            error_msg = nii.error_msg;
             return false;
         }
         if(nii.dim(4) <= 1)
         {
-            src_error_msg = "not a 4D nifti file";
+            error_msg = "not a 4D nifti file";
             return false;
         }
         dwi_data.resize(nii.dim(4));
@@ -342,7 +342,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         nii.get_voxel_size(vs);
         if(dwi_data.size() <= 1)
         {
-            src_error_msg = "not a 4D nifti file";
+            error_msg = "not a 4D nifti file";
             return false;
         }
     }
@@ -405,12 +405,12 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         std::string error_msg;
         if(!get_bval_bvec(bval_name.toStdString(),bvec_name.toStdString(),dwi_data.size(),bvals,bvecs,error_msg))
         {
-            src_error_msg = error_msg;
+            error_msg = error_msg;
             tipl::error() << error_msg;
         }
     }
     else
-        src_error_msg = "cannot find bval/bvec file";
+        error_msg = "cannot find bval/bvec file";
 
     if(need_bvalbvec && bvals.empty())
         return false;
@@ -449,12 +449,13 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
     return true;
 }
 
-bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
+bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg)
 {
+    tipl::progress prog("opening ",file_name);
     tipl::io::bruker_2dseq bruker_header;
     if(!bruker_header.load_from_file(file_name))
     {
-        src_error_msg = "failed to load image from 2dseq";
+        error_msg = "failed to load image from 2dseq";
         return false;
     }
     tipl::vector<3,float> vs;
@@ -470,21 +471,21 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
         QString method_name = system_path+"/method";
         if(!method_file.load_from_file(method_name.toStdString().c_str()))
         {
-            src_error_msg = "cannot find method file at ";
-            src_error_msg += method_name.toStdString();
+            error_msg = "cannot find method file at ";
+            error_msg += method_name.toStdString();
             return false;
         }        
         if(!method_file.read("PVM_DwEffBval",bvalues))
         {
-            src_error_msg = "cannot find PVM_DwEffBval in method file at ";
-            src_error_msg += method_name.toStdString();
+            error_msg = "cannot find PVM_DwEffBval in method file at ";
+            error_msg += method_name.toStdString();
             return false;
         }
         std::vector<float> bvec_temp;
         if(!method_file.read("PVM_DwGradVec",bvec_temp))
         {
-            src_error_msg = "cannot find PVM_DwGradVec in method file at ";
-            src_error_msg += method_name.toStdString();
+            error_msg = "cannot find PVM_DwGradVec in method file at ";
+            error_msg += method_name.toStdString();
             return false;
         }
 
@@ -510,8 +511,8 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
                     absolutePath()).absolutePath()).absolutePath()+"/imnd";
             if(!imnd_file.load_from_file(imnd_name.toStdString().c_str()))
             {
-                src_error_msg = "cannot find method or imnd file at ";
-                src_error_msg += imnd_name.toStdString();
+                error_msg = "cannot find method or imnd file at ";
+                error_msg += imnd_name.toStdString();
                 return false;
             }
             std::istringstream(imnd_file["IMND_diff_b_value"]) >> bvalues[0];
@@ -523,8 +524,8 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
         }
         else
         {
-            src_error_msg = "cannot find imnd file at ";
-            src_error_msg += system_path.toStdString();
+            error_msg = "cannot find imnd file at ";
+            error_msg += system_path.toStdString();
             return false;
         }
     }
@@ -535,7 +536,7 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
 
     if(dwi_files.size() && dwi_files.back()->image.shape() != dim)
     {
-        src_error_msg = "inconsistent dimension found";
+        error_msg = "inconsistent dimension found";
         return false;
     }
     tipl::lower_threshold(bruker_header.get_image(),0.0);
@@ -561,39 +562,70 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
     return true;
 }
 
-bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
+bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
+                               std::string& error_msg)
 {
-    tipl::io::dicom dicom_header;// multiple frame image
+    tipl::io::dicom dicom_header;
+    if(!dicom_header.load_from_file(file_list[0].toStdString().c_str()) || !dicom_header.is_dwi())
+        return false;
     tipl::shape<3> geo;
-    if(!dicom_header.load_from_file(file_list[0].toStdString().c_str()))
-        return false;
     dicom_header.get_image_dimension(geo);
-    // philips or GE single slice images
-    if(geo[2] != 1 || dicom_header.is_mosaic)
+
+    if(!dicom_header.is_mosaic && (dicom_header.is_multi_frame || geo[2] != 1 || file_list.size() < 2))
+    {
+        tipl::progress prog("parsing multiframe");
+        for(int index = 0;prog(index,file_list.size());++index)
+        {
+            if(!load_dicom_multi_frame(file_list[index].toStdString().c_str(),dwi_files))
+                return false;
+        }
+        return !prog.aborted() && !dwi_files.empty();
+    }
+
+    std::vector<std::shared_ptr<DwiHeader> > dwis(file_list.size());
+
+    tipl::progress p("reading dicoms");
+    for(size_t i = 0;p(i, file_list.size());++i)
+    {
+        dwis[i] = std::make_shared<DwiHeader>();
+        if(!dwis[i]->open(file_list[i].toStdString().c_str()))
+        {
+            error_msg = dwis[i]->error_msg;
+            error_msg += " at ";
+            error_msg += file_list[i].toStdString();
+            return false;
+        }
+        if(dwis[i]->image.shape() != geo)
+        {
+            error_msg = "inconsistent image size found at ";
+            error_msg += file_list[i].toStdString();
+            error_msg += " please parse DICOM into folders before further processing.";
+            return false;
+        }
+    }
+    if(p.aborted())
         return false;
-    tipl::io::dicom dicom_header2;
-    if(file_list.size() < 2 || !dicom_header2.load_from_file(file_list[1].toStdString().c_str()))
-        return false;
-    tipl::out()  << "handled as multiple single slice DWI";
-    float s1 = dicom_header.get_slice_location();
+
+    if(dicom_header.is_mosaic)
+    {
+        dwi_files = dwis;
+        return !dwi_files.empty();
+    }
+
+
+
     bool iterate_slice_first = true;
     unsigned int slice_num = 2;
     unsigned int b_num = 2;
-    if(s1 == 0.0) // no slice location information
+
+
+    if(dwis[0]->slice_location == 0.0) // no slice location information
     {
-        DwiHeader dwi1,dwi2;
-        dwi1.open(file_list[0].toStdString().c_str());
-        dwi2.open(file_list[1].toStdString().c_str());
-        if(dwi1.bvec == dwi2.bvec && dwi1.bvalue == dwi2.bvalue) // iterate slice first
+        if(dwis[0]->bvec == dwis[1]->bvec && dwis[0]->bvalue == dwis[1]->bvalue) // iterate slice first
         {
             for (;slice_num < file_list.size();++slice_num)
-            {
-                DwiHeader dwi;
-                if(!dwi.open(file_list[slice_num].toStdString().c_str()))
-                    return false;
-                if(dwi1.bvec != dwi.bvec || dwi1.bvalue != dwi.bvalue)
+                if(dwis[0]->bvec != dwis[slice_num]->bvec || dwis[0]->bvalue != dwis[slice_num]->bvalue)
                     break;
-            }
             geo[2] = slice_num;
             iterate_slice_first = true;
         }
@@ -601,28 +633,19 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
         // iterate b first
         {
             for (;b_num < file_list.size();++b_num)
-            {
-                DwiHeader dwi;
-                if(!dwi.open(file_list[b_num].toStdString().c_str()))
-                    return false;
-                if(dwi1.bvec == dwi.bvec && dwi1.bvalue == dwi.bvalue)
+                if(dwis[0]->bvec == dwis[slice_num]->bvec && dwis[0]->bvalue == dwis[slice_num]->bvalue)
                     break;
-            }
             geo[2] = file_list.size()/b_num;
             iterate_slice_first = false;
         }
     }
     else
     {
-        if(s1 == dicom_header2.get_slice_location()) // iterate b-value first
+        if(dwis[0]->slice_location == dwis[1]->slice_location) // iterate b-value first
         {
-            for (;b_num < file_list.size();++b_num)
-            {
-                if(!dicom_header2.load_from_file(file_list[b_num].toStdString().c_str()))
-                    return false;
-                if(dicom_header2.get_slice_location() != s1)
+            for (;b_num < file_list.size();++b_num)    
+                if(dwis[b_num]->slice_location != dwis[0]->slice_location)
                     break;
-            }
             geo[2] = std::ceil(float(file_list.size())/float(b_num));
             iterate_slice_first = false;
         }
@@ -630,35 +653,28 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
         // iterate slice first
         {
             for (;slice_num < file_list.size();++slice_num)
-            {
-                if(!dicom_header2.load_from_file(file_list[slice_num].toStdString().c_str()))
-                    return false;
-                if(dicom_header2.get_slice_location() == s1)
+                if(dwis[slice_num]->slice_location == dwis[0]->slice_location)
                     break;
-            }
             geo[2] = slice_num;
             iterate_slice_first = true;
         }
     }
-    tipl::progress prog("reading multiple slices DWI");
+
+    tipl::out() << "slice num: " << geo[2];
+
+
+    tipl::progress prog("reading dicoms");
     for (unsigned int index = 0,b_index = dwi_files.size(),slice_index = 0;prog(index,file_list.size());++index)
     {
-        std::shared_ptr<DwiHeader> dwi(new DwiHeader);
-        if(!dwi->open(file_list[index].toStdString().c_str()))
-            return false;
         if(slice_index == 0)
         {
-            dwi_files.push_back(dwi);
-            dwi_files.back()->file_name = file_list[index].toStdString().c_str();
+            dwi_files.push_back(dwis[index]);
             dwi_files.back()->image.resize(geo);
-            dicom_header.get_voxel_size(dwi_files.back()->voxel_size);
         }
         else
         {
-            size_t pos = slice_index*geo.plane_size();
-            if(pos+dwi->image.size() > dwi_files[b_index]->image.size())
-                return false;
-            std::copy(dwi->image.begin(),dwi->image.end(),dwi_files[b_index]->image.begin() + pos);
+            std::copy(dwis[index]->image.begin(),dwis[index]->image.end(),
+                      dwi_files[b_index]->image.begin() + slice_index*geo.plane_size());
         }
         if(iterate_slice_first)
         {
@@ -692,13 +708,14 @@ void scale_image_buf_to_uint16(std::vector<tipl::image<3> >& image_buf)
         tipl::lower_threshold(image_buf[i],0);
     });
 }
-bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
+bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
+               std::string& error_msg)
 {
+    tipl::progress prog("opening ",file_list[0].toStdString().c_str());
     std::vector<tipl::image<3> > image_buf;
     tipl::shape<3> dim;
     tipl::vector<3> vs;
     image_buf.resize(file_list.size());
-    tipl::progress prog("Reading raw data");
     for (size_t i = 0;prog(i,file_list.size());++i)
     {
         std::unordered_map<std::string,std::string> value_list;
@@ -722,7 +739,7 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
         }
         if(value_list["type"].find("float") == std::string::npos)
         {
-            src_error_msg = "unsupported value type";
+            error_msg = "unsupported value type";
             return false;
         }
         // allocate all space
@@ -732,7 +749,7 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
             if(!(std::istringstream(value_list["sizes"]) >> dim[0] >> dim[1] >> dim[2])||
                !(std::istringstream(value_list["space directions"]) >> vs[0] >> d >> d >> d >> vs[1] >> d >> d >> d >> vs[2]))
             {
-                src_error_msg = "failed to parse file";
+                error_msg = "failed to parse file";
                 return false;
             }
         }
@@ -742,7 +759,7 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
         }
         catch(...)
         {
-            src_error_msg = "insufficient memory";
+            error_msg = "insufficient memory";
             return false;
         }
         std::string raw_file_name = file_list[i].toStdString();
@@ -752,7 +769,7 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
         tipl::out() << "reading" << raw_file_name << std::endl;
         if(!in.read((char*)&image_buf[i][0],image_buf[i].size()*sizeof(float)))
         {
-            src_error_msg = "failed to read image file";
+            error_msg = "failed to read image file";
             return false;
         }
     }
@@ -777,11 +794,12 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
     }
     return true;
 }
-bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
+bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
+                 std::string& error_msg)
 {
+    tipl::progress prog("opening ",file_list[0].toStdString().c_str());
     std::vector<tipl::image<3> > image_buf;
     bool scan_2d = true;
-    tipl::progress prog("reading 4d fdf DWI");
     for (int index = 0;prog(index,file_list.size());++index)
     {
         std::unordered_map<std::string,std::string> value_list;
@@ -808,7 +826,7 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
         }
         if(value_list["*storage"] != " float ")
         {
-            src_error_msg = "unsupported value type";
+            error_msg = "unsupported value type";
             return false;
         }
         // allocate all space
@@ -822,7 +840,7 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
             {
                 if(!(std::istringstream(value_list["matrix[]"]) >> shape[0] >> shape[1]))
                 {
-                    src_error_msg = "cannot read matrix information";
+                    error_msg = "cannot read matrix information";
                     return false;
                 }
             }
@@ -832,7 +850,7 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
                 scan_2d = false;
                 if(!(std::istringstream(value_list["matrix[]"]) >> shape[0] >> shape[1] >> shape[2]))
                 {
-                    src_error_msg = "cannot read matrix information";
+                    error_msg = "cannot read matrix information";
                     return false;
                 }
             }
@@ -840,7 +858,7 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
             if(!(std::istringstream(value_list["array_dim"]) >> dwi_num) || dwi_num == 0 ||
                !(std::istringstream(value_list["roi[]"]) >> fov[0] >> fov[1] >> fov[2]))
             {
-                src_error_msg = "no array_dim or roi data";
+                error_msg = "no array_dim or roi data";
                 return false;
             }
 
@@ -869,7 +887,7 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
         size_t dwi_id;
         if(!(std::istringstream(value_list["array_index"]) >> dwi_id) || (--dwi_id) >= dwi_files.size())
         {
-            src_error_msg = "error reading array_index";
+            error_msg = "error reading array_index";
             return false;
         }
         // get b_value
@@ -880,7 +898,7 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
                !(std::istringstream(value_list["dsl"]) >> dwi_files[dwi_id]->bvec[2]) ||
                !(std::istringstream(value_list["bvalue"]) >> dwi_files[dwi_id]->bvalue))
             {
-                src_error_msg = "no btable information";
+                error_msg = "no btable information";
                 return false;
             }
             dwi_files[uint32_t(dwi_id)]->bvec.normalize();
@@ -893,14 +911,14 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
             size_t slice_id;
             if(!(std::istringstream(value_list["slice_no"]) >> slice_id) || (--slice_id >= size_t(dwi_files[dwi_id]->image.depth())))
             {
-                src_error_msg = "invalid slice no";
+                error_msg = "invalid slice no";
                 return false;
             }
             int64_t plane_size = int64_t(image_buf[dwi_id].plane_size());
             in.seekg(-plane_size*4,std::ios_base::end);
             if(!in.read(reinterpret_cast<char*>(&*(image_buf[dwi_id].begin() + plane_size*int64_t(slice_id))),plane_size*4))
             {
-                src_error_msg = "read image failed";
+                error_msg = "read image failed";
                 return false;
             }
         }
@@ -909,7 +927,7 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
             in.seekg(-int64_t(image_buf[dwi_id].size()*4),std::ios_base::end);
             if(!in.read(reinterpret_cast<char*>(&*(image_buf[dwi_id].begin())),image_buf[dwi_id].size()*4))
             {
-                src_error_msg = "read image failed";
+                error_msg = "read image failed";
                 return false;
             }
         }
@@ -951,45 +969,19 @@ std::vector<QStringList> split_by_path(const QStringList &files)
 }
 
 bool parse_dwi(QStringList file_list,
-                    std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
+                    std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg)
 {
-    tipl::progress prog("opening ",std::filesystem::path(file_list[0].toStdString()).stem().u8string().c_str());
-    if(QFileInfo(file_list.front()).absolutePath() != QFileInfo(file_list.back()).absolutePath())
+    if(file_list.isEmpty())
+        return false;
+    if(QFileInfo(file_list[0]).isDir())
     {
-        auto dwi_groups = split_by_path(file_list);
-        for(const auto& sub_file_list : dwi_groups)
+        if(QFileInfo(file_list[0]+"/pdata/1/2dseq").exists())
         {
-            if(!parse_dwi(sub_file_list,dwi_files))
-                return false;
+            for(int index = 0;index < file_list.size();++index)
+                parse_dwi(QStringList() << (file_list[index]+"/pdata/1/2dseq"),dwi_files,error_msg);
+            return !dwi_files.empty();
         }
-        return true;
-    }
-    src_error_msg.clear();
-    if(QFileInfo(file_list[0]).fileName() == "2dseq")
-    {
-        for(int index = 0;index < file_list.size();++index)
-            load_4d_2dseq(file_list[index].toStdString().c_str(),dwi_files);
-        return !dwi_files.empty();
-    }
-    if(QFileInfo(file_list[0]).suffix() == "fdf")
-    {
-        return load_4d_fdf(file_list,dwi_files);
-    }
-    if(QFileInfo(file_list[0]).suffix() == "nhdr")
-    {
-        return load_nhdr(file_list,dwi_files);
-    }
-    if(QFileInfo(file_list[0]).fileName().endsWith(".nii") ||
-            QFileInfo(file_list[0]).fileName().endsWith(".nii.gz"))
-    {
-        tipl::out()  << "convert 4D NIFTI to src";
-        for(int i = 0;i < file_list.size();++i)
-            if(!load_4d_nii(file_list[i].toStdString().c_str(),dwi_files,false))
-                return false;
-        return !dwi_files.empty();
-    }
-    if(file_list.size() == 1 && QFileInfo(file_list[0]).isDir())
-    {
+
         tipl::out()  << "processing a single folder with DICOM files";
         QDir cur_dir = file_list[0];
         QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
@@ -997,71 +989,49 @@ bool parse_dwi(QStringList file_list,
             return false;
         for (int index = 0;index < dicom_file_list.size();++index)
             dicom_file_list[index] = file_list[0] + "/" + dicom_file_list[index];
-        return parse_dwi(dicom_file_list,dwi_files);
+        return parse_dwi(dicom_file_list,dwi_files,error_msg);
     }
 
-    if(file_list.size() > 1 && QFileInfo(file_list[0]).isDir() &&
-            QFileInfo(file_list[0]+"/pdata/1/2dseq").exists())
+    error_msg.clear();
+    if(QFileInfo(file_list.front()).absolutePath() != QFileInfo(file_list.back()).absolutePath())
     {
-        tipl::out()  << "combine multiple 2dseq folders";
-        for(int index = 0;index < file_list.size();++index)
-            parse_dwi(QStringList() << (file_list[index]+"/pdata/1/2dseq"),dwi_files);
-        return !dwi_files.empty();
-    }
-
-    std::sort(file_list.begin(),file_list.end(),compare_qstring());
-    tipl::io::dicom dicom_header;
-    if(!dicom_header.load_from_file(file_list[0].toStdString().c_str()))
-    {
-        src_error_msg = "unsupported file format";
-        return false;
-    }
-    float bv,bx,by,bz;
-    if(!dicom_header.get_btable(bv,bx,by,bz))
-    {
-        src_error_msg = "data are structure image";
-        tipl::error() << src_error_msg;
-        return false;
-    }
-
-    if(dicom_header.is_mosaic)
-    {
-        tipl::out()  << "handled as Siemens mosaic";
-        for (unsigned int index = 0;prog(index,file_list.size());++index)
+        auto dwi_groups = split_by_path(file_list);
+        for(const auto& sub_file_list : dwi_groups)
         {
-            std::shared_ptr<DwiHeader> new_file(new DwiHeader);
-            if (!new_file->open(file_list[index].toStdString().c_str()))
-                continue;
-            new_file->file_name = file_list[index].toStdString().c_str();
-            dwi_files.push_back(new_file);
-        }
-        return !prog.aborted() && !dwi_files.empty();
-    }
-    if(dicom_header.is_multi_frame)
-    {
-
-        for(int index = 0;prog(index,file_list.size());++index)
-        {
-            if(!load_dicom_multi_frame(file_list[index].toStdString().c_str(),dwi_files))
+            if(!parse_dwi(sub_file_list,dwi_files,error_msg))
                 return false;
         }
-        return !prog.aborted() && !dwi_files.empty();
+        return true;
     }
-    if(!load_multiple_slice_dicom(file_list,dwi_files) || dwi_files.size() == 1)
+
+    if(QFileInfo(file_list[0]).fileName() == "2dseq")
     {
-        src_error_msg = "data are structure image";
-        tipl::error() << src_error_msg;
-        return false;
+        for(int index = 0;index < file_list.size();++index)
+            load_4d_2dseq(file_list[index].toStdString().c_str(),dwi_files,error_msg);
+        return !dwi_files.empty();
     }
-    return true;
+    if(QFileInfo(file_list[0]).suffix() == "fdf")
+        return load_4d_fdf(file_list,dwi_files,error_msg);
+    if(QFileInfo(file_list[0]).suffix() == "nhdr")
+        return load_nhdr(file_list,dwi_files,error_msg);
+    if(QFileInfo(file_list[0]).fileName().endsWith(".nii") ||
+            QFileInfo(file_list[0]).fileName().endsWith(".nii.gz"))
+    {
+        for(int i = 0;i < file_list.size();++i)
+            if(!load_4d_nii(file_list[i].toStdString().c_str(),dwi_files,false,error_msg))
+                return false;
+        return !dwi_files.empty();
+    }
+    std::sort(file_list.begin(),file_list.end(),compare_qstring());
+    return load_multiple_slice_dicom(file_list,dwi_files,error_msg);
 }
 bool parse_dwi(const std::vector<std::string>& file_list,
-                    std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
+                    std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg)
 {
     QStringList qlist;
     for(const auto& each : file_list)
         qlist << each.c_str();
-    return parse_dwi(qlist,dwi_files);
+    return parse_dwi(qlist,dwi_files,error_msg);
 }
 void dicom_parser::load_table(void)
 {
@@ -1082,15 +1052,13 @@ void dicom_parser::load_table(void)
     if(max_b == 0.0)
         QMessageBox::critical(this,QApplication::applicationName(),"Cannot find matching bval and bvec files. You can load them using the [File] menu");
 }
-extern std::string src_error_msg;
 void dicom_parser::load_files(QStringList file_list)
 {
-    if(!parse_dwi(file_list,dwi_files))
+    std::string error_msg;
+    if(!parse_dwi(file_list,dwi_files,error_msg))
     {
-        if(!src_error_msg.empty())
-            QMessageBox::critical(this,"ERROR",src_error_msg.c_str());
-        else
-            QMessageBox::critical(this,"ERROR","loading aborted");
+        if(!error_msg.empty())
+            QMessageBox::critical(this,"ERROR",error_msg.c_str());
         close();
         return;
     }
@@ -1116,13 +1084,13 @@ void dicom_parser::on_buttonBox_accepted()
                     ui->tableWidget->item(index,3)->text().toFloat(),
                     ui->tableWidget->item(index,4)->text().toFloat());
     }
-
+    std::string error_msg;
     if(!DwiHeader::output_src(ui->SrcName->text().toStdString().c_str(),
                           dwi_files,
                           ui->upsampling->currentIndex(),
-                          ui->sort_btable->isChecked()))
+                          ui->sort_btable->isChecked(),error_msg))
     {
-        QMessageBox::critical(this,"ERROR",src_error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
         close();
     }
 
