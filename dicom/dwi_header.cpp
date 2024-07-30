@@ -48,6 +48,7 @@ void get_report_from_bruker2(const tipl::io::bruker_info& header,std::string& re
 bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<2,short>& I);
 bool DwiHeader::open(const char* filename)
 {
+    file_name = filename;
     tipl::io::dicom header;
     if (!header.load_from_file(filename))
     {
@@ -59,11 +60,12 @@ bool DwiHeader::open(const char* filename)
         }
         nii.toLPS(image);
         nii.get_voxel_size(voxel_size);
-        file_name = filename;
         return true;
     }
-    slice_location = header.get_slice_location();
     header >> image;
+    header.get_voxel_size(voxel_size);
+    slice_location = header.get_slice_location();
+
     if(header.is_compressed)
     {
         tipl::image<2,short> I;
@@ -98,7 +100,9 @@ bool DwiHeader::open(const char* filename)
     te = header.get_te();
 
     float bx,by,bz;
-    if(!header.get_btable(bvalue,bvec[0],bvec[1],bvec[2]) || bvalue == 0.0f)
+    if(!header.get_btable(bvalue,bvec[0],bvec[1],bvec[2]))
+        return false;
+    if(bvalue == 0.0f)
         return true;
 
     bvec.normalize();
