@@ -53,20 +53,24 @@ bool DwiHeader::open(const char* filename)
     {
         tipl::io::nifti nii;
         if (!nii.load_from_file(filename))
+        {
+            error_msg = "unsupported file format";
             return false;
+        }
         nii.toLPS(image);
         nii.get_voxel_size(voxel_size);
         file_name = filename;
         return true;
     }
-
+    slice_location = header.get_slice_location();
     header >> image;
     if(header.is_compressed)
     {
         tipl::image<2,short> I;
         if(!get_compressed_image(header,I))
         {
-            tipl::error() << "unsupported transfer syntax: " << header.encoding << std::endl;
+            error_msg = "unsupported transfer syntax:";
+            error_msg += header.encoding;
             return false;
         }
         if(I.size() == image.size())
@@ -94,9 +98,7 @@ bool DwiHeader::open(const char* filename)
     te = header.get_te();
 
     float bx,by,bz;
-    if(!header.get_btable(bvalue,bvec[0],bvec[1],bvec[2]))
-        return false;
-    if(bvalue == 0.0f)
+    if(!header.get_btable(bvalue,bvec[0],bvec[1],bvec[2]) || bvalue == 0.0f)
         return true;
 
     bvec.normalize();
