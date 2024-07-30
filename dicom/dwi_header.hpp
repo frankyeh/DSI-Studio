@@ -10,16 +10,17 @@ class DwiHeader
 {
 	typedef std::vector<short>::iterator image_iterator;
 public:
-    std::string file_name, report;
+    std::string file_name, report,error_msg;
     tipl::image<3,unsigned short> image;
 public:// for HCP dataset
     tipl::image<4> grad_dev;
 public:
     tipl::vector<3,float> bvec;
-    float bvalue,te;
+    float bvalue = 0.0f;
+    float te = 0.0f;
+    float slice_location = 0.0f;
     tipl::vector<3,float> voxel_size;
 public:
-    DwiHeader(void): bvalue(0.0f), te(0.0f) {}
     bool open(const char* filename);
 public:
     const unsigned short* begin(void) const
