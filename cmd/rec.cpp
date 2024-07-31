@@ -42,7 +42,8 @@ int rec(tipl::program_option<tipl::out>& po)
         src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
 
         if(src.voxel.method_id == 7) // is qsdr
-            src.voxel.qsdr_reso = po.get("qsdr_reso",src.is_human_data() ? 2.0f : src.voxel.vs[2]);
+            src.voxel.qsdr_reso = po.get("qsdr_reso",src.is_human_data() ?
+                    std::min<float>(2.0f,std::max<float>(src.voxel.vs[0],src.voxel.vs[2])) : src.voxel.vs[2]);
 
     }
 
