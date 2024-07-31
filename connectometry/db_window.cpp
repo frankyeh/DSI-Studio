@@ -114,15 +114,15 @@ void db_window::update_subject_list()
     ui->subject_list->setRowCount(vbc->handle->db.num_subjects);
     QStringList header;
     header << "id";
-    for(auto& str : vbc->handle->db.feature_titles)
+    for(auto& str : vbc->handle->db.titles)
         header << str.c_str();
     ui->subject_list->setHorizontalHeaderLabels(header);
 
     for(unsigned int i = 0;i < vbc->handle->db.num_subjects;++i)
     {
         ui->subject_list->setItem(i,0, new QTableWidgetItem(QString(vbc->handle->db.subject_names[i].c_str())));
-        for(unsigned int j = 0;j < vbc->handle->db.feature_location.size();++j)
-            ui->subject_list->setItem(i,j+1, new QTableWidgetItem(QString(vbc->handle->db.items[i*vbc->handle->db.titles.size() + vbc->handle->db.feature_location[j]].c_str())));
+        for(unsigned int j = 0;j < vbc->handle->db.titles.size();++j)
+            ui->subject_list->setItem(i,j+1, new QTableWidgetItem(QString(vbc->handle->db.items[i*vbc->handle->db.titles.size() + j].c_str())));
     }
 
 }
