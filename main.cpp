@@ -327,7 +327,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *a
     }
 
 
-    if(action == "atk" || action == "atl" || loop.find('*') == std::string::npos) // atk, atl handle * by itself
+    if(action == "atk" || action == "atl" || action == "src" || loop.find('*') == std::string::npos) // atk, atl handle * by itself
     {
         if(run_action(po))
             return 1;
