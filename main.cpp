@@ -308,7 +308,6 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *a
     tipl::progress prog("command line");
     std::string source = po.get("source");
     std::string action = po.get("action");
-    std::string loop = po.get("loop",source);
 
 
     std::shared_ptr<QCoreApplication> cmd;
@@ -327,7 +326,14 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *a
     }
 
 
-    if(action == "atk" || action == "atl" || action == "qc" || loop.find('*') == std::string::npos) // atk, atl handle * by itself
+    std::string loop;
+    if(po.has("loop"))
+        loop = po.get("loop");
+    else
+    if(source.find('*') != std::string::npos && action != "atk" && action != "atl" && action != "src" && action != "qc")
+        loop = po.get("loop",source);
+
+    if(loop.empty())
     {
         if(run_action(po))
             return 1;
