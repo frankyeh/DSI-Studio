@@ -59,6 +59,7 @@ public:
     void add_work_dir(QString dir);
     bool load_db(std::shared_ptr<group_connectometry_analysis>& database,QString& file_name);
     void loadTags(QUrl url,QString repo);
+    void loadFiles(void);
 private slots:
     void on_averagefib_clicked();
     void on_vbc_clicked();
@@ -105,7 +106,6 @@ private slots:
     void on_OpenDWI_2dseq_clicked();
     void on_load_tags_clicked();
     void on_github_tags_itemSelectionChanged();
-    void on_load_release_files_clicked();
     void on_tabWidget_currentChanged(int index);
     void on_browseDownloadDir_clicked();
     void on_github_release_files_itemSelectionChanged();

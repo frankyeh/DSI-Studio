@@ -1333,7 +1333,8 @@ void MainWindow::on_github_repo_currentIndexChanged(int)
     }
     ui->github_tags->sortByColumn(0,Qt::AscendingOrder);
     ui->github_tags->setSortingEnabled(true);
-    ui->github_tags->resizeColumnsToContents();
+    ui->github_tags->resizeColumnToContents(0);
+    ui->github_tags->resizeColumnToContents(1);
 }
 
 
@@ -1398,7 +1399,7 @@ void MainWindow::loadTags(QUrl url,QString repo)
 }
 
 
-void MainWindow::on_load_release_files_clicked()
+void MainWindow::loadFiles()
 {
     int row = ui->github_tags->currentRow();
     if (row < 0)
@@ -1439,7 +1440,9 @@ void MainWindow::on_load_release_files_clicked()
     }
     ui->github_release_files->sortByColumn(0,Qt::AscendingOrder);
     ui->github_release_files->setUpdatesEnabled(true);
-    ui->github_release_files->resizeColumnsToContents();
+    ui->github_tags->resizeColumnToContents(0);
+    ui->github_tags->resizeColumnToContents(1);
+    ui->github_tags->resizeColumnToContents(2);
     ui->github_release_files->setSortingEnabled(true);
 
     ui->file_count->setText(QString("%1 files").arg(ui->github_release_files->rowCount()));
@@ -1459,12 +1462,10 @@ void MainWindow::on_github_tags_itemSelectionChanged()
         QString title = ui->github_tags->item(ui->github_tags->currentRow(), 2)->text();
         ui->github_repo_title->setText(title);
         ui->github_note->setMarkdown(notes[tag]);
-        ui->load_release_files->setEnabled(true);
-        on_load_release_files_clicked();
         ui->github_release_note->setCurrentIndex(0);
+        loadFiles();
+
     }
-    else
-        ui->load_release_files->setEnabled(false);
 }
 
 void MainWindow::on_browseDownloadDir_clicked()
