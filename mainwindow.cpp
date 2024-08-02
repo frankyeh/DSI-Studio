@@ -1464,7 +1464,6 @@ void MainWindow::on_github_tags_itemSelectionChanged()
         ui->github_note->setMarkdown(notes[tag]);
         ui->github_release_note->setCurrentIndex(0);
         loadFiles();
-
     }
 }
 
