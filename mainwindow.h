@@ -9,6 +9,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
+#include <QJsonArray>
 
 namespace Ui {
     class MainWindow;
@@ -23,8 +24,9 @@ class MainWindow : public QMainWindow
     std::map<QString,QString> notes;
     QString qc_link;
 public:
+    bool fetch_github = false;
     QNetworkAccessManager manager;
-    QSharedPointer<QNetworkReply> read_tag;
+    std::map<QString,QJsonArray> tags,assets;
     auto get(QUrl url)
     {
         QNetworkRequest request;
@@ -56,8 +58,7 @@ public:
     void open_template(QString name);
     void add_work_dir(QString dir);
     bool load_db(std::shared_ptr<group_connectometry_analysis>& database,QString& file_name);
-    void loadTags(QUrl url);
-    void loadFiles(QUrl url);
+    void loadTags(QUrl url,QString repo);
 private slots:
     void on_averagefib_clicked();
     void on_vbc_clicked();
@@ -106,7 +107,6 @@ private slots:
     void on_github_tags_itemSelectionChanged();
     void on_load_release_files_clicked();
     void on_tabWidget_currentChanged(int index);
-    void on_github_release_files_cellDoubleClicked(int row, int column);
     void on_browseDownloadDir_clicked();
     void on_github_release_files_itemSelectionChanged();
     void on_github_select_all_clicked();
@@ -114,6 +114,7 @@ private slots:
     void on_github_select_matching_clicked();
     void on_github_release_note_currentChanged(int index);
     void on_github_repo_currentIndexChanged(int index);
+    void on_github_open_file_clicked();
 };
 
 #endif // MAINWINDOW_H

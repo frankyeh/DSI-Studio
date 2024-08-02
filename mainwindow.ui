@@ -144,7 +144,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>3</number>
+       <number>4</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -2637,12 +2637,27 @@ Tractography</string>
                 </property>
                 <item>
                  <property name="text">
-                  <string>frankyeh/DSI-Studio-Cloud (openneuro)</string>
+                  <string>frankyeh/data-hcp</string>
                  </property>
                 </item>
                 <item>
                  <property name="text">
-                  <string>frankyeh/data (brain.labsolver.org)</string>
+                  <string>frankyeh/data-openneuro</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>frankyeh/data-abcd</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>frankyeh/data-disease</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>frankyeh/data-healthy</string>
                  </property>
                 </item>
                </widget>
@@ -2927,7 +2942,7 @@ p, li { white-space: pre-wrap; }
                    <string>Double click to download and open</string>
                   </property>
                   <property name="editTriggers">
-                   <set>QAbstractItemView::NoEditTriggers</set>
+                   <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed|QAbstractItemView::SelectedClicked</set>
                   </property>
                   <property name="alternatingRowColors">
                    <bool>true</bool>
@@ -2993,6 +3008,24 @@ p, li { white-space: pre-wrap; }
                     </property>
                     <property name="checked">
                      <bool>true</bool>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="github_open_file">
+                    <property name="styleSheet">
+                     <string notr="true">QPushButton {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+}</string>
+                    </property>
+                    <property name="text">
+                     <string>Open </string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="icons.qrc">
+                      <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
                     </property>
                    </widget>
                   </item>

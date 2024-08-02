@@ -81,6 +81,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->tabWidget->setCurrentIndex(0);
     ui->github_release_note->setCurrentIndex(0);
     ui->github_release_note->setTabVisible(1,false);
+    ui->github_open_file->setVisible(false);
     ui->template_list->setCurrentRow(1);
 }
 
@@ -1297,18 +1298,52 @@ void MainWindow::on_tabWidget_currentChanged(int index)
         if(QMessageBox::question( this, QApplication::applicationName(),
                         "Fetch repository lists (requires internet connection)?",
                         QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
+        {
+            fetch_github = true;
             on_load_tags_clicked();
+        }
     }
 }
 
+void MainWindow::on_github_repo_currentIndexChanged(int)
+{
+    QString repo = ui->github_repo->currentText().split(' ').first();
+
+    if(tags[repo].empty() && fetch_github)
+    {
+        on_load_tags_clicked();
+        return;
+    }
+
+    notes.clear();
+    assets.clear();
+    ui->github_tags->setSortingEnabled(false);
+    ui->github_tags->setRowCount(0);
+    foreach (const QJsonValue& release, tags[repo])
+    {
+        QJsonObject releaseObject = release.toObject();
+        auto asset = releaseObject.value("assets").toArray();
+        int row = ui->github_tags->rowCount();
+        ui->github_tags->insertRow(row);
+        ui->github_tags->setItem(row, 0, new QTableWidgetItem(releaseObject.value("tag_name").toString()));
+        ui->github_tags->setItem(row, 1, new QTableWidgetItem(QString::number(asset.size())));
+        ui->github_tags->setItem(row, 2, new QTableWidgetItem(releaseObject.value("name").toString()));
+        notes[releaseObject.value("tag_name").toString()] = releaseObject.value("body").toString();
+        assets[releaseObject.value("tag_name").toString()] = asset;
+    }
+    ui->github_tags->sortByColumn(0,Qt::AscendingOrder);
+    ui->github_tags->setSortingEnabled(true);
+    ui->github_tags->resizeColumnsToContents();
+}
+
+
 void MainWindow::on_load_tags_clicked()
 {
-    QString repoName = ui->github_repo->currentText().split(' ').first();
-    tipl::out() << "loading " << repoName.toStdString();
+    QString repo = ui->github_repo->currentText().split(' ').first();
+    tipl::out() << "loading " << repo.toStdString();
 
     QNetworkRequest request;
-    QString url = QString("https://api.github.com/repos/%1/releases").arg(repoName);
-    request.setUrl(QUrl(url));
+    QString url = QString("https://api.github.com/repos/%1/releases").arg(repo);
     request.setRawHeader("Accept", "application/json");
 
     ui->github_tags->setSortingEnabled(false);
@@ -1316,39 +1351,33 @@ void MainWindow::on_load_tags_clicked()
     ui->github_tags->setColumnWidth(0,75);
     ui->github_tags->setColumnWidth(1,50);
     ui->github_tags->setColumnWidth(2,200);
+    ui->github_tags->setRowCount(1);
+    ui->github_tags->setItem(0, 0, new QTableWidgetItem("Loading..."));
     notes.clear();
-
-    loadTags(QUrl(url));
+    assets.clear();
+    tags[repo] = QJsonArray();
+    loadTags(QUrl(url),repo);
 }
 
-void MainWindow::loadTags(QUrl url)
+void MainWindow::loadTags(QUrl url,QString repo)
 {
 
     tipl::out() << "loading " << url.toString().toStdString();
 
-    read_tag = get(url);
+    auto reply = get(url);
 
-    QObject::connect(read_tag.get(), &QNetworkReply::finished, this, [this]()
+    QObject::connect(reply.get(), &QNetworkReply::finished, this, [this, repo, reply]()
     {
-        if (read_tag->error() != QNetworkReply::NoError)
+        if (reply->error() != QNetworkReply::NoError)
         {
-            if(read_tag->error() != QNetworkReply::OperationCanceledError)
-                QMessageBox::critical(this,"ERROR",read_tag->errorString());
+            if(reply->error() != QNetworkReply::OperationCanceledError)
+                QMessageBox::critical(this,"ERROR",reply->errorString());
         }
         else
         {
-            foreach (const QJsonValue& release, QJsonDocument::fromJson(QString(read_tag->readAll()).toUtf8()).array())
-            {
-                QJsonObject releaseObject = release.toObject();
-                int row = ui->github_tags->rowCount();
-                ui->github_tags->insertRow(row);
-                ui->github_tags->setItem(row, 0, new QTableWidgetItem(releaseObject.value("tag_name").toString()));
-                ui->github_tags->setItem(row, 1, new QTableWidgetItem(QString::number(releaseObject.value("assets").toArray().size())));
-                ui->github_tags->setItem(row, 2, new QTableWidgetItem(releaseObject.value("name").toString()));
-                notes[releaseObject.value("tag_name").toString()] = releaseObject.value("body").toString();
-            }
-
-            QString linkHeader = read_tag->rawHeader("Link");
+            foreach (const QJsonValue& release , QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).array())
+                tags[repo].append(release);
+            QString linkHeader = reply->rawHeader("Link");
             if (!linkHeader.isEmpty())
             {
                 QRegularExpressionMatch match = QRegularExpression("<([^>]+)>; rel=\"next\"").match(linkHeader);
@@ -1357,14 +1386,13 @@ void MainWindow::loadTags(QUrl url)
                     QUrl nextPageUrl = match.captured(1);
                     if (nextPageUrl.isValid())
                     {
-                        loadTags(nextPageUrl);
+                        loadTags(nextPageUrl,repo);
                         return;
                     }
                 }
             }
-            ui->github_tags->sortByColumn(0,Qt::AscendingOrder);
-            ui->github_tags->setSortingEnabled(true);
-            read_tag.reset();
+            on_github_repo_currentIndexChanged(0);
+            reply->deleteLater();
         }
     });
 }
@@ -1376,69 +1404,56 @@ void MainWindow::on_load_release_files_clicked()
     if (row < 0)
         return;
 
-    QString url = QString("https://api.github.com/repos/%1/releases/tags/%2").
-                        arg(ui->github_repo->currentText().split(' ').first()).
-                        arg(ui->github_tags->item(row, 0)->text());
-
+    auto tag = ui->github_tags->item(row, 0)->text();
 
     ui->github_release_files->setSortingEnabled(false);
+    ui->github_release_files->setUpdatesEnabled(false);
     ui->github_release_files->setRowCount(0);
-    ui->github_release_files->setColumnWidth(0,200);
+    ui->github_release_files->setColumnWidth(0,300);
     ui->github_release_files->setColumnWidth(1,100);
     ui->github_release_files->setColumnWidth(2,200);
-    ui->github_release_files->setColumnWidth(3,400);
-    loadFiles(QUrl(url));
-}
+    ui->github_release_files->setColumnWidth(3,500);
 
-void MainWindow::loadFiles(QUrl url)
-{
-    tipl::out() << "loading " << url.toString().toStdString();
     qc_link.clear();
-    auto reply = get(url);
-    QObject::connect(reply.get(), &QNetworkReply::finished, this, [this,reply]()
+
+    QStringList units = {" b", " kb", " mb", " gb"};
+    foreach (const QJsonValue& asset,assets[tag])
     {
-        if (reply->error() != QNetworkReply::NoError)
+        QJsonObject assetObject = asset.toObject();
+        size_t size = assetObject.value("size").toInteger();
+        int i = 0;
+        while (size >= 1024 && i < units.size() - 1)
         {
-            if(reply->error() != QNetworkReply::OperationCanceledError)
-                QMessageBox::critical(this,"ERROR",reply->errorString());
+            size /= 1024;
+            i++;
         }
-        else
-        {
-            QStringList units = {" bytes", " KB", " MB", " GB"};
-            foreach (const QJsonValue& asset,
-                     QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).object().value("assets").toArray())
-            {
-                QJsonObject assetObject = asset.toObject();
-                size_t size = assetObject.value("size").toInteger();
-                int i = 0;
-                while (size >= 1024 && i < units.size() - 1)
-                {
-                    size /= 1024;
-                    i++;
-                }
-                int row = ui->github_release_files->rowCount();
-                ui->github_release_files->insertRow(row);
-                ui->github_release_files->setItem(row, 0, new QTableWidgetItem(assetObject.value("name").toString()));
-                ui->github_release_files->setItem(row, 1, new QTableWidgetItem(QString::number(size)+units[i]));
-                ui->github_release_files->setItem(row, 2, new QTableWidgetItem(assetObject.value("created_at").toString()));
-                ui->github_release_files->setItem(row, 3, new QTableWidgetItem(assetObject.value("browser_download_url").toString()));
-                ui->github_release_files->item(row,1)->setData(Qt::UserRole, assetObject.value("size").toInteger()); // Save the original size
-                if(assetObject.value("name").toString().contains("qc.txt"))
-                    qc_link = assetObject.value("browser_download_url").toString();
-            }
-            ui->github_release_files->sortByColumn(0,Qt::AscendingOrder);
-            ui->github_release_files->setSortingEnabled(true);
-            ui->file_count->setText(QString("%1 files").arg(ui->github_release_files->rowCount()));
-            ui->github_release_note->setTabVisible(1,!qc_link.isEmpty());
-        }
-    });
+        int row = ui->github_release_files->rowCount();
+        ui->github_release_files->insertRow(row);
+        ui->github_release_files->setItem(row, 0, new QTableWidgetItem(assetObject.value("name").toString()));
+        ui->github_release_files->setItem(row, 1, new QTableWidgetItem(QString::number(size)+units[i]));
+        ui->github_release_files->setItem(row, 2, new QTableWidgetItem(assetObject.value("created_at").toString()));
+        ui->github_release_files->setItem(row, 3, new QTableWidgetItem(assetObject.value("browser_download_url").toString()));
+        ui->github_release_files->item(row,1)->setData(Qt::UserRole, assetObject.value("size").toInteger()); // Save the original size
+        if(assetObject.value("name").toString().contains("qc.txt"))
+            qc_link = assetObject.value("browser_download_url").toString();
+    }
+    ui->github_release_files->sortByColumn(0,Qt::AscendingOrder);
+    ui->github_release_files->setUpdatesEnabled(true);
+    ui->github_release_files->resizeColumnsToContents();
+    ui->github_release_files->setSortingEnabled(true);
+
+    ui->file_count->setText(QString("%1 files").arg(ui->github_release_files->rowCount()));
+    ui->github_release_note->setTabVisible(1,!qc_link.isEmpty());
+
+
 }
 
 
 
 void MainWindow::on_github_tags_itemSelectionChanged()
 {
-    if(ui->github_tags->currentRow() >= 0)
+    if(ui->github_tags->currentRow() >= 0 &&
+       ui->github_tags->item(ui->github_tags->currentRow(), 0)->text() != "Loading...")
     {
         QString tag = ui->github_tags->item(ui->github_tags->currentRow(), 0)->text();
         QString title = ui->github_tags->item(ui->github_tags->currentRow(), 2)->text();
@@ -1462,75 +1477,14 @@ void MainWindow::on_browseDownloadDir_clicked()
     ui->download_dir->setText(filename);
 }
 
-void MainWindow::on_github_release_files_cellDoubleClicked(int row, int column)
-{
-    if(!QDir(ui->download_dir->text()).exists())
-    {
-        QMessageBox::critical(this,"ERROR","Download directory does not exist");
-        return;
-    }
-
-    QString filePath = ui->download_dir->text() + "/" + ui->github_release_files->item(row, 0)->text();
-    if (QFile::exists(filePath) && !ui->download_overwrite->isChecked())
-    {
-        openFile(QStringList() << filePath);
-        return;
-    }
-
-    auto reply = get(ui->github_release_files->item(row, 3)->text());
-
-    // Create a progress dialog
-    QProgressDialog progressDialog("Downloading...", "Cancel", 0, 100, this);
-    progressDialog.setModal(true);
-    progressDialog.show();
-
-    qint64 bytesReceived = 0;
-    qint64 bytesTotal = ui->github_release_files->item(row, 1)->data(Qt::UserRole).toLongLong();
-    QEventLoop loop;
-
-    QObject::connect(reply.get(), &QNetworkReply::readyRead, this,
-                     [this, row, &progressDialog, &bytesReceived, bytesTotal,reply]()
-    {
-        progressDialog.setValue((reply->bytesAvailable() * 100) / (bytesTotal));
-    });
-    QObject::connect(reply.get(), &QNetworkReply::finished, this,
-                     [this, row, filePath, &progressDialog, &loop,reply]() // Pass the loop to the lambda
-    {
-        if (reply->error() != QNetworkReply::NoError)
-        {
-            if(reply->error() != QNetworkReply::OperationCanceledError)
-                QMessageBox::critical(this, "ERROR", reply->errorString());
-        }
-        else
-        {
-            auto downloadFile = std::make_shared<QFile>(filePath);
-            if (!downloadFile->open(QFile::WriteOnly))
-            {
-                QMessageBox::critical(this, "ERROR", "Failed to open file for writing");
-                return;
-            }
-            downloadFile->write(reply->readAll());
-            downloadFile->close();
-            QTimer::singleShot(0, this, [this, filePath](){openFile(QStringList() << filePath);});
-        }
-        progressDialog.close();
-        loop.quit();
-    });
-
-    QObject::connect(&progressDialog, &QProgressDialog::canceled, this, [this,&loop,reply]() // Pass the loop to the lambda
-    {
-        if (reply && reply->isRunning())
-            reply->abort();
-    });
-
-    loop.exec();
-
-}
 
 void MainWindow::on_github_release_files_itemSelectionChanged()
 {
     int selectedRows = ui->github_release_files->selectionModel()->selectedRows().size();
     ui->github_download->setEnabled(selectedRows > 0);
+    ui->github_open_file->setVisible(selectedRows == 1);
+    if(selectedRows == 1)
+        ui->github_open_file->setText(QString("Open %1").arg(ui->github_release_files->item(ui->github_release_files->currentRow(),0)->text()));
     ui->github_download->setText(selectedRows > 0 ? QString("Download %1 File(s)...").arg(selectedRows) : QString("Download"));
     ui->file_count->setText(QString("%1/%2 files").arg(selectedRows).arg(ui->github_release_files->rowCount()));
 }
@@ -1659,11 +1613,74 @@ void MainWindow::on_github_release_note_currentChanged(int index)
 
 }
 
-void MainWindow::on_github_repo_currentIndexChanged(int index)
+
+
+void MainWindow::on_github_open_file_clicked()
 {
-    if(read_tag.get() && read_tag->isRunning())
-        read_tag->abort();
-    ui->github_tags->setSortingEnabled(false);
-    ui->github_tags->setRowCount(0);
+    if(!QDir(ui->download_dir->text()).exists())
+    {
+        QMessageBox::critical(this,"ERROR","Download directory does not exist");
+        return;
+    }
+    auto row = ui->github_release_files->currentRow();
+    if(row < 0)
+        return;
+
+    QString filePath = ui->download_dir->text() + "/" + ui->github_release_files->item(row, 0)->text();
+    if (QFile::exists(filePath) && !ui->download_overwrite->isChecked())
+    {
+        openFile(QStringList() << filePath);
+        return;
+    }
+
+    auto reply = get(ui->github_release_files->item(row, 3)->text());
+
+    // Create a progress dialog
+    QProgressDialog progressDialog("Downloading...", "Cancel", 0, 100, this);
+    progressDialog.setModal(true);
+    progressDialog.show();
+
+    qint64 bytesReceived = 0;
+    qint64 bytesTotal = ui->github_release_files->item(row, 1)->data(Qt::UserRole).toLongLong();
+    QEventLoop loop;
+
+    QObject::connect(reply.get(), &QNetworkReply::readyRead, this,
+                     [this, row, &progressDialog, &bytesReceived, bytesTotal,reply]()
+    {
+        progressDialog.setValue((reply->bytesAvailable() * 100) / (bytesTotal));
+    });
+    QObject::connect(reply.get(), &QNetworkReply::finished, this,
+                     [this, row, filePath, &progressDialog, &loop,reply]() // Pass the loop to the lambda
+    {
+        if (reply->error() != QNetworkReply::NoError)
+        {
+            if(reply->error() != QNetworkReply::OperationCanceledError)
+                QMessageBox::critical(this, "ERROR", reply->errorString());
+        }
+        else
+        {
+            auto downloadFile = std::make_shared<QFile>(filePath);
+            if (!downloadFile->open(QFile::WriteOnly))
+            {
+                QMessageBox::critical(this, "ERROR", "Failed to open file for writing");
+                return;
+            }
+            downloadFile->write(reply->readAll());
+            downloadFile->close();
+            QTimer::singleShot(0, this, [this, filePath](){openFile(QStringList() << filePath);});
+        }
+        progressDialog.close();
+        loop.quit();
+    });
+
+    QObject::connect(&progressDialog, &QProgressDialog::canceled, this, [this,&loop,reply]() // Pass the loop to the lambda
+    {
+        if (reply && reply->isRunning())
+            reply->abort();
+    });
+
+    loop.exec();
 }
+
+
 
