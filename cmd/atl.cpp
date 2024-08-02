@@ -201,8 +201,9 @@ int atl(tipl::program_option<tipl::out>& po)
                 tipl::error() << "cannot save db file " << data->handle->db.error_msg << std::endl;
                 return 1;
             }
-            tipl::out() << "saving " << (po.get("output",output)+".R2.txt");
-            std::ofstream out((po.get("output",output)+".R2.txt").c_str());
+            tipl::out() << "saving " << (po.get("output",output)+".R2.tsv");
+            std::ofstream out((po.get("output",output)+".R2.tsv").c_str());
+            out << "name\tR2" << std::endl;
             for(size_t i = 0;i < data->handle->db.subject_names.size();++i)
                 out << data->handle->db.subject_names[i] << "\t" << data->handle->db.R2[i] << std::endl;
         }
