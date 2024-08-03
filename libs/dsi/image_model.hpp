@@ -228,6 +228,18 @@ public:
     std::string file_name;
     mutable std::string error_msg;
     tipl::io::gz_mat_read mat_reader;
+private:
+    auto acqparam_file(void) const{return file_name + ".topup.acqparams.txt";}
+    auto temp_nifti(void)  const{return file_name + ".nii.gz";}
+    auto corrected_output(void) const{return file_name + ".corrected";}
+    auto corrected_file(void) const{return file_name + ".corrected.nii.gz";}
+    auto topup_output(void) const
+    {
+        auto stem = std::filesystem::path(file_name).stem().string();
+        std::replace(stem.begin(),stem.end(),'.','_');
+        return std::filesystem::path(file_name).parent_path().string() + "/" + stem;
+    }
+    auto topup_result(void) const {return topup_output() + "_fieldcoef.nii.gz";}
 public:
     std::vector<tipl::vector<3,float> > src_bvectors;
 public:
