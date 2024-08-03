@@ -139,6 +139,13 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
                     phase_str = json_obj["PhaseEncodingDirection"].toString().toStdString();
             }
         }
+        else
+        {
+            if(std::filesystem::path(each).filename().string().find("_AP") != std::string::npos)
+                phase_str = "ap";
+            if(std::filesystem::path(each).filename().string().find("_PA") != std::string::npos)
+                phase_str = "pa";
+        }
         tipl::io::gz_nifti nii;
         if(!nii.load_from_file(each))
         {
@@ -169,15 +176,26 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
             continue;
         std::vector<std::string> main_dwi_list,rev_pe_list;
         main_dwi_list.push_back(dwi_file[i]);
-        for(size_t j = i + 1;j < arg.size();++j)
-            if(image_size[i] == image_size[j])
-            {
-                if(phase_dir[i] == phase_dir[j])
-                    main_dwi_list.push_back(dwi_file[j]);
-                else
-                    rev_pe_list.push_back(dwi_file[j]);
-                image_size[j] = tipl::shape<3>();
-            }
+        tipl::out() << "creating src for " << dwi_file[i];
+        // match phase encoding
+        if(!phase_dir[i].empty())
+        {
+            for(size_t j = i + 1;j < arg.size();++j)
+                if(image_size[i] == image_size[j])
+                {
+                    if(phase_dir[i] == phase_dir[j])
+                    {
+                        tipl::out() << "adding " << dwi_file[j];
+                        main_dwi_list.push_back(dwi_file[j]);
+                    }
+                    else
+                    {
+                        tipl::out() << "reverse encoding adding " << dwi_file[j];
+                        rev_pe_list.push_back(dwi_file[j]);
+                    }
+                    image_size[j] = tipl::shape<3>();
+                }
+        }
         image_size[i] = tipl::shape<3>();
         dwi_file[i].erase(dwi_file[i].length() - 7, 7); // remove .nii.gz
         auto src_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).filename().u8string() + ".src.gz";
