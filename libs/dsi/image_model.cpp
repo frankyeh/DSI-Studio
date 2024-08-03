@@ -1686,7 +1686,7 @@ bool src_data::generate_topup_b0_acq_files(tipl::image<3>& b0,
     tipl::out() << "source and reverse phase encoding: " << pe_id << std::endl;
 
     {
-        std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
+        std::string acqparam_file = file_name + ".topup.acqparams.txt";
         tipl::out() << "create acq params at " << acqparam_file << std::endl;
         std::ofstream out(acqparam_file.c_str());
         if(!out)
@@ -1719,7 +1719,7 @@ bool src_data::generate_topup_b0_acq_files(tipl::image<3>& b0,
         std::copy(b0.begin(),b0.end(),buffer.begin());
         std::copy(rev_b0.begin(),rev_b0.end(),buffer.begin()+int64_t(b0.size()));
 
-        b0_appa_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup." + pe_id + ".nii.gz";
+        b0_appa_file = file_name + ".topup." + pe_id + ".nii.gz";
         if(!tipl::io::gz_nifti::save_to_file(b0_appa_file.c_str(),buffer,voxel.vs,trans))
         {
             tipl::out() << "Cannot wrtie a temporary b0_appa image volume to " << b0_appa_file << std::endl;
@@ -1745,7 +1745,7 @@ bool src_data::load_topup_eddy_result(void)
     std::string bval_file = file_name+".bval";
     std::string bvec_file = file_name+".corrected.eddy_rotated_bvecs";
     bool is_eddy = std::filesystem::exists(bvec_file);
-    bool has_topup = QFileInfo(QFileInfo(file_name.c_str()).baseName().replace('.','_')+"_fieldcoef.nii.gz").exists();
+    bool has_topup = QFileInfo(QString(file_name.c_str()).replace('.','_')+"_fieldcoef.nii.gz").exists();
 
     if(is_eddy)
     {
@@ -1794,8 +1794,8 @@ bool src_data::load_topup_eddy_result(void)
 bool src_data::run_applytopup(std::string exec)
 {
     tipl::out() << "run applytopup";
-    std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
-    std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
+    std::string topup_result = QString(file_name.c_str()).replace('.','_').toStdString();
+    std::string acqparam_file = file_name + ".topup.acqparams.txt";
     std::string temp_nifti = file_name+".nii.gz";
     std::string corrected_file = file_name+".corrected";
     if(!std::filesystem::exists(topup_result+"_fieldcoef.nii.gz"))
@@ -1923,8 +1923,8 @@ bool src_data::run_eddy(std::string exec)
         }
     }
 
-    std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
-    std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
+    std::string topup_result = QString(file_name.c_str()).replace('.','_').toStdString();
+    std::string acqparam_file = file_name + ".topup.acqparams.txt";
     std::string temp_nifti = file_name+".nii.gz";
     std::string mask_nifti = file_name+".mask.nii.gz";
     std::string corrected_file = file_name+".corrected";
@@ -2119,9 +2119,9 @@ bool src_data::run_topup_eddy(std::string other_src,bool topup_only)
     if(has_reversed_pe)
     {
         tipl::progress prog("run topup");
-        std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
-        std::string check_me_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.check_result";
-        std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
+        std::string topup_result = QString(file_name.c_str()).replace('.','_').toStdString();
+        std::string check_me_file = file_name + ".topup.check_result";
+        std::string acqparam_file = file_name + ".topup.acqparams.txt";
         std::string b0_appa_file;
         tipl::image<3> b0,rev_b0;
         if(!read_b0(b0) || !read_rev_b0(other_src.c_str(),rev_b0) || !generate_topup_b0_acq_files(b0,rev_b0,b0_appa_file))
