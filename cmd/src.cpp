@@ -198,8 +198,14 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
         }
         image_size[i] = tipl::shape<3>();
         dwi_file[i].erase(dwi_file[i].length() - 7, 7); // remove .nii.gz
-        auto src_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).filename().u8string() + ".src.gz";
-        auto rsrc_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).filename().u8string() + ".rsrc.gz";
+        auto src_name = dwi_file[i] + ".src.gz";
+        auto rsrc_name = dwi_file[i] + ".rsrc.gz";
+
+        if(!output_dir.empty())
+        {
+            src_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).filename().u8string() + ".src.gz";
+            rsrc_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).filename().u8string() + ".rsrc.gz";
+        }
         if(!overwrite && std::filesystem::exists(src_name))
             tipl::out() << "skipping " << src_name << " already exists";
         else
@@ -245,7 +251,9 @@ bool nii2src(const std::vector<std::string>& dwi_nii_files,
         }
         else
         {
-            auto src_name = output_dir + "/" + std::filesystem::path(dwi_nii_files[i]).filename().u8string() + ".src.gz";
+            auto src_name = dwi_nii_files[i] + ".src.gz";
+            if(!output_dir.empty())
+                src_name = output_dir + "/" + std::filesystem::path(dwi_nii_files[i]).filename().u8string() + ".src.gz";
             if(!overwrite && std::filesystem::exists(src_name))
                 tipl::out() << "skipping " << src_name << " already exists";
             else
@@ -276,17 +284,23 @@ int src(tipl::program_option<tipl::out>& po)
 
             if(!dwi_nii_files.empty())
             {
-                auto output_dir = po.get("output",source);
-                if(!std::filesystem::exists(output_dir) && !std::filesystem::create_directory(output_dir))
+                std::string output_dir;
+                if(po.has("output"))
                 {
-                    tipl::error() << "cannot create the output folder. please check write privileges";
-                    return 1;
+                    output_dir = po.get("output");
+                    if(!std::filesystem::exists(output_dir) && !std::filesystem::create_directory(output_dir))
+                    {
+                        tipl::error() << "cannot create the output folder. please check write privileges";
+                        return 1;
+                    }
+                    if(!std::filesystem::is_directory(output_dir))
+                    {
+                        tipl::error() << output_dir << " is not a valid output directory.";
+                        return 1;
+                    }
                 }
-                if(!std::filesystem::is_directory(output_dir))
-                {
-                    tipl::error() << output_dir << " is not a valid output directory.";
-                    return 1;
-                }
+                else
+                    tipl::out() << "no --output specified. write src files to the same directory of the nifti images";
                 std::sort(dwi_nii_files.begin(),dwi_nii_files.end());
                 if(nii2src(dwi_nii_files,output_dir,is_bids,po.get("overwrite",0)))
                     return 0;
