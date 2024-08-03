@@ -1686,12 +1686,11 @@ bool src_data::generate_topup_b0_acq_files(tipl::image<3>& b0,
     tipl::out() << "source and reverse phase encoding: " << pe_id << std::endl;
 
     {
-        std::string acqparam_file = file_name + ".topup.acqparams.txt";
-        tipl::out() << "create acq params at " << acqparam_file << std::endl;
-        std::ofstream out(acqparam_file.c_str());
+        tipl::out() << "create acq params at " << acqparam_file() << std::endl;
+        std::ofstream out(acqparam_file().c_str());
         if(!out)
         {
-            tipl::out() << "cannot write to acq param file " << acqparam_file << std::endl;
+            tipl::out() << "cannot write to acq param file " << acqparam_file() << std::endl;
             return false;
         }
         tipl::out() << acqstr << std::flush;
@@ -1736,10 +1735,10 @@ bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by =
 extern const char* version_string;
 bool src_data::load_topup_eddy_result(void)
 {
-    std::string corrected_file = file_name+".corrected.nii.gz";
-    if(!std::filesystem::exists(corrected_file))
+    if(!std::filesystem::exists(corrected_file()))
     {
-        error_msg = "cannot find corrected output";
+        error_msg = "cannot find corrected output ";
+        error_msg += corrected_file();
         return false;
     }
 
@@ -1771,7 +1770,7 @@ bool src_data::load_topup_eddy_result(void)
     }
     tipl::out() << "load topup/eddy results" << std::endl;
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-    if(!load_4d_nii(corrected_file.c_str(),dwi_files,false,error_msg))
+    if(!load_4d_nii(corrected_file().c_str(),dwi_files,false,error_msg))
         return false;
     nifti_dwi.resize(dwi_files.size());
     src_dwi_data.resize(dwi_files.size());
@@ -1797,12 +1796,7 @@ bool src_data::load_topup_eddy_result(void)
 bool src_data::run_applytopup(std::string exec)
 {
     tipl::out() << "run applytopup";
-    std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
-    std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
-    std::string temp_nifti = file_name+".nii.gz";
-    std::string corrected_file = file_name+".corrected";
-    if(!std::filesystem::exists(QFileInfo(file_name.c_str()).absolutePath().toStdString() + "/" +
-                                topup_result+"_fieldcoef.nii.gz"))
+    if(!std::filesystem::exists(topup_result()))
     {
         error_msg = "no topup result for applytopup";
         return false;
@@ -1821,23 +1815,23 @@ bool src_data::run_applytopup(std::string exec)
         }
         //two full acq of DWI
         param = {
-                QString("--imain=%1,%2").arg(QFileInfo(temp_nifti.c_str()).fileName())
-                                        .arg(QFileInfo((rev_pe_src->file_name+".nii.gz").c_str()).fileName()).toStdString().c_str(),
-                QString("--datain=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
-                QString("--topup=%1").arg(topup_result.c_str()).toStdString().c_str(),
-                QString("--out=%1").arg(QFileInfo(corrected_file.c_str()).fileName()).toStdString().c_str(),
+                std::string("--imain=") + std::filesystem::path(temp_nifti()).filename().u8string() +","+
+                                          std::filesystem::path(rev_pe_src->temp_nifti()).filename().u8string(),
+                std::string("--datain=") + std::filesystem::path(acqparam_file()).filename().u8string(),
+                std::string("--topup=") + std::filesystem::path(topup_output()).filename().u8string(),
+                std::string("--out=") + std::filesystem::path(corrected_output()).filename().u8string(),
                 "--inindex=1,2",
                 "--method=jac",
-                "--verbose=1"};
+                "--verbose=1"};        
     }
     else
     {
         // one full acq of DWI
         param = {
-                QString("--imain=%1").arg(QFileInfo(temp_nifti.c_str()).fileName()).toStdString().c_str(),
-                QString("--datain=%1").arg(acqparam_file.c_str()).toStdString().c_str(),
-                QString("--topup=%1").arg(topup_result.c_str()).toStdString().c_str(),
-                QString("--out=%1").arg(QFileInfo(corrected_file.c_str()).fileName()).toStdString().c_str(),
+                std::string("--imain=") + std::filesystem::path(temp_nifti()).filename().u8string(),
+                std::string("--datain=") + std::filesystem::path(acqparam_file()).filename().u8string(),
+                std::string("--topup=") + std::filesystem::path(topup_output()).filename().u8string(),
+                std::string("--out=") + std::filesystem::path(corrected_output()).filename().u8string(),
                 "--inindex=1",
                 "--method=jac",
                 "--verbose=1"};
@@ -1850,7 +1844,7 @@ bool src_data::run_applytopup(std::string exec)
         error_msg += " please check if memory is enough to run applytopup";
         return false;
     }
-    std::filesystem::remove(temp_nifti);
+    std::filesystem::remove(temp_nifti());
     if(rev_pe_src.get())
         std::filesystem::remove(rev_pe_src->file_name+".nii.gz");
     return true;
@@ -1935,22 +1929,16 @@ bool src_data::run_eddy(std::string exec)
             return false;
         }
     }
-
-    std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
-    std::string acqparam_file = file_name + ".topup.acqparams.txt";
-    std::string temp_nifti = file_name+".nii.gz";
     std::string mask_nifti = file_name+".mask.nii.gz";
-    std::string corrected_file = file_name+".corrected";
     std::string index_file = file_name+".index.txt";
     std::string bval_file = file_name+".bval";
     std::string bvec_file = file_name+".bvec";
-    bool has_topup = std::filesystem::exists(QFileInfo(file_name.c_str()).absolutePath().toStdString() + "/" +
-                                             topup_result+"_fieldcoef.nii.gz");
+    bool has_topup = std::filesystem::exists(topup_result());
     if(!has_topup)
     {
         tipl::out() << "no topup result. run eddy without topup" << std::endl;
         setup_topup_eddy_volume();
-        std::ofstream out(acqparam_file);
+        std::ofstream out(acqparam_file());
         out << "0 -1 0 0.05" << std::endl;
     }
     if(!save_nii_for_applytopup_or_eddy(true))
@@ -1999,17 +1987,17 @@ bool src_data::run_eddy(std::string exec)
     }
 
     std::vector<std::string> param = {
-            std::string("--imain=") + std::filesystem::path(temp_nifti).filename().u8string(),
+            std::string("--imain=") + std::filesystem::path(temp_nifti()).filename().u8string(),
             std::string("--mask=") + std::filesystem::path(mask_nifti).filename().u8string(),
-            std::string("--acqp=") + std::filesystem::path(acqparam_file).filename().u8string(),
-            std::string("--index=") + std::filesystem::path(index_file.c_str()).filename().u8string(),
-            std::string("--bvecs=") + std::filesystem::path(bvec_file.c_str()).filename().u8string(),
-            std::string("--bvals=") + std::filesystem::path(bval_file.c_str()).filename().u8string(),
-            std::string("--out=") + std::filesystem::path(corrected_file.c_str()).filename().u8string(),
+            std::string("--acqp=") + std::filesystem::path(acqparam_file()).filename().u8string(),
+            std::string("--index=") + std::filesystem::path(index_file).filename().u8string(),
+            std::string("--bvecs=") + std::filesystem::path(bvec_file).filename().u8string(),
+            std::string("--bvals=") + std::filesystem::path(bval_file).filename().u8string(),
+            std::string("--out=") + std::filesystem::path(corrected_output()).filename().u8string(),
             "--verbose=1"
             };
     if(has_topup)
-        param.push_back(QString("--topup=%1").arg(topup_result.c_str()).toStdString().c_str());
+        param.push_back(std::string("--topup=") + std::filesystem::path(topup_output()).filename().u8string());
 
     if(!run_plugin(has_cuda ? "eddy_cuda" : "eddy","model",16,param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
     {
@@ -2025,7 +2013,7 @@ bool src_data::run_eddy(std::string exec)
     }
 
 
-    std::filesystem::remove(temp_nifti);
+    std::filesystem::remove(temp_nifti());
     std::filesystem::remove(mask_nifti);
     return true;
 }
@@ -2135,9 +2123,6 @@ bool src_data::run_topup_eddy(std::string other_src,bool topup_only)
     if(has_reversed_pe)
     {
         tipl::progress prog("run topup");
-        std::string topup_result = QFileInfo(file_name.c_str()).baseName().replace('.','_').toStdString();
-        std::string check_me_file = file_name + ".topup.check_result";
-        std::string acqparam_file = file_name + ".topup.acqparams.txt";
         std::string b0_appa_file;
         tipl::image<3> b0,rev_b0;
         if(!read_b0(b0) || !read_rev_b0(other_src.c_str(),rev_b0) || !generate_topup_b0_acq_files(b0,rev_b0,b0_appa_file))
@@ -2145,10 +2130,10 @@ bool src_data::run_topup_eddy(std::string other_src,bool topup_only)
 
 
         std::vector<std::string> param = {
-            (std::string("--imain=")+std::filesystem::path(b0_appa_file).filename().u8string()).c_str(),
-            (std::string("--datain=")+std::filesystem::path(acqparam_file).filename().u8string()).c_str(),
-            (std::string("--out=")+topup_result).c_str(),
-            (std::string("--iout=")+std::filesystem::path(check_me_file).filename().u8string()).c_str(),
+            std::string("--imain=")+std::filesystem::path(b0_appa_file).filename().u8string(),
+            std::string("--datain=")+std::filesystem::path(acqparam_file()).filename().u8string(),
+            std::string("--out=")+std::filesystem::path(topup_output()).filename().u8string(),
+            std::string("--iout=")+std::filesystem::path(file_name + ".topup.check_result").filename().u8string(),
             "--verbose=1"};
 
         if(!std::filesystem::exists(topup_param_file))
@@ -2678,13 +2663,12 @@ bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
             tipl::reshape(rev_pe_src->dwi_at(index),out);
         });
 
-    std::string temp_nifti = file_name+".nii.gz";
     tipl::matrix<4,4> trans;
     initial_LPS_nifti_srow(trans,tipl::shape<3>(buffer.shape().begin()),voxel.vs);
-    if(!tipl::io::gz_nifti::save_to_file(temp_nifti.c_str(),buffer,voxel.vs,trans))
+    if(!tipl::io::gz_nifti::save_to_file(temp_nifti().c_str(),buffer,voxel.vs,trans))
     {
         error_msg = "failed to write a temporary nifti file: ";
-        error_msg += temp_nifti;
+        error_msg += temp_nifti();
         error_msg += ". Please check write permission.";
         return false;
     }
