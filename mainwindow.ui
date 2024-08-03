@@ -2765,7 +2765,7 @@ Tractography</string>
                 <item>
                  <widget class="QTabWidget" name="github_release_note">
                   <property name="currentIndex">
-                   <number>0</number>
+                   <number>1</number>
                   </property>
                   <widget class="QWidget" name="tab_7">
                    <attribute name="title">
@@ -2830,7 +2830,7 @@ p, li { white-space: pre-wrap; }
                   </widget>
                   <widget class="QWidget" name="tab_8">
                    <attribute name="title">
-                    <string>QC</string>
+                    <string>qc</string>
                    </attribute>
                    <layout class="QVBoxLayout" name="verticalLayout_16">
                     <property name="spacing">
@@ -2868,6 +2868,11 @@ p, li { white-space: pre-wrap; }
                      </widget>
                     </item>
                    </layout>
+                  </widget>
+                  <widget class="QWidget" name="tab_9">
+                   <attribute name="title">
+                    <string>participants</string>
+                   </attribute>
                   </widget>
                  </widget>
                 </item>
