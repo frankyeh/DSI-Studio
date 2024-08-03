@@ -1319,6 +1319,7 @@ void MainWindow::on_github_repo_currentIndexChanged(int)
     assets.clear();
     ui->github_tags->setSortingEnabled(false);
     ui->github_tags->setRowCount(0);
+
     foreach (const QJsonValue& release, tags[repo])
     {
         QJsonObject releaseObject = release.toObject();
@@ -1333,6 +1334,7 @@ void MainWindow::on_github_repo_currentIndexChanged(int)
     }
     ui->github_tags->sortByColumn(0,Qt::AscendingOrder);
     ui->github_tags->setSortingEnabled(true);
+    ui->github_tags->resizeRowsToContents();
     ui->github_tags->resizeColumnToContents(0);
     ui->github_tags->resizeColumnToContents(1);
 }
@@ -1349,9 +1351,6 @@ void MainWindow::on_load_tags_clicked()
 
     ui->github_tags->setSortingEnabled(false);
     ui->github_tags->setRowCount(0);
-    ui->github_tags->setColumnWidth(0,75);
-    ui->github_tags->setColumnWidth(1,50);
-    ui->github_tags->setColumnWidth(2,200);
     ui->github_tags->setRowCount(1);
     ui->github_tags->setItem(0, 0, new QTableWidgetItem("Loading..."));
     notes.clear();
@@ -1410,10 +1409,6 @@ void MainWindow::loadFiles()
     ui->github_release_files->setSortingEnabled(false);
     ui->github_release_files->setUpdatesEnabled(false);
     ui->github_release_files->setRowCount(0);
-    ui->github_release_files->setColumnWidth(0,300);
-    ui->github_release_files->setColumnWidth(1,100);
-    ui->github_release_files->setColumnWidth(2,200);
-    ui->github_release_files->setColumnWidth(3,500);
 
     qc_link.clear();
 
@@ -1440,9 +1435,10 @@ void MainWindow::loadFiles()
     }
     ui->github_release_files->sortByColumn(0,Qt::AscendingOrder);
     ui->github_release_files->setUpdatesEnabled(true);
-    ui->github_tags->resizeColumnToContents(0);
-    ui->github_tags->resizeColumnToContents(1);
-    ui->github_tags->resizeColumnToContents(2);
+    ui->github_release_files->resizeColumnToContents(0);
+    ui->github_release_files->resizeColumnToContents(1);
+    ui->github_release_files->resizeColumnToContents(2);
+    ui->github_release_files->setColumnWidth(3,50);
     ui->github_release_files->setSortingEnabled(true);
 
     ui->file_count->setText(QString("%1 files").arg(ui->github_release_files->rowCount()));
@@ -1465,6 +1461,7 @@ void MainWindow::on_github_tags_itemSelectionChanged()
         ui->github_release_note->setCurrentIndex(0);
         loadFiles();
     }
+    ui->github_tags->setColumnWidth(2,50);
 }
 
 void MainWindow::on_browseDownloadDir_clicked()
@@ -1481,6 +1478,7 @@ void MainWindow::on_browseDownloadDir_clicked()
 void MainWindow::on_github_release_files_itemSelectionChanged()
 {
     int selectedRows = ui->github_release_files->selectionModel()->selectedRows().size();
+    ui->github_release_files->setColumnWidth(3,50);
     ui->github_download->setEnabled(selectedRows > 0);
     ui->github_open_file->setVisible(selectedRows == 1);
     if(selectedRows == 1)

@@ -26,6 +26,9 @@
    <iconset resource="icons.qrc">
     <normaloff>:/icons/dsi_studio.ico</normaloff>:/icons/dsi_studio.ico</iconset>
   </property>
+  <property name="windowOpacity">
+   <double>1.000000000000000</double>
+  </property>
   <widget class="QWidget" name="centralWidget">
    <property name="sizePolicy">
     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -2683,6 +2686,15 @@ Tractography</string>
             </item>
             <item>
              <widget class="QTableWidget" name="github_tags">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="horizontalScrollBarPolicy">
+               <enum>Qt::ScrollBarAsNeeded</enum>
+              </property>
               <property name="editTriggers">
                <set>QAbstractItemView::NoEditTriggers</set>
               </property>
@@ -2692,9 +2704,15 @@ Tractography</string>
               <property name="selectionBehavior">
                <enum>QAbstractItemView::SelectRows</enum>
               </property>
+              <property name="horizontalScrollMode">
+               <enum>QAbstractItemView::ScrollPerItem</enum>
+              </property>
               <property name="sortingEnabled">
                <bool>true</bool>
               </property>
+              <attribute name="horizontalHeaderStretchLastSection">
+               <bool>true</bool>
+              </attribute>
               <column>
                <property name="text">
                 <string>Tag</string>
@@ -2898,16 +2916,6 @@ p, li { white-space: pre-wrap; }
                    </widget>
                   </item>
                   <item>
-                   <widget class="QLabel" name="file_count">
-                    <property name="styleSheet">
-                     <string notr="true"/>
-                    </property>
-                    <property name="text">
-                     <string/>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
                    <spacer name="horizontalSpacer">
                     <property name="orientation">
                      <enum>Qt::Horizontal</enum>
@@ -2919,6 +2927,16 @@ p, li { white-space: pre-wrap; }
                      </size>
                     </property>
                    </spacer>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="file_count">
+                    <property name="styleSheet">
+                     <string notr="true"/>
+                    </property>
+                    <property name="text">
+                     <string/>
+                    </property>
+                   </widget>
                   </item>
                   <item>
                    <widget class="QPushButton" name="github_open_file">
@@ -2942,6 +2960,12 @@ p, li { white-space: pre-wrap; }
                 </item>
                 <item>
                  <widget class="QTableWidget" name="github_release_files">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
                   <property name="toolTip">
                    <string>Double click to download and open</string>
                   </property>
@@ -2957,6 +2981,9 @@ p, li { white-space: pre-wrap; }
                   <property name="sortingEnabled">
                    <bool>true</bool>
                   </property>
+                  <attribute name="horizontalHeaderStretchLastSection">
+                   <bool>true</bool>
+                  </attribute>
                   <column>
                    <property name="text">
                     <string>Name</string>
