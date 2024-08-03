@@ -1747,7 +1747,7 @@ bool src_data::load_topup_eddy_result(void)
     std::string bvec_file = file_name+".corrected.eddy_rotated_bvecs";
     bool is_eddy = std::filesystem::exists(bvec_file);
     bool has_topup = QFileInfo(
-                QFileInfo(file_name.c_str()).absolutePath()+
+                QFileInfo(file_name.c_str()).absolutePath()+ "/" +
                 QFileInfo(file_name.c_str()).baseName().replace('.','_')+"_fieldcoef.nii.gz").exists();
 
     if(is_eddy)
@@ -1801,7 +1801,7 @@ bool src_data::run_applytopup(std::string exec)
     std::string acqparam_file = QFileInfo(file_name.c_str()).baseName().toStdString() + ".topup.acqparams.txt";
     std::string temp_nifti = file_name+".nii.gz";
     std::string corrected_file = file_name+".corrected";
-    if(!std::filesystem::exists(QFileInfo(file_name.c_str()).absolutePath().toStdString() +
+    if(!std::filesystem::exists(QFileInfo(file_name.c_str()).absolutePath().toStdString() + "/" +
                                 topup_result+"_fieldcoef.nii.gz"))
     {
         error_msg = "no topup result for applytopup";
@@ -1856,7 +1856,7 @@ bool src_data::run_applytopup(std::string exec)
     return true;
 }
 
-bool eddy_check_shell(const std::vector<float>& bvalues)
+bool eddy_check_shell(const std::vector<float>& bvalues,std::string& cause)
 {
     std::vector<float> shell_bvalue;
     std::vector<size_t> shells;
@@ -1897,12 +1897,21 @@ bool eddy_check_shell(const std::vector<float>& bvalues)
     }
     {
         if(shell_bvalue.size() >= 7)
+        {
+            cause = "too many shells";
             return false;
+        }
         auto scans_per_shell = uint32_t((double(bvalues.size() - shell_count[0]) / double(shell_bvalue.size() - 1)) + 0.5);
         if(tipl::max_value(shell_count.begin()+1,shell_count.end()) >= 2 * scans_per_shell)
+        {
+            cause = "not enough average sampling in the shell";
             return false;
+        }
         if(3 * tipl::min_value(shell_count.begin()+1,shell_count.end()) < scans_per_shell)
+        {
+            cause = "low sampling shell";
             return false;
+        }
     }
     return true;
 }
@@ -1935,11 +1944,11 @@ bool src_data::run_eddy(std::string exec)
     std::string index_file = file_name+".index.txt";
     std::string bval_file = file_name+".bval";
     std::string bvec_file = file_name+".bvec";
-    bool has_topup = std::filesystem::exists(QFileInfo(file_name.c_str()).absolutePath().toStdString() +
+    bool has_topup = std::filesystem::exists(QFileInfo(file_name.c_str()).absolutePath().toStdString() + "/" +
                                              topup_result+"_fieldcoef.nii.gz");
     if(!has_topup)
     {
-        tipl::out() << "eddy without topup" << std::endl;
+        tipl::out() << "no topup result. run eddy without topup" << std::endl;
         setup_topup_eddy_volume();
         std::ofstream out(acqparam_file);
         out << "0 -1 0 0.05" << std::endl;
@@ -2081,9 +2090,11 @@ bool src_data::run_topup_eddy(std::string other_src,bool topup_only)
             error_msg = "cannot find reversed phase encoding files.";
             return false;
         }
-        if(!eddy_check_shell(src_bvalues))
+        std::string cause;
+        if(!eddy_check_shell(src_bvalues,cause))
         {
-            tipl::out() << "no reversed phase encoding files. run motion correction...";
+            tipl::out() << "cannot run eddy due to " << cause;
+            tipl::out() << "run motion correction...";
             return correct_motion();
         }
         else
@@ -2102,7 +2113,7 @@ bool src_data::run_topup_eddy(std::string other_src,bool topup_only)
     {
         tipl::out() << "load previous results from " << file_name << ".corrected.nii.gz" <<std::endl;
         if(load_topup_eddy_result())
-            return eddy_check_shell(src_bvalues) ? true : correct_motion(); // if not eddy corrected, then run motion correction.
+            return true;
 
         tipl::error() << error_msg << std::endl;
         if(!std::filesystem::exists(other_src))
@@ -2172,8 +2183,13 @@ bool src_data::run_topup_eddy(std::string other_src,bool topup_only)
             return false;
     }
 
-    if(!topup_only && eddy_check_shell(src_bvalues))
-        return run_eddy();
+    if(!topup_only)
+    {
+        std::string cause;
+        if(eddy_check_shell(src_bvalues,cause))
+            return run_eddy();
+        tipl::out() << "cannot run eddy due to " << cause;
+    }
 
     if(has_reversed_pe && !run_applytopup())
         return false;
