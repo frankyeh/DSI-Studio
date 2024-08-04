@@ -2250,7 +2250,7 @@ bool src_data::save_to_file(const char* dwi_file_name)
     std::string filename(dwi_file_name);
     if(!tipl::ends_with(filename,".gz"))
         filename += ".gz";
-    if(tipl::ends_with(filename,".nii.gz"))
+    if(tipl::ends_with(filename,"nii.gz"))
     {
         tipl::matrix<4,4> trans;
         initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
@@ -2276,7 +2276,7 @@ bool src_data::save_to_file(const char* dwi_file_name)
         filename = filename.substr(0,filename.size()-7);
         return save_bval((filename+".bval").c_str()) && save_bvec((filename+".bvec").c_str());
     }
-    if(tipl::ends_with(filename,".src.gz"))
+    if(tipl::ends_with(filename,"src.gz"))
     {
         tipl::io::gz_mat_write mat_writer(dwi_file_name);
         if(!mat_writer)
