@@ -229,6 +229,14 @@ public:
     mutable std::string error_msg;
     tipl::io::gz_mat_read mat_reader;
 private:
+    auto working_path(void) const
+    {
+        auto parent_path = std::filesystem::path(file_name).parent_path().string();
+        if(parent_path.empty())
+            return std::string();
+        else
+            return parent_path + "/";
+    }
     auto acqparam_file(void) const{return file_name + ".topup.acqparams.txt";}
     auto temp_nifti(void)  const{return file_name + ".nii.gz";}
     auto corrected_output(void) const{return file_name + ".corrected";}
@@ -237,7 +245,7 @@ private:
     {
         auto stem = std::filesystem::path(file_name).stem().string();
         std::replace(stem.begin(),stem.end(),'.','_');
-        return std::filesystem::path(file_name).parent_path().string() + "/" + stem;
+        return working_path() + stem;
     }
     auto topup_result(void) const {return topup_output() + "_fieldcoef.nii.gz";}
 public:
