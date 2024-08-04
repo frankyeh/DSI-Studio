@@ -14,7 +14,9 @@
 #include <filesystem>
 #include "reg.hpp"
 
-bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec,std::string& error_msg);
+bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
+                 bool search_bvalbvec,
+                 bool must_have_bval_bvec,std::string& error_msg);
 
 void src_data::draw_mask(tipl::color_image& buffer,int position)
 {
@@ -1745,9 +1747,7 @@ bool src_data::load_topup_eddy_result(void)
     std::string bval_file = file_name+".bval";
     std::string bvec_file = file_name+".corrected.eddy_rotated_bvecs";
     bool is_eddy = std::filesystem::exists(bvec_file);
-    bool has_topup = QFileInfo(
-                QFileInfo(file_name.c_str()).absolutePath()+ "/" +
-                QFileInfo(file_name.c_str()).baseName().replace('.','_')+"_fieldcoef.nii.gz").exists();
+    bool has_topup = std::filesystem::exists(topup_result());
 
     if(is_eddy)
     {
@@ -1770,7 +1770,7 @@ bool src_data::load_topup_eddy_result(void)
     }
     tipl::out() << "load topup/eddy results" << std::endl;
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-    if(!load_4d_nii(corrected_file().c_str(),dwi_files,false,error_msg))
+    if(!load_4d_nii(corrected_file().c_str(),dwi_files,false,false,error_msg))
         return false;
     nifti_dwi.resize(dwi_files.size());
     src_dwi_data.resize(dwi_files.size());
@@ -2039,7 +2039,7 @@ std::string src_data::find_topup_reverse_pe(void)
         tipl::progress prog("searching for reversed phase encoding b0");
         for(QString file : nii_files)
         {
-            std::string path = (QFileInfo(file_name.c_str()).absolutePath() + "/" + file).toStdString();
+            std::string path = working_path() + file.toStdString();
             tipl::io::gz_nifti nii;
             if(!nii.load_from_file(path.c_str()))
                 continue;
@@ -2447,7 +2447,7 @@ bool src_data::load_from_file(const char* dwi_file_name)
     if(QString(dwi_file_name).toLower().endsWith(".nii.gz"))
     {
         std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-        if(!load_4d_nii(dwi_file_name,dwi_files,true,error_msg))
+        if(!load_4d_nii(dwi_file_name,dwi_files,true,true,error_msg))
             return false;
         nifti_dwi.resize(dwi_files.size());
         src_dwi_data.resize(dwi_files.size());

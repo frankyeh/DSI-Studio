@@ -307,7 +307,9 @@ bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
 bool get_bval_bvec(const std::string& bval_file,const std::string& bvec_file,size_t dwi_count,
                    std::vector<double>& bvals,std::vector<double>& bvecs,
                    std::string& error_msg);
-bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool need_bvalbvec,
+bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
+                 bool search_bvalbvec,
+                 bool must_have_bval_bvec,
                  std::string& error_msg)
 {
     tipl::progress prog("opening ",file_name);
@@ -399,21 +401,21 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
 
     std::vector<double> bvals,bvecs;
     QString bval_name,bvec_name;
-    if(find_bval_bvec(file_name,bval_name,bvec_name))
+    std::string bvalbvec_error_msg;
+    if(search_bvalbvec && find_bval_bvec(file_name,bval_name,bvec_name))
     {
         tipl::out() << "found bval and bvec file for " << file_name;
-        std::string error_msg;
-        if(!get_bval_bvec(bval_name.toStdString(),bvec_name.toStdString(),dwi_data.size(),bvals,bvecs,error_msg))
-        {
-            error_msg = error_msg;
-            tipl::error() << error_msg;
-        }
+        tipl::out() << "bval: " << bval_name.toStdString();
+        tipl::out() << "bvec: " << bvec_name.toStdString();
+        if(!get_bval_bvec(bval_name.toStdString(),bvec_name.toStdString(),dwi_data.size(),
+                          bvals,bvecs,bvalbvec_error_msg))
+            tipl::out() << bvalbvec_error_msg;
     }
-    else
-        error_msg = "cannot find bval/bvec file";
-
-    if(need_bvalbvec && bvals.empty())
+    if(must_have_bval_bvec && bvals.empty())
+    {
+        error_msg = bvalbvec_error_msg;
         return false;
+    }
 
     for(unsigned int index = 0;index < dwi_data.size();++index)
     {
@@ -1018,7 +1020,7 @@ bool parse_dwi(QStringList file_list,
             QFileInfo(file_list[0]).fileName().endsWith(".nii.gz"))
     {
         for(int i = 0;i < file_list.size();++i)
-            if(!load_4d_nii(file_list[i].toStdString().c_str(),dwi_files,false,error_msg))
+            if(!load_4d_nii(file_list[i].toStdString().c_str(),dwi_files,true,false,error_msg))
                 return false;
         return !dwi_files.empty();
     }
