@@ -59,7 +59,7 @@ public:
     void open_template(QString name);
     void add_work_dir(QString dir);
     bool load_db(std::shared_ptr<group_connectometry_analysis>& database,QString& file_name);
-    void loadTags(QUrl url,QString repo);
+    void loadTags(QUrl url,QString repo,QJsonArray array);
     void loadFiles(void);
 private slots:
     void on_averagefib_clicked();

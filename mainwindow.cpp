@@ -1356,18 +1356,17 @@ void MainWindow::on_load_tags_clicked()
     ui->load_tags->setEnabled(false);
     notes.clear();
     assets.clear();
-    tags[repo] = QJsonArray();
-    loadTags(QUrl(url),repo);
+    loadTags(QUrl(url),repo,QJsonArray());
 }
 
-void MainWindow::loadTags(QUrl url,QString repo)
+void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array)
 {
 
     tipl::out() << "loading " << url.toString().toStdString();
 
     auto reply = get(url);
 
-    QObject::connect(reply.get(), &QNetworkReply::finished, this, [this, repo, reply]()
+    QObject::connect(reply.get(), &QNetworkReply::finished, this, [this, repo, reply, array]()
     {
         if (reply->error() != QNetworkReply::NoError)
         {
@@ -1376,8 +1375,9 @@ void MainWindow::loadTags(QUrl url,QString repo)
         }
         else
         {
+            QJsonArray array_;
             foreach (const QJsonValue& release , QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).array())
-                tags[repo].append(release);
+                array_.append(release);
             QString linkHeader = reply->rawHeader("Link");
             if (!linkHeader.isEmpty())
             {
@@ -1387,11 +1387,12 @@ void MainWindow::loadTags(QUrl url,QString repo)
                     QUrl nextPageUrl = match.captured(1);
                     if (nextPageUrl.isValid())
                     {
-                        loadTags(nextPageUrl,repo);
+                        loadTags(nextPageUrl,repo,array_);
                         return;
                     }
                 }
             }
+            tags[repo] = array_;
             if(repo == ui->github_repo->currentText().split(' ').first())
                 on_github_repo_currentIndexChanged(0);
             reply->deleteLater();
