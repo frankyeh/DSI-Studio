@@ -2765,7 +2765,7 @@ Tractography</string>
                 <item>
                  <widget class="QTabWidget" name="github_release_note">
                   <property name="currentIndex">
-                   <number>1</number>
+                   <number>0</number>
                   </property>
                   <widget class="QWidget" name="tab_7">
                    <attribute name="title">
@@ -2827,52 +2827,6 @@ p, li { white-space: pre-wrap; }
                      </widget>
                     </item>
                    </layout>
-                  </widget>
-                  <widget class="QWidget" name="tab_8">
-                   <attribute name="title">
-                    <string>qc</string>
-                   </attribute>
-                   <layout class="QVBoxLayout" name="verticalLayout_16">
-                    <property name="spacing">
-                     <number>0</number>
-                    </property>
-                    <property name="leftMargin">
-                     <number>0</number>
-                    </property>
-                    <property name="topMargin">
-                     <number>0</number>
-                    </property>
-                    <property name="rightMargin">
-                     <number>0</number>
-                    </property>
-                    <property name="bottomMargin">
-                     <number>0</number>
-                    </property>
-                    <item>
-                     <widget class="QTableWidget" name="github_release_qc">
-                      <property name="editTriggers">
-                       <set>QAbstractItemView::NoEditTriggers</set>
-                      </property>
-                      <property name="alternatingRowColors">
-                       <bool>true</bool>
-                      </property>
-                      <property name="selectionMode">
-                       <enum>QAbstractItemView::NoSelection</enum>
-                      </property>
-                      <property name="selectionBehavior">
-                       <enum>QAbstractItemView::SelectRows</enum>
-                      </property>
-                      <attribute name="horizontalHeaderCascadingSectionResizes">
-                       <bool>false</bool>
-                      </attribute>
-                     </widget>
-                    </item>
-                   </layout>
-                  </widget>
-                  <widget class="QWidget" name="tab_9">
-                   <attribute name="title">
-                    <string>participants</string>
-                   </attribute>
                   </widget>
                  </widget>
                 </item>

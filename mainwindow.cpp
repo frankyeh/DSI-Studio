@@ -1353,6 +1353,7 @@ void MainWindow::on_load_tags_clicked()
     ui->github_tags->setRowCount(0);
     ui->github_tags->setRowCount(1);
     ui->github_tags->setItem(0, 0, new QTableWidgetItem("Loading..."));
+    ui->load_tags->setEnabled(false);
     notes.clear();
     assets.clear();
     tags[repo] = QJsonArray();
@@ -1391,9 +1392,11 @@ void MainWindow::loadTags(QUrl url,QString repo)
                     }
                 }
             }
-            on_github_repo_currentIndexChanged(0);
+            if(repo == ui->github_repo->currentText().split(' ').first())
+                on_github_repo_currentIndexChanged(0);
             reply->deleteLater();
         }
+        ui->load_tags->setEnabled(true);
     });
 }
 
@@ -1410,7 +1413,10 @@ void MainWindow::loadFiles()
     ui->github_release_files->setUpdatesEnabled(false);
     ui->github_release_files->setRowCount(0);
 
-    qc_link.clear();
+
+    for(int tab = ui->github_release_note->count()-1;tab > 0;--tab)
+        ui->github_release_note->removeTab(tab);
+    github_tsv_link.resize(1);
 
     QStringList units = {" b", " kb", " mb", " gb"};
     foreach (const QJsonValue& asset,assets[tag])
@@ -1424,14 +1430,18 @@ void MainWindow::loadFiles()
             i++;
         }
         int row = ui->github_release_files->rowCount();
+        auto file_name = assetObject.value("name").toString();
         ui->github_release_files->insertRow(row);
-        ui->github_release_files->setItem(row, 0, new QTableWidgetItem(assetObject.value("name").toString()));
+        ui->github_release_files->setItem(row, 0, new QTableWidgetItem(file_name));
         ui->github_release_files->setItem(row, 1, new QTableWidgetItem(QString::number(size)+units[i]));
         ui->github_release_files->setItem(row, 2, new QTableWidgetItem(assetObject.value("created_at").toString()));
         ui->github_release_files->setItem(row, 3, new QTableWidgetItem(assetObject.value("browser_download_url").toString()));
         ui->github_release_files->item(row,1)->setData(Qt::UserRole, assetObject.value("size").toInteger()); // Save the original size
-        if(assetObject.value("name").toString().contains("qc.txt"))
-            qc_link = assetObject.value("browser_download_url").toString();
+        if(file_name.contains(".tsv"))
+        {
+            ui->github_release_note->addTab(new QWidget(ui->github_release_note),file_name.remove(".tsv"));
+            github_tsv_link.push_back(assetObject.value("browser_download_url").toString());
+        }
     }
     ui->github_release_files->sortByColumn(0,Qt::AscendingOrder);
     ui->github_release_files->setUpdatesEnabled(true);
@@ -1442,11 +1452,56 @@ void MainWindow::loadFiles()
     ui->github_release_files->setSortingEnabled(true);
 
     ui->file_count->setText(QString("%1 files").arg(ui->github_release_files->rowCount()));
-    ui->github_release_note->setTabVisible(1,!qc_link.isEmpty());
-
 
 }
 
+
+void MainWindow::on_github_release_note_currentChanged(int index)
+{
+    if(index && index < github_tsv_link.size())
+    {
+
+        if(!github_tsv_link[index].isEmpty())
+        {
+            tipl::out() << "downloading " << github_tsv_link[index].toStdString().c_str();
+            auto reply = get(github_tsv_link[index]);
+            QEventLoop loop;
+            QObject::connect(reply.get(), &QNetworkReply::finished, this, [&loop, this, reply, index]()
+            {
+                loop.quit();
+                if (reply->error() == QNetworkReply::NoError &&
+                    index < github_tsv_link.size() &&
+                    !github_tsv_link[index].isEmpty())
+                {
+                    github_tsv_link[index].clear();
+                    auto tableWidget = new QTableWidget(ui->github_release_note->widget(index));
+                    auto layout = new QVBoxLayout(ui->github_release_note->widget(index));
+                    layout->addWidget(tableWidget);
+
+                    QString data = reply->readAll();
+                    QStringList rows = data.split("\n");
+                    while(rows.count() && rows.back().isEmpty())
+                        rows.pop_back();
+                    QStringList headers = rows.takeFirst().split("\t");
+                    tableWidget->setRowCount(rows.size());
+                    tableWidget->setColumnCount(headers.size());
+                    tableWidget->setHorizontalHeaderLabels(headers);
+
+                    for (int i = 0; i < rows.size(); ++i) {
+                        QStringList cols = rows.at(i).split("\t");
+                        for (int j = 0; j < cols.size(); ++j) {
+                            QTableWidgetItem* item = new QTableWidgetItem(cols.at(j));
+                            tableWidget->setItem(i, j, item);
+                        }
+                    }
+                    tableWidget->setSortingEnabled(true);
+                }
+            });
+            loop.exec();
+
+        }
+    }
+}
 
 
 void MainWindow::on_github_tags_itemSelectionChanged()
@@ -1575,41 +1630,6 @@ void MainWindow::on_github_select_matching_clicked()
 }
 
 
-void MainWindow::on_github_release_note_currentChanged(int index)
-{
-    if(index == 1 && !qc_link.isEmpty())
-    {
-        auto reply = get(qc_link);
-        QEventLoop loop;
-        ui->github_release_qc->setSortingEnabled(false);
-        ui->github_release_qc->setRowCount(0);
-        QObject::connect(reply.get(), &QNetworkReply::finished, this, [&loop, this, reply]() {
-            loop.quit();
-            if (reply->error() == QNetworkReply::NoError)
-            {
-                QString data = reply->readAll();
-                QStringList rows = data.split("\n");
-                while(rows.count() && rows.back().isEmpty())
-                    rows.pop_back();
-                QStringList headers = rows.takeFirst().split("\t");
-                ui->github_release_qc->setRowCount(rows.size());
-                ui->github_release_qc->setColumnCount(headers.size());
-                ui->github_release_qc->setHorizontalHeaderLabels(headers);
-
-                for (int i = 0; i < rows.size(); ++i) {
-                    QStringList cols = rows.at(i).split("\t");
-                    for (int j = 0; j < cols.size(); ++j) {
-                        QTableWidgetItem* item = new QTableWidgetItem(cols.at(j));
-                        ui->github_release_qc->setItem(i, j, item);
-                    }
-                }
-                ui->github_release_qc->setSortingEnabled(true);
-            }
-        });
-        loop.exec();
-    }
-
-}
 
 
 

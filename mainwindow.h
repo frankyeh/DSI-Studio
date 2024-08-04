@@ -22,7 +22,8 @@ class MainWindow : public QMainWindow
     void updateRecentList(void);
     QSettings settings;
     std::map<QString,QString> notes;
-    QString qc_link;
+public:
+    std::vector<QString> github_tsv_link;
 public:
     bool fetch_github = false;
     QNetworkAccessManager manager;
