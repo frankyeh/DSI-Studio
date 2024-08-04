@@ -1937,7 +1937,7 @@ bool src_data::run_eddy(std::string exec)
     bool has_topup = std::filesystem::exists(topup_result());
     if(!has_topup)
     {
-        tipl::out() << "cannot find " << topup_result();
+        tipl::out() << "cannot find topup result: " << topup_result();
         tipl::out() << "run eddy without topup";
         setup_topup_eddy_volume();
         std::ofstream out(acqparam_file());
@@ -2125,6 +2125,47 @@ bool src_data::run_topup_eddy(std::string other_src,bool topup_only)
     // run topup
     if(has_reversed_pe)
     {
+        tipl::progress prog("run topup");
+        std::string b0_appa_file;
+        tipl::image<3> b0,rev_b0;
+        if(!read_b0(b0) || !read_rev_b0(other_src.c_str(),rev_b0) || !generate_topup_b0_acq_files(b0,rev_b0,b0_appa_file))
+            return false;
+
+
+        std::vector<std::string> param = {
+            std::string("--imain=")+std::filesystem::path(b0_appa_file).filename().u8string(),
+            std::string("--datain=")+std::filesystem::path(acqparam_file()).filename().u8string(),
+            std::string("--out=")+std::filesystem::path(topup_output()).filename().u8string(),
+            std::string("--iout=")+std::filesystem::path(file_name + ".topup.check_result").filename().u8string(),
+            "--verbose=1"};
+
+        if(!std::filesystem::exists(topup_param_file))
+        {
+            tipl::out() << "failed to find topup parameter file at " << topup_param_file;
+            tipl::out() << "apply default parameters";
+            for(auto each : {
+                    "--warpres=20,16,14,12,10,6,4,4,4",
+                    "--subsamp=2,2,2,2,2,1,1,1,1",  // This causes an error in odd number of slices
+                    "--fwhm=8,6,4,3,3,2,1,0,0",
+                    "--miter=5,5,5,5,5,10,10,20,20",
+                    "--lambda=0.005,0.001,0.0001,0.000015,0.000005,0.0000005,0.00000005,0.0000000005,0.00000000001",
+                    "--estmov=1,1,1,1,1,0,0,0,0",
+                    "--minmet=0,0,0,0,0,1,1,1,1",
+                    "--scale=1"})
+                param.push_back(each);
+            return false;
+        }
+
+        {
+            std::ifstream in(topup_param_file);
+            std::string line;
+            while(std::getline(in,line))
+            {
+                if(!line.empty() && line[0] == '-')
+                   param.push_back(line);
+            }
+        }
+
         if(std::filesystem::exists(topup_result()))
         {
             tipl::out() << "found previous topup output:" << topup_result();
@@ -2132,47 +2173,6 @@ bool src_data::run_topup_eddy(std::string other_src,bool topup_only)
         }
         else
         {
-            tipl::progress prog("run topup");
-            std::string b0_appa_file;
-            tipl::image<3> b0,rev_b0;
-            if(!read_b0(b0) || !read_rev_b0(other_src.c_str(),rev_b0) || !generate_topup_b0_acq_files(b0,rev_b0,b0_appa_file))
-                return false;
-
-
-            std::vector<std::string> param = {
-                std::string("--imain=")+std::filesystem::path(b0_appa_file).filename().u8string(),
-                std::string("--datain=")+std::filesystem::path(acqparam_file()).filename().u8string(),
-                std::string("--out=")+std::filesystem::path(topup_output()).filename().u8string(),
-                std::string("--iout=")+std::filesystem::path(file_name + ".topup.check_result").filename().u8string(),
-                "--verbose=1"};
-
-            if(!std::filesystem::exists(topup_param_file))
-            {
-                tipl::out() << "failed to find topup parameter file at " << topup_param_file;
-                tipl::out() << "apply default parameters";
-                for(auto each : {
-                        "--warpres=20,16,14,12,10,6,4,4,4",
-                        "--subsamp=2,2,2,2,2,1,1,1,1",  // This causes an error in odd number of slices
-                        "--fwhm=8,6,4,3,3,2,1,0,0",
-                        "--miter=5,5,5,5,5,10,10,20,20",
-                        "--lambda=0.005,0.001,0.0001,0.000015,0.000005,0.0000005,0.00000005,0.0000000005,0.00000000001",
-                        "--estmov=1,1,1,1,1,0,0,0,0",
-                        "--minmet=0,0,0,0,0,1,1,1,1",
-                        "--scale=1"})
-                    param.push_back(each);
-                return false;
-            }
-
-            {
-                std::ifstream in(topup_param_file);
-                std::string line;
-                while(std::getline(in,line))
-                {
-                    if(!line.empty() && line[0] == '-')
-                       param.push_back(line);
-                }
-            }
-
             if(!run_plugin("topup","level",9,param,
                 QFileInfo(file_name.c_str()).absolutePath().toStdString(),std::string()))
                 return false;
