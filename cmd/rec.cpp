@@ -175,8 +175,9 @@ int rec(tipl::program_option<tipl::out>& po)
             src.is_human_data()))
             src.command("[Step T2][Edit][Resample]",po.get("make_isotropic",std::to_string(src.is_human_data() ? 2.0f : src.voxel.vs[2])));
 
-        if(po.get("align_acpc",0))
-            src.command("[Step T2][Edit][Align ACPC]",po.get("align_acpc",std::to_string(src.voxel.vs[0])));
+        if(po.has("align_acpc"))
+            src.command("[Step T2][Edit][Align ACPC]",
+                        std::to_string(po.get("align_acpc",std::min<float>(2.0f,std::max<float>(src.voxel.vs[0],src.voxel.vs[2])))));
         else
         {
             if(po.has("rotate_to") || po.has("align_to"))
