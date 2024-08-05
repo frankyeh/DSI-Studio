@@ -1375,7 +1375,7 @@ void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array)
         }
         else
         {
-            QJsonArray array_;
+            QJsonArray array_ = array;
             foreach (const QJsonValue& release , QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).array())
                 array_.append(release);
             QString linkHeader = reply->rawHeader("Link");
