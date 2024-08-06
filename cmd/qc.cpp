@@ -8,7 +8,7 @@ QStringList search_files(QString dir,QString filter);
 float check_src(std::string file_name,std::vector<std::string>& output) // return masked_ndc
 {
     tipl::out() << "checking " << file_name << std::endl;
-    output.push_back(QFileInfo(file_name.c_str()).baseName().toStdString());
+    output.push_back(std::filesystem::path(file_name).filename().string());
     src_data handle;
     if (!handle.load_from_file(file_name.c_str()))
     {
