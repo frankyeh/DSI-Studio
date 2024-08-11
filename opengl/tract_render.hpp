@@ -22,6 +22,10 @@ struct TractRenderParam{
     float tube_detail;
     float tract_shaderf;
 
+    float tract_visible_tract = 0.0f;
+    float total_visible_tract = 0.0f;
+    unsigned int track_num_index = 0;
+
     tipl::color_map color_map;
     double color_r,color_min;
     const tipl::vector<3,float>& get_color(double value) const
@@ -62,7 +66,7 @@ class TractRenderData{
     std::vector<GLsizei> tube_strip_size;
     std::vector<GLsizei> line_strip_size;
 public:
-    void draw(GLWidget* glwidget);
+    bool draw(GLWidget* glwidget,std::chrono::high_resolution_clock::time_point end_time);
 public:
     TractRenderData(void)
     {
@@ -115,7 +119,6 @@ public:
 
 struct TractRender{
 public:
-    TractRenderParam param;
     std::vector<TractRenderData> data;
 public:
     bool terminated = false;
@@ -127,6 +130,8 @@ public:
     bool writing = false;
     std::mutex writing_lock;
     std::mutex reading_lock;
+private:
+    std::vector<TractRenderData> new_data;
 public:
     struct end_reading
     {
@@ -176,6 +181,9 @@ public:
     }
     TractRender(void);
     ~TractRender(void);
-    void render_tracts(std::shared_ptr<TractModel>& tract_data,GLWidget* glwidget,tracking_window& cur_tracking_window);
+    void prepare_update(std::shared_ptr<TractModel>& active_tract_model,
+                        TractRenderParam param,
+                        std::shared_ptr<fib_data> handle);
+    bool render_tracts(GLWidget* glwidget);
 };
 #endif // TRACT_RENDER_HPP

@@ -36,6 +36,10 @@ void TractRenderParam::init(GLWidget* glwidget,
         color_r = cur_tracking_window.color_bar->color_r;
         color_min = cur_tracking_window.color_bar->color_min;
     }
+
+    tract_visible_tract = float(cur_tracking_window["tract_visible_tract"].toInt());
+    unsigned int track_num_index = cur_tracking_window.handle->get_name_index(
+                                           cur_tracking_window.color_bar->get_tract_color_name().toStdString());
 }
 
 
@@ -237,8 +241,10 @@ void TractRenderData::clear(void)
     line_strip_pos.push_back(0);
 
 }
-void TractRenderData::draw(GLWidget* glwidget)
+bool TractRenderData::draw(GLWidget* glwidget,std::chrono::high_resolution_clock::time_point end_time)
 {
+    if(std::chrono::high_resolution_clock::now() > end_time)
+        return false;
     if(!tube_strip_size.empty())
     {
         glEnableClientState(GL_VERTEX_ARRAY);
@@ -249,7 +255,7 @@ void TractRenderData::draw(GLWidget* glwidget)
         glNormalPointer(GL_FLOAT, stride, &tube_vertices[0]+3);
         glColorPointer(3, GL_FLOAT, stride, &tube_vertices[0]+6);
 
-        for(size_t i = 0;i < tube_strip_size.size();++i)
+        for(size_t i = 0;i < tube_strip_size.size() && std::chrono::high_resolution_clock::now() < end_time;++i)
             glDrawArrays(GL_TRIANGLE_STRIP,tube_strip_pos[i],tube_strip_size[i]);
 
         /*
@@ -281,7 +287,7 @@ void TractRenderData::draw(GLWidget* glwidget)
         glDisableClientState(GL_VERTEX_ARRAY);  // disable vertex arrays
         glDisableClientState(GL_COLOR_ARRAY);
     }
-
+    return std::chrono::high_resolution_clock::now() < end_time;
 }
 
 TractRender::TractRender(void)
@@ -370,37 +376,21 @@ void TractRenderShader::add_shade(std::shared_ptr<TractModel>& active_tract_mode
         t1.join();t2.join();t3.join();t4.join();t5.join();t6.join();
     }
 }
-
-void TractRender::render_tracts(std::shared_ptr<TractModel>& active_tract_model,GLWidget* glwidget,
-                            tracking_window& cur_tracking_window)
+void TractRender::prepare_update(std::shared_ptr<TractModel>& active_tract_model,
+                                 TractRenderParam param,
+                                 std::shared_ptr<fib_data> handle)
 {
-    if(!need_update)
-    {
-        for(auto& d: data)
-            d.draw(glwidget);
-        return;
-    }
     auto lock = start_reading(false);
     if(!lock.get())
         return;
 
-    param.init(glwidget,cur_tracking_window);
+    auto dim = handle->dim;
 
-    need_update = false;
-    auto tract_visible_tract = cur_tracking_window["tract_visible_tract"].toInt();
-
-
-
-    unsigned int track_num_index = cur_tracking_window.handle->get_name_index(
-                                   cur_tracking_window.color_bar->get_tract_color_name().toStdString());
-    auto dim = cur_tracking_window.handle->dim;
-
-
-    float skip_rate = float(tract_visible_tract)/float(active_tract_model->get_visible_track_count());
+    float skip_rate = param.tract_visible_tract/param.total_visible_tract;
 
     std::vector<unsigned int> visible;
     {
-        visible.reserve(tract_visible_tract*1.5f);
+        visible.reserve(param.tract_visible_tract*1.5f);
         tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
         auto tracks_count = active_tract_model->get_visible_track_count();
         for (unsigned int data_index = 0; data_index < tracks_count && !about_to_write; ++data_index)
@@ -430,7 +420,7 @@ void TractRender::render_tracts(std::shared_ptr<TractModel>& active_tract_model,
                 continue;
             }
             std::vector<float> metrics;
-            active_tract_model->get_tract_data(cur_tracking_window.handle,visible[i],track_num_index,metrics);
+            active_tract_model->get_tract_data(handle,visible[i],param.track_num_index,metrics);
             if(param.tract_color_style == 3) // mean values
                 assigned_colors[i] = param.get_color(tipl::mean(metrics));
             if(param.tract_color_style == 5) // max values
@@ -442,10 +432,11 @@ void TractRender::render_tracts(std::shared_ptr<TractModel>& active_tract_model,
     if(param.tract_shader)
         shader.add_shade(active_tract_model,visible);
 
-    auto thread_count = std::min<int>(6,tipl::max_thread_count);
-    data.clear();
-    data.resize(thread_count);
-    tipl::par_for (thread_count,[&](unsigned int thread)
+
+    auto thread_count = std::min<int>(4,tipl::max_thread_count);
+    new_data.clear();
+    new_data.resize(thread_count);
+    tipl::par_for(thread_count,[&](unsigned int thread)
     {
         for(unsigned int i = thread;i < visible.size();i += thread_count)
         {
@@ -453,15 +444,25 @@ void TractRender::render_tracts(std::shared_ptr<TractModel>& active_tract_model,
                 break;
             std::vector<float> metrics;
             if(param.tract_color_style == 2)
-                active_tract_model->get_tract_data(cur_tracking_window.handle,visible[i],track_num_index,metrics);
-            data[thread].add_tract(param,active_tract_model->get_tract(visible[i]),shader,
+                active_tract_model->get_tract_data(handle,visible[i],param.track_num_index,metrics);
+            new_data[thread].add_tract(param,active_tract_model->get_tract(visible[i]),shader,
                            assigned_colors.empty() ? tipl::vector<3>() : assigned_colors[i],metrics);
         }
     });
-
+}
+bool TractRender::render_tracts(GLWidget* glwidget)
+{
+    if(need_update)
+    {
+        need_update = false;
+        new_data.swap(data);
+        new_data.clear();
+    }
+    auto end_time = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(100);
     for(auto& d: data)
     {
-        d.draw(glwidget);
+        if(!d.draw(glwidget,end_time))
+            return false;
     }
-
+    return true;
 }

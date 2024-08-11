@@ -1110,27 +1110,34 @@ void TractTableWidget::need_update_all(void)
 }
 void TractTableWidget::render_tracts(GLWidget* glwidget)
 {
+    auto tracks = get_checked_tracks();
+    auto renders = get_checked_tracks_rendering();
 
-    std::vector<size_t> tract_to_be_updated;
-    for(unsigned int index = 0;index < tract_rendering.size();++index)
-        if(item(int(index),0)->checkState() == Qt::Checked &&
-           tract_models[index]->get_visible_track_count())
-    {
-        if(tract_rendering[index]->need_update)
-            tract_to_be_updated.push_back(index);
-        else
-            tract_rendering[index]->render_tracts(tract_models[index],glwidget,cur_tracking_window);
-    }
+    std::vector<size_t> update_list;
+    for(unsigned int index = 0;index < renders.size();++index)
+        if(renders[index]->need_update)
+            update_list.push_back(index);
 
-    if(!tract_to_be_updated.empty())
+    if(!update_list.empty())
     {
-        tipl::progress prog("rendering tracts");
-        for(size_t i = 0;prog(i,tract_to_be_updated.size());++i)
+        TractRenderParam param;
+        param.init(glwidget,cur_tracking_window);
+        for(auto each : tracks)
+            param.total_visible_tract += each->get_visible_track_count();
+
+        tipl::par_for(update_list.size(),[&](size_t index)
         {
-            size_t index = tract_to_be_updated[i];
-            tract_rendering[index]->render_tracts(tract_models[index],glwidget,cur_tracking_window);
-        }
+            renders[update_list[index]]->prepare_update(
+                        tracks[update_list[index]],param,cur_tracking_window.handle);
+        },update_list.size());
     }
+
+    bool need_repaint = false;
+    for(auto each : renders)
+        if(!each->render_tracts(glwidget))
+            need_repaint = true;
+    if(need_repaint)
+        emit show_tracts();
 }
 
 bool TractTableWidget::command(QString cmd,QString param,QString param2)
