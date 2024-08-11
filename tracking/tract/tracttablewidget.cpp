@@ -517,9 +517,10 @@ void TractTableWidget::save_all_tracts_as(void)
 
 void TractTableWidget::set_color(void)
 {
-    if(tract_models.empty())
+    if(tract_models.empty() || currentRow() == -1 ||
+       tract_models[uint32_t(currentRow())]->get_visible_track_count() == 0)
         return;
-    QColor color = QColorDialog::getColor(Qt::red,(QWidget*)this,"Select color",QColorDialog::ShowAlphaChannel);
+    QColor color = QColorDialog::getColor(tract_models[uint32_t(currentRow())]->get_tract_color(0),(QWidget*)this,"Select color",QColorDialog::ShowAlphaChannel);
     if(!color.isValid())
         return;
     tract_models[uint32_t(currentRow())]->set_color(color.rgb());
