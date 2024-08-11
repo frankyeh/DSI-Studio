@@ -75,13 +75,8 @@ public:
             }
 
         {
-            tipl::progress prog(prog_name,!silence);
-            size_t p = 0;
             tipl::adaptive_par_for(checked_index.size(),[&](unsigned int i)
             {
-                prog(p++,checked_index.size());
-                if(prog.aborted())
-                    return;
                 auto lock = tract_rendering[checked_index[i]]->start_writing();
                 if(fun(checked_index[i]))
                 {
@@ -89,20 +84,14 @@ public:
                     tract_rendering[checked_index[i]]->need_update = true;
                 }
             });
-            if(prog.aborted())
-                return;
         }
-        tipl::progress prog(prog_name,!silence);
-        for(unsigned int i = 0;prog(i,checked_index.size());++i)
+        for(unsigned int i = 0;i < checked_index.size();++i)
             if(changed[i])
             {
-                QApplication::processEvents();
                 item(int(checked_index[i]),1)->setText(QString::number(tract_models[checked_index[i]]->get_visible_track_count()));
                 item(int(checked_index[i]),2)->setText(QString::number(tract_models[checked_index[i]]->get_deleted_track_count()));
-                tract_rendering[checked_index[i]]->need_update = true;
-                emit show_tracts();
-                QApplication::processEvents();
             }
+        //emit show_tracts();
     }
 public:
     void render_tracts(GLWidget* glwidget);
