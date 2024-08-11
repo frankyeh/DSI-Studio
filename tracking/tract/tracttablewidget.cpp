@@ -456,12 +456,10 @@ void TractTableWidget::load_tract_label(QString filename)
 
 void TractTableWidget::check_all(void)
 {
-    tipl::progress prog("rendering tracts",true);
-    for(int row = 0;prog(row,rowCount());++row)
+    for(int row = 0;row < rowCount();++row)
     {
         item(row,0)->setCheckState(Qt::Checked);
         item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
-        QApplication::processEvents();
     }
 }
 
@@ -1112,10 +1110,27 @@ void TractTableWidget::need_update_all(void)
 }
 void TractTableWidget::render_tracts(GLWidget* glwidget)
 {
+
+    std::vector<size_t> tract_to_be_updated;
     for(unsigned int index = 0;index < tract_rendering.size();++index)
         if(item(int(index),0)->checkState() == Qt::Checked &&
            tract_models[index]->get_visible_track_count())
-        tract_rendering[index]->render_tracts(tract_models[index],glwidget,cur_tracking_window);
+    {
+        if(tract_rendering[index]->need_update)
+            tract_to_be_updated.push_back(index);
+        else
+            tract_rendering[index]->render_tracts(tract_models[index],glwidget,cur_tracking_window);
+    }
+
+    if(!tract_to_be_updated.empty())
+    {
+        tipl::progress prog("rendering tracts");
+        for(size_t i = 0;prog(i,tract_to_be_updated.size());++i)
+        {
+            size_t index = tract_to_be_updated[i];
+            tract_rendering[index]->render_tracts(tract_models[index],glwidget,cur_tracking_window);
+        }
+    }
 }
 
 bool TractTableWidget::command(QString cmd,QString param,QString param2)
@@ -1224,8 +1239,7 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
 
             return false;
         }
-        tipl::progress prog("rendering tracts");
-        for(unsigned int index = 0;prog(index,tract_models.size()) && in;++index)
+        for(unsigned int index = 0;index < tract_models.size() && in;++index)
             if(item(int(index),0)->checkState() == Qt::Checked)
             {
                 int r(0),g(0),b(0);
