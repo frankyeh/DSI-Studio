@@ -333,11 +333,12 @@ float TractRenderShader::get_shade(const tipl::vector<3>& pos) const
 void TractRenderShader::add_shade(std::shared_ptr<TractModel>& active_tract_model,
                             const std::vector<unsigned int>& visible)
 {
-    for (unsigned int data_index : visible)
+    tipl::adaptive_par_for(visible.size(),[&](size_t i)
     {
+        unsigned int data_index = visible[i];
         auto& cur_tract = active_tract_model->get_tract(data_index);
         if(cur_tract.size() < 6)
-            continue;
+            return;
         unsigned int vertex_count = cur_tract.size()/3;
         const float* data_iter = &cur_tract[0];
         for (unsigned int index = 0; index < vertex_count;data_iter += 3, ++index)
@@ -364,16 +365,16 @@ void TractRenderShader::add_shade(std::shared_ptr<TractModel>& active_tract_mode
                 min_z_map[pos] = std::min<float>(min_z_map[pos],data_iter[2]);
             }
         }
-    }
+    });
 
+    for(int i = 0;i < 3; ++i)
     {
-        std::thread t1([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(max_x_map);});
-        std::thread t2([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(min_x_map);});
-        std::thread t3([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(max_y_map);});
-        std::thread t4([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(min_y_map);});
-        std::thread t5([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(max_z_map);});
-        std::thread t6([&](){for(int i = 0;i < 3; ++i)tipl::filter::mean(min_z_map);});
-        t1.join();t2.join();t3.join();t4.join();t5.join();t6.join();
+        tipl::filter::mean(max_x_map);
+        tipl::filter::mean(min_x_map);
+        tipl::filter::mean(max_y_map);
+        tipl::filter::mean(min_y_map);
+        tipl::filter::mean(max_z_map);
+        tipl::filter::mean(min_z_map);
     }
 }
 void TractRender::prepare_update(std::shared_ptr<TractModel>& active_tract_model,
