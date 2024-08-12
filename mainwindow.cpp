@@ -1609,7 +1609,6 @@ void MainWindow::on_github_download_clicked()
 
 void MainWindow::on_github_select_matching_clicked()
 {
-    ui->github_release_files->clearSelection();
     tipl::progress p("select matching");
     QString pattern = QInputDialog::getText(this, "Select Matching", "Enter a sub text (fib.gz), wild card (*.fib.gz) or regex pattern:");
     if (pattern.isEmpty())
@@ -1631,6 +1630,7 @@ void MainWindow::on_github_select_matching_clicked()
     }
     QList<QTableWidgetItem*> items = ui->github_release_files->findItems(pattern, flags);
     ui->github_release_files->blockSignals(true);
+    ui->github_release_files->clearSelection();
     for (int i = 0; p(i, items.size()); ++i)
         ui->github_release_files->setRangeSelected(QTableWidgetSelectionRange(items[i]->row(), 0, items[i]->row(), ui->github_release_files->columnCount() - 1), true);
     ui->github_release_files->blockSignals(false);
