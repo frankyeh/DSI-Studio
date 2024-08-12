@@ -239,7 +239,7 @@
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
                </property>
                <property name="selectionMode">
                 <enum>QAbstractItemView::SingleSelection</enum>
@@ -274,7 +274,7 @@
                 </sizepolicy>
                </property>
                <property name="styleSheet">
-                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Clear All</string>
@@ -302,7 +302,7 @@
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
                </property>
                <property name="selectionMode">
                 <enum>QAbstractItemView::SingleSelection</enum>
@@ -337,7 +337,7 @@
                 </font>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                </property>
                <property name="text">
                 <string>FIB File (*.fib.gz)</string>
@@ -359,7 +359,7 @@
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
                </property>
                <property name="text">
                 <string/>
@@ -375,7 +375,7 @@
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
                </property>
                <property name="text">
                 <string/>
@@ -391,7 +391,7 @@
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step T3: Fiber Tracking</string>
@@ -423,7 +423,7 @@
                 </sizepolicy>
                </property>
                <property name="styleSheet">
-                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Clear All</string>
@@ -439,7 +439,7 @@
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
                </property>
                <property name="text">
                 <string/>
@@ -464,7 +464,7 @@
                 <bool>false</bool>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step T1: NIFTI to SRC...</string>
@@ -490,7 +490,7 @@
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step T2: Reconstruction</string>
@@ -513,7 +513,7 @@
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
                </property>
                <property name="text">
                 <string/>
@@ -541,7 +541,7 @@
                 </font>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                </property>
                <property name="text">
                 <string>SRC File (*.src.gz)</string>
@@ -588,7 +588,7 @@
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
                </property>
                <property name="text">
                 <string/>
@@ -610,7 +610,7 @@
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Load...</string>
@@ -633,7 +633,7 @@
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Load...</string>
@@ -653,7 +653,7 @@
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
                </property>
                <property name="text">
                 <string/>
@@ -700,7 +700,7 @@
                 </font>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                </property>
                <property name="text">
                 <string>NIFTI
@@ -751,7 +751,7 @@
                 </font>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                </property>
                <property name="text">
                 <string>DICOM
@@ -777,7 +777,7 @@
                 <bool>false</bool>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step T1: DICOM(s) to SRC...</string>
@@ -809,7 +809,7 @@
                 </font>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                </property>
                <property name="text">
                 <string>Tractography</string>
@@ -865,7 +865,7 @@ Files</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: rgba(128, 128, 128, 127);}</string>
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
                </property>
                <property name="text">
                 <string>B-table
@@ -915,7 +915,7 @@ Files</string>
                 <bool>false</bool>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step T1: 2dseq, *.fdf to SRC...</string>
@@ -947,7 +947,7 @@ Files</string>
                 </font>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                </property>
                <property name="text">
                 <string>Others
@@ -1100,7 +1100,7 @@ Files</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
                 </property>
                 <property name="text">
                  <string/>
@@ -1135,7 +1135,7 @@ Files</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QListWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                 <string notr="true">QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px; color: black; }</string>
                 </property>
                </widget>
                <widget class="QLabel" name="label_4">
@@ -1195,7 +1195,7 @@ Files</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                 <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                 </property>
                 <property name="text">
                  <string>Load...</string>
@@ -1221,7 +1221,7 @@ Files</string>
                  </font>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                 </property>
                 <property name="text">
                  <string>Template-Based
@@ -1284,7 +1284,7 @@ Tractography</string>
                  </font>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                 </property>
                 <property name="text">
                  <string>Tractography
@@ -1389,7 +1389,7 @@ Atlas</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                 </property>
                 <property name="text">
                  <string>T1W-Aligned Tractography</string>
@@ -1421,7 +1421,7 @@ Atlas</string>
                  </font>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                 </property>
                 <property name="text">
                  <string>T1W T2W
@@ -1554,7 +1554,7 @@ Atlas</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
                 </property>
                 <property name="text">
                  <string/>
@@ -1592,7 +1592,7 @@ Atlas</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                 </property>
                 <property name="text">
                  <string>Step C3: Correlational Tracking</string>
@@ -1615,7 +1615,7 @@ Atlas</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                 </property>
                 <property name="text">
                  <string>Step C1: Create a Database</string>
@@ -1638,7 +1638,7 @@ Atlas</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
                 </property>
                 <property name="text">
                  <string/>
@@ -1647,8 +1647,8 @@ Atlas</string>
                <widget class="QLabel" name="label_23">
                 <property name="geometry">
                  <rect>
-                  <x>360</x>
-                  <y>100</y>
+                  <x>370</x>
+                  <y>90</y>
                   <width>221</width>
                   <height>61</height>
                  </rect>
@@ -1660,7 +1660,7 @@ Atlas</string>
                  </font>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QLabel { border: 0px; background-color: rgba(255, 255, 255, 127); }</string>
+                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                 </property>
                 <property name="text">
                  <string>Database File
@@ -1730,7 +1730,7 @@ Atlas</string>
                  </font>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QLabel { border: 0px; background-color: rgba(255, 255, 255, 127); }</string>
+                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                 </property>
                 <property name="text">
                  <string>FIB File
@@ -1759,7 +1759,7 @@ Atlas</string>
                  </font>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QLabel { border: 0px; background-color: rgba(255, 255, 255, 127); }</string>
+                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                 </property>
                 <property name="text">
                  <string>Correlational
@@ -1782,7 +1782,7 @@ Tractography</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
                 </property>
                 <property name="text">
                  <string/>
@@ -1817,7 +1817,7 @@ Tractography</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                 </property>
                 <property name="text">
                  <string>Step C2: View/Edit Database</string>
@@ -1867,7 +1867,6 @@ Tractography</string>
                <zorder>label_61</zorder>
                <zorder>label_62</zorder>
                <zorder>label_19</zorder>
-               <zorder>label_25</zorder>
                <zorder>group_connectometry</zorder>
                <zorder>vbc</zorder>
                <zorder>label_22</zorder>
@@ -1876,6 +1875,7 @@ Tractography</string>
                <zorder>label_30</zorder>
                <zorder>label_24</zorder>
                <zorder>open_db</zorder>
+               <zorder>label_25</zorder>
                <zorder>label_23</zorder>
               </widget>
              </widget>
@@ -1961,7 +1961,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step B1b: Rename DICOM in Folders...</string>
@@ -1987,7 +1987,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step B2a: NIFTI to SRC (BIDS)...</string>
@@ -2013,7 +2013,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step B1c: DICOM to SRC...</string>
@@ -2039,7 +2039,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step B2b: NIFTI(s) to SRC(s)...</string>
@@ -2065,7 +2065,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step B1a: Rename DICOM...</string>
@@ -2091,7 +2091,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step B4: Automatic Tracking...</string>
@@ -2117,7 +2117,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step B3: SRC(s) to FIB(s)...</string>
@@ -2143,7 +2143,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black;}</string>
                </property>
                <property name="text">
                 <string/>
@@ -2181,7 +2181,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black;}</string>
                </property>
                <property name="text">
                 <string/>
@@ -2231,7 +2231,7 @@ Tractography</string>
                 </font>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                </property>
                <property name="text">
                 <string>SRC File (*.src.gz)</string>
@@ -2253,7 +2253,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black;}</string>
                </property>
                <property name="text">
                 <string/>
@@ -2294,7 +2294,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black;}</string>
                </property>
                <property name="text">
                 <string/>
@@ -2319,7 +2319,7 @@ Tractography</string>
                 </font>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                </property>
                <property name="text">
                 <string>Tractography</string>
@@ -2363,7 +2363,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step T2a: SRC Quality Control...</string>
@@ -2445,7 +2445,7 @@ Tractography</string>
                 </font>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                </property>
                <property name="text">
                 <string>NIFTI
@@ -2496,7 +2496,7 @@ Tractography</string>
                 </font>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                </property>
                <property name="text">
                 <string>DICOM
@@ -2519,7 +2519,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step B0: XNAT Download...</string>
@@ -3058,7 +3058,7 @@ p, li { white-space: pre-wrap; }
             </rect>
            </property>
            <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
            </property>
            <property name="text">
             <string>Parse Network Measure Text Files</string>
@@ -3080,7 +3080,7 @@ p, li { white-space: pre-wrap; }
             </rect>
            </property>
            <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
            </property>
            <property name="text">
             <string>R1: Linear Registration...</string>
@@ -3102,7 +3102,7 @@ p, li { white-space: pre-wrap; }
             </rect>
            </property>
            <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
            </property>
            <property name="text">
             <string>Create Population-Averaged Template</string>
@@ -3124,7 +3124,7 @@ p, li { white-space: pre-wrap; }
             </rect>
            </property>
            <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
            </property>
            <property name="text">
             <string>R2: Nonlinear Registration...</string>
@@ -3146,7 +3146,7 @@ p, li { white-space: pre-wrap; }
             </rect>
            </property>
            <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
            </property>
            <property name="text">
             <string>Step O1: View Images...</string>
