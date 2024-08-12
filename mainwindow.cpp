@@ -1536,9 +1536,13 @@ void MainWindow::on_github_release_files_itemSelectionChanged()
     int selectedRows = ui->github_release_files->selectionModel()->selectedRows().size();
     ui->github_release_files->setColumnWidth(3,50);
     ui->github_download->setEnabled(selectedRows > 0);
-    ui->github_open_file->setVisible(selectedRows == 1);
-    if(selectedRows == 1)
+    if(selectedRows == 1 && ui->github_release_files->currentRow() >= 0)
+    {
         ui->github_open_file->setText(QString("Open %1").arg(ui->github_release_files->item(ui->github_release_files->currentRow(),0)->text()));
+        ui->github_open_file->setVisible(true);
+    }
+    else
+        ui->github_open_file->setVisible(false);
     ui->github_download->setText(selectedRows > 0 ? QString("Download %1 File(s)...").arg(selectedRows) : QString("Download"));
     ui->file_count->setText(QString("%1/%2 files").arg(selectedRows).arg(ui->github_release_files->rowCount()));
 }
@@ -1626,8 +1630,11 @@ void MainWindow::on_github_select_matching_clicked()
         }
     }
     QList<QTableWidgetItem*> items = ui->github_release_files->findItems(pattern, flags);
+    ui->github_release_files->blockSignals(true);
     for (int i = 0; p(i, items.size()); ++i)
         ui->github_release_files->setRangeSelected(QTableWidgetSelectionRange(items[i]->row(), 0, items[i]->row(), ui->github_release_files->columnCount() - 1), true);
+    ui->github_release_files->blockSignals(false);
+    on_github_release_files_itemSelectionChanged();
 }
 
 
