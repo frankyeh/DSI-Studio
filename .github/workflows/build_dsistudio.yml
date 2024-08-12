@@ -240,7 +240,7 @@ jobs:
         file: build_packages/docker/Dockerfile
         push: true
         tags: |
-          "dsistudio/dsistudio:chen-${{ env.DATE_TAG }}"
+          "dsistudio/dsistudio:hou-${{ env.DATE_TAG }}"
           dsistudio/dsistudio:latest
 
   test:
