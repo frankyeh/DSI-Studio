@@ -2035,11 +2035,14 @@ std::string src_data::find_topup_reverse_pe(void)
     {
         tipl::image<3> b0;
         read_b0(b0);
-        QStringList nii_files = QFileInfo(file_name.c_str()).dir().entryList(QStringList("*nii.gz"),QDir::Files|QDir::NoSymLinks);
         tipl::progress prog("searching for reversed phase encoding b0");
-        for(QString file : nii_files)
+        for(auto file : tipl::search_files(std::filesystem::path(file_name).parent_path().string(),"*.nii.gz"))
         {
-            std::string path = working_path() + file.toStdString();
+            // skip those nii files generated for topup or eddy
+            if(tipl::contains(file,".src.gz."))
+                continue;
+            std::string path = working_path() + file;
+            tipl::out() << "checking " << file;
             tipl::io::gz_nifti nii;
             if(!nii.load_from_file(path.c_str()))
                 continue;
