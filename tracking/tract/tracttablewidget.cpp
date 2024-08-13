@@ -1136,12 +1136,17 @@ void TractTableWidget::render_tracts(GLWidget* glwidget)
         },update_list.size());
     }
 
-    bool need_repaint = false;
-    for(auto each : renders)
-        if(!each->render_tracts(glwidget))
-            need_repaint = true;
-    if(need_repaint)
-        emit show_tracts();
+    auto end_time = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(100);
+    for(size_t index = 0;index < TractRender::data_block_count &&
+                         std::chrono::high_resolution_clock::now() < end_time;++index)
+    {
+        for(auto each : renders)
+            if(!each->render_tracts(index,glwidget,end_time))
+            {
+                emit show_tracts();
+                return;
+            }
+    }
 }
 
 bool TractTableWidget::command(QString cmd,QString param,QString param2)

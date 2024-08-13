@@ -120,6 +120,7 @@ public:
 struct TractRender{
 public:
     std::vector<TractRenderData> data;
+    static const size_t data_block_count = 16;
 public:
     bool terminated = false;
     std::shared_ptr<std::thread> calculation_thread;
@@ -130,9 +131,7 @@ public:
     unsigned int reading_threads = 0;
     bool writing = false;
     std::mutex writing_lock;
-    std::mutex reading_lock;
-private:
-    std::vector<TractRenderData> new_data;
+    std::mutex reading_lock;    
 public:
     struct end_reading
     {
@@ -186,6 +185,6 @@ public:
                         const TractRenderParam& param,
                         const TractRenderShader& shader,
                         std::shared_ptr<fib_data> handle);
-    bool render_tracts(GLWidget* glwidget);
+    bool render_tracts(size_t index,GLWidget* glwidget,std::chrono::high_resolution_clock::time_point end_time);
 };
 #endif // TRACT_RENDER_HPP

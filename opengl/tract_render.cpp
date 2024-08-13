@@ -440,12 +440,10 @@ void TractRender::prepare_update(std::shared_ptr<TractModel>& active_tract_model
 
 
 
-    auto block_count = std::min<int>(16,tipl::max_thread_count);
-    new_data.clear();
-    new_data.resize(block_count);
-    tipl::par_for(block_count,[&](unsigned int thread)
+    std::vector<TractRenderData> new_data(data_block_count);
+    tipl::par_for(data_block_count,[&](unsigned int thread)
     {
-        for(unsigned int i = thread;i < visible.size();i += block_count)
+        for(unsigned int i = thread;i < visible.size();i += data_block_count)
         {
             if(about_to_write)
                 break;
@@ -456,27 +454,24 @@ void TractRender::prepare_update(std::shared_ptr<TractModel>& active_tract_model
                            assigned_colors.empty() ? tipl::vector<3>() : assigned_colors[i],metrics);
         }
     },4);
+
+    new_data.swap(data);
+    new_data.clear();
+    need_update = false;
+    update_data_count = 0;
 }
-bool TractRender::render_tracts(GLWidget* glwidget)
+bool TractRender::render_tracts(size_t index,
+                                GLWidget* glwidget,
+                                std::chrono::high_resolution_clock::time_point end_time)
 {
-    if(need_update)
+    if(index < data.size() && !data[index].draw(glwidget,end_time))
     {
-        need_update = false;
-        new_data.swap(data);
-        new_data.clear();
-        update_data_count = 0;
-    }
-    auto end_time = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(100);
-    for(size_t index = 0;index < data.size();++index)
-        if(!data[index].draw(glwidget,end_time))
+        if(update_data_count < index)
         {
-            if(update_data_count < index)
-            {
-                update_data_count = index;
-                return false;
-            }
-            else
-                return true;
+            update_data_count = index;
+            return false; // will emit update
         }
+    }
+    update_data_count = index;
     return true;
 }
