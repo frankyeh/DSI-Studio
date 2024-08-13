@@ -2645,12 +2645,17 @@ Tractography</string>
                 </item>
                 <item>
                  <property name="text">
+                  <string>frankyeh/data-abcd</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
                   <string>frankyeh/data-openneuro</string>
                  </property>
                 </item>
                 <item>
                  <property name="text">
-                  <string>frankyeh/data-abcd</string>
+                  <string>frankyeh/data-healthy</string>
                  </property>
                 </item>
                 <item>
@@ -2660,7 +2665,7 @@ Tractography</string>
                 </item>
                 <item>
                  <property name="text">
-                  <string>frankyeh/data-healthy</string>
+                  <string>frankyeh/data-atlas</string>
                  </property>
                 </item>
                </widget>
