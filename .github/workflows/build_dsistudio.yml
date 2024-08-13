@@ -90,9 +90,9 @@ jobs:
     - name: Download TIPL and Atlases
       run: |
         git clone https://github.com/frankyeh/TIPL.git
-        git clone https://github.com/frankyeh/DSI-Studio-atlas.git
+        git clone https://github.com/frankyeh/data-atlas.git
         git clone https://github.com/frankyeh/UNet-Studio-Data.git
-        rm -fr DSI-Studio-atlas/.git
+        rm -fr data-atlas/.git
     - name: Build DSI Studio
       run: |
         mkdir -p build
@@ -107,7 +107,7 @@ jobs:
         rm -fr dsi_studio.app/Contents/MacOS/plugin/tiny_fsl
         rm *.zip
         mv other/* dsi_studio.app/Contents/MacOS/
-        mv DSI-Studio-atlas dsi_studio.app/Contents/MacOS/atlas
+        mv data-atlas dsi_studio.app/Contents/MacOS/atlas
         mv UNet-Studio-Data/network dsi_studio.app/Contents/MacOS/
         mv dsi_studio.icns dsi_studio.app/Contents/Resources/
         zip -r dsi_studio_${{ matrix.os }}_qt6.zip dsi_studio.app
@@ -147,7 +147,7 @@ jobs:
     - name: get TIPL and DSI Studio atlas
       run: |
         git clone https://github.com/frankyeh/TIPL.git
-        git clone https://github.com/frankyeh/DSI-Studio-atlas.git
+        git clone https://github.com/frankyeh/data-atlas.git
         git clone https://github.com/frankyeh/UNet-Studio-Data.git
     - name: Build DSI Studio CPU
       run: |
@@ -172,7 +172,7 @@ jobs:
         move other\* dsi_studio_win   
         move build\dsi_studio.exe dsi_studio_win
         windeployqt --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win\dsi_studio.exe
-        move DSI-Studio-atlas dsi_studio_win\atlas
+        move data-atlas dsi_studio_win\atlas
         rm dsi_studio_win\atlas\.git -r -force
         move UNet-Studio-Data\network dsi_studio_win\
         curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_win.zip"
