@@ -63,7 +63,7 @@ jobs:
     - name: Setup Environment
       run: |
         curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2004.zip" | jar x
-        curl -sL https://github.com/frankyeh/DSI-Studio-atlas/blob/main/ICBM152_adult/ICBM152_adult.fib.gz?raw=true -o ICBM152_adult.fib.gz
+        curl -sL https://github.com/frankyeh/data-atlas/blob/main/ICBM152_adult/ICBM152_adult.fib.gz?raw=true -o ICBM152_adult.fib.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Tracking
       run: |
@@ -93,7 +93,7 @@ jobs:
       run: |
         curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2004.zip" | jar x
         curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
-        curl -sL https://github.com/frankyeh/DSI-Studio-atlas/blob/main/ICBM152_adult/ICBM152_adult.QA.nii.gz?raw=true -o template_qa.nii.gz
+        curl -sL https://github.com/frankyeh/data-atlas/blob/main/ICBM152_adult/ICBM152_adult.QA.nii.gz?raw=true -o template_qa.nii.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Tracking
       run: |
@@ -126,8 +126,8 @@ jobs:
         curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2004.zip" | jar x
         curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
         chmod 777 ./dsi-studio/dsi_studio
-        git clone https://github.com/frankyeh/DSI-Studio-atlas.git
-        mv DSI-Studio-atlas atlas
+        git clone https://github.com/frankyeh/data-atlas.git
+        mv data-atlas atlas
     - name: Export
       run: |
         ./dsi-studio/dsi_studio --source=100206.fib.gz --action=exp --export=qa,iso 
