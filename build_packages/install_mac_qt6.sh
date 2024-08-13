@@ -21,9 +21,9 @@ mv DSI-Studio dsi-studio
 
 cd ~/dsi-studio
 git clone https://github.com/frankyeh/TIPL.git
-git clone https://github.com/frankyeh/DSI-Studio-atlas.git
+git clone https://github.com/frankyeh/data-atlas.git
 git clone https://github.com/frankyeh/UNet-Studio-Data.git
-rm -fr DSI-Studio-atlas/.git
+rm -fr data-atlas/.git
 
 echo "Building the application..."
 mkdir -p ~/dsi-studio/build
@@ -40,7 +40,7 @@ curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tin
 unzip tiny_fsl_macos-13.zip -d dsi_studio.app/Contents/MacOS/plugin 
 rm -fr dsi_studio.app/Contents/MacOS/plugin/tiny_fsl 
 mv other/* dsi_studio.app/Contents/MacOS/ 
-mv DSI-Studio-atlas dsi_studio.app/Contents/MacOS/atlas 
+mv data-atlas dsi_studio.app/Contents/MacOS/atlas 
 mv UNet-Studio-Data/network dsi_studio.app/Contents/MacOS/ 
 mv dsi_studio.icns dsi_studio.app/Contents/Resources/
 

@@ -30,9 +30,9 @@ RUN cd /opt/dsi-studio \
   && git clone https://github.com/frankyeh/UNet-Studio-Data.git \
   && mv UNet-Studio-Data/network . \
   && rm -fr UNet-Studio-Data \
-  && git clone https://github.com/frankyeh/DSI-Studio-atlas.git \
-  && rm -fr DSI-Studio-atlas/.git \
-  && mv DSI-Studio-atlas atlas
+  && git clone https://github.com/frankyeh/data-atlas.git \
+  && rm -fr data-atlas/.git \
+  && mv data-atlas atlas
 
 
 RUN curl -sL https://github.com/probonopd/linuxdeployqt/releases/download/7/linuxdeployqt-7-x86_64.AppImage > linuxdeployqt \
