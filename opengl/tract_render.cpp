@@ -330,39 +330,46 @@ float TractRenderShader::get_shade(const tipl::vector<3>& pos) const
     }
     return d;
 }
-void TractRenderShader::add_shade(std::shared_ptr<TractModel>& active_tract_model,
-                            const std::vector<unsigned int>& visible)
-{
-    tipl::adaptive_par_for(visible.size(),[&](size_t i)
+void TractRenderShader::add_shade(const std::vector<std::shared_ptr<TractModel> >& models,
+                                  const TractRenderParam& param)
+{    
+    tipl::adaptive_par_for(models.size(),[&](size_t i)
     {
-        unsigned int data_index = visible[i];
-        auto& cur_tract = active_tract_model->get_tract(data_index);
-        if(cur_tract.size() < 6)
-            return;
-        unsigned int vertex_count = cur_tract.size()/3;
-        const float* data_iter = &cur_tract[0];
-        for (unsigned int index = 0; index < vertex_count;data_iter += 3, ++index)
+        auto tracks_count = models[i]->get_visible_track_count();
+        float skip_rate = param.tract_visible_tract/param.total_visible_tract;
+        tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
+        for (unsigned int data_index = 0; data_index < tracks_count; ++data_index)
         {
-            int x = std::round(data_iter[0]*to64[0]);
-            int y = std::round(data_iter[1]*to64[1]);
-            int z = std::round(data_iter[2]*to64[2]);
-            if(max_x_map.shape().is_valid(y,z))
+            if (models[i]->get_tract(data_index).size() < 6)
+                continue;
+            if(skip_rate < 1.0f && uniform_gen() > skip_rate)
+                continue;
+            auto& cur_tract = models[i]->get_tract(data_index);
+            unsigned int vertex_count = cur_tract.size()/3;
+            const float* data_iter = &cur_tract[0];
+            for (unsigned int index = 0; index < vertex_count;data_iter += 3, ++index)
             {
-                size_t pos = size_t(y + (z << 6));
-                max_x_map[pos] = std::max<float>(max_x_map[pos],data_iter[0]);
-                min_x_map[pos] = std::min<float>(min_x_map[pos],data_iter[0]);
-            }
-            if(max_y_map.shape().is_valid(x,z))
-            {
-                size_t pos = size_t(x + (z << 6));
-                max_y_map[pos] = std::max<float>(max_y_map[pos],data_iter[1]);
-                min_y_map[pos] = std::min<float>(min_y_map[pos],data_iter[1]);
-            }
-            if(max_z_map.shape().is_valid(x,y))
-            {
-                size_t pos = size_t(x + (y << 6));
-                max_z_map[pos] = std::max<float>(max_z_map[pos],data_iter[2]);
-                min_z_map[pos] = std::min<float>(min_z_map[pos],data_iter[2]);
+                int x = std::round(data_iter[0]*to64[0]);
+                int y = std::round(data_iter[1]*to64[1]);
+                int z = std::round(data_iter[2]*to64[2]);
+                if(max_x_map.shape().is_valid(y,z))
+                {
+                    size_t pos = size_t(y + (z << 6));
+                    max_x_map[pos] = std::max<float>(max_x_map[pos],data_iter[0]);
+                    min_x_map[pos] = std::min<float>(min_x_map[pos],data_iter[0]);
+                }
+                if(max_y_map.shape().is_valid(x,z))
+                {
+                    size_t pos = size_t(x + (z << 6));
+                    max_y_map[pos] = std::max<float>(max_y_map[pos],data_iter[1]);
+                    min_y_map[pos] = std::min<float>(min_y_map[pos],data_iter[1]);
+                }
+                if(max_z_map.shape().is_valid(x,y))
+                {
+                    size_t pos = size_t(x + (y << 6));
+                    max_z_map[pos] = std::max<float>(max_z_map[pos],data_iter[2]);
+                    min_z_map[pos] = std::min<float>(min_z_map[pos],data_iter[2]);
+                }
             }
         }
     });
@@ -378,7 +385,8 @@ void TractRenderShader::add_shade(std::shared_ptr<TractModel>& active_tract_mode
     }
 }
 void TractRender::prepare_update(std::shared_ptr<TractModel>& active_tract_model,
-                                 TractRenderParam param,
+                                 const TractRenderParam& param,
+                                 const TractRenderShader& shader,
                                  std::shared_ptr<fib_data> handle)
 {
     auto lock = start_reading(false);
@@ -391,10 +399,10 @@ void TractRender::prepare_update(std::shared_ptr<TractModel>& active_tract_model
 
     std::vector<unsigned int> visible;
     {
-        visible.reserve(param.tract_visible_tract*1.5f);
-        tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
         auto tracks_count = active_tract_model->get_visible_track_count();
-        for (unsigned int data_index = 0; data_index < tracks_count && !about_to_write; ++data_index)
+        visible.reserve(tracks_count);
+        tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
+        for (unsigned int data_index = 0; data_index < tracks_count; ++data_index)
         {
             if(skip_rate < 1.0f && uniform_gen() > skip_rate)
                 continue;
@@ -429,17 +437,15 @@ void TractRender::prepare_update(std::shared_ptr<TractModel>& active_tract_model
         };
     }
 
-    TractRenderShader shader(dim);
-    if(param.tract_shader)
-        shader.add_shade(active_tract_model,visible);
 
 
-    auto thread_count = std::min<int>(4,tipl::max_thread_count);
+
+    auto block_count = std::min<int>(16,tipl::max_thread_count);
     new_data.clear();
-    new_data.resize(thread_count);
-    tipl::par_for(thread_count,[&](unsigned int thread)
+    new_data.resize(block_count);
+    tipl::par_for(block_count,[&](unsigned int thread)
     {
-        for(unsigned int i = thread;i < visible.size();i += thread_count)
+        for(unsigned int i = thread;i < visible.size();i += block_count)
         {
             if(about_to_write)
                 break;
@@ -449,7 +455,7 @@ void TractRender::prepare_update(std::shared_ptr<TractModel>& active_tract_model
             new_data[thread].add_tract(param,active_tract_model->get_tract(visible[i]),shader,
                            assigned_colors.empty() ? tipl::vector<3>() : assigned_colors[i],metrics);
         }
-    });
+    },4);
 }
 bool TractRender::render_tracts(GLWidget* glwidget)
 {
@@ -458,12 +464,19 @@ bool TractRender::render_tracts(GLWidget* glwidget)
         need_update = false;
         new_data.swap(data);
         new_data.clear();
+        update_data_count = 0;
     }
     auto end_time = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(100);
-    for(auto& d: data)
-    {
-        if(!d.draw(glwidget,end_time))
-            return false;
-    }
+    for(size_t index = 0;index < data.size();++index)
+        if(!data[index].draw(glwidget,end_time))
+        {
+            if(update_data_count < index)
+            {
+                update_data_count = index;
+                return false;
+            }
+            else
+                return true;
+        }
     return true;
 }

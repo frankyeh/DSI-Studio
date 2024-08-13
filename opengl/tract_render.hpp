@@ -51,8 +51,8 @@ struct TractRenderShader{
         to64[1] = 64.0f/float(dim[1]);
         to64[2] = 64.0f/float(dim[2]);
     }
-    void add_shade(std::shared_ptr<TractModel>& active_tract_model,
-                   const std::vector<unsigned int>& visible);
+    void add_shade(const std::vector<std::shared_ptr<TractModel> >& models,
+                   const TractRenderParam& param);
     float get_shade(const tipl::vector<3>& pos) const;
 };
 
@@ -125,6 +125,7 @@ public:
     std::shared_ptr<std::thread> calculation_thread;
 public:
     bool need_update = true;
+    unsigned int update_data_count = 0;
     bool about_to_write = false;
     unsigned int reading_threads = 0;
     bool writing = false;
@@ -182,7 +183,8 @@ public:
     TractRender(void);
     ~TractRender(void);
     void prepare_update(std::shared_ptr<TractModel>& active_tract_model,
-                        TractRenderParam param,
+                        const TractRenderParam& param,
+                        const TractRenderShader& shader,
                         std::shared_ptr<fib_data> handle);
     bool render_tracts(GLWidget* glwidget);
 };

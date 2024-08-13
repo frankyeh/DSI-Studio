@@ -1125,10 +1125,14 @@ void TractTableWidget::render_tracts(GLWidget* glwidget)
         for(auto each : tracks)
             param.total_visible_tract += each->get_visible_track_count();
 
+        TractRenderShader shader(cur_tracking_window.handle->dim);
+        if(param.tract_shader)
+            shader.add_shade(tracks,param);
+
         tipl::par_for(update_list.size(),[&](size_t index)
         {
             renders[update_list[index]]->prepare_update(
-                        tracks[update_list[index]],param,cur_tracking_window.handle);
+                        tracks[update_list[index]],param,shader,cur_tracking_window.handle);
         },update_list.size());
     }
 
