@@ -2035,8 +2035,14 @@ std::string src_data::find_topup_reverse_pe(void)
     {
         tipl::image<3> b0;
         read_b0(b0);
-        tipl::progress prog("searching for reversed phase encoding b0");
-        for(auto file : tipl::search_files(std::filesystem::path(file_name).parent_path().string(),"*.nii.gz"))
+        auto searching_path = std::filesystem::path(file_name).parent_path().string();
+        if(searching_path.empty())
+            searching_path = std::filesystem::current_path().string();
+        tipl::out() << "searching for *.nii.gz at " << searching_path;
+        auto files = tipl::search_files(searching_path,"*.nii.gz");
+        tipl::out() << files.size() << " candidate files found";
+
+        for(auto file : files)
         {
             // skip those nii files generated for topup or eddy
             if(tipl::contains(file,".src.gz."))
@@ -2048,7 +2054,7 @@ std::string src_data::find_topup_reverse_pe(void)
                 continue;
             if(nii.width()*nii.height()*nii.depth() != dwi.size())
             {
-                tipl::out() << path << " has different image size" << std::endl;
+                tipl::out() << path << " has different image size, skipping" << std::endl;
                 continue;
             }
             if(nii.dim(4) != 1)
