@@ -323,7 +323,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
             error_msg = nii.error_msg;
             return false;
         }
-        if(nii.dim(4) <= 1)
+        if(nii.dim(4) <= 1 && must_have_bval_bvec)
         {
             error_msg = "not a 4D nifti file";
             return false;
@@ -342,7 +342,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
             dwi_data[index].swap(data);
         }
         nii.get_voxel_size(vs);
-        if(dwi_data.size() <= 1)
+        if(dwi_data.size() <= 1 && must_have_bval_bvec)
         {
             error_msg = "not a 4D nifti file";
             return false;
