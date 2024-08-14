@@ -342,17 +342,21 @@ bool freewater_window::command(std::string cmd,std::string param)
 }
 void freewater_window::on_doDTI_clicked()
 {
+    tipl::progress prog("Free Water Elimination Processing");
+    prog(0, 3);
     // first save 4D nifti
     QString filename = filenames[0];
     filename.replace("src.gz", "nii.gz");
     handle->save_to_file(filename.toStdString().c_str());
-    
+
+    prog(1, 3);
     // save mask
     QString mask_filename = filename.replace("nii.gz", "mask.nii.gz");// absolute_path+"/mask.nii.gz";
     ROIRegion region(handle->dwi.shape(),handle->voxel.vs);
     region.load_region_from_buffer(handle->voxel.mask);
     region.save_region_to_file(mask_filename.toStdString().c_str());
 
+    prog(2, 3);
     // then call the python exe
     // 创建一个 QProcess 对象
     QProcess process;
