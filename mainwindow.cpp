@@ -20,6 +20,7 @@
 #include "regtoolbox.h"
 #include "filebrowser.h"
 #include "reconstruction/reconstruction_window.h"
+#include "freewater/freewater_window.h"
 #include "tracking/tracking_window.h"
 #include "dicom/dicom_parser.h"
 #include "view_image.h"
@@ -51,14 +52,27 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->recentFib->setColumnWidth(1,250);
     ui->recentFib->setColumnWidth(2,150);
     ui->recentFib->setAlternatingRowColors(true);
+    ui->recentFib_freewater->setColumnCount(3);
+    ui->recentFib_freewater->setColumnWidth(0,300);
+    ui->recentFib_freewater->setColumnWidth(1,250);
+    ui->recentFib_freewater->setColumnWidth(2,150);
+    ui->recentFib_freewater->setAlternatingRowColors(true);
     ui->recentSrc->setColumnCount(3);
     ui->recentSrc->setColumnWidth(0,300);
     ui->recentSrc->setColumnWidth(1,250);
     ui->recentSrc->setColumnWidth(2,150);
     ui->recentSrc->setAlternatingRowColors(true);
+    ui->recentSrc_freewater->setColumnCount(3);
+    ui->recentSrc_freewater->setColumnWidth(0,300);
+    ui->recentSrc_freewater->setColumnWidth(1,250);
+    ui->recentSrc_freewater->setColumnWidth(2,150);
+    ui->recentSrc_freewater->setAlternatingRowColors(true);
     QObject::connect(ui->recentFib,SIGNAL(cellDoubleClicked(int,int)),this,SLOT(open_fib_at(int,int)));
+    QObject::connect(ui->recentFib_freewater,SIGNAL(cellDoubleClicked(int,int)),this,SLOT(open_fib_at_freewater(int,int)));
     QObject::connect(ui->recentSrc,SIGNAL(cellDoubleClicked(int,int)),this,SLOT(open_src_at(int,int)));
+    QObject::connect(ui->recentSrc_freewater,SIGNAL(cellDoubleClicked(int,int)),this,SLOT(open_src_at_freewater(int,int)));
     updateRecentList();
+    updateRecentListFreewater();
 
     if (settings.contains("WORK_PATH"))
         ui->workDir->addItems(settings.value("WORK_PATH").toStringList());
@@ -202,9 +216,21 @@ void MainWindow::open_fib_at(int row,int)
             ui->recentFib->item(row,0)->text());
 }
 
+void MainWindow::open_fib_at_freewater(int row,int)
+{
+    loadFibFreewater(ui->recentFib_freewater->item(row,1)->text() + "/" +
+            ui->recentFib_freewater->item(row,0)->text());
+}
+
 void MainWindow::open_src_at(int row,int)
 {
     loadSrc(QStringList() << (ui->recentSrc->item(row,1)->text() + "/" +
+            ui->recentSrc->item(row,0)->text()));
+}
+
+void MainWindow::open_src_at_freewater(int row,int)
+{
+    loadSrcFreewater(QStringList() << (ui->recentSrc->item(row,1)->text() + "/" +
             ui->recentSrc->item(row,0)->text()));
 }
 
@@ -272,6 +298,54 @@ void MainWindow::updateRecentList(void)
     ui->recentSrc->setHorizontalHeaderLabels(header);
 }
 
+void MainWindow::updateRecentListFreewater(void)
+{
+    {
+        QStringList file_list = settings.value("recentFibFileListFreewater").toStringList();
+        ui->recentFib_freewater->clear();
+        ui->recentFib_freewater->setRowCount(file_list.size());
+        for (int index = 0;index < file_list.size();++index)
+        {
+            ui->recentFib_freewater->setRowHeight(index,20);
+            ui->recentFib_freewater->setItem(index, 0, new QTableWidgetItem(QFileInfo(file_list[index]).fileName()));
+            ui->recentFib_freewater->setItem(index, 1, new QTableWidgetItem(QFileInfo(file_list[index]).absolutePath()));
+            ui->recentFib_freewater->setItem(index, 2, new QTableWidgetItem(QFileInfo(file_list[index]).lastModified().toString()));
+            ui->recentFib_freewater->item(index,0)->setFlags(ui->recentFib_freewater->item(index,0)->flags() & ~Qt::ItemIsEditable);
+            ui->recentFib_freewater->item(index,1)->setFlags(ui->recentFib_freewater->item(index,1)->flags() & ~Qt::ItemIsEditable);
+            ui->recentFib_freewater->item(index,2)->setFlags(ui->recentFib_freewater->item(index,2)->flags() & ~Qt::ItemIsEditable);
+        }
+    }
+    {
+        QStringList file_list = settings.value("recentSrcFileList").toStringList();
+        ui->recentSrc_freewater->clear();
+        ui->recentSrc_freewater->setRowCount(file_list.size());
+        for (int index = 0;index < file_list.size();++index)
+        {
+            ui->recentSrc_freewater->setRowHeight(index,20);
+            ui->recentSrc_freewater->setItem(index, 0, new QTableWidgetItem(QFileInfo(file_list[index]).fileName()));
+            ui->recentSrc_freewater->setItem(index, 1, new QTableWidgetItem(QFileInfo(file_list[index]).absolutePath()));
+            ui->recentSrc_freewater->setItem(index, 2, new QTableWidgetItem(QFileInfo(file_list[index]).lastModified().toString()));
+            ui->recentSrc_freewater->item(index,0)->setFlags(ui->recentSrc_freewater->item(index,0)->flags() & ~Qt::ItemIsEditable);
+            ui->recentSrc_freewater->item(index,1)->setFlags(ui->recentSrc_freewater->item(index,1)->flags() & ~Qt::ItemIsEditable);
+            ui->recentSrc_freewater->item(index,2)->setFlags(ui->recentSrc_freewater->item(index,2)->flags() & ~Qt::ItemIsEditable);
+        }
+    }
+    QStringList header;
+    header << "File Name" << "Directory" << "Date";
+    ui->recentFib->setHorizontalHeaderLabels(header);
+    ui->recentSrc_freewater->setHorizontalHeaderLabels(header);
+}
+void MainWindow::addFibFreewater(QString filename)
+{
+    // update recent file list
+    QStringList files = settings.value("recentFibFileListFreewater").toStringList();
+    files.removeAll(filename);
+    files.prepend(filename);
+    while (files.size() > MaxRecentFiles)
+        files.removeLast();
+    settings.setValue("recentFibFileListFreewater", files);
+    updateRecentListFreewater();
+}
 void MainWindow::addFib(QString filename)
 {
     // update recent file list
@@ -294,6 +368,19 @@ void MainWindow::addSrc(QString filename)
         files.removeLast();
     settings.setValue("recentSrcFileList", files);
     updateRecentList();
+    updateRecentListFreewater();
+}
+
+void MainWindow::addSrcFreewater(QString filename)
+{
+    // update recent file list
+    QStringList files = settings.value("recentSrcFileList").toStringList();
+    files.removeAll(filename);
+    files.prepend(filename);
+    while (files.size() > MaxRecentFiles)
+        files.removeLast();
+    settings.setValue("recentSrcFileList", files);
+    updateRecentListFreewater();
 }
 void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::shape<3>& geo);
 void MainWindow::loadFib(QString filename)
@@ -330,6 +417,69 @@ void MainWindow::loadFib(QString filename)
             tipl::shape<3> geo;
             shift_track_for_tck(tracking_windows.back()->tractWidget->tract_models.back()->get_tracts(),geo);
         }
+    }
+
+}
+void MainWindow::loadFibFreewater(QString filename)
+{
+    std::string file_name = filename.toStdString();
+    std::shared_ptr<fib_data> new_handle(new fib_data);
+    if (!new_handle->load_from_file(&*file_name.begin()))
+    {
+        if(!new_handle->error_msg.empty())
+            QMessageBox::critical(this,"ERROR",new_handle->error_msg.c_str());
+        return;
+    }
+    tracking_windows.push_back(new tracking_window(this,new_handle));
+    tracking_windows.back()->setAttribute(Qt::WA_DeleteOnClose);
+    tracking_windows.back()->setWindowTitle(filename);
+    if(filename.contains("/presentation/"))
+    {
+        tracking_windows.back()->command("load_workspace",QFileInfo(filename).absolutePath());
+        tracking_windows.back()->command("presentation_mode");
+    }
+    else
+    if(!filename.contains(QCoreApplication::applicationDirPath()))
+    {
+        addFib(filename);
+        add_work_dir(QFileInfo(filename).absolutePath());
+    }
+    tracking_windows.back()->showNormal();
+    tracking_windows.back()->resize(1200,700);
+    if(filename.endsWith("trk.gz") || filename.endsWith("trk") || filename.endsWith("tck") || filename.endsWith("tt.gz"))
+    {
+        tracking_windows.back()->tractWidget->load_tracts(QStringList() << filename);
+        if(filename.endsWith("tck"))
+        {
+            tipl::shape<3> geo;
+            shift_track_for_tck(tracking_windows.back()->tractWidget->tract_models.back()->get_tracts(),geo);
+        }
+    }
+
+}
+
+void MainWindow::loadSrcFreewater(QStringList filenames)
+{
+    if(filenames.empty())
+    {
+        QMessageBox::critical(this,"ERROR","Cannot find SRC.gz files in the directory. Please create SRC files first.");
+        return;
+    }
+    try
+    {
+        tipl::progress prog("[Step T2][Reconstruction]");
+        freewater_window* new_mdi = new freewater_window(filenames,this);
+        new_mdi->setAttribute(Qt::WA_DeleteOnClose);
+        new_mdi->show();
+        if(filenames.size() == 1)
+        {
+            addSrc(filenames[0]);
+            add_work_dir(QFileInfo(filenames[0]).absolutePath());
+        }
+    }
+    catch(const std::runtime_error& error)
+    {
+        QMessageBox::critical(this,"ERROR",error.what());
     }
 
 }
@@ -450,6 +600,18 @@ void MainWindow::open_DWI(QStringList filenames)
         dp->close();
 }
 
+void MainWindow::on_Freewater_clicked()
+{
+    QStringList filenames = QFileDialog::getOpenFileNames(
+                           this,
+                           "Open Src files",
+                           ui->workDir->currentText(),
+                           "Src files (*src.gz *.src);;Histology images (*.jpg *.tif);;All files (*)" );
+    if (filenames.isEmpty())
+        return;
+    add_work_dir(QFileInfo(filenames[0]).absolutePath());
+    loadSrcFreewater(filenames);
+}
 void MainWindow::on_Reconstruction_clicked()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
@@ -463,6 +625,19 @@ void MainWindow::on_Reconstruction_clicked()
     loadSrc(filenames);
 }
 
+void MainWindow::on_FiberTracking_Freewater_clicked()
+{
+
+    QString filename = QFileDialog::getOpenFileName(
+                           this,
+                           "Open Freewater files",
+                           ui->workDir->currentText(),
+                           "Freewater files (*nii.gz *.nii);;All files (*)");
+    if (filename.isEmpty())
+        return;
+    add_work_dir(QFileInfo(filename).absolutePath());
+    loadFib(filename);
+}
 void MainWindow::on_FiberTracking_clicked()
 {
 
@@ -1203,6 +1378,11 @@ void MainWindow::on_console_clicked()
 
 
 
+void MainWindow::on_recentFib_freewater_cellClicked(int row, int column)
+{
+    ui->open_selected_fib_freewater->setEnabled(true);
+}
+
 
 void MainWindow::on_recentFib_cellClicked(int row, int column)
 {
@@ -1214,11 +1394,26 @@ void MainWindow::on_recentSrc_cellClicked(int row, int column)
     ui->open_selected_src->setEnabled(true);
 }
 
+void MainWindow::on_recentSrc_freewater_cellClicked(int row, int column)
+{
+    ui->open_selected_src_freewater->setEnabled(true);
+}
+void MainWindow::on_clear_src_history_freewater_clicked()
+{
+    ui->recentSrc_freewater->setRowCount(0);
+    ui->open_selected_src_freewater->setEnabled(false);
+    settings.setValue("recentSrcFileList", QStringList());
+}
 void MainWindow::on_clear_src_history_clicked()
 {
     ui->recentSrc->setRowCount(0);
     ui->open_selected_src->setEnabled(false);
-    settings.setValue("recentSRCFileList", QStringList());
+    settings.setValue("recentSrcFileList", QStringList());
+}
+
+void MainWindow::on_open_selected_src_freewater_clicked()
+{
+     open_src_at_freewater(ui->recentSrc_freewater->currentRow(),0);
 }
 
 void MainWindow::on_open_selected_src_clicked()
@@ -1226,11 +1421,23 @@ void MainWindow::on_open_selected_src_clicked()
      open_src_at(ui->recentSrc->currentRow(),0);
 }
 
+void MainWindow::on_clear_fib_history_freewater_clicked()
+{
+    ui->recentFib_freewater->setRowCount(0);
+    ui->open_selected_fib_freewater->setEnabled(false);
+    settings.setValue("recentFibFileListFreewater", QStringList());
+}
+
 void MainWindow::on_clear_fib_history_clicked()
 {
     ui->recentFib->setRowCount(0);
     ui->open_selected_fib->setEnabled(false);
     settings.setValue("recentFibFileList", QStringList());
+}
+
+void MainWindow::on_open_selected_fib_freewater_clicked()
+{
+    open_fib_at_freewater(ui->recentFib_freewater->currentRow(),0);
 }
 
 void MainWindow::on_open_selected_fib_clicked()
@@ -1262,6 +1469,14 @@ void MainWindow::on_TemplateFiberTracking_clicked()
 }
 
 
+void MainWindow::on_OpenDWI_NIFTI_Freewater_clicked()
+{
+    open_DWI(QStringList() << QFileDialog::getOpenFileName(
+                         this,
+                         "Open NIFTI file",
+                         ui->workDir->currentText(),
+                         "NIFTI files (*.nii *.nii.gz);;All files (*)" ));
+}
 
 void MainWindow::on_OpenDWI_NIFTI_clicked()
 {
@@ -1272,6 +1487,15 @@ void MainWindow::on_OpenDWI_NIFTI_clicked()
                          "NIFTI files (*.nii *.nii.gz);;All files (*)" ));
 }
 
+
+void MainWindow::on_OpenDWI_DICOM_Freewater_clicked()
+{
+    open_DWI(QFileDialog::getOpenFileNames(
+                         this,
+                         "Open DICOM files",
+                         ui->workDir->currentText(),
+                         "DICOM files (*.dcm);;All files (*)" ));
+}
 
 void MainWindow::on_OpenDWI_DICOM_clicked()
 {

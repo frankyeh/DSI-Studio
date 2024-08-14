@@ -217,7 +217,7 @@ bool load_file_name(void)
     return true;
 }
 
-const char* version_string = "DSI Studio version: Hou \"\xe4\xbe\xaf\"";
+const char* version_string = "DSI Studio version: for FreeWater";
 
 bool init_application(void)
 {

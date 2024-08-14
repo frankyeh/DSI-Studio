@@ -147,8 +147,875 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>4</number>
+       <number>3</number>
       </property>
+      <widget class="QWidget" name="tab_0">
+       <attribute name="icon">
+        <iconset resource="icons.qrc">
+         <normaloff>:/icons/icons/tracts.xpm</normaloff>:/icons/icons/tracts.xpm</iconset>
+       </attribute>
+       <attribute name="title">
+        <string>Free Water Elimination</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_01">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QScrollArea" name="scrollArea_0">
+          <property name="verticalScrollBarPolicy">
+           <enum>Qt::ScrollBarAsNeeded</enum>
+          </property>
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scrollAreaWidgetContents_0">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>1264</width>
+             <height>701</height>
+            </rect>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_30">
+            <property name="spacing">
+             <number>0</number>
+            </property>
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QWidget" name="widget_0" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>1250</width>
+                <height>700</height>
+               </size>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QWidget { background-color : white; }</string>
+              </property>
+              <widget class="QTableWidget" name="recentFib_freewater">
+               <property name="geometry">
+                <rect>
+                 <x>670</x>
+                 <y>344</y>
+                 <width>270</width>
+                 <height>311</height>
+                </rect>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="selectionMode">
+                <enum>QAbstractItemView::SingleSelection</enum>
+               </property>
+               <property name="selectionBehavior">
+                <enum>QAbstractItemView::SelectRows</enum>
+               </property>
+               <column>
+                <property name="text">
+                 <string>File Name</string>
+                </property>
+               </column>
+               <column>
+                <property name="text">
+                 <string>Directory</string>
+                </property>
+               </column>
+              </widget>
+              <widget class="QPushButton" name="clear_fib_history_freewater">
+               <property name="geometry">
+                <rect>
+                 <x>767</x>
+                 <y>290</y>
+                 <width>81</width>
+                 <height>41</height>
+                </rect>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Clear All</string>
+               </property>
+              </widget>
+              <widget class="QTableWidget" name="recentSrc_freewater">
+               <property name="geometry">
+                <rect>
+                 <x>350</x>
+                 <y>344</y>
+                 <width>270</width>
+                 <height>311</height>
+                </rect>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="selectionMode">
+                <enum>QAbstractItemView::SingleSelection</enum>
+               </property>
+               <property name="selectionBehavior">
+                <enum>QAbstractItemView::SelectRows</enum>
+               </property>
+               <column>
+                <property name="text">
+                 <string>File Name</string>
+                </property>
+               </column>
+               <column>
+                <property name="text">
+                 <string>Directory</string>
+                </property>
+               </column>
+              </widget>
+              <widget class="QLabel" name="label_17_0">
+               <property name="geometry">
+                <rect>
+                 <x>705</x>
+                 <y>90</y>
+                 <width>191</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>15</pointsize>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+               </property>
+               <property name="text">
+                <string>NII File (*.nii.gz)</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_57_0">
+               <property name="geometry">
+                <rect>
+                 <x>665</x>
+                 <y>20</y>
+                 <width>280</width>
+                 <height>641</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_55_0">
+               <property name="geometry">
+                <rect>
+                 <x>345</x>
+                 <y>20</y>
+                 <width>280</width>
+                 <height>641</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+              <widget class="QCommandLinkButton" name="FiberTracking_Freewater">
+               <property name="geometry">
+                <rect>
+                 <x>680</x>
+                 <y>210</y>
+                 <width>250</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Step F3: Viewing</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="autoRepeatDelay">
+                <number>296</number>
+               </property>
+               <property name="description">
+                <string>Open a nii file to view result</string>
+               </property>
+              </widget>
+              <widget class="QPushButton" name="clear_src_history_freewater">
+               <property name="geometry">
+                <rect>
+                 <x>450</x>
+                 <y>290</y>
+                 <width>81</width>
+                 <height>41</height>
+                </rect>
+               </property>
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Clear All</string>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_13_0">
+               <property name="geometry">
+                <rect>
+                 <x>361</x>
+                 <y>30</y>
+                 <width>171</width>
+                 <height>170</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+              <widget class="QCommandLinkButton" name="OpenDWI_NIFTI_Freewater">
+               <property name="geometry">
+                <rect>
+                 <x>40</x>
+                 <y>170</y>
+                 <width>250</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="autoFillBackground">
+                <bool>false</bool>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Step F1: NIFTI to SRC...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="autoDefault">
+                <bool>false</bool>
+               </property>
+               <property name="description">
+                <string>Convert a NIFTI to an SRC file</string>
+               </property>
+              </widget>
+              <widget class="QCommandLinkButton" name="Freewater">
+               <property name="geometry">
+                <rect>
+                 <x>360</x>
+                 <y>210</y>
+                 <width>250</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Step F2: Elimination</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="description">
+                <string>Open SRC file(s) for elimination</string>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_15_0">
+               <property name="geometry">
+                <rect>
+                 <x>680</x>
+                 <y>30</y>
+                 <width>251</width>
+                 <height>170</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_14_0">
+               <property name="geometry">
+                <rect>
+                 <x>385</x>
+                 <y>90</y>
+                 <width>191</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>15</pointsize>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+               </property>
+               <property name="text">
+                <string>SRC File (*.src.gz)</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
+              </widget>
+              <widget class="Line" name="line_4_0">
+               <property name="geometry">
+                <rect>
+                 <x>145</x>
+                 <y>170</y>
+                 <width>941</width>
+                 <height>21</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">Line { background-color: rgba(0, 0, 0, 255); }</string>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Plain</enum>
+               </property>
+               <property name="lineWidth">
+                <number>20</number>
+               </property>
+               <property name="midLineWidth">
+                <number>0</number>
+               </property>
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_16_0">
+               <property name="geometry">
+                <rect>
+                 <x>985</x>
+                 <y>20</y>
+                 <width>250</width>
+                 <height>321</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="icons.qrc">:/icons/icons/tractogram.png</pixmap>
+               </property>
+              </widget>
+              <widget class="QPushButton" name="open_selected_fib_freewater">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="geometry">
+                <rect>
+                 <x>847</x>
+                 <y>290</y>
+                 <width>81</width>
+                 <height>41</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Load...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+               </property>
+              </widget>
+              <widget class="QPushButton" name="open_selected_src_freewater">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="geometry">
+                <rect>
+                 <x>530</x>
+                 <y>290</y>
+                 <width>81</width>
+                 <height>41</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Load...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_64_0">
+               <property name="geometry">
+                <rect>
+                 <x>25</x>
+                 <y>20</y>
+                 <width>280</width>
+                 <height>641</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_43_0">
+               <property name="geometry">
+                <rect>
+                 <x>100</x>
+                 <y>30</y>
+                 <width>121</width>
+                 <height>131</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
+               </property>
+               <property name="scaledContents">
+                <bool>true</bool>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_45_0">
+               <property name="geometry">
+                <rect>
+                 <x>50</x>
+                 <y>50</y>
+                 <width>211</width>
+                 <height>81</height>
+                </rect>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>15</pointsize>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+               </property>
+               <property name="text">
+                <string>NIFTI
+*.nii.gz+bval/bvec</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_10_0">
+               <property name="geometry">
+                <rect>
+                 <x>100</x>
+                 <y>240</y>
+                 <width>121</width>
+                 <height>131</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
+               </property>
+               <property name="scaledContents">
+                <bool>true</bool>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_44_0">
+               <property name="geometry">
+                <rect>
+                 <x>86</x>
+                 <y>280</y>
+                 <width>151</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>15</pointsize>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+               </property>
+               <property name="text">
+                <string>DICOM
+*.dcm</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
+              </widget>
+              <widget class="QCommandLinkButton" name="OpenDWI_DICOM_Freewater">
+               <property name="geometry">
+                <rect>
+                 <x>40</x>
+                 <y>380</y>
+                 <width>250</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="autoFillBackground">
+                <bool>false</bool>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Step F1: DICOM(s) to SRC...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="autoDefault">
+                <bool>false</bool>
+               </property>
+               <property name="description">
+                <string>Convert DICOM to an SRC file</string>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_28_0">
+               <property name="geometry">
+                <rect>
+                 <x>1025</x>
+                 <y>150</y>
+                 <width>171</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>15</pointsize>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+               </property>
+               <property name="text">
+                <string>Freewater</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_2_0">
+               <property name="geometry">
+                <rect>
+                 <x>677</x>
+                 <y>290</y>
+                 <width>91</width>
+                 <height>41</height>
+                </rect>
+               </property>
+               <property name="text">
+                <string>Recent
+Files</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_3_0">
+               <property name="geometry">
+                <rect>
+                 <x>360</x>
+                 <y>290</y>
+                 <width>91</width>
+                 <height>41</height>
+                </rect>
+               </property>
+               <property name="text">
+                <string>Recent
+Files</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_27_0">
+               <property name="geometry">
+                <rect>
+                 <x>531</x>
+                 <y>30</y>
+                 <width>81</width>
+                 <height>170</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: rgba(128, 128, 128, 127);}</string>
+               </property>
+               <property name="text">
+                <string>B-table
+0    0 0 0
+1000    1 0 0
+1000    0 1 0
+1000    0 0 1
+...
+ </string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_39_0">
+               <property name="geometry">
+                <rect>
+                 <x>100</x>
+                 <y>450</y>
+                 <width>121</width>
+                 <height>131</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
+               </property>
+               <property name="scaledContents">
+                <bool>true</bool>
+               </property>
+              </widget>
+              <widget class="QCommandLinkButton" name="OpenDWI_2dseq_0">
+               <property name="geometry">
+                <rect>
+                 <x>40</x>
+                 <y>590</y>
+                 <width>250</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="autoFillBackground">
+                <bool>false</bool>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;}</string>
+               </property>
+               <property name="text">
+                <string>Step F1: 2dseq, *.fdf to SRC...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="autoDefault">
+                <bool>false</bool>
+               </property>
+               <property name="description">
+                <string>Convert 2dseq *.fdf to an SRC file</string>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_49_0">
+               <property name="geometry">
+                <rect>
+                 <x>80</x>
+                 <y>480</y>
+                 <width>151</width>
+                 <height>81</height>
+                </rect>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>15</pointsize>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+               </property>
+               <property name="text">
+                <string>Others
+2dseq
+*.fdf</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_40_0">
+               <property name="geometry">
+                <rect>
+                 <x>10</x>
+                 <y>10</y>
+                 <width>1241</width>
+                 <height>661</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel { border: 0px; background-color: rgba(155,155,155,127); }</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+              <zorder>label_40_0</zorder>
+              <zorder>line_4_0</zorder>
+              <zorder>label_57_0</zorder>
+              <zorder>label_15_0</zorder>
+              <zorder>FiberTracking_Freewater</zorder>
+              <zorder>label_64_0</zorder>
+              <zorder>label_17_0</zorder>
+              <zorder>label_55_0</zorder>
+              <zorder>label_13_0</zorder>
+              <zorder>OpenDWI_NIFTI_Freewater</zorder>
+              <zorder>Freewater</zorder>
+              <zorder>label_16_0</zorder>
+              <zorder>label_43_0</zorder>
+              <zorder>label_45_0</zorder>
+              <zorder>label_10_0</zorder>
+              <zorder>label_44_0</zorder>
+              <zorder>OpenDWI_DICOM_Freewater</zorder>
+              <zorder>label_28_0</zorder>
+              <zorder>label_2_0</zorder>
+              <zorder>label_3_0</zorder>
+              <zorder>label_27_0</zorder>
+              <zorder>clear_src_history_freewater</zorder>
+              <zorder>clear_fib_history_freewater</zorder>
+              <zorder>open_selected_src_freewater</zorder>
+              <zorder>open_selected_fib_freewater</zorder>
+              <zorder>recentFib_freewater</zorder>
+              <zorder>recentSrc_freewater</zorder>
+              <zorder>label_39_0</zorder>
+              <zorder>OpenDWI_2dseq_0</zorder>
+              <zorder>label_49_0</zorder>
+              <zorder>label_14_0</zorder>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
         <iconset resource="icons.qrc">

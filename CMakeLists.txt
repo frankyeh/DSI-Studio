@@ -38,6 +38,7 @@ set(DSI_STUDIO_HEADERS mainwindow.h
     SliceModel.h
     tracking/tracking_window.h
     reconstruction/reconstruction_window.h
+    freewater/freewater_window.h
     tracking/slice_view_scene.h
     opengl/glwidget.h
     opengl/renderingtablewidget.h
@@ -82,6 +83,7 @@ set(DSI_STUDIO_HEADERS mainwindow.h
 set(DSI_STUDIO_FORMS mainwindow.ui
     tracking/tracking_window.ui
     reconstruction/reconstruction_window.ui
+    freewater/freewater_window.ui
     dicom/dicom_parser.ui
     view_image.ui
     manual_alignment.ui
@@ -114,6 +116,7 @@ set(DSI_STUDIO_SOURCES
     tracking/tracking_window.cpp
     tracking/tracking_window_action.cpp
     reconstruction/reconstruction_window.cpp
+    freewater/freewater_window.cpp
     tracking/slice_view_scene.cpp
     opengl/glwidget.cpp
     opengl/tract_render.cpp
