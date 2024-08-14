@@ -2054,10 +2054,12 @@ std::string src_data::find_topup_reverse_pe(void)
                 continue;
             if(nii.width()*nii.height()*nii.depth() != dwi.size())
             {
-                tipl::out() << path << " has different image size, skipping" << std::endl;
+                tipl::out() << path << " has a different image size " <<
+                               tipl::shape<3>(nii.width(),nii.height(),nii.depth())
+                               << ", skipping" << std::endl;
                 continue;
             }
-            if(nii.dim(4) != 1)
+            if(nii.dim(4) > 8)
             {
                 tipl::out() << path << " is likely non-b0 4d nifti, skipping" << std::endl;
                 continue;
