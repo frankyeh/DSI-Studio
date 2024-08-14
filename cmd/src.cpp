@@ -145,11 +145,14 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
 
         if(phase_str.empty())
         {
-            if(std::filesystem::path(each).filename().string().find("_AP") != std::string::npos)
+            if(std::filesystem::path(each).filename().string().find("_AP") != std::string::npos ||
+               std::filesystem::path(each).filename().string().find("AP_") != std::string::npos)
                 phase_str = "ap";
-            if(std::filesystem::path(each).filename().string().find("_PA") != std::string::npos)
+            if(std::filesystem::path(each).filename().string().find("_PA") != std::string::npos ||
+               std::filesystem::path(each).filename().string().find("PA_") != std::string::npos)
                 phase_str = "pa";
         }
+
         tipl::io::gz_nifti nii;
         if(!nii.load_from_file(each))
         {
