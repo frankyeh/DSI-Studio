@@ -58,7 +58,7 @@ bool create_src(const std::vector<std::string>& nii_names,std::string src_name)
     for(auto& nii_name : nii_names)
     {
         tipl::out() << "opening " << nii_name;
-        if(!load_4d_nii(nii_name.c_str(),dwi_files,true,true,error_msg))
+        if(!load_4d_nii(nii_name.c_str(),dwi_files,true,tipl::ends_with(src_name,".src.gz"),error_msg))
             tipl::warning() << "skipping " << nii_name << ": " << error_msg;
     }
     if(!DwiHeader::output_src(src_name.c_str(),dwi_files,0,false,error_msg))
