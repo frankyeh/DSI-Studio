@@ -121,27 +121,29 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
     // extract all information
     for(const auto& each : dwi_nii_files)
     {
-        if (each.size() < 7 || each.compare(each.size() - 7, 7, ".nii.gz") != 0)
+        if (!tipl::ends_with(each,".nii.gz"))
         {
-            error_msg = "invalid file name: ";
+            error_msg = "not a nifti gz file: ";
             error_msg += each;
             return false;
         }
         std::string json(each),phase_str;
-        json.replace(json.size() - 7, 7, ".json");
+        json.erase(json.size()-7);
+        json += ".json";
+
+        tipl::out() << "looking for json file: " << json;
         QFile input_file(json.c_str());
         if (input_file.open(QIODevice::ReadOnly | QIODevice::Text))
         {
-            tipl::out () << "read jaon file : " << json;
+            tipl::out () << "read json file : " << json;
             QJsonDocument json_doc = QJsonDocument::fromJson(input_file.readAll());
-            if (json_doc.isObject())
-            {
-                QJsonObject json_obj = json_doc.object();
-                if (json_obj.contains("PhaseEncodingDirection"))
-                    phase_str = json_obj["PhaseEncodingDirection"].toString().toStdString();
-            }
+            if (json_doc.isObject() && json_doc.object().contains("PhaseEncodingDirection"))
+                phase_str = json_doc.object()["PhaseEncodingDirection"].toString().toStdString();
+            else
+                tipl::out() << "json file does not include PhaseEncodingDirection information";
         }
-        else
+
+        if(phase_str.empty())
         {
             if(std::filesystem::path(each).filename().string().find("_AP") != std::string::npos)
                 phase_str = "ap";
