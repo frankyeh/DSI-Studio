@@ -1,6 +1,13 @@
-Copyright 2023 Fang-Cheng Yeh
+Copyright 2024 Fang-Cheng Yeh
 
-Unless required by applicable law or agreed to in writing, DSI Studio is distributed under Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode Commercial use requires a paid software license.
+The DSI Studio source code and executable file are licensed under the Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0). This license allows for non-commercial use, sharing, and modification of the source code and executable file, provided that the original author is attributed and any modifications are shared under the same license.
 
-This application utilizes the Qt framework distributed under the GNU Lesser General Public License (LGPL). The source code of the Qt libraries used in this application is open and freely available at https://www.qt.io/
+For commercial use of the source code and executable file, a paid software license is required. Please contact the author for more information.
 
+DSI Studio is built using the Qt framework, which is distributed under the GNU Lesser General Public License (LGPL). The source code of the Qt libraries used in this application is available at (link unavailable).
+
+Note that certain components of DSI Studio, including plugins and atlases, have their own license terms that may differ from the CC BY-NC-SA 4.0 license. Plugins are separate components that can be installed and used with DSI Studio, and atlases are data used by DSI Studio for certain functions. Users are responsible for complying with the license terms of these components.
+
+This license does not grant any rights under patent law, and the licensor disclaims any liability for infringement of any patent or other intellectual property right. Users are responsible for determining whether their use of the software infringes any patent or other intellectual property right.
+
+By using the DSI Studio source code and executable file, you acknowledge that you have read, understood, and agree to be bound by the terms of the CC BY-NC-SA 4.0 license and the LGPL, as well as any additional license terms that may apply to specific components or functions.
