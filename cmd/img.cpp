@@ -109,8 +109,8 @@ bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<2,short>& I)
         I[j] = *ptr;
     return true;
 }
-void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
-void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
+void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
+void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 bool variant_image::load_from_file(const char* file_name,std::string& info)
 {
     tipl::io::dicom dicom;
