@@ -22,6 +22,9 @@ public:
     virtual void end(Voxel&,tipl::io::gz_mat_write&) {}    
     virtual ~BaseProcess(void) {}
 };
+void write_image_to_mat(tipl::io::gz_mat_write& matfile,
+                       const std::string& name,
+                       const float* buf,tipl::shape<3> dim);
 
 
 
@@ -139,6 +142,7 @@ public: // for QSDR associated T1WT2W
     std::vector<tipl::image<3> > other_image;
     std::vector<std::string> other_image_name;
     std::vector<tipl::transformation_matrix<float> > other_image_trans;
+    std::vector<tipl::vector<3> > other_image_voxel_size;
 public: // for t1w qsdr
     tipl::image<3> other_modality_subject;
     std::string other_modality_template;
