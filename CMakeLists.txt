@@ -61,7 +61,6 @@ set(DSI_STUDIO_HEADERS mainwindow.h
     tracking/color_bar_dialog.hpp
     tracking/connectivity_matrix_dialog.h
     tracking/atlasdialog.h
-    filebrowser.h
     qcompletelineedit.h
     libs/mapping/connectometry_db.hpp
     connectometry/createdbdialog.h
@@ -89,7 +88,6 @@ set(DSI_STUDIO_FORMS mainwindow.ui
     tracking/color_bar_dialog.ui
     tracking/connectivity_matrix_dialog.ui
     tracking/atlasdialog.ui
-    filebrowser.ui
     connectometry/createdbdialog.ui
     connectometry/match_db.ui
     connectometry/db_window.ui
@@ -140,7 +138,6 @@ set(DSI_STUDIO_SOURCES
     cmd/atl.cpp
     tracking/atlasdialog.cpp
     cmd/vis.cpp
-    filebrowser.cpp
     qcompletelineedit.cpp
     libs/tracking/fib_data.cpp
     libs/tracking/tracking_thread.cpp
