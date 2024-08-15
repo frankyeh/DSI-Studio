@@ -263,7 +263,7 @@ void CreateDBDialog::on_select_output_file_clicked()
 #endif
     ui->output_file_name->setText(filename);
 }
-
+const char* odf_average(const char* out_name,std::vector<std::string>& file_names);
 void CreateDBDialog::on_create_data_base_clicked()
 {
     if(ui->output_file_name->text().isEmpty())
