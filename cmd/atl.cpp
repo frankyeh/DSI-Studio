@@ -265,34 +265,6 @@ int atl(tipl::program_option<tipl::out>& po)
             }
             return 0;
         }
-        if(cmd=="trk")
-        {
-            if(!handle->is_mni)
-            {
-                tipl::error() << "only QSDR reconstructed FIB file is supported." << std::endl;
-                return 1;
-            }
-            if(handle->get_native_position().empty())
-            {
-                tipl::error() << "no mapping information found. Please reconstruct QSDR with 'mapping' included in the output." << std::endl;
-                return 1;
-            }
-            std::shared_ptr<TractModel> tract_model(new TractModel(handle));
-            std::string file_name = po.get("tract");
-            {
-                tipl::out() << "opening " << file_name << "..." <<std::endl;
-                if (!tract_model->load_tracts_from_file(file_name.c_str(),handle.get(),file_name.find("mni") != std::string::npos))
-                {
-                    tipl::error() << "cannot open file " << file_name << std::endl;
-                    return 1;
-                }
-                tipl::out() << file_name << " loaded" << std::endl;
-            }
-            file_name += "native.tt.gz";
-            tipl::out() << "saving tracks to " << file_name << std::endl;
-            tract_model->save_tracts_in_native_space(handle,file_name.c_str());
-            return 0;
-        }
     }
     tipl::error() << "unknown command: " << cmd << std::endl;
     return 1;
