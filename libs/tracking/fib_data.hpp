@@ -201,10 +201,6 @@ public:
     unsigned int min_color = 0;
     tipl::image<3,unsigned int> color_map_buf;
 
-    // for other slice in QSDR, allow for loading t1w-based ROIs in QSDR fib
-    tipl::shape<3> native_geo;
-    tipl::transformation_matrix<float> native_trans;
-
     void get_minmax(void)
     {
         auto I = get_image();
@@ -274,12 +270,6 @@ public:
 public:
     int prog = 0;
     tipl::image<3,tipl::vector<3,float> > s2t,t2s;
-private:
-    mutable tipl::image<3,tipl::vector<3,float> > native_position;
-public:
-    tipl::shape<3> native_geo;
-    tipl::vector<3> native_vs;
-    const tipl::image<3,tipl::vector<3,float> >& get_native_position(void) const;
 public:
     size_t template_id = 256;
     tipl::vector<3> template_vs;
