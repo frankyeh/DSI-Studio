@@ -14,7 +14,7 @@ bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by =
 bool parse_dwi(const std::vector<std::string>& file_list,
                     std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg);
 void dicom2src_and_nii(std::string dir_);
-bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
+bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                  bool search_bvalbvec,
                  bool must_have_bval_bvec,std::string& error_msg);
 
@@ -58,7 +58,7 @@ bool create_src(const std::vector<std::string>& nii_names,std::string src_name)
     for(auto& nii_name : nii_names)
     {
         tipl::out() << "opening " << nii_name;
-        if(!load_4d_nii(nii_name.c_str(),dwi_files,true,tipl::ends_with(src_name,".src.gz"),error_msg))
+        if(!load_4d_nii(nii_name,dwi_files,true,tipl::ends_with(src_name,".src.gz"),error_msg))
             tipl::warning() << "skipping " << nii_name << ": " << error_msg;
     }
     if(!DwiHeader::output_src(src_name.c_str(),dwi_files,0,false,error_msg))
