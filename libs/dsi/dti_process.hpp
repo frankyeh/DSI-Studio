@@ -190,23 +190,23 @@ public:
             return;
         if(voxel.method_id == 1) // DTI
         {
-            mat_writer.write("fa0",voxel.fib_fa,uint32_t(voxel.dim.plane_size()));
-            mat_writer.write("dir0",&voxel.fib_dir[0][0],uint32_t(3*voxel.dim.plane_size()),uint32_t(voxel.dim.depth()));
+            write_image_to_mat(mat_writer,"fa0",voxel.fib_fa.data(),voxel.dim);
+            write_image_to_mat(mat_writer,"dir0",&voxel.fib_dir[0][0],voxel.dim.multiply(tipl::shape<3>::x,3));
         }
         else
-            mat_writer.write("dti_fa",voxel.fib_fa,uint32_t(voxel.dim.plane_size()));
-        mat_writer.write("txx",txx,uint32_t(voxel.dim.plane_size()));
-        mat_writer.write("txy",txy,uint32_t(voxel.dim.plane_size()));
-        mat_writer.write("txz",txz,uint32_t(voxel.dim.plane_size()));
-        mat_writer.write("tyy",tyy,uint32_t(voxel.dim.plane_size()));
-        mat_writer.write("tyz",tyz,uint32_t(voxel.dim.plane_size()));
-        mat_writer.write("tzz",tzz,uint32_t(voxel.dim.plane_size()));
-        mat_writer.write("rd1",rd1,uint32_t(voxel.dim.plane_size()));
-        mat_writer.write("rd2",rd2,uint32_t(voxel.dim.plane_size()));
-        mat_writer.write("ha",ha,uint32_t(voxel.dim.plane_size()));
-        mat_writer.write("md",md,uint32_t(voxel.dim.plane_size()));
-        mat_writer.write("ad",ad,uint32_t(voxel.dim.plane_size()));
-        mat_writer.write("rd",rd,uint32_t(voxel.dim.plane_size()));
+            write_image_to_mat(mat_writer,"dti_fa",voxel.fib_fa.data(),voxel.dim);
+        write_image_to_mat(mat_writer,"txx",txx.data(),voxel.dim);
+        write_image_to_mat(mat_writer,"txy",txy.data(),voxel.dim);
+        write_image_to_mat(mat_writer,"txz",txz.data(),voxel.dim);
+        write_image_to_mat(mat_writer,"tyy",tyy.data(),voxel.dim);
+        write_image_to_mat(mat_writer,"tyz",tyz.data(),voxel.dim);
+        write_image_to_mat(mat_writer,"tzz",tzz.data(),voxel.dim);
+        write_image_to_mat(mat_writer,"rd1",rd1.data(),voxel.dim);
+        write_image_to_mat(mat_writer,"rd2",rd2.data(),voxel.dim);
+        write_image_to_mat(mat_writer,"ha",ha.data(),voxel.dim);
+        write_image_to_mat(mat_writer,"md",md.data(),voxel.dim);
+        write_image_to_mat(mat_writer,"ad",ad.data(),voxel.dim);
+        write_image_to_mat(mat_writer,"rd",rd.data(),voxel.dim);
     }
 };
 
