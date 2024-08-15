@@ -82,6 +82,77 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->github_release_note->setTabVisible(1,false);
     ui->github_open_file->setVisible(false);
     ui->template_list->setCurrentRow(1);
+
+
+
+
+    {
+        auto reply = get(QString("https://freegeoip.app/json/"));
+        while (!reply->isFinished())
+            qApp->processEvents();
+        QString fnValue,adrValue,ipAddress = QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).object().value("ip").toString();
+        reply = get(QString("http://ip-api.com/json/%1").arg(ipAddress));
+        while (!reply->isFinished())
+            qApp->processEvents();
+
+        {
+            // Get the vcardArray
+            QJsonObject jsonObject = QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).object();
+            adrValue = jsonObject.value("city").toString() + "," +
+                       jsonObject.value("region").toString() + "," +
+                       jsonObject.value("countryCode").toString() + " " +
+                       jsonObject.value("zip").toString() + " ";
+            fnValue = jsonObject.value("as").toString();
+        }
+
+        {
+            QString licenseText;
+            {
+                QFile licenseFile(QApplication::applicationDirPath() + "/LICENSE");
+                if (!licenseFile.open(QIODevice::ReadOnly))
+                {
+                    QMessageBox::critical(this,"ERROR","cannot locate license file");
+                    return;
+                }
+                licenseText = licenseFile.readAll();
+            }
+
+            QDialog *dialog = new QDialog(this);
+            dialog->setWindowTitle("License Information");
+            dialog->setModal(false); // Make the dialog modeless
+
+            QTextEdit *licenseTextEdit = new QTextEdit;
+            licenseTextEdit->setText(licenseText);
+            licenseTextEdit->setReadOnly(true);
+
+            QPushButton *closeButton = new QPushButton("Close");
+            connect(closeButton, &QPushButton::clicked, dialog, &QDialog::close);
+
+            QVBoxLayout *layout = new QVBoxLayout;
+            layout->addWidget(licenseTextEdit);
+
+            if(!ipAddress.isEmpty())
+            {
+                layout->addWidget(new QLabel(QString("Auto-Registered IP: ") + ipAddress));
+                auto label = new QLabel(QString("Auto-Registered Entity: ") + fnValue + "," + adrValue);
+                label->setWordWrap(true);
+                layout->addWidget(label);
+            }
+
+            if(fnValue.contains("LLC") || fnValue.contains("L.L.C") || fnValue.contains("Inc"))
+            {
+                auto notice = new QLabel("This license does not cover commercial use. If you are a commercial entity, you must obtain a separate commercial license to use DSI Studio. Please contact frank.yeh@gmail.com to inquire about obtaining a commercial license.");
+                notice->setWordWrap(true);
+                notice->setStyleSheet("color: red; font-weight: bold;");
+                layout->addWidget(notice);
+            }
+            layout->addWidget(closeButton);
+            dialog->setLayout(layout);
+            dialog->resize(800,500);
+            dialog->show();
+        }
+    }
+
 }
 
 
