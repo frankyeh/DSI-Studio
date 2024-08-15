@@ -1014,6 +1014,7 @@ bool src_data::add_other_image(const std::string& name,const std::string& filena
         voxel.other_image_name.push_back(name);
         trans.inverse();
         voxel.other_image_trans.push_back(trans);
+        voxel.other_image_voxel_size.push_back(vs);
     }
     return true;
 }
