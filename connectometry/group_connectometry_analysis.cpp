@@ -223,15 +223,10 @@ void group_connectometry_analysis::save_result(void)
     {
         tipl::progress p2("save statistics.fib.gz");
         tipl::io::gz_mat_write mat_write((output_file_name+".t_statistics.fib.gz").c_str());
-        for(unsigned int i = 0;i < handle->mat_reader.size();++i)
-        {
-            std::string name = handle->mat_reader.name(i);
-            if(name == "dimension" || name == "voxel_size" ||
-                    name == "odf_vertices" || name == "odf_faces" || name == "trans")
-                mat_write.write(handle->mat_reader[i]);
-            if(name == "fa0")
-                mat_write.write("qa_map",handle->dir.fa[0],handle->dim.plane_size(),handle->dim.depth());
-        }
+        mat_write.write("dimension",handle->dim);
+        mat_write.write("voxel_size",handle->vs);
+        mat_write.write("trans",handle->trans_to_mni);
+        mat_write.write("qa_map",handle->dir.fa[0],handle->dim.plane_size(),handle->dim.depth());
         for(unsigned int i = 0;i < spm_map->inc_ptr.size();++i)
         {
             std::ostringstream out1,out2,out3,out4;
