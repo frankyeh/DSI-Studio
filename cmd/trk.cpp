@@ -559,12 +559,6 @@ int trk_post(tipl::program_option<tipl::out>& po,
         }
     }
 
-
-    if(po.has(("native_track")) && !tract_model->save_tracts_in_native_space(handle,po.get("native_track").c_str()))
-    {
-        tipl::error() << "failed to save file to " << po.get("native_track") << std::endl;
-        return 1;
-    }
     if(po.has(("template_track")) && !tract_model->save_tracts_in_template_space(handle,po.get("template_track").c_str()))
     {
         tipl::error() << "failed to save file to " << po.get("template_track") << std::endl;
