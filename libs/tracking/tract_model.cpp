@@ -908,35 +908,11 @@ bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const char* 
         }
         out.write("data",buf);
         out.write("length",length);
-        out.write("trans",trans_to_mni.begin(),4,4);
+        out.write("trans",trans_to_mni);
         return true;
     }
 
     return false;
-}
-//---------------------------------------------------------------------------
-// QSDR FIB save tracts back to native space
-bool TractModel::save_tracts_in_native_space(std::shared_ptr<fib_data> handle,
-                                             const char* file_name)
-{
-    if(handle->get_native_position().empty())
-        return false;
-    std::shared_ptr<TractModel> tract_in_native(new TractModel(handle->native_geo,handle->native_vs));
-    std::vector<std::vector<float> > new_tract_data = tract_data;
-    tipl::adaptive_par_for(new_tract_data.size(),[&](size_t i)
-    {
-        for(size_t j = 0;j < new_tract_data[i].size();j += 3)
-        {
-            tipl::vector<3> pos(&new_tract_data[i][0]+j),new_pos;
-            tipl::estimate(handle->get_native_position(),pos,new_pos);
-            new_tract_data[i][j] = new_pos[0];
-            new_tract_data[i][j+1] = new_pos[1];
-            new_tract_data[i][j+2] = new_pos[2];
-        }
-    });
-    tract_in_native->add_tracts(new_tract_data);
-    tract_in_native->resample(0.5f);
-    return tract_in_native->save_tracts_to_file(file_name);
 }
 //---------------------------------------------------------------------------
 // Native space FIB save tracts to the template space
