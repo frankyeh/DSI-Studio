@@ -454,8 +454,8 @@ bool load_fib_from_tracks(const char* file_name,
                           tipl::image<3>& I,
                           tipl::vector<3>& vs,
                           tipl::matrix<4,4>& trans_to_mni);
-void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
-void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
+void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
+void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 bool fib_data::load_from_file(const char* file_name)
 {
     tipl::progress prog("opening ",std::filesystem::path(file_name).filename().u8string().c_str());
@@ -1035,6 +1035,12 @@ bool fib_data::save_to_file(const char* file_name)
         return false;
     }
     return true;
+}
+void fib_data::remove_slice(size_t index)
+{
+    mat_reader.remove(view_item[index].name);
+
+    view_item.erase(view_item.begin()+index);
 }
 bool fib_data::resample_to(float resolution)
 {
