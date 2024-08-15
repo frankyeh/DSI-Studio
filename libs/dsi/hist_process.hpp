@@ -167,8 +167,8 @@ public:
         new_dim[2] = 2;
         mat_writer.write("dimension",new_dim);
         mat_writer.write("voxel_size",new_vs);
-        mat_writer.write("fa0",hist_fa,uint32_t(hist_fa.plane_size()));
-        mat_writer.write("dir0",&hist_dir[0][0],uint32_t(3*hist_dir.plane_size()),uint32_t(hist_dir.depth()));
+        write_image_to_mat(mat_writer,"fa0",hist_fa.data(),hist_fa.shape());
+        write_image_to_mat(mat_writer,"dir0",&hist_dir[0][0],hist_dir.shape().multiply(tipl::shape<3>::x,3));
     }
 };
 
