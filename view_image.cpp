@@ -495,7 +495,7 @@ void view_image::on_actionLoad_Image_to_4D_triggered()
     });
     init_image();
 }
-void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
+void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 QImage read_qimage(QString filename,std::string& error);
 bool view_image::open(QStringList file_names_)
 {
