@@ -265,6 +265,7 @@ public:
     fiber_directions dir;
     connectometry_db db;
     mutable std::vector<item> view_item;
+    void remove_slice(size_t index);
 public:
     std::shared_ptr<fib_data> high_reso;
 public:
