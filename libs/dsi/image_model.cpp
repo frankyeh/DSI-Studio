@@ -2632,12 +2632,6 @@ bool src_data::save_fib(const std::string& output_name)
 
     mat_writer.write("dimension",voxel.dim);
     mat_writer.write("voxel_size",voxel.vs);
-
-    std::vector<float> float_data;
-    std::vector<short> short_data;
-    voxel.ti.save_to_buffer(float_data,short_data);
-    mat_writer.write("odf_vertices",float_data,3);
-    mat_writer.write("odf_faces",short_data,3);
     if(!voxel.end(mat_writer))
     {
         mat_writer.close();
