@@ -422,20 +422,6 @@ protected:
 protected:
     std::vector<float> iso,gfa;
     std::vector<std::vector<float> > fa,rdi;
-    tipl::shape<3> dim;
-
-    void output_anisotropy(tipl::io::gz_mat_write& mat_writer,
-                           const char* name,const std::vector<std::vector<float> >& metrics)
-    {
-        for (unsigned int index = 0;index < metrics.size();++index)
-        {
-            std::ostringstream out;
-            out << index;
-            std::string num = out.str();
-            std::string str = name + num;
-            mat_writer.write(str.c_str(),metrics[index],uint32_t(dim.plane_size()));
-        }
-    }
 public:
     virtual void init(Voxel& voxel)
     {
@@ -444,16 +430,15 @@ public:
         lm.init(voxel);
 
         voxel.z0 = 1.0f;
-        dim = voxel.dim;
-        fa = std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(dim.size()));
+        fa = std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(voxel.dim.size()));
         if(voxel.needs("gfa"))
-            gfa = std::vector<float>(dim.size());
-        iso = std::vector<float>(dim.size());
+            gfa = std::vector<float>(voxel.dim.size());
+        iso = std::vector<float>(voxel.dim.size());
         if(voxel.needs("rdi"))
         {
             float sigma = voxel.param[0]; //optimal 1.24
             for(float L = 0.2f;L <= sigma;L+= 0.2f)
-                rdi.push_back(std::vector<float>(dim.size()));
+                rdi.push_back(std::vector<float>(voxel.dim.size()));
         }
         findex.resize(voxel.max_fiber_number);
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
@@ -539,8 +524,7 @@ public:
     }
     virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
-        mat_writer.write("gfa",gfa,uint32_t(voxel.dim.plane_size()));
-
+        write_image_to_mat(mat_writer,"gfa",gfa.data(),voxel.dim);
         // output normalized qa
         {
             float max_qa = 0.0;
@@ -550,20 +534,22 @@ public:
                 max_qa = 1.0f;
             voxel.z0 = float(1.0/double(max_qa));
         }
-        mat_writer.write("z0",std::vector<float>({voxel.z0}));
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
+        {
             tipl::multiply_constant(fa[index],voxel.z0);
-        output_anisotropy(mat_writer,"fa",fa);
+            write_image_to_mat(mat_writer,("fa" + std::to_string(index)).c_str(),fa[index].data(),voxel.dim);
+        }
 
         tipl::multiply_constant(iso,voxel.z0);
-        mat_writer.write("iso",iso,uint32_t(voxel.dim.plane_size()));
+        write_image_to_mat(mat_writer,"iso",iso.data(),voxel.dim);
 
         if(!rdi.empty())
         {
             for(unsigned int i = 0;i < rdi.size();++i)
                 tipl::multiply_constant(rdi[i],voxel.z0);
             float L = 0.2f;
-            mat_writer.write("rdi",rdi[0],uint32_t(voxel.dim.plane_size()));
+            write_image_to_mat(mat_writer,"rdi",rdi[0].data(),voxel.dim);
+
             if(voxel.shell.size() > 1)
             {
                 for(unsigned int i = 0;i < rdi[0].size();++i)
@@ -577,20 +563,12 @@ public:
                     std::ostringstream out2;
                     out2.precision(2);
                     out2 << "nrdi" << std::setfill('0') << std::setw(2) << int(L*10) << "L";
-                    mat_writer.write(out2.str().c_str(),rdi[i],uint32_t(voxel.dim.plane_size()));
+                    write_image_to_mat(mat_writer,out2.str().c_str(),rdi[i].data(),voxel.dim);
                 }
             }
         }
-
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-        {
-            std::ostringstream out;
-            out << index;
-            std::string num = out.str();
-            std::string index_str = "index";
-            index_str += num;
-            mat_writer.write(index_str.c_str(),findex[index],uint32_t(voxel.dim.plane_size()));
-        }
+            mat_writer.write(("index" + std::to_string(index)).c_str(),findex[index],uint32_t(voxel.dim.plane_size()));
     }
 };
 
