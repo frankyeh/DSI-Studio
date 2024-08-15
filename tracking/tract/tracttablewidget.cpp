@@ -743,34 +743,6 @@ void TractTableWidget::save_tracts_as(void)
         QMessageBox::critical(this,"ERROR","Cannot write to file. Please check write permission.");
 }
 
-void TractTableWidget::save_tracts_in_native(void)
-{
-    if(currentRow() >= int(tract_models.size()) || currentRow() < 0)
-        return;
-    if(!cur_tracking_window.handle->is_mni)
-    {
-        QMessageBox::critical(this,"ERROR","This function only works with QSDR reconstructed FIB files.");
-        return;
-    }
-    if(cur_tracking_window.handle->get_native_position().empty())
-    {
-        QMessageBox::critical(this,"ERROR","No mapping information included. Please reconstruct QSDR with 'mapping' included in the output.");
-        return;
-    }
-
-    QString filename;
-    filename = QFileDialog::getSaveFileName(
-                this,"Save tracts as",item(currentRow(),0)->text().replace(':','_') + output_format(),
-                 "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-    if(tract_models[uint32_t(currentRow())]->save_tracts_in_native_space(cur_tracking_window.handle,filename.toStdString().c_str()))
-        QMessageBox::information(this,QApplication::applicationName(),"file saved");
-    else
-        QMessageBox::critical(this,"ERROR","Cannot write to file. Please check write permission.");
-}
-
 void TractTableWidget::save_all_tracts_end_point_as(void)
 {
     auto selected_tracts = get_checked_tracks();
