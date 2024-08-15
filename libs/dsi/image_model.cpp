@@ -2511,7 +2511,7 @@ bool src_data::load_from_file(const char* dwi_file_name)
             !mat_reader.read("voxel_size",voxel.vs) ||
              voxel.dim[0]*voxel.dim[1]*voxel.dim[2] <= 0)
         {
-            error_msg = "Invalid SRC format";
+            error_msg = "Incompatible SRC format";
             return false;
         }
         mat_reader.read("steps",voxel.steps);
