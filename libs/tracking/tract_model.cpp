@@ -20,8 +20,8 @@
 #include "reg.hpp"
 #include <filesystem>
 
-void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
-void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
+void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
+void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 const tipl::rgb default_tract_color(255,160,60);
 void smoothed_tracks(const std::vector<float>& track,std::vector<float>& smoothed)
 {
