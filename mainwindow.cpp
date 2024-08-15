@@ -18,7 +18,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "regtoolbox.h"
-#include "filebrowser.h"
 #include "reconstruction/reconstruction_window.h"
 #include "tracking/tracking_window.h"
 #include "dicom/dicom_parser.h"
