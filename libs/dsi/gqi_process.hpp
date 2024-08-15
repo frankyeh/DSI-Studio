@@ -113,8 +113,7 @@ public:
     }
     virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer) override
     {
-        if(hgqi)
-            mat_writer.write("hraw",&hraw[0],voxel.dim.plane_size(),voxel.dim.depth());
+        write_image_to_mat(mat_writer,"hraw",hraw.data(),voxel.dim);
     }
 };
 
