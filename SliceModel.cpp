@@ -199,8 +199,8 @@ tipl::const_pointer_image<3> CustomSliceModel::get_source(void) const
 }
 // ---------------------------------------------------------------------------
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
-void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
-void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in);
+void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
+void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 bool parse_age_sex(const std::string& file_name,std::string& age,std::string& sex);
 QString get_matched_demo(QWidget *parent,std::shared_ptr<fib_data>);
 QImage read_qimage(QString filename,std::string& error);
