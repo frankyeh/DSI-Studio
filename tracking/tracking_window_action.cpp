@@ -930,13 +930,13 @@ void tracking_window::insertPicture()
 
 void tracking_window::on_deleteSlice_clicked()
 {
-    if(dynamic_cast<CustomSliceModel*>(current_slice.get()) == nullptr)
+    int index = ui->SliceModality->currentIndex();
+    if(index <= 1)
         return;
     if(current_slice->is_overlay)
         on_is_overlay_clicked();
     if(current_slice->stay)
         on_stay_clicked();
-    int index = ui->SliceModality->currentIndex();
     handle->view_item.erase(handle->view_item.begin()+index);
     slices.erase(slices.begin()+index);
     glWidget->slice_texture.erase(glWidget->slice_texture.begin()+index);
