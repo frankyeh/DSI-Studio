@@ -803,16 +803,6 @@ bool fib_data::load_from_mat(void)
 
     if(is_mni)
     {
-        mat_reader.read("native_dimension",native_geo);
-        mat_reader.read("native_voxel_size",native_vs);
-        for(unsigned int i = 0; i < view_item.size();++i)
-        {
-            view_item[i].native_geo = native_geo;
-            view_item[i].native_trans.sr[0] = view_item[i].native_trans.sr[4] = view_item[i].native_trans.sr[8] = 1.0;
-            mat_reader.read((view_item[i].name+"_dimension").c_str(),view_item[i].native_geo);
-            mat_reader.read((view_item[i].name+"_trans").c_str(),view_item[i].native_trans);
-        }
-
         // matching templates
         matched_template_id = 0;
         for(size_t index = 0;index < fa_template_list.size();++index)
@@ -1071,21 +1061,6 @@ void fib_data::match_template(void)
         set_template_id(match_volume(std::count_if(dir.fa[0],dir.fa[0]+dim.size(),[](float v){return v > 0.0f;})*2.0f*vs[0]*vs[1]*vs[2]));
     }
     tipl::out() << "matched template: " << tipl::split(std::filesystem::path(fa_template_list[template_id]).filename().u8string(),'.').front();
-}
-
-const tipl::image<3,tipl::vector<3,float> >& fib_data::get_native_position(void) const
-{
-    if(native_position.empty() && mat_reader.has("mapping"))
-    {
-        unsigned int row,col;
-        const float* mapping = nullptr;
-        if(mat_reader.read("mapping",row,col,mapping))
-        {
-            native_position.resize(dim);
-            std::copy(mapping,mapping+col*row,&native_position[0][0]);
-        }
-    }
-    return native_position;
 }
 
 size_t fib_data::get_name_index(const std::string& index_name) const
