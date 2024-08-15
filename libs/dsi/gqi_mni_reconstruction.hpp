@@ -298,7 +298,7 @@ public:
         // allow loading native space t1w-based ROI
         for(unsigned int index = 0;index < other_image.size();++index)
         {
-            mat_writer.write(voxel.other_image_name[index].c_str(),other_image[index]);
+            mat_writer.write(voxel.other_image_name[index].c_str(),other_image[index],other_image[index].plane_size());
             mat_writer.write((voxel.other_image_name[index]+"_dimension").c_str(),voxel.other_image[index].shape());
             mat_writer.write((voxel.other_image_name[index]+"_trans").c_str(),voxel.other_image_trans[index]);
         }
