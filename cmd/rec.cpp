@@ -31,7 +31,7 @@ int rec(tipl::program_option<tipl::out>& po)
         src.voxel.odf_resolving = po.get("odf_resolving",int(0));
         src.voxel.output_odf = po.get("record_odf",int(0));
         src.voxel.dti_no_high_b = po.get("dti_no_high_b",src.is_human_data());
-        src.voxel.other_output = po.get("other_output","fa,ad,rd,md,iso,rdi");
+        src.voxel.other_output = po.get("other_output","fa,rd,iso,rdi");
         src.voxel.r2_weighted = po.get("r2_weighted",int(0));
         src.voxel.thread_count = tipl::max_thread_count = po.get("thread_count",tipl::max_thread_count);
         src.voxel.param[0] = po.get("param0",src.voxel.param[0]);
