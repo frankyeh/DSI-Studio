@@ -680,36 +680,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         if(handle->is_mni)
         {
             if(!is_mni)
-            {
-                for(unsigned int index = 0;index < handle->view_item.size();++index)
-                if(handle->view_item[index].native_geo.size() && (index == 0 || handle->view_item[index].native_geo != handle->view_item[0].native_geo))
-                {
-                    tipl::out() << handle->view_item[index].name << " native space has a dimension of " << handle->view_item[index].native_geo << std::endl;
-                    if(handle->view_item[index].native_geo == from.shape())
-                    {
-                        tipl::out() << nifti_name << " dimension matches " << handle->view_item[index].name << "'s native space. assume they are from the same space. warping it now." << std::endl;
-                        if(handle->get_native_position().empty())
-                        {
-                            error_msg = "The FIB file is obsolete. Please reconstruct FIB file again to enable native-to-template warping.";
-                            return false;
-                        }
-                        auto T = handle->view_item[index].native_trans;
-                        tipl::image<3,unsigned int> new_from(handle->dim);
-                        tipl::adaptive_par_for(new_from.size(),[&](size_t i)
-                        {
-                            auto pos = handle->get_native_position()[i];
-                            T(pos);
-                            tipl::estimate<tipl::interpolation::nearest>(from,pos,new_from[i]);
-                        });
-                        new_from.swap(from);
-                        trans_to_mni = handle->trans_to_mni;
-                        goto end;
-                    }
-                    else
-                        tipl::out() << nifti_name << " is not from the native space due to dimension mismatch" << std::endl;
-                }
-                tipl::out() << "none of the native space dimension matches " << nifti_name << ". assume it is in the mni space (likely wrong. need to check)." << std::endl;
-            }
+                tipl::out() << "assume " << nifti_name << " is in the mni space (likely wrong. need to check)." << std::endl;
             else
                 tipl::out() << nifti_name << " is in the mni space." << std::endl;
 
