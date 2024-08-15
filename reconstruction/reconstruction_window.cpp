@@ -461,7 +461,7 @@ void reconstruction_window::on_DTI_toggled(bool checked)
     if(checked && (!ui->other_output->text().contains("rd") &&
                    !ui->other_output->text().contains("ad") &&
                    !ui->other_output->text().contains("md")))
-        ui->other_output->setText("fa,rd,ad,md");
+        ui->other_output->setText("fa,rd");
 
 }
 
