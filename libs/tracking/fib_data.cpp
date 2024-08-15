@@ -20,7 +20,7 @@ bool odf_data::read(tipl::io::gz_mat_read& mat_reader)
     tipl::shape<3> dim;
     if (!mat_reader.read("fa0",row,col,fa0) || !mat_reader.read("dimension",dim))
     {
-        error_msg = "invalid FIB file format";
+        error_msg = "Incompatible FIB file format";
         return false;
     }
     std::vector<const float*> odf_buf;
@@ -105,6 +105,50 @@ bool odf_data::read(tipl::io::gz_mat_read& mat_reader)
     return true;
 }
 
+bool read_image_from_mat(tipl::io::gz_mat_read& mat_reader,unsigned int index,const float*& ptr)
+{
+    unsigned int row,col;
+    size_t size;
+    bool is_float = mat_reader[index].is_type<float>();
+    if(!mat_reader.read(index,row,col,ptr))
+        return false;
+    if(is_float)
+        return true;
+    size = row*col;
+    std::string name = mat_reader.name(index);
+    auto slope_ptr = mat_reader.read_as_type<float>((name+"_slope").c_str(),row,col);
+    auto inter_ptr = mat_reader.read_as_type<float>((name+"_inter").c_str(),row,col);
+    if(!slope_ptr || !inter_ptr)
+        return true;
+    auto buf = const_cast<float*>(ptr);
+    tipl::multiply_constant(buf,buf+size,*slope_ptr);
+    if(*inter_ptr != 0.0f)
+        tipl::add_constant(buf,buf+size,*inter_ptr);
+    tipl::out() << name << " inter:" << *inter_ptr << " slope:" << *slope_ptr;
+    return true;
+}
+void write_image_to_mat(tipl::io::gz_mat_write& matfile,
+                       const std::string& name,
+                       const float* buf,tipl::shape<3> dim)
+{
+    if(!buf)
+        return;
+    float inter,slope;
+    tipl::minmax_value(buf,buf + dim.size(),inter,slope);
+    slope -= inter;
+    slope /= 255.99f;
+    std::vector<unsigned char> new_data(dim.size());
+    if(slope != 0.0f)
+    {
+        float scale = 1.0f/slope;
+        for(size_t i = 0;i < new_data.size();++i)
+            new_data[i] = (buf[i]-inter)*scale;
+    }
+    matfile.write(name.c_str(),new_data,uint32_t(dim.plane_size()));
+    matfile.write((name+"_slope").c_str(),std::vector<float>({slope}));
+    matfile.write((name+"_inter").c_str(),std::vector<float>({inter}));
+    tipl::out() << name << " size:" << dim << " inter:" << inter << " slope:" << slope;
+}
 tipl::const_pointer_image<3,float> item::get_image(void)
 {
     if(!image_ready)
@@ -114,11 +158,10 @@ tipl::const_pointer_image<3,float> item::get_image(void)
         if(image_ready)
             return image_data;
         // delay read routine
-        unsigned int row,col;
         const float* buf = nullptr;
         auto prior_show_prog = tipl::show_prog;
         tipl::show_prog = false;
-        if (!mat_reader->read(image_index,row,col,buf))
+        if (!read_image_from_mat(*mat_reader,image_index,buf))
         {
             tipl::error() << "reading " << name << std::endl;
             dummy.resize(image_data.shape());
@@ -157,6 +200,10 @@ void fiber_directions::check_index(unsigned int index)
     }
 }
 
+extern float odf8_vec[642][3];
+extern unsigned short odf8_face[1280][3];
+
+
 bool fiber_directions::add_data(tipl::io::gz_mat_read& mat_reader)
 {
     tipl::progress prog("loading image volumes");
@@ -167,7 +214,7 @@ bool fiber_directions::add_data(tipl::io::gz_mat_read& mat_reader)
         const float* odf_buffer;
         if (mat_reader.read("odf_vertices",row,col,odf_buffer))
         {
-                odf_table.resize(col);
+            odf_table.resize(col);
             for (unsigned int index = 0;index < odf_table.size();++index,odf_buffer += 3)
             {
                 odf_table[index][0] = odf_buffer[0];
@@ -178,9 +225,14 @@ bool fiber_directions::add_data(tipl::io::gz_mat_read& mat_reader)
         }
         else
         {
-            odf_table.resize(2);
-            half_odf_size = 1;
-            odf_faces.clear();
+            odf_table.resize(642);
+            for (unsigned int index = 0;index < odf_table.size();++index)
+            {
+                odf_table[index][0] = odf8_vec[index][0];
+                odf_table[index][1] = odf8_vec[index][1];
+                odf_table[index][2] = odf8_vec[index][2];
+            }
+            half_odf_size = 321;
         }
     }
     // odf_faces
@@ -196,24 +248,32 @@ bool fiber_directions::add_data(tipl::io::gz_mat_read& mat_reader)
                 odf_faces[index][2] = odf_buffer[2];
             }
         }
+        else
+        {
+            odf_faces.resize(1280);
+            for (unsigned int index = 0;index < odf_faces.size();++index)
+            {
+                odf_faces[index][0] = odf8_face[index][0];
+                odf_faces[index][1] = odf8_face[index][1];
+                odf_faces[index][2] = odf8_face[index][2];
+            }
+        }
     }
     mat_reader.read("dimension",dim);
     for (unsigned int index = 0;prog(index,mat_reader.size());++index)
     {
-        std::string matrix_name = mat_reader.name(index);
-        size_t total_size = mat_reader[index].get_cols()*mat_reader[index].get_rows();
+        auto& mat_data = mat_reader[index];
+        std::string matrix_name = mat_data.get_name();
+        size_t total_size = mat_data.get_cols()*mat_data.get_rows();
         if(total_size != dim.size() && total_size != dim.size()*3)
             continue;
         if (matrix_name == "image")
         {
             check_index(0);
-            mat_reader.read(index,row,col,fa[0]);
+            read_image_from_mat(mat_reader,index,fa[0]);
             findex_buf.resize(1);
             findex_buf[0].resize(size_t(row)*size_t(col));
             findex[0] = &*(findex_buf[0].begin());
-            odf_table.resize(2);
-            half_odf_size = 1;
-            odf_faces.clear();
             continue;
         }
         if(matrix_name.find("subjects") == 0) // database
@@ -233,14 +293,14 @@ bool fiber_directions::add_data(tipl::io::gz_mat_read& mat_reader)
         if (prefix_name == "fa")
         {
             check_index(store_index);
-            mat_reader.read(index,row,col,fa[store_index]);
+            read_image_from_mat(mat_reader,index,fa[store_index]);
             fa_otsu = tipl::segmentation::otsu_threshold(tipl::make_image(fa[0],dim));
             continue;
         }
         if (prefix_name == "dir")
         {
             const float* dir_ptr;
-            mat_reader.read(index,row,col,dir_ptr);
+            read_image_from_mat(mat_reader,index,dir_ptr);
             check_index(store_index);
             dir.resize(findex.size());
             dir[store_index] = dir_ptr;
@@ -256,7 +316,7 @@ bool fiber_directions::add_data(tipl::io::gz_mat_read& mat_reader)
 
         if(index_data[prefix_name_index].size() <= size_t(store_index))
             index_data[prefix_name_index].resize(store_index+1);
-        mat_reader.read(index,row,col,index_data[prefix_name_index][store_index]);
+        read_image_from_mat(mat_reader,index,index_data[prefix_name_index][store_index]);
 
     }
     if(prog.aborted())
@@ -842,13 +902,21 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             return false;
         }
         tipl::progress prog("saving");
+        tipl::shape<3> dim;
+        mat_reader.read("dimension",dim);
         for(unsigned int index = 0;prog(index,mat_reader.size());++index)
-            if(!matfile.write(mat_reader[index]))
+        {
+            auto& data = mat_reader[index];
+            if(data.is_type<float>() && data.get_cols()*data.get_rows() == dim.size())
+                write_image_to_mat(matfile,data.get_name(),data.get_data<float>(),dim);
+            else
+            if(!matfile.write(data))
             {
                 mat_reader.error_msg = "failed to write buffer to file ";
                 mat_reader.error_msg += param;
                 return false;
             }
+        }
         return true;
     }
     if(cmd == "remove")
@@ -969,7 +1037,15 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         return false;
     return !prog.aborted();
 }
-
+bool fib_data::save_to_file(const char* file_name)
+{
+    if(!modify_fib(mat_reader,"save",file_name))
+    {
+        error_msg = mat_reader.error_msg;
+        return false;
+    }
+    return true;
+}
 bool fib_data::resample_to(float resolution)
 {
     if(!modify_fib(mat_reader,"regrid",std::to_string(resolution)))
