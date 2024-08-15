@@ -307,7 +307,7 @@ bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
 bool get_bval_bvec(const std::string& bval_file,const std::string& bvec_file,size_t dwi_count,
                    std::vector<double>& bvals,std::vector<double>& bvecs,
                    std::string& error_msg);
-bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
+bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                  bool search_bvalbvec,
                  bool must_have_bval_bvec,
                  std::string& error_msg)
@@ -378,10 +378,10 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
         }
     }
     tipl::image<4,float> grad_dev;
-    if(QFileInfo(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").exists())
+    if(QFileInfo(QFileInfo(file_name.c_str()).absolutePath() + "/grad_dev.nii.gz").exists())
     {
         tipl::io::gz_nifti grad_header;
-        if(grad_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/grad_dev.nii.gz").toStdString().c_str()))
+        if(grad_header.load_from_file(QString(QFileInfo(file_name.c_str()).absolutePath() + "/grad_dev.nii.gz").toStdString().c_str()))
         {
             grad_header.toLPS(grad_dev);
             tipl::out() << "grad_dev used" << std::endl;
@@ -389,10 +389,10 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
     }
 
     tipl::image<3,unsigned char> mask;
-    if(QFileInfo(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").exists())
+    if(QFileInfo(QFileInfo(file_name.c_str()).absolutePath() + "/nodif_brain_mask.nii.gz").exists())
     {
         tipl::io::gz_nifti mask_header;
-        if(mask_header.load_from_file(QString(QFileInfo(file_name).absolutePath() + "/nodif_brain_mask.nii.gz").toStdString().c_str()))
+        if(mask_header.load_from_file(QString(QFileInfo(file_name.c_str()).absolutePath() + "/nodif_brain_mask.nii.gz").toStdString().c_str()))
         {
             mask_header.toLPS(mask);
             tipl::out() << "mask used" << std::endl;
@@ -402,7 +402,7 @@ bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >&
     std::vector<double> bvals,bvecs;
     QString bval_name,bvec_name;
     std::string bvalbvec_error_msg;
-    if(search_bvalbvec && find_bval_bvec(file_name,bval_name,bvec_name))
+    if(search_bvalbvec && find_bval_bvec(file_name.c_str(),bval_name,bvec_name))
     {
         tipl::out() << "found bval and bvec file for " << file_name;
         tipl::out() << "bval: " << bval_name.toStdString();
@@ -1020,7 +1020,7 @@ bool parse_dwi(QStringList file_list,
             QFileInfo(file_list[0]).fileName().endsWith(".nii.gz"))
     {
         for(int i = 0;i < file_list.size();++i)
-            if(!load_4d_nii(file_list[i].toStdString().c_str(),dwi_files,true,false,error_msg))
+            if(!load_4d_nii(file_list[i].toStdString(),dwi_files,true,false,error_msg))
                 return false;
         return !dwi_files.empty();
     }
