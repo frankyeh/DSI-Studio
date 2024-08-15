@@ -46,7 +46,6 @@ public:
     void clear(void);
     void remove_subject(unsigned int index);
     void calculate_si2vi(void);
-    bool is_odf_consistent(tipl::io::gz_mat_read& m);
     void sample_from_image(tipl::const_pointer_image<3,float> I,
                            const tipl::matrix<4,4>& trans,std::vector<float>& data);
     void add(float subject_R2,std::vector<float>& data,
