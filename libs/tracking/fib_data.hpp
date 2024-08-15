@@ -165,7 +165,7 @@ public:
         image_data(tipl::make_image(pointer,dim_)),name(name_)
     {
         T.identity();iT.identity();
-        if(name == "dti_fa" || name == "qa") // e.g., fa, qa
+        if(name == "dti_fa" || name == "qa" || name == "fa") // e.g., fa, qa
         {
             contrast_min = min_value = 0.0f;
             contrast_max = max_value = 1.0f;
@@ -175,7 +175,7 @@ public:
         image_data(tipl::make_image((const float*)nullptr,dim_)),mat_reader(mat_reader_),image_index(index_),name(name_)
     {
         T.identity();iT.identity();
-        if(name == "dti_fa" || name == "qa") // e.g., fa, qa
+        if(name == "dti_fa" || name == "qa" || name == "fa") // e.g., fa, qa
         {
             contrast_min = min_value = 0.0f;
             contrast_max = max_value = 1.0f;
@@ -208,7 +208,13 @@ public:
     void get_minmax(void)
     {
         auto I = get_image();
-        tipl::minmax_value(I.begin(),I.end(),min_value,max_value);
+        if(mat_reader && mat_reader->has((name+"_slope").c_str()) && mat_reader->has((name+"_inter").c_str()))
+        {
+            min_value = mat_reader->read_as_value<float>((name+"_inter").c_str());
+            max_value = min_value + 255.99f*mat_reader->read_as_value<float>((name+"_slope").c_str());
+        }
+        else
+            tipl::minmax_value(I.begin(),I.end(),min_value,max_value);
         if(std::isnan(min_value) || std::isinf(min_value) ||
            std::isnan(max_value) || std::isinf(max_value))
         {
@@ -378,6 +384,7 @@ public:
     fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4>& trans_to_mni_);
 public:
     bool load_from_file(const char* file_name);
+    bool save_to_file(const char* file_name);
     bool load_from_mat(void);
     bool save_mapping(const std::string& index_name,const std::string& file_name);
     bool resample_to(float vs);
