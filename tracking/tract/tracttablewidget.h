@@ -138,7 +138,6 @@ public slots:
     void save_all_tracts_to_dir(void);
     void save_all_tracts_end_point_as(void);
 
-    void save_tracts_in_native(void);
     void save_tracts_in_template(void);
     void save_tracts_in_mni(void);
     void save_end_point_as(void);
