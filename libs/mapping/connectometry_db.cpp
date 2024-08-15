@@ -381,48 +381,7 @@ size_t convert_index(size_t old_index,
     return new_pos.index();
 }
 
-bool connectometry_db::is_odf_consistent(tipl::io::gz_mat_read& m)
-{
-    unsigned int row,col;
-    const float* odf_buffer = nullptr;
-    m.read("odf_vertices",row,col,odf_buffer);
-    if (!odf_buffer)
-    {
-        error_msg = "No odf_vertices matrix in ";
-        return false;
-    }
-    if(col != handle->dir.odf_table.size())
-    {
-        error_msg = "Inconsistent ODF dimension in ";
-        return false;
-    }
-    for (unsigned int index = 0;index < col;++index,odf_buffer += 3)
-    {
-        if(handle->dir.odf_table[index][0] != odf_buffer[0] ||
-           handle->dir.odf_table[index][1] != odf_buffer[1] ||
-           handle->dir.odf_table[index][2] != odf_buffer[2])
-        {
-            error_msg = "Inconsistent ODF in ";
-            return false;
-        }
-    }
-    /*
-    const float* voxel_size = 0;
-    m.read("voxel_size",row,col,voxel_size);
-    if(!voxel_size)
-    {
-        error_msg = "No voxel_size matrix in ";
-        return false;
-    }
-    if(voxel_size[0] != handle->vs[0])
-    {
-        std::ostringstream out;
-        out << "Inconsistency in image resolution. Please use a correct atlas. The atlas resolution (" << handle->vs[0] << " mm) is different from that in ";
-        error_msg = out.str();
-        return false;
-    }*/
-    return true;
-}
+
 void connectometry_db::sample_from_image(tipl::const_pointer_image<3,float> I,
                        const tipl::matrix<4,4>& trans,std::vector<float>& data)
 {
@@ -519,12 +478,6 @@ bool connectometry_db::add(const std::string& file_name,
            (index_name == "qa" || index_name == "nqa" || index_name.empty()))
         {
             odf_data subject_odf;
-            if(!is_odf_consistent(fib.mat_reader))
-            {
-                error_msg = "Inconsistent ODF at ";
-                error_msg += file_name;
-                return false;
-            }
             if(!subject_odf.read(fib.mat_reader))
             {
                 error_msg = "Failed to read ODF at ";
@@ -785,8 +738,6 @@ bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vec
         error_msg = "fail to load the fib file";
         return false;
     }
-    if(!is_odf_consistent(single_subject))
-        return false;
     odf_data subject_odf;
     if(!subject_odf.read(single_subject))
     {
