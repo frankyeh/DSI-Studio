@@ -240,6 +240,7 @@ public:
     std::vector<image_type> I,J,It;
     std::vector<float> r;
     size_t modality_count = 0;
+    int version = 0;
     tipl::image<dimension,tipl::vector<dimension> > t2f_dis,to2from,f2t_dis,from2to;
     tipl::vector<dimension> Itvs,Ivs;
     tipl::matrix<dimension+1,dimension+1> ItR,IR;
@@ -545,41 +546,38 @@ public:
             tipl::io::gz_nifti::save_to_file("dis.nii.gz",buffer,Itvs,ItR);
         }
     }
-    bool matching_contrast(void)
+    void matching_contrast(void)
     {
-        if(data_ready())
-            return false;
         auto& J0 = J[0];
         auto& It0 = It[0];
         auto& It1 = It[1];
         std::vector<float> X(It0.size()*3);
-        tipl::par_for(It0.size(),[&](size_t pos)
+        for(size_t pos = 0;pos < It0.size();++pos)
         {
             if(J0[pos] == 0.0f)
-                return;
+                continue;
             size_t i = pos;
             pos = pos+pos+pos;
             X[pos] = 1;
             X[pos+1] = It0[i];
             X[pos+2] = It1[i];
-        },It0.size());
+        }
         tipl::multiple_regression<float> m;
         if(m.set_variables(X.begin(),3,It0.size()))
         {
             float b[3] = {0.0f,0.0f,0.0f};
             m.regress(J0.begin(),b);
             tipl::out() << "image=" << b[0] << " + " << b[1] << " × t1w + " << b[2] << " × t2w ";
-            tipl::par_for(It0.size(),[&](size_t pos)
+            tipl::adaptive_par_for(It0.size(),[&](size_t pos)
             {
                 if(J0[pos] == 0.0f)
                     return;
                 It0[pos] = b[0] + b[1]*It0[pos] + b[2]*It1[pos];
                 if(It0[pos] < 0.0f)
                     It0[pos] = 0.0f;
-            },It0.size());
+            });
         }
         It[1].clear();
-        return true;
     }
 public:
     auto apply_warping(const tipl::image<dimension>& from,bool is_label) const
@@ -613,26 +611,27 @@ public:
             error_msg += filename;
             return false;
         }
-        tipl::shape<dimension> to_dim,from_dim;
+        tipl::shape<dimension> dim_to,dim_from;
         const float* to2from_ptr = nullptr;
         const float* from2to_ptr = nullptr;
         unsigned int row,col;
-        if (!in.read("to_dim",to_dim) ||
-            !in.read("to_vs",Itvs) ||
-            !in.read("from_dim",from_dim) ||
-            !in.read("from_vs",Ivs) ||
-            !in.read("from_trans",IR) ||
-            !in.read("to_trans",ItR) ||
+        if (!in.read("dim_to",dim_to) ||
+            !in.read("dim_from",dim_from) ||
+            !in.read("vs_to",Itvs) ||
+            !in.read("vs_from",Ivs) ||
+            !in.read("trans_from",IR) ||
+            !in.read("trans_to",ItR) ||
             !in.read("to2from",row,col,to2from_ptr) ||
             !in.read("from2to",row,col,from2to_ptr))
         {
             error_msg = "invalid warp file format";
             return false;
         }
-        to2from.resize(to_dim);
+        to2from.resize(dim_to);
         std::copy(to2from_ptr,to2from_ptr+to2from.size()*dimension,&to2from[0][0]);
-        from2to.resize(from_dim);
+        from2to.resize(dim_from);
         std::copy(from2to_ptr,from2to_ptr+from2to.size()*dimension,&from2to[0][0]);
+        version = in.read_as_value<int>("version");
         return true;
     }
 
@@ -655,14 +654,14 @@ public:
             return false;
         }
         out.write("to2from",&to2from[0][0],dimension,to2from.size());
-        out.write("to_dim",to2from.shape());
-        out.write("to_vs",Itvs);
-        out.write("to_trans",ItR);
+        out.write("dim_to",to2from.shape());
+        out.write("vs_to",Itvs);
+        out.write("trans_to",ItR);
 
         out.write("from2to",&from2to[0][0],dimension,from2to.size());
-        out.write("from_dim",from2to.shape());
-        out.write("from_vs",Ivs);
-        out.write("from_trans",IR);
+        out.write("dim_from",from2to.shape());
+        out.write("vs_from",Ivs);
+        out.write("trans_from",IR);
 
         out.write("version",map_ver);
         out.close();
