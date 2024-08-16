@@ -29,7 +29,7 @@ std::string src_data::get_file_ext(void)
         out << ".dti.fib.gz";
         break;
     case 4://GQI
-        out << (voxel.r2_weighted ? ".gqi2.":".gqi.") << voxel.param[0] << ".fib.gz";
+        out << (voxel.r2_weighted ? ".gqi2.fib.gz":".gqi.fib.gz");
         break;
     case 6:
         out << ".hardi."<< voxel.param[0]
@@ -38,9 +38,7 @@ std::string src_data::get_file_ext(void)
         break;
     case 7:
         out << "." << QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().toLower().toStdString();
-        out << (voxel.r2_weighted ? ".qsdr2.":".qsdr.");
-        out << voxel.param[0];
-        out << ".R" << int(std::floor(voxel.R2*100.0f)) << ".fib.gz";
+        out << (voxel.r2_weighted ? ".qsdr2.fib.gz":".qsdr.fib.gz");
         break;
     }
     return out.str();
