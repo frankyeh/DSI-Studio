@@ -101,14 +101,15 @@ bool odf_data::read(fib_data& fib)
 
 bool read_image_from_mat(tipl::io::gz_mat_read& mat_reader,unsigned int index,const float*& ptr)
 {
-    unsigned int row,col;
-    size_t size;
+    if(index >= mat_reader.size())
+        return false;
     bool is_float = mat_reader[index].is_type<float>();
+    unsigned int row,col;
     if(!mat_reader.read(index,row,col,ptr))
         return false;
     if(is_float)
         return true;
-    size = row*col;
+    size_t size = row*col;
     std::string name = mat_reader.name(index);
     auto slope_ptr = mat_reader.read_as_type<float>((name+"_slope").c_str(),row,col);
     auto inter_ptr = mat_reader.read_as_type<float>((name+"_inter").c_str(),row,col);
@@ -729,7 +730,7 @@ bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs)
 extern int fib_ver;
 bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,tipl::shape<3>& dim,tipl::vector<3>& vs)
 {
-    if(mat_reader.has("version") && std::stoi(mat_reader.read<std::string>("version")) > fib_ver)
+    if(mat_reader.has("version") && mat_reader.read_as_value<int>("version") > fib_ver)
     {
         mat_reader.error_msg = "Incompatible FIB format. please update DSI Studio to open this new FIB file.";
         return false;
@@ -1791,12 +1792,11 @@ bool fib_data::map_to_mni(bool background)
             reg.It[1].swap(reg.It[2]);
             reg.It[2].clear();
             tipl::out() << "using structure image for normalization" << std::endl;
+            reg.cost_type = tipl::reg::mutual_info;
         }
 
-        reg.match_resolution(false);
+
         prog = 2;
-
-
         if(has_manual_atlas)
             reg.arg = manual_template_T;
         else
@@ -1805,7 +1805,12 @@ bool fib_data::map_to_mni(bool background)
         if(dir.index_name[0] == "image")
         {
             tipl::out() << "matching t1w t2w contrast" << std::endl;
-            reg.matching_contrast();
+            if(!reg.matching_contrast())
+            {
+                error_msg = "contrast matching failed";
+                tipl::prog_aborted = true;
+                return;
+            }
         }
 
         if(tipl::prog_aborted)
@@ -1847,64 +1852,53 @@ bool fib_data::load_mapping(const char* file_name,bool external)
 {
     if(tipl::ends_with(file_name,".map.gz"))
     {
-        tipl::io::gz_mat_read in;
-        if(!in.load_from_file(file_name))
+        if(!external && QFileInfo(file_name).lastModified() < QFileInfo(fib_file_name.c_str()).lastModified())
         {
-            error_msg = in.error_msg;
+            error_msg = "The mapping file was created before the fib file.";
             return false;
         }
-        if(!in.has("from2to") || !in.has("to2from"))
+        dual_reg<3> map;
+        if(!map.load_warping(file_name))
         {
-            error_msg = "invalid mapping file format";
+            error_msg = map.error_msg;
             return false;
         }
-        if(!external) // additional check for internal mapping
+        if(!external && map.version != map_ver)
         {
-            // check 1. mapping files was created later than the FIB file
-            if(QFileInfo(file_name).lastModified() < QFileInfo(fib_file_name.c_str()).lastModified())
-            {
-                error_msg = "The mapping file was previously created.";
-                return false;
-            }
-            // 2. check method version (new after Aug 2023)
-
-            if(!in.has("method_ver") || std::stoi(in.read<std::string>("method_ver")) < map_ver)
-            {
-                error_msg = "existing registration version outdated: ";
-                error_msg += in.read<std::string>("method_ver");
-                error_msg += " older than ";
-                error_msg += std::to_string(map_ver);
-                return false;
-            }
+            error_msg = "existing registration version: ";
+            error_msg += map.version;
+            error_msg += " not the same as the current one: ";
+            error_msg += std::to_string(map_ver);
+            return false;
         }
-
+        if(map.to2from.shape() != dim)
         {
-            const float* t2s_ptr = nullptr;
-            unsigned int t2s_row,t2s_col,s2t_row,s2t_col;
-            const float* s2t_ptr = nullptr;
-            if(in.read("to2from",t2s_row,t2s_col,t2s_ptr) &&
-               in.read("from2to",s2t_row,s2t_col,s2t_ptr))
-            {
-                if(size_t(t2s_col)*size_t(t2s_row) == template_I.size()*3 &&
-                   size_t(s2t_col)*size_t(s2t_row) == dim.size()*3)
-                {
-                    tipl::out() << "loading mapping fields from " << file_name << std::endl;
-                    t2s.clear();
-                    t2s.resize(template_I.shape());
-                    s2t.clear();
-                    s2t.resize(dim);
-                    std::copy(t2s_ptr,t2s_ptr+t2s_col*t2s_row,&t2s[0][0]);
-                    std::copy(s2t_ptr,s2t_ptr+s2t_col*s2t_row,&s2t[0][0]);
-                    prog = 6;
-                    return true;
-                }
-                else
-                    error_msg = "image size does not match";
-            }
-            else
-                error_msg = "failed to read mapping matrix";
+            map.from2to.swap(map.to2from);
+            map.ItR.swap(map.IR);
         }
-        return false;
+        if(map.to2from.shape() != dim)
+        {
+            error_msg = "image size mismatch in the mapping file";
+            return false;
+        }
+        if(map.from2to.shape() != template_I.shape() || map.IR != template_to_mni)
+        {
+            t2s = tipl::resample(map.from2to,template_I.shape(),
+                                 tipl::from_space(template_to_mni).to(map.IR));
+            s2t.swap(map.to2from);
+            tipl::transformation_matrix<float,3> T(tipl::from_space(map.IR).to(template_to_mni));
+            tipl::adaptive_par_for(s2t.size(),[&](size_t index)
+            {
+               T(s2t[index]);
+            });
+        }
+        else
+        {
+            t2s.swap(map.from2to);
+            s2t.swap(map.to2from);
+        }
+        prog = 6;
+        return true;
     }
 
     tipl::io::gz_nifti nii;
