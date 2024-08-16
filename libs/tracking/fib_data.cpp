@@ -270,7 +270,7 @@ bool fiber_directions::add_data(fib_data& fib)
             check_index(0);
             read_image_from_mat(mat_reader,index,fa[0]);
             findex_buf.resize(1);
-            findex_buf[0].resize(size_t(row)*size_t(col));
+            findex_buf[0].resize(dim.size());
             findex[0] = &*(findex_buf[0].begin());
             continue;
         }
