@@ -469,7 +469,7 @@ bool connectometry_db::add(const std::string& file_name,
            (index_name == "qa" || index_name == "nqa" || index_name.empty()))
         {
             odf_data subject_odf;
-            if(!subject_odf.read(fib.mat_reader))
+            if(!subject_odf.read(fib))
             {
                 error_msg = "Failed to read ODF at ";
                 error_msg += file_name;
@@ -726,14 +726,14 @@ void connectometry_db::get_subject_fa(unsigned int subject_index,std::vector<std
 }
 bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vector<float> >& data)
 {
-    tipl::io::gz_mat_read single_subject;
-    if(!single_subject.load_from_file(file_name))
+    fib_data fib;
+    if(!fib.load_from_file(file_name))
     {
         error_msg = "fail to load the fib file";
         return false;
     }
     odf_data subject_odf;
-    if(!subject_odf.read(single_subject))
+    if(!subject_odf.read(fib))
     {
         error_msg = subject_odf.error_msg;
         return false;
@@ -757,7 +757,7 @@ bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vec
                 data[i][index] = odf[handle->dir.findex[i][index]]-min_value;
             }
         }
-    single_subject.read("report",subject_report);
+    subject_report = fib.report;
     return true;
 }
 bool connectometry_db::is_db_compatible(const connectometry_db& rhs)
