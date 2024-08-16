@@ -2294,7 +2294,7 @@ void write_image_to_mat(tipl::io::gz_mat_write& matfile,
     matfile.write((name+"_inter").c_str(),std::vector<unsigned short>({min_v}));
     tipl::out() << name << " size:" << dim << " inter:" << min_v << " slope:" << slope;
 }
-
+extern int src_ver;
 bool src_data::save_to_file(const std::string& dwi_file_name)
 {
     tipl::progress prog_("saving ",std::filesystem::path(dwi_file_name).filename().u8string().c_str());
@@ -2333,12 +2333,9 @@ bool src_data::save_to_file(const std::string& dwi_file_name)
         if(!mat_writer)
             return false;
         {
-            uint16_t dim[3];
-            dim[0] = uint16_t(voxel.dim[0]);
-            dim[1] = uint16_t(voxel.dim[1]);
-            dim[2] = uint16_t(voxel.dim[2]);
-            mat_writer.write("dimension",dim,1,3);
+            mat_writer.write("dimension",voxel.dim);
             mat_writer.write("voxel_size",voxel.vs);
+            mat_writer.write("version",src_ver);
         }
         {
             std::vector<float> b_table;
@@ -2428,6 +2425,7 @@ bool read_image_from_mat(tipl::io::gz_mat_read& mat_reader,unsigned int index,co
 
 size_t match_volume(float volume);
 QImage read_qimage(QString filename,std::string& error);
+extern int src_ver;
 bool src_data::load_from_file(const std::string& dwi_file_name)
 {
     tipl::progress prog("open SRC file ",std::filesystem::path(dwi_file_name).filename().u8string().c_str());
@@ -2559,12 +2557,18 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         mat_reader.in->close();
 
         if (!mat_reader.read("dimension",voxel.dim) ||
-            !mat_reader.read("voxel_size",voxel.vs) ||
-             voxel.dim[0]*voxel.dim[1]*voxel.dim[2] <= 0)
+            !mat_reader.read("voxel_size",voxel.vs))
         {
             error_msg = "Incompatible SRC format";
             return false;
         }
+
+        if(mat_reader.has("version") && std::stoi(mat_reader.read<std::string>("version")) > src_ver)
+        {
+            error_msg = "Incompatible SRC format. please update DSI Studio to open this new SRC file.";
+            return false;
+        }
+
         mat_reader.read("steps",voxel.steps);
 
         unsigned int row,col;
@@ -2662,7 +2666,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
                                    2.0f*voxel.vs[0]*voxel.vs[1]*voxel.vs[2]);
     return true;
 }
-
+extern int fib_ver;
 bool src_data::save_fib(const std::string& output_name)
 {
     std::string tmp_file = output_name + ".tmp.gz";
@@ -2678,6 +2682,8 @@ bool src_data::save_fib(const std::string& output_name)
 
     mat_writer.write("dimension",voxel.dim);
     mat_writer.write("voxel_size",voxel.vs);
+    mat_writer.write("version",fib_ver);
+
     if(!voxel.end(mat_writer))
     {
         mat_writer.close();
