@@ -216,6 +216,7 @@ inline auto template_image_pre(const tipl::image<dim>& I)
     return template_image_pre(tipl::image<dim>(I));
 }
 tipl::color_image read_color_image(const std::string& filename,std::string& error);
+extern int map_ver;
 template<int dim>
 struct dual_reg{
     static constexpr int dimension = dim;
@@ -663,8 +664,7 @@ public:
         out.write("from_vs",Ivs);
         out.write("from_trans",IR);
 
-        constexpr int method_ver = 202406;
-        out.write("method_ver",std::to_string(method_ver));
+        out.write("method_ver",std::to_string(map_ver));
         out.close();
         std::filesystem::rename((output_name + ".tmp.gz").c_str(),output_name);
         return true;
