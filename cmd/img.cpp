@@ -315,16 +315,56 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
             }
     return true;
 }
+bool modify_fib(tipl::io::gz_mat_read& mat_reader,
+                const std::string& cmd,
+                const std::string& param);
 int img(tipl::program_option<tipl::out>& po)
 {
     std::string source(po.get("source")),info;
+    if(tipl::ends_with(source,"fib.gz"))
+    {
+        tipl::io::gz_mat_read mat_reader;
+        tipl::out() << "open " << source;
+        if(!mat_reader.load_from_file(source))
+        {
+            tipl::error() << mat_reader.error_msg;
+            return 1;
+        }
+        for(auto& cmd : tipl::split(po.get("cmd"),'+'))
+        {
+            std::string param;
+            auto sep_pos = cmd.find(':');
+            if(sep_pos != std::string::npos)
+            {
+                param = cmd.substr(sep_pos+1);
+                cmd = cmd.substr(0,sep_pos);
+            }
+            if(!modify_fib(mat_reader,cmd,param))
+            {
+                tipl::error() << mat_reader.error_msg;
+                return 1;
+            }
+        }
+        if(po.has("output"))
+        {
+            tipl::out() << "saving output";
+            if(!modify_fib(mat_reader,"save",po.get("output")))
+            {
+                tipl::error() << mat_reader.error_msg;
+                return 1;
+            }
+        }
+        return 0;
+    }
+
     variant_image var_image;
+    tipl::out() << "open " << source;
     if(!var_image.load_from_file(source.c_str(),info))
     {
         tipl::error() << var_image.error_msg;
         return 0;
     }
-    for(auto& cmd : tipl::split(po.get("cmd"),','))
+    for(auto& cmd : tipl::split(po.get("cmd"),'+'))
     {
         std::string param;
         auto sep_pos = cmd.find(':');
