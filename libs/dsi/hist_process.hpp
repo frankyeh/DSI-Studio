@@ -106,15 +106,11 @@ class CalculateStructuralTensor : public BaseProcess{
 class EigenAnalysis: public BaseProcess{
     tipl::image<3> hist_fa;
     tipl::image<3,tipl::vector<3> > hist_dir;
-    tipl::vector<3> new_vs;
-    tipl::shape<3> new_dim;
 public:
     virtual void init(Voxel& voxel)
     {
-        new_vs = voxel.vs;
-        new_dim[0] = voxel.hist_image.width();
-        new_dim[1] = voxel.hist_image.height();
-        new_dim[2] = 1;
+        tipl::vector<3> new_vs(voxel.vs);
+        tipl::shape<3> new_dim(voxel.hist_image.width(),voxel.hist_image.height(),1);
         for(unsigned int i = 0;i < voxel.hist_downsampling;++i)
         {
             new_vs *= 2.0f;
@@ -123,6 +119,9 @@ public:
         }
         hist_fa.resize(new_dim);
         hist_dir.resize(new_dim);
+        new_dim[2] = 2;
+        voxel.dim = new_dim;
+        voxel.vs = new_vs;
     }
     virtual void run_hist(Voxel& voxel,HistData& hist)
     {
@@ -164,9 +163,6 @@ public:
         hist_dir.resize(tipl::shape<3>(hist_dir.width(),hist_dir.height(),2));
         std::copy(hist_dir.begin(),hist_dir.begin()+int64_t(hist_dir.plane_size()),hist_dir.begin()+int64_t(hist_dir.plane_size()));
 
-        new_dim[2] = 2;
-        mat_writer.write("dimension",new_dim);
-        mat_writer.write("voxel_size",new_vs);
         write_image_to_mat(mat_writer,"fa0",hist_fa.data(),hist_fa.shape());
         write_image_to_mat(mat_writer,"dir0",&hist_dir[0][0],hist_dir.shape().multiply(tipl::shape<3>::x,3));
     }
