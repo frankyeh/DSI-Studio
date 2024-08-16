@@ -62,27 +62,12 @@ bool src_data::reconstruction_hist(void)
         error_msg = "reconstruction canceled";
         return false;
     }
-
     voxel.recon_report << " The parallel processing of histology image were done by tessellation whole slide image into smaller image block with overlapping margin to eliminate boundary effects (Yeh, et al. J Pathol Inform 2014,  5:1).";
     voxel.recon_report << " A total of " << voxel.hist_raw_smoothing << " smoothing iterations were applied to raw image.";
     voxel.recon_report << " Structural tensors were calculated to derive structural orientations and anisotropy (Zhang, IEEEE TMI 35, 294-306 2016, Schurr, Science, 2021) using a Gaussian kernel of " << voxel.hist_tensor_smoothing << " pixel spacing.";
     if(voxel.hist_downsampling)
         voxel.recon_report << " The results were exported at 2^" << voxel.hist_downsampling << " of the original pixel spacing.";
-
-
-
-    // create layers
-    std::string output_name = (file_name.find(".fib.gz") == std::string::npos ? file_name + get_file_ext():file_name);
-    tipl::io::gz_mat_write mat_writer(output_name.c_str());
-    if(!mat_writer)
-    {
-        error_msg = "Cannot save fib file";
-        return false;
-    }
-    voxel.end(mat_writer);
-    mat_writer.write("version",std::to_string(fib_ver));
-    mat_writer.write("report",voxel.report+voxel.recon_report.str());
-    mat_writer.write("steps",voxel.steps+voxel.step_report.str()+"[Step T2b][Run reconstruction]\n");
+    save_fib(file_name.find(".fib.gz") == std::string::npos ? file_name + get_file_ext():file_name);
     return true;
 }
 bool src_data::reconstruction(void)
