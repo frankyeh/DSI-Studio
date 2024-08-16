@@ -911,13 +911,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
     }
     if(cmd == "remove")
     {
-        auto row = std::stoi(param);
-        if(row >= mat_reader.size())
-        {
-            mat_reader.error_msg = "invalid row to remove";
-            return false;
-        }
-        mat_reader.remove(row);
+        mat_reader.remove(param[0] >= '0' && param[0] <= '9' ? std::stoi(param) : int(mat_reader.index_of(param)));
         return true;
     }
     if(cmd == "rename")
