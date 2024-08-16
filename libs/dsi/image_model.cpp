@@ -14,7 +14,7 @@
 #include <filesystem>
 #include "reg.hpp"
 
-bool load_4d_nii(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
+bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                  bool search_bvalbvec,
                  bool must_have_bval_bvec,std::string& error_msg);
 
@@ -1366,9 +1366,9 @@ bool src_data::read_b0(tipl::image<3>& b0) const
     error_msg = "No b0 found in DWI data";
     return false;
 }
-bool src_data::read_rev_b0(const char* filename,tipl::image<3>& rev_b0)
+bool src_data::read_rev_b0(const std::string& filename,tipl::image<3>& rev_b0)
 {
-    if(QString(filename).endsWith(".nii.gz") || QString(filename).endsWith(".nii"))
+    if(tipl::ends_with(filename,".nii.gz") || tipl::ends_with(filename,".nii"))
     {
         tipl::io::gz_nifti nii;
         if(!nii.load_from_file(filename))
@@ -1380,7 +1380,7 @@ bool src_data::read_rev_b0(const char* filename,tipl::image<3>& rev_b0)
         nii >> rev_b0;
         return true;
     }
-    if(QString(filename).endsWith("src.gz"))
+    if(tipl::ends_with(filename,"src.gz"))
     {
         std::shared_ptr<src_data> src2(new src_data);
         if(!src2->load_from_file(filename))
@@ -1419,7 +1419,7 @@ tipl::vector<3> phase_direction_at_AP_PA(const tipl::image<3>& v1,const tipl::im
     return c;
 }
 
-bool src_data::distortion_correction(const char* filename)
+bool src_data::distortion_correction(const std::string& filename)
 {
     tipl::image<3> v1,v2;
     if(!read_b0(v1) || !read_rev_b0(filename,v2))
@@ -1733,9 +1733,9 @@ bool src_data::generate_topup_b0_acq_files(tipl::image<3>& b0,
 }
 
 
-bool load_bval(const char* file_name,std::vector<double>& bval);
-bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by = true);
-extern const char* version_string;
+bool load_bval(const std::string& file_name,std::vector<double>& bval);
+bool load_bvec(const std::string& file_name,std::vector<double>& b_table,bool flip_by = true);
+extern const char*  version_string;
 bool src_data::load_topup_eddy_result(void)
 {
     if(!std::filesystem::exists(corrected_file()))
@@ -1754,7 +1754,7 @@ bool src_data::load_topup_eddy_result(void)
     {
         tipl::out() << "update b-table from eddy output" << std::endl;
         std::vector<double> bval,bvec;
-        if(!load_bval(bval_file.c_str(),bval) || !load_bvec(bvec_file.c_str(),bvec))
+        if(!load_bval(bval_file,bval) || !load_bvec(bvec_file,bvec))
         {
             error_msg = "cannot find bval and bvec. please run topup/eddy again";
             return false;
@@ -1771,7 +1771,7 @@ bool src_data::load_topup_eddy_result(void)
     }
     tipl::out() << "load topup/eddy results" << std::endl;
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-    if(!load_4d_nii(corrected_file().c_str(),dwi_files,false,false,error_msg))
+    if(!load_4d_nii(corrected_file(),dwi_files,false,false,error_msg))
         return false;
     nifti_dwi.resize(dwi_files.size());
     src_dwi_data.resize(dwi_files.size());
@@ -2267,7 +2267,7 @@ void src_data::get_report(std::string& report)
         << " The slice thickness was " << std::fixed << std::setprecision(2) << tipl::max_value(voxel.vs.begin(),voxel.vs.end()) << " mm.";
     report = out.str();
 }
-bool src_data::save_to_file(const char* dwi_file_name)
+bool src_data::save_to_file(const std::string& dwi_file_name)
 {
     tipl::progress prog_("saving ",std::filesystem::path(dwi_file_name).filename().u8string().c_str());
     std::string filename(dwi_file_name);
@@ -2339,9 +2339,9 @@ bool src_data::save_to_file(const char* dwi_file_name)
     return false;
 }
 
-void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in)
+void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in)
 {
-    if(!QString(file_name).endsWith(".gz"))
+    if(!tipl::ends_with(file_name,".gz"))
         return;
     std::string idx_name = file_name;
     idx_name += ".idx";
@@ -2352,11 +2352,11 @@ void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in)
            std::filesystem::last_write_time(file_name))
         {
             tipl::out() << "using index file for accelerated loading: " << idx_name << std::endl;
-            in->load_index(idx_name.c_str());
+            in->load_index(idx_name);
         }
         else
         {
-            if(QFileInfo(file_name).size() > 134217728) // 128mb
+            if(std::filesystem::file_size(file_name) > 134217728) // 128mb
             {
                 tipl::out() << "prepare index file for future accelerated loading" << std::endl;
                 in->sample_access_point = true;
@@ -2364,21 +2364,21 @@ void prepare_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in)
         }
     }
 }
-void save_idx(const char* file_name,std::shared_ptr<tipl::io::gz_istream> in)
+void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in)
 {
-    if(!QString(file_name).endsWith(".gz"))
+    if(!tipl::ends_with(file_name,".gz"))
         return;
     std::string idx_name = file_name;
     idx_name += ".idx";
     if(in->has_access_points() && in->sample_access_point && !std::filesystem::exists(idx_name))
     {
         tipl::out() << "saving index file for accelerated loading: " << std::filesystem::path(idx_name).filename().u8string() << std::endl;
-        in->save_index(idx_name.c_str());
+        in->save_index(idx_name);
     }
 }
 size_t match_volume(float volume);
 QImage read_qimage(QString filename,std::string& error);
-bool src_data::load_from_file(const char* dwi_file_name)
+bool src_data::load_from_file(const std::string& dwi_file_name)
 {
     tipl::progress prog("open SRC file ",std::filesystem::path(dwi_file_name).filename().u8string().c_str());
     if(voxel.steps.empty())
@@ -2400,7 +2400,7 @@ bool src_data::load_from_file(const char* dwi_file_name)
     {
         tipl::image<2,unsigned char> raw;
         {
-            QImage fig = read_qimage(dwi_file_name,error_msg);
+            QImage fig = read_qimage(dwi_file_name.c_str(),error_msg);
             if(fig.isNull())
                 return false;
             tipl::out() << "converting to grayscale";
@@ -2456,7 +2456,7 @@ bool src_data::load_from_file(const char* dwi_file_name)
         tipl::out() << "image file loaded" << std::endl;
         return true;
     }
-    if(QString(dwi_file_name).toLower().endsWith(".nii.gz"))
+    if(tipl::ends_with(dwi_file_name,".nii.gz"))
     {
         std::vector<std::shared_ptr<DwiHeader> > dwi_files;
         if(!load_4d_nii(dwi_file_name,dwi_files,true,true,error_msg))
@@ -2485,8 +2485,8 @@ bool src_data::load_from_file(const char* dwi_file_name)
     }
     else
     {
-        if (!QString(dwi_file_name).toLower().endsWith("src.gz") &&
-            !QString(dwi_file_name).toLower().endsWith(".src"))
+        if (!tipl::ends_with(dwi_file_name,"src.gz") &&
+            !tipl::ends_with(dwi_file_name,".src"))
         {
             error_msg = "Unsupported file format";
             return false;
@@ -2691,7 +2691,7 @@ bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
     }
     return true;
 }
-bool src_data::save_b0_to_nii(const char* nifti_file_name) const
+bool src_data::save_b0_to_nii(const std::string& nifti_file_name) const
 {
     tipl::matrix<4,4> trans;
     initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
@@ -2699,14 +2699,14 @@ bool src_data::save_b0_to_nii(const char* nifti_file_name) const
     std::copy(src_dwi_data[0],src_dwi_data[0]+buffer.size(),buffer.begin());
     return tipl::io::gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans);
 }
-bool src_data::save_mask_nii(const char* nifti_file_name) const
+bool src_data::save_mask_nii(const std::string& nifti_file_name) const
 {
     tipl::matrix<4,4> trans;
     initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
     return tipl::io::gz_nifti::save_to_file(nifti_file_name,voxel.mask,voxel.vs,trans);
 }
 
-bool src_data::save_dwi_sum_to_nii(const char* nifti_file_name) const
+bool src_data::save_dwi_sum_to_nii(const std::string& nifti_file_name) const
 {
     tipl::matrix<4,4> trans;
     initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
@@ -2714,7 +2714,7 @@ bool src_data::save_dwi_sum_to_nii(const char* nifti_file_name) const
     return tipl::io::gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans);
 }
 
-bool src_data::save_b_table(const char* file_name) const
+bool src_data::save_b_table(const std::string& file_name) const
 {
     std::ofstream out(file_name);
     for(unsigned int index = 0;index < src_bvalues.size();++index)
@@ -2726,7 +2726,7 @@ bool src_data::save_b_table(const char* file_name) const
     }
     return out.good();
 }
-bool src_data::save_bval(const char* file_name) const
+bool src_data::save_bval(const std::string& file_name) const
 {
     std::ofstream out(file_name);
     for(unsigned int index = 0;index < src_bvalues.size();++index)
@@ -2737,7 +2737,7 @@ bool src_data::save_bval(const char* file_name) const
     }
     return out.good();
 }
-bool src_data::save_bvec(const char* file_name) const
+bool src_data::save_bvec(const std::string& file_name) const
 {
     std::ofstream out(file_name);
     for(unsigned int index = 0;index < src_bvalues.size();++index)
