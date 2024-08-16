@@ -215,7 +215,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
 }
 
 
-bool load_bvec(const char* file_name,std::vector<double>& b_table_,bool flip_by = true)
+bool load_bvec(const std::string& file_name,std::vector<double>& b_table_,bool flip_by = true)
 {
     std::ifstream in(file_name);
     if(!in)
@@ -241,7 +241,7 @@ bool load_bvec(const char* file_name,std::vector<double>& b_table_,bool flip_by 
     b_table_.insert(b_table_.end(),b_table.begin(),b_table.end());
     return true;
 }
-bool load_bval(const char* file_name,std::vector<double>& bval)
+bool load_bval(const std::string& file_name,std::vector<double>& bval)
 {
     std::ifstream in(file_name);
     if(!in)
@@ -1230,7 +1230,7 @@ void dicom_parser::on_actionOpen_bval_triggered()
     if(filename.isEmpty())
         return;
     std::vector<double> bval;
-    load_bval(filename.toStdString().c_str(),bval);
+    load_bval(filename.toStdString(),bval);
     if(bval.empty())
         return;
     for (int index = ui->tableWidget->rowCount()-1,
