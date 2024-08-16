@@ -10,7 +10,7 @@ class DwiHeader
 {
 	typedef std::vector<short>::iterator image_iterator;
 public:
-    std::string file_name, report,error_msg;
+    std::string file_name,report,error_msg;
     tipl::image<3,unsigned short> image;
 public:// for HCP dataset
     tipl::image<4> grad_dev;
@@ -60,7 +60,7 @@ public:
 	}
 
 public:
-    static bool output_src(const char* file_name, std::vector<std::shared_ptr<DwiHeader> >& dwi_files, int upsampling,bool sort_btable,std::string& error_msg);
+    static bool output_src(const std::string& file_name, std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool sort_btable,std::string& error_msg);
     static bool has_b_table(std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 };
 
