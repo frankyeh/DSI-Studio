@@ -922,8 +922,7 @@ void reconstruction_window::on_actionOverwrite_Voxel_Size_triggered()
     if(!ok)
         return;
     command("[Step T2][Edit][Overwrite Voxel Size]",result.toStdString());
-    handle->get_report(handle->voxel.report);
-    ui->report->setText(handle->voxel.report.c_str());
+    ui->report->setText((handle->voxel.report = handle->get_report()).c_str());
 }
 
 void match_template_resolution(tipl::image<3>& VG,
