@@ -546,12 +546,13 @@ public:
             tipl::io::gz_nifti::save_to_file("dis.nii.gz",buffer,Itvs,ItR);
         }
     }
-    void matching_contrast(void)
+    bool matching_contrast(void)
     {
+        size_t modality_count = 2;
         auto& J0 = J[0];
         auto& It0 = It[0];
-        auto& It1 = It[1];
-        std::vector<float> X(It0.size()*3);
+        tipl::image<3> matched_image(It0.shape());
+        std::vector<float> X(It0.size()*(modality_count+1));
         for(size_t pos = 0;pos < It0.size();++pos)
         {
             if(J0[pos] == 0.0f)
@@ -559,25 +560,33 @@ public:
             size_t i = pos;
             pos = pos+pos+pos;
             X[pos] = 1;
-            X[pos+1] = It0[i];
-            X[pos+2] = It1[i];
+            for(size_t j = 0;j < modality_count;++j)
+                X[pos+1+j] = It[j][i];
         }
         tipl::multiple_regression<float> m;
-        if(m.set_variables(X.begin(),3,It0.size()))
+        if(!m.set_variables(X.begin(),modality_count+1,It0.size()))
+            return false;
+        std::vector<float> b(modality_count+1);
+        if(!m.regress(J0.data(),b.data()))
+            return false;
+
+        std::string b_str;
+        for(auto each : b)
+            b_str += std::to_string(each) + " ";
+        tipl::out() << "b: " << b_str;
+        tipl::adaptive_par_for(It0.size(),[&](size_t pos)
         {
-            float b[3] = {0.0f,0.0f,0.0f};
-            m.regress(J0.begin(),b);
-            tipl::out() << "image=" << b[0] << " + " << b[1] << " × t1w + " << b[2] << " × t2w ";
-            tipl::adaptive_par_for(It0.size(),[&](size_t pos)
-            {
-                if(J0[pos] == 0.0f)
-                    return;
-                It0[pos] = b[0] + b[1]*It0[pos] + b[2]*It1[pos];
-                if(It0[pos] < 0.0f)
-                    It0[pos] = 0.0f;
-            });
-        }
+            if(J0[pos] == 0.0f)
+                return;
+            matched_image[pos] = b[0];
+            for(size_t j = 1;j < b.size();++j)
+                matched_image[pos] += b[j]*float(It[j-1][pos]);
+            if(matched_image[pos] < 0.0f)
+                matched_image[pos] = 0.0f;
+        });
+        It[0] = subject_image_pre(matched_image);
         It[1].clear();
+        return true;
     }
 public:
     auto apply_warping(const tipl::image<dimension>& from,bool is_label) const
