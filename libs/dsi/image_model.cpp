@@ -2211,7 +2211,7 @@ bool src_data::run_topup_eddy(std::string other_src,bool topup_only)
 
 void calculate_shell(std::vector<float> sorted_bvalues,
                      std::vector<unsigned int>& shell);
-void src_data::get_report(std::string& report)
+std::string src_data::get_report(void)
 {
     std::vector<float> sorted_bvalues(src_bvalues);
     std::sort(sorted_bvalues.begin(),sorted_bvalues.end());
@@ -2265,7 +2265,7 @@ void src_data::get_report(std::string& report)
 
     out << " The in-plane resolution was " << std::fixed << std::setprecision(3) << voxel.vs[0] << " mm."
         << " The slice thickness was " << std::fixed << std::setprecision(2) << tipl::max_value(voxel.vs.begin(),voxel.vs.end()) << " mm.";
-    report = out.str();
+    return out.str();
 }
 
 void write_image_to_mat(tipl::io::gz_mat_write& matfile,
@@ -2295,12 +2295,9 @@ void write_image_to_mat(tipl::io::gz_mat_write& matfile,
     tipl::out() << name << " size:" << dim << " inter:" << min_v << " slope:" << slope;
 }
 extern int src_ver;
-bool src_data::save_to_file(const std::string& dwi_file_name)
+bool src_data::save_to_file(const std::string& filename)
 {
-    tipl::progress prog_("saving ",std::filesystem::path(dwi_file_name).filename().u8string().c_str());
-    std::string filename(dwi_file_name);
-    if(!tipl::ends_with(filename,".gz"))
-        filename += ".gz";
+    tipl::progress prog("saving ",filename);
     if(tipl::ends_with(filename,"nii.gz"))
     {
         tipl::matrix<4,4> trans;
@@ -2317,45 +2314,63 @@ bool src_data::save_to_file(const std::string& dwi_file_name)
                       src_dwi_data[index]+voxel.dim.size(),
                       buffer.begin() + long(index*voxel.dim.size()));
         });
-        if(!tipl::io::gz_nifti::save_to_file(dwi_file_name,buffer,voxel.vs,trans))
+        if(!tipl::io::gz_nifti::save_to_file(filename,buffer,voxel.vs,trans))
         {
-            error_msg = "Cannot save file to ";
-            error_msg += dwi_file_name;
+            error_msg = "cannot save ";
+            error_msg += filename;
             return false;
         }
-
-        filename = filename.substr(0,filename.size()-7);
-        return save_bval((filename+".bval").c_str()) && save_bvec((filename+".bvec").c_str());
+        error_msg = "cannot save bval bvec";
+        return save_bval((filename.substr(0,filename.size()-7)+".bval").c_str()) &&
+               save_bvec((filename.substr(0,filename.size()-7)+".bvec").c_str());
     }
     if(tipl::ends_with(filename,"src.gz"))
     {
-        tipl::io::gz_mat_write mat_writer(dwi_file_name);
-        if(!mat_writer)
-            return false;
+        auto temp_file = filename + ".tmp.gz";
         {
+            tipl::io::gz_mat_write mat_writer(temp_file);
+            if(!mat_writer)
+            {
+                error_msg = "cannot write ";
+                error_msg += temp_file;
+                return false;
+            }
             mat_writer.write("dimension",voxel.dim);
             mat_writer.write("voxel_size",voxel.vs);
             mat_writer.write("version",src_ver);
-        }
-        {
-            std::vector<float> b_table;
-            for (unsigned int index = 0;index < src_bvalues.size();++index)
             {
-                b_table.push_back(src_bvalues[index]);
-                b_table.push_back(src_bvectors[index][0]);
-                b_table.push_back(src_bvectors[index][1]);
-                b_table.push_back(src_bvectors[index][2]);
+                std::vector<float> b_table;
+                for (unsigned int index = 0;index < src_bvalues.size();++index)
+                {
+                    b_table.push_back(src_bvalues[index]);
+                    b_table.push_back(src_bvectors[index][0]);
+                    b_table.push_back(src_bvectors[index][1]);
+                    b_table.push_back(src_bvectors[index][2]);
+                }
+                mat_writer.write("b_table",b_table,4);
             }
-            mat_writer.write("b_table",b_table,4);
+            for (unsigned int index = 0;prog(index,src_bvalues.size());++index)
+                write_image_to_mat(mat_writer,std::string("image")+std::to_string(index),src_dwi_data[index],voxel.dim);
+            mat_writer.write("report",voxel.report);
+            mat_writer.write("steps",voxel.steps);
         }
-        for (unsigned int index = 0;index < src_bvalues.size();++index)
+        if(prog.aborted())
         {
-            prog_(index,src_bvalues.size());
-            write_image_to_mat(mat_writer,std::string("image")+std::to_string(index),src_dwi_data[index],voxel.dim);
+            std::filesystem::remove(temp_file);
+            return true;
         }
-        mat_writer.write("report",voxel.report);
-        mat_writer.write("steps",voxel.steps);
-        return true;
+        try{
+            if(std::filesystem::exists(filename))
+                std::filesystem::remove(filename);
+            std::filesystem::rename(temp_file,filename);
+            return true;
+        }
+        catch(std::runtime_error& e)
+        {
+            error_msg = e.what();
+            std::filesystem::remove(temp_file);
+            return false;
+        }
     }
     error_msg = "unsupported file extension";
     return false;
@@ -2526,7 +2541,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
             src_bvectors[index] = dwi_files[index]->bvec;
         }
 
-        get_report(voxel.report);
+        voxel.report = get_report();
         calculate_dwi_sum(true);
         tipl::out() << "NIFTI file loaded" << std::endl;
         return true;
@@ -2563,7 +2578,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
             return false;
         }
 
-        if(mat_reader.has("version") && std::stoi(mat_reader.read<std::string>("version")) > src_ver)
+        if(mat_reader.has("version") && mat_reader.read_as_value<int>("version") > src_ver)
         {
             error_msg = "Incompatible SRC format. please update DSI Studio to open this new SRC file.";
             return false;
@@ -2591,7 +2606,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         }
 
         if(!mat_reader.read("report",voxel.report))
-            get_report(voxel.report);
+            voxel.report = get_report();
 
         src_dwi_data.resize(src_bvalues.size());
         for (size_t index = 0;index < src_bvalues.size();++index)
