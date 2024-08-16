@@ -218,6 +218,9 @@ bool load_file_name(void)
 }
 
 const char* version_string = "DSI Studio version: Hou \"\xe4\xbe\xaf\"";
+int map_ver = 202406;
+int src_ver = 202408;
+int fib_ver = 202408;
 
 bool init_application(void)
 {
