@@ -1854,13 +1854,13 @@ bool fib_data::load_mapping(const char* file_name,bool external)
                 return false;
             }
             // 2. check method version (new after Aug 2023)
-            constexpr int method_ver = 202406; // 999999 is for external loading mapping
-            if(!in.has("method_ver") || std::stoi(in.read<std::string>("method_ver")) < method_ver)
+
+            if(!in.has("method_ver") || std::stoi(in.read<std::string>("method_ver")) < map_ver)
             {
                 error_msg = "existing registration version outdated: ";
                 error_msg += in.read<std::string>("method_ver");
                 error_msg += " older than ";
-                error_msg += std::to_string(method_ver);
+                error_msg += std::to_string(map_ver);
                 return false;
             }
         }
