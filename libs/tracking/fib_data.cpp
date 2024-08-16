@@ -10,24 +10,18 @@
 #include "roi.hpp"
 
 extern std::vector<std::string> fa_template_list;
-bool odf_data::read(tipl::io::gz_mat_read& mat_reader)
+bool odf_data::read(fib_data& fib)
 {
     if(!odf_map.empty())
         return true;
     tipl::progress prog("reading odf data");
     unsigned int row,col;
-    const float* fa0 = nullptr;
-    tipl::shape<3> dim;
-    if (!mat_reader.read("fa0",row,col,fa0) || !mat_reader.read("dimension",dim))
-    {
-        error_msg = "Incompatible FIB file format";
-        return false;
-    }
+    const float* fa0 = fib.dir.fa[0];
     std::vector<const float*> odf_buf;
     std::vector<size_t> odf_buf_count;
     size_t odf_count = 0;
     {
-        while(mat_reader.get_col_row((std::string("odf")+std::to_string(odf_buf_count.size())).c_str(),row,col))
+        while(fib.mat_reader.get_col_row((std::string("odf")+std::to_string(odf_buf_count.size())).c_str(),row,col))
         {
             odf_buf_count.push_back(col);
             odf_count += col;
@@ -36,7 +30,7 @@ bool odf_data::read(tipl::io::gz_mat_read& mat_reader)
         odf_buf.resize(odf_buf_count.size());
         for(size_t i = 0;prog(i,odf_buf_count.size());++i)
         {
-            if(!mat_reader.read((std::string("odf")+std::to_string(i)).c_str(),row,col,odf_buf[i]))
+            if(!fib.mat_reader.read((std::string("odf")+std::to_string(i)).c_str(),row,col,odf_buf[i]))
             {
                 error_msg = "failed to read ODF data";
                 return false;
@@ -55,7 +49,7 @@ bool odf_data::read(tipl::io::gz_mat_read& mat_reader)
 
     size_t mask_count = 0;
     {
-        for(size_t i = 0;i < dim.size();++i)
+        for(size_t i = 0;i < fib.dim.size();++i)
             if(fa0[i] != 0.0f)
                 ++mask_count;
         tipl::out() << "mask count: " << mask_count << std::endl;
@@ -68,7 +62,7 @@ bool odf_data::read(tipl::io::gz_mat_read& mat_reader)
 
     size_t voxel_index = 0;
     odf_count = 0; // count ODF again and now ignoring 0 odf to see if it matches.
-    odf_map.resize(dim);
+    odf_map.resize(fib.dim);
     for(size_t i = 0;prog(i,odf_buf.size());++i)
     {
         // row: half_odf_size
@@ -204,9 +198,12 @@ extern float odf8_vec[642][3];
 extern unsigned short odf8_face[1280][3];
 
 
-bool fiber_directions::add_data(tipl::io::gz_mat_read& mat_reader)
+bool fiber_directions::add_data(fib_data& fib)
 {
     tipl::progress prog("loading image volumes");
+    auto& mat_reader = fib.mat_reader;
+    dim = fib.dim;
+
     unsigned int row,col;
 
     // odf_vertices
@@ -259,7 +256,7 @@ bool fiber_directions::add_data(tipl::io::gz_mat_read& mat_reader)
             }
         }
     }
-    mat_reader.read("dimension",dim);
+
     for (unsigned int index = 0;prog(index,mat_reader.size());++index)
     {
         auto& mat_data = mat_reader[index];
@@ -276,7 +273,7 @@ bool fiber_directions::add_data(tipl::io::gz_mat_read& mat_reader)
             findex[0] = &*(findex_buf[0].begin());
             continue;
         }
-        if(matrix_name.find("subjects") == 0) // database
+        if(tipl::begins_with(matrix_name,"subjects")) // database
             continue;
         // read fiber wise index (e.g. my_fa0,my_fa1,my_fa2)
         std::string prefix_name(matrix_name.begin(),matrix_name.end()-1); // the "my_fa" part
@@ -666,7 +663,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
     if(index_name == "odfs")
     {
         odf_data odf;
-        if(!odf.read(mat_reader))
+        if(!odf.read(*this))
         {
             error_msg = odf.error_msg;
             return false;
@@ -729,28 +726,45 @@ bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs)
 {
     return dim[2] > 5 && dim[0]*vs[0] > 100 && dim[1]*vs[1] > 130;
 }
-bool fib_data::load_from_mat(void)
+extern int fib_ver;
+bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,tipl::shape<3>& dim,tipl::vector<3>& vs)
 {
-    mat_reader.read("report",report);
-    mat_reader.read("steps",steps);
+    if(mat_reader.has("version") && std::stoi(mat_reader.read<std::string>("version")) > fib_ver)
+    {
+        mat_reader.error_msg = "Incompatible FIB format. please update DSI Studio to open this new FIB file.";
+        return false;
+    }
     if (!mat_reader.read("dimension",dim))
     {
-        error_msg = "cannot find dimension matrix";
+        mat_reader.error_msg = "cannot find dimension matrix";
         return false;
     }
     if(!dim.size())
     {
-        error_msg = "invalid dimension";
+        mat_reader.error_msg = "invalid dimension";
         return false;
     }
     if (!mat_reader.read("voxel_size",vs))
     {
-        error_msg = "cannot find voxel_size matrix";
+        mat_reader.error_msg = "cannot find voxel size matrix";
         return false;
     }
+    return true;
+}
+bool fib_data::load_from_mat(void)
+{
+    if(!check_fib_dim_vs(mat_reader,dim,vs))
+    {
+        error_msg = mat_reader.error_msg;
+        return false;
+    }
+    mat_reader.read("report",report);
+    mat_reader.read("steps",steps);
+
+
     if (mat_reader.read("trans",trans_to_mni))
         is_mni = true;
-    if(!dir.add_data(mat_reader))
+    if(!dir.add_data(*this))
     {
         error_msg = dir.error_msg;
         return false;
@@ -897,6 +911,9 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         for(unsigned int index = 0;prog(index,mat_reader.size());++index)
         {
             auto& data = mat_reader[index];
+            if(data.get_name() == "odf_faces" || data.get_name() == "odf_vertices" ||
+               data.get_name() == "z0" || data.get_name() == "mapping")
+                continue;
             if(data.is_type<float>() && data.get_cols()*data.get_rows() == dim.size())
                 write_image_to_mat(matfile,data.get_name(),data.get_data<float>(),dim);
             else
@@ -938,11 +955,8 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
     tipl::vector<3> vs;
     tipl::matrix<4,4,float> trans((tipl::identity_matrix()));
     bool is_mni = false;
-    if(!mat_reader.read("dimension",dim) || !mat_reader.read("voxel_size",vs))
-    {
-        mat_reader.error_msg = "not a valid fib file";
+    if(!check_fib_dim_vs(mat_reader,dim,vs))
         return false;
-    }
     if(mat_reader.has("trans"))
     {
         mat_reader.read("trans",trans);
@@ -1033,7 +1047,6 @@ bool fib_data::save_to_file(const char* file_name)
 void fib_data::remove_slice(size_t index)
 {
     mat_reader.remove(view_item[index].name);
-
     view_item.erase(view_item.begin()+index);
 }
 bool fib_data::resample_to(float resolution)
