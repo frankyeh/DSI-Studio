@@ -1314,13 +1314,13 @@ void GLWidget::add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos_)
 {
     if(!odf.get())
         odf.reset(new odf_data);
-    if(!odf->read(cur_tracking_window.handle->mat_reader))
+    if(!odf->read(*cur_tracking_window.handle.get()))
     {
         if(!odf->error_msg.empty())
             QMessageBox::critical(this,"ERROR",odf->error_msg.c_str());
         return;
     }
-    std::shared_ptr<fib_data> handle = cur_tracking_window.handle;
+    auto handle = cur_tracking_window.handle;
     std::vector<const float*> odf_buffers;
     std::vector<tipl::pixel_index<3> > odf_pos;
     for(size_t i = 0;i < odf_pos_.size();++i)
@@ -1332,7 +1332,7 @@ void GLWidget::add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos_)
         odf_pos.push_back(odf_pos_[i]);
     }
 
-    unsigned int odf_dim = uint32_t(cur_tracking_window.handle->dir.odf_table.size());
+    unsigned int odf_dim = uint32_t(handle->dir.odf_table.size());
     unsigned int half_odf = odf_dim >> 1;
     odf_points.resize(odf_pos.size()*odf_dim);
     odf_norm.resize(odf_pos.size()*odf_dim);
