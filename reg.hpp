@@ -664,7 +664,7 @@ public:
         out.write("from_vs",Ivs);
         out.write("from_trans",IR);
 
-        out.write("method_ver",std::to_string(map_ver));
+        out.write("version",map_ver);
         out.close();
         std::filesystem::rename((output_name + ".tmp.gz").c_str(),output_name);
         return true;
