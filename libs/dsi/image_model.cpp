@@ -2691,13 +2691,8 @@ bool src_data::save_fib(const std::string& output_name)
         error_msg = "aborted";
         return false;
     }
-    std::string final_report = voxel.report;
-    final_report += voxel.recon_report.str();
-    mat_writer.write("report",final_report);
-    std::string final_steps = voxel.steps;
-    final_steps += voxel.step_report.str();
-    final_steps += "[Step T2b][Run reconstruction]\n";
-    mat_writer.write("steps",final_steps);
+    mat_writer.write("report",voxel.report + voxel.recon_report.str());
+    mat_writer.write("steps",voxel.steps + voxel.step_report.str() + "[Step T2b][Run reconstruction]\n");
     mat_writer.close();
     std::filesystem::rename(tmp_file,output_name);
     tipl::out() << "saving " << output_name;
