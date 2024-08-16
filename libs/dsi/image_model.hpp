@@ -263,7 +263,7 @@ public:
     void remove(unsigned int index);
     bool check_b_table(void);
 public:
-    void get_report(std::string& report);
+    std::string get_report(void);
 public:
     std::vector<std::pair<size_t,size_t> > get_bad_slices(void);
     std::pair<float,float> quality_control_neighboring_dwi_corr(void);
