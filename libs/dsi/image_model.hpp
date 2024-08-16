@@ -290,12 +290,12 @@ public:
     std::shared_ptr<src_data> rev_pe_src;
     tipl::shape<3> topup_size;
     void setup_topup_eddy_volume(void);
-    bool distortion_correction(const char* file_name);
+    bool distortion_correction(const std::string& file_name);
     std::string find_topup_reverse_pe(void);
     bool run_topup_eddy(std::string other_src,bool topup_only = false);
 private:
     bool read_b0(tipl::image<3>& b0) const;
-    bool read_rev_b0(const char* file_name,tipl::image<3>& rev_b0);
+    bool read_rev_b0(const std::string& file_name,tipl::image<3>& rev_b0);
     bool run_plugin(std::string program_name,std::string key_word,
                     size_t total_keyword_count,std::vector<std::string> param,std::string working_dir,std::string exec = std::string());
     bool generate_topup_b0_acq_files(tipl::image<3>& b0,
@@ -308,15 +308,15 @@ public:
     bool command(std::string cmd,std::string param = "");
     bool run_steps(const std::string& reg_file_name,const std::string& steps);
 public:
-    bool load_from_file(const char* dwi_file_name);
-    bool save_to_file(const char* dwi_file_name);
+    bool load_from_file(const std::string& dwi_file_name);
+    bool save_to_file(const std::string& dwi_file_name);
     bool save_nii_for_applytopup_or_eddy(bool include_rev) const;
-    bool save_mask_nii(const char* nifti_file_name) const;
-    bool save_b0_to_nii(const char* nifti_file_name) const;
-    bool save_dwi_sum_to_nii(const char* nifti_file_name) const;
-    bool save_b_table(const char* file_name) const;
-    bool save_bval(const char* file_name) const;
-    bool save_bvec(const char* file_name) const;
+    bool save_mask_nii(const std::string& nifti_file_name) const;
+    bool save_b0_to_nii(const std::string& nifti_file_name) const;
+    bool save_dwi_sum_to_nii(const std::string& nifti_file_name) const;
+    bool save_b_table(const std::string& file_name) const;
+    bool save_bval(const std::string& file_name) const;
+    bool save_bvec(const std::string& file_name) const;
 public:
     template<typename ...ProcessList>
     bool reconstruct2(const char* prog_title)
@@ -355,7 +355,5 @@ public:
 
 
 };
-
-const char* odf_average(const char* out_name,std::vector<std::string>& file_names);
 
 #endif//IMAGE_MODEL_HPP
