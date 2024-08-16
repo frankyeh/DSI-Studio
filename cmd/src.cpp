@@ -9,8 +9,8 @@
 #include <string>
 #include "dicom/dwi_header.hpp"
 QStringList search_files(QString dir,QString filter);
-bool load_bval(const char* file_name,std::vector<double>& bval);
-bool load_bvec(const char* file_name,std::vector<double>& b_table,bool flip_by = true);
+bool load_bval(const std::string& file_name,std::vector<double>& bval);
+bool load_bvec(const std::string& file_name,std::vector<double>& b_table,bool flip_by = true);
 bool parse_dwi(const std::vector<std::string>& file_list,
                     std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg);
 void dicom2src_and_nii(std::string dir_);
@@ -23,13 +23,13 @@ bool get_bval_bvec(const std::string& bval_file,const std::string& bvec_file,siz
                    std::string& error_msg)
 {
     std::vector<double> bvals,bvecs;
-    if(!load_bval(bval_file.c_str(),bvals))
+    if(!load_bval(bval_file,bvals))
     {
         error_msg = "cannot load bval at ";
         error_msg += bval_file;
         return false;
     }
-    if(!load_bvec(bvec_file.c_str(),bvecs))
+    if(!load_bvec(bvec_file,bvecs))
     {
         error_msg = "cannot load bvec at ";
         error_msg += bvec_file;
