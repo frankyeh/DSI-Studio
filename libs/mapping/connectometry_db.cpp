@@ -22,7 +22,7 @@ bool parse_age_sex(const std::string& file_name,std::string& age,std::string& se
     }
     return false;
 }
-
+bool read_image_from_mat(tipl::io::gz_mat_read& mat_reader,unsigned int index,const float*& ptr);
 bool connectometry_db::read_db(fib_data* handle_)
 {
     handle = handle_;
@@ -31,11 +31,13 @@ bool connectometry_db::read_db(fib_data* handle_)
     for(unsigned int index = 0;1;++index)
     {
         const float* buf = nullptr;
-        if (!handle->mat_reader.read((std::string("subjects")+std::to_string(index)).c_str(),row,col,buf) &&
-            !handle->mat_reader.read((std::string("subject")+std::to_string(index)).c_str(),row,col,buf))
+        if(!read_image_from_mat(handle->mat_reader,
+                                handle->mat_reader.index_of(std::string("subjects")+std::to_string(index)),buf))
             break;
         if(!index)
         {
+            if(!handle->mat_reader.get_col_row("subjects0",row,col))
+                break;
             subject_qa_length = row*col;
             // check if the db is longitudinal, for older db, the only way to check is by the negative values.
             is_longitudinal = false;
@@ -69,9 +71,6 @@ bool connectometry_db::read_db(fib_data* handle_)
     handle->mat_reader.read("report",report);
     handle->mat_reader.read("subject_report",subject_report);
     handle->mat_reader.read("index_name",index_name);
-    // update index name
-    if(index_name == "sdf")
-        index_name = "qa";
 
     // new db can be all positive, the checking the report text can confirm longitudinal setting
     if(report.find("longitudinal scans were calculated") != std::string::npos)
@@ -100,20 +99,12 @@ bool connectometry_db::read_db(fib_data* handle_)
         }
     }
 
-
-    // update report
-    if(report.find(" sdf ") != std::string::npos)
-    {
-        report.resize(report.find(" sdf "));
-        report += " local connectome fingerprint (LCF, Yeh et al. PLoS Comput Biol 12(11): e1005203) values were extracted from the data and used in the connectometry analysis.";
-    }
     // process subject names
     {
         std::istringstream in(subject_names_str);
         for(unsigned int index = 0;in && index < num_subjects;++index)
             std::getline(in,subject_names[index]);
     }
-
 
     if(handle->mat_reader.read("demo",demo))
     {
@@ -565,14 +556,16 @@ bool connectometry_db::add(const std::string& file_name,
     add(subject_R2,data,subject_name);
     return true;
 }
-
+void write_image_to_mat(tipl::io::gz_mat_write& matfile,
+                       const std::string& name,
+                       const float* buf,tipl::shape<3> dim);
 bool connectometry_db::save_db(const char* output_name)
 {
     // store results
     tipl::io::gz_mat_write matfile(output_name);
     if(!matfile)
     {
-        error_msg = "Cannot save file ";
+        error_msg = "cannot save file ";
         error_msg += output_name;
         return false;
     }
@@ -583,7 +576,8 @@ bool connectometry_db::save_db(const char* output_name)
             matfile.write(handle->mat_reader[index]);
     tipl::progress prog("save db");
     for(unsigned int index = 0;prog(index,subject_qa.size());++index)
-        matfile.write((std::string("subjects")+std::to_string(index)).c_str(),subject_qa[index],1,subject_qa_length);
+        write_image_to_mat(matfile,std::string("subjects")+std::to_string(index),subject_qa[index],
+                           tipl::shape<3>(1,1,subject_qa_length));
     if(prog.aborted())
     {
         error_msg = "aborted";
