@@ -1188,7 +1188,7 @@ bool dcm2src_and_nii(QStringList files)
     }
 
     QString src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".src.gz").c_str(),true);
-    if(!DwiHeader::output_src(src_name.toStdString().c_str(),dicom_files,0,false,error_msg))
+    if(!DwiHeader::output_src(src_name.toStdString().c_str(),dicom_files,false,error_msg))
     {
         tipl::error() << error_msg << std::endl;
         return false;
