@@ -6,12 +6,13 @@
 #include "connectometry_db.hpp"
 #include "atlas.hpp"
 
+class fib_data;
 struct odf_data{
 private:
     tipl::image<3,const float*> odf_map;
 public:
     std::string error_msg;
-    bool read(tipl::io::gz_mat_read& mat_reader);
+    bool read(fib_data& fib);
     bool has_odfs(void) const {return !odf_map.empty();}
     const float* get_odf_data(size_t index){return odf_map[index];}
 };
@@ -43,7 +44,7 @@ public: // for differential tractography
     std::string dt_threshold_name;
 public:
     void check_index(unsigned int index);
-    bool add_data(tipl::io::gz_mat_read& mat_reader);
+    bool add_data(fib_data& fib);
     bool set_tracking_index(int new_index);
     bool set_tracking_index(const std::string& name);
     std::string get_threshold_name(void) const{return index_name[uint32_t(cur_index)];}
@@ -53,7 +54,6 @@ public:
                              const tipl::vector<3,float>& dir) const;
 };
 
-class fib_data;
 class tracking_data{
 public:
     tipl::shape<3> dim;
