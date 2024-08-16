@@ -49,6 +49,7 @@ std::string src_data::get_file_ext(void)
 
 
 bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs);
+extern int fib_ver;
 bool src_data::reconstruction_hist(void)
 {
     if(!voxel.init_process<
@@ -79,6 +80,7 @@ bool src_data::reconstruction_hist(void)
         return false;
     }
     voxel.end(mat_writer);
+    mat_writer.write("version",std::to_string(fib_ver));
     mat_writer.write("report",voxel.report+voxel.recon_report.str());
     mat_writer.write("steps",voxel.steps+voxel.step_report.str()+"[Step T2b][Run reconstruction]\n");
     return true;
@@ -326,7 +328,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                 odf_count.resize(dim);
             }
             odf_data odf;
-            if(!odf.read(fib.mat_reader))
+            if(!odf.read(fib))
                 throw std::runtime_error(odf.error_msg);
             tipl::par_for(dim.size(),[&](size_t i)
             {
