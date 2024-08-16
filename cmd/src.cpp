@@ -61,7 +61,7 @@ bool create_src(const std::vector<std::string>& nii_names,std::string src_name)
         if(!load_4d_nii(nii_name,dwi_files,true,tipl::ends_with(src_name,".src.gz"),error_msg))
             tipl::warning() << "skipping " << nii_name << ": " << error_msg;
     }
-    if(!DwiHeader::output_src(src_name.c_str(),dwi_files,0,false,error_msg))
+    if(!DwiHeader::output_src(src_name.c_str(),dwi_files,false,error_msg))
     {
         tipl::error() << error_msg;
         return false;
@@ -417,7 +417,7 @@ int src(tipl::program_option<tipl::out>& po)
         tipl::out() << "skipping " << output << " already exists";
         return 0;
     }
-    if(!DwiHeader::output_src(output.c_str(),dwi_files,po.get<int>("up_sampling",0),po.get<int>("sort_b_table",0),error_msg))
+    if(!DwiHeader::output_src(output.c_str(),dwi_files,po.get<int>("sort_b_table",0),error_msg))
     {
         tipl::error() << error_msg << std::endl;
         return 1;
