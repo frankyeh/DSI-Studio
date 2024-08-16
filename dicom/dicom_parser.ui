@@ -71,35 +71,6 @@
          </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="upsampling">
-          <item>
-           <property name="text">
-            <string>No upsampling</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>upsampling 2</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>downsampling 2</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>upsampling 4</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>downsampling 4</string>
-           </property>
-          </item>
-         </widget>
-        </item>
-        <item>
          <widget class="QLabel" name="label">
           <property name="frameShape">
            <enum>QFrame::NoFrame</enum>
@@ -151,7 +122,7 @@
      <x>0</x>
      <y>0</y>
      <width>717</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFiles">
