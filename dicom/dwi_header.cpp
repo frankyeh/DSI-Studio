@@ -175,14 +175,12 @@ bool DwiHeader::has_b_table(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
             return true;
     return false;
 }
-// upsampling 1: upsampling 2: downsampling
-extern int src_ver;
-bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
-                           int upsampling,bool sort_btable,std::string& error_msg)
+bool DwiHeader::output_src(const std::string& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
+                           bool sort_btable,std::string& error_msg)
 {
     if(dwi_files.empty())
     {
-        error_msg = "no DWI data for output";
+        error_msg = "no DWI data to output";
         return false;
     }
     if(sort_btable)
@@ -206,140 +204,22 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
         }
     }
 
+    src_data src;
+    src.voxel.dim = dwi_files.front()->image.shape();
+    src.voxel.vs = dwi_files.front()->voxel_size;
 
-    auto temp_file = std::string(di_file) + ".tmp.gz";
+    for (auto& each : dwi_files)
     {
-        tipl::progress prog("saving ",di_file);
-        tipl::io::gz_mat_write write_mat(temp_file.c_str());
-        if(!write_mat)
-        {
-            error_msg = "cannot output file to ";
-            error_msg += di_file;
-            return false;
-        }
-        tipl::shape<3> geo = dwi_files.front()->image.shape();
-
-        //store dimension
-        tipl::shape<3> output_dim(geo);
-        {
-            tipl::vector<3,uint16_t> dimension(geo);
-            tipl::vector<3> voxel_size(dwi_files.front()->voxel_size);
-
-            if(upsampling == 1) // upsampling 2
-            {
-                voxel_size /= 2.0;
-                dimension *= 2;
-            }
-            if(upsampling == 2) // downsampling 2
-            {
-                voxel_size *= 2.0;
-                dimension /= 2;
-            }
-            if(upsampling == 3) // upsampling 4
-            {
-                voxel_size /= 4.0;
-                dimension *= 4;
-            }
-            if(upsampling == 4) // downsampling 4
-            {
-                voxel_size *= 4.0;
-                dimension /= 4;
-            }
-            output_dim[0] = dimension[0];
-            output_dim[1] = dimension[1];
-            output_dim[2] = dimension[2];
-
-            write_mat.write("dimension",output_dim);
-            write_mat.write("voxel_size",voxel_size);
-            write_mat.write("version",src_ver);
-
-        }
-        // store bvec file
-        {
-            std::vector<float> b_table;
-            for (unsigned int index = 0;index < dwi_files.size();++index)
-            {
-                if(dwi_files[index]->bvalue < 100.0f)
-                {
-                    b_table.push_back(0.0f);
-                    b_table.push_back(0.0f);
-                    b_table.push_back(0.0f);
-                    b_table.push_back(0.0f);
-                }
-                else
-                {
-                    b_table.push_back(dwi_files[index]->bvalue);
-                    std::copy(dwi_files[index]->bvec.begin(),dwi_files[index]->bvec.end(),std::back_inserter(b_table));
-                }
-            }
-            write_mat.write("b_table",b_table,4);
-        }
-        if(!dwi_files[0]->grad_dev.empty())
-            write_mat.write("grad_dev",dwi_files[0]->grad_dev,uint32_t(dwi_files[0]->grad_dev.size()/9));
-        //store images
-        for (unsigned int index = 0;prog(index,(unsigned int)(dwi_files.size()));++index)
-        {
-            std::ostringstream name;
-            tipl::image<3,unsigned short> buffer;
-            const unsigned short* ptr = 0;
-            name << "image" << index;
-            ptr = (const unsigned short*)dwi_files[index]->begin();
-            if(upsampling)
-            {
-                buffer.resize(geo);
-                std::copy(ptr,ptr+geo.size(),buffer.begin());
-                if(upsampling == 1)
-                    tipl::upsampling(buffer);
-                if(upsampling == 2)
-                    tipl::downsampling(buffer);
-                if(upsampling == 3)
-                {
-                    tipl::upsampling(buffer);
-                    tipl::upsampling(buffer);
-                }
-                if(upsampling == 4)
-                {
-                    tipl::downsampling(buffer);
-                    tipl::downsampling(buffer);
-                }
-                ptr = (const unsigned short*)&*buffer.begin();
-            }
-            write_mat.write(name.str().c_str(),ptr,output_dim.plane_size(),output_dim.depth());
-        }
-
-        if(prog.aborted())
-        {
-            error_msg = "output aborted";
-            goto delete_file;
-        }
-        std::string report1 = dwi_files.front()->report;
-        std::string report2;
-        {
-            src_data image_model;
-            for (unsigned int index = 0;index < dwi_files.size();++index)
-                image_model.src_bvalues.push_back(dwi_files[index]->bvalue);
-            image_model.voxel.vs = tipl::vector<3>(dwi_files.front()->voxel_size);
-            image_model.get_report(report2);
-        }
-        report1 += report2;
-        write_mat.write("report",report1);
+        src.src_bvalues.push_back(each->bvalue);
+        src.src_bvectors.push_back(each->bvec);
+        src.src_dwi_data.push_back(each->begin());
     }
-    if(std::filesystem::exists(di_file))
-        std::filesystem::remove(di_file);
-    try{
-        std::filesystem::rename(temp_file,di_file);
-        return true;
-    }
-    catch(...)
+
+    src.voxel.report = dwi_files.front()->report + src.get_report();
+    if(!src.save_to_file(file_name))
     {
-        std::filesystem::remove(temp_file);
-        error_msg = "cannot write to ";
-        error_msg += di_file;
+        error_msg = src.error_msg;
         return false;
     }
-
-
-    delete_file:
-    std::filesystem::remove(temp_file);
-    return false;
+    return true;
 }
