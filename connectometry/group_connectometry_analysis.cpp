@@ -139,6 +139,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
         prog = 100;
     }
 }
+extern int fib_ver;
 void group_connectometry_analysis::save_result(void)
 {
     tipl::progress prog("save correlational tractography results");
@@ -225,6 +226,7 @@ void group_connectometry_analysis::save_result(void)
         tipl::io::gz_mat_write mat_write((output_file_name+".t_statistics.fib.gz").c_str());
         mat_write.write("dimension",handle->dim);
         mat_write.write("voxel_size",handle->vs);
+        mat_write.write("version",fib_ver);
         mat_write.write("trans",handle->trans_to_mni);
         mat_write.write("qa_map",handle->dir.fa[0],handle->dim.plane_size(),handle->dim.depth());
         for(unsigned int i = 0;i < spm_map->inc_ptr.size();++i)
