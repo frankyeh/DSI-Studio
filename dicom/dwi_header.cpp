@@ -176,6 +176,7 @@ bool DwiHeader::has_b_table(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
     return false;
 }
 // upsampling 1: upsampling 2: downsampling
+extern int src_ver;
 bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                            int upsampling,bool sort_btable,std::string& error_msg)
 {
@@ -250,6 +251,7 @@ bool DwiHeader::output_src(const char* di_file,std::vector<std::shared_ptr<DwiHe
 
             write_mat.write("dimension",output_dim);
             write_mat.write("voxel_size",voxel_size);
+            write_mat.write("version",src_ver);
 
         }
         // store bvec file
