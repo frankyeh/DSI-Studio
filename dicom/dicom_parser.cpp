@@ -1089,19 +1089,20 @@ void dicom_parser::on_buttonBox_accepted()
     std::string error_msg;
     if(!DwiHeader::output_src(ui->SrcName->text().toStdString().c_str(),
                           dwi_files,
-                          ui->upsampling->currentIndex(),
                           ui->sort_btable->isChecked(),error_msg))
     {
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
         close();
+        return;
     }
-
-    dwi_files.clear();
-    if(QFileInfo(ui->SrcName->text()).suffix() != "gz")
-        ((MainWindow*)parent())->addSrc(ui->SrcName->text()+".gz");
-    else
-        ((MainWindow*)parent())->addSrc(ui->SrcName->text());
-    QMessageBox::information(this,QApplication::applicationName(),"SRC file created");
+    if(QFileInfo(ui->SrcName->text()).exists())
+    {
+        if(QFileInfo(ui->SrcName->text()).suffix() != "gz")
+            ((MainWindow*)parent())->addSrc(ui->SrcName->text()+".gz");
+        else
+            ((MainWindow*)parent())->addSrc(ui->SrcName->text());
+        QMessageBox::information(this,QApplication::applicationName(),"SRC file created");
+    }
     close();
 }
 void dicom_parser::on_buttonBox_rejected()
