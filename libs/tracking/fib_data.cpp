@@ -1036,7 +1036,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         return false;
     return !prog.aborted();
 }
-bool fib_data::save_to_file(const char* file_name)
+bool fib_data::save_to_file(const std::string& file_name)
 {
     if(!modify_fib(mat_reader,"save",file_name))
     {
