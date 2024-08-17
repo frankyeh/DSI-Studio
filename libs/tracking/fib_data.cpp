@@ -893,6 +893,50 @@ bool read_fib_data(tipl::io::gz_mat_read& mat_reader)
 }
 bool img_command_float32_std(tipl::image<3>& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
              const std::string& cmd,const std::string& param1,std::string& error_msg);
+bool copy_mat(tipl::io::gz_mat_read& mat_reader,
+              tipl::io::gz_mat_write& matfile,
+              const std::vector<std::string>& skip_list,
+              const std::vector<std::string>& skip_head_list)
+{
+    tipl::progress prog("saving");
+    for(unsigned int index = 0;prog(index,mat_reader.size());++index)
+    {
+        auto name = mat_reader.name(index);
+        bool skip = false;
+        for(const auto& each : skip_list)
+            if(name == each)
+            {
+                skip = true;
+                break;
+            }
+        for(const auto& each : skip_head_list)
+            if(name.find(each) == 0)
+            {
+                skip = true;
+                break;
+            }
+        if(skip)
+            continue;
+        mat_reader.flush(index);
+        if(mat_reader[index].is_type<float>())
+        {
+            unsigned int col,row;
+            auto ptr = mat_reader.read_as_type<float>(index,col,row);
+            if(row*col > 4096)
+            {
+                write_image_to_mat(matfile,name,ptr,tipl::shape<3>(row,1,col));
+                continue;
+            }
+        }
+
+        if(!matfile.write(mat_reader[index]))
+        {
+            mat_reader.error_msg = "failed to write buffer ";
+            return false;
+        }
+    }
+    return !prog.aborted();
+}
 bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 const std::string& cmd,
                 const std::string& param)
@@ -906,40 +950,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             mat_reader.error_msg += param;
             return false;
         }
-        tipl::progress prog("saving");
-        tipl::shape<3> dim;
-        mat_reader.read("dimension",dim);
-        for(unsigned int index = 0;prog(index,mat_reader.size());++index)
-        {
-            auto name = mat_reader.name(index);
-            if(name == "odf_faces" || name == "odf_vertices" ||
-               name == "z0" || name == "mapping")
-                continue;
-            mat_reader.flush(index);
-            if(mat_reader[index].is_type<float>())
-            {
-                unsigned int col,row;
-                auto ptr = mat_reader.read_as_type<float>(index,col,row);
-                if(row*col == dim.size())
-                {
-                    write_image_to_mat(matfile,name,ptr,dim);
-                    continue;
-                }
-                if(row*col > 1024)
-                {
-                    write_image_to_mat(matfile,name,ptr,tipl::shape<3>(row,1,col));
-                    continue;
-                }
-            }
-
-            if(!matfile.write(mat_reader[index]))
-            {
-                mat_reader.error_msg = "failed to write buffer to file ";
-                mat_reader.error_msg += param;
-                return false;
-            }
-        }
-        return true;
+        return copy_mat(mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping"},{"subject"});
     }
     if(cmd == "remove")
     {
