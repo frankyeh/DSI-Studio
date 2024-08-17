@@ -162,6 +162,7 @@ void MainWindow::openFile(QStringList file_names)
     if(QFileInfo(file_name).isDir())
     {
         QStringList fib_list = QDir(file_name).entryList(QStringList("*fib.gz"),QDir::Files|QDir::NoSymLinks);
+        fib_list << QDir(file_name).entryList(QStringList("*fz"),QDir::Files|QDir::NoSymLinks);
         QStringList tt_list = QDir(file_name).entryList(
                     QStringList("*tt.gz") <<
                     QString("*trk.gz") <<
@@ -195,7 +196,7 @@ void MainWindow::openFile(QStringList file_names)
            QString(file_name).endsWith("trk") ||
            QString(file_name).endsWith("trk.gz"))
         {
-            QStringList file_list = QFileInfo(file_name).dir().entryList(QStringList("*fib.gz"),QDir::Files|QDir::NoSymLinks);
+            QStringList file_list = QFileInfo(file_name).dir().entryList(QStringList("*fz"),QDir::Files|QDir::NoSymLinks);
             if(file_list.size() == 1)
             {
                 loadFib(QFileInfo(file_name).absolutePath() + "/" + file_list[0]);
@@ -206,9 +207,10 @@ void MainWindow::openFile(QStringList file_names)
         }
         else
         if(QString(file_name).endsWith("fib.gz") ||
+           QString(file_name).endsWith(".fz") ||
            QString(file_name).endsWith("tck"))
         {
-            if(QString(file_name).endsWith("db.fib.gz"))
+            if(QString(file_name).endsWith("db.fib.gz") || QString(file_name).endsWith("db.fz"))
             {
                 std::shared_ptr<group_connectometry_analysis> database(new group_connectometry_analysis);
                 if(database->load_database(file_name.toStdString().c_str()))
@@ -223,7 +225,7 @@ void MainWindow::openFile(QStringList file_names)
                 loadFib(file_name);
         }
         else
-        if(QString(file_name).endsWith("src.gz"))
+        if(QString(file_name).endsWith("src.gz") || QString(file_name).endsWith(".sz"))
         {
             loadSrc(file_names);
         }
@@ -540,7 +542,7 @@ void MainWindow::on_FiberTracking_clicked()
                            this,
                            "Open Fib files",
                            ui->workDir->currentText(),
-                           "Fib files (*fib.gz *.fib);;All files (*)");
+                           "Fib files (*fib.gz *.fz);;All files (*)");
     if (filename.isEmpty())
         return;
     add_work_dir(QFileInfo(filename).absolutePath());
@@ -739,7 +741,7 @@ void MainWindow::on_view_image_clicked()
                                 this,
                                 "Open Image",
                                 ui->workDir->currentText(),
-                                "image files (*.nii *nii.gz *.dcm *.nhdr 2dseq *fib.gz *src.gz)" );
+                                "image files (*.nii *nii.gz *.dcm *.nhdr 2dseq *fib.gz *.fz *src.gz *.sz)" );
     if(filename.isEmpty())
         return;
     add_work_dir(QFileInfo(filename[0]).absolutePath());
