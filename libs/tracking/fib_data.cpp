@@ -911,14 +911,28 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         mat_reader.read("dimension",dim);
         for(unsigned int index = 0;prog(index,mat_reader.size());++index)
         {
-            auto& data = mat_reader[index];
-            if(data.get_name() == "odf_faces" || data.get_name() == "odf_vertices" ||
-               data.get_name() == "z0" || data.get_name() == "mapping")
+            auto name = mat_reader.name(index);
+            if(name == "odf_faces" || name == "odf_vertices" ||
+               name == "z0" || name == "mapping")
                 continue;
-            if(data.is_type<float>() && data.get_cols()*data.get_rows() == dim.size())
-                write_image_to_mat(matfile,data.get_name(),data.get_data<float>(),dim);
-            else
-            if(!matfile.write(data))
+            mat_reader.flush(index);
+            if(mat_reader[index].is_type<float>())
+            {
+                unsigned int col,row;
+                auto ptr = mat_reader.read_as_type<float>(index,col,row);
+                if(row*col == dim.size())
+                {
+                    write_image_to_mat(matfile,name,ptr,dim);
+                    continue;
+                }
+                if(row*col > 1024)
+                {
+                    write_image_to_mat(matfile,name,ptr,tipl::shape<3>(row,1,col));
+                    continue;
+                }
+            }
+
+            if(!matfile.write(mat_reader[index]))
             {
                 mat_reader.error_msg = "failed to write buffer to file ";
                 mat_reader.error_msg += param;
