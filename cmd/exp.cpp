@@ -52,7 +52,8 @@ int exp(tipl::program_option<tipl::out>& po)
         tipl::error() << "unsupported file format" << std::endl;
         return 1;
     }
-    if(QString(file_name.c_str()).endsWith(".fib.gz"))
+    if(QString(file_name.c_str()).endsWith(".fib.gz") ||
+       QString(file_name.c_str()).endsWith(".fz"))
     {
         std::shared_ptr<fib_data> handle;
         handle = cmd_load_fib(po);
