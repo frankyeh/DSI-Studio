@@ -54,7 +54,8 @@ int atl(tipl::program_option<tipl::out>& po)
     if(cmd=="template")
     {
         tipl::out() << "constructing a group average template" << std::endl;
-        if(tipl::ends_with(name_list[0],".fib.gz"))
+        if(tipl::ends_with(name_list[0],".fib.gz") ||
+           tipl::ends_with(name_list[0],".fz"))
         {
             const char* msg = odf_average(po.get("output",(QFileInfo(name_list[0].c_str()).absolutePath()+"/template").toStdString()).c_str(),name_list);
             if(msg)
