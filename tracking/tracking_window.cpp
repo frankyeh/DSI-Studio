@@ -1306,3 +1306,19 @@ void tracking_window::on_actionEdit_Slices_triggered()
     dialog->show();
 }
 
+
+void tracking_window::on_actionSave_FIB_As_triggered()
+{
+    QString filename = QFileDialog::getSaveFileName(this,"Save FIB file",
+                        windowTitle(),"FIB files (*fib.gz);;All files (*)");
+    if (filename.isEmpty())
+        return;
+    if(!handle->save_to_file(filename.toStdString()))
+    {
+        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
+        return;
+    }
+    setWindowTitle(filename);
+    QMessageBox::information(this,QApplication::applicationName(),"saved");
+}
+
