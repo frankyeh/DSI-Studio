@@ -47,7 +47,7 @@ dicom_parser::dicom_parser(QStringList file_list,QWidget *parent) :
 
     if (!dwi_files.empty())
     {
-        ui->SrcName->setText(get_dicom_output_name(file_list[0],".src.gz",true));
+        ui->SrcName->setText(get_dicom_output_name(file_list[0],".sz",true));
         tipl::io::dicom header;
         if (header.load_from_file(file_list[0].toStdString().c_str()))
         {
@@ -1115,7 +1115,7 @@ void dicom_parser::on_pushButton_clicked()
     QString filename = QFileDialog::getSaveFileName(
             this,"Save file",
             ui->SrcName->text(),
-            "Src files (*src.gz *.src);;All files (*)" );
+            "Src files (*.sz *src.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
     ui->SrcName->setText(filename);
