@@ -1380,7 +1380,7 @@ bool src_data::read_rev_b0(const std::string& filename,tipl::image<3>& rev_b0)
         nii >> rev_b0;
         return true;
     }
-    if(tipl::ends_with(filename,"src.gz"))
+    if(tipl::ends_with(filename,"src.gz") || tipl::ends_with(filename,".sz"))
     {
         std::shared_ptr<src_data> src2(new src_data);
         if(!src2->load_from_file(filename))
@@ -2267,33 +2267,6 @@ std::string src_data::get_report(void)
         << " The slice thickness was " << std::fixed << std::setprecision(2) << tipl::max_value(voxel.vs.begin(),voxel.vs.end()) << " mm.";
     return out.str();
 }
-
-void write_image_to_mat(tipl::io::gz_mat_write& matfile,
-                       const std::string& name,
-                       const unsigned short* buf,tipl::shape<3> dim)
-{
-    if(!buf)
-        return;
-    unsigned short min_v,max_v;
-    tipl::minmax_value(buf,buf + dim.size(),min_v,max_v);
-    if(max_v <= 255)
-    {
-        matfile.write(name.c_str(),buf,uint32_t(dim.plane_size()),dim.depth());
-        return;
-    }
-    float slope = float(max_v-min_v)/255.99f;
-    std::vector<unsigned char> new_data(dim.size());
-    if(slope != 0.0f)
-    {
-        float scale = 1.0f/slope;
-        for(size_t i = 0;i < new_data.size();++i)
-            new_data[i] = (buf[i]-min_v)*scale;
-    }
-    matfile.write(name.c_str(),new_data,uint32_t(dim.plane_size()));
-    matfile.write((name+"_slope").c_str(),std::vector<float>({slope}));
-    matfile.write((name+"_inter").c_str(),std::vector<unsigned short>({min_v}));
-    tipl::out() << name << " size:" << dim << " inter:" << min_v << " slope:" << slope;
-}
 extern int src_ver;
 bool src_data::save_to_file(const std::string& filename)
 {
@@ -2350,7 +2323,8 @@ bool src_data::save_to_file(const std::string& filename)
                 mat_writer.write("b_table",b_table,4);
             }
             for (unsigned int index = 0;prog(index,src_bvalues.size());++index)
-                write_image_to_mat(mat_writer,std::string("image")+std::to_string(index),src_dwi_data[index],voxel.dim);
+                mat_writer.write<tipl::io::sloped>(std::string("image")+std::to_string(index),
+                                 src_dwi_data[index],voxel.dim.plane_size(),voxel.dim.depth());
             mat_writer.write("report",voxel.report);
             mat_writer.write("steps",voxel.steps);
         }
@@ -2413,30 +2387,6 @@ void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream>
         in->save_index(idx_name);
     }
 }
-
-bool read_image_from_mat(tipl::io::gz_mat_read& mat_reader,unsigned int index,const unsigned short*& ptr)
-{
-    unsigned int row,col;
-    size_t size;
-    bool is_char = mat_reader[index].is_type<char>();
-    if(!mat_reader.read(index,row,col,ptr))
-        return false;
-    if(!is_char)
-        return true;
-    size = row*col;
-    std::string name = mat_reader.name(index);
-    auto slope_ptr = mat_reader.read_as_type<float>((name+"_slope").c_str(),row,col);
-    auto inter_ptr = mat_reader.read_as_type<unsigned short>((name+"_inter").c_str(),row,col);
-    if(!slope_ptr || !inter_ptr)
-        return true;
-    auto buf = const_cast<unsigned short*>(ptr);
-    tipl::multiply_constant(buf,buf+size,*slope_ptr);
-    if(*inter_ptr != 0.0f)
-        tipl::add_constant(buf,buf+size,*inter_ptr);
-    tipl::out() << name << " inter:" << *inter_ptr << " slope:" << *slope_ptr;
-    return true;
-}
-
 
 size_t match_volume(float volume);
 QImage read_qimage(QString filename,std::string& error);
@@ -2610,7 +2560,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
 
         src_dwi_data.resize(src_bvalues.size());
         for (size_t index = 0;index < src_bvalues.size();++index)
-            if(!read_image_from_mat(mat_reader,mat_reader.index_of(std::string("image")+std::to_string(index)),src_dwi_data[index]))
+            if(!mat_reader.read(std::string("image")+std::to_string(index),src_dwi_data[index]))
             {
                 error_msg = "cannot read image. incomplete file ?";
                 return false;
@@ -2682,22 +2632,30 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
     return true;
 }
 extern int fib_ver;
-bool src_data::save_fib(const std::string& output_name)
+bool src_data::save_fib(const std::string& file_name)
 {
+    std::string output_name(file_name);
+    if(!tipl::ends_with(output_name,".fz") && !tipl::ends_with(output_name,".fib.gz"))
+        output_name += get_file_ext();
+
     std::string tmp_file = output_name + ".tmp.gz";
     while(std::filesystem::exists(tmp_file))
         tmp_file += ".tmp.gz";
 
-    tipl::io::gz_mat_write mat_writer(tmp_file.c_str());
+    tipl::io::gz_mat_write mat_writer(tmp_file);
     if(!mat_writer)
     {
         error_msg = "cannot save fib file";
         return false;
     }
+    if(tipl::ends_with(output_name,".fz"))
+        mat_writer.slope = true;
 
     mat_writer.write("dimension",voxel.dim);
     mat_writer.write("voxel_size",voxel.vs);
     mat_writer.write("version",fib_ver);
+    mat_writer.write("mask",voxel.mask,voxel.dim.plane_size());
+
 
     if(!voxel.end(mat_writer))
     {
