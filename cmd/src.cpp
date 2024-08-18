@@ -134,7 +134,7 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
 {
     if(dwi_nii_files.empty())
         return false;
-    if(intro_file_name.empty())
+    if(!std::filesystem::exists(intro_file_name))
         find_readme(dwi_nii_files[0],intro_file_name);
     std::vector<std::string> dwi_file;
     std::vector<tipl::shape<3> > image_size;
