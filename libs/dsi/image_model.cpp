@@ -51,34 +51,18 @@ void src_data::calculate_dwi_sum(bool update_mask)
         {
             for(size_t j = 0;j < src_dwi_data.size();++j)
             {
-                if(j && src_bvalues[j] == 0.0f)
+                if(src_bvalues[j] < 100.0f)
                     continue;
                 dwi_sum[i] += src_dwi_data[j][i];
             }
         });
-
-        float otsu = tipl::segmentation::otsu_threshold(dwi_sum);
-        float max_value = std::min<float>(tipl::max_value(dwi_sum),otsu*3.0f);
-        float min_value = max_value;
-        // handle 0 strip with background value condition
-        {
-            for (unsigned int index = 0;index < dwi_sum.size();index += uint32_t(dwi_sum.width()+1))
-                if (dwi_sum[index] < min_value && dwi_sum[index] > 0)
-                    min_value = dwi_sum[index];
-            if(min_value >= max_value)
-                min_value = 0;
-            else
-                tipl::minus_constant(dwi_sum,min_value);
-        }
-        tipl::upper_threshold(dwi_sum,max_value);
-        dwi.resize(voxel.dim);
-        tipl::normalize_upper_lower2(dwi_sum,dwi,255.99f);
+        dwi = subject_image_pre(dwi_sum);
     }
 
     if(update_mask)
     {
         tipl::out() << "generating mask";
-        tipl::threshold(dwi,voxel.mask,50,1,0);
+        tipl::threshold(dwi,voxel.mask,25,1,0);
         if(dwi.depth() < 300)
         {
             tipl::morphology::defragment(voxel.mask);
@@ -2030,6 +2014,12 @@ std::string src_data::find_topup_reverse_pe(void)
         tipl::out() << "reversed pe SRC file found: " << rev_file_name << std::endl;
         return rev_file_name;
     }
+    rev_file_name = file_name.substr(0,file_name.length()-2)+"rz";
+    if(std::filesystem::exists(rev_file_name))
+    {
+        tipl::out() << "reversed pe SRC file found: " << rev_file_name << std::endl;
+        return rev_file_name;
+    }
 
     // locate reverse pe nifti files
     std::map<float,std::string,std::greater<float> > candidates;
@@ -2297,10 +2287,17 @@ bool src_data::save_to_file(const std::string& filename)
         return save_bval((filename.substr(0,filename.size()-7)+".bval").c_str()) &&
                save_bvec((filename.substr(0,filename.size()-7)+".bvec").c_str());
     }
-    if(tipl::ends_with(filename,"src.gz"))
+    if(tipl::ends_with(filename,"src.gz") || tipl::ends_with(filename,".sz"))
     {
         auto temp_file = filename + ".tmp.gz";
         {
+            auto si2vi = tipl::get_sparse_index(voxel.mask);
+            if(si2vi.empty())
+            {
+                error_msg = "empty mask";
+                return false;
+            }
+
             tipl::io::gz_mat_write mat_writer(temp_file);
             if(!mat_writer)
             {
@@ -2308,6 +2305,8 @@ bool src_data::save_to_file(const std::string& filename)
                 error_msg += temp_file;
                 return false;
             }
+            if(tipl::ends_with(filename,".sz"))
+                mat_writer.slope = true;
             mat_writer.write("dimension",voxel.dim);
             mat_writer.write("voxel_size",voxel.vs);
             mat_writer.write("version",src_ver);
@@ -2322,9 +2321,14 @@ bool src_data::save_to_file(const std::string& filename)
                 }
                 mat_writer.write("b_table",b_table,4);
             }
+            if(voxel.mask.empty())
+            {
+                voxel.mask = dwi;
+                tipl::upper_threshold(voxel.mask,1);
+            }
+            mat_writer.write("mask",voxel.mask,voxel.dim.plane_size());
             for (unsigned int index = 0;prog(index,src_bvalues.size());++index)
-                mat_writer.write<tipl::io::sloped>(std::string("image")+std::to_string(index),
-                                 src_dwi_data[index],voxel.dim.plane_size(),voxel.dim.depth());
+                mat_writer.write_sparse<tipl::io::sloped>("image"+std::to_string(index),src_dwi_data[index],voxel.dim.size(),si2vi);
             mat_writer.write("report",voxel.report);
             mat_writer.write("steps",voxel.steps);
         }
@@ -2499,7 +2503,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
     else
     {
         if (!tipl::ends_with(dwi_file_name,"src.gz") &&
-            !tipl::ends_with(dwi_file_name,".src"))
+            !tipl::ends_with(dwi_file_name,".sz"))
         {
             error_msg = "Unsupported file format";
             return false;
@@ -2533,7 +2537,9 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
             error_msg = "Incompatible SRC format. please update DSI Studio to open this new SRC file.";
             return false;
         }
-
+        voxel.mask.resize(voxel.dim);
+        if(!mat_reader.read("mask",voxel.mask.begin(),voxel.mask.end()))
+            voxel.mask.clear();
         mat_reader.read("steps",voxel.steps);
 
         unsigned int row,col;
@@ -2558,11 +2564,24 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         if(!mat_reader.read("report",voxel.report))
             voxel.report = get_report();
 
+
+        auto si2vi = tipl::get_sparse_index(voxel.mask);
         src_dwi_data.resize(src_bvalues.size());
-        for (size_t index = 0;index < src_bvalues.size();++index)
-            if(!mat_reader.read(std::string("image")+std::to_string(index),src_dwi_data[index]))
+        for (size_t index = 0;index < mat_reader.size();++index)
+        {
+            if(!tipl::begins_with(mat_reader[index].name,"image"))
+                continue;
+            size_t image_index = std::stoi(mat_reader[index].name.substr(5));
+            if(!mat_reader.read(index,src_dwi_data[image_index],si2vi,voxel.dim.size()))
             {
                 error_msg = "cannot read image. incomplete file ?";
+                return false;
+            }
+        }
+        for(auto each : src_dwi_data)
+            if(!each)
+            {
+                error_msg = "incomplete file";
                 return false;
             }
         {
