@@ -37,7 +37,6 @@ std::string src_data::get_file_ext(void)
             << ".reg" << voxel.param[2] << ".sz";
         break;
     case 7:
-        out << "." << QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().toLower().toStdString();
         out << (voxel.r2_weighted ? ".qsdr2.fz":".qsdr.fz");
         break;
     }
@@ -148,8 +147,6 @@ bool src_data::reconstruction(void)
 
             // obtain QA map for normalization
             {
-                auto mask = voxel.mask;
-                voxel.mask = 1;
                 // clear mask to create whole volume QA map
                 if (!reconstruct2<
                         ReadDWIData,
@@ -165,7 +162,6 @@ bool src_data::reconstruction(void)
                         SaveMetrics,
                         OutputODF>("QSDR reconstruction"))
                     return false;
-                voxel.mask = mask;
             }
 
             voxel.recon_report
