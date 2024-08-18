@@ -975,7 +975,9 @@ bool get_pe_dir(const std::string& nii_name,size_t& pe_dir,bool& is_neg)
     return false;
 }
 std::vector<std::string> search_dwi_nii_bids(const std::string& dir);
-bool create_src(std::string nii_name,std::string src_name);
+bool create_src(const std::vector<std::string>& nii_names,
+                const std::string& intro_file_name,
+                std::string src_name);
 void search_dwi_nii(const std::string& dir,std::vector<std::string>& dwi_nii_files);
 void MainWindow::batch_create_src(const std::vector<std::string>& dwi_nii_files,const std::string& output_dir)
 {
@@ -1045,12 +1047,13 @@ void MainWindow::batch_create_src(const std::vector<std::string>& dwi_nii_files,
                 --nii_count;
             }
             tipl::out() << "processing " << nii_name << std::endl;
-            create_src(nii_name,src_name);
+            create_src(std::vector<std::string>({nii_name}),std::string(),src_name);
         }
     },8);
 }
 bool nii2src(const std::vector<std::string>& dwi_nii_files,
              const std::string& output_dir,
+             const std::string& intro_file_name,
              bool is_bids,
              bool overwrite);
 void MainWindow::on_nii2src_bids_clicked()
@@ -1070,7 +1073,7 @@ void MainWindow::on_nii2src_bids_clicked()
     add_work_dir(dir);
     auto dwi_nii_files = search_dwi_nii_bids(dir.toStdString());
     std::sort(dwi_nii_files.begin(),dwi_nii_files.end());
-    nii2src(dwi_nii_files,output_dir.toStdString(),true,true);
+    nii2src(dwi_nii_files,output_dir.toStdString(),(dir+"/README").toStdString(),true,true);
 }
 void MainWindow::on_nii2src_sf_clicked()
 {
@@ -1196,7 +1199,7 @@ bool dcm2src_and_nii(QStringList files)
     }
 
     QString src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".sz").c_str(),true);
-    if(!DwiHeader::output_src(src_name.toStdString().c_str(),dicom_files,false,error_msg))
+    if(!DwiHeader::output_src(src_name.toStdString().c_str(),dicom_files,false,"README",error_msg))
     {
         tipl::error() << error_msg << std::endl;
         return false;
