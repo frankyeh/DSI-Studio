@@ -47,11 +47,12 @@ void src_data::calculate_dwi_sum(bool update_mask)
         return;
     {
         tipl::image<3> dwi_sum(voxel.dim);
+        bool skip_b0 = tipl::max_value(src_bvalues) >= 100.0;
         tipl::adaptive_par_for(dwi_sum.size(),[&](size_t i)
         {
             for(size_t j = 0;j < src_dwi_data.size();++j)
             {
-                if(src_bvalues[j] < 100.0f)
+                if(skip_b0 && src_bvalues[j] < 100.0f)
                     continue;
                 dwi_sum[i] += src_dwi_data[j][i];
             }
