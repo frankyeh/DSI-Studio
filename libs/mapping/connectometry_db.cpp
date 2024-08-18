@@ -67,6 +67,7 @@ bool connectometry_db::read_db(fib_data* handle_)
     }
     // optional
     handle->mat_reader.read("report",report);
+    handle->mat_reader.read("intro",intro);
     handle->mat_reader.read("subject_report",subject_report);
     handle->mat_reader.read("index_name",index_name);
 
@@ -599,6 +600,7 @@ bool connectometry_db::save_db(const char* output_name)
             out << " The " << index_name << " values were used in the connectometry analysis.";
         matfile.write("report",out.str());
     }
+    matfile.write("intro",intro);
     if(!demo.empty())
         matfile.write("demo",demo);
     modified = false;
