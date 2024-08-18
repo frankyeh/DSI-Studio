@@ -175,7 +175,8 @@ int atl(tipl::program_option<tipl::out>& po)
             data->handle->db.index_name = index_name[i];
             for (unsigned int index = 0;index < name_list.size();++index)
             {
-                if(name_list[index].find(".db.fib.gz") != std::string::npos)
+                if(tipl::ends_with(name_list[index],".db.fib.gz") ||
+                   tipl::ends_with(name_list[index],".db.fz"))
                     continue;
                 tipl::out() << "reading " << name_list[index] << std::endl;
                 if(!data->handle->db.add(name_list[index],
@@ -195,7 +196,7 @@ int atl(tipl::program_option<tipl::out>& po)
             std::string output = std::string(name_list.front().begin(),
                                              std::mismatch(name_list.front().begin(),name_list.front().begin()+
                                              int64_t(std::min(name_list.front().length(),name_list.back().length())),
-                                               name_list.back().begin()).first) + "." + index_name[i] + ".db.fib.gz";
+                                               name_list.back().begin()).first) + "." + index_name[i] + ".db.fz";
             tipl::out() << "saving " << po.get("output",output);
             if(!data->handle->db.save_db(po.get("output",output).c_str()))
             {
