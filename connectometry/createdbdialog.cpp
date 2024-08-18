@@ -253,7 +253,7 @@ void CreateDBDialog::on_select_output_file_clicked()
                                  this,
                                  "Save file",
                                  "",
-                                 "FIB file (*fib.gz);;All files (*)");
+                                 "FIB file (*fib.gz *.fz);;All files (*)");
     if(filename.isEmpty())
         return;
 #ifdef __APPLE__
