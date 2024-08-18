@@ -152,7 +152,7 @@ public:
         tipl::draw(hist_fa_sub,hist_fa,draw_location);
         tipl::draw(hist_dir_sub,hist_dir,draw_location);
     }
-    virtual void end(Voxel&,tipl::io::gz_mat_write& mat_writer)
+    virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
         tipl::normalize(hist_fa);
 
@@ -163,8 +163,8 @@ public:
         hist_dir.resize(tipl::shape<3>(hist_dir.width(),hist_dir.height(),2));
         std::copy(hist_dir.begin(),hist_dir.begin()+int64_t(hist_dir.plane_size()),hist_dir.begin()+int64_t(hist_dir.plane_size()));
 
-        write_image_to_mat(mat_writer,"fa0",hist_fa.data(),hist_fa.shape());
-        write_image_to_mat(mat_writer,"dir0",&hist_dir[0][0],hist_dir.shape().multiply(tipl::shape<3>::x,3));
+        mat_writer.write_sparse<tipl::io::sloped>("fa0",hist_fa,voxel.si2vi);
+        mat_writer.write_sparse<tipl::io::sloped>("dir0",hist_dir,voxel.si2vi);
     }
 };
 
