@@ -907,7 +907,7 @@ void view_image::on_action_Save_as_triggered()
     QString filename = QFileDialog::getSaveFileName(
                            this,"Save",file_name,
                             mat.size() ?
-                            "FIB/SRC file(*fib.gz *src.gz);;All Files (*)":
+                            "FIB/SRC file(*.fz *.sz *fib.gz *src.gz);;All Files (*)":
                             "NIFTI file(*nii.gz *.nii)" );
     if (filename.isEmpty())
         return;
