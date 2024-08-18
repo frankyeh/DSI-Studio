@@ -147,7 +147,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>4</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -340,7 +340,7 @@
                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                </property>
                <property name="text">
-                <string>FIB File (*.fib.gz)</string>
+                <string>FIB File (*.fz)</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
@@ -544,7 +544,7 @@
                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                </property>
                <property name="text">
-                <string>SRC File (*.src.gz)</string>
+                <string>SRC File (*.sz)</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
@@ -1663,8 +1663,7 @@ Atlas</string>
                  <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                 </property>
                 <property name="text">
-                 <string>Database File
-(*.db.fib.gz)</string>
+                 <string>Database File(*.db.fz)</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
@@ -1733,8 +1732,7 @@ Atlas</string>
                  <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                 </property>
                 <property name="text">
-                 <string>FIB File
-(*.fib.gz)</string>
+                 <string>FIB File(*.fz)</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
@@ -2206,7 +2204,7 @@ Tractography</string>
                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
                </property>
                <property name="text">
-                <string>FIB File (*.fib.gz)</string>
+                <string>FIB File (*.fz)</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
@@ -2234,7 +2232,7 @@ Tractography</string>
                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                </property>
                <property name="text">
-                <string>SRC File (*.src.gz)</string>
+                <string>SRC File (*.sz)</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
@@ -2564,8 +2562,6 @@ Tractography</string>
               <zorder>auto_track</zorder>
               <zorder>batch_reconstruction</zorder>
               <zorder>label_31</zorder>
-              <zorder>label_32</zorder>
-              <zorder>label_33</zorder>
               <zorder>label_35</zorder>
               <zorder>label_36</zorder>
               <zorder>label_37</zorder>
@@ -2576,6 +2572,8 @@ Tractography</string>
               <zorder>label_34</zorder>
               <zorder>label_48</zorder>
               <zorder>xnat_download</zorder>
+              <zorder>label_33</zorder>
+              <zorder>label_32</zorder>
              </widget>
             </item>
            </layout>
