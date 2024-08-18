@@ -81,7 +81,7 @@ public:
     std::vector<tipl::vector<3,float> > bvectors;
     std::vector<float> bvalues;
 
-    std::string report,steps;
+    std::string intro,report,steps;
     std::ostringstream recon_report, step_report;
     unsigned int thread_count = tipl::max_thread_count;
     void load_from_src(src_data& image_model);
