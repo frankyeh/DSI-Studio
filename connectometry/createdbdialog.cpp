@@ -58,7 +58,7 @@ void CreateDBDialog::update_list(void)
 {
     dir_length = 0;
     for(size_t i = 0;i < group.size();)
-        if(group[i].endsWith("db.fib.gz"))
+        if(group[i].endsWith("db.fib.gz") || group[i].endsWith("db.fz"))
             group.removeAt(i);
         else
             ++i;
@@ -130,8 +130,8 @@ void CreateDBDialog::on_group1open_clicked()
                                      this,
                                      "Open Fib files",
                                      "",
-                                     create_db ? "Fib Files (*fib.gz);;NIFTI Files (*nii *nii.gz);;All Files (*)":
-                                                 "Fib Files (*fib.gz);;All Files (*)");
+                                     create_db ? "Fib Files (*.fz *fib.gz);;NIFTI Files (*nii *nii.gz);;All Files (*)":
+                                                 "Fib Files (*.fz *fib.gz);;All Files (*)");
     if (filenames.isEmpty())
         return;
     group << filenames;
@@ -253,7 +253,7 @@ void CreateDBDialog::on_select_output_file_clicked()
                                  this,
                                  "Save file",
                                  "",
-                                 "FIB file (*fib.gz *.fz);;All files (*)");
+                                 "FIB file (*.fz *fib.gz);;All files (*)");
     if(filename.isEmpty())
         return;
 #ifdef __APPLE__
@@ -286,7 +286,7 @@ void CreateDBDialog::on_create_data_base_clicked()
             template_file_name = QFileDialog::getOpenFileName(
                                              this,
                                              "Open Template FIB File",
-                                             "","Fib Files (*fib.gz);;All Files (*)").toStdString();
+                                             "","Fib Files (*.fz *fib.gz);;All Files (*)").toStdString();
             if(template_file_name.empty())
                 return;
         }
@@ -368,7 +368,7 @@ void CreateDBDialog::on_index_of_interest_currentTextChanged(const QString &arg1
                         int64_t(std::min(front.length(),back.length())),back.begin()).first).c_str();
 
         if(create_db)
-            ui->output_file_name->setText(base_name + "." + ui->index_of_interest->currentText() + ".db.fib.gz");
+            ui->output_file_name->setText(base_name + "." + ui->index_of_interest->currentText() + ".db.fz");
         else
             ui->output_file_name->setText(base_name + ".avg.fib.gz");
     }
