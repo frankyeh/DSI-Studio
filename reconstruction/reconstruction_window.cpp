@@ -265,26 +265,21 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
 
     auto dim_backup = handle->voxel.dim; // for QSDR
     auto vs = handle->voxel.vs; // for QSDR
+    auto mask = handle->voxel.mask;
     if (!handle->reconstruction())
     {
         tipl::error() << handle->error_msg << std::endl;
         QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
         return;
     }
+    handle->voxel.mask = mask;
     handle->voxel.dim = dim_backup;
     handle->voxel.vs = vs;
-    if(method_id == 7) // QSDR
-        handle->calculate_dwi_sum(true);
     if(!prompt)
         return;
-    QMessageBox::information(this,QApplication::applicationName(),"FIB file created.");
+    QMessageBox::information(this,QApplication::applicationName(),"FIB file created");
     raise(); // for Mac
-    QString filename = handle->file_name.c_str();
-    filename += handle->get_file_ext().c_str();
-    if(method_id == 6)
-        ((MainWindow*)parent())->addSrc(filename);
-    else
-        ((MainWindow*)parent())->addFib(filename);
+    ((MainWindow*)parent())->addFib(handle->output_file_name.c_str());
 }
 
 
