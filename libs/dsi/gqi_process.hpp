@@ -113,7 +113,7 @@ public:
     }
     virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer) override
     {
-        write_image_to_mat(mat_writer,"hraw",hraw.data(),voxel.dim);
+        mat_writer.write_sparse<tipl::io::sloped>("hraw",hraw,voxel.si2vi);
     }
 };
 
@@ -220,14 +220,14 @@ public:
         unsigned int image_num = 0;
         if(!b0.empty())
         {
-            mat_writer.write("image0",b0,uint32_t(voxel.dim.plane_size()));
+            mat_writer.write_sparse<tipl::io::sloped>("image0",b0,voxel.si2vi);
             ++image_num;
         }
         for (unsigned int index = 0;index < dwi.size();++index)
         {
             std::ostringstream out;
             out << "image" << image_num;
-            mat_writer.write(out.str().c_str(),dwi[index],uint32_t(voxel.dim.plane_size()));
+            mat_writer.write_sparse<tipl::io::sloped>(out.str(),dwi[index],voxel.si2vi);
             ++image_num;
         }
     }
