@@ -2331,6 +2331,7 @@ bool src_data::save_to_file(const std::string& filename)
                     mat_writer.write_sparse<tipl::io::sloped>("image"+std::to_string(index),src_dwi_data[index],voxel.dim.size(),si2vi);
             mat_writer.write("report",voxel.report);
             mat_writer.write("steps",voxel.steps);
+            mat_writer.write("intro",voxel.intro);
         }
         if(prog.aborted())
         {
@@ -2563,6 +2564,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
 
         if(!mat_reader.read("report",voxel.report))
             voxel.report = get_report();
+        mat_reader.read("intro",voxel.intro);
 
 
         auto si2vi = tipl::get_sparse_index(voxel.mask);
@@ -2695,6 +2697,7 @@ bool src_data::save_fib(const std::string& fib_file_name)
     }
     mat_writer.write("report",voxel.report + voxel.recon_report.str());
     mat_writer.write("steps",voxel.steps + voxel.step_report.str() + "[Step T2b][Run reconstruction]\n");
+    mat_writer.write("intro",voxel.intro);
     mat_writer.close();
     std::filesystem::rename(tmp_file,output_file_name);
     tipl::out() << "saving " << output_file_name;
