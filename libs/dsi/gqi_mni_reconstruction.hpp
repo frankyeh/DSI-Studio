@@ -296,6 +296,7 @@ public:
         for(unsigned int index = 0;index < other_image.size();++index)
             mat_writer.write<tipl::io::sloped>(voxel.other_image_name[index],other_image[index].data(),other_image[index].plane_size(),other_image[index].depth());
         mat_writer.write("trans",voxel.trans_to_mni);
+        mat_writer.write("template",std::filesystem::path(fa_template_list[voxel.template_id]).stem().stem().stem().string());
         mat_writer.write("R2",std::vector<float>({voxel.R2}));
     }
 
