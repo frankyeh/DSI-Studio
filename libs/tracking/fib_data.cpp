@@ -744,6 +744,7 @@ bool fib_data::load_from_mat(void)
     }
     mat_reader.read("report",report);
     mat_reader.read("steps",steps);
+    mat_reader.read("intro",intro);
     if (mat_reader.read("trans",trans_to_mni))
         is_mni = true;
 
