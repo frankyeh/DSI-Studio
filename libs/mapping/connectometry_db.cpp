@@ -36,6 +36,11 @@ bool connectometry_db::read_db(fib_data* handle_)
         {
             if(!handle->mat_reader.get_col_row("subjects0",row,col))
                 break;
+            if(col != handle->si2vi.size())
+            {
+                error_msg = "database corrupted: mask size mismatch ";
+                return false;
+            }
             subject_qa_length = row*col;
             // check if the db is longitudinal, for older db, the only way to check is by the negative values.
             is_longitudinal = false;
@@ -349,7 +354,7 @@ void connectometry_db::calculate_si2vi(void)
     size_t mask_size = 0;
     for(size_t index = 0;index < handle->dim.size();++index)
         if(handle->mask[index])
-            vi2si[index] = (mask_size++);
+            vi2si[index] = (mask_size++);    
 }
 
 size_t convert_index(size_t old_index,
@@ -567,8 +572,14 @@ bool connectometry_db::save_db(const char* output_name)
         matfile.slope = true;
     tipl::progress prog("save db");
     copy_mat(handle->mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping","report","steps"},{"subject"});
+    if(subject_qa_length < handle->si2vi.size())
+    {
+        error_msg = "cannot save file due to invalid mask";
+        return false;
+    }
     for(unsigned int index = 0;prog(index,subject_qa.size());++index)
-        matfile.write<tipl::io::sloped>(std::string("subjects")+std::to_string(index),subject_qa[index],1,subject_qa_length);
+        matfile.write<tipl::io::sloped>(std::string("subjects")+std::to_string(index),subject_qa[index],
+                                        subject_qa_length/handle->si2vi.size(),handle->si2vi.size());
     if(prog.aborted())
     {
         error_msg = "aborted";
@@ -656,21 +667,17 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
     mr.set_variables(X.begin(),uint32_t(feature_size),uint32_t(subject_qa.size()));
 
     tipl::image<3> I(handle->dim);
-    tipl::adaptive_par_for(I.size(),[&](size_t index)
+    tipl::adaptive_par_for(handle->si2vi.size(),[&](size_t index)
     {
-        if(vi2si[index])
-        {
-            //I[index] = subject_qa[selected_subject][vi2si[index]];
-            std::vector<double> y(subject_qa.size());
-            for(size_t s = 0;s < subject_qa.size();++s)
-                y[s] = double(subject_qa[s][vi2si[index]]);
-            std::vector<double> b(feature_size);
-            mr.regress(y.begin(),b.begin());
-            double predict = b[0];
-            for(size_t i = 1;i < b.size();++i)
-                predict += b[i]*v[i-1];
-            I[index] = std::max<float>(0.0f,float(predict));
-        }
+        std::vector<double> y(subject_qa.size());
+        for(size_t s = 0;s < subject_qa.size();++s)
+            y[s] = double(subject_qa[s][index]);
+        std::vector<double> b(feature_size);
+        mr.regress(y.begin(),b.begin());
+        double predict = b[0];
+        for(size_t i = 1;i < b.size();++i)
+            predict += b[i]*v[i-1];
+        I[handle->si2vi[index]] = std::max<float>(0.0f,float(predict));
     });
     if(index_name == "qa")
     {
@@ -696,9 +703,8 @@ bool connectometry_db::save_demo_matched_image(const std::string& matched_demo,c
 void connectometry_db::get_subject_volume(unsigned int subject_index,tipl::image<3>& volume) const
 {
     tipl::image<3> I(handle->dim);
-    for(unsigned int index = 0;index < I.size();++index)
-        if(vi2si[index])
-            I[index] = subject_qa[subject_index][vi2si[index]];
+    for(unsigned int index = 0;index < handle->si2vi.size();++index)
+        I[handle->si2vi[index]] = subject_qa[subject_index][index];
     volume.swap(I);
 }
 void connectometry_db::get_subject_fa(unsigned int subject_index,std::vector<std::vector<float> >& fa_data) const
