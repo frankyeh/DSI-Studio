@@ -46,39 +46,43 @@ int rec(tipl::program_option<tipl::out>& po)
                     std::min<float>(2.0f,std::max<float>(src.voxel.vs[0],src.voxel.vs[2])) : src.voxel.vs[2]);
 
     }
-
+    if(po.has("intro") && !src.load_intro(po.get("intro")))
     {
-        std::string mask_file = po.get("mask","1");
+        tipl::error() << src.error_msg;
+        return 1;
+    }
+
+    if(po.has("mask"))
+    {
+        std::string mask_file = po.get("mask");
         if(mask_file == "1")
             src.voxel.mask = 1;
-        else
+        if(mask_file == "unet")
         {
-            if(mask_file == "unet")
+            if(!src.mask_from_unet())
             {
-                if(!src.mask_from_unet())
-                {
-                    tipl::error() << src.error_msg;
-                    return 1;
-                }
+                tipl::error() << src.error_msg;
+                return 1;
             }
-            else
-            if(mask_file != "default")
+        }
+
+        {
+            tipl::out() << "opening mask file: " << mask_file << std::endl;
+            tipl::io::gz_nifti nii;
+            if(!nii.load_from_file(mask_file) || !nii.toLPS(src.voxel.mask))
             {
-                tipl::out() << "opening mask file: " << mask_file << std::endl;
-                tipl::io::gz_nifti nii;
-                if(!nii.load_from_file(mask_file) || !nii.toLPS(src.voxel.mask))
-                {
-                    tipl::error() << nii.error_msg << std::endl;
-                    return 1;
-                }
-                if(src.voxel.mask.shape() != src.voxel.dim)
-                {
-                    tipl::error() << "The mask dimension is different. terminating..." << std::endl;
-                    return 1;
-                }
+                tipl::error() << nii.error_msg << std::endl;
+                return 1;
+            }
+            if(src.voxel.mask.shape() != src.voxel.dim)
+            {
+                tipl::error() << "The mask dimension is different. terminating..." << std::endl;
+                return 1;
             }
         }
     }
+    else
+        src.calculate_dwi_sum(true);
 
     {
         tipl::progress prog("pre-processing steps");
