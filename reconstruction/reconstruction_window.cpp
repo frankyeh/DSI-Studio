@@ -332,13 +332,18 @@ bool reconstruction_window::command(std::string cmd,std::string param)
     }
     if(tipl::contains_case_insensitive(cmd,"topup") && !std::filesystem::exists(handle->file_name+".corrected.nii.gz"))
     {
-        QMessageBox::information(this,QApplication::applicationName(),"Please specify another NIFTI or SRC.GZ file with reversed phase encoding data");
-        auto other_src = QFileDialog::getOpenFileName(
+        tipl::remove_suffix(param = handle->file_name,".sz");
+        param += ".rev.sz";
+        if(!std::filesystem::exists(param))
+        {
+            QMessageBox::information(this,QApplication::applicationName(),"Please specify another nii.gz or sz file with reversed phase encoding data");
+            auto other_src = QFileDialog::getOpenFileName(
                     this,"Open SRC file",absolute_path,
                     "Images (*.sz *src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
-        if(other_src.isEmpty())
-            return false;
-        param = other_src.toStdString();
+            if(other_src.isEmpty())
+                return false;
+            param = other_src.toStdString();
+        }
     }
 
     if(tipl::contains_case_insensitive(cmd,"open"))
