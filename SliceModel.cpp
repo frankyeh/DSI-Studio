@@ -349,8 +349,13 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         nifti.get_image_transformation(trans_to_mni);
         if(handle->is_mni)
         {
-            tipl::out() << "This FIB file is in the template space.";
-            tipl::out() << "Assume the loaded nifti files are also in the template space. The header transformation will be used to align image." << std::endl;
+            tipl::out() << "the FIB file is in the template space";
+            if(trans_to_mni[0]*trans_to_mni[1]*trans_to_mni[2] != 0.0f)
+            {
+                error_msg = "cannot load a native space image in the template space";
+                return false;
+            }
+            tipl::out() << "header transformation used to align image." << std::endl;
             to_slice = tipl::inverse(to_dif = tipl::from_space(trans_to_mni).to(handle->trans_to_mni));
             has_transform = true;
         }
@@ -366,7 +371,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
                 }
                 if(is_mni)
                 {
-                    tipl::out() << "Warping template-space slices to the subject space." << std::endl;
+                    tipl::out() << "warping template-space slices to the subject space." << std::endl;
                     if(!handle->mni2sub(source_images,trans_to_mni))
                     {
                         error_msg = handle->error_msg;
