@@ -2642,6 +2642,13 @@ bool src_data::save_fib(const std::string& file_name)
     while(std::filesystem::exists(tmp_file))
         tmp_file += ".tmp.gz";
 
+    voxel.si2vi = tipl::get_sparse_index(voxel.mask);
+    if(voxel.si2vi.empty())
+    {
+        error_msg = "empty mask";
+        return false;
+    }
+
     tipl::io::gz_mat_write mat_writer(tmp_file);
     if(!mat_writer)
     {
@@ -2656,11 +2663,9 @@ bool src_data::save_fib(const std::string& file_name)
     mat_writer.write("version",fib_ver);
     mat_writer.write("mask",voxel.mask,voxel.dim.plane_size());
 
-
     if(!voxel.end(mat_writer))
     {
         mat_writer.close();
-        std::filesystem::remove(tmp_file);
         error_msg = "aborted";
         return false;
     }
