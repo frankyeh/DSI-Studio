@@ -51,8 +51,28 @@ bool get_bval_bvec(const std::string& bval_file,const std::string& bvec_file,siz
     bvecs_out.swap(bvecs);
     return true;
 }
-bool create_src(const std::vector<std::string>& nii_names,std::string src_name)
+
+bool find_readme(const std::string& file,std::string& intro_file_name)
 {
+    auto path = std::filesystem::path(file).parent_path();
+    for (int i = 0; i < 3; ++i)
+    {
+        auto readme_path = path / "README";
+        if (std::filesystem::exists(readme_path))
+        {
+            tipl::out() << "README file found at " << (intro_file_name = readme_path.string());
+            return true;
+        }
+        path = path.parent_path();
+    }
+    return false;
+}
+bool create_src(const std::vector<std::string>& nii_names,
+                const std::string& intro_file_name,
+                std::string src_name)
+{
+    if(nii_names.empty())
+        return false;
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     std::string error_msg;
     for(auto& nii_name : nii_names)
@@ -61,18 +81,15 @@ bool create_src(const std::vector<std::string>& nii_names,std::string src_name)
         if(!load_4d_nii(nii_name,dwi_files,true,tipl::ends_with(src_name,".sz"),error_msg))
             tipl::warning() << "skipping " << nii_name << ": " << error_msg;
     }
-    if(!DwiHeader::output_src(src_name.c_str(),dwi_files,false,error_msg))
+    auto file_name = intro_file_name;
+    if(file_name.empty())
+        find_readme(nii_names[0],file_name);
+    if(!DwiHeader::output_src(src_name.c_str(),dwi_files,false,file_name,error_msg))
     {
         tipl::error() << error_msg;
         return false;
     }
     return true;
-}
-bool create_src(std::string nii_name,std::string src_name)
-{
-    std::vector<std::string> nii_names;
-    nii_names.push_back(nii_name);
-    return create_src(nii_names,src_name);
 }
 
 bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec);
@@ -111,9 +128,14 @@ std::vector<std::string> search_dwi_nii_bids(const std::string& dir)
 
 bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
                         const std::string& output_dir,
+                        std::string intro_file_name,
                         bool overwrite,
                         std::string& error_msg)
 {
+    if(dwi_nii_files.empty())
+        return false;
+    if(intro_file_name.empty())
+        find_readme(dwi_nii_files[0],intro_file_name);
     std::vector<std::string> dwi_file;
     std::vector<tipl::shape<3> > image_size;
     std::vector<size_t> dwi_count;
@@ -203,24 +225,24 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
         image_size[i] = tipl::shape<3>();
         dwi_file[i].erase(dwi_file[i].length() - 7, 7); // remove .nii.gz
         auto src_name = dwi_file[i] + ".sz";
-        auto rsrc_name = dwi_file[i] + ".rz";
+        auto rsrc_name = dwi_file[i] + ".rev.sz";
 
         if(!output_dir.empty())
         {
             src_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).filename().u8string() + ".sz";
-            rsrc_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).filename().u8string() + ".rz";
+            rsrc_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).filename().u8string() + ".rev.sz";
         }
         if(!overwrite && std::filesystem::exists(src_name))
             tipl::out() << "skipping " << src_name << " already exists";
         else
-            if(!create_src(main_dwi_list,src_name))
+            if(!create_src(main_dwi_list,intro_file_name,src_name))
                 return false;
         if(!rev_pe_list.empty())
         {
             if(!overwrite && std::filesystem::exists(rsrc_name))
                 tipl::out() << "skipping " << rsrc_name << " already exists";
             else
-                if(!create_src(rev_pe_list,rsrc_name))
+                if(!create_src(rev_pe_list,intro_file_name,rsrc_name))
                     return false;
         }
     }
@@ -229,6 +251,7 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
 
 bool nii2src(const std::vector<std::string>& dwi_nii_files,
              const std::string& output_dir,
+             const std::string& intro_file_name,
              bool is_bids,
              bool overwrite)
 {
@@ -247,7 +270,7 @@ bool nii2src(const std::vector<std::string>& dwi_nii_files,
                 else
                     break;
             std::string error_msg;
-            if(!handle_bids_folder(dwi_list,output_dir,overwrite,error_msg))
+            if(!handle_bids_folder(dwi_list,output_dir,intro_file_name,overwrite,error_msg))
             {
                 tipl::error() << error_msg;
                 return false;
@@ -261,7 +284,7 @@ bool nii2src(const std::vector<std::string>& dwi_nii_files,
             if(!overwrite && std::filesystem::exists(src_name))
                 tipl::out() << "skipping " << src_name << " already exists";
             else
-                if(!create_src(dwi_nii_files[i],src_name))
+                if(!create_src(std::vector<std::string>({dwi_nii_files[i]}),intro_file_name,src_name))
                     return false;
         }
     }
@@ -306,7 +329,7 @@ int src(tipl::program_option<tipl::out>& po)
                 else
                     tipl::out() << "no --output specified. write src files to the same directory of the nifti images";
                 std::sort(dwi_nii_files.begin(),dwi_nii_files.end());
-                if(nii2src(dwi_nii_files,output_dir,is_bids,po.get("overwrite",0)))
+                if(nii2src(dwi_nii_files,output_dir,po.get("intro"),is_bids,po.get("overwrite",0)))
                     return 0;
                 return 1;
             }
@@ -417,7 +440,9 @@ int src(tipl::program_option<tipl::out>& po)
         tipl::out() << "skipping " << output << " already exists";
         return 0;
     }
-    if(!DwiHeader::output_src(output.c_str(),dwi_files,po.get<int>("sort_b_table",0),error_msg))
+    if(!DwiHeader::output_src(output.c_str(),dwi_files,
+                              po.get<int>("sort_b_table",0),
+                              po.get("intro"),error_msg))
     {
         tipl::error() << error_msg << std::endl;
         return 1;
