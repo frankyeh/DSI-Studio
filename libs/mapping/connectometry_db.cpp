@@ -22,7 +22,6 @@ bool parse_age_sex(const std::string& file_name,std::string& age,std::string& se
     }
     return false;
 }
-bool read_image_from_mat(tipl::io::gz_mat_read& mat_reader,unsigned int index,const float*& ptr);
 bool connectometry_db::read_db(fib_data* handle_)
 {
     handle = handle_;
@@ -31,8 +30,7 @@ bool connectometry_db::read_db(fib_data* handle_)
     for(unsigned int index = 0;1;++index)
     {
         const float* buf = nullptr;
-        if(!read_image_from_mat(handle->mat_reader,
-                                handle->mat_reader.index_of(std::string("subjects")+std::to_string(index)),buf))
+        if(!handle->mat_reader.read(std::string("subjects")+std::to_string(index),buf))
             break;
         if(!index)
         {
@@ -130,12 +128,6 @@ bool connectometry_db::read_db(fib_data* handle_)
         }
         if(!demo.empty() && !parse_demo())
             demo.clear();
-    }
-    // over write the mask because the fa0 value may change after saving
-    if(handle->mat_reader.has("mask"))
-    {
-        mask.resize(handle->dim);
-        handle->mat_reader.read("mask",mask);
     }
     calculate_si2vi();
     return true;
@@ -352,20 +344,11 @@ void connectometry_db::remove_subject(unsigned int index)
 }
 void connectometry_db::calculate_si2vi(void)
 {
-    if(mask.empty())
-    {
-        mask.resize(handle->dim);
-        for(size_t index = 0;index < handle->dim.size();++index)
-            mask[index] = handle->dir.fa[0][index] > 0 ? 1:0;
-    }
     vi2si.resize(handle->dim);
-    si2vi.clear();
+    size_t mask_size = 0;
     for(size_t index = 0;index < handle->dim.size();++index)
-        if(mask[index])
-        {
-            vi2si[index] = si2vi.size();
-            si2vi.push_back(index);
-        }
+        if(handle->mask[index])
+            vi2si[index] = (mask_size++);
 }
 
 size_t convert_index(size_t old_index,
@@ -393,10 +376,10 @@ void connectometry_db::sample_from_image(tipl::const_pointer_image<3,float> I,
             tipl::transformation_matrix<float>(tipl::from_space(handle->trans_to_mni).to(trans)));
 
     data.clear();
-    data.resize(si2vi.size());
-    tipl::adaptive_par_for(si2vi.size(),[&](size_t si)
+    data.resize(handle->si2vi.size());
+    tipl::adaptive_par_for(handle->si2vi.size(),[&](size_t si)
     {
-        data[si] = J[si2vi[si]];
+        data[si] = J[handle->si2vi[si]];
     });
 }
 void connectometry_db::add(float subject_R2,std::vector<float>& data,
@@ -493,11 +476,11 @@ bool connectometry_db::add(const std::string& file_name,
 
             tipl::out() << "loading";
             data.clear();
-            data.resize(si2vi.size()*size_t(handle->dir.num_fiber));
-            tipl::adaptive_par_for(si2vi.size(),[&](size_t si)
+            data.resize(handle->si2vi.size()*size_t(handle->dir.num_fiber));
+            tipl::adaptive_par_for(handle->si2vi.size(),[&](size_t si)
             {
-                size_t vi = si2vi[si];
-                if(!mask[vi])
+                size_t vi = handle->si2vi[si];
+                if(!handle->mask[vi])
                     return;
                 tipl::vector<3> pos(tipl::pixel_index<3>(vi,handle->dim));
                 template2subject(pos);
@@ -509,7 +492,7 @@ bool connectometry_db::add(const std::string& file_name,
                 if(odf == nullptr)
                     return;
                 float min_value = tipl::min_value(odf, odf + handle->dir.half_odf_size);
-                for(char i = 0;i < handle->dir.num_fiber;++i,si += si2vi.size())
+                for(char i = 0;i < handle->dir.num_fiber;++i,si += handle->si2vi.size())
                 {
                     if(handle->dir.fa[i][vi] == 0.0f)
                         break;
@@ -567,9 +550,6 @@ bool connectometry_db::add(const std::string& file_name,
     add(subject_R2,data,subject_name);
     return true;
 }
-void write_image_to_mat(tipl::io::gz_mat_write& matfile,
-                       const std::string& name,
-                       const float* buf,tipl::shape<3> dim);
 bool copy_mat(tipl::io::gz_mat_read& mat_reader,
               tipl::io::gz_mat_write& matfile,
               const std::vector<std::string>& skip_list,
@@ -587,8 +567,7 @@ bool connectometry_db::save_db(const char* output_name)
     tipl::progress prog("save db");
     copy_mat(handle->mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping","report","steps"},{"subject"});
     for(unsigned int index = 0;prog(index,subject_qa.size());++index)
-        write_image_to_mat(matfile,std::string("subjects")+std::to_string(index),subject_qa[index],
-                           tipl::shape<3>(1,1,subject_qa_length));
+        matfile.write<tipl::io::sloped>(std::string("subjects")+std::to_string(index),subject_qa[index],1,subject_qa_length);
     if(prog.aborted())
     {
         error_msg = "aborted";
@@ -600,7 +579,7 @@ bool connectometry_db::save_db(const char* output_name)
         name_string += subject_names[index];
         name_string += "\n";
     }
-    matfile.write("mask",mask,handle->dim.plane_size());
+
     matfile.write("subject_names",name_string);
     matfile.write("subject_report",subject_report);
     matfile.write("index_name",index_name);
@@ -725,11 +704,11 @@ void connectometry_db::get_subject_fa(unsigned int subject_index,std::vector<std
     fa_data.resize(handle->dir.num_fiber);
     for(char index = 0;index < handle->dir.num_fiber;++index)
         fa_data[index].resize(handle->dim.size());
-    tipl::adaptive_par_for(si2vi.size(),[&](unsigned int s_index)
+    tipl::adaptive_par_for(handle->si2vi.size(),[&](unsigned int s_index)
     {
-        size_t cur_index = si2vi[s_index];
+        size_t cur_index = handle->si2vi[s_index];
         size_t fib_offset = 0;
-        for(char i = 0;i < handle->dir.num_fiber && handle->dir.fa[i][cur_index] > 0;++i,fib_offset+=si2vi.size())
+        for(char i = 0;i < handle->dir.num_fiber && handle->dir.fa[i][cur_index] > 0;++i,fib_offset+=handle->si2vi.size())
         {
             size_t pos = s_index + fib_offset;
             fa_data[i][cur_index] = (pos < subject_qa_length ? subject_qa[subject_index][pos] : fa_data[0][cur_index]);
@@ -756,7 +735,7 @@ bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vec
         data[index].resize(handle->dim.size());
 
     for(size_t index = 0;index < handle->dim.size();++index)
-        if(mask[index])
+        if(handle->mask[index])
         {
             const float* odf = subject_odf.get_odf_data(index);
             if(!odf)
@@ -780,7 +759,7 @@ bool connectometry_db::is_db_compatible(const connectometry_db& rhs)
         return false;
     }
     for(size_t index = 0;index < handle->dim.size();++index)
-        if(mask[index] != rhs.mask[index])
+        if(handle->mask[index] != rhs.handle->mask[index])
         {
             error_msg = "The connectometry db was created using a different template.";
             return false;
