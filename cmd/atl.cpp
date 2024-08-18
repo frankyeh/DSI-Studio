@@ -110,7 +110,7 @@ int atl(tipl::program_option<tipl::out>& po)
         }
         if(fib_template_list[template_id].empty())
         {
-            tipl::error() << "no FIB template for " <<  std::filesystem::path(fa_template_list[template_id]).stem() << std::endl;
+            tipl::error() << "no FIB template for " <<  std::filesystem::path(fa_template_list[template_id]).stem().stem().stem() << std::endl;
             return 1;
         }
 
