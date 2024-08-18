@@ -785,7 +785,7 @@ bool fib_data::load_from_mat(void)
         mask_mat->resize(tipl::shape<2>(dim.plane_size(),dim.depth()));
         auto& mask_buffer = mask_mat->data_buf;
         for(size_t i = 0;i < dim.size();++i)
-            if(dir.fa[0][i] > 0.02f)
+            if(dir.fa[0][i] > 0.0f)
                 mask_buffer[i] = 1;
         mask = tipl::make_image(mask_buffer.data(),dim);
         mat_reader.push_back(mask_mat);
