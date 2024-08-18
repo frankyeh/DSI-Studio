@@ -21,6 +21,7 @@ bool reconstruction_window::load_src(int index)
     handle = std::make_shared<src_data>();
     if (!handle->load_from_file(filenames[index].toStdString().c_str()))
         return false;
+    handle->calculate_dwi_sum(true);
     move_current_dir_to(filenames[index].toStdString());
     tipl::progress prog("initiate interface");
     existing_steps = handle->voxel.steps;
