@@ -330,7 +330,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
     {
         QString filename = QFileDialog::getSaveFileName(
                 this,"Save SRC file",filenames[0],
-                        "SRC files (*src.gz);;All files (*)" );
+                        "SRC files (*.sz *src.gz);;All files (*)" );
         if(filename.isEmpty())
             return false;
         param = filename.toStdString();
@@ -340,7 +340,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
         QMessageBox::information(this,QApplication::applicationName(),"Please specify another NIFTI or SRC.GZ file with reversed phase encoding data");
         auto other_src = QFileDialog::getOpenFileName(
                     this,"Open SRC file",absolute_path,
-                    "Images (*src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
+                    "Images (*.sz *src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
         if(other_src.isEmpty())
             return false;
         param = other_src.toStdString();
@@ -775,7 +775,7 @@ void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
     QMessageBox::information(this,QApplication::applicationName(),"Please specify another SRC/DICOM/NIFTI file with an opposite phase encoding");
     QString filename = QFileDialog::getOpenFileName(
             this,"Open SRC file",absolute_path,
-            "Images (*src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
+            "Images (*.sz *src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
     if( filename.isEmpty())
         return;
 
