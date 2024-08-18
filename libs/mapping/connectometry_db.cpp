@@ -378,10 +378,8 @@ void connectometry_db::sample_from_image(tipl::const_pointer_image<3,float> I,
 
     data.clear();
     data.resize(handle->si2vi.size());
-    tipl::adaptive_par_for(handle->si2vi.size(),[&](size_t si)
-    {
-        data[si] = J[handle->si2vi[si]];
-    });
+    for(size_t i = 0;i < handle->si2vi.size();++i)
+        data[i] = J[handle->si2vi[i]];
 }
 void connectometry_db::add(float subject_R2,std::vector<float>& data,
                            const std::string& subject_name)
