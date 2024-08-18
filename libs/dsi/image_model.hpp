@@ -262,6 +262,7 @@ public:
     bool mask_from_unet(void);
     void remove(unsigned int index);
     bool check_b_table(void);
+    bool load_intro(const std::string& file_name);
 public:
     std::string get_report(void);
 public:
