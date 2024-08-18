@@ -476,7 +476,7 @@ int main(int ac, char *av[])
         w.setWindowTitle(QString(version_string) + " " + __DATE__);
         // presentation mode
         QStringList fib_list = QDir(QCoreApplication::applicationDirPath()+ "/presentation").
-                                entryList(QStringList("*fib.gz") << QString("*_qa.nii.gz"),QDir::Files|QDir::NoSymLinks);
+                                entryList(QStringList("*fib.gz") << QString("*.fz"),QDir::Files|QDir::NoSymLinks);
         if(fib_list.size())
         {
             w.hide();
