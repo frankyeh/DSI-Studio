@@ -476,9 +476,9 @@ public:
         {
             for(size_t i = 0;i < modality_count;++i)
             {
-                tipl::io::gz_nifti::save_to_file((std::string("I") + std::to_string(i) + ".nii.gz").c_str(),I[i],Itvs,ItR);
-                tipl::io::gz_nifti::save_to_file((std::string("It") + std::to_string(i) + ".nii.gz").c_str(),It[i],Itvs,ItR);
-                tipl::io::gz_nifti::save_to_file((std::string("J") + std::to_string(i) + ".nii.gz").c_str(),J[i],Itvs,ItR);
+                tipl::io::gz_nifti::save_to_file(("I" + std::to_string(i) + ".nii.gz").c_str(),I[i],Itvs,ItR);
+                tipl::io::gz_nifti::save_to_file(("It" + std::to_string(i) + ".nii.gz").c_str(),It[i],Itvs,ItR);
+                tipl::io::gz_nifti::save_to_file(("J" + std::to_string(i) + ".nii.gz").c_str(),J[i],Itvs,ItR);
             }
         }
         return r;
