@@ -564,6 +564,8 @@ bool connectometry_db::save_db(const char* output_name)
         error_msg += output_name;
         return false;
     }
+    if(tipl::ends_with(output_name,".fz"))
+        matfile.slope = true;
     tipl::progress prog("save db");
     copy_mat(handle->mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping","report","steps"},{"subject"});
     for(unsigned int index = 0;prog(index,subject_qa.size());++index)
