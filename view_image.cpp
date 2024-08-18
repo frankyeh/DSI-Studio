@@ -453,8 +453,23 @@ bool view_image::read_mat(void)
     bool has_data = true;
     ui->mat_images->clear();
     for(size_t i = 0;i < mat.size();++i)
-        if(mat[i].get_cols()*mat[i].get_rows() == cur_image->shape.size())
-            ui->mat_images->addItem(mat[i].get_name().c_str());
+        if(mat[i].size() == cur_image->shape.size())
+        {
+            ui->mat_images->addItem(mat[i].name.c_str());
+            if(mat[i].name == "mask")
+            {
+                mat_si2vi = tipl::get_sparse_index(
+                            tipl::make_image(mat.read_as_type<char>(i),cur_image->shape));
+                if(mat_si2vi.size() == cur_image->shape.size())
+                    mat_si2vi.clear();
+            }
+        }
+
+    for(size_t i = 0;i < mat.size();++i)
+        if(mat[i].size() == mat_si2vi.size())
+            ui->mat_images->addItem(mat[i].name.c_str());
+
+
     if(!ui->mat_images->count())
     {
         error_msg = "cannot find images";
@@ -561,7 +576,9 @@ bool view_image::open(QStringList file_names_)
     else
         if(QString(file_name).endsWith(".mat") ||
            QString(file_name).endsWith("fib.gz") ||
-           QString(file_name).endsWith("src.gz"))
+           QString(file_name).endsWith("src.gz") ||
+           QString(file_name).endsWith(".fz") ||
+           QString(file_name).endsWith(".sz"))
         {
             tipl::progress prog("open file ",std::filesystem::path(file_name.toStdString()).filename().u8string().c_str());
             if(!mat.load_from_file(file_name.toStdString().c_str()))
@@ -759,10 +776,14 @@ void view_image::show_info(QString info)
     for(int row = 0;row < list.size();++row)
     {
         QString line = list[row];
-        QStringList value_list = line.split("=");
-        ui->info->setItem(row,0, new QTableWidgetItem(value_list[0]));
-        if(value_list.size() > 1)
-            ui->info->setItem(row,1, new QTableWidgetItem(value_list[1]));
+        int index = line.indexOf('=');
+        if (index != -1)
+        {
+            ui->info->setItem(row,0,new QTableWidgetItem(line.mid(0, index)));
+            ui->info->setItem(row,1,new QTableWidgetItem(line.mid(index + 1)));
+        }
+        else
+            ui->info->setItem(row,0,new QTableWidgetItem(line));
     }
     ui->info->selectRow(0);
 }
@@ -1016,7 +1037,7 @@ void view_image::on_info_cellDoubleClicked(int row, int column)
 {
     if(!mat.size() || row >= mat.size())
         return;
-    if(column == 1 && mat[row].is_type<char>())
+    if(column == 1 && mat[row].is_type<char>() && mat[row].sub_data.empty())
     {
         bool okay = false;
         auto text = QInputDialog::getMultiLineText(this,QApplication::applicationName(),"Input Content",
@@ -1041,7 +1062,7 @@ void view_image::on_info_cellDoubleClicked(int row, int column)
 void view_image::on_mat_images_currentIndexChanged(int index)
 {
     no_update = true;
-    if(!cur_image->read_mat_image(ui->mat_images->currentText().toStdString(),mat))
+    if(!cur_image->read_mat_image(ui->mat_images->currentText().toStdString(),mat,mat_si2vi))
         return;
     ui->type->setCurrentIndex(cur_image->pixel_type);
     init_image();
