@@ -331,6 +331,22 @@ bool src_data::check_b_table(void)
     return true;
 }
 
+bool src_data::load_intro(const std::string& file_name)
+{
+    std::ifstream file(file_name);
+    if(!file)
+    {
+        error_msg = "cannot open ";
+        error_msg += file_name;
+        return false;
+    }
+    {
+        voxel.intro = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+        tipl::out() << "read intro: " << std::string(voxel.intro.begin(),
+                                                     voxel.intro.begin()+std::min<size_t>(voxel.intro.size(),64)) << "...";
+    }
+    return true;
+}
 size_t sum_dif(const unsigned short* I1,const unsigned short* I2,size_t size)
 {
     size_t dif = 0;
