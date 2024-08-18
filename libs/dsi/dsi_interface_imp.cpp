@@ -15,7 +15,7 @@ std::string src_data::get_file_ext(void)
     std::ostringstream out;
     if(voxel.is_histology)
     {
-        out << ".hist.fib.gz";
+        out << ".hist.fz";
         return out.str();
     }
     if(voxel.method_id != 1) // DTI
@@ -26,19 +26,19 @@ std::string src_data::get_file_ext(void)
     switch (voxel.method_id)
     {
     case 1://DTI
-        out << ".dti.fib.gz";
+        out << ".dti.fz";
         break;
     case 4://GQI
-        out << (voxel.r2_weighted ? ".gqi2.fib.gz":".gqi.fib.gz");
+        out << (voxel.r2_weighted ? ".gqi2.fz":".gqi.fz");
         break;
     case 6:
         out << ".hardi."<< voxel.param[0]
             << ".b" << voxel.param[1]
-            << ".reg" << voxel.param[2] << ".src.gz";
+            << ".reg" << voxel.param[2] << ".sz";
         break;
     case 7:
         out << "." << QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().toLower().toStdString();
-        out << (voxel.r2_weighted ? ".qsdr2.fib.gz":".qsdr.fib.gz");
+        out << (voxel.r2_weighted ? ".qsdr2.fz":".qsdr.fz");
         break;
     }
     return out.str();
@@ -67,7 +67,7 @@ bool src_data::reconstruction_hist(void)
     voxel.recon_report << " Structural tensors were calculated to derive structural orientations and anisotropy (Zhang, IEEEE TMI 35, 294-306 2016, Schurr, Science, 2021) using a Gaussian kernel of " << voxel.hist_tensor_smoothing << " pixel spacing.";
     if(voxel.hist_downsampling)
         voxel.recon_report << " The results were exported at 2^" << voxel.hist_downsampling << " of the original pixel spacing.";
-    save_fib(file_name.find(".fib.gz") == std::string::npos ? file_name + get_file_ext():file_name);
+    save_fib(file_name);
     return true;
 }
 bool src_data::reconstruction(void)
@@ -181,7 +181,7 @@ bool src_data::reconstruction(void)
 
         if(voxel.dti_no_high_b)
             voxel.recon_report << " The tensor metrics were calculated using DWI with b-value lower than 1750 s/mm².";
-        return save_fib(file_name.find(".fib.gz") == std::string::npos ? file_name + get_file_ext():file_name);
+        return save_fib(file_name);
     }
     catch (std::exception& e)
     {
