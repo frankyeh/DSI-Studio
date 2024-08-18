@@ -10,11 +10,17 @@
 
 bool group_connectometry_analysis::create_database(std::shared_ptr<fib_data> handle_)
 {
+
     handle = handle_;
     fiber_threshold = 0.6f*handle->dir.fa_otsu;
     handle->db.calculate_si2vi();
-    handle->db.subject_qa_length = handle->db.si2vi.size()*size_t(handle->dir.num_fiber);
+    handle->db.subject_qa_length = handle->si2vi.size()*size_t(handle->dir.num_fiber);
     handle->db.clear();
+    if(handle->si2vi.empty())
+    {
+        error_msg = "invalid mask";
+        return false;
+    }
     return true;
 }
 bool group_connectometry_analysis::load_database(const char* database_name)
@@ -140,6 +146,10 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
     }
 }
 extern int fib_ver;
+bool copy_mat(tipl::io::gz_mat_read& mat_reader,
+              tipl::io::gz_mat_write& matfile,
+              const std::vector<std::string>& skip_list,
+              const std::vector<std::string>& skip_head_list);
 void group_connectometry_analysis::save_result(void)
 {
     tipl::progress prog("save correlational tractography results");
@@ -222,24 +232,16 @@ void group_connectometry_analysis::save_result(void)
     }
 
     {
-        tipl::progress p2("save statistics.fib.gz");
-        tipl::io::gz_mat_write mat_write((output_file_name+".t_statistics.fib.gz").c_str());
-        mat_write.write("dimension",handle->dim);
-        mat_write.write("voxel_size",handle->vs);
-        mat_write.write("version",fib_ver);
-        mat_write.write("trans",handle->trans_to_mni);
-        mat_write.write("qa_map",handle->dir.fa[0],handle->dim.plane_size(),handle->dim.depth());
-        for(unsigned int i = 0;i < spm_map->inc_ptr.size();++i)
+        tipl::progress p2("save statistics.fz");
+        tipl::io::gz_mat_write mat_write(output_file_name+".t_statistics.fz");
+        if(!mat_write)
+            return;
+        mat_write.slope = true;
+        copy_mat(handle->mat_reader,mat_write,{"odf_faces","odf_vertices","z0","mapping","report","steps"},{"subject"});
+        for(unsigned int i = 0;i < spm_map->inc.size();++i)
         {
-            std::ostringstream out1,out2,out3,out4;
-            out1 << "fa" << i;
-            out2 << "index" << i;
-            out3 << "inc_t" << i;
-            out4 << "dec_t" << i;
-            mat_write.write(out1.str().c_str(),handle->dir.fa[i],1,handle->dim.size());
-            mat_write.write(out2.str().c_str(),handle->dir.findex[i],1,handle->dim.size());
-            mat_write.write(out3.str().c_str(),spm_map->inc_ptr[i],1,handle->dim.size());
-            mat_write.write(out4.str().c_str(),spm_map->dec_ptr[i],1,handle->dim.size());
+            mat_write.write_sparse<tipl::io::sloped>(std::string("inc_t")+std::to_string(i),spm_map->inc[i],handle->si2vi);
+            mat_write.write_sparse<tipl::io::sloped>(std::string("dec_t")+std::to_string(i),spm_map->dec[i],handle->si2vi);
         }
     }
 }
@@ -326,11 +328,11 @@ void group_connectometry_analysis::calculate_adjusted_qa(stat_model& info)
     // population_value_adjusted is a transpose of handle->db.subject_qa
     population_value_adjusted.clear();
     population_value_adjusted.resize(handle->db.subject_qa_length);
-    tipl::par_for(handle->db.si2vi.size(),[&](size_t s_index)
+    tipl::par_for(handle->si2vi.size(),[&](size_t s_index)
     {
-        size_t pos = handle->db.si2vi[s_index];
+        size_t pos = handle->si2vi[s_index];
         for(size_t fib = 0;s_index < handle->db.subject_qa_length &&
-                           handle->dir.fa[fib][pos] > fiber_threshold;++fib,s_index += handle->db.si2vi.size())
+                           handle->dir.fa[fib][pos] > fiber_threshold;++fib,s_index += handle->si2vi.size())
         {
             std::vector<float> population(info.selected_subject.size());
             for(unsigned int index = 0;index < info.selected_subject.size();++index)
@@ -348,13 +350,13 @@ void group_connectometry_analysis::calculate_adjusted_qa(stat_model& info)
 void group_connectometry_analysis::calculate_spm(connectometry_result& data,stat_model& info)
 {
     data.clear_result(handle->dir.num_fiber,handle->dim.size());
-    for(size_t s_index = 0;s_index < handle->db.si2vi.size() && !terminated;++s_index)
+    for(size_t s_index = 0;s_index < handle->si2vi.size() && !terminated;++s_index)
     {
-        size_t pos = handle->db.si2vi[s_index];
+        size_t pos = handle->si2vi[s_index];
         double T_stat(0.0); // declare here so that the T-stat of the 1st fiber can be applied to others if there is only one metric per voxel
         for(size_t fib = 0,cur_s_index = s_index;
             fib < handle->dir.num_fiber && handle->dir.fa[fib][pos] > fiber_threshold;
-            ++fib,cur_s_index += handle->db.si2vi.size())
+            ++fib,cur_s_index += handle->si2vi.size())
         {
             // some connectometry database only have 1 metrics per voxel
             // and thus the computed statistics will be applied to all fibers
