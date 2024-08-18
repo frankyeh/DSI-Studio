@@ -77,10 +77,11 @@ bool src_data::reconstruction(void)
     voxel.step_report.clear();
     voxel.step_report.str("");
 
-    if(voxel.is_histology)
-        return reconstruction_hist();
+
     try
     {
+        if(voxel.is_histology)
+            return reconstruction_hist();
         if (voxel.output_odf && (voxel.method_id == 7 || voxel.method_id == 4))
             voxel.step_report << "[Step T2b(2)][ODFs]=1" << std::endl;
 
