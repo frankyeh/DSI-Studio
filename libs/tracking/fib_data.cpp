@@ -1037,8 +1037,10 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             tipl::image<3> new_image;
             if(mat.is_type<short>()) // index0,index1
                 new_image = tipl::make_image(mat.get_data<short>(),dim);
-            else
+            if(mat.is_type<float>()) //
                 new_image = tipl::make_image(mat.get_data<float>(),dim);
+            if(mat.is_type<char>()) //
+                new_image = tipl::make_image(mat.get_data<char>(),dim);
 
             if(!img_command_float32_std(new_image,new_vs,new_trans,is_mni,cmd,param,mat_reader.error_msg))
             {
@@ -1047,11 +1049,15 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 failed = true;
                 return;
             }
-            mat.resize(tipl::vector<2,unsigned int>(new_image.width()*new_image.height(),new_image.depth()));
-            if(mat.is_type<short>()) // index0,index1
+
+            mat.resize(tipl::vector<2,unsigned int>(new_image.plane_size(),new_image.depth()));
+
+            if(mat.is_type<short>())
                 std::copy(new_image.begin(),new_image.end(),mat.get_data<short>());
-            else
+            if(mat.is_type<float>())
                 std::copy(new_image.begin(),new_image.end(),mat.get_data<float>());
+            if(mat.is_type<char>())
+                std::copy(new_image.begin(),new_image.end(),mat.get_data<char>());
 
             if(mat.name == "fa0")
             {
@@ -1091,6 +1097,14 @@ bool fib_data::resample_to(float resolution)
     mat_reader.read("dimension",dim);
     mat_reader.read("voxel_size",vs);
     mat_reader.read("trans",trans_to_mni);
+
+    mask = tipl::make_image(mat_reader.read_as_type<float>("mask"),dim);
+    if(!mask.data())
+    {
+        error_msg = "no valid mask";
+        return false;
+    }
+    si2vi = tipl::get_sparse_index(mask);
     for(auto& item : view_item)
         item.set_image(tipl::make_image(item.get_image().begin(),dim));
     return true;
