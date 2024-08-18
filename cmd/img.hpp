@@ -46,7 +46,9 @@ public:
             case float32:fun(I_float32);return;
         }
     }
-    bool read_mat_image(const std::string& metric_name,tipl::io::gz_mat_read& mat);
+    bool read_mat_image(const std::string& metric_name,
+                        tipl::io::gz_mat_read& mat,
+                        const std::vector<size_t>& si2vi);
     void change_type(decltype(pixel_type));
     bool command(std::string cmd,std::string param1);
     bool load_from_file(const char* file_name,std::string& info);
