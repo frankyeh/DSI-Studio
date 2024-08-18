@@ -22,10 +22,6 @@ public:
     virtual void end(Voxel&,tipl::io::gz_mat_write&) {}    
     virtual ~BaseProcess(void) {}
 };
-void write_image_to_mat(tipl::io::gz_mat_write& matfile,
-                       const std::string& name,
-                       const float* buf,tipl::shape<3> dim);
-
 
 
 struct VoxelData
@@ -78,8 +74,8 @@ public:
     tipl::shape<3> dim;
     tipl::vector<3> vs;
 public:
-
     tipl::image<3,unsigned char> mask;
+    std::vector<size_t> si2vi;
 public:
     std::vector<const unsigned short*> dwi_data;
     std::vector<tipl::vector<3,float> > bvectors;
