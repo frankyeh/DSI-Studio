@@ -33,9 +33,7 @@ public:// subject specific data
 public:
     std::list<std::vector<float> > subject_qa_buf;// merged from other db
     unsigned int subject_qa_length = 0;
-    tipl::image<3,unsigned char> mask;
     tipl::image<3,size_t> vi2si;
-    std::vector<size_t> si2vi;
     std::string index_name = "qa";
 public://longitudinal studies
     std::vector<std::pair<int,int> > match;
