@@ -949,7 +949,10 @@ bool get_pe_dir(const std::string& nii_name,size_t& pe_dir,bool& is_neg)
     const char pe_coding[3][2][5] = { { "\"i\"","\"i-\"" },
                                        { "\"j\"","\"j-\"" },
                                        { "\"k\"","\"k-\"" }};
-    std::string json_name = nii_name.substr(0,nii_name.find_last_of(".nii")-4) + ".json";
+    std::string json_name(nii_name);
+    tipl::remove_suffix(json_name,".nii.gz");
+    tipl::remove_suffix(json_name,".nii");
+    json_name += ".json";
     if(!std::filesystem::exists(json_name))
         return false;
 
