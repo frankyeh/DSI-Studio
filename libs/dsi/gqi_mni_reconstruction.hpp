@@ -290,19 +290,11 @@ public:
     virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
         voxel.qsdr = false;
-        write_image_to_mat(mat_writer,"jdet",jdet.data(),voxel.dim);
-
+        mat_writer.write_sparse<tipl::io::sloped>("jdet",jdet,voxel.si2vi);
         mat_writer.write("native_dimension",native_geo);
         mat_writer.write("native_voxel_size",native_vs);
-
-        // allow loading native space t1w-based ROI
         for(unsigned int index = 0;index < other_image.size();++index)
-        {
-            write_image_to_mat(mat_writer,voxel.other_image_name[index].c_str(),other_image[index].data(),other_image[index].shape());
-            mat_writer.write((voxel.other_image_name[index]+"_dimension").c_str(),voxel.other_image[index].shape());
-            mat_writer.write((voxel.other_image_name[index]+"_voxel_size").c_str(),voxel.other_image_voxel_size[index]);
-            mat_writer.write((voxel.other_image_name[index]+"_trans").c_str(),voxel.other_image_trans[index]);
-        }
+            mat_writer.write<tipl::io::sloped>(voxel.other_image_name[index],other_image[index].data(),other_image[index].plane_size(),other_image[index].depth());
         mat_writer.write("trans",voxel.trans_to_mni);
         mat_writer.write("R2",std::vector<float>({voxel.R2}));
     }
