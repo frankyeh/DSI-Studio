@@ -460,6 +460,7 @@ bool view_image::read_mat(void)
             {
                 mat_si2vi = tipl::get_sparse_index(
                             tipl::make_image(mat.read_as_type<char>(i),cur_image->shape));
+                tipl::out() << "size: " << cur_image->shape << " voxels: " << mat_si2vi.size();
                 if(mat_si2vi.size() == cur_image->shape.size())
                     mat_si2vi.clear();
             }
