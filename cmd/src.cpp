@@ -58,7 +58,7 @@ bool create_src(const std::vector<std::string>& nii_names,std::string src_name)
     for(auto& nii_name : nii_names)
     {
         tipl::out() << "opening " << nii_name;
-        if(!load_4d_nii(nii_name,dwi_files,true,tipl::ends_with(src_name,".src.gz"),error_msg))
+        if(!load_4d_nii(nii_name,dwi_files,true,tipl::ends_with(src_name,".sz"),error_msg))
             tipl::warning() << "skipping " << nii_name << ": " << error_msg;
     }
     if(!DwiHeader::output_src(src_name.c_str(),dwi_files,false,error_msg))
@@ -202,13 +202,13 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
             }
         image_size[i] = tipl::shape<3>();
         dwi_file[i].erase(dwi_file[i].length() - 7, 7); // remove .nii.gz
-        auto src_name = dwi_file[i] + ".src.gz";
-        auto rsrc_name = dwi_file[i] + ".rsrc.gz";
+        auto src_name = dwi_file[i] + ".sz";
+        auto rsrc_name = dwi_file[i] + ".rz";
 
         if(!output_dir.empty())
         {
-            src_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).filename().u8string() + ".src.gz";
-            rsrc_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).filename().u8string() + ".rsrc.gz";
+            src_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).filename().u8string() + ".sz";
+            rsrc_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).filename().u8string() + ".rz";
         }
         if(!overwrite && std::filesystem::exists(src_name))
             tipl::out() << "skipping " << src_name << " already exists";
@@ -255,9 +255,9 @@ bool nii2src(const std::vector<std::string>& dwi_nii_files,
         }
         else
         {
-            auto src_name = dwi_nii_files[i] + ".src.gz";
+            auto src_name = dwi_nii_files[i] + ".sz";
             if(!output_dir.empty())
-                src_name = output_dir + "/" + std::filesystem::path(dwi_nii_files[i]).filename().u8string() + ".src.gz";
+                src_name = output_dir + "/" + std::filesystem::path(dwi_nii_files[i]).filename().u8string() + ".sz";
             if(!overwrite && std::filesystem::exists(src_name))
                 tipl::out() << "skipping " << src_name << " already exists";
             else
@@ -405,12 +405,12 @@ int src(tipl::program_option<tipl::out>& po)
         return 1;
     }
 
-    auto output = po.get("output",file_list.front() + ".src.gz");
+    auto output = po.get("output",file_list.front() + ".sz");
 
     if(std::filesystem::is_directory(output))
-        output += std::string("/") + std::filesystem::path(file_list[0]).filename().u8string() + ".src.gz";
-    if(!tipl::ends_with(output,".src.gz"))
-        output += ".src.gz";
+        output += std::string("/") + std::filesystem::path(file_list[0]).filename().u8string() + ".sz";
+    if(!tipl::ends_with(output,".sz"))
+        output += ".sz";
 
     if(!po.get("overwrite",0) && std::filesystem::exists(output))
     {
