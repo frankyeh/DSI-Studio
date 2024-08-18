@@ -151,14 +151,13 @@ public:
 };
 
 
-
+class fib_data;
 struct item
 {
 private:
     tipl::const_pointer_image<3> image_data;
     tipl::image<3> dummy;
-    tipl::io::gz_mat_read* mat_reader = nullptr;
-    unsigned int image_index = 0;
+    fib_data* handle = nullptr;
 public:
     template<typename value_type>
     item(const std::string& name_,const value_type* pointer,const tipl::shape<3>& dim_):
@@ -171,8 +170,8 @@ public:
             contrast_max = max_value = 1.0f;
         }
     }
-    item(const std::string& name_,const tipl::shape<3>& dim_,tipl::io::gz_mat_read* mat_reader_,unsigned int index_):
-        image_data(tipl::make_image((const float*)nullptr,dim_)),mat_reader(mat_reader_),image_index(index_),name(name_)
+    item(const std::string& name_,const tipl::shape<3>& dim_,fib_data* handle_):
+        image_data(tipl::make_image((const float*)nullptr,dim_)),handle(handle_),name(name_)
     {
         T.identity();iT.identity();
         if(name == "dti_fa" || name == "qa" || name == "fa") // e.g., fa, qa
@@ -201,29 +200,7 @@ public:
     unsigned int min_color = 0;
     tipl::image<3,unsigned int> color_map_buf;
 
-    void get_minmax(void)
-    {
-        auto I = get_image();
-        if(mat_reader && mat_reader->has((name+"_slope").c_str()) && mat_reader->has((name+"_inter").c_str()))
-        {
-            min_value = mat_reader->read_as_value<float>((name+"_inter").c_str());
-            max_value = min_value + 255.99f*mat_reader->read_as_value<float>((name+"_slope").c_str());
-        }
-        else
-            tipl::minmax_value(I.begin(),I.end(),min_value,max_value);
-        if(std::isnan(min_value) || std::isinf(min_value) ||
-           std::isnan(max_value) || std::isinf(max_value))
-        {
-            min_value = 0.0f;
-            max_value = 1.0f;
-        }
-        contrast_min = 0;
-        contrast_max = max_value;
-        if(I.size() < 256*256*256 && contrast_min != contrast_max)
-            contrast_max = min_value+(tipl::segmentation::otsu_median(I)-min_value)*2.0f;
-        v2c.set_range(contrast_min,contrast_max);
-        v2c.two_color(min_color,max_color);
-    }
+    void get_minmax(void);
 
 };
 
@@ -261,6 +238,9 @@ public:
         float max_length_digit = float(std::pow(10.0f,std::floor(std::log10(double(max_length)))));
         return int(max_length/max_length_digit)*max_length_digit;
     }
+public:
+    tipl::const_pointer_image<3,unsigned char> mask;
+    std::vector<size_t> si2vi;
 public:
     fiber_directions dir;
     connectometry_db db;
