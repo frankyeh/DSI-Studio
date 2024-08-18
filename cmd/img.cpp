@@ -27,15 +27,20 @@ bool variant_image::command(std::string cmd,std::string param1)
 }
 
 
-bool variant_image::read_mat_image(const std::string& metric_name,tipl::io::gz_mat_read& mat)
+bool variant_image::read_mat_image(const std::string& metric_name,
+                                   tipl::io::gz_mat_read& mat,
+                                   const std::vector<size_t>& si2vi)
 {
     unsigned int row(0), col(0);
-    if(!mat.get_col_row(metric_name.c_str(),row,col) || row*col != shape.size())
+    if(!mat.get_col_row(metric_name.c_str(),row,col) ||
+        (row*col != shape.size() && row*col != si2vi.size()))
         return false;
     if(mat.type_compatible<unsigned int>(metric_name.c_str()))
     {
         I_int32.resize(shape);
         mat.read(metric_name.c_str(),I_int32.begin(),I_int32.end());
+        if(row*col == si2vi.size())
+            tipl::to_sparse_inplace(I_int32,si2vi);
         pixel_type = int32;
         return true;
     }
@@ -43,6 +48,8 @@ bool variant_image::read_mat_image(const std::string& metric_name,tipl::io::gz_m
     {
         I_int16.resize(shape);
         mat.read(metric_name.c_str(),I_int16.begin(),I_int16.end());
+        if(row*col == si2vi.size())
+            tipl::to_sparse_inplace(I_int16,si2vi);
         pixel_type = int16;
         return true;
     }
@@ -50,11 +57,15 @@ bool variant_image::read_mat_image(const std::string& metric_name,tipl::io::gz_m
     {
         I_int8.resize(shape);
         mat.read(metric_name.c_str(),I_int8.begin(),I_int8.end());
+        if(row*col == si2vi.size())
+            tipl::to_sparse_inplace(I_int8,si2vi);
         pixel_type = int8;
         return true;
     }
     I_float32.resize(shape);
     mat.read(metric_name.c_str(),I_float32.begin(),I_float32.end());
+    if(row*col == si2vi.size())
+        tipl::to_sparse_inplace(I_float32,si2vi);
     pixel_type = float32;
     return true;
 }
