@@ -9,7 +9,7 @@ class connectometry_db
 {
 public:
     fib_data* handle = nullptr;
-    std::string report,subject_report;
+    std::string report,intro,subject_report;
     mutable std::string error_msg;
     unsigned int num_subjects = 0;
     bool modified = false;
