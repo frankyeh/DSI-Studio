@@ -1310,7 +1310,7 @@ void tracking_window::on_actionEdit_Slices_triggered()
 void tracking_window::on_actionSave_FIB_As_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(this,"Save FIB file",
-                        windowTitle(),"FIB files (*fib.gz);;All files (*)");
+                        windowTitle(),"FIB files (*.fz *fib.gz);;All files (*)");
     if (filename.isEmpty())
         return;
     if(!handle->save_to_file(filename.toStdString()))
