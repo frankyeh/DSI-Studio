@@ -439,7 +439,7 @@ void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istre
 void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 bool fib_data::load_from_file(const std::string& file_name)
 {
-    tipl::progress prog("opening ",std::filesystem::path(file_name).filename().u8string().c_str());
+    tipl::progress prog("opening ",file_name);
     tipl::image<3> I;
     tipl::io::gz_nifti header;
     fib_file_name = file_name;
@@ -754,6 +754,7 @@ bool fib_data::load_from_mat(void)
         {
             mask = tipl::make_image(mask_ptr,dim);
             si2vi = tipl::get_sparse_index(mask);
+            tipl::out() << "size: " << mask.shape() << " voxels: " << si2vi.size();
         }
     }
 
@@ -791,6 +792,7 @@ bool fib_data::load_from_mat(void)
         mask = tipl::make_image(mask_buffer.data(),dim);
         mat_reader.push_back(mask_mat);
         si2vi = tipl::get_sparse_index(mask);
+        tipl::out() << "size: " << mask.shape() << " voxels: " << si2vi.size();
     }
 
     for (unsigned int index = 0;index < mat_reader.size();++index)
@@ -1098,13 +1100,14 @@ bool fib_data::resample_to(float resolution)
     mat_reader.read("voxel_size",vs);
     mat_reader.read("trans",trans_to_mni);
 
-    mask = tipl::make_image(mat_reader.read_as_type<float>("mask"),dim);
+    mask = tipl::make_image(mat_reader.read_as_type<char>("mask"),dim);
     if(!mask.data())
     {
         error_msg = "no valid mask";
         return false;
     }
     si2vi = tipl::get_sparse_index(mask);
+    tipl::out() << "size: " << mask.shape() << " voxels: " << si2vi.size();
     for(auto& item : view_item)
         item.set_image(tipl::make_image(item.get_image().begin(),dim));
     return true;
