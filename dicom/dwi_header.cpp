@@ -176,7 +176,7 @@ bool DwiHeader::has_b_table(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
     return false;
 }
 bool DwiHeader::output_src(const std::string& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
-                           bool sort_btable,std::string& error_msg)
+                           bool sort_btable,const std::string& intro_file_name,std::string& error_msg)
 {
     if(dwi_files.empty())
     {
@@ -213,6 +213,15 @@ bool DwiHeader::output_src(const std::string& file_name,std::vector<std::shared_
         src.src_bvalues.push_back(each->bvalue);
         src.src_bvectors.push_back(each->bvec);
         src.src_dwi_data.push_back(each->begin());
+    }
+
+
+    std::ifstream file(std::filesystem::exists(intro_file_name) ? intro_file_name : "README");
+    if(file)
+    {
+        src.voxel.intro = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+        tipl::out() << "read intro: " << std::string(src.voxel.intro.begin(),
+                                                     src.voxel.intro.begin()+std::min<size_t>(src.voxel.intro.size(),64)) << "...";
     }
 
     src.voxel.report = dwi_files.front()->report + src.get_report();
