@@ -17,7 +17,7 @@
    <item>
     <widget class="QGroupBox" name="subject_list_group">
      <property name="title">
-      <string>Step C1a: Select Subject Files (*.fib.gz, *.nii.gz)</string>
+      <string>Step C1a: Select Subject Files (*.fz, *.fib.gz *.nii.gz)</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_7">
       <property name="spacing">
