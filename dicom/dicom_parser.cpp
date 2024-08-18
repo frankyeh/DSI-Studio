@@ -1094,7 +1094,7 @@ void dicom_parser::on_buttonBox_accepted()
     std::string error_msg;
     if(!DwiHeader::output_src(ui->SrcName->text().toStdString().c_str(),
                           dwi_files,
-                          ui->sort_btable->isChecked(),error_msg))
+                          ui->sort_btable->isChecked(),"README",error_msg))
     {
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
         close();
