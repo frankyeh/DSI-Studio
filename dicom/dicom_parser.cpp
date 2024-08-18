@@ -32,7 +32,12 @@ QString get_dicom_output_name(QString file_name,QString file_extension, bool add
         }
     }
     else
-        return file_name+file_extension;
+    {
+        if(tipl::ends_with(file_name.toStdString(),".nii.gz"))
+            return file_name.remove(".nii.gz")+file_extension;
+        else
+            return file_name+file_extension;
+    }
 }
 
 
@@ -1097,10 +1102,7 @@ void dicom_parser::on_buttonBox_accepted()
     }
     if(QFileInfo(ui->SrcName->text()).exists())
     {
-        if(QFileInfo(ui->SrcName->text()).suffix() != "gz")
-            ((MainWindow*)parent())->addSrc(ui->SrcName->text()+".gz");
-        else
-            ((MainWindow*)parent())->addSrc(ui->SrcName->text());
+        ((MainWindow*)parent())->addSrc(ui->SrcName->text());
         QMessageBox::information(this,QApplication::applicationName(),"SRC file created");
     }
     close();
