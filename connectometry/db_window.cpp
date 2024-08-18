@@ -249,7 +249,7 @@ void db_window::on_actionSave_DB_as_triggered()
                            this,
                            "Save Database",
                            windowTitle()+default_ext,
-                           "Database files (*db.fz *db?fib.gz *fib.gz);;All files (*)");
+                           "Database files (*db.fz *db?fib.gz *.fz *fib.gz);;All files (*)");
     if (filename.isEmpty())
         return;
     tipl::progress prog_("saving ",std::filesystem::path(filename.toStdString()).filename().u8string().c_str());
@@ -293,7 +293,7 @@ void db_window::on_actionAdd_DB_triggered()
                            this,
                            "Open Database files",
                            windowTitle(),
-                           "Database files (*db.fz *db?fib.gz *fib.gz *nii.gz);;All files (*)");
+                           "Database files (*db.fz *db?fib.gz *.fz *fib.gz *nii.gz);;All files (*)");
     if (filenames.isEmpty())
         return;
     for(int i =0;i < filenames.count();++i)
