@@ -779,7 +779,7 @@ void tracking_window::on_addSlices_clicked()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
         this,"Open Images files",QFileInfo(work_path).absolutePath(),
-                "Image files (*.dcm *.hdr *.nii *nii.gz *db.fib.gz 2dseq);;Histology (*.jpg *.tif);;All files (*)" );
+                "Image files (*.dcm *.hdr *.nii *nii.gz *db.fz *db.fib.gz 2dseq);;Histology (*.jpg *.tif);;All files (*)" );
     if( filenames.isEmpty())
         return;
     if(QFileInfo(filenames[0]).completeSuffix() == "dcm" && filenames.size() == 1)
