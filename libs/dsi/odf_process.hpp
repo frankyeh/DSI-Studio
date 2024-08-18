@@ -192,13 +192,11 @@ public:
     }
     virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
-        tipl::par_for (odf_data.size(),[&](unsigned int index)
-        {
-            tipl::multiply_constant(odf_data[index],voxel.z0);
-        });
+        for(auto& each : odf_data)
+            tipl::multiply_constant(each,voxel.z0);
         tipl::progress prog("odf",true);
         for (unsigned int index = 0;prog(index,odf_data.size());++index)
-            mat_writer.write((std::string("odf")+std::to_string(index)).c_str(),odf_data[index],voxel.ti.half_vertices_count);
+            mat_writer.write<tipl::io::sloped>((std::string("odf")+std::to_string(index)).c_str(),odf_data[index],voxel.ti.half_vertices_count);
         odf_data.clear();
     }
 };
@@ -257,7 +255,7 @@ public:
             {
                 std::ostringstream out;
                 out << "odf" << index;
-                mat_writer.write(out.str().c_str(),voxel.template_odfs[index],voxel.ti.half_vertices_count);
+                mat_writer.write<tipl::io::sloped>(out.str().c_str(),voxel.template_odfs[index],voxel.ti.half_vertices_count);
             }
         }
         mat_writer.write("trans",voxel.trans_to_mni);
@@ -524,32 +522,29 @@ public:
     }
     virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
-        write_image_to_mat(mat_writer,"gfa",gfa.data(),voxel.dim);
         // output normalized qa
         {
-            float max_qa = 0.0;
-            for (unsigned int i = 0;i < voxel.max_fiber_number;++i)
-                max_qa = std::max<float>(tipl::max_value(fa[i]),max_qa);
+            float max_qa = tipl::max_value(fa[0]);
             if(max_qa == 0.0f)
                 max_qa = 1.0f;
             voxel.z0 = float(1.0/double(max_qa));
+            for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
+            {
+                tipl::multiply_constant(fa[index],voxel.z0);
+                mat_writer.write_sparse<tipl::io::sloped>("fa" + std::to_string(index),fa[index],voxel.si2vi);
+            }
         }
-        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-        {
-            tipl::multiply_constant(fa[index],voxel.z0);
-            write_image_to_mat(mat_writer,("fa" + std::to_string(index)).c_str(),fa[index].data(),voxel.dim);
-        }
+        mat_writer.write_sparse<tipl::io::sloped>("gfa",gfa,voxel.si2vi);
 
         tipl::multiply_constant(iso,voxel.z0);
-        write_image_to_mat(mat_writer,"iso",iso.data(),voxel.dim);
+        mat_writer.write_sparse<tipl::io::sloped>("iso",iso,voxel.si2vi);
 
         if(!rdi.empty())
         {
             for(unsigned int i = 0;i < rdi.size();++i)
                 tipl::multiply_constant(rdi[i],voxel.z0);
             float L = 0.2f;
-            write_image_to_mat(mat_writer,"rdi",rdi[0].data(),voxel.dim);
-
+            mat_writer.write_sparse<tipl::io::sloped>("rdi",rdi[0],voxel.si2vi);
             if(voxel.shell.size() > 1)
             {
                 for(unsigned int i = 0;i < rdi[0].size();++i)
@@ -563,12 +558,12 @@ public:
                     std::ostringstream out2;
                     out2.precision(2);
                     out2 << "nrdi" << std::setfill('0') << std::setw(2) << int(L*10) << "L";
-                    write_image_to_mat(mat_writer,out2.str().c_str(),rdi[i].data(),voxel.dim);
+                    mat_writer.write_sparse<tipl::io::sloped>(out2.str(),rdi[i],voxel.si2vi);
                 }
             }
         }
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-            mat_writer.write(("index" + std::to_string(index)).c_str(),findex[index],uint32_t(voxel.dim.plane_size()));
+            mat_writer.write_sparse("index" + std::to_string(index),findex[index],voxel.si2vi);
     }
 };
 
