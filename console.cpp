@@ -128,9 +128,9 @@ Console::Console(QWidget *parent) :
     console.log_window = ui->console;
     console.show_output();
     ui->cmd_line->installEventFilter(this);
-    ui->cmd_line->addItem("--action=rec --source=*.src.gz");
-    ui->cmd_line->addItem("--action=trk --source=*.fib.gz");
-    ui->cmd_line->addItem("--action=atk --source=*.fib.gz");
+    ui->cmd_line->addItem("--action=rec --source=*.sz");
+    ui->cmd_line->addItem("--action=trk --source=*.fz");
+    ui->cmd_line->addItem("--action=atk --source=*.fz");
 }
 
 Console::~Console()
