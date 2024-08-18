@@ -105,6 +105,7 @@ private:
 private:
 private:
     tipl::io::gz_mat_read mat;
+    std::vector<size_t> mat_si2vi;
     void read_mat_info(void);
     bool read_mat(void);
 private: //overlay
