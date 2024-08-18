@@ -38,7 +38,7 @@ int rec(tipl::program_option<tipl::out>& po)
         src.voxel.param[1] = po.get("param1",src.voxel.param[1]);
         src.voxel.param[2] = po.get("param2",src.voxel.param[2]);
         for(size_t id = 0;id < fa_template_list.size();++id)
-            tipl::out() << "template " << id << ": " << std::filesystem::path(fa_template_list[id]).stem() << std::endl;
+            tipl::out() << "template " << id << ": " << std::filesystem::path(fa_template_list[id]).stem().stem().stem() << std::endl;
         src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
 
         if(src.voxel.method_id == 7) // is qsdr
