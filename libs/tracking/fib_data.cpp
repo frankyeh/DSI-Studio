@@ -98,52 +98,33 @@ bool odf_data::read(fib_data& fib)
     }
     return true;
 }
-
-bool read_image_from_mat(tipl::io::gz_mat_read& mat_reader,unsigned int index,const float*& ptr)
+void item::get_minmax(void)
 {
-    if(index >= mat_reader.size())
-        return false;
-    bool is_float = mat_reader[index].is_type<float>();
-    unsigned int row,col;
-    if(!mat_reader.read(index,row,col,ptr))
-        return false;
-    if(is_float)
-        return true;
-    size_t size = row*col;
-    std::string name = mat_reader.name(index);
-    auto slope_ptr = mat_reader.read_as_type<float>((name+"_slope").c_str(),row,col);
-    auto inter_ptr = mat_reader.read_as_type<float>((name+"_inter").c_str(),row,col);
-    if(!slope_ptr || !inter_ptr)
-        return true;
-    auto buf = const_cast<float*>(ptr);
-    tipl::multiply_constant(buf,buf+size,*slope_ptr);
-    if(*inter_ptr != 0.0f)
-        tipl::add_constant(buf,buf+size,*inter_ptr);
-    tipl::out() << name << " inter:" << *inter_ptr << " slope:" << *slope_ptr;
-    return true;
-}
-void write_image_to_mat(tipl::io::gz_mat_write& matfile,
-                       const std::string& name,
-                       const float* buf,tipl::shape<3> dim)
-{
-    if(!buf)
-        return;
-    float inter,slope;
-    tipl::minmax_value(buf,buf + dim.size(),inter,slope);
-    slope -= inter;
-    slope /= 255.99f;
-    std::vector<unsigned char> new_data(dim.size());
-    if(slope != 0.0f)
+    auto I = get_image();
+    float slope;
+    if(handle && handle->mat_reader.index_of(name) < handle->mat_reader.size() &&
+       handle->mat_reader[handle->mat_reader.index_of(name)].get_sub_data(name+".inter",min_value) &&
+       handle->mat_reader[handle->mat_reader.index_of(name)].get_sub_data(name+".slope",slope))
     {
-        float scale = 1.0f/slope;
-        for(size_t i = 0;i < new_data.size();++i)
-            new_data[i] = (buf[i]-inter)*scale;
+        max_value = min_value + 255.99f*slope;
+        tipl::out() << "min: " << min_value << " max:" << max_value;
     }
-    matfile.write(name.c_str(),new_data,uint32_t(dim.plane_size()));
-    matfile.write((name+"_slope").c_str(),std::vector<float>({slope}));
-    matfile.write((name+"_inter").c_str(),std::vector<float>({inter}));
-    tipl::out() << name << " size:" << dim << " inter:" << inter << " slope:" << slope;
+    else
+        tipl::minmax_value(I.begin(),I.end(),min_value,max_value);
+    if(std::isnan(min_value) || std::isinf(min_value) ||
+       std::isnan(max_value) || std::isinf(max_value))
+    {
+        min_value = 0.0f;
+        max_value = 1.0f;
+    }
+    contrast_min = 0;
+    contrast_max = max_value;
+    if(I.size() < 256*256*256 && contrast_min != contrast_max)
+        contrast_max = min_value+(tipl::segmentation::otsu_median(I)-min_value)*2.0f;
+    v2c.set_range(contrast_min,contrast_max);
+    v2c.two_color(min_color,max_color);
 }
+
 tipl::const_pointer_image<3,float> item::get_image(void)
 {
     if(!image_ready)
@@ -156,16 +137,17 @@ tipl::const_pointer_image<3,float> item::get_image(void)
         const float* buf = nullptr;
         auto prior_show_prog = tipl::show_prog;
         tipl::show_prog = false;
-        if (!read_image_from_mat(*mat_reader,image_index,buf))
+        auto image_index = handle->mat_reader.index_of(name);
+        if (image_index >= handle->mat_reader.size() ||
+            !handle->mat_reader.read(image_index,buf,handle->si2vi,handle->dim.size()))
         {
-            tipl::error() << "reading " << name << std::endl;
+            tipl::error() << "cannot read " << name << std::endl;
             dummy.resize(image_data.shape());
             image_data = dummy.alias();
         }
         else
         {
             tipl::out() << name << " loaded" << std::endl;
-            mat_reader->in->flush();
             image_data = tipl::make_image(buf,image_data.shape());
         }
         tipl::show_prog = prior_show_prog;
@@ -261,44 +243,45 @@ bool fiber_directions::add_data(fib_data& fib)
     for (unsigned int index = 0;prog(index,mat_reader.size());++index)
     {
         auto& mat_data = mat_reader[index];
-        std::string matrix_name = mat_data.get_name();
-        size_t total_size = mat_data.get_cols()*mat_data.get_rows();
-        if(total_size != dim.size() && total_size != dim.size()*3)
+        std::string matrix_name = mat_data.name;
+        size_t total_size = mat_data.size();
+        if(total_size != dim.size() && total_size != dim.size()*3 &&
+           mat_data.cols != fib.si2vi.size())
+            continue;
+        if(tipl::begins_with(matrix_name,"subjects")) // database
             continue;
         if (matrix_name == "image")
         {
             check_index(0);
-            read_image_from_mat(mat_reader,index,fa[0]);
+            mat_reader.read(index,fa[0]);
             findex_buf.resize(1);
             findex_buf[0].resize(total_size);
             findex[0] = &*(findex_buf[0].begin());
             continue;
         }
-        if(tipl::begins_with(matrix_name,"subjects")) // database
-            continue;
         // read fiber wise index (e.g. my_fa0,my_fa1,my_fa2)
         std::string prefix_name(matrix_name.begin(),matrix_name.end()-1); // the "my_fa" part
         auto last_ch = matrix_name[matrix_name.length()-1]; // the index value part
         if (last_ch < '0' || last_ch > '9')
             continue;
+
         uint32_t store_index = uint32_t(last_ch-'0');
         if (prefix_name == "index")
         {
             check_index(store_index);
-            mat_reader.read(index,row,col,findex[store_index]);
+            mat_reader.read(index,findex[store_index],fib.si2vi,dim.size());
             continue;
         }
         if (prefix_name == "fa")
         {
             check_index(store_index);
-            read_image_from_mat(mat_reader,index,fa[store_index]);
-            fa_otsu = tipl::segmentation::otsu_threshold(tipl::make_image(fa[0],dim));
+            mat_reader.read(index,fa[store_index],fib.si2vi,dim.size());
             continue;
         }
         if (prefix_name == "dir")
         {
             const float* dir_ptr;
-            read_image_from_mat(mat_reader,index,dir_ptr);
+            mat_reader.read(index,dir_ptr,fib.si2vi,dim.size());
             check_index(store_index);
             dir.resize(findex.size());
             dir[store_index] = dir_ptr;
@@ -314,7 +297,7 @@ bool fiber_directions::add_data(fib_data& fib)
 
         if(index_data[prefix_name_index].size() <= size_t(store_index))
             index_data[prefix_name_index].resize(store_index+1);
-        read_image_from_mat(mat_reader,index,index_data[prefix_name_index][store_index]);
+        mat_reader.read(index,index_data[prefix_name_index][store_index],fib.si2vi,dim.size());
 
     }
     if(prog.aborted())
@@ -325,10 +308,10 @@ bool fiber_directions::add_data(fib_data& fib)
         return 0;
     }
 
-
     // adding the primary fiber index
     index_name.insert(index_name.begin(),fa.size() == 1 ? "fa":"qa");
     index_data.insert(index_data.begin(),fa);
+    fa_otsu = tipl::segmentation::otsu_threshold(tipl::make_image(fa[0],dim));
 
     for(size_t index = 1;index < index_data.size();++index)
     {
@@ -593,9 +576,9 @@ bool fib_data::load_from_file(const char* file_name)
     }
     if(!I.empty())
     {
-        mat_reader.add("dimension",I.shape());
-        mat_reader.add("voxel_size",vs);
-        mat_reader.add("image",I);
+        mat_reader.push_back(std::make_shared<tipl::io::mat_matrix>("dimension",I.shape().data(),1,3));
+        mat_reader.push_back(std::make_shared<tipl::io::mat_matrix>("voxel_size",vs.data(),1,3));
+        mat_reader.push_back(std::make_shared<tipl::io::mat_matrix>("image",I.data(),I.plane_size(),I.depth()));
         load_from_mat();
         dir.index_name[0] = "image";
         view_item[0].name = "image";
@@ -761,15 +744,25 @@ bool fib_data::load_from_mat(void)
     }
     mat_reader.read("report",report);
     mat_reader.read("steps",steps);
-
-
     if (mat_reader.read("trans",trans_to_mni))
         is_mni = true;
+
+    {
+        const unsigned char* mask_ptr;
+        if(mat_reader.read("mask",mask_ptr))
+        {
+            mask = tipl::make_image(mask_ptr,dim);
+            si2vi = tipl::get_sparse_index(mask);
+        }
+    }
+
+
     if(!dir.add_data(*this))
     {
         error_msg = dir.error_msg;
         return false;
     }
+
     /*
     {
         tipl::out() << "reading original mat file" << std::endl;
@@ -786,10 +779,25 @@ bool fib_data::load_from_mat(void)
         view_item.push_back(item(dir.index_name[index],dir.index_data[index][0],dim));
     view_item.push_back(item("color",dir.fa[0],dim));
 
+    if(mask.empty())
+    {
+        auto mask_mat = std::make_shared<tipl::io::mat_matrix>("mask");
+        mask_mat->resize(tipl::shape<2>(dim.plane_size(),dim.depth()));
+        auto& mask_buffer = mask_mat->data_buf;
+        for(size_t i = 0;i < dim.size();++i)
+            if(dir.fa[0][i] > 0.02f)
+                mask_buffer[i] = 1;
+        mask = tipl::make_image(mask_buffer.data(),dim);
+        mat_reader.push_back(mask_mat);
+        si2vi = tipl::get_sparse_index(mask);
+    }
+
     for (unsigned int index = 0;index < mat_reader.size();++index)
     {
-        std::string matrix_name = mat_reader.name(index);
-        if (matrix_name == "image" || matrix_name.find("subjects") == 0)
+        std::string matrix_name = mat_reader[index].name;
+        if (matrix_name == "image" ||
+            matrix_name == "mask" ||
+            matrix_name.find("subjects") == 0)
             continue;
         std::string prefix_name(matrix_name.begin(),matrix_name.end()-1);
         char post_fix = matrix_name[matrix_name.length()-1];
@@ -802,13 +810,18 @@ bool fib_data::load_from_mat(void)
                              {return view.name == prefix_name;}) != view_item.end())
                 continue;
         }
-        if (size_t(mat_reader[index].get_rows())*size_t(mat_reader[index].get_cols()) != dim.size())
+        if (mat_reader[index].size() != dim.size() &&
+            mat_reader[index].size() != si2vi.size())
             continue;
-        view_item.push_back(item(matrix_name,dim,&mat_reader,index));
+        view_item.push_back(item(matrix_name,dim,this));
     }
 
     is_human_data = is_human_size(dim,vs); // 1 percentile head size in mm
     is_histology = (dim[2] == 2 && dim[0] > 400 && dim[1] > 400);
+
+
+
+
 
     if(!db.read_db(this))
     {
@@ -901,7 +914,7 @@ bool copy_mat(tipl::io::gz_mat_read& mat_reader,
     tipl::progress prog("saving");
     for(unsigned int index = 0;prog(index,mat_reader.size());++index)
     {
-        auto name = mat_reader.name(index);
+        auto name = mat_reader[index].name;
         bool skip = false;
         for(const auto& each : skip_list)
             if(name == each)
@@ -918,17 +931,6 @@ bool copy_mat(tipl::io::gz_mat_read& mat_reader,
         if(skip)
             continue;
         mat_reader.flush(index);
-        if(mat_reader[index].is_type<float>())
-        {
-            unsigned int col,row;
-            auto ptr = mat_reader.read_as_type<float>(index,col,row);
-            if(row*col > 4096)
-            {
-                write_image_to_mat(matfile,name,ptr,tipl::shape<3>(row,1,col));
-                continue;
-            }
-        }
-
         if(!matfile.write(mat_reader[index]))
         {
             mat_reader.error_msg = "failed to write buffer ";
@@ -943,13 +945,15 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
 {
     if(cmd == "save")
     {
-        tipl::io::gz_mat_write matfile(param.c_str());
+        tipl::io::gz_mat_write matfile(param);
         if(!matfile)
         {
             mat_reader.error_msg = "cannot save file to ";
             mat_reader.error_msg += param;
             return false;
         }
+        if(tipl::ends_with(param,".fz"))
+            matfile.slope = true;
         return copy_mat(mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping"},{"subject"});
     }
     if(cmd == "remove")
@@ -999,7 +1003,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         auto& mat = mat_reader[i];
         auto new_vs = vs;
         auto new_trans = trans;
-        if(size_t(mat.get_cols())*size_t(mat.get_rows()) == 3*dim.size())
+        if(mat.size() == 3*dim.size())
         {
             for(size_t d = 0;d < 3;++d)
             {
@@ -1024,7 +1028,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 }
             }
         }
-        if(size_t(mat.get_cols())*size_t(mat.get_rows()) == dim.size()) // image volumes, including fa, and fiber index
+        if(mat.size() == dim.size()) // image volumes, including fa, and fiber index
         {
             if(mat.is_type<short>() && (cmd == "normalize" || cmd.find("filter") != std::string::npos || cmd.find("_value") != std::string::npos))
                 return;
@@ -1047,12 +1051,12 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             else
                 std::copy(new_image.begin(),new_image.end(),mat.get_data<float>());
 
-            if(mat.get_name() == "fa0")
+            if(mat.name == "fa0")
             {
-                std::copy(new_image.shape().begin(),new_image.shape().end(),mat_reader.get_data<unsigned int>("dimension"));
-                std::copy(new_vs.begin(),new_vs.end(),mat_reader.get_data<float>("voxel_size"));
+                std::copy(new_image.shape().begin(),new_image.shape().end(),const_cast<unsigned int*>(mat_reader.read_as_type<unsigned int>("dimension")));
+                std::copy(new_vs.begin(),new_vs.end(),const_cast<float*>(mat_reader.read_as_type<float>("voxel_size")));
                 if(is_mni)
-                    std::copy(new_trans.begin(),new_trans.end(),mat_reader.get_data<float>("trans"));
+                    std::copy(new_trans.begin(),new_trans.end(),const_cast<float*>(mat_reader.read_as_type<float>("trans")));
             }
         }
 
