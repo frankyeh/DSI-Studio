@@ -354,7 +354,7 @@ public:
     fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_);
     fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4>& trans_to_mni_);
 public:
-    bool load_from_file(const char* file_name);
+    bool load_from_file(const std::string& file_name);
     bool save_to_file(const std::string& file_name);
     bool load_from_mat(void);
     bool save_mapping(const std::string& index_name,const std::string& file_name);
