@@ -216,6 +216,7 @@ bool DwiHeader::output_src(const std::string& file_name,std::vector<std::shared_
     }
 
     src.voxel.report = dwi_files.front()->report + src.get_report();
+    src.calculate_dwi_sum(false);
     if(!src.save_to_file(file_name))
     {
         error_msg = src.error_msg;
