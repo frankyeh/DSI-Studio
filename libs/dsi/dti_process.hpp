@@ -190,23 +190,24 @@ public:
             return;
         if(voxel.method_id == 1) // DTI
         {
-            write_image_to_mat(mat_writer,"fa0",voxel.fib_fa.data(),voxel.dim);
-            write_image_to_mat(mat_writer,"dir0",&voxel.fib_dir[0][0],voxel.dim.multiply(tipl::shape<3>::x,3));
+            mat_writer.write_sparse<tipl::io::sloped>("fa0",voxel.fib_fa,voxel.si2vi);
+            mat_writer.write_sparse<tipl::io::sloped>("dir0",voxel.fib_dir,voxel.si2vi);
         }
         else
-            write_image_to_mat(mat_writer,"dti_fa",voxel.fib_fa.data(),voxel.dim);
-        write_image_to_mat(mat_writer,"txx",txx.data(),voxel.dim);
-        write_image_to_mat(mat_writer,"txy",txy.data(),voxel.dim);
-        write_image_to_mat(mat_writer,"txz",txz.data(),voxel.dim);
-        write_image_to_mat(mat_writer,"tyy",tyy.data(),voxel.dim);
-        write_image_to_mat(mat_writer,"tyz",tyz.data(),voxel.dim);
-        write_image_to_mat(mat_writer,"tzz",tzz.data(),voxel.dim);
-        write_image_to_mat(mat_writer,"rd1",rd1.data(),voxel.dim);
-        write_image_to_mat(mat_writer,"rd2",rd2.data(),voxel.dim);
-        write_image_to_mat(mat_writer,"ha",ha.data(),voxel.dim);
-        write_image_to_mat(mat_writer,"md",md.data(),voxel.dim);
-        write_image_to_mat(mat_writer,"ad",ad.data(),voxel.dim);
-        write_image_to_mat(mat_writer,"rd",rd.data(),voxel.dim);
+            mat_writer.write_sparse<tipl::io::sloped>("dti_fa",voxel.fib_fa,voxel.si2vi);
+
+        mat_writer.write_sparse<tipl::io::sloped>("txx",txx,voxel.si2vi);
+        mat_writer.write_sparse<tipl::io::sloped>("txy",txy,voxel.si2vi);
+        mat_writer.write_sparse<tipl::io::sloped>("txz",txz,voxel.si2vi);
+        mat_writer.write_sparse<tipl::io::sloped>("tyy",tyy,voxel.si2vi);
+        mat_writer.write_sparse<tipl::io::sloped>("tyz",tyz,voxel.si2vi);
+        mat_writer.write_sparse<tipl::io::sloped>("tzz",tzz,voxel.si2vi);
+        mat_writer.write_sparse<tipl::io::sloped>("rd1",rd1,voxel.si2vi);
+        mat_writer.write_sparse<tipl::io::sloped>("rd2",rd2,voxel.si2vi);
+        mat_writer.write_sparse<tipl::io::sloped>("ha",ha,voxel.si2vi);
+        mat_writer.write_sparse<tipl::io::sloped>("md",md,voxel.si2vi);
+        mat_writer.write_sparse<tipl::io::sloped>("ad",ad,voxel.si2vi);
+        mat_writer.write_sparse<tipl::io::sloped>("rd",rd,voxel.si2vi);
     }
 };
 
