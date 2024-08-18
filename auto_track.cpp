@@ -51,7 +51,7 @@ void auto_track::on_open_clicked()
                                      this,
                                      "Open FIB files",
                                      "",
-                                     "FIB files (*fib.gz);;All files (*)" );
+                                     "FIB files (*.fz *fib.gz);;All files (*)" );
     if (filenames.isEmpty())
         return;
     file_list << filenames;
@@ -93,6 +93,7 @@ void auto_track::on_open_dir_clicked()
     if(dir.isEmpty())
         return;
     file_list << search_files(dir,"*fib.gz");
+    file_list << search_files(dir,"*.fz");
     update_list();
 }
 extern std::string auto_track_report;
