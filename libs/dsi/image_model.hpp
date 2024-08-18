@@ -225,7 +225,7 @@ public:
     std::vector<tipl::image<3,unsigned short> > nifti_dwi; // if load directly from nifti
 public:
     Voxel voxel;
-    std::string file_name;
+    std::string file_name,output_file_name;
     mutable std::string error_msg;
     tipl::io::gz_mat_read mat_reader;
 private:
