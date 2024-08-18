@@ -210,26 +210,23 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         return false;
     // QSDR loaded, use MNI transformation instead
     bool has_transform = false;
-    source_file_name = files[0].c_str();
-    name = QFileInfo(files[0].c_str()).completeBaseName().remove(".nii").toStdString();
+    source_file_name = files[0];
+    auto suffix = QFileInfo(source_file_name.c_str()).suffix();
+    name = QFileInfo(source_file_name.c_str()).completeBaseName().remove(".nii").toStdString();
     to_dif.identity();
     to_slice.identity();
-    tipl::progress prog("open ",std::filesystem::path(files[0]).filename().u8string().c_str());
+    tipl::progress prog("open ",source_file_name);
     // picture as slice
-    if(QFileInfo(files[0].c_str()).suffix() == "bmp" ||
-       QFileInfo(files[0].c_str()).suffix() == "jpg" ||
-       QFileInfo(files[0].c_str()).suffix() == "png" ||
-       QFileInfo(files[0].c_str()).suffix() == "tif" ||
-       QFileInfo(files[0].c_str()).suffix() == "tiff")
+    if(suffix == "bmp" || suffix == "jpg" || suffix == "png" || suffix == "tif" || suffix == "tiff")
 
     {
-        QString info_file = QString(files[0].c_str()) + ".info.txt";
+        QString info_file = QString(source_file_name.c_str()) + ".info.txt";
         if(files.size() == 1) // single slice
         {
             uint32_t slices_count = 10;
             {
                 size_t max_width = tipl::max_value(handle->dim.begin(),handle->dim.end())*2;
-                QImage in = read_qimage(files[0].c_str(),error_msg);
+                QImage in = read_qimage(source_file_name.c_str(),error_msg);
                 if(in.isNull())
                     return false;
                 picture << in;
@@ -260,7 +257,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         }
         else
         {
-            QImage in = read_qimage(files[0].c_str(),error_msg);
+            QImage in = read_qimage(source_file_name.c_str(),error_msg);
             if(in.isNull())
                 return false;
 
@@ -298,10 +295,12 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         }
     }
     // load and match demographics DB file
-    if(source_images.empty() && QString(files[0].c_str()).endsWith(".db.fib.gz"))
+    if(source_images.empty() &&
+       (tipl::ends_with(source_file_name,".db.fib.gz") ||
+        tipl::ends_with(source_file_name,".db.fz")))
     {
         std::shared_ptr<fib_data> db_handle(new fib_data);
-        if(!db_handle->load_from_file(files[0].c_str()) || !db_handle->db.has_db())
+        if(!db_handle->load_from_file(source_file_name) || !db_handle->db.has_db())
         {
             error_msg = db_handle->error_msg;
             return false;
@@ -334,18 +333,18 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
 
     // load nifti file
     if(source_images.empty() &&
-       (QString(files[0].c_str()).endsWith("nii.gz") || QString(files[0].c_str()).endsWith("nii")))
+       (QString(source_file_name.c_str()).endsWith("nii.gz") || QString(source_file_name.c_str()).endsWith("nii")))
     {
         tipl::io::gz_nifti nifti;
         //  prepare idx file
-        prepare_idx(files[0].c_str(),nifti.input_stream);
-        if(!nifti.load_from_file(files[0]))
+        prepare_idx(source_file_name.c_str(),nifti.input_stream);
+        if(!nifti.load_from_file(source_file_name))
         {
             error_msg = nifti.error_msg;
             return false;
         }
         nifti.toLPS(source_images,prog);
-        save_idx(files[0].c_str(),nifti.input_stream);
+        save_idx(source_file_name.c_str(),nifti.input_stream);
         nifti.get_voxel_size(vs);
         nifti.get_image_transformation(trans_to_mni);
         if(handle->is_mni)
@@ -359,9 +358,9 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         {
             if(source_images.shape() != handle->dim)
             {
-                if(QFileInfo(files[0].c_str()).fileName().toLower().contains("mni"))
+                if(QFileInfo(source_file_name.c_str()).fileName().toLower().contains("mni"))
                 {
-                    tipl::out() << std::filesystem::path(files[0]).filename().u8string() <<
+                    tipl::out() << std::filesystem::path(source_file_name).filename().u8string() <<
                                  " has 'mni' in the file name and has a different image size from DWI. It will be spatially normalized from template space to native space." << std::endl;
                     is_mni = true;
                 }
@@ -381,7 +380,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
             else
             // slice and DWI have the same image size
             {
-                if(QFileInfo(files[0].c_str()).fileName().contains("reg"))
+                if(QFileInfo(source_file_name.c_str()).fileName().contains("reg"))
                 {
                     tipl::out() << "The slices have the same dimension, and there is 'reg' in the file name." << std::endl;
                     tipl::out() << "no registration needed." << std::endl;
@@ -399,12 +398,12 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
     if(source_images.empty())
     {
         tipl::io::bruker_2dseq bruker;
-        if(bruker.load_from_file(files[0].c_str()))
+        if(bruker.load_from_file(source_file_name.c_str()))
         {
             bruker.get_voxel_size(vs);
             source_images = std::move(bruker.get_image());
             initial_LPS_nifti_srow(trans_to_mni,source_images.shape(),vs);
-            QDir d = QFileInfo(files[0].c_str()).dir();
+            QDir d = QFileInfo(source_file_name.c_str()).dir();
             if(d.cdUp() && d.cdUp())
             {
                 QString method_file_name = d.absolutePath()+ "/method";
@@ -451,10 +450,10 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
     if(has_transform)
         return true;
 
-    if(std::filesystem::exists(files[0]+".linear_reg.txt"))
+    if(std::filesystem::exists(source_file_name+".linear_reg.txt"))
     {
         tipl::out() << "loading existing linear registration." << std::endl;
-        if(!(load_mapping((files[0]+".linear_reg.txt").c_str())))
+        if(!(load_mapping((source_file_name+".linear_reg.txt").c_str())))
         {
             tipl::error() << "invalid slice mapping file format" << std::endl;
             return false;
@@ -462,7 +461,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         return true;
     }
 
-    if(handle->is_mni || QFileInfo(files[0].c_str()).fileName().toLower().contains("reg"))
+    if(handle->is_mni || QFileInfo(source_file_name.c_str()).fileName().toLower().contains("reg"))
     {
         tipl::out() << "'reg' found in the file name. no registration applied." << std::endl;
         is_diffusion_space = true;
