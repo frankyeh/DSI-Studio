@@ -235,21 +235,21 @@ void db_window::on_actionCalculate_change_triggered()
 
 void db_window::on_actionSave_DB_as_triggered()
 {
-    QString default_ext = ".mod.db.fib.gz";
+    QString default_ext = ".mod.db.fz";
     if(vbc->handle->db.is_longitudinal)
     {
-        default_ext = ".dif.db.fib.gz";
+        default_ext = ".dif.db.fz";
         if(vbc->handle->db.longitudinal_filter_type == 1)
-            default_ext = ".pos_dif.db.fib.gz";
+            default_ext = ".pos_dif.db.fz";
         if(vbc->handle->db.longitudinal_filter_type == 2)
-            default_ext = ".neg_dif.db.fib.gz";
+            default_ext = ".neg_dif.db.fz";
 
     }
     QString filename = QFileDialog::getSaveFileName(
                            this,
                            "Save Database",
                            windowTitle()+default_ext,
-                           "Database files (*db?fib.gz *fib.gz);;All files (*)");
+                           "Database files (*db.fz *db?fib.gz *fib.gz);;All files (*)");
     if (filename.isEmpty())
         return;
     tipl::progress prog_("saving ",std::filesystem::path(filename.toStdString()).filename().u8string().c_str());
@@ -293,7 +293,7 @@ void db_window::on_actionAdd_DB_triggered()
                            this,
                            "Open Database files",
                            windowTitle(),
-                           "Database files (*db?fib.gz *fib.gz *nii.gz);;All files (*)");
+                           "Database files (*db.fz *db?fib.gz *fib.gz *nii.gz);;All files (*)");
     if (filenames.isEmpty())
         return;
     for(int i =0;i < filenames.count();++i)
