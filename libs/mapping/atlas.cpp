@@ -9,11 +9,10 @@ void apply_trans(tipl::vector<3>& pos,const tipl::matrix<4,4>& trans);
 
 std::string get_label_file_name(const std::string& file_name)
 {
-    if(tipl::ends_with(file_name,".nii.gz"))
-        return file_name.substr(0,file_name.size()-6) +"txt";
-    if(tipl::ends_with(file_name,".nii"))
-        return file_name.substr(0,file_name.size()-3) +"txt";
-    return file_name + ".txt";
+    std::string label_name(file_name);
+    tipl::remove_suffix(label_name,".nii.gz");
+    tipl::remove_suffix(label_name,".nii");
+    return label_name + ".txt";
 }
 void atlas::load_label(void)
 {
