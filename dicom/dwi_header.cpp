@@ -215,14 +215,8 @@ bool DwiHeader::output_src(const std::string& file_name,std::vector<std::shared_
         src.src_dwi_data.push_back(each->begin());
     }
 
-
-    std::ifstream file(std::filesystem::exists(intro_file_name) ? intro_file_name : "README");
-    if(file)
-    {
-        src.voxel.intro = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-        tipl::out() << "read intro: " << std::string(src.voxel.intro.begin(),
-                                                     src.voxel.intro.begin()+std::min<size_t>(src.voxel.intro.size(),64)) << "...";
-    }
+    if(std::filesystem::exists(intro_file_name))
+        src.load_intro(intro_file_name);
 
     src.voxel.report = dwi_files.front()->report + src.get_report();
     src.calculate_dwi_sum(false);
