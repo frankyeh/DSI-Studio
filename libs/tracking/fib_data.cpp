@@ -437,14 +437,14 @@ bool load_fib_from_tracks(const char* file_name,
                           tipl::matrix<4,4>& trans_to_mni);
 void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
-bool fib_data::load_from_file(const char* file_name)
+bool fib_data::load_from_file(const std::string& file_name)
 {
     tipl::progress prog("opening ",std::filesystem::path(file_name).filename().u8string().c_str());
     tipl::image<3> I;
     tipl::io::gz_nifti header;
     fib_file_name = file_name;
-    if((QFileInfo(file_name).fileName().endsWith(".nii") ||
-        QFileInfo(file_name).fileName().endsWith(".nii.gz")) &&
+    if((tipl::ends_with(file_name,".nii") ||
+        tipl::ends_with(file_name,".nii.gz")) &&
         header.load_from_file(file_name))
     {
         if(header.dim(4) == 3)
@@ -539,7 +539,7 @@ bool fib_data::load_from_file(const char* file_name)
             header.toLPS(I);
             header.get_voxel_size(vs);
             header.get_image_transformation(trans_to_mni);
-            is_mni = QFileInfo(file_name).fileName().toLower().contains("mni");
+            is_mni = std::filesystem::path(file_name).filename().string().find("mni") != std::string::npos;
             if(is_mni)
                 tipl::out() << "The file name contains 'mni'. The image is used as MNI-space image." << std::endl;
             else
@@ -547,7 +547,7 @@ bool fib_data::load_from_file(const char* file_name)
         }
     }
     else
-    if(QFileInfo(file_name).fileName() == "2dseq")
+    if(std::filesystem::path(file_name).filename().string() == "2dseq")
     {
         tipl::io::bruker_2dseq bruker_header;
         if(!bruker_header.load_from_file(file_name))
@@ -563,12 +563,12 @@ bool fib_data::load_from_file(const char* file_name)
         report = out.str();
     }
     else
-    if(QString(file_name).endsWith("trk.gz") ||
-       QString(file_name).endsWith("trk") ||
-       QString(file_name).endsWith("tck") ||
-       QString(file_name).endsWith("tt.gz"))
+    if(tipl::ends_with(file_name,"trk.gz") ||
+       tipl::ends_with(file_name,"trk") ||
+       tipl::ends_with(file_name,"tck") ||
+       tipl::ends_with(file_name,"tt.gz"))
     {
-        if(!load_fib_from_tracks(file_name,I,vs,trans_to_mni))
+        if(!load_fib_from_tracks(file_name.c_str(),I,vs,trans_to_mni))
         {
             error_msg = "Invalid track format";
             return false;
@@ -587,7 +587,7 @@ bool fib_data::load_from_file(const char* file_name)
         tipl::out() << "image file loaded: " << I.shape() << std::endl;
         return true;
     }
-    if(!QFileInfo(file_name).exists())
+    if(!std::filesystem::exists(file_name))
     {
         error_msg = "file does not exist";
         return false;
@@ -833,6 +833,23 @@ bool fib_data::load_from_mat(void)
     {
         // matching templates
         matched_template_id = 0;
+
+        std::string template_name;
+        if(mat_reader.read("template",template_name))
+        {
+            tipl::out() << "template: " << template_name;
+            for(size_t index = 0;index < fa_template_list.size();++index)
+            {
+                auto name = std::filesystem::path(fa_template_list[index]).stem().stem().stem().string();
+                if(template_name == name)
+                {
+                    matched_template_id = index;
+                    set_template_id(matched_template_id);
+                    return true;
+                }
+            }
+        }
+
         for(size_t index = 0;index < fa_template_list.size();++index)
             if(QString(fib_file_name.c_str()).contains(QFileInfo(fa_template_list[index].c_str()).baseName(),Qt::CaseInsensitive))
             {
@@ -861,30 +878,14 @@ bool fib_data::load_from_mat(void)
                 return true;
             }
         }
-
-        tipl::out() << "No matched template, use default: " << QFileInfo(fa_template_list[matched_template_id].c_str()).baseName().toStdString() << std::endl;
+        tipl::out() << "no matched template, use default: " <<
+            std::filesystem::path(fa_template_list[matched_template_id]).stem().stem().stem() << std::endl;
         set_template_id(matched_template_id);
         return true;
     }
 
-    {
-        if(trans_to_mni == tipl::identity_matrix())
-            initial_LPS_nifti_srow(trans_to_mni,dim,vs);
-    }
-
-    // template matching
-    // check if there is any mapping files exist
-    for(size_t index = 0;index < fa_template_list.size();++index)
-    {
-        QString name = QFileInfo(fa_template_list[index].c_str()).baseName().toLower();
-        if(QFileInfo(fib_file_name.c_str()).fileName().contains(name) ||
-           QFileInfo(QString(fib_file_name.c_str())+"."+name+".mapping.gz").exists() ||
-           QFileInfo(QString(fib_file_name.c_str())+"."+name+".inv.mapping.gz").exists())
-        {
-            set_template_id(index);
-            return true;
-        }
-    }
+    if(trans_to_mni == tipl::identity_matrix())
+        initial_LPS_nifti_srow(trans_to_mni,dim,vs);
 
     match_template();
     return true;
@@ -1103,7 +1104,7 @@ void fib_data::match_template(void)
         tipl::out() << "image volume smaller than human young adult. try matching a template...";
         set_template_id(match_volume(std::count_if(dir.fa[0],dir.fa[0]+dim.size(),[](float v){return v > 0.0f;})*2.0f*vs[0]*vs[1]*vs[2]));
     }
-    tipl::out() << "matched template: " << tipl::split(std::filesystem::path(fa_template_list[template_id]).filename().u8string(),'.').front();
+    tipl::out() << "matched template: " << std::filesystem::path(fa_template_list[template_id]).stem().stem().stem();
 }
 
 size_t fib_data::get_name_index(const std::string& index_name) const
