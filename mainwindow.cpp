@@ -488,7 +488,7 @@ void MainWindow::open_DWI(QStringList filenames)
         std::string file_name(subject_file["SUBJECT_study_name"]);
         file_name.erase(std::remove(file_name.begin(),file_name.end(),' '),file_name.end());
         dicom_parser* dp = new dicom_parser(filenames,this);
-        dp->set_name(dir + "/" + file_name.c_str() + ".src.gz");
+        dp->set_name(dir + "/" + file_name.c_str() + ".sz");
         dp->setAttribute(Qt::WA_DeleteOnClose);
         dp->showNormal();
         return;
@@ -528,7 +528,7 @@ void MainWindow::on_Reconstruction_clicked()
                            this,
                            "Open Src files",
                            ui->workDir->currentText(),
-                           "Src files (*src.gz *.src);;Histology images (*.jpg *.tif);;All files (*)" );
+                           "Src files (*.sz *src.gz);;Histology images (*.jpg *.tif);;All files (*)" );
     if (filenames.isEmpty())
         return;
     add_work_dir(QFileInfo(filenames[0]).absolutePath());
@@ -732,7 +732,7 @@ void MainWindow::on_batch_reconstruction_clicked()
     if(dir.isEmpty())
         return;
     add_work_dir(dir);
-    loadSrc(search_files(dir,"*src.gz"));
+    loadSrc(search_files(dir,"*src.gz") << search_files(dir,"*.sz"));
 }
 
 void MainWindow::on_view_image_clicked()
@@ -767,7 +767,7 @@ bool MainWindow::load_db(std::shared_ptr<group_connectometry_analysis>& database
                            this,
                            "Open Database files",
                            ui->workDir->currentText(),
-                           "Database files (*db?fib.gz);;All files (*)");
+                           "Database (*db.fz *db?fib.gz);;All files (*)");
     if (filename.isEmpty())
         return false;
     add_work_dir(QFileInfo(filename).absolutePath());
@@ -854,7 +854,10 @@ void MainWindow::on_SRC_qc_clicked()
     if(dir.isEmpty())
         return;
     tipl::progress prog_("checking SRC files");
-    show_info_dialog("SRC report",quality_check_src_files(tipl::search_files(dir.toStdString(),"*src.gz")));
+    std::vector<std::string> results;
+    tipl::search_files(dir.toStdString(),"*src.gz",results);
+    tipl::search_files(dir.toStdString(),"*sz",results);
+    show_info_dialog("SRC report",quality_check_src_files(results));
 }
 
 void MainWindow::on_parse_network_measures_clicked()
@@ -992,7 +995,7 @@ void MainWindow::batch_create_src(const std::vector<std::string>& dwi_nii_files,
             for(int j = 0;j < dwi_nii_files.size();++j)
             {
                 std::string nii_name = dwi_nii_files[j];
-                std::string src_name = output_dir + "/" + std::filesystem::path(nii_name).filename().u8string() + ".src.gz";
+                std::string src_name = output_dir + "/" + std::filesystem::path(nii_name).filename().u8string() + ".sz";
                 std::vector<std::shared_ptr<DwiHeader> > dwi_files;
 
                 if(std::filesystem::exists(src_name) && !yes_to_all)
@@ -1189,7 +1192,7 @@ bool dcm2src_and_nii(QStringList files)
         return tipl::io::gz_nifti::save_to_file(nii_name.toStdString().c_str(),buffer,dicom->voxel_size,trans,false,report.c_str());
     }
 
-    QString src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".src.gz").c_str(),true);
+    QString src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".sz").c_str(),true);
     if(!DwiHeader::output_src(src_name.toStdString().c_str(),dicom_files,false,error_msg))
     {
         tipl::error() << error_msg << std::endl;
