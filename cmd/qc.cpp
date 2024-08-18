@@ -116,11 +116,14 @@ std::string quality_check_fib_files(const std::vector<std::string>& file_list)
 int qc(tipl::program_option<tipl::out>& po)
 {
     std::string source = po.get("source");
-    bool is_fib = po.get("is_fib",source.find("fib.gz") != std::string::npos ? 1:0);
+    bool is_fib = po.get("is_fib",tipl::ends_with(source,"fib.gz") || tipl::ends_with(source,".fz") ? 1:0);
 
     std::vector<std::string> file_list;
     if(QFileInfo(source.c_str()).isDir())
+    {
         tipl::search_files(source,is_fib ? "*.fib.gz" : "*.src.gz",file_list);
+        tipl::search_files(source,is_fib ? "*.fz" : "*.sz",file_list);
+    }
     else
         if(!po.get_files("source",file_list))
         {
