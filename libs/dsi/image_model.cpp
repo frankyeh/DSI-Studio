@@ -2008,17 +2008,19 @@ std::string src_data::find_topup_reverse_pe(void)
 {
     tipl::progress prog("searching for opposite direction scans..");
     // locate rsrc.gz file
-    std::string rev_file_name = file_name.substr(0,file_name.length()-6)+"rsrc.gz";
-    if(std::filesystem::exists(rev_file_name))
+    std::string rev_file_name(file_name);
+    tipl::remove_suffix(rev_file_name,".sz");
+    tipl::remove_suffix(rev_file_name,".src.gz");
+    tipl::remove_suffix(rev_file_name,".nii.gz");
+    if(std::filesystem::exists(rev_file_name+".rev.sz"))
     {
-        tipl::out() << "reversed pe SRC file found: " << rev_file_name << std::endl;
-        return rev_file_name;
+        tipl::out() << "reversed pe SRC file found: " << rev_file_name+".rev.sz" << std::endl;
+        return rev_file_name+".rev.sz";
     }
-    rev_file_name = file_name.substr(0,file_name.length()-2)+"rz";
-    if(std::filesystem::exists(rev_file_name))
+    if(std::filesystem::exists(rev_file_name+".rsrc.gz"))
     {
-        tipl::out() << "reversed pe SRC file found: " << rev_file_name << std::endl;
-        return rev_file_name;
+        tipl::out() << "reversed pe SRC file found: " << rev_file_name+".rsrc.gz" << std::endl;
+        return rev_file_name+".rsrc.gz";
     }
 
     // locate reverse pe nifti files
@@ -2291,12 +2293,6 @@ bool src_data::save_to_file(const std::string& filename)
     {
         auto temp_file = filename + ".tmp.gz";
         {
-            auto si2vi = tipl::get_sparse_index(voxel.mask);
-            if(si2vi.empty())
-            {
-                error_msg = "empty mask";
-                return false;
-            }
 
             tipl::io::gz_mat_write mat_writer(temp_file);
             if(!mat_writer)
@@ -2326,9 +2322,13 @@ bool src_data::save_to_file(const std::string& filename)
                 voxel.mask = dwi;
                 tipl::upper_threshold(voxel.mask,1);
             }
+            auto si2vi = tipl::get_sparse_index(voxel.mask);
             mat_writer.write("mask",voxel.mask,voxel.dim.plane_size());
             for (unsigned int index = 0;prog(index,src_bvalues.size());++index)
-                mat_writer.write_sparse<tipl::io::sloped>("image"+std::to_string(index),src_dwi_data[index],voxel.dim.size(),si2vi);
+                if(si2vi.empty() || si2vi.size() == voxel.mask.size())
+                    mat_writer.write<tipl::io::sloped>("image"+std::to_string(index),src_dwi_data[index],voxel.dim.plane_size(),voxel.dim.depth());
+                else
+                    mat_writer.write_sparse<tipl::io::sloped>("image"+std::to_string(index),src_dwi_data[index],voxel.dim.size(),si2vi);
             mat_writer.write("report",voxel.report);
             mat_writer.write("steps",voxel.steps);
         }
@@ -2651,21 +2651,26 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
     return true;
 }
 extern int fib_ver;
-bool src_data::save_fib(const std::string& file_name)
+bool src_data::save_fib(const std::string& fib_file_name)
 {
-    std::string output_name(file_name);
-    if(!tipl::ends_with(output_name,".fz") && !tipl::ends_with(output_name,".fib.gz"))
-        output_name += get_file_ext();
+    output_file_name = fib_file_name;
+    if(!tipl::ends_with(output_file_name,".fz") && !tipl::ends_with(output_file_name,".fib.gz"))
+    {
+        tipl::remove_suffix(output_file_name,".sz");
+        tipl::remove_suffix(output_file_name,".src.gz");
+        tipl::remove_suffix(output_file_name,".nii.gz");
+        output_file_name += get_file_ext();
+    }
 
-    std::string tmp_file = output_name + ".tmp.gz";
+    std::string tmp_file = output_file_name + ".tmp.gz";
     while(std::filesystem::exists(tmp_file))
         tmp_file += ".tmp.gz";
 
     voxel.si2vi = tipl::get_sparse_index(voxel.mask);
     if(voxel.si2vi.empty())
     {
-        error_msg = "empty mask";
-        return false;
+        voxel.si2vi.resize(voxel.mask.plane_size());
+        std::iota(voxel.si2vi.begin(),voxel.si2vi.end(),0);
     }
 
     tipl::io::gz_mat_write mat_writer(tmp_file);
@@ -2674,7 +2679,7 @@ bool src_data::save_fib(const std::string& file_name)
         error_msg = "cannot save fib file";
         return false;
     }
-    if(tipl::ends_with(output_name,".fz"))
+    if(tipl::ends_with(output_file_name,".fz"))
         mat_writer.slope = true;
 
     mat_writer.write("dimension",voxel.dim);
@@ -2691,8 +2696,8 @@ bool src_data::save_fib(const std::string& file_name)
     mat_writer.write("report",voxel.report + voxel.recon_report.str());
     mat_writer.write("steps",voxel.steps + voxel.step_report.str() + "[Step T2b][Run reconstruction]\n");
     mat_writer.close();
-    std::filesystem::rename(tmp_file,output_name);
-    tipl::out() << "saving " << output_name;
+    std::filesystem::rename(tmp_file,output_file_name);
+    tipl::out() << "saving " << output_file_name;
     return true;
 }
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
