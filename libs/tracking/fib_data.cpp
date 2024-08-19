@@ -918,6 +918,11 @@ bool copy_mat(tipl::io::gz_mat_read& mat_reader,
     tipl::progress prog("saving");
     for(unsigned int index = 0;prog(index,mat_reader.size());++index)
     {
+        if(!matfile)
+        {
+            mat_reader.error_msg = "failed to write buffer ";
+            return false;
+        }
         auto name = mat_reader[index].name;
         bool skip = false;
         for(const auto& each : skip_list)
@@ -935,11 +940,20 @@ bool copy_mat(tipl::io::gz_mat_read& mat_reader,
         if(skip)
             continue;
         mat_reader.flush(index);
-        if(!matfile.write(mat_reader[index]))
+        if(mat_reader[index].size() == matfile.mask_cols*matfile.mask_rows)
         {
-            mat_reader.error_msg = "failed to write buffer ";
-            return false;
+            if(mat_reader[index].is_type<float>()) // metrics
+            {
+                matfile.write<tipl::io::masked_sloped>(mat_reader[index]);
+                continue;
+            }
+            if(mat_reader[index].is_type<short>()) // index
+            {
+                matfile.write<tipl::io::masked>(mat_reader[index]);
+                continue;
+            }
         }
+        matfile.write(mat_reader[index]);
     }
     return !prog.aborted();
 }
@@ -957,7 +971,19 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             return false;
         }
         if(tipl::ends_with(param,".fz"))
-            matfile.slope = true;
+        {
+            matfile.apply_slope = true;
+            tipl::shape<3> dim;
+            const unsigned char* mask_ptr;
+            if(!mat_reader.read("dimension",dim) || !mat_reader.read("mask",mask_ptr))
+            {
+                mat_reader.error_msg = "cannot find mask";
+                return false;
+            }
+            matfile.mask_rows = dim.plane_size();
+            matfile.mask_cols = dim.depth();
+            matfile.si2vi = tipl::get_sparse_index(tipl::make_image(mask_ptr,dim));
+        }
         return copy_mat(mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping"},{"subject"});
     }
     if(cmd == "remove")
