@@ -17,8 +17,6 @@ protected:
     tipl::image<3,tipl::vector<3> > cdm_dis,mapping;
 protected:
     tipl::transformation_matrix<float> affine;
-protected: // for warping other image modality
-    std::vector<tipl::image<3> > other_image;
 protected:
     std::vector<float> jdet;
 protected:
@@ -224,18 +222,22 @@ public:
             // other image
             if(!voxel.other_image.empty())
             {
-                other_image.resize(voxel.other_image.size());
                 for(unsigned int i = 0;i < voxel.other_image.size();++i)
                 {
-                    other_image[i].resize(VG.shape());
-                    tipl::adaptive_par_for(voxel.mask.size(),[&](size_t index)
+                    if(voxel.other_image[i].empty())
+                        continue;
+                    tipl::image<3> new_other_image(VG.shape());
+                    tipl::adaptive_par_for(VG.shape().size(),[&](size_t index)
                     {
                         tipl::vector<3,float> Jpos(mapping[index]);
                         if(voxel.other_image[i].shape() != native_geo)
                             voxel.other_image_trans[i](Jpos);
-                        tipl::estimate<tipl::interpolation::cubic>(voxel.other_image[i],Jpos,other_image[i][index]);
+                        tipl::estimate<tipl::interpolation::cubic>(voxel.other_image[i],Jpos,new_other_image[index]);
                     });
-                    tipl::lower_threshold(other_image[i],0);
+                    tipl::lower_threshold(new_other_image,0);
+                    voxel.other_image[i].swap(new_other_image);
+                    voxel.other_image_voxel_size[i] = VGvs;
+                    voxel.other_image_trans[i].identity();
                 }
             }
             if(voxel.needs("jdet"))
@@ -293,8 +295,6 @@ public:
         mat_writer.write<tipl::io::masked_sloped>("jdet",jdet,voxel.dim.plane_size());
         mat_writer.write("native_dimension",native_geo);
         mat_writer.write("native_voxel_size",native_vs);
-        for(unsigned int index = 0;index < other_image.size();++index)
-            mat_writer.write<tipl::io::masked_sloped>(voxel.other_image_name[index],other_image[index].data(),other_image[index].plane_size(),other_image[index].depth());
         mat_writer.write("trans",voxel.trans_to_mni);
         mat_writer.write("template",std::filesystem::path(fa_template_list[voxel.template_id]).stem().stem().stem().string());
         mat_writer.write("R2",std::vector<float>({voxel.R2}));
