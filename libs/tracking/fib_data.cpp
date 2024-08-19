@@ -8,6 +8,7 @@
 #include "tessellated_icosahedron.hpp"
 #include "tract_model.hpp"
 #include "roi.hpp"
+#include "cmd/img.hpp"
 
 extern std::vector<std::string> fa_template_list;
 bool odf_data::read(fib_data& fib)
@@ -908,8 +909,7 @@ bool read_fib_data(tipl::io::gz_mat_read& mat_reader)
         return false;
     return true;
 }
-bool img_command_float32_std(tipl::image<3>& data,tipl::vector<3>& vs,tipl::matrix<4,4>& T,bool& is_mni,
-             const std::string& cmd,const std::string& param1,std::string& error_msg);
+
 bool copy_mat(tipl::io::gz_mat_read& mat_reader,
               tipl::io::gz_mat_write& matfile,
               const std::vector<std::string>& skip_list,
@@ -963,31 +963,6 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 const std::string& cmd,
                 const std::string& param)
 {
-    if(cmd == "save")
-    {
-        tipl::io::gz_mat_write matfile(param);
-        if(!matfile)
-        {
-            mat_reader.error_msg = "cannot save file to ";
-            mat_reader.error_msg += param;
-            return false;
-        }
-        if(tipl::ends_with(param,".fz"))
-        {
-            matfile.apply_slope = true;
-            tipl::shape<3> dim;
-            const unsigned char* mask_ptr;
-            if(!mat_reader.read("dimension",dim) || !mat_reader.read("mask",mask_ptr))
-            {
-                mat_reader.error_msg = "cannot find mask";
-                return false;
-            }
-            matfile.mask_rows = dim.plane_size();
-            matfile.mask_cols = dim.depth();
-            matfile.si2vi = tipl::get_sparse_index(tipl::make_image(mask_ptr,dim));
-        }
-        return copy_mat(mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping"},{"subject"});
-    }
     if(cmd == "remove")
     {
         mat_reader.remove(param[0] >= '0' && param[0] <= '9' ? std::stoi(param) : int(mat_reader.index_of(param)));
@@ -1011,8 +986,10 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         mat_reader[row].set_name(data[1]);
         return true;
     }
+
     if(!read_fib_data(mat_reader))
         return false;
+
     tipl::shape<3> dim;
     tipl::vector<3> vs;
     tipl::matrix<4,4,float> trans((tipl::identity_matrix()));
@@ -1024,6 +1001,33 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         mat_reader.read("trans",trans);
         is_mni = true;
     }
+    const unsigned char* mask_ptr;
+    if(!mat_reader.read("mask",mask_ptr))
+    {
+        mat_reader.error_msg = "cannot find mask";
+        return false;
+    }
+    auto si2vi = tipl::get_sparse_index(tipl::make_image(mask_ptr,dim));
+
+    if(cmd == "save")
+    {
+        tipl::io::gz_mat_write matfile(param);
+        if(!matfile)
+        {
+            mat_reader.error_msg = "cannot save file to ";
+            mat_reader.error_msg += param;
+            return false;
+        }
+        if(tipl::ends_with(param,".fz"))
+        {
+            matfile.apply_slope = true;
+            matfile.mask_rows = dim.plane_size();
+            matfile.mask_cols = dim.depth();
+            matfile.si2vi = si2vi;
+        }
+        return copy_mat(mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping"},{"subject"});
+    }
+
 
     tipl::progress prog(cmd.c_str());
     size_t p = 0;
@@ -1043,7 +1047,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 auto ptr = mat.get_data<float>()+d;
                 for(size_t j = 0;j < dim.size();++j,ptr += 3)
                     new_image[j] = *ptr;
-                if(!img_command_float32_std(new_image,new_vs,new_trans,is_mni,cmd,param,mat_reader.error_msg))
+                if(!tipl::command<tipl::out,tipl::io::gz_nifti>(new_image,new_vs,new_trans,is_mni,cmd,param,true,mat_reader.error_msg))
                 {
                     mat_reader.error_msg = "cannot perform ";
                     mat_reader.error_msg += cmd;
@@ -1064,15 +1068,16 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         {
             if(mat.is_type<short>() && (cmd == "normalize" || cmd.find("filter") != std::string::npos || cmd.find("_value") != std::string::npos))
                 return;
-            tipl::image<3> new_image;
-            if(mat.is_type<short>()) // index0,index1
-                new_image = tipl::make_image(mat.get_data<short>(),dim);
-            if(mat.is_type<float>()) //
-                new_image = tipl::make_image(mat.get_data<float>(),dim);
-            if(mat.is_type<char>()) //
-                new_image = tipl::make_image(mat.get_data<char>(),dim);
+            variant_image new_image;
+            new_image.vs = vs;
+            new_image.T = trans;
+            new_image.shape = dim;
+            if(!new_image.read_mat_image(i,mat_reader,si2vi))
+                return;
+            if(mat.is_type<short>())
+                new_image.interpolation = false;
 
-            if(!img_command_float32_std(new_image,new_vs,new_trans,is_mni,cmd,param,mat_reader.error_msg))
+            if(!new_image.command(cmd,param))
             {
                 mat_reader.error_msg = "cannot perform ";
                 mat_reader.error_msg += cmd;
@@ -1080,21 +1085,24 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 return;
             }
 
-            mat.resize(tipl::vector<2,unsigned int>(new_image.plane_size(),new_image.depth()));
+            mat.resize(tipl::vector<2,unsigned int>(new_image.shape.plane_size(),new_image.shape.depth()));
 
-            if(mat.is_type<short>())
-                std::copy(new_image.begin(),new_image.end(),mat.get_data<short>());
-            if(mat.is_type<float>())
-                std::copy(new_image.begin(),new_image.end(),mat.get_data<float>());
-            if(mat.is_type<char>())
-                std::copy(new_image.begin(),new_image.end(),mat.get_data<char>());
+            new_image.apply([&](const auto& image_data)
+            {
+                if(mat.is_type<short>())
+                    std::copy(image_data.begin(),image_data.end(),mat.get_data<short>());
+                if(mat.is_type<float>())
+                    std::copy(image_data.begin(),image_data.end(),mat.get_data<float>());
+                if(mat.is_type<char>())
+                    std::copy(image_data.begin(),image_data.end(),mat.get_data<char>());
+            });
 
             if(mat.name == "fa0")
             {
-                std::copy(new_image.shape().begin(),new_image.shape().end(),const_cast<unsigned int*>(mat_reader.read_as_type<unsigned int>("dimension")));
-                std::copy(new_vs.begin(),new_vs.end(),const_cast<float*>(mat_reader.read_as_type<float>("voxel_size")));
+                std::copy(new_image.shape.begin(),new_image.shape.end(),const_cast<unsigned int*>(mat_reader.read_as_type<unsigned int>("dimension")));
+                std::copy(new_image.vs.begin(),new_image.vs.end(),const_cast<float*>(mat_reader.read_as_type<float>("voxel_size")));
                 if(is_mni)
-                    std::copy(new_trans.begin(),new_trans.end(),const_cast<float*>(mat_reader.read_as_type<float>("trans")));
+                    std::copy(new_image.T.begin(),new_image.T.end(),const_cast<float*>(mat_reader.read_as_type<float>("trans")));
             }
         }
 
