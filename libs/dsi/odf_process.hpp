@@ -531,20 +531,20 @@ public:
             for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             {
                 tipl::multiply_constant(fa[index],voxel.z0);
-                mat_writer.write_sparse<tipl::io::sloped>("fa" + std::to_string(index),fa[index],voxel.si2vi);
+                mat_writer.write<tipl::io::masked_sloped>("fa" + std::to_string(index),fa[index],voxel.dim.plane_size());
             }
         }
-        mat_writer.write_sparse<tipl::io::sloped>("gfa",gfa,voxel.si2vi);
+        mat_writer.write<tipl::io::masked_sloped>("gfa",gfa,voxel.dim.plane_size());
 
         tipl::multiply_constant(iso,voxel.z0);
-        mat_writer.write_sparse<tipl::io::sloped>("iso",iso,voxel.si2vi);
+        mat_writer.write<tipl::io::masked_sloped>("iso",iso,voxel.dim.plane_size());
 
         if(!rdi.empty())
         {
             for(unsigned int i = 0;i < rdi.size();++i)
                 tipl::multiply_constant(rdi[i],voxel.z0);
             float L = 0.2f;
-            mat_writer.write_sparse<tipl::io::sloped>("rdi",rdi[0],voxel.si2vi);
+            mat_writer.write<tipl::io::masked_sloped>("rdi",rdi[0],voxel.dim.plane_size());
             if(voxel.shell.size() > 1)
             {
                 for(unsigned int i = 0;i < rdi[0].size();++i)
@@ -558,12 +558,12 @@ public:
                     std::ostringstream out2;
                     out2.precision(2);
                     out2 << "nrdi" << std::setfill('0') << std::setw(2) << int(L*10) << "L";
-                    mat_writer.write_sparse<tipl::io::sloped>(out2.str(),rdi[i],voxel.si2vi);
+                    mat_writer.write<tipl::io::masked_sloped>(out2.str(),rdi[i],voxel.dim.plane_size());
                 }
             }
         }
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-            mat_writer.write_sparse("index" + std::to_string(index),findex[index],voxel.si2vi);
+            mat_writer.write<tipl::io::masked>("index" + std::to_string(index),findex[index],voxel.dim.plane_size());
     }
 };
 
