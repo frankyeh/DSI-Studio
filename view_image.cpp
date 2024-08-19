@@ -1061,7 +1061,9 @@ void view_image::on_info_cellDoubleClicked(int row, int column)
 void view_image::on_mat_images_currentIndexChanged(int index)
 {
     no_update = true;
-    if(!cur_image->read_mat_image(ui->mat_images->currentText().toStdString(),mat,mat_si2vi))
+    if(!cur_image->read_mat_image(
+                mat.index_of(ui->mat_images->currentText().toStdString()),
+                mat,mat_si2vi))
         return;
     ui->type->setCurrentIndex(cur_image->pixel_type);
     init_image();
