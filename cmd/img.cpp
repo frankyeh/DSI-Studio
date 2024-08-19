@@ -332,7 +332,8 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
 int img(tipl::program_option<tipl::out>& po)
 {
     std::string source(po.get("source")),info;
-    if(tipl::ends_with(source,"fib.gz"))
+    if(tipl::ends_with(source,"fib.gz") || tipl::ends_with(source,".fz") ||
+       tipl::ends_with(source,"src.gz") || tipl::ends_with(source,".sz"))
     {
         tipl::io::gz_mat_read mat_reader;
         tipl::out() << "open " << source;
@@ -341,6 +342,8 @@ int img(tipl::program_option<tipl::out>& po)
             tipl::error() << mat_reader.error_msg;
             return 1;
         }
+        for(unsigned int index = 0;index < mat_reader.size();++index)
+            tipl::out() << mat_reader[index].get_info();
         for(auto& cmd : tipl::split(po.get("cmd"),'+'))
         {
             std::string param;
