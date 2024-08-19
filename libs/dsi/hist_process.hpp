@@ -163,8 +163,8 @@ public:
         hist_dir.resize(tipl::shape<3>(hist_dir.width(),hist_dir.height(),2));
         std::copy(hist_dir.begin(),hist_dir.begin()+int64_t(hist_dir.plane_size()),hist_dir.begin()+int64_t(hist_dir.plane_size()));
 
-        mat_writer.write_sparse<tipl::io::sloped>("fa0",hist_fa,voxel.si2vi);
-        mat_writer.write_sparse<tipl::io::sloped>("dir0",hist_dir,voxel.si2vi);
+        mat_writer.write<tipl::io::masked_sloped>("fa0",hist_fa,voxel.dim.plane_size());
+        mat_writer.write<tipl::io::masked_sloped>("dir0",hist_dir,voxel.dim.plane_size());
     }
 };
 
