@@ -190,24 +190,24 @@ public:
             return;
         if(voxel.method_id == 1) // DTI
         {
-            mat_writer.write_sparse<tipl::io::sloped>("fa0",voxel.fib_fa,voxel.si2vi);
-            mat_writer.write_sparse<tipl::io::sloped>("dir0",voxel.fib_dir,voxel.si2vi);
+            mat_writer.write<tipl::io::masked_sloped>("fa0",voxel.fib_fa,voxel.dim.plane_size());
+            mat_writer.write<tipl::io::masked_sloped>("dir0",voxel.fib_dir,voxel.dim.plane_size());
         }
         else
-            mat_writer.write_sparse<tipl::io::sloped>("dti_fa",voxel.fib_fa,voxel.si2vi);
+            mat_writer.write<tipl::io::masked_sloped>("dti_fa",voxel.fib_fa,voxel.dim.plane_size());
 
-        mat_writer.write_sparse<tipl::io::sloped>("txx",txx,voxel.si2vi);
-        mat_writer.write_sparse<tipl::io::sloped>("txy",txy,voxel.si2vi);
-        mat_writer.write_sparse<tipl::io::sloped>("txz",txz,voxel.si2vi);
-        mat_writer.write_sparse<tipl::io::sloped>("tyy",tyy,voxel.si2vi);
-        mat_writer.write_sparse<tipl::io::sloped>("tyz",tyz,voxel.si2vi);
-        mat_writer.write_sparse<tipl::io::sloped>("tzz",tzz,voxel.si2vi);
-        mat_writer.write_sparse<tipl::io::sloped>("rd1",rd1,voxel.si2vi);
-        mat_writer.write_sparse<tipl::io::sloped>("rd2",rd2,voxel.si2vi);
-        mat_writer.write_sparse<tipl::io::sloped>("ha",ha,voxel.si2vi);
-        mat_writer.write_sparse<tipl::io::sloped>("md",md,voxel.si2vi);
-        mat_writer.write_sparse<tipl::io::sloped>("ad",ad,voxel.si2vi);
-        mat_writer.write_sparse<tipl::io::sloped>("rd",rd,voxel.si2vi);
+        mat_writer.write<tipl::io::masked_sloped>("txx",txx,voxel.dim.plane_size());
+        mat_writer.write<tipl::io::masked_sloped>("txy",txy,voxel.dim.plane_size());
+        mat_writer.write<tipl::io::masked_sloped>("txz",txz,voxel.dim.plane_size());
+        mat_writer.write<tipl::io::masked_sloped>("tyy",tyy,voxel.dim.plane_size());
+        mat_writer.write<tipl::io::masked_sloped>("tyz",tyz,voxel.dim.plane_size());
+        mat_writer.write<tipl::io::masked_sloped>("tzz",tzz,voxel.dim.plane_size());
+        mat_writer.write<tipl::io::masked_sloped>("rd1",rd1,voxel.dim.plane_size());
+        mat_writer.write<tipl::io::masked_sloped>("rd2",rd2,voxel.dim.plane_size());
+        mat_writer.write<tipl::io::masked_sloped>("ha",ha,voxel.dim.plane_size());
+        mat_writer.write<tipl::io::masked_sloped>("md",md,voxel.dim.plane_size());
+        mat_writer.write<tipl::io::masked_sloped>("ad",ad,voxel.dim.plane_size());
+        mat_writer.write<tipl::io::masked_sloped>("rd",rd,voxel.dim.plane_size());
     }
 };
 
