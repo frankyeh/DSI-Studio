@@ -236,12 +236,15 @@ void group_connectometry_analysis::save_result(void)
         tipl::io::gz_mat_write mat_write(output_file_name+".t_statistics.fz");
         if(!mat_write)
             return;
-        mat_write.slope = true;
+        mat_write.apply_slope = true;
+        mat_write.mask_rows = handle->dim.plane_size();
+        mat_write.mask_cols = handle->dim.depth();
+        mat_write.si2vi = handle->si2vi;
         copy_mat(handle->mat_reader,mat_write,{"odf_faces","odf_vertices","z0","mapping","report","steps"},{"subject"});
-        for(unsigned int i = 0;i < spm_map->inc.size();++i)
+        for(unsigned int i = 0;i < spm_map->inc_ptr.size();++i)
         {
-            mat_write.write_sparse<tipl::io::sloped>(std::string("inc_t")+std::to_string(i),spm_map->inc[i],handle->si2vi);
-            mat_write.write_sparse<tipl::io::sloped>(std::string("dec_t")+std::to_string(i),spm_map->dec[i],handle->si2vi);
+            mat_write.write<tipl::io::masked_sloped>(std::string("inc_t")+std::to_string(i),spm_map->inc_ptr[i],handle->dim.plane_size(),handle->dim.depth());
+            mat_write.write<tipl::io::masked_sloped>(std::string("dec_t")+std::to_string(i),spm_map->dec_ptr[i],handle->dim.plane_size(),handle->dim.depth());
         }
     }
 }
