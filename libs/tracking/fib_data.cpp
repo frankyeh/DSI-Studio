@@ -923,7 +923,7 @@ bool copy_mat(tipl::io::gz_mat_read& mat_reader,
             mat_reader.error_msg = "failed to write buffer ";
             return false;
         }
-        auto name = mat_reader[index].name;
+        const auto& name = mat_reader[index].name;
         bool skip = false;
         for(const auto& each : skip_list)
             if(name == each)
@@ -944,12 +944,14 @@ bool copy_mat(tipl::io::gz_mat_read& mat_reader,
         {
             if(mat_reader[index].is_type<float>()) // metrics
             {
-                matfile.write<tipl::io::masked_sloped>(mat_reader[index]);
+                matfile.write<tipl::io::masked_sloped>(name,mat_reader.read_as_type<float>(index),
+                                                       mat_reader[index].rows,mat_reader[index].cols);
                 continue;
             }
             if(mat_reader[index].is_type<short>()) // index
             {
-                matfile.write<tipl::io::masked>(mat_reader[index]);
+                matfile.write<tipl::io::masked>(name,mat_reader.read_as_type<short>(index),
+                                                mat_reader[index].rows,mat_reader[index].cols);
                 continue;
             }
         }
