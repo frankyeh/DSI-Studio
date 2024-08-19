@@ -1072,6 +1072,11 @@ void MainWindow::on_nii2src_bids_clicked()
         return;
     add_work_dir(dir);
     auto dwi_nii_files = search_dwi_nii_bids(dir.toStdString());
+    if(dwi_nii_files.empty())
+    {
+        QMessageBox::critical(this,"ERROR","cannot find bids nifti data");
+        return;
+    }
     std::sort(dwi_nii_files.begin(),dwi_nii_files.end());
     nii2src(dwi_nii_files,output_dir.toStdString(),(dir+"/README").toStdString(),true,true);
 }
@@ -1086,6 +1091,11 @@ void MainWindow::on_nii2src_sf_clicked()
     add_work_dir(dir);
     std::vector<std::string> dwi_nii_files;
     search_dwi_nii(dir.toStdString(),dwi_nii_files);
+    if(dwi_nii_files.empty())
+    {
+        QMessageBox::critical(this,"ERROR","cannot find nifti data");
+        return;
+    }
     batch_create_src(dwi_nii_files,dir.toStdString());
 }
 
