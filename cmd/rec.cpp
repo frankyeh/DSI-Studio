@@ -242,22 +242,12 @@ int rec(tipl::program_option<tipl::out>& po)
     }
     if(po.has("other_image"))
     {
-        QStringList file_list = QString(po.get("other_image").c_str()).split(",");
-        for(int i = 0;i < file_list.size();++i)
+        std::vector<std::string> others;
+        po.get_files("other_image",others);
+        for(const auto& each : others)
         {
-            QStringList name_value = file_list[i].split(":");
-            if(name_value.size() == 1)
-            {
-                tipl::error() << "invalid parameter: " << file_list[i].toStdString() << std::endl;
-                return 1;
-            }
-            if(name_value.size() == 3 && name_value[1].size() == 1) // handle windows directory with drive letter --other_image=t1w:c:/t1w.nii.gz
-            {
-                name_value[1] += ":";
-                name_value[1] += name_value[2];
-            }
-            tipl::out() << name_value[0].toStdString() << ":" << name_value[1].toStdString() << std::endl;
-            if(!src.add_other_image(name_value[0].toStdString(),name_value[1].toStdString()))
+            tipl::out() << "add image: " << each;
+            if(!src.add_other_image(std::filesystem::path(each).stem().stem().string(),each))
             {
                 tipl::error() << src.error_msg;
                 return 1;
