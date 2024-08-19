@@ -75,7 +75,6 @@ public:
     tipl::vector<3> vs;
 public:
     tipl::image<3,unsigned char> mask;
-    std::vector<size_t> si2vi;
 public:
     std::vector<const unsigned short*> dwi_data;
     std::vector<tipl::vector<3,float> > bvectors;
