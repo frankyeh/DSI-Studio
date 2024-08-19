@@ -1188,6 +1188,7 @@ Reconstruction</string>
     <addaction name="actionRotate"/>
     <addaction name="actionOverwrite_Voxel_Size"/>
     <addaction name="actionImage_upsample_to_T1W_TESTING"/>
+    <addaction name="actionAttach_Images"/>
     <addaction name="separator"/>
     <addaction name="actionSmooth_Signals"/>
     <addaction name="actionErase_Background_Signals"/>
@@ -1200,7 +1201,6 @@ Reconstruction</string>
      <string>QSDR</string>
     </property>
     <addaction name="actionManual_Align"/>
-    <addaction name="actionAttach_Images"/>
     <addaction name="actionPartial_FOV"/>
     <addaction name="actionT1W_based_QSDR"/>
    </widget>
