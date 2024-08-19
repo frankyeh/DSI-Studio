@@ -569,7 +569,13 @@ bool connectometry_db::save_db(const char* output_name)
         return false;
     }
     if(tipl::ends_with(output_name,".fz"))
-        matfile.slope = true;
+    {
+        matfile.apply_slope = true;
+        matfile.mask_rows = handle->dim.plane_size();
+        matfile.mask_cols = handle->dim.depth();
+        matfile.si2vi = handle->si2vi;
+    }
+
     tipl::progress prog("save db");
     copy_mat(handle->mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping","report","steps"},{"subject"});
     if(subject_qa_length < handle->si2vi.size())
