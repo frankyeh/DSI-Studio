@@ -79,6 +79,8 @@ void Voxel::load_from_src(src_data& image_model)
     scheme_balance = !is_dsi() && shell.size() < 5 && (method_id == 7 || method_id == 4);
     if(method_id == 1)
         max_fiber_number = 1;
+    else
+        max_fiber_number = 3;
 }
 bool Voxel::run_hist(void)
 {
