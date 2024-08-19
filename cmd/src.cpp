@@ -255,7 +255,8 @@ bool nii2src(const std::vector<std::string>& dwi_nii_files,
              bool is_bids,
              bool overwrite)
 {
-    for(size_t i = 0;i < dwi_nii_files.size();++i)
+    tipl::progress prog("convert nifti to src files");
+    for(size_t i = 0;prog(i,dwi_nii_files.size());++i)
     {
         if(is_bids)
         {
