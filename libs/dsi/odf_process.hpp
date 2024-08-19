@@ -564,6 +564,36 @@ public:
         }
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             mat_writer.write<tipl::io::masked>("index" + std::to_string(index),findex[index],voxel.dim.plane_size());
+
+        if(!voxel.other_image.empty())
+        {
+            std::string other_image_text;
+            for(unsigned int index = 0;index < voxel.other_image.size();++index)
+                if(voxel.other_image[index].empty())
+                {
+                    other_image_text += voxel.other_image_name[index];
+                    other_image_text += ",";
+                    continue;
+                }
+            mat_writer.write("other_images",other_image_text);
+            for(unsigned int index = 0;index < voxel.other_image.size();++index)
+            {
+                if(voxel.other_image[index].empty())
+                    continue;
+                float ot = tipl::segmentation::otsu_median(voxel.other_image[index]);
+                if(ot == 0.0f)
+                    continue;
+                tipl::upper_threshold(voxel.other_image_name[index],ot*2.0f);
+                mat_writer.write<tipl::io::sloped>("other_images." + voxel.other_image_name[index],
+                                                   voxel.other_image[index].data(),
+                                                   voxel.other_image[index].plane_size(),
+                                                   voxel.other_image[index].depth());
+                mat_writer.write(voxel.other_image_name[index]+".dimension",voxel.other_image[index].shape());
+                mat_writer.write(voxel.other_image_name[index]+".voxel_size",voxel.other_image_voxel_size[index]);
+                mat_writer.write(voxel.other_image_name[index]+".T",voxel.other_image_trans[index]);
+            }
+        }
+
     }
 };
 
