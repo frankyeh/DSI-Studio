@@ -290,11 +290,11 @@ public:
     virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
         voxel.qsdr = false;
-        mat_writer.write_sparse<tipl::io::sloped>("jdet",jdet,voxel.si2vi);
+        mat_writer.write<tipl::io::masked_sloped>("jdet",jdet,voxel.dim.plane_size());
         mat_writer.write("native_dimension",native_geo);
         mat_writer.write("native_voxel_size",native_vs);
         for(unsigned int index = 0;index < other_image.size();++index)
-            mat_writer.write<tipl::io::sloped>(voxel.other_image_name[index],other_image[index].data(),other_image[index].plane_size(),other_image[index].depth());
+            mat_writer.write<tipl::io::masked_sloped>(voxel.other_image_name[index],other_image[index].data(),other_image[index].plane_size(),other_image[index].depth());
         mat_writer.write("trans",voxel.trans_to_mni);
         mat_writer.write("template",std::filesystem::path(fa_template_list[voxel.template_id]).stem().stem().stem().string());
         mat_writer.write("R2",std::vector<float>({voxel.R2}));
