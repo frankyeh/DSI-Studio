@@ -13,6 +13,7 @@ public:
     enum {int8 = 0,int16 = 1,int32 = 2,float32 = 3} pixel_type = int8;
     tipl::shape<3> shape;
     bool is_mni = false;
+    bool interpolation = true;
     tipl::vector<3,float> vs;
     tipl::matrix<4,4> T;
     std::string error_msg;
@@ -46,7 +47,7 @@ public:
             case float32:fun(I_float32);return;
         }
     }
-    bool read_mat_image(const std::string& metric_name,
+    bool read_mat_image(size_t index,
                         tipl::io::gz_mat_read& mat,
                         const std::vector<size_t>& si2vi);
     void change_type(decltype(pixel_type));
