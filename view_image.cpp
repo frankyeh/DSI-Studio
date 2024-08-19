@@ -428,9 +428,7 @@ void view_image::read_mat_info(void)
     QString info;
     for(unsigned int index = 0;index < mat.size();++index)
     {
-        std::string data;
-        mat[index].get_info(data);
-        info += data.c_str();
+        info += mat[index].get_info().c_str();
         info += "\n";
     }
     show_info(info);
