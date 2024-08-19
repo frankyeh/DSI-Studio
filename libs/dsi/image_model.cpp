@@ -968,6 +968,14 @@ void src_data::smoothing(void)
 
 bool src_data::add_other_image(const std::string& name,const std::string& filename)
 {
+    if(tipl::begins_with(filename,"http"))
+    {
+        voxel.other_image.push_back(tipl::image<3>());
+        voxel.other_image_name.push_back(filename);
+        voxel.other_image_trans.push_back(tipl::transformation_matrix<float>());
+        voxel.other_image_voxel_size.push_back(tipl::vector<3>());
+        return true;
+    }
     tipl::progress prog("add other images");
     tipl::image<3> ref;
     tipl::vector<3> vs;
