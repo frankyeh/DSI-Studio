@@ -2318,8 +2318,6 @@ bool src_data::save_to_file(const std::string& filename)
                 error_msg += temp_file;
                 return false;
             }
-            if(tipl::ends_with(filename,".sz"))
-                mat_writer.slope = true;
             mat_writer.write("dimension",voxel.dim);
             mat_writer.write("voxel_size",voxel.vs);
             mat_writer.write("version",src_ver);
@@ -2339,13 +2337,17 @@ bool src_data::save_to_file(const std::string& filename)
                 voxel.mask = dwi;
                 tipl::upper_threshold(voxel.mask,1);
             }
-            auto si2vi = tipl::get_sparse_index(voxel.mask);
+            if(tipl::ends_with(filename,".sz"))
+            {
+                mat_writer.apply_slope = true;
+                mat_writer.mask_rows = voxel.dim.plane_size();
+                mat_writer.mask_cols = voxel.dim.depth();
+                mat_writer.si2vi = tipl::get_sparse_index(voxel.mask);
+            }
             mat_writer.write("mask",voxel.mask,voxel.dim.plane_size());
             for (unsigned int index = 0;prog(index,src_bvalues.size());++index)
-                if(si2vi.empty() || si2vi.size() == voxel.mask.size())
-                    mat_writer.write<tipl::io::sloped>("image"+std::to_string(index),src_dwi_data[index],voxel.dim.plane_size(),voxel.dim.depth());
-                else
-                    mat_writer.write_sparse<tipl::io::sloped>("image"+std::to_string(index),src_dwi_data[index],voxel.dim.size(),si2vi);
+                mat_writer.write<tipl::io::masked_sloped>("image"+std::to_string(index),src_dwi_data[index],
+                                                   voxel.dim.plane_size(),voxel.dim.depth());
             mat_writer.write("report",voxel.report);
             mat_writer.write("steps",voxel.steps);
             mat_writer.write("intro",voxel.intro);
@@ -2685,13 +2687,6 @@ bool src_data::save_fib(const std::string& fib_file_name)
     while(std::filesystem::exists(tmp_file))
         tmp_file += ".tmp.gz";
 
-    voxel.si2vi = tipl::get_sparse_index(voxel.mask);
-    if(voxel.si2vi.empty())
-    {
-        voxel.si2vi.resize(voxel.mask.plane_size());
-        std::iota(voxel.si2vi.begin(),voxel.si2vi.end(),0);
-    }
-
     tipl::io::gz_mat_write mat_writer(tmp_file);
     if(!mat_writer)
     {
@@ -2699,8 +2694,12 @@ bool src_data::save_fib(const std::string& fib_file_name)
         return false;
     }
     if(tipl::ends_with(output_file_name,".fz"))
-        mat_writer.slope = true;
-
+    {
+        mat_writer.apply_slope = true;
+        mat_writer.mask_rows = voxel.dim.plane_size();
+        mat_writer.mask_cols = voxel.dim.depth();
+        mat_writer.si2vi = tipl::get_sparse_index(voxel.mask);
+    }
     mat_writer.write("dimension",voxel.dim);
     mat_writer.write("voxel_size",voxel.vs);
     mat_writer.write("version",fib_ver);
