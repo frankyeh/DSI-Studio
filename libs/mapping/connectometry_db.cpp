@@ -461,7 +461,10 @@ bool connectometry_db::add(const std::string& file_name,
             return add_db(fib.db);
 
         if(subject_report.empty())
+        {
             subject_report = fib.report;
+            intro = fib.intro;
+        }
         fib.mat_reader.read("R2",subject_R2);
 
         if(fib.is_mni && fib.has_odfs() &&
