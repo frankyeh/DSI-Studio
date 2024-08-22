@@ -111,7 +111,7 @@ public:
 class CustomSliceModel : public SliceModel {
 public:
     std::vector<std::string> dicom_source;
-    std::string source_file_name,name,error_msg = "unknown error";
+    std::string source_file_name,name,http_link,error_msg = "unknown error";
 public:
     std::shared_ptr<std::thread> thread;
     tipl::affine_transform<float> arg_min;
