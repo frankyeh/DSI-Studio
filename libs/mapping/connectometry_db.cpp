@@ -65,7 +65,7 @@ bool connectometry_db::read_db(fib_data* handle_)
     if(!handle->mat_reader.read("subject_names",subject_names_str) ||
        !handle->mat_reader.read("R2",R2))
     {
-        error_msg = "Invalid connectometry DB format.";
+        error_msg = "invalid connectometry DB format.";
         num_subjects = 0;
         subject_qa.clear();
         return false;
