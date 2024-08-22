@@ -127,6 +127,11 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             ui->SliceModality->clear();
             for (unsigned int index = 0;index < fib.view_item.size(); ++index)
                 ui->SliceModality->addItem(fib.view_item[index].name.c_str());
+
+            if(!fib.other_images.empty())
+                for(const auto& each : tipl::split(fib.other_images,','))
+                    ui->SliceModality->addItem(std::filesystem::path(each).stem().stem().string.c_str(),each.c_str());
+
             updateSlicesMenu();
         }
         tipl::out() << "prepare template and atlases" << std::endl;
