@@ -1384,15 +1384,10 @@ void MainWindow::on_OpenDWI_2dseq_clicked()
 }
 void MainWindow::on_tabWidget_currentChanged(int index)
 {
-    if(index == 4 && !ui->github_tags->rowCount())
+    if(index == 4 && !ui->github_tags->rowCount() && !fetch_github)
     {
-        if(QMessageBox::question( this, QApplication::applicationName(),
-                        "Fetch repository lists (requires internet connection)?",
-                        QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
-        {
-            fetch_github = true;
-            on_load_tags_clicked();
-        }
+        fetch_github = true;
+        on_load_tags_clicked();
     }
 }
 
