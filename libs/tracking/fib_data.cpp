@@ -101,6 +101,14 @@ bool odf_data::read(fib_data& fib)
 }
 void item::get_minmax(void)
 {
+    if(max_value != 0.0f)
+        return;
+    if(name == "dti_fa" || name == "qa" || name == "fa") // e.g., fa, qa
+    {
+        contrast_min = min_value = 0.0f;
+        contrast_max = max_value = 1.0f;
+        return;
+    }
     auto I = get_image();
     float slope;
     if(handle && handle->mat_reader.index_of(name) < handle->mat_reader.size() &&
@@ -153,8 +161,7 @@ tipl::const_pointer_image<3,float> item::get_image(void)
         }
         tipl::show_prog = prior_show_prog;
         image_ready = true;
-        if(max_value == 0.0f)
-            get_minmax();
+        get_minmax();
     }
     return image_data;
 }
@@ -818,6 +825,14 @@ bool fib_data::load_from_mat(void)
             mat_reader[index].size() != si2vi.size())
             continue;
         view_item.push_back(item(matrix_name,dim,this));
+    }
+
+    {
+        std::string other_images;
+        mat_reader.read("other_images",other_images);
+        if(!other_images.empty())
+            for(const auto& each : tipl::split(other_images,','))
+                view_item.push_back(item(each));
     }
 
     is_human_data = is_human_size(dim,vs); // 1 percentile head size in mm
