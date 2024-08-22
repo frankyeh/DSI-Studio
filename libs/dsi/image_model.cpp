@@ -81,7 +81,7 @@ void src_data::calculate_dwi_sum(bool update_mask)
 }
 bool src_data::mask_from_unet(void)
 {
-    tipl::image<3> b0;
+    std::vector<tipl::image<3> > b0;
     if(!read_b0(b0))
     {
         error_msg = "no b0 for unet to generate a mask";
@@ -95,7 +95,7 @@ bool src_data::mask_from_unet(void)
         auto unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(model_file_name.c_str());
         if(unet.get())
         {
-            if(unet->forward(b0,voxel.vs,p))
+            if(unet->forward(b0[0],voxel.vs,p))
             {
                 tipl::threshold(unet->sum,voxel.mask,0.5f,1,0);
                 return true;
@@ -1117,12 +1117,9 @@ extern bool has_cuda;
 extern int gpu_count;
 bool src_data::correct_motion(void)
 {
-    std::string msg = " Motion correction was conducted with b-table rotated.";
+    std::string msg = " Motion correction and eddy current correction was conducted with b-table rotated.";
     if(voxel.report.find(msg) != std::string::npos)
         return true;
-
-
-
     std::vector<tipl::affine_transform<float> > args(src_bvalues.size());
     {
         tipl::progress prog("apply motion correction...");
@@ -1206,7 +1203,6 @@ bool src_data::correct_motion(void)
         }
     }
 
-    // get ndc list
     {
         tipl::progress prog("estimate and registering...");
         size_t total = 0;
@@ -1217,6 +1213,7 @@ bool src_data::correct_motion(void)
         });
     }
     voxel.report += msg;
+    apply_mask = true;
     return true;
 }
 void src_data::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
@@ -1364,55 +1361,61 @@ void apply_distortion_map2(const image_type& v1,
     );
 }
 
-bool src_data::read_b0(tipl::image<3>& b0) const
+bool src_data::read_b0(std::vector<tipl::image<3> >& b0) const
 {
     for(size_t index = 0;index < src_bvalues.size();++index)
         if(src_bvalues[index] == 0.0f)
-        {
-            b0 = dwi_at(index);
-            return true;
-        }
-    error_msg = "No b0 found in DWI data";
-    return false;
-}
-bool src_data::read_rev_b0(const std::string& filename,tipl::image<3>& rev_b0)
-{
-    if(tipl::ends_with(filename,".nii.gz") || tipl::ends_with(filename,".nii"))
+            b0.push_back(std::move(tipl::image<3>(dwi_at(index))));
+
+    if(b0.empty())
     {
+        error_msg = "No b0 found in DWI data";
+        return false;
+    }
+    return true;
+}
+bool src_data::read_rev_b0(const std::string& filename,std::vector<tipl::image<3> >& rev_b0)
+{
+    std::shared_ptr<src_data> src2(new src_data);
+    if(!src2->load_from_file(filename))
+    {
+        tipl::out() << "load " << filename << " as b0 nifti";
         tipl::io::gz_nifti nii;
         if(!nii.load_from_file(filename))
         {
-            error_msg = "cannot read the reverse b0: ";
-            error_msg += nii.error_msg;
+            error_msg = "cannot read the b0 from ";
+            error_msg += filename;
             return false;
         }
-        nii >> rev_b0;
+        for(size_t i = 0;i < nii.dim(4);++i)
+        {
+            tipl::image<3> b0;
+            nii >> b0;
+            if(i && tipl::correlation(b0,rev_b0.front()) < 0.9f)
+            {
+                tipl::out() << "images after volume number " << i << " seems not b0, ignoring them";
+                return true;
+            }
+            rev_b0.push_back(std::move(b0));
+        }
         return true;
     }
-    if(tipl::ends_with(filename,"src.gz") || tipl::ends_with(filename,".sz"))
+    if(src2->voxel.dim != voxel.dim)
     {
-        std::shared_ptr<src_data> src2(new src_data);
-        if(!src2->load_from_file(filename))
-        {
-            error_msg = src2->error_msg;
-            return false;
-        }
-        if(src2->voxel.dim != voxel.dim)
-        {
-            error_msg = "inconsistent image dimension between two SRC data";
-            return false;
-        }
-        if(!src2->read_b0(rev_b0))
-        {
-            error_msg = src2->error_msg;
-            return false;
-        }
-        if(tipl::max_value(src2->src_bvalues) > 100)
-            rev_pe_src = src2;
-        return true;
+        error_msg = "inconsistent image dimension between two SRC data";
+        return false;
     }
-    error_msg = "unsupported file format";
-    return false;
+    if(!src2->read_b0(rev_b0))
+    {
+        error_msg = src2->error_msg;
+        return false;
+    }
+    if(tipl::max_value(src2->src_bvalues) > 100)
+        rev_pe_src = src2;
+    else
+        rev_pe_src.reset();
+    return true;
+
 }
 tipl::vector<3> phase_direction_at_AP_PA(const tipl::image<3>& v1,const tipl::image<3>& v2)
 {
@@ -1428,6 +1431,7 @@ tipl::vector<3> phase_direction_at_AP_PA(const tipl::image<3>& v1,const tipl::im
     return c;
 }
 
+/*
 bool src_data::distortion_correction(const std::string& filename)
 {
     tipl::image<3> v1,v2;
@@ -1459,8 +1463,7 @@ bool src_data::distortion_correction(const std::string& filename)
     apply_distortion_map2(v1,dis_map,vv1,true);
     apply_distortion_map2(v2,dis_map,vv2,false);
 
-    /*
-
+    //
     tipl::image<3> vv1,vv2;
     for(int iter = 0;iter < 120;++iter)
     {
@@ -1478,7 +1481,7 @@ bool src_data::distortion_correction(const std::string& filename)
         tipl::filter::gaussian(gx);
         tipl::filter::gaussian(gx);
         dis_map += gx;
-    }*/
+    // }
 
     std::vector<tipl::image<3,unsigned short> > dwi(src_dwi_data.size());
     for(size_t i = 0;i < src_dwi_data.size();++i)
@@ -1502,7 +1505,7 @@ bool src_data::distortion_correction(const std::string& filename)
     voxel.report += " The phase distortion was correlated using data from an opposite phase encoding direction.";
     return true;
 }
-
+*/
 
 #include <QCoreApplication>
 #include <QRegularExpression>
@@ -1641,13 +1644,19 @@ void src_data::setup_topup_eddy_volume(void)
         rev_pe_src->topup_size = topup_size;
 }
 
-bool src_data::generate_topup_b0_acq_files(tipl::image<3>& b0,
-                                             tipl::image<3>& rev_b0,
-                                             std::string& b0_appa_file)
+bool src_data::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
+                                           std::vector<tipl::image<3> >& rev_b0,
+                                           std::string& b0_appa_file)
 {
+    if(b0.empty() || rev_b0.empty())
+    {
+        error_msg = "cannot find b0 for topup";
+        return false;
+    }
+
     // DSI Studio uses LPS orientation whereas and FSL uses LAS
     // The y direction is flipped
-    auto c = phase_direction_at_AP_PA(b0,rev_b0);
+    auto c = phase_direction_at_AP_PA(b0[0],rev_b0[0]);
     if(c[0] == c[1])
     {
         error_msg = "Invalid phase encoding. Please select correct reversed phase encoding b0 file";
@@ -1658,41 +1667,57 @@ bool src_data::generate_topup_b0_acq_files(tipl::image<3>& b0,
     tipl::vector<3> c1,c2;
     {
         tipl::image<3,unsigned char> mb0,rev_mb0;
-        tipl::threshold(b0,mb0,tipl::max_value(b0)*0.8f,1,0);
-        tipl::threshold(rev_b0,rev_mb0,tipl::max_value(rev_b0)*0.8f,1,0);
+        tipl::threshold(b0[0],mb0,tipl::max_value(b0[0])*0.8f,1,0);
+        tipl::threshold(rev_b0[0],rev_mb0,tipl::max_value(rev_b0[0])*0.8f,1,0);
         c1 = tipl::center_of_mass_weighted(mb0);
         c2 = tipl::center_of_mass_weighted(rev_mb0);
     }
     tipl::out() << "source com: " << c1 << std::endl;
     tipl::out() << "rev pe com: " << c2 << std::endl;
     bool phase_dir = c1[phase_dim] > c2[phase_dim];
+
     std::string acqstr,pe_id;
-    if(is_appa)
     {
-        if(phase_dir)
+        std::string acqstr1,acqstr2,pe_id1,pe_id2;
+        if(is_appa)
         {
-            acqstr = "0 -1 0 0.05\n0 1 0 0.05\n";
-            pe_id = "AP_PA";
+            acqstr1 = "0 -1 0 0.05";
+            acqstr2 = "0 1 0 0.05";
+            pe_id1 = "AP";
+            pe_id2 = "PA";
+            if(phase_dir)
+                pe_id = "AP_PA";
+            else
+            {
+                acqstr1.swap(acqstr2);
+                pe_id1.swap(pe_id2);
+                pe_id = "PA_AP";
+            }
         }
         else
         {
-            acqstr = "0 1 0 0.05\n0 -1 0 0.05\n";
-            pe_id = "PA_AP";
+            acqstr1 = "-1 0 0 0.05";
+            acqstr2 = "1 0 0 0.05";
+            pe_id1 = "LR";
+            pe_id2 = "RL";
+            if(phase_dir)
+                pe_id = "LR_RL";
+            else
+            {
+                acqstr1.swap(acqstr2);
+                pe_id1.swap(pe_id2);
+                pe_id = "RL_LR";
+            }
         }
+        for(auto each : b0)
+            acqstr += acqstr1 + "\n";
+        for(auto each : rev_b0)
+            acqstr += acqstr2 + "\n";
+        acqstr.pop_back();
+        topup_eddy_report += " " + std::to_string(b0.size()) + pe_id1 + " encoding and "
+                                 + std::to_string(rev_b0.size()) + pe_id2 + " encoding b0 images were used to estimate susceptibility using FSL topup";
     }
-    else
-    {
-        if(phase_dir)
-        {
-            acqstr = "-1 0 0 0.05\n1 0 0 0.05\n";
-            pe_id = "LR_RL";
-        }
-        else
-        {
-            acqstr = "1 0 0 0.05\n-1 0 0 0.05\n";
-            pe_id = "RL_LR";
-        }
-    }
+
 
 
     tipl::out() << "source and reverse phase encoding: " << pe_id << std::endl;
@@ -1714,21 +1739,32 @@ bool src_data::generate_topup_b0_acq_files(tipl::image<3>& b0,
     {
         // allow for more space in the PE direction
         setup_topup_eddy_volume();
-        tipl::reshape(b0,topup_size);
-        tipl::reshape(rev_b0,topup_size);
+        for(auto& each : b0)
+            tipl::reshape(each,topup_size);
+        for(auto& each : rev_b0)
+            tipl::reshape(each,topup_size);
     }
 
     {
         tipl::out() << "create topup needed b0 nii.gz file from " << pe_id << " b0" << std::endl;
         tipl::matrix<4,4> trans;
-        initial_LPS_nifti_srow(trans,b0.shape(),voxel.vs);
+        initial_LPS_nifti_srow(trans,b0[0].shape(),voxel.vs);
 
-        tipl::image<4,float> buffer(tipl::shape<4>(uint32_t(b0.width()),
-                                    uint32_t(b0.height()),
-                                    uint32_t(b0.depth()),2));
+        tipl::image<4,float> buffer(tipl::shape<4>(uint32_t(b0[0].width()),
+                                    uint32_t(b0[0].height()),
+                                    uint32_t(b0[0].depth()),b0.size() + rev_b0.size()));
+        size_t buffer_pos = 0;
+        for(auto& each : b0)
+        {
+            std::copy(each.begin(),each.end(),buffer.begin() + buffer_pos);
+            buffer_pos += b0[0].size();
+        }
 
-        std::copy(b0.begin(),b0.end(),buffer.begin());
-        std::copy(rev_b0.begin(),rev_b0.end(),buffer.begin()+int64_t(b0.size()));
+        for(auto& each : rev_b0)
+        {
+            std::copy(each.begin(),each.end(),buffer.begin() + buffer_pos);
+            buffer_pos += b0[0].size();
+        }
 
         b0_appa_file = file_name + ".topup." + pe_id + ".nii.gz";
         if(!tipl::io::gz_nifti::save_to_file(b0_appa_file.c_str(),
@@ -1753,13 +1789,13 @@ bool src_data::load_topup_eddy_result(void)
         error_msg += corrected_file();
         return false;
     }
+    if(!topup_eddy_report.empty())
+        std::ofstream(corrected_file()+".report.txt") << topup_eddy_report;
 
     std::string bval_file = file_name+".bval";
     std::string bvec_file = file_name+".corrected.eddy_rotated_bvecs";
-    bool is_eddy = std::filesystem::exists(bvec_file);
-    bool has_topup = std::filesystem::exists(topup_result());
 
-    if(is_eddy)
+    if(std::filesystem::exists(bvec_file)) // has eddy
     {
         tipl::out() << "update b-table from eddy output" << std::endl;
         std::vector<double> bval,bvec;
@@ -1778,6 +1814,7 @@ bool src_data::load_topup_eddy_result(void)
             src_bvectors[i][2] = float(bvec[index+2]);
         }
     }
+
     tipl::out() << "load topup/eddy results" << std::endl;
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     if(!load_4d_nii(corrected_file(),dwi_files,false,false,error_msg))
@@ -1792,13 +1829,13 @@ bool src_data::load_topup_eddy_result(void)
         nifti_dwi[index].swap(dwi_files[index]->image);
         src_dwi_data[index] = &nifti_dwi[index][0];
     }
-    if(has_topup)
-        voxel.report += " The susceptibility artifact was estimated using reversed phase-encoding b0 by TOPUP from the Tiny FSL package (http://github.com/frankyeh/TinyFSL), a re-compiled version of FSL TOPUP (FMRIB, Oxford) with multi-thread support.";
-    if(is_eddy)
-        voxel.report += " FSL eddy was used to correct for eddy current distortion.";
-    voxel.report += " The correction was conducted through the integrated interface in ";
-    voxel.report += version_string;
-    voxel.report += "(http://dsi-studio.labsolver.org).";
+
+    if(topup_eddy_report.empty())
+    {
+        std::ifstream file(corrected_file()+".report.txt");
+        topup_eddy_report = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    }
+    voxel.report += topup_eddy_report;
     calculate_dwi_sum(true);
     return true;
 }
@@ -1834,7 +1871,7 @@ bool src_data::run_applytopup(std::string exec)
                 "--inindex=1,2",
                 "--method=jac",
                 "--verbose=1"};        
-    }
+        topup_eddy_report += " FSL's applytopup was used to correct for susceptibility distortion using two DWI dataset acquired at opposite phase encoding directions.";    }
     else
     {
         // one full acq of DWI
@@ -1846,7 +1883,7 @@ bool src_data::run_applytopup(std::string exec)
                 "--inindex=1",
                 "--method=jac",
                 "--verbose=1"};
-
+        topup_eddy_report += " FSL's applytopup was used to correct for susceptibility distortion using DWI acquired from one phase encoding direction.";
     }
     if(!run_plugin("applytopup"," ",10,param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
         return false;
@@ -1858,6 +1895,7 @@ bool src_data::run_applytopup(std::string exec)
     std::filesystem::remove(temp_nifti());
     if(rev_pe_src.get())
         std::filesystem::remove(rev_pe_src->file_name+".nii.gz");
+    apply_mask = true;
     return true;
 }
 
@@ -2011,20 +2049,22 @@ bool src_data::run_eddy(std::string exec)
     if(has_topup)
         param.push_back(std::string("--topup=") + std::filesystem::path(topup_output()).filename().u8string());
 
+    topup_eddy_report += " The eddy current distortions of " + std::to_string(src_bvalues.size()) + " DWI ";
+    if(rev_pe_src.get())
+        topup_eddy_report += " and " + std::to_string(rev_pe_src->src_bvalues.size()) + " opposite phase DWI ";
+    topup_eddy_report += " were corrected using FSL eddy.";
     if(!run_plugin(has_cuda ? "eddy_cuda" : "eddy","model",16,param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
     {
         if(!has_topup)
             return false;
         return run_applytopup();
     }
-
     if(!load_topup_eddy_result())
     {
         error_msg += " please check if memory is enough to run eddy";
         return false;
     }
-
-
+    apply_mask = true;
     std::filesystem::remove(temp_nifti());
     std::filesystem::remove(mask_nifti);
     return true;
@@ -2051,8 +2091,9 @@ std::string src_data::find_topup_reverse_pe(void)
     // locate reverse pe nifti files
     std::map<float,std::string,std::greater<float> > candidates;
     {
-        tipl::image<3> b0;
-        read_b0(b0);
+        std::vector<tipl::image<3> > b0;
+        if(!read_b0(b0))
+            return std::string();
         auto searching_path = std::filesystem::path(file_name).parent_path().string();
         if(searching_path.empty())
             searching_path = std::filesystem::current_path().string();
@@ -2086,7 +2127,7 @@ std::string src_data::find_topup_reverse_pe(void)
             tipl::image<3> b0_op,each;
             if(!(nii >> b0_op))
                 continue;
-            auto c = phase_direction_at_AP_PA(b0,b0_op);
+            auto c = phase_direction_at_AP_PA(b0[0],b0_op);
             if(c[0] + c[1] < 1.8f) // 0.9 + 0.9
                 tipl::out() << "correlation with b0 is low. skipping..." << std::endl;
             else
@@ -2102,6 +2143,7 @@ extern std::string topup_param_file;
 bool src_data::run_topup_eddy(std::string other_src,bool topup_only)
 {
     tipl::progress prog("run topup/eddy");
+    topup_eddy_report.clear();
     if(other_src.empty() && (other_src = find_topup_reverse_pe()).empty())
     {
         if(topup_only)
@@ -2156,7 +2198,7 @@ bool src_data::run_topup_eddy(std::string other_src,bool topup_only)
     {
         tipl::progress prog("run topup");
         std::string b0_appa_file;
-        tipl::image<3> b0,rev_b0;
+        std::vector<tipl::image<3> > b0,rev_b0;
         if(!read_b0(b0) || !read_rev_b0(other_src.c_str(),rev_b0) || !generate_topup_b0_acq_files(b0,rev_b0,b0_appa_file))
             return false;
 
@@ -2206,6 +2248,7 @@ bool src_data::run_topup_eddy(std::string other_src,bool topup_only)
                 QFileInfo(file_name.c_str()).absolutePath().toStdString(),std::string()))
                 return false;
         }
+        topup_eddy_report += " The susceptibility distortion was estimated using FSL topup.";
     }
 
     if(!topup_only)
@@ -2352,10 +2395,22 @@ bool src_data::save_to_file(const std::string& filename)
                 mat_writer.mask_cols = voxel.dim.depth();
                 mat_writer.si2vi = tipl::get_sparse_index(voxel.mask);
             }
-            mat_writer.write("mask",voxel.mask,voxel.dim.plane_size());
+            if(apply_mask)
+            {
+                tipl::out() << "store masked DWI signals";
+                mat_writer.write("mask",voxel.mask,voxel.dim.plane_size());
+            }
+            else
+                tipl::out() << "store raw DWI signals";
             for (unsigned int index = 0;prog(index,src_bvalues.size());++index)
-                mat_writer.write<tipl::io::masked_sloped>("image"+std::to_string(index),src_dwi_data[index],
+            {
+                if(apply_mask)
+                    mat_writer.write<tipl::io::masked_sloped>("image"+std::to_string(index),src_dwi_data[index],
                                                    voxel.dim.plane_size(),voxel.dim.depth());
+                else
+                    mat_writer.write("image"+std::to_string(index),src_dwi_data[index],
+                                                   voxel.dim.plane_size(),voxel.dim.depth());
+            }
             mat_writer.write("report",voxel.report);
             mat_writer.write("steps",voxel.steps);
             mat_writer.write("intro",voxel.intro);
@@ -2591,6 +2646,9 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
 
         if(!mat_reader.read("report",voxel.report))
             voxel.report = get_report();
+
+        apply_mask = (voxel.report.find(" eddy") != std::string::npos);
+
         mat_reader.read("intro",voxel.intro);
 
 

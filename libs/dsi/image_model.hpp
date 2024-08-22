@@ -228,6 +228,8 @@ public:
     std::string file_name,output_file_name;
     mutable std::string error_msg;
     tipl::io::gz_mat_read mat_reader;
+    std::string topup_eddy_report;
+    bool apply_mask = false;
 private:
     auto working_path(void) const
     {
@@ -291,16 +293,16 @@ public:
     std::shared_ptr<src_data> rev_pe_src;
     tipl::shape<3> topup_size;
     void setup_topup_eddy_volume(void);
-    bool distortion_correction(const std::string& file_name);
+    //bool distortion_correction(const std::string& file_name);
     std::string find_topup_reverse_pe(void);
     bool run_topup_eddy(std::string other_src,bool topup_only = false);
 private:
-    bool read_b0(tipl::image<3>& b0) const;
-    bool read_rev_b0(const std::string& file_name,tipl::image<3>& rev_b0);
+    bool read_b0(std::vector<tipl::image<3> >& b0) const;
+    bool read_rev_b0(const std::string& file_name,std::vector<tipl::image<3> >& rev_b0);
     bool run_plugin(std::string program_name,std::string key_word,
                     size_t total_keyword_count,std::vector<std::string> param,std::string working_dir,std::string exec = std::string());
-    bool generate_topup_b0_acq_files(tipl::image<3>& b0,
-                                     tipl::image<3>& rev_b0,
+    bool generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
+                                     std::vector<tipl::image<3> >& rev_b0,
                                      std::string& b0_appa_file);
     bool run_applytopup(std::string exec = std::string());
     bool run_eddy(std::string exec = std::string());
