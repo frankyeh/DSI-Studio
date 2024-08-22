@@ -771,23 +771,6 @@ bool get_src(std::string filename,src_data& src2,std::string& error_msg)
     return true;
 }
 
-void reconstruction_window::on_actionCorrect_AP_PA_scans_triggered()
-{
-    QMessageBox::information(this,QApplication::applicationName(),"Please specify another SRC/DICOM/NIFTI file with an opposite phase encoding");
-    QString filename = QFileDialog::getOpenFileName(
-            this,"Open SRC file",absolute_path,
-            "Images (*.sz *src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
-    if( filename.isEmpty())
-        return;
-
-    if(!handle->distortion_correction(filename.toStdString().c_str()))
-    {
-        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-        return;
-    }
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-
 
 
 void reconstruction_window::on_actionEnable_TEST_features_triggered()
