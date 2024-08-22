@@ -14,17 +14,17 @@ jobs:
     - name: Test DTI Recon
       run: |  
         ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=1 |& tee -a log.txt
-        ls Rhesus.src.gz.dti.fib.gz
+        ls Rhesus.dti.fz
         
     - name: Test GQI Recon
       run: |  
         ./dsi-studio/dsi_studio --source=*.src.gz --action=rec |& tee -a log.txt
-        ls Rhesus.src.gz.gqi.1.25.fib.gz
+        ls Rhesus.gqi.fz
 
     - name: Test QSDR Recon
       run: |  
         ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=7 |& tee -a log.txt
-        ls Rhesus.src.gz.*
+        ls Rhesus.qsdr.fz
     
   test_human_recon:
     runs-on: ubuntu-20.04
@@ -39,23 +39,23 @@ jobs:
     - name: Test DTI Recon
       run: |
         ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=1
-        ls DSI.src.gz.dti.fib.gz 
-        ls DTI.src.gz.dti.fib.gz 
-        ls HARDI.src.gz.dti.fib.gz 
+        ls DSI.dti.fz 
+        ls DTI.dti.fz 
+        ls HARDI.dti.fz 
         
     - name: Test GQI Recon
       run: |
         ./dsi-studio/dsi_studio --source=*.src.gz --action=rec
-        ls DSI.src.gz.gqi.1.25.fib.gz
-        ls DTI.src.gz.gqi.1.25.fib.gz
-        ls HARDI.src.gz.gqi.1.25.fib.gz
+        ls DSI.gqi.fz
+        ls DTI.gqi.fz
+        ls HARDI.gqi.fz
 
     - name: Test QSDR Recon
       run: |
         ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=7 --template=0
-        ls DSI.src.gz.icbm152_adult.qsdr.1.25.*
-        ls DTI.src.gz.icbm152_adult.qsdr.1.25.*
-        ls HARDI.src.gz.icbm152_adult.qsdr.1.25.*
+        ls DSI.qsdr.fz
+        ls DTI.qsdr.fz
+        ls HARDI.qsdr.fz
         
   test_human_tracking_qsdr:
     runs-on: ubuntu-20.04
@@ -180,3 +180,5 @@ jobs:
       run: |
         aws s3 sync --no-sign-request --region eu-west-1 --exclude "*" --include "*dwi.*" s3://openneuro.org/ds002087 ds002087   
         ./dsi-studio/dsi_studio --action=src --source=ds002087
+        ls ds002087/sub-01/dwi/sub-01_run-1_dwi.nii.gz
+        ls ds002087/sub-01/dwi/sub-01_run-2_dwi.nii.gz
