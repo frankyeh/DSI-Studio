@@ -38,12 +38,10 @@ int cnt(tipl::program_option<tipl::out>& po)
 
 
     {
-        tipl::out pout;
-        pout << "selectable variables include ";
-        // show features readed
+        std::string sout("selectable variables include ");
         for(size_t i = 0;i < db.feature_titles.size();++i)
-             pout << "\t(" << i << ")" << db.feature_titles[i];
-        pout << std::endl;
+             sout += "\t(" + std::to_string(i) + ")" +db.feature_titles[i];
+        tipl::out() << sout;
     }
 
     std::vector<unsigned int> variable_list;
