@@ -753,6 +753,7 @@ bool fib_data::load_from_mat(void)
     mat_reader.read("report",report);
     mat_reader.read("steps",steps);
     mat_reader.read("intro",intro);
+    mat_reader.read("other_images",other_images);
     if (mat_reader.read("trans",trans_to_mni))
         is_mni = true;
 
@@ -825,14 +826,6 @@ bool fib_data::load_from_mat(void)
             mat_reader[index].size() != si2vi.size())
             continue;
         view_item.push_back(item(matrix_name,dim,this));
-    }
-
-    {
-        std::string other_images;
-        mat_reader.read("other_images",other_images);
-        if(!other_images.empty())
-            for(const auto& each : tipl::split(other_images,','))
-                view_item.push_back(item(each));
     }
 
     is_human_data = is_human_size(dim,vs); // 1 percentile head size in mm
