@@ -325,7 +325,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
     if(cmd == "[Step T2][File][Save Src File]")
     {
         QString filename = QFileDialog::getSaveFileName(
-                this,"Save SRC file",filenames[0],
+                this,"Save SRC file",filenames[0].remove(".src.gz")+".sz",
                         "SRC files (*.sz *src.gz);;All files (*)" );
         if(filename.isEmpty())
             return false;
@@ -415,7 +415,7 @@ void reconstruction_window::on_doDTI_clicked()
         if(result == QMessageBox::Cancel)
             return;
         if(result == QMessageBox::Yes)
-            handle->resample(2.0f);
+            handle->command("[Step T2][Edit][Resample]","2");
     }
     std::string ref_file_name = handle->file_name;
     std::string ref_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
