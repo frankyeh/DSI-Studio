@@ -164,28 +164,22 @@ public:
         image_data(tipl::make_image(pointer,dim_)),name(name_)
     {
         T.identity();iT.identity();
-        if(name == "dti_fa" || name == "qa" || name == "fa") // e.g., fa, qa
-        {
-            contrast_min = min_value = 0.0f;
-            contrast_max = max_value = 1.0f;
-        }
     }
     item(const std::string& name_,const tipl::shape<3>& dim_,fib_data* handle_):
         image_data(tipl::make_image((const float*)nullptr,dim_)),handle(handle_),name(name_)
     {
         T.identity();iT.identity();
-        if(name == "dti_fa" || name == "qa" || name == "fa") // e.g., fa, qa
-        {
-            contrast_min = min_value = 0.0f;
-            contrast_max = max_value = 1.0f;
-        }
+        image_ready = false;
+    }
+    item(const std::string& http_link_):name(std::filesystem::path(http_link).stem().stem().string()),http_link(http_link_)
+    {
         image_ready = false;
     }
     tipl::const_pointer_image<3> get_image(void);
     void get_image_in_dwi(tipl::image<3>& I);
     void set_image(tipl::const_pointer_image<3> new_image){image_data = new_image;}
 public:
-    std::string name;
+    std::string name,http_link;
     bool image_ready = true;
     bool registering = false;
     tipl::matrix<4,4> T,iT;// T: image->diffusion iT: diffusion->image
