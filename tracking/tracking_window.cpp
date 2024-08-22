@@ -130,7 +130,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
             if(!fib.other_images.empty())
                 for(const auto& each : tipl::split(fib.other_images,','))
-                    ui->SliceModality->addItem(std::filesystem::path(each).stem().stem().string.c_str(),each.c_str());
+                    ui->SliceModality->addItem(std::filesystem::path(each).stem().stem().string().c_str(),each.c_str());
 
             updateSlicesMenu();
         }
