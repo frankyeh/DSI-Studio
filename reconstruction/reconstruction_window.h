@@ -104,7 +104,6 @@ private slots:
     void on_delete_2_clicked();
     void on_SlicePos_valueChanged(int value);
     void on_actionManual_Rotation_triggered();
-    void on_actionCorrect_AP_PA_scans_triggered();
     void on_actionSave_b0_triggered();
     void on_actionEnable_TEST_features_triggered();
     void on_actionImage_upsample_to_T1W_TESTING_triggered();
