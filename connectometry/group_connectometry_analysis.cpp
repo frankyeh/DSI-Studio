@@ -28,12 +28,17 @@ bool group_connectometry_analysis::load_database(const char* database_name)
     handle.reset(new fib_data);
     if(!handle->load_from_file(database_name))
     {
-        error_msg = "Invalid fib file: ";
+        error_msg = "invalid fib file: ";
         error_msg += handle->error_msg;
         return false;
     }
+    if(!handle->db.has_db())
+    {
+        error_msg = "not a database file ";
+        return false;
+    }
     fiber_threshold = 0.6f*handle->dir.fa_otsu;
-    return handle->db.has_db();
+    return true;
 }
 
 
