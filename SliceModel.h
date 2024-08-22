@@ -123,7 +123,7 @@ public:
     void run_registration(void);
     void update_transform(void);
 public:
-    CustomSliceModel(fib_data* new_handle);
+    CustomSliceModel(fib_data* new_handle,uint32_t view_id = 0);
     ~CustomSliceModel(void)
     {
         terminate();
