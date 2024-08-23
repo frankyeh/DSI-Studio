@@ -70,6 +70,8 @@ public:
     bool slice_view_flip_x(unsigned char d) const {return d && (*this)["orientation_convention"].toInt();}
     bool slice_view_flip_y(unsigned char d) const {return d != 2;}
 public:
+    QStringList dt_list; // for dt_index1 dt_index2
+public:
     std::shared_ptr<tipl::ml3d::unet3d> unet;
     std::vector<std::string> unet_label_name;
     bool run_unet(void);
@@ -87,10 +89,13 @@ public:
     std::shared_ptr<fib_data> handle;
     std::vector<std::shared_ptr<SliceModel> > slices;
     std::shared_ptr<SliceModel> current_slice;
-    bool addSlices(QStringList filenames,QString name,bool cmd,bool mni = false);
+    std::shared_ptr<SliceModel> createSlices(const std::string& name,const std::string& path);
+    bool addSlices(std::shared_ptr<SliceModel> new_slice);
+    bool openSlices(const std::string& filename,bool is_mni = false);
+    void updateSlices(void);
     void updateSlicesMenu(void);
     float get_fa_threshold(void);
-    bool no_update = false;
+    bool no_update = true;
 public:
     bool eventFilter(QObject *obj, QEvent *event) override;
     QVariant operator[](QString name)const;
