@@ -184,14 +184,14 @@ void RegionTableWidget::add_all_regions_from_atlas(std::shared_ptr<atlas> at)
 }
 void RegionTableWidget::begin_update(void)
 {
-    cur_tracking_window.scene.no_show = true;
+    cur_tracking_window.scene.no_update = true;
     cur_tracking_window.disconnect(cur_tracking_window.regionWidget,SIGNAL(need_update()),cur_tracking_window.glWidget,SLOT(update()));
     cur_tracking_window.disconnect(cur_tracking_window.regionWidget,SIGNAL(cellChanged(int,int)),cur_tracking_window.glWidget,SLOT(update()));
 }
 
 void RegionTableWidget::end_update(void)
 {
-    cur_tracking_window.scene.no_show = false;
+    cur_tracking_window.scene.no_update = false;
     cur_tracking_window.connect(cur_tracking_window.regionWidget,SIGNAL(need_update()),cur_tracking_window.glWidget,SLOT(update()));
     cur_tracking_window.connect(cur_tracking_window.regionWidget,SIGNAL(cellChanged(int,int)),cur_tracking_window.glWidget,SLOT(update()));
 }
@@ -1045,10 +1045,10 @@ void RegionTableWidget::check_row(size_t row,bool checked)
 void RegionTableWidget::check_all(void)
 {
     cur_tracking_window.glWidget->no_update = true;
-    cur_tracking_window.scene.no_show = true;
+    cur_tracking_window.scene.no_update = true;
     for(int row = 0;row < rowCount();++row)
         check_row(row,true);
-    cur_tracking_window.scene.no_show = false;
+    cur_tracking_window.scene.no_update = false;
     cur_tracking_window.glWidget->no_update = false;
     emit need_update();
 }
@@ -1056,10 +1056,10 @@ void RegionTableWidget::check_all(void)
 void RegionTableWidget::uncheck_all(void)
 {
     cur_tracking_window.glWidget->no_update = true;
-    cur_tracking_window.scene.no_show = true;
+    cur_tracking_window.scene.no_update = true;
     for(int row = 0;row < rowCount();++row)
         check_row(row,false);
-    cur_tracking_window.scene.no_show = false;
+    cur_tracking_window.scene.no_update = false;
     cur_tracking_window.glWidget->no_update = false;
     emit need_update();
 }
@@ -1282,11 +1282,11 @@ void RegionTableWidget::save_region_info(void)
     for(unsigned int index = 0;index < cur_tracking_window.handle->dir.num_fiber;++index)
             out << "\tdx" << index << "\tdy" << index << "\tdz" << index;
 
-    for(unsigned int index = 0;index < cur_tracking_window.handle->view_item.size();++index)
-        if(cur_tracking_window.handle->view_item[index].name != "color" &&
-           cur_tracking_window.handle->view_item[index].image_ready)
-            out << "\t" << cur_tracking_window.handle->view_item[index].name;
-
+    for(const auto& each : cur_tracking_window.handle->get_index_list())
+        out << "\t" << each;
+    for(const auto& each : cur_tracking_window.handle->slices)
+        if(!each->optional())
+            each->get_image();
     out << std::endl;
     auto points = regions[currentRow()]->region;
     convert_region(points,regions[currentRow()]->dim,
