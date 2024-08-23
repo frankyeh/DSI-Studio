@@ -471,8 +471,8 @@ void group_connectometry::on_show_result_clicked()
         stat_model info;
         info.resample(*(vbc->model.get()),false,false,0);
         vbc->calculate_spm(*result_fib.get(),info);
-        new_data->view_item.push_back(item("dec_t",result_fib->dec_ptr[0],new_data->dim));
-        new_data->view_item.push_back(item("inc_t",result_fib->inc_ptr[0],new_data->dim));
+        new_data->slices.push_back(std::make_shared<slice_model>("dec_t",result_fib->dec_ptr[0],new_data->dim));
+        new_data->slices.push_back(std::make_shared<slice_model>("inc_t",result_fib->inc_ptr[0],new_data->dim));
     }
     tracking_window* current_tracking_window = new tracking_window(this,new_data);
     current_tracking_window->setAttribute(Qt::WA_DeleteOnClose);
