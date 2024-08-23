@@ -24,7 +24,7 @@ struct TractRenderParam{
 
     float tract_visible_tract = 0.0f;
     float total_visible_tract = 0.0f;
-    unsigned int track_num_index = 0;
+    size_t track_num_index = 0;
 
     tipl::color_map color_map;
     double color_r,color_min;
