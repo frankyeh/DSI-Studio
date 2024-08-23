@@ -444,9 +444,10 @@ int main(int ac, char *av[])
     }
 
 
+    QApplication a(ac,av);
     try
     {
-        QApplication a(ac,av);
+
         if(ac == 2)
         {
             QLocalSocket socket;
