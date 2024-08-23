@@ -271,10 +271,10 @@ void TractTableWidget::start_tracking(void)
         return;
     }
 
-    if(!cur_tracking_window.handle->set_dt_index(
-            std::make_pair(cur_tracking_window.renderWidget->getData("dt_index1").toInt()-1,
-                           cur_tracking_window.renderWidget->getData("dt_index2").toInt()-1),
-            cur_tracking_window.renderWidget->getData("dt_threshold_type").toInt()))
+    if(!cur_tracking_window.handle->set_dt_index(std::make_pair(
+                                                     cur_tracking_window.dt_list[cur_tracking_window["dt_index1"].toInt()].toStdString(),
+                                                     cur_tracking_window.dt_list[cur_tracking_window["dt_index2"].toInt()].toStdString()),
+                                                 cur_tracking_window.renderWidget->getData("dt_threshold_type").toInt()))
     {
         QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
         return;
