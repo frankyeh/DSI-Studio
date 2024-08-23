@@ -155,12 +155,12 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
             QDir::setCurrent(param+"/slices");
             QStringList slice_list = QDir().entryList(QStringList("*nii.gz"),QDir::Files|QDir::NoSymLinks);
             for(int i = 0;i < slice_list.size();++i)
-            {
-                addSlices(QStringList(slice_list[i]),QFileInfo(slice_list[0]).baseName(),true);
-                CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
-                if(reg_slice)
-                    reg_slice->load_mapping((param+"/slices/" + ui->SliceModality->currentText() + ".linear_reg.txt").toStdString().c_str());
-            }
+                if(openSlices(slice_list[i].toStdString()))
+                {
+                    auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
+                    if(reg_slice.get())
+                        reg_slice->load_mapping((param+"/slices/" + ui->SliceModality->currentText() + ".linear_reg.txt").toStdString().c_str());
+                }
         }
 
         prog(2,5);
@@ -396,16 +396,15 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
     }
     if(cmd == "add_slice")
     {
-        if(!addSlices(QStringList() << param,QFileInfo(param).baseName(),true))
+        if(!openSlices(param.toStdString()))
         {
             error_msg = "cannot add slice ";
             error_msg += param.toStdString();
             return false;
         }
         tipl::out() << "register image to the DWI space" << std::endl;
-        CustomSliceModel* cur_slice = (CustomSliceModel*)slices.back().get();
+        auto cur_slice = std::dynamic_pointer_cast<CustomSliceModel>(slices.back());
         cur_slice->wait();
-        cur_slice->update_transform();
         return true;
     }
     error_msg = "unknown command: ";
@@ -723,8 +722,8 @@ void tracking_window::check_reg(void)
     bool all_ended = true;
     for(unsigned int index = 0;index < slices.size();++index)
     {
-        CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(slices[index].get());
-        if(reg_slice && reg_slice->running)
+        auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(slices[index]);
+        if(reg_slice.get() && reg_slice->running)
         {
             all_ended = false;
             reg_slice->update_transform();
@@ -737,43 +736,69 @@ void tracking_window::check_reg(void)
         glWidget->update();
 }
 
-
-bool tracking_window::addSlices(QStringList filenames,QString name,bool cmd,bool mni)
+bool tracking_window::addSlices(std::shared_ptr<SliceModel> new_slice)
 {
-    std::vector<std::string> files(uint32_t(filenames.size()));
-    for (int index = 0; index < filenames.size(); ++index)
-        files[size_t(index)] = filenames[index].toStdString();
-    CustomSliceModel* reg_slice_ptr = nullptr;
-    std::shared_ptr<SliceModel> new_slice(reg_slice_ptr = new CustomSliceModel(handle.get()));
-    if(!reg_slice_ptr->load_slices(files,mni))
-    {
-        if(!cmd)
-            QMessageBox::critical(this,"ERROR",reg_slice_ptr->error_msg.c_str());
-        else
-            tipl::error() << reg_slice_ptr->error_msg << std::endl;
+    if(!new_slice.get())
         return false;
-    }
-
     slices.push_back(new_slice);
     glWidget->slice_texture.push_back(std::vector<std::shared_ptr<QOpenGLTexture> >());
-    ui->SliceModality->addItem(name);
-    updateSlicesMenu();
-
-    if(!timer2.get() && reg_slice_ptr->running)
-    {
-        timer2.reset(new QTimer());
-        timer2->setInterval(1000);
-        connect(timer2.get(), SIGNAL(timeout()), this, SLOT(check_reg()));
-        timer2->start();
-        check_reg();
-    }
-    if(!cmd)
-    {
-        set_data("show_slice",Qt::Checked);
-        glWidget->update();
-    }
+    ui->SliceModality->addItem(new_slice->view->name.c_str());
     return true;
 }
+bool tracking_window::addSlices(const std::string& name,const std::string& path)
+{
+    if(!tipl::begins_with(path,"http") && !std::filesystem::exists(path))
+        return false;
+    return addSlices(std::dynamic_pointer_cast<SliceModel>(
+                std::make_shared<CustomSliceModel>(handle,std::make_shared<slice_model>(name,path))));
+}
+
+bool tracking_window::openSlices(const std::string& filename,bool is_mni)
+{
+    auto files = tipl::split(filename,',');
+    if(files.empty())
+        return false;
+    std::shared_ptr<CustomSliceModel> slice;
+    slice = std::make_shared<CustomSliceModel>(handle,std::make_shared<slice_model>(
+                            std::filesystem::path(files[0]).stem().stem().string(),files[0]));
+    if(files.size() > 1)
+        slice->source_files = files;
+    slice->is_mni = is_mni;
+    if(!slice->load_slices())
+    {
+        QMessageBox::critical(this,"ERROR",slice->error_msg.c_str());
+        tipl::error() << slice->error_msg << std::endl;
+        return false;
+    }
+    addSlices(slice);
+    ui->SliceModality->setCurrentIndex(ui->SliceModality->count()-1);
+    updateSlices();
+    return true;
+}
+void tracking_window::updateSlices(void)
+{
+    updateSlicesMenu();
+    if(!timer2.get())
+    {
+        bool running_reg = false;
+        for(auto each : slices)
+        {
+            auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(each);
+            if(reg_slice.get() && reg_slice->running)
+            {
+                timer2.reset(new QTimer());
+                timer2->setInterval(1000);
+                connect(timer2.get(), SIGNAL(timeout()), this, SLOT(check_reg()));
+                timer2->start();
+                check_reg();
+                break;
+            }
+        }
+    }
+    set_data("show_slice",Qt::Checked);
+    glWidget->update();
+}
+
 
 void tracking_window::on_addSlices_clicked()
 {
@@ -804,13 +829,11 @@ void tracking_window::on_addSlices_clicked()
     }
     if(filenames[0].endsWith(".nii.gz"))
     {
-        for(int i = 0;i < filenames.size();++i)
-            addSlices(QStringList() << filenames[i],QFileInfo(filenames[i]).fileName().remove(".nii.gz"),false,false);
+        for(const auto& each : filenames)
+            openSlices(each.toStdString());
     }
     else
-        addSlices(filenames,QFileInfo(filenames[0]).baseName(),false);
-    ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
-
+        openSlices(filenames.join(",").toStdString());
 }
 
 void tracking_window::on_actionInsert_MNI_images_triggered()
@@ -820,8 +843,7 @@ void tracking_window::on_actionInsert_MNI_images_triggered()
                 "Image files (*.hdr *.nii *nii.gz);;All files (*)" );
     if( filename.isEmpty() || !map_to_mni())
         return;
-    addSlices(QStringList() << filename,QFileInfo(filename).baseName(),false,true);
-    ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
+    openSlices(filename.toStdString(),true);
 }
 
 void tracking_window::insertPicture()
@@ -853,14 +875,10 @@ void tracking_window::insertPicture()
     }
     QString filename = QFileDialog::getOpenFileName(
         this,"Open Picture",QFileInfo(work_path).absolutePath(),"Pictures (*.jpg *.tif *.bmp *.png);;All files (*)" );
-    if(filename.isEmpty())
+    if(filename.isEmpty() || !openSlices(filename.toStdString()))
         return;
-    QStringList filenames;
-    filenames << filename;
-    if(!addSlices(filenames,QFileInfo(filename).baseName(),false))
-        return;
-    auto reg_slice_ptr = dynamic_cast<CustomSliceModel*>(slices.back().get());
-    if(reg_slice_ptr == nullptr)
+    auto reg_slice_ptr = std::dynamic_pointer_cast<CustomSliceModel>(slices.back());
+    if(!reg_slice_ptr.get())
         return;
 
     glWidget->set_view(cur_dim);
@@ -901,7 +919,7 @@ void tracking_window::insertPicture()
             ui->glAxiCheck->setChecked(true);
             break;
     }
-    handle->view_item.back().set_image(reg_slice_ptr->source_images.alias());
+    handle->slices.back()->set_image(reg_slice_ptr->source_images.alias());
 
     reg_slice_ptr->is_diffusion_space = false;
     reg_slice_ptr->update_transform();
@@ -922,7 +940,7 @@ void tracking_window::insertPicture()
     else
         QMessageBox::information(this,QApplication::applicationName(),"Press Ctrl+A and then hold LEFT/RIGHT button to MOVE/RESIZE slice close to the target before using [Slices][Adjust Mapping]");
 
-    ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
+    ui->SliceModality->setCurrentIndex(int(handle->slices.size())-1);
     glWidget->update();
 
 }
@@ -937,12 +955,9 @@ void tracking_window::on_deleteSlice_clicked()
         on_is_overlay_clicked();
     if(current_slice->stay)
         on_stay_clicked();
-    handle->view_item.erase(handle->view_item.begin()+index);
     slices.erase(slices.begin()+index);
     glWidget->slice_texture.erase(glWidget->slice_texture.begin()+index);
-    for(uint32_t i = uint32_t(index);i < slices.size();++i)
-        slices[i]->view_id--;
-    ui->SliceModality->removeItem(index);
+    ui->SliceModality->removeItem(index);    
     updateSlicesMenu();
 }
 
@@ -950,8 +965,8 @@ void tracking_window::on_deleteSlice_clicked()
 
 void tracking_window::on_actionAdjust_Mapping_triggered()
 {
-    CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
-    if(!reg_slice || !ui->SliceModality->currentIndex())
+    auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
+    if(!reg_slice.get())
     {
         QMessageBox::critical(this,"ERROR","In the region window to the left, select the inserted slides to adjust mapping");
         return;
@@ -1014,8 +1029,8 @@ bool tracking_window::run_unet(void)
 
 void tracking_window::on_actionStrip_Skull_triggered()
 {
-    CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
-    if(!reg_slice)
+    auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
+    if(!reg_slice.get())
     {
         QMessageBox::critical(this,"ERROR","This funciton only applied to inserted images.");
         return;
@@ -1107,8 +1122,8 @@ void tracking_window::on_actionSegment_Tissue_triggered()
 
 void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
 {
-    CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
-    if(!slice || slice->dicom_source.empty())
+    auto slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
+    if(!slice.get() || slice->source_files.empty())
     {
         QMessageBox::critical(this,"ERROR","This function needs original DICOM files (loading them at the[Slices] menu)");
         return;
@@ -1117,11 +1132,11 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
     QMessageBox::information(this,QApplication::applicationName(),"Please assign the output directory");
     QString dir = QFileDialog::getExistingDirectory(
                                 this,
-                                "Assign output directory",slice->dicom_source[0].c_str());
+                                "Assign output directory",slice->source_files[0].c_str());
     if(dir.isEmpty())
         return;
     tipl::io::dicom_volume volume;
-    if(!volume.load_from_files(slice->dicom_source))
+    if(!volume.load_from_files(slice->source_files))
     {
         QMessageBox::critical(this,"ERROR","Failed to load the original DICOM files");
         return;
@@ -1153,7 +1168,7 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
     size_t read_size = 0;
     {
         tipl::io::dicom header;
-        if(!header.load_from_file(slice->dicom_source[0]))
+        if(!header.load_from_file(slice->source_files[0]))
         {
             QMessageBox::critical(this,"ERROR","Invalid DICOM files");
             return;
@@ -1162,14 +1177,14 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
     }
 
     tipl::progress prog("output dicom",true);
-    for(int i = 0,pos = 0;prog(i,slice->dicom_source.size());++i,pos += read_size)
+    for(int i = 0,pos = 0;prog(i,slice->source_files.size());++i,pos += read_size)
     {
         std::vector<char> buf;
         {
-            std::ifstream in(slice->dicom_source[i],std::ios::binary | std::ios::ate);
+            std::ifstream in(slice->source_files[i],std::ios::binary | std::ios::ate);
             if(!in)
             {
-                QMessageBox::critical(this,"ERROR",QString("Failed to load the original DICOM files: ") + slice->dicom_source[i].c_str());
+                QMessageBox::critical(this,"ERROR",QString("Failed to load the original DICOM files: ") + slice->source_files[i].c_str());
                 return;
             }
             buf.resize(size_t(in.tellg()));
@@ -1188,7 +1203,7 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
         std::copy(out.begin()+pos,out.begin()+pos+int(read_size),
                   reinterpret_cast<short*>(&*(buf.end()-int(read_size*sizeof(short)))));
 
-        QString output_name = dir + "/mod_" + QFileInfo(slice->dicom_source[i].c_str()).completeBaseName() + ".dcm";
+        QString output_name = dir + "/mod_" + QFileInfo(slice->source_files[i].c_str()).completeBaseName() + ".dcm";
 
         if(i == 0 && QFileInfo(output_name).exists() &&
            QMessageBox::information(this,QApplication::applicationName(),"Previous modifications found. Overwrite?",
@@ -1336,8 +1351,8 @@ void tracking_window::stripSkull()
 {
     if(!ui->SliceModality->currentIndex() || !handle->is_human_data || handle->is_mni)
         return;
-    CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
-    if(!reg_slice || !reg_slice->skull_removed_images.empty())
+    auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
+    if(!reg_slice.get() || !reg_slice->skull_removed_images.empty())
         return;
 
     tipl::io::gz_nifti in1,in2;
@@ -1380,7 +1395,8 @@ void tracking_window::stripSkull()
 }
 
 
-void paint_track_on_volume(tipl::image<3,unsigned char>& track_map,const std::vector<std::vector<float> >& all_tracts,SliceModel* slice)
+void paint_track_on_volume(tipl::image<3,unsigned char>& track_map,const std::vector<std::vector<float> >& all_tracts,
+                           std::shared_ptr<SliceModel> slice)
 {
     tipl::adaptive_par_for(all_tracts.size(),[&](unsigned int i)
     {
@@ -1417,8 +1433,8 @@ void paint_track_on_volume(tipl::image<3,unsigned char>& track_map,const std::ve
 
 void tracking_window::on_actionSave_T1W_T2W_images_triggered()
 {
-    CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
-    if(!slice)
+    auto slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
+    if(!slice.get())
         return;
     QString filename = QFileDialog::getSaveFileName(
         this,"Save T1W/T2W Image",QFileInfo(work_path).absolutePath()+"//"+slice->name.c_str()+"_modified.nii.gz","Image files (*nii.gz);;All files (*)" );
@@ -1429,8 +1445,8 @@ void tracking_window::on_actionSave_T1W_T2W_images_triggered()
 
 void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
 {
-    CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
-    if(!slice || slice->source_images.empty())
+    auto slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
+    if(!slice.get() || slice->source_images.empty())
         return;
     bool ok = true;
     double ratio = QInputDialog::getDouble(this,QApplication::applicationName(),
@@ -1459,8 +1475,8 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
 
 void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
 {
-    CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
-    if(!slice || slice->source_images.empty() || tractWidget->tract_models.empty())
+    auto slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
+    if(!slice.get() || slice->source_images.empty() || tractWidget->tract_models.empty())
         return;
     bool ok = true;
     double ratio = QInputDialog::getDouble(this,QApplication::applicationName(),
@@ -1481,10 +1497,8 @@ void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
 
 void tracking_window::on_actionSave_mapping_triggered()
 {
-    if(!ui->SliceModality->currentIndex())
-        return;
-    CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
-    if(!reg_slice)
+    auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
+    if(!reg_slice.get())
         return;
     QString filename = QFileDialog::getSaveFileName(
             this,
@@ -1498,9 +1512,7 @@ void tracking_window::on_actionSave_mapping_triggered()
 
 void tracking_window::on_actionLoad_mapping_triggered()
 {
-    if(!ui->SliceModality->currentIndex())
-        return;
-    CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
+    auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
     if(!reg_slice)
         return;
     QString filename = QFileDialog::getOpenFileName(
@@ -1532,7 +1544,7 @@ void tracking_window::on_actionLoad_Color_Map_triggered()
           QMessageBox::critical(this,"ERROR","Invalid color map format");
           return;
     }
-    handle->view_item[current_slice->view_id].v2c.set_color_map(new_color_map);
+    current_slice->view->v2c.set_color_map(new_color_map);
     slice_need_update = true;
     glWidget->update_slice();
 }
