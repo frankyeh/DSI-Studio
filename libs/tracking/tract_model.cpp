@@ -866,8 +866,8 @@ bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const char* 
     if(get_visible_track_count() == 0)
         return false;
 
-    std::vector<std::vector<float> > data;
-    if(!get_tracts_data(handle,index_name,data) || data.empty())
+    std::vector<std::vector<float> > data(get_tracts_data(handle,index_name));
+    if(data.empty())
         return false;
 
     std::string file_name_s(file_name);
@@ -3015,23 +3015,12 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
         data.push_back(branch_volume2);        titles.push_back("volume of end branches 2");
     }
 
-    // output mean and std of each index
+    for(size_t data_index = 0;data_index < handle->slices.size();++data_index)
     {
-        std::vector<float> mean_values(handle->view_item.size());
-        tipl::adaptive_par_for(handle->view_item.size(),[&](size_t data_index)
-        {
-            if(handle->view_item[data_index].name == "color")
-                return;
-            get_tracts_data(handle,uint32_t(data_index),mean_values[data_index]);
-        });
-
-        for(size_t data_index = 0;data_index < handle->view_item.size();++data_index)
-        {
-            if(handle->view_item[data_index].name == "color")
-                continue;
-            data.push_back(mean_values[data_index]);
-        }
-        handle->get_index_list(titles);
+        if(handle->slices[data_index]->optional())
+            continue;
+        data.push_back(get_tracts_mean(handle,data_index));
+        titles.push_back(handle->slices[data_index]->name);
     }
 
 
@@ -3048,10 +3037,8 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
                 handle->db.get_subject_fa(i,fa_data);
                 for(unsigned int j = 0;j < fa_data.size();++j)
                     handle->dir.index_data[0][j] = &fa_data[j][0];
-                float mean = 0.0f;
-                get_tracts_data(handle,0,mean);
                 out << handle->db.subject_names[i] << " mean_" <<
-                       handle->db.index_name << "\t" << mean << std::endl;
+                       handle->db.index_name << "\t" << get_tracts_mean(handle,0) << std::endl;
             }
         }
         handle->dir.index_data[0] = old_index_data;
@@ -3096,8 +3083,7 @@ tipl::vector<3> TractModel::get_report(std::shared_ptr<fib_data> handle,
     data_profile.resize(profile_width);
 
     {
-        std::vector<std::vector<float> > data;
-        get_tracts_data(handle,index_name,data);
+        std::vector<std::vector<float> > data(get_tracts_data(handle,index_name));
 
 
         if(profile_on_length == 2)// list the mean fa value of each tract
@@ -3208,13 +3194,12 @@ void gradient(input_iterator from,input_iterator to,output_iterator out)
     }
 }
 
-void TractModel::get_tract_data(std::shared_ptr<fib_data> handle,unsigned int fiber_index,unsigned int index_num,std::vector<float>& data) const
+std::vector<float> TractModel::get_tract_data(std::shared_ptr<fib_data> handle,size_t fiber_index,size_t index_num) const
 {
-    data.clear();
     if(tract_data[fiber_index].empty())
-        return;
-    unsigned int count = uint32_t(tract_data[fiber_index].size()/3);
-    data.resize(count);
+        return std::vector<float>();
+    auto count =  tract_data[fiber_index].size()/3;
+    std::vector<float> data(count);
     // track specific index
     if(index_num < handle->dir.index_data.size())
     {
@@ -3251,51 +3236,47 @@ void TractModel::get_tract_data(std::shared_ptr<fib_data> handle,unsigned int fi
     else
     // voxel-based index
     {
-        if(handle->view_item[index_num].get_image().shape() != handle->dim) // other slices
+        auto I = handle->slices[index_num]->get_image();
+        if(I.shape() != handle->dim) // other slices
         {
             for (unsigned int data_index = 0,index = 0;index < tract_data[fiber_index].size();index += 3,++data_index)
             {
                 tipl::vector<3> pos(&(tract_data[fiber_index][index]));
-                pos.to(handle->view_item[index_num].iT);
-                tipl::estimate(handle->view_item[index_num].get_image(),pos,data[data_index]);
+                pos.to(handle->slices[index_num]->iT);
+                tipl::estimate(I,pos,data[data_index]);
             }
         }
         else
         for (unsigned int data_index = 0,index = 0;index < tract_data[fiber_index].size();index += 3,++data_index)
-            tipl::estimate(handle->view_item[index_num].get_image(),&(tract_data[fiber_index][index]),data[data_index]);
+            tipl::estimate(I,&(tract_data[fiber_index][index]),data[data_index]);
     }
+    return data;
 }
 
-bool TractModel::get_tracts_data(std::shared_ptr<fib_data> handle,
-        const std::string& index_name,
-        std::vector<std::vector<float> >& data) const
+std::vector<std::vector<float> > TractModel::get_tracts_data(std::shared_ptr<fib_data> handle,const std::string& index_name) const
 {
-    unsigned int index_num = handle->get_name_index(index_name);
-    if(index_num == handle->view_item.size())
-        return false;
-    data.clear();
-    data.resize(tract_data.size());
+    std::vector<std::vector<float> > data;
+    unsigned int data_index = handle->get_name_index(index_name);
+    if(data_index < handle->slices.size())
+    {
+        data.resize(tract_data.size());
+        tipl::adaptive_par_for(tract_data.size(),[&](unsigned int i)
+        {
+             data[i] = std::move(get_tract_data(handle,i,data_index));
+        });
+    }
+    return data;
+}
+float TractModel::get_tracts_mean(std::shared_ptr<fib_data> handle,unsigned int data_index) const
+{
+    if(handle->slices[data_index]->optional() || tract_data.empty())
+        return 0.0f;
+    std::vector<double> mean(tract_data.size());
     tipl::adaptive_par_for(tract_data.size(),[&](unsigned int i)
     {
-         get_tract_data(handle,i,index_num,data[i]);
+        mean[i] = tipl::mean(get_tract_data(handle,i,data_index));
     });
-    return true;
-}
-void TractModel::get_tracts_data(std::shared_ptr<fib_data> handle,unsigned int data_index,float& mean) const
-{
-    double sum_data = 0.0;
-    size_t total = 0;
-    for (unsigned int i = 0;i < tract_data.size();++i)
-    {
-        std::vector<float> data;
-        get_tract_data(handle,i,data_index,data);
-        sum_data += std::accumulate(data.begin(),data.end(),0.0);
-        total += data.size();
-    }
-    if(total == 0)
-        mean = 0.0f;
-    else
-        mean = float(sum_data/double(total));
+    return tipl::mean(mean);
 }
 
 void TractModel::get_passing_list(const tipl::image<3,std::vector<short> >& region_map,
@@ -3749,8 +3730,8 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
                     matrix_value[index] = float(sum_length[i][j])/float(sum_n[i][j])/3.0f;
         return true;
     }
-    std::vector<std::vector<float> > data;
-    if(!tract_model.get_tracts_data(handle,matrix_value_type,data))
+    std::vector<std::vector<float> > data(tract_model.get_tracts_data(handle,matrix_value_type));
+    if(data.empty())
     {
         error_msg = "Cannot quantify matrix value using ";
         error_msg += matrix_value_type;
