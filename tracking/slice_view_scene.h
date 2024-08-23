@@ -14,7 +14,7 @@ class slice_view_scene : public QGraphicsScene
 {
     Q_OBJECT
 public:
-    bool no_show = true;
+    bool no_update = true;
     bool free_thread = false;
     slice_view_scene(tracking_window& cur_tracking_window_):cur_tracking_window(cur_tracking_window_),paint_image_thread([&](void){paint_image();}){}
     ~slice_view_scene(void)
