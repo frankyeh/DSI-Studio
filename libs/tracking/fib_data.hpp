@@ -152,37 +152,43 @@ public:
 
 
 class fib_data;
-struct item
+struct slice_model
 {
 private:
-    tipl::const_pointer_image<3> image_data;
-    tipl::image<3> dummy;
     fib_data* handle = nullptr;
+    tipl::const_pointer_image<3> image_data;
 public:
     template<typename value_type>
-    item(const std::string& name_,const value_type* pointer,const tipl::shape<3>& dim_):
-        image_data(tipl::make_image(pointer,dim_)),name(name_)
+    slice_model(const std::string& name_,const value_type* pointer,const tipl::shape<3>& dim_):
+                image_data(tipl::make_image(pointer,dim_)),name(name_)
     {
-        T.identity();iT.identity();
     }
-    item(const std::string& name_,const tipl::shape<3>& dim_,fib_data* handle_):
-        image_data(tipl::make_image((const float*)nullptr,dim_)),handle(handle_),name(name_)
+    slice_model(const std::string& name_,fib_data* handle_):
+        handle(handle_),name(name_)
     {
-        T.identity();iT.identity();
-        image_ready = false;
     }
-    item(const std::string& http_link_):name(std::filesystem::path(http_link).stem().stem().string()),http_link(http_link_)
+    slice_model(const std::string& path_):
+        name(std::filesystem::path(path_).stem().stem().string()),path(path_)
     {
-        image_ready = false;
+    }
+    slice_model(const std::string& name_,const std::string& path_):
+        name(name_),path(path_)
+    {
     }
     tipl::const_pointer_image<3> get_image(void);
+    bool image_ready(void){return image_data.data();}
+    bool optional(void){return !image_data.data() && !path.empty();}
     void get_image_in_dwi(tipl::image<3>& I);
-    void set_image(tipl::const_pointer_image<3> new_image){image_data = new_image;}
+    void set_image(tipl::const_pointer_image<3> new_image)
+    {
+        image_data = new_image;
+        max_value = 0.0f;
+        get_minmax();
+    }
 public:
-    std::string name,http_link;
-    bool image_ready = true;
+    std::string name,path;
     bool registering = false;
-    tipl::matrix<4,4> T,iT;// T: image->diffusion iT: diffusion->image
+    tipl::matrix<4,4> T = tipl::identity_matrix(),iT = tipl::identity_matrix();// T: image->diffusion iT: diffusion->image
 
 public:
     tipl::value_to_color<float> v2c;
@@ -195,7 +201,8 @@ public:
     tipl::image<3,unsigned int> color_map_buf;
 
     void get_minmax(void);
-
+    void get_slice(unsigned char d_index,unsigned int pos,
+                   tipl::color_image& show_image);
 };
 
 class TractModel;
@@ -238,7 +245,7 @@ public:
 public:
     fiber_directions dir;
     connectometry_db db;
-    mutable std::vector<item> view_item;
+    mutable std::vector<std::shared_ptr<slice_model> > slices;
     void remove_slice(size_t index);
 public:
     std::shared_ptr<fib_data> high_reso;
@@ -357,27 +364,25 @@ public:
     bool has_odfs(void) const{return mat_reader.has("odf0");}
 public:
     size_t get_name_index(const std::string& index_name) const;
-    void get_index_list(std::vector<std::string>& index_list) const;
+    std::vector<std::string> get_index_list(void) const;
 public:
-    bool set_dt_index(const std::pair<size_t,size_t>& pair,size_t type);
+    bool set_dt_index(const std::pair<std::string,std::string>& pair,size_t type);
 public:
-    void get_slice(unsigned int view_index,
-                   unsigned char d_index,unsigned int pos,
-                   tipl::color_image& show_image);
+
     void get_voxel_info2(int x,int y,int z,std::vector<float>& buf) const;
     void get_voxel_information(int x,int y,int z,std::vector<float>& buf) const;
     auto get_iso(void) const
     {
         size_t index = get_name_index("iso");
-        if(view_item.size() == index)
+        if(slices.size() == index)
             index = get_name_index("md");
-        if(view_item.size() == index)
+        if(slices.size() == index)
             index = 0;
-        return view_item[index].get_image();
+        return slices[index]->get_image();
     }
     auto get_iso_fa(void) const
     {
-        return std::make_pair(view_item[0].get_image(),get_iso());
+        return std::make_pair(slices[0]->get_image(),get_iso());
     }
 };
 
