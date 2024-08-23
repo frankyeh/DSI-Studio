@@ -740,9 +740,9 @@ void group_connectometry_analysis::generate_report(std::string& output)
         new_mdi->command("set_param","show_region","0");
         new_mdi->command("set_param","bkg_color","16777215");
         new_mdi->command("set_param","surface_alpha","0.2");
-        new_mdi->command("set_roi_view_index","wm");
+        new_mdi->command("set_roi_view_index","wm_template");
         new_mdi->command("add_surface","Full","25");
-        new_mdi->command("set_roi_view_index","t1w");
+        new_mdi->command("set_roi_view_index","t1w_template");
         new_mdi->command("set_roi_view_contrast","0.0","400.0");
 
         auto show_track_result = [&](std::shared_ptr<TractModel> track,std::string name,unsigned int color){
