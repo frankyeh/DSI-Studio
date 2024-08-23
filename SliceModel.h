@@ -149,7 +149,7 @@ public:
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
     virtual tipl::const_pointer_image<3> get_source(void) const;
 public:
-    bool load_slices(bool is_mni = false);
+    bool load_slices(void);
 };
 
 #endif
