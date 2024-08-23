@@ -61,11 +61,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 {
     setAcceptDrops(true);
     tipl::progress prog("initializing tracking GUI");
-    tipl::out() << "initiate image/slices" << std::endl;
-    fib_data& fib = *new_handle;
-    for (unsigned int index = 0;index < fib.view_item.size(); ++index)
-        slices.push_back(std::make_shared<SliceModel>(handle.get(),index));
-    current_slice = slices[0];
+
 
     ui->setupUi(this);
     ui->thread_count->setValue(tipl::max_thread_count >> 1);
@@ -121,32 +117,34 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 ui->enable_auto_track->setText("Enable Tractography...");
             }            
         }
-        tipl::out() << "initialize slices" << std::endl;
         {
-            glWidget->slice_texture.resize(slices.size());
-            ui->SliceModality->clear();
-            for (unsigned int index = 0;index < fib.view_item.size(); ++index)
-                ui->SliceModality->addItem(fib.view_item[index].name.c_str());
+            tipl::out() << "prepare template and atlases" << std::endl;
+            populate_templates(ui->template_box,handle->template_id);
+        }
 
-            if(!fib.other_images.empty())
-                for(const auto& each : tipl::split(fib.other_images,','))
-                    ui->SliceModality->addItem(std::filesystem::path(each).stem().stem().string().c_str(),each.c_str());
+        {
+            tipl::out() << "initialize slices" << std::endl;
+
+            for (auto each : handle->slices)
+                addSlices(std::make_shared<SliceModel>(handle,each));
 
             updateSlicesMenu();
-        }
-        tipl::out() << "prepare template and atlases" << std::endl;
-        {
-            populate_templates(ui->template_box,handle->template_id);
 
             if(handle->is_mni)
             {
-                if(std::filesystem::exists(handle->t1w_template_file_name.c_str()))
-                    addSlices(QStringList() << QString(handle->t1w_template_file_name.c_str()),"t1w",true);
-                if(std::filesystem::exists(handle->t2w_template_file_name.c_str()))
-                    addSlices(QStringList() << QString(handle->t2w_template_file_name.c_str()),"t2w",true);
-                if(std::filesystem::exists(handle->wm_template_file_name.c_str()))
-                    addSlices(QStringList() << QString(handle->wm_template_file_name.c_str()),"wm",true);
+                addSlices("t1w_template",handle->t1w_template_file_name);
+                addSlices("t2w_template",handle->t2w_template_file_name);
+                addSlices("wm_template",handle->wm_template_file_name);
             }
+
+            if(!handle->other_images.empty())
+                for(const auto& each : tipl::split(handle->other_images,','))
+                    addSlices(std::filesystem::path(each).stem().stem().string(),each);
+
+            current_slice = slices[0];
+            glWidget->slice_texture.resize(slices.size());
+        }
+        {
             // setup fa threshold
             {
                 QStringList tracking_index_list;
@@ -621,12 +619,16 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     // now begin visualization
     tipl::out() << "begin visualization" << std::endl;
     {
+        ui->SliceModality->blockSignals(false);
         glWidget->no_update = false;
-        scene.no_show = false;
+        scene.no_update = false;
+        no_update = false;
+        on_SliceModality_currentIndexChanged(0);
         ui->glAxiView->setChecked(true);
         if((*this)["orientation_convention"].toInt() == 1)
             glWidget->set_view(2);
-        ui->SliceModality->setCurrentIndex(0);
+
+
     }
     tipl::out() << "GUI initialization complete" << std::endl;
 }
@@ -740,10 +742,11 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     std::vector<float> data;
     pos.round();
     handle->get_voxel_information(pos[0],pos[1],pos[2], data);
-    for(unsigned int index = 0,data_index = 0;index < handle->view_item.size() && data_index < data.size();++index)
-        if(handle->view_item[index].name != "color" && handle->view_item[index].image_ready)
+    size_t data_index = 0;
+    for(const auto& each : handle->slices)
+        if(each->image_ready() && data_index < data.size())
         {
-            status += QString(" %1=%2").arg(handle->view_item[index].name.c_str()).arg(data[data_index]);
+            status += QString(" %1=%2").arg(each->name.c_str()).arg(data[data_index]);
             ++data_index;
         }
     ui->statusbar->showMessage(status);
@@ -961,49 +964,37 @@ void tracking_window::on_rendering_efficiency_currentIndexChanged(int index)
 
 void tracking_window::updateSlicesMenu(void)
 {
-    fib_data& fib = *handle;
-    std::vector<std::string> index_list;
-    fib.get_index_list(index_list);
-    // save along track index
+    auto new_item = [&](const std::string& each)
+    {
+        QAction* Item = new QAction(this);
+        Item->setText(QString("Save %1...").arg(each.c_str()));
+        Item->setData(QString(each.c_str()));
+        Item->setVisible(true);
+        return Item;
+    };
     ui->menuSave->clear();
-    for (int index = 0; index < index_list.size(); ++index)
+    ui->menuE_xport->clear();
+    for (const auto& each : handle->get_index_list())
+    {
         {
-            std::string& name = index_list[index];
-            QAction* Item = new QAction(this);
-            Item->setText(QString("Save %1...").arg(name.c_str()));
-            Item->setData(QString(name.c_str()));
-            Item->setVisible(true);
+            auto Item = new_item(each);
             connect(Item, SIGNAL(triggered()),tractWidget, SLOT(save_tracts_data_as()));
             ui->menuSave->addAction(Item);
         }
-    // export index mapping
-    ui->menuE_xport->clear();
-    for (unsigned int index = 0;index < fib.view_item.size(); ++index)
-    {
-        std::string name = fib.view_item[index].name;
-        QAction* Item = new QAction(this);
-        Item->setText(QString("Save %1...").arg(name.c_str()));
-        Item->setData(QString(name.c_str()));
-        Item->setVisible(true);
-        connect(Item, SIGNAL(triggered()),&scene, SLOT(save_slice_as()));
-        ui->menuE_xport->addAction(Item);
+        {
+            auto Item = new_item(each);
+            connect(Item, SIGNAL(triggered()),&scene, SLOT(save_slice_as()));
+            ui->menuE_xport->addAction(Item);
+        }
     }
-
     // export fiber directions
     {
-        QAction* Item = new QAction(this);
-        Item->setText(QString("Save fiber directions..."));
-        Item->setData(QString("fiber"));
-        Item->setVisible(true);
+        auto Item = new_item("fiber");
         connect(Item, SIGNAL(triggered()),&scene, SLOT(save_slice_as()));
         ui->menuE_xport->addAction(Item);
-
         if(handle->has_odfs())
         {
-            QAction* Item = new QAction(this);
-            Item->setText(QString("Save ODFs..."));
-            Item->setData(QString("odfs"));
-            Item->setVisible(true);
+            auto Item = new_item("odfs");
             connect(Item, SIGNAL(triggered()),&scene, SLOT(save_slice_as()));
             ui->menuE_xport->addAction(Item);
         }
@@ -1013,10 +1004,10 @@ void tracking_window::updateSlicesMenu(void)
     color_bar->update_slice_indices();
 
     // update dt metric menu
-    QStringList dt_list;
+    dt_list.clear();
     dt_list << "zero";
-    for (auto& item : handle->view_item)
-        dt_list << item.name.c_str();
+    for (const auto& each : handle->get_index_list())
+        dt_list << each.c_str();
     renderWidget->setList("dt_index1",dt_list);
     renderWidget->setList("dt_index2",dt_list);
 }
@@ -1139,10 +1130,24 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
     tipl::vector<3,float> slice_position(current_slice->slice_pos);
     if(!current_slice->is_diffusion_space)
         slice_position.to(current_slice->to_dif);
+
     current_slice = slices[size_t(index)];
 
-    if(!handle->view_item[current_slice->view_id].image_ready)
-        current_slice->get_source();
+    if(!current_slice->view->image_ready())
+    {
+        auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
+        if(reg_slice.get())
+        {
+            if(!reg_slice->load_slices())
+            {
+                QMessageBox::critical(this,"ERROR","Cannot load slices");
+                ui->SliceModality->setCurrentIndex(0);
+                return;
+            }
+        }
+        else
+            current_slice->get_source();
+    }
 
 
     ui->is_overlay->setChecked(current_slice->is_overlay);
@@ -1278,10 +1283,7 @@ void tracking_window::dropEvent(QDropEvent *event)
                 if(tipl::is_label_image(I))
                     regions << file_name;
                 else
-                {
-                    addSlices(QStringList(file_name),QFileInfo(file_name).baseName(),true);
-                    ui->SliceModality->setCurrentIndex(int(handle->view_item.size())-1);
-                }
+                    openSlices(file_name.toStdString());
             }
         }
     }
@@ -1296,8 +1298,8 @@ void tracking_window::dropEvent(QDropEvent *event)
 
 void tracking_window::on_actionEdit_Slices_triggered()
 {
-    CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
-    if(!slice)
+    auto slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
+    if(!slice.get())
         return;
     view_image* dialog = new view_image(this);
     dialog->setAttribute(Qt::WA_DeleteOnClose);
