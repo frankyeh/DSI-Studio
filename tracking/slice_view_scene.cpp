@@ -279,9 +279,8 @@ bool slice_view_scene::command(QString cmd,QString param,QString param2)
         if(param.isEmpty())
             param = QFileInfo(cur_tracking_window.work_path).absolutePath() + "/" +
                     QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+
-                    QString(cur_tracking_window.handle->view_item[cur_tracking_window.ui->SliceModality->currentIndex()].name.c_str())+"_"+
-                    QString(cur_tracking_window["roi_layout"].toString())+
-                    ".jpg";
+                    cur_tracking_window.ui->SliceModality->currentText()+"_"+
+                    cur_tracking_window["roi_layout"].toString()+".jpg";
         QImage output = view_image;
         if(cur_tracking_window["roi_layout"].toInt() > 2 && !param2.isEmpty()) //mosaic
         {
@@ -426,7 +425,7 @@ void slice_view_scene::update_3d(QImage captured)
 
 void slice_view_scene::show_slice(void)
 {
-    if(no_show)
+    if(no_update)
         return;
     need_complete_view = true;
     paint_image(view_image,true);
@@ -440,7 +439,7 @@ void slice_view_scene::show_slice(void)
 void slice_view_scene::show_complete_slice(void)
 {
     complete_view_ready = false;
-    if(no_show || need_complete_view)
+    if(no_update || need_complete_view)
         return;
     view_image = complete_view_image;
     *this << view_image;
@@ -451,7 +450,7 @@ void slice_view_scene::paint_image(void)
 {
     while(!free_thread)
     {
-        if(!no_show && need_complete_view)
+        if(!no_update && need_complete_view)
         {
             complete_view_ready = false;
             need_complete_view = false;
@@ -578,7 +577,7 @@ void slice_view_scene::catch_screen()
                 region->currentRow() >= 0 ?
                     region->item(region->currentRow(),0)->text()+".png" :
                     QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+
-                    QString(cur_tracking_window.handle->view_item[cur_tracking_window.ui->SliceModality->currentIndex()].name.c_str())+".jpg",
+                    cur_tracking_window.ui->SliceModality->currentText()+".jpg",
                     "Image files (*.png *.bmp *.jpg);;All files (*)");
         if(filename.isEmpty())
             return;
