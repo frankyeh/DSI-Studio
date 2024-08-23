@@ -454,28 +454,28 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
             std::copy(max.begin(),max.end(),std::back_inserter(data)); // bounding box
         }
     }
-    std::vector<std::string> index_titles;
-    handle->get_index_list(index_titles);
-    std::vector<tipl::vector<3> > points;
-    for (unsigned int index = 0; index < region.size(); ++index)
-        points.push_back(region[index]);
-    // get mean, max, min value of each index
+    std::vector<tipl::vector<3> > points(region.size());
+    std::copy(region.begin(),region.end(),points.begin());
     std::vector<float> max_values,min_values;
-    for(size_t data_index = 0;data_index < handle->view_item.size(); ++data_index)
+    std::vector<std::string> index_titles;
+    for(const auto& each : handle->slices)
     {
-        if(handle->view_item[data_index].name == "color")
+        if(each->optional())
             continue;
+        // get mean, max, min value of each index
+        auto I = each->get_image();
+        index_titles.push_back(each->name);
         float mean;
         max_values.push_back(0.0f);
         min_values.push_back(0.0f);
-        if(handle->view_item[data_index].get_image().shape() != handle->dim ||
-           handle->view_item[data_index].T != to_diffusion_space)
+        if(each->get_image().shape() != handle->dim ||
+           each->T != to_diffusion_space)
         {
-            tipl::matrix<4,4> trans = handle->view_item[data_index].iT*to_diffusion_space;
-            calculate_region_stat(handle->view_item[data_index].get_image(),points,mean,max_values.back(),min_values.back(),&trans[0]);
+            tipl::matrix<4,4> trans = each->iT*to_diffusion_space;
+            calculate_region_stat(I,points,mean,max_values.back(),min_values.back(),&trans[0]);
         }
         else
-            calculate_region_stat(handle->view_item[data_index].get_image(),points,mean,max_values.back(),min_values.back());
+            calculate_region_stat(I,points,mean,max_values.back(),min_values.back());
         data.push_back(mean);
     }
     titles.insert(titles.end(),index_titles.begin(),index_titles.end());
