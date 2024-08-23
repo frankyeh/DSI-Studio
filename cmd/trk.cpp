@@ -15,25 +15,6 @@
 
 
 extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
-
-std::shared_ptr<CustomSliceModel> load_slices(std::shared_ptr<fib_data> handle,std::string file_name)
-{
-    auto new_slice = std::make_shared<CustomSliceModel>(handle,file_name);
-    if(!new_slice->load_slices())
-    {
-        tipl::error() << "fail to load " << file_name << " " << new_slice->error_msg << std::endl;
-        return std::shared_ptr<CustomSliceModel>();
-    }
-    new_slice->wait();
-    new_slice->update_transform();
-    tipl::out() << "size: " << new_slice->dim << "resolution: " << new_slice->vs << std::endl;
-    tipl::out() << "srow:";
-    tipl::out() << new_slice->trans_to_mni;
-    tipl::out() << "to_dif:";
-    tipl::out() << new_slice->to_dif;
-    return new_slice;
-}
-
 bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 {
     if(!other_slices.empty() || !po.has("other_slices"))
@@ -47,9 +28,13 @@ bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_
     for(const auto& each : filenames)
     {
         tipl::out() << "add slice: " << each << std::endl;
-        auto new_slice = load_slices(handle,each);
-        if(!new_slice.get())
+        auto new_slice = std::make_shared<CustomSliceModel>(handle,each);
+        if(!new_slice->load_slices())
+        {
+            tipl::error() << new_slice->error_msg << std::endl;
             return false;
+        }
+        new_slice->wait();
         other_slices.push_back(new_slice);
     }
     return true;
@@ -149,9 +134,13 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
 
             if(po.has("ref"))
             {
-                auto new_slice = load_slices(handle,po.get("ref"));
-                if(!new_slice.get())
+                auto new_slice = std::make_shared<CustomSliceModel>(handle,po.get("ref"));
+                if(!new_slice->load_slices())
+                {
+                    tipl::error() << new_slice->error_msg << std::endl;
                     return false;
+                }
+                new_slice->wait();
                 dim = new_slice->dim;
                 vs = new_slice->vs;
                 trans_to_mni = new_slice->trans_to_mni;
@@ -542,9 +531,13 @@ int trk_post(tipl::program_option<tipl::out>& po,
         bool failed = false;
         if(po.has("ref")) // save track in T1W/T2W space
         {
-            auto new_slice = load_slices(handle,po.get("ref"));
-            if(!new_slice.get())
-                return 1;
+            auto new_slice = std::make_shared<CustomSliceModel>(handle,po.get("ref"));
+            if(!new_slice->load_slices())
+            {
+                tipl::error() << new_slice->error_msg << std::endl;
+                return false;
+            }
+            new_slice->wait();
             if(!tract_model->save_transformed_tracts_to_file(tract_file_name.c_str(),new_slice->dim,new_slice->vs,new_slice->trans_to_mni,new_slice->to_slice,false))
                 failed = true;
         }
