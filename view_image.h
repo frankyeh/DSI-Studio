@@ -95,7 +95,7 @@ private:
 public:
     std::shared_ptr<variant_image> cur_image;
 public:
-    CustomSliceModel* slice = nullptr;
+    std::shared_ptr<CustomSliceModel> slice;
     bool regtool_subject = true;
 private:
     std::vector<std::shared_ptr<variant_image> > undo_list;
