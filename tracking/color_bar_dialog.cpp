@@ -60,11 +60,9 @@ void color_bar_dialog::update_slice_indices(void)
 {
     if(cur_tracking_window)
     {
-        std::vector<std::string> index_list;
         ui->tract_color_index->clear();
-        cur_tracking_window->handle->get_index_list(index_list);
-        for (unsigned int index = 0; index < index_list.size(); ++index)
-            ui->tract_color_index->addItem(index_list[index].c_str());
+        for (const auto& each : cur_tracking_window->handle->get_index_list())
+            ui->tract_color_index->addItem(each.c_str());
     }
 }
 
@@ -99,11 +97,11 @@ void color_bar_dialog::on_tract_color_index_currentIndexChanged(int index)
     if(index_name.empty())
         return;
     size_t item_index = cur_tracking_window->handle->get_name_index(index_name);
-    if(item_index == cur_tracking_window->handle->view_item.size())
+    if(item_index == cur_tracking_window->handle->slices.size())
         return;
-    cur_tracking_window->handle->view_item[item_index].get_minmax();
-    set_value(double(cur_tracking_window->handle->view_item[item_index].min_value),
-              double(cur_tracking_window->handle->view_item[item_index].max_value));
+    cur_tracking_window->handle->slices[item_index]->get_minmax();
+    set_value(double(cur_tracking_window->handle->slices[item_index]->min_value),
+              double(cur_tracking_window->handle->slices[item_index]->max_value));
 }
 
 
