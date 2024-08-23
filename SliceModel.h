@@ -6,10 +6,11 @@
 
 // ---------------------------------------------------------------------------
 class fib_data;
+class slice_model;
 class SliceModel {
 public:
-    fib_data* handle = nullptr;
-    uint32_t view_id = 0;
+    std::shared_ptr<fib_data> handle;
+    std::shared_ptr<slice_model> view;
     bool is_diffusion_space = true;
     tipl::matrix<4,4> to_dif,to_slice;
     tipl::shape<3> dim;
@@ -23,7 +24,7 @@ public:
     tipl::vector<3,int> slice_pos;
     bool slice_visible[3];
 public:
-    SliceModel(fib_data* new_handle,uint32_t view_id_);
+    SliceModel(std::shared_ptr<fib_data> new_handle,std::shared_ptr<slice_model> new_view);
     virtual ~SliceModel(void){}
 public:
     std::pair<float,float> get_value_range(void) const;
@@ -110,8 +111,8 @@ public:
 
 class CustomSliceModel : public SliceModel {
 public:
-    std::vector<std::string> dicom_source;
-    std::string source_file_name,name,http_link,error_msg = "unknown error";
+    std::string source_file_name,name,error_msg = "unknown error";
+    std::vector<std::string> source_files;
 public:
     std::shared_ptr<std::thread> thread;
     tipl::affine_transform<float> arg_min;
@@ -123,11 +124,9 @@ public:
     void run_registration(void);
     void update_transform(void);
 public:
-    CustomSliceModel(fib_data* new_handle,uint32_t view_id = 0);
-    ~CustomSliceModel(void)
-    {
-        terminate();
-    }
+    CustomSliceModel(std::shared_ptr<fib_data> new_handle,const std::string& source_file_name_);
+    CustomSliceModel(std::shared_ptr<fib_data> new_handle,std::shared_ptr<slice_model> new_slice);
+    ~CustomSliceModel(void);
     bool save_mapping(const char* file_name);
     bool load_mapping(const char* file_name);
 public:
@@ -150,18 +149,7 @@ public:
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const;
     virtual tipl::const_pointer_image<3> get_source(void) const;
 public:
-    bool load_slices(const std::vector<std::string>& files,bool is_mni = false);
-    bool load_slices(const std::string& file,bool is_mni = false)
-    {
-        if(!std::filesystem::exists(file))
-        {
-            error_msg = "file not exist";
-            return false;
-        }
-        std::vector<std::string> files;
-        files.push_back(file);
-        return load_slices(files,is_mni);
-    }
+    bool load_slices(bool is_mni = false);
 };
 
 #endif
