@@ -16,10 +16,8 @@ tract_report::tract_report(QWidget *parent) :
     ui->setupUi(this);
     ui->report_layout->addWidget(report_chart_view);
 
-    std::vector<std::string> index_list;
-    cur_tracking_window->handle->get_index_list(index_list);
-    for (unsigned int index = 0; index < index_list.size(); ++index)
-        ui->report_index->addItem(index_list[index].c_str());
+    for (const auto& each : cur_tracking_window->handle->get_index_list())
+        ui->report_index->addItem(each.c_str());
 
     // report
     {
