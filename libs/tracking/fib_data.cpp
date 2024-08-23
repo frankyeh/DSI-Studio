@@ -99,17 +99,16 @@ bool odf_data::read(fib_data& fib)
     }
     return true;
 }
-void item::get_minmax(void)
+void slice_model::get_minmax(void)
 {
     if(max_value != 0.0f)
         return;
-    if(name == "dti_fa" || name == "qa" || name == "fa") // e.g., fa, qa
+    if(!get_image().data() || name == "dti_fa" || name == "qa" || name == "fa") // e.g., fa, qa
     {
         contrast_min = min_value = 0.0f;
         contrast_max = max_value = 1.0f;
         return;
     }
-    auto I = get_image();
     float slope;
     if(handle && handle->mat_reader.index_of(name) < handle->mat_reader.size() &&
        handle->mat_reader[handle->mat_reader.index_of(name)].get_sub_data(name+".inter",min_value) &&
@@ -119,7 +118,7 @@ void item::get_minmax(void)
         tipl::out() << "min: " << min_value << " max:" << max_value;
     }
     else
-        tipl::minmax_value(I.begin(),I.end(),min_value,max_value);
+        tipl::minmax_value(image_data.begin(),image_data.end(),min_value,max_value);
     if(std::isnan(min_value) || std::isinf(min_value) ||
        std::isnan(max_value) || std::isinf(max_value))
     {
@@ -128,45 +127,33 @@ void item::get_minmax(void)
     }
     contrast_min = 0;
     contrast_max = max_value;
-    if(I.size() < 256*256*256 && contrast_min != contrast_max)
-        contrast_max = min_value+(tipl::segmentation::otsu_median(I)-min_value)*2.0f;
+    if(image_data.size() < 256*256*256 && contrast_min != contrast_max)
+        contrast_max = min_value+(tipl::segmentation::otsu_median(image_data)-min_value)*2.0f;
     v2c.set_range(contrast_min,contrast_max);
     v2c.two_color(min_color,max_color);
 }
-
-tipl::const_pointer_image<3,float> item::get_image(void)
+void slice_model::get_slice(
+               unsigned char d_index,unsigned int pos,
+               tipl::color_image& show_image)
 {
-    if(!image_ready)
+    v2c.convert(tipl::volume2slice(get_image(),d_index,pos),show_image);
+}
+
+tipl::const_pointer_image<3,float> slice_model::get_image(void)
+{
+    if(!image_data.data() && handle)
     {
-        static std::mutex mat_load;
-        std::lock_guard<std::mutex> lock(mat_load);
-        if(image_ready)
-            return image_data;
-        // delay read routine
-        const float* buf = nullptr;
         auto prior_show_prog = tipl::show_prog;
         tipl::show_prog = false;
-        auto image_index = handle->mat_reader.index_of(name);
-        if (image_index >= handle->mat_reader.size() ||
-            !handle->mat_reader.read(image_index,buf,handle->si2vi,handle->dim.size()))
-        {
-            tipl::error() << "cannot read " << name << std::endl;
-            dummy.resize(image_data.shape());
-            image_data = dummy.alias();
-        }
-        else
-        {
-            tipl::out() << name << " loaded" << std::endl;
-            image_data = tipl::make_image(buf,image_data.shape());
-        }
+        set_image(tipl::make_image(
+                      handle->mat_reader.read_as_type<float>(name,handle->si2vi,handle->dim.size()),handle->dim));
+        tipl::out() << name << " loaded" << std::endl;
         tipl::show_prog = prior_show_prog;
-        image_ready = true;
-        get_minmax();
     }
     return image_data;
 }
 
-void item::get_image_in_dwi(tipl::image<3>& I)
+void slice_model::get_image_in_dwi(tipl::image<3>& I)
 {
     if(iT != tipl::identity_matrix())
         tipl::resample(get_image(),I,iT);
@@ -489,7 +476,7 @@ bool fib_data::load_from_file(const std::string& file_name)
                 dir.findex_buf[0][i] = ti.discretize(v);
             });
 
-            view_item.push_back(item("fiber",dir.fa[0],dim));
+            slices.push_back(std::make_shared<slice_model>("fiber",dir.fa[0],dim));
             match_template();
             tipl::out() << "NIFTI file loaded" << std::endl;
             return true;
@@ -537,7 +524,7 @@ bool fib_data::load_from_file(const std::string& file_name)
             }
             dir.index_name.push_back("fiber");
             dir.index_data.push_back(dir.fa);
-            view_item.push_back(item("fiber",dir.fa[0],dim));
+            slices.push_back(std::make_shared<slice_model>("fiber",dir.fa[0],dim));
             match_template();
             tipl::out() << "NIFTI file loaded" << std::endl;
             return true;
@@ -589,8 +576,8 @@ bool fib_data::load_from_file(const std::string& file_name)
         mat_reader.push_back(std::make_shared<tipl::io::mat_matrix>("image",I.data(),I.plane_size(),I.depth()));
         load_from_mat();
         dir.index_name[0] = "image";
-        view_item[0].name = "image";
-        view_item[0].max_value = 0.0;// this allows calculating the min and max contrast
+        slices[0]->name = "image";
+        slices[0]->max_value = 0.0;// this allows calculating the min and max contrast
         trackable = false;
         tipl::out() << "image file loaded: " << I.shape() << std::endl;
         return true;
@@ -670,7 +657,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
         return save(buf);
     }
     size_t index = get_name_index(index_name);
-    if(index >= view_item.size())
+    if(index >= slices.size())
     {
         error_msg = "cannot find metrics ";
         error_msg += index_name;
@@ -683,7 +670,7 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
         for(int z = 0;z < buf.depth();++z)
         {
             tipl::color_image I;
-            get_slice(uint32_t(index),uint8_t(2),uint32_t(z),I);
+            slices[index]->get_slice(uint8_t(2),uint32_t(z),I);
             std::copy(I.begin(),I.end(),buf.begin()+size_t(z)*buf.plane_size());
         }
         return save(buf);
@@ -699,16 +686,16 @@ bool fib_data::save_mapping(const std::string& index_name,const std::string& fil
             error_msg += file_name;
             return false;
         }
-        file << view_item[index].get_image();
+        file << slices[index]->get_image();
         return true;
     }
     else
     {
-        tipl::image<3> buf(view_item[index].get_image());
-        if(view_item[index].get_image().shape() != dim)
+        tipl::image<3> buf(slices[index]->get_image());
+        if(slices[index]->get_image().shape() != dim)
         {
             tipl::image<3> new_buf(dim);
-            tipl::resample<tipl::interpolation::cubic>(buf,new_buf,view_item[index].iT);
+            tipl::resample<tipl::interpolation::cubic>(buf,new_buf,slices[index]->iT);
             new_buf.swap(buf);
         }
         return save(buf);
@@ -785,11 +772,9 @@ bool fib_data::load_from_mat(void)
     }
     */
 
-    view_item.push_back(item(dir.fa.size() == 1 ? "fa":"qa",dir.fa[0],dim));
+    slices.push_back(std::make_shared<slice_model>(dir.fa.size() == 1 ? "fa":"qa",dir.fa[0],dim));
     for(unsigned int index = 1;index < dir.index_name.size();++index)
-        view_item.push_back(item(dir.index_name[index],dir.index_data[index][0],dim));
-    view_item.push_back(item("color",dir.fa[0],dim));
-
+        slices.push_back(std::make_shared<slice_model>(dir.index_name[index],dir.index_data[index][0],dim));
     if(mask.empty())
     {
         auto mask_mat = std::make_shared<tipl::io::mat_matrix>("mask");
@@ -816,16 +801,16 @@ bool fib_data::load_from_mat(void)
         if(post_fix >= '0' && post_fix <= '9')
         {
             if (prefix_name == "index" || prefix_name == "fa" || prefix_name == "dir" ||
-                std::find_if(view_item.begin(),
-                             view_item.end(),
-                             [&prefix_name](const item& view)
-                             {return view.name == prefix_name;}) != view_item.end())
+                std::find_if(slices.begin(),
+                             slices.end(),
+                             [&prefix_name](const auto& view)
+                             {return view->name == prefix_name;}) != slices.end())
                 continue;
         }
         if (mat_reader[index].size() != dim.size() &&
             mat_reader[index].size() != si2vi.size())
             continue;
-        view_item.push_back(item(matrix_name,dim,this));
+        slices.push_back(std::make_shared<slice_model>(matrix_name,this));
     }
 
     is_human_data = is_human_size(dim,vs); // 1 percentile head size in mm
@@ -1130,8 +1115,8 @@ bool fib_data::save_to_file(const std::string& file_name)
 }
 void fib_data::remove_slice(size_t index)
 {
-    mat_reader.remove(view_item[index].name);
-    view_item.erase(view_item.begin()+index);
+    mat_reader.remove(slices[index]->name);
+    slices.erase(slices.begin()+index);
 }
 bool fib_data::resample_to(float resolution)
 {
@@ -1152,8 +1137,8 @@ bool fib_data::resample_to(float resolution)
     }
     si2vi = tipl::get_sparse_index(mask);
     tipl::out() << "size: " << mask.shape() << " voxels: " << si2vi.size();
-    for(auto& item : view_item)
-        item.set_image(tipl::make_image(item.get_image().begin(),dim));
+    for(auto& each : slices)
+        each->set_image(tipl::make_image(each->get_image().begin(),dim));
     return true;
 }
 size_t match_volume(float volume);
@@ -1171,48 +1156,65 @@ void fib_data::match_template(void)
 
 size_t fib_data::get_name_index(const std::string& index_name) const
 {
-    for(unsigned int index_num = 0;index_num < view_item.size();++index_num)
-        if(view_item[index_num].name == index_name)
+    for(unsigned int index_num = 0;index_num < slices.size();++index_num)
+        if(slices[index_num]->name == index_name)
             return index_num;
-    for(unsigned int index_num = 0;index_num < view_item.size();++index_num)
-        if(view_item[index_num].name.find(index_name) != std::string::npos)
+    for(unsigned int index_num = 0;index_num < slices.size();++index_num)
+        if(slices[index_num]->name.find(index_name) != std::string::npos)
             return index_num;
-    return view_item.size();
+    return slices.size();
 }
-void fib_data::get_index_list(std::vector<std::string>& index_list) const
+std::vector<std::string> fib_data::get_index_list(void) const
 {
-    for (size_t index = 0; index < view_item.size(); ++index)
-        if(view_item[index].name != "color")
-            index_list.push_back(view_item[index].name);
+    std::vector<std::string> index_list;
+    for (const auto& each : slices)
+        if(!each->optional())
+            index_list.push_back(each->name);
+    return index_list;
 }
 
-bool fib_data::set_dt_index(const std::pair<size_t,size_t>& pair,size_t type)
+bool fib_data::set_dt_index(const std::pair<std::string,std::string>& name_pair,size_t type)
 {
+
+    auto find_index = [&](const std::string& metric)
+    {
+        error_msg.clear();
+        if(metric == "zero")
+            return slices.size();
+        auto index = get_name_index(metric);
+        if(index == slices.size())
+        {
+            error_msg = "cannot find the metric: ";
+            error_msg += metric;
+            return slices.size();
+        }
+        if(slices[index]->registering)
+            error_msg = "registration undergoing. please wait until registration complete.";
+        if(slices[index]->name != metric)
+            tipl::warning() << "specified " << metric << " but not found. The analysis will use " << slices[index]->name;
+        return index;
+    };
+
+    std::pair<size_t,size_t> pair;
+    pair.first = find_index(name_pair.first);
+    pair.second = find_index(name_pair.second);
+    if(!error_msg.empty())
+        return false;
+
+
     tipl::image<3> I(dim),J(dim);
     std::string name;
-    auto i = pair.first;
-    auto j = pair.second;
-    if(i < view_item.size())
+    if(pair.first < slices.size())
     {
-        if(view_item[i].registering)
-        {
-            error_msg = "Registration undergoing. Please wait until registration complete.";
-            return false;
-        }
-        name += view_item[i].name;
-        view_item[i].get_image_in_dwi(I);
+        name += slices[pair.first]->name;
+        slices[pair.first]->get_image_in_dwi(I);
     }
 
-    if(j < view_item.size())
+    if(pair.second < slices.size())
     {
-        if(view_item[j].registering)
-        {
-            error_msg = "Registration undergoing. Please wait until registration complete.";
-            return false;
-        }
         name += "-";
-        name += view_item[j].name;
-        view_item[j].get_image_in_dwi(J);
+        name += slices[pair.second]->name;
+        slices[pair.second]->get_image_in_dwi(J);
     }
     if(name.empty())
     {
@@ -1256,36 +1258,7 @@ bool fib_data::set_dt_index(const std::pair<size_t,size_t>& pair,size_t type)
 }
 
 
-void fib_data::get_slice(unsigned int view_index,
-               unsigned char d_index,unsigned int pos,
-               tipl::color_image& show_image)
-{
-    if(view_item[view_index].name == "color")
-    {
-        view_item[view_index].v2c.convert(tipl::volume2slice(view_item[0].get_image(),d_index,pos),show_image);
 
-        if(view_item[view_index].color_map_buf.empty())
-        {
-            view_item[view_index].color_map_buf.resize(dim);
-            std::iota(view_item[view_index].color_map_buf.begin(),
-                      view_item[view_index].color_map_buf.end(),0);
-        }
-        tipl::image<2,unsigned int> buf;
-        tipl::volume2slice(view_item[view_index].color_map_buf, buf, d_index, pos);
-        for (unsigned int index = 0;index < buf.size();++index)
-        {
-            auto d = dir.get_fib(buf[index],0);
-            show_image[index].r = std::abs(float(show_image[index].r)*d[0]);
-            show_image[index].g = std::abs(float(show_image[index].g)*d[1]);
-            show_image[index].b = std::abs(float(show_image[index].b)*d[2]);
-        }
-    }
-    else
-    {
-        view_item[view_index].v2c.convert(tipl::volume2slice(view_item[view_index].get_image(),d_index,pos),show_image);
-    }
-
-}
 
 void fib_data::get_voxel_info2(int x,int y,int z,std::vector<float>& buf) const
 {
@@ -1316,19 +1289,24 @@ void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) 
     size_t space_index = tipl::pixel_index<3>(x,y,z,dim).index();
     if (space_index >= dim.size())
         return;
-    for(unsigned int i = 0;i < view_item.size();++i)
-    {
-        if(view_item[i].name == "color" || !view_item[i].image_ready)
-            continue;
-        if(view_item[i].get_image().shape() != dim)
+    for(const auto& each : slices)
+        if(each->image_ready())
         {
-            tipl::vector<3> pos(x,y,z);
-            pos.to(view_item[i].iT);
-            buf.push_back(tipl::estimate(view_item[i].get_image(),pos));
+            auto I = each->get_image();
+            if(I.empty())
+                buf.push_back(0.0f);
+            else
+            {
+                if(I.shape() != dim)
+                {
+                    tipl::vector<3> pos(x,y,z);
+                    pos.to(each->iT);
+                    buf.push_back(tipl::estimate(I,pos));
+                }
+                else
+                    buf.push_back(I[space_index]);
+            }
         }
-        else
-            buf.push_back(view_item[i].get_image().size() ? view_item[i].get_image()[space_index] : 0.0);
-    }
 }
 
 
@@ -1857,10 +1835,10 @@ bool fib_data::map_to_mni(bool background)
         reg.load_subject(0,tipl::image<3>(dir.fa[0],dim));
         {
             size_t iso_index = get_name_index("iso");
-            if(view_item.size() == iso_index)
+            if(slices.size() == iso_index)
                 iso_index = get_name_index("md");
-            if(view_item.size() != iso_index)
-                reg.load_subject(1,tipl::image<3>(view_item[iso_index].get_image()));
+            if(slices.size() != iso_index)
+                reg.load_subject(1,tipl::image<3>(slices[iso_index]->get_image()));
         }
         reg.Ivs = vs;
         reg.IR = trans_to_mni;
