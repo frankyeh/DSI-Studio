@@ -18,8 +18,8 @@ extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 
 std::shared_ptr<CustomSliceModel> load_slices(std::shared_ptr<fib_data> handle,std::string file_name)
 {
-    auto new_slice = std::make_shared<CustomSliceModel>(handle.get());
-    if(!new_slice->load_slices(file_name))
+    auto new_slice = std::make_shared<CustomSliceModel>(handle,file_name);
+    if(!new_slice->load_slices())
     {
         tipl::error() << "fail to load " << file_name << " " << new_slice->error_msg << std::endl;
         return std::shared_ptr<CustomSliceModel>();
@@ -73,7 +73,7 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
             in >> report_tag >> index_name >> profile_dir >> bandwidth;
             std::vector<float> values,data_profile,data_ci1,data_ci2;
             // check index
-            if(index_name != "qa" && index_name != "fa" &&  handle->get_name_index(index_name) == handle->view_item.size())
+            if(handle->get_name_index(index_name) == handle->slices.size())
             {
                 tipl::out() << "cannot find index name " << index_name << std::endl;
                 return false;
@@ -207,7 +207,7 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
                 cmd = cmd.substr(0,cmd.find('.'));
             else
                 file_name_stat += ".txt";
-            if(handle->get_name_index(cmd) != handle->view_item.size())
+            if(handle->get_name_index(cmd) != handle->slices.size())
             {
                 tract_model->save_data_to_file(handle,file_name_stat.c_str(),cmd);
                 continue;
@@ -763,21 +763,15 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
             }
 
         }
-        auto metric_i = handle->get_name_index(po.get("dt_metric1"));
-        auto metric_j = handle->get_name_index(po.get("dt_metric2"));
-        if(metric_i == handle->view_item.size() || metric_j == handle->view_item.size())
+        auto index_list = handle->get_index_list();
+        tipl::out() << "available metrics:";
+        for(const auto& each : handle->get_index_list())
+            tipl::out() << each;
+        if(!handle->set_dt_index(std::make_pair(po.get("dt_metric1"),po.get("dt_metric2")),po.get("dt_threshold_type",0)))
         {
-            tipl::error() << "invalid dt_metric";
-            tipl::out() << "available metrics are ";
-            for(size_t i = 0;i < handle->view_item.size();++i)
-                tipl::out() << handle->view_item[i].name;
+            tipl::error() << handle->error_msg;
             return 1;
         }
-        if(handle->view_item[metric_i].name != po.get("dt_metric1"))
-            tipl::warning() << "specified " << po.get("dt_metric1") << " but it was not found. The analysis will use " << handle->view_item[metric_i].name;
-        if(handle->view_item[metric_j].name != po.get("dt_metric2"))
-            tipl::warning() << "specified " << po.get("dt_metric2") << " but it was not found. The analysis will use " << handle->view_item[metric_j].name;
-        handle->set_dt_index(std::make_pair(metric_i,metric_j),po.get("dt_threshold_type",0));
     }
 
     set_template(handle,po);
