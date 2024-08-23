@@ -9,15 +9,16 @@
 #include "SliceModel.h"
 #include "fib_data.hpp"
 #include "reg.hpp"
-SliceModel::SliceModel(fib_data* handle_,uint32_t view_id_):handle(handle_),view_id(view_id_)
+SliceModel::SliceModel(std::shared_ptr<fib_data> new_handle,std::shared_ptr<slice_model> new_view):
+    handle(new_handle),view(new_view)
 {
     slice_visible[0] = true;
     slice_visible[1] = true;
     slice_visible[2] = true;
     to_dif.identity();
     to_slice.identity();
-    dim = handle_->dim;
-    vs = handle_->vs;
+    dim = handle->dim;
+    vs = handle->vs;
     trans_to_mni = handle->trans_to_mni;
     slice_pos[0] = dim.width() >> 1;
     slice_pos[1] = dim.height() >> 1;
@@ -32,7 +33,7 @@ void SliceModel::apply_overlay(tipl::color_image& show_image,
     if(show_image.empty())
         return;
     bool op = show_image[0][0] < 128;
-    const auto& v2c = other_slice->handle->view_item[other_slice->view_id].v2c;
+    const auto& v2c = other_slice->view->v2c;
     std::pair<float,float> range = other_slice->get_contrast_range();
     for(int y = 0,pos = 0;y < show_image.height();++y)
         for(int x = 0;x < show_image.width();++x,++pos)
@@ -60,38 +61,58 @@ void SliceModel::apply_overlay(tipl::color_image& show_image,
 // ---------------------------------------------------------------------------
 std::pair<float,float> SliceModel::get_value_range(void) const
 {
-    handle->view_item[view_id].get_minmax();
-    return std::make_pair(handle->view_item[view_id].min_value,handle->view_item[view_id].max_value);
+    view->get_minmax();
+    return std::make_pair(view->min_value,view->max_value);
 }
 // ---------------------------------------------------------------------------
 std::pair<float,float> SliceModel::get_contrast_range(void) const
 {
-    return std::make_pair(handle->view_item[view_id].contrast_min,handle->view_item[view_id].contrast_max);
+    return std::make_pair(view->contrast_min,view->contrast_max);
 }
 // ---------------------------------------------------------------------------
 std::pair<unsigned int,unsigned int> SliceModel::get_contrast_color(void) const
 {
-    return std::make_pair(handle->view_item[view_id].min_color,handle->view_item[view_id].max_color);
+    return std::make_pair(view->min_color,view->max_color);
 }
 // ---------------------------------------------------------------------------
 void SliceModel::set_contrast_range(float min_v,float max_v)
 {
-    handle->view_item[view_id].contrast_min = min_v;
-    handle->view_item[view_id].contrast_max = max_v;
-    handle->view_item[view_id].v2c.set_range(min_v,max_v);
+    view->contrast_min = min_v;
+    view->contrast_max = max_v;
+    view->v2c.set_range(min_v,max_v);
 }
 // ---------------------------------------------------------------------------
 void SliceModel::set_contrast_color(unsigned int min_c,unsigned int max_c)
 {
-    handle->view_item[view_id].min_color = min_c;
-    handle->view_item[view_id].max_color = max_c;
-    handle->view_item[view_id].v2c.two_color(min_c,max_c);
+    view->min_color = min_c;
+    view->max_color = max_c;
+    view->v2c.two_color(min_c,max_c);
 }
 // ---------------------------------------------------------------------------
 void SliceModel::get_slice(tipl::color_image& show_image,unsigned char cur_dim,int pos,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const
 {
-    handle->get_slice(view_id,cur_dim, pos,show_image);
+    if(view->name == "color")
+    {
+        view->v2c.convert(tipl::volume2slice(handle->slices[0]->get_image(),cur_dim,pos),show_image);
+        if(view->color_map_buf.empty())
+        {
+            view->color_map_buf.resize(handle->dim);
+            std::iota(view->color_map_buf.begin(),
+                      view->color_map_buf.end(),0);
+        }
+        tipl::image<2,unsigned int> buf;
+        tipl::volume2slice(view->color_map_buf, buf, cur_dim, pos);
+        for (unsigned int index = 0;index < buf.size();++index)
+        {
+            auto d = handle->dir.get_fib(buf[index],0);
+            show_image[index].r = std::abs(float(show_image[index].r)*d[0]);
+            show_image[index].g = std::abs(float(show_image[index].g)*d[1]);
+            show_image[index].b = std::abs(float(show_image[index].b)*d[2]);
+        }
+    }
+    else
+        view->get_slice(cur_dim, pos,show_image);
     for(auto overlay_slice : overlay_slices)
         if(this != overlay_slice.get())
             apply_overlay(show_image,cur_dim,overlay_slice);
@@ -102,27 +123,49 @@ void SliceModel::get_high_reso_slice(tipl::color_image& show_image,unsigned char
 {
     if(handle && handle->high_reso.get())
     {
-        handle->high_reso->view_item[view_id].v2c = handle->view_item[view_id].v2c;
-        handle->high_reso->get_slice(view_id,cur_dim, pos*int(handle->high_reso->dim[cur_dim])/int(handle->dim[cur_dim]),show_image);
+        for(const auto& each : handle->high_reso->slices)
+            if(view->name == each->name)
+            {
+                each->v2c = view->v2c;
+                each->get_slice(cur_dim, pos*int(handle->high_reso->dim[cur_dim])/int(handle->dim[cur_dim]),show_image);
+                return;
+            }
     }
-    else
-        get_slice(show_image,cur_dim,pos,overlay_slices);
+    get_slice(show_image,cur_dim,pos,overlay_slices);
 }
 // ---------------------------------------------------------------------------
 tipl::const_pointer_image<3> SliceModel::get_source(void) const
 {
-    return handle->view_item[view_id].get_image();
+    return view->get_image();
 }
 // ---------------------------------------------------------------------------
 std::string SliceModel::get_name(void) const
 {
-    return handle->view_item[view_id].name;
+    return view->name;
 }
 // ---------------------------------------------------------------------------
-CustomSliceModel::CustomSliceModel(fib_data* new_handle,uint32_t view_id_):
-    SliceModel(new_handle,view_id_)
+CustomSliceModel::CustomSliceModel(std::shared_ptr<fib_data> new_handle,
+                                   const std::string& source_file_name_):
+    SliceModel(new_handle,std::make_shared<slice_model>(source_file_name_)),
+    source_file_name(source_file_name_)
 {
+    handle->slices.push_back(view);
     is_diffusion_space = false;
+}
+// ---------------------------------------------------------------------------
+CustomSliceModel::CustomSliceModel(std::shared_ptr<fib_data> new_handle,
+                                   std::shared_ptr<slice_model> new_slice):
+    SliceModel(new_handle,new_slice),
+    source_file_name(new_slice->path)
+{
+    handle->slices.push_back(view);
+    is_diffusion_space = false;
+}
+// ---------------------------------------------------------------------------
+CustomSliceModel::~CustomSliceModel(void)
+{
+    terminate();
+    handle->slices.erase(std::remove(handle->slices.begin(),handle->slices.end(),view),handle->slices.end());
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::get_slice(tipl::color_image& image,
@@ -203,24 +246,32 @@ void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream>
 bool parse_age_sex(const std::string& file_name,std::string& age,std::string& sex);
 QString get_matched_demo(QWidget *parent,std::shared_ptr<fib_data>);
 QImage read_qimage(QString filename,std::string& error);
-bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is_mni)
+bool CustomSliceModel::load_slices(void)
 {
-    if(files.empty())
+    if(source_file_name.empty())
         return false;
     // QSDR loaded, use MNI transformation instead
     bool has_transform = false;
-    source_file_name = files[0];
     auto suffix = QFileInfo(source_file_name.c_str()).suffix();
     name = QFileInfo(source_file_name.c_str()).completeBaseName().remove(".nii").toStdString();
     to_dif.identity();
     to_slice.identity();
+
+
+    if(tipl::begins_with(source_file_name,"http"))
+    {
+        error_msg = "cannot load ";
+        error_msg += source_file_name;
+        return false;
+    }
+
     tipl::progress prog("open ",source_file_name);
     // picture as slice
     if(suffix == "bmp" || suffix == "jpg" || suffix == "png" || suffix == "tif" || suffix == "tiff")
 
     {
         QString info_file = QString(source_file_name.c_str()) + ".info.txt";
-        if(files.size() == 1) // single slice
+        if(source_files.size() <= 1) // single slice
         {
             uint32_t slices_count = 10;
             {
@@ -262,7 +313,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
 
             dim[0] = in.width();
             dim[1] = in.height();
-            dim[2] = uint32_t(files.size());
+            dim[2] = uint32_t(source_files.size());
             vs[0] = vs[1] = vs[2] = 1.0f;
 
             try{
@@ -276,7 +327,7 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
 
             for(size_t file_index = 0;prog(file_index,dim[2]);++file_index)
             {
-                QImage in = read_qimage(files[file_index].c_str(),error_msg);
+                QImage in = read_qimage(source_files[file_index].c_str(),error_msg);
                 if(in.isNull())
                     return false;
                 QImage buf = in.convertToFormat(QImage::Format_RGB32).mirrored();
@@ -419,10 +470,10 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
     }
 
     // dicom images
-    if(source_images.empty())
+    if(source_images.empty() && !source_files.empty())
     {
         tipl::io::dicom_volume volume;
-        if(!volume.load_from_files(files))
+        if(!volume.load_from_files(source_files))
         {
             error_msg = volume.error_msg;
             return false;
@@ -435,7 +486,6 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
             return false;
         }
         initial_LPS_nifti_srow(trans_to_mni,source_images.shape(),vs);
-        dicom_source = files;
     }
 
     // add image to the view item lists
@@ -445,10 +495,9 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         tipl::out() << "dimension: " << source_images.shape() << std::endl;
         if(source_images.shape() == handle->dim)
             tipl::out() << "The slices have the same dimension as DWI." << std::endl;
-        handle->view_item.push_back(item(name,&*source_images.begin(),source_images.shape()));
-        handle->view_item.back().T = to_dif;
-        handle->view_item.back().iT = to_slice;
-        view_id = uint32_t(handle->view_item.size()-1);
+        view->set_image(tipl::make_image(source_images.data(),source_images.shape()));
+        view->T = to_dif;
+        view->iT = to_slice;
     }
 
     if(has_transform)
@@ -480,8 +529,8 @@ bool CustomSliceModel::load_slices(const std::vector<std::string>& files,bool is
         to_slice[10] = float(source_images.depth())/float(handle->dim.depth());
         to_slice[15] = 1.0;
         to_dif = tipl::inverse(to_slice);
-        handle->view_item.back().T = to_dif;
-        handle->view_item.back().iT = to_slice;
+        view->T = to_dif;
+        view->iT = to_slice;
         return true;
     }
 
@@ -512,7 +561,7 @@ void CustomSliceModel::update_image(void)
 void CustomSliceModel::update_image(tipl::image<3>&& new_image)
 {
     dim = new_image.shape();
-    handle->view_item[view_id].set_image(new_image);
+    view->set_image(new_image);
     source_images.swap(new_image);
 }
 // ---------------------------------------------------------------------------
@@ -522,18 +571,15 @@ void CustomSliceModel::update_transform(void)
     to_dif.identity();
     M.save_to_transform(to_dif.begin());
     to_slice = tipl::inverse(to_dif);
-    if(view_id)
-    {
-        handle->view_item[view_id].T = to_dif;
-        handle->view_item[view_id].iT = to_slice;
-    }
+    view->T = to_dif;
+    view->iT = to_slice;
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::argmin(void)
 {
     terminated = false;
     running = true;
-    handle->view_item[view_id].registering = true;
+    view->registering = true;
 
     auto to = subject_image_pre(tipl::image<3>(source_images));
     auto to_vs = vs;
@@ -555,7 +601,7 @@ void CustomSliceModel::argmin(void)
     linear(make_list(to,to),to_vs,make_list(from1,from2),from_vs,
            arg_min,picture.empty() ? tipl::reg::rigid_body : tipl::reg::affine,terminated);
     update_transform();
-    handle->view_item[view_id].registering = false;
+    view->registering = false;
     running = false;
     tipl::out() << "registration completed";
 }
@@ -594,6 +640,10 @@ void CustomSliceModel::wait(void)
 {
     if(thread.get() && thread->joinable())
         thread->join();
+    update_transform();
+    tipl::out() << "size: " << dim << "resolution: " << vs;
+    tipl::out() << "srow: " << trans_to_mni;
+    tipl::out() << "to_dif: " << to_dif;
 }
 // ---------------------------------------------------------------------------
 void CustomSliceModel::terminate(void)
