@@ -228,14 +228,9 @@ public:
                         std::vector<float>& data_ci2);
 
 public:
-        void get_tract_data(std::shared_ptr<fib_data> handle,
-                            unsigned int fiber_index,
-                            unsigned int index_num,
-                            std::vector<float>& data) const;
-        bool get_tracts_data(std::shared_ptr<fib_data> handle,
-                const std::string& index_name,
-                std::vector<std::vector<float> >& data) const;
-        void get_tracts_data(std::shared_ptr<fib_data> handle,unsigned int index_num,float& mean) const;
+        std::vector<float> get_tract_data(std::shared_ptr<fib_data> handle,size_t fiber_index,size_t index_num) const;
+        std::vector<std::vector<float> > get_tracts_data(std::shared_ptr<fib_data> handle,const std::string& index_name) const;
+        float get_tracts_mean(std::shared_ptr<fib_data> handle,unsigned int index_num) const;
 public:
 
         void get_passing_list(const tipl::image<3,std::vector<short> >& region_map,
