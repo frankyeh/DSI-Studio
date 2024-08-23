@@ -137,10 +137,9 @@ int atl(tipl::program_option<tipl::out>& po)
                 return 1;
             }
             reso = po.get("resolution",std::floor((fib.vs[0] + fib.vs[2])*0.5f*100.0f)/100.0f);
-            fib.get_index_list(item_list);
             std::ostringstream out;
-            for(size_t i = 0;i < item_list.size();++i)
-                out << item_list[i] << " ";
+            for(const auto& each: fib.get_index_list())
+                out << each << " ";
             tipl::out() << "available metrics: " << out.str() << std::endl;
         }
 
