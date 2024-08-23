@@ -18,10 +18,8 @@ connectivity_matrix_dialog::connectivity_matrix_dialog(tracking_window *parent,Q
     ui->setupUi(this);
     ui->graphicsView->setScene(&scene);
 
-    std::vector<std::string> index_list;
-    cur_tracking_window->handle->get_index_list(index_list);
-    for (unsigned int index = 0; index < index_list.size(); ++index)
-        ui->matrix_value->addItem(index_list[index].c_str());
+    for (const auto& each: cur_tracking_window->handle->get_index_list())
+        ui->matrix_value->addItem(each.c_str());
 
     // atlas
     ui->region_list->addItem("ROIs");
