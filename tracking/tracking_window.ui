@@ -94,14 +94,12 @@
              <height>16777215</height>
             </size>
            </property>
+           <property name="currentText">
+            <string/>
+           </property>
            <property name="sizeAdjustPolicy">
             <enum>QComboBox::AdjustToContents</enum>
            </property>
-           <item>
-            <property name="text">
-             <string>Diffusion</string>
-            </property>
-           </item>
           </widget>
          </item>
          <item>
