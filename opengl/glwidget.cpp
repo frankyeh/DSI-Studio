@@ -2233,7 +2233,7 @@ bool GLWidget::command(QString cmd,QString param,QString param2)
     {
         tipl::image<3> crop_image;
         float resolution_ratio = 1.0;
-        bool is_wm = (cur_tracking_window.current_slice->get_name().find("wm") != std::string::npos);
+        bool is_wm = (cur_tracking_window.current_slice->get_name() == "wm_template");
         float threshold = 25.0f;
         CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
         if(reg_slice)
