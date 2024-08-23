@@ -510,7 +510,7 @@ bool connectometry_db::add(const std::string& file_name,
         else
         {
             auto index = fib.get_name_index(index_name);
-            if(index == fib.view_item.size())
+            if(index == fib.slices.size())
             {
                 error_msg = "cannot export ";
                 error_msg += index_name;
@@ -521,7 +521,7 @@ bool connectometry_db::add(const std::string& file_name,
 
             {
                 if(fib.is_mni)
-                    sample_from_image(fib.view_item[index].get_image(),fib.trans_to_mni,data);
+                    sample_from_image(fib.slices[index]->get_image(),fib.trans_to_mni,data);
                 else
                 {
                     fib.set_template_id(handle->template_id);
@@ -534,7 +534,7 @@ bool connectometry_db::add(const std::string& file_name,
                         return false;
                     }
                     tipl::image<3> Iss(fib.t2s.shape());
-                    tipl::compose_mapping(fib.view_item[index].get_image(),fib.t2s,Iss);
+                    tipl::compose_mapping(fib.slices[index]->get_image(),fib.t2s,Iss);
                     sample_from_image(Iss.alias(),fib.template_to_mni,data);
                 }
             }
