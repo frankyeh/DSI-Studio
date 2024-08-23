@@ -279,7 +279,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                 ti.half_vertices_count = ti.vertices_count/2;
                 ti.fold = uint16_t(std::floor(std::sqrt((ti.vertices_count-2)/10.0)+0.5));
                 mni = fib.trans_to_mni;
-                fib.get_index_list(other_metrics_name);
+                other_metrics_name = fib.get_index_list();
                  // remove odf metrics generated from averaged ODFs
                 other_metrics_name.erase(std::remove(other_metrics_name.begin(),other_metrics_name.end(),std::string("iso")),other_metrics_name.end());
                 other_metrics_name.erase(std::remove(other_metrics_name.begin(),other_metrics_name.end(),std::string("qa")),other_metrics_name.end());
@@ -331,12 +331,13 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             for(size_t i = 0;prog(i,other_metrics_name.size());++i)
             {
                 auto metric_index = fib.get_name_index(other_metrics_name[i]);
-                if(metric_index < fib.view_item.size())
+                if(metric_index < fib.slices.size())
                 {
+                    auto I = fib.slices[metric_index]->get_image();
                     if(other_metrics_images[i].empty())
-                        other_metrics_images[i] = fib.view_item[metric_index].get_image();
+                        other_metrics_images[i] = I;
                     else
-                        tipl::add(other_metrics_images[i],fib.view_item[metric_index].get_image());
+                        tipl::add(other_metrics_images[i],I);
                     other_metrics_count[i]++;
                 }
             }
