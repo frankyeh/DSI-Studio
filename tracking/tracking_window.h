@@ -89,7 +89,7 @@ public:
     std::shared_ptr<fib_data> handle;
     std::vector<std::shared_ptr<SliceModel> > slices;
     std::shared_ptr<SliceModel> current_slice;
-    std::shared_ptr<SliceModel> createSlices(const std::string& name,const std::string& path);
+    bool addSlices(const std::string& name,const std::string& path);
     bool addSlices(std::shared_ptr<SliceModel> new_slice);
     bool openSlices(const std::string& filename,bool is_mni = false);
     void updateSlices(void);
