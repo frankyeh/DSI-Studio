@@ -511,30 +511,28 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
     {
         if(cur_node->id == "dt_index1" && getData("dt_index1").toInt() > 0)
         {
-            auto& view_item = cur_tracking_window.handle->view_item;
-            auto dt_name1 = view_item[getData("dt_index1").toInt()-1].name;
+            auto dt_name1 = cur_tracking_window.dt_list[getData("dt_index1").toInt()].toStdString();
             // search comparing metrics by inclusion
-            for(size_t i = 0;i < view_item.size();++i)
+            for(size_t i = 1;i < cur_tracking_window.dt_list.size();++i)
             {
-                auto name = view_item[i].name;
+                auto name = cur_tracking_window.dt_list[i].toStdString();
                 if(name != dt_name1 && (dt_name1.find(name) != std::string::npos ||
                                         name.find(dt_name1) != std::string::npos))
                 {
-                    setData("dt_index2",int(i+1));
+                    setData("dt_index2",int(i));
                     break;
                 }
             }
             // search comparing metrics by common prefix
-            for(size_t i = 0;i < view_item.size();++i)
+            for(size_t i = 1;i < cur_tracking_window.dt_list.size();++i)
             {
-                auto name = view_item[i].name;
+                auto name = cur_tracking_window.dt_list[i].toStdString();
                 if(name != dt_name1 && dt_name1.substr(0,2) == name.substr(0,2))
                 {
-                    setData("dt_index2",int(i+1));
+                    setData("dt_index2",int(i));
                     break;
                 }
             }
-
         }
         setData("tracking_plan",0); // use seed instead of tracks for dT
         setData("track_count",1000000);
