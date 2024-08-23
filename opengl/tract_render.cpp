@@ -38,7 +38,7 @@ void TractRenderParam::init(GLWidget* glwidget,
     }
 
     tract_visible_tract = float(cur_tracking_window["tract_visible_tract"].toInt());
-    unsigned int track_num_index = cur_tracking_window.handle->get_name_index(
+    track_num_index = cur_tracking_window.handle->get_name_index(
                                            cur_tracking_window.color_bar->get_tract_color_name().toStdString());
 }
 
@@ -428,8 +428,7 @@ void TractRender::prepare_update(std::shared_ptr<TractModel>& active_tract_model
                 assigned_colors[i] /= 255.0f;
                 continue;
             }
-            std::vector<float> metrics;
-            active_tract_model->get_tract_data(handle,visible[i],param.track_num_index,metrics);
+            std::vector<float> metrics(active_tract_model->get_tract_data(handle,visible[i],param.track_num_index));
             if(param.tract_color_style == 3) // mean values
                 assigned_colors[i] = param.get_color(tipl::mean(metrics));
             if(param.tract_color_style == 5) // max values
@@ -449,7 +448,7 @@ void TractRender::prepare_update(std::shared_ptr<TractModel>& active_tract_model
                 break;
             std::vector<float> metrics;
             if(param.tract_color_style == 2)
-                active_tract_model->get_tract_data(handle,visible[i],param.track_num_index,metrics);
+                metrics = std::move(active_tract_model->get_tract_data(handle,visible[i],param.track_num_index));
             new_data[thread].add_tract(param,active_tract_model->get_tract(visible[i]),shader,
                            assigned_colors.empty() ? tipl::vector<3>() : assigned_colors[i],metrics);
         }
