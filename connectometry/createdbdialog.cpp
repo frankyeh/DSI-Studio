@@ -104,9 +104,7 @@ void CreateDBDialog::update_list(void)
             }
             fib_reso = std::floor((fib.vs[0] + fib.vs[2])*0.5f*100.0f)/100.0f;
             ui->index_of_interest->clear();
-            std::vector<std::string> item_list;
-            fib.get_index_list(item_list);
-            for(auto& name : item_list)
+            for(const auto& name : fib.get_index_list())
                 ui->index_of_interest->addItem(name.c_str());
             populate_templates(ui->template_list,fib.template_id);
             ui->template_list->setEnabled(!fib.is_mni);
