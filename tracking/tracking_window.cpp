@@ -1140,7 +1140,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
         {
             if(!reg_slice->load_slices())
             {
-                QMessageBox::critical(this,"ERROR","Cannot load slices");
+                QMessageBox::critical(this,"ERROR",reg_slice->error_msg.c_str());
                 ui->SliceModality->setCurrentIndex(0);
                 return;
             }
