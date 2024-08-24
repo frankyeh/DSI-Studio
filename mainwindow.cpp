@@ -7,7 +7,7 @@
 #include <QMimeData>
 #include <QAction>
 #include <QStyleFactory>
-
+#include <QNetworkInterface>
 
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -119,18 +119,23 @@ MainWindow::MainWindow(QWidget *parent) :
 
             QDialog *dialog = new QDialog(this);
             dialog->setWindowTitle("License Information");
-            dialog->setModal(false); // Make the dialog modeless
+            dialog->setWindowFlags(Qt::Dialog | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
+            dialog->setModal(true);
 
             QTextEdit *licenseTextEdit = new QTextEdit;
             licenseTextEdit->setText(licenseText);
             licenseTextEdit->setReadOnly(true);
 
-            QPushButton *closeButton = new QPushButton("Close");
-            connect(closeButton, &QPushButton::clicked, dialog, &QDialog::close);
-
             QVBoxLayout *layout = new QVBoxLayout;
             layout->addWidget(licenseTextEdit);
 
+            if(!QNetworkInterface::allInterfaces().empty())
+            {
+                QHBoxLayout *h_layout = new QHBoxLayout;
+                h_layout->addWidget(new QLabel("User ID: "));
+                h_layout->addWidget(new QLineEdit(QNetworkInterface::allInterfaces()[0].hardwareAddress().remove(':')));
+                layout->addLayout(h_layout);
+            }
             if(!ipAddress.isEmpty())
             {
                 layout->addWidget(new QLabel(QString("Auto-Registered IP: ") + ipAddress));
@@ -146,7 +151,20 @@ MainWindow::MainWindow(QWidget *parent) :
                 notice->setStyleSheet("color: red; font-weight: bold;");
                 layout->addWidget(notice);
             }
-            layout->addWidget(closeButton);
+
+            {
+                QPushButton *closeButton = new QPushButton("Accept License");
+                connect(closeButton, &QPushButton::clicked, dialog, &QDialog::close);
+                QPushButton *exitButton = new QPushButton("Exit");
+                exitButton->setMaximumWidth(60);
+                connect(exitButton, &QPushButton::clicked, dialog, &QDialog::close);
+                connect(exitButton, &QPushButton::clicked, this, &MainWindow::close);
+                QHBoxLayout *h_layout = new QHBoxLayout;
+                h_layout->setSpacing(0);
+                h_layout->addWidget(closeButton);
+                h_layout->addWidget(exitButton);
+                layout->addLayout(h_layout);
+            }
             dialog->setLayout(layout);
             dialog->resize(800,500);
             dialog->show();
