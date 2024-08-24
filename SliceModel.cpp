@@ -6,6 +6,9 @@
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QDir>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
 #include "SliceModel.h"
 #include "fib_data.hpp"
 #include "reg.hpp"
@@ -260,9 +263,47 @@ bool CustomSliceModel::load_slices(void)
 
     if(tipl::begins_with(source_file_name,"http"))
     {
-        error_msg = "cannot load ";
-        error_msg += source_file_name;
-        return false;
+        auto path = std::filesystem::path(handle->fib_file_name).parent_path() / std::filesystem::path(source_file_name).filename();
+        if(!std::filesystem::exists(path.string()))
+        {
+            tipl::progress p("downloading data from ",source_file_name);
+            QNetworkAccessManager manager;
+            QNetworkRequest request;
+            request.setUrl(QString(source_file_name.c_str()));
+            request.setRawHeader("Accept", "application/json");
+            auto reply = QSharedPointer<QNetworkReply>(manager.get(request),
+                    [](QNetworkReply* r)
+                    {
+                        if(r->isRunning())
+                            r->abort();
+                        r->deleteLater();
+                    });
+            while (!reply->isFinished() && p(reply->bytesAvailable(),
+                                             reply->bytesAvailable()+1))
+                QCoreApplication::processEvents();
+            if(p.aborted())
+            {
+                error_msg = "download aborted";
+                return false;
+            }
+            if (reply->error() == QNetworkReply::NoError)
+            {
+                auto file = std::make_shared<QFile>(path.string().c_str());
+                if (!file->open(QFile::WriteOnly))
+                {
+                    error_msg = "failed to save file with the fib file";
+                    return false;
+                }
+                file->write(reply->readAll());
+            }
+        }
+        if(!std::filesystem::exists(path.string()))
+        {
+            error_msg = "cannot download ";
+            error_msg += source_file_name;
+            return false;
+        }
+        source_file_name = path.string();
     }
 
     tipl::progress prog("open ",source_file_name);
@@ -388,6 +429,7 @@ bool CustomSliceModel::load_slices(void)
         tipl::io::gz_nifti nifti;
         //  prepare idx file
         prepare_idx(source_file_name.c_str(),nifti.input_stream);
+        tipl::progress prog("opening ",source_file_name);
         if(!nifti.load_from_file(source_file_name))
         {
             error_msg = nifti.error_msg;
@@ -397,12 +439,19 @@ bool CustomSliceModel::load_slices(void)
         save_idx(source_file_name.c_str(),nifti.input_stream);
         nifti.get_voxel_size(vs);
         nifti.get_image_transformation(trans_to_mni);
-        if(handle->is_mni)
+        is_mni = (is_mni || nifti.is_mni() || QFileInfo(source_file_name.c_str()).fileName().toLower().contains("mni"));
+        if(is_mni)
+            tipl::out() << "this nifti file is a template space image";
+        else
+            tipl::out() << "this nifti file is a native space image";
+
+        tipl::out() << "vs: " << vs;
+        tipl::out() << "srow: " << trans_to_mni;
+        if(handle->is_mni) // fib in the template space
         {
-            tipl::out() << "the FIB file is in the template space";
-            if(trans_to_mni[0]*trans_to_mni[1]*trans_to_mni[2] != 0.0f)
+            if(!is_mni) // nifti is not in the template space
             {
-                error_msg = "cannot load a native space image in the template space";
+                error_msg = "the FIB file is in the template space, but the inserted slice is in the native space image";
                 return false;
             }
             tipl::out() << "header transformation used to align image." << std::endl;
@@ -413,12 +462,6 @@ bool CustomSliceModel::load_slices(void)
         {
             if(source_images.shape() != handle->dim)
             {
-                if(QFileInfo(source_file_name.c_str()).fileName().toLower().contains("mni"))
-                {
-                    tipl::out() << std::filesystem::path(source_file_name).filename().u8string() <<
-                                 " has 'mni' in the file name and has a different image size from DWI. It will be spatially normalized from template space to native space." << std::endl;
-                    is_mni = true;
-                }
                 if(is_mni)
                 {
                     tipl::out() << "warping template-space slices to the subject space." << std::endl;
@@ -514,7 +557,7 @@ bool CustomSliceModel::load_slices(void)
         return true;
     }
 
-    if(handle->is_mni || QFileInfo(source_file_name.c_str()).fileName().toLower().contains("reg"))
+    if(QFileInfo(source_file_name.c_str()).fileName().toLower().contains("reg"))
     {
         tipl::out() << "'reg' found in the file name. no registration applied." << std::endl;
         is_diffusion_space = true;
@@ -638,7 +681,9 @@ bool CustomSliceModel::load_mapping(const char* file_name)
 // ---------------------------------------------------------------------------
 void CustomSliceModel::wait(void)
 {
-    if(thread.get() && thread->joinable())
+    if(!thread.get())
+        return;
+    if(thread->joinable())
         thread->join();
     update_transform();
     tipl::out() << "size: " << dim << "resolution: " << vs;
