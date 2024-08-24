@@ -2402,9 +2402,23 @@ bool src_data::save_to_file(const std::string& filename)
             }
             else
                 tipl::out() << "store raw DWI signals";
+
+            bool no_signal_at_background = false;
+            if(!apply_mask && !voxel.mask.empty())
+            {
+                no_signal_at_background = true;
+                for(size_t i = 0;i < dwi.size();++i)
+                    if(voxel.mask[i] == 0 && dwi[i])
+                    {
+                        no_signal_at_background = false;
+                        break;
+                    }
+                if(no_signal_at_background)
+                    tipl::out() << "no dwi signal in the background, use enable apply mask when saing SRC file";
+            }
             for (unsigned int index = 0;prog(index,src_bvalues.size());++index)
             {
-                if(apply_mask)
+                if(apply_mask || no_signal_at_background)
                     mat_writer.write<tipl::io::masked_sloped>("image"+std::to_string(index),src_dwi_data[index],
                                                    voxel.dim.plane_size(),voxel.dim.depth());
                 else
@@ -2647,7 +2661,8 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         if(!mat_reader.read("report",voxel.report))
             voxel.report = get_report();
 
-        apply_mask = (voxel.report.find(" eddy") != std::string::npos);
+        if(!apply_mask && voxel.report.find(" eddy") != std::string::npos)
+            apply_mask = true;
 
         mat_reader.read("intro",voxel.intro);
 
