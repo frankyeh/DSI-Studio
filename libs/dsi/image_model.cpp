@@ -1714,8 +1714,8 @@ bool src_data::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
         for(auto each : rev_b0)
             acqstr += acqstr2 + "\n";
         acqstr.pop_back();
-        topup_eddy_report += " " + std::to_string(b0.size()) + pe_id1 + " encoding and "
-                                 + std::to_string(rev_b0.size()) + pe_id2 + " encoding b0 images were used to estimate susceptibility using FSL topup";
+        topup_eddy_report += " " + std::to_string(b0.size()) + " " + pe_id1 + " encoding and "
+                                 + std::to_string(rev_b0.size()) + " " + pe_id2 + " encoding b0 images were used to estimate susceptibility using FSL topup.";
     }
 
 
@@ -2049,9 +2049,9 @@ bool src_data::run_eddy(std::string exec)
     if(has_topup)
         param.push_back(std::string("--topup=") + std::filesystem::path(topup_output()).filename().u8string());
 
-    topup_eddy_report += " The eddy current distortions of " + std::to_string(src_bvalues.size()) + " DWI ";
+    topup_eddy_report += " The eddy current distortions of " + std::to_string(src_bvalues.size()) + " DWI";
     if(rev_pe_src.get())
-        topup_eddy_report += " and " + std::to_string(rev_pe_src->src_bvalues.size()) + " opposite phase DWI ";
+        topup_eddy_report += " and " + std::to_string(rev_pe_src->src_bvalues.size()) + " opposite phase DWI";
     topup_eddy_report += " were corrected using FSL eddy.";
     if(!run_plugin(has_cuda ? "eddy_cuda" : "eddy","model",16,param,QFileInfo(file_name.c_str()).absolutePath().toStdString(),exec))
     {
