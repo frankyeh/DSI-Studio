@@ -1,13 +1,29 @@
-Copyright 2024 Fang-Cheng Yeh
+Copyright (c) 2008-2024 Fang-Cheng Yeh. All rights reserved.
 
-The DSI Studio source code and executable file are licensed under the Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0). This license allows for non-commercial use, sharing, and modification of the source code and executable file, provided that the original author is attributed and any modifications are shared under the same license.
+**DSI Studio License Agreement**
+This DSI Studio License Agreement (the "license agreement") governs the use of the DSI Studio source code and executable file ("DSI Studio software").
 
-For commercial use of the source code and executable file, a paid software license is required. Please contact the author for more information.
+**License Terms**
+This license agreement fully incorporates the terms and conditions of [**Attribution-NonCommercial-Share Alike 4.0 International License (CC BY-NC-SA 4.0)**](https://creativecommons.org/licenses/by-nc-sa/4.0/) and governs the use of the DSI Studio source code and executable file ("DSI Studio software"). This license agreement allows for non-commercial use, sharing, and modification of the DSI Studio software, provided that the original author is attributed and any modifications are shared under this license agreement. For the full detail of CC BY-NC-SA 4.0, please see https://creativecommons.org/licenses/by-nc-sa/4.0/
 
-DSI Studio is built using the Qt framework, which is distributed under the GNU Lesser General Public License (LGPL). The source code of the Qt libraries used in this application is available at (link unavailable).
+**Warranty Disclaimer**
+The DSI Studio source code and executable file are provided "as is" without any warranties, express or implied, including but not limited to the implied warranties of merchantability, fitness for a particular purpose, and non-infringement.
 
-Note that certain components of DSI Studio, including plugins and atlases, have their own license terms that may differ from the CC BY-NC-SA 4.0 license. Plugins are separate components that can be installed and used with DSI Studio, and atlases are data used by DSI Studio for certain functions. Users are responsible for complying with the license terms of these components.
+**DISCLAIMER OF LIABILITY**
+A. LIABILITY: EACH PARTY IS RESPONSIBLE FOR ITS OWN BUSINESS, SERVICE, AND PLATFORM. EACH PARTY SHALL NOT BE LIABLE FOR ANY CLAIMS, COMPLAINTS, LAWSUITS, OR ACCUSATIONS ARISING FROM OR IN CONNECTION WITH THE OTHER PARTY'S BUSINESS, SERVICE, AND/OR PLATFORM. B. LIMITATION OF LIABILITY: NEITHER PARTY SHALL BE LIABLE FOR ANY PENALTIES, TAXES, JUDGMENTS, DAMAGES, OR EXPENSES ARISING FROM OR IN CONNECTION WITH THE OTHER PARTY OR ANY AFFILIATED THIRD PARTY'S BUSINESS, SERVICES, AND/OR PLATFORM. C. NO DIRECT AND INDIRECT LIABILITY: IN NO EVENT SHALL EITHER PARTY BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, CONSEQUENTIAL, SPECIAL, OR PUNITIVE DAMAGES ARISING FROM OR IN CONNECTION WITH THIS AGREEMENT.
 
-This license does not grant any rights under patent law, and the licensor disclaims any liability for infringement of any patent or other intellectual property right. Users are responsible for determining whether their use of the software infringes any patent or other intellectual property right.
+**Indemnification**
+You agree to indemnify, defend, and hold harmless DSI Studio, Fang-Cheng Yeh, and affiliates from any claims, liabilities, losses, damages, and costs (including attorneys' fees) arising from your use of the DSI Studio software and services, your breach of this license agreement, or your infringement of any intellectual property rights.
 
-By using the DSI Studio source code and executable file, you acknowledge that you have read, understood, and agree to be bound by the terms of the CC BY-NC-SA 4.0 license and the LGPL, as well as any additional license terms that may apply to specific components or functions.
+**Miscellaneous Terms**
+1. **Non-Commercial Use**: The DSI Studio software may be used for non-commercial purposes, including personal, educational, and research use.
+2. **Modification and Sharing**: The DSI Studio software may be modified and shared under the terms of this license agreement, including the CC BY-NC-SA 4.0.
+3. **Commercial Use**: For commercial use of the DSI Studio software, a paid software license is required. Please contact the Fang-Cheng Yeh at frank.yeh@gmail.com for more information.
+4. **Qt Framework License**: The Qt framework used in the DSI Studio package is distributed under the GNU Lesser General Public License (LGPL).
+5. **Additional License Terms**: Certain accessory components included in the DSI Studio package, such as plugins and atlases, are subject to their own respective license terms, which may differ from this license agreement. Additionally, some functions within DSI Studio may be subject to intellectual property rights that are not licensed under this license agreement. Users are responsible for complying with the license terms and any applicable intellectual property rights of these components. For a copy of these additional license terms, please contact the Fang-Cheng Yeh at frank.yeh@gmail.com.
+
+**Governing Law**
+This license agreement shall be governed by and construed in accordance with the laws of the Commonwealth of Pennsylvania, without giving effect to any principles of conflicts of law. Any disputes arising out of or in connection with this license agreement shall be resolved through binding arbitration in accordance with the rules of the American Arbitration Association.
+
+**Acknowledgement and Agreement**
+By clicking or using the DSI Studio software, you acknowledge that you have read, understood, and agree to be bound by the terms of this license agreement.
