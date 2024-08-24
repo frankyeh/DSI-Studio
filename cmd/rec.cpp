@@ -84,6 +84,9 @@ int rec(tipl::program_option<tipl::out>& po)
     else
         src.calculate_dwi_sum(true);
 
+    if(po.has("apply_mask"))
+        src.apply_mask = true;
+
     {
         tipl::progress prog("pre-processing steps");
         if(po.has("remove"))
