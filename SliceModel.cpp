@@ -5,6 +5,7 @@
 #include <QImage>
 #include <QInputDialog>
 #include <QMessageBox>
+#include <QApplication>
 #include <QDir>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
@@ -280,7 +281,7 @@ bool CustomSliceModel::load_slices(void)
                     });
             while (!reply->isFinished() && p(reply->bytesAvailable(),
                                              reply->bytesAvailable()+1))
-                QCoreApplication::processEvents();
+                QApplication::processEvents();
             if(p.aborted())
             {
                 error_msg = "download aborted";
