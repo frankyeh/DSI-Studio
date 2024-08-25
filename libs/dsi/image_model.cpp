@@ -2494,7 +2494,7 @@ QImage read_qimage(QString filename,std::string& error);
 extern int src_ver;
 bool src_data::load_from_file(const std::string& dwi_file_name)
 {
-    tipl::progress prog("open SRC file ",std::filesystem::path(dwi_file_name).filename().u8string().c_str());
+    tipl::progress prog("open ",dwi_file_name);
     if(voxel.steps.empty())
     {
         voxel.steps = "[Step T2][Reconstruction] open ";
@@ -2502,13 +2502,14 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         voxel.steps += "\n";
     }
 
-    file_name = dwi_file_name;
     if(!std::filesystem::exists(dwi_file_name))
     {
         error_msg = "file does not exist ";
         error_msg += dwi_file_name;
         return false;
     }
+    file_name = dwi_file_name;
+
     if(std::filesystem::path(dwi_file_name).extension() == ".jpg" ||
        std::filesystem::path(dwi_file_name).extension() == ".tif")
     {
@@ -2602,7 +2603,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         if (!tipl::ends_with(dwi_file_name,"src.gz") &&
             !tipl::ends_with(dwi_file_name,".sz"))
         {
-            error_msg = "Unsupported file format";
+            error_msg = "unsupported file format";
             return false;
         }
 
@@ -2625,15 +2626,16 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         if (!mat_reader.read("dimension",voxel.dim) ||
             !mat_reader.read("voxel_size",voxel.vs))
         {
-            error_msg = "Incompatible SRC format";
+            error_msg = "incompatible SRC format";
             return false;
         }
 
         if(mat_reader.has("version") && mat_reader.read_as_value<int>("version") > src_ver)
         {
-            error_msg = "Incompatible SRC format. please update DSI Studio to open this new SRC file.";
+            error_msg = "incompatible SRC format. please update DSI Studio to open this file.";
             return false;
         }
+
         voxel.mask.resize(voxel.dim);
         if(!mat_reader.read("mask",voxel.mask.begin(),voxel.mask.end()))
             voxel.mask.clear();
@@ -2669,21 +2671,10 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
 
         auto si2vi = tipl::get_sparse_index(voxel.mask);
         src_dwi_data.resize(src_bvalues.size());
-        for (size_t index = 0;index < mat_reader.size();++index)
-        {
-            if(!tipl::begins_with(mat_reader[index].name,"image"))
-                continue;
-            size_t image_index = std::stoi(mat_reader[index].name.substr(5));
-            if(!mat_reader.read(index,src_dwi_data[image_index],si2vi,voxel.dim.size()))
+        for (size_t index = 0;index < src_dwi_data.size();++index)
+            if(!mat_reader.read("image"+std::to_string(index),src_dwi_data[index],si2vi,voxel.dim.size()))
             {
                 error_msg = "cannot read image. incomplete file ?";
-                return false;
-            }
-        }
-        for(auto each : src_dwi_data)
-            if(!each)
-            {
-                error_msg = "incomplete file";
                 return false;
             }
         {
