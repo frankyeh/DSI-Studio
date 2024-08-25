@@ -296,11 +296,11 @@ bool fiber_directions::add_data(fib_data& fib)
 
     }
     if(prog.aborted())
-        return 0;
+        return false;
     if(num_fiber == 0)
     {
         error_msg = "Invalid FIB format";
-        return 0;
+        return false;
     }
 
     // adding the primary fiber index
