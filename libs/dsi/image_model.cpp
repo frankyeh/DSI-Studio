@@ -46,6 +46,7 @@ void src_data::calculate_dwi_sum(bool update_mask)
     if(src_dwi_data.empty())
         return;
     {
+        tipl::out() << "compute dwi sum";
         tipl::image<3> dwi_sum(voxel.dim);
         bool skip_b0 = tipl::max_value(src_bvalues) >= 100.0;
         tipl::adaptive_par_for(dwi_sum.size(),[&](size_t i)
@@ -62,7 +63,7 @@ void src_data::calculate_dwi_sum(bool update_mask)
 
     if(update_mask)
     {
-        tipl::out() << "generating mask";
+        tipl::out() << "create new mask from dwi sum";
         tipl::threshold(dwi,voxel.mask,25,1,0);
         if(dwi.depth() < 300)
         {
@@ -2629,6 +2630,8 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
             error_msg = "incompatible SRC format";
             return false;
         }
+        tipl::out() << "dim: " << voxel.dim;
+        tipl::out() << "vs: " << voxel.vs;
 
         if(mat_reader.has("version") && mat_reader.read_as_value<int>("version") > src_ver)
         {
@@ -2659,6 +2662,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
             src_bvectors[index].normalize();
             table += 4;
         }
+        tipl::out() << "dwi count: " << src_bvalues.size();
 
         if(!mat_reader.read("report",voxel.report))
             voxel.report = get_report();
