@@ -265,19 +265,22 @@ bool fiber_directions::add_data(fib_data& fib)
         if (prefix_name == "index")
         {
             check_index(store_index);
-            mat_reader.read(index,findex[store_index],fib.si2vi,dim.size());
+            if(!mat_reader.read(index,findex[store_index],fib.si2vi,dim.size()))
+                goto mat_reader_error;
             continue;
         }
         if (prefix_name == "fa")
         {
             check_index(store_index);
-            mat_reader.read(index,fa[store_index],fib.si2vi,dim.size());
+            if(!mat_reader.read(index,fa[store_index],fib.si2vi,dim.size()))
+                goto mat_reader_error;
             continue;
         }
         if (prefix_name == "dir")
         {
             const float* dir_ptr;
-            mat_reader.read(index,dir_ptr,fib.si2vi,dim.size());
+            if(!mat_reader.read(index,dir_ptr,fib.si2vi,dim.size()))
+                goto mat_reader_error;
             check_index(store_index);
             dir.resize(findex.size());
             dir[store_index] = dir_ptr;
@@ -293,8 +296,8 @@ bool fiber_directions::add_data(fib_data& fib)
 
         if(index_data[prefix_name_index].size() <= size_t(store_index))
             index_data[prefix_name_index].resize(store_index+1);
-        mat_reader.read(index,index_data[prefix_name_index][store_index],fib.si2vi,dim.size());
-
+        if(!mat_reader.read(index,index_data[prefix_name_index][store_index],fib.si2vi,dim.size()))
+            goto mat_reader_error;
     }
     if(prog.aborted())
         return false;
@@ -322,6 +325,10 @@ bool fiber_directions::add_data(fib_data& fib)
             }
     }
     return num_fiber;
+
+    mat_reader_error:
+    error_msg = mat_reader.error_msg;
+    return false;
 }
 
 bool fiber_directions::set_tracking_index(int new_index)
