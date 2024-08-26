@@ -687,7 +687,7 @@ void CustomSliceModel::wait(void)
     if(thread->joinable())
         thread->join();
     update_transform();
-    tipl::out() << "size: " << dim << "resolution: " << vs;
+    tipl::out() << "size: " << dim << " vs: " << vs;
     tipl::out() << "srow: " << trans_to_mni;
     tipl::out() << "to_dif: " << to_dif;
 }
