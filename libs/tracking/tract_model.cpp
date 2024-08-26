@@ -2988,7 +2988,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
             undo();
 
             branch_volume1 = branch1.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
-            branch_volume2 = branch1.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
+            branch_volume2 = branch2.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
 
         }
         data.push_back(tract_length);   titles.push_back("mean length(mm)");
