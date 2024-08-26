@@ -1014,6 +1014,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         if(tipl::ends_with(param,".fz"))
         {
             matfile.apply_slope = true;
+            matfile.apply_mask = true;
             matfile.mask_rows = dim.plane_size();
             matfile.mask_cols = dim.depth();
             matfile.si2vi = si2vi;
