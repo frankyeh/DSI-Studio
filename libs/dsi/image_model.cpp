@@ -2397,8 +2397,8 @@ bool src_data::save_to_file(const std::string& filename)
                 if(!apply_mask && !mat_writer.si2vi.empty())
                 {
                     bool no_signal_at_background = true;
-                    for(size_t i = 0;i < mat_writer.si2vi.size();++i)
-                        if(dwi[mat_writer.si2vi[i]])
+                    for(auto each : mat_writer.si2vi)
+                        if(dwi[each])
                         {
                             no_signal_at_background = false;
                             break;
