@@ -1647,7 +1647,8 @@ void src_data::setup_topup_eddy_volume(void)
 
 bool src_data::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
                                            std::vector<tipl::image<3> >& rev_b0,
-                                           std::string& b0_appa_file)
+                                           std::string& b0_appa_file,
+                                           std::string& report)
 {
     if(b0.empty() || rev_b0.empty())
     {
@@ -1715,8 +1716,9 @@ bool src_data::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
         for(auto each : rev_b0)
             acqstr += acqstr2 + "\n";
         acqstr.pop_back();
-        topup_eddy_report += " " + std::to_string(b0.size()) + " " + pe_id1 + " encoding and "
-                                 + std::to_string(rev_b0.size()) + " " + pe_id2 + " encoding b0 images were used to estimate susceptibility using FSL topup.";
+        report = " " + std::to_string(b0.size()) + " " + pe_id1 + " encoding and "
+                + std::to_string(rev_b0.size()) + " " + pe_id2 + " encoding b0 images were used to estimate susceptibility using FSL topup.";
+
     }
 
 
@@ -2198,9 +2200,9 @@ bool src_data::run_topup_eddy(std::string other_src,bool topup_only)
     if(has_reversed_pe)
     {
         tipl::progress prog("run topup");
-        std::string b0_appa_file;
+        std::string b0_appa_file,topup_report;
         std::vector<tipl::image<3> > b0,rev_b0;
-        if(!read_b0(b0) || !read_rev_b0(other_src.c_str(),rev_b0) || !generate_topup_b0_acq_files(b0,rev_b0,b0_appa_file))
+        if(!read_b0(b0) || !read_rev_b0(other_src.c_str(),rev_b0) || !generate_topup_b0_acq_files(b0,rev_b0,b0_appa_file,topup_report))
             return false;
 
 
@@ -2249,7 +2251,7 @@ bool src_data::run_topup_eddy(std::string other_src,bool topup_only)
                 QFileInfo(file_name.c_str()).absolutePath().toStdString(),std::string()))
                 return false;
         }
-        topup_eddy_report += " The susceptibility distortion was estimated using FSL topup.";
+        topup_eddy_report += topup_report;
     }
 
     if(!topup_only)

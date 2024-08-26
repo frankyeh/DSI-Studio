@@ -303,7 +303,8 @@ private:
                     size_t total_keyword_count,std::vector<std::string> param,std::string working_dir,std::string exec = std::string());
     bool generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
                                      std::vector<tipl::image<3> >& rev_b0,
-                                     std::string& b0_appa_file);
+                                     std::string& b0_appa_file,
+                                     std::string& report);
     bool run_applytopup(std::string exec = std::string());
     bool run_eddy(std::string exec = std::string());
     bool load_topup_eddy_result(void);
