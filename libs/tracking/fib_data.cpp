@@ -145,8 +145,9 @@ tipl::const_pointer_image<3,float> slice_model::get_image(void)
     {
         auto prior_show_prog = tipl::show_prog;
         tipl::show_prog = false;
-        set_image(tipl::make_image(
-                      handle->mat_reader.read_as_type<float>(name,handle->si2vi,handle->dim.size()),handle->dim));
+        image_data = tipl::make_image(
+                      handle->mat_reader.read_as_type<float>(name,handle->si2vi,handle->dim.size()),handle->dim);
+        max_value = 0.0f;
         tipl::out() << name << " loaded" << std::endl;
         tipl::show_prog = prior_show_prog;
     }
