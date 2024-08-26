@@ -262,9 +262,9 @@ int rec(tipl::program_option<tipl::out>& po)
     {
         std::string output = po.get("output");
         if(QFileInfo(output.c_str()).isDir())
-            src.file_name = output + "/" + std::filesystem::path(src.file_name).filename().u8string();
+            src.output_file_name = output + "/" + std::filesystem::path(src.file_name).filename().u8string();
         else
-            src.file_name = output;
+            src.output_file_name = output;
     }
     if (!src.reconstruction())
     {
