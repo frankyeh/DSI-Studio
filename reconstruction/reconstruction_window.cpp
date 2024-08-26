@@ -19,7 +19,7 @@ void move_current_dir_to(const std::string& file_name);
 bool reconstruction_window::load_src(int index)
 {
     handle = std::make_shared<src_data>();
-    if (!handle->load_from_file(filenames[index].toStdString().c_str()))
+    if (!handle->load_from_file(filenames[index].toStdString()))
         return false;
     handle->calculate_dwi_sum(true);
     move_current_dir_to(filenames[index].toStdString());
@@ -71,7 +71,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     absolute_path = QFileInfo(filenames[0]).absolutePath();
 
-
+    ui->fib_output_widget->setVisible(filenames.size() == 1);
     switch(settings.value("rec_method_id",4).toInt())
     {
     case 1:
@@ -464,6 +464,13 @@ void reconstruction_window::on_DTI_toggled(bool checked)
                    !ui->other_output->text().contains("md")))
         ui->other_output->setText("fa,rd");
 
+    if(filenames.size() == 1)
+    {
+        handle->voxel.method_id = 1;
+        handle->output_file_name = handle->file_name;
+        handle->check_output_file_name();
+        ui->fib_output->setText(handle->output_file_name.c_str());
+    }
 }
 
 
@@ -480,6 +487,15 @@ void reconstruction_window::on_GQI_toggled(bool checked)
 
     ui->qsdr_reso->setVisible(!checked);
     ui->qsdr_reso_label->setVisible(!checked);
+
+    if(filenames.size() == 1)
+    {
+        handle->voxel.method_id = 4;
+        handle->output_file_name = handle->file_name;
+        handle->check_output_file_name();
+        ui->fib_output->setText(handle->output_file_name.c_str());
+    }
+
 }
 
 void reconstruction_window::on_QSDR_toggled(bool checked)
@@ -496,6 +512,13 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
 
     ui->menuQSDR->setEnabled(checked);
 
+    if(filenames.size() == 1)
+    {
+        handle->voxel.method_id = 7;
+        handle->output_file_name = handle->file_name;
+        handle->check_output_file_name();
+        ui->fib_output->setText(handle->output_file_name.c_str());
+    }
 }
 
 void reconstruction_window::on_zoom_in_clicked()
@@ -964,8 +987,19 @@ void reconstruction_window::on_actionManual_Align_triggered()
 }
 
 
+void reconstruction_window::on_change_fib_output_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(this,"Save FIB file",
+                        windowTitle(),"FIB files (*.fz *fib.gz);;All files (*)");
+    if (filename.isEmpty())
+        return;
+    ui->fib_output->setText(filename);
+    handle->output_file_name = filename.toStdString();
+}
 
 
-
-
+void reconstruction_window::on_fib_output_editingFinished()
+{
+    handle->output_file_name = ui->fib_output->text().toStdString();
+}
 
