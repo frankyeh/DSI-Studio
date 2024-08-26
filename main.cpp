@@ -163,7 +163,7 @@ bool load_file_name(void)
             QString iso_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".ISO.nii.gz";
             QString t1w_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".T1W.nii.gz";
             QString tt_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".tt.gz";
-            QString fib_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".fib.gz";
+            QString fib_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".fz";
             if(!QFileInfo(qa_file_path).exists())
                 continue;
             // setup QA and ISO template        
