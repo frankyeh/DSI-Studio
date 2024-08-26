@@ -13,7 +13,7 @@ bool group_connectometry_analysis::create_database(std::shared_ptr<fib_data> han
 
     handle = handle_;
     fiber_threshold = 0.6f*handle->dir.fa_otsu;
-    handle->db.calculate_si2vi();
+    handle->db.calculate_vi2si();
     handle->db.subject_qa_length = handle->si2vi.size()*size_t(handle->dir.num_fiber);
     handle->db.clear();
     if(handle->si2vi.empty())

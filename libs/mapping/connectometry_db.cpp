@@ -135,7 +135,7 @@ bool connectometry_db::read_db(fib_data* handle_)
         if(!demo.empty() && !parse_demo())
             demo.clear();
     }
-    calculate_si2vi();
+    calculate_vi2si();
     return true;
 }
 
@@ -348,7 +348,7 @@ void connectometry_db::remove_subject(unsigned int index)
     --num_subjects;
     modified = true;
 }
-void connectometry_db::calculate_si2vi(void)
+void connectometry_db::calculate_vi2si(void)
 {
     vi2si.resize(handle->dim);
     size_t mask_size = 0;
