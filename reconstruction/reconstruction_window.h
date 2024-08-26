@@ -122,6 +122,8 @@ private slots:
     void on_actionAttach_Images_triggered();
     void on_actionPartial_FOV_triggered();
     void on_actionT1W_based_QSDR_triggered();
+    void on_change_fib_output_clicked();
+    void on_fib_output_editingFinished();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H
