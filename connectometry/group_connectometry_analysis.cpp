@@ -242,6 +242,7 @@ void group_connectometry_analysis::save_result(void)
         if(!mat_write)
             return;
         mat_write.apply_slope = true;
+        mat_write.apply_mask = true;
         mat_write.mask_rows = handle->dim.plane_size();
         mat_write.mask_cols = handle->dim.depth();
         mat_write.si2vi = handle->si2vi;
