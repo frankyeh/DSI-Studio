@@ -573,6 +573,7 @@ bool connectometry_db::save_db(const char* output_name)
     if(tipl::ends_with(output_name,".fz"))
     {
         matfile.apply_slope = true;
+        matfile.apply_mask = true;
         matfile.mask_rows = handle->dim.plane_size();
         matfile.mask_cols = handle->dim.depth();
         matfile.si2vi = handle->si2vi;
