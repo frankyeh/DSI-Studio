@@ -25,6 +25,8 @@ bool variant_image::read_mat_image(size_t index,
                                    tipl::io::gz_mat_read& mat,
                                    const std::vector<size_t>& si2vi)
 {
+    if(index >= mat.size())
+        return false;
     unsigned int row(mat[index].rows), col(mat[index].cols);
     if(mat[index].size() != shape.size() &&
        mat[index].size() != si2vi.size())
