@@ -759,6 +759,10 @@ bool fib_data::load_from_mat(void)
             mask = tipl::make_image(mask_ptr,dim);
             si2vi = tipl::get_sparse_index(mask);
             tipl::out() << "mask size: " << mask.shape() << " vs: " << vs << " voxels: " << si2vi.size();
+            mat_reader.mask_cols = dim.plane_size();
+            mat_reader.mask_rows = dim.depth();
+            mat_reader.si2vi = si2vi;
+
         }
     }
 
