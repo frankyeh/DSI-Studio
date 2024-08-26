@@ -2385,18 +2385,32 @@ bool src_data::save_to_file(const std::string& filename)
                 mat_writer.write("b_table",b_table,4);
             }
             if(voxel.mask.empty())
-            {
-                voxel.mask = dwi;
-                tipl::upper_threshold(voxel.mask,1);
-            }
+                tipl::threshold(dwi,voxel.mask,0,1,0);
+
             if(tipl::ends_with(filename,".sz"))
             {
                 mat_writer.apply_slope = true;
+                mat_writer.apply_mask = apply_mask;
                 mat_writer.mask_rows = voxel.dim.plane_size();
                 mat_writer.mask_cols = voxel.dim.depth();
                 mat_writer.si2vi = tipl::get_sparse_index(voxel.mask);
+                if(!apply_mask && !mat_writer.si2vi.empty())
+                {
+                    bool no_signal_at_background = true;
+                    for(size_t i = 0;i < mat_writer.si2vi.size();++i)
+                        if(dwi[mat_writer.si2vi[i]])
+                        {
+                            no_signal_at_background = false;
+                            break;
+                        }
+                    if(no_signal_at_background)
+                    {
+                        tipl::out() << "no dwi signal in the background, enable apply mask";
+                        apply_mask = true;
+                    }
+                }
             }
-            if(apply_mask)
+            if(mat_writer.apply_mask)
             {
                 tipl::out() << "store masked DWI signals";
                 mat_writer.write("mask",voxel.mask,voxel.dim.plane_size());
@@ -2404,28 +2418,10 @@ bool src_data::save_to_file(const std::string& filename)
             else
                 tipl::out() << "store raw DWI signals";
 
-            bool no_signal_at_background = false;
-            if(!apply_mask && !voxel.mask.empty())
-            {
-                no_signal_at_background = true;
-                for(size_t i = 0;i < dwi.size();++i)
-                    if(voxel.mask[i] == 0 && dwi[i])
-                    {
-                        no_signal_at_background = false;
-                        break;
-                    }
-                if(no_signal_at_background)
-                    tipl::out() << "no dwi signal in the background, use enable apply mask when saing SRC file";
-            }
             for (unsigned int index = 0;prog(index,src_bvalues.size());++index)
-            {
-                if(apply_mask || no_signal_at_background)
-                    mat_writer.write<tipl::io::masked_sloped>("image"+std::to_string(index),src_dwi_data[index],
+                mat_writer.write("image"+std::to_string(index),src_dwi_data[index],
                                                    voxel.dim.plane_size(),voxel.dim.depth());
-                else
-                    mat_writer.write("image"+std::to_string(index),src_dwi_data[index],
-                                                   voxel.dim.plane_size(),voxel.dim.depth());
-            }
+
             mat_writer.write("report",voxel.report);
             mat_writer.write("steps",voxel.steps);
             mat_writer.write("intro",voxel.intro);
@@ -2772,6 +2768,7 @@ bool src_data::save_fib(const std::string& fib_file_name)
     if(tipl::ends_with(output_file_name,".fz"))
     {
         mat_writer.apply_slope = true;
+        mat_writer.apply_mask = true;
         mat_writer.mask_rows = voxel.dim.plane_size();
         mat_writer.mask_cols = voxel.dim.depth();
         mat_writer.si2vi = tipl::get_sparse_index(voxel.mask);
