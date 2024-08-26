@@ -73,8 +73,13 @@ bool view_image::command(std::string cmd,std::string param1)
     if(mat.size())
     {
         result = modify_fib(mat,cmd,param1);
-        if(result)
-            read_mat();
+        if(!result)
+        {
+            error_msg = mat.error_msg;
+            tipl::error() << error_msg << std::endl;
+            return false;
+        }
+        read_mat();
         goto end_command;
     }
 
@@ -172,7 +177,7 @@ bool view_image::command(std::string cmd,std::string param1)
     undo_list.push_back(std::make_shared<variant_image>(*cur_image.get()));
     result = cur_image->command(cmd,param1);
 
-    end_command:
+
 
     if(!result)
     {
@@ -186,6 +191,7 @@ bool view_image::command(std::string cmd,std::string param1)
         return false;
     }
 
+    end_command:
 
     init_image();
 
@@ -431,23 +437,32 @@ void view_image::read_mat_info(void)
         info += mat[index].get_info().c_str();
         info += "\n";
     }
+    tipl::out() << info.toStdString();
     show_info(info);
 }
 void view_image::DeleteRowPressed(int row)
 {
     if(ui->info->currentRow() == -1)
         return;
-    if(mat.size())
-        command("remove",std::to_string(row));
+    if(!command("remove",ui->info->item(ui->info->currentRow(),0)->text().toStdString()))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 bool view_image::read_mat(void)
 {
+    read_mat_info();
     if(!mat.read("dimension",cur_image->shape))
     {
         error_msg = "cannot find dimension matrix";
         return false;
     }
+    mat.get_voxel_size(cur_image->vs);
+    if(mat.has("trans"))
+        mat.read("trans",cur_image->T);
+    else
+        initial_LPS_nifti_srow(cur_image->T,cur_image->shape,cur_image->vs);
+
+
     bool has_data = true;
     ui->mat_images->clear();
     for(size_t i = 0;i < mat.size();++i)
@@ -467,20 +482,11 @@ bool view_image::read_mat(void)
     for(size_t i = 0;i < mat.size();++i)
         if(mat[i].size() == mat_si2vi.size())
             ui->mat_images->addItem(mat[i].name.c_str());
-
-
     if(!ui->mat_images->count())
     {
         error_msg = "cannot find images";
         return false;
     }
-
-    mat.get_voxel_size(cur_image->vs);
-    if(mat.has("trans"))
-        mat.read("trans",cur_image->T);
-    else
-        initial_LPS_nifti_srow(cur_image->T,cur_image->shape,cur_image->vs);
-    read_mat_info();
     ui->mat_images->setCurrentIndex(0);
     ui->mat_images->show();
     return true;
@@ -1060,6 +1066,8 @@ void view_image::on_info_cellDoubleClicked(int row, int column)
 
 void view_image::on_mat_images_currentIndexChanged(int index)
 {
+    if(index < 0)
+        return;
     no_update = true;
     if(!cur_image->read_mat_image(
                 mat.index_of(ui->mat_images->currentText().toStdString()),
