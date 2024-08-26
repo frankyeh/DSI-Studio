@@ -956,9 +956,14 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 const std::string& cmd,
                 const std::string& param)
 {
+    tipl::out() << "fib command: " << cmd << " " << param;
     if(cmd == "remove")
     {
-        mat_reader.remove(param[0] >= '0' && param[0] <= '9' ? std::stoi(param) : int(mat_reader.index_of(param)));
+        if(!mat_reader.remove(param[0] >= '0' && param[0] <= '9' ? std::stoi(param) : int(mat_reader.index_of(param))))
+        {
+            mat_reader.error_msg = "invalid index";
+            return false;
+        }
         return true;
     }
     if(cmd == "rename")
