@@ -2746,16 +2746,9 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
     return true;
 }
 extern int fib_ver;
-bool src_data::save_fib(const std::string& fib_file_name)
+bool src_data::save_fib(void)
 {
-    output_file_name = fib_file_name;
-    if(!tipl::ends_with(output_file_name,".fz") && !tipl::ends_with(output_file_name,".fib.gz"))
-    {
-        tipl::remove_suffix(output_file_name,".sz");
-        tipl::remove_suffix(output_file_name,".src.gz");
-        tipl::remove_suffix(output_file_name,".nii.gz");
-        output_file_name += get_file_ext();
-    }
+    check_output_file_name();
 
     std::string tmp_file = output_file_name + ".tmp.gz";
     while(std::filesystem::exists(tmp_file))

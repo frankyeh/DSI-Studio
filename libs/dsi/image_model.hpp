@@ -351,8 +351,8 @@ public:
         }
         return false;
     }
-    std::string get_file_ext(void);
-    bool save_fib(const std::string& file_name);
+    void check_output_file_name(void);
+    bool save_fib(void);
     bool reconstruction(void);
     bool reconstruction_hist(void);
 

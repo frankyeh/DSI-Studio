@@ -10,37 +10,38 @@
 #include "hist_process.hpp"
 
 extern std::vector<std::string> fa_template_list;
-std::string src_data::get_file_ext(void)
+void src_data::check_output_file_name(void)
 {
+    if(output_file_name.empty())
+        output_file_name = file_name;
+    if(tipl::ends_with(output_file_name,".fz") || tipl::ends_with(output_file_name,".fib.gz"))
+        return;
+    tipl::remove_suffix(output_file_name,".sz");
+    tipl::remove_suffix(output_file_name,".src.gz");
+    tipl::remove_suffix(output_file_name,".nii.gz");
     std::ostringstream out;
     if(voxel.is_histology)
     {
-        out << ".hist.fz";
-        return out.str();
+        output_file_name += ".hist.fz";
+        return;
     }
-    if(voxel.method_id != 1) // DTI
-    {
-        if (voxel.output_odf)
-            out << ".odf";
-    }
+    if(voxel.method_id != 1 && voxel.output_odf)
+        output_file_name += ".odf";
+
     switch (voxel.method_id)
     {
     case 1://DTI
-        out << ".dti.fz";
-        break;
+        output_file_name += ".dti.fz";
+        return;
     case 4://GQI
-        out << (voxel.r2_weighted ? ".gqi2.fz":".gqi.fz");
-        break;
-    case 6:
-        out << ".hardi."<< voxel.param[0]
-            << ".b" << voxel.param[1]
-            << ".reg" << voxel.param[2] << ".sz";
-        break;
+        output_file_name += (voxel.r2_weighted ? ".gqi2.fz":".gqi.fz");
+        return;
     case 7:
-        out << (voxel.r2_weighted ? ".qsdr2.fz":".qsdr.fz");
-        break;
+        output_file_name += (voxel.r2_weighted ? ".qsdr2.fz":".qsdr.fz");
+        return;
+    default:
+        output_file_name += ".fz";
     }
-    return out.str();
 }
 
 
@@ -66,7 +67,7 @@ bool src_data::reconstruction_hist(void)
     voxel.recon_report << " Structural tensors were calculated to derive structural orientations and anisotropy (Zhang, IEEEE TMI 35, 294-306 2016, Schurr, Science, 2021) using a Gaussian kernel of " << voxel.hist_tensor_smoothing << " pixel spacing.";
     if(voxel.hist_downsampling)
         voxel.recon_report << " The results were exported at 2^" << voxel.hist_downsampling << " of the original pixel spacing.";
-    save_fib(file_name);
+    save_fib();
     return true;
 }
 bool src_data::reconstruction(void)
@@ -178,7 +179,7 @@ bool src_data::reconstruction(void)
 
         if(voxel.dti_no_high_b)
             voxel.recon_report << " The tensor metrics were calculated using DWI with b-value lower than 1750 s/mm².";
-        return save_fib(file_name);
+        return save_fib();
     }
     catch (std::exception& e)
     {
@@ -233,7 +234,8 @@ bool output_odfs(const tipl::image<3,unsigned char>& mni_mask,
         swap_data();
         return false;
     }
-    image_model.save_fib(std::string(out_name)+ext);
+    image_model.output_file_name = std::string(out_name)+ext;
+    image_model.save_fib();
     swap_data();
     return true;
 }
