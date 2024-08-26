@@ -758,7 +758,7 @@ bool fib_data::load_from_mat(void)
         {
             mask = tipl::make_image(mask_ptr,dim);
             si2vi = tipl::get_sparse_index(mask);
-            tipl::out() << "size: " << mask.shape() << " voxels: " << si2vi.size();
+            tipl::out() << "mask size: " << mask.shape() << " vs: " << vs << " voxels: " << si2vi.size();
         }
     }
 
@@ -794,7 +794,7 @@ bool fib_data::load_from_mat(void)
         mask = tipl::make_image(mask_buffer.data(),dim);
         mat_reader.push_back(mask_mat);
         si2vi = tipl::get_sparse_index(mask);
-        tipl::out() << "size: " << mask.shape() << " voxels: " << si2vi.size();
+        tipl::out() << "size: " << mask.shape() << " vs: " << vs << " voxels: " << si2vi.size();
     }
 
     for (unsigned int index = 0;index < mat_reader.size();++index)
@@ -1046,7 +1046,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         auto& mat = mat_reader[i];
         auto new_vs = vs;
         auto new_trans = trans;
-        if(mat.size() == 3*dim.size())
+        if(mat.size() == 3*dim.size() || (mat.rows == 3 && mat.cols == si2vi.size()))
         {
             for(size_t d = 0;d < 3;++d)
             {
@@ -1071,7 +1071,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 }
             }
         }
-        if(mat.size() == dim.size()) // image volumes, including fa, and fiber index
+        if(mat.size() == dim.size() || (mat.rows == 1 && mat.cols == si2vi.size())) // image volumes, including fa, and fiber index
         {
             if(mat.is_type<short>() && (cmd == "normalize" || cmd.find("filter") != std::string::npos || cmd.find("_value") != std::string::npos))
                 return;
@@ -1150,7 +1150,7 @@ bool fib_data::resample_to(float resolution)
         return false;
     }
     si2vi = tipl::get_sparse_index(mask);
-    tipl::out() << "size: " << mask.shape() << " voxels: " << si2vi.size();
+    tipl::out() << "new mask size: " << mask.shape() << " vs: " << vs << " voxels: " << si2vi.size();
     for(auto& each : slices)
         each->set_image(tipl::make_image(each->get_image().begin(),dim));
     return true;
