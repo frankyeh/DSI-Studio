@@ -671,8 +671,8 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     bool need_trans = false;
     tipl::matrix<4,4> to_diffusion_space = tipl::identity_matrix();
 
-    tipl::out() << "FIB file dimension: " << handle->dim << " voxel size: " << handle->vs << (handle->is_mni ? " mni space": " not mni space") << std::endl;
-    tipl::out() << nifti_name << " dimension: " << from.shape() << " voxel size: " << vs << (is_mni ? " mni space": " not mni space (if mni space, add 'mni' in file name)") << std::endl;
+    tipl::out() << "FIB file size: " << handle->dim << " vs: " << handle->vs << (handle->is_mni ? " mni space": " not mni space") << std::endl;
+    tipl::out() << nifti_name << " size: " << from.shape() << " vs: " << vs << (is_mni ? " mni space": " not mni space (if mni space, add 'mni' in file name)") << std::endl;
 
     if(from.shape() != handle->dim)
     {
