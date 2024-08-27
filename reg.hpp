@@ -240,7 +240,6 @@ public:
     std::vector<image_type> I,J,It;
     std::vector<float> r;
     size_t modality_count = 0;
-    int version = 0;
     tipl::image<dimension,tipl::vector<dimension> > t2f_dis,to2from,f2t_dis,from2to;
     tipl::vector<dimension> Itvs,Ivs;
     tipl::matrix<dimension+1,dimension+1> ItR,IR;
@@ -487,6 +486,13 @@ public:
     {
         nonlinear_reg(tipl::prog_aborted);
     }
+    void compute_mapping_from_displacement(void)
+    {
+        auto trans = T();
+        from2to.resize(I[0].shape());
+        tipl::inv_displacement_to_mapping(f2t_dis,from2to,trans);
+        tipl::displacement_to_mapping(t2f_dis,to2from,trans);
+    }
     void nonlinear_reg(bool& terminated)
     {
         tipl::progress prog("nonlinear registration");
@@ -505,11 +511,8 @@ public:
             f2t_dis.resize(J[0].shape());
             t2f_dis.resize(J[0].shape());
         }
-        auto trans = T();
-        from2to.resize(I[0].shape());
-        tipl::inv_displacement_to_mapping(f2t_dis,from2to,trans);
-        tipl::displacement_to_mapping(t2f_dis,to2from,trans);
 
+        compute_mapping_from_displacement();
 
         std::fill(r.begin(),r.end(),0.0f);
         tipl::par_for(modality_count,[&](size_t i)
@@ -587,7 +590,7 @@ public:
     }
     bool apply_warping(const char* from,const char* to) const;
     bool apply_warping_tt(const char* from,const char* to) const;
-    bool load_warping(const char* filename)
+    bool load_warping(const std::string& filename)
     {
         tipl::out() << "load warping " << filename;
         tipl::io::gz_mat_read in;
@@ -597,41 +600,67 @@ public:
             error_msg += filename;
             return false;
         }
+
+        if(in.read_as_value<int>("version") > map_ver)
+        {
+            error_msg = "incompatible map file format: the version ";
+            error_msg += in.read_as_value<int>("version");
+            error_msg += " is not supported within current rage ";
+            error_msg += std::to_string(map_ver);
+            return false;
+        }
         tipl::shape<dimension> dim_to,dim_from;
-        const float* to2from_ptr = nullptr;
-        const float* from2to_ptr = nullptr;
+        const float* f2t_dis_ptr = nullptr;
+        const float* t2f_dis_ptr = nullptr;
         unsigned int row,col;
-        if (!in.read("dim_to",dim_to) ||
-            !in.read("dim_from",dim_from) ||
-            !in.read("vs_to",Itvs) ||
-            !in.read("vs_from",Ivs) ||
+        if (!in.read("dimension",dim_to) ||
+            !in.read("voxel_size",Itvs) ||
+            !in.read("trans",ItR) ||
+            !in.read("dimension_from",dim_from) ||
+            !in.read("voxel_size_from",Ivs) ||
             !in.read("trans_from",IR) ||
-            !in.read("trans_to",ItR) ||
-            !in.read("to2from",row,col,to2from_ptr) ||
-            !in.read("from2to",row,col,from2to_ptr))
+            !in.read("f2t_dis",row,col,f2t_dis_ptr) ||
+            !in.read("t2f_dis",row,col,t2f_dis_ptr) ||
+            !in.read("arg",arg))
         {
             error_msg = "invalid warp file format";
             return false;
         }
-        to2from.resize(dim_to);
-        std::copy(to2from_ptr,to2from_ptr+to2from.size()*dimension,&to2from[0][0]);
-        from2to.resize(dim_from);
-        std::copy(from2to_ptr,from2to_ptr+from2to.size()*dimension,&from2to[0][0]);
-        version = in.read_as_value<int>("version");
+        It[0].resize(dim_to);
+        I[0].resize(dim_from);
+
+        tipl::shape<dimension> sub_shape;
+        if constexpr(dimension == 3)
+            sub_shape = tipl::shape<3>(dim_to[0]/2,dim_to[1]/2,dim_to[2]/2);
+        else
+            sub_shape = tipl::shape<2>(dim_to[0]/2,dim_to[1]/2);
+
+        t2f_dis.resize(sub_shape);
+        f2t_dis.resize(sub_shape);
+        if(row*col != sub_shape.size()*3)
+        {
+            error_msg = "invalid displacement field";
+            return false;
+        }
+        std::copy(f2t_dis_ptr,f2t_dis_ptr+f2t_dis.size()*dimension,&f2t_dis[0][0]);
+        std::copy(t2f_dis_ptr,t2f_dis_ptr+t2f_dis.size()*dimension,&t2f_dis[0][0]);
+        tipl::upsample_with_padding(t2f_dis,dim_to);
+        tipl::upsample_with_padding(f2t_dis,dim_to);
+        compute_mapping_from_displacement();
         return true;
     }
 
     bool save_warping(const char* filename) const
     {
         tipl::progress prog("saving ",filename);
-        if(from2to.empty() || to2from.empty())
+        if(f2t_dis.empty() || t2f_dis.empty())
         {
             error_msg = "no mapping matrix to save";
             return false;
         }
         std::string output_name(filename);
-        if(!tipl::ends_with(output_name,".map.gz"))
-            output_name += ".map.gz";
+        if(!tipl::ends_with(output_name,".mz"))
+            output_name += ".mz";
         tipl::io::gz_mat_write out((output_name + ".tmp.gz").c_str());
         if(!out)
         {
@@ -639,16 +668,21 @@ public:
             error_msg += filename;
             return false;
         }
-        out.write("to2from",&to2from[0][0],dimension,to2from.size());
-        out.write("dim_to",to2from.shape());
-        out.write("vs_to",Itvs);
-        out.write("trans_to",ItR);
+        out.apply_slope = true;
+        tipl::image<dimension,tipl::vector<dimension> > f2t_dis_sub2,t2f_dis_sub2;
+        tipl::downsample_with_padding(f2t_dis,f2t_dis_sub2);
+        tipl::downsample_with_padding(t2f_dis,t2f_dis_sub2);
+        out.write<tipl::io::sloped>("f2t_dis",&f2t_dis_sub2[0][0],dimension,f2t_dis_sub2.size());
+        out.write("dimension",It[0].shape());
+        out.write("voxel_size",Itvs);
+        out.write("trans",ItR);
 
-        out.write("from2to",&from2to[0][0],dimension,from2to.size());
-        out.write("dim_from",from2to.shape());
-        out.write("vs_from",Ivs);
+        out.write<tipl::io::sloped>("t2f_dis",&t2f_dis_sub2[0][0],dimension,t2f_dis_sub2.size());
+        out.write("dimension_from",I[0].shape());
+        out.write("voxel_size_from",Ivs);
         out.write("trans_from",IR);
 
+        out.write("arg",arg);
         out.write("version",map_ver);
         out.close();
         std::filesystem::rename((output_name + ".tmp.gz").c_str(),output_name);
