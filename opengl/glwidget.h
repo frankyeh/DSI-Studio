@@ -62,10 +62,9 @@ Q_OBJECT
      tipl::vector<3,float> accumulated_dis;
      float slice_distance;
      unsigned char moving_at_slice_index;
-     std::vector<tipl::vector<3,float> > slice_points;
      float slice_dx,slice_dy;
      void slice_location(unsigned char dim,std::vector<tipl::vector<3,float> >& points);
-     float get_slice_projection_point(const tipl::vector<3,float>& pos,const tipl::vector<3,float>& dir,
+     float get_slice_projection_point(unsigned char dim,const tipl::vector<3,float>& pos,const tipl::vector<3,float>& dir,
                                       float& dx,float& dy);
      void get_view_dir(QPoint p,tipl::vector<3,float>& dir);
 
