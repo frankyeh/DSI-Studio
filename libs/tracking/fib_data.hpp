@@ -339,7 +339,7 @@ public:
         return true;
     }
     const tipl::image<3,tipl::vector<3,float> >& get_sub2temp_mapping(void);
-    bool load_mapping(const char* file_name,bool external = true);
+    bool load_mapping(const std::string& file_name);
 public:
     fib_data(void)
     {
