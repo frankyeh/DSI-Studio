@@ -1506,15 +1506,14 @@ void GLWidget::get_view_dir(QPoint p,tipl::vector<3,float>& dir)
     dir.normalize();
 }
 
-float GLWidget::get_slice_projection_point(
+float GLWidget::get_slice_projection_point(unsigned char dim,
                                 const tipl::vector<3,float>& pos,
                                 const tipl::vector<3,float>& dir,
                                 float& dx,float& dy)
 {
-    tipl::vector<3,float> pos_offset(pos),v1(slice_points[1]),v2(slice_points[2]),v3(dir);
-    pos_offset -= slice_points[0];
-    v1 -= slice_points[0];
-    v2 -= slice_points[0];
+    std::vector<tipl::vector<3,float> > points;
+    slice_location(dim,points);
+    tipl::vector<3,float> pos_offset(pos-points[0]),v1(points[1]-points[0]),v2(points[2]-points[0]),v3(dir);
     tipl::matrix<3,3,float> m;
     m[0] = v1[0];
     m[1] = v2[0];
@@ -1612,8 +1611,7 @@ bool GLWidget::select_object(void)
         {
             if(!show_slice[dim])
                 continue;
-            slice_location(dim,slice_points);
-            float d = get_slice_projection_point(pos,dir1,slice_dx,slice_dy);
+            float d = get_slice_projection_point(dim,pos,dir1,slice_dx,slice_dy);
             if(slice_dx > 0.0f && slice_dy > 0.0f &&
                slice_dx < 1.0f && slice_dy < 1.0f &&
                     d > 0 && d < slice_distance)
@@ -1699,8 +1697,7 @@ bool GLWidget::get_mouse_pos(QPoint cur_pos,tipl::vector<3,float>& position)
         {
             if(!show_slice[dim])
                 continue;
-            slice_location(dim,slice_points);
-            d[dim] = get_slice_projection_point(pos,cur_dir,x[dim],y[dim]);
+            d[dim] = get_slice_projection_point(dim,pos,cur_dir,x[dim],y[dim]);
             if(d[dim] == 0.0 || x[dim] < 0.0 || x[dim] > 1.0 || y[dim] < 0.0 || y[dim] > 1.0)
                 d[dim] = std::numeric_limits<float>::max();
         }
@@ -1775,8 +1772,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
                 angle[dim] = std::fabs(dir1*get_norm(points));
             }
             moving_at_slice_index = std::max_element(angle,angle+3)-angle;
-            slice_location(moving_at_slice_index,slice_points);
-            if(get_slice_projection_point(pos,dir1,slice_dx,slice_dy) == 0.0)
+            if(get_slice_projection_point(moving_at_slice_index,pos,dir1,slice_dx,slice_dy) == 0.0)
             {
                 editing_option = none;
                 setCursor(Qt::ArrowCursor);
@@ -1865,19 +1861,19 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     if(editing_option == moving)
     {
         get_view_dir(curPos,dir2);
+        std::vector<tipl::vector<3,float> > slice_points;
+        slice_location(moving_at_slice_index,slice_points);
         float dx,dy;
-        if(get_slice_projection_point(pos,dir2,dx,dy) == 0.0f)
+        if(get_slice_projection_point(moving_at_slice_index,pos,dir2,dx,dy) == 0.0f)
             return;
-        tipl::vector<3,float> v1(slice_points[1]),v2(slice_points[2]),dis;
-        v1 -= slice_points[0];
-        v2 -= slice_points[0];
+        tipl::vector<3> v1(slice_points[1]-slice_points[0]),v2(slice_points[2]-slice_points[0]),dis;
         dis = v1*(dx-slice_dx)+v2*(dy-slice_dy);
         dis -= accumulated_dis;
-
         accumulated_dis += dis;
+
         if(device_selected && selected_index < cur_tracking_window.deviceWidget->devices.size())
         {
-            cur_tracking_window.deviceWidget->devices[selected_index]->move(device_selected_length,dis);
+            cur_tracking_window.deviceWidget->devices[selected_index]->move(device_selected_length,dis);    
             update();
             return;
         }
@@ -1885,12 +1881,9 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         if(region_selected && selected_index < cur_tracking_window.regionWidget->regions.size())
         {
             if(cur_tracking_window.regionWidget->regions[selected_index]->shift(dis))
-            {
                 emit region_edited();
-            }
             return;
         }
-
         // a picture slice is selected
         if(slice_selected && dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get()))
         {
