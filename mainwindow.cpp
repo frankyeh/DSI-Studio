@@ -122,12 +122,13 @@ MainWindow::MainWindow(QWidget *parent) :
             dialog->setWindowFlags(Qt::Dialog | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
             dialog->setModal(true);
 
-            QTextEdit *licenseTextEdit = new QTextEdit;
-            licenseTextEdit->setText(licenseText);
-            licenseTextEdit->setReadOnly(true);
+            QTextBrowser *licenseBrowser = new QTextBrowser;
+            licenseBrowser->setMarkdown(licenseText);
+            licenseBrowser->setReadOnly(true);
+
 
             QVBoxLayout *layout = new QVBoxLayout;
-            layout->addWidget(licenseTextEdit);
+            layout->addWidget(licenseBrowser);
 
             if(!QNetworkInterface::allInterfaces().empty())
             {
