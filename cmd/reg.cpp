@@ -161,7 +161,7 @@ int reg(tipl::program_option<tipl::out>& po)
             return 1;
         }
         tipl::out() << "loading warping field";
-        if(!r.load_warping(po.has("warp") ? po.get("warp").c_str() : po.get("inv_warp").c_str()))
+        if(!r.load_warping(po.has("warp") ? po.get("warp") : po.get("inv_warp")))
             goto error;
         if(!po.has("warp"))
             r.inv_warping();
