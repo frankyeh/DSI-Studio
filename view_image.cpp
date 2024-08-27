@@ -448,6 +448,7 @@ void view_image::DeleteRowPressed(int row)
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
+tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& mat_reader);
 bool view_image::read_mat(void)
 {
     read_mat_info();
@@ -456,6 +457,7 @@ bool view_image::read_mat(void)
         error_msg = "cannot find dimension matrix";
         return false;
     }
+    handle_mask(mat);
     mat.get_voxel_size(cur_image->vs);
     if(mat.has("trans"))
         mat.read("trans",cur_image->T);
@@ -466,22 +468,9 @@ bool view_image::read_mat(void)
     bool has_data = true;
     ui->mat_images->clear();
     for(size_t i = 0;i < mat.size();++i)
-        if(mat[i].size() == cur_image->shape.size())
-        {
+        if(mat.cols(i)*mat.rows(i) == cur_image->shape.size())
             ui->mat_images->addItem(mat[i].name.c_str());
-            if(mat[i].name == "mask")
-            {
-                mat_si2vi = tipl::get_sparse_index(
-                            tipl::make_image(mat.read_as_type<char>(i),cur_image->shape));
-                tipl::out() << "mask size: " << cur_image->shape << " vs: " << cur_image->vs << " voxels: " << mat_si2vi.size();
-                if(mat_si2vi.size() == cur_image->shape.size())
-                    mat_si2vi.clear();
-            }
-        }
 
-    for(size_t i = 0;i < mat.size();++i)
-        if(mat[i].size() == mat_si2vi.size())
-            ui->mat_images->addItem(mat[i].name.c_str());
     if(!ui->mat_images->count())
     {
         error_msg = "cannot find images";
@@ -1069,9 +1058,7 @@ void view_image::on_mat_images_currentIndexChanged(int index)
     if(index < 0)
         return;
     no_update = true;
-    if(!cur_image->read_mat_image(
-                mat.index_of(ui->mat_images->currentText().toStdString()),
-                mat,mat_si2vi))
+    if(!cur_image->read_mat_image(mat.index_of(ui->mat_images->currentText().toStdString()),mat))
         return;
     ui->type->setCurrentIndex(cur_image->pixel_type);
     init_image();
