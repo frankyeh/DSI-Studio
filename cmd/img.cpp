@@ -319,7 +319,8 @@ int img(tipl::program_option<tipl::out>& po)
 {
     std::string source(po.get("source")),info;
     if(tipl::ends_with(source,"fib.gz") || tipl::ends_with(source,".fz") ||
-       tipl::ends_with(source,"src.gz") || tipl::ends_with(source,".sz"))
+       tipl::ends_with(source,"src.gz") || tipl::ends_with(source,".sz") ||
+       tipl::ends_with(source,".mz"))
     {
         tipl::io::gz_mat_read mat_reader;
         tipl::out() << "open " << source;
