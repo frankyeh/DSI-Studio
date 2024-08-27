@@ -785,8 +785,10 @@ bool fib_data::load_from_mat(void)
         mat_reader.mask_rows = dim.plane_size();
         mat_reader.mask_cols = dim.depth();
         mat_reader.si2vi = tipl::get_sparse_index(mask);
-        tipl::out() << "mask created with size: " << mask.shape() << " vs: " << vs << " voxels: " << mat_reader.si2vi.size();
+        tipl::out() << "mask created from the aniostropy map";
     }
+    tipl::out() << "dim: " << dim << " vs: " << vs << " voxels: " << mat_reader.si2vi.size();
+
 
     for (unsigned int index = 0;index < mat_reader.size();++index)
     {
