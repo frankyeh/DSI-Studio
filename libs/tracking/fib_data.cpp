@@ -145,8 +145,7 @@ tipl::const_pointer_image<3,float> slice_model::get_image(void)
     {
         auto prior_show_prog = tipl::show_prog;
         tipl::show_prog = false;
-        image_data = tipl::make_image(
-                      handle->mat_reader.read_as_type<float>(name,handle->si2vi,handle->dim.size()),handle->dim);
+        image_data = tipl::make_image(handle->mat_reader.read_as_type<float>(name),handle->dim);
         max_value = 0.0f;
         tipl::out() << name << " loaded" << std::endl;
         tipl::show_prog = prior_show_prog;
@@ -240,9 +239,8 @@ bool fiber_directions::add_data(fib_data& fib)
     {
         auto& mat_data = mat_reader[index];
         std::string matrix_name = mat_data.name;
-        size_t total_size = mat_data.size();
-        if(total_size != dim.size() && total_size != dim.size()*3 &&
-           mat_data.cols != fib.si2vi.size())
+        size_t total_size = mat_reader.cols(index)*mat_reader.rows(index);
+        if(total_size != dim.size() && total_size != dim.size()*3)
             continue;
         if(tipl::begins_with(matrix_name,"subjects")) // database
             continue;
@@ -265,21 +263,21 @@ bool fiber_directions::add_data(fib_data& fib)
         if (prefix_name == "index")
         {
             check_index(store_index);
-            if(!mat_reader.read(index,findex[store_index],fib.si2vi,dim.size()))
+            if(!mat_reader.read(index,findex[store_index]))
                 goto mat_reader_error;
             continue;
         }
         if (prefix_name == "fa")
         {
             check_index(store_index);
-            if(!mat_reader.read(index,fa[store_index],fib.si2vi,dim.size()))
+            if(!mat_reader.read(index,fa[store_index]))
                 goto mat_reader_error;
             continue;
         }
         if (prefix_name == "dir")
         {
             const float* dir_ptr;
-            if(!mat_reader.read(index,dir_ptr,fib.si2vi,dim.size()))
+            if(!mat_reader.read(index,dir_ptr))
                 goto mat_reader_error;
             check_index(store_index);
             dir.resize(findex.size());
@@ -296,7 +294,7 @@ bool fiber_directions::add_data(fib_data& fib)
 
         if(index_data[prefix_name_index].size() <= size_t(store_index))
             index_data[prefix_name_index].resize(store_index+1);
-        if(!mat_reader.read(index,index_data[prefix_name_index][store_index],fib.si2vi,dim.size()))
+        if(!mat_reader.read(index,index_data[prefix_name_index][store_index]))
             goto mat_reader_error;
     }
     if(prog.aborted())
@@ -738,6 +736,19 @@ bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,tipl::shape<3>& dim,tipl
     }
     return true;
 }
+tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& mat_reader)
+{
+    const unsigned char* mask_ptr = nullptr;
+    tipl::shape<3> dim;
+    if(mat_reader.read("mask",mask_ptr) && mat_reader.read("dimension",dim))
+    {
+        mat_reader.si2vi = tipl::get_sparse_index(tipl::make_image(mask_ptr,dim));
+        mat_reader.mask_cols = dim.plane_size();
+        mat_reader.mask_rows = dim.depth();
+        tipl::out() << "mask voxels: " << mat_reader.si2vi.size();
+    }
+    return tipl::make_image(mask_ptr,dim);
+}
 bool fib_data::load_from_mat(void)
 {
     if(!check_fib_dim_vs(mat_reader,dim,vs))
@@ -745,6 +756,7 @@ bool fib_data::load_from_mat(void)
         error_msg = mat_reader.error_msg;
         return false;
     }
+    mask = handle_mask(mat_reader);
     mat_reader.read("report",report);
     mat_reader.read("steps",steps);
     mat_reader.read("intro",intro);
@@ -752,38 +764,11 @@ bool fib_data::load_from_mat(void)
     if (mat_reader.read("trans",trans_to_mni))
         is_mni = true;
 
-    {
-        const unsigned char* mask_ptr;
-        if(mat_reader.read("mask",mask_ptr))
-        {
-            mask = tipl::make_image(mask_ptr,dim);
-            si2vi = tipl::get_sparse_index(mask);
-            tipl::out() << "mask size: " << mask.shape() << " vs: " << vs << " voxels: " << si2vi.size();
-            mat_reader.mask_cols = dim.plane_size();
-            mat_reader.mask_rows = dim.depth();
-            mat_reader.si2vi = si2vi;
-
-        }
-    }
-
-
     if(!dir.add_data(*this))
     {
         error_msg = dir.error_msg;
         return false;
     }
-
-    /*
-    {
-        tipl::out() << "reading original mat file" << std::endl;
-        if(!high_reso->load_from_mat())
-        {
-            error_msg = high_reso->error_msg;
-            return false;
-        }
-    }
-    */
-
     slices.push_back(std::make_shared<slice_model>(dir.fa.size() == 1 ? "fa":"qa",dir.fa[0],dim));
     for(unsigned int index = 1;index < dir.index_name.size();++index)
         slices.push_back(std::make_shared<slice_model>(dir.index_name[index],dir.index_data[index][0],dim));
@@ -797,8 +782,10 @@ bool fib_data::load_from_mat(void)
                 mask_buffer[i] = 1;
         mask = tipl::make_image(mask_buffer.data(),dim);
         mat_reader.push_back(mask_mat);
-        si2vi = tipl::get_sparse_index(mask);
-        tipl::out() << "size: " << mask.shape() << " vs: " << vs << " voxels: " << si2vi.size();
+        mat_reader.mask_rows = dim.plane_size();
+        mat_reader.mask_cols = dim.depth();
+        mat_reader.si2vi = tipl::get_sparse_index(mask);
+        tipl::out() << "mask created with size: " << mask.shape() << " vs: " << vs << " voxels: " << mat_reader.si2vi.size();
     }
 
     for (unsigned int index = 0;index < mat_reader.size();++index)
@@ -819,8 +806,7 @@ bool fib_data::load_from_mat(void)
                              {return view->name == prefix_name;}) != slices.end())
                 continue;
         }
-        if (mat_reader[index].size() != dim.size() &&
-            mat_reader[index].size() != si2vi.size())
+        if (mat_reader.rows(index)*mat_reader.cols(index) != dim.size())
             continue;
         slices.push_back(std::make_shared<slice_model>(matrix_name,this));
     }
@@ -915,12 +901,18 @@ bool read_fib_data(tipl::io::gz_mat_read& mat_reader)
     return true;
 }
 
-bool copy_mat(tipl::io::gz_mat_read& mat_reader,
+bool save_fz(tipl::io::gz_mat_read& mat_reader,
               tipl::io::gz_mat_write& matfile,
               const std::vector<std::string>& skip_list,
               const std::vector<std::string>& skip_head_list)
 {
     tipl::progress prog("saving");
+    matfile.apply_slope = true;
+    matfile.apply_mask = true;
+    matfile.mask_rows = mat_reader.mask_rows;
+    matfile.mask_cols = mat_reader.mask_cols;
+    matfile.si2vi = mat_reader.si2vi;
+
     for(unsigned int index = 0;prog(index,mat_reader.size());++index)
     {
         if(!matfile)
@@ -945,21 +937,27 @@ bool copy_mat(tipl::io::gz_mat_read& mat_reader,
         if(skip)
             continue;
         mat_reader.flush(index);
-        if(mat_reader[index].size() == matfile.mask_cols*matfile.mask_rows)
+
+        // convert older format data
+        if(mat_reader[index].size() == matfile.mask_cols*matfile.mask_rows && mat_reader[index].sub_data.empty())
         {
             if(mat_reader[index].is_type<float>()) // metrics
             {
+                tipl::out() << "convert " << mat_reader[index].name << " data into masked sloped format";
                 matfile.write<tipl::io::masked_sloped>(name,mat_reader.read_as_type<float>(index),
-                                                       mat_reader[index].rows,mat_reader[index].cols);
+                                                       mat_reader.rows(index),mat_reader.cols(index));
                 continue;
             }
             if(mat_reader[index].is_type<short>()) // index
             {
+                tipl::out() << "convert " << mat_reader[index].name << " data into masked format";
                 matfile.write<tipl::io::masked>(name,mat_reader.read_as_type<short>(index),
-                                                mat_reader[index].rows,mat_reader[index].cols);
+                                                mat_reader.rows(index),mat_reader.cols(index));
                 continue;
             }
         }
+
+        tipl::out() << "save " << name << " as is";
         matfile.write(mat_reader[index]);
     }
     return !prog.aborted();
@@ -1006,19 +1004,12 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
     bool is_mni = false;
     if(!check_fib_dim_vs(mat_reader,dim,vs))
         return false;
+    handle_mask(mat_reader);
     if(mat_reader.has("trans"))
     {
         mat_reader.read("trans",trans);
         is_mni = true;
     }
-    const unsigned char* mask_ptr;
-    if(!mat_reader.read("mask",mask_ptr))
-    {
-        mat_reader.error_msg = "cannot find mask";
-        return false;
-    }
-    auto si2vi = tipl::get_sparse_index(tipl::make_image(mask_ptr,dim));
-
     if(cmd == "save")
     {
         tipl::io::gz_mat_write matfile(param);
@@ -1028,15 +1019,12 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             mat_reader.error_msg += param;
             return false;
         }
-        if(tipl::ends_with(param,".fz"))
+        if(tipl::ends_with(param,".fib.gz"))
         {
-            matfile.apply_slope = true;
-            matfile.apply_mask = true;
-            matfile.mask_rows = dim.plane_size();
-            matfile.mask_cols = dim.depth();
-            matfile.si2vi = si2vi;
+            mat_reader.error_msg = "cannot save file to fib.gz format";
+            return false;
         }
-        return copy_mat(mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping"},{"subject"});
+        return save_fz(mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping"},{"subject"});
     }
 
 
@@ -1048,9 +1036,10 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         if(!prog(p++,mat_reader.size()) || failed)
             return;
         auto& mat = mat_reader[i];
+        size_t mat_size = mat_reader.cols(i)*mat_reader.rows(i);
         auto new_vs = vs;
         auto new_trans = trans;
-        if(mat.size() == 3*dim.size() || (mat.rows == 3 && mat.cols == si2vi.size()))
+        if(mat_size == 3*dim.size())
         {
             for(size_t d = 0;d < 3;++d)
             {
@@ -1075,7 +1064,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 }
             }
         }
-        if(mat.size() == dim.size() || (mat.rows == 1 && mat.cols == si2vi.size())) // image volumes, including fa, and fiber index
+        if(mat_size == dim.size()) // image volumes, including fa, and fiber index
         {
             if(mat.is_type<short>() && (cmd == "normalize" || cmd.find("filter") != std::string::npos || cmd.find("_value") != std::string::npos))
                 return;
@@ -1083,7 +1072,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             new_image.vs = vs;
             new_image.T = trans;
             new_image.shape = dim;
-            if(!new_image.read_mat_image(i,mat_reader,si2vi))
+            if(!new_image.read_mat_image(i,mat_reader))
                 return;
             if(mat.is_type<short>())
                 new_image.interpolation = false;
@@ -1153,8 +1142,10 @@ bool fib_data::resample_to(float resolution)
         error_msg = "no valid mask";
         return false;
     }
-    si2vi = tipl::get_sparse_index(mask);
-    tipl::out() << "new mask size: " << mask.shape() << " vs: " << vs << " voxels: " << si2vi.size();
+    mat_reader.mask_rows = dim.plane_size();
+    mat_reader.mask_cols = dim.depth();
+    mat_reader.si2vi = tipl::get_sparse_index(mask);
+    tipl::out() << "new mask size: " << mask.shape() << " vs: " << vs << " voxels: " << mat_reader.si2vi.size();
     for(auto& each : slices)
         each->set_image(tipl::make_image(each->get_image().begin(),dim));
     return true;
