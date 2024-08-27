@@ -79,12 +79,12 @@ jobs:
         ls LR.tt.gz
         echo --------------------------------------------------------------------------------------------------
         ./dsi-studio/dsi_studio --source=ICBM152_adult.fz --action=trk --fiber_count=1000000 --output=no_file --connectivity=FreeSurferDKT_Cortical --connectivity_value=count,qa
-        ls ICBM152_adult.fib.gz.tt.gz.FreeSurferDKT_Cortical.count.pass.connectivity.mat
-        ls ICBM152_adult.fib.gz.tt.gz.FreeSurferDKT_Cortical.count.pass.connectogram.txt
-        ls ICBM152_adult.fib.gz.tt.gz.FreeSurferDKT_Cortical.count.pass.network_measures.txt
-        ls ICBM152_adult.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectivity.mat
-        ls ICBM152_adult.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectogram.txt
-        ls ICBM152_adult.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.network_measures.txt
+        ls ICBM152_adult.fz.tt.gz.FreeSurferDKT_Cortical.count.pass.connectivity.mat
+        ls ICBM152_adult.fz.tt.gz.FreeSurferDKT_Cortical.count.pass.connectogram.txt
+        ls ICBM152_adult.fz.tt.gz.FreeSurferDKT_Cortical.count.pass.network_measures.txt
+        ls ICBM152_adult.fz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectivity.mat
+        ls ICBM152_adult.fz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectogram.txt
+        ls ICBM152_adult.fz.tt.gz.FreeSurferDKT_Cortical.qa.pass.network_measures.txt
 
   test_human_tracking_gqi:
     runs-on: ubuntu-20.04
