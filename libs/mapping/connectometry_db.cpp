@@ -241,9 +241,8 @@ bool connectometry_db::parse_demo(void)
     pout << "demographic columns: ";
     for(size_t i = 0;i < titles.size();++i)
     {
-        std::replace(titles[i].begin(),titles[i].end(),' ','_');
-        std::replace(titles[i].begin(),titles[i].end(),'/','_');
-        std::replace(titles[i].begin(),titles[i].end(),'\\','_');
+        for(char each : std::string("/://|*?<>\"\\^~[]"))
+            std::replace(titles[i].begin(),titles[i].end(),each,'_');
         pout << "\t" << titles[i];
     }
     pout << std::endl;
@@ -274,14 +273,40 @@ bool connectometry_db::parse_demo(void)
             }
         }
         for(size_t i = 0;i < titles.size();++i)
-        if(!not_number[i])
-        {
-            feature_location.push_back(i);
-            feature_titles.push_back(titles[i]);
-            feature_selected.push_back(true);
-            feature_is_float.push_back(not_categorical[i]); // 0: categorical 1: floating
+            if(not_number[i])
+            {
+                std::string group1(items[i]),group2;
+                for(size_t j = i;j < items.size();j += titles.size())
+                {
+                    if(items[j] == group1)
+                        continue;
+                    if(group2.empty())
+                        group2 = items[j];
+                    if(items[j] != group2)
+                    {
+                        group1.clear();
+                        break;
+                    }
+                }
+                if(group1.empty())
+                    continue;
+                tipl::out() << titles[i] << " is group label, assign numbers 0:" << group1 << " 1:" << group2;
+                titles[i] += "(0=" + group1 + " 1=" + group2 + ")";
+                for(size_t j = i;j < items.size();j += titles.size())
+                    items[j] = (items[j] == group1 ? "0":"1");
+                not_number[i] = 0;
+                not_categorical[i] = 0;
+            }
 
-        }
+        for(size_t i = 0;i < titles.size();++i)
+            if(!not_number[i])
+            {
+                feature_location.push_back(i);
+                feature_titles.push_back(titles[i]);
+                feature_selected.push_back(true);
+                feature_is_float.push_back(not_categorical[i]); // 0: categorical 1: floating
+
+            }
     }
 
     //  get feature matrix
