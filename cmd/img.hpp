@@ -48,8 +48,7 @@ public:
         }
     }
     bool read_mat_image(size_t index,
-                        tipl::io::gz_mat_read& mat,
-                        const std::vector<size_t>& si2vi);
+                        tipl::io::gz_mat_read& mat);
     void change_type(decltype(pixel_type));
     bool command(std::string cmd,std::string param1);
     bool load_from_file(const char* file_name,std::string& info);
