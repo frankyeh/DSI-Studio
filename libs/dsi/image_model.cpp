@@ -2490,6 +2490,7 @@ void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream>
 
 size_t match_volume(float volume);
 QImage read_qimage(QString filename,std::string& error);
+tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& mat_reader);
 extern int src_ver;
 bool src_data::load_from_file(const std::string& dwi_file_name)
 {
@@ -2618,7 +2619,6 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
             error_msg += " is an invalid SRC file";
             return false;
         }
-
         save_idx(dwi_file_name,mat_reader.in);
         mat_reader.in->close();
 
@@ -2628,6 +2628,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
             error_msg = "incompatible SRC format";
             return false;
         }
+
         tipl::out() << "dim: " << voxel.dim;
         tipl::out() << "vs: " << voxel.vs;
 
@@ -2637,9 +2638,10 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
             return false;
         }
 
-        voxel.mask.resize(voxel.dim);
-        if(!mat_reader.read("mask",voxel.mask.begin(),voxel.mask.end()))
+        if(!mat_reader.has("mask"))
             voxel.mask.clear();
+        else
+            voxel.mask = handle_mask(mat_reader);
         mat_reader.read("steps",voxel.steps);
 
         unsigned int row,col;
@@ -2671,10 +2673,9 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         mat_reader.read("intro",voxel.intro);
 
 
-        auto si2vi = tipl::get_sparse_index(voxel.mask);
         src_dwi_data.resize(src_bvalues.size());
         for (size_t index = 0;index < src_dwi_data.size();++index)
-            if(!mat_reader.read("image"+std::to_string(index),src_dwi_data[index],si2vi,voxel.dim.size()))
+            if(!mat_reader.read("image"+std::to_string(index),src_dwi_data[index]))
             {
                 error_msg = "cannot read image. incomplete file ?";
                 return false;
