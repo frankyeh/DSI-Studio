@@ -1316,7 +1316,7 @@ void tracking_window::on_actionManual_Atlas_Alignment_triggered()
     output_file_name += ".";
     output_file_name += QFileInfo(fa_template_list[handle->template_id].c_str()).
                         baseName().toLower().toStdString();
-    output_file_name += ".map.gz";
+    output_file_name += ".mz";
     if(handle->s2t.empty() && std::filesystem::exists(output_file_name))
     {
         handle->s2t.clear();
