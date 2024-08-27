@@ -115,7 +115,7 @@ int cnt(tipl::program_option<tipl::out>& po)
 
         // setup roi
         vbc->roi_mgr = std::make_shared<RoiMgr>(vbc->handle);
-        if(po.get("exclude_cb",1))
+        if(po.get("exclude_cb",0))
             vbc->exclude_cerebellum();
 
         if(!load_roi(po,vbc->handle,vbc->roi_mgr))
