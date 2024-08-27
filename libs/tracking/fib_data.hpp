@@ -241,7 +241,6 @@ public:
     }
 public:
     tipl::const_pointer_image<3,unsigned char> mask;
-    std::vector<size_t> si2vi;
 public:
     fiber_directions dir;
     connectometry_db db;
