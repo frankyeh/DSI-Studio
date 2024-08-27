@@ -2628,10 +2628,6 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
             error_msg = "incompatible SRC format";
             return false;
         }
-
-        tipl::out() << "dim: " << voxel.dim;
-        tipl::out() << "vs: " << voxel.vs;
-
         if(mat_reader.has("version") && mat_reader.read_as_value<int>("version") > src_ver)
         {
             error_msg = "incompatible SRC format. please update DSI Studio to open this file.";
@@ -2662,7 +2658,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
             src_bvectors[index].normalize();
             table += 4;
         }
-        tipl::out() << "dwi count: " << src_bvalues.size();
+        tipl::out() << "dim: " << voxel.dim << " vs: " << voxel.vs << " dwi count: " << src_bvalues.size();
 
         if(!mat_reader.read("report",voxel.report))
             voxel.report = get_report();
