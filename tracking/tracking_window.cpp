@@ -1214,6 +1214,8 @@ void tracking_window::on_actionLoad_MNI_mapping_triggered()
     if (filename.isEmpty())
         return;
     {
+        if(!handle->load_template())
+            return;
         tipl::progress prog("loading mapping",true);
         if(!handle->load_mapping(filename.toStdString().c_str()))
         {
