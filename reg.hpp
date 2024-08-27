@@ -551,40 +551,17 @@ public:
         size_t modality_count = 2;
         auto& J0 = J[0];
         auto& It0 = It[0];
-        tipl::image<3> matched_image(It0.shape());
-        std::vector<float> X(It0.size()*(modality_count+1));
-        for(size_t pos = 0;pos < It0.size();++pos)
+        auto r_t1w = tipl::correlation(J0,It[0]);
+        auto r_t2w = tipl::correlation(J0,It[1]);
+        tipl::out() << "r t1w: " << r_t1w;
+        tipl::out() << "r t2w: " << r_t2w;
+        if(r_t1w > r_t2w)
+            tipl::out() << "nonlinear registration with t1w";
+        else
         {
-            if(J0[pos] == 0.0f)
-                continue;
-            size_t i = pos;
-            pos = pos+pos+pos;
-            X[pos] = 1;
-            for(size_t j = 0;j < modality_count;++j)
-                X[pos+1+j] = It[j][i];
+            tipl::out() << "nonlinear registration with t2w";
+            It[0].swap(It[1]);
         }
-        tipl::multiple_regression<float> m;
-        if(!m.set_variables(X.begin(),modality_count+1,It0.size()))
-            return false;
-        std::vector<float> b(modality_count+1);
-        if(!m.regress(J0.data(),b.data()))
-            return false;
-
-        std::string b_str;
-        for(auto each : b)
-            b_str += std::to_string(each) + " ";
-        tipl::out() << "b: " << b_str;
-        tipl::adaptive_par_for(It0.size(),[&](size_t pos)
-        {
-            if(J0[pos] == 0.0f)
-                return;
-            matched_image[pos] = b[0];
-            for(size_t j = 1;j < b.size();++j)
-                matched_image[pos] += b[j]*float(It[j-1][pos]);
-            if(matched_image[pos] < 0.0f)
-                matched_image[pos] = 0.0f;
-        });
-        It[0] = subject_image_pre(matched_image);
         It[1].clear();
         return true;
     }
