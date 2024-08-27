@@ -1120,6 +1120,7 @@ bool fib_data::save_to_file(const std::string& file_name)
         error_msg = mat_reader.error_msg;
         return false;
     }
+    fib_file_name = file_name;
     return true;
 }
 void fib_data::remove_slice(size_t index)
