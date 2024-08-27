@@ -1825,12 +1825,12 @@ bool fib_data::map_to_mni(bool background)
     std::string output_file_name(fib_file_name);
     output_file_name += ".";
     output_file_name += QFileInfo(fa_template_list[template_id].c_str()).baseName().toLower().toStdString();
-    output_file_name += ".map.gz";
+    output_file_name += ".mz";
 
     if(std::filesystem::exists(output_file_name))
     {
         tipl::progress p("checking existing mapping file");
-        if(load_mapping(output_file_name.c_str(),false/* not external*/))
+        if(load_mapping(output_file_name.c_str()))
             return true;
         if(!error_msg.empty())
         {
@@ -1930,11 +1930,11 @@ bool fib_data::map_to_mni(bool background)
     lambda();
     return !p.aborted();
 }
-bool fib_data::load_mapping(const char* file_name,bool external)
+bool fib_data::load_mapping(const std::string& file_name)
 {
-    if(tipl::ends_with(file_name,".map.gz"))
+    if(tipl::ends_with(file_name,".mz"))
     {
-        if(!external && QFileInfo(file_name).lastModified() < QFileInfo(fib_file_name.c_str()).lastModified())
+        if(std::filesystem::last_write_time(file_name) < std::filesystem::last_write_time(fib_file_name))
         {
             error_msg = "The mapping file was created before the fib file.";
             return false;
@@ -1943,14 +1943,6 @@ bool fib_data::load_mapping(const char* file_name,bool external)
         if(!map.load_warping(file_name))
         {
             error_msg = map.error_msg;
-            return false;
-        }
-        if(!external && map.version != map_ver)
-        {
-            error_msg = "existing registration version: ";
-            error_msg += map.version;
-            error_msg += " not the same as the current one: ";
-            error_msg += std::to_string(map_ver);
             return false;
         }
         if(map.to2from.shape() != dim)
