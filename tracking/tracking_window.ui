@@ -1045,9 +1045,6 @@
     <addaction name="actionCoronal_View"/>
     <addaction name="actionAxial_View"/>
     <addaction name="separator"/>
-    <addaction name="actionLoad_Presentation"/>
-    <addaction name="actionSave_Presentation"/>
-    <addaction name="separator"/>
     <addaction name="actionLoad_Camera"/>
     <addaction name="actionSave_Camera"/>
     <addaction name="separator"/>
@@ -1133,23 +1130,12 @@
     <property name="title">
      <string>Options</string>
     </property>
-    <addaction name="actionLoad_tracking_parameters"/>
-    <addaction name="actionSave_tracking_parameters"/>
     <addaction name="actionRestore_Tracking_Settings"/>
-    <addaction name="separator"/>
-    <addaction name="actionLoad_Rendering_Parameters"/>
-    <addaction name="actionSave_Rendering_Parameters"/>
     <addaction name="actionRestore_Settings"/>
-    <addaction name="separator"/>
     <addaction name="actionLoad_Parameter_ID"/>
-   </widget>
-   <widget class="QMenu" name="menuAnalysis">
-    <property name="title">
-     <string>Analysis</string>
-    </property>
+    <addaction name="separator"/>
     <addaction name="actionQuality_Assessment"/>
     <addaction name="actionFIB_protocol"/>
-    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuLayout">
     <property name="title">
@@ -1315,6 +1301,15 @@
      <string>&amp;File</string>
     </property>
     <addaction name="actionSave_FIB_As"/>
+    <addaction name="separator"/>
+    <addaction name="actionLoad_Presentation"/>
+    <addaction name="actionSave_Presentation"/>
+    <addaction name="separator"/>
+    <addaction name="actionLoad_tracking_parameters"/>
+    <addaction name="actionSave_tracking_parameters"/>
+    <addaction name="separator"/>
+    <addaction name="actionLoad_Rendering_Parameters"/>
+    <addaction name="actionSave_Rendering_Parameters"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Edit"/>
@@ -1327,7 +1322,6 @@
    <addaction name="menuE_xport"/>
    <addaction name="menu_View"/>
    <addaction name="menuDevices"/>
-   <addaction name="menuAnalysis"/>
    <addaction name="menuLayout"/>
    <addaction name="menuTools"/>
   </widget>
@@ -3333,7 +3327,7 @@ Tracking</string>
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Load Tracking Parameters</string>
+    <string>Open Tracking Parameters</string>
    </property>
   </action>
   <action name="actionCheck_all_tracts">
@@ -3369,7 +3363,7 @@ Tracking</string>
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Load Rendering Parameters...</string>
+    <string>Open Rendering Parameters...</string>
    </property>
   </action>
   <action name="actionSave_All_Regions_As_Multiple_Files">
@@ -3996,7 +3990,7 @@ Tracking</string>
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Load Workspace...</string>
+    <string>Open Workspace...</string>
    </property>
   </action>
   <action name="actionSave_Presentation">
