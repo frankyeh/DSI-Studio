@@ -10,7 +10,10 @@ bool variant_image::command(std::string cmd,std::string param1)
     bool result = true;
     error_msg.clear();
     if(cmd == "change_type")
+    {
+        tipl::out() << "change_type:"<< param1;
         change_type(decltype(pixel_type)(std::stoi(param1)));
+    }
     else
     apply([&](auto& I)
     {
@@ -66,6 +69,12 @@ void variant_image::change_type(decltype(pixel_type) new_type)
         {
             case int8:
                 I_int8.resize(shape);
+                if(pixel_type == float32)
+                {
+                    auto max_v = tipl::max_value(I);
+                    if(max_v <= 1.0f && max_v != 0.0f)
+                        tipl::multiply_constant(I,255.99f/max_v);
+                }
                 std::copy(I.begin(),I.end(),&I_int8[0]);
                 break;
             case int16:
