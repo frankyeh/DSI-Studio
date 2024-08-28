@@ -194,7 +194,7 @@ inline auto subject_image_pre(tipl::image<dim>&& I)
 {
     tipl::image<dim,unsigned char> out;
     tipl::filter::gaussian(I);
-    tipl::segmentation::otsu_median_regulzried(I);
+    tipl::segmentation::normalize_otsu_median(I);
     tipl::normalize_upper_lower2(I,out,255.999f);
     return out;
 }
@@ -293,7 +293,7 @@ public:
                 I.resize(max_modality);
             }
             I[id] = Ic;
-            tipl::segmentation::otsu_median_regulzried(I[id]);
+            tipl::segmentation::normalize_otsu_median(I[id]);
             Ivs = {1.0f,1.0f};
             clear_reg();
             return true;
