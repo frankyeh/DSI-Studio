@@ -1711,13 +1711,20 @@ bool src_data::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
                 pe_id = "RL_LR";
             }
         }
-        for(auto each : b0)
-            acqstr += acqstr1 + "\n";
-        for(auto each : rev_b0)
-            acqstr += acqstr2 + "\n";
-        acqstr.pop_back();
+
         report = " " + std::to_string(b0.size()) + " " + pe_id1 + " encoding and "
                 + std::to_string(rev_b0.size()) + " " + pe_id2 + " encoding b0 images were used to estimate susceptibility using FSL topup.";
+
+        acqstr += acqstr1 + "\n";
+        acqstr += acqstr2 + "\n";
+        acqstr.pop_back();
+        for(size_t index = 1;index < b0.size();++index)
+            b0[0] += b0[index];
+        for(size_t index = 1;index < rev_b0.size();++index)
+            rev_b0[0] += rev_b0[index];
+
+        b0.resize(1);
+        rev_b0.resize(1);
 
     }
 
@@ -1742,35 +1749,30 @@ bool src_data::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
     {
         // allow for more space in the PE direction
         setup_topup_eddy_volume();
-        for(auto& each : b0)
-            tipl::reshape(each,topup_size);
-        for(auto& each : rev_b0)
-            tipl::reshape(each,topup_size);
+        tipl::reshape(b0[0],topup_size);
+        tipl::reshape(rev_b0[0],topup_size);
     }
 
     {
         tipl::out() << "create topup needed b0 nii.gz file from " << pe_id << " b0" << std::endl;
         tipl::matrix<4,4> trans;
         initial_LPS_nifti_srow(trans,b0[0].shape(),voxel.vs);
-
-        tipl::image<4,float> buffer(tipl::shape<4>(uint32_t(b0[0].width()),
-                                    uint32_t(b0[0].height()),
-                                    uint32_t(b0[0].depth()),b0.size() + rev_b0.size()));
+        tipl::image<4,float> buffer(b0[0].shape().expand(2));
         size_t buffer_pos = 0;
-        for(auto& each : b0)
+
         {
-            std::copy(each.begin(),each.end(),buffer.begin() + buffer_pos);
+            std::copy(b0[0].begin(),b0[0].end(),buffer.begin() + buffer_pos);
             buffer_pos += b0[0].size();
         }
 
-        for(auto& each : rev_b0)
+
         {
-            std::copy(each.begin(),each.end(),buffer.begin() + buffer_pos);
-            buffer_pos += b0[0].size();
+            std::copy(rev_b0[0].begin(),rev_b0[0].end(),buffer.begin() + buffer_pos);
+            buffer_pos += rev_b0[0].size();
         }
 
         b0_appa_file = file_name + ".topup." + pe_id + ".nii.gz";
-        if(!tipl::io::gz_nifti::save_to_file(b0_appa_file.c_str(),
+        if(!tipl::io::gz_nifti::save_to_file(b0_appa_file,
                                              buffer,voxel.vs,trans))
         {
             tipl::out() << "Cannot wrtie a temporary b0_appa image volume to " << b0_appa_file << std::endl;
