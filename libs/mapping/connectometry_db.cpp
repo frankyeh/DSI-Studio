@@ -31,9 +31,9 @@ bool connectometry_db::read_db(fib_data* handle_)
                                     < handle->mat_reader.size();++index)
     {
         auto& matrix = handle->mat_reader[matrix_index];
-        if(matrix.cols != handle->mat_reader.si2vi.size())
+        if(matrix.cols % handle->mat_reader.si2vi.size())
         {
-            error_msg = "corrupted databse: mask size mismatch ";
+            error_msg = "corrupted database: mask size mismatch ";
             return false;
         }
         subject_qa.push_back(matrix.get_data<float>());
