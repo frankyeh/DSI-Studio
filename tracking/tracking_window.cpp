@@ -1127,20 +1127,18 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
 
     no_update = true;
 
-    tipl::vector<3,float> slice_position(current_slice->slice_pos);
-    if(!current_slice->is_diffusion_space)
-        slice_position.to(current_slice->to_dif);
-
+    auto previous_slice = current_slice;
     current_slice = slices[size_t(index)];
+    auto previous_custom_slice = std::dynamic_pointer_cast<CustomSliceModel>(previous_slice);
+    auto current_custom_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
 
     if(!current_slice->view->image_ready())
     {
-        auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
-        if(reg_slice.get())
+        if(current_custom_slice.get())
         {
-            if(!reg_slice->load_slices())
+            if(!current_custom_slice->load_slices())
             {
-                QMessageBox::critical(this,"ERROR",reg_slice->error_msg.c_str());
+                QMessageBox::critical(this,"ERROR",current_custom_slice->error_msg.c_str());
                 ui->SliceModality->setCurrentIndex(0);
                 return;
             }
@@ -1198,9 +1196,18 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
         ui->max_slider->setValue(int((contrast_range.second-ui->max_value_gl->minimum())*double(ui->max_slider->maximum())/(ui->max_value_gl->maximum()-ui->max_value_gl->minimum())));
     }
 
-    if(!current_slice->is_diffusion_space)
-        slice_position.to(current_slice->to_slice);
-    move_slice_to(slice_position);
+    if((previous_custom_slice.get() && previous_custom_slice->running) ||
+       (current_custom_slice.get() && current_custom_slice->running))
+        move_slice_to(current_slice->slice_pos);
+    else
+    {
+        tipl::vector<3> slice_position(previous_slice->slice_pos);
+        if(!previous_slice->is_diffusion_space)
+            slice_position.to(previous_slice->to_dif);
+        if(!current_slice->is_diffusion_space)
+            slice_position.to(current_slice->to_slice);
+        move_slice_to(slice_position);
+    }
 
     no_update = false;
     change_contrast();
