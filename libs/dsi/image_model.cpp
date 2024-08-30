@@ -238,8 +238,9 @@ bool src_data::check_b_table(void)
             tipl::progress prog("comparing subject fibers to template fibers");
 
             auto iso = template_fib->get_iso();
-            linear(make_list(template_image_pre(tipl::image<3>(iso))),template_fib->vs,
-                   make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,arg,tipl::reg::affine);
+            tipl::reg::linear<tipl::out>(
+                   tipl::reg::make_list(template_image_pre(tipl::image<3>(iso))),template_fib->vs,
+                   tipl::reg::make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,arg,tipl::reg::affine,tipl::prog_aborted);
             if(prog.aborted())
                 return false;
             tipl::rotation_matrix(arg.rotation,jacobian.begin(),tipl::vdim<3>());
@@ -1003,14 +1004,15 @@ bool src_data::add_other_image(const std::string& name,const std::string& filena
     if(!has_registered && ref.shape() != voxel.dim)
     {
         tipl::out() << " and register image with DWI." << std::endl;
-        trans = linear(make_list(subject_image_pre(tipl::image<3>(ref))),vs,
-                       make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,tipl::reg::rigid_body);
+        trans = tipl::reg::linear<tipl::out>(
+                        tipl::reg::make_list(subject_image_pre(tipl::image<3>(ref))),vs,
+                        tipl::reg::make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,tipl::reg::rigid_body,tipl::prog_aborted);
     }
     else {
         if(has_registered)
             tipl::out() << " using previous registration." << std::endl;
         else
-            tipl::out()<< " treated as DWI space images." << std::endl;
+            tipl::out() << " treated as DWI space images." << std::endl;
     }
     if(name == "reg")
     {
@@ -1073,8 +1075,9 @@ bool src_data::align_acpc(float reso)
     tipl::affine_transform<float> arg;
     {
         tipl::progress prog("linear registration");
-        linear(make_list(template_image_pre(tipl::image<3>(I))),Ivs,
-               make_list(subject_image_pre(tipl::image<3>(J))),Jvs,arg,tipl::reg::rigid_scaling);
+        tipl::reg::linear<tipl::out>(
+                    tipl::reg::make_list(template_image_pre(tipl::image<3>(I))),Ivs,
+                    tipl::reg::make_list(subject_image_pre(tipl::image<3>(J))),Jvs,arg,tipl::reg::rigid_scaling,tipl::prog_aborted);
         if(prog.aborted())
             return false;
     }
@@ -1133,8 +1136,9 @@ bool src_data::correct_motion(void)
             args[i] = args[i-1];
 
 
-            linear_refine(make_list(subject_image_pre(tipl::image<3>(dwi_at(0)))),voxel.vs,
-                          make_list(subject_image_pre(tipl::image<3>(dwi_at(i)))),voxel.vs,args[i],tipl::reg::rigid_body);
+            tipl::reg::linear_refine<tipl::out>(
+                        tipl::reg::make_list(subject_image_pre(tipl::image<3>(dwi_at(0)))),voxel.vs,
+                        tipl::reg::make_list(subject_image_pre(tipl::image<3>(dwi_at(i)))),voxel.vs,args[i],tipl::reg::rigid_body,tipl::prog_aborted);
             tipl::out() << "dwi (" << i+1 << "/" << src_bvalues.size() << ")" <<
                          " shift=" << tipl::vector<3>(args[i].translocation) <<
                          " rotation=" << tipl::vector<3>(args[i].rotation) << std::endl;
@@ -1189,8 +1193,9 @@ bool src_data::correct_motion(void)
                 }
             }
 
-            linear_refine(make_list(subject_image_pre(std::move(from))),voxel.vs,
-                          make_list(subject_image_pre(tipl::image<3>(dwi_at(i)))),voxel.vs,new_args[i],tipl::reg::rigid_body);
+            tipl::reg::linear_refine<tipl::out>(
+                        tipl::reg::make_list(subject_image_pre(std::move(from))),voxel.vs,
+                        tipl::reg::make_list(subject_image_pre(tipl::image<3>(dwi_at(i)))),voxel.vs,new_args[i],tipl::reg::rigid_body,tipl::prog_aborted);
             tipl::out() << "dwi (" << i+1 << "/" << src_bvalues.size() << ") = "
                       << " shift=" << tipl::vector<3>(new_args[i].translocation)
                       << " rotation=" << tipl::vector<3>(new_args[i].rotation) << std::endl;
