@@ -364,7 +364,9 @@ void manual_alignment::on_rerun_clicked()
 
     thread.run([this,cost,reg_type]()
     {
-        linear(make_list(from,from2),from_vs,make_list(to,to2),to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,tipl::reg::reg_bound,cost);
+        tipl::reg::linear<tipl::out>(tipl::reg::make_list(from,from2),from_vs,
+                                     tipl::reg::make_list(to,to2),to_vs,arg,
+                                     tipl::reg::reg_type(reg_type),thread.terminated,tipl::reg::reg_bound,cost);
     });
     ui->rerun->setText("Stop");
     ui->refine->setEnabled(false);
@@ -398,7 +400,9 @@ void manual_alignment::on_refine_clicked()
 
     thread.run([this,cost,reg_type]()
     {
-        linear_refine(make_list(from,from2),from_vs,make_list(to,to2),to_vs,arg,tipl::reg::reg_type(reg_type),thread.terminated,cost);
+        tipl::reg::linear_refine<tipl::out>(tipl::reg::make_list(from,from2),from_vs,
+                                            tipl::reg::make_list(to,to2),to_vs,
+                                            arg,tipl::reg::reg_type(reg_type),thread.terminated,cost);
 
         thread.running = false;
     });
