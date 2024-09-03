@@ -1680,15 +1680,25 @@ void MainWindow::on_github_download_clicked()
         tipl::progress p2(filePath.toStdString().c_str(),true);
         tipl::out() << url.toStdString();
 
-        auto reply = get(url);
-
-        qint64 bytesTotal = ui->github_release_files->item(row_list[i], 1)->data(Qt::UserRole).toLongLong();
-        while (!reply->isFinished() && p2(reply->bytesAvailable(),bytesTotal+1))
+        QSharedPointer<QNetworkReply> reply;
+        int retry = 0;
+        const int max_retry = 5;
+        while (retry < max_retry)
         {
-            QCoreApplication::processEvents();
-            QThread::msleep(100); // Check every 100ms
+            reply = get(url);
+            qint64 bytesTotal = ui->github_release_files->item(row_list[i], 1)->data(Qt::UserRole).toLongLong();
+            while (!reply->isFinished() && p2(reply->bytesAvailable(),bytesTotal+1))
+            {
+                QCoreApplication::processEvents();
+                QThread::msleep(100); // Check every 100ms
+            }
+            if (reply->error() == QNetworkReply::NoError)
+                break;
+            retry++;
+            QThread::sleep(3);
         }
-        if (reply->error() != QNetworkReply::NoError)
+
+        if (retry >= max_retry)
         {
             QMessageBox::critical(this, "ERROR", reply->errorString());
             return;
