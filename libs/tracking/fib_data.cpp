@@ -2121,7 +2121,7 @@ bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,
     }
     if(new_geo == dim && to_diffusion_space == tipl::identity_matrix())
     {
-        tipl::par_for<tipl::sequential_with_id>(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
+        tipl::adaptive_par_for<tipl::sequential_with_id>(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
             [&](const tipl::pixel_index<3>& index,size_t id)
         {
             if (at->is_labeled_as(s2t[index.index()], roi_index))
@@ -2130,7 +2130,7 @@ bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,
     }
     else
     {
-        tipl::par_for<tipl::sequential_with_id>(tipl::begin_index(new_geo),tipl::end_index(new_geo),
+        tipl::adaptive_par_for<tipl::sequential_with_id>(tipl::begin_index(new_geo),tipl::end_index(new_geo),
             [&](const tipl::pixel_index<3>& index,size_t id)
         {
             tipl::vector<3> p(index),p2;
@@ -2171,7 +2171,7 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,
 
     bool need_trans = (new_geo != dim || to_diffusion_space != tipl::identity_matrix());
     auto shape = need_trans ? new_geo : dim;
-    tipl::par_for<tipl::sequential_with_id>(tipl::begin_index(shape),tipl::end_index(shape),
+    tipl::adaptive_par_for<tipl::sequential_with_id>(tipl::begin_index(shape),tipl::end_index(shape),
                 [&](const tipl::pixel_index<3>& index,size_t id)
     {
         tipl::vector<3> p2;
