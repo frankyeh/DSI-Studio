@@ -3474,17 +3474,6 @@ void ConnectivityMatrix::set_regions(const tipl::shape<3>& geo,
                 regions_set[tipl::pixel_index<3>(pos[0],pos[1],pos[2],geo).index()].insert(uint16_t(roi));
         }
     }
-    unsigned int overlap_count = 0,total_count = 0;
-    for(unsigned int index = 0;index < geo.size();++index)
-        if(!regions_set[index].empty())
-        {
-            for(auto i : regions_set[index])
-                region_map[index].push_back(short(i));
-            ++total_count;
-            if(region_map[index].size() > 1)
-                ++overlap_count;
-        }
-    overlap_ratio = float(overlap_count)/float(total_count);
     atlas_name = "roi";
 }
 
@@ -3521,15 +3510,6 @@ bool ConnectivityMatrix::set_atlas(std::shared_ptr<atlas> data,
         }
     });
 
-    unsigned int overlap_count = 0,total_count = 0;
-    for(unsigned int index = 0;index < region_map.size();++index)
-        if(!region_map[index].empty())
-        {
-            ++total_count;
-            if(region_map[index].size() > 1)
-                ++overlap_count;
-        }
-    overlap_ratio = float(overlap_count)/float(total_count);
     atlas_name = data->name;
     return true;
 }
@@ -4316,13 +4296,6 @@ void ConnectivityMatrix::network_property(std::string& report)
     output_node_measures(out,"pagerank_centrality(weighted)",pagerank_centrality_wei);
     output_node_measures(out,"eccentricity(binary)",eccentricity_bin);
     output_node_measures(out,"eccentricity(weighted)",eccentricity_wei);
-
-
-    if(overlap_ratio > 0.5f)
-    {
-        out << "#The brain parcellations have a large overlapping area (ratio="
-            << overlap_ratio << "). The network measure calculated may not be reliable.";
-    }
 
     report = out.str();
 }
