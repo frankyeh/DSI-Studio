@@ -258,7 +258,6 @@ public:
     size_t region_count = 0;
     std::vector<std::string> region_name;
     std::string error_msg,atlas_name;
-    float overlap_ratio;
     bool set_atlas(std::shared_ptr<atlas> data,std::shared_ptr<fib_data> handle);
     void set_regions(const tipl::shape<3>& geo,
                      const std::vector<std::shared_ptr<ROIRegion> >& regions);
