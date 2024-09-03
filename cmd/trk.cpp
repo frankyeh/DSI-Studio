@@ -303,11 +303,6 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                 tipl::error() << data.error_msg << std::endl;
                 return false;
             }
-            if(data.overlap_ratio > 0.5f)
-            {
-                tipl::out() << "the ROIs have a large overlapping area (ratio: "
-                          << data.overlap_ratio << "). The network measure calculated may not be reliable" << std::endl;
-            }
             if(connectivity_value == "trk")
             {
                 // restore previous working directory
