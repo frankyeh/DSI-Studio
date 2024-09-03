@@ -188,12 +188,14 @@ endif()
 
 add_executable(dsi_studio ${DSI_STUDIO_EXEC} ${DSI_STUDIO_SOURCES} ${DSI_STUDIO_CUDA} ${DSI_STUDIO_FORMS} ${DSI_STUDIO_HEADERS} ${DSI_STUDIO_RESOURCES})
 set_target_properties(dsi_studio PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS NONE)
+
 target_compile_definitions(dsi_studio PUBLIC QT6_PATCH)
+target_compile_definitions(dsi_studio PUBLIC TIPL_USE_QT)
+
 if(CUDAToolkit_FOUND)
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -allow-unsupported-compiler --extended-lambda")
     set(CMAKE_CUDA_RUNTIME_LIBRARY "Static")
     target_compile_definitions(dsi_studio PUBLIC TIPL_USE_CUDA)
-    target_compile_definitions(dsi_studio PUBLIC TIPL_USE_QT)
     if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.23.0")
         set_property(TARGET dsi_studio PROPERTY CUDA_ARCHITECTURES all)
     else()
