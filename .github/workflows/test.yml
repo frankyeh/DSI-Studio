@@ -192,5 +192,5 @@ jobs:
     - name: Test GQI Recon
       run: |
         aws s3 sync --no-sign-request --region eu-west-1 --exclude "*" --include "*dwi.*" s3://openneuro.org/ds002080/sub-CON02/ses-postop . 
-        ./dsi-studio/dsi_studio --action=src --bids=1 --topup_eddy=1 --source=./dwi/sub-CON02_ses-postop_acq-AP_dwi.nii.gz
+        ./dsi-studio/dsi_studio --action=src --bids=1 --topup_eddy=1 --source=./dwi
         
