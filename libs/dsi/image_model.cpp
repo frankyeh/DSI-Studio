@@ -898,7 +898,12 @@ bool src_data::command(std::string cmd,std::string param)
     {
         if(!load_existing_corrections())
         {
-            if(!get_rev_pe(param) || !run_topup())
+            if(get_rev_pe(param))
+            {
+                if(!run_topup())
+                    return false;
+            }
+            else
             {
                 tipl::warning() << error_msg;
                 tipl::warning() << "skip topup";
@@ -1700,7 +1705,7 @@ bool src_data::run_plugin(std::string exec_name,
 
 void src_data::setup_topup_eddy_volume(void)
 {
-    topup_size = voxel.mask.shape();
+    topup_size = voxel.dim;
     // ensure even number in the dimension for topup
     for(int d = 0;d < 3;++d)
         if(topup_size[d] & 1)
@@ -1822,24 +1827,17 @@ bool src_data::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
         tipl::matrix<4,4> trans;
         initial_LPS_nifti_srow(trans,b0[0].shape(),voxel.vs);
         tipl::image<4,float> buffer(b0[0].shape().expand(2));
-        size_t buffer_pos = 0;
-
-        {
-            std::copy(b0[0].begin(),b0[0].end(),buffer.begin() + buffer_pos);
-            buffer_pos += b0[0].size();
-        }
-
-
-        {
-            std::copy(rev_b0[0].begin(),rev_b0[0].end(),buffer.begin() + buffer_pos);
-            buffer_pos += rev_b0[0].size();
-        }
-
+        std::copy(b0[0].begin(),b0[0].end(),buffer.begin());
+        std::copy(rev_b0[0].begin(),rev_b0[0].end(),buffer.begin() + b0[0].size());
         b0_appa_file = file_name + ".topup." + pe_id + ".nii.gz";
-        if(!tipl::io::gz_nifti::save_to_file(b0_appa_file,
-                                             buffer,voxel.vs,trans))
+        tipl::io::gz_nifti nii;
+        nii.set_voxel_size(voxel.vs);
+        nii.set_image_transformation(trans,false);
+        nii.load_from_image(buffer);
+        if(!nii.save_to_file(file_name))
         {
-            tipl::out() << "Cannot wrtie a temporary b0_appa image volume to " << b0_appa_file << std::endl;
+            tipl::error() << nii.error_msg;
+            tipl::error() << "cannot write a temporary b0_appa image volume to " << b0_appa_file;
             return false;
         }
     }
