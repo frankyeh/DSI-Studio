@@ -1677,6 +1677,12 @@ void MainWindow::on_github_download_clicked()
     {
         QString url = ui->github_release_files->item(row_list[i], 3)->text();
         QString filePath = ui->download_dir->text() + "/" + ui->github_release_files->item(row_list[i], 0)->text();
+        if (QFile::exists(filePath) && !ui->download_overwrite->isChecked())
+        {
+            tipl::out() << filePath.toStdString() << " exists...skipping";
+            continue;
+        }
+
         tipl::progress p2(filePath.toStdString().c_str(),true);
         tipl::out() << url.toStdString();
 
