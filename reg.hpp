@@ -8,11 +8,9 @@ extern bool has_cuda;
 template<int dim>
 inline auto subject_image_pre(tipl::image<dim>&& I)
 {
-    tipl::image<dim,unsigned char> out;
     tipl::filter::gaussian(I);
-    tipl::segmentation::normalize_otsu_median(I);
-    tipl::normalize_upper_lower2(I,out,255.999f);
-    return out;
+    tipl::segmentation::normalize_otsu_median(I,255.99f);
+    return tipl::image<dim,unsigned char>(I);
 }
 template<int dim>
 inline auto subject_image_pre(const tipl::image<dim>& I)
