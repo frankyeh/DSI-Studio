@@ -181,3 +181,16 @@ jobs:
         ./dsi-studio/dsi_studio --action=src --source=ds002087
         ls ds002087/sub-01/dwi/sub-01_run-1_dwi.nii.gz
         ls ds002087/sub-01/dwi/sub-01_run-2_dwi.nii.gz
+
+  test_topup:
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Setup Environment
+      run: |
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2004.zip" | jar x
+        chmod 777 ./dsi-studio/dsi_studio
+    - name: Test GQI Recon
+      run: |
+        aws s3 sync --no-sign-request --region eu-west-1 --exclude "*" --include "*dwi.*" s3://openneuro.org/ds002080/sub-CON02/ses-postop dwi   
+        ./dsi-studio/dsi_studio --action=src --bids=1 --topup_eddy=1 --source=dwi
+        
