@@ -22,7 +22,7 @@ int rec(tipl::program_option<tipl::out>& po)
     src_data src;
     if (!src.load_from_file(file_name.c_str()))
     {
-        tipl::error() << src.error_msg << std::endl;
+        tipl::error() << src.error_msg;
         return 1;
     }
     {
