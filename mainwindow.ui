@@ -2638,7 +2638,7 @@ Tractography</string>
                 </property>
                 <item>
                  <property name="text">
-                  <string>data-hcp/hcp-lifespan</string>
+                  <string>data-hcp/lifespan</string>
                  </property>
                 </item>
                 <item>
