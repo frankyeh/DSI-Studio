@@ -346,7 +346,7 @@ int src(tipl::program_option<tipl::out>& po)
                 else
                     tipl::out() << "no --output specified. write src files to the same directory of the nifti images";
                 std::sort(dwi_nii_files.begin(),dwi_nii_files.end());
-                if(nii2src(dwi_nii_files,output_dir,po.get("intro"),is_bids,po.get("overwrite",0),po.get("topup_eddy",1)))
+                if(nii2src(dwi_nii_files,output_dir,po.get("intro"),is_bids,po.get("overwrite",0),po.get("topup_eddy",0)))
                     return 0;
                 return 1;
             }
