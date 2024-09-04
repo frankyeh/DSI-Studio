@@ -593,6 +593,7 @@ bool CustomSliceModel::load_slices(void)
 
     // handle registration
     tipl::out() << "running rigid body transformation to the slices. To disable it, add 'reg' to the file name." << std::endl;
+    update_transform();
     run_registration();
     return true;
 }
@@ -600,10 +601,7 @@ bool CustomSliceModel::load_slices(void)
 void CustomSliceModel::run_registration(void)
 {
     if(tipl::show_prog)
-    {
         thread.reset(new std::thread([this](){argmin();}));
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
     else
         argmin();
 }
