@@ -63,6 +63,7 @@ std::shared_ptr<src_data> src_data::create(std::vector<std::shared_ptr<DwiHeader
 
     src->voxel.dim = dwi_files.front()->image.shape();
     src->voxel.vs = dwi_files.front()->voxel_size;
+    src->voxel.report = dwi_files.front()->report;
 
 
     src->nifti_dwi.resize(dwi_files.size());
@@ -82,7 +83,6 @@ std::shared_ptr<src_data> src_data::create(std::vector<std::shared_ptr<DwiHeader
     if(std::filesystem::exists(intro_file_name))
         src->load_intro(intro_file_name);
 
-    src->voxel.report = dwi_files.front()->report;
     src->calculate_dwi_sum(true);
     return src;
 }
