@@ -1,6 +1,11 @@
 name: Test DSI Studio
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag'
+        required: true
+        default: '2024.06.12'  
   workflow_call:
 jobs:    
   test_animal_recon:
