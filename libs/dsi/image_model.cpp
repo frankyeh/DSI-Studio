@@ -2708,7 +2708,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         if(!mat_reader.read("report",voxel.report))
             voxel.report = get_report();
 
-        if(!apply_mask && voxel.report.find(" eddy") != std::string::npos)
+        if(!apply_mask && voxel.report.find(" eddy ") != std::string::npos)
             apply_mask = true;
 
         mat_reader.read("intro",voxel.intro);
