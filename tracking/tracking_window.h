@@ -79,6 +79,7 @@ public:
     connectometry_result cnt_result;
 public:
     std::shared_ptr<QTimer> timer2;
+    void start_reg(void);
     void set_tracking_param(ThreadData& tracking_thread);
 public:
     std::shared_ptr<tract_report> tact_report_imp;
@@ -92,7 +93,6 @@ public:
     bool addSlices(const std::string& name,const std::string& path);
     bool addSlices(std::shared_ptr<SliceModel> new_slice);
     bool openSlices(const std::string& filename,bool is_mni = false);
-    void updateSlices(void);
     void updateSlicesMenu(void);
     float get_fa_threshold(void);
     bool no_update = true;

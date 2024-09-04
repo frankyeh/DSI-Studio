@@ -720,13 +720,15 @@ void tracking_window::on_actionFIB_protocol_triggered()
 void tracking_window::check_reg(void)
 {
     bool all_ended = true;
-    for(unsigned int index = 0;index < slices.size();++index)
+    for(auto each : slices)
     {
-        auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(slices[index]);
-        if(reg_slice.get() && reg_slice->running)
+        auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(each);
+        if(reg_slice.get())
         {
-            all_ended = false;
+            if(reg_slice->running)
+                all_ended = false;
             reg_slice->update_transform();
+            tipl::out() << "update transform";
         }
     }
     slice_need_update = true;
@@ -752,14 +754,19 @@ bool tracking_window::addSlices(const std::string& name,const std::string& path)
     return addSlices(std::dynamic_pointer_cast<SliceModel>(
                 std::make_shared<CustomSliceModel>(handle,std::make_shared<slice_model>(name,path))));
 }
-
+void tracking_window::start_reg(void)
+{
+    timer2.reset(new QTimer());
+    timer2->setInterval(1000);
+    connect(timer2.get(), SIGNAL(timeout()), this, SLOT(check_reg()));
+    timer2->start();
+}
 bool tracking_window::openSlices(const std::string& filename,bool is_mni)
 {
     auto files = tipl::split(filename,',');
     if(files.empty())
         return false;
-    std::shared_ptr<CustomSliceModel> slice;
-    slice = std::make_shared<CustomSliceModel>(handle,std::make_shared<slice_model>(
+    auto slice = std::make_shared<CustomSliceModel>(handle,std::make_shared<slice_model>(
                             std::filesystem::path(files[0]).stem().stem().string(),files[0]));
     if(files.size() > 1)
         slice->source_files = files;
@@ -772,34 +779,13 @@ bool tracking_window::openSlices(const std::string& filename,bool is_mni)
     }
     addSlices(slice);
     ui->SliceModality->setCurrentIndex(ui->SliceModality->count()-1);
-    updateSlices();
-    return true;
-}
-void tracking_window::updateSlices(void)
-{
+    if(slice->running)
+        start_reg();
     updateSlicesMenu();
-    if(!timer2.get())
-    {
-        bool running_reg = false;
-        for(auto each : slices)
-        {
-            auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(each);
-            if(reg_slice.get() && reg_slice->running)
-            {
-                timer2.reset(new QTimer());
-                timer2->setInterval(1000);
-                connect(timer2.get(), SIGNAL(timeout()), this, SLOT(check_reg()));
-                timer2->start();
-                check_reg();
-                break;
-            }
-        }
-    }
     set_data("show_slice",Qt::Checked);
     glWidget->update();
+    return true;
 }
-
-
 void tracking_window::on_addSlices_clicked()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
@@ -928,14 +914,8 @@ void tracking_window::insertPicture()
     if(QMessageBox::Yes == QMessageBox::question(this,QApplication::applicationName(),"Apply registration?",QMessageBox::No | QMessageBox::Yes))
     {
         reg_slice_ptr->run_registration();
-        if(!timer2.get() && reg_slice_ptr->running)
-        {
-            timer2.reset(new QTimer());
-            timer2->setInterval(1000);
-            connect(timer2.get(), SIGNAL(timeout()), this, SLOT(check_reg()));
-            timer2->start();
-            check_reg();
-        }
+        if(reg_slice_ptr->running)
+            start_reg();
     }
     else
         QMessageBox::information(this,QApplication::applicationName(),"Press Ctrl+A and then hold LEFT/RIGHT button to MOVE/RESIZE slice close to the target before using [Slices][Adjust Mapping]");
