@@ -237,7 +237,13 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
             else
                 sz->get_rev_pe(std::string());
             if(sz->rev_pe_src.get())
-                sz->run_topup();
+            {
+                if(!sz->run_topup())
+                {
+                    error_msg = sz->error_msg;
+                    return false;
+                }
+            }
             else
                 tipl::out() << "no reverse pe data. skip topup";
             sz->run_eddy();
