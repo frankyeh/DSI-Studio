@@ -225,12 +225,12 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
         image_size[i] = tipl::shape<3>();
         dwi_file[i].erase(dwi_file[i].length() - 7, 7); // remove .nii.gz
         auto src_name = dwi_file[i] + ".sz";
-        auto rsrc_name = dwi_file[i] + ".rev.sz";
+        auto rsrc_name = dwi_file[i] + ".rz";
 
         if(!output_dir.empty())
         {
             src_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).stem().stem().u8string() + ".sz";
-            rsrc_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).stem().stem().u8string() + ".rev.sz";
+            rsrc_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).stem().stem().u8string() + ".rz";
         }
         if(!overwrite && std::filesystem::exists(src_name))
             tipl::out() << "skipping " << src_name << " already exists";

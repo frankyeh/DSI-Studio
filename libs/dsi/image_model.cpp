@@ -2087,10 +2087,10 @@ std::string src_data::find_topup_reverse_pe(void)
     tipl::remove_suffix(rev_file_name,".sz");
     tipl::remove_suffix(rev_file_name,".src.gz");
     tipl::remove_suffix(rev_file_name,".nii.gz");
-    if(std::filesystem::exists(rev_file_name+".rev.sz"))
+    if(std::filesystem::exists(rev_file_name+".rz"))
     {
-        tipl::out() << "reversed pe SRC file found: " << rev_file_name+".rev.sz" << std::endl;
-        return rev_file_name+".rev.sz";
+        tipl::out() << "reversed pe SRC file found: " << rev_file_name+".rz" << std::endl;
+        return rev_file_name+".rz";
     }
     if(std::filesystem::exists(rev_file_name+".rsrc.gz"))
     {
