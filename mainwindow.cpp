@@ -994,9 +994,6 @@ bool get_pe_dir(const std::string& nii_name,size_t& pe_dir,bool& is_neg)
     return false;
 }
 std::vector<std::string> search_dwi_nii_bids(const std::string& dir);
-bool create_src(const std::vector<std::string>& nii_names,
-                const std::string& intro_file_name,
-                std::string src_name);
 void search_dwi_nii(const std::string& dir,std::vector<std::string>& dwi_nii_files);
 void MainWindow::batch_create_src(const std::vector<std::string>& dwi_nii_files,const std::string& output_dir)
 {
@@ -1066,7 +1063,12 @@ void MainWindow::batch_create_src(const std::vector<std::string>& dwi_nii_files,
                 --nii_count;
             }
             tipl::out() << "processing " << nii_name << std::endl;
-            create_src(std::vector<std::string>({nii_name}),std::string(),src_name);
+            auto src = src_data::create(std::vector<std::string>({nii_name}),true,std::string());
+            if(!src->save_to_file(src_name))
+            {
+                tipl::error() << src->error_msg;
+                tipl::error() << "cannot save SRC " << src_name;
+            }
         }
     },8);
 }
@@ -1074,7 +1076,8 @@ bool nii2src(const std::vector<std::string>& dwi_nii_files,
              const std::string& output_dir,
              const std::string& intro_file_name,
              bool is_bids,
-             bool overwrite);
+             bool overwrite,
+             bool topup_eddy);
 void MainWindow::on_nii2src_bids_clicked()
 {
     QString dir = QFileDialog::getExistingDirectory(
@@ -1097,7 +1100,7 @@ void MainWindow::on_nii2src_bids_clicked()
         return;
     }
     std::sort(dwi_nii_files.begin(),dwi_nii_files.end());
-    nii2src(dwi_nii_files,output_dir.toStdString(),(dir+"/README").toStdString(),true,true);
+    nii2src(dwi_nii_files,output_dir.toStdString(),(dir+"/README").toStdString(),true,true,false);
 }
 void MainWindow::on_nii2src_sf_clicked()
 {
@@ -1228,9 +1231,10 @@ bool dcm2src_and_nii(QStringList files)
     }
 
     QString src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".sz").c_str(),true);
-    if(!DwiHeader::output_src(src_name.toStdString().c_str(),dicom_files,false,"README",error_msg))
+    auto src = src_data::create(dicom_files,false,"README");
+    if(!src->save_to_file(src_name.toStdString()))
     {
-        tipl::error() << error_msg << std::endl;
+        tipl::error() << src->error_msg << std::endl;
         return false;
     }
     return true;

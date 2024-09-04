@@ -215,11 +215,18 @@ void distortion_estimate(const image_type& v1,const image_type& v2,
     }
 }
 
+
+class DwiHeader;
 struct src_data
 {
     src_data(void){}
     src_data(const src_data&) = delete;
     src_data operator=(const src_data&) = delete;
+    static std::shared_ptr<src_data> create(std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
+                                            bool sort_btable,const std::string& intro_file_name);
+    static std::shared_ptr<src_data> create(const std::vector<std::string>& nii_names,
+                                            bool need_bval_bvec,
+                                            const std::string& intro_file_name);
 public:
     std::vector<tipl::image<3,unsigned short> > new_dwi; //used in rotated volume
     std::vector<tipl::image<3,unsigned short> > nifti_dwi; // if load directly from nifti
@@ -295,18 +302,19 @@ public:
     void setup_topup_eddy_volume(void);
     //bool distortion_correction(const std::string& file_name);
     std::string find_topup_reverse_pe(void);
-    bool run_topup_eddy(std::string other_src,bool topup_only = false);
+    bool get_rev_pe(std::string other_src);
+    bool run_topup(void);
+    bool run_applytopup(std::string exec = std::string());
+    bool run_eddy(std::string exec = std::string());
+    bool load_existing_corrections(void);
 private:
     bool read_b0(std::vector<tipl::image<3> >& b0) const;
-    bool read_rev_b0(const std::string& file_name,std::vector<tipl::image<3> >& rev_b0);
     bool run_plugin(std::string program_name,std::string key_word,
                     size_t total_keyword_count,std::vector<std::string> param,std::string working_dir,std::string exec = std::string());
     bool generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
                                      std::vector<tipl::image<3> >& rev_b0,
                                      std::string& b0_appa_file,
                                      std::string& report);
-    bool run_applytopup(std::string exec = std::string());
-    bool run_eddy(std::string exec = std::string());
     bool load_topup_eddy_result(void);
 public:
     bool command(std::string cmd,std::string param = "");

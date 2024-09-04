@@ -152,21 +152,7 @@ if (sort_and_merge)
 }
 */
 
-void sort_dwi(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
-{
-    std::sort(dwi_files.begin(),dwi_files.end(),[&]
-              (const std::shared_ptr<DwiHeader>& lhs,const std::shared_ptr<DwiHeader>& rhs){return *lhs < *rhs;});
-    for (int i = dwi_files.size()-1;i >= 1;--i)
-        if (dwi_files[i]->bvalue == dwi_files[i-1]->bvalue &&
-                dwi_files[i]->bvec == dwi_files[i-1]->bvec)
-        {
-            tipl::image<3> I = dwi_files[i]->image;
-            I += dwi_files[i-1]->image;
-            I *= 0.5f;
-            dwi_files[i-1]->image = I;
-            dwi_files.erase(dwi_files.begin()+i);
-        }
-}
+
 
 bool DwiHeader::has_b_table(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
@@ -174,56 +160,4 @@ bool DwiHeader::has_b_table(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
         if(dwi_files[i]->bvalue > 0.0f)
             return true;
     return false;
-}
-bool DwiHeader::output_src(const std::string& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
-                           bool sort_btable,const std::string& intro_file_name,std::string& error_msg)
-{
-    if(dwi_files.empty())
-    {
-        error_msg = "no DWI data to output";
-        return false;
-    }
-    if(sort_btable)
-        sort_dwi(dwi_files);
-
-    // removing inconsistent dwi
-    for(unsigned int index = 0;index < dwi_files.size();++index)
-    {
-        if(dwi_files[index]->bvalue < 100.0f)
-        {
-            dwi_files[index]->bvalue = 0.0f;
-            dwi_files[index]->bvec = tipl::vector<3>(0.0f,0.0f,0.0f);
-        }
-        if(dwi_files[index]->image.shape() != dwi_files[0]->image.shape())
-        {
-            tipl::warning() << " removing inconsistent image dimensions found at dwi " << index
-                          << " size=" << dwi_files[index]->image.shape()
-                          << " versus " << dwi_files[0]->image.shape();
-            dwi_files.erase(dwi_files.begin() + index);
-            --index;
-        }
-    }
-
-    src_data src;
-    src.voxel.dim = dwi_files.front()->image.shape();
-    src.voxel.vs = dwi_files.front()->voxel_size;
-
-    for (auto& each : dwi_files)
-    {
-        src.src_bvalues.push_back(each->bvalue);
-        src.src_bvectors.push_back(each->bvec);
-        src.src_dwi_data.push_back(each->begin());
-    }
-
-    if(std::filesystem::exists(intro_file_name))
-        src.load_intro(intro_file_name);
-
-    src.voxel.report = dwi_files.front()->report + src.get_report();
-    src.calculate_dwi_sum(false);
-    if(!src.save_to_file(file_name))
-    {
-        error_msg = src.error_msg;
-        return false;
-    }
-    return true;
 }

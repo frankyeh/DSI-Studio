@@ -60,8 +60,6 @@ public:
 	}
 
 public:
-    static bool output_src(const std::string& file_name, std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
-                           bool sort_btable,const std::string& intro_file_name,std::string& error_msg);
     static bool has_b_table(std::vector<std::shared_ptr<DwiHeader> >& dwi_files);
 };
 

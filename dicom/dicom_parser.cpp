@@ -5,6 +5,7 @@
 #include <QSettings>
 #include "dicom_parser.h"
 #include "ui_dicom_parser.h"
+#include "image_model.hpp"
 #include "mainwindow.h"
 
 void get_report_from_dicom(const tipl::io::dicom& header,std::string& report_);
@@ -1091,12 +1092,10 @@ void dicom_parser::on_buttonBox_accepted()
                     ui->tableWidget->item(index,3)->text().toFloat(),
                     ui->tableWidget->item(index,4)->text().toFloat());
     }
-    std::string error_msg;
-    if(!DwiHeader::output_src(ui->SrcName->text().toStdString().c_str(),
-                          dwi_files,
-                          ui->sort_btable->isChecked(),"README",error_msg))
+    auto src = src_data::create(dwi_files,ui->sort_btable->isChecked(),"README");
+    if(!src->save_to_file(ui->SrcName->text().toStdString()))
     {
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",src->error_msg.c_str());
         close();
         return;
     }
