@@ -222,11 +222,7 @@ struct src_data
     src_data(void){}
     src_data(const src_data&) = delete;
     src_data operator=(const src_data&) = delete;
-    static std::shared_ptr<src_data> create(std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
-                                            bool sort_btable,const std::string& intro_file_name);
-    static std::shared_ptr<src_data> create(const std::vector<std::string>& nii_names,
-                                            bool need_bval_bvec,
-                                            const std::string& intro_file_name);
+
 public:
     std::vector<tipl::image<3,unsigned short> > new_dwi; //used in rotated volume
     std::vector<tipl::image<3,unsigned short> > nifti_dwi; // if load directly from nifti
@@ -320,6 +316,8 @@ public:
     bool command(std::string cmd,std::string param = "");
     bool run_steps(const std::string& reg_file_name,const std::string& steps);
 public:
+    bool load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool sort_btable);
+    bool load_from_file(const std::vector<std::string>& nii_names,bool need_bval_bvec);
     bool load_from_file(const std::string& dwi_file_name);
     bool save_to_file(const std::string& dwi_file_name);
     bool save_nii_for_applytopup_or_eddy(bool include_rev) const;

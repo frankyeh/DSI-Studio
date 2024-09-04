@@ -34,76 +34,7 @@ void sort_dwi(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
         }
 }
 
-std::shared_ptr<src_data> src_data::create(std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
-                                        bool sort_btable,const std::string& intro_file_name)
-{
-    std::shared_ptr<src_data> src(new src_data);
-    if(dwi_files.empty())
-        return src;
-    if(sort_btable)
-        sort_dwi(dwi_files);
 
-    // removing inconsistent dwi
-    for(unsigned int index = 0;index < dwi_files.size();++index)
-    {
-        if(dwi_files[index]->bvalue < 100.0f)
-        {
-            dwi_files[index]->bvalue = 0.0f;
-            dwi_files[index]->bvec = tipl::vector<3>(0.0f,0.0f,0.0f);
-        }
-        if(dwi_files[index]->image.shape() != dwi_files[0]->image.shape())
-        {
-            tipl::warning() << " removing inconsistent image dimensions found at dwi " << index
-                          << " size=" << dwi_files[index]->image.shape()
-                          << " versus " << dwi_files[0]->image.shape();
-            dwi_files.erase(dwi_files.begin() + index);
-            --index;
-        }
-    }
-
-    src->voxel.dim = dwi_files.front()->image.shape();
-    src->voxel.vs = dwi_files.front()->voxel_size;
-    src->voxel.report = dwi_files.front()->report;
-
-
-    src->nifti_dwi.resize(dwi_files.size());
-    src->src_bvalues.resize(dwi_files.size());
-    src->src_bvectors.resize(dwi_files.size());
-    src->src_dwi_data.resize(dwi_files.size());
-    for(size_t i = 0;i < dwi_files.size();++i)
-    {
-        src->src_bvalues[i] = dwi_files[i]->bvalue;
-        src->src_bvectors[i] = dwi_files[i]->bvec;
-        src->nifti_dwi[i].swap(dwi_files[i]->image);
-        src->src_dwi_data[i] = src->nifti_dwi[i].data();
-    }
-    dwi_files.clear();
-
-
-    if(std::filesystem::exists(intro_file_name))
-        src->load_intro(intro_file_name);
-
-    src->calculate_dwi_sum(true);
-    return src;
-}
-bool find_readme(const std::string& file,std::string& intro_file_name);
-std::shared_ptr<src_data> src_data::create(const std::vector<std::string>& nii_names,
-                                           bool need_bval_bvec,
-                                           const std::string& intro_file_name)
-{
-    std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-    std::string error_msg;
-    for(auto& nii_name : nii_names)
-    {
-        tipl::out() << "opening " << nii_name;
-        if(!load_4d_nii(nii_name,dwi_files,true,need_bval_bvec,error_msg))
-            tipl::warning() << "skipping " << nii_name << ": " << error_msg;
-    }
-    auto file_name = intro_file_name;
-    if(file_name.empty())
-        find_readme(nii_names[0],file_name);
-    return create(dwi_files,false,file_name);
-}
 
 
 void src_data::draw_mask(tipl::color_image& buffer,int position)
@@ -2478,6 +2409,8 @@ bool src_data::save_to_file(const std::string& filename)
 
             mat_writer.write("report",voxel.report);
             mat_writer.write("steps",voxel.steps);
+            if(voxel.intro.empty() && std::filesystem::exists(std::filesystem::path(filename).parent_path() / "README"))
+                load_intro((std::filesystem::path(filename).parent_path() / "README").string());
             mat_writer.write("intro",voxel.intro);
         }
         if(prog.aborted())
@@ -2538,6 +2471,66 @@ void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream>
         tipl::out() << "saving index file for accelerated loading: " << std::filesystem::path(idx_name).filename().u8string() << std::endl;
         in->save_index(idx_name);
     }
+}
+
+bool src_data::load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool sort_btable)
+{
+    if(dwi_files.empty())
+    {
+        error_msg = "no DWI data";
+        return false;
+    }
+    if(sort_btable)
+        sort_dwi(dwi_files);
+
+    // removing inconsistent dwi
+    for(unsigned int index = 0;index < dwi_files.size();++index)
+    {
+        if(dwi_files[index]->bvalue < 100.0f)
+        {
+            dwi_files[index]->bvalue = 0.0f;
+            dwi_files[index]->bvec = tipl::vector<3>(0.0f,0.0f,0.0f);
+        }
+        if(dwi_files[index]->image.shape() != dwi_files[0]->image.shape())
+        {
+            tipl::warning() << " removing inconsistent image dimensions found at dwi " << index
+                          << " size=" << dwi_files[index]->image.shape()
+                          << " versus " << dwi_files[0]->image.shape();
+            dwi_files.erase(dwi_files.begin() + index);
+            --index;
+        }
+    }
+
+    voxel.dim = dwi_files.front()->image.shape();
+    voxel.vs = dwi_files.front()->voxel_size;
+    voxel.report = dwi_files.front()->report;
+
+
+    nifti_dwi.resize(dwi_files.size());
+    src_bvalues.resize(dwi_files.size());
+    src_bvectors.resize(dwi_files.size());
+    src_dwi_data.resize(dwi_files.size());
+    for(size_t i = 0;i < dwi_files.size();++i)
+    {
+        src_bvalues[i] = dwi_files[i]->bvalue;
+        src_bvectors[i] = dwi_files[i]->bvec;
+        nifti_dwi[i].swap(dwi_files[i]->image);
+        src_dwi_data[i] = nifti_dwi[i].data();
+    }
+    dwi_files.clear();
+    calculate_dwi_sum(true);
+    return true;
+}
+bool src_data::load_from_file(const std::vector<std::string>& nii_names,bool need_bval_bvec)
+{
+    std::vector<std::shared_ptr<DwiHeader> > dwi_files;
+    for(auto& nii_name : nii_names)
+    {
+        tipl::out() << "opening " << nii_name;
+        if(!load_4d_nii(nii_name,dwi_files,true,need_bval_bvec,error_msg))
+            tipl::warning() << "skipping " << nii_name << ": " << error_msg;
+    }
+    return load_from_file(dwi_files,false);
 }
 
 size_t match_volume(float volume);
@@ -2647,7 +2640,6 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
 
         voxel.report = get_report();
         calculate_dwi_sum(true);
-        tipl::out() << "NIFTI file loaded" << std::endl;
         return true;
     }
     else

@@ -105,15 +105,13 @@ std::vector<std::string> search_dwi_nii_bids(const std::string& dir)
 
 bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
                         const std::string& output_dir,
-                        std::string intro_file_name,
                         bool overwrite,
                         bool topup_eddy,
                         std::string& error_msg)
 {
     if(dwi_nii_files.empty())
         return false;
-    if(!std::filesystem::exists(intro_file_name))
-        find_readme(dwi_nii_files[0],intro_file_name);
+
     std::vector<std::string> dwi_file;
     std::vector<tipl::shape<3> > image_size;
     std::vector<size_t> dwi_count;
@@ -210,59 +208,74 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
         auto src_name = dwi_file[i] + ".sz";
         auto rsrc_name = dwi_file[i] + ".rz";
 
-
-        std::shared_ptr<src_data> sz,rz;
         if(!output_dir.empty())
         {
             src_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).stem().stem().u8string() + ".sz";
             rsrc_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).stem().stem().u8string() + ".rz";
         }
         if(!overwrite && std::filesystem::exists(src_name))
-            tipl::out() << "skipping " << src_name << " already exists";
-        else
         {
-            sz = src_data::create(main_dwi_list,true,intro_file_name);
-            sz->file_name = src_name;
+            tipl::out() << "skipping " << src_name << ": already exists";
+            continue;
         }
+
+        src_data src;
+        if(!src.load_from_file(main_dwi_list,true))
+        {
+            error_msg = src.error_msg;
+            return false;
+        }
+        src.file_name = src_name;
+
+        {
+            std::string intro_file_name("README");
+            if(!std::filesystem::exists(intro_file_name))
+                find_readme(main_dwi_list[0],intro_file_name);
+            if(std::filesystem::exists(intro_file_name))
+                src.load_intro(intro_file_name);
+        }
+
         if(!rev_pe_list.empty())
         {
-            if(!overwrite && std::filesystem::exists(rsrc_name))
-                tipl::out() << "skipping " << rsrc_name << " already exists";
-            else
+            src.rev_pe_src = std::make_shared<src_data>();
+            if(!src.rev_pe_src->load_from_file(rev_pe_list,rev_pe_list.size() > 1 /*if more than one file, need bval bvec*/))
             {
-                rz = src_data::create(rev_pe_list,rev_pe_list.size() > 1 /*if more than one file, need bval bvec*/,intro_file_name);
-                rz->file_name = rsrc_name;
+                error_msg = src.error_msg;
+                return false;
             }
+            src.rev_pe_src->file_name = rsrc_name;
         }
 
         if(topup_eddy)
         {
-            if(rz.get())
-                sz->rev_pe_src = rz;
-            else
-                sz->get_rev_pe(std::string());
-            if(sz->rev_pe_src.get())
+            if(!src.rev_pe_src.get())
+                src.get_rev_pe(std::string());
+            if(src.rev_pe_src.get())
             {
-                if(!sz->run_topup())
+                if(!src.run_topup())
                 {
-                    error_msg = sz->error_msg;
+                    error_msg = src.error_msg;
                     return false;
                 }
             }
             else
                 tipl::out() << "no reverse pe data. skip topup";
-            sz->run_eddy();
+            src.run_eddy();
         }
         else
-            if(!rz->save_to_file(rz->file_name))
-            {
-                error_msg = rz->error_msg;
-                return false;
-            }
-
-        if(!sz->save_to_file(sz->file_name))
         {
-            error_msg = sz->error_msg;
+            if(src.rev_pe_src.get())
+            {
+                if(!src.rev_pe_src->save_to_file(src.rev_pe_src->file_name))
+                {
+                    error_msg = src.rev_pe_src->error_msg;
+                    return false;
+                }
+            }
+        }
+        if(!src.save_to_file(src.file_name))
+        {
+            error_msg = src.error_msg;
             return false;
         }
     }
@@ -271,7 +284,6 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
 
 bool nii2src(const std::vector<std::string>& dwi_nii_files,
              const std::string& output_dir,
-             const std::string& intro_file_name,
              bool is_bids,
              bool overwrite,
              bool topup_eddy)
@@ -292,7 +304,7 @@ bool nii2src(const std::vector<std::string>& dwi_nii_files,
                 else
                     break;
             std::string error_msg;
-            if(!handle_bids_folder(dwi_list,output_dir,intro_file_name,overwrite,topup_eddy,error_msg))
+            if(!handle_bids_folder(dwi_list,output_dir,overwrite,topup_eddy,error_msg))
             {
                 tipl::error() << error_msg;
                 return false;
@@ -307,10 +319,11 @@ bool nii2src(const std::vector<std::string>& dwi_nii_files,
                 tipl::out() << "skipping " << src_name << " already exists";
             else
             {
-                auto src = src_data::create(std::vector<std::string>({dwi_nii_files[i]}),true,intro_file_name);
-                if(!src->save_to_file(src_name))
+                src_data src;
+                if(!src.load_from_file(std::vector<std::string>({dwi_nii_files[i]}),true) ||
+                   !src.save_to_file(src_name))
                 {
-                    tipl::error() << src->error_msg;
+                    tipl::error() << src.error_msg;
                     return false;
                 }
             }
@@ -357,7 +370,7 @@ int src(tipl::program_option<tipl::out>& po)
                 else
                     tipl::out() << "no --output specified. write src files to the same directory of the nifti images";
                 std::sort(dwi_nii_files.begin(),dwi_nii_files.end());
-                if(nii2src(dwi_nii_files,output_dir,po.get("intro"),is_bids,po.get("overwrite",0),po.get("topup_eddy",0)))
+                if(nii2src(dwi_nii_files,output_dir,is_bids,po.get("overwrite",0),po.get("topup_eddy",0)))
                     return 0;
                 return 1;
             }
@@ -386,13 +399,22 @@ int src(tipl::program_option<tipl::out>& po)
         return 1;
     }
 
+
+    auto output = po.get("output",std::filesystem::path(file_list[0]).stem().stem().u8string() + ".sz");
+    if(std::filesystem::is_directory(output))
+        output += std::string("/") + std::filesystem::path(file_list[0]).stem().stem().u8string() + ".sz";
+    if(!tipl::ends_with(output,".sz"))
+        output += ".sz";
+
+    src_data src;
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-    std::string error_msg;
-    if(!parse_dwi(file_list,dwi_files,error_msg))
+
+    if(!parse_dwi(file_list,dwi_files,src.error_msg))
     {
-        tipl::error() << error_msg << std::endl;
+        tipl::error() << src.error_msg;
         return 1;
     }
+
     if(po.has("b_table"))
     {
         std::string table_file_name = po.get("b_table");
@@ -423,12 +445,13 @@ int src(tipl::program_option<tipl::out>& po)
         }
         tipl::out() << "b-table " << table_file_name << " loaded" << std::endl;
     }
+
     if(po.has("bval") && po.has("bvec"))
     {
         std::vector<double> bval,bvec;
-        if(!get_bval_bvec(po.get("bval"),po.get("bvec"),dwi_files.size(),bval,bvec,error_msg))
+        if(!get_bval_bvec(po.get("bval"),po.get("bvec"),dwi_files.size(),bval,bvec,src.error_msg))
         {
-            tipl::error() << error_msg;
+            tipl::error() << src.error_msg;
             return 1;
         }
         for(unsigned int index = 0;index < dwi_files.size();++index)
@@ -439,40 +462,31 @@ int src(tipl::program_option<tipl::out>& po)
     }
     if(dwi_files.empty())
     {
-        tipl::error() << "no file readed. Abort." << std::endl;
+        tipl::error() << "no DWI data. abort." << std::endl;
         return 1;
     }
 
-    double max_b = 0;
-    for(unsigned int index = 0;index < dwi_files.size();++index)
     {
-        if(dwi_files[index]->bvalue < 100.0f)
-            dwi_files[index]->bvalue = 0.0f;
-        max_b = std::max(max_b,double(dwi_files[index]->bvalue));
+        for(unsigned int index = 0;index < dwi_files.size();++index)
+            if(dwi_files[index]->bvalue < 100.0f)
+                dwi_files[index]->bvalue = 0.0f;
     }
-    if(max_b == 0.0)
-    {
-        tipl::error() << "cannot create SRC file: " << error_msg;
-        return 1;
-    }
-
-    auto output = po.get("output",std::filesystem::path(file_list[0]).stem().stem().u8string() + ".sz");
-
-    if(std::filesystem::is_directory(output))
-        output += std::string("/") + std::filesystem::path(file_list[0]).stem().stem().u8string() + ".sz";
-    if(!tipl::ends_with(output,".sz"))
-        output += ".sz";
 
     if(!po.get("overwrite",0) && std::filesystem::exists(output))
     {
         tipl::out() << "skipping " << output << " already exists";
         return 0;
     }
-    auto src = src_data::create(dwi_files,po.get<int>("sort_b_table",0),po.get("intro"));
-    if(!src->save_to_file(output))
+
+    if(!src.load_from_file(dwi_files,po.get<int>("sort_b_table",0)) ||
+       (po.has("intro") && !src.load_intro(po.get("intro"))) ||
+       !src.save_to_file(output))
     {
-        tipl::error() << src->error_msg << std::endl;
+        tipl::error() << src.error_msg;
         return 1;
     }
+
     return 0;
+
+
 }

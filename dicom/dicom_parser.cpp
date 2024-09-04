@@ -1092,18 +1092,23 @@ void dicom_parser::on_buttonBox_accepted()
                     ui->tableWidget->item(index,3)->text().toFloat(),
                     ui->tableWidget->item(index,4)->text().toFloat());
     }
-    auto src = src_data::create(dwi_files,ui->sort_btable->isChecked(),"README");
-    if(!src->save_to_file(ui->SrcName->text().toStdString()))
+    src_data src;
+    if(!src.load_from_file(dwi_files,ui->sort_btable->isChecked()) ||
+       !src.save_to_file(ui->SrcName->text().toStdString()))
     {
-        QMessageBox::critical(this,"ERROR",src->error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",src.error_msg.c_str());
         close();
         return;
     }
-    if(QFileInfo(ui->SrcName->text()).exists())
+    if(!QFileInfo(ui->SrcName->text()).exists())
     {
-        ((MainWindow*)parent())->addSrc(ui->SrcName->text());
-        QMessageBox::information(this,QApplication::applicationName(),"SRC file created");
+        QMessageBox::critical(this,"ERROR","Cannot save SRC file");
+        close();
+        return;
     }
+
+    ((MainWindow*)parent())->addSrc(ui->SrcName->text());
+    QMessageBox::information(this,QApplication::applicationName(),"SRC file created");
     close();
 }
 void dicom_parser::on_buttonBox_rejected()

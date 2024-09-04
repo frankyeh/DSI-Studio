@@ -1063,18 +1063,15 @@ void MainWindow::batch_create_src(const std::vector<std::string>& dwi_nii_files,
                 --nii_count;
             }
             tipl::out() << "processing " << nii_name << std::endl;
-            auto src = src_data::create(std::vector<std::string>({nii_name}),true,std::string());
-            if(!src->save_to_file(src_name))
-            {
-                tipl::error() << src->error_msg;
-                tipl::error() << "cannot save SRC " << src_name;
-            }
+            src_data src;
+            if(!src.load_from_file(std::vector<std::string>({nii_name}),true) ||
+               !src.save_to_file(src_name))
+                tipl::warning() << src.error_msg;
         }
     },8);
 }
 bool nii2src(const std::vector<std::string>& dwi_nii_files,
              const std::string& output_dir,
-             const std::string& intro_file_name,
              bool is_bids,
              bool overwrite,
              bool topup_eddy);
@@ -1100,7 +1097,7 @@ void MainWindow::on_nii2src_bids_clicked()
         return;
     }
     std::sort(dwi_nii_files.begin(),dwi_nii_files.end());
-    nii2src(dwi_nii_files,output_dir.toStdString(),(dir+"/README").toStdString(),true,true,false);
+    nii2src(dwi_nii_files,output_dir.toStdString(),true,true,false);
 }
 void MainWindow::on_nii2src_sf_clicked()
 {
@@ -1231,10 +1228,11 @@ bool dcm2src_and_nii(QStringList files)
     }
 
     QString src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".sz").c_str(),true);
-    auto src = src_data::create(dicom_files,false,"README");
-    if(!src->save_to_file(src_name.toStdString()))
+    src_data src;
+    if(!src.load_from_file(dicom_files,false) ||
+       !src.save_to_file(src_name.toStdString()))
     {
-        tipl::error() << src->error_msg << std::endl;
+        tipl::error() << src.error_msg;
         return false;
     }
     return true;
