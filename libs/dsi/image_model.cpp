@@ -2607,13 +2607,6 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
     }
     else
     {
-        if (!tipl::ends_with(dwi_file_name,"src.gz") &&
-            !tipl::ends_with(dwi_file_name,".sz"))
-        {
-            error_msg = "unsupported file format";
-            return false;
-        }
-
         prepare_idx(dwi_file_name,mat_reader.in);
         if(!mat_reader.load_from_file(dwi_file_name,prog))
         {
@@ -2623,7 +2616,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
                 return false;
             }
             error_msg = dwi_file_name;
-            error_msg += " is an invalid SRC file";
+            error_msg += " is not a valid SRC file";
             return false;
         }
         save_idx(dwi_file_name,mat_reader.in);
