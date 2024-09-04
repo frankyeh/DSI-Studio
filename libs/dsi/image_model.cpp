@@ -1829,14 +1829,9 @@ bool src_data::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
         tipl::image<4,float> buffer(b0[0].shape().expand(2));
         std::copy(b0[0].begin(),b0[0].end(),buffer.begin());
         std::copy(rev_b0[0].begin(),rev_b0[0].end(),buffer.begin() + b0[0].size());
-        b0_appa_file = file_name + ".topup." + pe_id + ".nii.gz";
-        tipl::io::gz_nifti nii;
-        nii.set_voxel_size(voxel.vs);
-        nii.set_image_transformation(trans,false);
-        nii.load_from_image(buffer);
-        if(!nii.save_to_file(file_name))
+        if(!tipl::io::gz_nifti::save_to_file((b0_appa_file = file_name + ".topup." + pe_id + ".nii.gz"),
+                                             buffer,voxel.vs,trans))
         {
-            tipl::error() << nii.error_msg;
             tipl::error() << "cannot write a temporary b0_appa image volume to " << b0_appa_file;
             return false;
         }
