@@ -127,6 +127,11 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
             error_msg += each;
             return false;
         }
+        if (tipl::contains(each,".sz."))
+        {
+            tipl::out() << "ignore file with '.sz.':" << each;
+            continue;
+        }
         std::string json(each),phase_str;
         json.erase(json.size()-7);
         json += ".json";
