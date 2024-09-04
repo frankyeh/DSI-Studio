@@ -2638,17 +2638,17 @@ Tractography</string>
                 </property>
                 <item>
                  <property name="text">
-                  <string>tractography/data-hcp</string>
+                  <string>data-hcp/hcp-lifespan</string>
                  </property>
                 </item>
                 <item>
                  <property name="text">
-                  <string>tractography/data-abcd</string>
+                  <string>data-hcp/abcd</string>
                  </property>
                 </item>
                 <item>
                  <property name="text">
-                  <string>tractography/data-openneuro</string>
+                  <string>data-openneuro/a</string>
                  </property>
                 </item>
                 <item>
