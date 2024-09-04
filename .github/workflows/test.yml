@@ -190,6 +190,12 @@ jobs:
   test_topup:
     runs-on: ubuntu-20.04
     steps:        
+    - name: Cache FSL environment
+      id: cache-fsl
+      uses: actions/cache@v3
+      with:
+        path: /opt/fsl
+        key: ${{ runner.os }}-fsl6.0.5.2
     - name: Prepare FSL environment
       if: steps.cache-fsl.outputs.cache-hit != 'true'
       run: curl -sSL https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.5.2-centos7_64.tar.gz | tar zxv --no-same-owner -C /opt --exclude='fsl/doc' --exclude='fsl/refdoc' --exclude='fsl/python/oxford_asl' --exclude='fsl/data/possum' --exclude='fsl/data/first' --exclude='fsl/data/mist' --exclude='fsl/data/atlases' --exclude='fsl/data/xtract_data' --exclude='fsl/extras/doc' --exclude='fsl/extras/man' --exclude='fsl/extras/src' --exclude='fsl/src'
