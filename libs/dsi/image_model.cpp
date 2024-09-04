@@ -83,7 +83,7 @@ std::shared_ptr<src_data> src_data::create(std::vector<std::shared_ptr<DwiHeader
         src->load_intro(intro_file_name);
 
     src->voxel.report = dwi_files.front()->report;
-    src->calculate_dwi_sum(false);
+    src->calculate_dwi_sum(true);
     return src;
 }
 bool find_readme(const std::string& file,std::string& intro_file_name);
@@ -2410,7 +2410,9 @@ bool src_data::save_to_file(const std::string& filename)
         return save_bval((filename.substr(0,filename.size()-7)+".bval").c_str()) &&
                save_bvec((filename.substr(0,filename.size()-7)+".bvec").c_str());
     }
-    if(tipl::ends_with(filename,"src.gz") || tipl::ends_with(filename,".sz"))
+    if(tipl::ends_with(filename,"src.gz") ||
+       tipl::ends_with(filename,".sz") ||
+       tipl::ends_with(filename,".rz"))
     {
         auto temp_file = filename + ".tmp.gz";
         {
@@ -2458,7 +2460,7 @@ bool src_data::save_to_file(const std::string& filename)
                     if(no_signal_at_background)
                     {
                         tipl::out() << "no dwi signal in the background, enable apply mask";
-                        apply_mask = true;
+                        mat_writer.apply_mask = true;
                     }
                 }
             }
