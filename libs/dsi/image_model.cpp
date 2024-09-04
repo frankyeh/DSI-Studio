@@ -64,12 +64,20 @@ std::shared_ptr<src_data> src_data::create(std::vector<std::shared_ptr<DwiHeader
     src->voxel.dim = dwi_files.front()->image.shape();
     src->voxel.vs = dwi_files.front()->voxel_size;
 
-    for (auto& each : dwi_files)
+
+    src->nifti_dwi.resize(dwi_files.size());
+    src->src_bvalues.resize(dwi_files.size());
+    src->src_bvectors.resize(dwi_files.size());
+    src->src_dwi_data.resize(dwi_files.size());
+    for(size_t i = 0;i < dwi_files.size();++i)
     {
-        src->src_bvalues.push_back(each->bvalue);
-        src->src_bvectors.push_back(each->bvec);
-        src->src_dwi_data.push_back(each->begin());
+        src->src_bvalues[i] = dwi_files[i]->bvalue;
+        src->src_bvectors[i] = dwi_files[i]->bvec;
+        src->nifti_dwi[i].swap(dwi_files[i]->image);
+        src->src_dwi_data[i] = src->nifti_dwi[i].data();
     }
+    dwi_files.clear();
+
 
     if(std::filesystem::exists(intro_file_name))
         src->load_intro(intro_file_name);
@@ -1006,7 +1014,7 @@ void src_data::rotate(const tipl::shape<3>& new_geo,
             tipl::resample<tipl::interpolation::cubic>(dwi_at(index),rotated_dwi[index],T);
         else
             tipl::resample_dis<tipl::interpolation::cubic>(dwi_at(index),rotated_dwi[index],T,cdm_dis);
-        src_dwi_data[index] = &(rotated_dwi[index][0]);
+        src_dwi_data[index] = rotated_dwi[index].data();
     });
     if(prog.aborted())
         return;
