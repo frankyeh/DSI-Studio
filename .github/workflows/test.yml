@@ -206,8 +206,6 @@ jobs:
         export FSLTCLSH="/usr/bin/tclsh"
         export FSLWISH="/usr/bin/wish"
         export PATH="$FSLDIR/bin:$PATH"        
-    - name: Test TOPUP
-      run: |
         aws s3 sync --no-sign-request --region eu-west-1 --exclude "*" --include "*dwi.*" s3://openneuro.org/ds002080/sub-CON02/ses-postop . 
         ./dsi-studio/dsi_studio --action=src --bids=1 --topup_eddy=1 --source=./dwi
         
