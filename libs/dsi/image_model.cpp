@@ -2505,7 +2505,6 @@ bool src_data::load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_file
     voxel.vs = dwi_files.front()->voxel_size;
     voxel.report = dwi_files.front()->report;
 
-
     nifti_dwi.resize(dwi_files.size());
     src_bvalues.resize(dwi_files.size());
     src_bvectors.resize(dwi_files.size());
@@ -2518,6 +2517,8 @@ bool src_data::load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_file
         src_dwi_data[i] = nifti_dwi[i].data();
     }
     dwi_files.clear();
+    if(voxel.report.empty())
+        voxel.report = get_report();
     calculate_dwi_sum(true);
     return true;
 }
