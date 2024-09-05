@@ -28,19 +28,7 @@ public:
     bool fetch_github = false;
     QNetworkAccessManager manager;
     std::map<QString,QJsonArray> tags,assets;
-    auto get(QUrl url)
-    {
-        QNetworkRequest request;
-        request.setUrl(url);
-        request.setRawHeader("Accept", "application/json");
-        return QSharedPointer<QNetworkReply>(manager.get(request),
-                [](QNetworkReply* reply)
-                {
-                    if(reply->isRunning())
-                        reply->abort();
-                    reply->deleteLater();
-                });
-    }
+    QSharedPointer<QNetworkReply> get(QUrl url);
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
