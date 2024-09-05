@@ -151,7 +151,7 @@ jobs:
     - name: Setup Environment
       run: |
         curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2004.zip" | jar x
-        curl -sL https://github.com/data-openneuro/releases/download/ds001378/ds001378.dti_fa.db.fz -o ds001378.dti_fa.db.fz
+        curl -sL https://github.com/data-openneuro/disease/releases/download/ds001378/ds001378.dti_fa.db.fz -o ds001378.dti_fa.db.fz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Connectometry
       run: |
