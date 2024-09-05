@@ -64,6 +64,7 @@ MainWindow::MainWindow(QWidget *parent) :
     else
         ui->workDir->addItem(QDir::currentPath());
     ui->download_dir->setText(ui->workDir->currentText());
+    ui->github_token->setText(settings.value("github_token").toString());
 
     for(auto& temp : fib_template_list)
     {
@@ -320,6 +321,7 @@ MainWindow::~MainWindow()
         workdir_list << ui->workDir->itemText(index);
     std::swap(workdir_list[0],workdir_list[ui->workDir->currentIndex()]);
     settings.setValue("WORK_PATH", workdir_list);
+    settings.setValue("github_token", ui->github_token->text());
     delete ui;
 
 }
@@ -1412,6 +1414,25 @@ void MainWindow::on_tabWidget_currentChanged(int index)
     }
 }
 
+QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
+{
+    QNetworkRequest request;
+    request.setUrl(url);
+    request.setRawHeader("Accept", "application/json");
+    QString authToken = ui->github_token->text().trimmed();
+    if (!authToken.isEmpty())
+        request.setRawHeader("Authorization",
+                             QString("Bearer %1").arg(authToken).toUtf8());
+
+    return QSharedPointer<QNetworkReply>(manager.get(request),
+            [](QNetworkReply* reply)
+            {
+                if(reply->isRunning())
+                    reply->abort();
+                reply->deleteLater();
+            });
+}
+
 void MainWindow::on_github_repo_currentIndexChanged(int)
 {
     QString repo = ui->github_repo->currentText().split(' ').first();
@@ -1451,11 +1472,7 @@ void MainWindow::on_load_tags_clicked()
 {
     QString repo = ui->github_repo->currentText().split(' ').first();
     tipl::out() << "loading " << repo.toStdString();
-
-    QNetworkRequest request;
     QString url = QString("https://api.github.com/repos/%1/releases").arg(repo);
-    request.setRawHeader("Accept", "application/json");
-
     ui->github_tags->setSortingEnabled(false);
     ui->github_tags->setRowCount(0);
     ui->github_tags->setRowCount(1);
@@ -1473,9 +1490,9 @@ QString showError(reply_type reply)
         {302, "Found - The requested resource resides temporarily under a different URI."},
         {304, "Not Modified - The server has fulfilled the request, but the document has not been modified."},
         {400, "Bad Request - The request was invalid."},
-        {401, "Unauthorized - The request requires authentication."},
-        {403, "Forbidden - The request was a valid request, but the server is refusing to respond to it."},
-        {404, "Not Found - The requested resource could not be found."},
+        {401, "invalid auth token"},
+        {403, "rate limit reached. apply for a github auth token to increase bandwidth"},
+        {404, "repository currently not available"},
         {405, "Method Not Allowed - The request method is not supported for the requested resource."},
         {408, "Request Timeout - The server timed out waiting for the request."},
         {500, "Internal Server Error - The server encountered an unexpected condition."},
@@ -1498,15 +1515,11 @@ void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array)
         {
             if (reply->error() != QNetworkReply::OperationCanceledError)
             {
-                if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == 404)
-                {
-                    // Don't retry if 404 status code
-                    QMessageBox::critical(this, "ERROR",
-                                          QString("repository currently not available:\n%1")
-                                          .arg(reply->url().toString()));
-                    ui->load_tags->setEnabled(true);
-                }
-                else if (retryCount < 5)
+                auto status_code = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+                if (status_code != 401 && // invalid token
+                    status_code != 404 && // no repo
+                    status_code != 403 && // rate limit reached
+                    retryCount < 5)
                 {
                     int waitTime = 2 << retryCount; // 2, 4, 8, 16, 32 seconds
                     QTimer::singleShot(waitTime * 1000, this, [this, url, repo, array]()
@@ -1517,13 +1530,9 @@ void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array)
                 }
                 else
                 {
-                    retryCount = 0;
-
-                    QMessageBox::critical(this, "ERROR",
-                                          QString("%1\nURL: %2")
-                                          .arg(showError(reply))
-                                          .arg(reply->url().toString()));
-                    ui->load_tags->setEnabled(true);
+                    QMessageBox::critical(this, "ERROR",showError(reply));
+                    if(status_code == 401)
+                        ui->github_token->setText(QString());
                 }
             }
         }
