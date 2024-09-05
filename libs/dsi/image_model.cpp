@@ -2404,7 +2404,7 @@ bool src_data::save_to_file(const std::string& filename)
                 tipl::out() << "store raw DWI signals";
 
             for (unsigned int index = 0;prog(index,src_bvalues.size());++index)
-                mat_writer.write("image"+std::to_string(index),src_dwi_data[index],
+                mat_writer.write<tipl::io::masked_sloped>("image"+std::to_string(index),src_dwi_data[index],
                                                    voxel.dim.plane_size(),voxel.dim.depth());
 
             mat_writer.write("report",voxel.report);
