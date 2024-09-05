@@ -1775,12 +1775,24 @@ void MainWindow::on_github_open_file_clicked()
     if(row < 0)
         return;
 
-    QString filePath = ui->download_dir->text() + "/" + ui->github_release_files->item(row, 0)->text();
-    if (QFile::exists(filePath) && !ui->download_overwrite->isChecked())
+
+    QDir dir(QDir::tempPath() + "/" + ui->github_tags->item(ui->github_tags->currentRow(), 0)->text());
+    if (!dir.exists())
+    {
+        if(!dir.mkpath("."))
+        {
+            QMessageBox::critical(this,"ERROR","cannot create a temporary directory to store file");
+            return;
+        }
+    }
+
+    QString filePath = dir.path()+ "/" + ui->github_release_files->item(row, 0)->text();
+    if (QFile::exists(filePath))
     {
         openFile(QStringList() << filePath);
         return;
     }
+    tipl::out() << "download file to " << filePath.toStdString();
 
     auto reply = get(ui->github_release_files->item(row, 3)->text());
 
