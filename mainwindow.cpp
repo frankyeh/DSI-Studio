@@ -1466,22 +1466,70 @@ void MainWindow::on_load_tags_clicked()
     loadTags(QUrl(url),repo,QJsonArray());
 }
 
+template<typename reply_type>
+QString showError(reply_type reply)
+{
+    return QMap<int, QString>({{301, "Moved Permanently - The requested resource has been permanently moved to a new location."},
+        {302, "Found - The requested resource resides temporarily under a different URI."},
+        {304, "Not Modified - The server has fulfilled the request, but the document has not been modified."},
+        {400, "Bad Request - The request was invalid."},
+        {401, "Unauthorized - The request requires authentication."},
+        {403, "Forbidden - The request was a valid request, but the server is refusing to respond to it."},
+        {404, "Not Found - The requested resource could not be found."},
+        {405, "Method Not Allowed - The request method is not supported for the requested resource."},
+        {408, "Request Timeout - The server timed out waiting for the request."},
+        {500, "Internal Server Error - The server encountered an unexpected condition."},
+        {502, "Bad Gateway - The server received an invalid response from an upstream server."},
+        {503, "Service Unavailable - The server is currently unable to handle the request."},
+        {504, "Gateway Timeout - The server did not receive a timely response from an upstream server."},
+                                  }).value(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(), "Unknown status code.");
+}
+
 void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array)
 {
-
+    static int retryCount = 0;
     tipl::out() << "loading " << url.toString().toStdString();
 
     auto reply = get(url);
 
-    QObject::connect(reply.get(), &QNetworkReply::finished, this, [this, repo, reply, array]()
+    QObject::connect(reply.get(), &QNetworkReply::finished, this, [this, url, repo, reply, array]()
     {
         if (reply->error() != QNetworkReply::NoError)
         {
-            if(reply->error() != QNetworkReply::OperationCanceledError)
-                QMessageBox::critical(this,"ERROR",reply->errorString());
+            if (reply->error() != QNetworkReply::OperationCanceledError)
+            {
+                if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == 404)
+                {
+                    // Don't retry if 404 status code
+                    QMessageBox::critical(this, "ERROR",
+                                          QString("repository currently not available:\n%1")
+                                          .arg(reply->url().toString()));
+                    ui->load_tags->setEnabled(true);
+                }
+                else if (retryCount < 5)
+                {
+                    int waitTime = 2 << retryCount; // 2, 4, 8, 16, 32 seconds
+                    QTimer::singleShot(waitTime * 1000, this, [this, url, repo, array]()
+                    {
+                        retryCount++;
+                        loadTags(url, repo, array);
+                    });
+                }
+                else
+                {
+                    retryCount = 0;
+
+                    QMessageBox::critical(this, "ERROR",
+                                          QString("%1\nURL: %2")
+                                          .arg(showError(reply))
+                                          .arg(reply->url().toString()));
+                    ui->load_tags->setEnabled(true);
+                }
+            }
         }
         else
         {
+            retryCount = 0;
             QJsonArray array_ = array;
             foreach (const QJsonValue& release , QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).array())
                 array_.append(release);
@@ -1708,7 +1756,7 @@ void MainWindow::on_github_download_clicked()
 
         if (retry >= max_retry)
         {
-            QMessageBox::critical(this, "ERROR", reply->errorString());
+            QMessageBox::critical(this, "ERROR", showError(reply));
             return;
         }
         if (p2.aborted())
@@ -1816,7 +1864,7 @@ void MainWindow::on_github_open_file_clicked()
         if (reply->error() != QNetworkReply::NoError)
         {
             if(reply->error() != QNetworkReply::OperationCanceledError)
-                QMessageBox::critical(this, "ERROR", reply->errorString());
+                QMessageBox::critical(this, "ERROR", showError(reply));
         }
         else
         {
