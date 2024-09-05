@@ -1,6 +1,11 @@
 name: Test DSI Studio
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag'
+        required: true
+        default: '2024.06.12'  
   workflow_call:
 jobs:    
   test_animal_recon:
@@ -184,13 +189,29 @@ jobs:
 
   test_topup:
     runs-on: ubuntu-20.04
-    steps:
-    - name: Setup Environment
+    steps:        
+    - name: Cache FSL environment
+      id: cache-fsl
+      uses: actions/cache@v3
+      with:
+        path: /opt/fsl
+        key: ${{ runner.os }}-fsl6.0.5.2
+    - name: Prepare FSL environment
+      if: steps.cache-fsl.outputs.cache-hit != 'true'
+      run: curl -sSL https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.5.2-centos7_64.tar.gz | tar zxv --no-same-owner -C /opt --exclude='fsl/doc' --exclude='fsl/refdoc' --exclude='fsl/python/oxford_asl' --exclude='fsl/data/possum' --exclude='fsl/data/first' --exclude='fsl/data/mist' --exclude='fsl/data/atlases' --exclude='fsl/data/xtract_data' --exclude='fsl/extras/doc' --exclude='fsl/extras/man' --exclude='fsl/extras/src' --exclude='fsl/src'
+    - name: Download NIFTI and Convert
       run: |
         curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2004.zip" | jar x
         chmod 777 ./dsi-studio/dsi_studio
-    - name: Test GQI Recon
-      run: |
+        export OS="Linux"
+        export FSLDIR="/opt/fsl"
+        export FSL_DIR="$FSLDIR"
+        export FSLOUTPUTTYPE="NIFTI_GZ"
+        export FSLMULTIFILEQUIT="TRUE"
+        export LD_LIBRARY_PATH="$FSLDIR/lib:$LD_LIBRARY_PATH"
+        export FSLTCLSH="/usr/bin/tclsh"
+        export FSLWISH="/usr/bin/wish"
+        export PATH="$FSLDIR/bin:$PATH"        
         aws s3 sync --no-sign-request --region eu-west-1 --exclude "*" --include "*dwi.*" s3://openneuro.org/ds002080/sub-CON02/ses-postop . 
         ./dsi-studio/dsi_studio --action=src --bids=1 --topup_eddy=1 --source=./dwi
         
