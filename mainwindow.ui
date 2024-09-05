@@ -2643,22 +2643,27 @@ Tractography</string>
                 </item>
                 <item>
                  <property name="text">
-                  <string>data-hcp/abcd</string>
+                  <string>data-hcp/disease</string>
                  </property>
                 </item>
                 <item>
                  <property name="text">
-                  <string>data-openneuro/a</string>
+                  <string>data-openneuro/brain</string>
                  </property>
                 </item>
                 <item>
                  <property name="text">
-                  <string>tractography/data-healthy</string>
+                  <string>data-openneuro/disease</string>
                  </property>
                 </item>
                 <item>
                  <property name="text">
-                  <string>tractography/data-disease</string>
+                  <string>data-openneuro/spine</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>data-openneuro/animal</string>
                  </property>
                 </item>
                </widget>
