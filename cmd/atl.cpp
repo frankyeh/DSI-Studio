@@ -115,7 +115,7 @@ int atl(tipl::program_option<tipl::out>& po)
         }
 
         std::shared_ptr<fib_data> template_fib(new fib_data);
-        if(!template_fib->load_from_file(fib_template_list[template_id].c_str()))
+        if(!template_fib->load_from_file(fib_template_list[template_id]))
         {
             tipl::error() <<  template_fib->error_msg << std::endl;
             return 1;
@@ -156,10 +156,15 @@ int atl(tipl::program_option<tipl::out>& po)
                 index_name.push_back(line);
         }
 
-        if(reso > template_fib->vs[0] && !template_fib->resample_to(reso))
+        if(reso > template_fib->vs[0])
         {
-            tipl::error() << template_fib->error_msg << std::endl;
-            return 1;
+            std::shared_ptr<fib_data> new_template_fib(new fib_data);
+            if(!new_template_fib->load_at_resolution(fib_template_list[template_id],reso))
+            {
+                tipl::error() << new_template_fib->error_msg << std::endl;
+                return 1;
+            }
+            template_fib = new_template_fib;
         }
 
         for(size_t i = 0; i < index_name.size();++i)

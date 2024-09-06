@@ -299,12 +299,21 @@ void CreateDBDialog::on_create_data_base_clicked()
         }
         std::shared_ptr<fib_data> template_fib;
         template_fib.reset(new fib_data);
-        if(!template_fib->load_from_file(template_file_name.c_str()) ||
-           (fib_reso > template_fib->vs[0] && !template_fib->resample_to(fib_reso)))
+        if(!template_fib->load_from_file(template_file_name))
             {
                 QMessageBox::critical(this,"ERROR",template_fib->error_msg.c_str());
                 return;
             }
+        if(fib_reso > template_fib->vs[0])
+        {
+            std::shared_ptr<fib_data> new_template_fib(new fib_data);
+            if(!new_template_fib->load_at_resolution(template_file_name,fib_reso))
+            {
+                QMessageBox::critical(this,"ERROR",new_template_fib->error_msg.c_str());
+                return;
+            }
+            template_fib = new_template_fib;
+        }
 
         tipl::progress prog_("creating database");
         std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);

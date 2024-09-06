@@ -612,6 +612,8 @@ bool fib_data::load_from_file(const std::string& file_name)
         return false;
     return true;
 }
+
+
 bool fib_data::save_mapping(const std::string& index_name,const std::string& file_name)
 {
     tipl::progress prog("saving ",file_name.c_str());
@@ -1071,7 +1073,6 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         {
             if(mat.is_type<short>() && (cmd == "normalize" || cmd.find("filter") != std::string::npos || cmd.find("_value") != std::string::npos))
                 return;
-            mat_reader[i].converted_data_buf.clear();
             variant_image new_image;
             new_image.vs = vs;
             new_image.T = trans;
@@ -1080,7 +1081,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 return;
             if(tipl::begins_with(mat.name,"index"))
                 new_image.interpolation = false;
-
+            tipl::out() << mat_reader[i].name;
             if(!new_image.command(cmd,param))
             {
                 mat_reader.error_msg = "cannot perform ";
@@ -1106,6 +1107,20 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         return false;
     return !prog.aborted();
 }
+bool fib_data::load_at_resolution(const std::string& file_name,float vs)
+{
+    tipl::progress prog("opening ",file_name);
+    tipl::out() << "resample to resolution:" << vs;
+    if (!mat_reader.load_from_file(file_name,prog) ||
+        !modify_fib(mat_reader,"regrid",std::to_string(vs)))
+    {
+        error_msg = mat_reader.error_msg;
+        return false;
+    }
+    if(!load_from_mat())
+        return false;
+    return true;
+}
 bool fib_data::save_to_file(const std::string& file_name)
 {
     if(!modify_fib(mat_reader,"save",file_name))
@@ -1120,31 +1135,6 @@ void fib_data::remove_slice(size_t index)
 {
     mat_reader.remove(slices[index]->name);
     slices.erase(slices.begin()+index);
-}
-bool fib_data::resample_to(float resolution)
-{
-    if(!modify_fib(mat_reader,"regrid",std::to_string(resolution)))
-    {
-        error_msg = mat_reader.error_msg;
-        return false;
-    }
-    mat_reader.read("dimension",dim);
-    mat_reader.read("voxel_size",vs);
-    mat_reader.read("trans",trans_to_mni);
-
-    mask = tipl::make_image(mat_reader.read_as_type<char>("mask"),dim);
-    if(!mask.data())
-    {
-        error_msg = "no valid mask";
-        return false;
-    }
-    mat_reader.mask_rows = dim.plane_size();
-    mat_reader.mask_cols = dim.depth();
-    mat_reader.si2vi = tipl::get_sparse_index(mask);
-    tipl::out() << "new mask size: " << mask.shape() << " vs: " << vs << " voxels: " << mat_reader.si2vi.size();
-    for(auto& each : slices)
-        each->set_image(tipl::make_image(each->get_image().begin(),dim));
-    return true;
 }
 size_t match_volume(float volume);
 void fib_data::match_template(void)
