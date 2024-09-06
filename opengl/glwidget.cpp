@@ -822,6 +822,8 @@ void GLWidget::renderLR()
                 {
                     tipl::color_image texture;
                     current_slice->get_high_reso_slice(texture,dim,current_slice->slice_pos[dim],cur_tracking_window.overlay_slices);
+                    if(texture.empty())
+                        continue;
                     if(get_param("slice_match_bkcolor"))
                     {
                         auto slice_bk = texture[0];
