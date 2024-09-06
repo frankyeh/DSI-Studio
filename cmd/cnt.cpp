@@ -146,7 +146,10 @@ int cnt(tipl::program_option<tipl::out>& po)
         std::string report_file_name = vbc->output_file_name+".report.html";
         std::ofstream out(report_file_name.c_str());
         if(!out)
-            tipl::out() << "cannot output file to " << report_file_name << std::endl;
+        {
+            tipl::error() << "cannot output file to " << report_file_name << std::endl;
+            return 1;
+        }
         else
         {
             tipl::out() << "saving " << report_file_name;
