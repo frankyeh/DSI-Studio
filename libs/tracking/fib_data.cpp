@@ -1071,6 +1071,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         {
             if(mat.is_type<short>() && (cmd == "normalize" || cmd.find("filter") != std::string::npos || cmd.find("_value") != std::string::npos))
                 return;
+            mat_reader[i].converted_data_buf.clear();
             variant_image new_image;
             new_image.vs = vs;
             new_image.T = trans;
