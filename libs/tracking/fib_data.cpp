@@ -1033,6 +1033,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
     tipl::progress prog(cmd.c_str());
     size_t p = 0;
     bool failed = false;
+    bool first_mat = true;
     tipl::adaptive_par_for(mat_reader.size(),[&](unsigned int i)
     {
         if(!prog(p++,mat_reader.size()) || failed)
@@ -1076,7 +1077,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             new_image.shape = dim;
             if(!new_image.read_mat_image(i,mat_reader))
                 return;
-            if(mat.is_type<short>())
+            if(tipl::begins_with(mat.name,"index"))
                 new_image.interpolation = false;
 
             if(!new_image.command(cmd,param))
@@ -1087,24 +1088,15 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 return;
             }
 
-            mat.resize(tipl::vector<2,unsigned int>(new_image.shape.plane_size(),new_image.shape.depth()));
+            new_image.write_mat_image(i,mat_reader);
 
-            new_image.apply([&](const auto& image_data)
-            {
-                if(mat.is_type<short>())
-                    std::copy(image_data.begin(),image_data.end(),mat.get_data<short>());
-                if(mat.is_type<float>())
-                    std::copy(image_data.begin(),image_data.end(),mat.get_data<float>());
-                if(mat.is_type<char>())
-                    std::copy(image_data.begin(),image_data.end(),mat.get_data<char>());
-            });
-
-            if(mat.name == "fa0")
+            if(first_mat)
             {
                 std::copy(new_image.shape.begin(),new_image.shape.end(),const_cast<unsigned int*>(mat_reader.read_as_type<unsigned int>("dimension")));
                 std::copy(new_image.vs.begin(),new_image.vs.end(),const_cast<float*>(mat_reader.read_as_type<float>("voxel_size")));
                 if(is_mni)
                     std::copy(new_image.T.begin(),new_image.T.end(),const_cast<float*>(mat_reader.read_as_type<float>("trans")));
+                first_mat = false;
             }
         }
 
