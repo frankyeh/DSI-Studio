@@ -22,7 +22,20 @@ bool variant_image::command(std::string cmd,std::string param1)
     });
     return result;
 }
-
+void variant_image::write_mat_image(size_t index,
+                    tipl::io::gz_mat_read& mat)
+{
+    mat[index].resize(tipl::vector<2,unsigned int>(shape.plane_size(),shape.depth()));
+    apply([&](const auto& image_data)
+    {
+        if(mat[index].type_compatible<short>())
+            std::copy(image_data.begin(),image_data.end(),mat[index].get_data<short>());
+        if(mat[index].type_compatible<float>())
+            std::copy(image_data.begin(),image_data.end(),mat[index].get_data<float>());
+        if(mat[index].type_compatible<char>())
+            std::copy(image_data.begin(),image_data.end(),mat[index].get_data<char>());
+    });
+}
 
 bool variant_image::read_mat_image(size_t index,
                                    tipl::io::gz_mat_read& mat)
@@ -53,10 +66,14 @@ bool variant_image::read_mat_image(size_t index,
         pixel_type = int8;
         return true;
     }
-    I_float32.resize(shape);
-    mat.read(index,I_float32.begin(),I_float32.end());
-    pixel_type = float32;
-    return true;
+    if(mat[index].type_compatible<float>())
+    {
+        I_float32.resize(shape);
+        mat.read(index,I_float32.begin(),I_float32.end());
+        pixel_type = float32;
+        return true;
+    }
+    return false;
 }
 
 void variant_image::change_type(decltype(pixel_type) new_type)
