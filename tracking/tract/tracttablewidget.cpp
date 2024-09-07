@@ -843,8 +843,11 @@ void TractTableWidget::save_transformed_tracts(void)
         QMessageBox::critical(this,"ERROR","Current slice is in the DWI space. Please use regular tract saving function");
         return;
     }
-
-    slice->update_transform();
+    if(slice->running)
+    {
+        QMessageBox::critical(this,"ERROR","Please wait until registration is complete");
+        return;
+    }
     auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
     if(tract_models[uint32_t(currentRow())]->save_transformed_tracts_to_file(filename.toStdString().c_str(),slice->dim,slice->vs,slice->trans_to_mni,slice->to_slice,false))
         QMessageBox::information(this,QApplication::applicationName(),"File saved");
