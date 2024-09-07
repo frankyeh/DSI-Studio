@@ -1142,7 +1142,8 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
                 ui->SliceModality->setCurrentIndex(0);
                 return;
             }
-            start_reg();
+            if(current_custom_slice->running)
+                start_reg();
         }
         else
             current_slice->get_source();
