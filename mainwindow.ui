@@ -2648,6 +2648,11 @@ Tractography</string>
                 </item>
                 <item>
                  <property name="text">
+                  <string>data-abcd/abcd</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
                   <string>data-openneuro/brain</string>
                  </property>
                 </item>
@@ -2668,7 +2673,7 @@ Tractography</string>
                 </item>
                 <item>
                  <property name="text">
-                  <string>data-openneuro/test</string>
+                  <string>labsolver/disease</string>
                  </property>
                 </item>
                </widget>
