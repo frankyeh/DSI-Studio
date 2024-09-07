@@ -611,6 +611,8 @@ void CustomSliceModel::update_image(tipl::image<3>&& new_image)
 // ---------------------------------------------------------------------------
 void CustomSliceModel::update_transform(void)
 {
+    if(!running)
+        return;
     tipl::transformation_matrix<float> M(arg_min,dim,vs,handle->dim,handle->vs);
     to_dif.identity();
     M.save_to_transform(to_dif.begin());
