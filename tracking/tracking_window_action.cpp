@@ -726,9 +726,11 @@ void tracking_window::check_reg(void)
         if(reg_slice.get())
         {
             if(reg_slice->running)
+            {
                 all_ended = false;
-            reg_slice->update_transform();
-            tipl::out() << "update transform";
+                reg_slice->update_transform();
+                tipl::out() << "update transform";
+            }
         }
     }
     slice_need_update = true;
