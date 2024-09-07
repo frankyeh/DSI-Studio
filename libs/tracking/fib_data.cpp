@@ -911,11 +911,17 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
               const std::vector<std::string>& skip_head_list)
 {
     tipl::progress prog("saving");
-    matfile.apply_slope = true;
-    matfile.apply_mask = true;
-    matfile.mask_rows = mat_reader.mask_rows;
-    matfile.mask_cols = mat_reader.mask_cols;
-    matfile.si2vi = mat_reader.si2vi;
+    if(!mat_reader.si2vi.empty())
+    {
+        tipl::out() << "enabled masked format";
+        matfile.apply_slope = true;
+        matfile.apply_mask = true;
+        matfile.mask_rows = mat_reader.mask_rows;
+        matfile.mask_cols = mat_reader.mask_cols;
+        matfile.si2vi = mat_reader.si2vi;
+    }
+    else
+        tipl::out() << "no mask information. saving unmasked format";
 
     for(unsigned int index = 0;prog(index,mat_reader.size());++index)
     {
@@ -942,26 +948,25 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
             continue;
         mat_reader.flush(index);
 
-        // convert older format data
-        if(mat_reader[index].size() == matfile.mask_cols*matfile.mask_rows && mat_reader[index].sub_data.empty())
+        // apply mask
+        if(mat_reader[index].size() == matfile.mask_cols*matfile.mask_rows && mat_reader[index].name != "mask")
         {
-            if(mat_reader[index].is_type<float>()) // metrics
-            {
-                tipl::out() << "convert " << mat_reader[index].name << " data into masked sloped format";
+            tipl::out() << "convert " << name << " data into masked format";
+            if(mat_reader[index].is_type<float>())
                 matfile.write<tipl::io::masked_sloped>(name,mat_reader.read_as_type<float>(index),
-                                                       mat_reader.rows(index),mat_reader.cols(index));
-                continue;
-            }
-            if(mat_reader[index].is_type<short>()) // index
-            {
-                tipl::out() << "convert " << mat_reader[index].name << " data into masked format";
+                                                       matfile.mask_rows,matfile.mask_cols);
+            if(mat_reader[index].is_type<short>()) // index no slope
                 matfile.write<tipl::io::masked>(name,mat_reader.read_as_type<short>(index),
-                                                mat_reader.rows(index),mat_reader.cols(index));
-                continue;
-            }
+                                                matfile.mask_rows,matfile.mask_cols);
+            if(mat_reader[index].is_type<char>())
+                matfile.write<tipl::io::masked>(name,mat_reader.read_as_type<char>(index),
+                                                matfile.mask_rows,matfile.mask_cols);
+            for(auto each : mat_reader[index].sub_data)
+                matfile.write(*each.get());
+            continue;
         }
 
-        tipl::out() << "save " << name << " as is";
+        tipl::out() << "store " << name << " as is";
         matfile.write(mat_reader[index]);
     }
     return !prog.aborted();
