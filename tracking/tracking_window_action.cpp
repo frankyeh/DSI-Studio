@@ -729,7 +729,6 @@ void tracking_window::check_reg(void)
             {
                 all_ended = false;
                 reg_slice->update_transform();
-                tipl::out() << "update transform";
             }
         }
     }
@@ -759,7 +758,7 @@ bool tracking_window::addSlices(const std::string& name,const std::string& path)
 void tracking_window::start_reg(void)
 {
     timer2.reset(new QTimer());
-    timer2->setInterval(1000);
+    timer2->setInterval(500);
     connect(timer2.get(), SIGNAL(timeout()), this, SLOT(check_reg()));
     timer2->start();
 }
@@ -916,8 +915,7 @@ void tracking_window::insertPicture()
     if(QMessageBox::Yes == QMessageBox::question(this,QApplication::applicationName(),"Apply registration?",QMessageBox::No | QMessageBox::Yes))
     {
         reg_slice_ptr->run_registration();
-        if(reg_slice_ptr->running)
-            start_reg();
+        start_reg();
     }
     else
         QMessageBox::information(this,QApplication::applicationName(),"Press Ctrl+A and then hold LEFT/RIGHT button to MOVE/RESIZE slice close to the target before using [Slices][Adjust Mapping]");
