@@ -1725,13 +1725,18 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,
     if(!load_track_atlas())
         return false;
     labels.resize(trk->get_tracts().size());
-    tipl::adaptive_par_for(trk->get_tracts().size(),[&](size_t i)
-    {
-        if(trk->get_tracts()[i].empty())
-            return;
-        labels[i] = find_nearest_contain(&(trk->get_tracts()[i][0]),uint32_t(trk->get_tracts()[i].size()),track_atlas->get_tracts(),track_atlas->tract_cluster);
-    });
 
+    tipl::progress prog("recognizing tracks");
+    size_t total = 0;
+    tipl::par_for(trk->get_tracts().size(),[&](size_t i)
+    {
+        if(trk->get_tracts()[i].empty() || prog.aborted())
+            return;
+        prog(total++,trk->get_tracts().size());
+        labels[i] = find_nearest_contain(&(trk->get_tracts()[i][0]),uint32_t(trk->get_tracts()[i].size()),track_atlas->get_tracts(),track_atlas->tract_cluster);
+    },std::thread::hardware_concurrency());
+    if(prog.aborted())
+        return false;
     std::vector<unsigned int> count(tractography_name_list.size());
     for(auto l : labels)
     {
