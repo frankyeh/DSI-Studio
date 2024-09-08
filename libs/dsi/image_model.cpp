@@ -2103,7 +2103,8 @@ std::string src_data::find_topup_reverse_pe(void)
         {
             // skip those nii files generated for topup or eddy
             if(tipl::contains(file,".src.gz.") ||
-               tipl::contains(file,".sz."))
+               tipl::contains(file,".sz.") ||
+               tipl::contains(file,std::filesystem::path(file_name).filename().string()))
                 continue;
             tipl::out() << "checking " << file;
             tipl::io::gz_nifti nii;
@@ -2130,9 +2131,16 @@ std::string src_data::find_topup_reverse_pe(void)
                 continue;
             auto c = phase_direction_at_AP_PA(b0[0],b0_op);
             if(c[0] + c[1] < 1.8f) // 0.9 + 0.9
-                tipl::out() << "correlation with b0 is low. skipping..." << std::endl;
-            else
-                candidates[std::fabs(c[0]-c[1])] = file;
+            {
+                tipl::out() << "correlation with b0 is low. skipping...";
+                continue;
+            }
+            if(c[0] == c[1])
+            {
+                tipl::out() << "not opposite direction image. skipping...";
+                continue;
+            }
+            candidates[std::fabs(c[0]-c[1])] = file;
         }
     }
     if(candidates.empty())
