@@ -148,12 +148,13 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
 
         if(phase_str.empty())
         {
-            if(std::filesystem::path(each).filename().string().find("_AP") != std::string::npos ||
-               std::filesystem::path(each).filename().string().find("AP_") != std::string::npos)
-                phase_str = "ap";
-            if(std::filesystem::path(each).filename().string().find("_PA") != std::string::npos ||
-               std::filesystem::path(each).filename().string().find("PA_") != std::string::npos)
-                phase_str = "pa";
+            auto file_name = std::filesystem::path(each).filename().string();
+            for(auto dir : {"_ap","ap_","_pa","pa_","_lr","lr_","_rl","rl_"})
+                if(tipl::contains_case_insensitive(file_name,dir))
+                {
+                    tipl::out() << file_name << " filename suggests phase direction is " << (phase_str = dir);
+                    break;
+                }
         }
 
         tipl::io::gz_nifti nii;
