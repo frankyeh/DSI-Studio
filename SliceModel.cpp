@@ -589,6 +589,7 @@ bool CustomSliceModel::load_slices(void)
 
 void CustomSliceModel::run_registration(void)
 {
+    running = true;
     if(tipl::show_prog)
         thread.reset(new std::thread([this](){argmin();}));
     else
@@ -624,7 +625,6 @@ void CustomSliceModel::update_transform(void)
 void CustomSliceModel::argmin(void)
 {
     terminated = false;
-    running = true;
     view->registering = true;
 
     auto to = subject_image_pre(tipl::image<3>(source_images));
