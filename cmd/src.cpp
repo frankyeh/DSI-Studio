@@ -225,7 +225,6 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
             error_msg = src.error_msg;
             return false;
         }
-        src.file_name = src_name;
 
         {
             std::string intro_file_name("README");
@@ -243,7 +242,6 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
                 error_msg = src.error_msg;
                 return false;
             }
-            src.rev_pe_src->file_name = rsrc_name;
         }
 
         if(topup_eddy)
@@ -266,14 +264,14 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
         {
             if(src.rev_pe_src.get())
             {
-                if(!src.rev_pe_src->save_to_file(src.rev_pe_src->file_name))
+                if(!src.rev_pe_src->save_to_file(rsrc_name))
                 {
                     error_msg = src.rev_pe_src->error_msg;
                     return false;
                 }
             }
         }
-        if(!src.save_to_file(src.file_name))
+        if(!src.save_to_file(src_name))
         {
             error_msg = src.error_msg;
             return false;
