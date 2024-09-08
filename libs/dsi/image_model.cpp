@@ -2105,24 +2105,26 @@ std::string src_data::find_topup_reverse_pe(void)
             if(tipl::contains(file,".src.gz.") ||
                tipl::contains(file,".sz."))
                 continue;
-            std::string path = working_path() + file;
             tipl::out() << "checking " << file;
             tipl::io::gz_nifti nii;
-            if(!nii.load_from_file(path.c_str()))
+            if(!nii.load_from_file(file))
+            {
+                tipl::out() << "cannot open " << file << " " << nii.error_msg;
                 continue;
+            }
             if(nii.width()*nii.height()*nii.depth() != dwi.size())
             {
-                tipl::out() << path << " has a different image size " <<
+                tipl::out() << file << " has a different image size " <<
                                tipl::shape<3>(nii.width(),nii.height(),nii.depth())
                                << ", skipping" << std::endl;
                 continue;
             }
             if(nii.dim(4) > 8)
             {
-                tipl::out() << path << " is likely non-b0 4d nifti, skipping" << std::endl;
+                tipl::out() << file << " is likely non-b0 4d nifti, skipping" << std::endl;
                 continue;
             }
-            tipl::out() << "candidate found: " << path << std::endl;
+            tipl::out() << "candidate found: " << file << std::endl;
             tipl::image<3> b0_op,each;
             if(!(nii >> b0_op))
                 continue;
@@ -2130,7 +2132,7 @@ std::string src_data::find_topup_reverse_pe(void)
             if(c[0] + c[1] < 1.8f) // 0.9 + 0.9
                 tipl::out() << "correlation with b0 is low. skipping..." << std::endl;
             else
-                candidates[std::fabs(c[0]-c[1])] = path;
+                candidates[std::fabs(c[0]-c[1])] = file;
         }
     }
     if(candidates.empty())
