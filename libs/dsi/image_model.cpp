@@ -2489,6 +2489,7 @@ bool src_data::load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_file
         error_msg = "no DWI data";
         return false;
     }
+    file_name = dwi_files.front()->file_name;
     if(sort_btable)
         sort_dwi(dwi_files);
 
