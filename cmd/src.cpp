@@ -119,12 +119,15 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
     // extract all information
     for(const auto& each : dwi_nii_files)
     {
-        if (!tipl::ends_with(each,".nii.gz"))
+        if (!tipl::ends_with(each,".nii.gz") &&
+            !tipl::ends_with(each,".nii"))
         {
             error_msg = "not a nifti gz file: ";
             error_msg += each;
             return false;
         }
+        auto file_name = std::filesystem::path(dwi_file.back()).filename().u8string();
+        tipl::out() << "opening " << file_name;
         if (tipl::contains(each,".sz."))
         {
             tipl::out() << "ignore file with '.sz.':" << each;
@@ -134,11 +137,10 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
         json.erase(json.size()-7);
         json += ".json";
 
-        tipl::out() << "looking for json file: " << json;
         QFile input_file(json.c_str());
         if (input_file.open(QIODevice::ReadOnly | QIODevice::Text))
         {
-            tipl::out () << "read json file : " << json;
+            tipl::out () << "read json : " << json;
             QJsonDocument json_doc = QJsonDocument::fromJson(input_file.readAll());
             if (json_doc.isObject() && json_doc.object().contains("PhaseEncodingDirection"))
                 phase_str = json_doc.object()["PhaseEncodingDirection"].toString().toStdString();
@@ -148,7 +150,6 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
 
         if(phase_str.empty())
         {
-            auto file_name = std::filesystem::path(each).filename().string();
             for(auto dir : {"_ap","ap_","_pa","pa_","_lr","lr_","_rl","rl_"})
                 if(tipl::contains_case_insensitive(file_name,dir))
                 {
@@ -168,12 +169,8 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
         nii.get_image_dimension(s);
         image_size.push_back(s);
         phase_dir.push_back(phase_str);
-
         dwi_file.push_back(each);
-        tipl::out() << std::filesystem::path(dwi_file.back()).filename().u8string();
-        tipl::out() << "image size: " << image_size.back();
-        tipl::out() << "dwi count: " << dwi_count.back();
-        tipl::out() << "phase encoding: " << phase_dir.back();
+        tipl::out() << "image size: " << image_size.back() << " dwi count: " << dwi_count.back() << " phase encoding: " << phase_dir.back();
     }
     auto arg = tipl::arg_sort(dwi_count,std::greater<float>());
     tipl::reorder(dwi_file,arg);
