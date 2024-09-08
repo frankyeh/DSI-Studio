@@ -1844,7 +1844,7 @@ bool src_data::load_topup_eddy_result(void)
 
 bool src_data::run_applytopup(std::string exec)
 {
-    tipl::out() << "run applytopup";
+    tipl::progress prog("run applytopup");
     if(!std::filesystem::exists(topup_result()))
     {
         error_msg = "applytopup cannot find ";
@@ -1962,24 +1962,11 @@ bool eddy_check_shell(const std::vector<float>& bvalues,std::string& cause)
 }
 bool src_data::run_eddy(std::string exec)
 {
-    {
-        std::string cause;
-        if(!eddy_check_shell(src_bvalues,cause))
-        {
-            tipl::out() << "cannot run eddy due to " << cause << ". run motion correction on DSI Studio instead." << std::endl;
-            return correct_motion();
-        }
-    }
     if(voxel.report.find("rotated") != std::string::npos)
     {
         error_msg = "eddy cannot be applied to motion corrected or rotated images";
         return false;
     }
-    tipl::progress prog("run eddy");
-    std::string mask_nifti = file_name+".mask.nii.gz";
-    std::string index_file = file_name+".index.txt";
-    std::string bval_file = file_name+".bval";
-    std::string bvec_file = file_name+".bvec";
     bool has_topup = std::filesystem::exists(topup_result());
     if(!has_topup)
     {
@@ -1989,9 +1976,26 @@ bool src_data::run_eddy(std::string exec)
         std::ofstream out(acqparam_file());
         out << "0 -1 0 0.05" << std::endl;
     }
+    {
+        std::string cause;
+        if(!eddy_check_shell(src_bvalues,cause))
+        {
+            error_msg = "cannot run eddy due to "+cause;
+            if(!has_topup)
+                return false;
+            tipl::warning() << error_msg;
+            error_msg.clear();
+            return run_applytopup();
+        }
+    }
     if(!save_nii_for_applytopup_or_eddy(true))
         return false;
 
+    tipl::progress prog("run eddy");
+    std::string mask_nifti = file_name+".mask.nii.gz";
+    std::string index_file = file_name+".index.txt";
+    std::string bval_file = file_name+".bval";
+    std::string bvec_file = file_name+".bvec";
     {
         tipl::image<3,unsigned char> I(topup_size);
         tipl::reshape(voxel.mask,I);
