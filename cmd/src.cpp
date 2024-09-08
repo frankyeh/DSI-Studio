@@ -122,17 +122,17 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
         if (!tipl::ends_with(each,".nii.gz") &&
             !tipl::ends_with(each,".nii"))
         {
-            error_msg = "not a nifti file: ";
-            error_msg += each;
-            return false;
+            tipl::out() << "ignore " << each << " : not a nifti file";
+            continue;
         }
-        auto file_name = std::filesystem::path(each).filename().u8string();
-        tipl::out() << "opening " << file_name;
         if (tipl::contains(each,".sz."))
         {
             tipl::out() << "ignore file with '.sz.':" << each;
             continue;
         }
+        auto file_name = std::filesystem::path(each).filename().u8string();
+        tipl::out() << "opening " << file_name;
+
         std::string json(each),phase_str;
         json.erase(json.size()-7);
         json += ".json";
