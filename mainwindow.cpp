@@ -1844,22 +1844,20 @@ void MainWindow::on_github_open_file_clicked()
     }
 
     QString filePath = dir.path()+ "/" + ui->github_release_files->item(row, 0)->text();
-    if (QFile::exists(filePath))
+    qint64 bytesTotal = ui->github_release_files->item(row, 1)->data(Qt::UserRole).toLongLong();
+    if (QFile::exists(filePath) && QFileInfo(filePath).size() == bytesTotal)
     {
         openFile(QStringList() << filePath);
         return;
     }
     tipl::out() << "download file to " << filePath.toStdString();
-
     auto reply = get(ui->github_release_files->item(row, 3)->text());
 
     // Create a progress dialog
     QProgressDialog progressDialog("Downloading...", "Cancel", 0, 100, this);
     progressDialog.setModal(true);
     progressDialog.show();
-
     qint64 bytesReceived = 0;
-    qint64 bytesTotal = ui->github_release_files->item(row, 1)->data(Qt::UserRole).toLongLong();
     QEventLoop loop;
 
     QObject::connect(reply.get(), &QNetworkReply::readyRead, this,
