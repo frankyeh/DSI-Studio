@@ -1839,6 +1839,7 @@ bool src_data::load_topup_eddy_result(void)
     }
     voxel.report += topup_eddy_report;
     calculate_dwi_sum(true);
+    apply_mask = true;
     return true;
 }
 
@@ -1897,7 +1898,6 @@ bool src_data::run_applytopup(std::string exec)
     std::filesystem::remove(temp_nifti());
     if(rev_pe_src.get())
         std::filesystem::remove(rev_pe_src->file_name+".nii.gz");
-    apply_mask = true;
     return true;
 }
 
@@ -2066,7 +2066,6 @@ bool src_data::run_eddy(std::string exec)
         error_msg += " please check if memory is enough to run eddy";
         return false;
     }
-    apply_mask = true;
     std::filesystem::remove(temp_nifti());
     std::filesystem::remove(mask_nifti);
     return true;
