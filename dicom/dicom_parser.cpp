@@ -434,8 +434,6 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
                     data[i] = 0;
         new_file->image = data;
         new_file->file_name = file_name;
-        new_file->file_name += ":";
-        new_file->file_name += std::to_string(index);
         new_file->voxel_size = vs;
         if(!bvals.empty())
         {
