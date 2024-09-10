@@ -1452,10 +1452,22 @@ void MainWindow::on_github_repo_currentIndexChanged(int)
     {
         QJsonObject releaseObject = release.toObject();
         auto asset = releaseObject.value("assets").toArray();
+
+        std::set<std::string> names;
+        foreach (const auto& each,asset)
+        {
+            auto file_name = each.toObject().value("name").toString().toStdString();
+            if(!tipl::ends_with(file_name,".fz") && !tipl::ends_with(file_name,".sz"))
+                continue;
+            if(tipl::ends_with(file_name,".db.fz") || tipl::ends_with(file_name,".qsdr.fz"))
+                continue;
+            names.insert(file_name.substr(0,file_name.find('.')));
+        }
+
         int row = ui->github_tags->rowCount();
         ui->github_tags->insertRow(row);
         ui->github_tags->setItem(row, 0, new QTableWidgetItem(releaseObject.value("tag_name").toString()));
-        ui->github_tags->setItem(row, 1, new QTableWidgetItem(QString::number(asset.size())));
+        ui->github_tags->setItem(row, 1, new QTableWidgetItem(QString::number(names.size())));
         ui->github_tags->setItem(row, 2, new QTableWidgetItem(releaseObject.value("name").toString()));
         notes[releaseObject.value("tag_name").toString()] = releaseObject.value("body").toString();
         assets[releaseObject.value("tag_name").toString()] = asset;
