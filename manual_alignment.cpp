@@ -101,6 +101,7 @@ void manual_alignment::warp_image(void)
         if(image_need_update && warped_from.shape() == to.shape())
         {
             warp_image_ready = false;
+            warped_from = 0;
             tipl::resample(from,warped_from,iT);
             image_need_update = false;
             warp_image_ready = true;
