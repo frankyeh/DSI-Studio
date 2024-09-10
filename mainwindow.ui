@@ -2733,7 +2733,7 @@ Tractography</string>
               </column>
               <column>
                <property name="text">
-                <string>Files</string>
+                <string>Scans</string>
                </property>
               </column>
               <column>
