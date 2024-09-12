@@ -216,6 +216,12 @@ public:
     {
         return tipl::transformation_matrix<float,dimension>(arg,It[0].shape(),Itvs,I[0].shape(),Ivs);
     }
+    auto invT(void) const
+    {
+        auto t = tipl::transformation_matrix<float,dimension>(arg,It[0].shape(),Itvs,I[0].shape(),Ivs);
+        t.inverse();
+        return t;
+    }
     bool data_ready(void) const
     {
         return !I[0].empty() && !It[0].empty();
@@ -413,7 +419,27 @@ public:
         }
         return to;
     }
+    auto apply_inv_warping(const tipl::image<dimension>& to,bool is_label) const
+    {
+        tipl::image<dimension> from(I[0].shape());
+        if(is_label)
+        {
+            if(from2to.empty())
+                tipl::resample<tipl::interpolation::nearest>(to,from,invT());
+            else
+                tipl::compose_mapping<tipl::interpolation::nearest>(to,from2to,from);
+        }
+        else
+        {
+            if(from2to.empty())
+                tipl::resample<tipl::interpolation::cubic>(to,from,invT());
+            else
+                tipl::compose_mapping<tipl::interpolation::cubic>(to,from2to,from);
+        }
+        return to;
+    }
     bool apply_warping(const char* from,const char* to) const;
+    bool apply_inv_warping(const char* from,const char* to) const;
     bool apply_warping_tt(const char* from,const char* to) const;
     bool load_warping(const std::string& filename)
     {
