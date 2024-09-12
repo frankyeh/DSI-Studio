@@ -116,7 +116,8 @@ public:
             I[id] = Ic;
             tipl::segmentation::normalize_otsu_median(I[id]);
             Ivs = {1.0f,1.0f};
-            clear_reg();
+            if(id == 0)
+                clear_reg();
             return true;
         }
         else
@@ -150,7 +151,8 @@ public:
                 if(I[id].shape() != I[0].shape() || I2R != IR)
                     I[id] = tipl::resample(I[id],I[0].shape(),tipl::from_space(IR).to(I2R));
             }
-            clear_reg();
+            if(id == 0)
+                clear_reg();
             return true;
         }
     }
@@ -169,7 +171,8 @@ public:
             It[id] = Ic;
             tipl::normalize(It[id]);
             Itvs = {1.0f,1.0f};
-            clear_reg();
+            if(id == 0)
+                clear_reg();
             return true;
         }
         else
@@ -204,7 +207,8 @@ public:
                 if(It[id].shape() != It[0].shape() || It2R != ItR)
                     It[id] = tipl::resample(It[id],It[0].shape(),tipl::from_space(ItR).to(It2R));
             }
-            clear_reg();
+            if(id == 0)
+                clear_reg();
             return true;
         }
     }
