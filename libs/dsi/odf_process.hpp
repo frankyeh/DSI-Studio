@@ -414,7 +414,6 @@ struct SaveMetrics : public BaseProcess
 {
 protected:
     SearchLocalMaximum lm;
-    std::mutex mutex;
     ODFShaping shaping;
     std::vector<std::vector<short> > findex;
 protected:
