@@ -447,6 +447,9 @@ void reconstruction_window::on_doDTI_clicked()
         }
     }
     handle = ref_handle;
+    update_dimension();
+    load_b_table();
+    on_SlicePos_valueChanged(ui->SlicePos->value());
 }
 
 void reconstruction_window::on_DTI_toggled(bool checked)
