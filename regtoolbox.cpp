@@ -206,8 +206,12 @@ void RegToolBox::on_OpenSubject_clicked()
            QFileInfo(new_file_name.c_str()).exists())
         load_subject2(new_file_name);
     else
-        if(QFileInfo(QString(filename).replace("qa","iso")).exists())
-            load_subject2(QString(filename).replace("qa","iso").toStdString());
+    if(filename.contains("qa"))
+    {
+        auto iso_file_name = QString(filename).replace("qa","iso");
+        if(QFileInfo(iso_file_name).exists())
+            load_subject2(iso_file_name.toStdString());
+    }
 
     if(filename.contains("qa") && reg.It[0].empty())
     {
@@ -281,16 +285,24 @@ struct image_fascade{
 };
 
 template<typename T,typename U>
-inline void show_slice_at(QGraphicsScene& scene,const T& source1,const U& source2,
+inline tipl::color_image show_slice_at(const T& source1,const U& source2,
                           const T& source3,const U& source4,
                    const tipl::value_to_color<float>& v2c_1,
                    const tipl::value_to_color<float>& v2c_2,
                    int slice_pos,float ratio,uint8_t cur_view,uint8_t style)
 {
-    auto I1 = v2c_1[tipl::volume2slice_scaled(source1,cur_view,slice_pos,ratio)];
-    auto I2 = v2c_2[tipl::volume2slice_scaled(source2,cur_view,slice_pos,ratio)];
-    auto I3 = v2c_1[tipl::volume2slice_scaled(source3,cur_view,slice_pos,ratio)];
-    auto I4 = v2c_2[tipl::volume2slice_scaled(source4,cur_view,slice_pos,ratio)];
+    tipl::color_image I1,I2,I3,I4;
+    tipl::par_for(4,[&](size_t i)
+    {
+        if(i == 0)
+            I1 = std::move(v2c_1[tipl::volume2slice_scaled(source1,cur_view,slice_pos,ratio)]);
+        if(i == 1)
+            I2 = std::move(v2c_2[tipl::volume2slice_scaled(source2,cur_view,slice_pos,ratio)]);
+        if(i == 2)
+            I3 = std::move(v2c_1[tipl::volume2slice_scaled(source3,cur_view,slice_pos,ratio)]);
+        if(i == 3)
+            I4 = std::move(v2c_2[tipl::volume2slice_scaled(source4,cur_view,slice_pos,ratio)]);
+    },4);
     switch(style)
     {
     case 0:
@@ -340,14 +352,12 @@ inline void show_slice_at(QGraphicsScene& scene,const T& source1,const U& source
         }
         break;
     }
-
     if(cur_view != 2)
     {
         tipl::flip_y(I1);
         tipl::flip_y(I2);
         tipl::flip_y(I3);
         tipl::flip_y(I4);
-
     }
     tipl::color_image buffer(tipl::shape<2>(I1.width()+I2.width(),I1.height()+I3.height()));
     tipl::draw(I1,buffer,tipl::vector<2,int>());
@@ -357,15 +367,16 @@ inline void show_slice_at(QGraphicsScene& scene,const T& source1,const U& source
         tipl::draw(I3,buffer,tipl::vector<2,int>(0,I1.height()));
         tipl::draw(I4,buffer,tipl::vector<2,int>(I1.width(),I1.height()));
     }
-    scene << (QImage() << buffer);
+    return buffer;
 }
 
 
 void RegToolBox::show_image(void)
 {
+    tipl::out() << "show image" << ui->subject_slice_pos->value();
     // paint the template side
     if(!reg.It.empty())
-        show_slice_at(It_scene,
+        It_scene << (QImage() << show_slice_at(
                       reg.It[0],
                       image_fascade<3>(reg.I[0],
                                        reg.It[0],reg.t2f_dis,reg.T()),
@@ -373,7 +384,7 @@ void RegToolBox::show_image(void)
                       image_fascade<3>(reg.I[1],
                                        reg.It[1],reg.t2f_dis,reg.T()),
                       v2c_It,v2c_I,ui->template_slice_pos->value(),
-                      ui->zoom_template->value(),template_cur_view,blend_style());
+                      ui->zoom_template->value(),template_cur_view,blend_style()));
     // paint the subject side
     if(!reg_2d.I.empty() && !reg_2d.I[0].empty())
     {
@@ -389,18 +400,18 @@ void RegToolBox::show_image(void)
             if(template_cur_view != 2)
                 tipl::flip_y(It2d);
         }
-        show_slice_at(I_scene,
+        I_scene << (QImage() << show_slice_at(
                       reg_2d.I[0],
                       image_fascade<2>(It2d,reg_2d.I[0],reg_2d.f2t_dis,invT),
                       reg_2d.I[1],
                       image_fascade<2>(It2d,reg_2d.I[1],reg_2d.f2t_dis,invT),
-                      v2c_I,v2c_It,0,ui->zoom_subject->value(),2,blend_style());
+                      v2c_I,v2c_It,0,ui->zoom_subject->value(),2,blend_style()));
     }
     if(!reg.I.empty())
     {
         auto invT = reg.T();
         invT.inverse();
-        show_slice_at(I_scene,
+        I_scene << (QImage() << show_slice_at(
                       reg.I[0],
                       image_fascade<3>(reg.It[0],
                                        reg.I[0],reg.f2t_dis,invT),
@@ -408,7 +419,7 @@ void RegToolBox::show_image(void)
                       image_fascade<3>(reg.It[1],
                                        reg.I[1],reg.f2t_dis,invT),
                       v2c_I,v2c_It,ui->subject_slice_pos->value(),ui->zoom_subject->value(),
-                      subject_cur_view,blend_style());
+                      subject_cur_view,blend_style()));
     }
 
     // Show subject image on the left
