@@ -1903,7 +1903,8 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
                 slice->arg_min.scaling[1] += dis[1]*0.005f;
                 slice->arg_min.scaling[2] += dis[2]*0.005f;
             }
-            slice->update_transform();
+            if(slice->running)
+                slice->update_transform();
             update();
         }
         return;
