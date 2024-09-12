@@ -39,6 +39,7 @@ struct dual_reg{
     static constexpr int dimension = dim;
     static constexpr int max_modality = 5;
     using image_type = tipl::image<dimension,unsigned char>;
+    using mapping_type = tipl::image<dimension,tipl::vector<dimension> >;
     tipl::affine_transform<float,dimension> arg;
     const float (*bound)[8] = tipl::reg::reg_bound;
     tipl::reg::cost_type cost_type = tipl::reg::corr;
@@ -54,12 +55,13 @@ public:
     dual_reg(void):I(max_modality),J(max_modality),It(max_modality),r(max_modality)
     {
     }
-    std::vector<image_type> I,J,It;
+    std::vector<image_type> I,J,It,JJ;
     std::vector<float> r;
     size_t modality_count = 0;
-    tipl::image<dimension,tipl::vector<dimension> > t2f_dis,to2from,f2t_dis,from2to;
+    mapping_type t2f_dis,to2from,f2t_dis,from2to;
     tipl::vector<dimension> Itvs,Ivs;
     tipl::matrix<dimension+1,dimension+1> ItR,IR;
+
 
     mutable std::string error_msg;
     void clear(void)
@@ -74,6 +76,8 @@ public:
     {
         J.clear();
         J.resize(max_modality);
+        JJ.clear();
+        JJ.resize(max_modality);
         r.clear();
         r.resize(max_modality);
         t2f_dis.clear();
@@ -141,12 +145,10 @@ public:
             }
             else
             {
-                if(I[id].shape() != I[0].shape())
-                {
-                    error_msg = "inconsistent image size:";
-                    I[id].clear();
-                    return false;
-                }
+                tipl::matrix<dimension+1,dimension+1> I2R;
+                nifti.get_image_transformation(I2R);
+                if(I[id].shape() != I[0].shape() || I2R != IR)
+                    I[id] = tipl::resample(I[id],I[0].shape(),tipl::from_space(IR).to(I2R));
             }
             clear_reg();
             return true;
@@ -310,10 +312,29 @@ public:
         tipl::inv_displacement_to_mapping(f2t_dis,from2to,trans);
         tipl::displacement_to_mapping(t2f_dis,to2from,trans);
     }
+    void report_cdm_correlation(void)
+    {
+        tipl::par_for(modality_count,[&](size_t i)
+        {
+            JJ[i] = tipl::compose_mapping(I[i],to2from);
+            r[i] = tipl::correlation(JJ[i],It[i]);
+        },modality_count);
+        for(size_t i = 0;i < modality_count;++i)
+            tipl::out() << "nonlinear: " << r[i];
+    }
+
     void nonlinear_reg(bool& terminated)
     {
         tipl::progress prog("nonlinear registration");
-        if(!skip_nonlinear)
+        if(skip_nonlinear)
+        {
+            f2t_dis.clear();
+            t2f_dis.clear();
+            f2t_dis.resize(J[0].shape());
+            t2f_dis.resize(J[0].shape());
+            return;
+        }
+
         tipl::par_for(2,[&](int id)
         {
             if(id)
@@ -321,31 +342,14 @@ public:
             else
                 tipl::reg::cdm_common<tipl::out>(make_list(J),make_list(It),f2t_dis,terminated,param,use_cuda && has_cuda);
         },2);
-        else
-        {
-            f2t_dis.clear();
-            t2f_dis.clear();
-            f2t_dis.resize(J[0].shape());
-            t2f_dis.resize(J[0].shape());
-        }
 
         compute_mapping_from_displacement();
-
-        std::fill(r.begin(),r.end(),0.0f);
-        tipl::par_for(modality_count,[&](size_t i)
-        {
-            image_type JJ0;
-            tipl::compose_mapping(I[i],to2from,JJ0);
-            if(export_intermediate)
-                tipl::io::gz_nifti::save_to_file((std::string("JJ") + std::to_string(i) + ".nii.gz").c_str(),JJ0,Itvs,ItR);
-            r[i] = tipl::correlation(JJ0,It[i]);
-        },modality_count);
-
-        for(size_t i = 0;i < modality_count;++i)
-            tipl::out() << "nonlinear: " << r[i];
+        report_cdm_correlation();
 
         if(export_intermediate)
         {
+            for(size_t i = 0;i < JJ.size();++i)
+                tipl::io::gz_nifti::save_to_file("JJ" + std::to_string(i) + ".nii.gz",JJ[i],Itvs,ItR);
             tipl::image<dimension+1> buffer(f2t_dis.shape().expand(2*dimension));
             tipl::par_for(2*dimension,[&](unsigned int d)
             {
