@@ -582,8 +582,8 @@ bool CustomSliceModel::load_slices(void)
 
     // handle registration
     tipl::out() << "running rigid body transformation to the slices. To disable it, add 'reg' to the file name." << std::endl;
-    update_transform();
     run_registration();
+    update_transform();
     return true;
 }
 
@@ -612,8 +612,6 @@ void CustomSliceModel::update_image(tipl::image<3>&& new_image)
 // ---------------------------------------------------------------------------
 void CustomSliceModel::update_transform(void)
 {
-    if(!running)
-        return;
     tipl::transformation_matrix<float> M(arg_min,dim,vs,handle->dim,handle->vs);
     to_dif.identity();
     M.save_to_transform(to_dif.begin());
@@ -688,7 +686,6 @@ void CustomSliceModel::wait(void)
         return;
     if(thread->joinable())
         thread->join();
-    update_transform();
     tipl::out() << "size: " << dim << " vs: " << vs;
     tipl::out() << "srow: " << trans_to_mni;
     tipl::out() << "to_dif: " << to_dif;
