@@ -438,8 +438,97 @@ public:
         }
         return to;
     }
-    bool apply_warping(const char* from,const char* to) const;
-    bool apply_inv_warping(const char* from,const char* to) const;
+    bool apply_warping(const char* from,const char* to) const
+    {
+        if(tipl::ends_with(from,".tt.gz"))
+            return apply_warping_tt(from,to);
+        /*
+        tipl::out() << "opening " << from;
+        tipl::io::gz_nifti nii;
+        if(!nii.load_from_file(from))
+        {
+            error_msg = "cannot open ";
+            error_msg += from;
+            return false;
+        }
+        if(nii.dim(dimension+1) > 1)
+        {
+            // check data range
+            std::vector<tipl::image<dimension> > I_list(nii.dim(dimension+1));
+            for(unsigned int index = 0;index < nii.dim(dimension+1);++index)
+            {
+                if(!nii.toLPS(I_list[index]))
+                {
+                    error_msg = "failed to parse 4D NIFTI file";
+                    return false;
+                }
+                std::replace_if(I_list[index].begin(),I_list[index].end(),[](float v){return std::isnan(v) || std::isinf(v) || v < 0.0f;},0.0f);
+            }
+            if(I[0].shape() != I_list[0].shape())
+            {
+                error_msg = std::filesystem::path(from).filename().u8string();
+                error_msg += " has an image size or srow matrix from that of the original --from image.";
+                return false;
+            }
+            bool is_label = tipl::is_label_image(I_list[0]);
+            tipl::out() << (is_label ? "label image interpolated using nearest assignment " : "scalar image interpolated using spline") << std::endl;
+            tipl::image<dimension+1> J4(It[0].shape().expand(nii.dim(dimension+1)));
+            tipl::adaptive_par_for(nii.dim(4),[&](size_t z)
+            {
+                tipl::image<dimension> out(apply_warping(I_list[z],is_label));
+                std::copy(out.begin(),out.end(),J4.slice_at(z).begin());
+            });
+            if(!tipl::io::gz_nifti::save_to_file(to,J4,Itvs,ItR,It_is_mni))
+            {
+                error_msg = "cannot write to file ";
+                error_msg += to;
+                return false;
+            }
+            return true;
+        }
+        */
+        tipl::out() << "apply warping to " << from;
+        tipl::out() << "opening " << from;
+        tipl::image<dimension> I3(I[0].shape());
+        if(!tipl::io::gz_nifti::load_to_space(from,I3,IR))
+        {
+            error_msg = "cannot open ";
+            error_msg += from;
+            return false;
+        }
+        bool is_label = tipl::is_label_image(I3);
+        tipl::out() << (is_label ? "label image interpolated using nearest assignment " : "scalar image interpolated using spline") << std::endl;
+        tipl::out() << "saving " << to;
+        if(!tipl::io::gz_nifti::save_to_file(to,apply_warping(I3,is_label),Itvs,ItR,It_is_mni))
+        {
+            error_msg = "cannot write to file ";
+            error_msg += to;
+            return false;
+        }
+        return true;
+    }
+    bool apply_inv_warping(const char* to,const char* from) const
+    {
+        tipl::out() << "apply inverse warping to " << to;
+        tipl::out() << "opening " << to;
+        tipl::image<dimension> I3(It[0].shape());
+        if(!tipl::io::gz_nifti::load_to_space(to,I3,ItR))
+        {
+            error_msg = "cannot open ";
+            error_msg += to;
+            return false;
+        }
+        bool is_label = tipl::is_label_image(I3);
+        tipl::out() << (is_label ? "label image interpolated using nearest assignment " : "scalar image interpolated using spline") << std::endl;
+        tipl::out() << "saving " << from;
+        if(!tipl::io::gz_nifti::save_to_file(from,apply_inv_warping(I3,is_label),Ivs,IR,false))
+        {
+            error_msg = "cannot write file ";
+            error_msg += from;
+            return false;
+        }
+        return true;
+    }
     bool apply_warping_tt(const char* from,const char* to) const;
     bool load_warping(const std::string& filename)
     {

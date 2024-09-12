@@ -60,8 +60,6 @@ private slots:
 
     void on_stop_clicked();
 
-    void on_actionApply_Warping_triggered();
-
     void on_actionSave_Warping_triggered();
 
     void on_show_option_clicked();
@@ -83,6 +81,10 @@ private slots:
     void on_ClearSubject_clicked();
 
     void on_ClearTemplate_clicked();
+
+    void on_actionApply_Subject_To_Template_Warping_triggered();
+
+    void on_actionApply_Template_To_Subject_Warping_triggered();
 
 private:
     Ui::RegToolBox *ui;

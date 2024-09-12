@@ -526,43 +526,6 @@ bool load_nifti_file(std::string file_name_cmd,
                      tipl::matrix<4,4>& trans,
                      bool& is_mni);
 
-void RegToolBox::on_actionApply_Warping_triggered()
-{
-    QStringList from = QFileDialog::getOpenFileNames(
-            this,"Open Subject Image",QDir::currentPath(),
-            "Images (*.nii *nii.gz);;All files (*)" );
-    if(from.isEmpty())
-        return;
-    if(from.size() == 1)
-    {
-        QString to = QFileDialog::getSaveFileName(
-                this,"Save Transformed Image",from[0],
-                "Images (*.nii *nii.gz);;All files (*)" );
-        if(to.isEmpty())
-            return;
-        if(!reg.apply_warping(from[0].toStdString().c_str(),
-                              to.toStdString().c_str()))
-            QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
-        else
-            QMessageBox::information(this,QApplication::applicationName(),"Saved");
-    }
-    else
-    {
-        tipl::progress prog("save files");
-        for(int i = 0;prog(i,from.size());++i)
-        {
-            if(!reg.apply_warping(from[i].toStdString().c_str(),
-                          (from[i]+".wp.nii.gz").toStdString().c_str()))
-
-            {
-                QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
-                return;
-            }
-        }
-        QMessageBox::information(this,QApplication::applicationName(),"Saved");
-    }
-}
-
 void RegToolBox::on_stop_clicked()
 {
     timer->stop();
@@ -666,4 +629,74 @@ void RegToolBox::on_actionTemplate_Image_triggered()
 
 
 
+
+
+void RegToolBox::on_actionApply_Subject_To_Template_Warping_triggered()
+{
+    QStringList from = QFileDialog::getOpenFileNames(
+            this,"Open Subject Image",QDir::currentPath(),
+            "Images (*.nii *nii.gz);;All files (*)" );
+    if(from.isEmpty())
+        return;
+    if(from.size() == 1)
+    {
+        QString to = QFileDialog::getSaveFileName(
+                this,"Save Transformed Image",from[0],
+                "Images (*.nii *nii.gz);;All files (*)" );
+        if(to.isEmpty())
+            return;
+        if(!reg.apply_warping(from[0].toStdString().c_str(),to.toStdString().c_str()))
+            QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
+        else
+            QMessageBox::information(this,QApplication::applicationName(),"Saved");
+    }
+    else
+    {
+        tipl::progress prog("save files");
+        for(int i = 0;prog(i,from.size());++i)
+        {
+            if(!reg.apply_warping(from[i].toStdString().c_str(),(from[i]+".wp.nii.gz").toStdString().c_str()))
+            {
+                QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
+                return;
+            }
+        }
+        QMessageBox::information(this,QApplication::applicationName(),"Saved");
+    }
+}
+
+
+void RegToolBox::on_actionApply_Template_To_Subject_Warping_triggered()
+{
+    QStringList to = QFileDialog::getOpenFileNames(
+            this,"Open Template Image",QDir::currentPath(),
+            "Images (*.nii *nii.gz);;All files (*)" );
+    if(to.isEmpty())
+        return;
+    if(to.size() == 1)
+    {
+        QString from = QFileDialog::getSaveFileName(
+                this,"Save Transformed Image",to[0],
+                "Images (*.nii *nii.gz);;All files (*)" );
+        if(from.isEmpty())
+            return;
+        if(!reg.apply_inv_warping(to[0].toStdString().c_str(),from.toStdString().c_str()))
+            QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
+        else
+            QMessageBox::information(this,QApplication::applicationName(),"Saved");
+    }
+    else
+    {
+        tipl::progress prog("save files");
+        for(int i = 0;prog(i,to.size());++i)
+        {
+            if(!reg.apply_inv_warping(to[i].toStdString().c_str(),(to[i]+".wp.nii.gz").toStdString().c_str()))
+            {
+                QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
+                return;
+            }
+        }
+        QMessageBox::information(this,QApplication::applicationName(),"Saved");
+    }
+}
 
