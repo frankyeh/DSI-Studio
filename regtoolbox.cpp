@@ -521,6 +521,16 @@ void RegToolBox::on_run_reg_clicked()
     setup_slice_pos(false);
     show_image();
 
+    reg.param.resolution = ui->resolution->value();
+    reg.param.min_dimension = uint32_t(ui->min_reso->value());
+    reg.param.smoothing = float(ui->smoothing->value());
+    reg.param.speed = float(ui->speed->value());
+    reg.bound = ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound;
+    reg.cost_type = ui->cost_fun->currentIndex() == 0 ? tipl::reg::corr : tipl::reg::mutual_info;
+    reg.use_cuda = ui->use_cuda->isChecked();
+    reg.skip_linear = ui->skip_linear->isChecked();
+    reg.skip_nonlinear = ui->skip_nonlinear->isChecked();
+
     {
         reg.match_resolution(false);
         ui->zoom_template->setValue(width()*0.2f/(1.0f+reg.It[0].width()));
