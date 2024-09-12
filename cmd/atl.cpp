@@ -98,6 +98,11 @@ int atl(tipl::program_option<tipl::out>& po)
     }
     if(cmd=="db")
     {        
+        if(po.has("demo") && !std::filesystem::exists(po.get("demo")))
+        {
+            tipl::error() << "cannot find demo file " << po.get("demo") <<std::endl;
+            return 1;
+        }
         for(size_t id = 0;id < fib_template_list.size();++id)
             if(!fib_template_list[id].empty())
                 tipl::out() << "template " << id << ": " << std::filesystem::path(fib_template_list[id]).stem() << std::endl;
