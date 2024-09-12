@@ -130,7 +130,11 @@ int qc(tipl::program_option<tipl::out>& po)
             tipl::error() << po.error_msg;
             return 1;
         }
-
+    if(file_list.empty())
+    {
+        tipl::error() << "no file to run quality control";
+        return 1;
+    }
     std::string report_file_name = po.get("output","qc.tsv");
     tipl::out() << "saving " << report_file_name << std::endl;
     std::ofstream(report_file_name.c_str()) <<
