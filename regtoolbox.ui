@@ -408,7 +408,7 @@
          <number>256</number>
         </property>
         <property name="value">
-         <number>50</number>
+         <number>128</number>
         </property>
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
@@ -764,7 +764,8 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
-    <addaction name="actionApply_Warping"/>
+    <addaction name="actionApply_Subject_To_Template_Warping"/>
+    <addaction name="actionApply_Template_To_Subject_Warping"/>
     <addaction name="separator"/>
     <addaction name="actionSave_Warping"/>
    </widget>
@@ -779,13 +780,13 @@
    <addaction name="menu_Open"/>
    <addaction name="menuEdit"/>
   </widget>
-  <action name="actionApply_Warping">
+  <action name="actionApply_Subject_To_Template_Warping">
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Apply Mapping to Other Image...</string>
+    <string>Apply Subject To Template Warping...</string>
    </property>
   </action>
   <action name="actionSave_Warping">
@@ -805,6 +806,15 @@
   <action name="actionTemplate_Image">
    <property name="text">
     <string>Template Image...</string>
+   </property>
+  </action>
+  <action name="actionApply_Template_To_Subject_Warping">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Apply Template To Subject Warping...</string>
    </property>
   </action>
  </widget>
