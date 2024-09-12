@@ -62,13 +62,18 @@ bool dual_reg<3>::apply_warping(const char* from,const char* to) const
     bool is_label = tipl::is_label_image(I3);
     tipl::out() << (is_label ? "processed as labels using nearest assignment" : "processed as values using interpolation") << std::endl;
 
-    tipl::out() << "dim: " << I3.shape();
     if(I[0].shape() != I3.shape())
     {
-        tipl::out() << "--from dim: " << I[0].shape();
-        error_msg = std::filesystem::path(from).filename().u8string();
-        error_msg += " has an image size or srow matrix from that of the original --from image.";
-        return false;
+        tipl::out() << "dim: " << I3.shape();
+        tipl::out() << "loading a different size image, applying header transformation";
+        tipl::image<3> new_I3(I[0].shape());
+        tipl::matrix<4,4> R_I3;
+        nii.get_image_transformation(R_I3);
+        if(is_label)
+            tipl::resample<tipl::nearest>(I3,new_I3,tipl::from_space(ItR).to(R_I3));
+        else
+            tipl::resample(I3,new_I3,tipl::from_space(ItR).to(R_I3));
+        I3.swap(new_I3);
     }
 
     tipl::out() << "saving " << to;
