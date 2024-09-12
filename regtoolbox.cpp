@@ -231,6 +231,7 @@ void RegToolBox::dropEvent(QDropEvent *event)
         load_subject(each.toLocalFile().toStdString());
     else
         load_template(each.toLocalFile().toStdString());
+    show_image();
 }
 
 template<int dim>
