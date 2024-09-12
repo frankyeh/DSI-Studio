@@ -19,7 +19,6 @@ class RegToolBox : public QMainWindow
 
 public:
     uint8_t subject_cur_view = 2,template_cur_view = 2;
-    dual_reg<2> reg_2d;
     dual_reg<3> reg;
 public:
     tipl::transformation_matrix<float> T;
@@ -31,19 +30,22 @@ public:
 public:
     std::shared_ptr<tipl::reg::bfnorm_mapping<float,3> > bnorm_data;
     bool flash = false;
-    void clear(void);
+    void clear_thread(void);
 private:
     void setup_slice_pos(bool subject = true);
     uint8_t blend_style(void);
 private:
-    std::string template2_name,subject2_name;
-    void load_subject2(const std::string& file_name);
-    void load_template2(const std::string& file_name);
+    std::vector<std::string> subject_names,template_names;
+    void auto_fill(void);
+    void load_subject(const std::string& file_name);
     void load_template(const std::string& file_name);
 public:
     explicit RegToolBox(QWidget *parent = nullptr);
     ~RegToolBox();
+    void dragEnterEvent(QDragEnterEvent *event);
+    void dropEvent(QDropEvent *event);
 public slots:
+
     void show_image();
 private slots:
 
@@ -56,14 +58,7 @@ private slots:
     void on_run_reg_clicked();
     void on_timer();
 
-
-
-
     void on_stop_clicked();
-
-    void on_OpenSubject2_clicked();
-
-    void on_OpenTemplate2_clicked();
 
     void on_actionApply_Warping_triggered();
 
@@ -79,8 +74,6 @@ private slots:
 
     void on_switch_view_clicked();
 
-    void on_actionDual_Modality_triggered();
-
 
     void on_actionSubject_Image_triggered();
 
@@ -91,6 +84,10 @@ private slots:
     void on_coronal_view_2_clicked();
 
     void on_axial_view_2_clicked();
+
+    void on_ClearSubject_clicked();
+
+    void on_ClearTemplate_clicked();
 
 private:
     Ui::RegToolBox *ui;

@@ -15,103 +15,21 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_16">
-      <property name="topMargin">
-       <number>0</number>
-      </property>
-      <item>
-       <widget class="QCheckBox" name="show_warp">
-        <property name="text">
-         <string>Show Warp</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QComboBox" name="dis_spacing">
-        <property name="maximumSize">
-         <size>
-          <width>40</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="currentIndex">
-         <number>3</number>
-        </property>
-        <item>
-         <property name="text">
-          <string>None</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>x1</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>x2</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>x4</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>x8</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>x16</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item>
-       <spacer name="horizontalSpacer_4">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item>
-       <widget class="QRadioButton" name="rb_blend">
-        <property name="text">
-         <string>Blend</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QRadioButton" name="rb_switch">
-        <property name="text">
-         <string>Subject/Reference</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="switch_view">
-        <property name="text">
-         <string>Switch</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
+    <property name="spacing">
+     <number>6</number>
+    </property>
+    <property name="leftMargin">
+     <number>9</number>
+    </property>
+    <property name="topMargin">
+     <number>9</number>
+    </property>
+    <property name="rightMargin">
+     <number>9</number>
+    </property>
+    <property name="bottomMargin">
+     <number>9</number>
+    </property>
     <item>
      <widget class="QWidget" name="widget_2" native="true">
       <layout class="QHBoxLayout" name="horizontalLayout_12">
@@ -201,35 +119,13 @@
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="OpenSubject2">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>56</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Add the second image modality&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
+             <widget class="QPushButton" name="ClearSubject">
               <property name="text">
-               <string>2nd</string>
+               <string/>
               </property>
               <property name="icon">
                <iconset resource="icons.qrc">
-                <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="subject_filename">
-              <property name="text">
-               <string/>
+                <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
               </property>
              </widget>
             </item>
@@ -435,35 +331,13 @@
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="OpenTemplate2">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>56</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>Add the second image modality</string>
-              </property>
+             <widget class="QPushButton" name="ClearTemplate">
               <property name="text">
-               <string>2nd</string>
+               <string/>
               </property>
               <property name="icon">
                <iconset resource="icons.qrc">
-                <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="template_filename">
-              <property name="text">
-               <string/>
+                <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
               </property>
              </widget>
             </item>
@@ -631,30 +505,11 @@
        <number>0</number>
       </property>
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout">
-        <property name="spacing">
-         <number>0</number>
-        </property>
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
-         <number>0</number>
-        </property>
-       </layout>
-      </item>
-      <item>
        <widget class="QGroupBox" name="options">
         <property name="title">
          <string>Registration setting</string>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_17">
+        <layout class="QGridLayout" name="gridLayout">
          <property name="leftMargin">
           <number>6</number>
          </property>
@@ -667,52 +522,7 @@
          <property name="bottomMargin">
           <number>0</number>
          </property>
-         <item>
-          <widget class="QCheckBox" name="use_cuda">
-           <property name="text">
-            <string>Use CUDA</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="large_deform">
-           <property name="text">
-            <string>Large Deform</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="skip_linear">
-           <property name="text">
-            <string>Skip Linear</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="skip_nonlinear">
-           <property name="text">
-            <string>Skip Nonlinear</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="cost_fun">
-           <item>
-            <property name="text">
-             <string>Correlation</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Mutual Information</string>
-            </property>
-           </item>
-          </widget>
-         </item>
-         <item>
+         <item row="0" column="5">
           <widget class="QWidget" name="nonlinear_widget" native="true">
            <layout class="QHBoxLayout" name="horizontalLayout_8">
             <property name="spacing">
@@ -868,6 +678,51 @@
            </layout>
           </widget>
          </item>
+         <item row="0" column="0">
+          <widget class="QCheckBox" name="use_cuda">
+           <property name="text">
+            <string>Use CUDA</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QCheckBox" name="skip_nonlinear">
+           <property name="text">
+            <string>Skip Nonlinear</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="5">
+          <widget class="QComboBox" name="cost_fun">
+           <item>
+            <property name="text">
+             <string>Correlation</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Mutual Information</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QCheckBox" name="skip_linear">
+           <property name="text">
+            <string>Skip Linear</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QCheckBox" name="large_deform">
+           <property name="text">
+            <string>Large Deform</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </widget>
       </item>
@@ -888,6 +743,30 @@
        <widget class="QPushButton" name="show_option">
         <property name="text">
          <string>&lt;&lt; Options</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="rb_blend">
+        <property name="text">
+         <string>Blend</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="rb_switch">
+        <property name="text">
+         <string>Subject/Reference</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="switch_view">
+        <property name="text">
+         <string>Switch Views</string>
         </property>
        </widget>
       </item>
@@ -976,15 +855,8 @@
     <addaction name="actionTemplate_Image"/>
     <addaction name="separator"/>
    </widget>
-   <widget class="QMenu" name="menu_Option">
-    <property name="title">
-     <string>&amp;Option</string>
-    </property>
-    <addaction name="actionDual_Modality"/>
-   </widget>
    <addaction name="menu_Open"/>
    <addaction name="menuEdit"/>
-   <addaction name="menu_Option"/>
   </widget>
   <action name="actionApply_Warping">
    <property name="icon">
@@ -1002,11 +874,6 @@
    </property>
    <property name="text">
     <string>Save Mapping...</string>
-   </property>
-  </action>
-  <action name="actionDual_Modality">
-   <property name="text">
-    <string>Dual Modality</string>
    </property>
   </action>
   <action name="actionSubject_Image">

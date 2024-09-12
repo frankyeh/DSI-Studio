@@ -845,36 +845,20 @@ void view_image::on_actionSave_triggered()
     auto regtool = dynamic_cast<RegToolBox*>(parent());
     if(regtool)
     {
+        regtool->clear_thread();
         cur_image->change_type(variant_image::float32);
         if(regtool_subject)
         {
-            if(!regtool->reg_2d.I[0].empty())
-            {
-                regtool->reg_2d.I[0] = tipl::volume2slice(cur_image->I_float32,2,0);
-                regtool->reg.Ivs = cur_image->vs;
-            }
-            else
-            {
-                regtool->reg.I[0] = cur_image->I_float32;
-                regtool->reg.Ivs = cur_image->vs;
-                regtool->reg.IR = cur_image->T;
-            }
+            regtool->reg.I[0] = cur_image->I_float32;
+            regtool->reg.Ivs = cur_image->vs;
+            regtool->reg.IR = cur_image->T;
         }
         else
         {
-            if(!regtool->reg_2d.It[0].empty())
-            {
-                regtool->reg_2d.It[0] = tipl::volume2slice(cur_image->I_float32,2,0);
-                regtool->reg.Itvs = cur_image->vs;
-            }
-            else
-            {
-                regtool->reg.It[0] = cur_image->I_float32;
-                regtool->reg.Itvs = cur_image->vs;
-                regtool->reg.ItR = cur_image->T;
-            }
+            regtool->reg.It[0] = cur_image->I_float32;
+            regtool->reg.Itvs = cur_image->vs;
+            regtool->reg.ItR = cur_image->T;
         }
-        regtool->clear();
         regtool->show_image();
         QMessageBox::information(this,QApplication::applicationName(),"Image Updated");
         return;
