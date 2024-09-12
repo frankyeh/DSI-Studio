@@ -18,7 +18,7 @@ class RegToolBox : public QMainWindow
     Q_OBJECT
 
 public:
-    uint8_t subject_cur_view = 2,template_cur_view = 2;
+    uint8_t cur_view = 2;
     dual_reg<3> reg;
 public:
     tipl::transformation_matrix<float> T;
@@ -32,7 +32,7 @@ public:
     bool flash = false;
     void clear_thread(void);
 private:
-    void setup_slice_pos(bool subject = true);
+    void setup_slice_pos(void);
     uint8_t blend_style(void);
 private:
     std::vector<std::string> subject_names,template_names;
@@ -79,11 +79,6 @@ private slots:
 
     void on_actionTemplate_Image_triggered();
 
-    void on_sag_view_2_clicked();
-
-    void on_coronal_view_2_clicked();
-
-    void on_axial_view_2_clicked();
 
     void on_ClearSubject_clicked();
 

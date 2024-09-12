@@ -23,8 +23,7 @@ RegToolBox::RegToolBox(QWidget *parent) :
     connect(ui->rb_blend, SIGNAL(clicked()), this, SLOT(show_image()));
     connect(ui->zoom_template, SIGNAL(valueChanged(double)), this, SLOT(show_image()));
     connect(ui->zoom_subject, SIGNAL(valueChanged(double)), this, SLOT(show_image()));
-    connect(ui->template_slice_pos, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
-    connect(ui->subject_slice_pos, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
+    connect(ui->slice_pos, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
     connect(ui->min1, SIGNAL(valueChanged(double)), this, SLOT(change_contrast()));
     connect(ui->min2, SIGNAL(valueChanged(double)), this, SLOT(change_contrast()));
     connect(ui->max1, SIGNAL(valueChanged(double)), this, SLOT(change_contrast()));
@@ -59,40 +58,19 @@ void RegToolBox::clear_thread(void)
     thread.clear();
     ui->run_reg->setText("run");
 }
-void RegToolBox::setup_slice_pos(bool subject)
+void RegToolBox::setup_slice_pos(void)
 {
-    if(!subject)
-    {
-        if(!reg.It[0].empty())
-        {
-            int range = int(reg.It[0].shape()[template_cur_view]);
-            ui->template_slice_pos->setMaximum(range-1);
-            ui->template_slice_pos->setValue(range/2);
-            ui->template_slice_pos->show();
-        }
-        else
-        {
-            ui->template_slice_pos->setMaximum(0);
-            ui->template_slice_pos->setValue(0);
-            ui->template_slice_pos->hide();
-        }
-    }
-    if(subject)
-    {
-        if(!reg.I[0].empty())
-        {
-            int range = int(reg.I[0].shape()[subject_cur_view]);
-            ui->subject_slice_pos->setMaximum(range-1);
-            ui->subject_slice_pos->setValue(range/2);
-            ui->subject_slice_pos->show();
-        }
-        else
-        {
-            ui->subject_slice_pos->setMaximum(0);
-            ui->subject_slice_pos->setValue(0);
-            ui->subject_slice_pos->hide();
-        }
-    }
+    if(reg.It.empty() || reg.I.empty())
+        return;
+    int range = std::max<int>(reg.It[0].shape()[cur_view],reg.I[0].shape()[cur_view]);
+    if(range == ui->slice_pos->maximum()+1)
+        return;
+    ui->slice_pos->blockSignals(true);
+    float pos_ratio = float(ui->slice_pos->value())/ui->slice_pos->maximum();
+    ui->slice_pos->setMaximum(range-1);
+    ui->slice_pos->setValue(pos_ratio*(range-1));
+    ui->slice_pos->blockSignals(false);
+    show_image();
 }
 void RegToolBox::change_contrast()
 {
@@ -131,7 +109,7 @@ void RegToolBox::load_template(const std::string& file_name)
     if(template_names.empty())
     {
         ui->zoom_template->setValue(width()*0.2f/(1.0f+reg.It[0].width()));
-        setup_slice_pos(false);
+        setup_slice_pos();
     }
     template_names.push_back(file_name);
     auto_fill();
@@ -151,20 +129,18 @@ void RegToolBox::on_OpenSubject_clicked()
     if(filename.contains("qa"))
     {
         auto iso_file_name = QString(filename).replace("qa","iso");
-        if(iso_file_name != filename && QFileInfo(iso_file_name).exists())
-            if(QMessageBox::question(this,QApplication::applicationName(),QString("load subject ") + iso_file_name + "?",
-                        QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
-            load_subject(iso_file_name.toStdString());
-    }
+        if(iso_file_name != filename && QFileInfo(iso_file_name).exists() &&
+           QMessageBox::question(this,QApplication::applicationName(),QString("load iso from ") + iso_file_name + "?",
+           QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
+                load_subject(iso_file_name.toStdString());
 
-    if(filename.contains("qa") && reg.It[0].empty())
-    {
-        if(QMessageBox::question(this,QApplication::applicationName(),"load QA/ISO templates?",
-                        QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
-        {
-            load_template(fa_template_list[0]);
-            load_template(iso_template_list[0]);
-        }
+        if(reg.It[0].empty() &&
+           QMessageBox::question(this,QApplication::applicationName(),"load QA/ISO templates?",
+           QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
+            {
+                load_template(fa_template_list[0]);
+                load_template(iso_template_list[0]);
+            }
     }
     show_image();
 }
@@ -189,7 +165,7 @@ void RegToolBox::load_subject(const std::string& file_name)
     if(subject_names.empty())
     {
         ui->zoom_subject->setValue(width()*0.2f/(1.0f+reg.I[0].width()));
-        setup_slice_pos(true);
+        setup_slice_pos();
     }
     subject_names.push_back(file_name);
     auto_fill();
@@ -202,16 +178,20 @@ void RegToolBox::auto_fill(void)
     std::string new_file_name;
     if(template_names.size() > subject_names.size())
     {
-        if(tipl::match_files(template_names[0],template_names[subject_names.size()],subject_names.front(),new_file_name) && std::filesystem::exists(new_file_name))
-            if(QMessageBox::question(this,QApplication::applicationName(),QString("load subject ") + new_file_name.c_str() + "?\n",
+        if(!subject_names.empty() &&
+           tipl::match_files(template_names[0],template_names[subject_names.size()],subject_names.front(),new_file_name) &&
+           std::filesystem::exists(new_file_name) &&
+           QMessageBox::question(this,QApplication::applicationName(),QString("load subject ") + new_file_name.c_str() + "?\n",
                         QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
             load_subject(new_file_name);
     }
     else
     {
 
-        if(tipl::match_files(subject_names[0],subject_names[template_names.size()],template_names.front(),new_file_name) && std::filesystem::exists(new_file_name))
-            if(QMessageBox::question(this,QApplication::applicationName(),QString("load template ") + new_file_name.c_str() + "?\n",
+        if(!template_names.empty() &&
+           tipl::match_files(subject_names[0],subject_names[template_names.size()],template_names.front(),new_file_name) &&
+           std::filesystem::exists(new_file_name) &&
+           QMessageBox::question(this,QApplication::applicationName(),QString("load template ") + new_file_name.c_str() + "?\n",
                         QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
             load_template(new_file_name);
     }
@@ -347,8 +327,8 @@ void RegToolBox::show_image(void)
             {
                 auto I = show_slice_at(
                           reg.It[id],image_fascade<3>(reg.I[id],reg.It[0].shape(),reg.t2f_dis,reg.T()),
-                          v2c_It,v2c_I,ui->template_slice_pos->value(),
-                          ui->zoom_template->value(),template_cur_view,blend_style());
+                          v2c_It,v2c_I,float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.It[0].shape()[cur_view]-1),
+                          ui->zoom_template->value(),cur_view,blend_style());
                 {
                     std::lock_guard<std::mutex> lock(template_mutex);
                     if(template_image.empty())
@@ -366,8 +346,9 @@ void RegToolBox::show_image(void)
                 invT.inverse();
                 auto I = show_slice_at(
                         reg.I[id],image_fascade<3>(reg.It[id],reg.I[0].shape(),reg.f2t_dis,invT),
-                        v2c_I,v2c_It,ui->subject_slice_pos->value(),ui->zoom_subject->value(),
-                        subject_cur_view,blend_style());
+                        v2c_I,v2c_It,float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.I[0].shape()[cur_view]-1),
+                        ui->zoom_subject->value(),
+                        cur_view,blend_style());
                 {
                     std::lock_guard<std::mutex> lock(subject_mutex);
                     if(subject_image.empty())
@@ -489,12 +470,8 @@ extern console_stream console;
 void RegToolBox::on_timer()
 {
     console.show_output();
-    on_switch_view_clicked();
     if(old_arg != reg.arg)
-    {
-        show_image();
         old_arg = reg.arg;
-    }
     if(!thread.running)
     {
         timer->stop();
@@ -503,9 +480,10 @@ void RegToolBox::on_timer()
         ui->stop->hide();
         ui->run_reg->show();
         ui->run_reg->setText("re-run");
-        flash = false;
+        flash = true;
         tipl::out() << "registration completed";
     }
+    on_switch_view_clicked();
 }
 
 void RegToolBox::on_run_reg_clicked()
@@ -516,10 +494,6 @@ void RegToolBox::on_run_reg_clicked()
         QMessageBox::critical(this,"ERROR","Please load image first");
         return;
     }
-
-    setup_slice_pos(true);
-    setup_slice_pos(false);
-    show_image();
 
     reg.param.resolution = ui->resolution->value();
     reg.param.min_dimension = uint32_t(ui->min_reso->value());
@@ -622,46 +596,23 @@ void RegToolBox::on_show_option_clicked()
 
 void RegToolBox::on_axial_view_clicked()
 {
-    subject_cur_view = 2;
-    setup_slice_pos(true);
+    cur_view = 2;
+    setup_slice_pos();
     show_image();
 }
 
 
 void RegToolBox::on_coronal_view_clicked()
 {
-    subject_cur_view = 1;
-    setup_slice_pos(true);
+    cur_view = 1;
+    setup_slice_pos();
     show_image();
 }
 
 void RegToolBox::on_sag_view_clicked()
 {
-    subject_cur_view = 0;
-    setup_slice_pos(true);
-    show_image();
-}
-
-void RegToolBox::on_sag_view_2_clicked()
-{
-    template_cur_view = 0;
-    setup_slice_pos(false);
-    show_image();
-}
-
-
-void RegToolBox::on_coronal_view_2_clicked()
-{
-    template_cur_view = 1;
-    setup_slice_pos(false);
-    show_image();
-}
-
-
-void RegToolBox::on_axial_view_2_clicked()
-{
-    template_cur_view = 2;
-    setup_slice_pos(false);
+    cur_view = 0;
+    setup_slice_pos();
     show_image();
 }
 
