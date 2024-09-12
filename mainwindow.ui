@@ -2673,6 +2673,11 @@ Tractography</string>
                 </item>
                 <item>
                  <property name="text">
+                  <string>labsolver/brain</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
                   <string>labsolver/disease</string>
                  </property>
                 </item>
