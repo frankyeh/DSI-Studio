@@ -4,6 +4,7 @@
 #include <QDragEnterEvent>
 #include <QMimeData>
 #include <QGraphicsPixmapItem>
+#include <QGraphicsSceneMouseEvent>
 #include "reg.hpp"
 #include "regtoolbox.h"
 #include "ui_regtoolbox.h"
@@ -37,6 +38,8 @@ RegToolBox::RegToolBox(QWidget *parent) :
         ui->use_cuda->hide();
 
     setAcceptDrops(true);
+    I_scene.installEventFilter(this);
+    It_scene.installEventFilter(this);
 }
 
 RegToolBox::~RegToolBox()
@@ -199,6 +202,50 @@ void RegToolBox::dropEvent(QDropEvent *event)
         load_template(each.toLocalFile().toStdString());
     show_image();
 }
+bool RegToolBox::eventFilter(QObject *obj, QEvent *event)
+{
+    if (event->type() == QEvent::GraphicsSceneMousePress && !reg.to2from.empty())
+    {
+        auto pos = static_cast<QGraphicsSceneMouseEvent *>(event)->scenePos();
+        if(obj == &I_scene && subject_view_size[0])
+        {
+            auto x = float(pos.x()-subject_view_border)/subject_view_size[0];
+            auto y = float(pos.y()-subject_view_border)/subject_view_size[1];
+            if(x > 0.5f && int(y) < template_names.size()) // click on the right half
+            {
+                QString filename = QFileDialog::getSaveFileName(
+                        this,("Save warped " + QFileInfo(template_names[y].c_str()).fileName()),template_names[y].c_str(),
+                        "Images (*.nii *nii.gz);;All files (*)" );
+                if(filename.isEmpty())
+                    return true;
+                if(!reg.apply_inv_warping(template_names[y].c_str(),filename.toStdString().c_str()))
+                    QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
+                else
+                    QMessageBox::information(this,QApplication::applicationName(),"Saved");
+            }
+            return true;
+        }
+        if(obj == &It_scene && template_view_size[0])
+        {
+            auto x = float(pos.x()-template_view_border)/template_view_size[0];
+            auto y = float(pos.y()-template_view_border)/template_view_size[1];
+            if(x > 0.5f && int(y) < subject_names.size()) // click on the right half
+            {
+                QString filename = QFileDialog::getSaveFileName(
+                        this,("Save warped " + QFileInfo(subject_names[y].c_str()).fileName()),subject_names[y].c_str(),
+                        "Images (*.nii *nii.gz);;All files (*)" );
+                if(filename.isEmpty())
+                    return true;
+                if(!reg.apply_warping(subject_names[y].c_str(),filename.toStdString().c_str()))
+                    QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
+                else
+                    QMessageBox::information(this,QApplication::applicationName(),"Saved");
+            }
+        }
+        return true;
+    }
+    return QObject::eventFilter(obj, event);
+}
 
 template<int dim>
 struct image_fascade{
@@ -312,7 +359,10 @@ void RegToolBox::show_image(void)
                 {
                     std::lock_guard<std::mutex> lock(template_mutex);
                     if(template_image.empty())
+                    {
+                        template_view_size = I.shape();
                         template_image.resize(tipl::shape<2>(I.width(),I.height()*row_count));
+                    }
                 }
                 tipl::draw(I,template_image,tipl::vector<2,int>(0,id*I.height()));
             }
@@ -332,7 +382,10 @@ void RegToolBox::show_image(void)
                 {
                     std::lock_guard<std::mutex> lock(subject_mutex);
                     if(subject_image.empty())
+                    {
+                        subject_view_size = I.shape();
                         subject_image.resize(tipl::shape<2>(I.width(),I.height()*row_count));
+                    }
                 }
                 tipl::draw(I,subject_image,tipl::vector<2,int>(0,id*I.height()));
             }
@@ -343,15 +396,15 @@ void RegToolBox::show_image(void)
     It_scene.clear();
 
     auto add_text = [&](QGraphicsScene& scene,const std::vector<std::string>& list,
-                        int border,int width,int height,bool left)
+                        int template_view_border,int width,int height,bool left)
     {
         std::vector<QGraphicsTextItem*> names;
         for(auto each : list)
         {
             names.push_back(scene.addText(QFileInfo(each.c_str()).fileName()));
             names.back()->setRotation(270);
-            names.back()->setPos(left ? 0 : border + width,
-                                 border + height*(float(names.size()-0.5f)/float(row_count)) + names.back()->boundingRect().width()/2);
+            names.back()->setPos(left ? 0 : template_view_border + width,
+                                 template_view_border + height*(float(names.size()-0.5f)/float(row_count)) + names.back()->boundingRect().width()/2);
         }
     };
     if(!template_names.empty())
@@ -359,33 +412,30 @@ void RegToolBox::show_image(void)
         It_scene.blockSignals(true);
         auto top_text1 = It_scene.addText("template");
         auto top_text2 = It_scene.addText("subject->template");
-        int border = top_text1->boundingRect().height();
-        QPixmap pixmap;
-        pixmap.loadFromData(template_image.data(), template_image.size(), "GRAY8");
-        It_scene.addPixmap(QPixmap::fromImage((QImage() << (tipl::color_image(template_image)))))->setPos(border, border);
-        top_text1->setPos(border + template_image.width() * 0.25 - top_text1->boundingRect().width()/2,0);
-        top_text2->setPos(border + template_image.width() * 0.75 - top_text2->boundingRect().width()/2,0);
-        add_text(It_scene,template_names,border,template_image.width(),template_image.height(),true);
+        template_view_border = top_text1->boundingRect().height();
+        It_scene.addPixmap(QPixmap::fromImage((QImage() << (tipl::color_image(template_image)))))->setPos(template_view_border, template_view_border);
+        top_text1->setPos(template_view_border + template_image.width() * 0.25 - top_text1->boundingRect().width()/2,0);
+        top_text2->setPos(template_view_border + template_image.width() * 0.75 - top_text2->boundingRect().width()/2,0);
+        add_text(It_scene,template_names,template_view_border,template_image.width(),template_image.height(),true);
         if(blend_style() != 1)
-            add_text(It_scene,subject_names,border,template_image.width(),template_image.height(),false);
+            add_text(It_scene,subject_names,template_view_border,template_image.width(),template_image.height(),false);
         It_scene.blockSignals(false);
-        It_scene.setSceneRect(0, 0, border+border+template_image.width(),border + template_image.height());
+        It_scene.setSceneRect(0, 0, template_view_border+template_view_border+template_image.width(),template_view_border + template_image.height());
     }
     if(!subject_names.empty())
     {
         I_scene.blockSignals(true);
         auto top_text1 = I_scene.addText("subject");
         auto top_text2 = I_scene.addText("template->subject");
-        int border = top_text1->boundingRect().height();
-
-        I_scene.addPixmap(QPixmap::fromImage((QImage() << (tipl::color_image() = subject_image))))->setPos(border, border);
-        top_text1->setPos(border + subject_image.width() * 0.25 - top_text1->boundingRect().width()/2,0);
-        top_text2->setPos(border + subject_image.width() * 0.75 - top_text2->boundingRect().width()/2,0);
-        add_text(I_scene,subject_names,border,subject_image.width(),subject_image.height(),true);
+        subject_view_border = top_text1->boundingRect().height();
+        I_scene.addPixmap(QPixmap::fromImage((QImage() << (tipl::color_image() = subject_image))))->setPos(subject_view_border, subject_view_border);
+        top_text1->setPos(subject_view_border + subject_image.width() * 0.25 - top_text1->boundingRect().width()/2,0);
+        top_text2->setPos(subject_view_border + subject_image.width() * 0.75 - top_text2->boundingRect().width()/2,0);
+        add_text(I_scene,subject_names,subject_view_border,subject_image.width(),subject_image.height(),true);
         if(blend_style() != 1)
-            add_text(I_scene,template_names,border,subject_image.width(),subject_image.height(),false);
+            add_text(I_scene,template_names,subject_view_border,subject_image.width(),subject_image.height(),false);
         I_scene.blockSignals(false);
-        I_scene.setSceneRect(0, 0, border+border+subject_image.width(),border + subject_image.height());
+        I_scene.setSceneRect(0, 0, subject_view_border+subject_view_border+subject_image.width(),subject_view_border + subject_image.height());
     }
 
     // Show subject image on the left
