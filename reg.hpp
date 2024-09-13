@@ -52,7 +52,7 @@ public:
     bool skip_linear = false;
     bool skip_nonlinear = false;
 public:
-    dual_reg(void):I(max_modality),J(max_modality),It(max_modality),r(max_modality)
+    dual_reg(void):I(max_modality),J(max_modality),JJ(max_modality),It(max_modality),r(max_modality)
     {
     }
     std::vector<image_type> I,J,It,JJ;
@@ -300,14 +300,11 @@ public:
         auto r = tipl::correlation(J[0],It[0]);
         tipl::out() << "linear: " << r << std::endl;
 
-        if(export_intermediate)
+        for(size_t i = 0;i < modality_count && export_intermediate;++i)
         {
-            for(size_t i = 0;i < modality_count;++i)
-            {
-                tipl::io::gz_nifti::save_to_file(("I" + std::to_string(i) + ".nii.gz").c_str(),I[i],Itvs,ItR);
-                tipl::io::gz_nifti::save_to_file(("It" + std::to_string(i) + ".nii.gz").c_str(),It[i],Itvs,ItR);
-                tipl::io::gz_nifti::save_to_file(("J" + std::to_string(i) + ".nii.gz").c_str(),J[i],Itvs,ItR);
-            }
+            tipl::io::gz_nifti::save_to_file(("I" + std::to_string(i) + ".nii.gz").c_str(),I[i],Itvs,ItR);
+            tipl::io::gz_nifti::save_to_file(("It" + std::to_string(i) + ".nii.gz").c_str(),It[i],Itvs,ItR);
+            tipl::io::gz_nifti::save_to_file(("J" + std::to_string(i) + ".nii.gz").c_str(),J[i],Itvs,ItR);
         }
         return r;
     }
