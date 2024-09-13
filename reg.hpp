@@ -379,6 +379,7 @@ public:
     }
     std::pair<size_t,float> matching_contrast(const std::vector<std::string>& contrast_names)
     {
+        tipl::out() << "matching contrast";
         std::vector<float> linear_r(contrast_names.size());
         for(size_t i = 0;i < contrast_names.size();++i)
             tipl::out() << contrast_names[i] << " r:" << (linear_r[i] = tipl::correlation(J[0],It[i]));
