@@ -436,7 +436,7 @@ public:
             else
                 tipl::compose_mapping<tipl::interpolation::cubic>(to,from2to,from);
         }
-        return to;
+        return from;
     }
     bool apply_warping(const char* from,const char* to) const
     {
