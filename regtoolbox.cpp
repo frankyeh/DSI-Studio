@@ -526,8 +526,6 @@ void RegToolBox::on_run_reg_clicked()
         return;
     }
 
-    reg.param.resolution = ui->resolution->value();
-    reg.param.min_dimension = uint32_t(ui->min_reso->value());
     reg.param.smoothing = float(ui->smoothing->value());
     reg.param.speed = float(ui->speed->value());
     reg.bound = ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound;
