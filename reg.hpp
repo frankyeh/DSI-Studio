@@ -377,24 +377,14 @@ public:
             tipl::io::gz_nifti::save_to_file("dis.nii.gz",buffer,Itvs,ItR);
         }
     }
-    bool matching_contrast(void)
+    std::pair<size_t,float> matching_contrast(const std::vector<std::string>& contrast_names)
     {
-        size_t modality_count = 2;
-        auto& J0 = J[0];
-        auto& It0 = It[0];
-        auto r_t1w = tipl::correlation(J0,It[0]);
-        auto r_t2w = tipl::correlation(J0,It[1]);
-        tipl::out() << "r t1w: " << r_t1w;
-        tipl::out() << "r t2w: " << r_t2w;
-        if(r_t1w > r_t2w)
-            tipl::out() << "nonlinear registration with t1w";
-        else
-        {
-            tipl::out() << "nonlinear registration with t2w";
-            It[0].swap(It[1]);
-        }
-        It[1].clear();
-        return true;
+        std::vector<float> linear_r(contrast_names.size());
+        for(size_t i = 0;i < contrast_names.size();++i)
+            tipl::out() << contrast_names[i] << " r:" << (linear_r[i] = tipl::correlation(J[0],It[i]));
+        size_t max_index = std::max_element(linear_r.begin(),linear_r.end())-linear_r.begin();
+        tipl::out() << "best matching contrast: " << contrast_names[max_index];
+        return std::make_pair(max_index,linear_r[max_index]);
     }
 public:
     auto apply_warping(const tipl::image<dimension>& from,bool is_label) const
@@ -624,6 +614,22 @@ public:
         out.close();
         std::filesystem::rename((output_name + ".tmp.gz").c_str(),output_name);
         return true;
+    }
+    void to_space(const tipl::shape<3>& new_It_shape,
+                  const tipl::matrix<4,4>& new_ItR)
+    {
+        auto trans = tipl::transformation_matrix<float,dimension>(tipl::from_space(new_ItR).to(ItR));
+        auto TR = trans;
+        TR *= T();
+        for(auto& each : It)
+            each = tipl::resample(each,new_It_shape,trans);
+        f2t_dis = tipl::resample(f2t_dis,new_It_shape,trans);
+        t2f_dis = tipl::resample(t2f_dis,new_It_shape,trans);
+        ItR = new_ItR;
+        for(int i = 0;i < 3;++i)
+            Itvs[i] = std::sqrt(ItR[i]*ItR[i]+ItR[i+4]*ItR[i+4]+ItR[i+8]*ItR[i+8]);
+        TR.to_affine_transform(arg,It[0].shape(),Itvs,I[0].shape(),Ivs);
+        compute_mapping_from_displacement();
     }
 };
 

@@ -1853,21 +1853,56 @@ bool fib_data::map_to_mni(bool background)
         reg.Itvs = template_vs;
         reg.ItR = template_to_mni;
 
-        // not FIB file, use t1w as template
+        // not FIB file, use t1w/t1w or others as template
         if(dir.index_name[0] == "image")
         {
-            if(!reg.load_template(1,t1w_template_file_name.c_str()) ||
-               !reg.load_template(2,t2w_template_file_name.c_str()))
+            tipl::out() << "reloading all t1w/t2w/qa/iso";
+            if(!reg.load_template(0,t1w_template_file_name.c_str()) ||
+               !reg.load_template(1,t2w_template_file_name.c_str()) ||
+               !reg.load_template(2,fa_template_list[template_id].c_str()) ||
+               !reg.load_template(3,iso_template_list[template_id].c_str()))
             {
                 error_msg = "cannot perform normalization";
                 tipl::prog_aborted = true;
                 return;
             }
-            reg.It[0].swap(reg.It[1]);
-            reg.It[1].swap(reg.It[2]);
-            reg.It[2].clear();
-            tipl::out() << "using structure image for normalization" << std::endl;
+            tipl::out() << "try using t1w image for registration..." << std::endl;
             reg.cost_type = tipl::reg::mutual_info;
+            reg.linear_reg();
+            std::vector<std::string> contrast_list({"t1w","t2w","fa","iso"});
+            auto best = reg.matching_contrast(contrast_list);
+            auto It = reg.It;
+            auto arg = reg.arg;
+            auto J = reg.J;
+            auto best_It = reg.It[best.first];
+            auto best_name = contrast_list[best.first];
+
+
+            tipl::out() << "try using skull-stripped image for registration..." << std::endl;
+            size_t total_size = It[0].size();
+            for(size_t i = 0;i < total_size;++i)
+                if(It[3][i] == 0)
+                    It[0][i] = It[1][i] = 0;
+            reg.It.swap(It);
+            reg.linear_reg();
+
+            auto best_without_skull = reg.matching_contrast(contrast_list);
+            if(best.second > best_without_skull.second)
+            {
+                tipl::out() << "run further normalization with skull";
+                reg.arg = arg;
+                reg.It.swap(It);
+                reg.J = J;
+            }
+            else
+            {
+                tipl::out() << "run further normalization without skull";
+                best_It = reg.It[best_without_skull.first];
+                best_name = contrast_list[best_without_skull.first];
+            }
+            reg.It[0] = best_It;
+            reg.It[1].clear();
+            tipl::out() << "using " << best_name << " for nonlinear registration";
         }
 
 
@@ -1876,17 +1911,6 @@ bool fib_data::map_to_mni(bool background)
             reg.arg = manual_template_T;
         else
             reg.linear_reg();
-
-        if(dir.index_name[0] == "image")
-        {
-            tipl::out() << "matching t1w t2w contrast" << std::endl;
-            if(!reg.matching_contrast())
-            {
-                error_msg = "contrast matching failed";
-                tipl::prog_aborted = true;
-                return;
-            }
-        }
 
         if(tipl::prog_aborted)
             return;
@@ -1899,12 +1923,14 @@ bool fib_data::map_to_mni(bool background)
         }
         if(tipl::prog_aborted)
             return;
-        s2t = reg.from2to;
-        t2s = reg.to2from;
+
+        if(dir.index_name[0] == "image")
+            reg.to_space(template_I.shape(),template_to_mni);
+        s2t.swap(reg.from2to);
+        t2s.swap(reg.to2from);
         prog = 4;
         if(!reg.save_warping(output_file_name.c_str()))
             tipl::error() << reg.error_msg;
-
     };
 
     if(background)
@@ -1938,32 +1964,27 @@ bool fib_data::load_mapping(const std::string& file_name)
             error_msg = map.error_msg;
             return false;
         }
-        if(map.to2from.shape() != dim)
+        if(map.from2to.shape() != dim)
         {
+            map.f2t_dis.swap(map.t2f_dis);
             map.from2to.swap(map.to2from);
             map.ItR.swap(map.IR);
+            std::swap(map.Itvs,map.Ivs);
         }
-        if(map.to2from.shape() != dim)
+        if(map.from2to.shape() != dim)
         {
             error_msg = "image size mismatch in the mapping file";
             return false;
         }
-        if(map.from2to.shape() != template_I.shape() || map.IR != template_to_mni)
+        if(map.to2from.shape() != template_I.shape() || map.ItR != template_to_mni)
         {
-            t2s = tipl::resample(map.from2to,template_I.shape(),
-                                 tipl::from_space(template_to_mni).to(map.IR));
-            s2t.swap(map.to2from);
-            tipl::transformation_matrix<float,3> T(tipl::from_space(map.IR).to(template_to_mni));
-            tipl::adaptive_par_for(s2t.size(),[&](size_t index)
-            {
-               T(s2t[index]);
-            });
+            tipl::out() << "transform mappings";
+            map.to_space(template_I.shape(),template_to_mni);
         }
-        else
-        {
-            t2s.swap(map.from2to);
-            s2t.swap(map.to2from);
-        }
+
+        s2t.swap(map.from2to);
+        t2s.swap(map.to2from);
+
         prog = 6;
         return true;
     }
