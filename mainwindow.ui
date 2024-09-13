@@ -147,7 +147,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>4</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -1392,7 +1392,7 @@ Atlas</string>
                  <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                 </property>
                 <property name="text">
-                 <string>T1W-Aligned Tractography</string>
+                 <string>T1W/T2W/Others-Aligned Tractography</string>
                 </property>
                 <property name="icon">
                  <iconset resource="icons.qrc">
@@ -1424,7 +1424,7 @@ Atlas</string>
                  <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
                 </property>
                 <property name="text">
-                 <string>T1W T2W
+                 <string>T1W/T2W/...
 (*.nii.gz)</string>
                 </property>
                 <property name="alignment">
