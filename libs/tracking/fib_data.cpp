@@ -1856,6 +1856,7 @@ bool fib_data::map_to_mni(bool background)
         // not FIB file, use t1w/t1w or others as template
         if(dir.index_name[0] == "image")
         {
+            std::vector<std::string> contrast_list({"t1w","t2w","fa","iso"});
             tipl::out() << "reloading all t1w/t2w/qa/iso";
             if(!reg.load_template(0,t1w_template_file_name.c_str()) ||
                !reg.load_template(1,t2w_template_file_name.c_str()) ||
@@ -1869,40 +1870,31 @@ bool fib_data::map_to_mni(bool background)
             tipl::out() << "try using t1w image for registration..." << std::endl;
             reg.cost_type = tipl::reg::mutual_info;
             reg.linear_reg();
-            std::vector<std::string> contrast_list({"t1w","t2w","fa","iso"});
             auto best = reg.matching_contrast(contrast_list);
             auto It = reg.It;
             auto arg = reg.arg;
-            auto J = reg.J;
-            auto best_It = reg.It[best.first];
-            auto best_name = contrast_list[best.first];
 
-
-            tipl::out() << "try using skull-stripped image for registration..." << std::endl;
-            size_t total_size = It[0].size();
-            for(size_t i = 0;i < total_size;++i)
-                if(It[3][i] == 0)
-                    It[0][i] = It[1][i] = 0;
+            tipl::out() << "try using skull-stripped t1w for registration..." << std::endl;
+            tipl::preserve(It[0],It[3]);
+            tipl::preserve(It[1],It[3]);
             reg.It.swap(It);
             reg.linear_reg();
 
             auto best_without_skull = reg.matching_contrast(contrast_list);
             if(best.second > best_without_skull.second)
             {
-                tipl::out() << "run further normalization with skull";
-                reg.arg = arg;
-                reg.It.swap(It);
-                reg.J = J;
+                tipl::out() << "use with-skull registration";
+                reg.arg = arg; //restore linear transformation
+                reg.It.swap(It); // restore It
             }
             else
             {
-                tipl::out() << "run further normalization without skull";
-                best_It = reg.It[best_without_skull.first];
-                best_name = contrast_list[best_without_skull.first];
+                tipl::out() << "use without-skull registration";
+                best = best_without_skull;
             }
-            reg.It[0] = best_It;
+            reg.It[0] = reg.It[best.first];
             reg.It[1].clear();
-            tipl::out() << "using " << best_name << " for nonlinear registration";
+            tipl::out() << "using " << contrast_list[best.first] << " for nonlinear registration";
         }
 
 
