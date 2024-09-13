@@ -43,6 +43,11 @@ public:
     ~RegToolBox();
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);
+public:
+    int subject_view_border = 0;
+    int template_view_border = 0;
+    tipl::shape<2> subject_view_size,template_view_size;
+    bool eventFilter(QObject *obj, QEvent *event) override;
 public slots:
 
     void show_image();
