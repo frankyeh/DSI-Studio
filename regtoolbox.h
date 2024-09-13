@@ -22,7 +22,6 @@ public:
     dual_reg<3> reg;
 public:
     tipl::transformation_matrix<float> T;
-    tipl::value_to_color<float> v2c_I,v2c_It;
 public:
     tipl::thread thread;
     std::shared_ptr<QTimer> timer;
@@ -49,7 +48,6 @@ public slots:
     void show_image();
 private slots:
 
-    void change_contrast();
     void on_OpenTemplate_clicked();
 
     void on_OpenSubject_clicked();

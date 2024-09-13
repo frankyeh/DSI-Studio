@@ -24,10 +24,6 @@ RegToolBox::RegToolBox(QWidget *parent) :
     connect(ui->zoom_template, SIGNAL(valueChanged(double)), this, SLOT(show_image()));
     connect(ui->zoom_subject, SIGNAL(valueChanged(double)), this, SLOT(show_image()));
     connect(ui->slice_pos, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
-    connect(ui->min1, SIGNAL(valueChanged(double)), this, SLOT(change_contrast()));
-    connect(ui->min2, SIGNAL(valueChanged(double)), this, SLOT(change_contrast()));
-    connect(ui->max1, SIGNAL(valueChanged(double)), this, SLOT(change_contrast()));
-    connect(ui->max2, SIGNAL(valueChanged(double)), this, SLOT(change_contrast()));
 
     timer.reset(new QTimer());
     connect(timer.get(), SIGNAL(timeout()), this, SLOT(on_timer()));
@@ -39,10 +35,6 @@ RegToolBox::RegToolBox(QWidget *parent) :
 
     if(!has_cuda)
         ui->use_cuda->hide();
-
-    v2c_I.two_color(tipl::rgb(0,0,0),tipl::rgb(255,255,255));
-    v2c_It.two_color(tipl::rgb(0,0,0),tipl::rgb(255,255,255));
-    change_contrast();
 
     setAcceptDrops(true);
 }
@@ -70,12 +62,6 @@ void RegToolBox::setup_slice_pos(void)
     ui->slice_pos->setMaximum(range-1);
     ui->slice_pos->setValue(pos_ratio*(range-1));
     ui->slice_pos->blockSignals(false);
-    show_image();
-}
-void RegToolBox::change_contrast()
-{
-    v2c_I.set_range(float(ui->min1->value()),float(ui->max1->value()));
-    v2c_It.set_range(float(ui->min2->value()),float(ui->max2->value()));
     show_image();
 }
 void RegToolBox::on_OpenTemplate_clicked()
@@ -247,22 +233,20 @@ struct image_fascade{
 };
 
 template<typename T,typename U>
-inline tipl::color_image show_slice_at(const T& source1,const U& source2,
-                   const tipl::value_to_color<float>& v2c_1,
-                   const tipl::value_to_color<float>& v2c_2,
+inline auto show_slice_at(const T& source1,const U& source2,
                    int slice_pos,float ratio,uint8_t cur_view,uint8_t style)
 {
-    tipl::color_image I1,I2;
+    tipl::grayscale_image I1,I2;
     tipl::par_for(2,[&](size_t i)
     {
         if(i == 0)
-            I1 = std::move(v2c_1[tipl::volume2slice_scaled(source1,cur_view,slice_pos,ratio)]);
+            I1 = tipl::volume2slice_scaled(source1,cur_view,slice_pos,ratio);
         if(i == 1)
-            I2 = std::move(v2c_2[tipl::volume2slice_scaled(source2,cur_view,slice_pos,ratio)]);
+            I2 = tipl::volume2slice_scaled(source2,cur_view,slice_pos,ratio);
     },2);
     tipl::shape<2> shape(std::max<int>(I1.width(),I2.width()),std::max<int>(I1.height(),I2.height()));
     if(!shape.width())
-        return tipl::color_image();
+        return tipl::grayscale_image();
     switch(style)
     {
     case 0:
@@ -287,12 +271,8 @@ inline tipl::color_image show_slice_at(const T& source1,const U& source2,
         {
             for(size_t i = 0;i < I1.size() && i < I2.size();++i)
             {
-                I2[i][0] >>= 1;
-                I2[i][1] >>= 1;
-                I2[i][2] >>= 1;
-                I2[i][0] += I1[i][0] >> 1;
-                I2[i][1] += I1[i][1] >> 1;
-                I2[i][2] += I1[i][2] >> 1;
+                I2[i] >>= 1;
+                I2[i] += I1[i] >> 1;
             }
         }
         break;
@@ -302,7 +282,7 @@ inline tipl::color_image show_slice_at(const T& source1,const U& source2,
         tipl::flip_y(I1);
         tipl::flip_y(I2);
     }
-    tipl::color_image buffer(tipl::shape<2>(2*shape.width(),shape.height()));
+    tipl::grayscale_image buffer(tipl::shape<2>(2*shape.width(),shape.height()));
     if(!I1.empty())
         tipl::draw(I1,buffer,tipl::vector<2,int>());
     if(!I2.empty())
@@ -317,7 +297,7 @@ void RegToolBox::show_image(void)
     size_t row_count = std::max<int>(template_names.size(),subject_names.size());
     if(!row_count)
         return;
-    tipl::color_image subject_image,template_image;
+    tipl::grayscale_image subject_image,template_image;
     std::mutex subject_mutex,template_mutex;
     tipl::par_for(row_count*2,[&](size_t id)
     {
@@ -327,7 +307,7 @@ void RegToolBox::show_image(void)
             {
                 auto I = show_slice_at(
                           reg.It[id],image_fascade<3>(reg.I[id],reg.It[0].shape(),reg.t2f_dis,reg.T()),
-                          v2c_It,v2c_I,float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.It[0].shape()[cur_view]-1),
+                          float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.It[0].shape()[cur_view]-1),
                           ui->zoom_template->value(),cur_view,blend_style());
                 {
                     std::lock_guard<std::mutex> lock(template_mutex);
@@ -346,7 +326,7 @@ void RegToolBox::show_image(void)
                 invT.inverse();
                 auto I = show_slice_at(
                         reg.I[id],image_fascade<3>(reg.It[id],reg.I[0].shape(),reg.f2t_dis,invT),
-                        v2c_I,v2c_It,float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.I[0].shape()[cur_view]-1),
+                        float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.I[0].shape()[cur_view]-1),
                         ui->zoom_subject->value(),
                         cur_view,blend_style());
                 {
@@ -374,14 +354,15 @@ void RegToolBox::show_image(void)
                                  border + height*(float(names.size()-0.5f)/float(row_count)) + names.back()->boundingRect().width()/2);
         }
     };
-
     if(!template_names.empty())
     {
         It_scene.blockSignals(true);
         auto top_text1 = It_scene.addText("template");
         auto top_text2 = It_scene.addText("subject->template");
         int border = top_text1->boundingRect().height();
-        It_scene.addPixmap(QPixmap::fromImage((QImage() << template_image)))->setPos(border, border);
+        QPixmap pixmap;
+        pixmap.loadFromData(template_image.data(), template_image.size(), "GRAY8");
+        It_scene.addPixmap(QPixmap::fromImage((QImage() << (tipl::color_image(template_image)))))->setPos(border, border);
         top_text1->setPos(border + template_image.width() * 0.25 - top_text1->boundingRect().width()/2,0);
         top_text2->setPos(border + template_image.width() * 0.75 - top_text2->boundingRect().width()/2,0);
         add_text(It_scene,template_names,border,template_image.width(),template_image.height(),true);
@@ -397,7 +378,7 @@ void RegToolBox::show_image(void)
         auto top_text2 = I_scene.addText("template->subject");
         int border = top_text1->boundingRect().height();
 
-        I_scene.addPixmap(QPixmap::fromImage((QImage() << subject_image)))->setPos(border, border);
+        I_scene.addPixmap(QPixmap::fromImage((QImage() << (tipl::color_image() = subject_image))))->setPos(border, border);
         top_text1->setPos(border + subject_image.width() * 0.25 - top_text1->boundingRect().width()/2,0);
         top_text2->setPos(border + subject_image.width() * 0.75 - top_text2->boundingRect().width()/2,0);
         add_text(I_scene,subject_names,border,subject_image.width(),subject_image.height(),true);
