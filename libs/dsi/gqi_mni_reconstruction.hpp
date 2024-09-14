@@ -39,8 +39,8 @@ public:
         dual_reg<3> reg;
         reg.export_intermediate = voxel.needs("debug");
 
-        if(!reg.load_template(0,fa_template_list[voxel.template_id].c_str()) ||
-           !reg.load_template(1,iso_template_list[voxel.template_id].c_str()))
+        if(!reg.load_template(0,fa_template_list[voxel.template_id]) ||
+           !reg.load_template(1,iso_template_list[voxel.template_id]))
             throw std::runtime_error("cannot load anisotropy/isotropy template");
         voxel.trans_to_mni = reg.ItR;
 
@@ -53,7 +53,7 @@ public:
         if(!voxel.other_modality_template.empty())
         {
             tipl::out() << "adding " << voxel.other_modality_template << " as template for registration";
-            if(!reg.load_template(2,voxel.other_modality_template.c_str()))
+            if(!reg.load_template(2,voxel.other_modality_template))
                 throw std::runtime_error(std::string("cannot load template: ") + voxel.other_modality_template);
 
             tipl::out() << "moving QA/ISO to the registration modality space";
