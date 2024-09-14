@@ -85,7 +85,7 @@ int reg(tipl::program_option<tipl::out>& po)
 {
     dual_reg<3> r;
 
-    if(po.has("warp") || po.has("inv_warp"))
+    if(po.has("warp"))
     {
         if(!po.has("apply_warp"))
         {
@@ -93,10 +93,8 @@ int reg(tipl::program_option<tipl::out>& po)
             return 1;
         }
         tipl::out() << "loading warping field";
-        if(!r.load_warping(po.has("warp") ? po.get("warp") : po.get("inv_warp")))
+        if(!r.load_warping(po.get("warp")))
             goto error;
-        if(!po.has("warp"))
-            r.inv_warping();
         return after_warp(po,r);
     }
 
