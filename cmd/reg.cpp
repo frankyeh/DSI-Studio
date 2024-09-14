@@ -98,13 +98,13 @@ int reg(tipl::program_option<tipl::out>& po)
         return 1;
     }
 
-    if(!r.load_subject(0,po.get("from").c_str()) ||
-       !r.load_template(0,po.get("to").c_str()))
+    if(!r.load_subject(0,po.get("from")) ||
+       !r.load_template(0,po.get("to")))
         goto error;
     if(po.has("from2") && po.has("to2"))
     {
-        if(!r.load_subject(1,po.get("from2").c_str()) ||
-           !r.load_template(1,po.get("to2").c_str()))
+        if(!r.load_subject(1,po.get("from2")) ||
+           !r.load_template(1,po.get("to2")))
             goto error;
     }
 
