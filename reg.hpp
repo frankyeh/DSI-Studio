@@ -268,12 +268,8 @@ public:
 
         J.clear();
         J.resize(max_modality);
-        for(size_t i = 0;i < J.size();++i)
-        {
-            if(I[i].empty() || It[i].empty())
-                break;
+        for(size_t i = 0;i < J.size() && !I[i].empty();++i)
             J[i] = tipl::resample(I[i],Its,trans);
-        }
 
         calculate_linear_r();
 
