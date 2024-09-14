@@ -1235,39 +1235,6 @@ void tracking_window::on_actionLoad_MNI_mapping_triggered()
     QMessageBox::information(this,QApplication::applicationName(),"mapping loaded");
 }
 
-
-void tracking_window::on_actionSave_MNI_mapping_triggered()
-{
-    std::string output_file_name(handle->fib_file_name);
-    output_file_name += ".";
-    output_file_name += QFileInfo(fa_template_list[handle->template_id].c_str()).baseName().toLower().toStdString();
-    output_file_name += ".mz";
-
-    QString filename = QFileDialog::getSaveFileName(
-                       this,"Save MNI mapping",output_file_name.c_str(),
-                       "Mapping file(*.mz);;All file types (*)" );
-    if (filename.isEmpty())
-        return;
-    {
-        tipl::progress prog("saving mapping",true);
-        dual_reg<3> reg;
-        reg.Itvs = handle->template_vs;
-        reg.ItR = handle->template_to_mni;
-        reg.Ivs = handle->vs;
-        reg.IR = handle->trans_to_mni;
-        reg.from2to = handle->s2t;
-        reg.to2from = handle->t2s;
-        if(!reg.save_warping(filename.toStdString().c_str()))
-        {
-            QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
-            return;
-        }
-    }
-    QMessageBox::information(this,QApplication::applicationName(),"mapping saved");
-}
-
-
-
 void tracking_window::dragEnterEvent(QDragEnterEvent *event)
 {
     if(event->mimeData()->hasUrls())
