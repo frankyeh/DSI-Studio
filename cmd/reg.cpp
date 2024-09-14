@@ -18,10 +18,18 @@ int after_warp(tipl::program_option<tipl::out>& po,dual_reg<3>& r)
     }
 
     for(const auto& each_file: filename_cmds)
-        if(!r.apply_warping(each_file.c_str(),
-                        (each_file+(tipl::ends_with(each_file,".tt.gz") ? ".wp.tt.gz" : ".wp.nii.gz")).c_str()))
-            tipl::error() << r.error_msg;
-
+    {
+        if(tipl::ends_with(each_file,".tt.gz"))
+        {
+            if(!r.apply_warping_tt(each_file.c_str(),(each_file+".wp.tt.gz").c_str()))
+                tipl::error() << r.error_msg;
+        }
+        else
+        {
+            if(!r.apply_warping(each_file.c_str(),(each_file+".wp.nii.gz").c_str()))
+                tipl::error() << r.error_msg;
+        }
+    }
     return 0;
 }
 
