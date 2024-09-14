@@ -272,8 +272,7 @@ public:
         {
             if(I[i].empty() || It[i].empty())
                 break;
-            J[i] = It[i];
-            tipl::resample(I[i],J[i],trans);
+            J[i] = tipl::resample(I[i],Its,trans);
         }
 
         calculate_linear_r();
@@ -309,15 +308,14 @@ public:
     void nonlinear_reg(bool& terminated)
     {
         tipl::progress prog("nonlinear registration");
+        f2t_dis.clear();
+        t2f_dis.clear();
         if(skip_nonlinear)
         {
-            f2t_dis.clear();
-            t2f_dis.clear();
             f2t_dis.resize(Its);
             t2f_dis.resize(Its);
             return;
         }
-
         tipl::par_for(2,[&](int id)
         {
             if(id)
