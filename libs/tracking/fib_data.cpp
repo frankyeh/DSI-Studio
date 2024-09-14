@@ -1858,10 +1858,10 @@ bool fib_data::map_to_mni(bool background)
         {
             std::vector<std::string> contrast_list({"t1w","t2w","qa","iso"});
             tipl::out() << "reloading all t1w/t2w/qa/iso";
-            if(!reg.load_template(0,t1w_template_file_name.c_str()) ||
-               !reg.load_template(1,t2w_template_file_name.c_str()) ||
-               !reg.load_template(2,fa_template_list[template_id].c_str()) ||
-               !reg.load_template(3,iso_template_list[template_id].c_str()))
+            if(!reg.load_template(0,t1w_template_file_name) ||
+               !reg.load_template(1,t2w_template_file_name) ||
+               !reg.load_template(2,fa_template_list[template_id]) ||
+               !reg.load_template(3,iso_template_list[template_id]))
             {
                 error_msg = "cannot perform normalization";
                 tipl::prog_aborted = true;
