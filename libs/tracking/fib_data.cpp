@@ -1869,8 +1869,11 @@ bool fib_data::map_to_mni(bool background)
             }
             tipl::out() << "try using t1w image for registration..." << std::endl;
             reg.cost_type = tipl::reg::mutual_info;
-            reg.linear_reg();
-            auto best = reg.matching_contrast(contrast_list);
+            reg.linear_reg(tipl::prog_aborted);
+            if(tipl::prog_aborted)
+                return;
+            auto best_index = std::max_element(reg.r.begin(),reg.r.end())-reg.r.begin();
+            float best_r = reg.r[best_index];
             auto It = reg.It;
             auto arg = reg.arg;
 
@@ -1878,10 +1881,10 @@ bool fib_data::map_to_mni(bool background)
             tipl::preserve(It[0],It[3]);
             tipl::preserve(It[1],It[3]);
             reg.It.swap(It);
-            reg.linear_reg();
-
-            auto best_without_skull = reg.matching_contrast(contrast_list);
-            if(best.second > best_without_skull.second)
+            reg.linear_reg(tipl::prog_aborted);
+            if(tipl::prog_aborted)
+                return;
+            if(best_r > tipl::max_value(reg.r))
             {
                 tipl::out() << "use with-skull registration";
                 reg.arg = arg; //restore linear transformation
@@ -1890,11 +1893,11 @@ bool fib_data::map_to_mni(bool background)
             else
             {
                 tipl::out() << "use without-skull registration";
-                best = best_without_skull;
+                best_index = std::max_element(reg.r.begin(),reg.r.end())-reg.r.begin();
             }
-            reg.It[0] = reg.It[best.first];
+            reg.It[0] = reg.It[best_index];
             reg.It[1].clear();
-            tipl::out() << "using " << contrast_list[best.first] << " for nonlinear registration";
+            tipl::out() << "using " << contrast_list[best_index] << " for nonlinear registration";
         }
 
 
@@ -1907,6 +1910,9 @@ bool fib_data::map_to_mni(bool background)
         if(tipl::prog_aborted)
             return;
         prog = 3;
+
+
+
         reg.nonlinear_reg(tipl::prog_aborted);
         if(reg.r[0] < 0.3f)
         {

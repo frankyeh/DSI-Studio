@@ -259,11 +259,6 @@ public:
             tipl::out() << "downsample subject to " << Ivs[0] << " mm resolution" << std::endl;
         }
     }
-
-    inline float linear_reg(void)
-    {
-        return linear_reg(tipl::prog_aborted);
-    }
     auto make_list(const std::vector<image_type>& data)
     {
         std::vector<tipl::const_pointer_image<dim,unsigned char> > ptr;
@@ -275,6 +270,15 @@ public:
         }
         modality_count = ptr.size();
         return ptr;
+    }
+    void calculate_linear_r(void)
+    {
+        for(size_t i = 0;i < It.size();++i)
+            if(!It[i].empty() || !J[i].empty())
+                tipl::out() << "linear r: "
+                            << (r[i] = tipl::correlation(
+                            J[i].empty() ? J[0]:J[i],
+                            It[i].empty() ? It[0]:It[i]));
     }
     float linear_reg(bool& terminated)
     {
@@ -297,8 +301,7 @@ public:
             tipl::resample(I[i],J[i],trans);
         }
 
-        auto r = tipl::correlation(J[0],It[0]);
-        tipl::out() << "linear: " << r << std::endl;
+        calculate_linear_r();
 
         for(size_t i = 0;i < modality_count && export_intermediate;++i)
         {
@@ -306,11 +309,7 @@ public:
             tipl::io::gz_nifti::save_to_file(("It" + std::to_string(i) + ".nii.gz").c_str(),It[i],Itvs,ItR);
             tipl::io::gz_nifti::save_to_file(("J" + std::to_string(i) + ".nii.gz").c_str(),J[i],Itvs,ItR);
         }
-        return r;
-    }
-    inline void nonlinear_reg(void)
-    {
-        nonlinear_reg(tipl::prog_aborted);
+        return r[0];
     }
     void compute_mapping_from_displacement(void)
     {
@@ -319,7 +318,7 @@ public:
         tipl::inv_displacement_to_mapping(f2t_dis,from2to,trans);
         tipl::displacement_to_mapping(t2f_dis,to2from,trans);
     }
-    void report_cdm_correlation(void)
+    void calculate_nonlinear_r(void)
     {
         tipl::par_for(modality_count,[&](size_t i)
         {
@@ -327,7 +326,7 @@ public:
             r[i] = tipl::correlation(JJ[i],It[i]);
         },modality_count);
         for(size_t i = 0;i < modality_count;++i)
-            tipl::out() << "nonlinear: " << r[i];
+            tipl::out() << "nonlinear r:" << r[i];
     }
 
     void nonlinear_reg(bool& terminated)
@@ -351,7 +350,7 @@ public:
         },2);
 
         compute_mapping_from_displacement();
-        report_cdm_correlation();
+        calculate_nonlinear_r();
 
         if(export_intermediate)
         {
@@ -377,20 +376,11 @@ public:
             tipl::io::gz_nifti::save_to_file("dis.nii.gz",buffer,Itvs,ItR);
         }
     }
-    std::pair<size_t,float> matching_contrast(const std::vector<std::string>& contrast_names)
-    {
-        tipl::out() << "matching contrast";
-        std::vector<float> linear_r(contrast_names.size());
-        for(size_t i = 0;i < contrast_names.size();++i)
-            tipl::out() << contrast_names[i] << " r:" << (linear_r[i] = tipl::correlation(J[0],It[i]));
-        size_t max_index = std::max_element(linear_r.begin(),linear_r.end())-linear_r.begin();
-        tipl::out() << "best matching contrast: " << contrast_names[max_index];
-        return std::make_pair(max_index,linear_r[max_index]);
-    }
 public:
-    auto apply_warping(const tipl::image<dimension>& from,bool is_label) const
+    template<typename image_type>
+    auto apply_warping(const image_type& from,bool is_label) const
     {
-        tipl::image<dimension> to(It[0].shape());
+        image_type to(It[0].shape());
         if(is_label)
         {
             if(to2from.empty())
@@ -407,9 +397,10 @@ public:
         }
         return to;
     }
-    auto apply_inv_warping(const tipl::image<dimension>& to,bool is_label) const
+    template<typename image_type>
+    auto apply_inv_warping(const image_type& to,bool is_label) const
     {
-        tipl::image<dimension> from(I[0].shape());
+        image_type from(I[0].shape());
         if(is_label)
         {
             if(from2to.empty())
@@ -426,68 +417,28 @@ public:
         }
         return from;
     }
-    bool apply_warping(const char* from,const char* to) const
+    auto apply_warping(const char* from) const
     {
-        if(tipl::ends_with(from,".tt.gz"))
-            return apply_warping_tt(from,to);
-        /*
-        tipl::out() << "opening " << from;
-        tipl::io::gz_nifti nii;
-        if(!nii.load_from_file(from))
-        {
-            error_msg = "cannot open ";
-            error_msg += from;
-            return false;
-        }
-        if(nii.dim(dimension+1) > 1)
-        {
-            // check data range
-            std::vector<tipl::image<dimension> > I_list(nii.dim(dimension+1));
-            for(unsigned int index = 0;index < nii.dim(dimension+1);++index)
-            {
-                if(!nii.toLPS(I_list[index]))
-                {
-                    error_msg = "failed to parse 4D NIFTI file";
-                    return false;
-                }
-                std::replace_if(I_list[index].begin(),I_list[index].end(),[](float v){return std::isnan(v) || std::isinf(v) || v < 0.0f;},0.0f);
-            }
-            if(I[0].shape() != I_list[0].shape())
-            {
-                error_msg = std::filesystem::path(from).filename().u8string();
-                error_msg += " has an image size or srow matrix from that of the original --from image.";
-                return false;
-            }
-            bool is_label = tipl::is_label_image(I_list[0]);
-            tipl::out() << (is_label ? "label image interpolated using nearest assignment " : "scalar image interpolated using spline") << std::endl;
-            tipl::image<dimension+1> J4(It[0].shape().expand(nii.dim(dimension+1)));
-            tipl::adaptive_par_for(nii.dim(4),[&](size_t z)
-            {
-                tipl::image<dimension> out(apply_warping(I_list[z],is_label));
-                std::copy(out.begin(),out.end(),J4.slice_at(z).begin());
-            });
-            if(!tipl::io::gz_nifti::save_to_file(to,J4,Itvs,ItR,It_is_mni))
-            {
-                error_msg = "cannot write to file ";
-                error_msg += to;
-                return false;
-            }
-            return true;
-        }
-        */
-        tipl::out() << "apply warping to " << from;
         tipl::out() << "opening " << from;
         tipl::image<dimension> I3(I[0].shape());
         if(!tipl::io::gz_nifti::load_to_space(from,I3,IR))
         {
             error_msg = "cannot open ";
             error_msg += from;
-            return false;
+            return tipl::image<dimension>();
         }
         bool is_label = tipl::is_label_image(I3);
         tipl::out() << (is_label ? "label image interpolated using nearest assignment " : "scalar image interpolated using spline") << std::endl;
+        tipl::out() << "apply warping to " << from;
+        return apply_warping(I3,is_label);
+    }
+    bool apply_warping(const char* from,const char* to) const
+    {
+        auto I = apply_warping(from);
+        if(I.empty())
+            return false;
         tipl::out() << "saving " << to;
-        if(!tipl::io::gz_nifti::save_to_file(to,apply_warping(I3,is_label),Itvs,ItR,It_is_mni))
+        if(!tipl::io::gz_nifti::save_to_file(to,I,Itvs,ItR,It_is_mni))
         {
             error_msg = "cannot write to file ";
             error_msg += to;
@@ -495,21 +446,29 @@ public:
         }
         return true;
     }
-    bool apply_inv_warping(const char* to,const char* from) const
+    auto apply_inv_warping(const char* to) const
     {
-        tipl::out() << "apply inverse warping to " << to;
         tipl::out() << "opening " << to;
         tipl::image<dimension> I3(It[0].shape());
         if(!tipl::io::gz_nifti::load_to_space(to,I3,ItR))
         {
             error_msg = "cannot open ";
             error_msg += to;
-            return false;
+            return tipl::image<dimension>();
         }
         bool is_label = tipl::is_label_image(I3);
         tipl::out() << (is_label ? "label image interpolated using nearest assignment " : "scalar image interpolated using spline") << std::endl;
+        tipl::out() << "apply inverse warping to " << to;
+        return apply_inv_warping(I3,is_label);
+    }
+
+    bool apply_inv_warping(const char* to,const char* from) const
+    {
+        auto I = apply_inv_warping(to);
+        if(I.empty())
+            return false;
         tipl::out() << "saving " << from;
-        if(!tipl::io::gz_nifti::save_to_file(from,apply_inv_warping(I3,is_label),Ivs,IR,false))
+        if(!tipl::io::gz_nifti::save_to_file(from,I,Ivs,IR,false))
         {
             error_msg = "cannot write file ";
             error_msg += from;
@@ -619,6 +578,8 @@ public:
     void to_space(const tipl::shape<3>& new_It_shape,
                   const tipl::matrix<4,4>& new_ItR)
     {
+        if(new_It_shape == It[0].shape() && new_ItR == ItR)
+            return;
         auto trans = tipl::transformation_matrix<float,dimension>(tipl::from_space(new_ItR).to(ItR));
         auto TR = trans;
         TR *= T();
