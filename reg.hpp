@@ -101,7 +101,7 @@ public:
         }
         I[id] = subject_image_pre(in);
     }
-    bool load_subject(size_t id,const char* file_name)
+    bool load_subject(size_t id,const std::string& file_name)
     {
         if constexpr(dim == 2)
         {
@@ -156,7 +156,7 @@ public:
             return true;
         }
     }
-    bool load_template(size_t id,const char* file_name)
+    bool load_template(size_t id,const std::string& file_name)
     {
         if constexpr(dim == 2)
         {
