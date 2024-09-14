@@ -1856,7 +1856,7 @@ bool fib_data::map_to_mni(bool background)
         // not FIB file, use t1w/t1w or others as template
         if(dir.index_name[0] == "image")
         {
-            std::vector<std::string> contrast_list({"t1w","t2w","fa","iso"});
+            std::vector<std::string> contrast_list({"t1w","t2w","qa","iso"});
             tipl::out() << "reloading all t1w/t2w/qa/iso";
             if(!reg.load_template(0,t1w_template_file_name.c_str()) ||
                !reg.load_template(1,t2w_template_file_name.c_str()) ||
@@ -1902,7 +1902,7 @@ bool fib_data::map_to_mni(bool background)
         if(has_manual_atlas)
             reg.arg = manual_template_T;
         else
-            reg.linear_reg();
+            reg.linear_reg(tipl::prog_aborted);
 
         if(tipl::prog_aborted)
             return;
