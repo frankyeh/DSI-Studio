@@ -1844,14 +1844,14 @@ bool fib_data::map_to_mni(bool background)
 
         reg.I[0] = subject_image_pre(tipl::image<3>(dir.fa[0],dim));
         if(iso_index < slices.size())
-            reg.I[1] = tipl::image<3>(slices[iso_index]->get_image());
+            reg.I[1] = subject_image_pre(tipl::image<3>(slices[iso_index]->get_image()));
 
         reg.Is = dim;
         reg.Ivs = vs;
         reg.IR = trans_to_mni;
 
-        reg.It[0] = template_image_pre(tipl::image<3>(template_I));
-        reg.It[1] = template_image_pre(tipl::image<3>(template_I2));
+        reg.It[0] = template_image_pre(template_I);
+        reg.It[1] = template_image_pre(template_I2);
 
         reg.Its = template_I.shape();
         reg.Itvs = template_vs;
