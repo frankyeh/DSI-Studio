@@ -44,8 +44,9 @@ public:
             throw std::runtime_error("cannot load anisotropy/isotropy template");
         voxel.trans_to_mni = reg.ItR;
 
-        reg.load_subject(0,std::move(voxel.qa_map));
-        reg.load_subject(1,std::move(voxel.iso_map));
+        reg.I[0] = subject_image_pre(std::move(voxel.qa_map));
+        reg.I[1] = subject_image_pre(std::move(voxel.iso_map));
+        reg.Is = voxel.dim;
         reg.Ivs = voxel.vs;
 
 
@@ -57,7 +58,8 @@ public:
                 throw std::runtime_error(std::string("cannot load template: ") + voxel.other_modality_template);
 
             tipl::out() << "moving QA/ISO to the registration modality space";
-            reg.load_subject(2,tipl::image<3>(voxel.other_modality_subject));
+            reg.I[2] = subject_image_pre(tipl::image<3>(voxel.other_modality_subject));
+            reg.Is = voxel.other_modality_subject.shape();
             reg.Ivs = voxel.vs = voxel.other_modality_vs;
             for(size_t i = 0;i < 2;++i)
                 reg.I[i] = tipl::resample(reg.I[i],voxel.other_modality_subject.shape(),voxel.other_modality_trans);

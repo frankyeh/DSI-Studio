@@ -850,12 +850,14 @@ void view_image::on_actionSave_triggered()
         if(regtool_subject)
         {
             regtool->reg.I[0] = cur_image->I_float32;
+            regtool->reg.Is = cur_image->I_float32.shape();
             regtool->reg.Ivs = cur_image->vs;
             regtool->reg.IR = cur_image->T;
         }
         else
         {
             regtool->reg.It[0] = cur_image->I_float32;
+            regtool->reg.Its = cur_image->I_float32.shape();
             regtool->reg.Itvs = cur_image->vs;
             regtool->reg.ItR = cur_image->T;
         }

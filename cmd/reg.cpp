@@ -116,8 +116,8 @@ int reg(tipl::program_option<tipl::out>& po)
             goto error;
     }
 
-    tipl::out() << "from dim: " << r.I[0].shape();
-    tipl::out() << "to dim: " << r.It[0].shape();
+    tipl::out() << "from dim: " << r.Is;
+    tipl::out() << "to dim: " << r.Its;
 
     tipl::out() << "running linear registration." << std::endl;
 

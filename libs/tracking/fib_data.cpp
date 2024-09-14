@@ -1837,19 +1837,23 @@ bool fib_data::map_to_mni(bool background)
     {
         prog = 1;
         dual_reg<3> reg;
-        reg.load_subject(0,tipl::image<3>(dir.fa[0],dim));
-        {
-            size_t iso_index = get_name_index("iso");
-            if(slices.size() == iso_index)
-                iso_index = get_name_index("md");
-            if(slices.size() != iso_index)
-                reg.load_subject(1,tipl::image<3>(slices[iso_index]->get_image()));
-        }
+
+        size_t iso_index = get_name_index("iso");
+        if(slices.size() == iso_index)
+            iso_index = get_name_index("md");
+
+        reg.I[0] = subject_image_pre(tipl::image<3>(dir.fa[0],dim));
+        if(iso_index < slices.size())
+            reg.I[1] = tipl::image<3>(slices[iso_index]->get_image());
+
+        reg.Is = dim;
         reg.Ivs = vs;
         reg.IR = trans_to_mni;
 
         reg.It[0] = template_image_pre(tipl::image<3>(template_I));
         reg.It[1] = template_image_pre(tipl::image<3>(template_I2));
+
+        reg.Its = template_I.shape();
         reg.Itvs = template_vs;
         reg.ItR = template_to_mni;
 
@@ -1911,8 +1915,6 @@ bool fib_data::map_to_mni(bool background)
             return;
         prog = 3;
 
-
-
         reg.nonlinear_reg(tipl::prog_aborted);
         if(reg.r[0] < 0.3f)
         {
@@ -1923,7 +1925,7 @@ bool fib_data::map_to_mni(bool background)
             return;
 
         if(dir.index_name[0] == "image")
-            reg.to_space(template_I.shape(),template_to_mni);
+            reg.to_It_space(template_I.shape(),template_to_mni);
         s2t.swap(reg.from2to);
         t2s.swap(reg.to2from);
         prog = 4;
@@ -1964,20 +1966,13 @@ bool fib_data::load_mapping(const std::string& file_name)
         }
         if(map.from2to.shape() != dim)
         {
-            map.f2t_dis.swap(map.t2f_dis);
-            map.from2to.swap(map.to2from);
-            map.ItR.swap(map.IR);
-            std::swap(map.Itvs,map.Ivs);
-        }
-        if(map.from2to.shape() != dim)
-        {
             error_msg = "image size mismatch in the mapping file";
             return false;
         }
         if(map.to2from.shape() != template_I.shape() || map.ItR != template_to_mni)
         {
             tipl::out() << "transform mappings";
-            map.to_space(template_I.shape(),template_to_mni);
+            map.to_It_space(template_I.shape(),template_to_mni);
         }
 
         s2t.swap(map.from2to);

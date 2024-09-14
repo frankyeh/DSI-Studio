@@ -57,7 +57,7 @@ void RegToolBox::setup_slice_pos(void)
 {
     if(reg.It.empty() || reg.I.empty())
         return;
-    int range = std::max<int>(reg.It[0].shape()[cur_view],reg.I[0].shape()[cur_view]);
+    int range = std::max<int>(reg.Its[cur_view],reg.Is[cur_view]);
     if(range == ui->slice_pos->maximum()+1)
         return;
     ui->slice_pos->blockSignals(true);
@@ -353,8 +353,8 @@ void RegToolBox::show_image(void)
             if(!reg.It[0].empty())
             {
                 auto I = show_slice_at(
-                          reg.It[id],image_fascade<3>(reg.I[id],reg.It[0].shape(),reg.t2f_dis,reg.T()),
-                          float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.It[0].shape()[cur_view]-1),
+                          reg.It[id],image_fascade<3>(reg.I[id],reg.Its,reg.t2f_dis,reg.T()),
+                          float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.Its[cur_view]-1),
                           ui->zoom_template->value(),cur_view,blend_style());
                 {
                     std::lock_guard<std::mutex> lock(template_mutex);
@@ -375,8 +375,8 @@ void RegToolBox::show_image(void)
                 auto invT = reg.T();
                 invT.inverse();
                 auto I = show_slice_at(
-                        reg.I[id],image_fascade<3>(reg.It[id],reg.I[0].shape(),reg.f2t_dis,invT),
-                        float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.I[0].shape()[cur_view]-1),
+                        reg.I[id],image_fascade<3>(reg.It[id],reg.Is,reg.f2t_dis,invT),
+                        float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.Is[cur_view]-1),
                         ui->zoom_subject->value(),
                         cur_view,blend_style());
                 {
@@ -632,7 +632,7 @@ void RegToolBox::on_actionSubject_Image_triggered()
     view_image* dialog = new view_image(this);
     dialog->setAttribute(Qt::WA_DeleteOnClose);
     dialog->cur_image->I_float32 = reg.I[0];
-    dialog->cur_image->shape = reg.I[0].shape();
+    dialog->cur_image->shape = reg.Is;
     dialog->cur_image->vs = reg.Ivs;
     dialog->cur_image->T = reg.IR;
     dialog->cur_image->pixel_type = variant_image::float32;
@@ -646,7 +646,7 @@ void RegToolBox::on_actionTemplate_Image_triggered()
     view_image* dialog = new view_image(this);
     dialog->setAttribute(Qt::WA_DeleteOnClose);
     dialog->cur_image->I_float32 = reg.It[0];
-    dialog->cur_image->shape = reg.It[0].shape();
+    dialog->cur_image->shape = reg.Its;
     dialog->cur_image->vs = reg.Itvs;
     dialog->cur_image->T = reg.ItR;
     dialog->cur_image->pixel_type = variant_image::float32;
