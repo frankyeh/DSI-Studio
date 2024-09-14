@@ -87,12 +87,6 @@ public:
         from2to.clear();
         arg.clear();
     }
-    void inv_warping(void)
-    {
-        ItR.swap(IR);
-        std::swap(Itvs,Ivs);
-        to2from.swap(from2to);
-    }
     bool load_subject(size_t id,const std::string& file_name)
     {
         if(id == 0)
@@ -127,7 +121,7 @@ public:
             {
                 nifti.get_image_transformation(IR);
                 nifti.get_voxel_size(Ivs);
-                Is = I[0].shape();
+                nifti.get_image_dimension(Is);
             }
             else
             {
@@ -174,7 +168,7 @@ public:
             {
                 nifti.get_image_transformation(ItR);
                 nifti.get_voxel_size(Itvs);
-                Its = It[0].shape();
+                nifti.get_image_dimension(Its);
                 It_is_mni = nifti.is_mni();
             }
             else
@@ -207,7 +201,7 @@ public:
             return;
         float ratio = (rigid_body ? Ivs[0]/Itvs[0] : float(Is.width())/float(Its.width()));
 
-        auto downsample = [](auto& I,auto& vs,auto& trans)
+        auto downsample = [](auto& I,auto& Is,auto& vs,auto& trans)
         {
             for(auto& each : I)
             {
@@ -220,16 +214,17 @@ public:
                              4,5,6,
                              8,9,10})
                 trans[each] *= 2.0f;
+            Is = I[0].shape();
         };
         while(ratio < 0.5f)   // if subject resolution is substantially lower, downsample template
         {
-            downsample(It,Itvs,ItR);
+            downsample(It,Its,Itvs,ItR);
             ratio *= 2.0f;
             tipl::out() << "downsampling template to " << Itvs[0] << " mm resolution" << std::endl;
         }
         while(ratio > 2.5f)  // if subject resolution is higher, downsample it for registration
         {
-            downsample(I,Ivs,IR);
+            downsample(I,Is,Ivs,IR);
             ratio /= 2.0f;
             tipl::out() << "downsample subject to " << Ivs[0] << " mm resolution" << std::endl;
         }
@@ -273,7 +268,7 @@ public:
 
         calculate_linear_r();
 
-        for(size_t i = 0;i < modality_count && export_intermediate;++i)
+        for(size_t i = 0;i < !I[i].empty() && export_intermediate;++i)
         {
             tipl::io::gz_nifti::save_to_file(("I" + std::to_string(i) + ".nii.gz").c_str(),I[i],Itvs,ItR);
             tipl::io::gz_nifti::save_to_file(("It" + std::to_string(i) + ".nii.gz").c_str(),It[i],Itvs,ItR);
