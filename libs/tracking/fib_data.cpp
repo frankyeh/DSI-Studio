@@ -1972,6 +1972,9 @@ bool fib_data::load_mapping(const std::string& file_name)
         if(map.to2from.shape() != template_I.shape() || map.ItR != template_to_mni)
         {
             tipl::out() << "transform mappings";
+            tipl::out() << "dim: " << map.to2from.shape() << "->" << template_I.shape();
+            tipl::out() << "trans: " << map.ItR;
+            tipl::out() << "new trans:" << template_to_mni;
             map.to_It_space(template_I.shape(),template_to_mni);
         }
 
