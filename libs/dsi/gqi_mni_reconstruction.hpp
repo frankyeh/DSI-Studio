@@ -38,13 +38,13 @@ public:
         if(!reg.load_template(0,fa_template_list[voxel.template_id]) ||
            !reg.load_template(1,iso_template_list[voxel.template_id]))
             throw std::runtime_error("cannot load anisotropy/isotropy template");
+        voxel.trans_to_mni = reg.IR = reg.ItR;
 
         reg.I[0] = subject_image_pre(std::move(voxel.qa_map));
         reg.I[1] = subject_image_pre(std::move(voxel.iso_map));
         reg.Is = native_geo = voxel.dim;
         reg.Ivs = native_vs = voxel.vs;
-        reg.IR = voxel.trans_to_mni;
-        voxel.trans_to_mni = reg.ItR;
+
 
 
         bool t1w_reg = false;
