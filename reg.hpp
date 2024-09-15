@@ -497,6 +497,16 @@ public:
         tipl::upsample_with_padding(t2f_dis,Its);
         tipl::upsample_with_padding(f2t_dis,Its);
         compute_mapping_from_displacement();
+        if(It[0].shape() != Its)
+        {
+            It.clear();
+            It.resize(max_modality);
+        }
+        if(I[0].shape() != Is)
+        {
+            I.clear();
+            I.resize(max_modality);
+        }
         return true;
     }
 
@@ -559,20 +569,33 @@ public:
     {
         if(new_Its == Its && new_ItR == ItR)
             return;
+        tipl::vector<3> new_Itvs;
+        for(int i = 0;i < 3;++i)
+            new_Itvs[i] = std::sqrt(new_ItR[i]*new_ItR[i]+new_ItR[i+4]*new_ItR[i+4]+new_ItR[i+8]*new_ItR[i+8]);
+        float jacobian = Itvs[0]/new_Itvs[0];
+
         auto trans = tipl::transformation_matrix<float,dimension>(tipl::from_space(new_ItR).to(ItR));
         auto TR = trans;
         TR *= T();
         for(auto& each : It)
             if(!each.empty())
                 each = tipl::resample(each,new_Its,trans);
+
         if(!f2t_dis.empty())
+        {
             f2t_dis = tipl::resample(f2t_dis,new_Its,trans);
+            if(jacobian != 1.0f)
+                tipl::multiply_constant(f2t_dis,jacobian);
+        }
         if(!t2f_dis.empty())
+        {
             t2f_dis = tipl::resample(t2f_dis,new_Its,trans);
+            if(jacobian != 1.0f)
+                tipl::multiply_constant(t2f_dis,jacobian);
+        }
         Its = new_Its;
         ItR = new_ItR;
-        for(int i = 0;i < 3;++i)
-            Itvs[i] = std::sqrt(ItR[i]*ItR[i]+ItR[i+4]*ItR[i+4]+ItR[i+8]*ItR[i+8]);
+        Itvs = new_Itvs;
         TR.to_affine_transform(arg,Its,Itvs,Is,Ivs);
         compute_mapping_from_displacement();
     }
