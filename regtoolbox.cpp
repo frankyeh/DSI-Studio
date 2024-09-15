@@ -253,23 +253,21 @@ struct image_fascade{
     typedef float value_type;
     const tipl::image<dimension>& I;
     tipl::shape<dimension> It_shape;
-    const tipl::image<dimension,tipl::vector<dimension> >& t2f_dis;
+    const tipl::image<dimension,tipl::vector<dimension> >& mapping;
     tipl::transformation_matrix<float,dimension> T;
     image_fascade(const tipl::image<dimension>& I_,
                   tipl::shape<dimension> It_shape_,
-                  const tipl::image<dimension,tipl::vector<dimension> >& t2f_dis_,
-                  const tipl::transformation_matrix<float,dimension>& T_):I(I_),It_shape(It_shape_),t2f_dis(t2f_dis_),T(T_){;}
+                  const tipl::image<dimension,tipl::vector<dimension> >& mapping_,
+                  const tipl::transformation_matrix<float,dimension>& T_):I(I_),It_shape(It_shape_),mapping(mapping_),T(T_){;}
 
     float at(const tipl::vector<dimension,int> xyz) const
     {
         if(!It_shape.is_valid(xyz))
             return 0.0f;
         tipl::vector<dimension> pos(xyz);
-        if(!t2f_dis.empty() && t2f_dis.shape() == It_shape)
-            pos += t2f_dis.at(xyz);
+        if(!mapping.empty() && mapping.shape().is_valid(xyz))
+            return tipl::estimate(I,mapping.at(xyz));
         T(pos);
-        if(!t2f_dis.empty() && t2f_dis.shape() != It_shape && t2f_dis.shape() == I.shape())
-            pos += tipl::estimate(t2f_dis,pos);
         return tipl::estimate(I,pos);
     }
     auto width(void) const{return It_shape.width();}
@@ -353,7 +351,7 @@ void RegToolBox::show_image(void)
             if(!reg.It[0].empty())
             {
                 auto I = show_slice_at(
-                          reg.It[id],image_fascade<3>(reg.I[id],reg.Its,reg.t2f_dis,reg.T()),
+                          reg.It[id],image_fascade<3>(reg.I[id],reg.Its,reg.to2from,reg.T()),
                           float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.Its[cur_view]-1),
                           ui->zoom_template->value(),cur_view,blend_style());
                 {
@@ -375,7 +373,7 @@ void RegToolBox::show_image(void)
                 auto invT = reg.T();
                 invT.inverse();
                 auto I = show_slice_at(
-                        reg.I[id],image_fascade<3>(reg.It[id],reg.Is,reg.f2t_dis,invT),
+                        reg.I[id],image_fascade<3>(reg.It[id],reg.Is,reg.from2to,invT),
                         float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.Is[cur_view]-1),
                         ui->zoom_subject->value(),
                         cur_view,blend_style());
@@ -572,13 +570,24 @@ void RegToolBox::on_actionSave_Warping_triggered()
         return;
     QString filename = QFileDialog::getSaveFileName(
             this,"Save Mapping",QDir::currentPath(),
-            "Images (*mz);;All files (*)" );
+            "Images (*.mz);;All files (*)" );
     if(filename.isEmpty())
         return;
     if(!reg.save_warping(filename.toStdString().c_str()))
         QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
 }
 
+void RegToolBox::on_actionOpen_Mapping_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(
+            this,"Open Mapping",QDir::currentPath(),
+            "Images (*.mz);;All files (*)" );
+    if(filename.isEmpty())
+        return;
+    if(!reg.load_warping(filename.toStdString().c_str()))
+        QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
+    show_image();
+}
 
 void RegToolBox::on_show_option_clicked()
 {
@@ -728,4 +737,5 @@ void RegToolBox::on_actionApply_Template_To_Subject_Warping_triggered()
         QMessageBox::information(this,QApplication::applicationName(),"Saved");
     }
 }
+
 
