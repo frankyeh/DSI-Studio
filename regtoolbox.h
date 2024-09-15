@@ -89,6 +89,8 @@ private slots:
 
     void on_actionApply_Template_To_Subject_Warping_triggered();
 
+    void on_actionOpen_Mapping_triggered();
+
 private:
     Ui::RegToolBox *ui;
     QGraphicsScene It_scene,I_scene;
