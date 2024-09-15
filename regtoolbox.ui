@@ -655,6 +655,7 @@
     <addaction name="actionApply_Subject_To_Template_Warping"/>
     <addaction name="actionApply_Template_To_Subject_Warping"/>
     <addaction name="separator"/>
+    <addaction name="actionOpen_Mapping"/>
     <addaction name="actionSave_Warping"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
@@ -703,6 +704,15 @@
    </property>
    <property name="text">
     <string>Apply Template To Subject Warping...</string>
+   </property>
+  </action>
+  <action name="actionOpen_Mapping">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Open Mapping...</string>
    </property>
   </action>
  </widget>
