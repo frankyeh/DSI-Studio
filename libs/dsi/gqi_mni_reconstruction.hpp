@@ -88,7 +88,7 @@ public:
                 if(VFratio != 1.0f)
                     tipl::multiply_constant(affine.data(),affine.data()+12,VFratio);
                 if(t1w_reg)
-                    affine *= voxel.other_modality_trans;
+                    affine.accumulate(voxel.other_modality_trans);
             }
         }
 
