@@ -341,8 +341,7 @@ bool CustomSliceModel::load_slices(void)
 
             vs = handle->vs*(handle->dim.width())/(source_images.width());
 
-            tipl::transformation_matrix<float> M(arg_min,handle->dim,handle->vs,source_images.shape(),vs);
-            M.save_to_transform(to_slice.begin());
+            tipl::transformation_matrix<float>(arg_min,handle->dim,handle->vs,source_images.shape(),vs).to(to_slice);
             to_dif = tipl::inverse(to_slice);
             initial_LPS_nifti_srow(trans_to_mni,source_images.shape(),vs);
             has_transform = true;
@@ -613,8 +612,7 @@ void CustomSliceModel::update_image(tipl::image<3>&& new_image)
 void CustomSliceModel::update_transform(void)
 {
     tipl::transformation_matrix<float> M(arg_min,dim,vs,handle->dim,handle->vs);
-    to_dif.identity();
-    M.save_to_transform(to_dif.begin());
+    M.to(to_dif);
     to_slice = tipl::inverse(to_dif);
     view->T = to_dif;
     view->iT = to_slice;
@@ -670,7 +668,7 @@ bool CustomSliceModel::load_mapping(const char* file_name)
         tipl::transformation_matrix<float> T;
         if(!(in >> T))
             return false;
-        T.to_affine_transform(arg_min,dim,vs,handle->dim,handle->vs);
+        arg_min = T.to_affine_transform(dim,vs,handle->dim,handle->vs);
     }
     update_transform();
     is_diffusion_space = false;
