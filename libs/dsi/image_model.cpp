@@ -921,8 +921,7 @@ tipl::matrix<3,3,float> get_inv_rotation(const Voxel& voxel,const tipl::transfor
 {
     auto iT = T;
     iT.inverse();
-    tipl::affine_transform<double> arg;
-    iT.to_affine_transform(arg,voxel.dim,voxel.vs,voxel.dim,voxel.vs);
+    tipl::affine_transform<double> arg(iT.to_affine_transform(voxel.dim,voxel.vs,voxel.dim,voxel.vs));
     tipl::matrix<3,3,float> r;
     tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
     return r;
@@ -1154,7 +1153,7 @@ bool src_data::align_acpc(float reso)
         T2.sr[0] = double(reso/voxel.vs[0]);
         T2.sr[4] = double(reso/voxel.vs[1]);
         T2.sr[8] = double(reso/voxel.vs[2]);
-        T *= T2;
+        T.accumulate(T2);
     }
     rotate(new_geo,tipl::v(reso,reso,reso),T);
     voxel.report += out.str();
