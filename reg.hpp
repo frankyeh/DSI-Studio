@@ -243,12 +243,10 @@ public:
     }
     void calculate_linear_r(void)
     {
-        for(size_t i = 0;i < It.size();++i)
-            if(!It[i].empty() || !J[i].empty())
-                tipl::out() << "linear r: "
-                            << (r[i] = tipl::correlation(
-                            J[i].empty() ? J[0]:J[i],
-                            It[i].empty() ? It[0]:It[i]));
+        std::fill(r.begin(),r.end(),0.0f);
+        for(size_t i = 0;i < It.size() && (!It[i].empty() || !J[i].empty());++i)
+            tipl::out() << "linear r: "
+                << (r[i] = tipl::correlation(J[i].empty() ? J[0]:J[i],It[i].empty() ? It[0]:It[i]));
     }
     float linear_reg(bool& terminated)
     {
@@ -287,6 +285,7 @@ public:
     }
     void calculate_nonlinear_r(void)
     {
+        std::fill(r.begin(),r.end(),0.0f);
         tipl::par_for(modality_count,[&](size_t i)
         {
             JJ[i] = tipl::compose_mapping(I[i],to2from);
