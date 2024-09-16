@@ -1819,9 +1819,9 @@ bool fib_data::map_to_mni(bool background)
     output_file_name += ".";
     output_file_name += QFileInfo(fa_template_list[template_id].c_str()).baseName().toLower().toStdString();
     output_file_name += ".mz";
-    tipl::out() << "looking for existing mapping: " << output_file_name;
     if(std::filesystem::exists(output_file_name))
     {
+        tipl::out() << "use existing mapping";
         tipl::progress p("open ",output_file_name);
         if(load_mapping(output_file_name))
             return true;
@@ -1832,7 +1832,7 @@ bool fib_data::map_to_mni(bool background)
         }
     }
 
-    tipl::progress p("running normalization");
+    tipl::progress p("normalization");
     auto lambda = [this,output_file_name]()
     {
         prog = 1;
@@ -1914,6 +1914,7 @@ bool fib_data::map_to_mni(bool background)
         if(tipl::prog_aborted)
             return;
         prog = 3;
+
 
         reg.nonlinear_reg(tipl::prog_aborted);
         if(reg.r[0] < 0.3f)
