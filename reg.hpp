@@ -547,55 +547,89 @@ public:
         std::filesystem::rename((output_name + ".tmp.gz").c_str(),output_name);
         return true;
     }
+
+    void dis_to_space(const tipl::shape<3>& new_s,const tipl::matrix<4,4>& new_R)
+    {
+        auto trans = tipl::transformation_matrix<float,dimension>(tipl::from_space(new_R).to(ItR));
+        tipl::vector<3> new_vs(tipl::to_vs(new_R));
+        float jacobian = Itvs[0]/new_vs[0];
+        if(!f2t_dis.empty())
+        {
+            f2t_dis = tipl::resample(f2t_dis,new_s,trans);
+            if(jacobian != 1.0f)
+                tipl::multiply_constant(f2t_dis,jacobian);
+        }
+        if(!t2f_dis.empty())
+        {
+            t2f_dis = tipl::resample(t2f_dis,new_s,trans);
+            if(jacobian != 1.0f)
+                tipl::multiply_constant(t2f_dis,jacobian);
+        }
+    }
+    void to_space(const tipl::shape<3>& new_s,const tipl::matrix<4,4>& new_R)
+    {
+        if(new_s == Is && new_R == IR && new_s == Its && new_R == ItR)
+            return;
+
+        tipl::vector<3> new_vs(tipl::to_vs(new_R));
+        if(ItR != IR || arg != tipl::affine_transform<float,3>())
+            arg = tipl::transformation_matrix<float,dimension>(tipl::from_space(new_R).to(ItR))
+                .accumulate(T())
+                .accumulate(tipl::transformation_matrix<float,dimension>(tipl::from_space(IR).to(new_R)))
+                .to_affine_transform(new_s,new_vs,new_s,new_vs);
+
+        if(new_s != Is || new_R != IR)
+        {
+            auto trans = tipl::transformation_matrix<float,dimension>(tipl::from_space(new_R).to(IR));
+            for(auto& each : I)
+                if(!each.empty())
+                    each = tipl::resample(each,new_s,trans);
+            Is = new_s;
+            IR = new_R;
+            Ivs = tipl::to_vs(IR);
+        }
+        if(new_s != Its || new_R != ItR)
+        {
+            auto trans = tipl::transformation_matrix<float,dimension>(tipl::from_space(new_R).to(ItR));
+            dis_to_space(new_s,new_R);
+            for(auto& each : It)
+                if(!each.empty())
+                    each = tipl::resample(each,new_s,trans);
+            Its = new_s;
+            ItR = new_R;
+            Itvs = new_vs;
+        }
+        compute_mapping_from_displacement();
+    }
     void to_I_space(const tipl::shape<3>& new_Is,const tipl::matrix<4,4>& new_IR)
     {
         if(new_Is == Is && new_IR == IR)
             return;
         auto trans = tipl::transformation_matrix<float,dimension>(tipl::from_space(new_IR).to(IR));
-        auto TR = T();
-        TR *= trans;
         for(auto& each : I)
             if(!each.empty())
                 each = tipl::resample(each,new_Is,trans);
         Is = new_Is;
         IR = new_IR;
-        for(int i = 0;i < 3;++i)
-            Ivs[i] = std::sqrt(IR[i]*IR[i]+IR[i+4]*IR[i+4]+IR[i+8]*IR[i+8]);
-        TR.to_affine_transform(arg,Its,Itvs,Is,Ivs);
+        Ivs = tipl::to_vs(IR);
+        arg = T().accumulate(tipl::from_space(IR).to(new_IR)).
+                to_affine_transform(Its,Itvs,new_Is,Ivs);
         compute_mapping_from_displacement();
     }
     void to_It_space(const tipl::shape<3>& new_Its,const tipl::matrix<4,4>& new_ItR)
     {
         if(new_Its == Its && new_ItR == ItR)
             return;
-        tipl::vector<3> new_Itvs;
-        for(int i = 0;i < 3;++i)
-            new_Itvs[i] = std::sqrt(new_ItR[i]*new_ItR[i]+new_ItR[i+4]*new_ItR[i+4]+new_ItR[i+8]*new_ItR[i+8]);
-        float jacobian = Itvs[0]/new_Itvs[0];
-
+        tipl::vector<3> new_Itvs(tipl::to_vs(new_ItR));
         auto trans = tipl::transformation_matrix<float,dimension>(tipl::from_space(new_ItR).to(ItR));
-        auto TR = trans;
-        TR *= T();
         for(auto& each : It)
             if(!each.empty())
                 each = tipl::resample(each,new_Its,trans);
-
-        if(!f2t_dis.empty())
-        {
-            f2t_dis = tipl::resample(f2t_dis,new_Its,trans);
-            if(jacobian != 1.0f)
-                tipl::multiply_constant(f2t_dis,jacobian);
-        }
-        if(!t2f_dis.empty())
-        {
-            t2f_dis = tipl::resample(t2f_dis,new_Its,trans);
-            if(jacobian != 1.0f)
-                tipl::multiply_constant(t2f_dis,jacobian);
-        }
+        dis_to_space(new_Its,new_ItR);
         Its = new_Its;
         ItR = new_ItR;
         Itvs = new_Itvs;
-        TR.to_affine_transform(arg,Its,Itvs,Is,Ivs);
+        arg = trans.accumulate(T()).to_affine_transform(new_Its,new_Itvs,Is,Ivs);
         compute_mapping_from_displacement();
     }
 };
