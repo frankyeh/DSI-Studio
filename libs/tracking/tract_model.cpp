@@ -3460,8 +3460,6 @@ void ConnectivityMatrix::set_regions(const tipl::shape<3>& geo,
     region_count = regions.size();
     region_map.clear();
     region_map.resize(geo);
-
-    std::vector<std::set<uint16_t> > regions_set(geo.size());
     for(size_t roi = 0;roi < regions.size();++roi)
     {
         auto points = regions[roi]->region;
@@ -3469,10 +3467,8 @@ void ConnectivityMatrix::set_regions(const tipl::shape<3>& geo,
                               regions[roi]->to_diffusion_space,
                               geo,tipl::matrix<4,4>(tipl::identity_matrix()));
         for(auto& pos : points)
-        {
             if(geo.is_valid(pos))
-                regions_set[tipl::pixel_index<3>(pos[0],pos[1],pos[2],geo).index()].insert(uint16_t(roi));
-        }
+                region_map.at(pos).push_back(uint16_t(roi));
     }
     atlas_name = "roi";
 }
