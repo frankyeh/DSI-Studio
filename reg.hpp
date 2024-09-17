@@ -52,9 +52,10 @@ public:
     bool skip_linear = false;
     bool skip_nonlinear = false;
 public:
-    dual_reg(void):I(max_modality),J(max_modality),JJ(max_modality),It(max_modality),r(max_modality)
+    dual_reg(void):modality_names(max_modality),I(max_modality),J(max_modality),JJ(max_modality),It(max_modality),r(max_modality)
     {
     }
+    std::vector<std::string> modality_names;
     std::vector<image_type> I,J,It,JJ;
     std::vector<float> r;
     size_t modality_count = 0;
@@ -62,6 +63,11 @@ public:
     tipl::vector<dimension> Itvs,Ivs;
     tipl::matrix<dimension+1,dimension+1> ItR,IR;
     tipl::shape<dimension> Its,Is;
+public:
+    mapping_type previous_t2f,previous_f2t;
+    std::vector<image_type> previous_It;
+
+public:
 
 
     mutable std::string error_msg;
@@ -241,21 +247,33 @@ public:
         modality_count = ptr.size();
         return ptr;
     }
+    void show_r(const std::string& prompt)
+    {
+        std::string result(prompt);
+        for(size_t i = 0;i < r.size() && r[i] != 0.0;++i)
+        {
+            result += (i ? "," : " ");
+            result += modality_names[i];
+            result += " ";
+            result += std::to_string(r[i]);
+        }
+        tipl::out() << result;
+    }
     void calculate_linear_r(void)
     {
         std::fill(r.begin(),r.end(),0.0f);
         for(size_t i = 0;i < It.size() && (!It[i].empty() || !J[i].empty());++i)
-            tipl::out() << "linear r: "
-                << (r[i] = tipl::correlation(J[i].empty() ? J[0]:J[i],It[i].empty() ? It[0]:It[i]));
+            r[i] = tipl::correlation(J[i].empty() ? J[0]:J[i],It[i].empty() ? It[0]:It[i]);
+        show_r("linear r: ");
     }
     float linear_reg(bool& terminated)
     {
         if(!data_ready())
             return 0.0f;
         tipl::progress prog("linear registration");
-
+        float cost = 0.0f;
         if(!skip_linear)
-            tipl::reg::linear<tipl::out>(make_list(It),Itvs,make_list(I),Ivs,
+            cost = tipl::reg::linear<tipl::out>(make_list(It),Itvs,make_list(I),Ivs,
                    arg,reg_type,terminated,bound,cost_type,use_cuda && has_cuda);
         auto trans = T();
 
@@ -272,7 +290,7 @@ public:
             tipl::io::gz_nifti::save_to_file(("It" + std::to_string(i) + ".nii.gz").c_str(),It[i],Itvs,ItR);
             tipl::io::gz_nifti::save_to_file(("J" + std::to_string(i) + ".nii.gz").c_str(),J[i],Itvs,ItR);
         }
-        return r[0];
+        return cost;
     }
     void compute_mapping_from_displacement(void)
     {
@@ -289,10 +307,9 @@ public:
         tipl::par_for(modality_count,[&](size_t i)
         {
             JJ[i] = tipl::compose_mapping(I[i],to2from);
-            r[i] = tipl::correlation(JJ[i],It[i]);
+            r[i] = tipl::correlation(JJ[i],previous_It.empty() ? It[i] : previous_It[i]);
         },modality_count);
-        for(size_t i = 0;i < modality_count;++i)
-            tipl::out() << "nonlinear r:" << r[i];
+        show_r("nonlinear r: ");
     }
 
     void nonlinear_reg(bool& terminated)
@@ -313,6 +330,12 @@ public:
             else
                 tipl::reg::cdm_common<tipl::out>(make_list(J),make_list(It),f2t_dis,terminated,param,use_cuda && has_cuda);
         },2);
+
+        if(!previous_f2t.empty() && !previous_t2f.empty())
+        {
+            tipl::accumulate_displacement(previous_f2t,f2t_dis);
+            tipl::accumulate_displacement(previous_t2f,t2f_dis);
+        }
 
         compute_mapping_from_displacement();
         calculate_nonlinear_r();
@@ -584,21 +607,19 @@ public:
             for(auto& each : I)
                 if(!each.empty())
                     each = tipl::resample(each,new_s,trans);
-            Is = new_s;
-            IR = new_R;
-            Ivs = tipl::to_vs(IR);
+
         }
         if(new_s != Its || new_R != ItR)
         {
-            auto trans = tipl::transformation_matrix<float,dimension>(tipl::from_space(new_R).to(ItR));
             dis_to_space(new_s,new_R);
+            auto trans = tipl::transformation_matrix<float,dimension>(tipl::from_space(new_R).to(ItR));
             for(auto& each : It)
                 if(!each.empty())
                     each = tipl::resample(each,new_s,trans);
-            Its = new_s;
-            ItR = new_R;
-            Itvs = new_vs;
         }
+        Its = Is = new_s;
+        ItR = IR = new_R;
+        Itvs = Ivs = new_vs;
         compute_mapping_from_displacement();
     }
     void to_I_space(const tipl::shape<3>& new_Is,const tipl::matrix<4,4>& new_IR)
@@ -609,11 +630,11 @@ public:
         for(auto& each : I)
             if(!each.empty())
                 each = tipl::resample(each,new_Is,trans);
+        arg = T().accumulate(tipl::from_space(IR).to(new_IR)).
+                to_affine_transform(Its,Itvs,new_Is,Ivs);
         Is = new_Is;
         IR = new_IR;
         Ivs = tipl::to_vs(IR);
-        arg = T().accumulate(tipl::from_space(IR).to(new_IR)).
-                to_affine_transform(Its,Itvs,new_Is,Ivs);
         compute_mapping_from_displacement();
     }
     void to_It_space(const tipl::shape<3>& new_Its,const tipl::matrix<4,4>& new_ItR)
@@ -626,10 +647,10 @@ public:
             if(!each.empty())
                 each = tipl::resample(each,new_Its,trans);
         dis_to_space(new_Its,new_ItR);
+        arg = trans.accumulate(T()).to_affine_transform(new_Its,new_Itvs,Is,Ivs);
         Its = new_Its;
         ItR = new_ItR;
         Itvs = new_Itvs;
-        arg = trans.accumulate(T()).to_affine_transform(new_Its,new_Itvs,Is,Ivs);
         compute_mapping_from_displacement();
     }
 };
