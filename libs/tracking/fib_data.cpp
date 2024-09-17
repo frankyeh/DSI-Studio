@@ -1821,6 +1821,8 @@ bool fib_data::map_to_mni(bool background)
     std::string output_file_name(fib_file_name);
     output_file_name += ".";
     output_file_name += QFileInfo(fa_template_list[template_id].c_str()).baseName().toLower().toStdString();
+    if(alternative_mapping_index)
+        output_file_name += std::to_string(alternative_mapping_index);
     output_file_name += ".mz";
     if(std::filesystem::exists(output_file_name))
     {
