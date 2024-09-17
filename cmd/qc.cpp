@@ -51,7 +51,7 @@ float check_src(std::string file_name,std::vector<std::string>& output) // retur
 std::string quality_check_src_files(const std::vector<std::string>& file_list)
 {
     std::ostringstream out;
-    out << "file name\tdimension\tresolution\tdwi count(b0/dwi)\tmax b-value\tDWI contrast\tneighboring DWI correlation\tneighboring DWI correlation(masked)\t#bad slices" << std::endl;
+    out << "file name\tdimension\tresolution\tdwi count(b0/dwi)\tmax b-value\tDWI contrast\tneighboring DWI correlation\tneighboring DWI correlation(masked)\t#bad slices\toutlier" << std::endl;
     std::vector<std::vector<std::string> > output;
     std::vector<float> ndc;
     tipl::progress prog("checking SRC files");
@@ -76,12 +76,7 @@ std::string quality_check_src_files(const std::vector<std::string>& file_list)
     {
         for(size_t j = 0 ;j < output[i].size();++j)
             out << output[i][j] << "\t";
-        if(ndc[i] < outlier_threshold)
-        {
-            out << "low quality outlier";
-        }
-        out << "\t";
-        out << std::endl;
+        out << ((ndc[i] < outlier_threshold) ? "1" : "0") << std::endl;
     }
     return out.str();
 }
