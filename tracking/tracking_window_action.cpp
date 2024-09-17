@@ -1340,7 +1340,12 @@ void tracking_window::on_template_box_currentIndexChanged(int index)
 void tracking_window::on_alt_mapping_currentIndexChanged(int index)
 {
     if(index >= 0 && index < handle->alternative_mapping.size())
+    {
         handle->alternative_mapping_index = index;
+        handle->s2t.clear();
+        handle->t2s.clear();
+    }
+
 }
 
 
