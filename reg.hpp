@@ -534,7 +534,7 @@ public:
     bool load_alternative_warping(const std::string& filename)
     {
         dual_reg<3> alt_reg;
-        tipl::out() << "opening alternative warping" << filename;
+        tipl::out() << "opening alternative warping " << filename;
         if(!alt_reg.load_warping(filename) ||
             alt_reg.Is != alt_reg.Its ||
             alt_reg.IR != alt_reg.ItR ||
@@ -554,6 +554,7 @@ public:
             previous_It[i] = alt_reg.apply_warping(It[i],false);
             previous_It[i].swap(It[i]);
         }
+        return true;
     }
 
     bool save_warping(const char* filename) const
