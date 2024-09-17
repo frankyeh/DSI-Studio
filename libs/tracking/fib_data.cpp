@@ -1838,6 +1838,7 @@ bool fib_data::map_to_mni(bool background)
     }
 
     tipl::progress p("normalization");
+    prog = 0;
     auto lambda = [this,output_file_name]()
     {
         prog = 1;
