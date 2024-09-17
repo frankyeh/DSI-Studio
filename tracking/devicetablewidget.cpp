@@ -131,6 +131,15 @@ void DeviceTableWidget::updateDevices(QTableWidgetItem* cur_item)
                head_item->text().length() > previous_name.length() &&
                head_item->text().left(previous_name.length()) == previous_name)
                head_item->setText(new_default_name+head_item->text().right(head_item->text().length()-previous_name.length()));
+            if(previous_name == "Device" && tipl::begins_with(device->type,"Scale"))
+            {
+                device->pos = {cur_tracking_window.handle->dim[2]/2.0f-25.0f/cur_tracking_window.handle->vs[0],
+                               float(cur_tracking_window.handle->dim[1]),cur_tracking_window.handle->dim[2]/2.0f};
+                device->dir = {1,0,0};
+                device->name = "50 mm";
+                item(cur_item->row(),2)->setText(QString::number(uint32_t(device->color = 0x808080)));
+                item(cur_item->row(),3)->setText(QString::number(double(device->length = 50)));
+            }
 
         }
         break;
@@ -181,7 +190,6 @@ void DeviceTableWidget::newDevice()
     {
         QAction* pAction = qobject_cast<QAction*>(sender());
         devices.push_back(std::make_shared<Device>());
-        // random location
         std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_real_distribution<> dis(-10.0,10.0);
@@ -191,7 +199,7 @@ void DeviceTableWidget::newDevice()
                 cur_tracking_window.handle->dim[0]/2+dx,
                 cur_tracking_window.handle->dim[1]/2+dy,
                 cur_tracking_window.handle->dim[2]/2+dis(gen)/4.0);
-        devices.back()->dir = tipl::vector<3>(dx,dy,pAction->text().contains("SEEG") ? 0.0: 50.0);
+        devices.back()->dir = tipl::vector<3>(dx,dy,50.0);
         devices.back()->dir.normalize();
         devices.back()->name = (pAction->text().split(':')[0].split(' ').back()+QString::number(device_num++)).toStdString();
     }
