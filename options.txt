@@ -57,17 +57,17 @@ Tract/Opacity/tract_alpha/float:0:1:0.1:2/1
 Tract/Style/tract_style/Line:Tube:End:End1:End2/1
 Tract/Line Width/tract_line_width/float:1.0:10:0.5:1/3
 Tract/Color/tract_color_style/Directional:Assigned:Local Index:Averaged Index:Averaged Directional:Max Index/0
-Tract/Color Saturation/tract_color_saturation/float:0:1:0.1:2/0.7
+Tract/Color Saturation/tract_color_saturation/float:0:1:0.1:2/0.8
 Tract/Color Brightness/tract_color_brightness/float:0:1:0.1:2/0.3
 Tract/Visible Tracts/tract_visible_tract/int:5000:1000000:5000/25000
 Tract/Shade/tract_shader/int:0:20:1/7
 Tract/Tube Detail/tract_tube_detail/Coarse:Fine:Finer:Finest/1
-Tract/Tube Diameter (voxel)/tube_diameter/float:0.01:5:0.1:2/0.15
+Tract/Tube Diameter (voxel)/tube_diameter/float:0.01:5:0.1:2/0.2
 Tract/Endpoint Shift (voxel)/end_point_shift/int:0:10:1/0
 Tract/Light/tract_light_option/One source:Two sources:Off/1
 Tract/Light Direction/tract_light_dir/int/2
-Tract/Light Shading/tract_light_shading/int/7
-Tract/Light Diffuse/tract_light_diffuse/int/7
+Tract/Light Shading/tract_light_shading/int/10
+Tract/Light Diffuse/tract_light_diffuse/int/10
 Tract/Light Ambient/tract_light_ambient/int/0
 Tract/Light Specular/tract_light_specular/int/0
 Tract/Material Specular/tract_specular/int/0
