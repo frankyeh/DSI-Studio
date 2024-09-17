@@ -1031,8 +1031,8 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         }
         return;
     }
-
-    tipl::shape<3> geo(cur_tracking_window.current_slice->dim);
+    auto& cur_slice = cur_tracking_window.current_slice;
+    tipl::shape<3> geo(cur_slice->dim);
     float display_ratio = cur_tracking_window.get_scene_zoom();
     auto regionWidget = cur_tracking_window.regionWidget;
     if (regionWidget->currentRow() < 0 || regionWidget->currentRow() >= int(regionWidget->regions.size()))
@@ -1066,7 +1066,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         for (float z = min_coord[2]; z <= max_coord[2]; z += dis)
             for (float y = min_coord[1]; y <= max_coord[1]; y += dis)
                 for (float x = min_coord[0]; x <= max_coord[0]; x += dis)
-                    if (cur_tracking_window.current_slice->dim.is_valid(x, y, z))
+                    if (cur_slice->dim.is_valid(x, y, z))
                         points.push_back(tipl::vector<3,float>(x, y, z));
     }
     break;
@@ -1175,7 +1175,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     }
     case 6:
     {
-        auto slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
+        auto slice = dynamic_cast<CustomSliceModel*>(cur_slice.get());
         if(slice && !slice->picture.empty())
         {
             tipl::vector<2> from = sel_point.front();
@@ -1205,7 +1205,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     {
         float threshold = cur_tracking_window.ui->draw_threshold->value();
         bool upper = cur_tracking_window.ui->draw_threshold_direction->currentIndex() == 0;
-        tipl::const_pointer_image<3,float> I = cur_tracking_window.current_slice->get_source();
+        tipl::const_pointer_image<3,float> I = cur_slice->get_source();
         for(size_t i = 0;i < points_int16.size();)
         {
             if(I.shape().is_valid(points_int16[i]))
@@ -1221,10 +1221,17 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
             ++i;
         }
     }
-
-    regionWidget->regions[regionWidget->currentRow()]->add_points(std::move(points_int16),
-                cur_tracking_window.current_slice->dim,
-                cur_tracking_window.current_slice->to_dif,mouseEvent->button() == Qt::RightButton || mouseEvent->modifiers() & Qt::ShiftModifier);
+    auto& cur_region = regionWidget->regions[regionWidget->currentRow()];
+    if(cur_slice->dim != cur_region->dim ||
+       cur_slice->to_dif == cur_region->to_diffusion_space)
+    {
+        ROIRegion draw_region(cur_slice->dim,tipl::vector<3>());
+        draw_region.to_diffusion_space = cur_slice->to_dif;
+        draw_region.region.swap(points_int16);
+        points_int16 = std::move(draw_region.to_space(cur_region->dim,cur_region->to_diffusion_space));
+    }
+    cur_region->add_points(std::move(points_int16),
+                           mouseEvent->button() == Qt::RightButton || mouseEvent->modifiers() & Qt::ShiftModifier);
 
     need_update();
 }

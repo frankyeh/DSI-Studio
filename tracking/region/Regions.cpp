@@ -36,32 +36,18 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,float> >&& points,bool del
     }
     add_points(std::move(new_points),del);
 }
-
 // ---------------------------------------------------------------------------
-void convert_region(std::vector<tipl::vector<3,short> >& points,
-                    const tipl::shape<3>& dim_from,
-                    const tipl::matrix<4,4>& trans_from,
+std::vector<tipl::vector<3,short> > ROIRegion::to_space(
                     const tipl::shape<3>& dim_to,
-                    const tipl::matrix<4,4>& trans_to)
+                    const tipl::matrix<4,4>& trans_to) const
 {
-    if(dim_from == dim_to && trans_from == trans_to)
-        return;
-    ROIRegion region_from(dim_from,tipl::to_vs(trans_from)),
-              region_to(dim_to,tipl::to_vs(trans_to));
-    region_from.region.swap(points);
-    region_from.to_diffusion_space = trans_from;
+    if(dim == dim_to && to_diffusion_space == trans_to)
+        return region;
     tipl::image<3,unsigned char> mask;
-    region_from.save_region_to_buffer(mask,dim_to,trans_to);
-    region_to.load_region_from_buffer(mask);
-    region_to.region.swap(points);
+    save_region_to_buffer(mask,dim_to,trans_to);
+    return tipl::volume2points(mask);
 }
-void ROIRegion::add_points(std::vector<tipl::vector<3,short> >&& points,
-                           const tipl::shape<3>& slice_dim,
-                           const tipl::matrix<4,4>& slice_trans,bool del)
-{
-    convert_region(points,slice_dim,slice_trans,dim,to_diffusion_space);
-    add_points(std::move(points),del);
-}
+
 // ---------------------------------------------------------------------------
 void ROIRegion::add_points(std::vector<tipl::vector<3,short> >&& points, bool del)
 {
@@ -232,18 +218,12 @@ void ROIRegion::load_region_from_buffer(tipl::image<3,unsigned char>& mask)
     region = tipl::volume2points(mask);
 }
 // ---------------------------------------------------------------------------
-void ROIRegion::save_region_to_buffer(tipl::image<3,unsigned char>& mask)
+void ROIRegion::save_region_to_buffer(tipl::image<3,unsigned char>& mask) const
 {
-    mask.resize(dim);
-    mask = 0;
-    tipl::adaptive_par_for(region.size(),[&](unsigned int index)
-    {
-        if (mask.shape().is_valid(region[index]))
-            mask.at(region[index]) = 1;
-    });
+    mask = std::move(tipl::points2volume(dim,region));
 }
 // ---------------------------------------------------------------------------
-void ROIRegion::save_region_to_buffer(tipl::image<3,unsigned char>& mask,const tipl::shape<3>& dim_to,const tipl::matrix<4,4>& trans_to)
+void ROIRegion::save_region_to_buffer(tipl::image<3,unsigned char>& mask,const tipl::shape<3>& dim_to,const tipl::matrix<4,4>& trans_to) const
 {
     tipl::image<3,unsigned char> m;
     save_region_to_buffer(m);

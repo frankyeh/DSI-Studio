@@ -982,11 +982,6 @@ void RegionTableWidget::load_mni_region(void)
     emit need_update();
 }
 
-void convert_region(std::vector<tipl::vector<3,short> >& points,
-                    const tipl::shape<3>& dim_from,
-                    const tipl::matrix<4,4>& trans_from,
-                    const tipl::shape<3>& dim_to,
-                    const tipl::matrix<4,4>& trans_to);
 void RegionTableWidget::merge_all(void)
 {
     std::vector<size_t> merge_list;
@@ -1004,17 +999,11 @@ void RegionTableWidget::merge_all(void)
         if(prog.aborted())
             return;
         prog(p++,merge_list.size());
-        if(regions[merge_list[0]]->to_diffusion_space != regions[merge_list[index]]->to_diffusion_space)
-                convert_region(regions[merge_list[index]]->region,
-                               regions[merge_list[index]]->dim,
-                               regions[merge_list[index]]->to_diffusion_space,
-                               regions[merge_list[0]]->dim,
-                               regions[merge_list[0]]->to_diffusion_space);
-        for(auto& p: regions[merge_list[index]]->region)
-        {
+        for(auto& p: regions[merge_list[index]]->to_space(
+                                regions[merge_list[0]]->dim,
+                                regions[merge_list[0]]->to_diffusion_space))
             if (mask.shape().is_valid(p))
                 mask.at(p) = 1;
-        }
     });
     if(prog.aborted())
         return;
@@ -1179,13 +1168,8 @@ void RegionTableWidget::save_all_regions_to_4dnifti(void)
             return;
         prog(p++,checked_regions.size());
         size_t offset = region_index*dim.size();
-        auto points = checked_regions[region_index]->region;
-        convert_region(points,
-                       checked_regions[region_index]->dim,
-                       checked_regions[region_index]->to_diffusion_space,
-                       checked_regions[0]->dim,
-                       checked_regions[0]->to_diffusion_space);
-        for (auto& p : points)
+        for (auto& p : checked_regions[region_index]->to_space(
+                         checked_regions[0]->dim,checked_regions[0]->to_diffusion_space))
         {
             if (dim.is_valid(p))
                 multiple_I[offset+tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()] = 1;
@@ -1221,13 +1205,8 @@ void RegionTableWidget::save_all_regions(void)
     tipl::par_for (checked_regions.size(),[&](unsigned int region_index)
     {
         auto region_id = uint16_t(region_index+1);
-        auto points = checked_regions[region_index]->region;
-        convert_region(points,
-                       checked_regions[region_index]->dim,
-                       checked_regions[region_index]->to_diffusion_space,
-                       checked_regions[0]->dim,
-                       checked_regions[0]->to_diffusion_space);
-        for (auto& p : points)
+        for (auto& p : checked_regions[region_index]->to_space(
+                            checked_regions[0]->dim,checked_regions[0]->to_diffusion_space))
             if (dim.is_valid(p))
             {
                 auto pos = tipl::pixel_index<3>(p[0],p[1],p[2],dim).index();
@@ -1282,12 +1261,8 @@ void RegionTableWidget::save_region_info(void)
         if(!each->optional())
             each->get_image();
     out << std::endl;
-    auto points = regions[currentRow()]->region;
-    convert_region(points,regions[currentRow()]->dim,
-                          regions[currentRow()]->to_diffusion_space,
-                          cur_tracking_window.handle->dim,
-                          tipl::matrix<4,4>(tipl::identity_matrix()));
-    for(auto& point : points)
+    for(auto& point : regions[currentRow()]->to_space(
+            cur_tracking_window.handle->dim,tipl::matrix<4,4>(tipl::identity_matrix())))
     {
         std::vector<float> data;
         cur_tracking_window.handle->get_voxel_info2(point[0],point[1],point[2],data);

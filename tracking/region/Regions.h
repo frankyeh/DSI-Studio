@@ -96,11 +96,10 @@ public: // rendering options
         }
 public:
         void new_from_mni_sphere(std::shared_ptr<fib_data> handle,tipl::vector<3> mni,float radius);
+        std::vector<tipl::vector<3,short> > to_space(const tipl::shape<3>& dim_to,
+                                                     const tipl::matrix<4,4>& trans_to) const;
         void add_points(std::vector<tipl::vector<3,float> >&& points,bool del = false);
         void add_points(std::vector<tipl::vector<3,short> >&& points,bool del = false);
-        void add_points(std::vector<tipl::vector<3,short> >&& points,
-                        const tipl::shape<3>& slice_dim,
-                        const tipl::matrix<4,4>& slice_trans,bool del = false);
         void undo(void)
         {
             if(region.empty() && undo_backup.empty())
@@ -131,8 +130,8 @@ public:
         bool shift(tipl::vector<3,float> dx);
 
         void load_region_from_buffer(tipl::image<3,unsigned char>& mask);
-        void save_region_to_buffer(tipl::image<3,unsigned char>& mask);
-        void save_region_to_buffer(tipl::image<3,unsigned char>& mask,const tipl::shape<3>& dim_to,const tipl::matrix<4,4>& trans_to);
+        void save_region_to_buffer(tipl::image<3,unsigned char>& mask) const;
+        void save_region_to_buffer(tipl::image<3,unsigned char>& mask,const tipl::shape<3>& dim_to,const tipl::matrix<4,4>& trans_to) const;
         void perform(const std::string& action);
         void makeMeshes(unsigned char smooth);
         template<typename value_type>
@@ -145,6 +144,8 @@ public:
                                                    std::round(point_in_dwi_space[1]),
                                                    std::round(point_in_dwi_space[2]))) != region.end();
         }
+
+
         bool is_same_space(const ROIRegion& rhs) const
         {   return dim == rhs.dim && to_diffusion_space == rhs.to_diffusion_space;}
 

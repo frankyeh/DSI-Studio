@@ -3448,11 +3448,6 @@ void ConnectivityMatrix::save_to_connectogram(const char* file_name)
     }
 }
 
-void convert_region(std::vector<tipl::vector<3,short> >& points,
-                    const tipl::shape<3>& dim_from,
-                    const tipl::matrix<4,4>& trans_from,
-                    const tipl::shape<3>& dim_to,
-                    const tipl::matrix<4,4>& trans_to);
 
 void ConnectivityMatrix::set_regions(const tipl::shape<3>& geo,
                                      const std::vector<std::shared_ptr<ROIRegion> >& regions)
@@ -3462,10 +3457,7 @@ void ConnectivityMatrix::set_regions(const tipl::shape<3>& geo,
     region_map.resize(geo);
     for(size_t roi = 0;roi < regions.size();++roi)
     {
-        auto points = regions[roi]->region;
-        convert_region(points,regions[roi]->dim,
-                              regions[roi]->to_diffusion_space,
-                              geo,tipl::matrix<4,4>(tipl::identity_matrix()));
+        auto points = regions[roi]->to_space(geo,tipl::matrix<4,4>(tipl::identity_matrix()));
         for(auto& pos : points)
             if(geo.is_valid(pos))
                 region_map.at(pos).push_back(uint16_t(roi));
