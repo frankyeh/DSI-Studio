@@ -171,6 +171,7 @@ private slots:
     void on_actionSave_3D_Model_triggered();
     void on_actionEdit_Slices_triggered();
     void on_actionSave_FIB_As_triggered();
+    void on_alt_mapping_currentIndexChanged(int index);
 };
 
 #endif // TRACKING_WINDOW_H
