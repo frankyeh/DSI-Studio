@@ -46,8 +46,8 @@ void convert_region(std::vector<tipl::vector<3,short> >& points,
 {
     if(dim_from == dim_to && trans_from == trans_to)
         return;
-    ROIRegion region_from(dim_from,tipl::vector<3>(1,1,1)),
-              region_to(dim_to,tipl::vector<3>(1,1,1));
+    ROIRegion region_from(dim_from,tipl::to_vs(trans_from)),
+              region_to(dim_to,tipl::to_vs(trans_to));
     region_from.region.swap(points);
     region_from.to_diffusion_space = trans_from;
     tipl::image<3,unsigned char> mask;
@@ -236,7 +236,7 @@ void ROIRegion::save_region_to_buffer(tipl::image<3,unsigned char>& mask)
 {
     mask.resize(dim);
     mask = 0;
-    tipl::par_for (region.size(),[&](unsigned int index)
+    tipl::adaptive_par_for(region.size(),[&](unsigned int index)
     {
         if (mask.shape().is_valid(region[index]))
             mask.at(region[index]) = 1;
