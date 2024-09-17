@@ -1391,7 +1391,10 @@ void fib_data::set_template_id(size_t new_id)
             }
         }
 
-
+        alternate_mapping_index = 0;
+        alternate_mapping = { "" };
+        auto files = tipl::search_files(std::filesystem::path(fa_template_list[template_id]).parent_path().string(),"*.mz");
+        alternate_mapping.insert(alternate_mapping.end(),files.begin(),files.end());
 
     }
 }
@@ -1838,6 +1841,8 @@ bool fib_data::map_to_mni(bool background)
         prog = 1;
         dual_reg<3> reg;
 
+        reg.modality_names = {"qa","iso"};
+
         size_t iso_index = get_name_index("iso");
         if(slices.size() == iso_index)
             iso_index = get_name_index("md");
@@ -1860,7 +1865,7 @@ bool fib_data::map_to_mni(bool background)
         // not FIB file, use t1w/t1w or others as template
         if(dir.index_name[0] == "image")
         {
-            std::vector<std::string> contrast_list({"t1w","t2w","qa","iso"});
+            reg.modality_names = {"t1w","t2w","qa","iso"};
             tipl::out() << "reloading all t1w/t2w/qa/iso";
             if(!reg.load_template(0,t1w_template_file_name) ||
                !reg.load_template(1,t2w_template_file_name) ||
@@ -1890,18 +1895,20 @@ bool fib_data::map_to_mni(bool background)
                 return;
             if(best_r > tipl::max_value(reg.r))
             {
-                tipl::out() << "use with-skull registration";
+                tipl::out() << "using with-skull registration";
                 reg.arg = arg; //restore linear transformation
                 reg.It.swap(It); // restore It
             }
             else
             {
-                tipl::out() << "use without-skull registration";
+                tipl::out() << "using without-skull registration";
                 best_index = std::max_element(reg.r.begin(),reg.r.end())-reg.r.begin();
             }
             reg.It[0] = reg.It[best_index];
             reg.It[1].clear();
-            tipl::out() << "using " << contrast_list[best_index] << " for nonlinear registration";
+            reg.cost_type = tipl::reg::corr;
+            tipl::out() << "using " << reg.modality_names[best_index] << " for registration";
+            reg.modality_names = {reg.modality_names[best_index]};
         }
 
 
@@ -1909,12 +1916,39 @@ bool fib_data::map_to_mni(bool background)
         if(has_manual_atlas)
             reg.arg = manual_template_T;
         else
+        {
+            if(alternate_mapping_index)
+            {
+                tipl::out() << "use alternative mapping";
+                dual_reg<3> alt_reg;
+                tipl::out() << "opening " << alternate_mapping[alternate_mapping_index];
+                if(!alt_reg.load_warping(alternate_mapping[alternate_mapping_index]) ||
+                    alt_reg.Is != alt_reg.Its ||
+                    alt_reg.IR != alt_reg.ItR ||
+                    alt_reg.arg != tipl::affine_transform<float,3>())
+                {
+                    error_msg = "invalid alternative mapping";
+                    tipl::prog_aborted = true;
+                    return;
+                }
+
+                alt_reg.to_space(reg.Its,reg.ItR);
+                for(auto& each : reg.modality_names)
+                    each = "alt-"+each;
+                reg.previous_It.swap(reg.It);
+                reg.previous_f2t.swap(alt_reg.t2f_dis);
+                reg.previous_t2f.swap(alt_reg.f2t_dis);
+                reg.previous_It.resize(reg.It.size());
+                for(size_t i = 0;i < reg.It.size() && !reg.It[i].empty();++i)
+                    reg.It[i] = alt_reg.apply_warping(reg.previous_It[i],false);
+
+            }
             reg.linear_reg(tipl::prog_aborted);
+        }
 
         if(tipl::prog_aborted)
             return;
         prog = 3;
-
 
         reg.nonlinear_reg(tipl::prog_aborted);
         if(reg.r[0] < 0.3f)
