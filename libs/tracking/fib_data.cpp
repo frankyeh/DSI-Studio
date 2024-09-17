@@ -1917,7 +1917,7 @@ bool fib_data::map_to_mni(bool background)
             reg.arg = manual_template_T;
         else
         {
-            if(alternative_mapping_index &&
+            if(alternative_mapping_index && alternative_mapping_index < alternative_mapping.size() &&
               !reg.load_alternative_warping(alternative_mapping[alternative_mapping_index]))
             {
                 error_msg = reg.error_msg;
