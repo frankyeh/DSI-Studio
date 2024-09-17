@@ -1835,11 +1835,6 @@ void MainWindow::on_github_select_matching_clicked()
 
 void MainWindow::on_github_open_file_clicked()
 {
-    if(!QDir(ui->download_dir->text()).exists())
-    {
-        QMessageBox::critical(this,"ERROR","Download directory does not exist");
-        return;
-    }
     auto row = ui->github_release_files->currentRow();
     if(row < 0)
         return;
