@@ -1845,7 +1845,7 @@ bool fib_data::map_to_mni(bool background)
 
         size_t iso_index = get_name_index("iso");
         if(slices.size() == iso_index)
-            iso_index = get_name_index("md");
+            iso_index = get_name_index("rd");
 
         reg.I[0] = subject_image_pre(tipl::image<3>(dir.fa[0],dim));
         if(iso_index < slices.size())
