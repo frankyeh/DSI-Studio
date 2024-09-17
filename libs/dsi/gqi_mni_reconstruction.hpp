@@ -33,6 +33,7 @@ public:
             throw std::runtime_error("No spatial information found in src file. Recreate src file or contact developer for assistance");
 
         dual_reg<3> reg;
+        reg.modality_names = {"qa","iso"};
         reg.export_intermediate = voxel.needs("debug");
 
         if(!reg.load_template(0,fa_template_list[voxel.template_id]) ||
@@ -53,7 +54,7 @@ public:
             tipl::out() << "adding " << voxel.other_modality_template << " as template for registration";
             if(!reg.load_template(2,voxel.other_modality_template))
                 throw std::runtime_error(std::string("cannot load template: ") + voxel.other_modality_template);
-
+            reg.modality_names[2] = "other";
             tipl::out() << "moving QA/ISO to the registration modality space";
             reg.I[2] = subject_image_pre(tipl::image<3>(voxel.other_modality_subject));
             reg.Is = voxel.other_modality_subject.shape();
@@ -74,7 +75,8 @@ public:
             {
                 tipl::run("linear registration",[&](void)
                 {
-                    if((voxel.R2 = reg.linear_reg(tipl::prog_aborted)) < 0.4f)
+                    reg.linear_reg(tipl::prog_aborted);
+                    if((voxel.R2 = tipl::max_value(reg.r)) < 0.4f)
                         tipl::warning() << "poor registration found in linear registration. Please check image quality or orientation. consider using manual alignment.";
                 });
                 if(tipl::prog_aborted)
