@@ -137,7 +137,7 @@ void DeviceTableWidget::updateDevices(QTableWidgetItem* cur_item)
                                float(cur_tracking_window.handle->dim[1]),cur_tracking_window.handle->dim[2]/2.0f};
                 device->dir = {1,0,0};
                 device->name = "50 mm";
-                item(cur_item->row(),2)->setText(QString::number(uint32_t(device->color = 0x808080)));
+                item(cur_item->row(),2)->setData(Qt::UserRole,uint32_t(device->color));
                 item(cur_item->row(),3)->setText(QString::number(double(device->length = 50)));
             }
 
