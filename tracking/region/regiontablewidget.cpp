@@ -1265,12 +1265,6 @@ void RegionTableWidget::save_region_info(void)
 {
     if (regions.empty() || currentRow() >= regions.size())
         return;
-
-    if(!regions[currentRow()]->is_diffusion_space)
-    {
-        QMessageBox::critical(this,"ERROR","Voxels not in the DWI space");
-        return;
-    }
     QString filename = QFileDialog::getSaveFileName(
                            this,"Save voxel information",item(currentRow(),0)->text() + "_info.txt",
                            "Text files (*.txt)" );
