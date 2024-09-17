@@ -1391,10 +1391,10 @@ void fib_data::set_template_id(size_t new_id)
             }
         }
 
-        alternate_mapping_index = 0;
-        alternate_mapping = { "" };
+        alternative_mapping_index = 0;
+        alternative_mapping = { "" };
         auto files = tipl::search_files(std::filesystem::path(fa_template_list[template_id]).parent_path().string(),"*.mz");
-        alternate_mapping.insert(alternate_mapping.end(),files.begin(),files.end());
+        alternative_mapping.insert(alternative_mapping.end(),files.begin(),files.end());
 
     }
 }
@@ -1917,31 +1917,12 @@ bool fib_data::map_to_mni(bool background)
             reg.arg = manual_template_T;
         else
         {
-            if(alternate_mapping_index)
+            if(alternative_mapping_index &&
+              !reg.load_alternative_warping(alternative_mapping[alternative_mapping_index]))
             {
-                tipl::out() << "use alternative mapping";
-                dual_reg<3> alt_reg;
-                tipl::out() << "opening " << alternate_mapping[alternate_mapping_index];
-                if(!alt_reg.load_warping(alternate_mapping[alternate_mapping_index]) ||
-                    alt_reg.Is != alt_reg.Its ||
-                    alt_reg.IR != alt_reg.ItR ||
-                    alt_reg.arg != tipl::affine_transform<float,3>())
-                {
-                    error_msg = "invalid alternative mapping";
-                    tipl::prog_aborted = true;
-                    return;
-                }
-
-                alt_reg.to_space(reg.Its,reg.ItR);
-                for(auto& each : reg.modality_names)
-                    each = "alt-"+each;
-                reg.previous_It.swap(reg.It);
-                reg.previous_f2t.swap(alt_reg.t2f_dis);
-                reg.previous_t2f.swap(alt_reg.f2t_dis);
-                reg.previous_It.resize(reg.It.size());
-                for(size_t i = 0;i < reg.It.size() && !reg.It[i].empty();++i)
-                    reg.It[i] = alt_reg.apply_warping(reg.previous_It[i],false);
-
+                error_msg = reg.error_msg;
+                tipl::prog_aborted = true;
+                return;
             }
             reg.linear_reg(tipl::prog_aborted);
         }

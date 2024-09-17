@@ -261,8 +261,8 @@ public:
     tipl::affine_transform<float> manual_template_T;
     std::vector<std::shared_ptr<std::thread> > reg_threads;
 public:
-    std::vector<std::string> alternate_mapping;
-    size_t alternate_mapping_index = 0;
+    std::vector<std::string> alternative_mapping;
+    size_t alternative_mapping_index = 0;
 public:
     std::string t1w_template_file_name,t2w_template_file_name,wm_template_file_name,mask_template_file_name;
     std::string tractography_atlas_file_name;

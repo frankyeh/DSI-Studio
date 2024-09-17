@@ -531,6 +531,30 @@ public:
         }
         return true;
     }
+    bool load_alternative_warping(const std::string& filename)
+    {
+        dual_reg<3> alt_reg;
+        tipl::out() << "opening alternative warping" << filename;
+        if(!alt_reg.load_warping(filename) ||
+            alt_reg.Is != alt_reg.Its ||
+            alt_reg.IR != alt_reg.ItR ||
+            alt_reg.arg != tipl::affine_transform<float,3>())
+        {
+            error_msg = "invalid alternative mapping";
+            return false;
+        }
+        alt_reg.to_space(Its,ItR);
+        for(auto& each : modality_names)
+            each = "alt-"+each;
+        previous_f2t.swap(alt_reg.t2f_dis);
+        previous_t2f.swap(alt_reg.f2t_dis);
+        previous_It.resize(It.size());
+        for(size_t i = 0;i < It.size() && !It[i].empty();++i)
+        {
+            previous_It[i] = alt_reg.apply_warping(It[i],false);
+            previous_It[i].swap(It[i]);
+        }
+    }
 
     bool save_warping(const char* filename) const
     {
