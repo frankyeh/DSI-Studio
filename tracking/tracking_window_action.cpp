@@ -1318,6 +1318,16 @@ void tracking_window::on_template_box_currentIndexChanged(int index)
     if(index < 0 || index >= int(fa_template_list.size()))
         return;
     handle->set_template_id(size_t(index));
+    ui->alt_mapping->clear();
+    ui->alt_mapping->addItem("regular");
+    ui->alt_mapping->setCurrentIndex(0);
+    ui->alt_mapping->setVisible(handle->alternative_mapping.size() > 1);
+    for(size_t i = 1;i < handle->alternative_mapping.size();++i)
+    {
+        auto name = tipl::split(std::filesystem::path(handle->alternative_mapping[i]).filename().string(),'.');
+        ui->alt_mapping->addItem(name.size() > 1 ? name[1].c_str() : name[0].c_str());
+    }
+
     ui->tract_target_0->setCurrentIndex(0);
     ui->tract_target_0->hide();
     ui->tract_target_1->hide();
@@ -1326,6 +1336,14 @@ void tracking_window::on_template_box_currentIndexChanged(int index)
     ui->addRegionFromAtlas->setVisible(!handle->atlas_list.empty());
 
 }
+
+void tracking_window::on_alt_mapping_currentIndexChanged(int index)
+{
+    if(index >= 0 && index < handle->alternative_mapping.size())
+        handle->alternative_mapping_index = index;
+}
+
+
 
 void tracking_window::stripSkull()
 {
