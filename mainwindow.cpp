@@ -1689,7 +1689,10 @@ void MainWindow::on_github_tags_itemSelectionChanged()
         QString tag = ui->github_tags->item(ui->github_tags->currentRow(), 0)->text();
         QString title = ui->github_tags->item(ui->github_tags->currentRow(), 2)->text();
         ui->github_repo_title->setText(title);
-        ui->github_note->setMarkdown(notes[tag]);
+        auto content = notes[tag].split('\n');
+        if(!content.empty() && content[0].contains(title))
+            content.remove(0);
+        ui->github_note->setMarkdown(content.join('\n'));
         ui->github_release_note->setCurrentIndex(0);
         loadFiles();
     }
