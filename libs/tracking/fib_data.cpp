@@ -17,7 +17,6 @@ bool odf_data::read(fib_data& fib)
         return true;
     tipl::progress prog("reading odf data");
     unsigned int row,col;
-    const float* fa0 = fib.dir.fa[0];
     std::vector<const float*> odf_buf;
     std::vector<size_t> odf_buf_count;
     size_t odf_count = 0;
@@ -48,17 +47,12 @@ bool odf_data::read(fib_data& fib)
 
     tipl::out() << "odf count: " << odf_count << std::endl;
 
-    size_t mask_count = 0;
+    size_t mask_count = std::count(fib.mask.begin(),fib.mask.end(),1);
+    tipl::out() << "mask count: " << mask_count << std::endl;
+    if(odf_count != mask_count)
     {
-        for(size_t i = 0;i < fib.dim.size();++i)
-            if(fa0[i] != 0.0f)
-                ++mask_count;
-        tipl::out() << "mask count: " << mask_count << std::endl;
-        if(odf_count < mask_count)
-        {
-            error_msg = "incomplete ODF data";
-            return false;
-        }
+        error_msg = "ODF count does not match the mask";
+        return false;
     }
 
     size_t voxel_index = 0;
@@ -81,7 +75,7 @@ bool odf_data::read(fib_data& fib)
                 continue;
             ++odf_count;
             for(;voxel_index < odf_map.size();++voxel_index)
-                if(fa0[voxel_index] != 0.0f)
+                if(fib.mask[voxel_index])
                     break;
             if(voxel_index >= odf_map.size())
                 break;
@@ -89,15 +83,7 @@ bool odf_data::read(fib_data& fib)
             ++voxel_index;
         }
     }
-    if(prog.aborted())
-        return false;
-    tipl::out() << "odf count (excluding 0): " << odf_count << std::endl;
-    if(odf_count != mask_count)
-    {
-        error_msg = "ODF count does not match the mask";
-        return false;
-    }
-    return true;
+    return !prog.aborted();
 }
 void slice_model::get_minmax(void)
 {
