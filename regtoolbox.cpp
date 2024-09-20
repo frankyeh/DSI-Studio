@@ -260,7 +260,7 @@ struct image_fascade{
                   const tipl::image<dimension,tipl::vector<dimension> >& mapping_,
                   const tipl::transformation_matrix<float,dimension>& T_):I(I_),It_shape(It_shape_),mapping(mapping_),T(T_){;}
 
-    float at(const tipl::vector<dimension,int> xyz) const
+    float at(const tipl::vector<dimension,int>& xyz) const
     {
         if(!It_shape.is_valid(xyz))
             return 0.0f;
