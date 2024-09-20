@@ -231,29 +231,21 @@ void manual_alignment::param_changed()
     slice_pos_moved();
 }
 
-template<int dim>
-struct image_fascade2{
-    static constexpr int dimension = dim;
-    typedef unsigned char value_type;
-    const tipl::image<dimension,unsigned char>& I;
-    tipl::shape<dimension> It_shape;
-    tipl::transformation_matrix<float,dimension> T;
-    image_fascade2(const tipl::image<dimension,unsigned char>& I_,
-                  tipl::shape<dimension> It_shape_,
-                  const tipl::transformation_matrix<float,dimension>& T_):I(I_),It_shape(It_shape_),T(T_){;}
-
-    float at(tipl::vector<dimension,int> xyz) const
+template<int dim,typename value_type>
+struct warped_image : public tipl::shape<dim>{
+    tipl::const_pointer_image<dim,value_type> I;
+    tipl::transformation_matrix<float,dim> T;
+    template<typename T,typename U,typename V>
+    warped_image(const T& s,const U& I_,const V& T_):tipl::shape<dim>(s),I(I_),T(T_){;}
+    value_type at(tipl::vector<dim> xyz) const
     {
         T(xyz);
-        if(I.shape().is_valid(xyz))
-            return I.at(xyz);
-        return 0.0f;
+        tipl::vector<dim,int> pos(xyz+0.5f);
+        if(I.shape().is_valid(pos))
+            return I.at(pos);
+        return 0;
     }
-    auto width(void) const{return It_shape.width();}
-    auto height(void) const{return It_shape.height();}
-    auto depth(void) const{return It_shape.depth();}
-    const auto& shape(void) const{return It_shape;}
-    bool empty(void) const{return It_shape.empty();}
+    const auto& shape(void) const{return *this;}
 };
 
 void manual_alignment::slice_pos_moved()
@@ -269,7 +261,10 @@ void manual_alignment::slice_pos_moved()
     for(unsigned char dim = 0;dim < 3;++dim)
     {
         tipl::image<2,unsigned char> slice,slice2;
-        tipl::volume2slice_scaled(image_fascade2<3>(from,to.shape(),iT),slice,dim,slice_pos[dim],ratio);
+        if(thread.running || warped_from.empty())
+            tipl::volume2slice_scaled(warped_image<3,unsigned char>(to.shape(),from,iT),slice,dim,slice_pos[dim],ratio);
+        else
+            tipl::volume2slice_scaled(warped_from,slice,dim,slice_pos[dim],ratio);
         tipl::volume2slice_scaled(to,slice2,dim,slice_pos[dim],ratio);
 
         tipl::color_image buffer(slice.shape());
@@ -361,12 +356,15 @@ void manual_alignment::on_rerun_clicked()
         reg_type += int(tipl::reg::tilt);
 
     load_param();
-
+    warped_from.clear();
     thread.run([this,cost,reg_type]()
     {
         tipl::reg::linear<tipl::out>(tipl::reg::make_list(from,from2),from_vs,
                                      tipl::reg::make_list(to,to2),to_vs,arg,
                                      tipl::reg::reg_type(reg_type),thread.terminated,tipl::reg::reg_bound,cost);
+        auto trans = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
+        trans.inverse();
+        warped_from = tipl::resample(from,to.shape(),trans);
     });
     ui->rerun->setText("Stop");
     ui->refine->setEnabled(false);
