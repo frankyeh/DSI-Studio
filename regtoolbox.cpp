@@ -247,34 +247,27 @@ bool RegToolBox::eventFilter(QObject *obj, QEvent *event)
     return QObject::eventFilter(obj, event);
 }
 
-template<int dim>
-struct image_fascade{
-    static constexpr int dimension = dim;
-    typedef float value_type;
-    const tipl::image<dimension>& I;
-    tipl::shape<dimension> It_shape;
-    const tipl::image<dimension,tipl::vector<dimension> >& mapping;
-    tipl::transformation_matrix<float,dimension> T;
-    image_fascade(const tipl::image<dimension>& I_,
-                  tipl::shape<dimension> It_shape_,
-                  const tipl::image<dimension,tipl::vector<dimension> >& mapping_,
-                  const tipl::transformation_matrix<float,dimension>& T_):I(I_),It_shape(It_shape_),mapping(mapping_),T(T_){;}
 
-    float at(const tipl::vector<dimension,int>& xyz) const
+template<int dim,typename vtype>
+struct nonlinear_warped_image : public tipl::shape<dim>{
+    typedef vtype value_type;
+    tipl::const_pointer_image<dim,vtype> I;
+    tipl::const_pointer_image<dim,tipl::vector<dim> > mapping;
+    tipl::transformation_matrix<float,dim> T;
+    template<typename T,typename U,typename V,typename W>
+    nonlinear_warped_image(const T& s,const U& I_,const V& mapping_,const W& T_):tipl::shape<dim>(s),I(I_),mapping(mapping_),T(T_){;}
+    value_type at(tipl::vector<dim> xyz) const
     {
-        if(!It_shape.is_valid(xyz))
-            return 0.0f;
-        tipl::vector<dimension> pos(xyz);
         if(!mapping.empty() && mapping.shape().is_valid(xyz))
-            return tipl::estimate(I,mapping.at(xyz));
-        T(pos);
-        return tipl::estimate(I,pos);
+            xyz = mapping.at(xyz);
+        else
+            T(xyz);
+        tipl::vector<dim,int> pos(xyz+0.5f);
+        if(I.shape().is_valid(pos))
+            return I.at(pos);
+        return 0;
     }
-    auto width(void) const{return It_shape.width();}
-    auto height(void) const{return It_shape.height();}
-    auto depth(void) const{return It_shape.depth();}
-    const auto& shape(void) const{return It_shape;}
-    bool empty(void) const{return It_shape.empty();}
+    const auto& shape(void) const{return *this;}
 };
 
 template<typename T,typename U>
@@ -348,10 +341,10 @@ void RegToolBox::show_image(void)
     {
         if(id < row_count)
         {
-            if(!reg.It[0].empty())
+            if(!reg.It[0].empty() && !reg.I[id].empty())
             {
                 auto I = show_slice_at(
-                          reg.It[id],image_fascade<3>(reg.I[id],reg.Its,reg.to2from,reg.T()),
+                          reg.It[id],nonlinear_warped_image<3,unsigned char>(reg.Its,reg.I[id],reg.to2from,reg.T()),
                           float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.Its[cur_view]-1),
                           ui->zoom_template->value(),cur_view,blend_style());
                 {
@@ -367,13 +360,13 @@ void RegToolBox::show_image(void)
         }
         else
         {
-            if(!reg.I[0].empty())
+            id -= row_count;
+            if(!reg.I[0].empty() && !reg.It[id].empty())
             {
-                id -= row_count;
                 auto invT = reg.T();
                 invT.inverse();
                 auto I = show_slice_at(
-                        reg.I[id],image_fascade<3>(reg.It[id],reg.Is,reg.from2to,invT),
+                        reg.I[id],nonlinear_warped_image<3,unsigned char>(reg.Is,reg.It[id],reg.from2to,invT),
                         float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.Is[cur_view]-1),
                         ui->zoom_subject->value(),
                         cur_view,blend_style());
