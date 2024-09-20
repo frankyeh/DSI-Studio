@@ -29,7 +29,6 @@ public:
     std::thread warp_image_thread;
     bool free_thread = false;
     bool image_need_update = false;
-    bool warp_image_ready = false;
     void warp_image();
 public:
     tipl::affine_transform<float> arg;
