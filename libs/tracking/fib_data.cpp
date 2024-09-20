@@ -15,74 +15,16 @@ bool odf_data::read(fib_data& fib)
 {
     if(!odf_map.empty())
         return true;
+    if(!fib.has_odfs())
+        return false;
     tipl::progress prog("reading odf data");
     unsigned int row,col;
-    std::vector<const float*> odf_buf;
-    std::vector<size_t> odf_buf_count;
-    size_t odf_count = 0;
-    {
-        while(fib.mat_reader.get_col_row((std::string("odf")+std::to_string(odf_buf_count.size())).c_str(),row,col))
-        {
-            odf_buf_count.push_back(col);
-            odf_count += col;
-        }
-
-        odf_buf.resize(odf_buf_count.size());
-        for(size_t i = 0;prog(i,odf_buf_count.size());++i)
-        {
-            if(!fib.mat_reader.read((std::string("odf")+std::to_string(i)).c_str(),row,col,odf_buf[i]))
-            {
-                error_msg = "failed to read ODF data";
-                return false;
-            }
-        }
-        if(prog.aborted())
-            return false;
-    }
-    if (odf_buf.empty())
-    {
-        error_msg = "no ODF data found";
-        return false;
-    }
-
-    tipl::out() << "odf count: " << odf_count << std::endl;
-
-    size_t mask_count = std::count(fib.mask.begin(),fib.mask.end(),1);
-    tipl::out() << "mask count: " << mask_count << std::endl;
-    if(odf_count != mask_count)
-    {
-        error_msg = "ODF count does not match the mask";
-        return false;
-    }
-
-    size_t voxel_index = 0;
-    odf_count = 0; // count ODF again and now ignoring 0 odf to see if it matches.
+    odf_map.clear();
     odf_map.resize(fib.dim);
-    for(size_t i = 0;prog(i,odf_buf.size());++i)
-    {
-        // row: half_odf_size
-        auto odf_ptr = odf_buf[i];
-        for(size_t j = 0;j < odf_buf_count[i];++j,odf_ptr += row)
-        {
-            bool is_odf_zero = true;
-            for(size_t k = 0;k < row;++k)
-                if(odf_ptr[k] != 0.0f)
-                {
-                    is_odf_zero = false;
-                    break;
-                }
-            if(is_odf_zero)
-                continue;
-            ++odf_count;
-            for(;voxel_index < odf_map.size();++voxel_index)
-                if(fib.mask[voxel_index])
-                    break;
-            if(voxel_index >= odf_map.size())
-                break;
-            odf_map[voxel_index] = odf_ptr;
-            ++voxel_index;
-        }
-    }
+    const float* odf_buf = nullptr;
+    for(size_t i = 0,si = 0;prog(0,1) && fib.mat_reader.read("odf"+std::to_string(i),row,col,odf_buf);++i)
+        for(size_t j = 0;j < col;++j,++si,odf_buf += row)
+            odf_map[fib.mat_reader.si2vi[si]] = odf_buf;
     return !prog.aborted();
 }
 void slice_model::get_minmax(void)
