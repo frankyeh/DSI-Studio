@@ -17,7 +17,7 @@ manual_alignment::manual_alignment(QWidget *parent,
                                    const tipl::vector<3>& to_vs_,
                                    tipl::reg::reg_type reg_type,
                                    tipl::reg::cost_type cost_function) :
-    QDialog(parent),from_vs(from_vs_),to_vs(to_vs_),timer(nullptr),ui(new Ui::manual_alignment),warp_image_thread([&](void){warp_image();})
+    QDialog(parent),from_vs(from_vs_),to_vs(to_vs_),timer(nullptr),ui(new Ui::manual_alignment)
 {
     from.swap(from_);
     to.swap(to_);
@@ -42,8 +42,6 @@ manual_alignment::manual_alignment(QWidget *parent,
         from_downsample *= 2.0f;
         tipl::out() << "downsampling subject image by 2 dim=" << from.shape() << std::endl;
     }
-
-    warped_from.resize(to.shape());
 
     ui->setupUi(this);
     ui->options->hide();
@@ -94,20 +92,6 @@ manual_alignment::manual_alignment(QWidget *parent,
 
 }
 
-void manual_alignment::warp_image(void)
-{
-    while(!free_thread)
-    {
-        if(image_need_update && warped_from.shape() == to.shape())
-        {
-            warped_from = 0;
-            tipl::resample(from,warped_from,iT);
-            image_need_update = false;
-        }
-        std::this_thread::yield();
-    }
-}
-
 void manual_alignment::add_images(std::shared_ptr<fib_data> handle)
 {
     for(const auto& each : handle->slices)
@@ -150,9 +134,6 @@ void manual_alignment::disconnect_arg_update()
 
 manual_alignment::~manual_alignment()
 {
-    free_thread = true;
-    if(warp_image_thread.joinable())
-        warp_image_thread.join();
     if(timer)
         timer->stop();
     delete ui;
@@ -214,7 +195,6 @@ void manual_alignment::update_image(void)
     T = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
     iT = T;
     iT.inverse();
-    image_need_update = true;
 }
 
 tipl::transformation_matrix<float> manual_alignment::get_iT(void)
@@ -278,7 +258,7 @@ struct image_fascade2{
 
 void manual_alignment::slice_pos_moved()
 {
-    if(warped_from.empty() || to.empty())
+    if(to.empty())
         return;
     int slice_pos[3] = {ui->sag_slice_pos->value(),ui->cor_slice_pos->value(),ui->axi_slice_pos->value()};
     double ratio = ui->zoom->value();
