@@ -26,11 +26,6 @@ private:
     tipl::transformation_matrix<float> T,iT;
     void load_param(void);
 public:
-    std::thread warp_image_thread;
-    bool free_thread = false;
-    bool image_need_update = false;
-    void warp_image();
-public:
     tipl::affine_transform<float> arg;
     std::vector<tipl::image<3> > other_images;
     std::vector<std::string> other_images_name;
