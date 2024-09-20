@@ -100,11 +100,9 @@ void manual_alignment::warp_image(void)
     {
         if(image_need_update && warped_from.shape() == to.shape())
         {
-            warp_image_ready = false;
             warped_from = 0;
             tipl::resample(from,warped_from,iT);
             image_need_update = false;
-            warp_image_ready = true;
         }
         std::this_thread::yield();
     }
@@ -253,15 +251,36 @@ void manual_alignment::param_changed()
     slice_pos_moved();
 }
 
+template<int dim>
+struct image_fascade2{
+    static constexpr int dimension = dim;
+    typedef unsigned char value_type;
+    const tipl::image<dimension,unsigned char>& I;
+    tipl::shape<dimension> It_shape;
+    tipl::transformation_matrix<float,dimension> T;
+    image_fascade2(const tipl::image<dimension,unsigned char>& I_,
+                  tipl::shape<dimension> It_shape_,
+                  const tipl::transformation_matrix<float,dimension>& T_):I(I_),It_shape(It_shape_),T(T_){;}
+
+    float at(tipl::vector<dimension,int> xyz) const
+    {
+        T(xyz);
+        if(I.shape().is_valid(xyz))
+            return I.at(xyz);
+        return 0.0f;
+    }
+    auto width(void) const{return It_shape.width();}
+    auto height(void) const{return It_shape.height();}
+    auto depth(void) const{return It_shape.depth();}
+    const auto& shape(void) const{return It_shape;}
+    bool empty(void) const{return It_shape.empty();}
+};
 
 void manual_alignment::slice_pos_moved()
 {
     if(warped_from.empty() || to.empty())
         return;
-    int slice_pos[3];
-    slice_pos[0] = ui->sag_slice_pos->value();
-    slice_pos[1] = ui->cor_slice_pos->value();
-    slice_pos[2] = ui->axi_slice_pos->value();
+    int slice_pos[3] = {ui->sag_slice_pos->value(),ui->cor_slice_pos->value(),ui->axi_slice_pos->value()};
     double ratio = ui->zoom->value();
     float w1 = ui->blend_pos->value()/10.0;
     float w2 = 1.0-w1;
@@ -270,7 +289,7 @@ void manual_alignment::slice_pos_moved()
     for(unsigned char dim = 0;dim < 3;++dim)
     {
         tipl::image<2,unsigned char> slice,slice2;
-        tipl::volume2slice_scaled(warped_from,slice,dim,slice_pos[dim],ratio);
+        tipl::volume2slice_scaled(image_fascade2<3>(from,to.shape(),iT),slice,dim,slice_pos[dim],ratio);
         tipl::volume2slice_scaled(to,slice2,dim,slice_pos[dim],ratio);
 
         tipl::color_image buffer(slice.shape());
