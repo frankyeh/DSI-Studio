@@ -342,16 +342,22 @@ void RegToolBox::show_image(void)
         return;
     tipl::grayscale_image subject_image,template_image;
     std::mutex subject_mutex,template_mutex;
-    auto pos = float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.Its[cur_view]-1);
 
     tipl::par_for(row_count*2,[&](size_t id)
     {
-
+        tipl::grayscale_image I;
         if(id < row_count)
         {
-            if(!reg.It[0].empty() && !reg.I[id].empty())
+            if(!reg.It[0].empty())
             {
-                auto I = show_slice_at(reg.It[id],nonlinear_warped_image<3,unsigned char>(reg.Its,reg.I[id],reg.to2from,reg.T()),pos,ui->zoom_template->value(),cur_view,blend_style());
+                if(!thread.running && id < J.size())
+                    I = show_slice_at(reg.It[id],J[id],
+                                       float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.Its[cur_view]-1),
+                                       ui->zoom_template->value(),cur_view,blend_style());
+                else
+                    I = show_slice_at(reg.It[id],nonlinear_warped_image<3,unsigned char>(reg.Its,reg.I[id],reg.to2from,reg.T()),
+                                       float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.Its[cur_view]-1),
+                                       ui->zoom_template->value(),cur_view,blend_style());
                 {
                     std::lock_guard<std::mutex> lock(template_mutex);
                     if(template_image.empty())
@@ -366,11 +372,14 @@ void RegToolBox::show_image(void)
         else
         {
             id -= row_count;
-            if(!reg.I[0].empty() && !reg.It[id].empty())
+            if(!reg.I[0].empty())
             {
-                auto invT = reg.T();
-                invT.inverse();
-                auto I = show_slice_at(reg.I[id],nonlinear_warped_image<3,unsigned char>(reg.Is,reg.It[id],reg.from2to,invT),pos,ui->zoom_subject->value(),cur_view,blend_style());
+                if(!thread.running && id < Jt.size())
+                    I = show_slice_at(reg.I[id],Jt[id],
+                                       float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.Is[cur_view]-1),ui->zoom_subject->value(),cur_view,blend_style());
+                else
+                    I = show_slice_at(reg.I[id],nonlinear_warped_image<3,unsigned char>(reg.Is,reg.It[id],reg.from2to,reg.invT()),
+                                       float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.Is[cur_view]-1),ui->zoom_subject->value(),cur_view,blend_style());
                 {
                     std::lock_guard<std::mutex> lock(subject_mutex);
                     if(subject_image.empty())
@@ -529,9 +538,22 @@ void RegToolBox::on_run_reg_clicked()
     {
         reg.match_resolution(false);
         ui->zoom_template->setValue(width()*0.2f/(1.0f+reg.It[0].width()));
+        J.clear();
+        Jt.clear();
+
         thread.run([this](void){
             reg.linear_reg(thread.terminated);
-            reg.nonlinear_reg(thread.terminated);});
+            reg.nonlinear_reg(thread.terminated);
+
+            J.swap(reg.JJ);
+            J.resize(reg.modality_count);
+            Jt.resize(reg.modality_count);
+            tipl::par_for(reg.modality_count,[&](size_t i)
+            {
+                Jt[i] = tipl::compose_mapping(reg.It[i],reg.from2to);
+            },reg.modality_count);
+
+        });
     }
 
     ui->running_label->movie()->start();
