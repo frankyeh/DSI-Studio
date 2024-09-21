@@ -92,13 +92,6 @@ void CreateDBDialog::update_list(void)
             ui->index_of_interest->setCurrentIndex(0);
             populate_templates(ui->template_list,0);
             ui->template_list->setEnabled(true);
-            tipl::io::gz_nifti nii;
-            if(nii.load_from_file(group[0].toStdString()))
-            {
-                tipl::vector<3> reso;
-                nii.get_voxel_size(reso);
-                fib_reso = reso[2];
-            }
         }
         else
         {
@@ -114,7 +107,6 @@ void CreateDBDialog::update_list(void)
                 ui->index_of_interest->addItem(name.c_str());
             populate_templates(ui->template_list,fib.template_id);
             ui->template_list->setEnabled(!fib.is_mni);
-            fib_reso = (fib.template_id == 0 ? 2.0f : fib.vs[2]);
         }
         ui->template_list->addItem("Open...");
     }
@@ -311,16 +303,6 @@ void CreateDBDialog::on_create_data_base_clicked()
                 QMessageBox::critical(this,"ERROR",template_fib->error_msg.c_str());
                 return;
             }
-        if(fib_reso > template_fib->vs[0])
-        {
-            std::shared_ptr<fib_data> new_template_fib(new fib_data);
-            if(!new_template_fib->load_at_resolution(template_file_name,fib_reso))
-            {
-                QMessageBox::critical(this,"ERROR",new_template_fib->error_msg.c_str());
-                return;
-            }
-            template_fib = new_template_fib;
-        }
 
         tipl::progress prog_("creating database");
         std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);
