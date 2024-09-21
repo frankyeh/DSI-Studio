@@ -130,7 +130,6 @@ int atl(tipl::program_option<tipl::out>& po)
 
         tipl::out() << "constructing a connectometry db" << std::endl;
         std::vector<std::string> index_name;
-        float reso = template_fib->vs[0];
 
         // get the name of all metrics from the first file
         std::vector<std::string> item_list;
@@ -141,7 +140,6 @@ int atl(tipl::program_option<tipl::out>& po)
                 tipl::error() << "cannot load subject fib " << name_list[0] << std::endl;
                 return 1;
             }
-            reso = po.get("resolution",std::floor((fib.vs[0] + fib.vs[2])*0.5f*100.0f)/100.0f);
             std::ostringstream out;
             for(const auto& each: fib.get_index_list())
                 out << each << " ";
@@ -159,17 +157,6 @@ int atl(tipl::program_option<tipl::out>& po)
             std::string line;
             while(std::getline(in,line,','))
                 index_name.push_back(line);
-        }
-
-        if(reso > template_fib->vs[0])
-        {
-            std::shared_ptr<fib_data> new_template_fib(new fib_data);
-            if(!new_template_fib->load_at_resolution(fib_template_list[template_id],reso))
-            {
-                tipl::error() << new_template_fib->error_msg << std::endl;
-                return 1;
-            }
-            template_fib = new_template_fib;
         }
 
         for(size_t i = 0; i < index_name.size();++i)
