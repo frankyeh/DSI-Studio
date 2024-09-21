@@ -253,15 +253,20 @@ struct nonlinear_warped_image : public tipl::shape<dim>{
     typedef vtype value_type;
     tipl::const_pointer_image<dim,vtype> I;
     tipl::const_pointer_image<dim,tipl::vector<dim> > mapping;
-    tipl::transformation_matrix<float,dim> T;
+    tipl::transformation_matrix<float,dim> trans;
     template<typename T,typename U,typename V,typename W>
-    nonlinear_warped_image(const T& s,const U& I_,const V& mapping_,const W& T_):tipl::shape<dim>(s),I(I_),mapping(mapping_),T(T_){;}
+    nonlinear_warped_image(const T& s,const U& I_,const V& mapping_,const W& trans_):tipl::shape<dim>(s)
+    {
+        I = I_;
+        mapping = mapping_;
+        trans = trans_;
+    }
     value_type at(tipl::vector<dim> xyz) const
     {
         if(!mapping.empty() && mapping.shape().is_valid(xyz))
             xyz = mapping.at(xyz);
         else
-            T(xyz);
+            trans(xyz);
         tipl::vector<dim,int> pos(xyz+0.5f);
         if(I.shape().is_valid(pos))
             return I.at(pos);
@@ -337,16 +342,16 @@ void RegToolBox::show_image(void)
         return;
     tipl::grayscale_image subject_image,template_image;
     std::mutex subject_mutex,template_mutex;
+    auto pos = float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.Its[cur_view]-1);
+
     tipl::par_for(row_count*2,[&](size_t id)
     {
+
         if(id < row_count)
         {
             if(!reg.It[0].empty() && !reg.I[id].empty())
             {
-                auto I = show_slice_at(
-                          reg.It[id],nonlinear_warped_image<3,unsigned char>(reg.Its,reg.I[id],reg.to2from,reg.T()),
-                          float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.Its[cur_view]-1),
-                          ui->zoom_template->value(),cur_view,blend_style());
+                auto I = show_slice_at(reg.It[id],nonlinear_warped_image<3,unsigned char>(reg.Its,reg.I[id],reg.to2from,reg.T()),pos,ui->zoom_template->value(),cur_view,blend_style());
                 {
                     std::lock_guard<std::mutex> lock(template_mutex);
                     if(template_image.empty())
@@ -365,11 +370,7 @@ void RegToolBox::show_image(void)
             {
                 auto invT = reg.T();
                 invT.inverse();
-                auto I = show_slice_at(
-                        reg.I[id],nonlinear_warped_image<3,unsigned char>(reg.Is,reg.It[id],reg.from2to,invT),
-                        float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.Is[cur_view]-1),
-                        ui->zoom_subject->value(),
-                        cur_view,blend_style());
+                auto I = show_slice_at(reg.I[id],nonlinear_warped_image<3,unsigned char>(reg.Is,reg.It[id],reg.from2to,invT),pos,ui->zoom_subject->value(),cur_view,blend_style());
                 {
                     std::lock_guard<std::mutex> lock(subject_mutex);
                     if(subject_image.empty())
