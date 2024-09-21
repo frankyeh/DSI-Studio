@@ -234,12 +234,16 @@ void manual_alignment::param_changed()
 template<int dim,typename value_type>
 struct warped_image : public tipl::shape<dim>{
     tipl::const_pointer_image<dim,value_type> I;
-    tipl::transformation_matrix<float,dim> T;
+    tipl::transformation_matrix<float,dim> trans;
     template<typename T,typename U,typename V>
-    warped_image(const T& s,const U& I_,const V& T_):tipl::shape<dim>(s),I(I_),T(T_){;}
+    warped_image(const T& s,const U& I_,const V& trans_):tipl::shape<dim>(s)
+    {
+        I = I_;
+        trans = trans_;
+    }
     value_type at(tipl::vector<dim> xyz) const
     {
-        T(xyz);
+        trans(xyz);
         tipl::vector<dim,int> pos(xyz+0.5f);
         if(I.shape().is_valid(pos))
             return I.at(pos);
