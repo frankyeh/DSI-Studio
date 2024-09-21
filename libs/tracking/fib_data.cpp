@@ -1882,8 +1882,7 @@ bool fib_data::map_to_mni(bool background)
 
     if(background)
     {
-        if(prog == 0)
-            reg_threads.push_back(std::make_shared<std::thread>(lambda));
+        reg_threads.push_back(std::make_shared<std::thread>(lambda));
         while(p(prog,4))
             std::this_thread::yield();
         if(p.aborted())
