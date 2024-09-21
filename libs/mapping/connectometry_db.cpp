@@ -427,7 +427,7 @@ void connectometry_db::add(float subject_R2,std::vector<float>& data,
 bool connectometry_db::add(const std::string& file_name,
                                          const std::string& subject_name)
 {
-    tipl::progress prog(file_name.c_str());
+    tipl::progress prog("adding ",std::filesystem::path(file_name).filename().string());
     std::vector<float> data;
     float subject_R2 = 1.0f;
     if(tipl::ends_with(file_name,".nii") || tipl::ends_with(file_name,".nii.gz"))
@@ -497,8 +497,6 @@ bool connectometry_db::add(const std::string& file_name,
                 return false;
             }
             tipl::transformation_matrix<float> template2subject(tipl::from_space(handle->trans_to_mni).to(fib.trans_to_mni));
-
-            tipl::out() << "loading";
             const auto& si2vi = handle->mat_reader.si2vi;
             data.clear();
             data.resize(si2vi.size()*size_t(handle->dir.num_fiber));
@@ -544,17 +542,12 @@ bool connectometry_db::add(const std::string& file_name,
                 else
                 {
                     fib.set_template_id(handle->template_id);
-                    fib.map_to_mni(tipl::show_prog);
-                    while(!prog.aborted() && fib.prog != 6)
-                        std::this_thread::yield();
-                    if(prog.aborted())
+                    if(!fib.map_to_mni(tipl::show_prog))
                     {
-                        error_msg = "aborted";
+                        error_msg = fib.error_msg;
                         return false;
                     }
-                    tipl::image<3> Iss(fib.t2s.shape());
-                    tipl::compose_mapping(fib.slices[index]->get_image(),fib.t2s,Iss);
-                    sample_from_image(Iss.alias(),fib.template_to_mni,data);
+                    sample_from_image(tipl::compose_mapping(fib.slices[index]->get_image(),fib.t2s),fib.template_to_mni,data);
                 }
             }
         }
