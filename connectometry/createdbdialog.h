@@ -17,7 +17,6 @@ private:
 public:
     QStringList group;
     unsigned int dir_length;
-    float fib_reso = 2.0f;
     explicit CreateDBDialog(QWidget *parent,bool create_db_);
     ~CreateDBDialog();
 private:
