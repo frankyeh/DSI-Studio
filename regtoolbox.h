@@ -20,6 +20,7 @@ class RegToolBox : public QMainWindow
 public:
     uint8_t cur_view = 2;
     dual_reg<3> reg;
+    std::vector<tipl::image<3,unsigned char> > J,Jt;
 public:
     tipl::transformation_matrix<float> T;
 public:
