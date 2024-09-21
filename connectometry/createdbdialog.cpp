@@ -92,6 +92,13 @@ void CreateDBDialog::update_list(void)
             ui->index_of_interest->setCurrentIndex(0);
             populate_templates(ui->template_list,0);
             ui->template_list->setEnabled(true);
+            tipl::io::gz_nifti nii;
+            if(nii.load_from_file(group[0].toStdString()))
+            {
+                tipl::vector<3> reso;
+                nii.get_voxel_size(reso);
+                fib_reso = reso[2];
+            }
         }
         else
         {
@@ -102,12 +109,12 @@ void CreateDBDialog::update_list(void)
                 raise(); // for Mac
                 return;
             }
-            fib_reso = std::floor((fib.vs[0] + fib.vs[2])*0.5f*100.0f)/100.0f;
             ui->index_of_interest->clear();
             for(const auto& name : fib.get_index_list())
                 ui->index_of_interest->addItem(name.c_str());
             populate_templates(ui->template_list,fib.template_id);
             ui->template_list->setEnabled(!fib.is_mni);
+            fib_reso = (fib.template_id == 0 ? 2.0f : fib.vs[2]);
         }
         ui->template_list->addItem("Open...");
     }
