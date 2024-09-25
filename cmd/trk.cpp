@@ -19,6 +19,40 @@ bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_
 {
     if(!other_slices.empty() || !po.has("other_slices"))
         return true;
+
+    // allow adding other slices for creating new metrics
+    if(po.has("subject_demo"))
+    {
+        auto subject_demo = po.get("subject_demo");
+        bool found = false;
+        if(std::filesystem::exists(subject_demo))
+        {
+            std::ifstream in(subject_demo);
+            std::string line;
+            while(std::getline(in,line))
+            {
+                std::replace(line.begin(),line.end(),',','\t');
+                std::istringstream in2(line);
+                std::string name;
+                in2 >> name;
+                if(po.get("source").find(name) != std::string::npos ||
+                   po.get("other_slices").find(name) != std::string::npos)
+                {
+                    tipl::out() << "found subject's demographics: " << line << std::endl;
+                    found = true;
+                    handle->demo = line.substr(name.length()+1);
+                }
+            }
+            if(!found)
+            {
+                tipl::error() << "cannot find subject in " << subject_demo << ". Please make sure that the FIB or NIFTI file name includes subject's id." << std::endl;
+                return 1;
+            }
+        }
+        else
+            handle->demo = subject_demo;
+    }
+
     std::vector<std::string> filenames;
     if(!po.get_files("other_slices",filenames))
     {
@@ -666,7 +700,7 @@ void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_threa
     tipl::progress prog("tracking parameters:");
     tracking_thread.param.default_otsu = po.get("otsu_threshold",tracking_thread.param.default_otsu);
     tracking_thread.param.threshold = po.get("fa_threshold",tracking_thread.param.threshold);
-    tracking_thread.param.dt_threshold = po.get("dt_threshold",po.has("dt_threshold_index") ? 0.2f : tracking_thread.param.dt_threshold);
+    tracking_thread.param.dt_threshold = po.get("dt_threshold",po.has("dt_metric1") ? 0.2f : tracking_thread.param.dt_threshold);
     tracking_thread.param.cull_cos_angle = float(std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0));
     tracking_thread.param.step_size = po.get("step_size",tracking_thread.param.step_size);
     tracking_thread.param.smooth_fraction = po.get("smoothing",tracking_thread.param.smooth_fraction);
@@ -675,8 +709,8 @@ void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_threa
 
     tracking_thread.param.random_seed = uint8_t(po.get("random_seed",int(tracking_thread.param.random_seed)));
     tracking_thread.param.tracking_method = uint8_t(po.get("method",int(tracking_thread.param.tracking_method)));
-    tracking_thread.param.check_ending = uint8_t(po.get("check_ending",int(0))) && !(po.has("dt_threshold_index"));
-    tracking_thread.param.tip_iteration = uint8_t(po.get("tip_iteration", (po.has("track_id") | po.has("dt_metric1") ) ? 4 : 0));
+    tracking_thread.param.check_ending = uint8_t(po.get("check_ending",int(0))) && !(po.has("dt_metric1"));
+    tracking_thread.param.tip_iteration = uint8_t(po.get("tip_iteration", (po.has("track_id") | po.has("dt_metric1") ) ? 16 : 0));
 
     if (po.has("fiber_count"))
     {
@@ -716,45 +750,11 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
     }
     if (po.has("dt_metric1") && po.has("dt_metric2"))
     {
-        // allow adding other slices for creating new metrics
-        {
-            if(po.has("subject_demo"))
-            {
-                auto subject_demo = po.get("subject_demo");
-                bool found = false;
-                if(std::filesystem::exists(subject_demo))
-                {
-                    std::ifstream in(subject_demo);
-                    std::string line;
-                    while(std::getline(in,line))
-                    {
-                        std::replace(line.begin(),line.end(),',','\t');
-                        std::istringstream in2(line);
-                        std::string name;
-                        in2 >> name;
-                        if(po.get("source").find(name) != std::string::npos ||
-                           po.get("other_slices").find(name) != std::string::npos)
-                        {
-                            tipl::out() << "found subject's demographics: " << line << std::endl;
-                            found = true;
-                            handle->demo = line.substr(name.length()+1);
-                        }
-                    }
-                    if(!found)
-                    {
-                        tipl::error() << "cannot find subject in " << subject_demo << ". Please make sure that the FIB or NIFTI file name includes subject's id." << std::endl;
-                        return 1;
-                    }
-                }
-                else
-                    handle->demo = subject_demo;
-            }
-
-        }
         auto index_list = handle->get_index_list();
-        tipl::out() << "available metrics:";
+        std::string prompt("available metrics:");
         for(const auto& each : handle->get_index_list())
-            tipl::out() << each;
+            prompt += " " + each;
+        tipl::out() << "enable differential tracking. " << prompt;
         if(!handle->set_dt_index(std::make_pair(po.get("dt_metric1"),po.get("dt_metric2")),po.get("dt_threshold_type",0)))
         {
             tipl::error() << handle->error_msg;
