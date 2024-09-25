@@ -1151,6 +1151,8 @@ bool fib_data::set_dt_index(const std::pair<std::string,std::string>& name_pair,
         return true;
     }
 
+    tipl::out() << "differential tracking on " << name;
+
     std::shared_ptr<tipl::image<3> > new_metrics(new tipl::image<3>(dim));
     auto& K = (*new_metrics);
     switch(type)
@@ -1159,6 +1161,7 @@ bool fib_data::set_dt_index(const std::pair<std::string,std::string>& name_pair,
             for(size_t k = 0;k < I.size();++k)
                 if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
                     K[k] = 1.0f-J[k]/I[k];
+
         break;
         case 1: // (m1-m2)÷m2
             for(size_t k = 0;k < I.size();++k)
