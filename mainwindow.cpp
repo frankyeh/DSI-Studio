@@ -212,10 +212,17 @@ void MainWindow::openFile(QStringList file_names)
     }
     else
     {
-        if(QString(file_name).endsWith("tt.gz") ||
-           QString(file_name).endsWith("trk") ||
-           QString(file_name).endsWith("trk.gz"))
+        if(QString(file_name).endsWith(".tt.gz") ||
+           QString(file_name).endsWith(".trk") ||
+           QString(file_name).endsWith(".trk.gz"))
         {
+            if(QString(file_name).remove(".tt.gz").endsWith(".fz") &&
+               QFileInfo(QString(file_name).remove(".tt.gz")).exists())
+            {
+                loadFib(QString(file_name).remove(".tt.gz"));
+                tracking_windows.back()->tractWidget->load_tracts(file_names);
+                return;
+            }
             QStringList file_list = QFileInfo(file_name).dir().entryList(QStringList("*fz"),QDir::Files|QDir::NoSymLinks);
             if(file_list.size() == 1)
             {
