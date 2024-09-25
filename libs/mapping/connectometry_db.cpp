@@ -660,10 +660,16 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
         std::string s(matched_demo);
         std::replace(s.begin(),s.end(),',',' ');
         std::istringstream in(s);
-        std::copy(std::istream_iterator<double>(in),
-                  std::istream_iterator<double>(),
-                  std::back_inserter(v));
-
+        while(in)
+        {
+            std::string str;
+            in >> str;
+            try{
+                float value = std::stof(str);
+                v.push_back(value);
+            }
+            catch (...){}
+        }
         if(v.size() != feature_location.size())
         {
             error_msg = "invalid demographic input: ";
