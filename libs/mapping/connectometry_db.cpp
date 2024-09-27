@@ -203,14 +203,13 @@ bool connectometry_db::parse_demo(void)
             last_item_size = items.size();
         }
         // select demographics by matching subject name
-        if(items.size() != (num_subjects+1)*col_count)
+
         {
-            tipl::out() << "demographic rows different from database subject numbers. trying to match subject name with the first column...";
+            tipl::out() << "trying to match subject name with the first column...";
             bool found = false;
             std::vector<std::string> new_items((num_subjects+1)*col_count);
             // copy titles
             std::copy(items.begin(),items.begin()+int(col_count),new_items.begin());
-
             for(size_t i = 0;i < num_subjects;++i)
                 for(size_t j = col_count;j+col_count <= items.size();j += col_count)
                 {
@@ -222,14 +221,16 @@ bool connectometry_db::parse_demo(void)
                         break;
                     }
                 }
-            if(!found)
+            if(found)
+                items.swap(new_items);
+            else
+            if(items.size() != (num_subjects+1)*col_count)
             {
                 std::ostringstream out;
                 out << "Subject number mismatch. The demographic file has " << row_count-1 << " subject rows, but the database has " << num_subjects << " subjects.";
                 error_msg = out.str();
                 return false;
             }
-            items.swap(new_items);
         }
     }
     // first line moved to title vector
