@@ -148,7 +148,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
             if(fnValue.contains("LLC") || fnValue.contains("L.L.C") || fnValue.contains("Inc"))
             {
-                auto notice = new QLabel("This license does not cover commercial use. If you are a commercial entity, you must obtain a separate commercial license to use DSI Studio. Please contact frank.yeh@gmail.com to inquire about obtaining a commercial license.");
+                auto notice = new QLabel("This license does not cover commercial use. If using DSI Studio under a commercial entity, please contact frank.yeh@gmail.com to inquire about obtaining a commercial license.");
                 notice->setWordWrap(true);
                 notice->setStyleSheet("color: red; font-weight: bold;");
                 layout->addWidget(notice);
