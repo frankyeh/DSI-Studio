@@ -147,7 +147,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -391,7 +391,7 @@
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step T3: Fiber Tracking</string>
@@ -464,7 +464,7 @@
                 <bool>false</bool>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step T1: NIFTI to SRC...</string>
@@ -490,7 +490,7 @@
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step T2: Reconstruction</string>
@@ -777,7 +777,7 @@
                 <bool>false</bool>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step T1: DICOM(s) to SRC...</string>
@@ -915,7 +915,7 @@ Files</string>
                 <bool>false</bool>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step T1: 2dseq, *.fdf to SRC...</string>
@@ -1389,10 +1389,10 @@ Atlas</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                 </property>
                 <property name="text">
-                 <string>T1W/T2W/Others-Aligned Tractography</string>
+                 <string>T1W/T2W/... Aligned Tractography</string>
                 </property>
                 <property name="icon">
                  <iconset resource="icons.qrc">
@@ -1592,7 +1592,7 @@ Atlas</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                 </property>
                 <property name="text">
                  <string>Step C3: Correlational Tracking</string>
@@ -1615,7 +1615,7 @@ Atlas</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                 </property>
                 <property name="text">
                  <string>Step C1: Create a Database</string>
@@ -1815,7 +1815,7 @@ Tractography</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                 </property>
                 <property name="text">
                  <string>Step C2: View/Edit Database</string>
@@ -1959,7 +1959,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step B1b: Rename DICOM in Folders...</string>
@@ -1985,7 +1985,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step B2a: NIFTI to SRC (BIDS)...</string>
@@ -2011,7 +2011,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step B1c: DICOM to SRC...</string>
@@ -2037,7 +2037,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step B2b: NIFTI(s) to SRC(s)...</string>
@@ -2063,7 +2063,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step B1a: Rename DICOM...</string>
@@ -2089,7 +2089,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step B4: Automatic Tracking...</string>
@@ -2115,7 +2115,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step B3: SRC(s) to FIB(s)...</string>
@@ -2361,7 +2361,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step T2a: SRC Quality Control...</string>
@@ -2517,7 +2517,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Step B0: XNAT Download...</string>
@@ -3097,7 +3097,7 @@ p, li { white-space: pre-wrap; }
             </rect>
            </property>
            <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
            </property>
            <property name="text">
             <string>Parse Network Measure Text Files</string>
@@ -3119,7 +3119,7 @@ p, li { white-space: pre-wrap; }
             </rect>
            </property>
            <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
            </property>
            <property name="text">
             <string>R1: Linear Registration...</string>
@@ -3141,7 +3141,7 @@ p, li { white-space: pre-wrap; }
             </rect>
            </property>
            <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
            </property>
            <property name="text">
             <string>Create Population-Averaged Template</string>
@@ -3163,7 +3163,7 @@ p, li { white-space: pre-wrap; }
             </rect>
            </property>
            <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
            </property>
            <property name="text">
             <string>R2: Nonlinear Registration...</string>
@@ -3185,7 +3185,7 @@ p, li { white-space: pre-wrap; }
             </rect>
            </property>
            <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
            </property>
            <property name="text">
             <string>Step O1: View Images...</string>
