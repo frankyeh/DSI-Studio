@@ -259,7 +259,7 @@ bool connectometry_db::parse_demo(void)
         {
             if(not_number[i%titles.size()])
                 continue;
-            if(items[i] == " " || items[i] == "\r")
+            if(items[i] == " " || items[i] == "\r" || items[i] == "n/a" || items[i] == "na")
                 items[i].clear();
             if(items[i].empty())
                 continue;
@@ -1059,6 +1059,24 @@ bool stat_model::select_cohort(connectometry_db& db,
                 {
                     auto fov_name = text.substr(0,j);
                     auto value_text = text.substr(j+1);
+
+                    if(fov_name == "subject")
+                    {
+                        for(size_t i = 0;i < db.subject_names.size();++i)
+                        {
+                            if(text[j] == '=')
+                                remove_list[i] = (db.subject_names[i] == value_text ? 1:0);
+                            if(text[j] == '/')
+                                remove_list[i] = (db.subject_names[i] != value_text ? 1:0);
+                            if(text[j] == '>')
+                                remove_list[i] = (tipl::contains(db.subject_names[i],value_text) ? 1:0);
+                            if(text[j] == '<')
+                                remove_list[i] = (tipl::contains(db.subject_names[i],value_text) ? 0:1);
+                        }
+                        parsed = true;
+                        break;
+                    }
+
                     bool okay;
                     std::istringstream si(value_text);
                     float threshold = 0.0f;
@@ -1080,6 +1098,7 @@ bool stat_model::select_cohort(connectometry_db& db,
                         parsed = true;
                         break;
                     }
+
                     size_t fov_index = 0;
                     okay = false;
                     for(size_t k = 0;k < db.feature_titles.size();++k)
