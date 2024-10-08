@@ -630,9 +630,10 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
             QMessageBox::critical(this,"ERROR","The connectivity matrix should be a square matrix");
             return;
         }
-        tipl::image<2,float> connectivity(tipl::shape<2>(row,col));
-        std::copy(buf,buf+row*col,connectivity.begin());
-        glWidget->connectivity = std::move(connectivity);
+        glWidget->connectivity.resize(tipl::shape<2>(row,col));
+        std::copy(buf,buf+row*col,glWidget->connectivity.begin());
+
+
 
         if(in.has("atlas") && in.read<std::string>("atlas") != "roi")
         {
@@ -690,7 +691,23 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
                 arg(regionWidget->regions.size()));
         return;
     }
-    glWidget->max_connectivity = tipl::max_value(glWidget->connectivity);
+    for(size_t i = 0,pos = 0;i < glWidget->connectivity.height();++i)
+    {
+        std::string line;
+        for(size_t j = 0;j < glWidget->connectivity.width();++j,++pos)
+        {
+            line += std::to_string(glWidget->connectivity[pos]);
+            line += " ";
+        }
+        tipl::out() << line;
+    }
+    glWidget->pos_max_connectivity = tipl::max_value(glWidget->connectivity);
+    glWidget->neg_max_connectivity = tipl::min_value(glWidget->connectivity);
+    if(glWidget->pos_max_connectivity == 0.0f)
+        glWidget->pos_max_connectivity = 1.0f;
+    if(glWidget->neg_max_connectivity == 0.0f)
+        glWidget->neg_max_connectivity = -1.0f;
+
     set_data("region_graph",1);
     regionWidget->check_all();
     glWidget->update();

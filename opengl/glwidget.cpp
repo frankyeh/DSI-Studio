@@ -1016,11 +1016,13 @@ void GLWidget::renderLR()
 
         if(get_param("region_graph") && !connectivity.empty())
         {
-            tipl::value_to_color<float> v2c;
-            v2c.two_color((unsigned int)get_param("region_edge_color2"),
-                          (unsigned int)get_param("region_edge_color1"));
-            v2c.set_range(get_param_float("region_edge_value2"),
-                          get_param_float("region_edge_value1"));
+            tipl::value_to_color<float> v2c1,v2c2;
+            v2c1.two_color((unsigned int)get_param("region_pos_edge_color1"),
+                          (unsigned int)get_param("region_pos_edge_color2"));
+            v2c2.two_color((unsigned int)get_param("region_neg_edge_color1"),
+                          (unsigned int)get_param("region_neg_edge_color2"));
+            v2c1.set_range(0.0f,1.0f);
+            v2c2.set_range(0.0f,1.0f);
             if (cur_tracking_window.regionWidget->regions.size())
             {
                 glEnable(GL_COLOR_MATERIAL);
@@ -1029,8 +1031,9 @@ void GLWidget::renderLR()
                     RegionSpheres.reset(new GluQua);
                     gluQuadricNormals(RegionSpheres->get(), GLU_SMOOTH);
                 }
-                float edge_threshold = get_param_float("region_edge_threshold")*max_connectivity;
-                if(!connectivity.empty() && connectivity.width() == int(cur_tracking_window.regionWidget->regions.size()) && max_connectivity != 0.0f)
+                float pos_edge_threshold = get_param_float("region_edge_threshold")*pos_max_connectivity;
+                float neg_edge_threshold = get_param_float("region_edge_threshold")*neg_max_connectivity;
+                if(!connectivity.empty() && connectivity.width() == int(cur_tracking_window.regionWidget->regions.size()))
                 {
                     for(unsigned int i = 0;i < cur_tracking_window.regionWidget->regions.size();++i)
                         for(unsigned int j = i+1;j < cur_tracking_window.regionWidget->regions.size();++j)
@@ -1039,19 +1042,23 @@ void GLWidget::renderLR()
                            !cur_tracking_window.regionWidget->regions[i]->region.empty() &&
                                 !cur_tracking_window.regionWidget->regions[j]->region.empty())
                         {
-                            float c = std::fabs(connectivity.at(i,j));
-                            if(c == 0.0f || (edge_threshold != 0.0f && c < edge_threshold))
+                            float c = connectivity.at(i,j);
+                            if(c > 0 && c < pos_edge_threshold)
                                 continue;
+                            if(c < 0 && c > neg_edge_threshold)
+                                continue;
+                            float scaled_c = (c > 0) ? c/pos_max_connectivity : c/neg_max_connectivity;
                             region_visualized[i] = true;
                             region_visualized[j] = true;
                             auto centeri = cur_tracking_window.regionWidget->regions[i]->get_center();
                             auto centerj = cur_tracking_window.regionWidget->regions[j]->get_center();
-                            auto color = v2c[connectivity.at(i,j)/max_connectivity];
+
+                            auto color = (c > 0) ? v2c1[scaled_c] : v2c2[scaled_c];
                             glColor4f(((float)color.r)/255.0f,
                                       ((float)color.g)/255.0f,
                                       ((float)color.b)/255.0f,1.0f);
                             CylinderGL(RegionSpheres->get(),centeri,centerj,
-                                       double((get_param("region_constant_edge_size") ? 0.5f:c/max_connectivity)*(get_param("region_edge_size")+5)/5.0f));
+                                       double((get_param("region_constant_edge_size") ? 0.5f:scaled_c)*(get_param("region_edge_size")+1)/5.0f));
                         }
                 }
 

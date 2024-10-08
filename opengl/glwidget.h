@@ -101,7 +101,7 @@ private: //glu
      std::shared_ptr<GluQua> DeviceQua;
 public:
      tipl::image<2,float> connectivity;
-     float max_connectivity = 0.0f;
+     float pos_max_connectivity = 0.0f,neg_max_connectivity = 0.0f;
  private:
      void rotate_angle(float angle,float x,float y,float z);
  public slots:
