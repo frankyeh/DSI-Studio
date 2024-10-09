@@ -245,8 +245,7 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
 bool load_nii(tipl::program_option<tipl::out>& po,
               std::shared_ptr<fib_data> handle,
               const std::string& file_name,
-              std::vector<std::shared_ptr<ROIRegion> >& regions,
-              std::vector<std::string>& names);
+              std::vector<std::shared_ptr<ROIRegion> >& regions);
 
 bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                              std::shared_ptr<fib_data> handle,
@@ -304,8 +303,8 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                         tipl::error() << "failed to open file as a region: " << fn << std::endl;
                         return false;
                     }
+                    region->name = QFileInfo(line.c_str()).baseName().toStdString();
                     regions.push_back(region);
-                    data.region_name.push_back(QFileInfo(line.c_str()).baseName().toStdString());
                 }
                 data.set_regions(handle->dim,regions);
                 tipl::out() << "a total of " << data.region_count << " regions are loaded." << std::endl;
@@ -314,13 +313,14 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
             {
                 tipl::out() << "reading " << roi_file_name << " as a NIFTI ROI file" << std::endl;
                 std::vector<std::shared_ptr<ROIRegion> > regions;
-                std::vector<std::string> names;
-                if(!load_nii(po,handle,roi_file_name,regions,names))
+                if(!load_nii(po,handle,roi_file_name,regions))
                     return false;
-                data.region_name = names;
                 data.set_regions(handle->dim,regions);
             }
         }
+
+
+
         for(int j = 0;j < connectivity_type_list.size();++j)
         for(int k = 0;k < connectivity_value_list.size();++k)
         {
@@ -428,17 +428,16 @@ bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> h
        QString(file_name.c_str()).endsWith(".nii"))
     {
         std::vector<std::shared_ptr<ROIRegion> > regions;
-        std::vector<std::string> names;
-        if(!load_nii(po,handle,file_name,regions,names))
+        if(!load_nii(po,handle,file_name,regions))
             return false;
         if(region_name.empty())
             roi = *(regions[0].get());
         else
         {
             bool found = false;
-            for(size_t index = 0;index < names.size();++index)
-                if(names[index] == region_name ||
-                   names[index] == QFileInfo(file_name.c_str()).baseName().toStdString() + "_" + region_name)
+            for(size_t index = 0;index < regions.size();++index)
+                if(regions[index]->name == region_name ||
+                   regions[index]->name == QFileInfo(file_name.c_str()).baseName().toStdString() + "_" + region_name)
                 {
                     found = true;
                     roi = *(regions[index].get());

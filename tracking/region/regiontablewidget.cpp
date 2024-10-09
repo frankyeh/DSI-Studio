@@ -126,14 +126,15 @@ void RegionTableWidget::contextMenuEvent ( QContextMenuEvent * event )
 
 void RegionTableWidget::updateRegions(QTableWidgetItem* item)
 {
+    if (item->column() == 0)
+        regions[uint32_t(item->row())]->name = item->text().toStdString();
     if (item->column() == 1)
         regions[uint32_t(item->row())]->regions_feature = uint8_t(item->text().toInt());
-    else
-        if (item->column() == 2)
-        {
-            regions[uint32_t(item->row())]->region_render->color = uint32_t(item->data(Qt::UserRole).toInt());
-            emit need_update();
-        }
+    if (item->column() == 2)
+    {
+        regions[uint32_t(item->row())]->region_render->color = uint32_t(item->data(Qt::UserRole).toInt());
+        emit need_update();
+    }
 }
 
 QColor RegionTableWidget::currentRowColor(void)
@@ -304,7 +305,7 @@ bool RegionTableWidget::command(QString cmd,QString param,QString)
             {
                 std::string filename = param.toStdString();
                 filename  += "/";
-                filename  += item(index,0)->text().toStdString();
+                filename  += regions[size_t(index)]->name;
                 filename  += output_format().toStdString();
                 regions[size_t(index)]->save_region_to_file(filename.c_str());
             }
@@ -479,7 +480,7 @@ void RegionTableWidget::copy_region(void)
     regions.insert(regions.begin() + cur_row + 1,std::make_shared<ROIRegion>(cur_tracking_window.handle));
     *regions[cur_row + 1] = *regions[cur_row];
     regions[cur_row + 1]->region_render->color.color = color;
-    add_row(int(cur_row+1),item(currentRow(),0)->text());
+    add_row(int(cur_row+1),regions[cur_row]->name.c_str());
 }
 void load_nii_label(const char* filename,std::map<int,std::string>& label_map)
 {
@@ -577,7 +578,6 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<SliceModel*>& transform_lookup,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
-              std::vector<std::string>& names,
               std::string& error_msg,
               bool is_mni)
 {
@@ -738,8 +738,8 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     // single region ROI
     if(!multiple_roi)
     {
-        names.push_back(nifti_name);
         regions.push_back(std::make_shared<ROIRegion>(handle));
+        regions.back()->name = nifti_name;
         if(need_trans)
         {
             regions.back()->dim = from.shape();
@@ -796,10 +796,9 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     for(uint32_t i = 0;i < region_points.size();++i)
         {
             unsigned short value = value_list[i];
-            std::string name = (label_map.find(value) == label_map.end() ?
-                 nifti_name + "_" + std::to_string(int(value)): label_map[value]);
             regions.push_back(std::make_shared<ROIRegion>(handle));
-            names.push_back(name);
+            regions.back()->name = (label_map.find(value) == label_map.end() ?
+                                    nifti_name + "_" + std::to_string(int(value)): label_map[value]);
             if(need_trans)
             {
                 regions.back()->dim = from.shape();
@@ -833,7 +832,6 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
             transform_lookup.push_back(slice.get());
     }
     std::vector<std::vector<std::shared_ptr<ROIRegion> > > loaded_regions(files.size());
-    std::vector<std::vector<std::string> > names(files.size());
 
     {
         tipl::progress prog("reading region files");
@@ -850,7 +848,6 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
                          files[i].toStdString(),
                          transform_lookup,
                          loaded_regions[i],
-                         names[i],
                          error_msg,is_mni))
                 {
                     failed = true;
@@ -867,8 +864,8 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
                     failed = true;
                     return;
                 }
+                region->name = QFileInfo(files[i]).completeBaseName().toStdString();
                 loaded_regions[i].push_back(region);
-                names[i].push_back(QFileInfo(files[i]).completeBaseName().toStdString());
             }
         });
 
@@ -879,7 +876,6 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
     }
 
     tipl::aggregate_results(std::move(loaded_regions),loaded_regions[0]);
-    tipl::aggregate_results(std::move(names),names[0]);
 
     {
         tipl::progress prog("loading ROIs");
@@ -887,7 +883,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
         for(uint32_t i = 0;prog(i,loaded_regions[0].size());++i)
             {
                 regions.push_back(loaded_regions[0][i]);
-                add_row(int(regions.size()-1),names[0][i].c_str());
+                add_row(int(regions.size()-1),loaded_regions[0][i]->name.c_str());
                 check_row(currentRow(),loaded_regions.size() == 1);
             }
         end_update();
@@ -1096,7 +1092,7 @@ void RegionTableWidget::save_region(void)
         return;
     QString filename = QFileDialog::getSaveFileName(
                            this,
-                           "Save region",item(currentRow(),0)->text() + output_format(),"NIFTI file(*nii.gz *.nii);;Text file(*.txt);;MAT file (*.mat);;All files(*)" );
+                           "Save region",QString(regions[currentRow()]->name.c_str()) + output_format(),"NIFTI file(*nii.gz *.nii);;Text file(*.txt);;MAT file (*.mat);;All files(*)" );
     if (filename.isEmpty())
         return;
     if(!filename.endsWith(".mat") &&
@@ -1138,11 +1134,9 @@ void RegionTableWidget::save_checked_region_label_file(QString filename,int firs
         base_name.chop(4);
     QString label_file = QFileInfo(filename).absolutePath()+"/"+base_name+".txt";
     std::ofstream out(label_file.toStdString().c_str());
-    for (unsigned int roi_index = 0;roi_index < regions.size();++roi_index)
+    for (auto each : get_checked_regions())
     {
-        if (item(int(roi_index),0)->checkState() != Qt::Checked)
-            continue;
-        out << first_index << " " << item(int(roi_index),0)->text().toStdString() << std::endl;
+        out << first_index << " " << each->name << std::endl;
         ++first_index;
     }
 }
@@ -1153,7 +1147,7 @@ void RegionTableWidget::save_all_regions_to_4dnifti(void)
     if (checked_regions.empty())
         return;
     QString filename = QFileDialog::getSaveFileName(
-                           this,"Save region",item(currentRow(),0)->text() + output_format(),
+                           this,"Save region",QString(checked_regions[0]->name.c_str()) + output_format(),
                            "Region file(*nii.gz *.nii);;All file types (*)" );
     if (filename.isEmpty())
         return;
@@ -1196,7 +1190,7 @@ void RegionTableWidget::save_all_regions(void)
     if (checked_regions.empty())
         return;
     QString filename = QFileDialog::getSaveFileName(
-                           this,"Save region",item(currentRow(),0)->text() + output_format(),
+                           this,"Save region",QString(checked_regions[0]->name.c_str()) + output_format(),
                            "Region file(*nii.gz *.nii *.mat);;Text file (*.txt);;All file types (*)" );
     if (filename.isEmpty())
         return;
@@ -1245,7 +1239,7 @@ void RegionTableWidget::save_region_info(void)
     if (regions.empty() || currentRow() >= regions.size())
         return;
     QString filename = QFileDialog::getSaveFileName(
-                           this,"Save voxel information",item(currentRow(),0)->text() + "_info.txt",
+                           this,"Save voxel information",QString(regions[currentRow()]->name.c_str()) + "_info.txt",
                            "Text files (*.txt)" );
     if (filename.isEmpty())
         return;
@@ -1291,7 +1285,6 @@ void RegionTableWidget::delete_all_region(void)
 
 
 void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<std::shared_ptr<ROIRegion> >& regions,
-                            const std::vector<std::string>& region_name,
                             std::string& result)
 {
     std::vector<std::string> titles;
@@ -1302,8 +1295,8 @@ void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<s
     });
     std::ostringstream out;
     out << "Name\t";
-    for(unsigned int index = 0;index < regions.size();++index)
-        out << region_name[index] << "\t";
+    for(auto each : regions)
+        out << each->name << "\t";
     out << std::endl;
     for(unsigned int i = 0;i < titles.size();++i)
     {
@@ -1321,20 +1314,10 @@ void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<s
 
 void RegionTableWidget::show_statistics(void)
 {
-    if(currentRow() >= regions.size())
+    if(currentRow() >= regions.size() || regions.empty())
         return;
     std::string result;
-    {
-        std::vector<std::shared_ptr<ROIRegion> > active_regions;
-        std::vector<std::string> region_name;
-        for(unsigned int index = 0;index < regions.size();++index)
-            if(item(index,0)->checkState() == Qt::Checked)
-            {
-                active_regions.push_back(regions[index]);
-                region_name.push_back(item(index,0)->text().toStdString());
-            }
-        get_regions_statistics(cur_tracking_window.handle,active_regions,region_name,result);
-    }
+    get_regions_statistics(cur_tracking_window.handle,get_checked_regions(),result);
     QMessageBox msgBox;
     msgBox.setText("Region Statistics");
     msgBox.setDetailedText(result.c_str());
@@ -1347,7 +1330,7 @@ void RegionTableWidget::show_statistics(void)
     {
         QString filename;
         filename = QFileDialog::getSaveFileName(
-                    this,"Save statistics as",item(currentRow(),0)->text() + "_stat.txt",
+                    this,"Save statistics as",QString(regions[currentRow()]->name.c_str()) + "_stat.txt",
                     "Text files (*.txt);;All files|(*)");
         if(filename.isEmpty())
             return;
@@ -1394,7 +1377,8 @@ void RegionTableWidget::setROIs(ThreadData* data)
             data->roi_mgr->setRegions(regions[index]->region,
                                       regions[index]->dim,
                                       regions[index]->to_diffusion_space,
-                                      regions[index]->regions_feature,item(int(index),0)->text().toStdString().c_str());
+                                      regions[index]->regions_feature,
+                                      regions[index]->name.c_str());
     // auto track
     if(cur_tracking_window.ui->tract_target_0->currentIndex() > 0)
     {
@@ -1412,14 +1396,12 @@ void RegionTableWidget::setROIs(ThreadData* data)
 
 QString RegionTableWidget::getROIname(void)
 {
-    for (size_t index = 0;index < regions.size();++index)
-        if (!regions[index]->region.empty() && item(int(index),0)->checkState() == Qt::Checked &&
-             regions[index]->regions_feature == roi_id)
-                return item(int(index),0)->text();
-    for (size_t index = 0;index < regions.size();++index)
-        if (!regions[index]->region.empty() && item(int(index),0)->checkState() == Qt::Checked &&
-             regions[index]->regions_feature == seed_id)
-                return item(int(index),0)->text();
+    for (auto each : get_checked_regions())
+        if (each->regions_feature == roi_id)
+            return each->name.c_str();
+    for (auto each : get_checked_regions())
+        if (each->regions_feature == seed_id)
+            return each->name.c_str();
     return "whole_brain";
 }
 void RegionTableWidget::undo(void)
@@ -1702,8 +1684,8 @@ void RegionTableWidget::do_action(QString action)
                 arg = tipl::arg_sort(regions.size(),[&]
                 (int lhs,int rhs)
                 {
-                    auto lstr = item(lhs,0)->text();
-                    auto rstr = item(rhs,0)->text();
+                    auto lstr = regions[lhs]->name;
+                    auto rstr = regions[rhs]->name;
                     return negate ^ (lstr.length() == rstr.length() ? lstr < rstr : lstr.length() < rstr.length());
                 });
             }
@@ -1726,18 +1708,16 @@ void RegionTableWidget::do_action(QString action)
 
             std::vector<std::shared_ptr<ROIRegion> > new_region(arg.size());
             std::vector<int> new_region_checked(arg.size());
-            std::vector<std::string> new_region_names(arg.size());
             for(size_t i = 0;i < arg.size();++i)
             {
                 new_region[i] = regions[arg[i]];
-                new_region_checked[i] = item(int(arg[i]),0)->checkState() == Qt::Checked ? 1:0;
-                new_region_names[i] = item(int(arg[i]),0)->text().toStdString();
+                new_region_checked[i] = (item(int(arg[i]),0)->checkState() == Qt::Checked ? 1:0);
             }
             regions.swap(new_region);
             for(int i = 0;i < int(arg.size());++i)
             {
                 check_row(i,new_region_checked[uint32_t(i)]);
-                item(i,0)->setText(new_region_names[uint32_t(i)].c_str());
+                item(i,0)->setText(new_region[uint32_t(i)]->name.c_str());
                 rows_to_be_updated.push_back(i);
             }
         }

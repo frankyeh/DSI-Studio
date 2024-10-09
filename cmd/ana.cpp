@@ -23,7 +23,6 @@ bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
 
 void get_regions_statistics(std::shared_ptr<fib_data> handle,
                             const std::vector<std::shared_ptr<ROIRegion> >& regions,
-                            const std::vector<std::string>& region_name,
                             std::string& result);
 bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text);
@@ -31,7 +30,6 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<SliceModel*>& transform_lookup,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
-              std::vector<std::string>& names,
               std::string& error_msg,
               bool is_mni);
 
@@ -40,8 +38,7 @@ bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_
 bool load_nii(tipl::program_option<tipl::out>& po,
               std::shared_ptr<fib_data> handle,
               const std::string& region_text,
-              std::vector<std::shared_ptr<ROIRegion> >& regions,
-              std::vector<std::string>& names)
+              std::vector<std::shared_ptr<ROIRegion> >& regions)
 {
     std::vector<SliceModel*> transform_lookup;
     if(!check_other_slices(po,handle))
@@ -52,7 +49,7 @@ bool load_nii(tipl::program_option<tipl::out>& po,
     QStringList str_list = QString(region_text.c_str()).split(",");// splitting actions
     QString file_name = str_list[0];
     std::string error_msg;
-    if(!load_nii(handle,file_name.toStdString(),transform_lookup,regions,names,error_msg,QFileInfo(file_name).baseName().toLower().contains("mni")))
+    if(!load_nii(handle,file_name.toStdString(),transform_lookup,regions,error_msg,QFileInfo(file_name).baseName().toLower().contains("mni")))
     {
         tipl::error() << error_msg << std::endl;
         return false;
@@ -96,7 +93,6 @@ bool load_tracts(const char* file_name,std::shared_ptr<fib_data> handle,std::sha
 }
 int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 {
-    std::vector<std::string> region_list;
     std::vector<std::shared_ptr<ROIRegion> > regions;
     if(po.has("atlas"))
     {
@@ -111,15 +107,12 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
             for(unsigned int j = 0;j < atlas_list[i]->get_list().size();++j)
             {
                 std::shared_ptr<ROIRegion> region(std::make_shared<ROIRegion>(handle));
-                std::string region_name = atlas_list[i]->name;
-                region_name += ":";
-                region_name += atlas_list[i]->get_list()[j];
-                if(!load_region(po,handle,*region.get(),region_name))
+                if(!load_region(po,handle,*region.get(),atlas_list[i]->name + ":" + atlas_list[i]->get_list()[j]))
                 {
-                    tipl::out() << "fail to load the ROI file " << region_name << std::endl;
+                    tipl::out() << "fail to load the ROI: " << atlas_list[i]->get_list()[j] << std::endl;
                     return 1;
                 }
-                region_list.push_back(atlas_list[i]->get_list()[j]);
+                region->name = atlas_list[i]->get_list()[j];
                 regions.push_back(region);
             }
 
@@ -136,7 +129,7 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
                 tipl::error() << "fail to load the ROI file." << std::endl;
                 return 1;
             }
-            region_list.push_back(roi_list[i].toStdString());
+            region->name = roi_list[i].toStdString();
             regions.push_back(region);
         }
     }
@@ -145,7 +138,7 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
         QStringList roi_list = QString(po.get("regions").c_str()).split("+");
         for(int i = 0;i < roi_list.size();++i)
         {
-            if(!load_nii(po,handle,po.get("regions"),regions,region_list))
+            if(!load_nii(po,handle,po.get("regions"),regions))
                 return 1;
         }
     }
@@ -157,7 +150,7 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
 
     std::string result;
     tipl::out() << "calculating region statistics at a total of " << regions.size() << " regions" << std::endl;
-    get_regions_statistics(handle,regions,region_list,result);
+    get_regions_statistics(handle,regions,result);
 
     std::string file_name(po.get("source"));
     file_name += ".statistics.txt";

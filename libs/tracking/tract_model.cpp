@@ -3454,9 +3454,12 @@ void ConnectivityMatrix::set_regions(const tipl::shape<3>& geo,
 {
     region_count = regions.size();
     region_map.clear();
+    region_name.clear();
     region_map.resize(geo);
+    region_name.resize(regions.size());
     for(size_t roi = 0;roi < regions.size();++roi)
     {
+        region_name[roi] = regions[roi]->name;
         auto points = regions[roi]->to_space(geo,tipl::matrix<4,4>(tipl::identity_matrix()));
         for(auto& pos : points)
             if(geo.is_valid(pos))
