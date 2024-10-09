@@ -3448,61 +3448,19 @@ void ConnectivityMatrix::save_to_connectogram(const char* file_name)
     }
 }
 
-
 void ConnectivityMatrix::set_regions(const tipl::shape<3>& geo,
-                                     const std::vector<std::shared_ptr<ROIRegion> >& regions)
+                                     const std::vector<std::vector<tipl::vector<3,short> > >& points,
+                                     const std::vector<std::string>& labels)
 {
-    region_count = regions.size();
+    region_count = points.size();
+    region_name = labels;
     region_map.clear();
-    region_name.clear();
     region_map.resize(geo);
-    region_name.resize(regions.size());
-    for(size_t roi = 0;roi < regions.size();++roi)
-    {
-        region_name[roi] = regions[roi]->name;
-        auto points = regions[roi]->to_space(geo,tipl::matrix<4,4>(tipl::identity_matrix()));
-        for(auto& pos : points)
+    for(size_t roi = 0;roi < points.size();++roi)
+        for(auto& pos : points[roi])
             if(geo.is_valid(pos))
                 region_map.at(pos).push_back(uint16_t(roi));
-    }
     atlas_name = "roi";
-}
-
-
-bool ConnectivityMatrix::set_atlas(std::shared_ptr<atlas> data,
-                                   std::shared_ptr<fib_data> handle)
-{
-    tipl::progress p("open and load ",data->filename.c_str());
-    if(handle->get_sub2temp_mapping().empty())
-    {
-        error_msg = handle->error_msg;
-        return false;
-    }
-    region_count = data->get_list().size();
-    region_name = data->get_list();
-
-    // trigger atlas loading to avoid crash in multi thread
-    if(!data->load_from_file())
-    {
-        error_msg = "cannot read atlas file ";
-        error_msg += data->filename;
-        return false;
-    }
-
-    const auto& s2t = handle->get_sub2temp_mapping();
-    region_map.clear();
-    region_map.resize(handle->dim);
-    tipl::adaptive_par_for(region_map.size(),[&](size_t index)
-    {
-        for(unsigned int i = 0;i < region_count;++i)
-        {
-            if(data->is_labeled_as(s2t[index],i))
-                region_map[index].push_back(short(i));
-        }
-    });
-
-    atlas_name = data->name;
-    return true;
 }
 
 
