@@ -92,19 +92,32 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
     if(cur_tracking_window->tractWidget->tract_models.size() == 0)
         return;
     tipl::progress p("calculating connectivity matrix");
+    std::vector<std::vector<tipl::vector<3,short> > > points;
+    std::vector<std::string> names;
+    cm.clear();
     if(ui->region_list->currentIndex() == 0)
         {
-            cm.clear();
-            auto checked_regions = cur_tracking_window->regionWidget->get_checked_regions();
-            if(checked_regions.empty())
+            for(auto each : cur_tracking_window->regionWidget->get_checked_regions())
             {
-                QMessageBox::critical(this,"ERROR","No checked ROI in the region list. Please assign/check ROIs.");
-                return;
+                points.push_back(each->to_space(cur_tracking_window->handle->dim,tipl::matrix<4,4>(tipl::identity_matrix())));
+                names.push_back(each->name);
             }
-            data.set_regions(cur_tracking_window->handle->dim,checked_regions);
         }
     else
-        data.set_atlas(cur_tracking_window->handle->atlas_list[ui->region_list->currentIndex()-1],cur_tracking_window->handle);
+    {
+        if(!cur_tracking_window->handle->get_atlas_all_roi(cur_tracking_window->handle->atlas_list[ui->region_list->currentIndex()-1],
+                                                           cur_tracking_window->handle->dim,tipl::matrix<4,4>(tipl::identity_matrix()),points,names))
+        {
+            QMessageBox::critical(this,"ERROR",cur_tracking_window->handle->error_msg.c_str());
+            return;
+        }
+    }
+    if(points.empty())
+    {
+        QMessageBox::critical(this,"ERROR","No checked ROI in the region list. Please assign/check ROIs.");
+        return;
+    }
+    data.set_regions(cur_tracking_window->handle->dim,points,names);
     TractModel tracks(cur_tracking_window->handle);
     for(int index = 0;index < cur_tracking_window->tractWidget->tract_models.size();++index)
         if(cur_tracking_window->tractWidget->item(index,0)->checkState() == Qt::Checked)
