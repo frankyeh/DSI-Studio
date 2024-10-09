@@ -577,6 +577,11 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
     tipl::shape<3> geo;
     dicom_header.get_image_dimension(geo);
 
+    tipl::out() << "is_mosaic: " << (dicom_header.is_mosaic ? "yes":"no");
+    tipl::out() << "is_multi_frame: " << (dicom_header.is_mosaic ? "yes":"no");
+    tipl::out() << "shape: " << geo;
+
+
     if(!dicom_header.is_mosaic && (dicom_header.is_multi_frame || geo[2] != 1 || file_list.size() < 2))
     {
         tipl::progress prog("parsing multiframe");
@@ -601,6 +606,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             error_msg += file_list[i].toStdString();
             return false;
         }
+        tipl::out() << QFileInfo(file_list[i]).fileName().toStdString() << " shape: " << dwis[i]->image.shape();
         if(dwis[i]->image.shape() != geo)
         {
             error_msg = "inconsistent image size found at ";
@@ -608,6 +614,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             error_msg += " please parse DICOM into folders before further processing.";
             return false;
         }
+
     }
     if(p.aborted())
         return false;
