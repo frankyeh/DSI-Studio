@@ -2107,11 +2107,13 @@ bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,
 bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,
                                  const tipl::shape<3>& new_geo,const tipl::matrix<4,4>& to_diffusion_space,
                                  std::vector<std::vector<tipl::vector<3,short> > >& points,
-                                 std::vector<std::string>& labels)
+                                 std::vector<std::string>& names)
 {
-    if(get_sub2temp_mapping().empty() || !at->load_from_file())
+    if(get_sub2temp_mapping().empty())
+    {
+        error_msg = "cannot warp subject image to the template space";
         return false;
-
+    }
     // trigger atlas loading to avoid crash in multi thread
     if(!at->load_from_file())
     {
@@ -2119,8 +2121,6 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,
         error_msg += at->filename;
         return false;
     }
-
-
     std::vector<std::vector<std::vector<tipl::vector<3,short> > > > region_voxels(std::thread::hardware_concurrency());
     for(auto& region : region_voxels)
     {
@@ -2130,7 +2130,7 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,
 
     bool need_trans = (new_geo != dim || to_diffusion_space != tipl::identity_matrix());
     auto shape = need_trans ? new_geo : dim;
-    tipl::adaptive_par_for<tipl::sequential_with_id>(tipl::begin_index(shape),tipl::end_index(shape),
+    tipl::par_for<tipl::sequential_with_id>(tipl::begin_index(shape),tipl::end_index(shape),
                 [&](const tipl::pixel_index<3>& index,size_t id)
     {
         tipl::vector<3> p2;
@@ -2164,19 +2164,19 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,
                 return;
             region_voxels[id][uint32_t(region_index)].push_back(tipl::vector<3,short>(index.begin()));
         }
-    });
+    },std::thread::hardware_concurrency());
 
-    // aggregating results from all threads
-    labels.resize(at->get_list().size());
-    tipl::adaptive_par_for(at->get_list().size(),[&](size_t i)
+    for(size_t i = 0;i < at->get_list().size();++i)
     {
-        labels[i] = at->get_list()[i];
+        names.push_back(at->get_list()[i]);
+        std::vector<tipl::vector<3,short> > region_points(std::move(region_voxels[0][i]));
+        // aggregating results from all threads
         for(size_t j = 1;j < region_voxels.size();++j)
-            region_voxels[0][i].insert(region_voxels[0][i].end(),
+            region_points.insert(region_points.end(),
                     std::make_move_iterator(region_voxels[j][i].begin()),std::make_move_iterator(region_voxels[j][i].end()));
-        std::sort(region_voxels[0][i].begin(),region_voxels[0][i].end());
-    });
-    region_voxels[0].swap(points);
+        std::sort(region_points.begin(),region_points.end());
+        points.push_back(std::move(region_points));
+    }
     return true;
 }
 
