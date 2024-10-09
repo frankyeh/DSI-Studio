@@ -19,6 +19,7 @@ const unsigned char default_id = 7;
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 class ROIRegion {
 public:
+        std::string name = "region";
         tipl::shape<3> dim;
         tipl::vector<3> vs;
         tipl::matrix<4,4> trans_to_mni;
