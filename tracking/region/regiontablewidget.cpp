@@ -1055,7 +1055,7 @@ void RegionTableWidget::move_up(void)
     {
         regions[uint32_t(currentRow())].swap(regions[uint32_t(currentRow())-1]);
         begin_update();
-        for(int i = 0;i < 4;++i)
+        for(int i = 0;i < columnCount();++i)
         {
             QTableWidgetItem* item0 = takeItem(currentRow()-1,i);
             QTableWidgetItem* item1 = takeItem(currentRow(),i);
@@ -1074,7 +1074,7 @@ void RegionTableWidget::move_down(void)
     {
         regions[uint32_t(currentRow())].swap(regions[uint32_t(currentRow())+1]);
         begin_update();
-        for(int i = 0;i < 4;++i)
+        for(int i = 0;i < columnCount();++i)
         {
             QTableWidgetItem* item0 = takeItem(currentRow()+1,i);
             QTableWidgetItem* item1 = takeItem(currentRow(),i);
@@ -1102,6 +1102,7 @@ void RegionTableWidget::save_region(void)
         filename += ".nii.gz";
     regions[currentRow()]->save_region_to_file(filename.toStdString().c_str());
     item(currentRow(),0)->setText(QFileInfo(filename).completeBaseName());
+    regions[currentRow()]->name = QFileInfo(filename).completeBaseName().toStdString();
 }
 QString RegionTableWidget::output_format(void)
 {
@@ -1706,20 +1707,21 @@ void RegionTableWidget::do_action(QString action)
                 arg = tipl::arg_sort(data,[negate](float lhs,float rhs){return negate ^ (lhs < rhs);});
             }
 
+            std::vector<QTableWidgetItem*> items;
             std::vector<std::shared_ptr<ROIRegion> > new_region(arg.size());
-            std::vector<int> new_region_checked(arg.size());
+            begin_update();
+            size_t col_count = columnCount();
             for(size_t i = 0;i < arg.size();++i)
             {
                 new_region[i] = regions[arg[i]];
-                new_region_checked[i] = (item(int(arg[i]),0)->checkState() == Qt::Checked ? 1:0);
+                for(size_t j = 0;j < col_count;++j)
+                    items.push_back(takeItem(arg[i],j));
             }
-            regions.swap(new_region);
-            for(int i = 0;i < int(arg.size());++i)
-            {
-                check_row(i,new_region_checked[uint32_t(i)]);
-                item(i,0)->setText(new_region[uint32_t(i)]->name.c_str());
-                rows_to_be_updated.push_back(i);
-            }
+            regions.swap(new_region);           
+            for(size_t i = 0,pos = 0;i < arg.size();++i)
+                for(size_t j = 0;j < col_count;++j,++pos)
+                    setItem(i,j,items[pos]);
+            end_update();
         }
 
 
