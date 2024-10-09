@@ -258,9 +258,10 @@ public:
     size_t region_count = 0;
     std::vector<std::string> region_name;
     std::string error_msg,atlas_name;
-    bool set_atlas(std::shared_ptr<atlas> data,std::shared_ptr<fib_data> handle);
     void set_regions(const tipl::shape<3>& geo,
-                     const std::vector<std::shared_ptr<ROIRegion> >& regions);
+                     const std::vector<std::vector<tipl::vector<3,short> > >& points,
+                     const std::vector<std::string>& labels);
+
 public:
     void save_to_image(tipl::color_image& cm);
     void save_to_file(const char* file_name);
