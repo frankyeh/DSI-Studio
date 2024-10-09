@@ -252,79 +252,51 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                              std::string output_name,
                              std::shared_ptr<TractModel> tract_model)
 {
-    QStringList connectivity_list = QString(po.get("connectivity").c_str()).split(",");
+    QStringList connectivity_list1 = QString(po.get("connectivity").c_str()).split(",");
     QStringList connectivity_type_list = QString(po.get("connectivity_type","pass").c_str()).split(",");
     QStringList connectivity_value_list = QString(po.get("connectivity_value","count").c_str()).split(",");
     std::string connectivity_output = po.get("connectivity_output","matrix,connectogram,measure");
-    for(int i = 0;i < connectivity_list.size();++i)
+    for(int i = 0;i < connectivity_list1.size();++i)
     {
-        std::string roi_file_name = connectivity_list[i].toStdString();
-        tipl::out() << "opening " << roi_file_name << std::endl;
-        ConnectivityMatrix data;
+        std::vector<std::vector<tipl::vector<3,short> > > points;
+        std::vector<std::string> names;
 
-        // specify atlas name (e.g. --connectivity=AAL2)
-        if(!QString(roi_file_name.c_str()).contains("."))
+        QStringList connectivity_list2 = connectivity_list1[i].split("+");
+        for(int j = 0;j < connectivity_list2.size();++j)
         {
-            auto at = handle->get_atlas(roi_file_name);
-            if(!at.get())
-            {
-                tipl::error() << handle->error_msg << std::endl;
-                return false;
-            }
-            data.set_atlas(at,handle);
-        }
-        else
-        // specify atlas file (e.g. --connectivity=subject_file.nii.gz)
-        {
-            if(!std::filesystem::exists(roi_file_name))
-            {
-                tipl::error() << "cannot open file " << roi_file_name << std::endl;
-                return false;
-            }
+            auto roi_file_name = connectivity_list2[j].toStdString();
 
-            if(QString(roi_file_name.c_str()).toLower().endsWith("txt")) // a roi list
+            if(!QString(roi_file_name.c_str()).contains(".")) // specify atlas name (e.g. --connectivity=AAL2)
             {
-                tipl::out() << "reading " << roi_file_name << " as an ROI list" << std::endl;
-                std::string dir = QFileInfo(roi_file_name.c_str()).absolutePath().toStdString();
-                dir += "/";
-                std::ifstream in(roi_file_name.c_str());
-                std::string line;
-                std::vector<std::shared_ptr<ROIRegion> > regions;
-                while(std::getline(in,line))
+                tipl::out() << "looking for built-in atlas " << roi_file_name << std::endl;
+                if(!handle->get_atlas_all_roi(handle->get_atlas(roi_file_name),
+                                              handle->dim,tipl::matrix<4,4>(tipl::identity_matrix()),points,names))
                 {
-                    std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
-                    std::string fn;
-                    if(std::filesystem::exists(line))
-                        fn = line;
-                    else
-                        fn = dir + line;
-                    if(!region->load_region_from_file(fn.c_str()))
-                    {
-                        tipl::error() << "failed to open file as a region: " << fn << std::endl;
-                        return false;
-                    }
-                    region->name = QFileInfo(line.c_str()).baseName().toStdString();
-                    regions.push_back(region);
+                    tipl::error() << handle->error_msg << std::endl;
+                    return false;
                 }
-                data.set_regions(handle->dim,regions);
-                tipl::out() << "a total of " << data.region_count << " regions are loaded." << std::endl;
             }
             else
             {
-                tipl::out() << "reading " << roi_file_name << " as a NIFTI ROI file" << std::endl;
+                tipl::out() << "opening " << roi_file_name << std::endl;
                 std::vector<std::shared_ptr<ROIRegion> > regions;
-                if(!load_nii(po,handle,roi_file_name,regions))
+                if(!load_nii(po,handle,roi_file_name,regions)) // specify atlas file (e.g. --connectivity=subject_file.nii.gz)
                     return false;
-                data.set_regions(handle->dim,regions);
+                for(auto each : regions)
+                {
+                    points.push_back(each->to_space(handle->dim,tipl::matrix<4,4>(tipl::identity_matrix())));
+                    names.push_back(each->name);
+                }
             }
         }
 
-
+        ConnectivityMatrix data;
+        data.set_regions(handle->dim,points,names);
 
         for(int j = 0;j < connectivity_type_list.size();++j)
         for(int k = 0;k < connectivity_value_list.size();++k)
         {
-            std::string connectivity_roi = roi_file_name;
+            std::string connectivity_roi = connectivity_list2[0].toStdString();
             std::string connectivity_value = connectivity_value_list[k].toStdString();
             bool use_end_only = connectivity_type_list[j].toLower() == QString("end");
             QDir pwd = QDir::current();
