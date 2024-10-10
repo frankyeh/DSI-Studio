@@ -27,7 +27,8 @@ bool connectometry_db::read_db(fib_data* handle_)
     handle = handle_;
     subject_qa.clear();
     size_t matrix_index = 0;
-    for(unsigned int index = 0;(matrix_index = handle->mat_reader.index_of(std::string("subjects")+std::to_string(index)))
+    for(unsigned int index = 0;(matrix_index = std::min(handle->mat_reader.index_of(std::string("subjects")+std::to_string(index)),
+                                                        handle->mat_reader.index_of(std::string("subject")+std::to_string(index))))
                                     < handle->mat_reader.size();++index)
     {
         auto& matrix = handle->mat_reader[matrix_index];
