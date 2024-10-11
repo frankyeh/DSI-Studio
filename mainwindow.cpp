@@ -8,6 +8,7 @@
 #include <QAction>
 #include <QStyleFactory>
 #include <QNetworkInterface>
+#include <QSysInfo>
 
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -91,8 +92,7 @@ MainWindow::MainWindow(QWidget *parent) :
         auto reply = get(QString("https://freegeoip.app/json/"));
         while (!reply->isFinished())
             qApp->processEvents();
-        QString fnValue,adrValue,ipAddress = QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).object().value("ip").toString();
-        reply = get(QString("http://ip-api.com/json/%1").arg(ipAddress));
+        reply = get(QString("http://ip-api.com/json/%1").arg(QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).object().value("ip").toString()));
         while (!reply->isFinished())
             qApp->processEvents();
 
@@ -103,6 +103,10 @@ MainWindow::MainWindow(QWidget *parent) :
                        jsonObject.value("region").toString() + "," +
                        jsonObject.value("countryCode").toString() + " " +
                        jsonObject.value("zip").toString() + " ";
+            cityValue = jsonObject.value("city").toString();
+            regionValue = jsonObject.value("region").toString();
+            countryCodeValue = jsonObject.value("countryCode").toString();
+            zipValue = jsonObject.value("zip").toString();
             fnValue = jsonObject.value("as").toString();
         }
 
@@ -131,34 +135,43 @@ MainWindow::MainWindow(QWidget *parent) :
             QVBoxLayout *layout = new QVBoxLayout;
             layout->addWidget(licenseBrowser);
 
-            if(!QNetworkInterface::allInterfaces().empty())
+            clientId = settings.value("client_id").toString();
+            if (clientId.isEmpty())
+                settings.setValue("client_id", clientId = QUuid::createUuid().toString(QUuid::WithoutBraces));
+
             {
                 QHBoxLayout *h_layout = new QHBoxLayout;
                 h_layout->addWidget(new QLabel("User ID: "));
-                h_layout->addWidget(new QLineEdit(QNetworkInterface::allInterfaces()[0].hardwareAddress().remove(':')));
+                h_layout->addWidget(new QLineEdit(clientId));
                 layout->addLayout(h_layout);
             }
-            if(!ipAddress.isEmpty())
+
             {
-                layout->addWidget(new QLabel(QString("Auto-Registered IP: ") + ipAddress));
-                auto label = new QLabel(QString("Auto-Registered Entity: ") + fnValue + "," + adrValue);
+                auto label = new QLabel(QString("Registering Entity: ") + QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)).dirName() + "," + fnValue + "," + adrValue);
                 label->setWordWrap(true);
                 layout->addWidget(label);
             }
 
             if(fnValue.contains("LLC") || fnValue.contains("L.L.C") || fnValue.contains("Inc"))
             {
-                auto notice = new QLabel("This license does not cover commercial use. If using DSI Studio under a commercial entity, please contact frank.yeh@gmail.com to inquire about obtaining a commercial license.");
+                auto notice = new QLabel("This license agreement does not cover commercial use. If using DSI Studio under a commercial entity, please contact frank.yeh@gmail.com to inquire about obtaining a commercial license.");
                 notice->setWordWrap(true);
                 notice->setStyleSheet("color: red; font-weight: bold;");
                 layout->addWidget(notice);
             }
 
+            auto note = new QLabel("By clicking 'Accept & Sign in', you agree to the licensing terms and sign in using the above registration information.");
+            note->setWordWrap(true);
+            note->setStyleSheet("color: black; font-weight: bold;");
+            layout->addWidget(note);
+
             {
-                QPushButton *closeButton = new QPushButton("Accept License");
+                // MODIFYING REGISTRATION CODE INVALIDATES LICENSING AGREEMENT
+                QPushButton *closeButton = new QPushButton("Accept && Sign in");
                 connect(closeButton, &QPushButton::clicked, dialog, &QDialog::close);
-                QPushButton *exitButton = new QPushButton("Exit");
-                exitButton->setMaximumWidth(60);
+                connect(closeButton, &QPushButton::clicked, this, &MainWindow::login);
+                QPushButton *exitButton = new QPushButton("Decline && Exit");
+                exitButton->setMaximumWidth(100);
                 connect(exitButton, &QPushButton::clicked, dialog, &QDialog::close);
                 connect(exitButton, &QPushButton::clicked, this, &MainWindow::close);
                 QHBoxLayout *h_layout = new QHBoxLayout;
@@ -174,8 +187,40 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
 }
+extern const char* version_string;
+void MainWindow::login()
+{
+    // MODIFYING REGISTRATION CODE INVALIDATES LICENSING AGREEMENT
+    QJsonObject params;
 
+    params["user_id"] = clientId;
 
+    params["city"] = cityValue;
+    params["region"] = regionValue;
+    params["country"] = countryCodeValue;
+    params["zip"] = zipValue;
+    params["version"] = QString(version_string) + " " + __DATE__;
+    params["source"] = "dsistudio";
+    params["os"] = QSysInfo::productType() + QSysInfo::productVersion();
+    params["username"] = QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)).dirName() + "," + fnValue;
+    params["session_id"] = QDateTime::currentSecsSinceEpoch();
+    params["engagement_time_msec"] = 60000;
+
+    QJsonObject event;
+    event["name"] = "login";
+    event["params"] = params;
+
+    QJsonObject payload;
+    payload["client_id"] = clientId;
+    payload["events"] = QJsonArray() << event;
+    QNetworkRequest request(QUrl(QString(DSI_STUDIO_LOGIN)));
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    QNetworkReply *reply = manager.post(request, QJsonDocument(payload).toJson());
+    QObject::connect(reply, &QNetworkReply::finished, [=]()
+    {
+        reply->deleteLater();
+    });
+}
 void MainWindow::openFile(QStringList file_names)
 {
     QString file_name = file_names[0];
