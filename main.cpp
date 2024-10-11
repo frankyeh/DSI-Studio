@@ -217,7 +217,7 @@ bool load_file_name(void)
     return true;
 }
 
-const char* version_string = "DSI Studio version: Hou \"\xe4\xbe\xaf\"";
+const char* version_string = "Hou \"\xe4\xbe\xaf\"";
 int map_ver = 202408;
 int src_ver = 202408;
 int fib_ver = 202408;
@@ -225,7 +225,7 @@ int fib_ver = 202408;
 bool init_application(void)
 {
     QCoreApplication::setOrganizationName("LabSolver");
-    QCoreApplication::setApplicationName(version_string);
+    QCoreApplication::setApplicationName(QString("DSI Studio ") + version_string);
 
     if(tipl::show_prog)
     {
@@ -410,7 +410,8 @@ void init_cuda(void)
 extern console_stream console;
 int main(int ac, char *av[])
 {
-    std::cout << version_string << " " << __DATE__ << std::endl;
+    std::string show_ver = std::string("DSI Studio version: ") + version_string + " " + __DATE__;
+    std::cout << show_ver << std::endl;
 
     if(ac == 2 && std::string(av[1]) == "--version")
         return 0;
@@ -466,7 +467,7 @@ int main(int ac, char *av[])
         tipl::show_prog = true;
         console.attach();
 
-        tipl::progress prog(version_string);
+        tipl::progress prog(show_ver);
 
 
         init_cuda();
@@ -474,7 +475,7 @@ int main(int ac, char *av[])
             return 1;
 
         MainWindow w;
-        w.setWindowTitle(QString(version_string) + " " + __DATE__);
+        w.setWindowTitle(show_ver.c_str());
         // presentation mode
         QStringList fib_list = QDir(QCoreApplication::applicationDirPath()+ "/presentation").
                                 entryList(QStringList("*fib.gz") << QString("*.fz"),QDir::Files|QDir::NoSymLinks);
