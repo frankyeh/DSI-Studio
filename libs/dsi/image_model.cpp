@@ -1779,7 +1779,6 @@ bool src_data::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
 
 bool load_bval(const std::string& file_name,std::vector<double>& bval);
 bool load_bvec(const std::string& file_name,std::vector<double>& b_table,bool flip_by = true);
-extern const char*  version_string;
 bool src_data::load_topup_eddy_result(void)
 {
     if(!std::filesystem::exists(corrected_file()))
