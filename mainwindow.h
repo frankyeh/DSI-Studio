@@ -29,6 +29,7 @@ public:
     QNetworkAccessManager manager;
     std::map<QString,QJsonArray> tags,assets;
     QSharedPointer<QNetworkReply> get(QUrl url);
+    QString fnValue,adrValue,cityValue,regionValue,countryCodeValue,zipValue,clientId;
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
@@ -50,6 +51,7 @@ public:
     void loadTags(QUrl url,QString repo,QJsonArray array);
     void loadFiles(void);
 private slots:
+    void login();
     void on_averagefib_clicked();
     void on_vbc_clicked();
     void on_RenameDICOMDir_clicked();
