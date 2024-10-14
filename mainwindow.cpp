@@ -103,10 +103,6 @@ MainWindow::MainWindow(QWidget *parent) :
                        jsonObject.value("region").toString() + "," +
                        jsonObject.value("countryCode").toString() + " " +
                        jsonObject.value("zip").toString() + " ";
-            cityValue = jsonObject.value("city").toString();
-            regionValue = jsonObject.value("region").toString();
-            countryCodeValue = jsonObject.value("countryCode").toString();
-            zipValue = jsonObject.value("zip").toString();
             fnValue = jsonObject.value("as").toString();
         }
 
@@ -195,14 +191,11 @@ void MainWindow::login()
 
     params["user_id"] = clientId;
 
-    params["city"] = cityValue;
-    params["region"] = regionValue;
-    params["country"] = countryCodeValue;
-    params["zip"] = zipValue;
+    params["address"] = adrValue;
     params["version"] = QString(version_string) + " " + __DATE__;
     params["source"] = "dsistudio";
     params["os"] = QSysInfo::productType() + QSysInfo::productVersion();
-    params["username"] = QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)).dirName() + "," + fnValue;
+    params["user"] = QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)).dirName() + "," + fnValue;
     params["session_id"] = QDateTime::currentSecsSinceEpoch();
     params["engagement_time_msec"] = 60000;
 
