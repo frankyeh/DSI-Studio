@@ -29,7 +29,7 @@ public:
     QNetworkAccessManager manager;
     std::map<QString,QJsonArray> tags,assets;
     QSharedPointer<QNetworkReply> get(QUrl url);
-    QString fnValue,adrValue,cityValue,regionValue,countryCodeValue,zipValue,clientId;
+    QString fnValue,adrValue,clientId;
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
