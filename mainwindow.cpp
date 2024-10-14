@@ -131,17 +131,6 @@ MainWindow::MainWindow(QWidget *parent) :
             QVBoxLayout *layout = new QVBoxLayout;
             layout->addWidget(licenseBrowser);
 
-            clientId = settings.value("client_id").toString();
-            if (clientId.isEmpty())
-                settings.setValue("client_id", clientId = QUuid::createUuid().toString(QUuid::WithoutBraces));
-
-            {
-                QHBoxLayout *h_layout = new QHBoxLayout;
-                h_layout->addWidget(new QLabel("User ID: "));
-                h_layout->addWidget(new QLineEdit(clientId));
-                layout->addLayout(h_layout);
-            }
-
             {
                 auto label = new QLabel(QString("Registering Entity: ") + QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)).dirName() + "," + fnValue + "," + adrValue);
                 label->setWordWrap(true);
