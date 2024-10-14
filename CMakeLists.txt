@@ -191,7 +191,7 @@ set_target_properties(dsi_studio PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS NONE)
 
 target_compile_definitions(dsi_studio PUBLIC QT6_PATCH)
 target_compile_definitions(dsi_studio PUBLIC TIPL_USE_QT)
-target_compile_definitions(dsi_studio PRIVATE DSI_STUDIO_LOGIN="https://www.google-analytics.com/mp/collect?measurement_id=G-WD1MVK5K8E&api_secret=G8GZI_qcS9ifSLjLcLMyHw")
+target_compile_definitions(dsi_studio PRIVATE DSI_STUDIO_LOGIN="https://script.google.com/macros/s/AKfycbz7TRuvveao5yFVr1bZWg87wovdpdxZgw7kzyE4a7WPH-XFDXt-741gk_JXVUACUGTr/exec")
 if(CUDAToolkit_FOUND)
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -allow-unsupported-compiler --extended-lambda")
     set(CMAKE_CUDA_RUNTIME_LIBRARY "Static")
