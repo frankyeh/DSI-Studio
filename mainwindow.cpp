@@ -183,32 +183,20 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
 }
+
 extern const char* version_string;
 void MainWindow::login()
 {
     // MODIFYING REGISTRATION CODE INVALIDATES LICENSING AGREEMENT
-    QJsonObject params;
-
-    params["user_id"] = clientId;
-
-    params["address"] = adrValue;
-    params["version"] = QString(version_string) + " " + __DATE__;
-    params["source"] = "dsistudio";
-    params["os"] = QSysInfo::productType() + QSysInfo::productVersion();
-    params["user"] = QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)).dirName() + "," + fnValue;
-    params["session_id"] = QDateTime::currentSecsSinceEpoch();
-    params["engagement_time_msec"] = 60000;
-
-    QJsonObject event;
-    event["name"] = "login";
-    event["params"] = params;
-
-    QJsonObject payload;
-    payload["client_id"] = clientId;
-    payload["events"] = QJsonArray() << event;
     QNetworkRequest request(QUrl(QString(DSI_STUDIO_LOGIN)));
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    QNetworkReply *reply = manager.post(request, QJsonDocument(payload).toJson());
+    request.setRawHeader("Content-Type", "application/json");
+    QJsonObject data;
+    data["name"] = QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)).dirName();
+    data["fn"] = fnValue;
+    data["os"] = QSysInfo::productType() + QSysInfo::productVersion();
+    data["version"] = QString(version_string) + " " + __DATE__;
+    data["address"] = adrValue;
+    QNetworkReply *reply = manager.post(request, QJsonDocument(data).toJson());
     QObject::connect(reply, &QNetworkReply::finished, [=]()
     {
         reply->deleteLater();
