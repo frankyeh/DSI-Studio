@@ -2694,6 +2694,16 @@ Tractography</string>
                   <string>labsolver/disease</string>
                  </property>
                 </item>
+                <item>
+                 <property name="text">
+                  <string>duke-civm/mouse</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>duke-civm/human</string>
+                 </property>
+                </item>
                </widget>
               </item>
               <item>
