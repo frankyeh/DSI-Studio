@@ -865,7 +865,7 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
     {
         if(!matfile)
         {
-            mat_reader.error_msg = "failed to write buffer ";
+            mat_reader.error_msg = "cannot write to file. please check write permission.";
             return false;
         }
         const auto& name = mat_reader[index].name;
