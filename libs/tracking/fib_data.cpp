@@ -670,7 +670,26 @@ tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& ma
 {
     const unsigned char* mask_ptr = nullptr;
     tipl::shape<3> dim;
-    if(mat_reader.read("mask",mask_ptr) && mat_reader.read("dimension",dim))
+    if(mat_reader.read("dimension",dim))
+    {
+        if(!mat_reader.read("mask",mask_ptr))
+        {
+            const float* fa0_ptr = nullptr;
+            if(mat_reader.read("fa0",fa0_ptr))
+            {
+                auto mask_mat = std::make_shared<tipl::io::mat_matrix>("mask");
+                mask_mat->resize(tipl::shape<2>(dim.plane_size(),dim.depth()));
+                auto& mask_buffer = mask_mat->data_buf;
+                for(size_t i = 0;i < dim.size();++i)
+                    if(fa0_ptr[i] > 0.0f)
+                        mask_buffer[i] = 1;
+                mask_ptr = mask_buffer.data();
+                mat_reader.push_back(mask_mat);
+                tipl::out() << "mask created from the aniostropy map";
+            }
+        }
+    }
+    if(mask_ptr)
     {
         mat_reader.si2vi = tipl::get_sparse_index(tipl::make_image(mask_ptr,dim));
         mat_reader.mask_cols = dim.plane_size();
@@ -687,6 +706,11 @@ bool fib_data::load_from_mat(void)
         return false;
     }
     mask = handle_mask(mat_reader);
+    if(mask.empty())
+    {
+        error_msg = "invalid fib file: cannot create mask";
+        return false;
+    }
     mat_reader.read("report",report);
     mat_reader.read("steps",steps);
     mat_reader.read("intro",intro);
@@ -702,21 +726,7 @@ bool fib_data::load_from_mat(void)
     slices.push_back(std::make_shared<slice_model>(dir.fa.size() == 1 ? "fa":"qa",dir.fa[0],dim));
     for(unsigned int index = 1;index < dir.index_name.size();++index)
         slices.push_back(std::make_shared<slice_model>(dir.index_name[index],dir.index_data[index][0],dim));
-    if(mask.empty())
-    {
-        auto mask_mat = std::make_shared<tipl::io::mat_matrix>("mask");
-        mask_mat->resize(tipl::shape<2>(dim.plane_size(),dim.depth()));
-        auto& mask_buffer = mask_mat->data_buf;
-        for(size_t i = 0;i < dim.size();++i)
-            if(dir.fa[0][i] > 0.0f)
-                mask_buffer[i] = 1;
-        mask = tipl::make_image(mask_buffer.data(),dim);
-        mat_reader.push_back(mask_mat);
-        mat_reader.mask_rows = dim.plane_size();
-        mat_reader.mask_cols = dim.depth();
-        mat_reader.si2vi = tipl::get_sparse_index(mask);
-        tipl::out() << "mask created from the aniostropy map";
-    }
+
     tipl::out() << "dim: " << dim << " vs: " << vs << " voxels: " << mat_reader.si2vi.size();
 
 
@@ -873,7 +883,10 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
                 break;
             }
         if(skip)
+        {
+            tipl::out() << "skip " << name;
             continue;
+        }
         mat_reader.flush(index);
 
         // apply mask
@@ -947,7 +960,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         mat_reader.read("trans",trans);
         is_mni = true;
     }
-    if(cmd == "save")
+    if(cmd == "save" || cmd == "save_mini")
     {
         tipl::io::gz_mat_write matfile(param);
         if(!matfile)
@@ -961,6 +974,8 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             mat_reader.error_msg = "cannot save file to fib.gz format";
             return false;
         }
+        if(cmd == "save_mini")
+            return save_fz(mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping","dti_fa","md","ad","rd","fa3","fa4","rdi","index3","index4"},{"nrdi","subject"});
         return save_fz(mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping"},{"subject"});
     }
 
