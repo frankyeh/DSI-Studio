@@ -338,6 +338,48 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
             }
     return true;
 }
+tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& mat_reader);
+template<typename slice_type>
+void show_slice(slice_type&& slice)
+{
+    while(slice.width() > 64)
+        tipl::downsampling(slice);
+    float max_v = tipl::max_value(slice);
+    float threshold1 = 0.2f * max_v;
+    float threshold2 = 0.4f * max_v;
+    float threshold3 = 0.6f * max_v;
+    float threshold4 = 0.8f * max_v;
+    // Print upper border
+    for (int y = 0, pos = 0; y < slice.height(); ++y)
+    {
+        std::string line;
+        for (int x = 0; x < slice.width(); ++x, ++pos)
+        {
+            float value = slice[pos];
+            if (value < threshold1) line += " "; // black
+            else if (value < threshold2) line += "▒"; // dark gray
+            else if (value < threshold3) line += "▓"; // medium gray
+            else if (value < threshold4) line += "▓"; // light gray
+            else line += "█"; // white
+        }
+        tipl::out() << line;
+    }
+}
+template<typename value_type>
+void show_slice(tipl::io::gz_mat_read& mat_reader,const char* name)
+{
+    if(!mat_reader.has(name))
+        return;
+    tipl::shape<3> dim;
+    if(!mat_reader.read("dimension",dim))
+        return;
+    if(mat_reader.has("mask"))
+        handle_mask(mat_reader);
+    const value_type* buffer = nullptr;
+    if(!mat_reader.read(name,buffer))
+        return;
+    show_slice(tipl::image<2,float>(tipl::make_image(buffer,dim).slice_at(dim[2]/2)));
+}
 bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 const std::string& cmd,
                 const std::string& param);
@@ -355,8 +397,14 @@ int img(tipl::program_option<tipl::out>& po)
             tipl::error() << mat_reader.error_msg;
             return 1;
         }
+
+        show_slice<float>(mat_reader,"fa0");
+        show_slice<unsigned short>(mat_reader,"image0");
+
         for(unsigned int index = 0;index < mat_reader.size();++index)
             tipl::out() << mat_reader[index].get_info();
+
+
         for(auto& cmd : tipl::split(po.get("cmd"),'+'))
         {
             std::string param;
@@ -402,6 +450,14 @@ int img(tipl::program_option<tipl::out>& po)
         }
         if(cmd == "info")
         {
+            if(var_image.pixel_type == variant_image::int8)
+                show_slice(tipl::image<2,float>(var_image.I_int8.slice_at(var_image.shape.depth()/2)));
+            if(var_image.pixel_type == variant_image::int16)
+                show_slice(tipl::image<2,float>(var_image.I_int16.slice_at(var_image.shape.depth()/2)));
+            if(var_image.pixel_type == variant_image::int32)
+                show_slice(tipl::image<2,float>(var_image.I_int32.slice_at(var_image.shape.depth()/2)));
+            if(var_image.pixel_type == variant_image::float32)
+                show_slice(tipl::image<2,float>(var_image.I_float32.slice_at(var_image.shape.depth()/2)));
             tipl::out() << info;
             continue;
         }
