@@ -143,20 +143,29 @@ int rec(tipl::program_option<tipl::out>& po)
             }
         }
 
+        if(po.get("volume_correction",src.is_human_data() ? 0 : 1))
+        {
+            if(!src.command("[Step T2][Corrections][Volume Orientation Correction]"))
+            {
+                tipl::error() << src.error_msg;
+                return 1;
+            }
+        }
+
+        if(po.get("check_btable",src.is_human_data() ? 0 : 1))
+        {
+            if(!src.command("[Step T2][B-table][Check B-table]"))
+            {
+                tipl::error() << src.error_msg;
+                return 1;
+            }
+        }
+
         if(po.get("motion_correction",0))
         {
             if(!src.command("[Step T2][Corrections][Motion Correction]"))
             {
                 tipl::error() << src.error_msg << std::endl;
-                return 1;
-            }
-        }
-
-        if(po.get("check_btable",0))
-        {
-            if(!src.command("[Step T2][B-table][Check B-table]"))
-            {
-                tipl::error() << src.error_msg;
                 return 1;
             }
         }
