@@ -80,6 +80,7 @@ private slots:
 
 
     void on_actionCheck_b_table_triggered() {command("[Step T2][B-table][Check B-table]");}
+    void on_actionCheck_b_table2_triggered() {command("[Step T2][B-table][Check B-table2]");}
     void on_actionFlip_bx_triggered()       {command("[Step T2][B-table][flip bx]");}
     void on_actionFlip_by_triggered()       {command("[Step T2][B-table][flip by]");}
     void on_actionFlip_bz_triggered()       {command("[Step T2][B-table][flip bz]");}
