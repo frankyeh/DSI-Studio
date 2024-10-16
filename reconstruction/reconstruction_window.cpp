@@ -417,6 +417,16 @@ void reconstruction_window::on_doDTI_clicked()
         if(result == QMessageBox::Yes)
             handle->command("[Step T2][Edit][Resample]","2");
     }
+    if(!handle->is_human_data() && (handle->long_axis_direction() != 1 || handle->symmetric_axis_direction() != 0))
+    {
+        auto result = QMessageBox::information(this,QApplication::applicationName(),
+            QString("This seems to be an animal scan in non-axial orientation. Correct image orientation?"),
+                QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+        if(result == QMessageBox::Cancel)
+            return;
+        if(result == QMessageBox::Yes)
+            handle->command("[Step T2][Corrections][Volume Orientation Correction]");
+    }
     std::string ref_file_name = handle->file_name;
     std::string ref_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
     std::shared_ptr<src_data> ref_handle = handle;
