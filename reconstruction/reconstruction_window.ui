@@ -1203,7 +1203,9 @@ Reconstruction</string>
     <addaction name="actionSave_bvals"/>
     <addaction name="actionSave_bvecs"/>
     <addaction name="separator"/>
+    <addaction name="actionCheck_b_table2"/>
     <addaction name="actionCheck_b_table"/>
+    <addaction name="separator"/>
     <addaction name="actionFlip_bx"/>
     <addaction name="actionFlip_by"/>
     <addaction name="actionFlip_bz"/>
@@ -1466,7 +1468,7 @@ Reconstruction</string>
   </action>
   <action name="actionCheck_b_table">
    <property name="text">
-    <string>Check b-table</string>
+    <string>Check B-table (Template-Based)...</string>
    </property>
   </action>
   <action name="actionManual_Align">
@@ -1487,6 +1489,11 @@ Reconstruction</string>
   <action name="actionT1W_based_QSDR">
    <property name="text">
     <string>T1W-based QSDR...</string>
+   </property>
+  </action>
+  <action name="actionCheck_b_table2">
+   <property name="text">
+    <string>Check B-table...</string>
    </property>
   </action>
  </widget>
