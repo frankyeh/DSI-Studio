@@ -370,7 +370,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
         if(tipl::contains(cmd,"Corrections"))
             QMessageBox::information(this,QApplication::applicationName(),"correction result loaded");
         if(tipl::contains(cmd,"B-table"))
-            QMessageBox::information(this,QApplication::applicationName(),cmd.find("Check") ? handle->error_msg.c_str() : "b-table updated");
+            QMessageBox::information(this,QApplication::applicationName(),QString("b-table updated ") + handle->error_msg.c_str());
     }
     update_dimension();
     load_b_table();
