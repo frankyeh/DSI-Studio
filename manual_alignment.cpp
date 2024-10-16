@@ -72,7 +72,6 @@ manual_alignment::manual_alignment(QWidget *parent,
 
     load_param();
 
-    connect_arg_update();
     connect(ui->sag_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(ui->cor_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(ui->axi_slice_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
@@ -80,6 +79,21 @@ manual_alignment::manual_alignment(QWidget *parent,
     connect(ui->contrast,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(ui->blend_pos,SIGNAL(valueChanged(int)),this,SLOT(slice_pos_moved()));
     connect(ui->grid,SIGNAL(clicked(bool)),this,SLOT(slice_pos_moved()));
+
+    connect(ui->tx,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->ty,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->tz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->sx,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->sy,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->sz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->rx,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->ry,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->rz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->xy,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->xz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    connect(ui->yz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+
+    connect_arg_update();
 
     timer = new QTimer(this);
     timer->stop();
@@ -102,34 +116,35 @@ void manual_alignment::add_images(std::shared_ptr<fib_data> handle)
 
 void manual_alignment::connect_arg_update()
 {
-    connect(ui->tx,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    connect(ui->ty,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    connect(ui->tz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    connect(ui->sx,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    connect(ui->sy,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    connect(ui->sz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    connect(ui->rx,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    connect(ui->ry,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    connect(ui->rz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    connect(ui->xy,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    connect(ui->xz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    connect(ui->yz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    ui->tx->blockSignals(false);
+    ui->ty->blockSignals(false);
+    ui->tz->blockSignals(false);
+    ui->sx->blockSignals(false);
+    ui->sy->blockSignals(false);
+    ui->sz->blockSignals(false);
+    ui->rx->blockSignals(false);
+    ui->ry->blockSignals(false);
+    ui->rz->blockSignals(false);
+    ui->xy->blockSignals(false);
+    ui->xz->blockSignals(false);
+    ui->yz->blockSignals(false);
+
 }
 
 void manual_alignment::disconnect_arg_update()
 {
-    disconnect(ui->tx,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    disconnect(ui->ty,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    disconnect(ui->tz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    disconnect(ui->sx,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    disconnect(ui->sy,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    disconnect(ui->sz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    disconnect(ui->rx,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    disconnect(ui->ry,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    disconnect(ui->rz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    disconnect(ui->xy,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    disconnect(ui->xz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
-    disconnect(ui->yz,SIGNAL(valueChanged(double)),this,SLOT(param_changed()));
+    ui->tx->blockSignals(true);
+    ui->ty->blockSignals(true);
+    ui->tz->blockSignals(true);
+    ui->sx->blockSignals(true);
+    ui->sy->blockSignals(true);
+    ui->sz->blockSignals(true);
+    ui->rx->blockSignals(true);
+    ui->ry->blockSignals(true);
+    ui->rz->blockSignals(true);
+    ui->xy->blockSignals(true);
+    ui->xz->blockSignals(true);
+    ui->yz->blockSignals(true);
 }
 
 manual_alignment::~manual_alignment()
@@ -265,10 +280,7 @@ void manual_alignment::slice_pos_moved()
     for(unsigned char dim = 0;dim < 3;++dim)
     {
         tipl::image<2,unsigned char> slice,slice2;
-        if(thread.running || warped_from.empty())
-            tipl::volume2slice_scaled(warped_image<3,unsigned char>(to.shape(),from,iT),slice,dim,slice_pos[dim],ratio);
-        else
-            tipl::volume2slice_scaled(warped_from,slice,dim,slice_pos[dim],ratio);
+        tipl::volume2slice_scaled(warped_image<3,unsigned char>(to.shape(),from,iT),slice,dim,slice_pos[dim],ratio);
         tipl::volume2slice_scaled(to,slice2,dim,slice_pos[dim],ratio);
 
         tipl::color_image buffer(slice.shape());
@@ -360,7 +372,6 @@ void manual_alignment::on_rerun_clicked()
         reg_type += int(tipl::reg::tilt);
 
     load_param();
-    warped_from.clear();
     thread.run([this,cost,reg_type]()
     {
         tipl::reg::linear<tipl::out>(tipl::reg::make_list(from,from2),from_vs,
@@ -368,7 +379,6 @@ void manual_alignment::on_rerun_clicked()
                                      tipl::reg::reg_type(reg_type),thread.terminated,tipl::reg::reg_bound,cost);
         auto trans = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
         trans.inverse();
-        warped_from = tipl::resample(from,to.shape(),trans);
     });
     ui->rerun->setText("Stop");
     ui->refine->setEnabled(false);
