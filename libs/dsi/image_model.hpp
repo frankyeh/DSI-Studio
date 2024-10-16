@@ -266,7 +266,7 @@ public:
     void calculate_dwi_sum(bool update_mask);
     bool mask_from_unet(void);
     void remove(unsigned int index);
-    bool check_b_table(void);
+    bool check_b_table(bool use_template = true);
     bool load_intro(const std::string& file_name);
 public:
     std::string get_report(void);

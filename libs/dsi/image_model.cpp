@@ -189,7 +189,7 @@ void src_data::flip_b_table(const unsigned char* order)
 
 
 extern std::vector<std::string> fib_template_list;
-bool src_data::check_b_table(void)
+bool src_data::check_b_table(bool use_template)
 {
     if(!new_dwi.empty())
     {
@@ -244,7 +244,8 @@ bool src_data::check_b_table(void)
     //if(is_human_data())
     {
         template_fib = std::make_shared<fib_data>();
-        if(!fib_template_list.empty() &&
+        if(use_template &&
+           !fib_template_list.empty() &&
            !fib_template_list[voxel.template_id].empty() &&
            template_fib->load_from_file(fib_template_list[voxel.template_id]))
         {
@@ -775,7 +776,14 @@ bool src_data::command(std::string cmd,std::string param)
     // correct for b-table orientation
     if(cmd == "[Step T2][B-table][Check B-table]")
     {
-        if(!check_b_table())
+        if(!check_b_table(true))
+            return false;
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2][B-table][Check B-table2]")
+    {
+        if(!check_b_table(false))
             return false;
         voxel.steps += cmd+"\n";
         return true;
