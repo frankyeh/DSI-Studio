@@ -137,7 +137,7 @@ MainWindow::MainWindow(QWidget *parent) :
                 layout->addWidget(label);
             }
 
-            if(fnValue.contains("LLC") || fnValue.contains("L.L.C") || fnValue.contains("Inc"))
+            if(fnValue.contains(" LLC") || fnValue.contains(" L.L.C") || fnValue.contains(" Inc") || fnValue.contains(" INC"))
             {
                 auto notice = new QLabel("This license agreement does not cover commercial use. If using DSI Studio under a commercial entity, please contact frank.yeh@gmail.com to inquire about obtaining a commercial license.");
                 notice->setWordWrap(true);
