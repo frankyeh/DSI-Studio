@@ -274,7 +274,14 @@ public:
     std::vector<std::pair<size_t,size_t> > get_bad_slices(void);
     std::pair<float,float> quality_control_neighboring_dwi_corr(void);
     float dwi_contrast(void);
+public:
     bool is_human_data(void) const;
+    int long_axis_direction(void);
+    int symmetric_axis_direction(void);
+    int64_t bottom_top_difference(void);
+    int64_t anterior_posterior_difference(void);
+    void correction_axis(void);
+public:
     std::vector<size_t> get_sorted_dwi_index(void);
     void flip_b_table(const unsigned char* order);
     void flip_b_table(unsigned char dim);

@@ -1223,6 +1223,7 @@ Reconstruction</string>
     <addaction name="separator"/>
     <addaction name="actionEddy_Motion_Correction"/>
     <addaction name="separator"/>
+    <addaction name="actionVolume_Orientation_Correction"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -1494,6 +1495,11 @@ Reconstruction</string>
   <action name="actionCheck_b_table2">
    <property name="text">
     <string>Check B-table...</string>
+   </property>
+  </action>
+  <action name="actionVolume_Orientation_Correction">
+   <property name="text">
+    <string>Volume Orientation Correction...</string>
    </property>
   </action>
  </widget>
