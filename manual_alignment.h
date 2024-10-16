@@ -16,7 +16,7 @@ class manual_alignment : public QDialog
     Q_OBJECT
 private:
     tipl::image<3,unsigned char> from_original;
-    tipl::image<3,unsigned char> from,to,warped_from;
+    tipl::image<3,unsigned char> from,to;
     tipl::image<3,unsigned char> from2,to2;
     tipl::vector<3> from_vs,to_vs;
     QGraphicsScene scene[3];
