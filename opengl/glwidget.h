@@ -166,18 +166,6 @@ public:
      std::vector<QString> text_str;
      void renderText(float x,float y, const QString &str, const QFont & font = QFont());
      void renderText(float x, float y, float z, const QString &str, const QFont & font = QFont());
- public:
-     float tract_alpha = 0.0f;
-     float tract_color_saturation = 0.0f;
-     float tract_color_brightness = 0.0f;
-     float tube_diameter = 0.0f;
-
-     unsigned char tract_style = 0;
-     unsigned char tract_color_style = 0;
-     unsigned char tract_tube_detail = 0;
-     unsigned char tract_shader = 0;
-     unsigned char end_point_shift = 0;
-
 public:
      unsigned char scale_voxel = 0;
      unsigned char slice_match_bkcolor = 0;
