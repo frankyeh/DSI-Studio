@@ -60,8 +60,8 @@ void TractTableWidget::update_color_map(void)
     }
     else
     {
-        tipl::rgb from_color(uint32_t(cur_tracking_window["tract_color_max"].toUInt()));
-        tipl::rgb to_color(uint32_t(cur_tracking_window["tract_color_min"].toUInt()));
+        tipl::rgb from_color(uint32_t(cur_tracking_window["tract_color_min"].toUInt()));
+        tipl::rgb to_color(uint32_t(cur_tracking_window["tract_color_max"].toUInt()));
         bar.two_color(from_color,to_color);
         std::swap(from_color.r,from_color.b);
         std::swap(to_color.r,to_color.b);
