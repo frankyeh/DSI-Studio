@@ -409,7 +409,9 @@ void TractRender::prepare_update(tracking_window& param,
         }
     }
     auto tract_color_style = param["tract_color_style"].toInt();
-    auto track_num_index = param["tract_color_index"].toInt();
+    auto index_num = param["tract_color_index"].toInt();
+    tipl::out() << "rendering using metrics: " << (index_num < param.handle->dir.index_name.size() ?  param.handle->dir.index_name[index_num]:param.handle->slices[index_num]->name);
+
     std::vector<tipl::vector<3> > assigned_colors;
     // Directional:Assigned:Local Index:Averaged Index:Averaged Directional:Max Index
     if(tract_color_style == 1 || // assigned
@@ -428,7 +430,7 @@ void TractRender::prepare_update(tracking_window& param,
                 assigned_colors[i] /= 255.0f;
                 continue;
             }
-            std::vector<float> metrics(active_tract_model->get_tract_data(param.handle,visible[i],track_num_index));
+            std::vector<float> metrics(active_tract_model->get_tract_data(param.handle,visible[i],index_num));
             if(tract_color_style == 3) // mean values
                 assigned_colors[i] = param.tractWidget->color_map.value2color(tipl::mean(metrics),color_min,color_r);
             if(tract_color_style == 5) // max values
@@ -447,8 +449,8 @@ void TractRender::prepare_update(tracking_window& param,
             if(about_to_write)
                 break;
             std::vector<float> metrics;
-            if(tract_color_style == 2)
-                metrics = std::move(active_tract_model->get_tract_data(param.handle,visible[i],track_num_index));
+            if(tract_color_style == 2) // local values
+                metrics = std::move(active_tract_model->get_tract_data(param.handle,visible[i],index_num));
             new_data[thread].add_tract(param,active_tract_model->get_tract(visible[i]),shader,
                            assigned_colors.empty() ? tipl::vector<3>() : assigned_colors[i],metrics);
         }
