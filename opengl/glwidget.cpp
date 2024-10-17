@@ -536,7 +536,7 @@ void GLWidget::paintGL()
             {
                 text_painter.drawText(tract_color_bar_pos[0]+20, tract_color_bar_pos[1]+5, QString::number(cur_tracking_window["tract_color_max_value"].toInt()));
                 text_painter.drawText(tract_color_bar_pos[0]+20, tract_color_bar_pos[1]+256+5, QString::number(cur_tracking_window["tract_color_min_value"].toInt()));
-                text_painter.drawText(tract_color_bar_pos[0]+5, tract_color_bar_pos[0]+256+10, cur_tracking_window.renderWidget->getListValue("tract_color_index"));
+                text_painter.drawText(tract_color_bar_pos[0]+5, tract_color_bar_pos[1]+256+10, cur_tracking_window.renderWidget->getListValue("tract_color_index"));
             }
             text_painter.drawImage(QPoint(tract_color_bar_pos[0],tract_color_bar_pos[1]),QImage() << *(tipl::color_image*)&tract_color_bar);
         }
