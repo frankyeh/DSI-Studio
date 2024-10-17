@@ -15,7 +15,6 @@
 #include "tracking/devicetablewidget.h"
 #include "SliceModel.h"
 #include "fib_data.hpp"
-#include "tracking/color_bar_dialog.hpp"
 #include "libs/tracking/tract_model.hpp"
 #include "odf_process.hpp"
 
@@ -738,34 +737,6 @@ void GLWidget::renderLR()
                       (float)(get_param("tract_specular"))/10.0,
                       get_param("tract_shininess")*10);
 
-
-
-        if(get_param("tract_color_style") != tract_color_style &&
-           cur_tracking_window.color_bar.get())
-        {
-            if(get_param("tract_color_style") > 1)
-                cur_tracking_window.color_bar->show();
-            else
-                cur_tracking_window.color_bar->hide();
-        }
-
-
-        {
-            bool changed = false;
-            while(
-               check_change("tract_alpha",tract_alpha) ||
-               check_change("tract_style",tract_style) ||
-               check_change("tract_color_style",tract_color_style) ||
-               check_change("tract_color_saturation",tract_color_saturation) ||
-               check_change("tract_color_brightness",tract_color_brightness) ||
-               check_change("tube_diameter",tube_diameter) ||
-               check_change("tract_tube_detail",tract_tube_detail) ||
-               check_change("tract_shader",tract_shader) ||
-               check_change("end_point_shift",end_point_shift))
-                changed = true;
-            if(changed)
-                cur_tracking_window.tractWidget->need_update_all();
-        }
 
         glDepthMask(true);
         if(get_param_float("tract_alpha") != 1.0)
