@@ -530,11 +530,23 @@ void GLWidget::paintGL()
             text_painter.setFont(text_font[i]);
             text_painter.drawText(text_pos[i].x(), text_pos[i].y(), text_str[i]);
         }
+        if(get_param("tract_color_style") > 1) // use color map
+        {
+            if(!tract_color_bar_selected)
+            {
+                text_painter.drawText(tract_color_bar_pos[0]+20, tract_color_bar_pos[1]+5, QString::number(cur_tracking_window["tract_color_max_value"].toInt()));
+                text_painter.drawText(tract_color_bar_pos[0]+20, tract_color_bar_pos[1]+256+5, QString::number(cur_tracking_window["tract_color_min_value"].toInt()));
+                text_painter.drawText(tract_color_bar_pos[0]+5, tract_color_bar_pos[0]+256+10, cur_tracking_window.renderWidget->getListValue("tract_color_index"));
+            }
+            text_painter.drawImage(QPoint(tract_color_bar_pos[0],tract_color_bar_pos[1]),QImage() << *(tipl::color_image*)&tract_color_bar);
+        }
+
         text_painter.end();
         text_pos.clear();
         text_color.clear();
         text_font.clear();
         text_str.clear();
+
     }
     // provide 3D view to ROI window
     if(cur_tracking_window["roi_layout"].toInt() == 1)// 3 slice
@@ -1527,8 +1539,16 @@ bool GLWidget::select_object(void)
     device_selected = false;
     region_selected = false;
     slice_selected = false;
+    tract_color_bar_selected = false;
 
     object_distance = slice_distance = std::numeric_limits<float>::max();
+    // select color bar to move
+    if(get_param("tract_color_style") > 1)
+    {
+        if(curPos.x() > tract_color_bar_pos[0] && curPos.x() < tract_color_bar_pos[0]+tract_color_bar.width() &&
+           curPos.y() > tract_color_bar_pos[1] && curPos.y() < tract_color_bar_pos[1]+tract_color_bar.height())
+            tract_color_bar_selected = true;
+    }
     // select device to move
     if(get_param("show_device") && !cur_tracking_window.deviceWidget->devices.empty())
     {
@@ -1602,7 +1622,7 @@ bool GLWidget::select_object(void)
             }
         }
     }
-    return region_selected || slice_selected || device_selected;
+    return region_selected || slice_selected || device_selected || tract_color_bar_selected;
 }
 
 
@@ -1778,6 +1798,7 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
         device_selected = false;
         update();
     }
+    tract_color_bar_selected = false;
     editing_option = none;
     setCursor(Qt::ArrowCursor);
 }
@@ -1840,6 +1861,15 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
     if(editing_option == moving)
     {
+        if(tract_color_bar_selected)
+        {
+            tract_color_bar_pos[0] += curPos.x() - lastPos.x();
+            tract_color_bar_pos[1] += curPos.y() - lastPos.y();
+            lastPos = curPos;
+            update();
+            return;
+        }
+
         get_view_dir(curPos,dir2);
         std::vector<tipl::vector<3,float> > slice_points;
         slice_location(moving_at_slice_index,slice_points);
