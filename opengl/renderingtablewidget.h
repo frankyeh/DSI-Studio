@@ -71,6 +71,7 @@ public:
      void setValue(QVariant new_value);
      void setMinMax(float min,float max,float step);
      void setList(QStringList list);
+     QString getListValue(void) const;
 };
 
 class RenderingTableWidget;
@@ -141,13 +142,15 @@ class RenderingTableWidget : public QTreeView
     Q_OBJECT
 private:
     tracking_window& cur_tracking_window;
-    std::unordered_set<std::string> tract_update_list;
+    std::unordered_set<std::string> tract_update_list,tract_color_map_update_list;
 public:
     RenderingDelegate* data_delegate;
     TreeModel* treemodel;
 public:
     explicit RenderingTableWidget(tracking_window& cur_tracking_window_,QWidget *parent);
     QVariant getData(QString name){return treemodel->getData(name);}
+    QString getListValue(QString name){return (*treemodel)[name].getListValue();}
+public:
     void setData(QString name,QVariant data){(*treemodel)[name].setValue(data);}
     void setMinMax(QString name,float min,float max,float step){(*treemodel)[name].setMinMax(min,max,step);}
     void setList(QString name,QStringList list){(*treemodel)[name].setList(list);}
