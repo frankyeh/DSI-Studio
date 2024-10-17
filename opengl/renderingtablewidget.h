@@ -7,10 +7,11 @@
 #include <QModelIndex>
 #include <QVariant>
 #include <QSettings>
-#include <map>
 #include <string>
 #include <memory>
 #include <stdexcept>
+#include <unordered_map>
+#include <unordered_set>
 
 
 class RenderingDelegate : public QItemDelegate
@@ -42,7 +43,7 @@ private:
 public:
     QObject* GUI = nullptr;
     QString id;
-    QVariant title,type,value;
+    QVariant title,type,value,def_value;
     QString hint;
 public:
     RenderingItem(QVariant title_, QVariant type_, QString id_,QVariant value_, RenderingItem *parent = nullptr):
@@ -70,7 +71,6 @@ public:
      void setValue(QVariant new_value);
      void setMinMax(float min,float max,float step);
      void setList(QStringList list);
-
 };
 
 class RenderingTableWidget;
@@ -79,9 +79,8 @@ class TreeModel : public QAbstractItemModel
     Q_OBJECT
 private:
     std::shared_ptr<RenderingItem> root;
-    std::map<QString,RenderingItem*> root_mapping;
-    std::map<QString,RenderingItem*> name_data_mapping;
-    std::map<QString,QVariant> name_default_values;
+    std::unordered_map<QString,RenderingItem*> root_mapping;
+    std::unordered_map<QString,RenderingItem*> name_data_mapping;
 public:
     TreeModel(RenderingTableWidget *parent);
     ~TreeModel();
@@ -102,14 +101,14 @@ public:
     QModelIndex addItem(QString root_name,QString id,QVariant title, QVariant type, QVariant value, QString hint = QString());
     QVariant getData(QString name)
     {
-        std::map<QString,RenderingItem*>::const_iterator iter = name_data_mapping.find(name);
+        auto iter = name_data_mapping.find(name);
         if(iter == name_data_mapping.end())
             throw std::runtime_error("Cannot find the setting value");
         return iter->second->value;
     }
     RenderingItem& operator[](QString name)
     {
-        std::map<QString,RenderingItem*>::const_iterator iter = name_data_mapping.find(name);
+        auto iter = name_data_mapping.find(name);
         if(iter == name_data_mapping.end())
             throw std::runtime_error("Cannot find the setting value");
         return *(iter->second);
@@ -142,6 +141,7 @@ class RenderingTableWidget : public QTreeView
     Q_OBJECT
 private:
     tracking_window& cur_tracking_window;
+    std::unordered_set<std::string> tract_update_list;
 public:
     RenderingDelegate* data_delegate;
     TreeModel* treemodel;

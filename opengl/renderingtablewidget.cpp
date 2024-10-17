@@ -68,7 +68,6 @@ void RenderingItem::setList(QStringList list)
         reinterpret_cast<QComboBox*>(GUI)->addItems(list);
     }
 }
-
 QWidget *RenderingDelegate::createEditor(QWidget *parent,
         const QStyleOptionViewItem &option,
         const QModelIndex &index) const
@@ -264,12 +263,10 @@ TreeModel::TreeModel(RenderingTableWidget *parent)
 
 TreeModel::~TreeModel()
 {
-    std::map<QString,RenderingItem*>::const_iterator iter = name_data_mapping.begin();
-    std::map<QString,RenderingItem*>::const_iterator end = name_data_mapping.end();
     QSettings settings;
     settings.beginGroup("Rendering Options");
-    for(;iter != end;++iter)
-        settings.setValue(iter->first,iter->second->getValue());
+    for(auto& each : name_data_mapping)
+        settings.setValue(each.first,each.second->getValue());
     settings.endGroup();
 }
 
@@ -428,8 +425,8 @@ QModelIndex TreeModel::addItem(QString root_name,QString id,QVariant title, QVar
         settings.beginGroup("Rendering Options");
         auto item = new RenderingItem(title,type,id,settings.value(id,value),root_mapping[root_name]);
         item->hint = hint;
+        item->def_value = value;
         name_data_mapping[id] = item;
-        name_default_values[id] = value;
         settings.endGroup();
     }
     else
@@ -439,13 +436,9 @@ QModelIndex TreeModel::addItem(QString root_name,QString id,QVariant title, QVar
 
 void TreeModel::setDefault(QString parent_id)
 {
-    std::map<QString,RenderingItem*>::iterator iter = name_data_mapping.begin();
-    std::map<QString,RenderingItem*>::iterator end = name_data_mapping.end();
-    std::map<QString,QVariant>::iterator iter2 = name_default_values.begin();
-    for(;iter != end;++iter,++iter2)
-        if(iter->second->parent() && iter->second->parent()->id == parent_id)
-        iter->second->setValue(iter2->second);
-
+    for(auto& each : name_data_mapping)
+        if(each.second->parent() && each.second->parent()->id == parent_id)
+            each.second->setValue(each.second->def_value);
 }
 
 RenderingTableWidget::RenderingTableWidget(tracking_window& cur_tracking_window_,QWidget *parent) :
@@ -466,6 +459,12 @@ RenderingTableWidget::RenderingTableWidget(tracking_window& cur_tracking_window_
     header()->hide();
     expandAll();
     collapseAll();
+
+    tract_update_list = {"tract_alpha","tract_style",
+                         "tract_color_style", "tract_color_saturation",
+                         "tract_color_brightness","tube_diameter",
+                         "tract_tube_detail","tract_shader",
+                         "end_point_shift"};
 
 }
 
@@ -502,6 +501,10 @@ void RenderingTableWidget::setDefault(QString parent_id)
 void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &bottomRight)
 {
     auto cur_node = reinterpret_cast<RenderingItem*>(bottomRight.internalPointer());
+    if(tract_update_list.find(cur_node->id.toStdString()) != tract_update_list.end())
+        cur_tracking_window.tractWidget->need_update_all();
+
+
     if(cur_node->id == "tracking_index")
     {
         cur_tracking_window.on_tracking_index_currentIndexChanged(cur_node->value.toInt());
@@ -567,6 +570,20 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
         cur_tracking_window.ui->roi_fiber->setChecked(cur_node->value.toBool());
         return;
     }
+    if(cur_node->id == "tract_color_index")
+    {
+        size_t item_index = cur_node->value.toInt();
+        if(item_index >= cur_tracking_window.handle->slices.size())
+            return;
+        cur_tracking_window.handle->slices[item_index]->get_minmax();
+        float min = cur_tracking_window.handle->slices[item_index]->min_value;
+        float max = cur_tracking_window.handle->slices[item_index]->max_value;
+        setMinMax("tract_color_index_min",min,max,(max-min)/20);
+        setMinMax("tract_color_index_max",min,max,(max-min)/20);
+        setData("tract_color_index_min",min);
+        setData("tract_color_index_max",max);
+        return;
+    }
 
     if(cur_node->id == "fa_threshold" ||
        cur_node->id == "dt_threshold" ||
@@ -577,4 +594,6 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
     }
     else
         cur_tracking_window.glWidget->update();
+
+
 }
