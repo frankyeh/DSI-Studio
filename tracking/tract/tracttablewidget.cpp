@@ -13,7 +13,6 @@
 #include "ui_tracking_window.h"
 #include "opengl/renderingtablewidget.h"
 #include "atlas.hpp"
-#include "../color_bar_dialog.hpp"
 
 
 void show_info_dialog(const std::string& title,const std::string& result);
@@ -41,12 +40,35 @@ TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget
     timer_update = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(fetch_tracts()));
     connect(timer_update, SIGNAL(timeout()), this, SLOT(show_tracking_progress()));
+
+    update_color_map();
 }
 
 TractTableWidget::~TractTableWidget(void)
 {
 }
 
+void TractTableWidget::update_color_map(void)
+{
+    if(cur_tracking_window["tract_color_map"].toInt()) // color map from file
+    {
+        QString filename = QCoreApplication::applicationDirPath()+"/color_map/"+
+                cur_tracking_window.renderWidget->getListValue("tract_color_map")+".txt";
+        color_map.load_from_file(filename.toStdString().c_str());
+        color_map_rgb.load_from_file(filename.toStdString().c_str());
+        bar.load_from_file(filename.toStdString().c_str());
+    }
+    else
+    {
+        tipl::rgb from_color(uint32_t(cur_tracking_window["tract_color_max"].toUInt()));
+        tipl::rgb to_color(uint32_t(cur_tracking_window["tract_color_min"].toUInt()));
+        bar.two_color(from_color,to_color);
+        std::swap(from_color.r,from_color.b);
+        std::swap(to_color.r,to_color.b);
+        color_map.two_color(from_color,to_color);
+        color_map_rgb.two_color(from_color,to_color);
+    }
+}
 void TractTableWidget::contextMenuEvent ( QContextMenuEvent * event )
 {
     if(event->reason() == QContextMenuEvent::Mouse)
@@ -957,13 +979,16 @@ void TractTableWidget::load_tracts_value(void)
                                  arg(values.size()).arg(tract_models[uint32_t(currentRow())]->get_visible_track_count()));
         return;
     }
-    color_bar_dialog dialog(nullptr);
+
     auto min_max = std::minmax_element(values.begin(),values.end());
-    dialog.set_value(*min_max.first,*min_max.second);
-    dialog.exec();
+    auto color_min = *min_max.first;
+    auto color_r = *min_max.second - *min_max.first;
+    if(color_r == 0.0f)
+        color_r = 1.0f;
     std::vector<unsigned int> colors(values.size());
     for(int i = 0;i < values.size();++i)
-        colors[i] = (unsigned int)dialog.get_rgb(values[i]);
+        colors[i] = color_map_rgb.value2color(values[i],color_min,color_r);
+
     tract_models[uint32_t(currentRow())]->set_tract_color(colors);
     tract_rendering[uint32_t(currentRow())]->need_update = true;
     cur_tracking_window.set_data("tract_color_style",1);//manual assigned
@@ -1095,19 +1120,10 @@ void TractTableWidget::render_tracts(GLWidget* glwidget)
 
     if(!update_list.empty())
     {
-        TractRenderParam param;
-        param.init(glwidget,cur_tracking_window);
-        for(auto each : tracks)
-            param.total_visible_tract += each->get_visible_track_count();
-
-        TractRenderShader shader(cur_tracking_window.handle->dim);
-        if(param.tract_shader)
-            shader.add_shade(tracks,param);
-
+        TractRenderShader shader(cur_tracking_window);
         tipl::par_for(update_list.size(),[&](size_t index)
         {
-            renders[update_list[index]]->prepare_update(
-                        tracks[update_list[index]],param,shader,cur_tracking_window.handle);
+            renders[update_list[index]]->prepare_update(cur_tracking_window,tracks[update_list[index]],shader);
         },update_list.size());
     }
 
