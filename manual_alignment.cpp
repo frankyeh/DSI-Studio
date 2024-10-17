@@ -109,8 +109,11 @@ manual_alignment::manual_alignment(QWidget *parent,
 void manual_alignment::add_images(std::shared_ptr<fib_data> handle)
 {
     for(const auto& each : handle->slices)
-        if(!each->optional())
-            add_image(each->name,each->get_image(),tipl::transformation_matrix<float>(each->T));
+    {
+        if(each->optional())
+            break;
+        add_image(each->name,each->get_image(),tipl::transformation_matrix<float>(each->T));
+    }
 
 }
 
