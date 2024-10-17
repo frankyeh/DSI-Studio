@@ -28,6 +28,11 @@ public:
     std::vector<std::shared_ptr<TractModel> > tract_models;
     std::vector<std::shared_ptr<TractRender> > tract_rendering;
 public:
+    tipl::color_map color_map;
+    tipl::color_map_rgb color_map_rgb;
+    tipl::color_bar bar;
+    void update_color_map(void);
+public:
     std::vector<std::shared_ptr<TractModel> > get_checked_tracks(void);
     std::vector<std::shared_ptr<TractRender> > get_checked_tracks_rendering(void);
     std::vector<std::shared_ptr<TractRender::end_reading> > start_reading_checked_tracks(void);
