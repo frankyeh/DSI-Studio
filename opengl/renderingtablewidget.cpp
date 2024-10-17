@@ -68,6 +68,13 @@ void RenderingItem::setList(QStringList list)
         reinterpret_cast<QComboBox*>(GUI)->addItems(list);
     }
 }
+QString RenderingItem::getListValue(void) const
+{
+    if(GUI && QString(GUI->metaObject()->className()) == "QComboBox")
+        return reinterpret_cast<QComboBox*>(GUI)->currentText();
+    return QString();
+}
+
 QWidget *RenderingDelegate::createEditor(QWidget *parent,
         const QStyleOptionViewItem &option,
         const QModelIndex &index) const
@@ -461,11 +468,14 @@ RenderingTableWidget::RenderingTableWidget(tracking_window& cur_tracking_window_
     collapseAll();
 
     tract_update_list = {"tract_alpha","tract_style",
-                         "tract_color_style", "tract_color_saturation",
-                         "tract_color_brightness","tube_diameter",
-                         "tract_tube_detail","tract_shader",
+                         "tract_color_saturation","tract_color_brightness",
+                         "tract_color_style", "tract_color_map",
+                         "tract_color_max","tract_color_min",
+                         "tract_color_max_value","tract_color_min_value",
+                         "tube_diameter", "tract_tube_detail","tract_shader",
                          "end_point_shift"};
-
+    tract_color_map_update_list = {
+                         "tract_color_max","tract_color_min","tract_color_map"};
 }
 
 void RenderingTableWidget::initialize(void)
@@ -504,6 +514,8 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
     if(tract_update_list.find(cur_node->id.toStdString()) != tract_update_list.end())
         cur_tracking_window.tractWidget->need_update_all();
 
+    if(tract_color_map_update_list.find(cur_node->id.toStdString()) != tract_color_map_update_list.end())
+        cur_tracking_window.tractWidget->update_color_map();
 
     if(cur_node->id == "tracking_index")
     {
@@ -578,10 +590,10 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
         cur_tracking_window.handle->slices[item_index]->get_minmax();
         float min = cur_tracking_window.handle->slices[item_index]->min_value;
         float max = cur_tracking_window.handle->slices[item_index]->max_value;
-        setMinMax("tract_color_index_min",min,max,(max-min)/20);
-        setMinMax("tract_color_index_max",min,max,(max-min)/20);
-        setData("tract_color_index_min",min);
-        setData("tract_color_index_max",max);
+        setMinMax("tract_color_min_value",min,max,(max-min)/20);
+        setMinMax("tract_color_max_value",min,max,(max-min)/20);
+        setData("tract_color_min_value",min);
+        setData("tract_color_max_value",max);
         return;
     }
 
