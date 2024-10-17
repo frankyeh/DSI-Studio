@@ -7,8 +7,9 @@
 #include <QTextStream>
 #include "renderingtablewidget.h"
 #include "qcolorcombobox.h"
-#include "tracking/tracking_window.h"
 #include "glwidget.h"
+#include "tracking/tracking_window.h"
+#include "tracking/region/regiontablewidget.h"
 #include "ui_tracking_window.h"
 #include <iostream>
 #include <cmath>
@@ -476,6 +477,8 @@ RenderingTableWidget::RenderingTableWidget(tracking_window& cur_tracking_window_
                          "end_point_shift"};
     tract_color_map_update_list = {
                          "tract_color_max","tract_color_min","tract_color_map"};
+    region_color_map_update_list = {
+                         "region_color_max","region_color_min","region_color_map"};
 }
 
 void RenderingTableWidget::initialize(void)
@@ -513,6 +516,9 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
     auto cur_node = reinterpret_cast<RenderingItem*>(bottomRight.internalPointer());
     if(tract_color_map_update_list.find(cur_node->id.toStdString()) != tract_color_map_update_list.end())
         cur_tracking_window.tractWidget->update_color_map();
+    if(region_color_map_update_list.find(cur_node->id.toStdString()) != region_color_map_update_list.end())
+        cur_tracking_window.regionWidget->update_color_map();
+
     if(tract_update_list.find(cur_node->id.toStdString()) != tract_update_list.end())
         cur_tracking_window.tractWidget->need_update_all();
 
