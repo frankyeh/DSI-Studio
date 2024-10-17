@@ -21,7 +21,6 @@ namespace Ui {
 
 class GLWidget;
 class tract_report;
-class color_bar_dialog;
 class connectivity_matrix_dialog;
 class QGLDockWidget : public QDockWidget
 {
@@ -83,7 +82,6 @@ public:
     void set_tracking_param(ThreadData& tracking_thread);
 public:
     std::shared_ptr<tract_report> tact_report_imp;
-    std::shared_ptr<color_bar_dialog> color_bar;
     std::shared_ptr<connectivity_matrix_dialog> connectivity_matrix;
 public:
     QString work_path;
