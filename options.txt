@@ -56,9 +56,16 @@ Slice/Blend Func2/slice_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:O
 Tract/Opacity/tract_alpha/float:0:1:0.1:2/1
 Tract/Style/tract_style/Line:Tube:End:End1:End2/1
 Tract/Line Width/tract_line_width/float:1.0:10:0.5:1/3
-Tract/Color/tract_color_style/Directional:Assigned:Local Index:Averaged Index:Averaged Directional:Max Index/0
-Tract/Color Saturation/tract_color_saturation/float:0:1:0.1:2/0.5
-Tract/Color Brightness/tract_color_brightness/float:0:1:0.1:2/0.5
+Tract/Tract Color/Tract_color
+Tract_color/Saturation/tract_color_saturation/float:0:1:0.1:2/0.5
+Tract_color/Brightness/tract_color_brightness/float:0:1:0.1:2/0.5
+Tract_color/Style/tract_color_style/Directional:Assigned:Local Index:Averaged Index:Averaged Directional:Max Index/0
+Tract_color/Index/tract_color_index/qa:iso/0
+Tract_color/Maximum Index/tract_color_index_max/float:0:1:0.1:2/1.0
+Tract_color/Minimum Index/tract_color_index_min/float:0:1:0.1:2/0.0
+Tract_color/Max Color/tract_color_max/color/16715792
+Tract_color/Min Color/tract_color_min/color/16776976
+Tract_color/Map/tract_color_map/assigned:files/0
 Tract/Visible Tracts/tract_visible_tract/int:5000:1000000:5000/25000
 Tract/Shade/tract_shader/int:0:20:1/4
 Tract/Tube Detail/tract_tube_detail/Coarse:Fine:Finer:Finest/1
