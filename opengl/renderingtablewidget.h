@@ -142,7 +142,7 @@ class RenderingTableWidget : public QTreeView
     Q_OBJECT
 private:
     tracking_window& cur_tracking_window;
-    std::unordered_set<std::string> tract_update_list,tract_color_map_update_list;
+    std::unordered_set<std::string> tract_update_list,tract_color_map_update_list,region_color_map_update_list;
 public:
     RenderingDelegate* data_delegate;
     TreeModel* treemodel;
