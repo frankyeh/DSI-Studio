@@ -1007,7 +1007,7 @@ void tracking_window::updateSlicesMenu(void)
         QStringList tract_index_list;
         for(auto each : handle->get_index_list())
             tract_index_list << each.c_str();
-        renderWidget->setList("tract_color_index",tract_index_list);
+        renderWidget->setList("tract_color_metrics",tract_index_list);
     }
     // update dt metric menu
     dt_list.clear();

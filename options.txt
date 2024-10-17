@@ -53,19 +53,19 @@ Slice/Smoothing/slice_smoothing/Off:On/0
 Slice/Match Background Color/slice_match_bkcolor/Off:On/0/Modify slice background color and match it with that of the 3D background
 Slice/Blend Func1/slice_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/2
 Slice/Blend Func2/slice_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
-Tract/Opacity/tract_alpha/float:0:1:0.1:2/1
-Tract/Style/tract_style/Line:Tube:End:End1:End2/1
-Tract/Line Width/tract_line_width/float:1.0:10:0.5:1/3
 Tract/Tract Color/Tract_color
+Tract_color/Opacity/tract_alpha/float:0:1:0.1:2/1
 Tract_color/Saturation/tract_color_saturation/float:0:1:0.1:2/0.5
 Tract_color/Brightness/tract_color_brightness/float:0:1:0.1:2/0.5
-Tract_color/Style/tract_color_style/Directional:Assigned:Local Index:Averaged Index:Averaged Directional:Max Index/0
-Tract_color/Index/tract_color_index/qa:iso/0
+Tract_color/Style/tract_color_style/Directional:Assigned:Local Metrics:Averaged Metrics:Averaged Directional:Max Metrics/0
+Tract_color/Metrics/tract_color_metrics/qa:iso/0
 Tract_color/Max Value/tract_color_max_value/float:0:1:0.1:2/1.0
 Tract_color/Min Value/tract_color_min_value/float:0:1:0.1:2/0.0
 Tract_color/Map/tract_color_map/assigned:files/0
 Tract_color/Max Color/tract_color_max/color/16715792
 Tract_color/Min Color/tract_color_min/color/16776976
+Tract/Style/tract_style/Line:Tube:End:End1:End2/1
+Tract/Line Width/tract_line_width/float:1.0:10:0.5:1/3
 Tract/Visible Tracts/tract_visible_tract/int:5000:1000000:5000/25000
 Tract/Shade/tract_shader/int:0:20:1/4
 Tract/Tube Detail/tract_tube_detail/Coarse:Fine:Finer:Finest/1
@@ -83,7 +83,15 @@ Tract/Material Shininess/tract_shininess/int/0
 Tract/Tract Selection Angle/tract_sel_angle/int:0:90:5/45
 Tract/Blend Func1/tract_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/6
 Tract/Blend Func2/tract_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/2
-Region/Opacity/region_alpha/float:0:1:0.1:2/0.8
+Region/Region Color/Region_color
+Region_color/Opacity/region_alpha/float:0:1:0.1:2/0.8
+Region_color/Style/region_color_style/Assigned:Metrics/0
+Region_color/Metrics/region_color_metrics/qa:iso/0
+Region_color/Max Value/region_color_max_value/float:0:1:0.1:2/1.0
+Region_color/Min Value/region_color_min_value/float:0:1:0.1:2/0.0
+Region_color/Map/region_color_map/assigned:files/0
+Region_color/Max Color/region_color_max/color/16715792
+Region_color/Min Color/region_color_min/color/16776976
 Region/Graph Visualization/Region_graph
 Region_graph/Graph/region_graph/Off:On/0
 Region_graph/Node Size/region_node_size/int/4

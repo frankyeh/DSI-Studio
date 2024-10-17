@@ -410,7 +410,7 @@ void TractRender::prepare_update(tracking_window& param,
     }
 
     auto tract_color_style = param["tract_color_style"].toInt();
-    auto index_num = param["tract_color_index"].toInt();
+    auto index_num = param["tract_color_metrics"].toInt();
 
     std::vector<tipl::vector<3> > assigned_colors;
     // Directional:Assigned:Local Index:Averaged Index:Averaged Directional:Max Index

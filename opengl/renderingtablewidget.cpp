@@ -469,7 +469,7 @@ RenderingTableWidget::RenderingTableWidget(tracking_window& cur_tracking_window_
 
     tract_update_list = {"tract_alpha","tract_style",
                          "tract_color_saturation","tract_color_brightness",
-                         "tract_color_style", "tract_color_index", "tract_color_map",
+                         "tract_color_style", "tract_color_metrics", "tract_color_map",
                          "tract_color_max","tract_color_min",
                          "tract_color_max_value","tract_color_min_value",
                          "tube_diameter", "tract_tube_detail","tract_shader",
@@ -582,7 +582,7 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
         cur_tracking_window.ui->roi_fiber->setChecked(cur_node->value.toBool());
         return;
     }
-    if(cur_node->id == "tract_color_index")
+    if(cur_node->id == "tract_color_metrics")
     {
         size_t item_index = cur_node->value.toInt();
         if(item_index >= cur_tracking_window.handle->slices.size())
