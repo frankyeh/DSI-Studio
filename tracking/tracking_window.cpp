@@ -24,7 +24,6 @@
 
 #include "devicetablewidget.h"
 #include "fib_data.hpp"
-#include "color_bar_dialog.hpp"
 #include "regtoolbox.h"
 #include "connectivity_matrix_dialog.h"
 
@@ -82,8 +81,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             ui->graphicsView->setScene(&scene);
             ui->graphicsView->setCursor(Qt::CrossCursor);
             ui->DeviceDockWidget->hide();
-
-            color_bar.reset(new color_bar_dialog(this)); // need to initiate after glwidget for tract rendering
         }
         {
             tipl::out() << "recall previous settings" << std::endl;
@@ -1005,8 +1002,6 @@ void tracking_window::updateSlicesMenu(void)
         }
     }
 
-    // update along track color dialog
-    color_bar->update_slice_indices();
     // update options: color map
     {
         QStringList tract_index_list;
