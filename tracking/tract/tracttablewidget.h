@@ -30,7 +30,6 @@ public:
 public:
     tipl::color_map color_map;
     tipl::color_map_rgb color_map_rgb;
-    tipl::color_bar bar;
     void update_color_map(void);
 public:
     std::vector<std::shared_ptr<TractModel> > get_checked_tracks(void);
