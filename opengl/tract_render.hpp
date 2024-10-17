@@ -4,55 +4,14 @@
 #include "tract_model.hpp"
 class tracking_window;
 class GLWidget;
-struct TractRenderParam{
-
-    float tract_alpha = 0.0f;
-    float tract_color_saturation = 0.0f;
-    float tract_color_brightness = 0.0f;
-    float tube_diameter = 0.0f;
-
-    unsigned char tract_style = 0;
-    unsigned char tract_color_style = 0;
-    unsigned char tract_tube_detail = 0;
-    unsigned char tract_shader = 0;
-    unsigned char end_point_shift = 0;
-
-    float tract_color_saturation_base;
-    bool show_end_only;
-    float tube_detail;
-    float tract_shaderf;
-
-    float tract_visible_tract = 0.0f;
-    float total_visible_tract = 0.0f;
-    size_t track_num_index = 0;
-
-    tipl::color_map color_map;
-    double color_r,color_min;
-    const tipl::vector<3,float>& get_color(double value) const
-    {
-        return color_map[uint32_t(std::floor(std::min(1.0,(std::max<double>(value-color_min,0.0))/color_r)*255.0+0.49))];
-    }
-    void init(GLWidget* glwidget,tracking_window& cur_tracking_window);
-};
 
 struct TractRenderShader{
     tipl::shape<3> dim;
     tipl::vector<3> to64;
     tipl::image<2,float> max_z_map,min_z_map,max_x_map,min_x_map,min_y_map,max_y_map;
-    TractRenderShader(tipl::shape<3> dim_):dim(dim_),
-        min_x_map(tipl::shape<2>(64,64),float(dim.width())),
-        min_y_map(tipl::shape<2>(64,64),float(dim.height())),
-        min_z_map(tipl::shape<2>(64,64),float(dim.depth())),
-        max_x_map(tipl::shape<2>(64,64)),
-        max_y_map(tipl::shape<2>(64,64)),
-        max_z_map(tipl::shape<2>(64,64))
-    {
-        to64[0] = 64.0f/float(dim[0]);
-        to64[1] = 64.0f/float(dim[1]);
-        to64[2] = 64.0f/float(dim[2]);
-    }
-    void add_shade(const std::vector<std::shared_ptr<TractModel> >& models,
-                   const TractRenderParam& param);
+    float skip_rate = 0.0f;
+    TractRenderShader(tracking_window& cur_tracking_window);
+
     float get_shade(const tipl::vector<3>& pos) const;
 };
 
@@ -110,7 +69,7 @@ public:
         line_strip_size.push_back(line_vertices_count-line_strip_pos.back());
         line_strip_pos.push_back(line_vertices_count);
     }
-    void add_tract(const TractRenderParam& param,
+    void add_tract(const tracking_window& param,
                    const std::vector<float>& tract,
                    const TractRenderShader& shader,
                    const tipl::vector<3>& assign_color,
@@ -181,10 +140,9 @@ public:
     }
     TractRender(void);
     ~TractRender(void);
-    void prepare_update(std::shared_ptr<TractModel>& active_tract_model,
-                        const TractRenderParam& param,
-                        const TractRenderShader& shader,
-                        std::shared_ptr<fib_data> handle);
+    void prepare_update(tracking_window& param,
+                        std::shared_ptr<TractModel>& active_tract_model,
+                        const TractRenderShader& shader);
     bool render_tracts(size_t index,GLWidget* glwidget,std::chrono::high_resolution_clock::time_point end_time);
 };
 #endif // TRACT_RENDER_HPP
