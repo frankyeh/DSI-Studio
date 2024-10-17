@@ -327,7 +327,17 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         renderWidget->setDefault("show_surface");
         renderWidget->setDefault("show_label");
         renderWidget->setDefault("show_odf");
+        renderWidget->setDefault("Tract_color");
+        renderWidget->setDefault("Region_graph");
         glWidget->update();
+        return true;
+    }
+    if(cmd == "restore_tracking")
+    {
+        renderWidget->setDefault("Tracking");
+        renderWidget->setDefault("Tracking_dT");
+        renderWidget->setDefault("Tracking_adv");
+        on_tracking_index_currentIndexChanged((*this)["tracking_index"].toInt());
         return true;
     }
     if(cmd == "set_roi_view")
