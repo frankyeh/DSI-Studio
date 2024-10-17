@@ -58,7 +58,6 @@ set(DSI_STUDIO_HEADERS mainwindow.h
     view_image.h
     manual_alignment.h
     tracking/tract_report.hpp
-    tracking/color_bar_dialog.hpp
     tracking/connectivity_matrix_dialog.h
     tracking/atlasdialog.h
     qcompletelineedit.h
@@ -85,7 +84,6 @@ set(DSI_STUDIO_FORMS mainwindow.ui
     view_image.ui
     manual_alignment.ui
     tracking/tract_report.ui
-    tracking/color_bar_dialog.ui
     tracking/connectivity_matrix_dialog.ui
     tracking/atlasdialog.ui
     connectometry/createdbdialog.ui
@@ -131,7 +129,6 @@ set(DSI_STUDIO_SOURCES
     view_image.cpp
     manual_alignment.cpp
     tracking/tract_report.cpp
-    tracking/color_bar_dialog.cpp
     cmd/exp.cpp
     tracking/connectivity_matrix_dialog.cpp
     libs/dsi/tessellated_icosahedron.cpp
