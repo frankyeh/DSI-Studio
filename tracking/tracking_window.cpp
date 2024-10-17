@@ -145,7 +145,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             glWidget->slice_texture.resize(slices.size());
         }
         {
-            // setup fa threshold
+            // update options: fa threshold
             {
                 QStringList tracking_index_list;
                 for(size_t index = 0;index < handle->dir.index_name.size();++index)
@@ -153,6 +153,14 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                        handle->dir.index_name[index].find("inc_") != 0)
                         tracking_index_list.push_back(handle->dir.index_name[index].c_str());
                 renderWidget->setList("tracking_index",tracking_index_list);
+            }
+            // update options: color map
+            {
+                QStringList color_map_list("none");
+                for(auto each : QDir(QCoreApplication::applicationDirPath()+"/color_map/").
+                                    entryList(QStringList("*.txt"),QDir::Files|QDir::NoSymLinks))
+                    color_map_list << QFileInfo(each).baseName();
+                renderWidget->setList("tract_color_map",color_map_list);
             }
 
             if(handle->is_histology || handle->dim[0] > 1024)
@@ -593,14 +601,11 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionLoad_Rendering_Parameters,&QAction::triggered, this,[this](void){command("load_rendering_setting");});
 
         connect(ui->actionRestore_Settings,&QAction::triggered, this,[this](void){command("restore_rendering");});
+        connect(ui->actionRestore_Tracking_Settings,&QAction::triggered, this,[this](void){command("restore_tracking");});
         connect(ui->reset_rendering,&QPushButton::clicked, this,[this](void)
         {
+            command("restore_tracking");
             command("restore_rendering");
-            renderWidget->setDefault("Tracking");
-            renderWidget->setDefault("Tracking_dT");
-            renderWidget->setDefault("Tracking_adv");
-            on_tracking_index_currentIndexChanged((*this)["tracking_index"].toInt());
-            glWidget->update();
         });
 
     }
@@ -1002,7 +1007,13 @@ void tracking_window::updateSlicesMenu(void)
 
     // update along track color dialog
     color_bar->update_slice_indices();
-
+    // update options: color map
+    {
+        QStringList tract_index_list;
+        for(auto each : handle->get_index_list())
+            tract_index_list << each.c_str();
+        renderWidget->setList("tract_color_index",tract_index_list);
+    }
     // update dt metric menu
     dt_list.clear();
     dt_list << "zero";
