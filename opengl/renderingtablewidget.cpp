@@ -469,7 +469,7 @@ RenderingTableWidget::RenderingTableWidget(tracking_window& cur_tracking_window_
 
     tract_update_list = {"tract_alpha","tract_style",
                          "tract_color_saturation","tract_color_brightness",
-                         "tract_color_style", "tract_color_map",
+                         "tract_color_style", "tract_color_index", "tract_color_map",
                          "tract_color_max","tract_color_min",
                          "tract_color_max_value","tract_color_min_value",
                          "tube_diameter", "tract_tube_detail","tract_shader",
@@ -511,11 +511,11 @@ void RenderingTableWidget::setDefault(QString parent_id)
 void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &bottomRight)
 {
     auto cur_node = reinterpret_cast<RenderingItem*>(bottomRight.internalPointer());
+    if(tract_color_map_update_list.find(cur_node->id.toStdString()) != tract_color_map_update_list.end())
+        cur_tracking_window.tractWidget->update_color_map();
     if(tract_update_list.find(cur_node->id.toStdString()) != tract_update_list.end())
         cur_tracking_window.tractWidget->need_update_all();
 
-    if(tract_color_map_update_list.find(cur_node->id.toStdString()) != tract_color_map_update_list.end())
-        cur_tracking_window.tractWidget->update_color_map();
 
     if(cur_node->id == "tracking_index")
     {
@@ -594,6 +594,7 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
         setMinMax("tract_color_max_value",min,max,(max-min)/20);
         setData("tract_color_min_value",min);
         setData("tract_color_max_value",max);
+        cur_tracking_window.glWidget->update();
         return;
     }
 
@@ -604,8 +605,6 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
         cur_tracking_window.slice_need_update = true;
         return;
     }
-    else
-        cur_tracking_window.glWidget->update();
 
-
+    cur_tracking_window.glWidget->update();
 }
