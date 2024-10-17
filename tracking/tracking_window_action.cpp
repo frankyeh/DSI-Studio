@@ -329,6 +329,8 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         renderWidget->setDefault("show_odf");
         renderWidget->setDefault("Tract_color");
         renderWidget->setDefault("Region_graph");
+        tractWidget->update_color_map();
+        tractWidget->need_update_all();
         glWidget->update();
         return true;
     }
