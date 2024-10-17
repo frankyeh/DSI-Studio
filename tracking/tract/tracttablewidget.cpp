@@ -56,18 +56,19 @@ void TractTableWidget::update_color_map(void)
                 cur_tracking_window.renderWidget->getListValue("tract_color_map")+".txt";
         color_map.load_from_file(filename.toStdString().c_str());
         color_map_rgb.load_from_file(filename.toStdString().c_str());
-        bar.load_from_file(filename.toStdString().c_str());
+        cur_tracking_window.glWidget->tract_color_bar.load_from_file(filename.toStdString().c_str());
     }
     else
     {
         tipl::rgb from_color(uint32_t(cur_tracking_window["tract_color_min"].toUInt()));
         tipl::rgb to_color(uint32_t(cur_tracking_window["tract_color_max"].toUInt()));
-        bar.two_color(from_color,to_color);
+        cur_tracking_window.glWidget->tract_color_bar.two_color(from_color,to_color);
         std::swap(from_color.r,from_color.b);
         std::swap(to_color.r,to_color.b);
         color_map.two_color(from_color,to_color);
         color_map_rgb.two_color(from_color,to_color);
     }
+    cur_tracking_window.glWidget->tract_color_bar_pos = {10,10};
 }
 void TractTableWidget::contextMenuEvent ( QContextMenuEvent * event )
 {
