@@ -530,7 +530,7 @@ void GLWidget::paintGL()
             text_painter.setFont(text_font[i]);
             text_painter.drawText(text_pos[i].x(), text_pos[i].y(), text_str[i]);
         }
-        if(get_param("tract_color_style") > 1) // use color map
+        if(get_param("tract_color_style") > 1) // use tract color map
         {
             if(!tract_color_bar_selected)
             {
@@ -539,6 +539,19 @@ void GLWidget::paintGL()
                 text_painter.drawText(tract_color_bar_pos[0], tract_color_bar_pos[1]+256+15,cur_tracking_window.renderWidget->getListValue("tract_color_metrics"));
             }
             text_painter.drawImage(QPoint(tract_color_bar_pos[0],tract_color_bar_pos[1]),QImage() << *(tipl::color_image*)&tract_color_bar);
+            if(tract_color_bar_pos == region_color_bar_pos)
+                region_color_bar_pos[0] += 48;
+        }
+
+        if(get_param("region_color_style")) // use region color map
+        {
+            if(!region_color_bar_selected)
+            {
+                text_painter.drawText(region_color_bar_pos[0]+20, region_color_bar_pos[1]+5, QString::number(cur_tracking_window["region_color_max_value"].toFloat()));
+                text_painter.drawText(region_color_bar_pos[0]+20, region_color_bar_pos[1]+256+5, QString::number(cur_tracking_window["region_color_min_value"].toFloat()));
+                text_painter.drawText(region_color_bar_pos[0], region_color_bar_pos[1]+256+15,cur_tracking_window.renderWidget->getListValue("region_color_metrics"));
+            }
+            text_painter.drawImage(QPoint(region_color_bar_pos[0],region_color_bar_pos[1]),QImage() << *(tipl::color_image*)&region_color_bar);
         }
 
         text_painter.end();
@@ -1540,6 +1553,7 @@ bool GLWidget::select_object(void)
     region_selected = false;
     slice_selected = false;
     tract_color_bar_selected = false;
+    region_color_bar_selected = false;
 
     object_distance = slice_distance = std::numeric_limits<float>::max();
     // select color bar to move
@@ -1548,6 +1562,9 @@ bool GLWidget::select_object(void)
         if(curPos.x() > tract_color_bar_pos[0] && curPos.x() < tract_color_bar_pos[0]+tract_color_bar.width() &&
            curPos.y() > tract_color_bar_pos[1] && curPos.y() < tract_color_bar_pos[1]+tract_color_bar.height())
             tract_color_bar_selected = true;
+        if(curPos.x() > region_color_bar_pos[0] && curPos.x() < region_color_bar_pos[0]+region_color_bar.width() &&
+           curPos.y() > region_color_bar_pos[1] && curPos.y() < region_color_bar_pos[1]+region_color_bar.height())
+            region_color_bar_selected = true;
     }
     // select device to move
     if(get_param("show_device") && !cur_tracking_window.deviceWidget->devices.empty())
@@ -1799,6 +1816,7 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
         update();
     }
     tract_color_bar_selected = false;
+    region_color_bar_selected = false;
     editing_option = none;
     setCursor(Qt::ArrowCursor);
 }
@@ -1865,6 +1883,14 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         {
             tract_color_bar_pos[0] += curPos.x() - lastPos.x();
             tract_color_bar_pos[1] += curPos.y() - lastPos.y();
+            lastPos = curPos;
+            update();
+            return;
+        }
+        if(region_color_bar_selected)
+        {
+            region_color_bar_pos[0] += curPos.x() - lastPos.x();
+            region_color_bar_pos[1] += curPos.y() - lastPos.y();
             lastPos = curPos;
             update();
             return;
