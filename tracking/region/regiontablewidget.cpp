@@ -13,6 +13,7 @@
 #include "ui_tracking_window.h"
 #include "mapping/atlas.hpp"
 #include "opengl/glwidget.h"
+#include "opengl/renderingtablewidget.h"
 #include "libs/tracking/fib_data.hpp"
 #include "libs/tracking/tracking_thread.hpp"
 
@@ -113,6 +114,9 @@ RegionTableWidget::RegionTableWidget(tracking_window& cur_tracking_window_,QWidg
     connect(this,SIGNAL(cellClicked(int,int)),this,SLOT(check_check_status(int,int)));
     connect(this,SIGNAL(itemChanged(QTableWidgetItem*)),this,SLOT(updateRegions(QTableWidgetItem*)));
     setEditTriggers(QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed);
+
+
+    update_color_map();
 }
 
 
@@ -293,6 +297,29 @@ void RegionTableWidget::check_check_status(int row, int col)
             emit need_update();
         }
     }
+}
+
+void RegionTableWidget::update_color_map(void)
+{
+    if(cur_tracking_window["region_color_map"].toInt()) // color map from file
+    {
+        QString filename = QCoreApplication::applicationDirPath()+"/color_map/"+
+                cur_tracking_window.renderWidget->getListValue("region_color_map")+".txt";
+        color_map.load_from_file(filename.toStdString().c_str());
+        color_map_rgb.load_from_file(filename.toStdString().c_str());
+        cur_tracking_window.glWidget->region_color_bar.load_from_file(filename.toStdString().c_str());
+    }
+    else
+    {
+        tipl::rgb from_color(uint32_t(cur_tracking_window["region_color_min"].toUInt()));
+        tipl::rgb to_color(uint32_t(cur_tracking_window["region_color_max"].toUInt()));
+        cur_tracking_window.glWidget->region_color_bar.two_color(from_color,to_color);
+        std::swap(from_color.r,from_color.b);
+        std::swap(to_color.r,to_color.b);
+        color_map.two_color(from_color,to_color);
+        color_map_rgb.two_color(from_color,to_color);
+    }
+    cur_tracking_window.glWidget->region_color_bar_pos = {10,10};
 }
 
 bool RegionTableWidget::command(QString cmd,QString param,QString)
