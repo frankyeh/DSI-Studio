@@ -441,7 +441,7 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
     for(const auto& each : handle->slices)
     {
         if(each->optional())
-            continue;
+            break;
         // get mean, max, min value of each index
         auto I = each->get_image();
         index_titles.push_back(each->name);
