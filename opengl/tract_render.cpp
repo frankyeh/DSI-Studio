@@ -408,9 +408,9 @@ void TractRender::prepare_update(tracking_window& param,
             visible.push_back(data_index);
         }
     }
+
     auto tract_color_style = param["tract_color_style"].toInt();
     auto index_num = param["tract_color_index"].toInt();
-    tipl::out() << "rendering using metrics: " << (index_num < param.handle->dir.index_name.size() ?  param.handle->dir.index_name[index_num]:param.handle->slices[index_num]->name);
 
     std::vector<tipl::vector<3> > assigned_colors;
     // Directional:Assigned:Local Index:Averaged Index:Averaged Directional:Max Index
