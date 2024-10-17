@@ -1,54 +1,37 @@
 #include "glwidget.h"
 #include "tract_render.hpp"
-#include "tracking/color_bar_dialog.hpp"
 #ifdef __APPLE__
 #include <OpenGL/glu.h>
 #else
 #include <GL/glu.h>
 #endif
 
-void TractRenderParam::init(GLWidget* glwidget,
-                            tracking_window& cur_tracking_window)
-{
-    const float detail_option[5] = {1.0f,0.5f,0.25f,0.0f,0.0f};
-    tract_alpha = glwidget->tract_alpha;
-    tract_color_saturation = glwidget->tract_color_saturation;
-    tract_color_brightness = glwidget->tract_color_brightness;
-    tube_diameter = glwidget->tube_diameter;
-
-    tract_style = glwidget->tract_style;
-    tract_color_style = glwidget->tract_color_style;
-    tract_tube_detail = glwidget->tract_tube_detail;
-    tract_shader = glwidget->tract_shader;
-    end_point_shift = glwidget->end_point_shift;
-
-    tract_color_saturation_base = tract_color_brightness*(1.0f-tract_color_saturation);
-    show_end_only = tract_style >= 2;
-    tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0f;
-    tract_shaderf = 0.01f*float(tract_shader);
-
-
-    if(tract_color_style == 2 || // local index
-       tract_color_style == 3 || // avg index
-       tract_color_style == 5) // max index
-    {
-        color_map = cur_tracking_window.color_bar->color_map;
-        color_r = cur_tracking_window.color_bar->color_r;
-        color_min = cur_tracking_window.color_bar->color_min;
-    }
-
-    tract_visible_tract = float(cur_tracking_window["tract_visible_tract"].toInt());
-    track_num_index = cur_tracking_window.handle->get_name_index(
-                                           cur_tracking_window.color_bar->get_tract_color_name().toStdString());
-}
-
-
-void TractRenderData::add_tract(const TractRenderParam& param,
+void TractRenderData::add_tract(const tracking_window& param,
                                 const std::vector<float>& tract,
                                 const TractRenderShader& shader,
                                 const tipl::vector<3>& assigned_color,
                                 const std::vector<float>& metrics)
 {
+    auto tract_alpha = param["tract_alpha"].toFloat();
+    auto tract_color_saturation = param["tract_color_saturation"].toFloat();
+    auto tract_color_brightness = param["tract_color_brightness"].toFloat();
+    auto tube_diameter = param["tube_diameter"].toFloat();
+
+    auto tract_style = param["tract_style"].toInt();
+    auto tract_color_style = param["tract_color_style"].toInt();
+    auto tract_tube_detail = param["tract_tube_detail"].toInt();
+    auto tract_shader = param["tract_shader"].toInt();
+    auto end_point_shift = param["end_point_shift"].toInt();
+
+    auto color_min = param["tract_color_min_value"].toFloat();
+    auto color_r = param["tract_color_max_value"].toFloat()-color_min;
+
+    const float detail_option[5] = {1.0f,0.5f,0.25f,0.0f,0.0f};
+    auto tract_color_saturation_base = tract_color_brightness*(1.0f-tract_color_saturation);
+
+    auto tube_detail = tube_diameter*detail_option[tract_tube_detail]*4.0f;
+    auto tract_shaderf = 0.01f*float(tract_shader);
+
     const unsigned char end_sequence[8] = {4,3,5,2,6,1,7,0};
     const unsigned char end_sequence2[8] = {7,0,6,1,5,2,4,3};
     std::vector<tipl::vector<3,float> > points(8),previous_points(8),normals(8),previous_normals(8);
@@ -64,12 +47,12 @@ void TractRenderData::add_tract(const TractRenderParam& param,
     for (unsigned int index = 0; index < vertex_count;data_iter += 3, ++index)
     {
         // skip straight line!
-        if (param.tract_style && index != 0 && index+1 != vertex_count)
+        if (tract_style && index != 0 && index+1 != vertex_count)
         {
             tipl::vector<3,float> displacement(data_iter+3);
             displacement -= last_pos;
             displacement -= prev_vec_n*(prev_vec_n*displacement);
-            if (displacement.length() < param.tube_detail)
+            if (displacement.length() < tube_detail)
                 continue;
         }
 
@@ -86,31 +69,31 @@ void TractRenderData::add_tract(const TractRenderParam& param,
         auto abs_vec_n = vec_n;
         abs_vec_n.abs();
 
-        switch(param.tract_color_style)
+        switch(tract_color_style)
         {
             case 0://directional
                 cur_color = abs_vec_n;
-                if(param.tract_color_saturation != 1.0f)
+                if(tract_color_saturation != 1.0f)
                 {
-                    cur_color *= param.tract_color_saturation;
-                    cur_color += param.tract_color_saturation_base;
+                    cur_color *= tract_color_saturation;
+                    cur_color += tract_color_saturation_base;
                 }
                 break;
             case 2://local anisotropy
                 if(index < metrics.size())
-                    cur_color = param.get_color(metrics[index]);
+                    cur_color = param.tractWidget->color_map.value2color(metrics[index],color_min,color_r);
                 break;
             default:
                 cur_color = assigned_color;
                 break;
         }
 
-        if(param.tract_shader)
+        if(tract_shader)
         {
-            cur_color *= 1.0f-std::min<float>(shader.get_shade(pos)*param.tract_shaderf,0.95f);
+            cur_color *= 1.0f-std::min<float>(shader.get_shade(pos)*tract_shaderf,0.95f);
             cur_color += 0.05f;
         }
-        if(param.tract_style)
+        if(tract_style)
         {
 
         if (index == 0 && std::fabs(vec_a*vec_n) > 0.5f)
@@ -136,10 +119,10 @@ void TractRenderData::add_tract(const TractRenderParam& param,
             normals[6] = -vec_b;
             normals[7] = vec_ba;
         }
-        vec_ab *= param.tube_diameter;
-        vec_ba *= param.tube_diameter;
-        vec_a *= param.tube_diameter;
-        vec_b *= param.tube_diameter;
+        vec_ab *= tube_diameter;
+        vec_ba *= tube_diameter;
+        vec_a *= tube_diameter;
+        vec_b *= tube_diameter;
 
         // add point
         {
@@ -153,22 +136,22 @@ void TractRenderData::add_tract(const TractRenderParam& param,
             points[6] -= vec_b;
             points[7] += vec_ba;
         }
-        if(param.show_end_only)
+        if(tract_style >= 2) // show_end_only
         {
             // add end
             if (index == 0)
             {
-                if(param.tract_style != 3)
+                if(tract_style != 3)
                 {
                     tipl::vector<3,float> shift(vec_n);
-                    shift *= -(int)param.end_point_shift;
+                    shift *= -(int)end_point_shift;
                     for (unsigned int k = 0;k < 8;++k)
                     {
                         tipl::vector<3,float> cur_point = points[end_sequence[k]];
                         cur_point += shift;
-                        add_tube(cur_point,cur_color,-vec_n,param.tract_alpha);
+                        add_tube(cur_point,cur_color,-vec_n,tract_alpha);
                     }
-                    if(param.tract_style == 2)
+                    if(tract_style == 2)
                         end_tube_strip();
                 }
 
@@ -176,15 +159,15 @@ void TractRenderData::add_tract(const TractRenderParam& param,
             else
                 if(index + 1 == vertex_count)
                 {
-                    if(param.tract_style != 4)
+                    if(tract_style != 4)
                     {
                         tipl::vector<3,float> shift(vec_n);
-                        shift *= (int)param.end_point_shift;
+                        shift *= (int)end_point_shift;
                         for (unsigned int k = 0;k < 8;++k)
                         {
                             tipl::vector<3,float> cur_point = points[end_sequence2[k]];
                             cur_point += shift;
-                            add_tube(cur_point,cur_color,vec_n,param.tract_alpha);
+                            add_tube(cur_point,cur_color,vec_n,tract_alpha);
                         }
                     }
                 }
@@ -194,22 +177,22 @@ void TractRenderData::add_tract(const TractRenderParam& param,
             if (index == 0)
             {
                 for (unsigned int k = 0;k < 8;++k)
-                    add_tube(points[end_sequence[k]],cur_color,normals[end_sequence[k]],param.tract_alpha);
+                    add_tube(points[end_sequence[k]],cur_color,normals[end_sequence[k]],tract_alpha);
             }
             else
             {
-                add_tube(points[0],cur_color,normals[0],param.tract_alpha);
+                add_tube(points[0],cur_color,normals[0],tract_alpha);
                 for (unsigned int k = 1;k < 8;++k)
                 {
-                   add_tube(previous_points[k],previous_color,previous_normals[k],param.tract_alpha);
-                   add_tube(points[k],cur_color,normals[k],param.tract_alpha);
+                   add_tube(previous_points[k],previous_color,previous_normals[k],tract_alpha);
+                   add_tube(points[k],cur_color,normals[k],tract_alpha);
                 }
-                add_tube(points[0],cur_color,normals[0],param.tract_alpha);
+                add_tube(points[0],cur_color,normals[0],tract_alpha);
 
                 if(index +1 == vertex_count)
                 {
                     for (unsigned int k = 2;k < 8;++k) // skip 0 and 1 because the tubes have them
-                        add_tube(points[end_sequence2[k]],cur_color,normals[end_sequence2[k]],param.tract_alpha);
+                        add_tube(points[end_sequence2[k]],cur_color,normals[end_sequence2[k]],tract_alpha);
                 }
             }
         }
@@ -221,10 +204,10 @@ void TractRenderData::add_tract(const TractRenderParam& param,
         }
         else
         {
-            add_line(pos,cur_color,param.tract_alpha);
+            add_line(pos,cur_color,tract_alpha);
         }
     }
-    if(param.tract_style)
+    if(tract_style)
         end_tube_strip();
     else
         end_line_strip();
@@ -330,13 +313,30 @@ float TractRenderShader::get_shade(const tipl::vector<3>& pos) const
     }
     return d;
 }
-void TractRenderShader::add_shade(const std::vector<std::shared_ptr<TractModel> >& models,
-                                  const TractRenderParam& param)
-{    
+
+TractRenderShader::TractRenderShader(tracking_window& cur_tracking_window):
+    dim(cur_tracking_window.handle->dim),
+    min_x_map(tipl::shape<2>(64,64),float(dim.width())),
+    min_y_map(tipl::shape<2>(64,64),float(dim.height())),
+    min_z_map(tipl::shape<2>(64,64),float(dim.depth())),
+    max_x_map(tipl::shape<2>(64,64)),
+    max_y_map(tipl::shape<2>(64,64)),
+    max_z_map(tipl::shape<2>(64,64))
+{
+    to64[0] = 64.0f/float(dim[0]);
+    to64[1] = 64.0f/float(dim[1]);
+    to64[2] = 64.0f/float(dim[2]);
+
+    auto models = cur_tracking_window.tractWidget->get_checked_tracks();
+    size_t total_visible_tract = 0;
+    for(auto each : models)
+        total_visible_tract += each->get_visible_track_count();
+
+    skip_rate = cur_tracking_window["tract_visible_tract"].toFloat()/float(total_visible_tract);
+
     tipl::adaptive_par_for(models.size(),[&](size_t i)
     {
         auto tracks_count = models[i]->get_visible_track_count();
-        float skip_rate = param.tract_visible_tract/param.total_visible_tract;
         tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
         for (unsigned int data_index = 0; data_index < tracks_count; ++data_index)
         {
@@ -384,18 +384,15 @@ void TractRenderShader::add_shade(const std::vector<std::shared_ptr<TractModel> 
         tipl::filter::mean(min_z_map);
     }
 }
-void TractRender::prepare_update(std::shared_ptr<TractModel>& active_tract_model,
-                                 const TractRenderParam& param,
-                                 const TractRenderShader& shader,
-                                 std::shared_ptr<fib_data> handle)
+void TractRender::prepare_update(tracking_window& param,
+                                 std::shared_ptr<TractModel>& active_tract_model,
+                                 const TractRenderShader& shader)
 {
     auto lock = start_reading(false);
     if(!lock.get())
         return;
 
-    auto dim = handle->dim;
-
-    float skip_rate = param.tract_visible_tract/param.total_visible_tract;
+    auto dim = param.handle->dim;
 
     std::vector<unsigned int> visible;
     {
@@ -404,35 +401,38 @@ void TractRender::prepare_update(std::shared_ptr<TractModel>& active_tract_model
         tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);
         for (unsigned int data_index = 0; data_index < tracks_count; ++data_index)
         {
-            if(skip_rate < 1.0f && uniform_gen() > skip_rate)
+            if(shader.skip_rate < 1.0f && uniform_gen() > shader.skip_rate)
                 continue;
             if (active_tract_model->get_tract(data_index).size() <= 3)
                 continue;
             visible.push_back(data_index);
         }
     }
-
+    auto tract_color_style = param["tract_color_style"].toInt();
+    auto track_num_index = param["tract_color_index"].toInt();
     std::vector<tipl::vector<3> > assigned_colors;
     // Directional:Assigned:Local Index:Averaged Index:Averaged Directional:Max Index
-    if(param.tract_color_style == 1 || // assigned
-       param.tract_color_style == 3 || // mean value
-       param.tract_color_style == 5)   // max value
+    if(tract_color_style == 1 || // assigned
+       tract_color_style == 3 || // mean value
+       tract_color_style == 5)   // max value
     {
+        auto color_min = param["tract_color_min_value"].toFloat();
+        auto color_r = param["tract_color_max_value"].toFloat()-color_min;
         assigned_colors.resize(visible.size());
         for (unsigned int i = 0;i < visible.size();++i)
         {
-            if(param.tract_color_style == 1) // assigned
+            if(tract_color_style == 1) // assigned
             {
                 tipl::rgb paint_color = active_tract_model->get_tract_color(visible[i]);
                 assigned_colors[i] = tipl::vector<3,float>(paint_color.r,paint_color.g,paint_color.b);
                 assigned_colors[i] /= 255.0f;
                 continue;
             }
-            std::vector<float> metrics(active_tract_model->get_tract_data(handle,visible[i],param.track_num_index));
-            if(param.tract_color_style == 3) // mean values
-                assigned_colors[i] = param.get_color(tipl::mean(metrics));
-            if(param.tract_color_style == 5) // max values
-                assigned_colors[i] = param.get_color(tipl::max_value(metrics));
+            std::vector<float> metrics(active_tract_model->get_tract_data(param.handle,visible[i],track_num_index));
+            if(tract_color_style == 3) // mean values
+                assigned_colors[i] = param.tractWidget->color_map.value2color(tipl::mean(metrics),color_min,color_r);
+            if(tract_color_style == 5) // max values
+                assigned_colors[i] = param.tractWidget->color_map.value2color(tipl::max_value(metrics),color_min,color_r);
         };
     }
 
@@ -447,8 +447,8 @@ void TractRender::prepare_update(std::shared_ptr<TractModel>& active_tract_model
             if(about_to_write)
                 break;
             std::vector<float> metrics;
-            if(param.tract_color_style == 2)
-                metrics = std::move(active_tract_model->get_tract_data(handle,visible[i],param.track_num_index));
+            if(tract_color_style == 2)
+                metrics = std::move(active_tract_model->get_tract_data(param.handle,visible[i],track_num_index));
             new_data[thread].add_tract(param,active_tract_model->get_tract(visible[i]),shader,
                            assigned_colors.empty() ? tipl::vector<3>() : assigned_colors[i],metrics);
         }
