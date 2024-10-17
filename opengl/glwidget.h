@@ -69,7 +69,7 @@ Q_OBJECT
      void get_view_dir(QPoint p,tipl::vector<3,float>& dir);
 
  private:
-     bool region_selected,slice_selected,device_selected;
+     bool region_selected,slice_selected,device_selected,tract_color_bar_selected = false;
      float device_selected_length;
      size_t selected_index;
      float object_distance;
@@ -80,7 +80,9 @@ Q_OBJECT
      bool get_mouse_pos(QPoint cur_pos,tipl::vector<3,float>& position);
      void paintGL() override;
      bool no_update = true;
-
+ public:
+     tipl::vector<2,int> tract_color_bar_pos = {10,10};
+     tipl::color_bar tract_color_bar,region_color_bar;
  public://surface
      std::shared_ptr<RegionRender> surface;
      std::shared_ptr<QTimer> video_timer,rotate_timer;
