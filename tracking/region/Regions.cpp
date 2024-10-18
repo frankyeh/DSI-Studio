@@ -376,6 +376,24 @@ tipl::vector<3> ROIRegion::get_pos(void) const
         cm.to(to_diffusion_space);
     return cm;
 }
+float ROIRegion::get_coverage_rate(const tipl::image<3,unsigned int>& values,float threshold)
+{
+    size_t sum = 0;
+    if(region.empty())
+        return 0.0f;
+    unsigned int t = tipl::max_value(values)*threshold;
+    for(const auto& each : region)
+    {
+        tipl::vector<3> pos(each);
+        if(!is_diffusion_space)
+            pos.to(to_diffusion_space);
+        pos.round();
+        size_t index = tipl::voxel2index(pos.begin(),values.shape());
+        if(index < values.size() && values[index] > t)
+            ++sum;
+    }
+    return float(sum)/float(region.size());
+}
 void ROIRegion::get_quantitative_data(std::shared_ptr<slice_model> slice,float& mean,float& max_v,float& min_v)
 {
     auto I = slice->get_image();
