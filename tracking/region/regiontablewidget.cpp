@@ -328,26 +328,28 @@ tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
     if(color_map_values.size() != regions.size())
         color_map_values.clear();
     color_map_values.resize(regions.size(),std::nanf(""));
-    if(std::isnan(color_map_values[index]))
+
     {
-        color_map_values[index] = 0.0f;
         auto metric_index = cur_tracking_window["region_color_metrics"].toInt();
         if(metric_index < cur_tracking_window.handle->slices.size() &&
            !cur_tracking_window.handle->slices[metric_index]->optional()) // sample slices values
         {
-            float mean,max_v,min_v;
-            regions[index]->get_quantitative_data(cur_tracking_window.handle->slices[metric_index],mean,max_v,min_v);
-            switch(region_color_style)
+            if(std::isnan(color_map_values[index]))
             {
-            case 1:
-                color_map_values[index] = mean;
-                break;
-            case 2:
-                color_map_values[index] = max_v;
-                break;
-            case 3:
-                color_map_values[index] = min_v;
-                break;
+                float mean,max_v,min_v;
+                regions[index]->get_quantitative_data(cur_tracking_window.handle->slices[metric_index],mean,max_v,min_v);
+                switch(region_color_style)
+                {
+                case 1:
+                    color_map_values[index] = mean;
+                    break;
+                case 2:
+                    color_map_values[index] = max_v;
+                    break;
+                case 3:
+                    color_map_values[index] = min_v;
+                    break;
+                }
             }
         }
         else // compute tract-region interscept
@@ -358,7 +360,7 @@ tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
                 auto tract = cur_tracking_window.tractWidget->tract_models[tract_index];
                 if(tract->get_visible_track_count())
                 {
-                    size_t id = size_t((tract_index+1) & 255)*
+                    size_t id = size_t(tract_index+1)*
                                 ((tract->get_visible_track_count()+2) & 255)*
                                 ((tract->get_tracts().back().size()+3) & 255);
                     if(id != tract_map_id)
@@ -367,12 +369,17 @@ tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
                         tract_map.resize(cur_tracking_window.handle->dim);
                         tract->get_density_map(tract_map,tipl::matrix<4,4>(tipl::identity_matrix()),false);
                         tract_map_id = id;
+                        color_map_values.clear();
+                        color_map_values.resize(regions.size(),std::nanf(""));
                     }
-                    color_map_values[index] = regions[index]->get_coverage_rate(tract_map);
+                    if(std::isnan(color_map_values[index]))
+                        color_map_values[index] = regions[index]->get_coverage_rate(tract_map);
                 }
             }
         }
     }
+    if(std::isnan(color_map_values[index]))
+        color_map_values[index] = 0;
     auto color_min = cur_tracking_window["region_color_min_value"].toFloat();
     auto color_r = cur_tracking_window["region_color_max_value"].toFloat()-color_min;
     auto c = color_map_rgb.value2color(color_map_values[index],color_min,color_r);
