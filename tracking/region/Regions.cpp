@@ -376,6 +376,18 @@ tipl::vector<3> ROIRegion::get_pos(void) const
         cm.to(to_diffusion_space);
     return cm;
 }
+void ROIRegion::get_quantitative_data(std::shared_ptr<slice_model> slice,float& mean,float& max_v,float& min_v)
+{
+    auto I = slice->get_image();
+    if(I.shape() != dim || slice->T != to_diffusion_space)
+    {
+        tipl::matrix<4,4> trans = slice->iT*to_diffusion_space;
+        calculate_region_stat(I,region,mean,max_v,min_v,&trans[0]);
+    }
+    else
+        calculate_region_stat(I,region,mean,max_v,min_v);
+
+}
 void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vector<std::string>& titles,std::vector<float>& data)
 {
     titles.clear();
@@ -442,21 +454,11 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
     {
         if(each->optional())
             break;
-        // get mean, max, min value of each index
-        auto I = each->get_image();
         index_titles.push_back(each->name);
-        float mean;
         max_values.push_back(0.0f);
         min_values.push_back(0.0f);
-        if(each->get_image().shape() != handle->dim ||
-           each->T != to_diffusion_space)
-        {
-            tipl::matrix<4,4> trans = each->iT*to_diffusion_space;
-            calculate_region_stat(I,points,mean,max_values.back(),min_values.back(),&trans[0]);
-        }
-        else
-            calculate_region_stat(I,points,mean,max_values.back(),min_values.back());
-        data.push_back(mean);
+        data.push_back(0.0f);
+        get_quantitative_data(each,data.back(),max_values.back(),min_values.back());
     }
     titles.insert(titles.end(),index_titles.begin(),index_titles.end());
 
