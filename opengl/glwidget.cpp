@@ -1058,7 +1058,6 @@ void GLWidget::renderLR()
                         }
                 }
 
-
                 for(unsigned int i = 0;i < cur_tracking_window.regionWidget->regions.size();++i)
                     if(cur_tracking_window.regionWidget->item(i,0)->checkState() == Qt::Checked &&
                        !cur_tracking_window.regionWidget->regions[i]->region.empty())
@@ -1069,9 +1068,8 @@ void GLWidget::renderLR()
                         auto center = cur_tracking_window.regionWidget->regions[i]->get_center();
                         glPushMatrix();
                         glTranslatef(center[0],center[1],center[2]);
-                        glColor4f(cur_region->region_render->color.r/255.0f,
-                                  cur_region->region_render->color.g/255.0f,
-                                  cur_region->region_render->color.b/255.0f,1.0f);
+                        auto c = cur_tracking_window.regionWidget->get_region_rendering_color(i);
+                        glColor4f(c.r/255.0f,c.g/255.0f,c.b/255.0f,1.0f);
                         gluSphere(RegionSpheres->get(),
                                   std::pow(cur_tracking_window.regionWidget->regions[get_param("region_constant_node_size") ? 0:i]->region.size(),1.0f/3.0f)
                                   *(get_param("region_node_size")+5)/50.0f,10,10);
@@ -1103,6 +1101,7 @@ void GLWidget::renderLR()
                    !regions[index]->region.empty())
                 {
                     regions[index]->region_render->draw(
+                               regionWidget->get_region_rendering_color(index),
                                cur_view,alpha,get_param("region_bend1"),get_param("region_bend2"));
                     region_visualized[index] = true;
                 }
@@ -1132,7 +1131,8 @@ void GLWidget::renderLR()
         float alpha = get_param_float("surface_alpha");
         surface->color = (unsigned int)get_param("surface_color");
         surface->color.a = 255;
-        surface->draw((alpha == 1.0 ? 0 : getCurView(transformation_matrix)),
+        surface->draw(surface->color,
+                      (alpha == 1.0 ? 0 : getCurView(transformation_matrix)),
                       alpha,get_param("surface_bend1"),get_param("surface_bend2"));
         glDisable(GL_BLEND);
         glPopMatrix();
