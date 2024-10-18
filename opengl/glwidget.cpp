@@ -2066,6 +2066,7 @@ void GLWidget::copyToClipboardEach(QTableWidget* widget,unsigned int col_size)
         if(is_checked[uint32_t(i)])
         {
             widget->item(i,0)->setCheckState(Qt::Checked);
+            widget->setCurrentCell(i,0);
             images.push_back(tipl::qt::get_bounding_box(grab_image()));
             if(images.back().width() == 0)
                 images.pop_back();
