@@ -491,6 +491,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->stop_tracking,SIGNAL(clicked()),tractWidget,SLOT(stop_tracking()));
         connect(tractWidget,SIGNAL(show_tracts()),glWidget,SLOT(update()));
         connect(tractWidget,&TractTableWidget::show_tracts,this,[this](void){slice_need_update = true;});
+        connect(tractWidget,&TractTableWidget::show_tracts,this,[this](void){regionWidget->tract_map_id = 0;});
         connect(tractWidget,SIGNAL(cellChanged(int,int)),glWidget,SLOT(update())); //update label
         connect(tractWidget,SIGNAL(itemSelectionChanged()),tractWidget,SLOT(show_report()));
         connect(glWidget,SIGNAL(edited()),tractWidget,SLOT(edit_tracts()));
