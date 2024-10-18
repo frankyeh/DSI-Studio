@@ -1557,11 +1557,12 @@ bool GLWidget::select_object(void)
 
     object_distance = slice_distance = std::numeric_limits<float>::max();
     // select color bar to move
-    if(get_param("tract_color_style") > 1)
+    if(get_param("tract_color_style") > 1 || get_param("region_color_style") > 0)
     {
         if(curPos.x() > tract_color_bar_pos[0] && curPos.x() < tract_color_bar_pos[0]+tract_color_bar.width() &&
            curPos.y() > tract_color_bar_pos[1] && curPos.y() < tract_color_bar_pos[1]+tract_color_bar.height())
             tract_color_bar_selected = true;
+        else
         if(curPos.x() > region_color_bar_pos[0] && curPos.x() < region_color_bar_pos[0]+region_color_bar.width() &&
            curPos.y() > region_color_bar_pos[1] && curPos.y() < region_color_bar_pos[1]+region_color_bar.height())
             region_color_bar_selected = true;
