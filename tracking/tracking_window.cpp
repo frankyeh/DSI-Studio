@@ -680,6 +680,7 @@ tracking_window::~tracking_window()
 void tracking_window::report(QString string)
 {
     ui->text_report->setText(string);
+    regionWidget->tract_map_id = 0;
 }
 extern console_stream console;
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)
