@@ -158,6 +158,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                                     entryList(QStringList("*.txt"),QDir::Files|QDir::NoSymLinks))
                     color_map_list << QFileInfo(each).baseName();
                 renderWidget->setList("tract_color_map",color_map_list);
+                renderWidget->setList("region_color_map",color_map_list);
             }
 
             if(handle->is_histology || handle->dim[0] > 1024)
@@ -1008,6 +1009,7 @@ void tracking_window::updateSlicesMenu(void)
         for(auto each : handle->get_index_list())
             tract_index_list << each.c_str();
         renderWidget->setList("tract_color_metrics",tract_index_list);
+        renderWidget->setList("region_color_metrics",tract_index_list);
     }
     // update dt metric menu
     dt_list.clear();
