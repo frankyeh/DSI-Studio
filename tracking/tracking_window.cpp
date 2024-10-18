@@ -1009,6 +1009,7 @@ void tracking_window::updateSlicesMenu(void)
         for(auto each : handle->get_index_list())
             tract_index_list << each.c_str();
         renderWidget->setList("tract_color_metrics",tract_index_list);
+        tract_index_list << "current tract";
         renderWidget->setList("region_color_metrics",tract_index_list);
     }
     // update dt metric menu
