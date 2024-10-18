@@ -169,11 +169,11 @@ std::string RegionRender::get_obj(unsigned int& coordinate_count,tipl::vector<3>
     return output;
 }
 void handleAlpha(tipl::rgb color,float alpha,int blend1,int blend2);
-void RegionRender::draw(unsigned char cur_view,float alpha,int blend1,int blend2)
+void RegionRender::draw(tipl::rgb draw_color,unsigned char cur_view,float alpha,int blend1,int blend2)
 {
     if(!object.get() || object->tri_list.empty())
         return;
-    handleAlpha(color,alpha,blend1,blend2);
+    handleAlpha(draw_color,alpha,blend1,blend2);
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_NORMAL_ARRAY);
     glVertexPointer(3, GL_FLOAT, 0, &object->point_list[0]);

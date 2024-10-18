@@ -37,7 +37,7 @@ public:
         void transform_point_list(const tipl::matrix<4,4>& T);
         std::string get_obj(unsigned int& coordinate_count,tipl::vector<3> vs);
 public:
-        void draw(unsigned char cur_view,float alpha,int blend1,int blend2);
+        void draw(tipl::rgb draw_color,unsigned char cur_view,float alpha,int blend1,int blend2);
 };
 
 #endif
