@@ -1562,6 +1562,7 @@ bool GLWidget::select_object(void)
         if(curPos.x() > tract_color_bar_pos[0] && curPos.x() < tract_color_bar_pos[0]+tract_color_bar.width() &&
            curPos.y() > tract_color_bar_pos[1] && curPos.y() < tract_color_bar_pos[1]+tract_color_bar.height())
             tract_color_bar_selected = true;
+    }
     if(get_param("region_color_style") > 0)
     {
         if(curPos.x() > region_color_bar_pos[0] && curPos.x() < region_color_bar_pos[0]+region_color_bar.width() &&
