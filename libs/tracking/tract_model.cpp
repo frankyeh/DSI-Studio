@@ -7,7 +7,7 @@
 #include <array>
 #include <iterator>
 #include <tuple>
-#include <set>
+#include <unordered_set>
 #include <map>
 #include <cmath>
 #include "roi.hpp"
@@ -2478,10 +2478,14 @@ void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract, unsigne
 void TractModel::get_density_map(tipl::image<3,unsigned int>& mapping,
                                  const tipl::matrix<4,4>& to_t1t2,bool endpoint)
 {
-    tipl::shape<3> geo = mapping.shape();
-    tipl::adaptive_par_for(tract_data.size(),[&](unsigned int i)
+    tipl::shape<3> s = mapping.shape();
+    std::vector<tipl::image<3,unsigned int> > maps(std::thread::hardware_concurrency());
+    tipl::adaptive_par_for<tipl::sequential_with_id>(tract_data.size(),[&](unsigned int i,unsigned int id)
     {
-        std::set<size_t> point_set;
+        auto& m = maps[id];
+        if(m.empty())
+            m.resize(s);
+        std::unordered_set<size_t> point_set;
         for (unsigned int j = 0;j < tract_data[i].size();j+=3)
         {
             if(j && endpoint)
@@ -2490,13 +2494,22 @@ void TractModel::get_density_map(tipl::image<3,unsigned int>& mapping,
             pos.to(to_t1t2);
             pos.round();
             tipl::vector<3,int> ipos(pos);
-            if (geo.is_valid(ipos))
+            if (s.is_valid(ipos))
                 point_set.insert(tipl::voxel2index(ipos.begin(),mapping.shape()));
         }
-
         for(auto pos : point_set)
-            ++mapping[pos];
+            ++m[pos];
     });
+
+    while(maps.back().empty() && !maps.empty())
+        maps.pop_back();
+
+    tipl::adaptive_par_for(s.size(),[&](unsigned int i)
+    {
+        for(const auto& each : maps)
+            mapping[i] += each[i];
+    });
+
 }
 //---------------------------------------------------------------------------
 void TractModel::get_density_map(
