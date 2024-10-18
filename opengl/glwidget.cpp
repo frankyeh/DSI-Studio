@@ -532,12 +532,9 @@ void GLWidget::paintGL()
         }
         if(get_param("tract_color_style") > 1) // use tract color map
         {
-            if(!tract_color_bar_selected)
-            {
-                text_painter.drawText(tract_color_bar_pos[0]+20, tract_color_bar_pos[1]+5, QString::number(cur_tracking_window["tract_color_max_value"].toFloat()));
-                text_painter.drawText(tract_color_bar_pos[0]+20, tract_color_bar_pos[1]+256+5, QString::number(cur_tracking_window["tract_color_min_value"].toFloat()));
-                text_painter.drawText(tract_color_bar_pos[0], tract_color_bar_pos[1]+256+15,cur_tracking_window.renderWidget->getListValue("tract_color_metrics"));
-            }
+            text_painter.drawText(tract_color_bar_pos[0]+20, tract_color_bar_pos[1]+5, QString::number(cur_tracking_window["tract_color_max_value"].toFloat()));
+            text_painter.drawText(tract_color_bar_pos[0]+20, tract_color_bar_pos[1]+256+5, QString::number(cur_tracking_window["tract_color_min_value"].toFloat()));
+            text_painter.drawText(tract_color_bar_pos[0], tract_color_bar_pos[1]+256+15,cur_tracking_window.renderWidget->getListValue("tract_color_metrics"));
             text_painter.drawImage(QPoint(tract_color_bar_pos[0],tract_color_bar_pos[1]),QImage() << *(tipl::color_image*)&tract_color_bar);
             if(tract_color_bar_pos == region_color_bar_pos)
                 region_color_bar_pos[0] += 48;
@@ -545,12 +542,9 @@ void GLWidget::paintGL()
 
         if(get_param("region_color_style")) // use region color map
         {
-            if(!region_color_bar_selected)
-            {
-                text_painter.drawText(region_color_bar_pos[0]+20, region_color_bar_pos[1]+5, QString::number(cur_tracking_window["region_color_max_value"].toFloat()));
-                text_painter.drawText(region_color_bar_pos[0]+20, region_color_bar_pos[1]+256+5, QString::number(cur_tracking_window["region_color_min_value"].toFloat()));
-                text_painter.drawText(region_color_bar_pos[0], region_color_bar_pos[1]+256+15,cur_tracking_window.renderWidget->getListValue("region_color_metrics"));
-            }
+            text_painter.drawText(region_color_bar_pos[0]+20, region_color_bar_pos[1]+5, QString::number(cur_tracking_window["region_color_max_value"].toFloat()));
+            text_painter.drawText(region_color_bar_pos[0]+20, region_color_bar_pos[1]+256+5, QString::number(cur_tracking_window["region_color_min_value"].toFloat()));
+            text_painter.drawText(region_color_bar_pos[0], region_color_bar_pos[1]+256+15,cur_tracking_window.renderWidget->getListValue("region_color_metrics"));
             text_painter.drawImage(QPoint(region_color_bar_pos[0],region_color_bar_pos[1]),QImage() << *(tipl::color_image*)&region_color_bar);
         }
 
