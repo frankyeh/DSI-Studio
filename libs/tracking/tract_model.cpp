@@ -2478,20 +2478,23 @@ void TractModel::add_tracts(std::vector<std::vector<float> >& new_tract, unsigne
 void TractModel::get_density_map(tipl::image<3,unsigned int>& mapping,
                                  const tipl::matrix<4,4>& to_t1t2,bool endpoint)
 {
-    tipl::shape<3> s = mapping.shape();
+    tipl::shape<3> s(mapping.shape());
     std::vector<tipl::image<3,unsigned int> > maps(std::thread::hardware_concurrency());
+    bool is_identity = (to_t1t2 == tipl::matrix<4,4>(tipl::identity_matrix()));
     tipl::adaptive_par_for<tipl::sequential_with_id>(tract_data.size(),[&](unsigned int i,unsigned int id)
     {
         auto& m = maps[id];
         if(m.empty())
             m.resize(s);
         std::unordered_set<size_t> point_set;
-        for (unsigned int j = 0;j < tract_data[i].size();j+=3)
+        const auto& tract = tract_data[i];
+        for (unsigned int j = 0;j < tract.size();j+=3)
         {
             if(j && endpoint)
-                j = uint32_t(tract_data[i].size())-3;
-            tipl::vector<3,float> pos(tract_data[i].begin()+j);
-            pos.to(to_t1t2);
+                j = uint32_t(tract.size())-3;
+            tipl::vector<3> pos(tract.data()+j);
+            if(!is_identity)
+                pos.to(to_t1t2);
             pos.round();
             tipl::vector<3,int> ipos(pos);
             if (s.is_valid(ipos))
