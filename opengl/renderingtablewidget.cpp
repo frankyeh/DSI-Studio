@@ -588,20 +588,31 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
         cur_tracking_window.ui->roi_fiber->setChecked(cur_node->value.toBool());
         return;
     }
-    if(cur_node->id == "tract_color_metrics")
+    if(cur_node->id == "tract_color_metrics" || cur_node->id == "region_color_metrics")
     {
         size_t item_index = cur_node->value.toInt();
-        if(item_index >= cur_tracking_window.handle->slices.size())
-            return;
-        cur_tracking_window.handle->slices[item_index]->get_minmax();
-        float min = cur_tracking_window.handle->slices[item_index]->min_value;
-        float max = cur_tracking_window.handle->slices[item_index]->max_value;
-        setMinMax("tract_color_min_value",min,max,(max-min)/20);
-        setMinMax("tract_color_max_value",min,max,(max-min)/20);
-        setData("tract_color_min_value",min);
-        setData("tract_color_max_value",max);
-        cur_tracking_window.glWidget->update();
-        return;
+        float min_v = 0.0f,max_v = 1.0f;
+        if(item_index < cur_tracking_window.handle->slices.size())
+        {
+            cur_tracking_window.handle->slices[item_index]->get_minmax();
+            min_v = cur_tracking_window.handle->slices[item_index]->min_value;
+            max_v = cur_tracking_window.handle->slices[item_index]->max_value;
+        }
+        if(cur_node->id == "tract_color_metrics")
+        {
+            setMinMax("tract_color_min_value",min_v,max_v,(max_v-min_v)/20);
+            setMinMax("tract_color_max_value",min_v,max_v,(max_v-min_v)/20);
+            setData("tract_color_min_value",min_v);
+            setData("tract_color_max_value",max_v);
+        }
+        else
+        {
+            setMinMax("region_color_min_value",min_v,max_v,(max_v-min_v)/20);
+            setMinMax("region_color_max_value",min_v,max_v,(max_v-min_v)/20);
+            setData("region_color_min_value",min_v);
+            setData("region_color_max_value",max_v);
+            cur_tracking_window.regionWidget->color_map_values.clear();
+        }
     }
 
     if(cur_node->id == "fa_threshold" ||
