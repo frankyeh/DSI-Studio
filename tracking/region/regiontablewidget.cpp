@@ -1,4 +1,5 @@
 #include <regex>
+#include <cmath>
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QContextMenuEvent>
@@ -305,7 +306,6 @@ void RegionTableWidget::update_color_map(void)
     {
         QString filename = QCoreApplication::applicationDirPath()+"/color_map/"+
                 cur_tracking_window.renderWidget->getListValue("region_color_map")+".txt";
-        color_map.load_from_file(filename.toStdString().c_str());
         color_map_rgb.load_from_file(filename.toStdString().c_str());
         cur_tracking_window.glWidget->region_color_bar.load_from_file(filename.toStdString().c_str());
     }
@@ -314,12 +314,43 @@ void RegionTableWidget::update_color_map(void)
         tipl::rgb from_color(uint32_t(cur_tracking_window["region_color_min"].toUInt()));
         tipl::rgb to_color(uint32_t(cur_tracking_window["region_color_max"].toUInt()));
         cur_tracking_window.glWidget->region_color_bar.two_color(from_color,to_color);
-        std::swap(from_color.r,from_color.b);
-        std::swap(to_color.r,to_color.b);
-        color_map.two_color(from_color,to_color);
         color_map_rgb.two_color(from_color,to_color);
     }
     cur_tracking_window.glWidget->region_color_bar_pos = {10,10};
+}
+tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
+{
+    if(index >= regions.size())
+        return tipl::rgb(0xFFFFFFFF);
+    auto region_color_style = cur_tracking_window["region_color_style"].toInt();
+    if(region_color_style == 0) // assigned color
+        return regions[index]->region_render->color;
+    if(color_map_values.size() != regions.size())
+        color_map_values.clear();
+    color_map_values.resize(regions.size(),std::nanf(""));
+    if(std::isnan(color_map_values[index]))
+    {
+        auto metric_index = cur_tracking_window["region_color_metrics"].toInt();
+        float mean,max_v,min_v;
+        regions[index]->get_quantitative_data(cur_tracking_window.handle->slices[metric_index],mean,max_v,min_v);
+        switch(region_color_style)
+        {
+        case 1:
+            color_map_values[index] = mean;
+            break;
+        case 2:
+            color_map_values[index] = max_v;
+            break;
+        case 3:
+            color_map_values[index] = min_v;
+            break;
+        }
+    }
+    auto color_min = cur_tracking_window["region_color_min_value"].toFloat();
+    auto color_r = cur_tracking_window["region_color_max_value"].toFloat()-color_min;
+    auto c = color_map_rgb.value2color(color_map_values[index],color_min,color_r);
+    c.a = 255;
+    return c;
 }
 
 bool RegionTableWidget::command(QString cmd,QString param,QString)
