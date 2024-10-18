@@ -3397,6 +3397,78 @@ void TractModel::run_clustering(unsigned char method_id,unsigned int cluster_cou
     }
 }
 
+bool Parcellation::load_from_atlas(std::string atlas_name)
+{
+    name = atlas_name;
+    tipl::out() << "load built-in atlas " << atlas_name << std::endl;
+    if(!handle->get_atlas_all_roi(handle->get_atlas(atlas_name),
+                                  handle->dim,tipl::matrix<4,4>(tipl::identity_matrix()),points,labels))
+    {
+        error_msg = handle->error_msg;
+        return false;
+    }
+    return true;
+}
+void Parcellation::load_from_regions(const std::vector<std::shared_ptr<ROIRegion> >& regions)
+{
+    for(auto each : regions)
+    {
+        points.push_back(each->to_space(handle->dim));
+        labels.push_back(each->name);
+    }
+}
+
+std::vector<float> Parcellation::get_t2r_values(std::shared_ptr<TractModel> tract) const
+{
+    tipl::image<3,unsigned int> tract_map(handle->dim);
+    tract->get_density_map(tract_map,tipl::matrix<4,4>(tipl::identity_matrix()),false);
+    unsigned int t = tipl::max_value(tract_map)*0.005f;
+    std::vector<float> values(points.size());
+    tipl::adaptive_par_for(points.size(),[&](unsigned int j)
+    {
+        if(points[j].empty())
+            return;
+        size_t sum = 0;
+        for(const auto& each : points[j])
+        {
+            size_t index = tipl::voxel2index(each.begin(),tract_map.shape());
+            if(index < tract_map.size() && tract_map[index] > t)
+                ++sum;
+        }
+        values[j] = float(sum)/float(points[j].size());
+    });
+    return values;
+}
+std::string Parcellation::get_t2r(const std::vector<std::shared_ptr<TractModel> >& tracts) const
+{
+    std::vector<std::string> lines(tracts.size());
+    for(size_t i = 0;i < tracts.size();++i)
+    {
+        lines[i] += tracts[i]->name;
+        for(auto each : get_t2r_values(tracts[i]))
+            lines[i] += "\t"+std::to_string(each);
+    }
+    std::ostringstream out;
+    out << "Name";
+    for(auto each : labels)
+        out << "\t" << each;
+    out << std::endl;
+
+    for(const auto& each : lines)
+        out << each << std::endl;
+    return out.str();
+}
+bool Parcellation::save_t2r(const std::string& filename,const std::vector<std::shared_ptr<TractModel> >& tracts) const
+{
+    std::ofstream out(filename);
+    if(!out)
+    {
+        error_msg = "cannot write output to " + filename;
+        return false;
+    }
+    out << get_t2r(tracts);
+}
+
 void ConnectivityMatrix::save_to_image(tipl::color_image& cm)
 {
     if(matrix_value.empty())
@@ -3464,16 +3536,15 @@ void ConnectivityMatrix::save_to_connectogram(const char* file_name)
     }
 }
 
-void ConnectivityMatrix::set_regions(const tipl::shape<3>& geo,
-                                     const std::vector<std::vector<tipl::vector<3,short> > >& points,
-                                     const std::vector<std::string>& labels)
+void ConnectivityMatrix::set_parcellation(const Parcellation& p)
 {
-    region_count = points.size();
-    region_name = labels;
+    auto geo = p.handle->dim;
+    region_count = p.points.size();
+    region_name = p.labels;
     region_map.clear();
     region_map.resize(geo);
-    for(size_t roi = 0;roi < points.size();++roi)
-        for(auto& pos : points[roi])
+    for(size_t roi = 0;roi < p.points.size();++roi)
+        for(auto& pos : p.points[roi])
             if(geo.is_valid(pos))
                 region_map.at(pos).push_back(uint16_t(roi));
     atlas_name = "roi";

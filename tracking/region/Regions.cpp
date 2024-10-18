@@ -386,28 +386,6 @@ tipl::vector<3> ROIRegion::get_pos(void) const
         cm.to(to_diffusion_space);
     return cm;
 }
-float quantify_t2r(const tipl::image<3,unsigned int>& tract_map,
-                 const std::vector<tipl::vector<3,short> >& region,
-                 float threshold)
-{
-    size_t sum = 0;
-    if(region.empty() || tract_map.empty())
-        return 0.0f;
-    unsigned int t = tipl::max_value(tract_map)*threshold;
-    for(const auto& each : region)
-    {
-        size_t index = tipl::voxel2index(each.begin(),tract_map.shape());
-        if(index < tract_map.size() && tract_map[index] > t)
-            ++sum;
-    }
-    return float(sum)/float(region.size());
-}
-float ROIRegion::get_t2r(const tipl::image<3,unsigned int>& tract_map,float threshold)
-{
-    if(is_diffusion_space)
-        return quantify_t2r(tract_map,region,threshold);
-    return quantify_t2r(tract_map,to_space(tract_map.shape()),threshold);
-}
 void ROIRegion::get_quantitative_data(std::shared_ptr<slice_model> slice,float& mean,float& max_v,float& min_v)
 {
     auto I = slice->get_image();

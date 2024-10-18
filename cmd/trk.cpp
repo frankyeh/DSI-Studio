@@ -246,71 +246,62 @@ bool load_nii(tipl::program_option<tipl::out>& po,
               std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<std::shared_ptr<ROIRegion> >& regions);
-void get_tract2region_connectome(std::shared_ptr<fib_data> handle,
-                                 const std::vector<std::vector<tipl::vector<3,short> > >& regions,
-                                 const std::vector<std::shared_ptr<TractModel> >& tracts,
-                                 std::string& result);
+bool get_parcellation(tipl::program_option<tipl::out>& po,Parcellation& p,std::string connectivity)
+{
+    for(auto roi_file_name : tipl::split(connectivity,'+'))
+    {
+        if(!tipl::contains(roi_file_name,".")) // specify atlas name (e.g. --connectivity=AAL2)
+        {
+            if(!p.load_from_atlas(roi_file_name))
+            {
+                tipl::error() << p.error_msg << std::endl;
+                return false;
+            }
+        }
+        else
+        {
+            std::vector<std::shared_ptr<ROIRegion> > regions;
+            tipl::out() << "opening " << roi_file_name << std::endl;
+            if(!load_nii(po,p.handle,roi_file_name,regions)) // specify atlas file (e.g. --connectivity=subject_file.nii.gz)
+                return false;
+            p.load_from_regions(regions);
+        }
+        if(p.name.empty())
+            p.name = (std::filesystem::exists(roi_file_name)) ?
+                        std::filesystem::path(roi_file_name).stem().string():roi_file_name;
+
+    }
+    return true;
+}
 bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                              std::shared_ptr<fib_data> handle,
                              std::string output_name,
                              std::shared_ptr<TractModel> tract_model)
 {
-    QStringList connectivity_list1 = QString(po.get("connectivity").c_str()).split(",");
-    QStringList connectivity_type_list = QString(po.get("connectivity_type","pass").c_str()).split(",");
-    QStringList connectivity_value_list = QString(po.get("connectivity_value","count").c_str()).split(",");
-    std::string connectivity_output = po.get("connectivity_output","matrix,connectogram,measure");
-    for(int i = 0;i < connectivity_list1.size();++i)
+
+    for(auto each : tipl::split(po.get("connectivity"),','))
     {
-        std::vector<std::vector<tipl::vector<3,short> > > points;
-        std::vector<std::string> names;
-
-        QStringList connectivity_list2 = connectivity_list1[i].split("+");
-        std::string connectivity_roi = connectivity_list2[0].toStdString();
-        std::string roi_name = (std::filesystem::exists(connectivity_roi)) ? QFileInfo(connectivity_roi.c_str()).baseName().toStdString():connectivity_roi;
-        for(int j = 0;j < connectivity_list2.size();++j)
-        {
-            auto roi_file_name = connectivity_list2[j].toStdString();
-
-            if(!QString(roi_file_name.c_str()).contains(".")) // specify atlas name (e.g. --connectivity=AAL2)
-            {
-                tipl::out() << "looking for built-in atlas " << roi_file_name << std::endl;
-                if(!handle->get_atlas_all_roi(handle->get_atlas(roi_file_name),
-                                              handle->dim,tipl::matrix<4,4>(tipl::identity_matrix()),points,names))
-                {
-                    tipl::error() << handle->error_msg << std::endl;
-                    return false;
-                }
-            }
-            else
-            {
-                tipl::out() << "opening " << roi_file_name << std::endl;
-                std::vector<std::shared_ptr<ROIRegion> > regions;
-                if(!load_nii(po,handle,roi_file_name,regions)) // specify atlas file (e.g. --connectivity=subject_file.nii.gz)
-                    return false;
-                for(auto each : regions)
-                {
-                    points.push_back(each->to_space(handle->dim));
-                    names.push_back(each->name);
-                }
-            }
-        }
+        Parcellation p(handle);
+        if(!get_parcellation(po,p,each))
+            return false;
 
         if(po.has("track_id"))
         {
-            std::string file_name_stat(output_name + "." + roi_name + ".tract2region.txt");
-            tipl::out() << "saving " << file_name_stat << std::endl;
-            std::string result;
-            get_tract2region_connectome(handle,points,std::vector<std::shared_ptr<TractModel> >{tract_model},result);
-            std::ofstream out(file_name_stat);
-            out << "Name";
-            for(auto& each : names)
-                out << "\t" << each;
-            out << std::endl;
-            out << result;
+            auto file_name = output_name + "." + p.name + ".tract2region.txt";
+            tipl::out() << "saving " << file_name;
+            if(!p.save_t2r(file_name,std::vector<std::shared_ptr<TractModel> >{tract_model}))
+            {
+                tipl::error() << p.error_msg;
+                return false;
+            }
         }
 
         ConnectivityMatrix data;
-        data.set_regions(handle->dim,points,names);
+        data.set_parcellation(p);
+
+        QStringList connectivity_type_list = QString(po.get("connectivity_type","pass").c_str()).split(",");
+        QStringList connectivity_value_list = QString(po.get("connectivity_value","count").c_str()).split(",");
+        std::string connectivity_output = po.get("connectivity_output","matrix,connectogram,measure");
 
         for(int j = 0;j < connectivity_type_list.size();++j)
         for(int k = 0;k < connectivity_value_list.size();++k)
@@ -334,7 +325,7 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                 continue;
             }
 
-            std::string file_name_stat(output_name + "." + roi_name + "." + connectivity_value);
+            std::string file_name_stat(output_name + "." + p.name + "." + connectivity_value);
             file_name_stat += use_end_only ? ".end":".pass";
 
             if(connectivity_output.find("matrix") != std::string::npos)
@@ -694,12 +685,12 @@ void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_threa
 
     tracking_thread.param.random_seed = uint8_t(po.get("random_seed",int(tracking_thread.param.random_seed)));
     tracking_thread.param.tracking_method = uint8_t(po.get("method",int(tracking_thread.param.tracking_method)));
-    tracking_thread.param.check_ending = uint8_t(po.get("check_ending",int(0))) && !(po.has("dt_metric1"));
+    tracking_thread.param.check_ending = uint8_t(po.get("check_ending",po.has("track_id") ? 1 : 0)) && !(po.has("dt_metric1"));
     tracking_thread.param.tip_iteration = uint8_t(po.get("tip_iteration", (po.has("track_id") | po.has("dt_metric1") ) ? 16 : 0));
 
-    if (po.has("fiber_count"))
+    if (po.has("fiber_count") || po.has("track_id"))
     {
-        tracking_thread.param.termination_count = po.get("fiber_count",uint32_t(tracking_thread.param.termination_count));
+        tracking_thread.param.termination_count = po.get("fiber_count",10000);
         tracking_thread.param.stop_by_tract = 1;
         tracking_thread.param.max_seed_count = po.get("seed_count",uint32_t(tracking_thread.param.max_seed_count));
     }

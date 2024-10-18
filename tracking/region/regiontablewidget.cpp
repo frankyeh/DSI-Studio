@@ -322,8 +322,7 @@ tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
 {
     if(index >= regions.size())
         return tipl::rgb(0xFFFFFFFF);
-    auto region_color_style = cur_tracking_window["region_color_style"].toInt();
-    if(region_color_style == 0) // assigned color
+    if(cur_tracking_window["region_color_style"].toInt() == 0) // assigned color
         return regions[index]->region_render->color;
     if(color_map_values.size() != regions.size())
         color_map_values.clear();
@@ -338,18 +337,7 @@ tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
             {
                 float mean,max_v,min_v;
                 regions[index]->get_quantitative_data(cur_tracking_window.handle->slices[metric_index],mean,max_v,min_v);
-                switch(region_color_style)
-                {
-                case 1:
-                    color_map_values[index] = mean;
-                    break;
-                case 2:
-                    color_map_values[index] = max_v;
-                    break;
-                case 3:
-                    color_map_values[index] = min_v;
-                    break;
-                }
+                color_map_values[index] = mean;
             }
         }
         else // compute tract-region interscept
@@ -365,15 +353,11 @@ tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
                                 ((tract->get_tracts().back().size()+3) & 255);
                     if(id != tract_map_id)
                     {
-                        tract_map.clear();
-                        tract_map.resize(cur_tracking_window.handle->dim);
-                        tract->get_density_map(tract_map,tipl::matrix<4,4>(tipl::identity_matrix()),false);
                         tract_map_id = id;
-                        color_map_values.clear();
-                        color_map_values.resize(regions.size(),std::nanf(""));
+                        Parcellation p(cur_tracking_window.handle);
+                        p.load_from_regions(regions);
+                        color_map_values = p.get_t2r_values(tract);
                     }
-                    if(std::isnan(color_map_values[index]))
-                        color_map_values[index] = regions[index]->get_t2r(tract_map);
                 }
             }
         }
@@ -1403,34 +1387,6 @@ void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<s
     }
     result = out.str();
 }
-float quantify_t2r(const tipl::image<3,unsigned int>& tract_map,
-                 const std::vector<tipl::vector<3,short> >& region,
-                 float threshold);
-void get_tract2region_connectome(std::shared_ptr<fib_data> handle,
-                                 const std::vector<std::vector<tipl::vector<3,short> > >& regions,
-                                 const std::vector<std::shared_ptr<TractModel> >& tracts,
-                                 std::string& result)
-{
-    std::vector<std::string> lines(tracts.size());
-    for(size_t i = 0;i < tracts.size();++i)
-    {
-        tipl::image<3,unsigned int> tract_map(handle->dim);
-        tracts[i]->get_density_map(tract_map,tipl::matrix<4,4>(tipl::identity_matrix()),false);
-
-        std::vector<float> values(regions.size());
-        tipl::adaptive_par_for(regions.size(),[&](unsigned int j)
-        {
-            values[j] = quantify_t2r(tract_map,regions[j],0.005f);
-        });
-        lines[i] += tracts[i]->name;
-        for(auto each : values)
-            lines[i] += "\t"+std::to_string(each);
-    }
-    std::ostringstream out;
-    for(const auto& each : lines)
-        out << each << std::endl;
-    result = out.str();
-}
 void show_info_dialog(const std::string& title,const std::string& result);
 void RegionTableWidget::show_statistics(void)
 {
@@ -1452,21 +1408,9 @@ void RegionTableWidget::show_t2r(void)
         QMessageBox::critical(this,"ERROR",cur_tracking_window.tractWidget->tract_models.empty() ? "Please generate tracts first" : "No checked tracts");
         return;
     }
-
-    std::vector<std::vector<tipl::vector<3,short> > > points;
-    for(auto each : regions)
-        points.push_back(each->to_space(cur_tracking_window.handle->dim));
-
-    std::string result;
-    get_tract2region_connectome(cur_tracking_window.handle,points,tracts,result);
-
-    std::ostringstream out;
-    out << "Name";
-    for(auto each : regions)
-        out << "\t" << each->name;
-    out << std::endl;
-    out << result;
-    show_info_dialog("Tract-To-Region Connectome",out.str());
+    Parcellation p(cur_tracking_window.handle);
+    p.load_from_regions(regions);
+    show_info_dialog("Tract-To-Region Connectome",p.get_t2r(tracts));
 }
 
 void RegionTableWidget::whole_brain(void)

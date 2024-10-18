@@ -51,7 +51,6 @@ private:
 public:
     tipl::color_map_rgb color_map_rgb;
     std::vector<float> color_map_values;
-    tipl::image<3,unsigned int> tract_map;
     size_t tract_map_id = 0;
     void update_color_map(void);
     tipl::rgb get_region_rendering_color(size_t index);

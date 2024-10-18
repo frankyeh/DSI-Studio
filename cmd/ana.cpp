@@ -173,6 +173,7 @@ void get_track_statistics(std::shared_ptr<fib_data> handle,
                           const std::vector<std::shared_ptr<TractModel> >& tract_models,
                           const std::vector<std::string>& track_name,
                           std::string& result);
+bool get_parcellation(tipl::program_option<tipl::out>& po,Parcellation& p,std::string connectivity);
 int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 {
     std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
@@ -210,9 +211,14 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
     if(tracts.size() == 1 && !tracts[0]->tract_cluster.empty())
     {
         tipl::out() << "loading cluster information";
+        if(std::filesystem::exists(tract_files[0]+".txt"))
+        {
+            std::ifstream in(tract_files[0]+".txt");
+            tract_name = std::vector<std::string>((std::istream_iterator<std::string>(in)),(std::istream_iterator<std::string>()));
+        }
         tracts = TractModel::separate_tracts(tracts[0],tracts[0]->tract_cluster,tract_name);
-        if(!po.has("name") && !std::filesystem::exists(tract_files[0]+".txt"))
-            tipl::warning() << "please use --name to specify the text file storing tract names";
+        if(tracts.size() > 1 && !std::filesystem::exists(tract_files[0]+".txt"))
+            tipl::warning() << "cannot find label file: " << tract_files[0] << ".txt";
         tipl::out() << "cluster count: " << tracts.size();
 
     }
@@ -291,8 +297,23 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
             }
         }
 
+        if(po.has("connectivity"))
+        {
+            for(auto each : tipl::split(po.get("connectivity"),','))
+            {
+                Parcellation p(handle);
+                if(!get_parcellation(po,p,each))
+                    return false;
+                tipl::out() << "saving " << p.name + ".t2r.txt";
+                if(!p.save_t2r(p.name + ".t2r.txt",tracts))
+                {
+                    tipl::error() << p.error_msg;
+                    return false;
+                }
+            }
+        }
 
-        if(po.get("export") == "stat")
+        if(po.has("export"))
         {
             std::string result,file_name_stat("stat.txt");
             get_track_statistics(handle,tracts,tract_name,result);

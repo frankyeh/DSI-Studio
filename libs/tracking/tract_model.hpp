@@ -249,6 +249,23 @@ public:
 
 class atlas;
 class ROIRegion;
+struct Parcellation{
+public:
+    std::shared_ptr<fib_data> handle;
+    std::vector<std::vector<tipl::vector<3,short> > > points;
+    std::vector<std::string> labels;
+    std::string name;
+public:
+    mutable std::string error_msg;
+public:
+    Parcellation(std::shared_ptr<fib_data> handle_):handle(handle_){}
+    bool load_from_atlas(std::string atlas_name);
+    void load_from_regions(const std::vector<std::shared_ptr<ROIRegion> >& regions);
+    std::vector<float> get_t2r_values(std::shared_ptr<TractModel> tract) const;
+    std::string get_t2r(const std::vector<std::shared_ptr<TractModel> >& tracts) const;
+    bool save_t2r(const std::string& filename,const std::vector<std::shared_ptr<TractModel> >& tracts) const;
+};
+
 class ConnectivityMatrix{
 public:
 
@@ -258,9 +275,7 @@ public:
     size_t region_count = 0;
     std::vector<std::string> region_name;
     std::string error_msg,atlas_name;
-    void set_regions(const tipl::shape<3>& geo,
-                     const std::vector<std::vector<tipl::vector<3,short> > >& points,
-                     const std::vector<std::string>& labels);
+    void set_parcellation(const Parcellation& p);
 
 public:
     void save_to_image(tipl::color_image& cm);
