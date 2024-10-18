@@ -331,7 +331,10 @@ bool tracking_window::command(QString cmd,QString param,QString param2)
         renderWidget->setDefault("Region_color");
         renderWidget->setDefault("Region_graph");
         tractWidget->update_color_map();
+        regionWidget->update_color_map();
+        regionWidget->color_map_values.clear();
         tractWidget->need_update_all();
+        slice_need_update = true;
         glWidget->update();
         return true;
     }
