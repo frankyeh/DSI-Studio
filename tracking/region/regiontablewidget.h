@@ -49,9 +49,10 @@ private:
         }
     }
 public:
-    tipl::color_map color_map;
     tipl::color_map_rgb color_map_rgb;
+    std::vector<float> color_map_values;
     void update_color_map(void);
+    tipl::rgb get_region_rendering_color(size_t index);
 public:
     std::vector<std::shared_ptr<ROIRegion> > get_checked_regions(void)
     {
