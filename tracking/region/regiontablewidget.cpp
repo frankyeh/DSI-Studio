@@ -373,7 +373,7 @@ tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
                         color_map_values.resize(regions.size(),std::nanf(""));
                     }
                     if(std::isnan(color_map_values[index]))
-                        color_map_values[index] = regions[index]->get_coverage_rate(tract_map);
+                        color_map_values[index] = regions[index]->get_t2r(tract_map);
                 }
             }
         }
@@ -1348,8 +1348,7 @@ void RegionTableWidget::save_region_info(void)
         if(!each->optional())
             each->get_image();
     out << std::endl;
-    for(auto& point : regions[currentRow()]->to_space(
-            cur_tracking_window.handle->dim,tipl::matrix<4,4>(tipl::identity_matrix())))
+    for(auto& point : regions[currentRow()]->to_space(cur_tracking_window.handle->dim))
     {
         std::vector<float> data;
         cur_tracking_window.handle->get_voxel_info2(point[0],point[1],point[2],data);
@@ -1387,51 +1386,87 @@ void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<s
         regions[index]->get_quantitative_data(handle,(index == 0) ? titles : dummy,data[index]);
     });
     std::ostringstream out;
-    out << "Name\t";
+    out << "Name";
     for(auto each : regions)
-        out << each->name << "\t";
+        out << "\t" << each->name;
     out << std::endl;
     for(unsigned int i = 0;i < titles.size();++i)
     {
-        out << titles[i] << "\t";
+        out << titles[i];
         for(unsigned int j = 0;j < regions.size();++j)
         {
+            out << "\t";
             if(i < data[j].size())
                 out << data[j][i];
-            out << "\t";
         }
         out << std::endl;
     }
     result = out.str();
 }
+float quantify_t2r(const tipl::image<3,unsigned int>& tract_map,
+                 const std::vector<tipl::vector<3,short> >& region,
+                 float threshold);
+void get_tract2region_connectome(std::shared_ptr<fib_data> handle,
+                                 const std::vector<std::vector<tipl::vector<3,short> > >& regions,
+                                 const std::vector<std::shared_ptr<TractModel> >& tracts,
+                                 std::string& result)
+{
+    std::vector<std::string> lines(tracts.size());
+    for(size_t i = 0;i < tracts.size();++i)
+    {
+        tipl::image<3,unsigned int> tract_map(handle->dim);
+        tracts[i]->get_density_map(tract_map,tipl::matrix<4,4>(tipl::identity_matrix()),false);
 
+        std::vector<float> values(regions.size());
+        tipl::adaptive_par_for(regions.size(),[&](unsigned int j)
+        {
+            values[j] = quantify_t2r(tract_map,regions[j],0.005f);
+        });
+        lines[i] += tracts[i]->name;
+        for(auto each : values)
+            lines[i] += "\t"+std::to_string(each);
+    }
+    std::ostringstream out;
+    for(const auto& each : lines)
+        out << each << std::endl;
+    result = out.str();
+}
+void show_info_dialog(const std::string& title,const std::string& result);
 void RegionTableWidget::show_statistics(void)
 {
-    if(currentRow() >= regions.size() || regions.empty())
+    auto regions = get_checked_regions();
+    if(regions.empty())
         return;
     std::string result;
-    get_regions_statistics(cur_tracking_window.handle,get_checked_regions(),result);
-    QMessageBox msgBox;
-    msgBox.setText("Region Statistics");
-    msgBox.setDetailedText(result.c_str());
-    msgBox.setStandardButtons(QMessageBox::Ok|QMessageBox::Save);
-    msgBox.setDefaultButton(QMessageBox::Ok);
-    QPushButton *copyButton = msgBox.addButton("Copy To Clipboard", QMessageBox::ActionRole);
-
-
-    if(msgBox.exec() == QMessageBox::Save)
+    get_regions_statistics(cur_tracking_window.handle,regions,result);
+    show_info_dialog("Region Statistics",result);
+}
+void RegionTableWidget::show_t2r(void)
+{
+    auto regions = get_checked_regions();
+    if(regions.empty())
+        return;
+    auto tracts = cur_tracking_window.tractWidget->get_checked_tracks();
+    if(tracts.empty())
     {
-        QString filename;
-        filename = QFileDialog::getSaveFileName(
-                    this,"Save statistics as",QString(regions[currentRow()]->name.c_str()) + "_stat.txt",
-                    "Text files (*.txt);;All files|(*)");
-        if(filename.isEmpty())
-            return;
-        std::ofstream out(filename.toStdString().c_str());
-        out << result.c_str();
+        QMessageBox::critical(this,"ERROR",cur_tracking_window.tractWidget->tract_models.empty() ? "Please generate tracts first" : "No checked tracts");
+        return;
     }
-    if (msgBox.clickedButton() == copyButton)
-        QApplication::clipboard()->setText(result.c_str());
+
+    std::vector<std::vector<tipl::vector<3,short> > > points;
+    for(auto each : regions)
+        points.push_back(each->to_space(cur_tracking_window.handle->dim));
+
+    std::string result;
+    get_tract2region_connectome(cur_tracking_window.handle,points,tracts,result);
+
+    std::ostringstream out;
+    out << "Name";
+    for(auto each : regions)
+        out << "\t" << each->name;
+    out << std::endl;
+    out << result;
+    show_info_dialog("Tract-To-Region Connectome",out.str());
 }
 
 void RegionTableWidget::whole_brain(void)

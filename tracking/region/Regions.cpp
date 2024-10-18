@@ -47,6 +47,16 @@ std::vector<tipl::vector<3,short> > ROIRegion::to_space(
     save_region_to_buffer(mask,dim_to,trans_to);
     return tipl::volume2points(mask);
 }
+// ---------------------------------------------------------------------------
+
+std::vector<tipl::vector<3,short> > ROIRegion::to_space(const tipl::shape<3>& dim_to) const
+{
+    if(dim == dim_to && is_diffusion_space)
+        return region;
+    tipl::image<3,unsigned char> mask;
+    save_region_to_buffer(mask,dim_to,tipl::matrix<4,4>(tipl::identity_matrix()));
+    return tipl::volume2points(mask);
+}
 
 // ---------------------------------------------------------------------------
 void ROIRegion::add_points(std::vector<tipl::vector<3,short> >&& points, bool del)
@@ -376,23 +386,27 @@ tipl::vector<3> ROIRegion::get_pos(void) const
         cm.to(to_diffusion_space);
     return cm;
 }
-float ROIRegion::get_coverage_rate(const tipl::image<3,unsigned int>& values,float threshold)
+float quantify_t2r(const tipl::image<3,unsigned int>& tract_map,
+                 const std::vector<tipl::vector<3,short> >& region,
+                 float threshold)
 {
     size_t sum = 0;
-    if(region.empty())
+    if(region.empty() || tract_map.empty())
         return 0.0f;
-    unsigned int t = tipl::max_value(values)*threshold;
+    unsigned int t = tipl::max_value(tract_map)*threshold;
     for(const auto& each : region)
     {
-        tipl::vector<3> pos(each);
-        if(!is_diffusion_space)
-            pos.to(to_diffusion_space);
-        pos.round();
-        size_t index = tipl::voxel2index(pos.begin(),values.shape());
-        if(index < values.size() && values[index] > t)
+        size_t index = tipl::voxel2index(each.begin(),tract_map.shape());
+        if(index < tract_map.size() && tract_map[index] > t)
             ++sum;
     }
     return float(sum)/float(region.size());
+}
+float ROIRegion::get_t2r(const tipl::image<3,unsigned int>& tract_map,float threshold)
+{
+    if(is_diffusion_space)
+        return quantify_t2r(tract_map,region,threshold);
+    return quantify_t2r(tract_map,to_space(tract_map.shape()),threshold);
 }
 void ROIRegion::get_quantitative_data(std::shared_ptr<slice_model> slice,float& mean,float& max_v,float& min_v)
 {

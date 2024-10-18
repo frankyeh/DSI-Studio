@@ -99,6 +99,7 @@ public:
         void new_from_mni_sphere(std::shared_ptr<fib_data> handle,tipl::vector<3> mni,float radius);
         std::vector<tipl::vector<3,short> > to_space(const tipl::shape<3>& dim_to,
                                                      const tipl::matrix<4,4>& trans_to) const;
+        std::vector<tipl::vector<3,short> > to_space(const tipl::shape<3>& dim_to) const;
         void add_points(std::vector<tipl::vector<3,float> >&& points,bool del = false);
         void add_points(std::vector<tipl::vector<3,short> >&& points,bool del = false);
         void undo(void)
@@ -153,7 +154,7 @@ public:
     public:
         float get_volume(void) const;
         tipl::vector<3> get_pos(void) const;
-        float get_coverage_rate(const tipl::image<3,unsigned int>& values,float threshold = 0.005f);
+        float get_t2r(const tipl::image<3,unsigned int>& values,float threshold = 0.005f);
         void get_quantitative_data(std::shared_ptr<slice_model> slice,float& mean,float& max_v,float& min_v);
         void get_quantitative_data(std::shared_ptr<fib_data> handle,std::vector<std::string>& titles,std::vector<float>& data);
 };

@@ -901,6 +901,8 @@
     <addaction name="actionCheck_all_regions"/>
     <addaction name="actionUnckech_all_regions"/>
     <addaction name="separator"/>
+    <addaction name="actionMerge_All_2"/>
+    <addaction name="separator"/>
     <addaction name="actionDeleteRegion"/>
     <addaction name="actionDeleteRegionAll"/>
     <addaction name="separator"/>
@@ -908,9 +910,8 @@
     <addaction name="actionUndo_Edit"/>
     <addaction name="actionRedo_Edit"/>
     <addaction name="separator"/>
-    <addaction name="actionMerge_All_2"/>
     <addaction name="actionRegion_statistics"/>
-    <addaction name="separator"/>
+    <addaction name="actionTract_To_Region_Connectome"/>
    </widget>
    <widget class="QMenu" name="menuTracts">
     <property name="title">
@@ -4250,6 +4251,15 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Save FIB As...</string>
+   </property>
+  </action>
+  <action name="actionTract_To_Region_Connectome">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/stat.xpm</normaloff>:/icons/icons/stat.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Tract-To-Region Connectome...</string>
    </property>
   </action>
  </widget>

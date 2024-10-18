@@ -246,7 +246,10 @@ bool load_nii(tipl::program_option<tipl::out>& po,
               std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<std::shared_ptr<ROIRegion> >& regions);
-
+void get_tract2region_connectome(std::shared_ptr<fib_data> handle,
+                                 const std::vector<std::vector<tipl::vector<3,short> > >& regions,
+                                 const std::vector<std::shared_ptr<TractModel> >& tracts,
+                                 std::string& result);
 bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                              std::shared_ptr<fib_data> handle,
                              std::string output_name,
@@ -262,6 +265,8 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
         std::vector<std::string> names;
 
         QStringList connectivity_list2 = connectivity_list1[i].split("+");
+        std::string connectivity_roi = connectivity_list2[0].toStdString();
+        std::string roi_name = (std::filesystem::exists(connectivity_roi)) ? QFileInfo(connectivity_roi.c_str()).baseName().toStdString():connectivity_roi;
         for(int j = 0;j < connectivity_list2.size();++j)
         {
             auto roi_file_name = connectivity_list2[j].toStdString();
@@ -284,10 +289,24 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                     return false;
                 for(auto each : regions)
                 {
-                    points.push_back(each->to_space(handle->dim,tipl::matrix<4,4>(tipl::identity_matrix())));
+                    points.push_back(each->to_space(handle->dim));
                     names.push_back(each->name);
                 }
             }
+        }
+
+        if(po.has("track_id"))
+        {
+            std::string file_name_stat(output_name + "." + roi_name + ".tract2region.txt");
+            tipl::out() << "saving " << file_name_stat << std::endl;
+            std::string result;
+            get_tract2region_connectome(handle,points,std::vector<std::shared_ptr<TractModel> >{tract_model},result);
+            std::ofstream out(file_name_stat);
+            out << "Name";
+            for(auto& each : names)
+                out << "\t" << each;
+            out << std::endl;
+            out << result;
         }
 
         ConnectivityMatrix data;
@@ -296,7 +315,6 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
         for(int j = 0;j < connectivity_type_list.size();++j)
         for(int k = 0;k < connectivity_value_list.size();++k)
         {
-            std::string connectivity_roi = connectivity_list2[0].toStdString();
             std::string connectivity_value = connectivity_value_list[k].toStdString();
             bool use_end_only = connectivity_type_list[j].toLower() == QString("end");
             QDir pwd = QDir::current();
@@ -316,11 +334,7 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                 continue;
             }
 
-            std::string file_name_stat(output_name);
-            file_name_stat += ".";
-            file_name_stat += (std::filesystem::exists(connectivity_roi)) ? QFileInfo(connectivity_roi.c_str()).baseName().toStdString():connectivity_roi;
-            file_name_stat += ".";
-            file_name_stat += connectivity_value;
+            std::string file_name_stat(output_name + "." + roi_name + "." + connectivity_value);
             file_name_stat += use_end_only ? ".end":".pass";
 
             if(connectivity_output.find("matrix") != std::string::npos)
