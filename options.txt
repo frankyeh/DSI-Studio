@@ -85,7 +85,7 @@ Tract/Blend Func1/tract_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:O
 Tract/Blend Func2/tract_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/2
 Region/Region Color/Region_color
 Region_color/Opacity/region_alpha/float:0:1:0.1:2/0.8
-Region_color/Style/region_color_style/Assigned:Averaged Metrics:Maximum Metrics:Minimum Metrics/0
+Region_color/Style/region_color_style/Assigned:Metrics/0
 Region_color/Metrics/region_color_metrics/qa:iso/0
 Region_color/Max Value/region_color_max_value/float:0:1:0.1:2/1.0
 Region_color/Min Value/region_color_min_value/float:0:1:0.1:2/0.0
