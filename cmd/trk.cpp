@@ -690,7 +690,7 @@ void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_threa
 
     if (po.has("fiber_count") || po.has("track_id"))
     {
-        tracking_thread.param.termination_count = po.get("fiber_count",10000);
+        tracking_thread.param.termination_count = po.get("fiber_count",100000);
         tracking_thread.param.stop_by_tract = 1;
         tracking_thread.param.max_seed_count = po.get("seed_count",uint32_t(tracking_thread.param.max_seed_count));
     }
