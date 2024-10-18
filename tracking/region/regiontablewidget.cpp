@@ -330,20 +330,47 @@ tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
     color_map_values.resize(regions.size(),std::nanf(""));
     if(std::isnan(color_map_values[index]))
     {
+        color_map_values[index] = 0.0f;
         auto metric_index = cur_tracking_window["region_color_metrics"].toInt();
-        float mean,max_v,min_v;
-        regions[index]->get_quantitative_data(cur_tracking_window.handle->slices[metric_index],mean,max_v,min_v);
-        switch(region_color_style)
+        if(metric_index < cur_tracking_window.handle->slices.size() &&
+           !cur_tracking_window.handle->slices[metric_index]->optional()) // sample slices values
         {
-        case 1:
-            color_map_values[index] = mean;
-            break;
-        case 2:
-            color_map_values[index] = max_v;
-            break;
-        case 3:
-            color_map_values[index] = min_v;
-            break;
+            float mean,max_v,min_v;
+            regions[index]->get_quantitative_data(cur_tracking_window.handle->slices[metric_index],mean,max_v,min_v);
+            switch(region_color_style)
+            {
+            case 1:
+                color_map_values[index] = mean;
+                break;
+            case 2:
+                color_map_values[index] = max_v;
+                break;
+            case 3:
+                color_map_values[index] = min_v;
+                break;
+            }
+        }
+        else // compute tract-region interscept
+        {
+            int tract_index = cur_tracking_window.tractWidget->currentRow();
+            if(tract_index >= 0 && tract_index < cur_tracking_window.tractWidget->tract_models.size())
+            {
+                auto tract = cur_tracking_window.tractWidget->tract_models[tract_index];
+                if(tract->get_visible_track_count())
+                {
+                    size_t id = size_t((tract_index+1) & 255)*
+                                ((tract->get_visible_track_count()+2) & 255)*
+                                ((tract->get_tracts().back().size()+3) & 255);
+                    if(id != tract_map_id)
+                    {
+                        tract_map.clear();
+                        tract_map.resize(cur_tracking_window.handle->dim);
+                        tract->get_density_map(tract_map,tipl::matrix<4,4>(tipl::identity_matrix()),false);
+                        tract_map_id = id;
+                    }
+                    color_map_values[index] = regions[index]->get_coverage_rate(tract_map);
+                }
+            }
         }
     }
     auto color_min = cur_tracking_window["region_color_min_value"].toFloat();
@@ -1408,11 +1435,7 @@ void RegionTableWidget::whole_brain(void)
     auto fa_map = tipl::make_image(cur_tracking_window.handle->dir.fa[0],cur_tracking_window.handle->dim);
 
     if(cur_slice->is_diffusion_space)
-        tipl::adaptive_par_for(mask.size(),[&](size_t index)
-        {
-            if(fa_map[index] > threshold)
-                mask[index] = 1;
-        });
+        tipl::threshold(fa_map,mask,threshold);
     else
         tipl::adaptive_par_for(tipl::begin_index(mask.shape()),
                       tipl::end_index(mask.shape()),
