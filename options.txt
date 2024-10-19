@@ -64,6 +64,7 @@ Tract_color/Min Value/tract_color_min_value/float:0:1:0.1:2/0.0
 Tract_color/Map/tract_color_map/assigned:files/0
 Tract_color/Max Color/tract_color_max/color/12079178
 Tract_color/Min Color/tract_color_min/color/14465098
+Tract_color/Show Color Bar/tract_show_color_bar/Off:On/1
 Tract/Style/tract_style/Line:Tube:End:End1:End2/1
 Tract/Line Width/tract_line_width/float:1.0:10:0.5:1/3
 Tract/Visible Tracts/tract_visible_tract/int:5000:1000000:5000/25000
@@ -92,6 +93,7 @@ Region_color/Min Value/region_color_min_value/float:0:1:0.1:2/0.0
 Region_color/Map/region_color_map/assigned:files/0
 Region_color/Max Color/region_color_max/color/12079178
 Region_color/Min Color/region_color_min/color/14465098
+Region_color/Show Color Bar/region_show_color_bar/Off:On/1
 Region/Graph Visualization/Region_graph
 Region_graph/Graph/region_graph/Off:On/0
 Region_graph/Node Size/region_node_size/int/4
