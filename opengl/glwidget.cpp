@@ -530,7 +530,7 @@ void GLWidget::paintGL()
             text_painter.setFont(text_font[i]);
             text_painter.drawText(text_pos[i].x(), text_pos[i].y(), text_str[i]);
         }
-        if(get_param("tract_color_style") > 1) // use tract color map
+        if(get_param("tract_color_style") > 1 && get_param("tract_show_color_bar")) // use tract color map
         {
             text_painter.drawText(tract_color_bar_pos[0]+20, tract_color_bar_pos[1]+5, QString::number(cur_tracking_window["tract_color_max_value"].toFloat()));
             text_painter.drawText(tract_color_bar_pos[0]+20, tract_color_bar_pos[1]+256+5, QString::number(cur_tracking_window["tract_color_min_value"].toFloat()));
@@ -540,7 +540,7 @@ void GLWidget::paintGL()
                 region_color_bar_pos[0] += 48;
         }
 
-        if(get_param("region_color_style")) // use region color map
+        if(get_param("region_color_style") && get_param("region_show_color_bar")) // use region color map
         {
             text_painter.drawText(region_color_bar_pos[0]+20, region_color_bar_pos[1]+5, QString::number(cur_tracking_window["region_color_max_value"].toFloat()));
             text_painter.drawText(region_color_bar_pos[0]+20, region_color_bar_pos[1]+256+5, QString::number(cur_tracking_window["region_color_min_value"].toFloat()));
