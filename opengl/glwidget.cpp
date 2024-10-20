@@ -2084,6 +2084,21 @@ void GLWidget::copyToClipboardEach(QTableWidget* widget,unsigned int col_size)
     QMessageBox::information(this,QApplication::applicationName(),"Images captured to clipboard");
 
 }
+QImage GLWidget::getLRView(void)
+{
+    makeCurrent();
+    set_view_flip = false;
+    set_view(0);
+    QImage image0 = grab_image();
+    set_view_flip = true;
+    set_view(0);
+    QImage image1 = grab_image();
+    QImage all(image0.width()*2,image0.height(),QImage::Format_RGB32);
+    QPainter painter(&all);
+    painter.drawImage(0,0,image0);
+    painter.drawImage(image0.width(),0,image1);
+    return all;
+}
 QImage GLWidget::get3View(unsigned int type)
 {
     makeCurrent();
