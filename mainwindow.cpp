@@ -132,14 +132,18 @@ MainWindow::MainWindow(QWidget *parent) :
             layout->addWidget(licenseBrowser);
 
             {
-                auto label = new QLabel(QString("Registering Entity: ") + QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)).dirName() + "," + fnValue + "," + adrValue);
-                label->setWordWrap(true);
-                layout->addWidget(label);
+                QHBoxLayout *h_layout = new QHBoxLayout;
+                h_layout->addWidget(new QLabel("Registering Entity:"));
+                auto line_edit = new QLineEdit(QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)).dirName() + "," + fnValue + "," + adrValue);
+                line_edit->setReadOnly(true);
+                h_layout->addWidget(line_edit);
+                layout->addLayout(h_layout);
+
             }
 
             if(fnValue.contains(" LLC") || fnValue.contains(" L.L.C") || fnValue.contains(" Inc") || fnValue.contains(" INC"))
             {
-                auto notice = new QLabel("This license agreement does not cover commercial use. If using DSI Studio under a commercial entity, please contact frank.yeh@gmail.com to inquire about obtaining a commercial license.");
+                auto notice = new QLabel("This license agreement does not cover commercial use. For commercial entities, please contact frank.yeh@gmail.com to obtain a commercial license.");
                 notice->setWordWrap(true);
                 notice->setStyleSheet("color: red; font-weight: bold;");
                 layout->addWidget(notice);
