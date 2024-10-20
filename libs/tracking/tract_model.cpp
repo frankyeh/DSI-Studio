@@ -3467,6 +3467,7 @@ bool Parcellation::save_t2r(const std::string& filename,const std::vector<std::s
         return false;
     }
     out << get_t2r(tracts);
+    return true;
 }
 
 void ConnectivityMatrix::save_to_image(tipl::color_image& cm)
