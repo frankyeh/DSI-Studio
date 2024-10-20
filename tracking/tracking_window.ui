@@ -1024,6 +1024,7 @@
       <string>Copy to Clipboard</string>
      </property>
      <addaction name="action3D_Screen"/>
+     <addaction name="action3D_Screen_Left_Right_Views"/>
      <addaction name="action3D_Screen_3_Views"/>
      <addaction name="action3D_Screen_3_Views_Horizontal"/>
      <addaction name="action3D_Screen_3_Views_Vertical"/>
@@ -4260,6 +4261,11 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Tract-To-Region Connectome...</string>
+   </property>
+  </action>
+  <action name="action3D_Screen_Left_Right_Views">
+   <property name="text">
+    <string>3D Screen Left/Right Views</string>
    </property>
   </action>
  </widget>
