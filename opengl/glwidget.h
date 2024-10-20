@@ -186,6 +186,7 @@ public:
      enum class view_mode_type { single, two, stereo} view_mode = view_mode_type::single;
 
      bool set_view_flip = false;
+     QImage getLRView(void);
      QImage get3View(unsigned int type);
      QImage grab_image(void){update();return grabFramebuffer();}
      void update_slice(void)
