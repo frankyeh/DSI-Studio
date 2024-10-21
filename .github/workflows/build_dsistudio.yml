@@ -151,6 +151,7 @@ jobs:
     - name: get TIPL and DSI Studio atlas
       run: |
         build_packages\build_win_cpu.bat
+      shell: cmd
     - name: Create Release
       env:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
