@@ -150,12 +150,40 @@ jobs:
         modules: addons.qtcharts
     - name: Build
       run: |
-        call .\build_packages\build_win_cpu.bat
+        call .\build_packages\build_win.bat
+        move dsi_studio_win.zip dsi_studio_win_cpu.zip
       shell: cmd
     - name: Create Release
       env:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
       run: |
         gh release upload ${{ github.event.inputs.tag }} dsi_studio_win_cpu.zip --repo frankyeh/DSI-Studio --clobber
+
+  windows_gpu_build:
+    if: ${{ github.event.inputs.build_windows == 'true' }}
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v4.1.1
+    - name: Download Build
+      run: |
+        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git  
+        move DSI-Studio-Build/*.txt .
+        move DSI-Studio-Build/build_packages .
+    - name: Install Cuda
+      uses: Jimver/cuda-toolkit@v0.2.11
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3.2.1
+      with:
+        version: 6.5.2
+        modules: addons.qtcharts
+    - name: Build
+      run: |
+        call .\build_packages\build_win.bat
+      shell: cmd
+    - name: Create Release
+      env:
+        GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
+      run: |
+        gh release upload ${{ github.event.inputs.tag }} dsi_studio_win.zip --repo frankyeh/DSI-Studio --clobber        
         
           
