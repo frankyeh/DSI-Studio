@@ -54,7 +54,7 @@ jobs:
       with:
         context: .
         build-args: |
-          DSISTUDIO_TOKEN=${{ secrets.DSITUDIO_TOKEN }}        
+          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}        
         file: build_packages/${{ matrix.os }}/Dockerfile
         push: false
         outputs: dsi-studio
