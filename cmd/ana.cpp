@@ -171,7 +171,6 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
 }
 void get_track_statistics(std::shared_ptr<fib_data> handle,
                           const std::vector<std::shared_ptr<TractModel> >& tract_models,
-                          const std::vector<std::string>& track_name,
                           std::string& result);
 bool get_parcellation(tipl::program_option<tipl::out>& po,Parcellation& p,std::string connectivity);
 int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
@@ -196,13 +195,11 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
 
 
     std::vector<std::shared_ptr<TractModel> > tracts;
-    std::vector<std::string> tract_name;
-    for(size_t i = 0;i < tract_files.size();++i)
+    for(const auto& each : tract_files)
     {
         tracts.push_back(std::make_shared<TractModel>(handle));
-        if(!load_tracts(tract_files[i].c_str(),handle,tracts.back(),roi_mgr))
+        if(!load_tracts(each.c_str(),handle,tracts.back(),roi_mgr))
             return 1;
-        tract_name.push_back(std::filesystem::path(tract_files[i]).filename().u8string());
     }
     tipl::out() << "a total of " << tract_files.size() << " tract file(s) loaded" << std::endl;
 
@@ -211,6 +208,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
     if(tracts.size() == 1 && !tracts[0]->tract_cluster.empty())
     {
         tipl::out() << "loading cluster information";
+        std::vector<std::string> tract_name;
         if(std::filesystem::exists(tract_files[0]+".txt"))
         {
             std::ifstream in(tract_files[0]+".txt");
@@ -225,23 +223,16 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
 
     if(po.has("name"))
     {
+        tipl::out() << "open label file: " << po.get("name");
         std::ifstream in(po.get("name"));
         if(!in)
         {
             tipl::error() << "cannot open file:" << po.get("name");
             return 1;
         }
-        tract_name.clear();
         std::string line;
-        while(std::getline(in,line))
-            tract_name.push_back(line);
-        if(tract_name.size() != tracts.size())
-        {
-            tipl::error() << "number of labels does not match: "
-                          << tract_name.size() << " names in " << po.get("name")
-                          << " vs " << tracts.size() << "clusters ";
-            return 1;
-        }
+        for(size_t i = 0;i < tracts.size() && std::getline(in,line);++i)
+            tracts[i]->name = line;
     }
 
     if(tracts.size() > 1)
@@ -289,7 +280,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
                QString(output.c_str()).endsWith(".tt.gz"))
             {
                 tipl::out() << "saving multiple tracts into one file: " << output;
-                if(!TractModel::save_all(output.c_str(),tracts,tract_files))
+                if(!TractModel::save_all(output.c_str(),tracts))
                 {
                     tipl::error() << "cannot write to " << output << std::endl;
                     return 1;
@@ -316,7 +307,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         if(po.has("export"))
         {
             std::string result,file_name_stat("stat.txt");
-            get_track_statistics(handle,tracts,tract_name,result);
+            get_track_statistics(handle,tracts,result);
             tipl::out() << "saving " << file_name_stat;
             std::ofstream out_stat(file_name_stat.c_str());
             if(!out_stat)

@@ -192,7 +192,7 @@ class TinyTrack{
                                std::string& report,std::string& parameter_id,
                                std::vector<unsigned int>& color)
     {
-        tipl::progress prog("opening ",std::filesystem::path(file_name).filename().c_str());
+        tipl::progress prog("opening ",std::filesystem::path(file_name).filename().string());
         tipl::io::gz_mat_read in;
         prepare_idx(file_name,in.in);
         if (!in.load_from_file(file_name))
@@ -675,6 +675,8 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
         color = 0x00F04040;
 
     tipl::matrix<4,4> source_trans_to_mni(trans_to_mni);
+
+    name = std::filesystem::path(file_name).stem().string();
 
     if(QString(file_name_).endsWith("tt.gz"))
     {
@@ -1219,8 +1221,7 @@ std::string TractModel::get_obj(unsigned int& coordinate_count,
 
 //---------------------------------------------------------------------------
 bool TractModel::save_all(const char* file_name,
-                          const std::vector<std::shared_ptr<TractModel> >& all,
-                          const std::vector<std::string>& name_list)
+                          const std::vector<std::shared_ptr<TractModel> >& all)
 {    
     if(all.empty())
         return false;
@@ -1344,8 +1345,8 @@ bool TractModel::save_all(const char* file_name,
         return false;
     // output label file
     std::ofstream out(std::string(file_name)+".txt");
-    for(int i = 0;i < name_list.size();++i)
-        out << name_list[i] << std::endl;
+    for(const auto& each : all)
+        out << each->name << std::endl;
     return true;
 }
 //---------------------------------------------------------------------------

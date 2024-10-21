@@ -34,8 +34,7 @@ public:
         std::vector<unsigned int> tract_cluster;
 public:
         static bool save_all(const char* file_name,
-                             const std::vector<std::shared_ptr<TractModel> >& all,
-                             const std::vector<std::string>& name_list);
+                             const std::vector<std::shared_ptr<TractModel> >& all);
         void select(float select_angle,
                     const std::vector<tipl::vector<3,float> >& dirs,
                     const tipl::vector<3,float>& from_pos,std::vector<unsigned int>& selected);
@@ -48,7 +47,7 @@ public:
 public:
         static auto separate_tracts(std::shared_ptr<TractModel> tract_model,
                         const std::vector<unsigned int>& labels,
-                        std::vector<std::string> name)
+                        const std::vector<std::string>& name)
         {
             std::vector<std::shared_ptr<TractModel> > all;
             if(tract_model->tract_cluster.empty())
@@ -57,7 +56,6 @@ public:
             std::vector<unsigned int> all_tract_color(std::move(tract_model->tract_color));
             tract_model->release_tracts(all_tract);
             all.resize(tipl::max_value(labels) + 1);
-            name.resize(all.size());
             tipl::adaptive_par_for(all.size(),[&](size_t cluster_index)
             {
                 auto fiber_num = std::count(labels.begin(),labels.end(),cluster_index);
@@ -75,7 +73,8 @@ public:
                 all[cluster_index] = std::make_shared<TractModel>(*tract_model.get());
                 all[cluster_index]->add_tracts(tract);
                 all[cluster_index]->tract_color.swap(tract_color);
-                all[cluster_index]->name = name[cluster_index];
+                all[cluster_index]->name = (cluster_index < name.size() && !name[cluster_index].empty() ? name[cluster_index] :
+                                            std::string("cluster") + std::to_string(cluster_index));
             });
             return all;
         }

@@ -1012,9 +1012,14 @@ void TractTableWidget::save_tracts_color_as(void)
     tract_models[uint32_t(currentRow())]->save_tracts_color_to_file(&*sfilename.begin());
 }
 
+void TractTableWidget::cell_changed(int row, int column)
+{
+    if(row >= 0 && row < tract_models.size())
+        tract_models[row]->name = item(int(row),0)->text().toStdString();
+
+}
 void get_track_statistics(std::shared_ptr<fib_data> handle,
                           const std::vector<std::shared_ptr<TractModel> >& tract_models,
-                          const std::vector<std::string>& track_name,
                           std::string& result)
 {
     if(tract_models.empty())
@@ -1039,7 +1044,7 @@ void get_track_statistics(std::shared_ptr<fib_data> handle,
     std::ostringstream out;
     out << "Tract Name\t";
     for(unsigned int index = 0;index < tract_models.size();++index)
-        out << track_name[index] << "\t";
+        out << tract_models[index]->name << "\t";
     out << std::endl;
     for(unsigned int index = 0;index < metrics_name.size();++index)
     {
@@ -1086,20 +1091,12 @@ std::vector<std::shared_ptr<TractRender::end_writing> > TractTableWidget::start_
             locks.push_back(tract_rendering[index]->start_writing());
     return locks;
 }
-std::vector<std::string> TractTableWidget::get_checked_tracks_name(void) const
-{
-    std::vector<std::string> track_name;
-    for(unsigned int index = 0;index < tract_models.size();++index)
-        if(item(int(index),0)->checkState() == Qt::Checked)
-            track_name.push_back(item(int(index),0)->text().toStdString());
-    return track_name;
-}
 void TractTableWidget::show_tracts_statistics(void)
 {
     if(tract_models.empty())
         return;
     std::string result;
-    get_track_statistics(cur_tracking_window.handle,get_checked_tracks(),get_checked_tracks_name(),result);
+    get_track_statistics(cur_tracking_window.handle,get_checked_tracks(),result);
     if(!result.empty())
         show_info_dialog("Tract Statistics",result);
 
@@ -1203,8 +1200,7 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
     if(cmd == "save_tracks")
     {
         auto locks = start_reading_checked_tracks();
-        if(!TractModel::save_all(param.toStdString().c_str(),
-                             get_checked_tracks(),get_checked_tracks_name()))
+        if(!TractModel::save_all(param.toStdString().c_str(),get_checked_tracks()))
         {
             error_msg = "cannot save file to ";
             error_msg = param.toStdString();
