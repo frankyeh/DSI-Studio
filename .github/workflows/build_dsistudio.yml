@@ -43,7 +43,7 @@ jobs:
     steps:
     - name: Download Build
       run: |
-        git clone https://x-access-token:${{ secrets.DSITUDIO_TOKEN }} @github.com/frankyeh/DSI-Studio-Build.git  
+        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }} @github.com/frankyeh/DSI-Studio-Build.git  
         mv DSI-Studio-Build/build_packages .
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3.0.0
@@ -80,7 +80,7 @@ jobs:
     - uses: actions/checkout@v4.1.1
     - name: Download Build
       run: |
-        git clone https://x-access-token:${{ secrets.DSITUDIO_TOKEN }} @github.com/frankyeh/DSI-Studio-Build.git  
+        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }} @github.com/frankyeh/DSI-Studio-Build.git  
         mv DSI-Studio-Build/*.txt .
         mv DSI-Studio-Build/build_packages/build_mac.sh .
     - name: brew update
@@ -108,7 +108,7 @@ jobs:
     steps:
     - name: Download Build
       run: |
-        git clone https://x-access-token:${{ secrets.DSITUDIO_TOKEN }} @github.com/frankyeh/DSI-Studio-Build.git  
+        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }} @github.com/frankyeh/DSI-Studio-Build.git  
         mv DSI-Studio-Build/docker .
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3.0.0
