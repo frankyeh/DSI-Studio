@@ -141,7 +141,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
             }
 
-            if(fnValue.contains(" LLC") || fnValue.contains(" L.L.C") || fnValue.contains(" Inc") || fnValue.contains(" INC"))
+            if((fnValue.contains(" LLC") || fnValue.contains(" L.L.C") || fnValue.contains(" Inc") || fnValue.contains(" INC")) &&
+                !fnValue.toLower().contains("com") && !fnValue.toLower().contains("tel"))
             {
                 auto notice = new QLabel("This license agreement does not cover commercial use. For commercial entities, please contact frank.yeh@gmail.com to obtain a commercial license.");
                 notice->setWordWrap(true);
