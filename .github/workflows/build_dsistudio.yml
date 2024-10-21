@@ -132,3 +132,29 @@ jobs:
         tags: |
           "dsistudio/dsistudio:hou-${{ env.DATE_TAG }}"
           dsistudio/dsistudio:latest
+
+  windows_cpu_build:
+    if: ${{ github.event.inputs.build_windows == 'true' }}
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v4.1.1
+    - name: Download Build
+      run: |
+        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git  
+        move DSI-Studio-Build/*.txt .
+        move DSI-Studio-Build/build_packages .
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3.2.1
+      with:
+        version: 6.5.2
+        modules: addons.qtcharts
+    - name: get TIPL and DSI Studio atlas
+      run: |
+        build_packages\build_win_cpu.bat
+    - name: Create Release
+      env:
+        GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
+      run: |
+        gh release upload ${{ github.event.inputs.tag }} dsi_studio_win_cpu.zip --repo frankyeh/DSI-Studio --clobber
+        
+          
