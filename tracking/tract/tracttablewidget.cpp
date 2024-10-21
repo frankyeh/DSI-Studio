@@ -1016,6 +1016,8 @@ void TractTableWidget::cell_changed(int row, int column)
 {
     if(row >= 0 && row < tract_models.size())
         tract_models[row]->name = item(int(row),0)->text().toStdString();
+    if(cur_tracking_window["show_track_label"].toInt())
+        cur_tracking_window.glWidget->update();
 
 }
 void get_track_statistics(std::shared_ptr<fib_data> handle,
