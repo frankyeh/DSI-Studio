@@ -109,7 +109,7 @@ jobs:
     - name: Download Build
       run: |
         git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git  
-        mv DSI-Studio-Build/docker .
+        mv DSI-Studio-Build/build_packages .
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3.0.0
     - name: Set up Docker Buildx
