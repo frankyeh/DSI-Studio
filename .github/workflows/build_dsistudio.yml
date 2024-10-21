@@ -6,10 +6,6 @@ on:
         description: 'Tag'
         required: true
         default: '2024.06.12'
-      release_name:
-        description: 'Release Name'
-        required: true
-        default: '2024 "Hou" Release'
       build_windows:
         type: boolean
         description: 'Build Windows'
