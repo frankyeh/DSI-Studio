@@ -497,7 +497,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             slice_need_update = true;
             regionWidget->tract_map_id = 0;
         });
-        connect(tractWidget,SIGNAL(cellChanged(int,int)),glWidget,SLOT(update())); //update label
+        connect(tractWidget,SIGNAL(cellChanged(int,int)),tractWidget,SLOT(cell_changed(int,int))); //update label
         connect(tractWidget,SIGNAL(itemSelectionChanged()),tractWidget,SLOT(show_report()));
         connect(glWidget,SIGNAL(edited()),tractWidget,SLOT(edit_tracts()));
         connect(glWidget,SIGNAL(region_edited()),glWidget,SLOT(update()));
