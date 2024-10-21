@@ -94,7 +94,7 @@ jobs:
         modules: qtcharts
     - name: Build DSI Studio
       run: |
-        sh build_mac.sh
+        sh build_mac.sh ${{ matrix.os }}
         zip -r dsi_studio_${{ matrix.os }}_qt6.zip dsi_studio.app
     - name: Create Release
       env:
@@ -148,9 +148,9 @@ jobs:
       with:
         version: 6.5.2
         modules: addons.qtcharts
-    - name: get TIPL and DSI Studio atlas
+    - name: Build
       run: |
-        build_packages\build_win_cpu.bat
+        call .\build_packages\build_win_cpu.bat
       shell: cmd
     - name: Create Release
       env:
