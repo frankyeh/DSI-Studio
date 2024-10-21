@@ -61,7 +61,7 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
       run: |
-        gh release upload ${{ github.event.inputs.tag }} *.zip --clobber
+        gh release upload ${{ github.event.inputs.tag }} *.zip --clobber --repo frankyeh/DSI-Studio
 
   macos-build-qt6:
     if: ${{ github.event.inputs.build_mac == 'true' }}
