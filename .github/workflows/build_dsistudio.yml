@@ -63,7 +63,7 @@ jobs:
         zip -r dsi_studio_${{ matrix.os }}.zip dsi-studio
     - name: Create Release
       env:
-        GH_TOKEN: ${{ secrets.DSITUDIO_TOKEN }}
+        GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
       run: |
         gh release upload ${{ github.event.inputs.tag }} *.zip --repo frankyeh/DSI-Studio --clobber
 
@@ -126,7 +126,7 @@ jobs:
       with:
         context: .
         build-args: |
-          DSISTUDIO_TOKEN=${{ secrets.DSITUDIO_TOKEN }}               
+          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}               
         file: build_packages/docker/Dockerfile
         push: true
         tags: |
