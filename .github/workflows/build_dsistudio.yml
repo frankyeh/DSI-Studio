@@ -61,7 +61,7 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
       run: |
-        gh release upload ${{ github.event.inputs.tag }} *.zip --repo frankyeh/DSI-Studio --clobber
+        gh release upload ${{ github.event.inputs.tag }} *.zip --clobber
 
   macos-build-qt6:
     if: ${{ github.event.inputs.build_mac == 'true' }}
@@ -94,9 +94,9 @@ jobs:
         zip -r dsi_studio_${{ matrix.os }}_qt6.zip dsi_studio.app
     - name: Create Release
       env:
-        GH_TOKEN: ${{ secrets.DSITUDIO_TOKEN }}
+        GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
       run: |
-        gh release upload ${{ github.event.inputs.tag }} *.zip --repo frankyeh/DSI-Studio --clobber 
+        gh release upload ${{ github.event.inputs.tag }} *.zip --clobber 
 
   docker_build:
     if: ${{ github.event.inputs.build_docker == 'true' }}
@@ -153,7 +153,7 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
       run: |
-        gh release upload ${{ github.event.inputs.tag }} dsi_studio_win_cpu.zip --repo frankyeh/DSI-Studio --clobber
+        gh release upload ${{ github.event.inputs.tag }} dsi_studio_win_cpu.zip --clobber
 
   windows_gpu_build:
     if: ${{ github.event.inputs.build_windows == 'true' }}
@@ -180,6 +180,6 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
       run: |
-        gh release upload ${{ github.event.inputs.tag }} dsi_studio_win.zip --repo frankyeh/DSI-Studio --clobber        
+        gh release upload ${{ github.event.inputs.tag }} dsi_studio_win.zip --clobber        
         
           
