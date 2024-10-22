@@ -97,7 +97,7 @@ public:
         //emit show_tracts();
     }
 public:
-    void render_tracts(GLWidget* glwidget);
+    void render_tracts(GLWidget* glwidget,std::chrono::high_resolution_clock::time_point end_time);
     std::string error_msg;
     bool command(QString cmd,QString param = "",QString param2 = "");
 

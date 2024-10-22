@@ -767,7 +767,8 @@ void GLWidget::renderLR()
         else
             glDisable(GL_BLEND);
 
-        cur_tracking_window.tractWidget->render_tracts(this);
+        cur_tracking_window.tractWidget->render_tracts(this,
+            std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(500));
 
         glPopMatrix();
         glDisable(GL_COLOR_MATERIAL);

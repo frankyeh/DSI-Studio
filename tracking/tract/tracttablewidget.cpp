@@ -1108,7 +1108,7 @@ void TractTableWidget::need_update_all(void)
     for(auto& t:tract_rendering)
         t->need_update = true;
 }
-void TractTableWidget::render_tracts(GLWidget* glwidget)
+void TractTableWidget::render_tracts(GLWidget* glwidget,std::chrono::high_resolution_clock::time_point end_time)
 {
     auto tracks = get_checked_tracks();
     auto renders = get_checked_tracks_rendering();
@@ -1127,7 +1127,6 @@ void TractTableWidget::render_tracts(GLWidget* glwidget)
         },update_list.size());
     }
 
-    auto end_time = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(100);
     for(size_t index = 0;index < TractRender::data_block_count &&
                          std::chrono::high_resolution_clock::now() < end_time;++index)
     {
