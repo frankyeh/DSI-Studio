@@ -97,7 +97,18 @@ public:
         //emit show_tracts();
     }
 public:
-    void render_tracts(GLWidget* glwidget,std::chrono::high_resolution_clock::time_point end_time);
+    unsigned int render_time = 200;
+    bool render_tracts(GLWidget* glwidget,std::chrono::high_resolution_clock::time_point end_time);
+    void render_tracts(GLWidget* glwidget)
+    {
+        if(!render_tracts(glwidget,std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(render_time)))
+        {
+            render_time *= 2;
+            emit show_tracts();
+        }
+        else
+            render_time = 200;
+    }
     std::string error_msg;
     bool command(QString cmd,QString param = "",QString param2 = "");
 
