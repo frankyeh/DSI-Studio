@@ -415,6 +415,7 @@ void freewater_window::on_doDTI_clicked()
     filename.replace("mask","fwdti.fa");
     ((MainWindow*)parent())->addFibFreewater(filename);
 
+    QMessageBox::information(this,QApplication::applicationName()," Compute Completedly ");
 /*
     if(handle->voxel.vs[2] > handle->voxel.vs[0]*1.2f && handle->is_human_data() ) // non isotropic resolution
     {
