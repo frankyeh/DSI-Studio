@@ -1145,15 +1145,11 @@ bool TractTableWidget::command(QString cmd,QString param,QString param2)
         auto selected_tracts_rendering = get_checked_tracks_rendering();
         for(size_t index = 0;index < selected_tracts.size();++index)
         {
-            std::string filename = param.toStdString();
-            filename += "/";
-            filename += item(int(index),0)->text().toStdString();
-            filename += output_format().toStdString();
+            auto filename = param.toStdString() + "/" + selected_tracts[index]->name + output_format().toStdString();
             auto lock = selected_tracts_rendering[index]->start_reading();
             if(!selected_tracts[index]->save_tracts_to_file(filename.c_str()))
             {
-                error_msg = "cannot save file to ";
-                error_msg = filename;
+                error_msg = "cannot save file due to permission error" + filename;
                 return false;
             }
         }
