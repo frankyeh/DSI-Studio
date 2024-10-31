@@ -193,10 +193,19 @@ void MainWindow::login()
     QNetworkReply *reply = manager.post(request, QJsonDocument(data).toJson());
     QObject::connect(reply, &QNetworkReply::finished, [=]()
     {
-        auto reg_info = reply->readAll().toStdString();
-        setWindowTitle(windowTitle() + " " + reg_info.c_str());
-        if(tipl::contains(reg_info,"expired"))
-            QMessageBox::critical(this,"Notice",reg_info.c_str());
+        if (reply->error() != QNetworkReply::NoError)
+        {
+            QString error_message = "Network Error: " + reply->errorString();
+            QMessageBox::warning(this, "Connection Error", error_message);
+            setWindowTitle(windowTitle() + " (Offline Mode)");  // Set offline mode title
+        }
+        else
+        {
+            auto reg_info = reply->readAll().toStdString();
+            setWindowTitle(windowTitle() + " " + reg_info.c_str());
+            if(tipl::contains(reg_info,"expired"))
+                QMessageBox::critical(this,"Notice",reg_info.c_str());
+        }
         reply->deleteLater();
     });
 }
