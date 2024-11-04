@@ -206,12 +206,7 @@ bool connectometry_db::parse_demo(void)
             last_item_size = items.size();
         }
 
-        auto is_number = [](const std::string& str) {
-            try { std::stof(str); return true; }
-            catch (...) { return false; }
-        };
-        // if the first column is not a number, select demographics by matching subject name
-        if(!is_number(items[col_count]))
+        if(items.size() != (num_subjects+1)*col_count)
         {
             size_t found = 0;
             std::vector<std::string> new_items((num_subjects+1)*col_count);
@@ -233,14 +228,13 @@ bool connectometry_db::parse_demo(void)
                 tipl::out() << "rematch subject name with the first column.";
                 items.swap(new_items);
             }
-        }
-
-        if(items.size() != (num_subjects+1)*col_count)
-        {
-            std::ostringstream out;
-            out << "Subject number mismatch. The demographic file has " << row_count-1 << " subject rows, but the database has " << num_subjects << " subjects.";
-            error_msg = out.str();
-            return false;
+            else
+            {
+                std::ostringstream out;
+                out << "Subject number mismatch. The demographic file has " << row_count-1 << " subject rows, but the database has " << num_subjects << " subjects.";
+                error_msg = out.str();
+                return false;
+            }
         }
     }
     // first line moved to title vector
