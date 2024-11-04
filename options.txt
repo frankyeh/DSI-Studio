@@ -55,7 +55,7 @@ Slice/Blend Func1/slice_bend1/ZERO:ONE:DST_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:O
 Slice/Blend Func2/slice_bend2/ZERO:ONE:SRC_COLOR:ONE_MINUS_DST_COLOR:SRC_ALPHA:ONE_MINUS_SRC_ALPHA:DST_ALPHA:ONE_MINUS_DST_ALPHA/5
 Tract/Tract Color/Tract_color
 Tract_color/Opacity/tract_alpha/float:0:1:0.1:2/1
-Tract_color/Saturation/tract_color_saturation/float:0:1:0.1:2/0.5
+Tract_color/Saturation/tract_color_saturation/float:0:1:0.1:2/0.7
 Tract_color/Brightness/tract_color_brightness/float:0:1:0.1:2/0.5
 Tract_color/Style/tract_color_style/Directional:Assigned:Local Metrics:Averaged Metrics:Averaged Directional:Max Metrics/0
 Tract_color/Metrics/tract_color_metrics/qa:iso/0
