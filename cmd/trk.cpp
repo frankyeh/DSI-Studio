@@ -285,8 +285,11 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
         if(!get_parcellation(po,p,each))
             return false;
 
-        if(po.has("track_id"))
+
         {
+            tipl::out() << "generating tract-to-region connectome";
+            if(!po.has("track_id") && !po.has("tract") && !po.has("roi") && po.get("action") != "atk")
+                tipl::warning() << "t2r connectome may not work well with whole-brain tracking. please consider using autotrack --action=atk for t2r connectome.";
             auto file_name = output_name + "." + p.name + ".tract2region.txt";
             tipl::out() << "saving " << file_name;
             if(!p.save_t2r(file_name,std::vector<std::shared_ptr<TractModel> >{tract_model}))
