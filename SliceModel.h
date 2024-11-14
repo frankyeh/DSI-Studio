@@ -19,6 +19,7 @@ public:
 public:
     bool is_overlay = false;
     bool stay = false;
+    bool directional_color = false;
 public:
     // for directx
     tipl::vector<3,int> slice_pos;
