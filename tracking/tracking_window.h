@@ -170,6 +170,7 @@ private slots:
     void on_actionEdit_Slices_triggered();
     void on_actionSave_FIB_As_triggered();
     void on_alt_mapping_currentIndexChanged(int index);
+    void on_directional_color_clicked();
 };
 
 #endif // TRACKING_WINDOW_H
