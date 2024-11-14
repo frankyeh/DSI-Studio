@@ -334,7 +334,7 @@ void tracking_data::read(std::shared_ptr<fib_data> fib)
     if(!fib->dir.index_name.empty())
         threshold_name = fib->dir.get_threshold_name();
     if(!dt_fa.empty())
-        dt_threshold_name = fib->dir.dt_threshold_name;
+        dt_metrics= fib->dir.dt_metrics;
 }
 
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs)
@@ -1142,61 +1142,83 @@ bool fib_data::set_dt_index(const std::pair<std::string,std::string>& name_pair,
         return false;
 
 
-    tipl::image<3> I(dim),J(dim);
-    std::string name;
+    tipl::image<3> m1(dim),m2(dim);
+    std::string m1_name,m2_name;
     if(pair.first < slices.size())
     {
-        name += slices[pair.first]->name;
-        slices[pair.first]->get_image_in_dwi(I);
+        m1_name = slices[pair.first]->name;
+        slices[pair.first]->get_image_in_dwi(m1);
     }
 
     if(pair.second < slices.size())
     {
-        name += "-";
-        name += slices[pair.second]->name;
-        slices[pair.second]->get_image_in_dwi(J);
+        m2_name = slices[pair.second]->name;
+        slices[pair.second]->get_image_in_dwi(m2);
     }
-    if(name.empty())
-    {
-        dir.dt_fa.clear();
-        dir.dt_threshold_name.clear();
-        return true;
-    }
-
-    tipl::out() << "differential tracking on " << name;
 
     dir.dt_fa_data = std::move(tipl::image<3>(dim));
-    auto& K = dir.dt_fa_data;
+    auto& dif = dir.dt_fa_data;
     switch(type)
     {
         case 0: // (m1-m2)÷m1
-            for(size_t k = 0;k < I.size();++k)
-                if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
-                    K[k] = 1.0f-J[k]/I[k];
+            dir.dt_metrics = "(" + m1_name + "-" + m2_name + ")/" + m1_name;
+            for(size_t k = 0;k < m1.size();++k)
+                if(dir.fa[0][k] > 0.0f && m1[k] > 0.0f && m2[k] > 0.0f)
+                    dif[k] = 1.0f-m2[k]/m1[k];
 
         break;
         case 1: // (m1-m2)÷m2
-            for(size_t k = 0;k < I.size();++k)
-                if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
-                    K[k] = I[k]/J[k]-1.0f;
+            dir.dt_metrics = "(" + m1_name + "-" + m2_name + ")/" + m2_name;
+            for(size_t k = 0;k < m1.size();++k)
+                if(dir.fa[0][k] > 0.0f && m1[k] > 0.0f && m2[k] > 0.0f)
+                    dif[k] = m1[k]/m2[k]-1.0f;
         break;
         case 2: // m1-m2
-            for(size_t k = 0;k < I.size();++k)
-                if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
-                    K[k] = I[k]-J[k];
+            dir.dt_metrics = m1_name + "-" + m2_name;
+            for(size_t k = 0;k < m1.size();++k)
+                if(dir.fa[0][k] > 0.0f && m1[k] > 0.0f && m2[k] > 0.0f)
+                    dif[k] = m1[k]-m2[k];
         break;
-        case 3: // m1/max(m1)
+        case 3: // (m2-m1)÷m1
+            dir.dt_metrics = "(" + m2_name + "-" + m1_name + ")/" + m1_name;
+            for(size_t k = 0;k < m1.size();++k)
+                if(dir.fa[0][k] > 0.0f && m1[k] > 0.0f && m2[k] > 0.0f)
+                    dif[k] = m2[k]/m1[k]-1.0f;
+
+        break;
+        case 4: // (m2-m1)÷m2
+            dir.dt_metrics = "(" + m2_name + "-" + m1_name + ")/" + m2_name;
+            for(size_t k = 0;k < m1.size();++k)
+                if(dir.fa[0][k] > 0.0f && m1[k] > 0.0f && m2[k] > 0.0f)
+                    dif[k] = 1.0f-m1[k]/m2[k];
+        break;
+        case 5: // m2-m1
+            dir.dt_metrics = m2_name + "-" + m1_name;
+            for(size_t k = 0;k < m1.size();++k)
+                if(dir.fa[0][k] > 0.0f && m1[k] > 0.0f && m2[k] > 0.0f)
+                    dif[k] = m1[k]-m2[k];
+        break;
+        case 6: // m1/max(m1)
+            dir.dt_metrics = m1_name + "/max(" + m1_name + ")";
             {
-                float max_v = tipl::max_value(I);
+                float max_v = tipl::max_value(m1);
                 if(max_v > 0.0f)
-                    for(size_t k = 0;k < I.size();++k)
-                        K[k] = I[k]/max_v;
+                    for(size_t k = 0;k < m1.size();++k)
+                        dif[k] = m1[k]/max_v;
+            }
+        break;
+        case 7: // m2/max(m2)
+            dir.dt_metrics = m2_name + "/max(" + m2_name + ")";
+            {
+                float max_v = tipl::max_value(m2);
+                if(max_v > 0.0f)
+                    for(size_t k = 0;k < m2.size();++k)
+                        dif[k] = m2[k]/max_v;
             }
         break;
     }
-
-    dir.dt_fa = std::vector<const float*>(size_t(dir.num_fiber),(const float*)&K[0]);
-    dir.dt_threshold_name = name;
+    tipl::out() << "dt metrics:" << dir.dt_metrics;
+    dir.dt_fa = std::vector<const float*>(size_t(dir.num_fiber),(const float*)&dif[0]);
     return true;
 }
 

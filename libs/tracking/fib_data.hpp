@@ -41,7 +41,7 @@ public:
 public: // for differential tractography
     tipl::image<3> dt_fa_data;
     std::vector<const float*> dt_fa;
-    std::string dt_threshold_name;
+    std::string dt_metrics;
 public:
     void check_index(unsigned int index);
     bool add_data(fib_data& fib);
@@ -60,7 +60,7 @@ public:
     tipl::vector<3> vs;
     unsigned char fib_num;
     float fa_otsu;
-    std::string threshold_name,dt_threshold_name;
+    std::string threshold_name,dt_metrics;
     std::vector<const float*> dir;
     std::vector<const float*> fa;
     std::vector<const float*> dt_fa;

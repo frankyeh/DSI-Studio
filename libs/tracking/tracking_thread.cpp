@@ -183,27 +183,10 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
 
     report.clear();
     report.str("");
-    if(!trk->dt_threshold_name.empty())
+    if(!trk->dt_metrics.empty())
     {
-        report << " Differential tractography (Yeh et al., Neuroimage, 2019 Nov 15;202:116131.) was applied to map pathways with ";
-        if(trk->dt_threshold_name.substr(0,4) == "inc_" || trk->dt_threshold_name.substr(0,4) == "dec_")
-        {
-            if(trk->dt_threshold_name.substr(0,4) == "inc_")
-                report << "an increase";
-            else
-                report << "a decrease";
-            report << " in " << trk->dt_threshold_name.substr(4,std::string::npos);
-
-        }
-        else
-        {
-            auto pos = trk->dt_threshold_name.find('-');
-            if(pos == std::string::npos)
-                report << "changes in " << trk->dt_threshold_name;
-            else
-                report << trk->dt_threshold_name.substr(0,pos) << " larger than " << trk->dt_threshold_name.substr(pos+1);
-        }
-        report << ", and only the differences greater than " << int(param.dt_threshold * 100) << "% were tracked.";
+        report << " Differential tractography (Yeh et al., Neuroimage, 2019 Nov 15;202:116131.) was applied to map pathways with "
+               << trk->dt_metrics << " larger than " << int(param.dt_threshold * 100) << "%.";
     }
     else
         report << " A deterministic fiber tracking algorithm (Yeh et al., PLoS ONE 8(11): e80713, 2013) was used with augmented tracking strategies (Yeh, Neuroimage, 2020 Dec;223:117329) to improve reproducibility.";
