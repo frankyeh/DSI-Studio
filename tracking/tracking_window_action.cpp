@@ -968,6 +968,8 @@ void tracking_window::on_deleteSlice_clicked()
         on_is_overlay_clicked();
     if(current_slice->stay)
         on_stay_clicked();
+    if(current_slice->directional_color)
+        on_directional_color_clicked();
     slices.erase(slices.begin()+index);
     glWidget->slice_texture.erase(glWidget->slice_texture.begin()+index);
     ui->SliceModality->removeItem(index);    
