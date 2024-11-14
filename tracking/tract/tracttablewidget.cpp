@@ -309,8 +309,7 @@ void TractTableWidget::start_tracking(void)
     {
         // turn off automated tracking
         cur_tracking_window.ui->tract_target_0->setCurrentIndex(0);
-        tract_name = QString(cur_tracking_window.handle->dir.dt_threshold_name.c_str())+"_"+
-                     QString::number(cur_tracking_window["dt_threshold"].toDouble());
+        tract_name = "Track";
     }
 
     addNewTracts(tract_name);
