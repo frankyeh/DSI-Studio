@@ -89,7 +89,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     {
-        auto reply = get(QString("https://freegeoip.app/json/"));
+        auto reply = get(QString("https://raw.githubusercontent.com/frankyeh/DSI-Studio-Website/main/news.md"));
+        while (!reply->isFinished())
+            qApp->processEvents();
+        QString news = reply->readAll();
+        reply = get(QString("https://freegeoip.app/json/"));
         while (!reply->isFinished())
             qApp->processEvents();
         reply = get(QString("http://ip-api.com/json/%1").arg(QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).object().value("ip").toString()));
@@ -123,13 +127,20 @@ MainWindow::MainWindow(QWidget *parent) :
             dialog->setWindowFlags(Qt::Dialog | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
             dialog->setModal(true);
 
+            QTextBrowser *NewsBrowser = new QTextBrowser;
+            NewsBrowser->setMarkdown(news);
+            NewsBrowser->setReadOnly(true);
+            NewsBrowser->setOpenExternalLinks(true);
+
             QTextBrowser *licenseBrowser = new QTextBrowser;
             licenseBrowser->setMarkdown(licenseText);
             licenseBrowser->setReadOnly(true);
+            licenseBrowser->setOpenExternalLinks(true);
 
 
             QVBoxLayout *layout = new QVBoxLayout;
             layout->addWidget(licenseBrowser);
+            layout->addWidget(NewsBrowser);
 
             {
                 QHBoxLayout *h_layout = new QHBoxLayout;
