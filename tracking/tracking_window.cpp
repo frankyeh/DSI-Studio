@@ -1108,6 +1108,16 @@ void tracking_window::on_stay_clicked()
 }
 
 
+void tracking_window::on_directional_color_clicked()
+{
+    if(current_slice->directional_color == ui->directional_color->isChecked())
+        return;
+    current_slice->directional_color = (ui->directional_color->isChecked());
+    glWidget->update_slice();
+    slice_need_update = true;
+}
+
+
 void tracking_window::on_SlicePos_valueChanged(int value)
 {
     if(cur_dim ==0)
@@ -1167,6 +1177,7 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
 
     ui->is_overlay->setChecked(current_slice->is_overlay);
     ui->stay->setChecked(current_slice->stay);
+    ui->directional_color->setChecked(current_slice->directional_color);
 
     if(!glWidget->slice_texture[index].empty())
     {
@@ -1321,4 +1332,5 @@ void tracking_window::on_actionSave_FIB_As_triggered()
     setWindowTitle(filename);
     QMessageBox::information(this,QApplication::applicationName(),"saved");
 }
+
 
