@@ -96,14 +96,27 @@ void SliceModel::set_contrast_color(unsigned int min_c,unsigned int max_c)
 void SliceModel::get_slice(tipl::color_image& show_image,unsigned char cur_dim,int pos,
                            const std::vector<std::shared_ptr<SliceModel> >& overlay_slices) const
 {
-    if(view->name == "color")
+    view->get_slice(cur_dim, pos,show_image);
+    if(directional_color)
     {
-        view->v2c.convert(tipl::volume2slice(handle->slices[0]->get_image(),cur_dim,pos),show_image);
         if(view->color_map_buf.empty())
         {
-            view->color_map_buf.resize(handle->dim);
-            std::iota(view->color_map_buf.begin(),
-                      view->color_map_buf.end(),0);
+            tipl::image<3,unsigned int> colormap_buf(dim);
+            if(is_diffusion_space)
+                std::iota(colormap_buf.begin(),
+                          colormap_buf.end(),0);
+            else
+            {
+                tipl::adaptive_par_for(tipl::begin_index(dim),tipl::end_index(dim),[&](const tipl::pixel_index<3>& index)
+                {
+                    tipl::vector<3> pos(index);
+                    pos.to(to_dif);
+                    pos.round();
+                    if(handle->dim.is_valid(pos))
+                        colormap_buf[index.index()] = tipl::voxel2index(pos[0],pos[1],pos[2],handle->dim);
+                });
+            }
+            view->color_map_buf.swap(colormap_buf);
         }
         tipl::image<2,unsigned int> buf;
         tipl::volume2slice(view->color_map_buf, buf, cur_dim, pos);
@@ -115,8 +128,7 @@ void SliceModel::get_slice(tipl::color_image& show_image,unsigned char cur_dim,i
             show_image[index].b = std::abs(float(show_image[index].b)*d[2]);
         }
     }
-    else
-        view->get_slice(cur_dim, pos,show_image);
+
     for(auto overlay_slice : overlay_slices)
         if(this != overlay_slice.get())
             apply_overlay(show_image,cur_dim,overlay_slice);
