@@ -334,10 +334,7 @@ void tracking_data::read(std::shared_ptr<fib_data> fib)
     if(!fib->dir.index_name.empty())
         threshold_name = fib->dir.get_threshold_name();
     if(!dt_fa.empty())
-    {
-        dt_fa_data = fib->dir.dt_fa_data;
         dt_threshold_name = fib->dir.dt_threshold_name;
-    }
 }
 
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs)
@@ -1168,8 +1165,8 @@ bool fib_data::set_dt_index(const std::pair<std::string,std::string>& name_pair,
 
     tipl::out() << "differential tracking on " << name;
 
-    std::shared_ptr<tipl::image<3> > new_metrics(new tipl::image<3>(dim));
-    auto& K = (*new_metrics);
+    dir.dt_fa_data = std::move(tipl::image<3>(dim));
+    auto& K = dir.dt_fa_data;
     switch(type)
     {
         case 0: // (m1-m2)÷m1
@@ -1187,6 +1184,7 @@ bool fib_data::set_dt_index(const std::pair<std::string,std::string>& name_pair,
             for(size_t k = 0;k < I.size();++k)
                 if(dir.fa[0][k] > 0.0f && I[k] > 0.0f && J[k] > 0.0f)
                     K[k] = I[k]-J[k];
+        break;
         case 3: // m1/max(m1)
             {
                 float max_v = tipl::max_value(I);
@@ -1197,7 +1195,6 @@ bool fib_data::set_dt_index(const std::pair<std::string,std::string>& name_pair,
         break;
     }
 
-    dir.dt_fa_data = new_metrics;
     dir.dt_fa = std::vector<const float*>(size_t(dir.num_fiber),(const float*)&K[0]);
     dir.dt_threshold_name = name;
     return true;

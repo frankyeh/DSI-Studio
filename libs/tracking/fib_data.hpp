@@ -39,7 +39,7 @@ public:
     unsigned int half_odf_size;
     std::string error_msg;
 public: // for differential tractography
-    std::shared_ptr<tipl::image<3> > dt_fa_data;
+    tipl::image<3> dt_fa_data;
     std::vector<const float*> dt_fa;
     std::string dt_threshold_name;
 public:
@@ -66,7 +66,6 @@ public:
     std::vector<const float*> dt_fa;
     std::vector<const short*> findex;
     std::vector<tipl::vector<3,float> > odf_table;
-    std::shared_ptr<tipl::image<3> > dt_fa_data;
 
     const tracking_data& operator=(const tracking_data& rhs) = delete;
 public:
