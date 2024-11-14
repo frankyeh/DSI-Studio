@@ -155,6 +155,13 @@
           </widget>
          </item>
          <item>
+          <widget class="QCheckBox" name="directional_color">
+           <property name="text">
+            <string>Directional Color</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QCheckBox" name="stay">
            <property name="text">
             <string>Stay</string>
