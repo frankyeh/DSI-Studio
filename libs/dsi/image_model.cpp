@@ -1022,27 +1022,20 @@ bool src_data::command(std::string cmd,std::string param)
     error_msg += cmd;
     return false;
 }
-void src_data::flip_b_table(unsigned char dim)
-{
-    for(unsigned int index = 0;index < src_bvectors.size();++index)
-        src_bvectors[index][dim] = -src_bvectors[index][dim];
-}
-// 0:xy 1:yz 2: xz
-void src_data::swap_b_table(unsigned char dim)
-{
-    std::swap(voxel.vs[dim],voxel.vs[(dim+1)%3]);
-    for (unsigned int index = 0;index < src_bvectors.size();++index)
-        std::swap(src_bvectors[index][dim],src_bvectors[index][(dim+1)%3]);
-}
 
 // 0: x  1: y  2: z
 // 3: xy 4: yz 5: xz
 void src_data::flip_dwi(unsigned char type)
 {
-    if(type < 3)
-        flip_b_table(type);
-    else
-        swap_b_table(type-3);
+    for(unsigned int index = 0;index < src_bvectors.size();++index)
+    {
+        if(type < 3)
+            src_bvectors[index][type] = -src_bvectors[index][type];
+        else
+            std::swap(src_bvectors[index][type-3],src_bvectors[index][(type-2)%3]);
+    }
+    if(type >=3 )
+        std::swap(voxel.vs[type-3],voxel.vs[(type-2)%3]);
     tipl::flip(dwi,type);
     tipl::flip(voxel.mask,type);
     tipl::progress prog("flip image");
@@ -1058,12 +1051,6 @@ void src_data::flip_dwi(unsigned char type)
         });
     }
     voxel.dim = voxel.mask.shape();
-    if(type == 3)
-        std::swap(voxel.vs[0],voxel.vs[1]);
-    if(type == 4)
-        std::swap(voxel.vs[1],voxel.vs[2]);
-    if(type == 5)
-        std::swap(voxel.vs[0],voxel.vs[2]);
 }
 
 tipl::matrix<3,3,float> get_inv_rotation(const Voxel& voxel,const tipl::transformation_matrix<double>& T)
