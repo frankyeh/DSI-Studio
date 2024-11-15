@@ -552,12 +552,12 @@ void TractTableWidget::set_color(void)
 
 void TractTableWidget::assign_colors(void)
 {
-    double hue = 0;
+    double hue = -0.618033988749895;
+    double var1[9] = {0.0, 0.15,-0.15,0.15,-0.15,0.15,0.0,-0.15, 0.0};
+    double var2[9] = {0.0,-0.15, 0.15,0.15,-0.15,0.0,0.15, 0.0,-0.15};
     for(unsigned int index = 0;index < tract_models.size();++index)
     {
-        double saturation = 0.7 + 0.2 * ((index % 2 == 0) ? 1 : -1);
-        double lightness = 0.6 + 0.1 * ((index % 3 == 0) ? 1 : -1);
-        auto color = QColor::fromHslF(hue = std::fmod(hue + 0.618033988749895, 1.0), saturation, lightness);
+        auto color = QColor::fromHslF(hue = std::fmod(hue + 0.618033988749895, 1.0), 0.8+var1[(index/13) % 9], 0.7+var1[(index/13) % 9]);
         tipl::rgb c(color.red(),color.green(),color.blue());
         auto lock = tract_rendering[index]->start_writing();
         tract_models[index]->set_color(c.color);
