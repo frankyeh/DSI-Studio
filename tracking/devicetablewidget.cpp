@@ -334,12 +334,10 @@ void DeviceTableWidget::assign_colors(void)
 {
     for(unsigned int index = 0;index < devices.size();++index)
     {
-        tipl::rgb c;
-        c.from_hsl((color_gen*1.1-std::floor(color_gen*1.1/6)*6)*3.14159265358979323846/3.0,0.85,0.7);
+        tipl::rgb c = tipl::rgb::generate_hue(index);
         c.a = 255;
         item(int(index),2)->setData(Qt::UserRole,0xFF000000 | uint32_t(c));
         devices[index]->color = c.color;
-        color_gen++;
     }
     emit need_update();
 }

@@ -40,7 +40,6 @@ signals:
     void need_update(void);
 private:
     QString new_device_str;
-    int color_gen = 10;
     void new_device(std::shared_ptr<Device> device);
 public slots:
     void updateDevices(QTableWidgetItem* item);

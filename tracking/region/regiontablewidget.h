@@ -69,7 +69,7 @@ signals:
     void need_update(void);
 public:
     std::vector<std::shared_ptr<ROIRegion> > regions;
-    int color_gen = 10;
+    int color_gen = 0;
     std::string error_msg;
     bool command(QString cmd,QString param = "",QString param2 = "");
     void check_row(size_t index,bool checked);

@@ -21,8 +21,6 @@ public:
 private:
     tracking_window& cur_tracking_window;
     QTimer *timer,*timer_update;
-private:
-    int color_gen = 10;
 public:
     std::vector<std::shared_ptr<ThreadData> > thread_data;
     std::vector<std::shared_ptr<TractModel> > tract_models;
