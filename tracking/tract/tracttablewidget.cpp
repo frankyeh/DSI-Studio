@@ -294,7 +294,8 @@ void TractTableWidget::start_tracking(void)
         return;
     }
 
-    if(!cur_tracking_window.handle->set_dt_index(std::make_pair(
+    if((cur_tracking_window["dt_index1"].toInt() || cur_tracking_window["dt_index2"].toInt()) &&
+        !cur_tracking_window.handle->set_dt_index(std::make_pair(
                                                      cur_tracking_window.dt_list[cur_tracking_window["dt_index1"].toInt()].toStdString(),
                                                      cur_tracking_window.dt_list[cur_tracking_window["dt_index2"].toInt()].toStdString()),
                                                  cur_tracking_window.renderWidget->getData("dt_threshold_type").toInt()))
@@ -548,13 +549,16 @@ void TractTableWidget::set_color(void)
     cur_tracking_window.set_data("tract_color_style",1);//manual assigned
     emit show_tracts();
 }
+
 void TractTableWidget::assign_colors(void)
 {
+    double hue = 0;
     for(unsigned int index = 0;index < tract_models.size();++index)
     {
-        tipl::rgb c;
-        c.from_hsl((color_gen*1.1-std::floor(color_gen*1.1/6)*6)*3.14159265358979323846/3.0,0.85,0.7);
-        color_gen++;
+        double saturation = 0.7 + 0.2 * ((index % 2 == 0) ? 1 : -1);
+        double lightness = 0.6 + 0.1 * ((index % 3 == 0) ? 1 : -1);
+        auto color = QColor::fromHslF(hue = std::fmod(hue + 0.618033988749895, 1.0), saturation, lightness);
+        tipl::rgb c(color.red(),color.green(),color.blue());
         auto lock = tract_rendering[index]->start_writing();
         tract_models[index]->set_color(c.color);
         tract_rendering[index]->need_update = true;
