@@ -284,8 +284,6 @@ public:
 public:
     std::vector<size_t> get_sorted_dwi_index(void);
     void flip_b_table(const unsigned char* order);
-    void flip_b_table(unsigned char dim);
-    void swap_b_table(unsigned char dim);
     void flip_dwi(unsigned char type);
     void rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_matrix<double>& affine);
     void rotate(const tipl::shape<3>& new_geo,
