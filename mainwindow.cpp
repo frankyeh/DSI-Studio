@@ -1562,7 +1562,7 @@ QString showError(reply_type reply)
         {502, "Bad Gateway - The server received an invalid response from an upstream server."},
         {503, "Service Unavailable - The server is currently unable to handle the request."},
         {504, "Gateway Timeout - The server did not receive a timely response from an upstream server."},
-                                  }).value(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(), "Unknown status code.");
+                                  }).value(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(), "Download rate limit reached. Try later or consider using Gitub PAT.");
 }
 
 void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array)
@@ -1790,6 +1790,17 @@ void MainWindow::on_github_download_clicked()
     if (ranges.isEmpty()) {
         QMessageBox::critical(this, "ERROR", "No files selected for download");
         return;
+    }
+
+    if(ui->github_token->text().isEmpty())
+    {
+        QString message =
+            "Consider using a GitHub personal access token (PAT) to avoid rate limits and enable faster downloads.\n\n"
+            "1. Go to GitHub → Settings → Developer settings → Personal access tokens.\n"
+            "2. Generate a token with 'repo' permissions.\n"
+            "3. Copy the token (it won't be shown again).\n"
+            "4. Paste it into DSI Studio's 'Gitub PAT' field.";
+            QMessageBox::information(nullptr, "DSI Studio", message);
     }
 
     std::vector<int> row_list;
