@@ -1795,7 +1795,7 @@ void MainWindow::on_github_download_clicked()
     if(ui->github_token->text().isEmpty())
     {
         QString message =
-            "Consider using a GitHub personal access token (PAT) to avoid rate limits and enable faster downloads.\n\n"
+            "Consider using a GitHub personal access token (PAT) to enable faster downloads.\n\n"
             "1. Go to GitHub → Settings → Developer settings → Personal access tokens.\n"
             "2. Generate a token with 'repo' permissions.\n"
             "3. Copy the token (it won't be shown again).\n"
@@ -1811,6 +1811,8 @@ void MainWindow::on_github_download_clicked()
     tipl::progress p("downloading...");
     for (int i = 0; p(i,row_list.size());++i)
     {
+        qint64 startTime = QDateTime::currentMSecsSinceEpoch();
+
         QString url = ui->github_release_files->item(row_list[i], 3)->text();
         QString filePath = ui->download_dir->text() + "/" + ui->github_release_files->item(row_list[i], 0)->text();
         if (QFile::exists(filePath) && !ui->download_overwrite->isChecked())
@@ -1860,6 +1862,20 @@ void MainWindow::on_github_download_clicked()
                 file->write(reply->readAll());
             });
         }
+
+        // Calculate elapsed time for download + write
+        qint64 endTime = QDateTime::currentMSecsSinceEpoch();
+        qint64 elapsed = endTime - startTime; // in ms
+
+        // Determine a minimum total time based on PAT presence
+        // For example, 10 seconds if no PAT, 3 seconds if PAT is set
+        QString pat = ui->github_token->text().trimmed();
+        int minWaitMs = pat.isEmpty() ? 10000 : 3000; // in milliseconds
+
+        // If the elapsed time is less than our minWait, sleep the difference
+        qint64 remain = minWaitMs - elapsed;
+        if (remain > 0)
+            QThread::msleep(static_cast<unsigned long>(remain));
     }
 }
 
