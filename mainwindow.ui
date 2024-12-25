@@ -2771,27 +2771,6 @@ Tractography</string>
               </column>
              </widget>
             </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_7">
-              <property name="bottomMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <widget class="QLabel" name="label_50">
-                <property name="text">
-                 <string>Auth Token:</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLineEdit" name="github_token">
-                <property name="echoMode">
-                 <enum>QLineEdit::PasswordEchoOnEdit</enum>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
            </layout>
           </widget>
           <widget class="QWidget" name="widget_10" native="true">
@@ -3051,6 +3030,20 @@ p, li { white-space: pre-wrap; }
                     <property name="icon">
                      <iconset resource="icons.qrc">
                       <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="label_50">
+                    <property name="text">
+                     <string>Gitub PAT:</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLineEdit" name="github_token">
+                    <property name="echoMode">
+                     <enum>QLineEdit::PasswordEchoOnEdit</enum>
                     </property>
                    </widget>
                   </item>
