@@ -42,8 +42,8 @@ private:
 public:
     explicit RegToolBox(QWidget *parent = nullptr);
     ~RegToolBox();
-    void dragEnterEvent(QDragEnterEvent *event);
-    void dropEvent(QDropEvent *event);
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
 public:
     int subject_view_border = 0;
     int template_view_border = 0;
