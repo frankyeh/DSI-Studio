@@ -1874,8 +1874,18 @@ void MainWindow::on_github_download_clicked()
 
         // If the elapsed time is less than our minWait, sleep the difference
         qint64 remain = minWaitMs - elapsed;
+        // If the elapsed time is less than our minWait, keep UI alive while waiting
         if (remain > 0)
-            QThread::msleep(static_cast<unsigned long>(remain));
+        {
+            QElapsedTimer timer;
+            timer.start();
+            while (timer.elapsed() < remain)
+            {
+                // Process events so the user can click "Cancel" (or any other UI actions)
+                QCoreApplication::processEvents();
+                QThread::msleep(50);
+            }
+        }
     }
 }
 
