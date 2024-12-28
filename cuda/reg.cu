@@ -30,9 +30,9 @@ void check_cuda(std::string& error_msg)
     if(cudaGetDeviceCount(&gpu_count) != cudaSuccess ||
        cudaDriverGetVersion(&Ver) != cudaSuccess)
     {
-        error_msg = "cannot obtain GPU driver and device information (CUDA ERROR ";
+        error_msg = "Failed to obtain GPU driver and device information (CUDA ERROR ";
         error_msg += std::to_string(int(cudaGetDeviceCount(&gpu_count)));
-        error_msg += "). please update the Nvidia driver and install CUDA Toolkit.";
+        error_msg += "). Please install CUDA Toolkit or use the CPU version.";
         return;
     }
     std::cout << "├──CUDA Driver Version: " << Ver << " CUDA Run Time Version: " << CUDART_VERSION << std::endl;
