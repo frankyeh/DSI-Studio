@@ -395,17 +395,21 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *a
 void check_cuda(std::string& error_msg);
 bool has_cuda = false;
 int gpu_count = 0;
-void init_cuda(void)
+bool init_cuda(void)
 {
     if constexpr(tipl::use_cuda)
     {
         std::string cuda_msg;
         check_cuda(cuda_msg);
         if(!has_cuda)
-            tipl::out() << cuda_msg << std::endl;
+        {
+            QMessageBox::critical(nullptr,"ERROR",cuda_msg.c_str());
+            return false;
+        }
         else
             tipl::out() << "CPU/GPU computation enabled "<< std::endl;
     }
+    return true;
 }
 extern console_stream console;
 int main(int ac, char *av[])
@@ -470,7 +474,8 @@ int main(int ac, char *av[])
         tipl::progress prog(show_ver);
 
 
-        init_cuda();
+        if(!init_cuda())
+            return 1;
         if(!init_application())
             return 1;
 
