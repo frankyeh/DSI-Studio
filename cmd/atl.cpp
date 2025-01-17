@@ -218,7 +218,6 @@ int atl(tipl::program_option<tipl::out>& po)
         }
         if(cmd=="roi")
         {
-
             std::vector<std::shared_ptr<atlas> > atlas_list;
             if(!atl_load_atlas(handle,po.get("atlas"),atlas_list))
                 return 1;
