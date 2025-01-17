@@ -3400,10 +3400,14 @@ void TractModel::run_clustering(unsigned char method_id,unsigned int cluster_cou
 
 bool Parcellation::load_from_atlas(std::string atlas_name)
 {
-    name = atlas_name;
-    tipl::out() << "load built-in atlas " << atlas_name << std::endl;
-    if(!handle->get_atlas_all_roi(handle->get_atlas(atlas_name),
-                                  handle->dim,tipl::matrix<4,4>(tipl::identity_matrix()),points,labels))
+    auto at = handle->get_atlas(atlas_name);
+    if(!at.get())
+    {
+        error_msg = handle->error_msg;
+        return false;
+    }
+    name = at->name;
+    if(!handle->get_atlas_all_roi(at,handle->dim,tipl::matrix<4,4>(tipl::identity_matrix()),points,labels))
     {
         error_msg = handle->error_msg;
         return false;
