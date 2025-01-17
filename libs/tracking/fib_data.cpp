@@ -1306,7 +1306,16 @@ void apply_inverse_trans(tipl::vector<3>& pos,const tipl::matrix<4,4>& trans)
     if(trans[10] != 1.0f)
         pos[2] /= trans[10];
 }
-
+bool fib_data::add_atlas(const std::string& file_name)
+{
+    if(!std::filesystem::exists(file_name) || !tipl::ends_with(file_name,"nii.gz"))
+        return false;
+    atlas_list.push_back(std::make_shared<atlas>());
+    atlas_list.back()->name = QFileInfo(file_name.c_str()).baseName().toStdString();
+    atlas_list.back()->filename = file_name;
+    atlas_list.back()->template_to_mni = template_I.empty() ? trans_to_mni : template_to_mni;
+    return true;
+}
 void fib_data::set_template_id(size_t new_id)
 {
     if(new_id != template_id)
@@ -1318,12 +1327,7 @@ void fib_data::set_template_id(size_t new_id)
         track_atlas.reset();
         // populate atlas list
         for(size_t i = 0;i < atlas_file_name_list[template_id].size();++i)
-        {
-            atlas_list.push_back(std::make_shared<atlas>());
-            atlas_list.back()->name = QFileInfo(atlas_file_name_list[template_id][i].c_str()).baseName().toStdString();
-            atlas_list.back()->filename = atlas_file_name_list[template_id][i];
-            atlas_list.back()->template_to_mni = trans_to_mni;
-        }
+            add_atlas(atlas_file_name_list[template_id][i]);
         // populate other modality name
         t1w_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T1W.nii.gz").toStdString();
         t2w_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T2W.nii.gz").toStdString();
@@ -2048,19 +2052,15 @@ void fib_data::mni2sub(tipl::vector<3>& pos)
 }
 std::shared_ptr<atlas> fib_data::get_atlas(const std::string atlas_name)
 {
-    std::string name_list;
     for(auto at : atlas_list)
         if(at->name == atlas_name)
             return at;
-        else {
-            if(!name_list.empty())
-                name_list += ",";
-            name_list += at->name;
-        }
-    error_msg = atlas_name;
-    error_msg += " is not one of the built-in atlases of ";
-    error_msg += name_list;
-    return std::shared_ptr<atlas>();
+    if(!add_atlas(atlas_name))
+    {
+        error_msg = atlas_name + " is not one of the built-in atlases or an readable nifti file";
+        return std::shared_ptr<atlas>();
+    }
+    return atlas_list.back();
 }
 
 bool fib_data::get_atlas_roi(const std::string& atlas_name,const std::string& region_name,std::vector<tipl::vector<3,short> >& points)
@@ -2149,6 +2149,11 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,
         return false;
     }
     // trigger atlas loading to avoid crash in multi thread
+    if(!at.get())
+    {
+        error_msg = "cannot load atlas";
+        return false;
+    }
     if(!at->load_from_file())
     {
         error_msg = "cannot read atlas file ";
