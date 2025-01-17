@@ -254,7 +254,10 @@ public:
     size_t template_id = 256;
     tipl::vector<3> template_vs;
     tipl::image<3> template_I,template_I2;
+public:
     std::vector<std::shared_ptr<atlas> > atlas_list;
+    bool add_atlas(const std::string& file_name);
+public:
     tipl::matrix<4,4> template_to_mni;
     bool has_manual_atlas = false;
     tipl::affine_transform<float> manual_template_T;
