@@ -98,10 +98,7 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
     {
         std::vector<std::shared_ptr<atlas> > atlas_list;
         if(!atl_load_atlas(handle,po.get("atlas"),atlas_list))
-        {
-            tipl::out() << "fail to load atlas" << std::endl;
             return 1;
-        }
         for(unsigned int i = 0;i < atlas_list.size();++i)
         {
             for(unsigned int j = 0;j < atlas_list[i]->get_list().size();++j)
