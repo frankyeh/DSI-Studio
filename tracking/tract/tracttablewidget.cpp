@@ -1026,7 +1026,8 @@ void get_track_statistics(std::shared_ptr<fib_data> handle,
     if(tract_models.empty())
         return;
     std::vector<std::vector<std::string> > track_results(tract_models.size());
-    tipl::adaptive_par_for(tract_models.size(),[&](size_t index)
+    tipl::progress p("for each tract");
+    for(size_t index = 0;p(index,tract_models.size());++index)
     {
         std::string tmp,line;
         tract_models[index]->get_quantitative_info(handle,tmp);
@@ -1037,7 +1038,9 @@ void get_track_statistics(std::shared_ptr<fib_data> handle,
                 continue;
             track_results[index].push_back(line);
         }
-    });
+    }
+    if(p.aborted())
+        return;
     std::vector<std::string> metrics_name;
     for(unsigned int j = 0;j < track_results[0].size();++j)
         metrics_name.push_back(track_results[0][j].substr(0,track_results[0][j].find("\t")));
@@ -1097,7 +1100,10 @@ void TractTableWidget::show_tracts_statistics(void)
     if(tract_models.empty())
         return;
     std::string result;
-    get_track_statistics(cur_tracking_window.handle,get_checked_tracks(),result);
+    {
+        tipl::progress p("calculate tract statistics",true);
+        get_track_statistics(cur_tracking_window.handle,get_checked_tracks(),result);
+    }
     if(!result.empty())
         show_info_dialog("Tract Statistics",result);
 
