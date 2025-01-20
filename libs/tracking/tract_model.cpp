@@ -3046,9 +3046,10 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
 
     if(handle->db.has_db()) // connectometry database
     {
+        tipl::progress p("for each subject");
         std::vector<const float*> old_index_data(handle->dir.index_data[0]);
         {
-            for(unsigned int i = 0;i < handle->db.num_subjects;++i)
+            for(unsigned int i = 0;p(i,handle->db.num_subjects);++i)
             {
                 std::vector<std::vector<float> > fa_data;
                 handle->db.get_subject_fa(i,fa_data);
@@ -3267,6 +3268,9 @@ std::vector<float> TractModel::get_tract_data(std::shared_ptr<fib_data> handle,s
         for (unsigned int data_index = 0,index = 0;index < tract_data[fiber_index].size();index += 3,++data_index)
             tipl::estimate(I,&(tract_data[fiber_index][index]),data[data_index]);
     }
+    for(auto& value : data)
+        if(std::isnan(value) || std::isinf(value))
+            value = 0.0f;
     return data;
 }
 
