@@ -355,7 +355,7 @@ void calculate_region_stat(const Image& I, const Points& p,float& mean,float& ma
         if(T)
             pos.to(T);
         value = tipl::estimate(I,pos);
-        if(value == 0.0f)
+        if(value == 0.0f || std::isnan(value) || std::isinf(value))
             continue;
         if(index)
         {
@@ -487,7 +487,8 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
 
     if(handle->db.has_db()) // connectometry database
     {
-        for(unsigned int subject_index = 0;subject_index < handle->db.num_subjects;++subject_index)
+        tipl::progress p("compute subject data");
+        for(unsigned int subject_index = 0;p(subject_index,handle->db.num_subjects);++subject_index)
         {
             std::vector<std::vector<float> > fa_data;
             handle->db.get_subject_fa(subject_index,fa_data);
