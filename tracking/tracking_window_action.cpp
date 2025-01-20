@@ -19,25 +19,50 @@
 #include "reg.hpp"
 
 extern std::vector<std::string> fa_template_list;
-void show_info_dialog(const std::string& title,const std::string& result)
+void show_info_dialog(const std::string& title, const std::string& result)
 {
     QMessageBox msgBox;
     msgBox.setText(title.c_str());
-    msgBox.setDetailedText(result.c_str());
-    msgBox.setStandardButtons(QMessageBox::Ok|QMessageBox::Save);
+
+    // Set a brief summary in the main message box text
+    std::string summary = result.length() > 200 ? result.substr(0, 200) + "..." : result;
+    msgBox.setInformativeText(summary.c_str());
+    msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Save);
     msgBox.setDefaultButton(QMessageBox::Ok);
+
     QPushButton *copyButton = msgBox.addButton("Copy To Clipboard", QMessageBox::ActionRole);
-    if(msgBox.exec() == QMessageBox::Save)
-    {
-        QString filename;
-        filename = QFileDialog::getSaveFileName(0,"Save as","report.txt","Text files (*.txt);;All files|(*)");
-        if(filename.isEmpty())
-            return;
-        std::ofstream out(filename.toStdString().c_str());
-        out << result.c_str();
+    QPushButton *viewDetailsButton = msgBox.addButton("View Full Text", QMessageBox::ActionRole);
+
+    if (msgBox.exec() == QMessageBox::Save) {
+        QString filename = QFileDialog::getSaveFileName(nullptr, "Save as", "report.txt", "Text files (*.txt);;All files (*)");
+        if (!filename.isEmpty()) {
+            std::ofstream out(filename.toStdString().c_str());
+            out << result;
+        }
     }
-    if (msgBox.clickedButton() == copyButton)
-        QApplication::clipboard()->setText(result.c_str());
+
+    if (msgBox.clickedButton() == copyButton) {
+        QApplication::clipboard()->setText(QString::fromStdString(result));
+    }
+
+    if (msgBox.clickedButton() == viewDetailsButton) {
+        // Show the full text in a separate scrollable dialog
+        QDialog detailDialog;
+        detailDialog.setWindowTitle("Detailed Text");
+        detailDialog.resize(600, 400);
+
+        QVBoxLayout layout(&detailDialog);
+        QTextEdit *textEdit = new QTextEdit(&detailDialog);
+        textEdit->setReadOnly(true);
+        textEdit->setText(QString::fromStdString(result));
+        layout.addWidget(textEdit);
+
+        QPushButton closeButton("Close", &detailDialog);
+        layout.addWidget(&closeButton);
+        QObject::connect(&closeButton, &QPushButton::clicked, &detailDialog, &QDialog::accept);
+
+        detailDialog.exec();
+    }
 }
 
 bool tracking_window::command(QString cmd,QString param,QString param2)
