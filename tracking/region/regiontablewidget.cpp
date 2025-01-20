@@ -1395,7 +1395,10 @@ void RegionTableWidget::show_statistics(void)
     if(regions.empty())
         return;
     std::string result;
-    get_regions_statistics(cur_tracking_window.handle,regions,result);
+    {
+        tipl::progress p("calculate statistics",true);
+        get_regions_statistics(cur_tracking_window.handle,regions,result);
+    }
     show_info_dialog("Region Statistics",result);
 }
 void RegionTableWidget::show_t2r(void)
