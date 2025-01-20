@@ -127,11 +127,6 @@ MainWindow::MainWindow(QWidget *parent) :
             dialog->setWindowFlags(Qt::Dialog | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
             dialog->setModal(true);
 
-            QTextBrowser *NewsBrowser = new QTextBrowser;
-            NewsBrowser->setMarkdown(news);
-            NewsBrowser->setReadOnly(true);
-            NewsBrowser->setOpenExternalLinks(true);
-
             QTextBrowser *licenseBrowser = new QTextBrowser;
             licenseBrowser->setMarkdown(licenseText);
             licenseBrowser->setReadOnly(true);
@@ -140,7 +135,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
             QVBoxLayout *layout = new QVBoxLayout;
             layout->addWidget(licenseBrowser);
-            layout->addWidget(NewsBrowser);
+
 
             {
                 QHBoxLayout *h_layout = new QHBoxLayout;
@@ -161,7 +156,7 @@ MainWindow::MainWindow(QWidget *parent) :
                 layout->addWidget(notice);
             }
 
-            auto note = new QLabel("By clicking 'Accept & Sign in', you agree to the licensing terms and sign in using the above registration information.");
+            auto note = new QLabel("By clicking 'Accept & Sign in', you agree to the licensing terms and will sign in using the registration information.");
             note->setWordWrap(true);
             note->setStyleSheet("color: black; font-weight: bold;");
             layout->addWidget(note);
@@ -169,9 +164,11 @@ MainWindow::MainWindow(QWidget *parent) :
             {
                 // MODIFYING REGISTRATION CODE INVALIDATES LICENSING AGREEMENT
                 QPushButton *closeButton = new QPushButton("Accept && Sign in");
+                closeButton->setFixedHeight(closeButton->sizeHint().height() * 2);
                 connect(closeButton, &QPushButton::clicked, dialog, &QDialog::close);
                 connect(closeButton, &QPushButton::clicked, this, &MainWindow::login);
                 QPushButton *exitButton = new QPushButton("Decline && Exit");
+                exitButton->setFixedHeight(exitButton->sizeHint().height() * 2);
                 exitButton->setMaximumWidth(100);
                 connect(exitButton, &QPushButton::clicked, dialog, &QDialog::close);
                 connect(exitButton, &QPushButton::clicked, this, &MainWindow::close);
@@ -181,6 +178,28 @@ MainWindow::MainWindow(QWidget *parent) :
                 h_layout->addWidget(exitButton);
                 layout->addLayout(h_layout);
             }
+
+            {
+                // Add a horizontal separator
+                QFrame *separator = new QFrame;
+                separator->setFrameShape(QFrame::HLine);
+                separator->setFrameShadow(QFrame::Sunken);
+                layout->addWidget(separator);
+            }
+            {
+                auto title = new QLabel("News and Updates:");
+                note->setStyleSheet("color: black; font-weight: bold;");
+                layout->addWidget(title);
+            }
+
+            {
+                QTextBrowser *NewsBrowser = new QTextBrowser;
+                NewsBrowser->setMarkdown(news);
+                NewsBrowser->setReadOnly(true);
+                NewsBrowser->setOpenExternalLinks(true);
+                layout->addWidget(NewsBrowser);
+            }
+
             dialog->setLayout(layout);
             dialog->resize(800,500);
             dialog->show();
