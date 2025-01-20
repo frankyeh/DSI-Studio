@@ -164,11 +164,13 @@ MainWindow::MainWindow(QWidget *parent) :
             {
                 // MODIFYING REGISTRATION CODE INVALIDATES LICENSING AGREEMENT
                 QPushButton *closeButton = new QPushButton("Accept && Sign in");
-                closeButton->setFixedHeight(closeButton->sizeHint().height() * 2);
+                closeButton->setStyleSheet("font-size: 14pt; font-weight: bold;");
+                auto h = closeButton->sizeHint().height() * 1.5f;
+                closeButton->setFixedHeight(h);
                 connect(closeButton, &QPushButton::clicked, dialog, &QDialog::close);
                 connect(closeButton, &QPushButton::clicked, this, &MainWindow::login);
                 QPushButton *exitButton = new QPushButton("Decline && Exit");
-                exitButton->setFixedHeight(exitButton->sizeHint().height() * 2);
+                exitButton->setFixedHeight(h);
                 exitButton->setMaximumWidth(100);
                 connect(exitButton, &QPushButton::clicked, dialog, &QDialog::close);
                 connect(exitButton, &QPushButton::clicked, this, &MainWindow::close);
