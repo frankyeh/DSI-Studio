@@ -1366,10 +1366,12 @@ void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<s
 {
     std::vector<std::string> titles;
     std::vector<std::vector<float> > data(regions.size());
-    tipl::adaptive_par_for(regions.size(),[&](unsigned int index){
+    tipl::progress p("for each region");
+    for(size_t index = 0;index < regions.size();++index)
+    {
         std::vector<std::string> dummy;
         regions[index]->get_quantitative_data(handle,(index == 0) ? titles : dummy,data[index]);
-    });
+    }
     std::ostringstream out;
     out << "Name";
     for(auto each : regions)
@@ -1396,7 +1398,7 @@ void RegionTableWidget::show_statistics(void)
         return;
     std::string result;
     {
-        tipl::progress p("calculate statistics",true);
+        tipl::progress p("calculate region statistics",true);
         get_regions_statistics(cur_tracking_window.handle,regions,result);
     }
     show_info_dialog("Region Statistics",result);
