@@ -2707,7 +2707,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
 
     if(!std::filesystem::exists(dwi_file_name))
     {
-        error_msg = "file does not exist ";
+        error_msg = "file does not exist: ";
         error_msg += dwi_file_name;
         return false;
     }
