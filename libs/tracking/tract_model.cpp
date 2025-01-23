@@ -3281,6 +3281,7 @@ std::vector<std::vector<float> > TractModel::get_tracts_data(std::shared_ptr<fib
     if(data_index < handle->slices.size())
     {
         data.resize(tract_data.size());
+        handle->slices[data_index]->get_image();
         tipl::adaptive_par_for(tract_data.size(),[&](unsigned int i)
         {
              data[i] = std::move(get_tract_data(handle,i,data_index));
