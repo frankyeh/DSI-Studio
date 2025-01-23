@@ -3292,6 +3292,8 @@ float TractModel::get_tracts_mean(std::shared_ptr<fib_data> handle,unsigned int 
 {
     if(handle->slices[data_index]->optional() || tract_data.empty())
         return 0.0f;
+    // avoid multithread racing
+    handle->slices[data_index]->get_image();
     std::vector<double> mean(tract_data.size());
     tipl::adaptive_par_for(tract_data.size(),[&](unsigned int i)
     {
