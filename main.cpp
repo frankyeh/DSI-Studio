@@ -168,20 +168,9 @@ bool load_file_name(void)
                 continue;
             // setup QA and ISO template        
             fa_template_list.push_back(qa_file_path.toStdString());
-            if(QFileInfo(iso_file_path).exists())
-                iso_template_list.push_back(iso_file_path.toStdString());
-            else
-                iso_template_list.push_back(std::string());
-            if(QFileInfo(t1w_file_path).exists())
-                t1w_template_list.push_back(t1w_file_path.toStdString());
-            else
-                t1w_template_list.push_back(std::string());
-
-            // not all have FIB template
-            if(QFileInfo(fib_file_path).exists())
-                fib_template_list.push_back(fib_file_path.toStdString());
-            else
-                fib_template_list.push_back(std::string());
+            iso_template_list.push_back(iso_file_path.toStdString());
+            t1w_template_list.push_back(t1w_file_path.toStdString());
+            fib_template_list.push_back(fib_file_path.toStdString());
 
             // find related atlases
             {
