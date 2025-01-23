@@ -437,7 +437,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
             // read metric names
             if(metrics_names.empty())
             {
-                std::ifstream in(stat_files[t][0].c_str());
+                std::ifstream in(stat_files[t][0]);
                 std::string line;
                 for(size_t m = 0;std::getline(in,line);++m)
                     metrics_names.push_back(line.substr(0,line.find('\t')));
@@ -459,27 +459,22 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
             {
                 output[s].resize(metrics_names.size());
                 tipl::out() << "reading " << stat_files[t][s] << std::endl;
-                std::ifstream in(stat_files[t][s].c_str());
-                if(!in)
-                    continue;
-                std::vector<std::string> lines;
+                std::ifstream in(stat_files[t][s]);
+                std::string line;
+                for(size_t m = 0;std::getline(in,line);++m)
                 {
-                    std::string line;
-                    while(std::getline(in,line))
-                        lines.push_back(line);
+                    auto pos = line.find('\t');
+                    auto name = line.substr(0,pos);
+                    auto value = line.substr(pos+1);
+                    if(m < metrics_names.size() && name == metrics_names[m])
+                        output[s][m] = value;
+                    else
+                    {
+                        auto loc = std::find(metrics_names.begin(),metrics_names.end(),name);
+                        if(loc != metrics_names.end())
+                            output[s][loc-metrics_names.begin()] = value;
+                    }
                 }
-                if(lines.size() < metrics_names.size())
-                {
-                    std::string error("inconsistent stat file (remove it and rerun): ");
-                    error += std::filesystem::path(stat_files[t][s]).filename().u8string();
-                    error += " metrics count: ";
-                    error += std::to_string(lines.size());
-                    error += " others: ";
-                    error += std::to_string(metrics_names.size());
-                    return error;
-                }
-                for(size_t m = 0;m < metrics_names.size();++m)
-                    output[s][m] = lines[m].substr(lines[m].find('\t')+1);
             }
             std::string tract_name = tract_name_list[t];
             std::ofstream out((dir+"/"+tract_name+".stat.txt").c_str());
