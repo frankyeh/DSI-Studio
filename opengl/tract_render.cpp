@@ -442,6 +442,7 @@ void TractRender::prepare_update(tracking_window& param,
 
 
     std::vector<TractRenderData> new_data(data_block_count);
+    param.handle->slices[index_num]->get_image();
     tipl::par_for(data_block_count,[&](unsigned int thread)
     {
         for(unsigned int i = thread;i < visible.size();i += data_block_count)
