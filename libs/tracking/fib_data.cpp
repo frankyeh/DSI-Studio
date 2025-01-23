@@ -515,7 +515,8 @@ bool fib_data::load_from_file(const std::string& file_name)
     }
     if(!std::filesystem::exists(file_name))
     {
-        error_msg = "file does not exist";
+        error_msg = "file does not exist: ";
+        error_msg += file_name;
         return false;
     }
 
