@@ -22,8 +22,8 @@ private:
 public:
     explicit db_window(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc);
     ~db_window();
-    void closeEvent(QCloseEvent *event);
-    bool eventFilter(QObject *obj, QEvent *event);
+    void closeEvent(QCloseEvent *event) override;
+    bool eventFilter(QObject *obj, QEvent *event) override;
 private slots:
 
     void on_subject_list_itemSelectionChanged();

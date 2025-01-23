@@ -33,12 +33,12 @@ public:
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    void closeEvent(QCloseEvent *event);
+    void closeEvent(QCloseEvent *event) override;
     Ui::MainWindow *ui;
     void addFib(QString Filename);
     void addSrc(QString Filename);
-    void dragEnterEvent(QDragEnterEvent *event);
-    void dropEvent(QDropEvent *event);
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
     void openFile(QStringList file_name);
 public:
     void open_DWI(QStringList files);

@@ -71,11 +71,11 @@ public:
     void update_3d(QImage captured);
     // update cursor info
 protected:
-    void mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * mouseEvent );
-    void mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent );
-    void mouseMoveEvent ( QGraphicsSceneMouseEvent * mouseEvent );
-    void mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent );
-    void wheelEvent(QGraphicsSceneWheelEvent *wheelEvent);
+    void mouseDoubleClickEvent( QGraphicsSceneMouseEvent * mouseEvent ) override;
+    void mousePressEvent( QGraphicsSceneMouseEvent * mouseEvent ) override;
+    void mouseMoveEvent( QGraphicsSceneMouseEvent * mouseEvent ) override;
+    void mouseReleaseEvent( QGraphicsSceneMouseEvent * mouseEvent ) override;
+    void wheelEvent(QGraphicsSceneWheelEvent *wheelEvent) override;
 public slots:
     void show_slice();
     void show_complete_slice();

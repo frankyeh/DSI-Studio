@@ -31,7 +31,7 @@ public:
     explicit view_image(QWidget *parent = nullptr);
     ~view_image();
     bool open(QStringList file_name);
-    bool eventFilter(QObject *obj, QEvent *event);
+    bool eventFilter(QObject *obj, QEvent *event) override;
 public:
     std::vector<std::string> command_list;
     std::vector<std::string> param_list;

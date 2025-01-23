@@ -24,9 +24,9 @@ public:
     ~reconstruction_window();
     bool command(std::string cmd,std::string param = std::string());
 protected:
-    void resizeEvent ( QResizeEvent * event );
-    void showEvent ( QShowEvent * event );
-    void closeEvent(QCloseEvent *event);
+    void resizeEvent(QResizeEvent * event) override;
+    void showEvent(QShowEvent * event) override;
+    void closeEvent(QCloseEvent *event) override;
 private:
     QGraphicsScene source;
     float source_ratio = 1.0f;

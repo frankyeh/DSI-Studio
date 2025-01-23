@@ -43,7 +43,7 @@ void QColorToolButton::setColor(QColor color_)
     setIcon(icon);
     setToolButtonStyle(Qt::ToolButtonIconOnly);
 }
-void QColorToolButton::mouseReleaseEvent ( QMouseEvent * e )
+void QColorToolButton::mouseReleaseEvent(QMouseEvent * e )
 {
     QColor c = QColorDialog::getColor(selected_color,(QWidget*)parent(),"Select color",QColorDialog::ShowAlphaChannel);
     if(!c.isValid())

@@ -30,7 +30,7 @@ class QColorToolButton : public QToolButton
      {
          setToolButtonStyle(Qt::ToolButtonTextOnly);
      }
-     void mouseReleaseEvent ( QMouseEvent * e );
+     void mouseReleaseEvent(QMouseEvent * e ) override;
  public:
      QColor color() const;
      void setColor(QColor color);

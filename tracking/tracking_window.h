@@ -41,8 +41,8 @@ class tracking_window : public QMainWindow
 {
     Q_OBJECT
 public:
-    void closeEvent(QCloseEvent *event);
-    void keyPressEvent ( QKeyEvent * event );
+    void closeEvent(QCloseEvent *event) override;
+    void keyPressEvent( QKeyEvent * event) override;
 
 public:
     explicit tracking_window(QWidget *parent,
@@ -56,8 +56,8 @@ public:
     RenderingTableWidget *renderWidget = nullptr;
     DeviceTableWidget *deviceWidget = nullptr;
 
-    void dragEnterEvent(QDragEnterEvent *event);
-    void dropEvent(QDropEvent *event);
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
 public:
     slice_view_scene scene;
     bool slice_need_update = false;

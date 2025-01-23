@@ -27,7 +27,7 @@ class DeviceTableWidget : public QTableWidget
 {
     Q_OBJECT
 protected:
-    void contextMenuEvent ( QContextMenuEvent * event );
+    void contextMenuEvent(QContextMenuEvent * event ) override;
 public:
     explicit DeviceTableWidget(tracking_window& cur_tracking_window,QWidget *parent = nullptr);
     // Header:

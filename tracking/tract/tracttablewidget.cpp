@@ -70,7 +70,7 @@ void TractTableWidget::update_color_map(void)
     }
     cur_tracking_window.glWidget->tract_color_bar_pos = {10,10};
 }
-void TractTableWidget::contextMenuEvent ( QContextMenuEvent * event )
+void TractTableWidget::contextMenuEvent(QContextMenuEvent * event )
 {
     if(event->reason() == QContextMenuEvent::Mouse)
         cur_tracking_window.ui->menuTracts->popup(event->globalPos());

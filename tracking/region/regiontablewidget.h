@@ -32,7 +32,7 @@ class RegionTableWidget : public QTableWidget
 {
     Q_OBJECT
 protected:
-    void contextMenuEvent ( QContextMenuEvent * event );
+    void contextMenuEvent(QContextMenuEvent * event ) override;
 private:
     tracking_window& cur_tracking_window;
     void do_action(QString action);
