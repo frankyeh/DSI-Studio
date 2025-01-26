@@ -659,10 +659,11 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 {
     tipl::progress prog("opening file ",std::filesystem::path(file_name).stem().u8string().c_str());
 
-    if(QFileInfo(file_name.c_str()).baseName().toLower().contains("mni") && is_mni)
+    if(QFileInfo(file_name.c_str()).baseName().toLower().contains(".mni."))
     {
         tipl::out() << QFileInfo(file_name.c_str()).baseName().toStdString() <<
-                     " has 'mni' in the file name. If the image has a different image dimension from DWI, it will be spatially normalized from template space to native space." << std::endl;
+                     " has '.mni.' in the file name. It will be treated as mni space image" << std::endl;
+        is_mni = true;
     }
 
     tipl::io::gz_nifti header;
@@ -748,7 +749,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     tipl::matrix<4,4> to_diffusion_space = tipl::identity_matrix();
 
     tipl::out() << "FIB file size: " << handle->dim << " vs: " << handle->vs << (handle->is_mni ? " mni space": " not mni space") << std::endl;
-    tipl::out() << nifti_name << " size: " << from.shape() << " vs: " << vs << (is_mni ? " mni space": " not mni space (if mni space, add 'mni' in file name)") << std::endl;
+    tipl::out() << nifti_name << " size: " << from.shape() << " vs: " << vs << (is_mni ? " mni space": " not mni space (if mni space, add '.mni.' in file name)") << std::endl;
 
     if(from.shape() != handle->dim)
     {
@@ -806,7 +807,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     else
     {
         if(is_mni && !handle->is_mni)
-            tipl::out() << "The 'mni' in the filename is ignored, and " << nifti_name << " is treated as DWI regions because of identical image dimension. " << std::endl;
+            tipl::out() << "The '.mni.' in the filename is ignored, and " << nifti_name << " is treated as DWI regions because of identical image dimension. " << std::endl;
     }
 
 
