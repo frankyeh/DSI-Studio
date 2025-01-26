@@ -49,7 +49,7 @@ bool load_nii(tipl::program_option<tipl::out>& po,
     QStringList str_list = QString(region_text.c_str()).split(",");// splitting actions
     QString file_name = str_list[0];
     std::string error_msg;
-    if(!load_nii(handle,file_name.toStdString(),transform_lookup,regions,error_msg,QFileInfo(file_name).baseName().toLower().contains("mni")))
+    if(!load_nii(handle,file_name.toStdString(),transform_lookup,regions,error_msg,false))
     {
         tipl::error() << error_msg << std::endl;
         return false;
@@ -77,7 +77,10 @@ bool load_tracts(const char* file_name,std::shared_ptr<fib_data> handle,std::sha
         tipl::error() << file_name << " does not exist. terminating..." << std::endl;
         return false;
     }
-    if(!tract_model->load_tracts_from_file(file_name,handle.get(),std::string(file_name).find("mni") != std::string::npos))
+    if(QFileInfo(file_name).baseName().contains(".mni."))
+        tipl::out() << QFileInfo(file_name).baseName().toStdString() <<
+                     " has '.mni.' in the file name. It will be treated as mni-space tracts" << std::endl;
+    if(!tract_model->load_tracts_from_file(file_name,handle.get(),QFileInfo(file_name).baseName().contains(".mni.")))
     {
         tipl::error() << "cannot read or parse " << file_name << std::endl;
         return false;
