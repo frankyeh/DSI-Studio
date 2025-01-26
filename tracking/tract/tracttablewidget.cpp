@@ -1026,21 +1026,23 @@ void get_track_statistics(std::shared_ptr<fib_data> handle,
     if(tract_models.empty())
         return;
     std::vector<std::vector<std::string> > track_results(tract_models.size());
-    tipl::progress p("for each tract");
-    for(size_t index = 0;p(index,tract_models.size());++index)
     {
-        std::string tmp,line;
-        tract_models[index]->get_quantitative_info(handle,tmp);
-        std::istringstream in(tmp);
-        while(std::getline(in,line))
+        tipl::progress p("for each tract");
+        for(size_t index = 0;p(index,tract_models.size());++index)
         {
-            if(line.find("\t") == std::string::npos)
-                continue;
-            track_results[index].push_back(line);
+            std::string tmp,line;
+            tract_models[index]->get_quantitative_info(handle,tmp);
+            std::istringstream in(tmp);
+            while(std::getline(in,line))
+            {
+                if(line.find("\t") == std::string::npos)
+                    continue;
+                track_results[index].push_back(line);
+            }
         }
+        if(p.aborted())
+            return;
     }
-    if(p.aborted())
-        return;
     std::vector<std::string> metrics_name;
     for(unsigned int j = 0;j < track_results[0].size();++j)
         metrics_name.push_back(track_results[0][j].substr(0,track_results[0][j].find("\t")));
