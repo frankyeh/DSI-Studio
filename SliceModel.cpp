@@ -458,9 +458,9 @@ bool CustomSliceModel::load_slices(void)
             is_mni = false;
         }
 
-        if(QFileInfo(source_file_name.c_str()).fileName().toLower().contains("mni"))
+        if(QFileInfo(source_file_name.c_str()).fileName().toLower().contains(".mni."))
         {
-            tipl::out() << source_file_name << " has 'mni' in the file name. used as mni image.";
+            tipl::out() << source_file_name << " has '.mni.' in the file name. It will be treated as mni space image.";
             is_mni = true;
         }
 
