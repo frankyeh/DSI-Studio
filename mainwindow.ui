@@ -2696,6 +2696,11 @@ Tractography</string>
                 </item>
                 <item>
                  <property name="text">
+                  <string>labsolver/animal</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
                   <string>duke-civm/mouse</string>
                  </property>
                 </item>
