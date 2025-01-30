@@ -116,7 +116,7 @@ public:
             tipl::io::gz_nifti nifti;
             if(!nifti.load_from_file(file_name))
             {
-                error_msg = "invalid nifti format";
+                error_msg = nifti.error_msg;
                 return false;
             }
             if(nifti.is_int8())
@@ -163,7 +163,7 @@ public:
             tipl::io::gz_nifti nifti;
             if(!nifti.load_from_file(file_name))
             {
-                error_msg = "invalid nifti format";
+                error_msg = nifti.error_msg;
                 return false;
             }
             if(nifti.is_int8())
@@ -279,17 +279,18 @@ public:
 
         J.clear();
         J.resize(max_modality);
-        for(size_t i = 0;i < J.size() && !I[i].empty();++i)
+        for(size_t i = 0;i < I.size() && !I[i].empty();++i)
             J[i] = tipl::resample(I[i],Its,trans);
 
         calculate_linear_r();
 
-        for(size_t i = 0;i < !I[i].empty() && export_intermediate;++i)
-        {
-            tipl::io::gz_nifti::save_to_file(("I" + std::to_string(i) + ".nii.gz").c_str(),I[i],Itvs,ItR);
-            tipl::io::gz_nifti::save_to_file(("It" + std::to_string(i) + ".nii.gz").c_str(),It[i],Itvs,ItR);
-            tipl::io::gz_nifti::save_to_file(("J" + std::to_string(i) + ".nii.gz").c_str(),J[i],Itvs,ItR);
-        }
+        if(export_intermediate)
+            for(size_t i = 0;i < I.size() && !I[i].empty();++i)
+            {
+                tipl::io::gz_nifti::save_to_file(("I" + std::to_string(i) + ".nii.gz").c_str(),I[i],Itvs,ItR);
+                tipl::io::gz_nifti::save_to_file(("It" + std::to_string(i) + ".nii.gz").c_str(),It[i],Itvs,ItR);
+                tipl::io::gz_nifti::save_to_file(("J" + std::to_string(i) + ".nii.gz").c_str(),J[i],Itvs,ItR);
+            }
         return cost;
     }
     void compute_mapping_from_displacement(void)
