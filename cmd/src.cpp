@@ -399,8 +399,14 @@ int src(tipl::program_option<tipl::out>& po)
     auto output = po.get("output",std::filesystem::path(file_list[0]).stem().stem().u8string() + ".sz");
     if(std::filesystem::is_directory(output))
         output += std::string("/") + std::filesystem::path(file_list[0]).stem().stem().u8string() + ".sz";
-    if(!tipl::ends_with(output,".sz"))
+    if(!tipl::ends_with(output,".sz") && !tipl::ends_with(output,".rz"))
         output += ".sz";
+    if(!po.get("overwrite",0) && std::filesystem::exists(output))
+    {
+        tipl::out() << "skipping " << output << " already exists";
+        return 0;
+    }
+
 
     src_data src;
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
@@ -466,12 +472,6 @@ int src(tipl::program_option<tipl::out>& po)
         for(unsigned int index = 0;index < dwi_files.size();++index)
             if(dwi_files[index]->bvalue < 100.0f)
                 dwi_files[index]->bvalue = 0.0f;
-    }
-
-    if(!po.get("overwrite",0) && std::filesystem::exists(output))
-    {
-        tipl::out() << "skipping " << output << " already exists";
-        return 0;
     }
 
     if(!src.load_from_file(dwi_files,po.get<int>("sort_b_table",0)) ||
