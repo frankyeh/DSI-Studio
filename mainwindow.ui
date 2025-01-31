@@ -3039,20 +3039,6 @@ p, li { white-space: pre-wrap; }
                    </widget>
                   </item>
                   <item>
-                   <widget class="QLabel" name="label_50">
-                    <property name="text">
-                     <string>Gitub PAT:</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QLineEdit" name="github_token">
-                    <property name="echoMode">
-                     <enum>QLineEdit::PasswordEchoOnEdit</enum>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
                    <widget class="QCheckBox" name="download_overwrite">
                     <property name="text">
                      <string>Overwrite</string>
@@ -3239,7 +3225,7 @@ p, li { white-space: pre-wrap; }
            <property name="geometry">
             <rect>
              <x>40</x>
-             <y>147</y>
+             <y>134</y>
              <width>101</width>
              <height>20</height>
             </rect>
@@ -3258,7 +3244,7 @@ p, li { white-space: pre-wrap; }
            <property name="geometry">
             <rect>
              <x>220</x>
-             <y>143</y>
+             <y>130</y>
              <width>93</width>
              <height>29</height>
             </rect>
@@ -3271,7 +3257,7 @@ p, li { white-space: pre-wrap; }
            <property name="geometry">
             <rect>
              <x>140</x>
-             <y>144</y>
+             <y>131</y>
              <width>80</width>
              <height>26</height>
             </rect>
@@ -3283,7 +3269,7 @@ p, li { white-space: pre-wrap; }
              <x>10</x>
              <y>10</y>
              <width>971</width>
-             <height>211</height>
+             <height>241</height>
             </rect>
            </property>
            <property name="styleSheet">
@@ -3291,6 +3277,32 @@ p, li { white-space: pre-wrap; }
            </property>
            <property name="text">
             <string/>
+           </property>
+          </widget>
+          <widget class="QLabel" name="label_50">
+           <property name="geometry">
+            <rect>
+             <x>40</x>
+             <y>160</y>
+             <width>54</width>
+             <height>24</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Gitub PAT:</string>
+           </property>
+          </widget>
+          <widget class="QLineEdit" name="github_token">
+           <property name="geometry">
+            <rect>
+             <x>100</x>
+             <y>160</y>
+             <width>211</width>
+             <height>22</height>
+            </rect>
+           </property>
+           <property name="echoMode">
+            <enum>QLineEdit::PasswordEchoOnEdit</enum>
            </property>
           </widget>
           <zorder>label_12</zorder>
@@ -3303,6 +3315,8 @@ p, li { white-space: pre-wrap; }
           <zorder>label_11</zorder>
           <zorder>clear_settings</zorder>
           <zorder>styles</zorder>
+          <zorder>label_50</zorder>
+          <zorder>github_token</zorder>
          </widget>
         </item>
        </layout>
