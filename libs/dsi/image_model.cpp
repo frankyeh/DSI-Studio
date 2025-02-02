@@ -97,6 +97,28 @@ void src_data::calculate_dwi_sum(bool update_mask)
         }
     }
 }
+
+
+
+bool src_data::mask_from_template(void)
+{
+    tipl::affine_transform<float> arg;
+    auto template_fib = get_template_fib(arg);
+    if(!template_fib.get())
+    {
+        error_msg = "cannot load template";
+        return false;
+    }
+    auto T = tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs);
+    T.inverse();
+    tipl::image<3,unsigned char> iso(dwi.shape());
+    tipl::resample(template_image_pre(tipl::image<3>(template_fib->get_iso())),iso,T);
+    tipl::threshold(iso,voxel.mask,0);
+    auto I = dwi;
+    tipl::filter::gaussian(I);
+    tipl::morphology::fit(voxel.mask,I);
+    return true;
+}
 bool src_data::mask_from_unet(void)
 {
     std::vector<tipl::image<3> > b0;
@@ -189,6 +211,47 @@ void src_data::flip_b_table(const unsigned char* order)
 
 
 extern std::vector<std::string> fib_template_list;
+std::shared_ptr<fib_data> src_data::get_template_fib(tipl::affine_transform<float>& arg)
+{
+    auto template_fib = std::make_shared<fib_data>();
+    if(!fib_template_list.empty() &&
+       !fib_template_list[voxel.template_id].empty() &&
+       template_fib->load_from_file(fib_template_list[voxel.template_id]))
+    {
+        if(template_fib->vs[0] < voxel.vs[0])
+        {
+            std::shared_ptr<fib_data> new_template_fib(new fib_data);
+            if(new_template_fib->load_at_resolution(fib_template_list[voxel.template_id],voxel.vs[0]))
+                template_fib = new_template_fib;
+            else
+            {
+                template_fib.reset();
+                return template_fib;
+            }
+        }
+        {
+            tipl::progress prog("registering to template");
+
+            auto iso = template_fib->get_iso();
+            tipl::reg::linear<tipl::out>(
+                   tipl::reg::make_list(template_image_pre(tipl::image<3>(iso))),template_fib->vs,
+                   tipl::reg::make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,arg,tipl::reg::affine,tipl::prog_aborted);
+            if(prog.aborted())
+            {
+                template_fib.reset();
+                return template_fib;
+            }
+            float r = tipl::correlation(iso,tipl::resample<tipl::interpolation::linear>(dwi,iso.shape(),
+                        tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs)));
+            tipl::out() << "linear r: " << r << std::endl;
+            if(r < 0.6f)
+                template_fib.reset();
+        }
+    }
+    else
+        template_fib.reset();
+    return template_fib;
+}
 bool src_data::check_b_table(bool use_template)
 {
     if(!new_dwi.empty())
@@ -237,51 +300,10 @@ bool src_data::check_b_table(bool use_template)
                              ".210",".210fx",".210fy",".210fz",
                              ".201",".201fx",".201fy",".201fz"};
 
+    tipl::affine_transform<float> arg;
     std::shared_ptr<fib_data> template_fib;
-    tipl::transformation_matrix<float> T;
-    tipl::matrix<3,3,float> jacobian;
-
-    //if(is_human_data())
-    {
-        template_fib = std::make_shared<fib_data>();
-        if(use_template &&
-           !fib_template_list.empty() &&
-           !fib_template_list[voxel.template_id].empty() &&
-           template_fib->load_from_file(fib_template_list[voxel.template_id]))
-        {
-            if(template_fib->vs[0] < voxel.vs[0])
-            {
-                std::shared_ptr<fib_data> new_template_fib(new fib_data);
-                if(new_template_fib->load_at_resolution(fib_template_list[voxel.template_id],voxel.vs[0]))
-                    template_fib = new_template_fib;
-                else
-                    template_fib.reset();
-            }
-
-            if(template_fib.get())
-            {
-                tipl::affine_transform<float> arg;
-                tipl::progress prog("comparing subject fibers to template fibers");
-
-                auto iso = template_fib->get_iso();
-                tipl::reg::linear<tipl::out>(
-                       tipl::reg::make_list(template_image_pre(tipl::image<3>(iso))),template_fib->vs,
-                       tipl::reg::make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,arg,tipl::reg::affine,tipl::prog_aborted);
-                if(prog.aborted())
-                    return false;
-                tipl::rotation_matrix(arg.rotation,jacobian.begin(),tipl::vdim<3>());
-                jacobian.inv();
-                T = tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs);
-
-                float r = tipl::correlation(iso,tipl::resample<tipl::interpolation::linear>(dwi,iso.shape(),T));
-                tipl::out() << "linear r: " << r << std::endl;
-                if(r < 0.6f)
-                    template_fib.reset();
-            }
-        }
-        else
-            template_fib.reset();
-    }
+    if(use_template)
+        template_fib = get_template_fib(arg);
     if(template_fib.get())
     {
         voxel.recon_report <<
@@ -307,6 +329,10 @@ bool src_data::check_b_table(bool use_template)
             double sum_cos = 0.0;
             size_t ncount = 0;
             auto template_geo = template_fib->dim;
+            tipl::matrix<3,3,float> jacobian;
+            tipl::rotation_matrix(arg.rotation,jacobian.begin(),tipl::vdim<3>());
+            jacobian.inv();
+            auto T = tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs);
             for(tipl::pixel_index<3> index(template_geo);index < template_geo.size();++index)
             {
                 if(template_fib->dir.fa[0][index.index()] < 0.2f)
