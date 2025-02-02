@@ -217,6 +217,7 @@ void distortion_estimate(const image_type& v1,const image_type& v2,
 
 
 class DwiHeader;
+class fib_data;
 struct src_data
 {
     src_data(void){}
@@ -265,7 +266,9 @@ public:
     void draw_mask(tipl::color_image& buffer,int position);
     void calculate_dwi_sum(bool update_mask);
     bool mask_from_unet(void);
+    bool mask_from_template(void);
     void remove(unsigned int index);
+    std::shared_ptr<fib_data> get_template_fib(tipl::affine_transform<float>& arg);
     bool check_b_table(bool use_template = true);
     bool load_intro(const std::string& file_name);
 public:
