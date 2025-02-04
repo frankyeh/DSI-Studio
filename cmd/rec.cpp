@@ -143,7 +143,7 @@ int rec(tipl::program_option<tipl::out>& po)
             }
         }
 
-        if(po.get("volume_correction",src.is_human_data() ? 0 : 1))
+        if(po.get("volume_correction",0))
         {
             if(!src.command("[Step T2][Corrections][Volume Orientation Correction]"))
             {
