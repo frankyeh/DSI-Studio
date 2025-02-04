@@ -201,12 +201,11 @@ public:
     {
         return !I[0].empty() && !It[0].empty();
     }
-    void match_resolution(bool rigid_body)
+    void match_resolution(bool use_vs)
     {
         if(!data_ready())
             return;
-        float ratio = (rigid_body ? Ivs[0]/Itvs[0] : float(Is.width())/float(Its.width()));
-
+        float ratio = (use_vs ? Itvs[0]/Ivs[0] : float(Is.width())/float(Its.width()));
         auto downsample = [](auto& I,auto& Is,auto& vs,auto& trans)
         {
             for(auto& each : I)
@@ -222,13 +221,13 @@ public:
                 trans[each] *= 2.0f;
             Is = I[0].shape();
         };
-        while(ratio < 0.5f)   // if subject resolution is substantially lower, downsample template
+        while(ratio <= 0.5f)
         {
             downsample(It,Its,Itvs,ItR);
             ratio *= 2.0f;
             tipl::out() << "downsampling template to " << Itvs[0] << " mm resolution" << std::endl;
         }
-        while(ratio > 2.5f)  // if subject resolution is higher, downsample it for registration
+        while(ratio >= 2.0f)
         {
             downsample(I,Is,Ivs,IR);
             ratio /= 2.0f;
