@@ -1849,6 +1849,7 @@ bool fib_data::map_to_mni(bool background)
                 tipl::prog_aborted = true;
                 return;
             }
+            reg.match_resolution(true);
             tipl::out() << "try using t1w image for registration..." << std::endl;
             reg.cost_type = tipl::reg::mutual_info;
             reg.linear_reg(tipl::prog_aborted);
@@ -1897,6 +1898,7 @@ bool fib_data::map_to_mni(bool background)
                 tipl::prog_aborted = true;
                 return;
             }
+            reg.match_resolution(false);
             reg.linear_reg(tipl::prog_aborted);
         }
 
