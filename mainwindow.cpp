@@ -1820,7 +1820,7 @@ void MainWindow::on_github_download_clicked()
             "1. Go to GitHub → Settings → Developer settings → Personal access tokens.\n"
             "2. Generate a token with 'repo' permissions.\n"
             "3. Copy the token (it won't be shown again).\n"
-            "4. Paste it into DSI Studio's 'Gitub PAT' field.";
+            "4. Paste it into DSI Studio's [Tools][Gitub PAT] field.";
             QMessageBox::information(nullptr, "DSI Studio", message);
     }
 
