@@ -316,7 +316,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
     if(cmd == "[Step T2][File][Save 4D NIFTI]")
     {
         QString filename = QFileDialog::getSaveFileName(
-                    this,"Save image as...",filenames[0] + ".nii.gz",
+                    this,"Save image as...",QFileInfo(filenames[0]).baseName() + ".nii.gz",
                                 "NIFTI files (*nii.gz);;All files (*)" );
         if(filename.isEmpty())
             return false;
@@ -325,7 +325,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
     if(cmd == "[Step T2][File][Save Src File]")
     {
         QString filename = QFileDialog::getSaveFileName(
-                this,"Save SRC file",filenames[0].remove(".src.gz")+".sz",
+                this,"Save SRC file",QFileInfo(filenames[0]).baseName()+".sz",
                         "SRC files (*.sz *src.gz);;All files (*)" );
         if(filename.isEmpty())
             return false;
@@ -377,26 +377,27 @@ bool reconstruction_window::command(std::string cmd,std::string param)
     on_SlicePos_valueChanged(ui->SlicePos->value());
 
 
-    if(filenames.size() > 1 && tipl::contains_case_insensitive(cmd,"save") &&
+    if(filenames.size() > 1 &&
+       tipl::contains(cmd,"[Save ") &&
         QMessageBox::information(this,QApplication::applicationName(),"Apply to other SRC files?",
         QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel) == QMessageBox::Yes)
     {
         tipl::progress prog("apply to other SRC files");
-        std::string steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
-        steps += cmd;
-        if(!param.empty())
-        {
-            steps += "=";
-            steps += param;
-            steps += "\n";
-        }
+        std::string previous_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
         for(int index = 1;prog(index,filenames.size());++index)
         {
+            std::string cur_param;
+            if(!tipl::match_files(filenames[0].toStdString(),param,
+                                  filenames[index].toStdString(),cur_param))
+            {
+                QMessageBox::critical(this,"ERROR",QString("cannot apply to ") + filenames[index]);
+                return false;
+            }
             src_data model;
             if (!model.load_from_file(filenames[index].toStdString().c_str()) ||
-                !model.run_steps(handle->file_name,steps))
+                !model.run_steps(handle->file_name,previous_steps + cmd + "=" + cur_param + "\n"))
             {
-                if(QMessageBox::information(this,QApplication::applicationName(),
+                if(QMessageBox::critical(this,QApplication::applicationName(),
                     QFileInfo(filenames[index]).fileName() + " : " + model.error_msg.c_str() + " Continue?",
                                 QMessageBox::Yes|QMessageBox::No) == QMessageBox::No)
                     return false;
