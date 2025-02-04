@@ -626,15 +626,26 @@ bool dual_reg<3>::apply_warping_tt(const char* from,const char* to) const
     std::vector<unsigned int> color;
     std::string report, parameter_id;
 
-    tipl::shape<3> geo;
-    tipl::vector<3> vs;
-    tipl::matrix<4,4,float> trans_to_mni;
-    if(!TinyTrack::load_from_file(from,loaded_tract_data,cluster,geo,vs,trans_to_mni,report,parameter_id,color))
     {
-        error_msg = "Failed to read file";
-        return false;
-    }
+        tipl::shape<3> geo;
+        tipl::vector<3> vs;
+        tipl::matrix<4,4,float> trans_to_mni;
+        if(!TinyTrack::load_from_file(from,loaded_tract_data,cluster,geo,vs,trans_to_mni,report,parameter_id,color))
+        {
+            error_msg = "Failed to read file";
+            return false;
+        }
 
+        tipl::out() << "image dim:" << Is;
+        tipl::out() << "image trans:" << IR;
+        tipl::out() << "tract dim:" << geo;
+        tipl::out() << "tract trans:" << trans_to_mni;
+        if(geo != Is || trans_to_mni != IR)
+        {
+            error_msg = "tracts are not in the image space";
+            return false;
+        }
+    }
     tipl::vector<3> max_pos(from2to.shape());
     max_pos -= 1.0f;
     auto T = tipl::from_space(ItR).to(IR);
@@ -807,25 +818,10 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
                     tract[i+2] = p[2];
                 }
             });
-            tipl::out() << "old dim:" << geo << " vs:" << vs;
-            geo[0] *= std::abs(T[0]);
-            geo[1] *= std::abs(T[5]);
-            geo[2] *= std::abs(T[10]);
-            vs[0] /= std::abs(T[0]);
-            vs[1] /= std::abs(T[5]);
-            vs[2] /= std::abs(T[10]);
-            tipl::out() << "new dim:" << geo << " vs:" << vs;
         };
-
-        // two conditions to transform tracts
-
-        // 1. QSDR loading MNI space tracts
-        if(is_mni && trans_to_mni != source_trans_to_mni)
-            apply_transform(tipl::from_space(source_trans_to_mni).to(trans_to_mni));
-
-        // 2. subject FIB loading MNI space tracts
         if(!is_mni && tract_is_mni)
         {
+            tipl::out() << "applying nonlinear transform, condition: loading template-space tract to subject space";
             if(!handle->map_to_mni(tipl::show_prog))
             {
                 tipl::out() << "cannot run normalization" << std::endl;;
@@ -838,12 +834,19 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
             if(handle->template_to_mni != source_trans_to_mni)
                 apply_transform(tipl::from_space(source_trans_to_mni).to(handle->template_to_mni));
             // then warp to the native space
-            tipl::out() << "warping tract from mni to native space" << std::endl;
             handle->temp2sub(loaded_tract_data);
+            geo = handle->dim;
+            vs = handle->vs;
         }
+        else
+            if(trans_to_mni != source_trans_to_mni)
+            {
+                tipl::out() << "applying linear transform, condition: loading tract to a different srow";
+                apply_transform(tipl::from_space(source_trans_to_mni).to(trans_to_mni));
+                geo = handle->dim;
+                vs = handle->vs;
+            }
     }
-
-
     loaded_tract_data.swap(tract_data);
 
     tract_color.resize(tract_data.size(),color);
