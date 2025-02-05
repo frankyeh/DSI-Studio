@@ -323,20 +323,22 @@ public:
             t2f_dis.resize(Its);
             return;
         }
-        tipl::par_for(2,[&](int id)
+        else
         {
-            if(id)
-                tipl::reg::cdm_common<tipl::out>(make_list(It),make_list(J),t2f_dis,terminated,param,use_cuda && has_cuda);
-            else
-                tipl::reg::cdm_common<tipl::out>(make_list(J),make_list(It),f2t_dis,terminated,param,use_cuda && has_cuda);
-        },2);
+            tipl::par_for(2,[&](int id)
+            {
+                if(id)
+                    tipl::reg::cdm_common<tipl::out>(make_list(It),make_list(J),t2f_dis,terminated,param,use_cuda && has_cuda);
+                else
+                    tipl::reg::cdm_common<tipl::out>(make_list(J),make_list(It),f2t_dis,terminated,param,use_cuda && has_cuda);
+            },2);
 
-        if(!previous_f2t.empty() && !previous_t2f.empty())
-        {
-            tipl::accumulate_displacement(previous_f2t,f2t_dis);
-            tipl::accumulate_displacement(previous_t2f,t2f_dis);
+            if(!previous_f2t.empty() && !previous_t2f.empty())
+            {
+                tipl::accumulate_displacement(previous_f2t,f2t_dis);
+                tipl::accumulate_displacement(previous_t2f,t2f_dis);
+            }
         }
-
         compute_mapping_from_displacement();
         calculate_nonlinear_r();
 
