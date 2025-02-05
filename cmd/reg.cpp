@@ -123,8 +123,10 @@ int reg(tipl::program_option<tipl::out>& po)
         r.bound = tipl::reg::large_bound;
     r.reg_type = po.get("reg_type",1) == 0 ? tipl::reg::rigid_body : tipl::reg::affine;
     r.cost_type = po.get("cost_function",r.reg_type==tipl::reg::rigid_body ? "mi" : "corr") == std::string("mi") ? tipl::reg::mutual_info : tipl::reg::corr;
-    r.linear_reg(tipl::prog_aborted);
+    r.skip_linear = po.get("skip_linear",0);
+    r.skip_nonlinear = po.get("skip_nonlinear",0);
 
+    r.linear_reg(tipl::prog_aborted);
 
     if(r.reg_type != tipl::reg::rigid_body)
     {
