@@ -67,72 +67,76 @@ bool load_nifti_file(std::string file_name_cmd,tipl::image<3>& data,tipl::vector
 
 int reg(tipl::program_option<tipl::out>& po)
 {
-
-    std::vector<std::string> apply_warp_filename;
-    if(po.has("apply_warp"))
-    {
-        if(!po.get_files("apply_warp",apply_warp_filename))
-        {
-            tipl::error() << "cannot find file " << po.get("apply_warp") <<std::endl;
-            return 1;
-        }
-        if(!po.get("overwrite",0))
-        {
-            bool skip = true;
-            for(const auto& each_file: apply_warp_filename)
-            {
-                if((tipl::ends_with(each_file,".tt.gz") && !std::filesystem::exists(each_file+".wp.tt.gz")) ||
-                   (tipl::ends_with(each_file,".nii.gz") && !std::filesystem::exists(each_file+".wp.nii.gz")))
-                {
-                    skip = false;
-                    break;
-                }
-            }
-            if(skip)
-            {
-                tipl::out() << "output file exists, skipping";
-                return 0;
-            }
-        }
-    }
-
     dual_reg<3> r;
-
-    if(po.has("warp"))
+    if(!po.has("source") || !po.has("to"))
     {
-        if(!po.has("apply_warp"))
-        {
-            tipl::error() << "please specify the images or tracts to be warped using --apply_warp";
-            return 1;
-        }
-        tipl::out() << "loading warping field";
-        if(!r.load_warping(po.get("warp")))
-            goto error;
-        return after_warp(apply_warp_filename,r);
-    }
-
-    if(!po.has("from") || !po.has("to"))
-    {
-        tipl::error() << "please specify the images to normalize using --from and --to";
+        tipl::error() << "please specify the images to normalize using --source and --to";
         return 1;
     }
 
-    if(!r.load_subject(0,po.get("from")) ||
-       !r.load_template(0,po.get("to")))
-        goto error;
-    r.modality_names[0] = std::filesystem::path(po.get("from")).stem().stem().string() + "->" +
-                          std::filesystem::path(po.get("to")).stem().stem().string();
 
-    if(po.has("from2") && po.has("to2"))
+    std::vector<std::string> from_filename,to_filename;
+    if(!po.get_files("source",from_filename))
     {
-        if(!r.load_subject(1,po.get("from2")) ||
-           !r.load_template(1,po.get("to2")))
-            goto error;
-        r.modality_names[1] = std::filesystem::path(po.get("from2")).stem().stem().string() + "->" +
-                              std::filesystem::path(po.get("to2")).stem().stem().string();
+        tipl::error() << "cannot find file " << po.get("from") <<std::endl;
+        return 1;
+    }
+    if(!po.get_files("to",to_filename))
+    {
+        tipl::error() << "cannot find file " << po.get("to") <<std::endl;
+        return 1;
     }
 
-    tipl::out() << "from dim: " << r.Is;
+    if(!po.get("overwrite",0))
+    {
+        bool skip = true;
+        for(const auto& each_file: from_filename)
+        {
+            if((tipl::ends_with(each_file,".tt.gz") && !std::filesystem::exists(each_file+".wp.tt.gz")) ||
+               (tipl::ends_with(each_file,".nii.gz") && !std::filesystem::exists(each_file+".wp.nii.gz")))
+            {
+                skip = false;
+                break;
+            }
+        }
+        if(skip)
+        {
+            tipl::out() << "output file exists, skipping";
+            return 0;
+        }
+    }
+
+    if(po.has("mapping"))
+    {
+        tipl::out() << "loading mapping field";
+        if(!r.load_warping(po.get("mapping")))
+        {
+            tipl::error() << r.error_msg;
+            return 1;
+        }
+        return after_warp(from_filename,r);
+    }
+
+
+    for(size_t i = 0;i < from_filename.size() && i < to_filename.size();++i)
+    {
+        if(!r.load_subject(i,from_filename[i]))
+        {
+            tipl::error() << r.error_msg;
+            return 1;
+        }
+
+        if(!r.load_template(i,to_filename[i]))
+        {
+            tipl::error() << r.error_msg;
+            return 1;
+        }
+
+        r.modality_names[i] = std::filesystem::path(from_filename[i]).stem().stem().string() + "->" +
+                              std::filesystem::path(to_filename[i]).stem().stem().string();
+    }
+
+    tipl::out() << "source dim: " << r.Is;
     tipl::out() << "to dim: " << r.Its;
 
     tipl::out() << "running linear registration." << std::endl;
@@ -155,11 +159,10 @@ int reg(tipl::program_option<tipl::out>& po)
         r.nonlinear_reg(tipl::prog_aborted);
     }
 
-    if(po.has("output_warp") && !r.save_warping(po.get("output_warp").c_str()))
-        goto error;
-    return after_warp(apply_warp_filename,r);
-
-    error:
-    tipl::error() << r.error_msg;
-    return 1;
+    if(po.has("output_mapping") && !r.save_warping(po.get("output_mapping").c_str()))
+    {
+        tipl::error() << r.error_msg;
+        return 1;
+    }
+    return after_warp(from_filename,r);
 }
