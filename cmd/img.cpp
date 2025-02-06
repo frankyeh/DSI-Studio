@@ -91,6 +91,7 @@ void variant_image::change_type(decltype(pixel_type) new_type)
                     auto max_v = tipl::max_value(I);
                     if(max_v <= 1.0f && max_v != 0.0f)
                         tipl::multiply_constant(I,255.99f/max_v);
+                    tipl::lower_threshold(I,0);
                 }
                 std::copy(I.begin(),I.end(),&I_int8[0]);
                 break;
