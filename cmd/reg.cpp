@@ -5,19 +5,9 @@
 
 
 
-int after_warp(tipl::program_option<tipl::out>& po,dual_reg<3>& r)
+int after_warp(const std::vector<std::string>& apply_warp_filename,dual_reg<3>& r)
 {
-    if(!po.has("apply_warp"))
-        return 0;
-
-    std::vector<std::string> filename_cmds;
-    if(!po.get_files("apply_warp",filename_cmds))
-    {
-        tipl::error() << "cannot find file " << po.get("apply_warp") <<std::endl;
-        return 1;
-    }
-
-    for(const auto& each_file: filename_cmds)
+    for(const auto& each_file: apply_warp_filename)
     {
         if(tipl::ends_with(each_file,".tt.gz"))
         {
@@ -75,14 +65,37 @@ bool load_nifti_file(std::string file_name_cmd,tipl::image<3>& data,tipl::vector
 }
 
 
-
-
-
-
-
-
 int reg(tipl::program_option<tipl::out>& po)
 {
+
+    std::vector<std::string> apply_warp_filename;
+    if(po.has("apply_warp"))
+    {
+        if(!po.get_files("apply_warp",apply_warp_filename))
+        {
+            tipl::error() << "cannot find file " << po.get("apply_warp") <<std::endl;
+            return 1;
+        }
+        if(!po.get("overwrite",0))
+        {
+            bool skip = true;
+            for(const auto& each_file: apply_warp_filename)
+            {
+                if((tipl::ends_with(each_file,".tt.gz") && !std::filesystem::exists(each_file+".wp.tt.gz")) ||
+                   (tipl::ends_with(each_file,".nii.gz") && !std::filesystem::exists(each_file+".wp.nii.gz")))
+                {
+                    skip = false;
+                    break;
+                }
+            }
+            if(skip)
+            {
+                tipl::out() << "output file exists, skipping";
+                return 0;
+            }
+        }
+    }
+
     dual_reg<3> r;
 
     if(po.has("warp"))
@@ -95,7 +108,7 @@ int reg(tipl::program_option<tipl::out>& po)
         tipl::out() << "loading warping field";
         if(!r.load_warping(po.get("warp")))
             goto error;
-        return after_warp(po,r);
+        return after_warp(apply_warp_filename,r);
     }
 
     if(!po.has("from") || !po.has("to"))
@@ -107,11 +120,16 @@ int reg(tipl::program_option<tipl::out>& po)
     if(!r.load_subject(0,po.get("from")) ||
        !r.load_template(0,po.get("to")))
         goto error;
+    r.modality_names[0] = std::filesystem::path(po.get("from")).stem().stem().string() + "->" +
+                          std::filesystem::path(po.get("to")).stem().stem().string();
+
     if(po.has("from2") && po.has("to2"))
     {
         if(!r.load_subject(1,po.get("from2")) ||
            !r.load_template(1,po.get("to2")))
             goto error;
+        r.modality_names[1] = std::filesystem::path(po.get("from2")).stem().stem().string() + "->" +
+                              std::filesystem::path(po.get("to2")).stem().stem().string();
     }
 
     tipl::out() << "from dim: " << r.Is;
@@ -139,7 +157,7 @@ int reg(tipl::program_option<tipl::out>& po)
 
     if(po.has("output_warp") && !r.save_warping(po.get("output_warp").c_str()))
         goto error;
-    return after_warp(po,r);
+    return after_warp(apply_warp_filename,r);
 
     error:
     tipl::error() << r.error_msg;
