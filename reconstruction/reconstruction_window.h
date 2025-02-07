@@ -63,6 +63,7 @@ private slots:
     void on_dilation_clicked(){command("[Step T2a][Dilation]");}
     void on_erosion_clicked(){command("[Step T2a][Erosion]");}
     void on_negate_clicked(){command("[Step T2a][Negate]");}
+    void on_from_template_clicked();
     void on_actionErase_Background_Signals_triggered(){command("[Step T2a][Remove Background]");}
     void on_thresholding_clicked(){command("[Step T2a][Threshold]");}
 
