@@ -284,6 +284,11 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
 }
 
 
+void reconstruction_window::on_from_template_clicked()
+{
+    handle->voxel.template_id = ui->primary_template->currentIndex();
+    command("[Step T2a][Template]");
+}
 
 
 void reconstruction_window::on_save_mask_clicked()
