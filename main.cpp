@@ -32,23 +32,6 @@ std::vector<std::vector<std::string> > atlas_file_name_list;
 class CustomSliceModel;
 std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 
-int rec(tipl::program_option<tipl::out>& po);
-int trk(tipl::program_option<tipl::out>& po);
-int src(tipl::program_option<tipl::out>& po);
-int ana(tipl::program_option<tipl::out>& po);
-int exp(tipl::program_option<tipl::out>& po);
-int atl(tipl::program_option<tipl::out>& po);
-int cnt(tipl::program_option<tipl::out>& po);
-int cnt_ind(tipl::program_option<tipl::out>& po);
-int vis(tipl::program_option<tipl::out>& po);
-int ren(tipl::program_option<tipl::out>& po);
-int cnn(tipl::program_option<tipl::out>& po);
-int qc(tipl::program_option<tipl::out>& po);
-int reg(tipl::program_option<tipl::out>& po);
-int atk(tipl::program_option<tipl::out>& po);
-int xnat(tipl::program_option<tipl::out>& po);
-int img(tipl::program_option<tipl::out>& po);
-
 
 size_t match_volume(float volume)
 {
@@ -258,40 +241,53 @@ void move_current_dir_to(const std::string& file_name)
     std::filesystem::current_path(dir);
 }
 
+
+int rec(tipl::program_option<tipl::out>& po);
+int trk(tipl::program_option<tipl::out>& po);
+int src(tipl::program_option<tipl::out>& po);
+int ana(tipl::program_option<tipl::out>& po);
+int exp(tipl::program_option<tipl::out>& po);
+int atl(tipl::program_option<tipl::out>& po);
+int db(tipl::program_option<tipl::out>& po);
+int tmp(tipl::program_option<tipl::out>& po);
+int cnt(tipl::program_option<tipl::out>& po);
+int vis(tipl::program_option<tipl::out>& po);
+int ren(tipl::program_option<tipl::out>& po);
+int cnn(tipl::program_option<tipl::out>& po);
+int qc(tipl::program_option<tipl::out>& po);
+int reg(tipl::program_option<tipl::out>& po);
+int atk(tipl::program_option<tipl::out>& po);
+int xnat(tipl::program_option<tipl::out>& po);
+int img(tipl::program_option<tipl::out>& po);
+
+// Define a map of function pointers
+static const std::unordered_map<std::string, int(*)(tipl::program_option<tipl::out>&)> action_map = {
+    {"rec", rec},
+    {"trk", trk},
+    {"src", src},
+    {"ana", ana},
+    {"exp", exp},
+    {"atl", atl},
+    {"db", db},
+    {"tmp", tmp},
+    {"cnt", cnt},
+    {"vis", vis},
+    {"ren", ren},
+    {"cnn", cnn},
+    {"qc", qc},
+    {"reg", reg},
+    {"atk", atk},
+    {"xnat", xnat},
+    {"img", img}
+};
+
 int run_action(tipl::program_option<tipl::out>& po)
 {
     std::string action = po.get("action");
     tipl::progress prog("run ",action.c_str());
-    if(action == std::string("rec"))
-        return rec(po);
-    if(action == std::string("trk"))
-        return trk(po);
-    if(action == std::string("atk"))
-        return atk(po);
-    if(action == std::string("src"))
-        return src(po);
-    if(action == std::string("ana"))
-        return ana(po);
-    if(action == std::string("exp"))
-        return exp(po);
-    if(action == std::string("atl"))
-        return atl(po);
-    if(action == std::string("cnt"))
-        return cnt(po);
-    if(action == std::string("ren"))
-        return ren(po);
-    if(action == std::string("cnn"))
-        return cnn(po);
-    if(action == std::string("qc"))
-        return qc(po);
-    if(action == std::string("reg"))
-        return reg(po);
-    if(action == std::string("xnat"))
-        return xnat(po);
-    if(action == std::string("img"))
-        return img(po);
-    if(action == std::string("vis"))
-        return vis(po);
+    auto it = action_map.find(action);
+    if (it != action_map.end())
+        return it->second(po);
     tipl::error() << "unknown action: " << action << std::endl;
     return 1;
 }
@@ -322,7 +318,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *a
     if(po.has("loop"))
         loop = po.get("loop");
     else
-    if(source.find('*') != std::string::npos && action != "atk" && action != "atl" && action != "src" && action != "qc")
+    if(source.find('*') != std::string::npos && action != "atk" && action != "src" && action != "qc" && action != "db" && action != "tmp")
         loop = po.get("loop",source);
 
     if(loop.empty())
