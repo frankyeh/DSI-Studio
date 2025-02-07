@@ -29,7 +29,7 @@ on:
  
 jobs:    
 
-  linux-build:
+  linux-build-cpu:
     if: ${{ github.event.inputs.build_linux == 'true' }}
     strategy:
       matrix:
@@ -56,12 +56,47 @@ jobs:
         outputs: dsi-studio
     - name: Packaging
       run: |
+        zip -r dsi_studio_${{ matrix.os }}_cpu.zip dsi-studio
+    - name: Create Release
+      env:
+        GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
+      run: |
+        gh release upload ${{ github.event.inputs.tag }} *.zip --clobber --repo frankyeh/DSI-Studio
+
+linux-build-cuda:
+    if: ${{ github.event.inputs.build_linux == 'true' }}
+    strategy:
+      matrix:
+        os: [ubuntu2404,ubuntu2204,ubuntu2004]
+      fail-fast: false
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Download Build
+      run: |
+        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git  
+        mv DSI-Studio-Build/build_packages .
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3.0.0
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3.0.0
+    - name: Build and push
+      uses: docker/build-push-action@v5.1.0
+      with:
+        context: .
+        build-args: |
+          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}        
+        file: build_packages/${{ matrix.os }}/Dockerfile_cuda
+        push: false
+        outputs: dsi-studio
+    - name: Packaging
+      run: |
         zip -r dsi_studio_${{ matrix.os }}.zip dsi-studio
     - name: Create Release
       env:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
       run: |
         gh release upload ${{ github.event.inputs.tag }} *.zip --clobber --repo frankyeh/DSI-Studio
+
 
   macos-build-qt6:
     if: ${{ github.event.inputs.build_mac == 'true' }}
