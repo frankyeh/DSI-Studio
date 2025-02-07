@@ -545,6 +545,13 @@
                  </property>
                 </spacer>
                </item>
+               <item row="0" column="11">
+                <widget class="QPushButton" name="from_template">
+                 <property name="text">
+                  <string>Template</string>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </item>
              <item>
