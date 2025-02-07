@@ -1575,7 +1575,7 @@ QString showError(reply_type reply)
         {304, "Not Modified - The server has fulfilled the request, but the document has not been modified."},
         {400, "Bad Request - The request was invalid."},
         {401, "invalid auth token"},
-        {403, "rate limit reached. apply for a github auth token to increase bandwidth"},
+        {403, "rate limit reached. apply for a GitHub auth token to increase bandwidth"},
         {404, "repository currently not available"},
         {405, "Method Not Allowed - The request method is not supported for the requested resource."},
         {408, "Request Timeout - The server timed out waiting for the request."},
@@ -1583,7 +1583,8 @@ QString showError(reply_type reply)
         {502, "Bad Gateway - The server received an invalid response from an upstream server."},
         {503, "Service Unavailable - The server is currently unable to handle the request."},
         {504, "Gateway Timeout - The server did not receive a timely response from an upstream server."},
-                                  }).value(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(), "Download rate limit reached. Try later or consider using Gitub PAT.");
+                                  }).value(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(),
+              "Download rate limit reached. Try later or consider adding a GitHub personal access token (PAT) to enable faster downloads.");
 }
 
 void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array)
@@ -1684,7 +1685,8 @@ void MainWindow::loadFiles()
         ui->github_release_files->setItem(row, 0, new QTableWidgetItem(file_name));
         ui->github_release_files->setItem(row, 1, new QTableWidgetItem(QString::number(size)+units[i]));
         ui->github_release_files->setItem(row, 2, new QTableWidgetItem(assetObject.value("created_at").toString()));
-        ui->github_release_files->setItem(row, 3, new QTableWidgetItem(assetObject.value("browser_download_url").toString()));
+        ui->github_release_files->setItem(row, 3, new QTableWidgetItem(QString::number(assetObject.value("download_count").toInteger())));
+        ui->github_release_files->setItem(row, 4, new QTableWidgetItem(assetObject.value("browser_download_url").toString()));
         ui->github_release_files->item(row,1)->setData(Qt::UserRole, assetObject.value("size").toInteger()); // Save the original size
         if(file_name.contains(".tsv"))
         {
@@ -1820,7 +1822,7 @@ void MainWindow::on_github_download_clicked()
             "1. Go to GitHub → Settings → Developer settings → Personal access tokens.\n"
             "2. Generate a token with 'repo' permissions.\n"
             "3. Copy the token (it won't be shown again).\n"
-            "4. Paste it into DSI Studio's [Tools][Gitub PAT] field.";
+            "4. Paste it into DSI Studio's [Tools][GitHub PAT] field.";
             QMessageBox::information(nullptr, "DSI Studio", message);
     }
 
@@ -1834,7 +1836,7 @@ void MainWindow::on_github_download_clicked()
     {
         qint64 startTime = QDateTime::currentMSecsSinceEpoch();
 
-        QString url = ui->github_release_files->item(row_list[i], 3)->text();
+        QString url = ui->github_release_files->item(row_list[i], 4)->text();
         QString filePath = ui->download_dir->text() + "/" + ui->github_release_files->item(row_list[i], 0)->text();
         if (QFile::exists(filePath) && !ui->download_overwrite->isChecked())
         {
@@ -1970,7 +1972,7 @@ void MainWindow::on_github_open_file_clicked()
         return;
     }
     tipl::out() << "download file to " << filePath.toStdString();
-    auto reply = get(ui->github_release_files->item(row, 3)->text());
+    auto reply = get(ui->github_release_files->item(row, 4)->text());
 
     // Create a progress dialog
     QProgressDialog progressDialog("Downloading...", "Cancel", 0, 100, this);
