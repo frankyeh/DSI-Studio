@@ -99,24 +99,39 @@ void src_data::calculate_dwi_sum(bool update_mask)
 }
 
 
-
+extern std::vector<std::string> iso_template_list;
 bool src_data::mask_from_template(void)
 {
-    tipl::affine_transform<float> arg;
-    auto template_fib = get_template_fib(arg);
-    if(!template_fib.get())
+    dual_reg<3> r;
+    if(!r.load_template(0,iso_template_list[voxel.template_id]))
     {
-        error_msg = "cannot load template";
+        error_msg = r.error_msg;
         return false;
     }
-    auto T = tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs);
-    T.inverse();
-    tipl::image<3,unsigned char> iso(dwi.shape());
-    tipl::resample(template_image_pre(tipl::image<3>(template_fib->get_iso())),iso,T);
+    r.I[0] = dwi;
+    r.IR = voxel.trans_to_mni;
+    r.Ivs = voxel.vs;
+    r.Is = dwi.shape();
+    r.cost_type = tipl::reg::mutual_info;
+    r.param.speed = 0.05f;
+    r.match_resolution(true);
+    {
+        tipl::progress prog("registering to template");
+        bool ended = false;
+        std::thread thread([&](void)
+        {
+            r.linear_reg(tipl::prog_aborted);
+            r.nonlinear_reg(tipl::prog_aborted);
+            ended = true;
+        });
+        while(!ended)
+            prog(0,1);
+        thread.join();
+        if(prog.aborted())
+            return false;
+    }
+    auto iso = r.apply_inv_warping(r.It[0],false);
     tipl::threshold(iso,voxel.mask,0);
-    auto I = dwi;
-    tipl::filter::gaussian(I);
-    tipl::morphology::fit(voxel.mask,I);
     return true;
 }
 bool src_data::mask_from_unet(void)
@@ -817,6 +832,12 @@ bool src_data::command(std::string cmd,std::string param)
     if(cmd == "[Step T2a][Negate]")
     {
         tipl::morphology::negate(voxel.mask);
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2a][Template]")
+    {
+        mask_from_template();
         voxel.steps += cmd+"\n";
         return true;
     }
