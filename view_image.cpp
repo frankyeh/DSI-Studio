@@ -237,6 +237,11 @@ bool view_image::command(std::string cmd,std::string param1)
                         tipl::out() << "matched path: " << std::filesystem::path(param2).parent_path().u8string() << std::endl;
                         tipl::out() << "matched file name: " << std::filesystem::path(param2).filename().u8string() << std::endl;
                     }
+                    else
+                    {
+                        QMessageBox::critical(this,"ERROR","cannot match a saving filename for "+file_name2);
+                        goto end;
+                    }
                 }
                 if(!dialog->command(command_list[i],param2))
                 {
@@ -787,26 +792,49 @@ void view_image::show_image(bool update_others)
         return;
 
     tipl::color_image buffer;
-    cur_image->apply([&](auto& data)
+
+    switch(ui->overlay_style->currentIndex())
     {
-        v2c.convert(tipl::volume2slice_scaled(data,cur_dim, size_t(slice_pos[cur_dim]),ui->zoom->value()),buffer);
-    });
-    if(ui->overlay_style->currentIndex() == 1)
-        std::fill(buffer.begin(),buffer.end(),tipl::rgb(0,0,0));
-    // draw overlay
-    for(size_t i = 0;i < overlay_images.size() && ui->overlay_style->currentIndex() <= 1;++i)
-    if(overlay_images_visible[i] && opened_images[overlay_images[i]])
-        opened_images[overlay_images[i]]->cur_image->apply([&](auto& data)
+    case 0: // image + overlay
+    case 2: // image only
+        cur_image->apply([&](auto& data)
         {
-            tipl::color_image buffer2(
-                opened_images[overlay_images[i]]->v2c[tipl::volume2slice_scaled(data,cur_dim, size_t(slice_pos[cur_dim]),ui->zoom->value())]);
-            for(size_t j = 0;j < buffer.size();++j)
-            {
-                buffer[j][0] = (buffer2[j][0]>>1) + (buffer[j][0]>>1);
-                buffer[j][1] = (buffer2[j][1]>>1) + (buffer[j][1]>>1);
-                buffer[j][2] = (buffer2[j][2]>>1) + (buffer[j][2]>>1);
-            }
+            v2c.convert(tipl::volume2slice_scaled(data,cur_dim, size_t(slice_pos[cur_dim]),ui->zoom->value()),buffer);
         });
+        if(ui->overlay_style->currentIndex() == 2)
+            break;
+        for(size_t i = 0;i < overlay_images.size();++i)
+            if(overlay_images_visible[i] && opened_images[overlay_images[i]])
+            opened_images[overlay_images[i]]->cur_image->apply([&](auto& data)
+            {
+                tipl::color_image buffer2(
+                    opened_images[overlay_images[i]]->v2c[tipl::volume2slice_scaled(data,cur_dim, size_t(slice_pos[cur_dim]),ui->zoom->value())]);
+                for(size_t j = 0;j < buffer.size();++j)
+                {
+                    buffer[j][0] = (buffer2[j][0]>>1) + (buffer[j][0]>>1);
+                    buffer[j][1] = (buffer2[j][1]>>1) + (buffer[j][1]>>1);
+                    buffer[j][2] = (buffer2[j][2]>>1) + (buffer[j][2]>>1);
+                }
+            });
+        break;
+    case 1: // overlay only
+        std::fill(buffer.begin(),buffer.end(),tipl::rgb(0,0,0));
+        for(size_t i = 0;i < overlay_images.size();++i)
+            if(overlay_images_visible[i] && opened_images[overlay_images[i]])
+            {
+                opened_images[overlay_images[i]]->cur_image->apply([&](auto& data)
+                {
+                    buffer = tipl::color_image(opened_images[overlay_images[i]]->v2c[tipl::volume2slice_scaled(data,cur_dim, size_t(slice_pos[cur_dim]),ui->zoom->value())]);
+                });
+                break;
+            }
+        break;
+    }
+
+
+
+
+
     source_image << buffer;
     source_image = source_image.mirrored(has_flip_x(),has_flip_y());
     {
