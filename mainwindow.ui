@@ -150,7 +150,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>4</number>
+       <number>5</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -3007,6 +3007,11 @@ p, li { white-space: pre-wrap; }
                   </column>
                   <column>
                    <property name="text">
+                    <string>#Download</string>
+                   </property>
+                  </column>
+                  <column>
+                   <property name="text">
                     <string>Download Link</string>
                    </property>
                   </column>
@@ -3284,20 +3289,20 @@ p, li { white-space: pre-wrap; }
             <rect>
              <x>40</x>
              <y>160</y>
-             <width>54</width>
+             <width>71</width>
              <height>24</height>
             </rect>
            </property>
            <property name="text">
-            <string>Gitub PAT:</string>
+            <string>GitHub PAT:</string>
            </property>
           </widget>
           <widget class="QLineEdit" name="github_token">
            <property name="geometry">
             <rect>
-             <x>100</x>
+             <x>120</x>
              <y>160</y>
-             <width>211</width>
+             <width>191</width>
              <height>22</height>
             </rect>
            </property>
