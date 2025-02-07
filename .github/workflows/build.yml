@@ -63,7 +63,7 @@ jobs:
       run: |
         gh release upload ${{ github.event.inputs.tag }} *.zip --clobber --repo frankyeh/DSI-Studio
 
-linux-build-cuda:
+  linux-build:
     if: ${{ github.event.inputs.build_linux == 'true' }}
     strategy:
       matrix:
@@ -97,8 +97,7 @@ linux-build-cuda:
       run: |
         gh release upload ${{ github.event.inputs.tag }} *.zip --clobber --repo frankyeh/DSI-Studio
 
-
-  macos-build-qt6:
+  macos-build:
     if: ${{ github.event.inputs.build_mac == 'true' }}
     strategy:
       matrix:
@@ -164,7 +163,7 @@ linux-build-cuda:
           "dsistudio/dsistudio:hou-${{ env.DATE_TAG }}"
           dsistudio/dsistudio:latest
 
-  windows_cpu_build:
+  windows_build_cpu:
     if: ${{ github.event.inputs.build_windows == 'true' }}
     runs-on: windows-2019
     steps:
@@ -190,7 +189,7 @@ linux-build-cuda:
       run: |
         gh release upload ${{ github.event.inputs.tag }} dsi_studio_win_cpu.zip --clobber
 
-  windows_gpu_build:
+  windows_build:
     if: ${{ github.event.inputs.build_windows == 'true' }}
     runs-on: windows-2019
     steps:
