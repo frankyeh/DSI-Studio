@@ -78,7 +78,7 @@ int reg(tipl::program_option<tipl::out>& po)
     std::vector<std::string> from_filename,to_filename;
     if(!po.get_files("source",from_filename))
     {
-        tipl::error() << "cannot find file " << po.get("from") <<std::endl;
+        tipl::error() << "cannot find file " << po.get("source") <<std::endl;
         return 1;
     }
     if(!po.get_files("to",to_filename))
