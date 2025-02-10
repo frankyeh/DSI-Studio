@@ -936,7 +936,8 @@ void MainWindow::on_nonlinear_reg_clicked()
     rt->showNormal();
 }
 
-std::string quality_check_src_files(const std::vector<std::string>& file_list);
+std::string quality_check_src_files(const std::vector<std::string>& file_list,
+                                    bool check_btable,bool use_template,unsigned int template_id);
 void show_info_dialog(const std::string& title,const std::string& result);
 void MainWindow::on_SRC_qc_clicked()
 {
@@ -950,7 +951,7 @@ void MainWindow::on_SRC_qc_clicked()
     std::vector<std::string> results;
     tipl::search_files(dir.toStdString(),"*src.gz",results);
     tipl::search_files(dir.toStdString(),"*sz",results);
-    show_info_dialog("SRC report",quality_check_src_files(results));
+    show_info_dialog("SRC report",quality_check_src_files(results,false,false,0));
 }
 
 void MainWindow::on_parse_network_measures_clicked()
