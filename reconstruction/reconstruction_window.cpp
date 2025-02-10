@@ -318,10 +318,11 @@ bool reconstruction_window::command(std::string cmd,std::string param)
             return false;
         param = std::to_string(nv);
     }
-    if(cmd == "[Step T2][File][Save 4D NIFTI]")
+    if(cmd == "[Step T2][File][Save 4D NIFTI]" || cmd == "[Step T2][File][Save B0]" ||
+       cmd == "[Step T2][File][Save DWI Sum]")
     {
         QString filename = QFileDialog::getSaveFileName(
-                    this,"Save image as...",QFileInfo(filenames[0]).baseName() + ".nii.gz",
+                    this,cmd.c_str(),QFileInfo(filenames[0]).baseName() + ".nii.gz",
                                 "NIFTI files (*nii.gz);;All files (*)" );
         if(filename.isEmpty())
             return false;
@@ -391,16 +392,9 @@ bool reconstruction_window::command(std::string cmd,std::string param)
         std::string previous_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
         for(int index = 1;prog(index,filenames.size());++index)
         {
-            std::string cur_param;
-            if(!tipl::match_files(filenames[0].toStdString(),param,
-                                  filenames[index].toStdString(),cur_param))
-            {
-                QMessageBox::critical(this,"ERROR",QString("cannot apply to ") + filenames[index]);
-                return false;
-            }
             src_data model;
             if (!model.load_from_file(filenames[index].toStdString().c_str()) ||
-                !model.run_steps(handle->file_name,previous_steps + cmd + "=" + cur_param + "\n"))
+                !model.run_steps(handle->file_name,previous_steps + cmd + "=" + param + "\n"))
             {
                 if(QMessageBox::critical(this,QApplication::applicationName(),
                     QFileInfo(filenames[index]).fileName() + " : " + model.error_msg.c_str() + " Continue?",
@@ -564,30 +558,6 @@ void reconstruction_window::on_AdvancedOptions_clicked()
         ui->AdvancedWidget->setVisible(false);
         ui->AdvancedOptions->setText("Advanced Options >>");
     }
-}
-
-void reconstruction_window::on_actionSave_b0_triggered()
-{
-    QString filename = QFileDialog::getSaveFileName(
-                                this,
-                                "Save image as...",
-                            filenames[0] + ".b0.nii.gz",
-                                "All files (*)" );
-    if ( filename.isEmpty() )
-        return;
-    handle->save_b0_to_nii(filename.toStdString().c_str());
-}
-
-void reconstruction_window::on_actionSave_DWI_sum_triggered()
-{
-    QString filename = QFileDialog::getSaveFileName(
-                                this,
-                                "Save image as...",
-                            filenames[0] + ".dwi_sum.nii.gz",
-                                "All files (*)" );
-    if ( filename.isEmpty() )
-        return;
-    handle->save_dwi_sum_to_nii(filename.toStdString().c_str());
 }
 
 void reconstruction_window::on_actionSave_b_table_triggered()
