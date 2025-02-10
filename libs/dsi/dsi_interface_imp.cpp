@@ -371,12 +371,24 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
 
     {
         tipl::progress prog("averaging odf");
-        size_t total = 0;
-        tipl::adaptive_par_for(dim.size(),[&](size_t i)
+        auto thread_count = tipl::max_thread_count;
+        bool terminated = false;
+        tipl::par_for(thread_count,[&](size_t id)
         {
-            if(odf_count[i] > 1)
-                tipl::divide_constant(odfs[i],float(odf_count[i]));
-        });
+            size_t next_report_pos = 0;
+            for(size_t pos = id;pos < dim.size() && !terminated;pos += thread_count)
+            {
+                if(odf_count[pos] > 1)
+                    tipl::divide_constant(odfs[pos],float(odf_count[pos]));
+                if(pos > next_report_pos)
+                {
+                    next_report_pos += dim.size()/50;
+                    prog(pos,dim.size());
+                    if (prog.aborted())
+                        terminated = true;
+                }
+            }
+        },thread_count);
         if (prog.aborted())
             return nullptr;
     }
