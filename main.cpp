@@ -260,7 +260,6 @@ int atk(tipl::program_option<tipl::out>& po);
 int xnat(tipl::program_option<tipl::out>& po);
 int img(tipl::program_option<tipl::out>& po);
 
-// Define a map of function pointers
 static const std::unordered_map<std::string, int(*)(tipl::program_option<tipl::out>&)> action_map = {
     {"rec", rec},
     {"trk", trk},
@@ -281,6 +280,26 @@ static const std::unordered_map<std::string, int(*)(tipl::program_option<tipl::o
     {"img", img}
 };
 
+static const std::unordered_map<std::string, std::string> action_default_source = {
+    {"rec", "*.sz"},
+    {"trk", "*.fz"},
+    {"src", "*.nii.gz"},
+    {"ana", "*.fz"},
+    {"exp", "*.fz"},
+    {"atl", "*.nii.gz"},
+    {"db", ""},
+    {"tmp", "*z"},
+    {"cnt", ""},
+    {"vis", "*.fz"},
+    {"ren", ""},
+    {"cnn", ""},
+    {"qc", ""},
+    {"reg", ""},
+    {"atk", "*.fz"},
+    {"xnat", ""},
+    {"img", "*.nii.gz"}
+};
+
 int run_action(tipl::program_option<tipl::out>& po)
 {
     std::string action = po.get("action");
@@ -294,8 +313,16 @@ int run_action(tipl::program_option<tipl::out>& po)
 int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *av[])
 {
     tipl::progress prog("command line");
-    std::string source = po.get("source");
     std::string action = po.get("action");
+    std::string default_source;
+
+    {
+        auto it = action_default_source.find(action);
+        if (it != action_default_source.end())
+            default_source = it->second;
+    }
+
+    std::string source = po.get("source",default_source);
 
 
     std::shared_ptr<QCoreApplication> cmd;
@@ -448,8 +475,15 @@ int main(int ac, char *av[])
                 socket.write(av[1]);
                 socket.flush();
                 socket.waitForBytesWritten(500);
+                if(socket.waitForReadyRead(1000))
+                {
+                    if (socket.readAll() == "OKAY")
+                    {
+                        socket.disconnectFromServer();
+                        return 0;
+                    }
+                }
                 socket.disconnectFromServer();
-                return 0;
             }
         }
 
@@ -493,14 +527,22 @@ int main(int ac, char *av[])
                     clientSocket->waitForReadyRead(500);
                     auto file_name = clientSocket->readAll();
                     tipl::out() << "file name:" << file_name.begin();
-                    if(std::filesystem::exists(file_name.begin()))
+                    if(!tipl::progress::is_running())
                     {
-                        w.openFile(QStringList() << file_name);
-                        w.show();
-                        w.setWindowState((w.windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
-                        w.raise();
-                        w.activateWindow();
+                        if(std::filesystem::exists(file_name.begin()))
+                        {
+                            w.openFile(QStringList() << file_name);
+                            w.show();
+                            w.setWindowState((w.windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
+                            w.raise();
+                            w.activateWindow();
+                        }
+                        clientSocket->write("OKAY");
                     }
+                    else
+                        clientSocket->write("BUSY");
+                    clientSocket->flush();
+                    clientSocket->waitForBytesWritten(500);
                     clientSocket->disconnectFromServer();
                     clientSocket->deleteLater();
                 }
