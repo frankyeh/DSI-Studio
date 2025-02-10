@@ -255,9 +255,9 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     std::vector<std::string> other_metrics_name;
     std::vector<tipl::image<3> > other_metrics_images;
     std::vector<size_t> other_metrics_count;
-    tipl::progress prog("loading data");
 
     try {
+        tipl::progress prog("loading data");
         for (unsigned int index = 0;prog(index,file_names.size());++index)
         {
             file_name = file_names[index];
@@ -343,6 +343,9 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                     other_metrics_count[i]++;
                 }
             }
+
+            if (prog.aborted())
+                return nullptr;
         }
     } catch (const std::exception& e) {
         error_msg = e.what();
@@ -351,26 +354,35 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
         return error_msg.c_str();
     }
 
-    if (prog.aborted())
-        return nullptr;
 
-    tipl::out() << "averaging other metrics";
-    prog(1,3);
-    tipl::par_for(other_metrics_name.size(),[&](unsigned int i)
+
     {
-        if(other_metrics_count[i])
-            other_metrics_images[i] *= 1.0f/other_metrics_count[i];
-    },tipl::max_thread_count);
+        tipl::progress prog("averaging other metrics");
+        size_t total = 0;
+        tipl::par_for(other_metrics_name.size(),[&](unsigned int i)
+        {
+            if(other_metrics_count[i])
+                other_metrics_images[i] *= 1.0f/other_metrics_count[i];
+            prog(total++,other_metrics_name.size());
+        },other_metrics_name.size());
+        if (prog.aborted())
+            return nullptr;
+    }
 
-    prog(0,3);
-    tipl::par_for(dim.size(),[&](size_t i){
-        if(odf_count[i] > 1)
-            tipl::divide_constant(odfs[i],float(odf_count[i]));
-    },tipl::max_thread_count);
+    {
+        tipl::progress prog("averaging odf");
+        size_t total = 0;
+        tipl::par_for(dim.size(),[&](size_t i)
+        {
+            if(odf_count[i] > 1)
+                tipl::divide_constant(odfs[i],float(odf_count[i]));
+            prog(total++,dim.size());
+        },std::thread::hardware_concurrency());
+        if (prog.aborted())
+            return nullptr;
+    }
 
     // eliminate ODF if missing more than half of the population
-    tipl::out() << "preparing ODFs";
-    prog(2,3);
     tipl::image<3,unsigned char> mask(dim);
     size_t odf_size = 0;
     for(size_t i = 0;i < mask.size();++i)
@@ -383,21 +395,20 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
         }
     }
     odfs.resize(odf_size);
-    prog(3,3);
     std::ostringstream out;
     out << "A group-average template was constructed from a total of " << file_names.size() << " scans." << report.c_str();
     report = out.str();
-    if (prog.aborted())
-        return nullptr;
 
+
+    tipl::progress prog("output odf");
     std::vector<std::vector<float> > odfs_float(odfs.size());
-    tipl::par_for(odfs.size(),[&](size_t i)
+    tipl::adaptive_par_for(odfs.size(),[&](size_t i)
     {
         odfs_float[i].resize(odfs[i].size());
         std::transform(odfs[i].begin(), odfs[i].end(), odfs_float[i].begin(),
                            [](double d) { return static_cast<float>(d); });
 
-    },tipl::max_thread_count);
+    });
 
     if(!output_odfs(mask,out_name,".mean.fib.gz",odfs_float,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg,false) ||
        !output_odfs(mask,out_name,".mean.odf.fib.gz",odfs_float,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg))
