@@ -717,7 +717,8 @@ bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref
             cmd = step.substr(0,pos);
             param = step.substr(pos+1,step.size()-pos-1);
         }
-        if(param.find(".gz") != std::string::npos && !tipl::match_files(reg_file_name,param,file_name,param))
+        if((tipl::ends_with(param,".sz") || tipl::ends_with(param,".gz")) &&
+           !tipl::match_files(reg_file_name,param,file_name,param))
         {
             error_msg = step;
             error_msg += " cannot find a matched file for ";
@@ -758,6 +759,27 @@ bool src_data::command(std::string cmd,std::string param)
         tipl::progress prog_("saving ",std::filesystem::path(param).filename().u8string().c_str());
         return save_to_file(param.c_str());
     }
+    if(cmd == "[Step T2][File][Save B0]")
+    {
+        if(param.empty())
+        {
+            error_msg = " please assign file name ";
+            return false;
+        }
+        tipl::progress prog_("saving ",std::filesystem::path(param).filename().u8string().c_str());
+        return save_b0_to_nii(param.c_str());
+    }
+    if(cmd == "[Step T2][File][Save DWI Sum]")
+    {
+        if(param.empty())
+        {
+            error_msg = " please assign file name ";
+            return false;
+        }
+        tipl::progress prog_("saving ",std::filesystem::path(param).filename().u8string().c_str());
+        return save_dwi_sum_to_nii(param.c_str());
+    }
+
     if(cmd == "[Step T2a][Open]")
     {
         if(!std::filesystem::exists(param))
