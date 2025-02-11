@@ -1530,11 +1530,9 @@ void MainWindow::on_github_repo_currentIndexChanged(int)
         foreach (const auto& each,asset)
         {
             auto file_name = each.toObject().value("name").toString().toStdString();
-            if(!tipl::ends_with(file_name,".fz") && !tipl::ends_with(file_name,".sz"))
+            if(file_name.back() != 'z' || tipl::ends_with(file_name,".db.fz"))
                 continue;
-            if(tipl::ends_with(file_name,".db.fz") || tipl::ends_with(file_name,".qsdr.fz"))
-                continue;
-            names.insert(file_name.substr(0,file_name.find('.')));
+            names.insert(file_name.substr(0,std::min(file_name.find('_'),file_name.find('.'))));
         }
 
         int row = ui->github_tags->rowCount();
