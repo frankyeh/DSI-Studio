@@ -127,18 +127,20 @@ bool load_file_name(void)
         if(!dir.exists())
             dir = QDir::currentPath()+ "/atlas";
 
-        QStringList name_list = dir.entryList(QStringList("*"),QDir::Dirs|QDir::NoSymLinks);
-
-        // Make ICBM152 the default
-        for(int i = 0;i < name_list.size();++i)
+        QStringList dir_list = dir.entryList(QStringList("*"),QDir::Dirs|QDir::NoSymLinks);
+        dir_list.sort();
+        QStringList name_list;
+        for(auto each : {"human","chimpanzee","rhesus","marmoset","rat","mouse"})
         {
-            if(name_list[i].contains("ICBM"))
-            {
-                QString item_to_move = name_list[i];
-                name_list.erase(name_list.begin()+i);
-                name_list.insert(name_list.begin(),item_to_move);
-            }
+            for(size_t i = 0;i < dir_list.size();++i)
+                if(dir_list[i].contains(each))
+                {
+                    name_list << dir_list[i];
+                    dir_list[i].clear();
+                }
         }
+
+
         for(int i = 0;i < name_list.size();++i)
         {
             QDir template_dir = dir.absolutePath() + "/" + name_list[i];
@@ -423,6 +425,7 @@ bool init_cuda(void)
     }
     return true;
 }
+
 extern console_stream console;
 int main(int ac, char *av[])
 {
@@ -497,6 +500,7 @@ int main(int ac, char *av[])
             return 1;
         if(!init_application())
             return 1;
+
 
         MainWindow w;
         w.setWindowTitle(show_ver.c_str());
