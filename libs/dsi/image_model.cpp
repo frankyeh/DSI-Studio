@@ -966,11 +966,6 @@ bool src_data::command(std::string cmd,std::string param)
         voxel.steps += param.empty() ? (cmd+"\n") : (cmd+"="+param+"\n");
         return true;
     }
-    if(cmd.find("[Step T2][B-table]") == 0 && !new_dwi.empty())
-    {
-        error_msg = "Cannot flip or rotate b-table after aligning ac-pc or rotating image volume.";
-        return false;
-    }
     // correct for b-table orientation
     if(cmd == "[Step T2][B-table][Check B-table]")
     {
