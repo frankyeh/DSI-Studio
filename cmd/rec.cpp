@@ -152,7 +152,7 @@ int rec(tipl::program_option<tipl::out>& po)
             }
         }
 
-        if(po.get("check_btable",src.is_human_data() ? 0 : 1))
+        if(po.get("check_btable",0))
         {
             if(!src.command("[Step T2][B-table][Check B-table]"))
             {
