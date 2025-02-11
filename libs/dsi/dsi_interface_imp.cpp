@@ -380,7 +380,7 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             {
                 if(odf_count[pos] > 1)
                     tipl::divide_constant(odfs[pos],float(odf_count[pos]));
-                if(pos > next_report_pos)
+                if(id == 0 && pos > next_report_pos)
                 {
                     next_report_pos += dim.size()/50;
                     prog(pos,dim.size());
