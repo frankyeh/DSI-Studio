@@ -578,7 +578,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
     dicom_header.get_image_dimension(geo);
 
     tipl::out() << "is_mosaic: " << (dicom_header.is_mosaic ? "yes":"no");
-    tipl::out() << "is_multi_frame: " << (dicom_header.is_mosaic ? "yes":"no");
+    tipl::out() << "is_multi_frame: " << (dicom_header.is_multi_frame ? "yes":"no");
     tipl::out() << "shape: " << geo;
 
 
@@ -596,6 +596,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
     std::vector<std::shared_ptr<DwiHeader> > dwis(file_list.size());
 
     tipl::progress p("reading dicoms");
+    bool has_dwi = false;
     for(size_t i = 0;p(i, file_list.size());++i)
     {
         dwis[i] = std::make_shared<DwiHeader>();
@@ -606,7 +607,11 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             error_msg += file_list[i].toStdString();
             return false;
         }
-        tipl::out() << QFileInfo(file_list[i]).fileName().toStdString() << " shape: " << dwis[i]->image.shape();
+        tipl::out() << QFileInfo(file_list[i]).fileName().toStdString() << " shape: " << dwis[i]->image.shape() << " b:" << dwis[i]->bvalue << " " << dwis[i]->bvec;
+        if(dwis[i]->bvalue > 0.0f)
+            has_dwi = true;
+        if(!i)
+            geo = dwis[i]->image.shape();
         if(dwis[i]->image.shape() != geo)
         {
             error_msg = "inconsistent image size found at ";
@@ -614,11 +619,11 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             error_msg += " please parse DICOM into folders before further processing.";
             return false;
         }
-
     }
     if(p.aborted())
         return false;
-
+    if(!has_dwi)
+        return false;
     if(dicom_header.is_mosaic)
     {
         dwi_files = dwis;
@@ -631,6 +636,11 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
     unsigned int slice_num = 2;
     unsigned int b_num = 2;
 
+    unsigned int slice_axis = 2;
+    if(geo[1] == 1)
+        slice_axis = 1;
+    if(geo[0] == 1)
+        slice_axis = 0;
 
     if(dwis[0]->slice_location == 0.0) // no slice location information
     {
@@ -639,7 +649,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             for (;slice_num < file_list.size();++slice_num)
                 if(dwis[0]->bvec != dwis[slice_num]->bvec || dwis[0]->bvalue != dwis[slice_num]->bvalue)
                     break;
-            geo[2] = slice_num;
+            geo[slice_axis] = slice_num;
             iterate_slice_first = true;
         }
         else
@@ -648,7 +658,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             for (;b_num < file_list.size();++b_num)
                 if(dwis[0]->bvec == dwis[slice_num]->bvec && dwis[0]->bvalue == dwis[slice_num]->bvalue)
                     break;
-            geo[2] = file_list.size()/b_num;
+            geo[slice_axis] = file_list.size()/b_num;
             iterate_slice_first = false;
         }
     }
@@ -659,7 +669,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             for (;b_num < file_list.size();++b_num)    
                 if(dwis[b_num]->slice_location != dwis[0]->slice_location)
                     break;
-            geo[2] = std::ceil(float(file_list.size())/float(b_num));
+            geo[slice_axis] = std::ceil(float(file_list.size())/float(b_num));
             iterate_slice_first = false;
         }
         else
@@ -668,13 +678,12 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             for (;slice_num < file_list.size();++slice_num)
                 if(dwis[slice_num]->slice_location == dwis[0]->slice_location)
                     break;
-            geo[2] = slice_num;
+            geo[slice_axis] = slice_num;
             iterate_slice_first = true;
         }
     }
 
-    tipl::out() << "slice num: " << geo[2];
-
+    tipl::out() << "slice num: " << geo[slice_axis];
 
     tipl::progress prog("reading dicoms");
     for (unsigned int index = 0,b_index = dwi_files.size(),slice_index = 0;prog(index,file_list.size());++index)
@@ -686,8 +695,21 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
         }
         else
         {
-            std::copy(dwis[index]->image.begin(),dwis[index]->image.end(),
-                      dwi_files[b_index]->image.begin() + slice_index*geo.plane_size());
+            if(slice_axis == 2)
+                std::copy(dwis[index]->image.begin(),dwis[index]->image.end(),
+                          dwi_files[b_index]->image.begin() + slice_index*dwis[index]->image.size());
+            if(slice_axis == 1)
+            {
+                for(size_t pos = 0,pos2 = slice_index*geo[0];
+                    pos < dwis[index]->image.size();pos += geo[0],pos2 += geo.plane_size())
+                    std::copy(dwis[index]->image.begin()+pos,dwis[index]->image.begin()+pos+geo[0],dwi_files[b_index]->image.begin() + pos2);
+            }
+            if(slice_axis == 0)
+            {
+                for (size_t z = 0,src_index = 0,plane_index = 0; z < geo[2]; ++z,plane_index += geo.plane_size())
+                    for (size_t y = 0,pos = plane_index + slice_index; y < geo[1]; ++y,++src_index,pos += geo[0])
+                        dwi_files[b_index]->image[pos] = dwis[index]->image[src_index];
+            }
         }
         if(iterate_slice_first)
         {
