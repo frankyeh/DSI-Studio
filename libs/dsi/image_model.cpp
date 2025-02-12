@@ -883,6 +883,37 @@ bool src_data::command(std::string cmd,std::string param)
         voxel.steps += cmd + "=" + std::to_string(threshold) + "\n";
         return true;
     }
+    if(cmd == "[Step T2][Edit][Probablistic Masking]")
+    {
+        if(param.empty())
+        {
+            error_msg = " please assign file name ";
+            return false;
+        }
+        tipl::io::gz_nifti in;
+        if(!in.load_from_file(param))
+        {
+            error_msg = in.error_msg;
+            return false;
+        }
+        tipl::image<3> prob;
+        in >> prob;
+        if(prob.shape() != dwi.shape())
+        {
+            error_msg = "mask has a different image dimension";
+            return false;
+        }
+        tipl::adaptive_par_for(src_dwi_data.size(),[&](size_t index)
+        {
+            unsigned short* buf = const_cast<unsigned short*>(src_dwi_data[index]);
+            for(size_t i = 0;i < prob.size();++i)
+                buf[i] *= prob[i];
+        });
+        tipl::threshold(prob,voxel.mask,0.0f);
+        calculate_dwi_sum(false);
+        voxel.steps += cmd+"="+param+"\n";
+        return true;
+    }
     if(cmd == "[Step T2a][Remove Background]")
     {
         for(size_t index = 0;index < voxel.mask.size();++index)
