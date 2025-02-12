@@ -1254,6 +1254,7 @@ Reconstruction</string>
     <addaction name="actionSmooth_Signals"/>
     <addaction name="actionErase_Background_Signals"/>
     <addaction name="actionTrim_image"/>
+    <addaction name="actionProbablistic_Masking"/>
     <addaction name="separator"/>
     <addaction name="actionEnable_TEST_features"/>
    </widget>
@@ -1507,6 +1508,11 @@ Reconstruction</string>
   <action name="actionVolume_Orientation_Correction">
    <property name="text">
     <string>Volume Orientation Correction...</string>
+   </property>
+  </action>
+  <action name="actionProbablistic_Masking">
+   <property name="text">
+    <string>Probablistic Masking...</string>
    </property>
   </action>
  </widget>
