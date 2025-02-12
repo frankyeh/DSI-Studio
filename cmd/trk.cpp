@@ -713,7 +713,7 @@ void set_template(std::shared_ptr<fib_data> handle,tipl::program_option<tipl::ou
     {
         for(size_t id = 0;id < fa_template_list.size();++id)
             tipl::out() << "template " << id << ": " << std::filesystem::path(fa_template_list[id]).stem().stem().stem() << std::endl;
-        handle->set_template_id(po.get("template",size_t(0)));
+        handle->set_template_id(po.get("template",handle->template_id));
     }
 }
 int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
