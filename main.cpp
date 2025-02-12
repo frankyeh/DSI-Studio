@@ -42,7 +42,7 @@ size_t match_volume(float volume)
         tipl::io::gz_nifti read;
         if(!read.load_from_file(fa_template_list[i].c_str()))
             continue;
-        float v = float(read.nif_header.dim[1]*read.nif_header.dim[2]*read.nif_header.dim[3])*
+        float v = float(read.nif_header.dim[1])*float(read.nif_header.dim[2])*float(read.nif_header.dim[3])*
                 float(read.nif_header.pixdim[1]*read.nif_header.pixdim[2]*read.nif_header.pixdim[3]);
         v = std::fabs(v-volume);
         if(v < min_dif)
@@ -139,7 +139,9 @@ bool load_file_name(void)
                     dir_list[i].clear();
                 }
         }
-
+        for(size_t i = 0;i < dir_list.size();++i)
+            if(!dir_list[i].isEmpty())
+                name_list << dir_list[i];
 
         for(int i = 0;i < name_list.size();++i)
         {
