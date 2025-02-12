@@ -80,6 +80,7 @@ private slots:
     void on_actionResample_triggered(){command("[Step T2][Edit][Resample]");}
     void on_actionAlign_ACPC_triggered(){command("[Step T2][Edit][Align ACPC]");}
     void on_actionTrim_image_triggered(){command("[Step T2][Edit][Crop Background]");}
+    void on_actionProbablistic_Masking_triggered(){command("[Step T2][Edit][Probablistic Masking]");}
 
 
     void on_actionCheck_b_table_triggered() {command("[Step T2][B-table][Check B-table]");}
