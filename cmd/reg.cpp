@@ -9,16 +9,9 @@ int after_warp(const std::vector<std::string>& apply_warp_filename,dual_reg<3>& 
 {
     for(const auto& each_file: apply_warp_filename)
     {
-        if(tipl::ends_with(each_file,".tt.gz"))
-        {
-            if(!r.apply_warping_tt(each_file.c_str(),(each_file+".wp.tt.gz").c_str()))
-                tipl::error() << r.error_msg;
-        }
-        else
-        {
-            if(!r.apply_warping(each_file.c_str(),(each_file+".wp.nii.gz").c_str()))
-                tipl::error() << r.error_msg;
-        }
+        if(!r.apply_warping(each_file.c_str(),(each_file+".wp.nii.gz").c_str()))
+            tipl::error() << r.error_msg;
+        return 1;
     }
     return 0;
 }
