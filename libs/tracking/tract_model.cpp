@@ -621,54 +621,34 @@ void TractModel::add(const TractModel& rhs)
 template<>
 bool dual_reg<3>::apply_warping_tt(const char* from,const char* to) const
 {
-    std::vector<std::vector<float> > loaded_tract_data;
-    std::vector<uint16_t> cluster;
-    std::vector<unsigned int> color;
-    std::string report, parameter_id;
-
+    TractModel tract_model(Is,Ivs,IR);
     {
-        tipl::shape<3> geo;
-        tipl::vector<3> vs;
-        tipl::matrix<4,4,float> trans_to_mni;
-        if(!TinyTrack::load_from_file(from,loaded_tract_data,cluster,geo,vs,trans_to_mni,report,parameter_id,color))
+        fib_data fib(Is,Ivs,IR);
+        if(!tract_model.load_tracts_from_file(from,&fib,false))
         {
-            error_msg = "Failed to read file";
+            error_msg = "cannot read tract file";
             return false;
-        }
-
-        tipl::out() << "image dim:" << Is;
-        tipl::out() << "image trans:" << IR;
-        tipl::out() << "tract dim:" << geo;
-        tipl::out() << "tract trans:" << trans_to_mni;
-        if(geo != Is || trans_to_mni != IR)
-        {
-            error_msg = "tracts are not in the image space";
-            return false;
-        }
+        }        
     }
-    tipl::vector<3> max_pos(from2to.shape());
-    max_pos -= 1.0f;
-    auto T = tipl::from_space(ItR).to(IR);
-    tipl::adaptive_par_for(loaded_tract_data.size(),[&](size_t i)
+    std::vector<std::vector<float> >& tracts = tract_model.get_tracts();
+    auto trans = invT();
+    tipl::adaptive_par_for(tracts.size(),[&](size_t i)
     {
-        for(size_t j = 0;j < loaded_tract_data[i].size();j += 3)
+        for(size_t j = 0;j < tracts[i].size();j += 3)
         {
-            tipl::vector<3> pos(&loaded_tract_data[i][j]);
-            pos.to(T);
-            pos[0] = std::min<float>(std::max<float>(pos[0],0.0f),max_pos[0]);
-            pos[1] = std::min<float>(std::max<float>(pos[1],0.0f),max_pos[1]);
-            pos[2] = std::min<float>(std::max<float>(pos[2],0.0f),max_pos[2]);
-            tipl::vector<3> new_pos;
-            tipl::estimate(from2to,pos,new_pos);
-            loaded_tract_data[i][j] = new_pos[0];
-            loaded_tract_data[i][j+1] = new_pos[1];
-            loaded_tract_data[i][j+2] = new_pos[2];
+            tipl::vector<3> pos(&tracts[i][j]);
+            if(!tipl::estimate(from2to,pos,pos))
+                pos.to(trans);
+            std::copy(pos.begin(),pos.end(),&tracts[i][j]);
         }
     });
+    tract_model.geo = Its;
+    tract_model.vs = Itvs;
+    tract_model.trans_to_mni = ItR;
     tipl::out() << "saving " << to;
-    if(!TinyTrack::save_to_file(to,to2from.shape(),Itvs,ItR,loaded_tract_data,cluster,report,parameter_id,color))
+    if(!tract_model.save_tracts_to_file(to))
     {
-        error_msg = "Failed to save file";
+        error_msg = "failed to save file";
         return false;
     }
     return true;
