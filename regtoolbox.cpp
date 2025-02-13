@@ -544,8 +544,7 @@ void RegToolBox::on_run_reg_clicked()
         thread.run([this](void){
             reg.linear_reg(thread.terminated);
             reg.nonlinear_reg(thread.terminated);
-
-            J.swap(reg.JJ);
+            J.swap(reg.J);
             J.resize(reg.modality_count);
             Jt.resize(reg.modality_count);
             tipl::par_for(reg.modality_count,[&](size_t i)
