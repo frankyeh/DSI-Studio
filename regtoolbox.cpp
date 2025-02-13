@@ -688,14 +688,14 @@ void RegToolBox::on_actionApply_Subject_To_Template_Warping_triggered()
 {
     QStringList from = QFileDialog::getOpenFileNames(
             this,"Open Subject Image",QDir::currentPath(),
-            "Images (*.nii *nii.gz);;All files (*)" );
+            "Images (*.nii *nii.gz);;Tracts (*tt.gz);;All files (*)" );
     if(from.isEmpty())
         return;
     if(from.size() == 1)
     {
         QString to = QFileDialog::getSaveFileName(
                 this,"Save Transformed Image",from[0],
-                "Images (*.nii *nii.gz);;All files (*)" );
+                "Images (*.nii *nii.gz);;Tracts (*tt.gz);;All files (*)" );
         if(to.isEmpty())
             return;
         if(!reg.apply_warping(from[0].toStdString().c_str(),to.toStdString().c_str()))
