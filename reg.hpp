@@ -37,7 +37,7 @@ extern int map_ver;
 template<int dim>
 struct dual_reg{
     static constexpr int dimension = dim;
-    static constexpr int max_modality = 5;
+    static constexpr int max_modality = 16;
     using image_type = tipl::image<dimension,unsigned char>;
     using mapping_type = tipl::image<dimension,tipl::vector<dimension> >;
     tipl::affine_transform<float,dimension> arg;
@@ -52,13 +52,14 @@ public:
     bool skip_linear = false;
     bool skip_nonlinear = false;
 public:
-    dual_reg(void):modality_names(max_modality),I(max_modality),J(max_modality),JJ(max_modality),It(max_modality),r(max_modality)
+    dual_reg(void):modality_names(max_modality),I(max_modality),J(max_modality),It(max_modality),r(max_modality)
     {
     }
     std::vector<std::string> modality_names;
-    std::vector<image_type> I,J,It,JJ;
+    std::vector<image_type> I,J,It;
     std::vector<float> r;
     size_t modality_count = 0;
+    size_t iteration_count = 1;
     mapping_type t2f_dis,to2from,f2t_dis,from2to;
     tipl::vector<dimension> Itvs,Ivs;
     tipl::matrix<dimension+1,dimension+1> ItR,IR;
@@ -83,8 +84,6 @@ public:
     {
         J.clear();
         J.resize(max_modality);
-        JJ.clear();
-        JJ.resize(max_modality);
         r.clear();
         r.resize(max_modality);
         t2f_dis.clear();
@@ -101,43 +100,30 @@ public:
             I.resize(max_modality);
             clear_reg();
         }
-        if constexpr(dim == 2)
+        tipl::io::gz_nifti nifti;
+        if(!nifti.load_from_file(file_name))
         {
-            tipl::color_image Ic = read_color_image(file_name,error_msg);
-            if(Ic.empty())
-                return false;
-            I[id] = Ic;
-            tipl::segmentation::normalize_otsu_median(I[id]);
-            Ivs = {1.0f,1.0f};
-            return true;
+            error_msg = nifti.error_msg;
+            return false;
+        }
+        if(nifti.is_int8())
+            nifti >> I[id];
+        else
+            I[id] = subject_image_pre(nifti.toImage<tipl::image<3> >());
+        if(id == 0)
+        {
+            nifti.get_image_transformation(IR);
+            nifti.get_voxel_size(Ivs);
+            nifti.get_image_dimension(Is);
         }
         else
         {
-            tipl::io::gz_nifti nifti;
-            if(!nifti.load_from_file(file_name))
-            {
-                error_msg = nifti.error_msg;
-                return false;
-            }
-            if(nifti.is_int8())
-                nifti >> I[id];
-            else
-                I[id] = subject_image_pre(nifti.toImage<tipl::image<3> >());
-            if(id == 0)
-            {
-                nifti.get_image_transformation(IR);
-                nifti.get_voxel_size(Ivs);
-                nifti.get_image_dimension(Is);
-            }
-            else
-            {
-                tipl::matrix<dimension+1,dimension+1> I2R;
-                nifti.get_image_transformation(I2R);
-                if(I[id].shape() != Is || I2R != IR)
-                    I[id] = tipl::resample(I[id],Is,tipl::from_space(IR).to(I2R));
-            }    
-            return true;
+            tipl::matrix<dimension+1,dimension+1> I2R;
+            nifti.get_image_transformation(I2R);
+            if(I[id].shape() != Is || I2R != IR)
+                I[id] = tipl::resample(I[id],Is,tipl::from_space(IR).to(I2R));
         }
+        return true;
     }
     bool load_template(size_t id,const std::string& file_name)
     {
@@ -147,45 +133,31 @@ public:
             It.resize(max_modality);
             clear_reg();
         }
-
-        if constexpr(dim == 2)
+        tipl::io::gz_nifti nifti;
+        if(!nifti.load_from_file(file_name))
         {
-            tipl::color_image Ic = read_color_image(file_name,error_msg);
-            if(Ic.empty())
-                return false;
-            It[id] = Ic;
-            tipl::normalize(It[id]);
-            Itvs = {1.0f,1.0f};
-            return true;
+            error_msg = nifti.error_msg;
+            return false;
+        }
+        if(nifti.is_int8())
+            nifti >> It[id];
+        else
+            It[id] = template_image_pre(nifti.toImage<tipl::image<dim> >());
+        if(id == 0)
+        {
+            nifti.get_image_transformation(ItR);
+            nifti.get_voxel_size(Itvs);
+            nifti.get_image_dimension(Its);
+            It_is_mni = nifti.is_mni();
         }
         else
         {
-            tipl::io::gz_nifti nifti;
-            if(!nifti.load_from_file(file_name))
-            {
-                error_msg = nifti.error_msg;
-                return false;
-            }
-            if(nifti.is_int8())
-                nifti >> It[id];
-            else
-                It[id] = template_image_pre(nifti.toImage<tipl::image<dim> >());
-            if(id == 0)
-            {
-                nifti.get_image_transformation(ItR);
-                nifti.get_voxel_size(Itvs);
-                nifti.get_image_dimension(Its);
-                It_is_mni = nifti.is_mni();
-            }
-            else
-            {
-                tipl::matrix<dimension+1,dimension+1> It2R;
-                nifti.get_image_transformation(It2R);
-                if(It[id].shape() != Its || It2R != ItR)
-                    It[id] = tipl::resample(It[id],Its,tipl::from_space(ItR).to(It2R));
-            }
-            return true;
+            tipl::matrix<dimension+1,dimension+1> It2R;
+            nifti.get_image_transformation(It2R);
+            if(It[id].shape() != Its || It2R != ItR)
+                It[id] = tipl::resample(It[id],Its,tipl::from_space(ItR).to(It2R));
         }
+        return true;
     }
     auto T(void) const
     {
@@ -260,9 +232,17 @@ public:
     }
     void calculate_linear_r(void)
     {
+        auto trans = T();
         std::fill(r.begin(),r.end(),0.0f);
-        for(size_t i = 0;i < It.size() && (!It[i].empty() || !J[i].empty());++i)
-            r[i] = tipl::correlation(J[i].empty() ? J[0]:J[i],It[i].empty() ? It[0]:It[i]);
+        J.resize(max_modality);
+        for(size_t i = 0;i < J.size();++i)
+            if(i < I.size() && !I[i].empty())
+            {
+                J[i] = tipl::resample(I[i],Its,trans);
+                r[i] = tipl::correlation(J[i],It[i].empty() ? It[0]:It[i]);
+            }
+            else
+                J[i].clear();
         show_r("linear r: ");
     }
     float linear_reg(bool& terminated)
@@ -274,12 +254,6 @@ public:
         if(!skip_linear)
             cost = tipl::reg::linear<tipl::out>(make_list(It),Itvs,make_list(I),Ivs,
                    arg,reg_type,terminated,bound,cost_type,use_cuda && has_cuda);
-        auto trans = T();
-
-        J.clear();
-        J.resize(max_modality);
-        for(size_t i = 0;i < I.size() && !I[i].empty();++i)
-            J[i] = tipl::resample(I[i],Its,trans);
 
         calculate_linear_r();
 
@@ -306,8 +280,8 @@ public:
         std::fill(r.begin(),r.end(),0.0f);
         tipl::par_for(modality_count,[&](size_t i)
         {
-            JJ[i] = tipl::compose_mapping(I[i],to2from);
-            r[i] = tipl::correlation(JJ[i],previous_It.empty() ? It[i] : previous_It[i]);
+            J[i] = tipl::compose_mapping(I[i],to2from);
+            r[i] = tipl::correlation(J[i],previous_It.empty() ? It[i] : previous_It[i]);
         },modality_count);
         show_r("nonlinear r: ");
     }
@@ -315,8 +289,6 @@ public:
     void nonlinear_reg(bool& terminated)
     {
         tipl::progress prog("nonlinear registration");
-        f2t_dis.clear();
-        t2f_dis.clear();
         if(skip_nonlinear)
         {
             f2t_dis.resize(Its);
@@ -325,27 +297,44 @@ public:
         }
         else
         {
-            tipl::par_for(2,[&](int id)
+            for(size_t iter = 0;iter < iteration_count;++iter)
             {
-                if(id)
-                    tipl::reg::cdm_common<tipl::out>(make_list(It),make_list(J),t2f_dis,terminated,param,use_cuda && has_cuda);
-                else
-                    tipl::reg::cdm_common<tipl::out>(make_list(J),make_list(It),f2t_dis,terminated,param,use_cuda && has_cuda);
-            },2);
+                mapping_type t2f,f2t;
 
-            if(!previous_f2t.empty() && !previous_t2f.empty())
-            {
-                tipl::accumulate_displacement(previous_f2t,f2t_dis);
-                tipl::accumulate_displacement(previous_t2f,t2f_dis);
+                std::thread t([&](void){
+                    tipl::reg::cdm_common<tipl::out>(make_list(It),make_list(J),t2f,terminated,param,use_cuda && has_cuda);
+                });
+                tipl::reg::cdm_common<tipl::out>(make_list(J),make_list(It),f2t,terminated,param,use_cuda && has_cuda);
+                t.join();
+
+
+                // first round
+                if(!iter)
+                {
+                    f2t.swap(f2t_dis);
+                    t2f.swap(t2f_dis);
+                }
+                else
+                {
+                    tipl::accumulate_displacement(f2t,f2t_dis);
+                    tipl::accumulate_displacement(t2f,t2f_dis);
+                }
+                // if last round
+                if(iter+1 == iteration_count && !previous_f2t.empty() && !previous_t2f.empty())
+                {
+                    tipl::accumulate_displacement(previous_f2t,f2t_dis);
+                    tipl::accumulate_displacement(previous_t2f,t2f_dis);
+                }
+
+                compute_mapping_from_displacement();
+                calculate_nonlinear_r();
             }
         }
-        compute_mapping_from_displacement();
-        calculate_nonlinear_r();
 
         if(export_intermediate)
         {
-            for(size_t i = 0;i < JJ.size();++i)
-                tipl::io::gz_nifti::save_to_file("JJ" + std::to_string(i) + ".nii.gz",JJ[i],Itvs,ItR);
+            for(size_t i = 0;i < J.size();++i)
+                tipl::io::gz_nifti::save_to_file("J" + std::to_string(i) + ".nii.gz",J[i],Itvs,ItR);
             tipl::image<dimension+1> buffer(f2t_dis.shape().expand(2*dimension));
             tipl::par_for(2*dimension,[&](unsigned int d)
             {
@@ -424,6 +413,8 @@ public:
     }
     bool apply_warping(const char* from,const char* to) const
     {
+        if(tipl::ends_with(from,"tt.gz"))
+            return apply_warping_tt(from,to);
         auto I = apply_warping(from);
         if(I.empty())
             return false;
