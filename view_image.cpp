@@ -23,7 +23,7 @@ bool resample_mat(tipl::io::gz_mat_read& mat_reader,float resolution);
 void view_image::read_4d_at(size_t new_index)
 {
     if(new_index == cur_4d_index ||
-       new_index >= nifti.dim(4))
+       new_index >= buf4d.size())
         return;
     cur_image->apply([&](auto& I)
     {
@@ -113,19 +113,20 @@ bool view_image::command(std::string cmd,std::string param1)
             {
                 size_t size_per_image = cur_image->buf_size();
                 buf4d.resize(dim4);
-                for(size_t i = 0;i < dim4;++i)
+                for(size_t i = 1,pos = size_per_image;i < dim4;++i,pos += size_per_image)
                 {
                     buf4d[i].resize(size_per_image);
-                    std::memcpy(buf4d[i].data(),buf.data()+i*size_per_image,size_per_image);
+                    std::copy(buf.data()+pos,buf.data()+pos+size_per_image,buf4d[i].data());
                 }
+                nifti.set_dim(cur_image->shape.expand(dim4));
                 cur_4d_index = 0;
-                buf.swap(buf4d[0]);
+                buf.resize(size_per_image);
             }
 
             cur_image->apply([&](auto& I)
             {
-                I.buf().swap(buf);
                 I.resize(cur_image->shape);
+                I.buf().swap(buf);
             });
 
             // clear up undo and redo
