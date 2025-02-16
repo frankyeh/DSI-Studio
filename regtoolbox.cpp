@@ -547,13 +547,17 @@ void RegToolBox::on_run_reg_clicked()
         thread.run([this](void){
             reg.linear_reg(thread.terminated);
             reg.nonlinear_reg(thread.terminated);
+            size_t modality_count = 0;
+            for(size_t i = 0;i < reg.I.size();++i)
+                if(!reg.I[i].empty() && !reg.It[i].empty())
+                    modality_count = i+1;
             J.swap(reg.J);
-            J.resize(reg.modality_count);
-            Jt.resize(reg.modality_count);
-            tipl::par_for(reg.modality_count,[&](size_t i)
+            J.resize(modality_count);
+            Jt.resize(modality_count);
+            tipl::par_for(modality_count,[&](size_t i)
             {
                 Jt[i] = tipl::compose_mapping(reg.It[i],reg.from2to);
-            },reg.modality_count);
+            },modality_count);
 
         });
     }
