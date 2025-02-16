@@ -105,22 +105,25 @@ public:
             error_msg = nifti.error_msg;
             return false;
         }
-        if(nifti.is_int8())
-            nifti >> I[id];
-        else
-            I[id] = subject_image_pre(nifti.toImage<tipl::image<3> >());
-        if(id == 0)
+        for(size_t i = 0;i < nifti.dim(4);++i,++id)
         {
-            nifti.get_image_transformation(IR);
-            nifti.get_voxel_size(Ivs);
-            nifti.get_image_dimension(Is);
-        }
-        else
-        {
-            tipl::matrix<dimension+1,dimension+1> I2R;
-            nifti.get_image_transformation(I2R);
-            if(I[id].shape() != Is || I2R != IR)
-                I[id] = tipl::resample(I[id],Is,tipl::from_space(IR).to(I2R));
+            if(nifti.is_int8())
+                nifti >> I[id];
+            else
+                I[id] = subject_image_pre(nifti.toImage<tipl::image<3> >());
+            if(id == 0)
+            {
+                nifti.get_image_transformation(IR);
+                nifti.get_voxel_size(Ivs);
+                nifti.get_image_dimension(Is);
+            }
+            else
+            {
+                tipl::matrix<dimension+1,dimension+1> I2R;
+                nifti.get_image_transformation(I2R);
+                if(I[id].shape() != Is || I2R != IR)
+                    I[id] = tipl::resample(I[id],Is,tipl::from_space(IR).to(I2R));
+            }
         }
         return true;
     }
@@ -138,23 +141,26 @@ public:
             error_msg = nifti.error_msg;
             return false;
         }
-        if(nifti.is_int8())
-            nifti >> It[id];
-        else
-            It[id] = template_image_pre(nifti.toImage<tipl::image<dim> >());
-        if(id == 0)
+        for(size_t i = 0;i < nifti.dim(4);++i,++id)
         {
-            nifti.get_image_transformation(ItR);
-            nifti.get_voxel_size(Itvs);
-            nifti.get_image_dimension(Its);
-            It_is_mni = nifti.is_mni();
-        }
-        else
-        {
-            tipl::matrix<dimension+1,dimension+1> It2R;
-            nifti.get_image_transformation(It2R);
-            if(It[id].shape() != Its || It2R != ItR)
-                It[id] = tipl::resample(It[id],Its,tipl::from_space(ItR).to(It2R));
+            if(nifti.is_int8())
+                nifti >> It[id];
+            else
+                It[id] = template_image_pre(nifti.toImage<tipl::image<dim> >());
+            if(id == 0)
+            {
+                nifti.get_image_transformation(ItR);
+                nifti.get_voxel_size(Itvs);
+                nifti.get_image_dimension(Its);
+                It_is_mni = nifti.is_mni();
+            }
+            else
+            {
+                tipl::matrix<dimension+1,dimension+1> It2R;
+                nifti.get_image_transformation(It2R);
+                if(It[id].shape() != Its || It2R != ItR)
+                    It[id] = tipl::resample(It[id],Its,tipl::from_space(ItR).to(It2R));
+            }
         }
         return true;
     }
