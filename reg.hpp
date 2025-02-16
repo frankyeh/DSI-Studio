@@ -58,7 +58,6 @@ public:
     std::vector<std::string> modality_names;
     std::vector<image_type> I,J,It;
     std::vector<float> r;
-    size_t modality_count = 0;
     size_t iteration_count = 1;
     mapping_type t2f_dis,to2from,f2t_dis,from2to;
     tipl::vector<dimension> Itvs,Ivs;
@@ -215,7 +214,6 @@ public:
                 break;
             ptr.push_back(tipl::make_shared(each));
         }
-        modality_count = ptr.size();
         return ptr;
     }
     void show_r(const std::string& prompt)
@@ -235,14 +233,13 @@ public:
         auto trans = T();
         std::fill(r.begin(),r.end(),0.0f);
         J.resize(max_modality);
-        for(size_t i = 0;i < J.size();++i)
-            if(i < I.size() && !I[i].empty())
-            {
-                J[i] = tipl::resample(I[i],Its,trans);
-                r[i] = tipl::correlation(J[i],It[i].empty() ? It[0]:It[i]);
-            }
-            else
-                J[i].clear();
+        tipl::par_for(max_modality,[&](size_t i)
+        {
+            if(I[i].empty())
+                return;
+            r[i] = tipl::correlation(J[i] = tipl::resample(I[i],Its,trans),
+                                     It[i].empty() ? It[0]:It[i]);
+        },max_modality);
         show_r("linear r: ");
     }
     float linear_reg(bool& terminated)
@@ -278,11 +275,13 @@ public:
     void calculate_nonlinear_r(void)
     {
         std::fill(r.begin(),r.end(),0.0f);
-        tipl::par_for(modality_count,[&](size_t i)
+        tipl::par_for(max_modality,[&](size_t i)
         {
-            J[i] = tipl::compose_mapping(I[i],to2from);
-            r[i] = tipl::correlation(J[i],previous_It.empty() ? It[i] : previous_It[i]);
-        },modality_count);
+            if(I[i].empty() || It[i].empty())
+                return;
+            r[i] = tipl::correlation(J[i] = tipl::compose_mapping(I[i],to2from),
+                                     previous_It.empty() ? It[i] : previous_It[i]);
+        },max_modality);
         show_r("nonlinear r: ");
     }
 
