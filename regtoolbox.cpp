@@ -100,7 +100,8 @@ void RegToolBox::load_template(const std::string& file_name)
         ui->zoom_template->setValue(width()*0.2f/(1.0f+reg.It[0].width()));
         setup_slice_pos();
     }
-    template_names.push_back(file_name);
+    while(!reg.It[template_names.size()].empty())
+        template_names.push_back(file_name);
     auto_fill();
 }
 
@@ -156,7 +157,8 @@ void RegToolBox::load_subject(const std::string& file_name)
         ui->zoom_subject->setValue(width()*0.2f/(1.0f+reg.I[0].width()));
         setup_slice_pos();
     }
-    subject_names.push_back(file_name);
+    while(!reg.I[subject_names.size()].empty())
+        subject_names.push_back(file_name);
     auto_fill();
 }
 
