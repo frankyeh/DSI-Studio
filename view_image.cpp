@@ -156,8 +156,8 @@ bool view_image::command(std::string cmd,std::string param1)
             auto old_shape = cur_image->shape;
             auto old_vs = cur_image->vs;
             auto old_T = cur_image->T;
-            auto old_type = cur_image->pixel_type;
             auto old_4d_index = cur_4d_index;
+            auto old_type = cur_image->pixel_type;
             for(size_t i = 0;i < buf4d.size() && result;++i)
             {
                 cur_image->shape = old_shape;
@@ -166,6 +166,8 @@ bool view_image::command(std::string cmd,std::string param1)
                 cur_image->pixel_type = old_type;
                 read_4d_at(i);
                 result = cur_image->command(cmd,param1);
+                if(cmd == "change_type")
+                    cur_image->apply([&](auto& I){I.buf().swap(buf4d[i]);});
             }
         }
 
