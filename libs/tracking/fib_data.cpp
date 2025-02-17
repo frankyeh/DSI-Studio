@@ -1915,8 +1915,7 @@ bool fib_data::map_to_mni(bool background)
         if(tipl::prog_aborted)
             return;
 
-        if(dir.index_name[0] == "image")
-            reg.to_It_space(template_I.shape(),template_to_mni);
+        reg.to_It_space(template_I.shape(),template_to_mni);
         s2t.swap(reg.from2to);
         t2s.swap(reg.to2from);
         prog = 4;
