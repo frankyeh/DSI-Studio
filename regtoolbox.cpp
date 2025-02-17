@@ -1,6 +1,7 @@
 #include <QMessageBox>
 #include <QMovie>
 #include <QFileDialog>
+#include <QInputDialog>
 #include <QDragEnterEvent>
 #include <QMimeData>
 #include <QGraphicsPixmapItem>
@@ -762,4 +763,20 @@ void RegToolBox::on_actionApply_Template_To_Subject_Warping_triggered()
     }
 }
 
+
+
+void RegToolBox::on_actionSet_Template_Size_triggered()
+{
+    bool okay = false;
+    auto text = QInputDialog::getMultiLineText(this,QApplication::applicationName(),"Input size",
+                                               (std::ostringstream() << reg.Its).str().c_str(),&okay);
+    if(!okay)
+        return;
+    int w(0),h(0),d(0);
+    std::istringstream(text.toStdString()) >> w >> h >> d;
+    if(w*h*d)
+        reg.to_It_space(tipl::shape<3>(w,h,d));
+    setup_slice_pos();
+    show_image();
+}
 
