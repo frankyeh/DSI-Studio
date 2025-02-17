@@ -92,6 +92,8 @@ private slots:
 
     void on_actionOpen_Mapping_triggered();
 
+    void on_actionSet_Template_Size_triggered();
+
 private:
     Ui::RegToolBox *ui;
     QGraphicsScene It_scene,I_scene;
