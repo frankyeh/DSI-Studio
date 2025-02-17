@@ -769,7 +769,7 @@ void RegToolBox::on_actionSet_Template_Size_triggered()
 {
     bool okay = false;
     auto text = QInputDialog::getMultiLineText(this,QApplication::applicationName(),"Input size",
-                                               (std::ostringstream() << reg.Its).str().c_str(),&okay);
+                                               QString::number(reg.Its[0])+" "+QString::number(reg.Its[1])+" "+QString::number(reg.Its[2]),&okay);
     if(!okay)
         return;
     int w(0),h(0),d(0);
