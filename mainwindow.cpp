@@ -214,20 +214,41 @@ extern const char* version_string;
 void MainWindow::login()
 {
     // MODIFYING REGISTRATION CODE INVALIDATES LICENSING AGREEMENT
-    QNetworkRequest request(QUrl(QString(DSI_STUDIO_LOGIN)));
+    setWindowTitle(windowTitle() + " (Offline)");
+    QDnsLookup *dns = new QDnsLookup(this);
+    dns->setType(QDnsLookup::TXT);
+    dns->setName(DSI_STUDIO_LOGIN);
+    connect(dns, &QDnsLookup::finished, this, [=]()
+    {
+        if (dns->error() == QDnsLookup::NoError)
+            for (const auto &record : dns->textRecords())
+            {
+                login_with_param(QString(record.values().join("")).split(","));
+                break;
+            }
+        dns->deleteLater();
+    });
+    dns->lookup();
+}
+
+void MainWindow::login_with_param(QStringList param)
+{
+    setWindowTitle(windowTitle() + " (Offline Mode)");  // Set offline mode title
+    // MODIFYING REGISTRATION CODE INVALIDATES LICENSING AGREEMENT
+    if(param.size() < 6)
+        return;
+    QNetworkRequest request(QUrl(param[0].toStdString().c_str()));
     request.setRawHeader("Content-Type", "application/json");
     QJsonObject data;
-    data["name"] = QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)).dirName();
-    data["fn"] = fnValue;
-    data["os"] = QSysInfo::productType() + QSysInfo::productVersion();
-    data["version"] = QString(version_string) + " " + __DATE__;
-    data["address"] = adrValue;
+    data[param[1]] = QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)).dirName();
+    data[param[2]] = fnValue;
+    data[param[3]] = QSysInfo::productType() + QSysInfo::productVersion();
+    data[param[4]] = QString(version_string) + " " + __DATE__;
+    data[param[5]] = adrValue;
     QNetworkReply *reply = manager.post(request, QJsonDocument(data).toJson());
     QObject::connect(reply, &QNetworkReply::finished, [=]()
     {
-        if (reply->error() != QNetworkReply::NoError)
-            setWindowTitle(windowTitle() + " (Offline Mode)");  // Set offline mode title
-        else
+        if (reply->error() == QNetworkReply::NoError)
         {
             auto reg_info = reply->readAll().toStdString();
             setWindowTitle(windowTitle() + " " + reg_info.c_str());
