@@ -676,6 +676,13 @@ public:
         Itvs = new_Itvs;
         compute_mapping_from_displacement();
     }
+    void to_It_space(const tipl::shape<3>& new_Its)
+    {
+        auto new_ItR = ItR;
+        for(int i = 0;i < 3;++i)
+            new_ItR[3+i*4] -= new_ItR[i*5]*(float(new_Its[i])-float(Its[i]))*0.5f;
+        to_It_space(new_Its,new_ItR);
+    }
 };
 
 
