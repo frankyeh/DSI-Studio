@@ -727,6 +727,7 @@
     <addaction name="actionSubject_Image"/>
     <addaction name="actionTemplate_Image"/>
     <addaction name="separator"/>
+    <addaction name="actionSet_Template_Size"/>
    </widget>
    <addaction name="menu_Open"/>
    <addaction name="menuEdit"/>
@@ -775,6 +776,11 @@
    </property>
    <property name="text">
     <string>Open Mapping...</string>
+   </property>
+  </action>
+  <action name="actionSet_Template_Size">
+   <property name="text">
+    <string>Set Template Size...</string>
    </property>
   </action>
  </widget>
