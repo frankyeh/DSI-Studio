@@ -214,7 +214,7 @@ extern const char* version_string;
 void MainWindow::login()
 {
     // MODIFYING REGISTRATION CODE INVALIDATES LICENSING AGREEMENT
-    setWindowTitle(windowTitle() + " (Offline)");
+    setWindowTitle(windowTitle() + "(Offline)");
     QDnsLookup *dns = new QDnsLookup(this);
     dns->setType(QDnsLookup::TXT);
     dns->setName(DSI_STUDIO_LOGIN);
@@ -233,7 +233,6 @@ void MainWindow::login()
 
 void MainWindow::login_with_param(QStringList param)
 {
-    setWindowTitle(windowTitle() + " (Offline Mode)");  // Set offline mode title
     // MODIFYING REGISTRATION CODE INVALIDATES LICENSING AGREEMENT
     if(param.size() < 6)
         return;
@@ -251,7 +250,7 @@ void MainWindow::login_with_param(QStringList param)
         if (reply->error() == QNetworkReply::NoError)
         {
             auto reg_info = reply->readAll().toStdString();
-            setWindowTitle(windowTitle() + " " + reg_info.c_str());
+            setWindowTitle(windowTitle().remove("" + " " + reg_info.c_str());
             if(tipl::contains(reg_info,"expired"))
                 QMessageBox::critical(this,"Notice",reg_info.c_str());
         }
