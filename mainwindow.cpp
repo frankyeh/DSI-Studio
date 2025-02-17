@@ -250,7 +250,7 @@ void MainWindow::login_with_param(QStringList param)
         if (reply->error() == QNetworkReply::NoError)
         {
             auto reg_info = reply->readAll().toStdString();
-            setWindowTitle(windowTitle().remove("" + " " + reg_info.c_str());
+            setWindowTitle(windowTitle().remove("(Offline)") + " " + reg_info.c_str());
             if(tipl::contains(reg_info,"expired"))
                 QMessageBox::critical(this,"Notice",reg_info.c_str());
         }
