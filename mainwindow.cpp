@@ -226,11 +226,7 @@ void MainWindow::login()
     QObject::connect(reply, &QNetworkReply::finished, [=]()
     {
         if (reply->error() != QNetworkReply::NoError)
-        {
-            QString error_message = "Network Error: " + reply->errorString();
-            QMessageBox::warning(this, "Registration Error", error_message);
             setWindowTitle(windowTitle() + " (Offline Mode)");  // Set offline mode title
-        }
         else
         {
             auto reg_info = reply->readAll().toStdString();
