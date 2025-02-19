@@ -719,6 +719,9 @@
     <addaction name="separator"/>
     <addaction name="actionOpen_Mapping"/>
     <addaction name="actionSave_Warping"/>
+    <addaction name="separator"/>
+    <addaction name="actionSave_Subject_Images"/>
+    <addaction name="actionSave_Template_Images"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -781,6 +784,24 @@
   <action name="actionSet_Template_Size">
    <property name="text">
     <string>Set Template Size...</string>
+   </property>
+  </action>
+  <action name="actionSave_Subject_Images">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save Subject Images...</string>
+   </property>
+  </action>
+  <action name="actionSave_Template_Images">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save Template Images...</string>
    </property>
   </action>
  </widget>
