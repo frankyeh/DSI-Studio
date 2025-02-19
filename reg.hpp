@@ -88,14 +88,54 @@ public:
     float linear_reg(bool& terminated);
     void nonlinear_reg(bool& terminated);
 public:
-    tipl::image<3,unsigned char> apply_warping(const tipl::image<3,unsigned char>& from,bool is_label) const;
-    tipl::image<3,unsigned char> apply_inv_warping(const tipl::image<3,unsigned char>& to,bool is_label) const;
-    tipl::image<3,unsigned char> apply_warping(const char* from) const;
-    tipl::image<3,unsigned char> apply_inv_warping(const char* to) const;
-    bool apply_warping_tt(const char* from,const char* to) const;
-    bool apply_inv_warping_tt(const char* to,const char* from) const;
-    bool apply_warping(const char* from,const char* to) const;
-    bool apply_inv_warping(const char* to,const char* from) const;
+
+    template<bool direction,tipl::interpolation itype,typename Itype>
+    auto apply_warping(const Itype& input) const
+    {
+        const auto& mapping = direction ? to2from : from2to;
+        return mapping.empty() ?
+            tipl::resample<itype>(input, direction ? Its : Is, direction ? T() : invT()) :
+            tipl::compose_mapping<itype>(input, mapping);
+    }
+    template<bool direction>
+    auto apply_warping(const char* input) const
+    {
+        tipl::out() << "opening " << input;
+        tipl::image<dimension> I3(direction ? Is : Its);
+        if(!tipl::io::gz_nifti::load_to_space(input,I3,direction ? IR : ItR))
+        {
+            error_msg = "cannot open " + std::string(input);
+            return tipl::image<dimension>();
+        }
+        bool is_label = tipl::is_label_image(I3);
+        tipl::out() << (is_label ? "label image interpolated using nearest assignment " : "scalar image interpolated using spline") << std::endl;
+        if(is_label)
+            return apply_warping<direction,tipl::interpolation::nearest>(I3);
+        else
+            return apply_warping<direction,tipl::interpolation::cubic>(I3);
+    }
+
+    template<bool direction>
+    bool apply_warping(const char* input,const char* output) const
+    {
+        if(tipl::ends_with(input,"tt.gz"))
+            return apply_warping<direction>(input,output);
+        auto I = apply_warping<direction>(input);
+        if(I.empty())
+            return false;
+        tipl::out() << "saving " << output;
+        if(!tipl::io::gz_nifti::save_to_file(output,I,
+                                             direction ? Itvs : Ivs,
+                                             direction ? ItR : IR,
+                                             direction ? It_is_mni : Is_is_mni))
+        {
+            error_msg = "cannot write to file " + std::string(output);
+            return false;
+        }
+        return true;
+    }
+    template<bool direction>
+    bool apply_warping_tt(const char* input,const char* output) const;
     bool load_warping(const std::string& filename);
     bool load_alternative_warping(const std::string& filename);
     bool save_warping(const char* filename) const;

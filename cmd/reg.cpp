@@ -40,84 +40,77 @@ auto read_buffer(const std::vector<image_type>& data)
 }
 bool dual_reg::save_subject(const std::string& file_name)
 {
-    return tipl::io::gz_nifti::save_to_file(file_name,read_buffer(I),Ivs,IR,It_is_mni);
+    return tipl::io::gz_nifti::save_to_file(file_name,read_buffer(I),Ivs,IR,Is_is_mni);
 }
 bool dual_reg::save_template(const std::string& file_name)
 {
     return tipl::io::gz_nifti::save_to_file(file_name,read_buffer(It),Itvs,ItR,It_is_mni);
 }
-bool dual_reg::load_subject(size_t id,const std::string& file_name)
+
+template<typename T>
+bool load_image(size_t id, const std::string& file_name,
+                std::vector<T>& images, bool preprocess,
+                tipl::matrix<T::dimension+1, T::dimension+1>& ref_transform,
+                tipl::vector<T::dimension,float>& voxel_size,
+                tipl::shape<T::dimension>& image_shape,
+                bool& is_mni,
+                std::string& error_msg)
 {
     if(id == 0)
     {
-        I.clear();
-        I.resize(max_modality);
-        clear_reg();
+        auto size = images.size();
+        images.clear();
+        images.resize(size);
     }
+
     tipl::io::gz_nifti nifti;
     if(!nifti.load_from_file(file_name))
     {
         error_msg = nifti.error_msg;
         return false;
     }
-    for(size_t i = 0;i < nifti.dim(4);++i,++id)
+
+    for(size_t i = 0; i < nifti.dim(4); ++i, ++id)
     {
         if(nifti.is_int8())
-            nifti >> I[id];
+            nifti >> images[id];
         else
-            I[id] = subject_image_pre(nifti.toImage<tipl::image<3> >());
+        {
+            if(preprocess)
+                images[id] = subject_image_pre(nifti.toImage<tipl::image<T::dimension> >());
+            else
+                images[id] = template_image_pre(nifti.toImage<tipl::image<T::dimension> >());
+        }
+
         if(id == 0)
         {
-            nifti.get_image_transformation(IR);
-            nifti.get_voxel_size(Ivs);
-            nifti.get_image_dimension(Is);
+            nifti.get_image_transformation(ref_transform);
+            nifti.get_voxel_size(voxel_size);
+            nifti.get_image_dimension(image_shape);
+            is_mni = nifti.is_mni();
         }
         else
         {
-            tipl::matrix<dimension+1,dimension+1> I2R;
-            nifti.get_image_transformation(I2R);
-            if(I[id].shape() != Is || I2R != IR)
-                I[id] = tipl::resample(I[id],Is,tipl::from_space(IR).to(I2R));
+            tipl::matrix<T::dimension+1,T::dimension+1> curr_transform;
+            nifti.get_image_transformation(curr_transform);
+            if(images[id].shape() != image_shape || curr_transform != ref_transform)
+                images[id] = tipl::resample(images[id], image_shape, tipl::from_space(ref_transform).to(curr_transform));
         }
     }
     return true;
 }
-bool dual_reg::load_template(size_t id,const std::string& file_name)
+
+bool dual_reg::load_subject(size_t id, const std::string& file_name)
 {
-    if(id == 0)
-    {
-        It.clear();
-        It.resize(max_modality);
+    if(!id)
         clear_reg();
-    }
-    tipl::io::gz_nifti nifti;
-    if(!nifti.load_from_file(file_name))
-    {
-        error_msg = nifti.error_msg;
-        return false;
-    }
-    for(size_t i = 0;i < nifti.dim(4);++i,++id)
-    {
-        if(nifti.is_int8())
-            nifti >> It[id];
-        else
-            It[id] = template_image_pre(nifti.toImage<tipl::image<dimension> >());
-        if(id == 0)
-        {
-            nifti.get_image_transformation(ItR);
-            nifti.get_voxel_size(Itvs);
-            nifti.get_image_dimension(Its);
-            It_is_mni = nifti.is_mni();
-        }
-        else
-        {
-            tipl::matrix<dimension+1,dimension+1> It2R;
-            nifti.get_image_transformation(It2R);
-            if(It[id].shape() != Its || It2R != ItR)
-                It[id] = tipl::resample(It[id],Its,tipl::from_space(ItR).to(It2R));
-        }
-    }
-    return true;
+    return load_image(id, file_name, I, true, IR, Ivs, Is,Is_is_mni,error_msg);
+}
+bool dual_reg::load_template(size_t id, const std::string& file_name)
+{
+    if(!id)
+        clear_reg();
+    return load_image(id, file_name, It, false, ItR, Itvs, Its,It_is_mni,error_msg);
 }
 
 
@@ -280,175 +273,63 @@ void dual_reg::nonlinear_reg(bool& terminated)
     }
 }
 
-tipl::image<3,unsigned char> dual_reg::apply_warping(const tipl::image<3,unsigned char>& from,bool is_label) const
+
+
+
+
+template<typename TransformType, typename MappingType>
+bool apply_warping_tt_template(const char* input_file, const char* output_file,
+                               const tipl::shape<3>& geo, const tipl::vector<3>& vs,
+                               const tipl::matrix<4, 4>& trans_to_mni,
+                               const MappingType& mapping, TransformType transform,
+                               std::string& error_msg)
 {
-    tipl::image<3,unsigned char> to(Its);
-    if(is_label)
+    TractModel tract_model(geo, vs, trans_to_mni);
     {
-        if(to2from.empty())
-            tipl::resample<tipl::interpolation::nearest>(from,to,T());
-        else
-            tipl::compose_mapping<tipl::interpolation::nearest>(from,to2from,to);
+        fib_data fib(geo, vs, trans_to_mni);
+        if (!tract_model.load_tracts_from_file(input_file, &fib, false))
+        {
+            error_msg = "cannot read tract file";
+            return false;
+        }
     }
-    else
+
+    std::vector<std::vector<float>>& tracts = tract_model.get_tracts();
+
+    tipl::adaptive_par_for(tracts.size(), [&](size_t i)
     {
-        if(to2from.empty())
-            tipl::resample<tipl::interpolation::cubic>(from,to,T());
-        else
-            tipl::compose_mapping<tipl::interpolation::cubic>(from,to2from,to);
-    }
-    return to;
-}
-tipl::image<3,unsigned char> dual_reg::apply_inv_warping(const tipl::image<3,unsigned char>& to,bool is_label) const
-{
-    tipl::image<3,unsigned char> from(Is);
-    if(is_label)
+        for (size_t j = 0; j < tracts[i].size(); j += 3)
+        {
+            tipl::vector<3> pos(&tracts[i][j]);
+            if (!tipl::estimate(mapping, pos, pos))
+                pos.to(transform);
+            std::copy(pos.begin(), pos.end(), &tracts[i][j]);
+        }
+    });
+
+    tract_model.geo = geo;
+    tract_model.vs = vs;
+    tract_model.trans_to_mni = trans_to_mni;
+
+    tipl::out() << "saving " << output_file;
+    if (!tract_model.save_tracts_to_file(output_file))
     {
-        if(from2to.empty())
-            tipl::resample<tipl::interpolation::nearest>(to,from,invT());
-        else
-            tipl::compose_mapping<tipl::interpolation::nearest>(to,from2to,from);
-    }
-    else
-    {
-        if(from2to.empty())
-            tipl::resample<tipl::interpolation::cubic>(to,from,invT());
-        else
-            tipl::compose_mapping<tipl::interpolation::cubic>(to,from2to,from);
-    }
-    return from;
-}
-tipl::image<3,unsigned char> dual_reg::apply_warping(const char* from) const
-{
-    tipl::out() << "opening " << from;
-    tipl::image<dimension> I3(Is);
-    if(!tipl::io::gz_nifti::load_to_space(from,I3,IR))
-    {
-        error_msg = "cannot open ";
-        error_msg += from;
-        return tipl::image<dimension>();
-    }
-    bool is_label = tipl::is_label_image(I3);
-    tipl::out() << (is_label ? "label image interpolated using nearest assignment " : "scalar image interpolated using spline") << std::endl;
-    tipl::out() << "apply warping to " << from;
-    return apply_warping(I3,is_label);
-}
-bool dual_reg::apply_warping(const char* from,const char* to) const
-{
-    if(tipl::ends_with(from,"tt.gz"))
-        return apply_warping_tt(from,to);
-    auto I = apply_warping(from);
-    if(I.empty())
-        return false;
-    tipl::out() << "saving " << to;
-    if(!tipl::io::gz_nifti::save_to_file(to,I,Itvs,ItR,It_is_mni))
-    {
-        error_msg = "cannot write to file ";
-        error_msg += to;
+        error_msg = "failed to save file";
         return false;
     }
     return true;
-}
-tipl::image<3,unsigned char> dual_reg::apply_inv_warping(const char* to) const
-{
-    tipl::out() << "opening " << to;
-    tipl::image<dimension> I3(Its);
-    if(!tipl::io::gz_nifti::load_to_space(to,I3,ItR))
-    {
-        error_msg = "cannot open ";
-        error_msg += to;
-        return tipl::image<dimension>();
-    }
-    bool is_label = tipl::is_label_image(I3);
-    tipl::out() << (is_label ? "label image interpolated using nearest assignment " : "scalar image interpolated using spline") << std::endl;
-    tipl::out() << "apply inverse warping to " << to;
-    return apply_inv_warping(I3,is_label);
 }
 
-bool dual_reg::apply_inv_warping(const char* to,const char* from) const
+template<bool direction>
+bool dual_reg::apply_warping_tt(const char* input, const char* output) const
 {
-    if(tipl::ends_with(from,"tt.gz"))
-        return apply_inv_warping_tt(from,to);
-    auto I = apply_inv_warping(to);
-    if(I.empty())
-        return false;
-    tipl::out() << "saving " << from;
-    if(!tipl::io::gz_nifti::save_to_file(from,I,Ivs,IR,false))
-    {
-        error_msg = "cannot write file ";
-        error_msg += from;
-        return false;
-    }
-    return true;
+    return apply_warping_tt_template(input, output, direction ? Its : Is,
+                                                    direction ? Itvs : Ivs,
+                                                    direction ? ItR : IR,
+                                                    direction ? from2to : to2from,
+                                                    direction ? invT() : T(),error_msg);
 }
-bool dual_reg::apply_warping_tt(const char* from,const char* to) const
-{
-    TractModel tract_model(Is,Ivs,IR);
-    {
-        fib_data fib(Is,Ivs,IR);
-        if(!tract_model.load_tracts_from_file(from,&fib,false))
-        {
-            error_msg = "cannot read tract file";
-            return false;
-        }
-    }
-    std::vector<std::vector<float> >& tracts = tract_model.get_tracts();
-    auto trans = invT();
-    tipl::adaptive_par_for(tracts.size(),[&](size_t i)
-    {
-        for(size_t j = 0;j < tracts[i].size();j += 3)
-        {
-            tipl::vector<3> pos(&tracts[i][j]);
-            if(!tipl::estimate(from2to,pos,pos))
-                pos.to(trans);
-            std::copy(pos.begin(),pos.end(),&tracts[i][j]);
-        }
-    });
-    tract_model.geo = Its;
-    tract_model.vs = Itvs;
-    tract_model.trans_to_mni = ItR;
-    tipl::out() << "saving " << to;
-    if(!tract_model.save_tracts_to_file(to))
-    {
-        error_msg = "failed to save file";
-        return false;
-    }
-    return true;
-}
-bool dual_reg::apply_inv_warping_tt(const char* to,const char* from) const
-{
-    TractModel tract_model(Its,Itvs,ItR);
-    {
-        fib_data fib(Its,Itvs,ItR);
-        if(!tract_model.load_tracts_from_file(from,&fib,false))
-        {
-            error_msg = "cannot read tract file";
-            return false;
-        }
-    }
-    std::vector<std::vector<float> >& tracts = tract_model.get_tracts();
-    auto trans = T();
-    tipl::adaptive_par_for(tracts.size(),[&](size_t i)
-    {
-        for(size_t j = 0;j < tracts[i].size();j += 3)
-        {
-            tipl::vector<3> pos(&tracts[i][j]);
-            if(!tipl::estimate(to2from,pos,pos))
-                pos.to(trans);
-            std::copy(pos.begin(),pos.end(),&tracts[i][j]);
-        }
-    });
-    tract_model.geo = Is;
-    tract_model.vs = Ivs;
-    tract_model.trans_to_mni = IR;
-    tipl::out() << "saving " << to;
-    if(!tract_model.save_tracts_to_file(to))
-    {
-        error_msg = "failed to save file";
-        return false;
-    }
-    return true;
-}
+
 bool dual_reg::load_warping(const std::string& filename)
 {
     tipl::out() << "load warping " << filename;
@@ -532,7 +413,7 @@ bool dual_reg::load_alternative_warping(const std::string& filename)
     previous_It.resize(It.size());
     for(size_t i = 0;i < It.size() && !It[i].empty();++i)
     {
-        previous_It[i] = alt_reg.apply_warping(It[i],false);
+        previous_It[i] = alt_reg.apply_warping<true,tipl::interpolation::cubic>(It[i]);
         previous_It[i].swap(It[i]);
     }
     return true;
@@ -673,7 +554,7 @@ int after_warp(const std::vector<std::string>& apply_warp_filename,dual_reg& r)
 {
     for(const auto& each_file: apply_warp_filename)
     {
-        if(!r.apply_warping(each_file.c_str(),(each_file+".wp.nii.gz").c_str()))
+        if(!r.apply_warping<true>(each_file.c_str(),(each_file+".wp.nii.gz").c_str()))
             tipl::error() << r.error_msg;
         return 1;
     }

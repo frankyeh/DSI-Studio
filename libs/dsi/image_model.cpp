@@ -130,7 +130,7 @@ bool src_data::mask_from_template(void)
         if(prog.aborted())
             return false;
     }
-    auto iso = r.apply_inv_warping(r.It[0],false);
+    auto iso = r.apply_warping<false,tipl::interpolation::cubic>(r.It[0]);
     tipl::threshold(iso,voxel.mask,0);
     return true;
 }

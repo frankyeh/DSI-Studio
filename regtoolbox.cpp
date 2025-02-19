@@ -221,7 +221,7 @@ bool RegToolBox::eventFilter(QObject *obj, QEvent *event)
                         "Images (*.nii *nii.gz);;All files (*)" );
                 if(filename.isEmpty())
                     return true;
-                if(!reg.apply_inv_warping(template_names[y].c_str(),filename.toStdString().c_str()))
+                if(!reg.apply_warping<false>(template_names[y].c_str(),filename.toStdString().c_str()))
                     QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
                 else
                     QMessageBox::information(this,QApplication::applicationName(),"Saved");
@@ -239,7 +239,7 @@ bool RegToolBox::eventFilter(QObject *obj, QEvent *event)
                         "Images (*.nii *nii.gz);;All files (*)" );
                 if(filename.isEmpty())
                     return true;
-                if(!reg.apply_warping(subject_names[y].c_str(),filename.toStdString().c_str()))
+                if(!reg.apply_warping<true>(subject_names[y].c_str(),filename.toStdString().c_str()))
                     QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
                 else
                     QMessageBox::information(this,QApplication::applicationName(),"Saved");
@@ -708,7 +708,7 @@ void RegToolBox::on_actionApply_Subject_To_Template_Warping_triggered()
                 "Images (*.nii *nii.gz);;Tracts (*tt.gz);;All files (*)" );
         if(to.isEmpty())
             return;
-        if(!reg.apply_warping(from[0].toStdString().c_str(),to.toStdString().c_str()))
+        if(!reg.apply_warping<true>(from[0].toStdString().c_str(),to.toStdString().c_str()))
             QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
         else
             QMessageBox::information(this,QApplication::applicationName(),"Saved");
@@ -718,7 +718,7 @@ void RegToolBox::on_actionApply_Subject_To_Template_Warping_triggered()
         tipl::progress prog("save files");
         for(int i = 0;prog(i,from.size());++i)
         {
-            if(!reg.apply_warping(from[i].toStdString().c_str(),(from[i]+".wp.nii.gz").toStdString().c_str()))
+            if(!reg.apply_warping<true>(from[i].toStdString().c_str(),(from[i]+".wp.nii.gz").toStdString().c_str()))
             {
                 QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
                 return;
@@ -743,7 +743,7 @@ void RegToolBox::on_actionApply_Template_To_Subject_Warping_triggered()
                 "Images (*.nii *nii.gz);;All files (*)" );
         if(from.isEmpty())
             return;
-        if(!reg.apply_inv_warping(to[0].toStdString().c_str(),from.toStdString().c_str()))
+        if(!reg.apply_warping<false>(to[0].toStdString().c_str(),from.toStdString().c_str()))
             QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
         else
             QMessageBox::information(this,QApplication::applicationName(),"Saved");
@@ -753,7 +753,7 @@ void RegToolBox::on_actionApply_Template_To_Subject_Warping_triggered()
         tipl::progress prog("save files");
         for(int i = 0;prog(i,to.size());++i)
         {
-            if(!reg.apply_inv_warping(to[i].toStdString().c_str(),(to[i]+".wp.nii.gz").toStdString().c_str()))
+            if(!reg.apply_warping<false>(to[i].toStdString().c_str(),(to[i]+".wp.nii.gz").toStdString().c_str()))
             {
                 QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
                 return;
