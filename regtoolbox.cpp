@@ -534,7 +534,6 @@ void RegToolBox::on_run_reg_clicked()
     reg.param.speed = float(ui->speed->value());
     reg.param.resolution = ui->resolution->value();
     reg.param.gradient_type = ui->gradient->text().toStdString();
-    reg.iteration_count = ui->iteration->value();
     reg.bound = ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound;
     reg.cost_type = ui->cost_fun->currentIndex() == 0 ? tipl::reg::corr : tipl::reg::mutual_info;
     reg.use_cuda = ui->use_cuda->isChecked();
@@ -546,7 +545,8 @@ void RegToolBox::on_run_reg_clicked()
         ui->zoom_template->setValue(width()*0.2f/(1.0f+reg.It[0].width()));
         J.clear();
         Jt.clear();
-
+        reg.to2from.clear();
+        reg.from2to.clear();
         thread.run([this](void){
             reg.linear_reg(thread.terminated);
             reg.nonlinear_reg(thread.terminated);
@@ -778,5 +778,31 @@ void RegToolBox::on_actionSet_Template_Size_triggered()
         reg.to_It_space(tipl::shape<3>(w,h,d));
     setup_slice_pos();
     show_image();
+}
+
+
+void RegToolBox::on_actionSave_Subject_Images_triggered()
+{
+    if(subject_names.empty())
+        return;
+    QString from = QFileDialog::getSaveFileName(
+            this,"Save Subject Images",subject_names.front().c_str(),
+            "Images (*.nii *nii.gz);;All files (*)" );
+    if(from.isEmpty())
+        return;
+    reg.save_subject(from.toStdString());
+}
+
+
+void RegToolBox::on_actionSave_Template_Images_triggered()
+{
+    if(template_names.empty())
+        return;
+    QString from = QFileDialog::getSaveFileName(
+            this,"Save Template Images",template_names.front().c_str(),
+            "Images (*.nii *nii.gz);;All files (*)" );
+    if(from.isEmpty())
+        return;
+    reg.save_template(from.toStdString());
 }
 
