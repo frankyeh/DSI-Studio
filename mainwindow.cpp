@@ -70,7 +70,7 @@ MainWindow::MainWindow(QWidget *parent) :
     for(auto& temp : fib_template_list)
     {
         QString name = QFileInfo(temp.c_str()).baseName();
-        if(name.contains("adult") || name.contains("neonate"))
+        if(name.contains("human"))
             name = QString("Human\t") + name;
         if(name.contains("rhesus") || name.contains("marmoset") || name.contains("chimp"))
             name = QString("Primate\t") + name;
