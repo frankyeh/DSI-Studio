@@ -211,7 +211,7 @@ float dual_reg::linear_reg(bool& terminated)
     tipl::progress prog("linear registration");
     float cost = 0.0f;
     if(!skip_linear)
-        cost = tipl::reg::linear<tipl::out>(make_list(It),Itvs,make_list(I),Ivs,
+        cost = tipl::reg::linear<tipl::out>(tipl::reg::make_list(It),Itvs,tipl::reg::make_list(I),Ivs,
                arg,reg_type,terminated,bound,cost_type,use_cuda && has_cuda);
 
     calculate_linear_r();
@@ -242,9 +242,9 @@ void dual_reg::nonlinear_reg(bool& terminated)
     else
     {
         std::thread t([&](void){
-            tipl::reg::cdm_common<tipl::out>(make_list(It),make_list(J),t2f_dis,terminated,param,use_cuda && has_cuda);
+            tipl::reg::cdm_common<tipl::out>(tipl::reg::make_list(It),tipl::reg::make_list(J),t2f_dis,terminated,param,use_cuda && has_cuda);
         });
-        tipl::reg::cdm_common<tipl::out>(make_list(J),make_list(It),f2t_dis,terminated,param,use_cuda && has_cuda);
+        tipl::reg::cdm_common<tipl::out>(tipl::reg::make_list(J),tipl::reg::make_list(It),f2t_dis,terminated,param,use_cuda && has_cuda);
         t.join();
         if(!previous_f2t.empty() && !previous_t2f.empty())
         {
