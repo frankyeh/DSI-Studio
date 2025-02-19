@@ -344,6 +344,13 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QCheckBox" name="apply_to_all">
+            <property name="text">
+             <string>apply to all</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </item>
         <item>
