@@ -1812,7 +1812,7 @@ bool fib_data::map_to_mni(bool background)
     auto lambda = [this,output_file_name]()
     {
         prog = 1;
-        dual_reg<3> reg;
+        dual_reg reg;
 
         reg.modality_names = {"qa","iso"};
 
@@ -1947,7 +1947,7 @@ bool fib_data::load_mapping(const std::string& file_name)
             error_msg = "The mapping file was created before the fib file.";
             return false;
         }
-        dual_reg<3> map;
+        dual_reg map;
         if(!map.load_warping(file_name))
         {
             error_msg = map.error_msg;

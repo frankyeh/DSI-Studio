@@ -32,7 +32,7 @@ public:
            voxel.vs[2] == 0.0f)
             throw std::runtime_error("No spatial information found in src file. Recreate src file or contact developer for assistance");
 
-        dual_reg<3> reg;
+        dual_reg reg;
         reg.modality_names = {"qa","iso"};
         reg.export_intermediate = voxel.needs("debug");
 

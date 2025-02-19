@@ -102,7 +102,7 @@ void src_data::calculate_dwi_sum(bool update_mask)
 extern std::vector<std::string> iso_template_list;
 bool src_data::mask_from_template(void)
 {
-    dual_reg<3> r;
+    dual_reg r;
     if(!r.load_template(0,iso_template_list[voxel.template_id]))
     {
         error_msg = r.error_msg;
