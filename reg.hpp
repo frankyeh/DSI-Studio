@@ -78,17 +78,6 @@ public:
     {
         return !I[0].empty() && !It[0].empty();
     }
-    auto make_list(const std::vector<image_type>& data)
-    {
-        std::vector<tipl::const_pointer_image<dimension,unsigned char> > ptr;
-        for(const auto& each : data)
-        {
-            if(each.empty())
-                break;
-            ptr.push_back(tipl::make_shared(each));
-        }
-        return ptr;
-    }
 public:
     void show_r(const std::string& prompt);
     void compute_mapping_from_displacement(void);
