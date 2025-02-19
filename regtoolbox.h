@@ -94,6 +94,10 @@ private slots:
 
     void on_actionSet_Template_Size_triggered();
 
+    void on_actionSave_Subject_Images_triggered();
+
+    void on_actionSave_Template_Images_triggered();
+
 private:
     Ui::RegToolBox *ui;
     QGraphicsScene It_scene,I_scene;
