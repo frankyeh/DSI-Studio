@@ -653,6 +653,41 @@ bool dual_reg<3>::apply_warping_tt(const char* from,const char* to) const
     }
     return true;
 }
+template<>
+bool dual_reg<3>::apply_inv_warping_tt(const char* to,const char* from) const
+{
+    TractModel tract_model(Its,Itvs,ItR);
+    {
+        fib_data fib(Its,Itvs,ItR);
+        if(!tract_model.load_tracts_from_file(from,&fib,false))
+        {
+            error_msg = "cannot read tract file";
+            return false;
+        }
+    }
+    std::vector<std::vector<float> >& tracts = tract_model.get_tracts();
+    auto trans = T();
+    tipl::adaptive_par_for(tracts.size(),[&](size_t i)
+    {
+        for(size_t j = 0;j < tracts[i].size();j += 3)
+        {
+            tipl::vector<3> pos(&tracts[i][j]);
+            if(!tipl::estimate(to2from,pos,pos))
+                pos.to(trans);
+            std::copy(pos.begin(),pos.end(),&tracts[i][j]);
+        }
+    });
+    tract_model.geo = Is;
+    tract_model.vs = Ivs;
+    tract_model.trans_to_mni = IR;
+    tipl::out() << "saving " << to;
+    if(!tract_model.save_tracts_to_file(to))
+    {
+        error_msg = "failed to save file";
+        return false;
+    }
+    return true;
+}
 bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,bool tract_is_mni)
 {
     std::string file_name(file_name_);
