@@ -150,9 +150,25 @@ bool view_image::command(std::string cmd,std::string param1)
                 nii << tipl::make_image(reinterpret_cast<decltype(&I[0])>(buf.data()),tipl::shape<4>(cur_image->shape[0],cur_image->shape[1],cur_image->shape[2],buf4d.size()));
                 result = nii.save_to_file(param1.c_str());
             });
+            read_4d_at(old_4d_index);
             goto end_command;
         }
-
+        if(cmd == "concatenate_image")
+        {
+            cur_image->apply([&](auto& I)
+            {
+                typename std::remove_reference<decltype(I)>::type new_I(I.shape());
+                result = tipl::command<tipl::out,tipl::io::gz_nifti>(new_I,cur_image->vs,cur_image->T,cur_image->is_mni,
+                                "load_image",param1,cur_image->interpolation,cur_image->error_msg);
+                if(result)
+                {
+                    buf4d.push_back(std::vector<unsigned char>());
+                    new_I.buf().swap(buf4d.back());
+                }
+            });
+            goto end_command;
+        }
+        if(ui->apply_to_all->isChecked())
         {
             auto old_shape = cur_image->shape;
             auto old_vs = cur_image->vs;
@@ -170,12 +186,10 @@ bool view_image::command(std::string cmd,std::string param1)
                 if(cmd == "change_type")
                     cur_image->apply([&](auto& I){I.buf().swap(buf4d[i]);});
             }
-        }
-
-        read_4d_at(old_4d_index);
-        goto end_command;
+            read_4d_at(old_4d_index);
+            goto end_command;
+        }        
     }
-
 
     undo_list.push_back(std::make_shared<variant_image>(*cur_image.get()));
     result = cur_image->command(cmd,param1);
@@ -681,12 +695,14 @@ void view_image::init_image(void)
     {
         ui->dwi_volume->hide();
         ui->dwi_label->hide();
+        ui->apply_to_all->hide();
     }
     else
     {
         ui->dwi_volume->setMaximum(buf4d.size()-1);
         ui->dwi_volume->show();
         ui->dwi_label->show();
+        ui->apply_to_all->show();
     }
     ui->type->setCurrentIndex(cur_image->pixel_type);
     no_update = false;
