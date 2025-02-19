@@ -43,6 +43,7 @@ struct dual_reg{
     tipl::reg::cdm_param param;
 public:
     bool It_is_mni = true;
+    bool Is_is_mni = false;
     bool export_intermediate = false;
     bool use_cuda = true;
     bool skip_linear = false;
