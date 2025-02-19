@@ -58,7 +58,6 @@ public:
     std::vector<std::string> modality_names;
     std::vector<image_type> I,J,It;
     std::vector<float> r;
-    size_t iteration_count = 1;
     mapping_type t2f_dis,to2from,f2t_dis,from2to;
     tipl::vector<dimension> Itvs,Ivs;
     tipl::matrix<dimension+1,dimension+1> ItR,IR;
@@ -90,6 +89,28 @@ public:
         f2t_dis.clear();
         from2to.clear();
         arg.clear();
+    }
+    static auto read_buffer(const std::vector<image_type>& data)
+    {
+        size_t image_count = std::distance(data.begin(),
+                                               std::find_if(data.begin(), data.end(),
+                                               [](const auto& img) { return img.empty(); }));
+        if(!image_count)
+            return tipl::image<4,unsigned char>();
+        tipl::image<4,unsigned char> buffer(data[0].shape().expand(image_count));
+        tipl::par_for(image_count,[&](size_t i)
+        {
+            std::copy(data[i].begin(),data[i].end(),buffer.begin() + i*data[0].size());
+        },image_count);
+        return buffer;
+    }
+    bool save_subject(const std::string& file_name)
+    {
+        return tipl::io::gz_nifti::save_to_file(file_name,read_buffer(I),Ivs,IR,It_is_mni);
+    }
+    bool save_template(const std::string& file_name)
+    {
+        return tipl::io::gz_nifti::save_to_file(file_name,read_buffer(It),Itvs,ItR,It_is_mni);
     }
     bool load_subject(size_t id,const std::string& file_name)
     {
@@ -294,6 +315,8 @@ public:
     void nonlinear_reg(bool& terminated)
     {
         tipl::progress prog("nonlinear registration");
+        f2t_dis.clear();
+        t2f_dis.clear();
         if(skip_nonlinear)
         {
             f2t_dis.resize(Its);
@@ -302,39 +325,19 @@ public:
         }
         else
         {
-            for(size_t iter = 0;iter < iteration_count;++iter)
+            std::thread t([&](void){
+                tipl::reg::cdm_common<tipl::out>(make_list(It),make_list(J),t2f_dis,terminated,param,use_cuda && has_cuda);
+            });
+            tipl::reg::cdm_common<tipl::out>(make_list(J),make_list(It),f2t_dis,terminated,param,use_cuda && has_cuda);
+            t.join();
+            if(!previous_f2t.empty() && !previous_t2f.empty())
             {
-                mapping_type t2f,f2t;
-
-                std::thread t([&](void){
-                    tipl::reg::cdm_common<tipl::out>(make_list(It),make_list(J),t2f,terminated,param,use_cuda && has_cuda);
-                });
-                tipl::reg::cdm_common<tipl::out>(make_list(J),make_list(It),f2t,terminated,param,use_cuda && has_cuda);
-                t.join();
-
-
-                // first round
-                if(!iter)
-                {
-                    f2t.swap(f2t_dis);
-                    t2f.swap(t2f_dis);
-                }
-                else
-                {
-                    tipl::accumulate_displacement(f2t,f2t_dis);
-                    tipl::accumulate_displacement(t2f,t2f_dis);
-                }
-                // if last round
-                if(iter+1 == iteration_count && !previous_f2t.empty() && !previous_t2f.empty())
-                {
-                    tipl::accumulate_displacement(previous_f2t,f2t_dis);
-                    tipl::accumulate_displacement(previous_t2f,t2f_dis);
-                }
-
-                compute_mapping_from_displacement();
-                calculate_nonlinear_r();
+                tipl::accumulate_displacement(previous_f2t,f2t_dis);
+                tipl::accumulate_displacement(previous_t2f,t2f_dis);
             }
         }
+        compute_mapping_from_displacement();
+        calculate_nonlinear_r();
 
         if(export_intermediate)
         {
@@ -450,6 +453,8 @@ public:
 
     bool apply_inv_warping(const char* to,const char* from) const
     {
+        if(tipl::ends_with(from,"tt.gz"))
+            return apply_inv_warping_tt(from,to);
         auto I = apply_inv_warping(to);
         if(I.empty())
             return false;
@@ -463,6 +468,7 @@ public:
         return true;
     }
     bool apply_warping_tt(const char* from,const char* to) const;
+    bool apply_inv_warping_tt(const char* to,const char* from) const;
     bool load_warping(const std::string& filename)
     {
         tipl::out() << "load warping " << filename;
