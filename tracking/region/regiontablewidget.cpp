@@ -1506,33 +1506,20 @@ void RegionTableWidget::do_action(QString action)
     {
         if(action == "A-B" || action == "B-A" || action == "A*B" || action == "A<<B" || action == "A>>B")
         {
-            auto handle = cur_tracking_window.handle;
-            std::vector<unsigned int> checked_row;
-            for (unsigned int roi_index = 0;roi_index < regions.size();++roi_index)
-            {
-                if (item(roi_index,0)->checkState() != Qt::Checked)
-                    continue;
-                checked_row.push_back(roi_index);
-            }
-            auto to_dwi_space = [&](auto region)
-            {
-                region->vs = handle->vs;
-                region->dim = handle->dim;
-                region->is_diffusion_space = true;
-                region->to_diffusion_space = tipl::identity_matrix();
-                region->trans_to_mni = handle->trans_to_mni;
-                region->is_mni = handle->is_mni;
-                region->region.clear();
-                region->undo_backup.clear();
-                region->redo_backup.clear();
-            };
             if(checked_regions.size() < 2)
                 return;
+            auto base_dim = checked_regions[0]->dim;
+            auto base_to_dif = checked_regions[0]->to_diffusion_space;
+            std::vector<unsigned int> checked_row;
+            for (unsigned int r = 0;r < regions.size();++r)
+                if (item(r,0)->checkState() == Qt::Checked)
+                    checked_row.push_back(r);
+
             tipl::image<3,unsigned char> A;
             tipl::image<3,uint16_t> A_labels;
-            checked_regions[0]->save_region_to_buffer(A,handle->dim,tipl::identity_matrix());
+            checked_regions[0]->save_region_to_buffer(A);
             if(action == "A<<B" || action == "A>>B")
-                A_labels.resize(handle->dim);
+                A_labels.resize(base_dim);
 
             {
                 tipl::out() << "processing regions";
@@ -1543,109 +1530,84 @@ void RegionTableWidget::do_action(QString action)
                     if(r == 0)
                         return;
                     tipl::image<3,unsigned char> B;
-                    checked_regions[r]->save_region_to_buffer(B,handle->dim,tipl::identity_matrix());
+                    checked_regions[r]->save_region_to_buffer(B,base_dim,base_to_dif);
                     if(action == "A-B")
                     {
-                        for(size_t i = 0;i < A.size();++i)
-                            if(B[i])
-                                A[i] = 0;
-                        return;
+                        tipl::masking(A,B);
+                        return; // don't update B
                     }
                     if(action == "B-A")
-                    {
-                        for(size_t i = 0;i < B.size();++i)
-                            if(A[i])
-                                B[i] = 0;
-                        to_dwi_space(checked_regions[r]);
-                        checked_regions[r]->load_region_from_buffer(B);
-                        rows_to_be_updated.push_back(checked_row[r]);
-                    }
+                        tipl::masking(B,A);
                     if(action == "A*B")
-                    {
                         for(size_t i = 0;i < B.size();++i)
                             B[i] = (A[i] & B[i]);
-                        to_dwi_space(checked_regions[r]);
-                        checked_regions[r]->load_region_from_buffer(B);
-                        rows_to_be_updated.push_back(checked_row[r]);
-                    }
                     if(action == "A<<B" || action == "A>>B")
-                    {
                         for(size_t i = 0;i < A.size();++i)
-                            if(A[i] && B[i] && A_labels[i] < r)
-                                A_labels[i] = uint16_t(r);
-                    }
+                            if(A[i] && B[i] && A_labels[i] < i)
+                                A_labels[i] = uint16_t(i);
+
+                    checked_regions[r]->vs = checked_regions[0]->vs;
+                    checked_regions[r]->dim = base_dim;
+                    checked_regions[r]->is_diffusion_space = checked_regions[0]->is_diffusion_space;
+                    checked_regions[r]->to_diffusion_space = base_to_dif;
+                    checked_regions[r]->trans_to_mni = checked_regions[0]->trans_to_mni;
+                    checked_regions[r]->is_mni = checked_regions[0]->is_mni;
+                    checked_regions[r]->region.clear();
+                    checked_regions[r]->undo_backup.clear();
+                    checked_regions[r]->redo_backup.clear();
+                    checked_regions[r]->load_region_from_buffer(B);
+                    rows_to_be_updated.push_back(checked_row[r]);
                 });
             }
             if(action == "A-B")
-            {
-                to_dwi_space(checked_regions[0]);
                 checked_regions[0]->load_region_from_buffer(A);
-                rows_to_be_updated.push_back(checked_row[0]);
-            }
 
-
-            tipl::const_pointer_image<3,float> I = cur_tracking_window.current_slice->get_source();
-            if(I.empty())
-                return;
-            bool need_trans = !cur_tracking_window.current_slice->is_diffusion_space;
-            tipl::matrix<4,4> trans = tipl::identity_matrix();
-            if(need_trans)
-               trans = cur_tracking_window.current_slice->to_slice;
-
-            auto value_at = [&](tipl::vector<3> pos)
-            {
-                if(need_trans)
-                    pos.to(trans);
-                return tipl::estimate(I,pos);
-            };
 
             if(action == "A>>B")
             {
-                tipl::image<3,unsigned char> edges(handle->dim);
+                auto I = tipl::resample(cur_tracking_window.current_slice->get_source(),base_dim,
+                                        tipl::from_space(cur_tracking_window.current_slice->to_dif).
+                                        to(base_to_dif));
+                tipl::image<3,unsigned char> edges(base_dim);
                 tipl::adaptive_par_for(checked_regions.size(),[&](size_t r)
                 {
                     if(r == 0)
                         return;
                     tipl::image<3,unsigned char> B;
-                    checked_regions[r]->save_region_to_buffer(B,handle->dim,tipl::identity_matrix());
+                    checked_regions[r]->save_region_to_buffer(B);
                     tipl::morphology::edge(B);
                     for(size_t pos = 0;pos < B.size();++pos)
                         if(A[pos] && B[pos])
                             edges[pos] += 1;
                 });
 
-                tipl::adaptive_par_for(tipl::begin_index(handle->dim),
-                              tipl::end_index(handle->dim),
-                              [&](const tipl::pixel_index<3>& pos)
+                tipl::adaptive_par_for(tipl::begin_index(base_dim),tipl::end_index(base_dim),
+                                       [&](const tipl::pixel_index<3>& pos)
                 {
                     if(edges[pos.index()] <= 1)
                         return;
-
-
                     std::vector<float> votes(checked_regions.size());
                     votes[A_labels[pos.index()]] += 4.0f;
 
 
                     // spatial voting, total vote: 32 x 0.5 = 16
-                    tipl::for_each_connected_neighbors(pos,handle->dim,[&](const tipl::pixel_index<3>& rhs_pos)
+                    tipl::for_each_connected_neighbors(pos,base_dim,[&](const tipl::pixel_index<3>& rhs_pos)
                     {
                         votes[A_labels[rhs_pos.index()]] += 0.5f;
                     });
-                    tipl::for_each_neighbors(pos,handle->dim,[&](const tipl::pixel_index<3>& rhs_pos)
+                    tipl::for_each_neighbors(pos,base_dim,[&](const tipl::pixel_index<3>& rhs_pos)
                     {
                         votes[A_labels[rhs_pos.index()]] += 0.5f;
                     });
 
                     // value voting, total vote: 16
                     {
-                        float pos_value = value_at(pos);
+                        float pos_value = tipl::estimate(I,pos);
                         std::vector<float> dif_values(16,std::numeric_limits<float>::max());
                         std::vector<size_t> regions(16);
-                        tipl::for_each_neighbors(pos,handle->dim,4,[&](const auto& rhs_pos)
+                        tipl::for_each_neighbors(pos,base_dim,4,[&](const auto& rhs_pos)
                         {
                             tipl::vector<3> p2(rhs_pos);
-                            if(need_trans)
-                                p2.to(trans);
                             float dif_value = std::fabs(pos_value-tipl::estimate(I,p2));
                             if(dif_value > dif_values.back())
                                 return;
@@ -1668,6 +1630,9 @@ void RegionTableWidget::do_action(QString action)
             }
             if(action == "A<<B")
             {
+                auto I = tipl::resample(cur_tracking_window.current_slice->get_source(),base_dim,
+                                        tipl::from_space(cur_tracking_window.current_slice->to_dif).
+                                        to(base_to_dif));
                 std::vector<size_t> need_fill_up;
                 {
                     std::vector<std::vector<size_t> > need_fill_ups(tipl::max_thread_count);
@@ -1689,20 +1654,16 @@ void RegionTableWidget::do_action(QString action)
                         float min_value_dif = std::numeric_limits<float>::max();
                         size_t min_r = 1;
                         tipl::vector<3> pos(index);
-                        float pos_value = value_at(pos);
+                        float pos_value = tipl::estimate(I,pos);
                         for(size_t r = 1;r < checked_regions.size();++r)
                         {
                             for(auto pos2 : checked_regions[r]->region)
                             {
-                                if(!checked_regions[r]->is_diffusion_space)
-                                    pos2.to(checked_regions[r]->to_diffusion_space);
-                                {
-                                    if(std::abs(pos2[0]-pos[0]) > min_dis ||
-                                       std::abs(pos2[1]-pos[1]) > min_dis ||
-                                       std::abs(pos2[2]-pos[2]) > min_dis)
-                                           continue;
-                                }
-                                float pos2_value = value_at(pos2);
+                                if(std::abs(pos2[0]-pos[0]) > min_dis ||
+                                   std::abs(pos2[1]-pos[1]) > min_dis ||
+                                   std::abs(pos2[2]-pos[2]) > min_dis)
+                                       continue;
+                                float pos2_value = tipl::estimate(I,pos2);
                                 pos2 -= pos;
                                 float L = float(pos2.length());
                                 float L2 = std::fabs(pos2_value-pos_value);
@@ -1728,13 +1689,11 @@ void RegionTableWidget::do_action(QString action)
                     prog(prog_count++,checked_regions.size());
                     if(r == 0)
                         return;
-                    tipl::image<3,unsigned char> B(A_labels.shape());
+                    tipl::image<3,unsigned char> B(base_dim);
                     for(size_t i = 0;i < A_labels.size();++i)
                         if(A_labels[i] == r)
                             B[i] = 1;
-                    to_dwi_space(checked_regions[r]);
                     checked_regions[r]->load_region_from_buffer(B);
-                    rows_to_be_updated.push_back(checked_row[r]);
                 });
             }
         }
