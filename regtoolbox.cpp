@@ -19,10 +19,11 @@ RegToolBox::RegToolBox(QWidget *parent) :
 {
     ui->setupUi(this);
     ui->options->hide();
-    ui->It_view->setScene(&It_scene);
-    ui->I_view->setScene(&I_scene);
+    ui->It_view->setScene(&scene[1]);
+    ui->I_view->setScene(&scene[0]);
     connect(ui->rb_switch, SIGNAL(clicked()), this, SLOT(show_image()));
     connect(ui->rb_blend, SIGNAL(clicked()), this, SLOT(show_image()));
+    connect(ui->anchor, SIGNAL(clicked()), this, SLOT(show_image()));
     connect(ui->zoom_template, SIGNAL(valueChanged(double)), this, SLOT(show_image()));
     connect(ui->zoom_subject, SIGNAL(valueChanged(double)), this, SLOT(show_image()));
     connect(ui->slice_pos, SIGNAL(sliderMoved(int)), this, SLOT(show_image()));
@@ -39,8 +40,8 @@ RegToolBox::RegToolBox(QWidget *parent) :
         ui->use_cuda->hide();
 
     setAcceptDrops(true);
-    I_scene.installEventFilter(this);
-    It_scene.installEventFilter(this);
+    scene[0].installEventFilter(this);
+    scene[1].installEventFilter(this);
 }
 
 RegToolBox::~RegToolBox()
@@ -70,7 +71,7 @@ void RegToolBox::setup_slice_pos(void)
 }
 void RegToolBox::on_OpenTemplate_clicked()
 {
-    if(template_names.size() >= reg.max_modality)
+    if(file_names[1].size() >= reg.max_modality)
         return;
     QString filename = QFileDialog::getOpenFileName(
             this,"Open Template Image",QDir::currentPath(),
@@ -82,34 +83,34 @@ void RegToolBox::on_OpenTemplate_clicked()
 }
 void RegToolBox::on_ClearTemplate_clicked()
 {
-    template_names.clear();
+    file_names[1].clear();
     reg.clear_reg();
     reg.It.clear();
     reg.It.resize(reg.max_modality);
-    It_scene.clear();
+    scene[1].clear();
 }
 void RegToolBox::load_template(const std::string& file_name)
 {
     clear_thread();
-    if(!reg.load_template(template_names.size(),file_name.c_str()))
+    if(!reg.load_template(file_names[1].size(),file_name.c_str()))
     {
         QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
         return;
     }
-    if(template_names.empty())
+    if(file_names[1].empty())
     {
         ui->zoom_template->setValue(width()*0.2f/(1.0f+reg.It[0].width()));
         setup_slice_pos();
     }
-    while(!reg.It[template_names.size()].empty())
-        template_names.push_back(file_name);
+    while(!reg.It[file_names[1].size()].empty())
+        file_names[1].push_back(file_name);
     auto_fill();
 }
 
 extern std::vector<std::string> fa_template_list,iso_template_list;
 void RegToolBox::on_OpenSubject_clicked()
 {
-    if(subject_names.size() >= reg.max_modality)
+    if(file_names[0].size() >= reg.max_modality)
         return;
     QString filename = QFileDialog::getOpenFileName(
             this,"Open Subject Image",QDir::currentPath(),
@@ -138,40 +139,40 @@ void RegToolBox::on_OpenSubject_clicked()
 
 void RegToolBox::on_ClearSubject_clicked()
 {
-    subject_names.clear();
+    file_names[0].clear();
     reg.clear_reg();
     reg.I.clear();
     reg.I.resize(reg.max_modality);
-    I_scene.clear();
+    scene[0].clear();
 }
 
 void RegToolBox::load_subject(const std::string& file_name)
 {
     clear_thread();
-    if(!reg.load_subject(subject_names.size(),file_name.c_str()))
+    if(!reg.load_subject(file_names[0].size(),file_name.c_str()))
     {
         QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
         return;
     }
-    if(subject_names.empty())
+    if(file_names[0].empty())
     {
         ui->zoom_subject->setValue(width()*0.2f/(1.0f+reg.I[0].width()));
         setup_slice_pos();
     }
-    while(!reg.I[subject_names.size()].empty())
-        subject_names.push_back(file_name);
+    while(!reg.I[file_names[0].size()].empty())
+        file_names[0].push_back(file_name);
     auto_fill();
 }
 
 void RegToolBox::auto_fill(void)
 {
-    if(template_names.size() == subject_names.size())
+    if(file_names[1].size() == file_names[0].size())
         return;
     std::string new_file_name;
-    if(template_names.size() > subject_names.size())
+    if(file_names[1].size() > file_names[0].size())
     {
-        if(!subject_names.empty() &&
-           tipl::match_files(template_names[0],template_names[subject_names.size()],subject_names.front(),new_file_name) &&
+        if(!file_names[0].empty() &&
+           tipl::match_files(file_names[1][0],file_names[1][file_names[0].size()],file_names[0].front(),new_file_name) &&
            std::filesystem::exists(new_file_name) &&
            QMessageBox::question(this,QApplication::applicationName(),QString("load subject ") + new_file_name.c_str() + "?\n",
                         QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
@@ -180,8 +181,8 @@ void RegToolBox::auto_fill(void)
     else
     {
 
-        if(!template_names.empty() &&
-           tipl::match_files(subject_names[0],subject_names[template_names.size()],template_names.front(),new_file_name) &&
+        if(!file_names[1].empty() &&
+           tipl::match_files(file_names[0][0],file_names[0][file_names[1].size()],file_names[1].front(),new_file_name) &&
            std::filesystem::exists(new_file_name) &&
            QMessageBox::question(this,QApplication::applicationName(),QString("load template ") + new_file_name.c_str() + "?\n",
                         QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
@@ -205,47 +206,87 @@ void RegToolBox::dropEvent(QDropEvent *event)
         load_template(each.toLocalFile().toStdString());
     show_image();
 }
+
+void add_anchor(RegToolBox* host,
+                tipl::vector<3> p,tipl::shape<3> shape,
+                std::vector<tipl::vector<3,int> >& anchor)
+{
+    p.round();
+    tipl::vector<3,int> ip(p);
+    if(shape.is_valid(ip))
+    {
+        bool remove_point = false;
+        for(auto& each : anchor)
+            if((each-ip).length() < 8)
+            {
+                each = anchor.back();
+                anchor.pop_back();
+                remove_point = true;
+                QMessageBox::information(host,QApplication::applicationName(),"anchor removed");
+            }
+        if(!remove_point)
+        {
+            QMessageBox::information(host,QApplication::applicationName(),"anchor added");
+            anchor.push_back(ip);
+        }
+    }
+}
+
+template<bool direction>
+void save_warp(RegToolBox* host,
+               dual_reg& reg,
+               int y,
+               const std::vector<std::string>& names)
+{
+    QString filename = QFileDialog::getSaveFileName(
+            host,("Save warped " + QFileInfo(names[y].c_str()).fileName()),names[y].c_str(),
+            "Images (*.nii *nii.gz);;All files (*)" );
+    if(filename.isEmpty())
+        return;
+    if(!reg.apply_warping<direction>(names[y].c_str(),filename.toStdString().c_str()))
+        QMessageBox::critical(host,"ERROR",reg.error_msg.c_str());
+    else
+        QMessageBox::information(host,QApplication::applicationName(),"Saved");
+    return;
+}
 bool RegToolBox::eventFilter(QObject *obj, QEvent *event)
 {
-    if (event->type() == QEvent::GraphicsSceneMousePress && !reg.to2from.empty())
+    auto mouse_event = dynamic_cast<QGraphicsSceneMouseEvent*>(event);
+    if(!mouse_event)
+        return QObject::eventFilter(obj, event);
+    auto pos = mouse_event->scenePos();
+    for(size_t st : {0,1})
     {
-        auto pos = static_cast<QGraphicsSceneMouseEvent *>(event)->scenePos();
-        if(obj == &I_scene && subject_view_size[0])
+        auto shape = st ? reg.Its : reg.Is;
+        if(obj == &scene[st] && view_size[st][0])
         {
-            auto x = float(pos.x()-subject_view_border)/subject_view_size[0];
-            auto y = float(pos.y()-subject_view_border)/subject_view_size[1];
-            if(x > 0.5f && int(y) < template_names.size()) // click on the right half
+            auto x = float(pos.x()-view_border[st])/view_size[st][0];
+            auto y = float(pos.y()-view_border[st])/view_size[st][1];
+            if(!reg.to2from.empty() && event->type() == QEvent::GraphicsSceneMousePress && x > 1.0f && int(y) < file_names[1-st].size()) // click on the right half
             {
-                QString filename = QFileDialog::getSaveFileName(
-                        this,("Save warped " + QFileInfo(template_names[y].c_str()).fileName()),template_names[y].c_str(),
-                        "Images (*.nii *nii.gz);;All files (*)" );
-                if(filename.isEmpty())
-                    return true;
-                if(!reg.apply_warping<false>(template_names[y].c_str(),filename.toStdString().c_str()))
-                    QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
+                if(st)
+                    save_warp<true>(this,reg,y,file_names[1-st]);
                 else
-                    QMessageBox::information(this,QApplication::applicationName(),"Saved");
+                    save_warp<false>(this,reg,y,file_names[1-st]);
             }
-            return true;
-        }
-        if(obj == &It_scene && template_view_size[0])
-        {
-            auto x = float(pos.x()-template_view_border)/template_view_size[0];
-            auto y = float(pos.y()-template_view_border)/template_view_size[1];
-            if(x > 0.5f && int(y) < subject_names.size()) // click on the right half
+
+            float zoom = st ? ui->zoom_template->value() : ui->zoom_subject->value();
+            tipl::vector<3> p = tipl::slice2space<tipl::vector<3> >(cur_view,
+                                 float(int(pos.x()-view_border[st])%view_size[st][0])/zoom,
+                                 float(int(pos.y()-view_border[st])%view_size[st][1])/zoom,
+                                 float(ui->slice_pos->value())/ui->slice_pos->maximum()*(shape[cur_view]-1));
+            if(cur_view != 2)
+                p[2] = shape[2]-p[2];
+
+            ui->statusBar->showMessage(QString("(%1,%2,%3)").arg(p[0]).arg(p[1]).arg(p[2]));
+
+            if(event->type() == QEvent::GraphicsSceneMousePress && x < 1.0f && x > 0.0f && ui->anchor->isChecked())
             {
-                QString filename = QFileDialog::getSaveFileName(
-                        this,("Save warped " + QFileInfo(subject_names[y].c_str()).fileName()),subject_names[y].c_str(),
-                        "Images (*.nii *nii.gz);;All files (*)" );
-                if(filename.isEmpty())
-                    return true;
-                if(!reg.apply_warping<true>(subject_names[y].c_str(),filename.toStdString().c_str()))
-                    QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
-                else
-                    QMessageBox::information(this,QApplication::applicationName(),"Saved");
+                add_anchor(this,p,shape,anchor[st]);
+                show_image();
+                return true;
             }
         }
-        return true;
     }
     return QObject::eventFilter(obj, event);
 }
@@ -336,169 +377,110 @@ inline auto show_slice_at(const T& source1,const U& source2,
     return buffer;
 }
 
-
 void RegToolBox::show_image(void)
 {
     // paint the template side
-    size_t row_count = std::max<int>(template_names.size(),subject_names.size());
+    size_t row_count = std::max<int>(file_names[1].size(),file_names[0].size());
     if(!row_count)
         return;
-    tipl::grayscale_image subject_image,template_image;
-    std::mutex subject_mutex,template_mutex;
-
-    tipl::par_for(row_count*2,[&](size_t id)
+    tipl::grayscale_image view_image[2];
+    std::mutex mutex[2];
+    float slice_pos = float(ui->slice_pos->value())/ui->slice_pos->maximum();
+    double zoom[2] = {ui->zoom_subject->value(),ui->zoom_template->value()};
+    tipl::par_for(row_count,[&](size_t id)
     {
-        tipl::grayscale_image I;
-        if(id < row_count)
+        for(size_t st : {0,1})
         {
-            if(!reg.It[0].empty())
+            tipl::grayscale_image I;
+            const auto& reg_I = st ? reg.It:reg.I;
+            const auto& reg_I2 = st ? reg.I:reg.It;
+            const auto& mapping = st ? reg.to2from:reg.from2to;
+            auto reg_Is = st ? reg.Its:reg.Is;
+            auto T = st ? reg.T() : reg.invT();
+            if(!reg_I[0].empty())
             {
-                if(!thread.running && id < J.size())
-                    I = show_slice_at(reg.It[id],J[id],
-                                       float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.Its[cur_view]-1),
-                                       ui->zoom_template->value(),cur_view,blend_style());
+                if(!thread.running && id < J[1-st].size())
+                    I = show_slice_at(reg_I[id],J[1-st][id],slice_pos*(reg_Is[cur_view]-1),zoom[st],cur_view,blend_style());
                 else
-                    I = show_slice_at(reg.It[id],nonlinear_warped_image<3,unsigned char>(reg.Its,reg.I[id],reg.to2from,reg.T()),
-                                       float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.Its[cur_view]-1),
-                                       ui->zoom_template->value(),cur_view,blend_style());
+                    I = show_slice_at(reg_I[id],nonlinear_warped_image<3,unsigned char>(reg_Is,reg_I2[id],mapping,T),
+                                       slice_pos*(reg_Is[cur_view]-1),zoom[st],cur_view,blend_style());
                 {
-                    std::lock_guard<std::mutex> lock(template_mutex);
-                    if(template_image.empty())
+                    std::lock_guard<std::mutex> lock(mutex[st]);
+                    if(view_image[st].empty())
                     {
-                        template_view_size = I.shape();
-                        template_image.resize(tipl::shape<2>(I.width(),I.height()*row_count));
+                        view_size[st] = I.shape();
+                        view_size[st][0] /= 2;
+                        view_image[st].resize(tipl::shape<2>(I.width(),I.height()*row_count));
                     }
                 }
-                tipl::draw(I,template_image,tipl::vector<2,int>(0,id*I.height()));
-            }
-        }
-        else
-        {
-            id -= row_count;
-            if(!reg.I[0].empty())
-            {
-                if(!thread.running && id < Jt.size())
-                    I = show_slice_at(reg.I[id],Jt[id],
-                                       float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.Is[cur_view]-1),ui->zoom_subject->value(),cur_view,blend_style());
-                else
-                    I = show_slice_at(reg.I[id],nonlinear_warped_image<3,unsigned char>(reg.Is,reg.It[id],reg.from2to,reg.invT()),
-                                       float(ui->slice_pos->value())/ui->slice_pos->maximum()*(reg.Is[cur_view]-1),ui->zoom_subject->value(),cur_view,blend_style());
-                {
-                    std::lock_guard<std::mutex> lock(subject_mutex);
-                    if(subject_image.empty())
-                    {
-                        subject_view_size = I.shape();
-                        subject_image.resize(tipl::shape<2>(I.width(),I.height()*row_count));
-                    }
-                }
-                tipl::draw(I,subject_image,tipl::vector<2,int>(0,id*I.height()));
+                tipl::draw(I,view_image[st],tipl::vector<2,int>(0,id*I.height()));
             }
         }
     },row_count*2);
 
-    I_scene.clear();
-    It_scene.clear();
 
     auto add_text = [&](QGraphicsScene& scene,const std::vector<std::string>& list,
-                        int template_view_border,int width,int height,bool left)
+                        int view_border,int width,int height,bool left)
     {
         std::vector<QGraphicsTextItem*> names;
         for(auto each : list)
         {
             names.push_back(scene.addText(QFileInfo(each.c_str()).fileName()));
             names.back()->setRotation(270);
-            names.back()->setPos(left ? 0 : template_view_border + width,
-                                 template_view_border + height*(float(names.size()-0.5f)/float(row_count)) + names.back()->boundingRect().width()/2);
+            names.back()->setPos(left ? 0 : view_border + width,
+                                 view_border + height*(float(names.size()-0.5f)/float(row_count)) + names.back()->boundingRect().width()/2);
         }
     };
-    if(!template_names.empty())
-    {
-        It_scene.blockSignals(true);
-        auto top_text1 = It_scene.addText("template");
-        auto top_text2 = It_scene.addText("subject->template");
-        template_view_border = top_text1->boundingRect().height();
-        It_scene.addPixmap(QPixmap::fromImage((QImage() << (tipl::color_image(template_image)))))->setPos(template_view_border, template_view_border);
-        top_text1->setPos(template_view_border + template_image.width() * 0.25 - top_text1->boundingRect().width()/2,0);
-        top_text2->setPos(template_view_border + template_image.width() * 0.75 - top_text2->boundingRect().width()/2,0);
-        add_text(It_scene,template_names,template_view_border,template_image.width(),template_image.height(),true);
-        if(blend_style() != 1)
-            add_text(It_scene,subject_names,template_view_border,template_image.width(),template_image.height(),false);
-        It_scene.blockSignals(false);
-        It_scene.setSceneRect(0, 0, template_view_border+template_view_border+template_image.width(),template_view_border + template_image.height());
-    }
-    if(!subject_names.empty())
-    {
-        I_scene.blockSignals(true);
-        auto top_text1 = I_scene.addText("subject");
-        auto top_text2 = I_scene.addText("template->subject");
-        subject_view_border = top_text1->boundingRect().height();
-        I_scene.addPixmap(QPixmap::fromImage((QImage() << (tipl::color_image() = subject_image))))->setPos(subject_view_border, subject_view_border);
-        top_text1->setPos(subject_view_border + subject_image.width() * 0.25 - top_text1->boundingRect().width()/2,0);
-        top_text2->setPos(subject_view_border + subject_image.width() * 0.75 - top_text2->boundingRect().width()/2,0);
-        add_text(I_scene,subject_names,subject_view_border,subject_image.width(),subject_image.height(),true);
-        if(blend_style() != 1)
-            add_text(I_scene,template_names,subject_view_border,subject_image.width(),subject_image.height(),false);
-        I_scene.blockSignals(false);
-        I_scene.setSceneRect(0, 0, subject_view_border+subject_view_border+subject_image.width(),subject_view_border + subject_image.height());
-    }
 
-    // Show subject image on the left
-    /*
-    if(!reg.I.empty())
+    std::string caption[2] = {"subject","template"};
+    for(size_t st : {0,1})
     {
-        const auto& I_to_show = reg.show_subject_warped(false);
-        int pos = std::min(I_to_show.depth()-1,I_to_show.depth()*ui->slice_pos->value()/ui->slice_pos->maximum());
-        tipl::color_image cJ(v2c_I[tipl::volume2slice_scaled(I_to_show,cur_view,pos,ratio)]);
-        QImage warp_image;
-        warp_image << cJ;
-
-        if(ui->show_warp->isChecked() && ui->dis_spacing->currentIndex() && !reg.t2f_dis.empty())
+        scene[st].clear();
+        if(!file_names[st].empty())
         {
-            float sub_ratio = float(reg.t2f_dis.width())/float(I_to_show.width());
-            QPainter paint(&warp_image);
-            paint.setBrush(Qt::NoBrush);
-            paint.setPen(Qt::red);
-            tipl::image<2,tipl::vector<3> > dis_slice;
-            tipl::volume2slice(reg.t2f_dis,dis_slice,cur_view,pos*sub_ratio);
-
-            int cur_dis = 1 << (ui->dis_spacing->currentIndex()-1);
-            sub_ratio = ratio/sub_ratio;
-            for(int x = 0;x < dis_slice.width();x += cur_dis)
+            QImage color_image;
+            color_image << tipl::color_image(view_image[st]);
+            if(!anchor[st].empty() && ui->anchor->isChecked())
             {
-                for(int y = 1,index = x;
-                        y < dis_slice.height()-1;++y,index += dis_slice.width())
+                QPainter painter(&color_image);
+                QPen pen(Qt::red);
+                pen.setWidth(1);
+                painter.setPen(pen);
+                QFont font("Arial", 10);
+                painter.setFont(font);
+                auto reg_Is = st ? reg.Its:reg.Is;
+                int slice_location = slice_pos*(reg_Is[cur_view]-1);
+
+                for(size_t i = 0;i < anchor[st].size();++i)
                 {
-                    auto vfrom = dis_slice[index];
-                    auto vto = dis_slice[index+dis_slice.width()];
-                    vfrom[0] += x;
-                    vfrom[1] += y-1;
-                    vto[0] += x;
-                    vto[1] += y;
-                    paint.drawLine(vfrom[0]*sub_ratio,vfrom[1]*sub_ratio,
-                                   vto[0]*sub_ratio,vto[1]*sub_ratio);
+                    auto pos = tipl::space2slice<tipl::vector<3> >(cur_view,anchor[st][i]);
+                    auto dis = std::fabs(pos[2]-slice_location);
+                    if(dis > 5.0f)
+                        continue;
+                    dis = 5.0f-dis;
+                    auto x = zoom[st]*(pos[0]);
+                    auto y = zoom[st]*((cur_view == 2) ? pos[1] : reg_Is[2]-pos[1]);
+                    painter.drawLine(x - dis, y, x + dis, y);
+                    painter.drawLine(x, y - dis, x, y + dis);
+                    painter.drawText(x + dis + 2, y + 3, QString::number(i));
                 }
             }
-
-            for(int y = 0;y < dis_slice.height();y += cur_dis)
-            {
-                for(int x = 1,index = y*dis_slice.width();
-                        x < dis_slice.width()-1;++x,++index)
-                {
-                    auto vfrom = dis_slice[index];
-                    auto vto = dis_slice[index+1];
-                    vfrom[0] += x-1;
-                    vfrom[1] += y;
-                    vto[0] += x;
-                    vto[1] += y;
-                    paint.drawLine(vfrom[0]*sub_ratio,vfrom[1]*sub_ratio,
-                                   vto[0]*sub_ratio,vto[1]*sub_ratio);
-                }
-            }
+            scene[st].blockSignals(true);
+            auto top_text1 = scene[st].addText(caption[st].c_str());
+            auto top_text2 = scene[st].addText((caption[1-st]+"->"+caption[st]).c_str());
+            view_border[st] = top_text1->boundingRect().height();
+            scene[st].addPixmap(QPixmap::fromImage(color_image))->setPos(view_border[st], view_border[st]);
+            top_text1->setPos(view_border[st] + view_image[st].width() * 0.25 - top_text1->boundingRect().width()/2,0);
+            top_text2->setPos(view_border[st] + view_image[st].width() * 0.75 - top_text2->boundingRect().width()/2,0);
+            add_text(scene[st],file_names[st],view_border[st],view_image[st].width(),view_image[st].height(),true);
+            if(blend_style() != 1)
+                add_text(scene[st],file_names[1-st],view_border[st],view_image[st].width(),view_image[st].height(),false);
+            scene[st].blockSignals(false);
+            scene[st].setSceneRect(0, 0, view_border[st]+view_border[st]+view_image[st].width(),view_border[st] + view_image[st].height());
         }
-        if(cur_view != 2)
-            warp_image = warp_image.mirrored(false,true);
-        I_scene << warp_image;
-    }*/
+    }
+
+
 }
 extern console_stream console;
 
@@ -518,7 +500,7 @@ void RegToolBox::on_timer()
         flash = true;
         tipl::out() << "registration completed";
     }
-    on_switch_view_clicked();
+    on_rb_switch_clicked();
 }
 
 void RegToolBox::on_run_reg_clicked()
@@ -543,8 +525,8 @@ void RegToolBox::on_run_reg_clicked()
     {
         reg.match_resolution(false);
         ui->zoom_template->setValue(width()*0.2f/(1.0f+reg.It[0].width()));
-        J.clear();
-        Jt.clear();
+        J[0].clear();
+        J[1].clear();
         reg.to2from.clear();
         reg.from2to.clear();
         thread.run([this](void){
@@ -554,12 +536,12 @@ void RegToolBox::on_run_reg_clicked()
             for(size_t i = 0;i < reg.I.size();++i)
                 if(!reg.I[i].empty() && !reg.It[i].empty())
                     modality_count = i+1;
-            J.swap(reg.J);
-            J.resize(modality_count);
-            Jt.resize(modality_count);
+            J[0].swap(reg.J);
+            J[0].resize(modality_count);
+            J[1].resize(modality_count);
             tipl::par_for(modality_count,[&](size_t i)
             {
-                Jt[i] = tipl::compose_mapping(reg.It[i],reg.from2to);
+                J[1][i] = tipl::compose_mapping(reg.It[i],reg.from2to);
             },modality_count);
 
         });
@@ -642,7 +624,7 @@ void RegToolBox::on_sag_view_clicked()
     show_image();
 }
 
-void RegToolBox::on_switch_view_clicked()
+void RegToolBox::on_rb_switch_clicked()
 {
     ui->rb_switch->setChecked(true);
     flash = !flash;
@@ -693,76 +675,46 @@ void RegToolBox::on_actionTemplate_Image_triggered()
 
 
 
+template <bool subjectToTemplate>
+void applyWarping(dual_reg& reg)
+{
+    QString filter = "Images (*.nii *nii.gz);;Tracts (*tt.gz);;All files (*)";
+    QStringList file_list = QFileDialog::getOpenFileNames(nullptr,
+                                                          subjectToTemplate ? "Open Subject Image" : "Open Template Image",
+                                                          QDir::currentPath(), filter);
+    if (file_list.isEmpty())
+        return;
+    if (file_list.size() == 1)
+    {
+        QString saveFileName = QFileDialog::getSaveFileName(nullptr, "Save Transformed Image", file_list[0], filter);
+        if (saveFileName.isEmpty())
+            return;
+        if (!reg.apply_warping<subjectToTemplate>(file_list[0].toStdString().c_str(), saveFileName.toStdString().c_str()))
+            goto error;
+    }
+    else
+    {
+        tipl::progress prog("save files");
+        for (int i = 0; prog(i, file_list.size()); ++i)
+        {
+            if (!reg.apply_warping<subjectToTemplate>(file_list[i].toStdString().c_str(), (file_list[i] + ".wp.nii.gz").toStdString().c_str()))
+                goto error;
+        }
+    }
+    QMessageBox::information(nullptr, QApplication::applicationName(), "Saved");
+    error:
+    QMessageBox::critical(nullptr, "ERROR", reg.error_msg.c_str());
+}
 
 void RegToolBox::on_actionApply_Subject_To_Template_Warping_triggered()
 {
-    QStringList from = QFileDialog::getOpenFileNames(
-            this,"Open Subject Image",QDir::currentPath(),
-            "Images (*.nii *nii.gz);;Tracts (*tt.gz);;All files (*)" );
-    if(from.isEmpty())
-        return;
-    if(from.size() == 1)
-    {
-        QString to = QFileDialog::getSaveFileName(
-                this,"Save Transformed Image",from[0],
-                "Images (*.nii *nii.gz);;Tracts (*tt.gz);;All files (*)" );
-        if(to.isEmpty())
-            return;
-        if(!reg.apply_warping<true>(from[0].toStdString().c_str(),to.toStdString().c_str()))
-            QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
-        else
-            QMessageBox::information(this,QApplication::applicationName(),"Saved");
-    }
-    else
-    {
-        tipl::progress prog("save files");
-        for(int i = 0;prog(i,from.size());++i)
-        {
-            if(!reg.apply_warping<true>(from[i].toStdString().c_str(),(from[i]+".wp.nii.gz").toStdString().c_str()))
-            {
-                QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
-                return;
-            }
-        }
-        QMessageBox::information(this,QApplication::applicationName(),"Saved");
-    }
+    applyWarping<true>(reg);
 }
-
 
 void RegToolBox::on_actionApply_Template_To_Subject_Warping_triggered()
 {
-    QStringList to = QFileDialog::getOpenFileNames(
-            this,"Open Template Image",QDir::currentPath(),
-            "Images (*.nii *nii.gz);;All files (*)" );
-    if(to.isEmpty())
-        return;
-    if(to.size() == 1)
-    {
-        QString from = QFileDialog::getSaveFileName(
-                this,"Save Transformed Image",to[0],
-                "Images (*.nii *nii.gz);;All files (*)" );
-        if(from.isEmpty())
-            return;
-        if(!reg.apply_warping<false>(to[0].toStdString().c_str(),from.toStdString().c_str()))
-            QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
-        else
-            QMessageBox::information(this,QApplication::applicationName(),"Saved");
-    }
-    else
-    {
-        tipl::progress prog("save files");
-        for(int i = 0;prog(i,to.size());++i)
-        {
-            if(!reg.apply_warping<false>(to[i].toStdString().c_str(),(to[i]+".wp.nii.gz").toStdString().c_str()))
-            {
-                QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
-                return;
-            }
-        }
-        QMessageBox::information(this,QApplication::applicationName(),"Saved");
-    }
+    applyWarping<false>(reg);
 }
-
 
 
 void RegToolBox::on_actionSet_Template_Size_triggered()
@@ -783,10 +735,10 @@ void RegToolBox::on_actionSet_Template_Size_triggered()
 
 void RegToolBox::on_actionSave_Subject_Images_triggered()
 {
-    if(subject_names.empty())
+    if(file_names[0].empty())
         return;
     QString from = QFileDialog::getSaveFileName(
-            this,"Save Subject Images",subject_names.front().c_str(),
+            this,"Save Subject Images",file_names[0].front().c_str(),
             "Images (*.nii *nii.gz);;All files (*)" );
     if(from.isEmpty())
         return;
@@ -796,13 +748,20 @@ void RegToolBox::on_actionSave_Subject_Images_triggered()
 
 void RegToolBox::on_actionSave_Template_Images_triggered()
 {
-    if(template_names.empty())
+    if(file_names[1].empty())
         return;
     QString from = QFileDialog::getSaveFileName(
-            this,"Save Template Images",template_names.front().c_str(),
+            this,"Save Template Images",file_names[1].front().c_str(),
             "Images (*.nii *nii.gz);;All files (*)" );
     if(from.isEmpty())
         return;
     reg.save_template(from.toStdString());
 }
+void RegToolBox::on_anchor_toggled(bool checked)
+{
+    ui->I_view->setCursor(checked ? Qt::CrossCursor:Qt::ArrowCursor);
+    ui->It_view->setCursor(checked ? Qt::CrossCursor:Qt::ArrowCursor);
+}
+
+
 

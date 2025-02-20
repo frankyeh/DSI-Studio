@@ -20,7 +20,8 @@ class RegToolBox : public QMainWindow
 public:
     uint8_t cur_view = 2;
     dual_reg reg;
-    std::vector<tipl::image<3,unsigned char> > J,Jt;
+    std::vector<tipl::image<3,unsigned char> > J[2];
+    std::vector<tipl::vector<3,int> > anchor[2];
 public:
     tipl::transformation_matrix<float> T;
 public:
@@ -35,7 +36,7 @@ private:
     void setup_slice_pos(void);
     uint8_t blend_style(void);
 private:
-    std::vector<std::string> subject_names,template_names;
+    std::vector<std::string> file_names[2];
     void auto_fill(void);
     void load_subject(const std::string& file_name);
     void load_template(const std::string& file_name);
@@ -45,9 +46,8 @@ public:
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dropEvent(QDropEvent *event) override;
 public:
-    int subject_view_border = 0;
-    int template_view_border = 0;
-    tipl::shape<2> subject_view_size,template_view_size;
+    int view_border[2] = {0,0};
+    tipl::shape<2> view_size[2];
     bool eventFilter(QObject *obj, QEvent *event) override;
 public slots:
 
@@ -74,9 +74,6 @@ private slots:
 
     void on_sag_view_clicked();
 
-    void on_switch_view_clicked();
-
-
     void on_actionSubject_Image_triggered();
 
     void on_actionTemplate_Image_triggered();
@@ -98,9 +95,13 @@ private slots:
 
     void on_actionSave_Template_Images_triggered();
 
+    void on_anchor_toggled(bool checked);
+
+    void on_rb_switch_clicked();
+
 private:
     Ui::RegToolBox *ui;
-    QGraphicsScene It_scene,I_scene;
+    QGraphicsScene scene[2];
 };
 
 #endif // REGTOOLBOX_H
