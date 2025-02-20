@@ -143,6 +143,20 @@
              </spacer>
             </item>
             <item>
+             <widget class="QToolButton" name="toolButton">
+              <property name="text">
+               <string>...</string>
+              </property>
+              <property name="icon">
+               <iconset resource="icons.qrc">
+                <normaloff>:/icons/icons/red_cross.xpm</normaloff>:/icons/icons/red_cross.xpm</iconset>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QLabel" name="label_4">
               <property name="text">
                <string>Zoom</string>
@@ -242,6 +256,20 @@
                </size>
               </property>
              </spacer>
+            </item>
+            <item>
+             <widget class="QToolButton" name="template_anchor">
+              <property name="text">
+               <string>...</string>
+              </property>
+              <property name="icon">
+               <iconset resource="icons.qrc">
+                <normaloff>:/icons/icons/red_cross.xpm</normaloff>:/icons/icons/red_cross.xpm</iconset>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+             </widget>
             </item>
             <item>
              <widget class="QLabel" name="label_6">
