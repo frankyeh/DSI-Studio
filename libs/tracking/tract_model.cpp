@@ -2846,8 +2846,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
         resolution_trans[0] = resolution_trans[5] = resolution_trans[10] = 2.0f;
         float voxel_volume = vs[0]*vs[1]*vs[2];
         const float PI = 3.14159265358979323846f;
-        float tract_volume, branch_volume1, branch_volume2, tract_area, tract_length, span, curl, bundle_diameter;
-        tipl::image<3,unsigned char> volume;
+        float tract_volume(0.0f), branch_volume1(0.0f), branch_volume2(0.0f), tract_area(0.0f), tract_length(0.0f), span(0.0f), curl(0.0f), bundle_diameter(0.0f);
 
 
         titles.push_back("number of tracts");
@@ -2857,7 +2856,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
         {
             std::vector<float> length_each(tract_data.size());
             std::vector<float> end_dis_each(tract_data.size());
-            tipl::par_for (tract_data.size(),[&](unsigned int i)
+            tipl::adaptive_par_for(tract_data.size(),[&](unsigned int i)
             {
                 length_each[i] = get_tract_length_in_mm(i);
                 end_dis_each[i] = float((tipl::vector<3,float>(&tract_data[i][0])-
@@ -2880,35 +2879,36 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
             bundle_diameter = 2.0f*float(std::sqrt(tract_volume/tract_length/PI));
 
             // now next convert point list to volume
-            tipl::vector<3,short> max_value(points[0]), min_value(points[0]);
-            tipl::bounding_box(points,max_value,min_value);
-
-            max_value += tipl::vector<3,short>(1, 1, 1);
-            min_value -= tipl::vector<3,short>(1, 1, 1);
-
-            tipl::shape<3> geo(max_value[0] - min_value[0],
-                                  max_value[1] - min_value[1],
-                                  max_value[2] - min_value[2]);
-
-            volume.resize(geo);
-            tipl::adaptive_par_for(points.size(),[&](unsigned int index)
+            if(!points.empty())
             {
-                tipl::vector<3,short> point(points[index]);
-                point -= min_value;
-                volume[tipl::pixel_index<3>(point[0], point[1], point[2],geo).index()] = 1;
-            });
-        }
-        // surface area
-        {
-            tipl::image<3,unsigned char> edge;
-            tipl::morphology::edge(volume,edge);
-            size_t num = 0;
-            for(size_t i = 0;i < edge.size();++i)
-                if(edge[i])
-                    ++num;
-            tract_area = float(num)*vs[0]*vs[1]/resolution_ratio/resolution_ratio;
+                tipl::image<3,unsigned char> volume;
+                tipl::vector<3,short> max_value(points[0]), min_value(points[0]);
+                tipl::bounding_box(points,max_value,min_value);
 
+                max_value += tipl::vector<3,short>(1, 1, 1);
+                min_value -= tipl::vector<3,short>(1, 1, 1);
+
+                tipl::shape<3> geo(max_value[0] - min_value[0],
+                                      max_value[1] - min_value[1],
+                                      max_value[2] - min_value[2]);
+
+                volume.resize(geo);
+                tipl::adaptive_par_for(points.size(),[&](unsigned int index)
+                {
+                    tipl::vector<3,short> point(points[index]);
+                    point -= min_value;
+                    volume[tipl::pixel_index<3>(point[0], point[1], point[2],geo).index()] = 1;
+                });
+
+                // surface area
+                {
+                    tipl::image<3,unsigned char> edge;
+                    tipl::morphology::edge(volume,edge);
+                    tract_area = float(std::count(edge.begin(), edge.end(), 1))*vs[0]*vs[1]/resolution_ratio/resolution_ratio;
+                }
+            }
         }
+
         // end points
         float end_area1,end_area2,radius1,radius2;
         {
@@ -2919,7 +2919,9 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
             end_area2 = float(endpoint2.size())*vs[0]*vs[1]/resolution_ratio/resolution_ratio;
 
             // radius
-            auto c1 = std::accumulate(endpoint1.begin(),endpoint1.end(),tipl::vector<3,float>(0.0f,0.0f,0.0f))/float(endpoint1.size());
+            auto c1 = std::accumulate(endpoint1.begin(),endpoint1.end(),tipl::vector<3,float>(0.0f,0.0f,0.0f));
+            if(!endpoint1.empty())
+                c1 /= float(endpoint1.size());
             float mean_dis1 = 0.0f;
             for(size_t i = 0;i < endpoint1.size();++i)
             {
@@ -2927,7 +2929,10 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
                 dis -= endpoint1[i];
                 mean_dis1 += float(dis.length());
             }
-            auto c2 = std::accumulate(endpoint2.begin(),endpoint2.end(),tipl::vector<3,float>(0.0f,0.0f,0.0f))/float(endpoint2.size());
+            auto c2 = std::accumulate(endpoint2.begin(),endpoint2.end(),tipl::vector<3,float>(0.0f,0.0f,0.0f));
+            if(!endpoint2.empty())
+                c2 /= float(endpoint2.size());
+
             float mean_dis2 = 0.0f;
             for(size_t i = 0;i < endpoint2.size();++i)
             {
@@ -2935,8 +2940,10 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
                 dis -= endpoint2[i];
                 mean_dis2 += float(dis.length());
             }
-            mean_dis1 /= float(endpoint1.size());
-            mean_dis2 /= float(endpoint2.size());
+            if(!endpoint1.empty())
+                mean_dis1 /= float(endpoint1.size());
+            if(!endpoint2.empty())
+                mean_dis2 /= float(endpoint2.size());
             // the average distance of a point in a circle to the center is 2R/3, where R is the radius
             radius1 = 1.5f*mean_dis1/resolution_ratio;
             radius2 = 1.5f*mean_dis2/resolution_ratio;
