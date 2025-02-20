@@ -794,6 +794,21 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
     }
     loaded_tract_data.swap(tract_data);
 
+    // eliminiate single point tracts
+    for(size_t i = 0;i < tract_data.size();)
+        if(tract_data[i].size() < 6)
+        {
+            tract_data[i].swap(tract_data.back());
+            tract_data.pop_back();
+            if(i < tract_cluster.size())
+            {
+                tract_cluster[i] = tract_cluster.back();
+                tract_cluster.pop_back();
+            }
+        }
+        else
+            ++i;
+
     tract_color.resize(tract_data.size(),color);
     for(size_t i = 0;i < tract_cluster.size();++i)
         if(tract_cluster[i] < colors.size())
@@ -2846,7 +2861,8 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
         resolution_trans[0] = resolution_trans[5] = resolution_trans[10] = 2.0f;
         float voxel_volume = vs[0]*vs[1]*vs[2];
         const float PI = 3.14159265358979323846f;
-        float tract_volume(0.0f), branch_volume1(0.0f), branch_volume2(0.0f), tract_area(0.0f), tract_length(0.0f), span(0.0f), curl(0.0f), bundle_diameter(0.0f);
+        float tract_volume(0.0f), branch_volume1(0.0f), branch_volume2(0.0f),
+              tract_area(0.0f), tract_length(0.0f), span(0.0f), curl(0.0f), bundle_diameter(1.0f);
 
 
         titles.push_back("number of tracts");
@@ -2854,10 +2870,12 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
 
         // mean length
         {
-            std::vector<float> length_each(tract_data.size());
-            std::vector<float> end_dis_each(tract_data.size());
+            std::vector<float> length_each(tract_data.size(),0.0f);
+            std::vector<float> end_dis_each(tract_data.size(),0.0f);
             tipl::adaptive_par_for(tract_data.size(),[&](unsigned int i)
             {
+                if(tract_data[i].size() < 6)
+                    return;
                 length_each[i] = get_tract_length_in_mm(i);
                 end_dis_each[i] = float((tipl::vector<3,float>(&tract_data[i][0])-
                                     tipl::vector<3,float>(&tract_data[i][tract_data[i].size()-3])).length());
@@ -2867,7 +2885,8 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
 
             tract_length = sum_length/float(tract_data.size());
             span = sum_end_dis/float(tract_data.size());
-            curl = sum_length/sum_end_dis;
+            if(sum_end_dis != 0.0f)
+                curl = sum_length/sum_end_dis;
 
         }
 
@@ -2876,7 +2895,8 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
             std::vector<tipl::vector<3,short> > points;
             to_voxel(points,resolution_trans);
             tract_volume = points.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
-            bundle_diameter = 2.0f*float(std::sqrt(tract_volume/tract_length/PI));
+            if(tract_length != 0.0f)
+                bundle_diameter = 2.0f*float(std::sqrt(tract_volume/tract_length/PI));
 
             // now next convert point list to volume
             if(!points.empty())
@@ -2976,7 +2996,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
         data.push_back(tract_area);     titles.push_back("total surface area(mm^2)");
         data.push_back(radius1+radius2);titles.push_back("total radius of end regions(mm)");
         data.push_back(end_area1+end_area2);      titles.push_back("total area of end regions(mm^2)");
-        data.push_back(float(tract_area/PI/bundle_diameter/tract_length));  titles.push_back("irregularity");
+        data.push_back(tract_length == 0.0f ? 0.0f : float(tract_area/PI/bundle_diameter/tract_length));  titles.push_back("irregularity");
 
         data.push_back(end_area1);      titles.push_back("area of end region 1(mm^2)");
         data.push_back(radius1);        titles.push_back("radius of end region 1(mm)");
