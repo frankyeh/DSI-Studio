@@ -676,7 +676,7 @@ int reg(tipl::program_option<tipl::out>& po)
 
     tipl::out() << "source dim: " << r.Is;
     tipl::out() << "to dim: " << r.Its;
-
+    r.match_resolution(po.get("match_vs",1));
     tipl::out() << "running linear registration." << std::endl;
 
     if(po.get("large_deform",0))
