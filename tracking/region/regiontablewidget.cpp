@@ -1543,8 +1543,8 @@ void RegionTableWidget::do_action(QString action)
                             B[i] = (A[i] & B[i]);
                     if(action == "A<<B" || action == "A>>B")
                         for(size_t i = 0;i < A.size();++i)
-                            if(A[i] && B[i] && A_labels[i] < i)
-                                A_labels[i] = uint16_t(i);
+                            if(A[i] && B[i] && A_labels[i] < r)
+                                A_labels[i] = uint16_t(r);
 
                     checked_regions[r]->vs = checked_regions[0]->vs;
                     checked_regions[r]->dim = base_dim;
