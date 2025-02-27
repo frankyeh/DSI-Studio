@@ -1648,34 +1648,30 @@ void RegionTableWidget::do_action(QString action)
                     size_t prog_count = 0;
                     tipl::adaptive_par_for(need_fill_up.size(),[&](size_t i)
                     {
-                        prog(prog_count++,need_fill_up.size());
-                        tipl::pixel_index<3> index(need_fill_up[i],A.shape());
-                        float min_dis = std::numeric_limits<float>::max();
-                        float min_value_dif = std::numeric_limits<float>::max();
-                        size_t min_r = 1;
+                        prog(prog_count++, need_fill_up.size());
+                        tipl::pixel_index<3> index(need_fill_up[i], A.shape());
                         tipl::vector<3> pos(index);
-                        float pos_value = tipl::estimate(I,pos);
-                        for(size_t r = 1;r < checked_regions.size();++r)
-                        {
-                            for(auto pos2 : checked_regions[r]->region)
+                        std::vector<size_t> label_count(checked_regions.size()); // Store label frequency within radius
+                        float search_radius = 2.0;
+
+                        for (size_t r = 1; r < checked_regions.size(); ++r)
+                            for (auto pos2 : checked_regions[r]->region)
+                                if (std::abs(pos2[0] - pos[0]) < search_radius &&
+                                    std::abs(pos2[1] - pos[1]) < search_radius &&
+                                    std::abs(pos2[2] - pos[2]) < search_radius &&
+                                    (pos2 - pos).length() <= search_radius)
+                                    label_count[r]++;
+
+                        size_t majority_label = 1;
+                        int max_count = label_count[1];
+                        for (size_t r = 2;r < label_count.size();++r)
+                            if (label_count[r] > max_count)
                             {
-                                if(std::abs(pos2[0]-pos[0]) > min_dis ||
-                                   std::abs(pos2[1]-pos[1]) > min_dis ||
-                                   std::abs(pos2[2]-pos[2]) > min_dis)
-                                       continue;
-                                float pos2_value = tipl::estimate(I,pos2);
-                                pos2 -= pos;
-                                float L = float(pos2.length());
-                                float L2 = std::fabs(pos2_value-pos_value);
-                                if(L < min_dis || (L == min_dis && L2 < min_value_dif))
-                                {
-                                    min_dis = L;
-                                    min_value_dif = L2;
-                                    min_r = r;
-                                }
+                                majority_label = r;
+                                max_count = label_count[r];
                             }
-                        }
-                        A_labels[index.index()] = min_r;
+
+                        A_labels[index.index()] = majority_label;
                     });
                 }
             }
