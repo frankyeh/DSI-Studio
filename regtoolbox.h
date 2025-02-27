@@ -21,7 +21,7 @@ public:
     uint8_t cur_view = 2;
     dual_reg reg;
     std::vector<tipl::image<3,unsigned char> > J[2];
-    std::vector<tipl::vector<3,int> > anchor[2];
+
 public:
     tipl::transformation_matrix<float> T;
 public:
