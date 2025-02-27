@@ -209,15 +209,13 @@ void RegToolBox::dropEvent(QDropEvent *event)
 
 void add_anchor(RegToolBox* host,
                 tipl::vector<3> p,tipl::shape<3> shape,
-                std::vector<tipl::vector<3,int> >& anchor)
+                std::vector<tipl::vector<3> >& anchor)
 {
-    p.round();
-    tipl::vector<3,int> ip(p);
-    if(shape.is_valid(ip))
+    if(shape.is_valid(p))
     {
         bool remove_point = false;
         for(auto& each : anchor)
-            if((each-ip).length() < 8)
+            if((each-p).length() < 8)
             {
                 each = anchor.back();
                 anchor.pop_back();
@@ -227,7 +225,7 @@ void add_anchor(RegToolBox* host,
         if(!remove_point)
         {
             QMessageBox::information(host,QApplication::applicationName(),"anchor added");
-            anchor.push_back(ip);
+            anchor.push_back(p);
         }
     }
 }
@@ -282,7 +280,7 @@ bool RegToolBox::eventFilter(QObject *obj, QEvent *event)
 
             if(event->type() == QEvent::GraphicsSceneMousePress && x < 1.0f && x > 0.0f && ui->anchor->isChecked())
             {
-                add_anchor(this,p,shape,anchor[st]);
+                add_anchor(this,p,shape,reg.anchor[st]);
                 show_image();
                 return true;
             }
@@ -440,7 +438,7 @@ void RegToolBox::show_image(void)
         {
             QImage color_image;
             color_image << tipl::color_image(view_image[st]);
-            if(!anchor[st].empty() && ui->anchor->isChecked())
+            if(!reg.anchor[st].empty() && ui->anchor->isChecked())
             {
                 QPainter painter(&color_image);
                 QPen pen(Qt::red);
@@ -451,9 +449,9 @@ void RegToolBox::show_image(void)
                 auto reg_Is = st ? reg.Its:reg.Is;
                 int slice_location = slice_pos*(reg_Is[cur_view]-1);
 
-                for(size_t i = 0;i < anchor[st].size();++i)
+                for(size_t i = 0;i < reg.anchor[st].size();++i)
                 {
-                    auto pos = tipl::space2slice<tipl::vector<3> >(cur_view,anchor[st][i]);
+                    auto pos = tipl::space2slice<tipl::vector<3> >(cur_view,reg.anchor[st][i]);
                     auto dis = std::fabs(pos[2]-slice_location);
                     if(dis > 5.0f)
                         continue;
@@ -702,6 +700,7 @@ void applyWarping(dual_reg& reg)
         }
     }
     QMessageBox::information(nullptr, QApplication::applicationName(), "Saved");
+    return;
     error:
     QMessageBox::critical(nullptr, "ERROR", reg.error_msg.c_str());
 }
