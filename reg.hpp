@@ -60,6 +60,8 @@ public:
     tipl::matrix<dimension+1,dimension+1> ItR,IR;
     tipl::shape<dimension> Its,Is;
 public:
+    std::vector<tipl::vector<3> > anchor[2];
+public:
     mapping_type previous_t2f,previous_f2t;
     std::vector<image_type> previous_It;
 public:
@@ -119,7 +121,7 @@ public:
     bool apply_warping(const char* input,const char* output) const
     {
         if(tipl::ends_with(input,"tt.gz"))
-            return apply_warping<direction>(input,output);
+            return apply_warping_tt<direction>(input,output);
         auto I = apply_warping<direction>(input);
         if(I.empty())
             return false;
