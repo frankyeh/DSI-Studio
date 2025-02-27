@@ -234,10 +234,26 @@ void dual_reg::nonlinear_reg(bool& terminated)
     }
     else
     {
-        std::thread t([&](void){
-            tipl::reg::cdm_common<tipl::out>(tipl::reg::make_list(It),tipl::reg::make_list(J),t2f_dis,terminated,param,use_cuda && has_cuda);
+        auto param0 = param;
+        auto param1 = param;
+        /*
+        auto s2t = invT();
+        for(size_t i = 0;i < anchor[0].size() && i < anchor[1].size();++i)
+        {
+            auto spos = anchor[0][i];
+            auto tpos = anchor[1][i];
+            s2t(spos);
+            param0.anchor.push_back(std::make_pair(tpos,spos));
+            param1.anchor.push_back(std::make_pair(spos,tpos));
+            tipl::out() << "anchor: " << spos << "->" << tpos;
+        }
+        tipl::out() << "a total of " << param0.anchor.size() << " anchor points";
+        */
+        std::thread t([&](void)
+        {
+            tipl::reg::cdm_common<tipl::out>(tipl::reg::make_list(It),tipl::reg::make_list(J),t2f_dis,terminated,param0,use_cuda && has_cuda);
         });
-        tipl::reg::cdm_common<tipl::out>(tipl::reg::make_list(J),tipl::reg::make_list(It),f2t_dis,terminated,param,use_cuda && has_cuda);
+        tipl::reg::cdm_common<tipl::out>(tipl::reg::make_list(J),tipl::reg::make_list(It),f2t_dis,terminated,param1,use_cuda && has_cuda);
         t.join();
         if(!previous_f2t.empty() && !previous_t2f.empty())
         {
@@ -277,58 +293,50 @@ void dual_reg::nonlinear_reg(bool& terminated)
 
 
 
-template<typename TransformType, typename MappingType>
-bool apply_warping_tt_template(const char* input_file, const char* output_file,
-                               const tipl::shape<3>& geo, const tipl::vector<3>& vs,
-                               const tipl::matrix<4, 4>& trans_to_mni,
-                               const MappingType& mapping, TransformType transform,
-                               std::string& error_msg)
+
+template<bool direction>
+bool dual_reg::apply_warping_tt(const char* input, const char* output) const
 {
-    TractModel tract_model(geo, vs, trans_to_mni);
+    auto fib = std::make_shared<fib_data>(direction ? Is : Its,direction ? Ivs : Itvs,direction ? IR : ItR);
+    fib->is_mni = direction ? Is_is_mni : It_is_mni;
+    TractModel tract_model(fib);
+    if (!tract_model.load_tracts_from_file(input,fib.get(), false))
     {
-        fib_data fib(geo, vs, trans_to_mni);
-        if (!tract_model.load_tracts_from_file(input_file, &fib, false))
-        {
-            error_msg = "cannot read tract file";
-            return false;
-        }
+        error_msg = "cannot read tract file";
+        return false;
     }
 
     std::vector<std::vector<float>>& tracts = tract_model.get_tracts();
-
+    const auto& mapping = direction ? from2to : to2from;
+    const auto transform = direction ? invT() : T();
     tipl::adaptive_par_for(tracts.size(), [&](size_t i)
     {
         for (size_t j = 0; j < tracts[i].size(); j += 3)
         {
             tipl::vector<3> pos(&tracts[i][j]);
             if (!tipl::estimate(mapping, pos, pos))
-                pos.to(transform);
+                transform(pos);
             std::copy(pos.begin(), pos.end(), &tracts[i][j]);
         }
     });
 
-    tract_model.geo = geo;
-    tract_model.vs = vs;
-    tract_model.trans_to_mni = trans_to_mni;
+    tract_model.geo = direction ? Its : Is;
+    tract_model.vs = direction ? Itvs : Ivs;
+    tract_model.trans_to_mni = direction ? ItR : IR;
 
-    tipl::out() << "saving " << output_file;
-    if (!tract_model.save_tracts_to_file(output_file))
+    tipl::out() << "saving " << output;
+    if (!tract_model.save_tracts_to_file(output))
     {
         error_msg = "failed to save file";
         return false;
     }
     return true;
-}
 
-template<bool direction>
-bool dual_reg::apply_warping_tt(const char* input, const char* output) const
-{
-    return apply_warping_tt_template(input, output, direction ? Its : Is,
-                                                    direction ? Itvs : Ivs,
-                                                    direction ? ItR : IR,
-                                                    direction ? from2to : to2from,
-                                                    direction ? invT() : T(),error_msg);
+
 }
+template bool dual_reg::apply_warping_tt<false>(const char* input, const char* output) const;
+template bool dual_reg::apply_warping_tt<true>(const char* input, const char* output) const;
+
 
 bool dual_reg::load_warping(const std::string& filename)
 {
