@@ -558,11 +558,11 @@ void dual_reg::to_It_space(const tipl::shape<3>& new_Its)
 
 
 
-int after_warp(const std::vector<std::string>& apply_warp_filename,dual_reg& r)
+int after_warp(const std::vector<std::string>& apply_warp_filename,dual_reg& r,const std::string& post_fix)
 {
     for(const auto& each_file: apply_warp_filename)
     {
-        if(!r.apply_warping<true>(each_file.c_str(),(each_file+".wp.nii.gz").c_str()))
+        if(!r.apply_warping<true>(each_file.c_str(),(each_file+post_fix).c_str()))
             tipl::error() << r.error_msg;
         return 1;
     }
@@ -660,7 +660,7 @@ int reg(tipl::program_option<tipl::out>& po)
             tipl::error() << r.error_msg;
             return 1;
         }
-        return after_warp(from_filename,r);
+        return after_warp(from_filename,r,".wp.nii.gz");
     }
 
 
@@ -710,5 +710,6 @@ int reg(tipl::program_option<tipl::out>& po)
         tipl::error() << r.error_msg;
         return 1;
     }
-    return after_warp(from_filename,r);
+    return after_warp(from_filename,r,po.get("export_r",0) ?
+                      "wp.r"+std::to_string(int(r.r[0]*100.0f)) + std::string(".nii.gz") : std::string(".wp.nii.gz"));
 }
