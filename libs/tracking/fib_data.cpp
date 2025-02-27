@@ -785,12 +785,13 @@ bool fib_data::load_from_mat(void)
             }
         }
 
-        for(size_t index = 0;index < fa_template_list.size();++index)
-            if(QString(fib_file_name.c_str()).contains(QFileInfo(fa_template_list[index].c_str()).baseName(),Qt::CaseInsensitive))
+        for(int index = fa_template_list.size()-1;index >= 0;--index)
+            if(tipl::contains(std::filesystem::path(fib_file_name).filename().string(),
+                              std::filesystem::path(fa_template_list[index]).filename().string()))
             {
                 matched_template_id = index;
                 tipl::out() << "matched template (by file name): " <<
-                                   QFileInfo(fa_template_list[index].c_str()).baseName().toStdString() << std::endl;
+                                   std::filesystem::path(fa_template_list[index]).filename().string() << std::endl;
                 set_template_id(matched_template_id);
                 return true;
             }
