@@ -275,6 +275,14 @@ int rec(tipl::program_option<tipl::out>& po)
         else
             src.output_file_name = output;
     }
+    if(po.get("export_r",0))
+    {
+        if(src.output_file_name.empty())
+            src.output_file_name = src.file_name;
+        tipl::remove_suffix(src.output_file_name,".fz");
+        src.output_file_name += ".r" + std::to_string(int(src.voxel.R2*100.0f));
+    }
+
     if (!src.reconstruction())
     {
         tipl::error() << src.error_msg << std::endl;
