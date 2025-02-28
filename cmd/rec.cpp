@@ -34,6 +34,7 @@ int rec(tipl::program_option<tipl::out>& po)
         src.voxel.other_output = po.get("other_output","fa,rd,iso,rdi");
         src.voxel.r2_weighted = po.get("r2_weighted",int(0));
         src.voxel.thread_count = tipl::max_thread_count = po.get("thread_count",tipl::max_thread_count);
+        src.voxel.export_r = po.get("export_r",0);
         src.voxel.param[0] = po.get("param0",src.voxel.param[0]);
         src.voxel.param[1] = po.get("param1",src.voxel.param[1]);
         src.voxel.param[2] = po.get("param2",src.voxel.param[2]);
@@ -275,14 +276,6 @@ int rec(tipl::program_option<tipl::out>& po)
         else
             src.output_file_name = output;
     }
-    if(po.get("export_r",0))
-    {
-        if(src.output_file_name.empty())
-            src.output_file_name = src.file_name;
-        tipl::remove_suffix(src.output_file_name,".fz");
-        src.output_file_name += ".r" + std::to_string(int(src.voxel.R2*100.0f));
-    }
-
     if (!src.reconstruction())
     {
         tipl::error() << src.error_msg << std::endl;
