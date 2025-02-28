@@ -562,9 +562,9 @@ int after_warp(const std::vector<std::string>& apply_warp_filename,dual_reg& r,c
 {
     for(const auto& each_file: apply_warp_filename)
     {
+        tipl::out() << "warping " << each_file << " as " << (each_file+post_fix);
         if(!r.apply_warping<true>(each_file.c_str(),(each_file+post_fix).c_str()))
             tipl::error() << r.error_msg;
-        return 1;
     }
     return 0;
 }
@@ -711,5 +711,5 @@ int reg(tipl::program_option<tipl::out>& po)
         return 1;
     }
     return after_warp(from_filename,r,po.get("export_r",0) ?
-                      "wp.r"+std::to_string(int(r.r[0]*100.0f)) + std::string(".nii.gz") : std::string(".wp.nii.gz"));
+                      ".wp.r"+std::to_string(int(r.r[0]*100.0f)) + std::string(".nii.gz") : std::string(".wp.nii.gz"));
 }
