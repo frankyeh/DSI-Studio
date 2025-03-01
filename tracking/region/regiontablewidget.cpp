@@ -772,7 +772,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             if(is_mni)
             {
                 tipl::out() << "warping " << nifti_name << " from the template space to the native space." << std::endl;
-                if(!handle->mni2sub<tipl::interpolation::nearest>(from,trans_to_mni))
+                if(!handle->mni2sub<tipl::interpolation::majority>(from,trans_to_mni))
                 {
                     error_msg = handle->error_msg;
                     return false;
