@@ -442,7 +442,7 @@ void manual_alignment::on_actionSave_Warped_Image_triggered()
 
     tipl::image<3> I(to.shape());
     if(tipl::is_label_image(from_original))
-        tipl::resample<tipl::interpolation::nearest>(from_original,I,iT);
+        tipl::resample<tipl::interpolation::majority>(from_original,I,iT);
     else
         tipl::resample<tipl::interpolation::cubic>(from_original,I,iT);
     tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),I,to_vs,nifti_srow);
@@ -522,7 +522,7 @@ void manual_alignment::on_actionApply_Transformation_triggered()
 
     tipl::image<3> I(to.shape());
     if(tipl::is_label_image(from))
-        tipl::resample<tipl::interpolation::nearest>(from,I,iT);
+        tipl::resample<tipl::interpolation::majority>(from,I,iT);
     else
         tipl::resample<tipl::interpolation::cubic>(from,I,iT);
     tipl::io::gz_nifti::save_to_file(to_filename.toStdString().c_str(),I,to_vs,nifti_srow);
