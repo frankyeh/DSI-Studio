@@ -474,13 +474,13 @@ int main(int ac, char *av[])
         {
             QLocalSocket socket;
             socket.connectToServer("dsi-studio");
-            if (socket.waitForConnected(500))
+            if (socket.waitForConnected(5000))
             {
                 tipl::out() << "another instance is running, passing file name.";
                 socket.write(av[1]);
                 socket.flush();
-                socket.waitForBytesWritten(500);
-                if(socket.waitForReadyRead(1000))
+                socket.waitForBytesWritten(5000);
+                if(socket.waitForReadyRead(5000))
                 {
                     if (socket.readAll() == "OKAY")
                     {
