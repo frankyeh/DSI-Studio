@@ -60,8 +60,9 @@ bool atlas::load_from_file(void)
     {
         nii.toLPS(multiple_I);
         I.resize(tipl::shape<3>(multiple_I.width(),multiple_I.height(),multiple_I.depth()));
-        for(unsigned int i = 0;i < multiple_I.size();i += I.size())
-            multiple_I_pos.push_back(i);
+        multiple_I_3d.clear();
+        for(size_t pos = 0;pos < multiple_I.size();pos += I.size())
+            multiple_I_3d.push_back(tipl::make_image(&*multiple_I.data() + pos,I.shape()));
     }
     else
         nii.toLPS(I);
@@ -117,66 +118,53 @@ bool atlas::load_from_file(void)
     return true;
 }
 
-size_t atlas::get_index(tipl::vector<3,float> p)
-{
-    // template to atlas space
-    if(!in_template_space)
-        apply_trans(p,T);
-    p.round();
-    if(!I.shape().is_valid(p))
-        return 0;
-    return size_t((int64_t(p[2])*int64_t(I.height())+int64_t(p[1]))*int64_t(I.width())+int64_t(p[0]));
-}
 
-bool atlas::is_labeled_as(const tipl::vector<3,float>& template_space,unsigned int region_index)
+bool atlas::is_labeled_as(tipl::vector<3,float> template_space,unsigned int region_index)
 {
     if(I.empty())
         load_from_file();
     if(region_index >= region_value.size())
         return false;
-    size_t offset = get_index(template_space);
-    if(!offset || offset >= I.size())
-        return false;
+    if(!in_template_space)
+        apply_trans(template_space,T);
+    unsigned int voxel_index = 0;
     if(is_multiple_roi)
     {
-        if(region_index >= multiple_I_pos.size())
+        if(region_index >= multiple_I_3d.size())
             return false;
-        size_t pos = multiple_I_pos[region_index] + offset;
-        if(pos >= multiple_I.size())
-            return false;
-        return multiple_I[pos];
+        return tipl::estimate<tipl::interpolation::majority>(multiple_I_3d[region_index],template_space);
     }
-    return I[offset] == region_value[region_index];
+    if(!tipl::estimate<tipl::interpolation::majority>(I,template_space,voxel_index))
+        return false;
+    return voxel_index == region_value[region_index];
 }
-int atlas::region_index_at(const tipl::vector<3,float>& template_space)
+int atlas::region_index_at(tipl::vector<3,float> template_space)
 {
     if(is_multiple_roi)
         return -1;
     if(I.empty())
         load_from_file();
-    size_t offset = get_index(template_space);
-    if(!offset || offset >= I.size())
+    if(!in_template_space)
+        apply_trans(template_space,T);
+    unsigned int value = 0;
+    if(!tipl::estimate<tipl::interpolation::majority>(I,template_space,value))
         return -1;
-    auto value = I[offset];
     if(value >= value2index.size())
         return -1;
     return int(value2index[value])-1;
 }
-void atlas::region_indices_at(const tipl::vector<3,float>& template_space,std::vector<uint16_t>& indices)
+void atlas::region_indices_at(tipl::vector<3,float> template_space,std::vector<uint16_t>& indices)
 {
     if(!is_multiple_roi)
         return;
     if(I.empty())
         load_from_file();
-    size_t offset = get_index(template_space);
-    if(!offset || offset >= I.size())
-        return;
-    for(uint32_t region_index = 0;region_index < multiple_I_pos.size();++region_index)
-    {
-        size_t pos = multiple_I_pos[region_index] + offset;
-        if(pos < multiple_I.size() && multiple_I[pos])
+    if(!in_template_space)
+        apply_trans(template_space,T);
+
+    for(uint32_t region_index = 0;region_index < multiple_I_3d.size();++region_index)
+        if(tipl::estimate<tipl::interpolation::majority>(multiple_I_3d[region_index],template_space))
             indices.push_back(region_index);
-    }
 }
 
 
