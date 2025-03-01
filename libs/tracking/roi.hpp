@@ -285,6 +285,7 @@ public:
                     unsigned char type,
                     const char* roi_name)
     {
+        std::ostringstream out;
         if(type == seed_id)
         {
             uint16_t seed_space_id = uint16_t(to_diffusion_space.size());
@@ -295,7 +296,7 @@ public:
                 seeds.push_back(points[index]);
                 seed_space.push_back(seed_space_id);
             }
-            report += " A seeding region was placed at ";
+            out << "A seeding region was placed at ";
         }
         else
         {
@@ -304,43 +305,44 @@ public:
             {
             case roi_id:
                 roi.push_back(region);
-                report += " An ROI was placed at ";
+                out << "An ROI was placed at ";
                 break;
             case roa_id:
                 roa.push_back(region);
-                report += " An ROA was placed at ";
+                out << "An ROA was placed at ";
                 break;
             case end_id:
                 end.push_back(region);
-                report += " An ending region was placed at ";
+                out << "An ending region was placed at ";
                 break;
             case term_id:
                 term.push_back(region);
-                report += " A terminative region was placed at ";
+                out << "A terminative region was placed at ";
                 break;
             case not_end_id:
                 no_end.push_back(region);
-                report += " A no ending region was placed at ";
+                out << "A no ending region was placed at ";
                 break;
             case limiting_id:
                 limiting.push_back(region);
-                report += " A limiting region was placed at ";
+                out << "A limiting region was placed at ";
                 break;
             default:
                 return;
             }
         }
 
-        report += roi_name;
+        out << roi_name;
         tipl::vector<3> center;
         for(size_t i = 0;i < points.size();++i)
             center += points[i];
         center /= points.size();
-        std::ostringstream out;
-        out << std::setprecision(2) << " (" << center[0] << "," << center[1] << "," << center[2]
-            << ") ";
-        report += out.str();
-        report += ".";
+        out << std::setprecision(1) << " (" << center[0] << "," << center[1] << "," << center[2]
+            << ").";
+
+        auto output = out.str();
+        report += " " + output;
+        tipl::out() << output;
     }
 };
 
