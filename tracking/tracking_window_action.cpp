@@ -1523,7 +1523,7 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
     if(current_region->to_diffusion_space != slice->to_dif)
     {
         tipl::image<3,unsigned char> new_mask(slice->dim);
-        tipl::resample<tipl::interpolation::nearest>(mask,new_mask,
+        tipl::resample<tipl::interpolation::majority>(mask,new_mask,
             tipl::transformation_matrix<float>(tipl::from_space(slice->to_dif).to(current_region->to_diffusion_space)));
         mask.swap(new_mask);
     }
