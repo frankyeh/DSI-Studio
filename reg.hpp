@@ -112,7 +112,7 @@ public:
         bool is_label = tipl::is_label_image(I3);
         tipl::out() << (is_label ? "label image interpolated using nearest assignment " : "scalar image interpolated using spline") << std::endl;
         if(is_label)
-            return apply_warping<direction,tipl::interpolation::nearest>(I3);
+            return apply_warping<direction,tipl::interpolation::majority>(I3);
         else
             return apply_warping<direction,tipl::interpolation::cubic>(I3);
     }
