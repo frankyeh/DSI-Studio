@@ -243,7 +243,7 @@ void ROIRegion::save_region_to_buffer(tipl::image<3,unsigned char>& mask,const t
         return;
     }
     mask.resize(dim_to);
-    tipl::resample<tipl::interpolation::nearest>(m,mask,
+    tipl::resample<tipl::interpolation::majority>(m,mask,
             tipl::transformation_matrix<float>(tipl::from_space(trans_to).to(to_diffusion_space)));
 }
 // ---------------------------------------------------------------------------
