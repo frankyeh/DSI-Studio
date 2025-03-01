@@ -67,17 +67,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->download_dir->setText(ui->workDir->currentText());
     ui->github_token->setText(settings.value("github_token").toString());
 
-    for(auto& temp : fib_template_list)
-    {
-        QString name = QFileInfo(temp.c_str()).baseName();
-        if(name.contains("human"))
-            name = QString("Human\t") + name;
-        if(name.contains("rhesus") || name.contains("marmoset") || name.contains("chimp"))
-            name = QString("Primate\t") + name;
-        if(name.contains("mouse") || name.contains("rat"))
-            name = QString("Rodent\t") + name;
+    for(auto& each : fib_template_list)
+    {        
+        QString name = std::filesystem::path(each).stem().string().c_str();
         ui->template_list->addItem(name);
-        ui->template_list->sortItems();
     }
     ui->tabWidget->setCurrentIndex(0);
     ui->github_release_note->setCurrentIndex(0);
@@ -1450,10 +1443,11 @@ void MainWindow::on_template_list_itemDoubleClicked(QListWidgetItem *item)
 void MainWindow::open_template(QString name)
 {
     for(auto& each : fib_template_list)
-        if(name.contains(QFileInfo(each.c_str()).baseName()))
+        if(std::filesystem::path(each).stem().string() == name.toStdString())
         {
             loadFib(each.c_str());
             tracking_windows.back()->work_path.clear();
+            return;
         }
 }
 
