@@ -1205,7 +1205,7 @@ void src_data::rotate(const tipl::shape<3>& new_geo,
 
     // rotate the mask
     tipl::image<3,unsigned char> mask(voxel.dim);
-    tipl::resample<tipl::interpolation::nearest>(voxel.mask,mask,T);
+    tipl::resample<tipl::interpolation::majority>(voxel.mask,mask,T);
     mask.swap(voxel.mask);
 }
 void src_data::resample(float nv)
