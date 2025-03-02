@@ -1,5 +1,5 @@
 #include "TIPL/reg/cdm.hpp"
-#include "tipl/prog.hpp"
+#include "TIPL/prog.hpp"
 namespace tipl::reg
 {
 template
