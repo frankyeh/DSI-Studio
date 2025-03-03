@@ -91,6 +91,22 @@ public:
     void nonlinear_reg(bool& terminated);
 public:
 
+    template<bool direction>
+    bool apply_warping(const std::vector<std::string>& apply_warp_filename,const std::string& post_fix)
+    {
+        bool result = true;
+        for(const auto& each_file: apply_warp_filename)
+        {
+            tipl::out() << (direction ? "warping " : "unwarping") << each_file << " into " << (each_file+post_fix);
+            if(!apply_warping<direction>(each_file.c_str(),(each_file+post_fix).c_str()))
+            {
+                tipl::error() << error_msg;
+                result = false;
+            }
+        }
+        return result;
+    }
+
     template<bool direction,tipl::interpolation itype,typename Itype>
     auto apply_warping(const Itype& input) const
     {
