@@ -557,19 +557,6 @@ void dual_reg::to_It_space(const tipl::shape<3>& new_Its)
 }
 
 
-
-int after_warp(const std::vector<std::string>& apply_warp_filename,dual_reg& r,const std::string& post_fix)
-{
-    for(const auto& each_file: apply_warp_filename)
-    {
-        tipl::out() << "warping " << each_file << " as " << (each_file+post_fix);
-        if(!r.apply_warping<true>(each_file.c_str(),(each_file+post_fix).c_str()))
-            tipl::error() << r.error_msg;
-    }
-    return 0;
-}
-
-
 bool load_nifti_file(std::string file_name_cmd,
                      tipl::image<3>& data,
                      tipl::vector<3>& vs,
@@ -614,22 +601,38 @@ bool load_nifti_file(std::string file_name_cmd,tipl::image<3>& data,tipl::vector
 int reg(tipl::program_option<tipl::out>& po)
 {
     dual_reg r;
-    if(!po.has("source") || !po.has("to"))
-    {
-        tipl::error() << "please specify the images to normalize using --source and --to";
-        return 1;
-    }
-
-
     std::vector<std::string> from_filename,to_filename;
-    if(!po.get_files("source",from_filename))
+    po.get_files("source",from_filename);
+    po.get_files("to",to_filename);
+    tipl::out() << from_filename.size() << " file(s) specified at --source";
+    tipl::out() << to_filename.size() << " file(s) specified at --to";
+    if(po.has("mapping"))
     {
-        tipl::error() << "cannot find file " << po.get("source") <<std::endl;
-        return 1;
+        if(from_filename.empty() && to_filename.empty())
+        {
+            tipl::error() << "please specify images to warp/unwwarp at --source/--to, respectively.";
+            return 1;
+        }
+        tipl::out() << "loading mapping field";
+        if(!r.load_warping(po.get("mapping")))
+        {
+            tipl::error() << r.error_msg;
+            return 1;
+        }
+        tipl::out() << "dim: " << r.Is << " to " << r.Its;
+        tipl::out() << "vs: " << r.Ivs << " to " << r.Itvs;
+        bool good = true;
+        if(!from_filename.empty())
+            good &= r.apply_warping<true>(from_filename,".wp.nii.gz");
+        if(!to_filename.empty())
+            good &= r.apply_warping<false>(to_filename,".wp.nii.gz");
+        return good ? 0 : 1;
     }
-    if(!po.get_files("to",to_filename))
+
+
+    if(from_filename.empty() || to_filename.empty())
     {
-        tipl::error() << "cannot find file " << po.get("to") <<std::endl;
+        tipl::error() << "please specify the images to warp using --source and --to";
         return 1;
     }
 
@@ -650,17 +653,6 @@ int reg(tipl::program_option<tipl::out>& po)
             tipl::out() << "output file exists, skipping";
             return 0;
         }
-    }
-
-    if(po.has("mapping"))
-    {
-        tipl::out() << "loading mapping field";
-        if(!r.load_warping(po.get("mapping")))
-        {
-            tipl::error() << r.error_msg;
-            return 1;
-        }
-        return after_warp(from_filename,r,".wp.nii.gz");
     }
 
 
@@ -710,6 +702,12 @@ int reg(tipl::program_option<tipl::out>& po)
         tipl::error() << r.error_msg;
         return 1;
     }
-    return after_warp(from_filename,r,po.get("export_r",0) ?
+    bool good = true;
+    if(po.get("output_warp",1))
+        good &= r.apply_warping<true>(from_filename,po.get("export_r",0) ?
                       ".wp.r"+std::to_string(int(r.r[0]*100.0f)) + std::string(".nii.gz") : std::string(".wp.nii.gz"));
+    if(po.get("output_unwarp",0))
+        good &= r.apply_warping<false>(to_filename,po.get("export_r",0) ?
+                          ".wp.r"+std::to_string(int(r.r[0]*100.0f)) + std::string(".nii.gz") : std::string(".wp.nii.gz"));
+    return good ? 0 : 1;
 }
