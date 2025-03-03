@@ -1198,7 +1198,7 @@ bool fib_data::set_dt_index(const std::pair<std::string,std::string>& name_pair,
             dir.dt_metrics = m2_name + "-" + m1_name;
             for(size_t k = 0;k < m1.size();++k)
                 if(dir.fa[0][k] > 0.0f && m1[k] > 0.0f && m2[k] > 0.0f)
-                    dif[k] = m1[k]-m2[k];
+                    dif[k] = m2[k]-m1[k];
         break;
         case 6: // m1/max(m1)
             dir.dt_metrics = m1_name + "/max(" + m1_name + ")";
