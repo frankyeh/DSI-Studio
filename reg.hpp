@@ -103,14 +103,31 @@ public:
     auto apply_warping(const char* input) const
     {
         tipl::out() << "opening " << input;
-        tipl::image<dimension> I3(direction ? Is : Its);
+        auto input_size = (direction ? Is : Its);
+        // check dimension
+        {
+            tipl::io::gz_nifti nii;
+            if(!nii.load_from_file(input))
+            {
+                error_msg = nii.error_msg;
+                return tipl::image<dimension>();
+            }
+            tipl::shape<3> d;
+            nii.get_image_dimension(d);
+            if(d != input_size)
+            {
+                tipl::warning() << std::filesystem::path(input).filename().string() << " has a size of " << d << " different from the expected size " << input_size;
+                tipl::warning() << "transformation will be applied. But please make sure you apply the mapping in the correct direction.";
+            }
+        }
+        tipl::image<dimension> I3(input_size);
         if(!tipl::io::gz_nifti::load_to_space(input,I3,direction ? IR : ItR))
         {
             error_msg = "cannot open " + std::string(input);
             return tipl::image<dimension>();
         }
         bool is_label = tipl::is_label_image(I3);
-        tipl::out() << (is_label ? "label image interpolated using nearest assignment " : "scalar image interpolated using spline") << std::endl;
+        tipl::out() << (is_label ? "label image interpolated using majority assignment " : "scalar image interpolated using spline") << std::endl;
         if(is_label)
             return apply_warping<direction,tipl::interpolation::majority>(I3);
         else
