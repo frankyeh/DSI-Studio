@@ -9,11 +9,11 @@ on:
   workflow_call:
 jobs:    
   test_animal_recon:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2004.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2204.zip" | jar x
         curl -sL https://zenodo.org/record/6321169/files/mountsinai-S-sub-032156_dwi.src.gz?download=1 -o Rhesus.src.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Test DTI Recon
@@ -36,7 +36,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2004.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2204.zip" | jar x
         curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_DSI_203.src.gz?download=1 -o DSI.src.gz
         curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_DTI64.src.gz?download=1 -o DTI.src.gz
         curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_HARDI.src.gz?download=1 -o HARDI.src.gz
@@ -67,7 +67,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2004.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2204.zip" | jar x
         curl -sL https://github.com/frankyeh/data-atlas/blob/main/ICBM152_adult/ICBM152_adult.fz?raw=true -o ICBM152_adult.fz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Tracking
@@ -96,7 +96,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2004.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2204.zip" | jar x
         curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
         curl -sL https://github.com/frankyeh/data-atlas/blob/main/ICBM152_adult/ICBM152_adult.QA.nii.gz?raw=true -o template_qa.nii.gz
         chmod 777 ./dsi-studio/dsi_studio
@@ -128,7 +128,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2004.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2204.zip" | jar x
         curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
         chmod 777 ./dsi-studio/dsi_studio
         git clone https://github.com/frankyeh/data-atlas.git
@@ -150,7 +150,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2004.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2204.zip" | jar x
         curl -sL https://github.com/data-openneuro/disease/releases/download/ds001378/ds001378.dti_fa.db.fz -o ds001378.dti_fa.db.fz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Connectometry
@@ -164,7 +164,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2004.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2204.zip" | jar x
         curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
         curl -sL https://zenodo.org/record/6307812/files/100307.src.gz.gqi.1.7.fib.gz?download=1 -o 100307.fib.gz
         chmod 777 ./dsi-studio/dsi_studio
@@ -178,7 +178,7 @@ jobs:
     steps:
     - name: Setup Environment
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2004.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2204.zip" | jar x
         chmod 777 ./dsi-studio/dsi_studio
     - name: Test GQI Recon
       run: |
@@ -201,7 +201,7 @@ jobs:
       run: curl -sSL https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.5.2-centos7_64.tar.gz | tar zxv --no-same-owner -C /opt --exclude='fsl/doc' --exclude='fsl/refdoc' --exclude='fsl/python/oxford_asl' --exclude='fsl/data/possum' --exclude='fsl/data/first' --exclude='fsl/data/mist' --exclude='fsl/data/atlases' --exclude='fsl/data/xtract_data' --exclude='fsl/extras/doc' --exclude='fsl/extras/man' --exclude='fsl/extras/src' --exclude='fsl/src'
     - name: Download NIFTI and Convert
       run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2004.zip" | jar x
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2204.zip" | jar x
         chmod 777 ./dsi-studio/dsi_studio
         export OS="Linux"
         export FSLDIR="/opt/fsl"
