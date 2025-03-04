@@ -1118,45 +1118,41 @@ std::vector<std::string> fib_data::get_index_list(void) const
 bool fib_data::set_dt_index(const std::pair<std::string,std::string>& name_pair,size_t type)
 {
 
-    auto find_index = [&](const std::string& metric)
+    auto find_index = [&](const std::string& metric,size_t& index,std::string& m_name)->bool
     {
         error_msg.clear();
+        index = slices.size();
+        m_name = metric;
         if(metric == "zero")
-            return slices.size();
-        auto index = get_name_index(metric);
+            return true;
+        index = get_name_index(metric);
         if(index == slices.size())
         {
             error_msg = "cannot find the metric: ";
             error_msg += metric;
-            return slices.size();
+            return false;
         }
         if(slices[index]->registering)
+        {
             error_msg = "registration undergoing. please wait until registration complete.";
+            return false;
+        }
         if(slices[index]->name != metric)
-            tipl::warning() << "specified " << metric << " but not found. The analysis will use " << slices[index]->name;
-        return index;
+            tipl::warning() << "specified " << metric << " but not found. The analysis will use " << (m_name = slices[index]->name);
+        return true;
     };
 
+    std::string m1_name,m2_name;
     std::pair<size_t,size_t> pair;
-    pair.first = find_index(name_pair.first);
-    pair.second = find_index(name_pair.second);
-    if(!error_msg.empty())
+    if(!find_index(name_pair.first,pair.first,m1_name) ||
+       !find_index(name_pair.second,pair.second,m2_name))
         return false;
 
-
     tipl::image<3> m1(dim),m2(dim);
-    std::string m1_name,m2_name;
     if(pair.first < slices.size())
-    {
-        m1_name = slices[pair.first]->name;
         slices[pair.first]->get_image_in_dwi(m1);
-    }
-
     if(pair.second < slices.size())
-    {
-        m2_name = slices[pair.second]->name;
         slices[pair.second]->get_image_in_dwi(m2);
-    }
 
     dir.dt_fa_data = std::move(tipl::image<3>(dim));
     auto& dif = dir.dt_fa_data;
