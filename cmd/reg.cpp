@@ -625,7 +625,7 @@ int reg(tipl::program_option<tipl::out>& po)
         if(!from_filename.empty())
             good &= r.apply_warping<true>(from_filename,".wp.nii.gz");
         if(!to_filename.empty())
-            good &= r.apply_warping<false>(to_filename,".wp.nii.gz");
+            good &= r.apply_warping<false>(to_filename,".uwp.nii.gz");
         return good ? 0 : 1;
     }
 
@@ -708,6 +708,6 @@ int reg(tipl::program_option<tipl::out>& po)
                       ".wp.r"+std::to_string(int(r.r[0]*100.0f)) + std::string(".nii.gz") : std::string(".wp.nii.gz"));
     if(po.get("output_unwarp",0))
         good &= r.apply_warping<false>(to_filename,po.get("export_r",0) ?
-                          ".wp.r"+std::to_string(int(r.r[0]*100.0f)) + std::string(".nii.gz") : std::string(".wp.nii.gz"));
+                          ".uwp.r"+std::to_string(int(r.r[0]*100.0f)) + std::string(".nii.gz") : std::string(".uwp.nii.gz"));
     return good ? 0 : 1;
 }
