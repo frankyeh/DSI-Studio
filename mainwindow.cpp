@@ -116,19 +116,28 @@ MainWindow::MainWindow(QWidget *parent) :
             }
 
             QDialog *dialog = new QDialog(this);
-            dialog->setWindowTitle("License Information");
+            dialog->setWindowTitle("DSI Studio");
             dialog->setWindowFlags(Qt::Dialog | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
             dialog->setModal(true);
 
-            QTextBrowser *licenseBrowser = new QTextBrowser;
-            licenseBrowser->setMarkdown(licenseText);
-            licenseBrowser->setReadOnly(true);
-            licenseBrowser->setOpenExternalLinks(true);
+            QHBoxLayout *main_layout = new QHBoxLayout;
+            dialog->setLayout(main_layout);
+            QVBoxLayout *left_layout = new QVBoxLayout;
+            QVBoxLayout *right_layout = new QVBoxLayout;
 
+            {
+                auto title = new QLabel("License Information:");
+                title->setStyleSheet("color: black; font-weight: bold;");
+                left_layout->addWidget(title);
+            }
 
-            QVBoxLayout *layout = new QVBoxLayout;
-            layout->addWidget(licenseBrowser);
-
+            {
+                QTextBrowser *licenseBrowser = new QTextBrowser;
+                licenseBrowser->setMarkdown(licenseText);
+                licenseBrowser->setReadOnly(true);
+                licenseBrowser->setOpenExternalLinks(true);
+                left_layout->addWidget(licenseBrowser);
+            }
 
             {
                 QHBoxLayout *h_layout = new QHBoxLayout;
@@ -136,7 +145,7 @@ MainWindow::MainWindow(QWidget *parent) :
                 auto line_edit = new QLineEdit(QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)).dirName() + "," + fnValue + "," + adrValue);
                 line_edit->setReadOnly(true);
                 h_layout->addWidget(line_edit);
-                layout->addLayout(h_layout);
+                left_layout->addLayout(h_layout);
 
             }
 
@@ -146,13 +155,13 @@ MainWindow::MainWindow(QWidget *parent) :
                 auto notice = new QLabel("This license agreement does not cover commercial use. For commercial entities, please contact frank.yeh@gmail.com to obtain a commercial license.");
                 notice->setWordWrap(true);
                 notice->setStyleSheet("color: red; font-weight: bold;");
-                layout->addWidget(notice);
+                left_layout->addWidget(notice);
             }
 
             auto note = new QLabel("By clicking 'Accept & Sign in', you agree to the licensing terms and will sign in using the registration information.");
             note->setWordWrap(true);
             note->setStyleSheet("color: black; font-weight: bold;");
-            layout->addWidget(note);
+            left_layout->addWidget(note);
 
             {
                 // MODIFYING REGISTRATION CODE INVALIDATES LICENSING AGREEMENT
@@ -171,20 +180,14 @@ MainWindow::MainWindow(QWidget *parent) :
                 h_layout->setSpacing(0);
                 h_layout->addWidget(closeButton);
                 h_layout->addWidget(exitButton);
-                layout->addLayout(h_layout);
+                left_layout->addLayout(h_layout);
             }
 
-            {
-                // Add a horizontal separator
-                QFrame *separator = new QFrame;
-                separator->setFrameShape(QFrame::HLine);
-                separator->setFrameShadow(QFrame::Sunken);
-                layout->addWidget(separator);
-            }
+
             {
                 auto title = new QLabel("News and Updates:");
-                note->setStyleSheet("color: black; font-weight: bold;");
-                layout->addWidget(title);
+                title->setStyleSheet("color: black; font-weight: bold;");
+                right_layout->addWidget(title);
             }
 
             {
@@ -192,11 +195,13 @@ MainWindow::MainWindow(QWidget *parent) :
                 NewsBrowser->setMarkdown(news);
                 NewsBrowser->setReadOnly(true);
                 NewsBrowser->setOpenExternalLinks(true);
-                layout->addWidget(NewsBrowser);
+                right_layout->addWidget(NewsBrowser);
             }
 
-            dialog->setLayout(layout);
-            dialog->resize(800,500);
+            main_layout->addLayout(left_layout, 2);  // Left side takes 2/3 of space
+            main_layout->addLayout(right_layout, 1); // Right side takes 1/3 of space
+
+            dialog->resize(1024,800);
             dialog->show();
         }
     }
