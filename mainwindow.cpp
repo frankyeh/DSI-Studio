@@ -128,7 +128,7 @@ MainWindow::MainWindow(QWidget *parent) :
             {
                 auto title = new QLabel("License Information:");
                 title->setStyleSheet("color: black; font-weight: bold;");
-                left_layout->addWidget(title);
+                right_layout->addWidget(title);
             }
 
             {
@@ -136,7 +136,7 @@ MainWindow::MainWindow(QWidget *parent) :
                 licenseBrowser->setMarkdown(licenseText);
                 licenseBrowser->setReadOnly(true);
                 licenseBrowser->setOpenExternalLinks(true);
-                left_layout->addWidget(licenseBrowser);
+                right_layout->addWidget(licenseBrowser);
             }
 
             {
@@ -145,7 +145,7 @@ MainWindow::MainWindow(QWidget *parent) :
                 auto line_edit = new QLineEdit(QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)).dirName() + "," + fnValue + "," + adrValue);
                 line_edit->setReadOnly(true);
                 h_layout->addWidget(line_edit);
-                left_layout->addLayout(h_layout);
+                right_layout->addLayout(h_layout);
 
             }
 
@@ -155,13 +155,15 @@ MainWindow::MainWindow(QWidget *parent) :
                 auto notice = new QLabel("This license agreement does not cover commercial use. For commercial entities, please contact frank.yeh@gmail.com to obtain a commercial license.");
                 notice->setWordWrap(true);
                 notice->setStyleSheet("color: red; font-weight: bold;");
-                left_layout->addWidget(notice);
+                right_layout->addWidget(notice);
             }
 
-            auto note = new QLabel("By clicking 'Accept & Sign in', you agree to the licensing terms and will sign in using the registration information.");
-            note->setWordWrap(true);
-            note->setStyleSheet("color: black; font-weight: bold;");
-            left_layout->addWidget(note);
+            {
+                auto note = new QLabel("By clicking 'Accept & Sign in', you agree to the licensing terms and will sign in using the registration information.");
+                note->setWordWrap(true);
+                note->setStyleSheet("color: black; font-weight: bold;");
+                right_layout->addWidget(note);
+            }
 
             {
                 // MODIFYING REGISTRATION CODE INVALIDATES LICENSING AGREEMENT
@@ -180,14 +182,14 @@ MainWindow::MainWindow(QWidget *parent) :
                 h_layout->setSpacing(0);
                 h_layout->addWidget(closeButton);
                 h_layout->addWidget(exitButton);
-                left_layout->addLayout(h_layout);
+                right_layout->addLayout(h_layout);
             }
 
 
             {
                 auto title = new QLabel("News and Updates:");
                 title->setStyleSheet("color: black; font-weight: bold;");
-                right_layout->addWidget(title);
+                left_layout->addWidget(title);
             }
 
             {
@@ -195,11 +197,11 @@ MainWindow::MainWindow(QWidget *parent) :
                 NewsBrowser->setMarkdown(news);
                 NewsBrowser->setReadOnly(true);
                 NewsBrowser->setOpenExternalLinks(true);
-                right_layout->addWidget(NewsBrowser);
+                left_layout->addWidget(NewsBrowser);
             }
 
-            main_layout->addLayout(left_layout, 2);  // Left side takes 2/3 of space
-            main_layout->addLayout(right_layout, 1); // Right side takes 1/3 of space
+            main_layout->addLayout(left_layout, 1);
+            main_layout->addLayout(right_layout, 1);
 
             dialog->resize(1024,800);
             dialog->show();
