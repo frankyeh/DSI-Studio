@@ -1602,13 +1602,12 @@ void RegionTableWidget::do_action(QString action)
 
                     // value voting, total vote: 16
                     {
-                        float pos_value = tipl::estimate(I,pos);
+                        float pos_value = I[pos.index()];
                         std::vector<float> dif_values(16,std::numeric_limits<float>::max());
                         std::vector<size_t> regions(16);
                         tipl::for_each_neighbors(pos,base_dim,4,[&](const auto& rhs_pos)
                         {
-                            tipl::vector<3> p2(rhs_pos);
-                            float dif_value = std::fabs(pos_value-tipl::estimate(I,p2));
+                            float dif_value = std::fabs(pos_value-I[rhs_pos.index()]);
                             if(dif_value > dif_values.back())
                                 return;
                             size_t ins_pos = dif_values.size()-1;
