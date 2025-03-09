@@ -92,6 +92,16 @@ void CreateDBDialog::update_list(void)
             ui->index_of_interest->setCurrentIndex(0);
             populate_templates(ui->template_list,0);
             ui->template_list->setEnabled(true);
+            tipl::io::gz_nifti nii;
+            if(nii.load_from_file(group[0].toStdString()))
+            {
+                QMessageBox::critical(this,"ERROR","The first file is not a valid NIFTI file.");
+                raise(); // for Mac
+                return;
+            }
+            tipl::vector<3> vs;
+            nii.get_voxel_size(vs);
+            template_reso = vs[0];
         }
         else
         {
@@ -102,6 +112,7 @@ void CreateDBDialog::update_list(void)
                 raise(); // for Mac
                 return;
             }
+            template_reso = fib.vs[0];
             ui->index_of_interest->clear();
             for(const auto& name : fib.get_index_list())
                 ui->index_of_interest->addItem(name.c_str());
@@ -298,11 +309,11 @@ void CreateDBDialog::on_create_data_base_clicked()
         }
         std::shared_ptr<fib_data> template_fib;
         template_fib.reset(new fib_data);
-        if(!template_fib->load_from_file(template_file_name))
-            {
-                QMessageBox::critical(this,"ERROR",template_fib->error_msg.c_str());
-                return;
-            }
+        if(!template_fib->load_at_resolution(template_file_name,template_reso))
+        {
+            QMessageBox::critical(this,"ERROR",template_fib->error_msg.c_str());
+            return;
+        }
 
         tipl::progress prog_("creating database");
         std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);
