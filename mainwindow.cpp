@@ -1500,6 +1500,21 @@ void MainWindow::on_tabWidget_currentChanged(int index)
     if(index == 4 && !ui->github_tags->rowCount() && !fetch_github)
     {
         fetch_github = true;
+        auto reply = get(QString("https://raw.githubusercontent.com/frankyeh/Brain-Data/gh-pages/index.md"));
+        while (!reply->isFinished())
+            qApp->processEvents();
+        QString content = reply->readAll();
+        QStringList lines = content.split('\n');
+        lines.removeFirst();
+        QStringList filteredLines;
+        for (const QString &line : lines) {
+            if (!line.trimmed().startsWith("<img src"))
+                filteredLines.append(line);
+        }
+
+        ui->github_note->setMarkdown(filteredLines.join("\n"));
+        ui->github_note->setReadOnly(true);
+        ui->github_note->setOpenExternalLinks(true);
         on_load_tags_clicked();
     }
 }
