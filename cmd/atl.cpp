@@ -52,10 +52,30 @@ int db(tipl::program_option<tipl::out>& po)
         tipl::error() << "cannot find demo file " << po.get("demo") <<std::endl;
         return 1;
     }
+
+
+    std::vector<std::string> index_name;
+
+    // get the name of all metrics from the first file
+    std::vector<std::string> item_list;
+    float template_reso = 1.0f;
+    {
+        fib_data fib;
+        if(!fib.load_from_file(name_list[0].c_str()))
+        {
+            tipl::error() << "cannot load subject fib " << name_list[0] << std::endl;
+            return 1;
+        }
+        std::ostringstream out;
+        for(const auto& each: fib.get_index_list())
+            out << each << " ";
+        tipl::out() << "available metrics: " << out.str() << std::endl;
+        template_reso = fib.vs[0];
+    }
+
     for(size_t id = 0;id < fib_template_list.size();++id)
         if(!fib_template_list[id].empty())
             tipl::out() << "template " << id << ": " << std::filesystem::path(fib_template_list[id]).stem() << std::endl;
-
     auto template_id = po.get("template",0);
     if(template_id >= fib_template_list.size())
     {
@@ -69,31 +89,16 @@ int db(tipl::program_option<tipl::out>& po)
     }
 
     std::shared_ptr<fib_data> template_fib(new fib_data);
-    if(!template_fib->load_from_file(fib_template_list[template_id]))
     {
-        tipl::error() <<  template_fib->error_msg << std::endl;
-        return 1;
-    }
-    template_fib->set_template_id(template_id);
-
-
-    tipl::out() << "constructing a connectometry db" << std::endl;
-    std::vector<std::string> index_name;
-
-    // get the name of all metrics from the first file
-    std::vector<std::string> item_list;
-    {
-        fib_data fib;
-        if(!fib.load_from_file(name_list[0].c_str()))
+        tipl::out() << "load template at resolution " << template_reso;
+        if(!template_fib->load_at_resolution(fib_template_list[template_id],template_reso))
         {
-            tipl::error() << "cannot load subject fib " << name_list[0] << std::endl;
+            tipl::error() <<  template_fib->error_msg << std::endl;
             return 1;
         }
-        std::ostringstream out;
-        for(const auto& each: fib.get_index_list())
-            out << each << " ";
-        tipl::out() << "available metrics: " << out.str() << std::endl;
+        template_fib->set_template_id(template_id);
     }
+
 
     if(po.get("index_name","qa") == std::string("*"))
     {
