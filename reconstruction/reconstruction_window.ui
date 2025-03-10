@@ -404,7 +404,7 @@
         <item>
          <widget class="QGroupBox" name="groupBox_2">
           <property name="title">
-           <string>Step T2a: specify mask</string>
+           <string>Step T2a: Specify a Mask</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
            <property name="topMargin">
@@ -594,7 +594,7 @@
             <item>
              <widget class="QGroupBox" name="method_group">
               <property name="title">
-               <string>Step T2b: select model</string>
+               <string>Step T2b: Specify a Model</string>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_10">
                <property name="spacing">
@@ -944,7 +944,7 @@
             <item>
              <widget class="QGroupBox" name="groupBox">
               <property name="title">
-               <string>Step T2c: specify outputs</string>
+               <string>Step T2c: Specify Outputs</string>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_15">
                <property name="topMargin">
@@ -1001,6 +1001,19 @@
                   </widget>
                  </item>
                  <item>
+                  <widget class="QCheckBox" name="output_rd12">
+                   <property name="toolTip">
+                    <string>rd1,rd2</string>
+                   </property>
+                   <property name="statusTip">
+                    <string>rd1,rd2</string>
+                   </property>
+                   <property name="text">
+                    <string>rd1,rd2</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <widget class="QCheckBox" name="output_md">
                    <property name="toolTip">
                     <string>md</string>
@@ -1013,19 +1026,6 @@
                    </property>
                    <property name="checked">
                     <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QCheckBox" name="output_rd12">
-                   <property name="toolTip">
-                    <string>rd1,rd2</string>
-                   </property>
-                   <property name="statusTip">
-                    <string>rd1,rd2</string>
-                   </property>
-                   <property name="text">
-                    <string>rd1,rd2</string>
                    </property>
                   </widget>
                  </item>
