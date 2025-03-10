@@ -1124,22 +1124,22 @@
                      </widget>
                     </item>
                     <item>
-                     <widget class="QCheckBox" name="output_gfa">
-                      <property name="statusTip">
-                       <string>gfa</string>
-                      </property>
-                      <property name="text">
-                       <string>gfa</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
                      <widget class="QCheckBox" name="output_rdi">
                       <property name="statusTip">
                        <string>rdi</string>
                       </property>
                       <property name="text">
                        <string>rdi</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QCheckBox" name="output_gfa">
+                      <property name="statusTip">
+                       <string>gfa</string>
+                      </property>
+                      <property name="text">
+                       <string>gfa</string>
                       </property>
                      </widget>
                     </item>
