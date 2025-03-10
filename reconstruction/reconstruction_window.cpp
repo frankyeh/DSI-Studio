@@ -48,8 +48,32 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     QMainWindow(parent),filenames(filenames_),ui(new Ui::reconstruction_window)
 {
     ui->setupUi(this);
+    outputs = {
+        ui->output_fa,
+        ui->output_rd,
+        ui->output_md,
+        ui->output_rd12,
+        ui->output_tensor,
+        ui->output_helix,
+        ui->output_rdi,
+        ui->output_gfa,
+        ui->output_odf
+    };
+    adv_outputs = {
+        ui->output_rd12,
+        ui->output_tensor,
+        ui->output_helix,
+        ui->output_gfa,
+        ui->output_odf,
+        ui->dti_ignore_high_b
+    };
+    for(auto each : adv_outputs)
+        each->hide();
     if(!load_src(0))
         throw std::runtime_error(handle->error_msg.c_str());
+
+    ui->output_rdi->setChecked(tipl::contains(handle->voxel.report,"multishell"));
+
     setWindowTitle(filenames[0]);
     ui->ThreadCount->setMaximum(tipl::max_thread_count);
     ui->toolBox->setCurrentIndex(1);
@@ -90,18 +114,14 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     ui->odf_resolving->setVisible(false);
 
-    ui->AdvancedWidget->setVisible(false);
     ui->ThreadCount->setValue(settings.value("rec_thread_count",tipl::max_thread_count).toInt());
 
     ui->odf_resolving->setChecked(settings.value("odf_resolving",0).toInt());
 
-    ui->RecordODF->setChecked(settings.value("rec_record_odf",0).toInt());
-
     ui->report->setText(handle->voxel.report.c_str());
-    ui->dti_no_high_b->setChecked(handle->is_human_data());
+    ui->dti_ignore_high_b->setChecked(handle->is_human_data());
 
     ui->method_group->setVisible(!handle->voxel.is_histology);
-    ui->param_group->setVisible(!handle->voxel.is_histology);
     ui->hist_param_group->setVisible(handle->voxel.is_histology);
 
     ui->qsdr_reso->setValue(handle->is_human_data() ? std::min<float>(2.0f,std::max<float>(handle->voxel.vs[0],handle->voxel.vs[2])) : handle->voxel.vs[2]);
@@ -234,16 +254,21 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
     settings.setValue("rec_thread_count",ui->ThreadCount->value());
 
     settings.setValue("odf_resolving",ui->odf_resolving->isChecked() ? 1 : 0);
-    settings.setValue("rec_record_odf",ui->RecordODF->isChecked() ? 1 : 0);
-    settings.setValue("other_output",ui->other_output->text());
 
     handle->voxel.method_id = method_id;
     handle->voxel.odf_resolving = ui->odf_resolving->isChecked();
-    handle->voxel.output_odf = ui->RecordODF->isChecked();
-    handle->voxel.dti_no_high_b = ui->dti_no_high_b->isChecked();
-    handle->voxel.other_output = ui->other_output->text().toStdString();
+    handle->voxel.dti_ignore_high_b = ui->dti_ignore_high_b->isChecked();
     handle->voxel.thread_count = ui->ThreadCount->value();
     handle->voxel.template_id = ui->primary_template->currentIndex();
+
+    handle->voxel.other_output.clear();
+    for(auto each : outputs)
+        if(each->isChecked())
+        {
+            if(!handle->voxel.other_output.empty())
+                handle->voxel.other_output += ",";
+            handle->voxel.other_output += each->statusTip().toStdString();
+        }
 
     if(handle->voxel.is_histology)
     {
@@ -475,16 +500,11 @@ void reconstruction_window::on_DTI_toggled(bool checked)
 {
     ui->qsdr_options->setVisible(!checked);
     ui->GQIOption_2->setVisible(!checked);
+    ui->ODF_metrics->setVisible(!checked);
 
-    ui->AdvancedOptions->setVisible(checked);
 
-    ui->RecordODF->setVisible(!checked);
     ui->qsdr_reso->setVisible(!checked);
     ui->qsdr_reso_label->setVisible(!checked);
-    if(checked && (!ui->other_output->text().contains("rd") &&
-                   !ui->other_output->text().contains("ad") &&
-                   !ui->other_output->text().contains("md")))
-        ui->other_output->setText("fa,rd");
 
     if(filenames.size() == 1)
     {
@@ -499,13 +519,9 @@ void reconstruction_window::on_DTI_toggled(bool checked)
 void reconstruction_window::on_GQI_toggled(bool checked)
 {
     ui->qsdr_options->setVisible(!checked);
-
-
     ui->GQIOption_2->setVisible(checked);
+    ui->ODF_metrics->setVisible(checked);
 
-    ui->AdvancedOptions->setVisible(checked);
-
-    ui->RecordODF->setVisible(checked);
 
     ui->qsdr_reso->setVisible(!checked);
     ui->qsdr_reso_label->setVisible(!checked);
@@ -524,10 +540,8 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
 {
     ui->qsdr_options->setVisible(checked);
     ui->GQIOption_2->setVisible(checked);
+    ui->ODF_metrics->setVisible(checked);
 
-    ui->AdvancedOptions->setVisible(checked);
-
-    ui->RecordODF->setVisible(checked);
 
     ui->qsdr_reso->setVisible(checked);
     ui->qsdr_reso_label->setVisible(checked);
@@ -555,19 +569,6 @@ void reconstruction_window::on_zoom_out_clicked()
     on_b_table_itemSelectionChanged();
 }
 
-void reconstruction_window::on_AdvancedOptions_clicked()
-{
-    if(ui->AdvancedOptions->text() == "Advanced Options >>")
-    {
-        ui->AdvancedWidget->setVisible(true);
-        ui->AdvancedOptions->setText("Advanced Options <<");
-    }
-    else
-    {
-        ui->AdvancedWidget->setVisible(false);
-        ui->AdvancedOptions->setText("Advanced Options >>");
-    }
-}
 
 void reconstruction_window::on_actionSave_b_table_triggered()
 {
@@ -999,5 +1000,12 @@ void reconstruction_window::on_change_fib_output_clicked()
 void reconstruction_window::on_fib_output_editingFinished()
 {
     handle->output_file_name = ui->fib_output->text().toStdString();
+}
+
+
+void reconstruction_window::on_more_outputs_clicked()
+{
+    for(auto each : adv_outputs)
+        each->show();
 }
 

@@ -136,7 +136,7 @@ protected:
 public:
     virtual bool needed(Voxel& voxel)
     {
-        return voxel.output_odf;
+        return voxel.needs("odf");
     }
     virtual void init(Voxel& voxel)
     {
@@ -249,7 +249,7 @@ public:
     }
     virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
-        if (voxel.output_odf)
+        if (voxel.needs("odf"))
         {
             for (unsigned int index = 0;index < voxel.template_odfs.size();++index)
             {

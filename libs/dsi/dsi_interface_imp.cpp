@@ -25,7 +25,7 @@ void src_data::check_output_file_name(void)
         output_file_name += ".hist.fz";
         return;
     }
-    if(voxel.method_id != 1 && voxel.output_odf)
+    if(voxel.method_id != 1 && voxel.needs("odf"))
         output_file_name += ".odf";
 
     switch (voxel.method_id)
@@ -84,20 +84,18 @@ bool src_data::reconstruction(void)
     {
         if(voxel.is_histology)
             return reconstruction_hist();
-        if (voxel.output_odf && (voxel.method_id == 7 || voxel.method_id == 4))
-            voxel.step_report << "[Step T2b(2)][ODFs]=1" << std::endl;
 
         switch (voxel.method_id)
         {
         case 1://DTI
-            voxel.step_report << "[Step T2b(1)]=DTI" << std::endl;
+            voxel.step_report << "[Step T2b]=DTI" << std::endl;
             if (!reconstruct2<ReadDWIData,
                     Dwi2Tensor>("DTI reconstruction"))
                 return false;
             break;
         case 4://GQI
-            voxel.step_report << "[Step T2b(1)]=GQI" << std::endl;
-            voxel.step_report << "[Step T2b(1)][Diffusion sampling length ratio]=" << float(voxel.param[0]) << std::endl;
+            voxel.step_report << "[Step T2b]=GQI" << std::endl;
+            voxel.step_report << "[Step T2b][Diffusion sampling length ratio]=" << float(voxel.param[0]) << std::endl;
 
             voxel.recon_report <<
                     " The restricted diffusion was quantified using restricted diffusion imaging (Yeh et al., MRM, 77:603–612 (2017)).";
@@ -137,10 +135,10 @@ bool src_data::reconstruction(void)
                 return false;
             break;
         case 7:
-            voxel.step_report << "[Step T2b(1)]=QSDR" << std::endl;
-            voxel.step_report << "[Step T2b(1)][QSDR resolution]=" << voxel.qsdr_reso << std::endl;
-            voxel.step_report << "[Step T2b(1)][Template]=" << QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().toLower().toStdString() << std::endl;
-            voxel.step_report << "[Step T2b(1)][Diffusion sampling length ratio]=" << voxel.param[0] << std::endl;
+            voxel.step_report << "[Step T2b]=QSDR" << std::endl;
+            voxel.step_report << "[Step T2b][QSDR resolution]=" << voxel.qsdr_reso << std::endl;
+            voxel.step_report << "[Step T2b][Template]=" << QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().toLower().toStdString() << std::endl;
+            voxel.step_report << "[Step T2b][Diffusion sampling length ratio]=" << voxel.param[0] << std::endl;
             voxel.recon_report
             << " The diffusion data were reconstructed in the MNI space using q-space diffeomorphic reconstruction (Yeh et al., Neuroimage, 58(1):91-9, 2011) to obtain the spin distribution function (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010). "
             << " A diffusion sampling length ratio of "
@@ -179,7 +177,8 @@ bool src_data::reconstruction(void)
             return false;
         }
 
-        if(voxel.dti_no_high_b)
+        voxel.step_report << "[Step T2c][Output metrics]=" << voxel.other_output << std::endl;
+        if(voxel.dti_ignore_high_b)
             voxel.recon_report << " The tensor metrics were calculated using DWI with b-value lower than 1750 s/mm².";
         return save_fib();
     }
@@ -222,12 +221,11 @@ bool output_odfs(const tipl::image<3,unsigned char>& mni_mask,
         image_model.voxel.report = report.c_str();
     image_model.voxel.dim = mni_mask.shape();
     image_model.voxel.ti = ti;
-    image_model.voxel.output_odf = record_odf;
     image_model.file_name = out_name;
     image_model.voxel.mask = mni_mask;
     image_model.voxel.trans_to_mni = mni;
     image_model.voxel.vs = vs;
-    image_model.voxel.other_output = "gfa";
+    image_model.voxel.other_output = record_odf ? "odf,gfa" : "gfa";
     swap_data();
     if (!image_model.reconstruct2<ODFLoader,
             SaveMetrics>("template"))

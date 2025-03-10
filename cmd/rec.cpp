@@ -29,9 +29,8 @@ int rec(tipl::program_option<tipl::out>& po)
         tipl::progress prog("reconstruction parameters");
         src.voxel.method_id = uint8_t(po.get("method",4));
         src.voxel.odf_resolving = po.get("odf_resolving",int(0));
-        src.voxel.output_odf = po.get("record_odf",int(0));
-        src.voxel.dti_no_high_b = po.get("dti_no_high_b",src.is_human_data());
-        src.voxel.other_output = po.get("other_output","fa,rd,iso,rdi");
+        src.voxel.dti_ignore_high_b = po.get("dti_ignore_high_b",src.is_human_data());
+        src.voxel.other_output = po.get("other_output","fa,rd,rdi");
         src.voxel.r2_weighted = po.get("r2_weighted",int(0));
         src.voxel.thread_count = tipl::max_thread_count = po.get("thread_count",tipl::max_thread_count);
         src.voxel.export_r = po.get("export_r",0);

@@ -23,6 +23,8 @@ public:
     explicit reconstruction_window(QStringList filenames_,QWidget *parent = nullptr);
     ~reconstruction_window();
     bool command(std::string cmd,std::string param = std::string());
+public:
+    std::vector<QCheckBox*> outputs,adv_outputs;
 protected:
     void resizeEvent(QResizeEvent * event) override;
     void showEvent(QShowEvent * event) override;
@@ -101,7 +103,6 @@ private slots:
     void on_b_table_itemSelectionChanged();
     void on_zoom_in_clicked();
     void on_zoom_out_clicked();
-    void on_AdvancedOptions_clicked();
     void on_actionSave_b_table_triggered();
     void on_actionSave_bvals_triggered();
     void on_actionSave_bvecs_triggered();
@@ -128,6 +129,7 @@ private slots:
     void on_actionT1W_based_QSDR_triggered();
     void on_change_fib_output_clicked();
     void on_fib_output_editingFinished();
+    void on_more_outputs_clicked();
 };
 
 #endif // RECONSTRUCTION_WINDOW_H

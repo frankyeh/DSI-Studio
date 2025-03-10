@@ -28,7 +28,7 @@ public:
     virtual void init(Voxel& voxel)
     {
         if(std::count_if(voxel.bvalues.begin(),voxel.bvalues.end(),[](float b){return b > 100.0f && b <= 1750.0f;}) < 10)
-            voxel.dti_no_high_b = false;
+            voxel.dti_ignore_high_b = false;
 
         voxel.fib_fa.clear();
         voxel.fib_fa.resize(voxel.dim);
@@ -67,7 +67,7 @@ public:
 
         for(size_t i = 1;i < voxel.bvalues.size();++i)//skip b0
         {
-            if(voxel.dti_no_high_b && voxel.bvalues[i] > 1750.0f)
+            if(voxel.dti_ignore_high_b && voxel.bvalues[i] > 1750.0f)
                 continue;
             b_count++;
             b_location.push_back(i);
@@ -194,6 +194,7 @@ public:
             mat_writer.write<tipl::io::masked_sloped>("dir0",voxel.fib_dir,voxel.dim.plane_size());
         }
         else
+        if(voxel.needs("fa"))
             mat_writer.write<tipl::io::masked_sloped>("dti_fa",voxel.fib_fa,voxel.dim.plane_size());
 
         mat_writer.write<tipl::io::masked_sloped>("txx",txx,voxel.dim.plane_size());

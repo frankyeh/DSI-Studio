@@ -90,7 +90,6 @@ public:
     tessellated_icosahedron ti;
 public:
     std::string file_name;
-    bool output_odf = false;
     unsigned int max_fiber_number = 3;
     std::vector<std::string> file_list;
 public:
@@ -115,7 +114,7 @@ public:
     unsigned int crop_size = 1024;
     unsigned int margin = 128;
 public:// DTI
-    bool dti_no_high_b = true;
+    bool dti_ignore_high_b = true;
 public://used in GQI
     bool odf_resolving = false;
     bool r2_weighted = false;// used in GQI only

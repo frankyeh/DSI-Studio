@@ -62,7 +62,7 @@
          <x>0</x>
          <y>0</y>
          <width>848</width>
-         <height>636</height>
+         <height>637</height>
         </rect>
        </property>
        <attribute name="label">
@@ -394,7 +394,7 @@
          <x>0</x>
          <y>0</y>
          <width>848</width>
-         <height>636</height>
+         <height>637</height>
         </rect>
        </property>
        <attribute name="label">
@@ -404,7 +404,7 @@
         <item>
          <widget class="QGroupBox" name="groupBox_2">
           <property name="title">
-           <string>Step T2a: confirm mask coverage on white matter</string>
+           <string>Step T2a: specify mask</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
            <property name="topMargin">
@@ -594,7 +594,7 @@
             <item>
              <widget class="QGroupBox" name="method_group">
               <property name="title">
-               <string>Step T2b(1): select reconstruction method</string>
+               <string>Step T2b: select model</string>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_10">
                <property name="spacing">
@@ -705,6 +705,95 @@
                        <number>0</number>
                       </property>
                      </layout>
+                    </item>
+                   </layout>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_2">
+                 <property name="spacing">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="QWidget" name="GQIOption_2" native="true">
+                   <layout class="QHBoxLayout" name="GQIOption">
+                    <property name="spacing">
+                     <number>0</number>
+                    </property>
+                    <property name="leftMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>0</number>
+                    </property>
+                    <item>
+                     <widget class="QLabel" name="label_7">
+                      <property name="text">
+                       <string>Diffusion sampling length ratio:</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QDoubleSpinBox" name="diffusion_sampling">
+                      <property name="maximumSize">
+                       <size>
+                        <width>75</width>
+                        <height>16777215</height>
+                       </size>
+                      </property>
+                      <property name="decimals">
+                       <number>2</number>
+                      </property>
+                      <property name="minimum">
+                       <double>0.050000000000000</double>
+                      </property>
+                      <property name="maximum">
+                       <double>3.000000000000000</double>
+                      </property>
+                      <property name="singleStep">
+                       <double>0.050000000000000</double>
+                      </property>
+                      <property name="value">
+                       <double>1.250000000000000</double>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QCheckBox" name="odf_resolving">
+                      <property name="text">
+                       <string>Fiber+</string>
+                      </property>
+                      <property name="checked">
+                       <bool>true</bool>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <spacer name="horizontalSpacer_5">
+                      <property name="orientation">
+                       <enum>Qt::Horizontal</enum>
+                      </property>
+                      <property name="sizeHint" stdset="0">
+                       <size>
+                        <width>40</width>
+                        <height>20</height>
+                       </size>
+                      </property>
+                     </spacer>
                     </item>
                    </layout>
                   </widget>
@@ -853,14 +942,11 @@
              </widget>
             </item>
             <item>
-             <widget class="QGroupBox" name="param_group">
+             <widget class="QGroupBox" name="groupBox">
               <property name="title">
-               <string>Step T2b(2): specify parameters</string>
+               <string>Step T2c: specify outputs</string>
               </property>
-              <layout class="QVBoxLayout" name="verticalLayout_7">
-               <property name="spacing">
-                <number>6</number>
-               </property>
+              <layout class="QVBoxLayout" name="verticalLayout_15">
                <property name="topMargin">
                 <number>3</number>
                </property>
@@ -868,19 +954,153 @@
                 <number>6</number>
                </property>
                <item>
-                <layout class="QHBoxLayout" name="horizontalLayout_2">
+                <layout class="QHBoxLayout" name="horizontalLayout_12">
                  <property name="spacing">
                   <number>0</number>
                  </property>
                  <property name="topMargin">
                   <number>0</number>
                  </property>
-                 <property name="rightMargin">
+                 <item>
+                  <widget class="QLabel" name="label_8">
+                   <property name="text">
+                    <string>DTI metrics:</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="output_fa">
+                   <property name="toolTip">
+                    <string>fa</string>
+                   </property>
+                   <property name="statusTip">
+                    <string>fa</string>
+                   </property>
+                   <property name="text">
+                    <string>fa</string>
+                   </property>
+                   <property name="checked">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="output_rd">
+                   <property name="toolTip">
+                    <string>rd</string>
+                   </property>
+                   <property name="statusTip">
+                    <string>rd</string>
+                   </property>
+                   <property name="text">
+                    <string>rd</string>
+                   </property>
+                   <property name="checked">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="output_md">
+                   <property name="toolTip">
+                    <string>md</string>
+                   </property>
+                   <property name="statusTip">
+                    <string>md</string>
+                   </property>
+                   <property name="text">
+                    <string>md</string>
+                   </property>
+                   <property name="checked">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="output_rd12">
+                   <property name="toolTip">
+                    <string>rd1,rd2</string>
+                   </property>
+                   <property name="statusTip">
+                    <string>rd1,rd2</string>
+                   </property>
+                   <property name="text">
+                    <string>rd1,rd2</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="output_tensor">
+                   <property name="toolTip">
+                    <string>tensor</string>
+                   </property>
+                   <property name="statusTip">
+                    <string>tensor</string>
+                   </property>
+                   <property name="text">
+                    <string>tensor (txx,txy,txz,tyy,tyz,tzz)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="output_helix">
+                   <property name="statusTip">
+                    <string>helix</string>
+                   </property>
+                   <property name="text">
+                    <string>helix</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <spacer name="horizontalSpacer_10">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>40</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="dti_ignore_high_b">
+                   <property name="toolTip">
+                    <string>Calculate tensor-based metrics using DWI lower than 1750 s/mm2</string>
+                   </property>
+                   <property name="statusTip">
+                    <string>calculate DTI metrics by using only b &lt; 1750</string>
+                   </property>
+                   <property name="text">
+                    <string>ignore high b</string>
+                   </property>
+                   <property name="checked">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="more_outputs">
+                   <property name="text">
+                    <string>More...</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_18">
+                 <property name="spacing">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
                   <number>0</number>
                  </property>
                  <item>
-                  <widget class="QWidget" name="GQIOption_2" native="true">
-                   <layout class="QHBoxLayout" name="GQIOption">
+                  <widget class="QWidget" name="ODF_metrics" native="true">
+                   <layout class="QHBoxLayout" name="horizontalLayout_13">
                     <property name="spacing">
                      <number>0</number>
                     </property>
@@ -897,118 +1117,39 @@
                      <number>0</number>
                     </property>
                     <item>
-                     <widget class="QLabel" name="label_7">
+                     <widget class="QLabel" name="label_10">
                       <property name="text">
-                       <string>Diffusion sampling length ratio:</string>
+                       <string>ODF metrics:</string>
                       </property>
                      </widget>
                     </item>
                     <item>
-                     <widget class="QDoubleSpinBox" name="diffusion_sampling">
-                      <property name="maximumSize">
-                       <size>
-                        <width>75</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                      <property name="decimals">
-                       <number>2</number>
-                      </property>
-                      <property name="minimum">
-                       <double>0.050000000000000</double>
-                      </property>
-                      <property name="maximum">
-                       <double>3.000000000000000</double>
-                      </property>
-                      <property name="singleStep">
-                       <double>0.050000000000000</double>
-                      </property>
-                      <property name="value">
-                       <double>1.250000000000000</double>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QCheckBox" name="odf_resolving">
-                      <property name="text">
-                       <string>Fiber+</string>
-                      </property>
-                      <property name="checked">
-                       <bool>true</bool>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <spacer name="horizontalSpacer_5">
-                      <property name="orientation">
-                       <enum>Qt::Horizontal</enum>
-                      </property>
-                      <property name="sizeHint" stdset="0">
-                       <size>
-                        <width>40</width>
-                        <height>20</height>
-                       </size>
-                      </property>
-                     </spacer>
-                    </item>
-                    <item>
-                     <widget class="QPushButton" name="AdvancedOptions">
-                      <property name="text">
-                       <string>Advanced Options &gt;&gt;</string>
-                      </property>
-                     </widget>
-                    </item>
-                   </layout>
-                  </widget>
-                 </item>
-                </layout>
-               </item>
-               <item>
-                <widget class="QWidget" name="AdvancedWidget" native="true">
-                 <layout class="QVBoxLayout" name="verticalLayout_12">
-                  <property name="spacing">
-                   <number>0</number>
-                  </property>
-                  <property name="leftMargin">
-                   <number>0</number>
-                  </property>
-                  <property name="topMargin">
-                   <number>0</number>
-                  </property>
-                  <property name="rightMargin">
-                   <number>0</number>
-                  </property>
-                  <property name="bottomMargin">
-                   <number>0</number>
-                  </property>
-                  <item>
-                   <layout class="QHBoxLayout" name="horizontalLayout_18">
-                    <property name="bottomMargin">
-                     <number>0</number>
-                    </property>
-                    <item>
-                     <widget class="QCheckBox" name="dti_no_high_b">
-                      <property name="toolTip">
-                       <string>Calculate tensor-based metrics using DWI lower than 1750 s/mm2</string>
-                      </property>
+                     <widget class="QCheckBox" name="output_gfa">
                       <property name="statusTip">
-                       <string>calculate DTI metrics by using only b &lt; 1750</string>
+                       <string>gfa</string>
                       </property>
                       <property name="text">
-                       <string>No high b for DTI</string>
-                      </property>
-                      <property name="checked">
-                       <bool>true</bool>
+                       <string>gfa</string>
                       </property>
                      </widget>
                     </item>
                     <item>
-                     <widget class="QCheckBox" name="RecordODF">
+                     <widget class="QCheckBox" name="output_rdi">
                       <property name="statusTip">
-                       <string>Output ODFs in the FIB file (will increase file size)</string>
+                       <string>rdi</string>
                       </property>
                       <property name="text">
-                       <string>Output ODFs</string>
+                       <string>rdi</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QCheckBox" name="output_odf">
+                      <property name="statusTip">
+                       <string>odf</string>
+                      </property>
+                      <property name="text">
+                       <string>odf vectors (rarely used)</string>
                       </property>
                      </widget>
                     </item>
@@ -1025,27 +1166,10 @@
                       </property>
                      </spacer>
                     </item>
-                    <item>
-                     <widget class="QLabel" name="label">
-                      <property name="toolTip">
-                       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;e.g., fa,md,ad,rd,tensor,helix,gfa,nqa,rdi,nrdi,jdet,mapping, or 'all' for all metrics&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                      </property>
-                      <property name="text">
-                       <string>Other output metrics:</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QLineEdit" name="other_output">
-                      <property name="text">
-                       <string>fa,rd,iso,rdi</string>
-                      </property>
-                     </widget>
-                    </item>
                    </layout>
-                  </item>
-                 </layout>
-                </widget>
+                  </widget>
+                 </item>
+                </layout>
                </item>
               </layout>
              </widget>
@@ -1077,7 +1201,7 @@
                <item>
                 <widget class="QLabel" name="label_6">
                  <property name="text">
-                  <string>Output:  </string>
+                  <string>Save As</string>
                  </property>
                 </widget>
                </item>
@@ -1190,7 +1314,7 @@ Reconstruction</string>
      <x>0</x>
      <y>0</y>
      <width>848</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
