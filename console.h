@@ -52,6 +52,8 @@ private slots:
 private:
     Ui::Console *ui;
     bool eventFilter(QObject *obj, QEvent *event) override;
+protected:
+    void closeEvent(QCloseEvent *event) override;
 };
 
 #endif // CONSOLE_H
