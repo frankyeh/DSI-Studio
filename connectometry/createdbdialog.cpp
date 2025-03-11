@@ -376,7 +376,7 @@ void CreateDBDialog::on_index_of_interest_currentTextChanged(const QString &arg1
         if(create_db)
             ui->output_file_name->setText(base_name + "." + ui->index_of_interest->currentText() + ".db.fz");
         else
-            ui->output_file_name->setText(base_name + ".avg.fib.gz");
+            ui->output_file_name->setText(base_name + ".avg.fz");
     }
 }
 
