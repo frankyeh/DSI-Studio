@@ -150,7 +150,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>4</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -189,8 +189,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>1264</width>
-             <height>701</height>
+             <width>1266</width>
+             <height>700</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -223,10 +223,10 @@
               <widget class="QTableWidget" name="recentFib">
                <property name="geometry">
                 <rect>
-                 <x>670</x>
-                 <y>344</y>
-                 <width>270</width>
-                 <height>311</height>
+                 <x>663</x>
+                 <y>346</y>
+                 <width>281</width>
+                 <height>303</height>
                 </rect>
                </property>
                <property name="sizePolicy">
@@ -242,7 +242,7 @@
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
+                <string notr="true">QWidget {color: black} QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
                </property>
                <property name="selectionMode">
                 <enum>QAbstractItemView::SingleSelection</enum>
@@ -265,7 +265,7 @@
                <property name="geometry">
                 <rect>
                  <x>767</x>
-                 <y>290</y>
+                 <y>296</y>
                  <width>81</width>
                  <height>41</height>
                 </rect>
@@ -277,7 +277,7 @@
                 </sizepolicy>
                </property>
                <property name="styleSheet">
-                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px; color: black}</string>
                </property>
                <property name="text">
                 <string>Clear All</string>
@@ -286,10 +286,10 @@
               <widget class="QTableWidget" name="recentSrc">
                <property name="geometry">
                 <rect>
-                 <x>350</x>
-                 <y>344</y>
-                 <width>270</width>
-                 <height>311</height>
+                 <x>339</x>
+                 <y>346</y>
+                 <width>281</width>
+                 <height>303</height>
                 </rect>
                </property>
                <property name="sizePolicy">
@@ -305,7 +305,7 @@
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
+                <string notr="true">QWidget {color: black} QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
                </property>
                <property name="selectionMode">
                 <enum>QAbstractItemView::SingleSelection</enum>
@@ -340,7 +340,7 @@
                 </font>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 157); color: black; }</string>
                </property>
                <property name="text">
                 <string>FIB File (*.fz)</string>
@@ -355,10 +355,10 @@
               <widget class="QLabel" name="label_57">
                <property name="geometry">
                 <rect>
-                 <x>665</x>
+                 <x>654</x>
                  <y>20</y>
-                 <width>280</width>
-                 <height>641</height>
+                 <width>301</width>
+                 <height>261</height>
                 </rect>
                </property>
                <property name="styleSheet">
@@ -371,10 +371,10 @@
               <widget class="QLabel" name="label_55">
                <property name="geometry">
                 <rect>
-                 <x>345</x>
+                 <x>329</x>
                  <y>20</y>
-                 <width>280</width>
-                 <height>641</height>
+                 <width>301</width>
+                 <height>261</height>
                 </rect>
                </property>
                <property name="styleSheet">
@@ -413,8 +413,8 @@
               <widget class="QPushButton" name="clear_src_history">
                <property name="geometry">
                 <rect>
-                 <x>450</x>
-                 <y>290</y>
+                 <x>445</x>
+                 <y>296</y>
                  <width>81</width>
                  <height>41</height>
                 </rect>
@@ -426,7 +426,7 @@
                 </sizepolicy>
                </property>
                <property name="styleSheet">
-                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px; color: black}</string>
                </property>
                <property name="text">
                 <string>Clear All</string>
@@ -435,7 +435,7 @@
               <widget class="QLabel" name="label_13">
                <property name="geometry">
                 <rect>
-                 <x>361</x>
+                 <x>356</x>
                  <y>30</y>
                  <width>171</width>
                  <height>170</height>
@@ -458,7 +458,7 @@
                <property name="geometry">
                 <rect>
                  <x>40</x>
-                 <y>170</y>
+                 <y>210</y>
                  <width>250</width>
                  <height>61</height>
                 </rect>
@@ -486,7 +486,7 @@
               <widget class="QCommandLinkButton" name="Reconstruction">
                <property name="geometry">
                 <rect>
-                 <x>360</x>
+                 <x>355</x>
                  <y>210</y>
                  <width>250</width>
                  <height>61</height>
@@ -531,7 +531,7 @@
               <widget class="QLabel" name="label_14">
                <property name="geometry">
                 <rect>
-                 <x>385</x>
+                 <x>380</x>
                  <y>90</y>
                  <width>191</width>
                  <height>61</height>
@@ -544,7 +544,7 @@
                 </font>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 157); color: black; }</string>
                </property>
                <property name="text">
                 <string>SRC File (*.sz)</string>
@@ -559,14 +559,14 @@
               <widget class="Line" name="line_4">
                <property name="geometry">
                 <rect>
-                 <x>145</x>
-                 <y>170</y>
+                 <x>150</x>
+                 <y>110</y>
                  <width>941</width>
                  <height>21</height>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">Line { background-color: rgba(0, 0, 0, 255); }</string>
+                <string notr="true">Line { background-color: rgba(0, 0, 0, 255); color: black; }</string>
                </property>
                <property name="frameShadow">
                 <enum>QFrame::Plain</enum>
@@ -584,7 +584,7 @@
               <widget class="QLabel" name="label_16">
                <property name="geometry">
                 <rect>
-                 <x>985</x>
+                 <x>980</x>
                  <y>20</y>
                  <width>250</width>
                  <height>321</height>
@@ -607,13 +607,13 @@
                <property name="geometry">
                 <rect>
                  <x>847</x>
-                 <y>290</y>
+                 <y>296</y>
                  <width>81</width>
                  <height>41</height>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Load...</string>
@@ -629,14 +629,14 @@
                </property>
                <property name="geometry">
                 <rect>
-                 <x>530</x>
-                 <y>290</y>
+                 <x>525</x>
+                 <y>296</y>
                  <width>81</width>
                  <height>41</height>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                </property>
                <property name="text">
                 <string>Load...</string>
@@ -652,7 +652,7 @@
                  <x>25</x>
                  <y>20</y>
                  <width>280</width>
-                 <height>641</height>
+                 <height>381</height>
                 </rect>
                </property>
                <property name="styleSheet">
@@ -662,103 +662,29 @@
                 <string/>
                </property>
               </widget>
-              <widget class="QLabel" name="label_43">
-               <property name="geometry">
-                <rect>
-                 <x>100</x>
-                 <y>30</y>
-                 <width>121</width>
-                 <height>131</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="pixmap">
-                <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
-               </property>
-               <property name="scaledContents">
-                <bool>true</bool>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-               </property>
-              </widget>
               <widget class="QLabel" name="label_45">
                <property name="geometry">
                 <rect>
-                 <x>50</x>
-                 <y>50</y>
+                 <x>60</x>
+                 <y>70</y>
                  <width>211</width>
-                 <height>81</height>
+                 <height>101</height>
                 </rect>
                </property>
                <property name="font">
                 <font>
-                 <pointsize>15</pointsize>
+                 <pointsize>13</pointsize>
                  <bold>true</bold>
                 </font>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 157); color: black; }</string>
                </property>
                <property name="text">
-                <string>NIFTI
-*.nii.gz+bval/bvec</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_10">
-               <property name="geometry">
-                <rect>
-                 <x>100</x>
-                 <y>240</y>
-                 <width>121</width>
-                 <height>131</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="pixmap">
-                <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
-               </property>
-               <property name="scaledContents">
-                <bool>true</bool>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_44">
-               <property name="geometry">
-                <rect>
-                 <x>86</x>
-                 <y>280</y>
-                 <width>151</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="font">
-                <font>
-                 <pointsize>15</pointsize>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
-               </property>
-               <property name="text">
-                <string>DICOM
-*.dcm</string>
+                <string>NIFTI (.nii.gz)
+DICOM (.dcm)
+2dseq
+Varian (.fdf)</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
@@ -771,7 +697,7 @@
                <property name="geometry">
                 <rect>
                  <x>40</x>
-                 <y>380</y>
+                 <y>270</y>
                  <width>250</width>
                  <height>61</height>
                 </rect>
@@ -812,7 +738,7 @@
                 </font>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 157); color: black; }</string>
                </property>
                <property name="text">
                 <string>Tractography</string>
@@ -828,14 +754,17 @@
                <property name="geometry">
                 <rect>
                  <x>677</x>
-                 <y>290</y>
+                 <y>296</y>
                  <width>91</width>
                  <height>41</height>
                 </rect>
                </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel { color: black; }</string>
+               </property>
                <property name="text">
                 <string>Recent
-Files</string>
+FIB Files</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
@@ -844,15 +773,18 @@ Files</string>
               <widget class="QLabel" name="label_3">
                <property name="geometry">
                 <rect>
-                 <x>360</x>
-                 <y>290</y>
+                 <x>355</x>
+                 <y>296</y>
                  <width>91</width>
                  <height>41</height>
                 </rect>
                </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel { color: black; }</string>
+               </property>
                <property name="text">
                 <string>Recent
-Files</string>
+SRC Files</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
@@ -861,14 +793,14 @@ Files</string>
               <widget class="QLabel" name="label_27">
                <property name="geometry">
                 <rect>
-                 <x>531</x>
+                 <x>526</x>
                  <y>30</y>
                  <width>81</width>
                  <height>170</height>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: lightgray; }</string>
                </property>
                <property name="text">
                 <string>B-table
@@ -883,33 +815,11 @@ Files</string>
                 <set>Qt::AlignCenter</set>
                </property>
               </widget>
-              <widget class="QLabel" name="label_39">
-               <property name="geometry">
-                <rect>
-                 <x>100</x>
-                 <y>450</y>
-                 <width>121</width>
-                 <height>131</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="pixmap">
-                <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
-               </property>
-               <property name="scaledContents">
-                <bool>true</bool>
-               </property>
-              </widget>
               <widget class="QCommandLinkButton" name="OpenDWI_2dseq">
                <property name="geometry">
                 <rect>
                  <x>40</x>
-                 <y>590</y>
+                 <y>330</y>
                  <width>250</width>
                  <height>61</height>
                 </rect>
@@ -934,36 +844,6 @@ Files</string>
                 <string>Convert 2dseq *.fdf to an SRC file</string>
                </property>
               </widget>
-              <widget class="QLabel" name="label_49">
-               <property name="geometry">
-                <rect>
-                 <x>80</x>
-                 <y>480</y>
-                 <width>151</width>
-                 <height>81</height>
-                </rect>
-               </property>
-               <property name="font">
-                <font>
-                 <pointsize>15</pointsize>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Others
-2dseq
-*.fdf</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
               <widget class="QLabel" name="label_40">
                <property name="geometry">
                 <rect>
@@ -980,7 +860,63 @@ Files</string>
                 <string/>
                </property>
               </widget>
+              <widget class="QLabel" name="label_66">
+               <property name="geometry">
+                <rect>
+                 <x>329</x>
+                 <y>286</y>
+                 <width>301</width>
+                 <height>375</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_67">
+               <property name="geometry">
+                <rect>
+                 <x>654</x>
+                 <y>285</y>
+                 <width>301</width>
+                 <height>375</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_51">
+               <property name="geometry">
+                <rect>
+                 <x>80</x>
+                 <y>30</y>
+                 <width>171</width>
+                 <height>170</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
               <zorder>label_40</zorder>
+              <zorder>label_67</zorder>
+              <zorder>label_66</zorder>
               <zorder>line_4</zorder>
               <zorder>label_57</zorder>
               <zorder>label_15</zorder>
@@ -992,10 +928,6 @@ Files</string>
               <zorder>OpenDWI_NIFTI</zorder>
               <zorder>Reconstruction</zorder>
               <zorder>label_16</zorder>
-              <zorder>label_43</zorder>
-              <zorder>label_45</zorder>
-              <zorder>label_10</zorder>
-              <zorder>label_44</zorder>
               <zorder>OpenDWI_DICOM</zorder>
               <zorder>label_28</zorder>
               <zorder>label_2</zorder>
@@ -1007,10 +939,10 @@ Files</string>
               <zorder>open_selected_fib</zorder>
               <zorder>recentFib</zorder>
               <zorder>recentSrc</zorder>
-              <zorder>label_39</zorder>
               <zorder>OpenDWI_2dseq</zorder>
-              <zorder>label_49</zorder>
               <zorder>label_14</zorder>
+              <zorder>label_51</zorder>
+              <zorder>label_45</zorder>
              </widget>
             </item>
            </layout>
@@ -1053,7 +985,7 @@ Files</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>1247</width>
+             <width>1252</width>
              <height>800</height>
             </rect>
            </property>
@@ -1137,8 +1069,13 @@ Files</string>
                   <height>251</height>
                  </rect>
                 </property>
+                <property name="font">
+                 <font>
+                  <pointsize>11</pointsize>
+                 </font>
+                </property>
                 <property name="styleSheet">
-                 <string notr="true">QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px; color: black; }</string>
+                 <string notr="true">QWidget { color: black} QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px; color: black; }</string>
                 </property>
                </widget>
                <widget class="QLabel" name="label_4">
@@ -1149,6 +1086,9 @@ Files</string>
                   <width>141</width>
                   <height>41</height>
                  </rect>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLabel { color: black; }</string>
                 </property>
                 <property name="text">
                  <string>Population-averaged FIB templates</string>
@@ -1170,7 +1110,7 @@ Files</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">Line { background-color: rgba(0, 0, 0, 255); }</string>
+                 <string notr="true">Line { background-color: rgba(0, 0, 0, 255); color: black; }</string>
                 </property>
                 <property name="frameShadow">
                  <enum>QFrame::Plain</enum>
@@ -1198,7 +1138,7 @@ Files</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                 <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                 </property>
                 <property name="text">
                  <string>Load...</string>
@@ -1224,7 +1164,7 @@ Files</string>
                  </font>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
+                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 157); color: black; }</string>
                 </property>
                 <property name="text">
                  <string>Template-Based
@@ -1266,7 +1206,7 @@ Tractography</string>
                <property name="geometry">
                 <rect>
                  <x>-10</x>
-                 <y>360</y>
+                 <y>350</y>
                  <width>661</width>
                  <height>351</height>
                 </rect>
@@ -1274,7 +1214,7 @@ Tractography</string>
                <widget class="QLabel" name="label_53">
                 <property name="geometry">
                  <rect>
-                  <x>395</x>
+                  <x>410</x>
                   <y>140</y>
                   <width>151</width>
                   <height>91</height>
@@ -1287,7 +1227,7 @@ Tractography</string>
                  </font>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
+                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 157); color: black; }</string>
                 </property>
                 <property name="text">
                  <string>Tractography
@@ -1310,7 +1250,7 @@ Atlas</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">Line { background-color: rgba(0, 0, 0, 255); }</string>
+                 <string notr="true">Line { background-color: rgba(0, 0, 0, 255); color: black; }</string>
                 </property>
                 <property name="frameShadow">
                  <enum>QFrame::Plain</enum>
@@ -1350,8 +1290,8 @@ Atlas</string>
                <widget class="QLabel" name="label_9">
                 <property name="geometry">
                  <rect>
-                  <x>105</x>
-                  <y>50</y>
+                  <x>99</x>
+                  <y>47</y>
                   <width>151</width>
                   <height>171</height>
                  </rect>
@@ -1395,7 +1335,7 @@ Atlas</string>
                  <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
                 </property>
                 <property name="text">
-                 <string>T1W/T2W/... Aligned Tractography</string>
+                 <string>T1W/T2W Aligned Tractography</string>
                 </property>
                 <property name="icon">
                  <iconset resource="icons.qrc">
@@ -1411,10 +1351,10 @@ Atlas</string>
                <widget class="QLabel" name="label_52">
                 <property name="geometry">
                  <rect>
-                  <x>105</x>
-                  <y>90</y>
+                  <x>104</x>
+                  <y>97</y>
                   <width>151</width>
-                  <height>91</height>
+                  <height>61</height>
                  </rect>
                 </property>
                 <property name="font">
@@ -1424,10 +1364,10 @@ Atlas</string>
                  </font>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
+                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 157); color: black; }</string>
                 </property>
                 <property name="text">
-                 <string>T1W/T2W/...
+                 <string>T1W/T2W
 (*.nii.gz)</string>
                 </property>
                 <property name="alignment">
@@ -1504,8 +1444,8 @@ Atlas</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>1264</width>
-             <height>701</height>
+             <width>1266</width>
+             <height>700</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -1921,8 +1861,8 @@ Tractography</string>
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>1264</width>
-             <height>701</height>
+             <width>1266</width>
+             <height>700</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_10">
@@ -2204,7 +2144,7 @@ Tractography</string>
                 </font>
                </property>
                <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); }</string>
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127);color: black }</string>
                </property>
                <property name="text">
                 <string>FIB File (*.fz)</string>
@@ -3135,9 +3075,9 @@ p, li { white-space: pre-wrap; }
           <widget class="QCommandLinkButton" name="averagefib">
            <property name="geometry">
             <rect>
-             <x>640</x>
-             <y>30</y>
-             <width>321</width>
+             <x>330</x>
+             <y>120</y>
+             <width>301</width>
              <height>81</height>
             </rect>
            </property>
@@ -3157,9 +3097,9 @@ p, li { white-space: pre-wrap; }
           <widget class="QCommandLinkButton" name="nonlinear_reg">
            <property name="geometry">
             <rect>
-             <x>330</x>
-             <y>120</y>
-             <width>300</width>
+             <x>640</x>
+             <y>30</y>
+             <width>321</width>
              <height>81</height>
             </rect>
            </property>
@@ -3229,6 +3169,9 @@ p, li { white-space: pre-wrap; }
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="styleSheet">
+            <string notr="true">QLabel { color: black; }</string>
+           </property>
            <property name="text">
             <string>Window Style:</string>
            </property>
@@ -3241,6 +3184,9 @@ p, li { white-space: pre-wrap; }
              <width>93</width>
              <height>29</height>
             </rect>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QPushButton { color: black; }</string>
            </property>
            <property name="text">
             <string>Reset</string>
@@ -3280,6 +3226,9 @@ p, li { white-space: pre-wrap; }
              <width>71</width>
              <height>24</height>
             </rect>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QLabel { color: black; }</string>
            </property>
            <property name="text">
             <string>GitHub PAT:</string>
