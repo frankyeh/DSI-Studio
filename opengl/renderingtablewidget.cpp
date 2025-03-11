@@ -555,8 +555,6 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
                 }
             }
         }
-        setData("tracking_plan",0); // use seed instead of tracks for dT
-        setData("track_count",1000000);
         setData("check_ending",0); // no check ending
         cur_tracking_window.handle->dir.dt_fa.clear(); // avoid slice showing previous dt
         cur_tracking_window.slice_need_update = true;
