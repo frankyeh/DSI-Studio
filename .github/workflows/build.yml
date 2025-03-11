@@ -165,7 +165,7 @@ jobs:
 
   windows_build_cpu:
     if: ${{ github.event.inputs.build_windows == 'true' }}
-    runs-on: windows-latest
+    runs-on: windows-2019
     steps:
     - uses: actions/checkout@v4.1.1
     - name: Download Build
