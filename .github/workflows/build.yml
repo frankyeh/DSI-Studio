@@ -181,6 +181,12 @@ jobs:
     - name: Build
       run: |
         call .\build_packages\build_win.bat
+        if exist "dsi_studio_win\dsi_studio.exe" (
+          echo "dsi_studio.exe exists!"
+        ) else (
+          echo "Error: dsi_studio.exe not found!" >&2
+          exit /b 1
+        )
         move dsi_studio_win.zip dsi_studio_win_cpu.zip
       shell: cmd
     - name: Create Release
@@ -209,6 +215,12 @@ jobs:
     - name: Build
       run: |
         call .\build_packages\build_win.bat
+        if exist "dsi_studio_win\dsi_studio.exe" (
+          echo "dsi_studio.exe exists!"
+        ) else (
+          echo "Error: dsi_studio.exe not found!" >&2
+          exit /b 1
+        )
       shell: cmd
     - name: Create Release
       env:
