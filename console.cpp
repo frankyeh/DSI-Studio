@@ -151,6 +151,11 @@ void Console::on_set_dir_clicked()
     ui->pwd->setText(QString("[%1]$ ./dsi_studio ").arg(QDir().current().absolutePath()));
 
 }
+void Console::closeEvent(QCloseEvent *event)
+{
+    event->ignore();
+    hide();
+}
 
 bool Console::eventFilter(QObject *obj, QEvent *event)
 {
