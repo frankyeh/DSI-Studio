@@ -1398,8 +1398,9 @@ void MainWindow::on_clear_settings_clicked()
 
 void MainWindow::on_console_clicked()
 {
-    auto* con= new Console(this);
-    con->setAttribute(Qt::WA_DeleteOnClose);
+    static Console* con(0);
+    if(!con)
+        con = new Console(this);
     con->showNormal();
 }
 
