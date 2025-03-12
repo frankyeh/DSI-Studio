@@ -125,7 +125,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
     on_zoom_valueChanged(0);
     QString out = QString("%1 %2 was used as the brain parcellation, and the connectivity matrix was calculated by using %3 of the connecting tracks.").
             arg(method).arg(ui->region_list->currentText()).arg(ui->matrix_value->currentText());
-    out += " The connectivity matrix and graph theoretical analysis was conducted using DSI Studio (http://dsi-studio.labsolver.org).";
+    out += " The connectivity matrix and graph theoretical analysis was conducted.";
     ui->report->setText(out);
 
     std::string report;
