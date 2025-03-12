@@ -149,11 +149,20 @@ struct TrackingParam
 
 
         if(max_seed_count && max_tract_count == 0) // stop by seed condition, set tract_count = seed count
+        {
             max_tract_count = max_seed_count;
+            tipl::out() << "fiber tracking using seed count as exist point";
+        }
         if(max_seed_count == 0 && max_tract_count) // stop by tract condition, set seed_count = tract_count*5000
+        {
             max_seed_count = max_tract_count*5000;
+            tipl::out() << "fiber tracking using seed count as exist point";
+        }
         if(max_seed_count < max_tract_count)
+        {
             max_seed_count = max_tract_count;
+            tipl::out() << "adjust seed count to " << max_seed_count << "match tract count";
+        }
 
         if(max_tract_count)
         {
@@ -165,9 +174,15 @@ struct TrackingParam
         else
         {
             if(dt_threshold == 0.0f)
+            {
                 report << " The seed-to-voxel ratio was set to " << track_voxel_ratio << ".";
+                tipl::out() << "differential fiber tracking using seed-to-voxel as exist point";
+            }
             else
+            {
                 report << " The tract-to-voxel ratio was set to " << track_voxel_ratio << ".";
+                tipl::out() << "fiber tracking using tract-to-voxel as exist point";
+            }
         }
 
         if(tip_iteration)
