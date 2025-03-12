@@ -629,7 +629,7 @@ bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
     if(po.has("track_id"))
     {
         tipl::out() << "Consider using action atk for automatic fiber tracking" << std::endl;
-        if(!handle->load_track_atlas())
+        if(!handle->load_track_atlas(true/*symmetric*/))
         {
             tipl::error() << handle->error_msg << std::endl;
             return false;
@@ -685,23 +685,18 @@ void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_threa
     tracking_thread.param.min_length = po.get("min_length",handle->min_length());
     tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,po.get("max_length",handle->max_length()));
 
+    tracking_thread.param.track_voxel_ratio = po.get("track_voxel_ratio",tracking_thread.param.track_voxel_ratio);
     tracking_thread.param.random_seed = uint8_t(po.get("random_seed",int(tracking_thread.param.random_seed)));
     tracking_thread.param.tracking_method = uint8_t(po.get("method",int(tracking_thread.param.tracking_method)));
     tracking_thread.param.check_ending = uint8_t(po.get("check_ending",po.has("track_id") ? 1 : 0)) && !(po.has("dt_metric1"));
     tracking_thread.param.tip_iteration = uint8_t(po.get("tip_iteration", (po.has("track_id") | po.has("dt_metric1") ) ? 16 : 0));
 
-    if (po.has("fiber_count") || po.has("track_id"))
-    {
-        tracking_thread.param.termination_count = po.get("fiber_count",100000);
-        tracking_thread.param.stop_by_tract = 1;
-        tracking_thread.param.max_seed_count = po.get("seed_count",uint32_t(tracking_thread.param.max_seed_count));
-    }
+    if(po.has("dt_metric1") || po.has("seed_count"))
+        tracking_thread.param.max_tract_count = tracking_thread.param.max_seed_count = po.get("seed_count",tracking_thread.param.max_seed_count);
     else
-    {
-        tracking_thread.param.termination_count = po.get("seed_count",po.has("dt_metric1") ? 10000000 :
-                                                        uint32_t(tracking_thread.param.termination_count));
-        tracking_thread.param.stop_by_tract = 0;
-    }
+        if(po.has("tract_count"))
+            tracking_thread.param.max_tract_count = po.get("tract_count",0);
+
 
     if(po.has("parameter_id"))
         tracking_thread.param.set_code(po.get("parameter_id"));

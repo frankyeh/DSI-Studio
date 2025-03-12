@@ -224,7 +224,7 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
 }
 void TractTableWidget::load_built_in_atlas(const std::string& tract_name)
 {
-    if(!cur_tracking_window.handle->load_track_atlas())
+    if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
     {
         QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
         return;
@@ -662,7 +662,7 @@ void TractTableWidget::recog_tracks(void)
 {
     if(currentRow() >= int(tract_models.size()) || tract_models[uint32_t(currentRow())]->get_tracts().size() == 0)
         return;
-    if(!cur_tracking_window.handle->load_track_atlas())
+    if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
     {
         QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
         return;
@@ -705,7 +705,7 @@ void TractTableWidget::recognize_and_cluster(void)
 
 void TractTableWidget::recognize_rename(void)
 {
-    if(!cur_tracking_window.handle->load_track_atlas())
+    if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
     {
         QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
         return;

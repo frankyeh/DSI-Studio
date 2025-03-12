@@ -1465,7 +1465,7 @@ void RegionTableWidget::setROIs(ThreadData* data)
             data->roi_mgr->tract_name += cur_tracking_window.ui->tract_target_2->currentText().toStdString();
         }
 
-        data->roi_mgr->tolerance_dis_in_icbm152_mm = cur_tracking_window["autotrack_tolerance"].toFloat();
+        data->roi_mgr->tolerance_dis_in_icbm152_mm = cur_tracking_window["tolerance"].toFloat();
     }
 }
 

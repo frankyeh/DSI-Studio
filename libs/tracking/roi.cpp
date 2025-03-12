@@ -2,7 +2,7 @@
 
 bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_threshold)
 {
-    if(!handle->load_track_atlas())
+    if(!handle->load_track_atlas(true/*symmetric*/))
         return false;
     tipl::progress prog("loading atlas regions");
     track_ids = handle->get_track_ids(tract_name);

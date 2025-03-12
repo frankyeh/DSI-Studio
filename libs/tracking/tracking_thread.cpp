@@ -44,11 +44,15 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
             if(roi_mgr->seeds.empty())
                 roi_mgr->setWholeBrainSeed(fa_threshold1);
 
-            if(param.termination_count == 0)
+            if(param.max_tract_count == 0)
             {
-                param.termination_count = std::max<uint32_t>(1,roi_mgr->track_voxel_ratio*roi_mgr->seeds.size());
-                param.max_seed_count = param.termination_count*5000; //yield rate easy:1/100 hard:1/5000
+                size_t t2v_count = std::max<uint32_t>(1,param.track_voxel_ratio*roi_mgr->seeds.size());
+                if(!trk->dt_metrics.empty())
+                    param.max_seed_count = param.max_tract_count = t2v_count; // differential tractography
+                else
+                    param.max_seed_count = (param.max_tract_count = t2v_count)*size_t(5000); //yield rate easy:1/100 hard:1/5000
             }
+
         }
         ready_to_track = true;
     }
@@ -66,16 +70,18 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
         method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/param.step_size));
         method->current_min_steps3 = 3*uint32_t(std::round(param.min_length/param.step_size));
     }
-    unsigned int termination_count = (thread_id == 0 ?
-        param.termination_count-(param.termination_count/thread_count)*(thread_count-1):
-        param.termination_count/thread_count);
-    unsigned int max_seed_per_thread = param.max_seed_count/thread_count;
+    unsigned int termination_tract_count = (thread_id == 0 ?
+        param.max_tract_count-(param.max_tract_count/thread_count)*(thread_count-1):
+        param.max_tract_count/thread_count);
+    unsigned int termination_seed_count = (thread_id == 0 ?
+        param.max_seed_count-(param.max_seed_count/thread_count)*(thread_count-1):
+        param.max_seed_count/thread_count);
+
     if(!roi_mgr->seeds.empty())
     try{
         while(!joining &&
-              !(param.stop_by_tract == 1 && tract_count[thread_id] >= termination_count) &&
-              !(param.stop_by_tract == 0 && seed_count[thread_id] >= termination_count) &&
-              !(param.max_seed_count > 0 && seed_count[thread_id] >= max_seed_per_thread))
+              !(tract_count[thread_id] >= termination_tract_count) &&
+              !(seed_count[thread_id] >= termination_seed_count))
         {
             ++seed_count[thread_id];
             tipl::vector<3> sub_voxel_shift;
@@ -197,12 +203,11 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
                << " with a distance tolerance of "
                << std::fixed << std::setprecision(2) << roi_mgr->tolerance_dis_in_icbm152_mm
                << " (mm) in the ICBM152 space by comparing trajectories with a tractography atlas (Yeh, Nat Commun 13(1), 4933, 2022).";
-        if(param.termination_count == 0)
-            report << " The track-to-voxel ratio was set to " << roi_mgr->track_voxel_ratio << ".";
     }
-    report << roi_mgr->report;
-    report << param.get_report();
-    report << " Shape analysis (Yeh, Neuroimage, 2020 Dec;223:117329) was conducted to derive shape metrics for tractography.";
+    report << roi_mgr->report
+           << param.get_report()
+           << " Shape analysis (Yeh, Neuroimage, 2020 Dec;223:117329) was conducted to derive shape metrics for tractography."
+           << " The analysis was conducted using " + QApplication::applicationName().toStdString() + " (http://dsi-studio.labsolver.org)";
     end_thread();
     if(thread_count < 1)
         thread_count = 1;

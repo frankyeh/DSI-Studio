@@ -464,9 +464,10 @@ void tracking_window::set_tracking_param(ThreadData& tracking_thread)
     tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,renderWidget->getData("max_length").toDouble());
 
     tracking_thread.param.tracking_method = renderWidget->getData("tracking_method").toInt();
-    tracking_thread.param.stop_by_tract = renderWidget->getData("tracking_plan").toInt();
     tracking_thread.param.check_ending = renderWidget->getData("check_ending").toInt() && (renderWidget->getData("dt_index1").toInt() == 0);
-    tracking_thread.param.termination_count = renderWidget->getData("track_count").toInt();
+    tracking_thread.param.max_seed_count = renderWidget->getData("max_seed_count").toInt();
+    tracking_thread.param.max_tract_count = renderWidget->getData("max_tract_count").toInt();
+    tracking_thread.param.track_voxel_ratio = renderWidget->getData("track_voxel_ratio").toInt();
     tracking_thread.param.default_otsu = renderWidget->getData("otsu_threshold").toFloat();
     tracking_thread.param.tip_iteration =
             // only used in automatic fiber tracking
@@ -494,9 +495,10 @@ void tracking_window::on_actionLoad_Parameter_ID_triggered()
     set_data("max_length",float(param.max_length));
 
     set_data("tracking_method",int(param.tracking_method));
-    set_data("tracking_plan",int(param.stop_by_tract));
     set_data("check_ending",int(param.check_ending));
-    set_data("track_count",int(param.termination_count));
+    set_data("max_tract_count",int(param.max_tract_count));
+    set_data("max_seed_count",int(param.max_seed_count));
+    set_data("track_voxel_ratio",float(param.track_voxel_ratio));
 
     set_data("otsu_threshold",float(param.default_otsu));
     set_data("tip_iteration",int(param.tip_iteration));
@@ -1265,7 +1267,7 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
 
 void tracking_window::on_enable_auto_track_clicked()
 {
-    if(!handle->load_track_atlas())
+    if(!handle->load_track_atlas(true/*symmetric*/))
     {
         QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
         return;

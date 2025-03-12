@@ -122,7 +122,6 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
 std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector<std::string>& file_list,int& prog)
 {
     std::string tolerance_string = po.get("tolerance","22,26,30");
-    float track_voxel_ratio = po.get("track_voxel_ratio",2.0f);
     float yield_rate = po.get("yield_rate",0.00001f);
     size_t yield_check_count = 10.0f/yield_rate;
     bool export_stat = po.get("export_stat",1);
@@ -276,7 +275,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 {
                     ThreadData thread(handle);
                     {
-                        if(!handle->load_track_atlas())
+                        if(!handle->load_track_atlas(true/*symmetric*/))
                             return handle->error_msg + " at " + fib_file_name;
 
                         if (po.has("threshold_index") && !handle->dir.set_tracking_index(po.get("threshold_index")))
@@ -296,12 +295,11 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         tipl::out() << "max_length(mm): " << thread.param.max_length << std::endl;
                         thread.param.tip_iteration = po.get("tip_iteration",32);
                         thread.param.check_ending = po.get("check_ending",1);
-                        thread.param.stop_by_tract = 1;
-                        thread.param.termination_count = 0;
+                        thread.param.track_voxel_ratio = po.get("track_voxel_ratio",thread.param.track_voxel_ratio);
                     }
                     {
                         thread.roi_mgr->use_auto_track = true;
-                        thread.roi_mgr->track_voxel_ratio = track_voxel_ratio;
+
                         thread.roi_mgr->tract_name = tract_name;
                         thread.roi_mgr->tolerance_dis_in_icbm152_mm = tolerance[tracking_iteration];
                     }
@@ -315,12 +313,12 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         while(!thread.is_ended() && !prog2.aborted())
                         {
                             std::this_thread::yield();
-                            if(!thread.param.termination_count)
+                            if(!thread.param.max_tract_count)
                             {
                                 prog2(0,1);
                                 continue;
                             }
-                            prog2(thread.get_total_tract_count(),thread.param.termination_count);
+                            prog2(thread.get_total_tract_count(),thread.param.max_tract_count);
                             // terminate if yield rate is very low, likely quality problem
                             if(thread.get_total_seed_count() > yield_check_count &&
                                thread.get_total_tract_count() < float(thread.get_total_seed_count())*yield_rate)

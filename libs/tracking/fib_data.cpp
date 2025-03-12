@@ -1507,9 +1507,8 @@ void fib_data::temp2sub(std::vector<std::vector<float> >&tracts) const
         }
     });
 }
-bool fib_data::load_track_atlas()
+bool fib_data::load_track_atlas(bool symmetric)
 {
-    tipl::progress prog("loading tractography atlas");
     if(!std::filesystem::exists(tractography_atlas_file_name))
     {
         error_msg = "no tractography atlas in ";
@@ -1524,6 +1523,7 @@ bool fib_data::load_track_atlas()
     }
     if(!track_atlas.get())
     {
+        tipl::progress prog(symmetric ?  "loading symmetric ractography atlas" : "loading asymmetric tractography atlas");
         if(!map_to_mni(tipl::show_prog))
             return false;
         // load the tract to the template space
@@ -1555,16 +1555,25 @@ bool fib_data::load_track_atlas()
 
         std::vector<std::vector<float> > new_tracts;
         std::vector<unsigned int> new_cluster;
-        for(size_t i = 0;i < tracts.size();++i)
-            if(pair[cluster[i]] < tractography_name_list.size())
-            {
-                new_tracts.push_back(tracts[i]);
-                auto& tract = new_tracts.back();
-                // mirror in the x
-                for(size_t pos = 0;pos < tract.size();pos += 3)
-                    tract[pos] = track_atlas->geo.width()-tract[pos];
-                new_cluster.push_back(pair[cluster[i]]);
-            }
+
+        if(symmetric)
+        {
+            for(size_t i = 0;i < tracts.size();++i)
+                if(pair[cluster[i]] < tractography_name_list.size())
+                {
+                    new_tracts.push_back(tracts[i]);
+                    auto& tract = new_tracts.back();
+                    // mirror in the x
+                    for(size_t pos = 0;pos < tract.size();pos += 3)
+                        tract[pos] = (template_I.shape()[0]-1)-tract[pos];
+                    new_cluster.push_back(pair[cluster[i]]);
+                }
+        }
+        else
+        {
+            new_tracts = tracts;
+            new_cluster = cluster;
+        }
 
         // add adds
         track_atlas->add_tracts(new_tracts);
@@ -1692,7 +1701,7 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,
                          std::vector<unsigned int>& labels,
                          std::vector<unsigned int>& label_count)
 {
-    if(!load_track_atlas())
+    if(!load_track_atlas(false/*asymmetric*/))
         return false;
     labels.resize(trk->get_tracts().size());
 
@@ -1721,7 +1730,7 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,
                std::vector<unsigned int>& labels,
                std::vector<std::string> & label_names)
 {
-    if(!load_track_atlas())
+    if(!load_track_atlas(false/*asymmetric*/))
         return false;
     std::vector<unsigned int> c,count;
     recognize(trk,c,count);
@@ -1745,7 +1754,7 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,
 
 bool fib_data::recognize_and_sort(std::shared_ptr<TractModel>& trk,std::multimap<float,std::string,std::greater<float> >& result)
 {
-    if(!load_track_atlas())
+    if(!load_track_atlas(false/*asymmetric*/))
         return false;
     std::vector<unsigned int> labels,count;
     if(!recognize(trk,labels,count))

@@ -18,19 +18,16 @@ struct TrackingParam
     float smooth_fraction = 0.0f;
     float min_length = 30.0f;
     float max_length = 300.0f;
-    unsigned int termination_count = 100000;
+    unsigned int max_tract_count = 0;
     unsigned int max_seed_count = 0;
-    unsigned char stop_by_tract = 1;
-    unsigned char reserved0 = 0; // center_seed DEPRECATED
-    unsigned char check_ending = 0;
-    unsigned char reserved5 = 0; // interpolation_strategy DEPRECATED
+    float track_voxel_ratio = 2.0f;
 
     unsigned char tracking_method = 0;
-    unsigned char reserved2 = 0; // initial_direction DEPRECATED
+    unsigned char check_ending = 0; // initial_direction DEPRECATED
     unsigned char reserved6 = 0; // random_seed DEPRECATED
     unsigned char tip_iteration = 0;
 
-    float dt_threshold = 0;
+    float dt_threshold = 0.0f;
     unsigned short random_seed = 0; // used in connectometry to generate different seed sequence for each permutation
     unsigned char reserved3 = 0;
     unsigned char reserved4 = 0;
@@ -101,13 +98,11 @@ struct TrackingParam
         tipl::out() << "smooth_fraction: " << smooth_fraction << std::endl;
         tipl::out() << "min_length: " << min_length << std::endl;
         tipl::out() << "max_length: " << max_length << std::endl;
-        tipl::out() << "termination_count: " << termination_count << std::endl;
+        tipl::out() << "max_tract_count: " << max_tract_count << std::endl;
         tipl::out() << "max_seed_count: " << max_seed_count << std::endl;
-        tipl::out() << "stop_by_tract: " << int(stop_by_tract) << std::endl;
-        tipl::out() << "reserved0(center_seed DEPRECATED): " << int(reserved0) << std::endl;
-        tipl::out() << "check_ending: " << int(check_ending) << std::endl;
-        tipl::out() << "reserved5(interpolation_strategy DEPRECATED): " << int(reserved5) << std::endl;
+        tipl::out() << "track_voxel_ratio: " << track_voxel_ratio << std::endl;
         tipl::out() << "tracking_method: " << int(tracking_method) << std::endl;
+        tipl::out() << "check_ending: " << int(check_ending) << std::endl;
         tipl::out() << "reserved6(random_seed DEPRECATED): " << int(reserved6) << std::endl;
         tipl::out() << "tip_iteration: " << int(tip_iteration) << std::endl;
         tipl::out() << "dt_threshold: " << dt_threshold << std::endl;
@@ -151,8 +146,30 @@ struct TrackingParam
         }
 
         report << " Tracks with length shorter than " << min_length << " or longer than " << max_length  << " mm were discarded.";
-        if(termination_count)
-            report << " A total of " << termination_count << (stop_by_tract ? " tracts were calculated.":" seeds were placed.");
+
+
+        if(max_seed_count && max_tract_count == 0) // stop by seed condition, set tract_count = seed count
+            max_tract_count = max_seed_count;
+        if(max_seed_count == 0 && max_tract_count) // stop by tract condition, set seed_count = tract_count*5000
+            max_seed_count = max_tract_count*5000;
+        if(max_seed_count < max_tract_count)
+            max_seed_count = max_tract_count;
+
+        if(max_tract_count)
+        {
+            if(max_seed_count == max_tract_count)
+                report << " A total of " << max_seed_count << " seeds were placed.";
+            else
+                report << " A total of " << max_tract_count << " tracts were tracked.";
+        }
+        else
+        {
+            if(dt_threshold == 0.0f)
+                report << " The seed-to-voxel ratio was set to " << track_voxel_ratio << ".";
+            else
+                report << " The tract-to-voxel ratio was set to " << track_voxel_ratio << ".";
+        }
+
         if(tip_iteration)
             report << " Topology-informed pruning (Yeh et al. Neurotherapeutics, 16(1), 52-58, 2019) was applied to the tractography with " << int(tip_iteration) <<
                       " iteration(s) to remove false connections.";
