@@ -92,13 +92,22 @@ public:
 public:
 
     template<bool direction>
-    bool apply_warping(const std::vector<std::string>& apply_warp_filename,const std::string& post_fix)
+    bool apply_warping(const std::vector<std::string>& apply_warp_filename,const std::string& post_fix,const std::string& output_dir)
     {
         bool result = true;
         for(const auto& each_file: apply_warp_filename)
         {
+            std::string output_file;
+            if (!output_dir.empty())
+            {
+                std::filesystem::create_directories(output_dir);
+                output_file = (std::filesystem::path(output_dir) / (std::filesystem::path(each_file).filename().string() + post_fix)).string();
+            }
+            else
+                output_file = each_file + post_fix;
+
             tipl::out() << (direction ? "warping " : "unwarping") << each_file << " into " << (each_file+post_fix);
-            if(!apply_warping<direction>(each_file.c_str(),(each_file+post_fix).c_str()))
+            if(!apply_warping<direction>(each_file.c_str(),output_file.c_str()))
             {
                 tipl::error() << error_msg;
                 result = false;
