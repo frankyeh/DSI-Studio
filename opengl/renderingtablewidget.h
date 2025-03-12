@@ -104,14 +104,14 @@ public:
     {
         auto iter = name_data_mapping.find(name);
         if(iter == name_data_mapping.end())
-            throw std::runtime_error("Cannot find the setting value");
+            throw std::runtime_error(("Cannot find the setting value: "+name.toStdString()).c_str());
         return iter->second->value;
     }
     RenderingItem& operator[](QString name)
     {
         auto iter = name_data_mapping.find(name);
         if(iter == name_data_mapping.end())
-            throw std::runtime_error("Cannot find the setting value");
+            throw std::runtime_error(("Cannot find the setting value: "+name.toStdString()).c_str());
         return *(iter->second);
     }
     QStringList get_param_list(QString root_name)
