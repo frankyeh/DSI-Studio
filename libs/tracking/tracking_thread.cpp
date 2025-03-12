@@ -42,15 +42,24 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
                 }
             }
             if(roi_mgr->seeds.empty())
+            {
+                tipl::out() << "whole brain seeding";
                 roi_mgr->setWholeBrainSeed(fa_threshold1);
+            }
 
             if(param.max_tract_count == 0)
             {
                 size_t t2v_count = std::max<uint32_t>(1,param.track_voxel_ratio*roi_mgr->seeds.size());
                 if(!trk->dt_metrics.empty())
+                {
                     param.max_seed_count = param.max_tract_count = t2v_count; // differential tractography
+                    tipl::out() << "for seed-to-voxel ratio of " << param.track_voxel_ratio << ", the maximum seed and tract counts are set to " << t2v_count;
+                }
                 else
+                {
                     param.max_seed_count = (param.max_tract_count = t2v_count)*size_t(5000); //yield rate easy:1/100 hard:1/5000
+                    tipl::out() << "for tract-to-voxel ratio of " << param.track_voxel_ratio << ", the maximum tract counts are set to " << t2v_count;
+                }
             }
 
         }
