@@ -336,8 +336,7 @@ public:
         for(size_t i = 0;i < points.size();++i)
             center += points[i];
         center /= points.size();
-        out << std::setprecision(1) << " (" << center[0] << "," << center[1] << "," << center[2]
-            << ").";
+        out << " (" << int(center[0]) << "," << int(center[1]) << "," << int(center[2]) << ").";
 
         auto output = out.str();
         report += " " + output;
