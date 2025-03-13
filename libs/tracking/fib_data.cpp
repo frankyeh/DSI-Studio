@@ -1054,12 +1054,12 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         return false;
     return !prog.aborted();
 }
-bool fib_data::load_at_resolution(const std::string& file_name,float vs)
+bool fib_data::load_at_resolution(const std::string& file_name,float reso)
 {
     tipl::progress prog("opening ",file_name);
-    tipl::out() << "resample to resolution:" << vs;
+    tipl::out() << "resample to resolution:" << reso;
     if (!mat_reader.load_from_file(file_name,prog) ||
-        !modify_fib(mat_reader,"regrid",std::to_string(vs)))
+        !modify_fib(mat_reader,"regrid",std::to_string(reso)))
     {
         error_msg = mat_reader.error_msg;
         return false;
