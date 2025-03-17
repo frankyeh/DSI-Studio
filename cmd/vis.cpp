@@ -1,54 +1,36 @@
 #include <QApplication>
 #include <QFileInfo>
-#include "libs/tracking/tract_model.hpp"
 #include "tracking/tracking_window.h"
-#include "opengl/glwidget.h"
-
-std::shared_ptr<fib_data> cmd_load_fib(tipl::program_option<tipl::out>& po);
+extern std::vector<tracking_window*> tracking_windows;
 int vis(tipl::program_option<tipl::out>& po)
 {
-    std::shared_ptr<fib_data> new_handle = cmd_load_fib(po);
-    if(!new_handle.get())
-        return 1;
-    auto prior_show_prog = tipl::show_prog;
-    tipl::show_prog = false;
-    tipl::out() << "starting gui" << std::endl;
-    tracking_window* new_mdi = new tracking_window(nullptr,new_handle);
-    new_mdi->setAttribute(Qt::WA_DeleteOnClose);
-    new_mdi->setWindowTitle(po.get("source").c_str());
-    new_mdi->show();
-    new_mdi->resize(1980,1000);
-
-    if(po.has("tract"))
+    if(tracking_windows.empty())
     {
-        std::vector<std::string> filenames;
-        if(!po.get_files("tract",filenames))
+        tipl::error() << "please load a fib file to run --action=vis";
+        return 1;
+    }
+    if(tracking_windows.size() != 1)
+    {
+        tipl::error() << "multiple fib files are currently opened. please close others.";
+        return 1;
+    }
+    if(!po.has("cmd"))
+    {
+        tipl::error() << "please specify command using --cmd";
+        return 1;
+    }
+    po.mute("cmd");
+    for(auto each : tipl::split(po.get("cmd"),'+'))
+    {
+        auto param = tipl::split(each,',');
+        if(!tracking_windows.back()->command(param[0],
+            param.size() > 1 ? param[1]:std::string(),
+            param.size() > 2 ? param[2]:std::string()))
         {
-            tipl::error() << po.error_msg << std::endl;
+            tipl::error() << tracking_windows.back()->error_msg << std::endl;
             return 1;
         }
-        QStringList tracts;
-        for(auto file : filenames)
-            tracts << file.c_str();
-        new_mdi->tractWidget->load_tracts(tracts);
-        new_mdi->tractWidget->check_all();
     }
-    QStringList cmd = QString(po.get("cmd").c_str()).split('+');
-    for(unsigned int index = 0;index < cmd.size();++index)
-    {
-        QStringList param = cmd[index].split(',');
-        if(!new_mdi->command(param[0],param.size() > 1 ? param[1]:QString(),param.size() > 2 ? param[2]:QString()))
-        {
-            tipl::error() << new_mdi->error_msg << std::endl;
-            break;
-        }
-    }
-    if(!po.has("stay_open"))
-    {
-        new_mdi->close();
-        delete new_mdi;
-    }
-    tipl::show_prog = prior_show_prog;
     return 0;
 }
 
