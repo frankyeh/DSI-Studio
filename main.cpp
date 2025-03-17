@@ -307,11 +307,16 @@ static const std::unordered_map<std::string, std::string> action_default_source 
 int run_action(tipl::program_option<tipl::out>& po)
 {
     std::string action = po.get("action");
+    if(!tipl::show_prog && (action == "cnt" || action =="vis"))
+    {
+        tipl::error() << action << " is only supported at GUI's console";
+        return 1;
+    }
     tipl::progress prog("run ",action.c_str());
     auto it = action_map.find(action);
     if (it != action_map.end())
         return it->second(po);
-    tipl::error() << "unknown action: " << action << std::endl;
+    tipl::error() << "unknown action: " << action;
     return 1;
 }
 void check_cuda(std::string& error_msg);
@@ -334,24 +339,16 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *a
     std::shared_ptr<QCoreApplication> cmd;
     if(av)
     {
-        if ((action == "cnt" && po.get("no_tractogram",1) == 0) || action == "vis")
-        {
-            tipl::out() << "Starting GUI-based command line interface." << std::endl;
-            cmd.reset(new QApplication(ac, av));
-            tipl::show_prog = true;
-        }
-        else
-            cmd.reset(new QCoreApplication(ac, av));
+        cmd.reset(new QCoreApplication(ac, av));
         if(!init_application())
             return 1;
-    }
-
-    if constexpr(tipl::use_cuda)
-    {
-        std::string cuda_msg;
-        check_cuda(cuda_msg);
-        if(has_cuda)
-            tipl::out() << "CPU/GPU computation enabled "<< std::endl;
+        if constexpr(tipl::use_cuda)
+        {
+            std::string cuda_msg;
+            check_cuda(cuda_msg);
+            if(has_cuda)
+                tipl::out() << "CPU/GPU computation enabled "<< std::endl;
+        }
     }
 
 
