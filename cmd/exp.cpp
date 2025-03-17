@@ -14,10 +14,10 @@ bool tt2trk(const char* tt_file,const char* trk_file);
 int exp(tipl::program_option<tipl::out>& po)
 {
     std::string file_name = po.get("source");
-    if(QString(file_name.c_str()).endsWith(".trk.gz"))
+    if(tipl::ends_with(file_name,".trk.gz"))
     {
         std::string output_name = po.get("output");
-        if(QString(output_name.c_str()).endsWith(".tt.gz"))
+        if(tipl::ends_with(output_name,".tt.gz"))
         {
             if(trk2tt(file_name.c_str(),output_name.c_str()))
             {
@@ -33,10 +33,10 @@ int exp(tipl::program_option<tipl::out>& po)
         tipl::error() << "unsupported file format" << std::endl;
         return 1;
     }
-    if(QString(file_name.c_str()).endsWith(".tt.gz"))
+    if(tipl::ends_with(file_name,".tt.gz"))
     {
         std::string output_name = po.get("output");
-        if(QString(output_name.c_str()).endsWith(".trk.gz"))
+        if(tipl::ends_with(output_name,".trk.gz"))
         {
             if(tt2trk(file_name.c_str(),output_name.c_str()))
             {
@@ -52,8 +52,8 @@ int exp(tipl::program_option<tipl::out>& po)
         tipl::error() << "unsupported file format" << std::endl;
         return 1;
     }
-    if(QString(file_name.c_str()).endsWith(".fib.gz") ||
-       QString(file_name.c_str()).endsWith(".fz"))
+    if(tipl::ends_with(file_name,".fib.gz") ||
+       tipl::ends_with(file_name,".fz"))
     {
         std::shared_ptr<fib_data> handle;
         handle = cmd_load_fib(po);
@@ -82,16 +82,12 @@ int exp(tipl::program_option<tipl::out>& po)
             return 0;
         }
 
-        std::istringstream in(po.get("export"));
-        std::string cmd;
-        while(std::getline(in,cmd,','))
-        {
-            if(!handle->save_mapping(cmd,file_name + "." + cmd + ".nii.gz"))
+        for(const auto& each : tipl::split(po.get("export"),','))
+            if(!handle->save_slice(each,file_name + "." + each + ".nii.gz"))
             {
                 tipl::error() << handle->error_msg;
                 return 1;
             }
-        }
         return 0;
     }
 
