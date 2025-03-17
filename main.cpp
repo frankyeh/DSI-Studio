@@ -2,6 +2,7 @@
 #include <iterator>
 #include <string>
 #include <cstdio>
+#include <unordered_set>
 #include <QApplication>
 #include <QLocalServer>
 #include <QLocalSocket>
@@ -284,25 +285,6 @@ static const std::unordered_map<std::string, int(*)(tipl::program_option<tipl::o
     {"img", img}
 };
 
-static const std::unordered_map<std::string, std::string> action_default_source = {
-    {"rec", "*.sz"},
-    {"trk", "*.fz"},
-    {"src", "*.nii.gz"},
-    {"ana", "*.fz"},
-    {"exp", "*.fz"},
-    {"atl", "*.nii.gz"},
-    {"db", ""},
-    {"tmp", "*z"},
-    {"cnt", ""},
-    {"vis", "*.fz"},
-    {"ren", ""},
-    {"cnn", ""},
-    {"qc", ""},
-    {"reg", ""},
-    {"atk", "*.fz"},
-    {"xnat", ""},
-    {"img", "*.nii.gz"}
-};
 
 int run_action(tipl::program_option<tipl::out>& po)
 {
@@ -325,17 +307,6 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *a
 {
     tipl::progress prog("command line");
     std::string action = po.get("action");
-    std::string default_source;
-
-    {
-        auto it = action_default_source.find(action);
-        if (it != action_default_source.end())
-            default_source = it->second;
-    }
-
-    std::string source = po.get("source",default_source);
-
-
     std::shared_ptr<QCoreApplication> cmd;
     if(av)
     {
@@ -356,9 +327,13 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *a
     if(po.has("loop"))
         loop = po.get("loop");
     else
-    if(source.find('*') != std::string::npos && action != "atk" && action != "src" && action != "qc" && action != "db" && action != "tmp")
-        loop = po.get("loop",source);
-
+    {
+        std::unordered_set<std::string> excluded_actions = {"atk", "src", "qc", "db", "tmp"};
+        if (excluded_actions.find(action) == excluded_actions.end() &&
+            po.has("source") &&
+            po.get("source").find('*') != std::string::npos)
+            loop = po.get("source");
+    }
     if(loop.empty())
     {
         if(run_action(po))
