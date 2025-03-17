@@ -197,8 +197,16 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     tipl::out() << "connect signal and slots " << std::endl;
     // opengl
     {
-        connect(ui->zoom_3d,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](double){glWidget->command("set_zoom",QString::number(ui->zoom_3d->value()));});
-
+        connect(ui->zoom_3d,qOverload<double>(&QDoubleSpinBox::valueChanged),this,
+                [this](double zoom)
+                {
+                    zoom /= std::pow(glWidget->transformation_matrix.det(),1.0/3.0);
+                    if(zoom < 0.99 || zoom > 1.01)
+                    {
+                        glWidget->scale_by(zoom);
+                        glWidget->update();
+                    }
+                });
         connect(ui->glSagSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
         connect(ui->glCorSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
         connect(ui->glAxiSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
@@ -459,7 +467,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionSave_3D_screen_in_3_views,SIGNAL(triggered()),glWidget,SLOT(save3ViewImage()));
         connect(ui->actionRecord_Video,SIGNAL(triggered()),glWidget,SLOT(record_video()));
         connect(ui->actionROI,&QAction::triggered,this,[this](void){scene.copyClipBoard();});
-        connect(ui->actionSave_ROI_Screen,&QAction::triggered,this,[this](void){scene.catch_screen();});
+        connect(ui->actionSave_ROI_Screen,SIGNAL(triggered()),this,SLOT(catch_screen()));
 
 
     }
@@ -992,19 +1000,19 @@ void tracking_window::updateSlicesMenu(void)
         }
         {
             auto Item = new_item(each);
-            connect(Item, SIGNAL(triggered()),&scene, SLOT(save_slice_as()));
+            connect(Item, SIGNAL(triggered()),this, SLOT(save_slice_as()));
             ui->menuE_xport->addAction(Item);
         }
     }
     // export fiber directions
     {
         auto Item = new_item("fiber");
-        connect(Item, SIGNAL(triggered()),&scene, SLOT(save_slice_as()));
+        connect(Item, SIGNAL(triggered()),this, SLOT(save_slice_as()));
         ui->menuE_xport->addAction(Item);
         if(handle->has_odfs())
         {
             auto Item = new_item("odfs");
-            connect(Item, SIGNAL(triggered()),&scene, SLOT(save_slice_as()));
+            connect(Item, SIGNAL(triggered()),this, SLOT(save_slice_as()));
             ui->menuE_xport->addAction(Item);
         }
     }
@@ -1293,7 +1301,7 @@ void tracking_window::dropEvent(QDropEvent *event)
     }
     if(!tracts.empty())
         tractWidget->load_tracts(tracts);
-    if(!regions.empty() && !regionWidget->command("load_region",regions.join(",")))
+    if(!regions.empty() && !regionWidget->command("load_region",regions.join(",").toStdString()))
         QMessageBox::critical(this,"ERROR",regionWidget->error_msg.c_str());
 }
 

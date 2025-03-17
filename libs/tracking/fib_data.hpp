@@ -362,7 +362,7 @@ public:
     bool load_from_file(const std::string& file_name);
     bool save_to_file(const std::string& file_name);
     bool load_from_mat(void);
-    bool save_mapping(const std::string& index_name,const std::string& file_name);
+    bool save_slice(const std::string& index_name,const std::string& file_name);
     bool load_at_resolution(const std::string& file_name,float vs);
 public:
     bool has_odfs(void) const{return mat_reader.has("odf0");}

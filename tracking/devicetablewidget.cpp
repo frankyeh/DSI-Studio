@@ -268,11 +268,11 @@ void DeviceTableWidget::check_all(void)
     }
     emit need_update();
 }
-bool DeviceTableWidget::command(QString cmd,QString param)
+bool DeviceTableWidget::command(const std::string& cmd,const std::string& param)
 {
     if(cmd == "save_all_devices")
     {
-        std::ofstream out(param.toStdString().c_str());
+        std::ofstream out(param);
         for (size_t i = 0; i < devices.size(); ++i)
         {
             if (item(int(i),0)->checkState() == Qt::Checked)
@@ -294,29 +294,27 @@ void DeviceTableWidget::uncheck_all(void)
     }
     emit need_update();
 }
-bool DeviceTableWidget::load_device(QStringList Filename)
+bool DeviceTableWidget::load_device(const std::string& filename)
 {
-    for(int i = 0;i < Filename.size();++i)
+    std::ifstream in(filename);
+    if(!in)
+        return false;
+    std::string line;
+    while(std::getline(in,line))
     {
-        std::ifstream in(Filename[i].toStdString().c_str());
-        if(!in)
-            return false;
-        std::string line;
-        while(std::getline(in,line))
-        {
-            new_device_str = line.c_str();
-            newDevice();
-        }
+        new_device_str = line.c_str();
+        newDevice();
     }
     return true;
 }
 void DeviceTableWidget::load_device(void)
 {
-    QStringList filenames = QFileDialog::getOpenFileNames(
-                           this,"Open device","device.dv.csv","CSV file(*dv.csv);;All files(*)");
-    if (filenames.isEmpty())
-        return;
-    load_device(filenames);
+    for(auto each : QFileDialog::getOpenFileNames(this,"Open device","device.dv.csv","CSV file(*dv.csv);;All files(*)"))
+        if(!load_device(each.toStdString()))
+        {
+            QMessageBox::critical(this,"ERROR","cannot load device file " + each);
+            return;
+        }
 }
 void DeviceTableWidget::save_device(void)
 {
@@ -350,7 +348,7 @@ void DeviceTableWidget::save_all_devices(void)
                            "CSV file(*dv.csv);;All files(*)");
     if (filename.isEmpty())
         return;
-    command("save_all_devices",filename);
+    command("save_all_devices",filename.toStdString());
 }
 
 void DeviceTableWidget::delete_device(void)

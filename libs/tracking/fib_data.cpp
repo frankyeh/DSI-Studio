@@ -540,7 +540,7 @@ bool fib_data::load_from_file(const std::string& file_name)
 }
 
 
-bool fib_data::save_mapping(const std::string& index_name,const std::string& file_name)
+bool fib_data::save_slice(const std::string& index_name,const std::string& file_name)
 {
     tipl::progress prog("saving ",file_name.c_str());
     auto save = [this,file_name](const auto& buf)->bool

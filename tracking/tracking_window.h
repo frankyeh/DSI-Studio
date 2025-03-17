@@ -19,6 +19,27 @@ namespace Ui {
     class tracking_window;
 }
 
+struct show_command{
+    std::string output;
+    std::string& error_msg;
+    show_command(std::string& error_msg_,const std::string& cmd,const std::string& param,const std::string& param2):output(cmd),error_msg(error_msg_)
+    {
+        if(!param.empty())
+        {
+            output += "," +  param;
+            if(!param2.empty())
+                output += "," +  param2;
+        }
+        error_msg.clear();
+    }
+    ~show_command(void)
+    {
+        if(!output.empty())
+            tipl::out() << "--cmd=" << output;
+        if(!error_msg.empty())
+            tipl::error() << error_msg;
+    }
+};
 class GLWidget;
 class tract_report;
 class connectivity_matrix_dialog;
@@ -106,7 +127,7 @@ public:
     void set_roi_zoom(float zoom);
 public:
     std::string error_msg;
-    bool command(QString cmd,QString param = "",QString param2 = "");
+    bool command(const std::string& cmd,const std::string& param = "",const std::string& param2 = "");
 
 public slots:
     void check_reg(void);
@@ -171,6 +192,8 @@ private slots:
     void on_actionSave_FIB_As_triggered();
     void on_alt_mapping_currentIndexChanged(int index);
     void on_directional_color_clicked();
+    void save_slice_as();
+    void catch_screen();
 };
 
 #endif // TRACKING_WINDOW_H

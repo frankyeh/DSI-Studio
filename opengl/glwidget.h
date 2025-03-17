@@ -194,7 +194,8 @@ public:
          slice_pos[0] = slice_pos[1] = slice_pos[2] = -1;
          update();
      }
-     bool command(QString cmd,QString param = "",QString param2 = "");
+     std::string error_msg;
+     bool command(const std::string& cmd,const std::string& param = "",const std::string& param2 = "");
  };
 
 #endif // GLWIDGET_H

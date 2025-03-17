@@ -270,34 +270,6 @@ void slice_view_scene::add_R_label(QPainter& painter,std::shared_ptr<SliceModel>
                          cur_tracking_window["orientation_convention"].toInt() ? Qt::AlignTop|Qt::AlignRight: Qt::AlignTop|Qt::AlignLeft,"R");
     }
 }
-bool slice_view_scene::command(QString cmd,QString param,QString param2)
-{
-    if(cmd == "save_roi_image")
-    {
-        cur_tracking_window.slice_need_update = false; // turn off simple drawing
-        paint_image(view_image,false);
-        if(param.isEmpty())
-            param = QFileInfo(cur_tracking_window.work_path).absolutePath() + "/" +
-                    QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+
-                    cur_tracking_window.ui->SliceModality->currentText()+"_"+
-                    cur_tracking_window["roi_layout"].toString()+".jpg";
-        QImage output = view_image;
-        if(cur_tracking_window["roi_layout"].toInt() > 2 && !param2.isEmpty()) //mosaic
-        {
-            int cut_row = param2.toInt();
-            output = output.copy(QRect(0,cut_row,output.width(),output.height()-cut_row-cut_row));
-        }
-        output.save(param);
-        return true;
-    }
-    if(cmd == "save_mapping")
-    {
-        if(param.isEmpty())
-            param = QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+param2+".nii.gz";
-        return cur_tracking_window.handle->save_mapping(param2.toStdString(),param.toStdString());
-    }
-    return false;
-}
 
 bool slice_view_scene::to_3d_space_single_slice(float x,float y,tipl::vector<3,float>& pos)
 {
@@ -549,39 +521,6 @@ void slice_view_scene::paint_image(QImage& out,bool simple)
             add_R_label(painter,current_slice,cur_dim);
     }
     out = I;
-}
-
-
-
-void slice_view_scene::save_slice_as()
-{
-    QAction *action = qobject_cast<QAction *>(sender());
-    if(!action)
-        return;
-    QString filename = QFileDialog::getSaveFileName(
-                0,
-                "Save as",
-                QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+
-                action->data().toString()+".nii.gz",
-                "NIFTI files (*nii.gz *.nii);;MAT files (*.mat);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    command("save_mapping",filename,action->data().toString());
-}
-
-void slice_view_scene::catch_screen()
-{
-    auto* region = cur_tracking_window.regionWidget;
-    QString filename = QFileDialog::getSaveFileName(
-                0,"Save Images files",
-                region->currentRow() >= 0 ?
-                    region->item(region->currentRow(),0)->text()+".png" :
-                    QFileInfo(cur_tracking_window.windowTitle()).baseName()+"_"+
-                    cur_tracking_window.ui->SliceModality->currentText()+".jpg",
-                    "Image files (*.png *.bmp *.jpg);;All files (*)");
-        if(filename.isEmpty())
-            return;
-    command("save_roi_image",filename,cur_tracking_window["roi_layout"].toString());
 }
 
 void slice_view_scene::copyClipBoard()

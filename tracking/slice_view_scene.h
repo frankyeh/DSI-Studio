@@ -67,7 +67,7 @@ public:
     QImage get_view_image(std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim,int pos,float display_ratio,bool simple);
     void add_R_label(QPainter& painter,std::shared_ptr<SliceModel> current_slice,unsigned char cur_dim);
     void manage_slice_orientation(QImage& slice,QImage& new_slice,unsigned char cur_dim);
-    bool command(QString cmd,QString param = "",QString param2 = "");
+public:
     void update_3d(QImage captured);
     // update cursor info
 protected:
@@ -79,10 +79,8 @@ protected:
 public slots:
     void show_slice();
     void show_complete_slice();
-    void catch_screen();
     void copyClipBoard();
     void center();
-    void save_slice_as();
 signals:
     void need_update();
 

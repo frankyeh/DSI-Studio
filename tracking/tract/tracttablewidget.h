@@ -108,7 +108,7 @@ public:
             render_time = 200;
     }
     std::string error_msg;
-    bool command(QString cmd,QString param = "",QString param2 = "");
+    bool command(const std::string& cmd,const std::string& param = "",const std::string& param2 = "");
 
 signals:
     void show_tracts(void);
