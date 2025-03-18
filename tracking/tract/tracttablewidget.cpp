@@ -1257,22 +1257,13 @@ bool TractTableWidget::command(const std::string& cmd,const std::string& param,c
         std::copy(std::istream_iterator<float>(in),
                   std::istream_iterator<float>(),
                   std::back_inserter(values));
-
         if(tract_models[uint32_t(currentRow())]->get_visible_track_count() == values.size())
         {
             tipl::out() << "assign values to each track of the current bundle";
             auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-            auto min_max = std::minmax_element(values.begin(),values.end());
-            auto color_min = *min_max.first;
-            auto color_r = *min_max.second - *min_max.first;
-            if(color_r == 0.0f)
-                color_r = 1.0f;
-            std::vector<unsigned int> colors(values.size());
-            for(int i = 0;i < values.size();++i)
-                colors[i] = color_map_rgb.value2color(values[i],color_min,color_r);
-            tract_models[uint32_t(currentRow())]->set_tract_color(colors);
+            tract_models[uint32_t(currentRow())]->loaded_values.swap(values);
             tract_rendering[uint32_t(currentRow())]->need_update = true;
-            cur_tracking_window.set_data("tract_color_style",1);//manual assigned
+            cur_tracking_window.set_data("tract_color_style",6);//loaded values
             emit show_tracts();
             return true;
         }
@@ -1287,7 +1278,7 @@ bool TractTableWidget::command(const std::string& cmd,const std::string& param,c
                     tract_rendering[index]->need_update = true;
                     ++pos;
                 }
-            cur_tracking_window.set_data("tract_color_style",6);//loaded value
+            cur_tracking_window.set_data("tract_color_style",6);//loaded values
             emit show_tracts();
             return true;
         }
