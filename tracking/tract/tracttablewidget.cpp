@@ -951,41 +951,14 @@ void TractTableWidget::load_tracts_color(void)
 
 void TractTableWidget::load_tracts_value(void)
 {
-    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
-        return;
+    QMessageBox::information(this,QApplication::applicationName(),"Open text files of space-separated values between [0 1] for each bundle or streamline");
     QString filename = QFileDialog::getOpenFileName(
             this,"Load tracts color",QFileInfo(cur_tracking_window.work_path).absolutePath(),
-            "Color files (*.txt);;All files (*)");
+            "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::ifstream in(filename.toStdString().c_str());
-    if (!in)
-        return;
-    std::vector<float> values;
-    std::copy(std::istream_iterator<float>(in),
-              std::istream_iterator<float>(),
-              std::back_inserter(values));
-    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-    if(tract_models[uint32_t(currentRow())]->get_visible_track_count() != values.size())
-    {
-        QMessageBox::critical(this,"ERROR",QString("Inconsistent track number: The text file has %1 values, but there are %2 tracks.").
-                                 arg(values.size()).arg(tract_models[uint32_t(currentRow())]->get_visible_track_count()));
-        return;
-    }
-
-    auto min_max = std::minmax_element(values.begin(),values.end());
-    auto color_min = *min_max.first;
-    auto color_r = *min_max.second - *min_max.first;
-    if(color_r == 0.0f)
-        color_r = 1.0f;
-    std::vector<unsigned int> colors(values.size());
-    for(int i = 0;i < values.size();++i)
-        colors[i] = color_map_rgb.value2color(values[i],color_min,color_r);
-
-    tract_models[uint32_t(currentRow())]->set_tract_color(colors);
-    tract_rendering[uint32_t(currentRow())]->need_update = true;
-    cur_tracking_window.set_data("tract_color_style",1);//manual assigned
-    emit show_tracts();
+    if(!command("load_tract_values",filename.toStdString()))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
 void TractTableWidget::save_tracts_color_as(void)
@@ -1266,6 +1239,62 @@ bool TractTableWidget::command(const std::string& cmd,const std::string& param,c
         cur_tracking_window.set_data("tract_color_style",1);//manual assigned
         emit show_tracts();
         return true;
+    }
+    if(cmd == "load_tract_values")
+    {
+        if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
+        {
+            error_msg = "no tract to assign values";
+            return false;
+        }
+        std::ifstream in(param);
+        if(!in)
+        {
+            error_msg = "cannot find or open " + param;
+            return false;
+        }
+        std::vector<float> values;
+        std::copy(std::istream_iterator<float>(in),
+                  std::istream_iterator<float>(),
+                  std::back_inserter(values));
+
+        if(tract_models[uint32_t(currentRow())]->get_visible_track_count() == values.size())
+        {
+            tipl::out() << "assign values to each track of the current bundle";
+            auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
+            auto min_max = std::minmax_element(values.begin(),values.end());
+            auto color_min = *min_max.first;
+            auto color_r = *min_max.second - *min_max.first;
+            if(color_r == 0.0f)
+                color_r = 1.0f;
+            std::vector<unsigned int> colors(values.size());
+            for(int i = 0;i < values.size();++i)
+                colors[i] = color_map_rgb.value2color(values[i],color_min,color_r);
+            tract_models[uint32_t(currentRow())]->set_tract_color(colors);
+            tract_rendering[uint32_t(currentRow())]->need_update = true;
+            cur_tracking_window.set_data("tract_color_style",1);//manual assigned
+            emit show_tracts();
+            return true;
+        }
+        auto checked_track = get_checked_tracks();
+        if(checked_track.size() == values.size())
+        {
+            tipl::out() << "assign values to each bundle";
+            for(unsigned int index = 0,pos = 0;index < tract_models.size();++index)
+                if(item(int(index),0)->checkState() == Qt::Checked)
+                {
+                    tract_models[index]->loaded_value = values[pos];
+                    tract_rendering[index]->need_update = true;
+                    ++pos;
+                }
+            cur_tracking_window.set_data("tract_color_style",6);//loaded value
+            emit show_tracts();
+            return true;
+        }
+        error_msg = "the number of values " + std::to_string(values.size()) +
+                    " does not match bundle count " + std::to_string(values.size()) +
+                    " or current tract count " + std::to_string(tract_models[uint32_t(currentRow())]->get_visible_track_count());
+        return false;
     }
     sc.output.clear();
     return false;
