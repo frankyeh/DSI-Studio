@@ -23,9 +23,8 @@ int vis(tipl::program_option<tipl::out>& po)
     for(auto each : tipl::split(po.get("cmd"),'+'))
     {
         auto param = tipl::split(each,',');
-        if(!tracking_windows.back()->command(param[0],
-            param.size() > 1 ? param[1]:std::string(),
-            param.size() > 2 ? param[2]:std::string()))
+        param.resize(3);
+        if(!tracking_windows.back()->command(param[0],param[1],param[2]))
         {
             tipl::error() << tracking_windows.back()->error_msg << std::endl;
             return 1;
