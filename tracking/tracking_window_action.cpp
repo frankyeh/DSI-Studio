@@ -96,7 +96,7 @@ void tracking_window::catch_screen()
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
-
+extern std::vector<tracking_window*> tracking_windows;
 bool tracking_window::command(const std::string& cmd,const std::string& param,const std::string& param2)
 {
     if(glWidget->command(cmd,param,param2))
@@ -122,6 +122,21 @@ bool tracking_window::command(const std::string& cmd,const std::string& param,co
     }
 
     auto h = history.record(error_msg,cmd,param,param2);
+    if(cmd == "open_fib")
+    {
+        std::shared_ptr<fib_data> new_handle(new fib_data);
+        if(!new_handle->load_from_file(param))
+        {
+            error_msg = new_handle->error_msg;
+            return false;
+        }
+        tracking_windows.push_back(new tracking_window(parentWidget(),new_handle));
+        tracking_windows.back()->setAttribute(Qt::WA_DeleteOnClose);
+        tracking_windows.back()->setWindowTitle(param.c_str());
+        tracking_windows.back()->showNormal();
+        tracking_windows.back()->resize(size().width(),size().height());
+        return true;
+    }
     if(cmd == "save_roi_image")
     {
         slice_need_update = false; // turn off simple drawing
