@@ -67,6 +67,7 @@ public:
             {
                 auto p = std::filesystem::path(tipl::split(output,',')[1]);
                 default_base_name = (p.parent_path() / p.stem()).string();
+                std::replace(default_base_name.begin(),default_base_name.end(),'.','_');
             }
         }
     }
@@ -133,7 +134,7 @@ public:
 public:
     std::shared_ptr<QTimer> timer2;
     void start_reg(void);
-    void set_tracking_param(ThreadData& tracking_thread);
+    std::string get_parameter_id(void);
 public:
     std::shared_ptr<tract_report> tact_report_imp;
     std::shared_ptr<connectivity_matrix_dialog> connectivity_matrix;

@@ -444,6 +444,28 @@ bool tracking_window::command(const std::string& cmd,const std::string& param,co
         on_tracking_index_currentIndexChanged((*this)["tracking_index"].toInt());
         return true;
     }
+    if(cmd == "enable_auto_track")
+    {
+        if(!handle->load_track_atlas(true/*symmetric*/))
+        {
+            error_msg = handle->error_msg;
+            return false;
+        }
+        auto level0 = handle->get_tractography_level0();
+
+        ui->enable_auto_track->setVisible(false);
+        ui->tract_target_0->setVisible(true);
+
+        ui->tract_target_0->clear();
+        ui->tract_target_0->addItem("All");
+        for(const auto& each: level0)
+            ui->tract_target_0->addItem(each.c_str());
+        ui->tract_target_0->setCurrentIndex(0);
+        raise();
+        // for adding atlas tract in t1w as fib
+        ui->perform_tracking->show();
+        return true;
+    }
     if(cmd == "set_roi_view")
     {
         if(param == "0")
@@ -523,29 +545,30 @@ bool tracking_window::command(const std::string& cmd,const std::string& param,co
     return false;
 }
 
-void tracking_window::set_tracking_param(ThreadData& tracking_thread)
+std::string tracking_window::get_parameter_id(void)
 {
-    tracking_thread.param.threshold = renderWidget->getData("fa_threshold").toFloat();
-    tracking_thread.param.dt_threshold = renderWidget->getData("dt_threshold").toFloat();
-    tracking_thread.param.cull_cos_angle = std::cos(renderWidget->getData("turning_angle").toDouble() * 3.14159265358979323846 / 180.0);
-    tracking_thread.param.step_size = renderWidget->getData("step_size").toFloat();
-    tracking_thread.param.smooth_fraction = renderWidget->getData("smoothing").toFloat();
-    tracking_thread.param.min_length = renderWidget->getData("min_length").toFloat();
-    tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,renderWidget->getData("max_length").toDouble());
+    TrackingParam param;
+    param.threshold = renderWidget->getData("fa_threshold").toFloat();
+    param.dt_threshold = renderWidget->getData("dt_threshold").toFloat();
+    param.cull_cos_angle = std::cos(renderWidget->getData("turning_angle").toDouble() * 3.14159265358979323846 / 180.0);
+    param.step_size = renderWidget->getData("step_size").toFloat();
+    param.smooth_fraction = renderWidget->getData("smoothing").toFloat();
+    param.min_length = renderWidget->getData("min_length").toFloat();
+    param.max_length = std::max<float>(param.min_length,renderWidget->getData("max_length").toDouble());
 
-    tracking_thread.param.tracking_method = renderWidget->getData("tracking_method").toInt();
-    tracking_thread.param.check_ending = renderWidget->getData("check_ending").toInt() && (renderWidget->getData("dt_index1").toInt() == 0);
-    tracking_thread.param.max_seed_count = renderWidget->getData("max_seed_count").toInt();
-    tracking_thread.param.max_tract_count = renderWidget->getData("max_tract_count").toInt();
-    tracking_thread.param.track_voxel_ratio = renderWidget->getData("track_voxel_ratio").toInt();
-    tracking_thread.param.default_otsu = renderWidget->getData("otsu_threshold").toFloat();
-    tracking_thread.param.tip_iteration =
+    param.tracking_method = renderWidget->getData("tracking_method").toInt();
+    param.check_ending = renderWidget->getData("check_ending").toInt() && (renderWidget->getData("dt_index1").toInt() == 0);
+    param.max_seed_count = renderWidget->getData("max_seed_count").toInt();
+    param.max_tract_count = renderWidget->getData("max_tract_count").toInt();
+    param.track_voxel_ratio = renderWidget->getData("track_voxel_ratio").toInt();
+    param.default_otsu = renderWidget->getData("otsu_threshold").toFloat();
+    param.tip_iteration =
             // only used in automatic fiber tracking
             (ui->tract_target_0->currentIndex() > 0 ||
             // or differential tractography
             renderWidget->getData("dt_index1").toInt() > 0)
             ? renderWidget->getData("tip_iteration").toInt() : 0;
-
+    return param.get_code();
 }
 
 
@@ -1337,24 +1360,8 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
 
 void tracking_window::on_enable_auto_track_clicked()
 {
-    if(!handle->load_track_atlas(true/*symmetric*/))
-    {
-        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-        return;
-    }
-    auto level0 = handle->get_tractography_level0();
-
-    ui->enable_auto_track->setVisible(false);
-    ui->tract_target_0->setVisible(true);
-
-    ui->tract_target_0->clear();
-    ui->tract_target_0->addItem("All");
-    for(const auto& each: level0)
-        ui->tract_target_0->addItem(each.c_str());
-    ui->tract_target_0->setCurrentIndex(0);
-    raise();
-    // for adding atlas tract in t1w as fib
-    ui->perform_tracking->show();
+    if(!command("enable_auto_track"))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
 void tracking_window::on_tract_target_0_currentIndexChanged(int index)
