@@ -26,11 +26,6 @@ private:
     static bool is_saving(const std::string& cmd);
 public:
     std::string default_base_name;
-    void set_base_name(const std::string& file_name)
-    {
-        auto p = std::filesystem::path(file_name);
-        default_base_name = (p.parent_path() / p.stem()).string();
-    }
     std::vector<std::string> commands;
     bool run(tracking_window *parent,const std::vector<std::string>& cmd);
 public:
@@ -69,7 +64,10 @@ public:
         {
             commands.push_back(output);
             if(output.find(',') < output.find('.') && output.find('.') != std::string::npos)
-                set_base_name(tipl::split(output,',')[1]);
+            {
+                auto p = std::filesystem::path(tipl::split(output,',')[1]);
+                default_base_name = (p.parent_path() / p.stem()).string();
+            }
         }
     }
 };
