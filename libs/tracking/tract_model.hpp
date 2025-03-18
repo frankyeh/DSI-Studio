@@ -32,6 +32,7 @@ public:
         // for loading multiple clusters
         // it can be empty
         std::vector<unsigned int> tract_cluster;
+        float loaded_value = 0.0f;
 public:
         static bool save_all(const char* file_name,
                              const std::vector<std::shared_ptr<TractModel> >& all);
