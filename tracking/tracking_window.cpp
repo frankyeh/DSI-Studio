@@ -85,6 +85,8 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
     tipl::progress p("processing files");
     repeating = true;
     for(size_t k = 0;p(k,file_list.size());++k)
+    {
+        tracking_window *backup_parent = nullptr;
         for(int j = 0;j < cmd.size();++j)
         {
             auto param_j = tipl::split(cmd[j],',');
@@ -97,15 +99,25 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
                 if(tipl::match_files(param[1],param_j[1],file_list[k].toStdString(),new_param_j1))
                     param_j[1] = new_param_j1;
             }
-
             param_j.resize(3);
             if(!parent->command(param_j[0],param_j[1],param_j[2]))
             {
-                QMessageBox::critical(parent,"ERROR",tracking_windows.back()->error_msg.c_str());
+                QMessageBox::critical(parent,"ERROR",parent->error_msg.c_str());
                 repeating = false;
                 return false;
             }
+            if(param_j[0] == "open_fib")
+            {
+                backup_parent = parent;
+                parent = tracking_windows.back();
+            }
         }
+        if(backup_parent)
+        {
+            delete parent;
+            parent = backup_parent;
+        }
+    }
     repeating = false;
     return true;
 }
@@ -700,8 +712,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         if((*this)["orientation_convention"].toInt() == 1)
             glWidget->set_view(2);
 
-        history.set_base_name(handle->fib_file_name);
-
+        history.record(error_msg,"open_fib",handle->fib_file_name,std::string());
     }
     tipl::out() << "GUI initialization complete" << std::endl;
 }
@@ -730,7 +741,8 @@ tracking_window::~tracking_window()
     for(size_t index = 0;index < tracking_windows.size();++index)
         if(tracking_windows[index] == this)
         {
-            tracking_windows[index] = 0;
+            tracking_windows[index] = tracking_windows.back();
+            tracking_windows.pop_back();
             break;
         }
     tractWidget->stop_tracking();
