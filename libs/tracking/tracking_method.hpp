@@ -90,7 +90,11 @@ struct TrackingParam
         unsigned char* p = reinterpret_cast<unsigned char*>(this);
         for(size_t i = 0;i < code.size();i += 2,++p)
             *p = index2char(code[i],code[i+1]);
-
+        print();
+        return true;
+    }
+    void print(void)
+    {
         tipl::out() << "threshold: " << threshold << std::endl;
         tipl::out() << "default_otsu: " << default_otsu << std::endl;
         tipl::out() << "cull_cos_angle: " << cull_cos_angle << std::endl;
@@ -109,7 +113,6 @@ struct TrackingParam
         tipl::out() << "random_seed: " << random_seed << std::endl;
         tipl::out() << "reserved3: " << int(reserved3) << std::endl;
         tipl::out() << "reserved4: " << int(reserved4) << std::endl;
-        return true;
     }
 
     std::string get_report(void)
