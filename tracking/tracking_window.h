@@ -21,10 +21,10 @@ namespace Ui {
 
 struct command_history{
 private:
-    bool repeating = false,has_other_thread = false;
     static bool is_loading(const std::string& cmd);
     static bool is_saving(const std::string& cmd);
 public:
+    bool repeating = false,has_other_thread = false;
     std::string default_base_name;
     std::vector<std::string> commands;
     bool run(tracking_window *parent,const std::vector<std::string>& cmd);
