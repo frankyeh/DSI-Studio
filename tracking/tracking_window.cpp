@@ -106,6 +106,14 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
                 repeating = false;
                 return false;
             }
+            while (parent->history.has_other_thread && !p.aborted())
+            {
+                QCoreApplication::processEvents();
+                QThread::msleep(200);
+            }
+            if(p.aborted())
+                break;
+
             if(param_j[0] == "open_fib")
             {
                 backup_parent = parent;
