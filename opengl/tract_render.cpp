@@ -433,7 +433,12 @@ void TractRender::prepare_update(tracking_window& param,
             }
             if(tract_color_style == 6) // loaded value
             {
-                assigned_colors[i] = param.tractWidget->color_map.value2color(active_tract_model->loaded_value,color_min,color_r);
+                if(active_tract_model->loaded_values.empty())
+                    assigned_colors[i] = i ? assigned_colors[0] :
+                            param.tractWidget->color_map.value2color(active_tract_model->loaded_value,color_min,color_r);
+                else
+                    if(visible[i] < active_tract_model->loaded_values.size())
+                        assigned_colors[i] = param.tractWidget->color_map.value2color(active_tract_model->loaded_values[visible[i]],color_min,color_r);
                 continue;
             }
 
