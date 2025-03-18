@@ -193,10 +193,7 @@ bool Console::eventFilter(QObject *obj, QEvent *event)
                 return true;
             }
             if (!po.has("action"))
-            {
-                tipl::error() << "invalid command, use --help for more detail" << std::endl;
-                return true;
-            }
+                po.set("action","vis");
             run_action_with_wildcard(po,0,nullptr);
             ui->cmd_line->addItem(ui->cmd_line->currentText());
             ui->cmd_line->setCurrentText(QString());
