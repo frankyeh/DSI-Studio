@@ -12,6 +12,7 @@
 #include <QApplication>
 #include <QMouseEvent>
 #include <QMessageBox>
+#include <QListWidget>
 
 #include "tracking_window.h"
 #include "ui_tracking_window.h"
@@ -53,6 +54,60 @@ QVariant tracking_window::operator[](QString name) const
 void tracking_window::set_data(QString name, QVariant value)
 {
     renderWidget->setData(name,value);
+}
+
+bool command_history::is_loading(const std::string& cmd)
+{
+    return cmd.find(',') < cmd.find('.') && cmd.find('.') != std::string::npos &&
+               (tipl::begins_with(cmd,"load_") || tipl::begins_with(cmd,"open_"));
+}
+bool command_history::is_saving(const std::string& cmd)
+{
+    return cmd.find(',') < cmd.find('.') && cmd.find('.') != std::string::npos &&  tipl::begins_with(cmd,"save_");
+}
+bool command_history::run(tracking_window *parent,const std::vector<std::string>& cmd)
+{
+    auto first_load = std::find_if(cmd.begin(),cmd.end(),[](const auto& cmd_line){return is_loading(cmd_line);});
+    if(first_load == cmd.end())
+    {
+        QMessageBox::critical(parent,"ERROR","the repeated code should have at least one file loading command");
+        return false;
+    }
+
+    auto param = tipl::split(*first_load,',');
+    QMessageBox::information(parent,QApplication::applicationName(),
+                             "select files for '" + QString::fromStdString(param[0]).replace('_',' ') + "' step");
+    auto file_list = QFileDialog::getOpenFileNames(parent,"files for " + QString::fromStdString(param[0]),param[1].c_str(),
+            QString("files (*%1);;all files (*)").arg(std::filesystem::path(param[1]).extension().string().c_str()));
+    if(file_list.isEmpty())
+        return false;
+
+    tipl::progress p("processing files");
+    repeating = true;
+    for(size_t k = 0;p(k,file_list.size());++k)
+        for(int j = 0;j < cmd.size();++j)
+        {
+            auto param_j = tipl::split(cmd[j],',');
+            if(first_load-cmd.begin() == j)
+                param_j[1] = file_list[k].toStdString();
+            else
+            if(is_loading(cmd[j]) || is_saving(cmd[j]))
+            {
+                std::string new_param_j1;
+                if(tipl::match_files(param[1],param_j[1],file_list[k].toStdString(),new_param_j1))
+                    param_j[1] = new_param_j1;
+            }
+
+            param_j.resize(3);
+            if(!parent->command(param_j[0],param_j[1],param_j[2]))
+            {
+                QMessageBox::critical(parent,"ERROR",tracking_windows.back()->error_msg.c_str());
+                repeating = false;
+                return false;
+            }
+        }
+    repeating = false;
+    return true;
 }
 
 tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_handle) :
@@ -645,6 +700,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         if((*this)["orientation_convention"].toInt() == 1)
             glWidget->set_view(2);
 
+        history.set_base_name(handle->fib_file_name);
 
     }
     tipl::out() << "GUI initialization complete" << std::endl;
@@ -1341,4 +1397,44 @@ void tracking_window::on_actionSave_FIB_As_triggered()
     QMessageBox::information(this,QApplication::applicationName(),"saved");
 }
 
+
+
+void tracking_window::on_actionCommand_History_triggered()
+{
+    QDialog dialog(this);
+    dialog.setWindowTitle("Command History");
+    dialog.resize(600, 400);
+    QVBoxLayout layout(&dialog);
+
+    QLabel label("Select the command range to repeat, make sure to include commands that open files", &dialog);
+    layout.addWidget(&label);
+
+    QListWidget listWidget(&dialog);
+    listWidget.setSelectionMode(QAbstractItemView::ExtendedSelection);
+    layout.addWidget(&listWidget);
+    for (const auto& line : history.commands)
+        listWidget.addItem(QString::fromStdString(line));
+
+    QPushButton closeButton("Close", &dialog), repeatButton("Repeat", &dialog);
+    repeatButton.setDisabled(true);
+    QHBoxLayout buttonLayout;
+    buttonLayout.addWidget(&repeatButton);
+    buttonLayout.addWidget(&closeButton);
+    layout.addLayout(&buttonLayout);
+
+    QObject::connect(&listWidget, &QListWidget::itemSelectionChanged, [&]() {
+            repeatButton.setEnabled(!listWidget.selectedItems().isEmpty());
+        });
+
+    QObject::connect(&repeatButton, &QPushButton::clicked, [&]() {
+        std::vector<std::string> selected;
+        for (auto *item : listWidget.selectedItems())
+            selected.push_back(item->text().toStdString());
+        if(history.run(this,selected))
+            QMessageBox::information(this,QApplication::applicationName(),"execution completed");
+    });
+    QObject::connect(&repeatButton, &QPushButton::clicked, &dialog, &QDialog::close);
+    QObject::connect(&closeButton, &QPushButton::clicked, &dialog, &QDialog::close);
+    dialog.exec();
+}
 

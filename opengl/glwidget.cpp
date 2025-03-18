@@ -2160,7 +2160,7 @@ QImage GLWidget::get3View(unsigned int type)
 }
 bool GLWidget::command(const std::string& cmd,const std::string& param,const std::string& param2)
 {
-    show_command sc(error_msg,cmd,param,param2);
+    auto history = cur_tracking_window.history.record(error_msg,cmd,param,param2);
     if(cmd == "save_camera")
     {
         std::ofstream out(param);
@@ -2527,7 +2527,7 @@ bool GLWidget::command(const std::string& cmd,const std::string& param,const std
         }
         return true;
     }
-    sc.output.clear();
+    history->output.clear();
     return false;
 }
 void GLWidget::catchScreen(void)
@@ -2535,7 +2535,7 @@ void GLWidget::catchScreen(void)
     QString filename = QFileDialog::getSaveFileName(
                this,
                "Save Images files",
-               QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".image.jpg",
+               QString::fromStdString(cur_tracking_window.history.default_base_name)+".jpg",
                "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -2553,7 +2553,7 @@ void GLWidget::catchScreen2(void)
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Save Images files",
-            QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".hd_image.jpg",
+            QString::fromStdString(cur_tracking_window.history.default_base_name)+"_hd.jpg",
             "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -2566,7 +2566,7 @@ void GLWidget::save3ViewImage(void)
     QString filename = QFileDialog::getSaveFileName(
             this,
             "Assign image name",
-            QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".3view_image.jpg",
+            QString::fromStdString(cur_tracking_window.history.default_base_name)+"_3v.jpg",
             "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -2580,7 +2580,7 @@ void GLWidget::saveRotationSeries(void)
     QString filename = QFileDialog::getSaveFileName(
                 this,
                 "Assign video name",
-                QFileInfo(cur_tracking_window.windowTitle()).completeBaseName()+".rotation_movie.avi",
+                QString::fromStdString(cur_tracking_window.history.default_base_name)+".avi",
                 "Video file (*.avi);;Image filess (*.jpg *.png);;All files (*)");
     if(filename.isEmpty())
         return;

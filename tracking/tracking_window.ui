@@ -528,7 +528,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>386</width>
+     <width>397</width>
      <height>50</height>
     </size>
    </property>
@@ -780,7 +780,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>280</width>
+     <width>286</width>
      <height>50</height>
     </size>
    </property>
@@ -874,7 +874,7 @@
      <x>0</x>
      <y>0</y>
      <width>1352</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -1135,6 +1135,8 @@
     <addaction name="separator"/>
     <addaction name="actionQuality_Assessment"/>
     <addaction name="actionFIB_protocol"/>
+    <addaction name="separator"/>
+    <addaction name="actionCommand_History"/>
    </widget>
    <widget class="QMenu" name="menuLayout">
     <property name="title">
@@ -4273,6 +4275,16 @@ Tracking</string>
   <action name="action3D_Screen_Left_Right_Views">
    <property name="text">
     <string>3D Screen Left/Right Views</string>
+   </property>
+  </action>
+  <action name="actionCommand_List">
+   <property name="text">
+    <string>Command List...</string>
+   </property>
+  </action>
+  <action name="actionCommand_History">
+   <property name="text">
+    <string>Command History...</string>
    </property>
   </action>
  </widget>

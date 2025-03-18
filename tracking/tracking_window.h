@@ -19,25 +19,58 @@ namespace Ui {
     class tracking_window;
 }
 
-struct show_command{
-    std::string output;
-    std::string& error_msg;
-    show_command(std::string& error_msg_,const std::string& cmd,const std::string& param,const std::string& param2):output(cmd),error_msg(error_msg_)
+struct command_history{
+private:
+    bool repeating = false;
+    static bool is_loading(const std::string& cmd);
+    static bool is_saving(const std::string& cmd);
+public:
+    std::string default_base_name;
+    void set_base_name(const std::string& file_name)
     {
+        auto p = std::filesystem::path(file_name);
+        default_base_name = (p.parent_path() / p.stem()).string();
+    }
+    std::vector<std::string> commands;
+    bool run(tracking_window *parent,const std::vector<std::string>& cmd);
+public:
+    struct surrogate {
+        std::string output;
+        std::string& error_msg;
+        surrogate(command_history& owner,std::string& error_msg_) : owner(owner),error_msg(error_msg_){}
+        ~surrogate()
+        {
+            if(!error_msg.empty())
+                tipl::error() << error_msg;
+            owner.surrogate_deleted(output);
+        }
+        command_history& owner;
+    };
+    std::shared_ptr<surrogate> record(std::string& error_msg_,const std::string& cmd,const std::string& param,const std::string& param2)
+    {
+        auto s = std::make_shared<surrogate>(*this,error_msg_);
+        s->output = cmd;
         if(!param.empty())
         {
-            output += "," +  param;
+            s->output += "," +  param;
             if(!param2.empty())
-                output += "," +  param2;
+                s->output += "," +  param2;
         }
-        error_msg.clear();
+        error_msg_.clear();
+        return s;
     }
-    ~show_command(void)
+
+    void surrogate_deleted(const std::string& output)
     {
-        if(!output.empty())
-            tipl::out() << "--cmd=" << output;
-        if(!error_msg.empty())
-            tipl::error() << error_msg;
+        if(output.empty())
+            return;
+        tipl::out() << "--cmd=" << output;
+        if(!repeating)
+        {
+            commands.push_back(output);
+            if(output.find(',') < output.find('.') && output.find('.') != std::string::npos)
+                set_base_name(tipl::split(output,',')[1]);
+        }
     }
 };
 class GLWidget;
@@ -79,6 +112,8 @@ public:
 
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dropEvent(QDropEvent *event) override;
+public:
+    command_history history;
 public:
     slice_view_scene scene;
     bool slice_need_update = false;
@@ -194,6 +229,7 @@ private slots:
     void on_directional_color_clicked();
     void save_slice_as();
     void catch_screen();
+    void on_actionCommand_History_triggered();
 };
 
 #endif // TRACKING_WINDOW_H

@@ -373,7 +373,7 @@ tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
 
 bool RegionTableWidget::command(const std::string& cmd,const std::string& param,const std::string& param2)
 {
-    show_command sc(error_msg,cmd,param,param2);
+    auto history = cur_tracking_window.history.record(error_msg,cmd,param,param2);
     if(cmd == "save_all_regions_to_dir")
     {
         tipl::progress prog("saving files");
@@ -413,7 +413,7 @@ bool RegionTableWidget::command(const std::string& cmd,const std::string& param,
         check_all();
         return true;
     }
-    sc.output.clear();
+    history->output.clear();
     return false;
 }
 void RegionTableWidget::move_slice_to_current_region(void)

@@ -103,25 +103,25 @@ bool tracking_window::command(const std::string& cmd,const std::string& param,co
         return true;
     if(!glWidget->error_msg.empty())
     {
-        QMessageBox::critical(this,"ERROR",glWidget->error_msg.c_str());
+        error_msg = glWidget->error_msg;
         return false;
     }
     if(tractWidget->command(cmd,param,param2))
         return true;
     if(!tractWidget->error_msg.empty())
     {
-        QMessageBox::critical(this,"ERROR",tractWidget->error_msg.c_str());
+        error_msg = tractWidget->error_msg;
         return false;
     }
     if(regionWidget->command(cmd,param,param2))
         return true;
     if(!regionWidget->error_msg.empty())
     {
-        QMessageBox::critical(this,"ERROR",regionWidget->error_msg.c_str());
+        error_msg = regionWidget->error_msg;
         return false;
     }
 
-    show_command sc(error_msg,cmd,param,param2);
+    auto h = history.record(error_msg,cmd,param,param2);
     if(cmd == "save_roi_image")
     {
         slice_need_update = false; // turn off simple drawing

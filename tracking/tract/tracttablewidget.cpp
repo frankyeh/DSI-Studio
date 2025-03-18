@@ -1111,8 +1111,7 @@ bool TractTableWidget::render_tracts(GLWidget* glwidget,std::chrono::high_resolu
 
 bool TractTableWidget::command(const std::string& cmd,const std::string& param,const std::string& param2)
 {
-    show_command sc(error_msg,cmd,param,param2);
-    error_msg.clear();
+    auto history = cur_tracking_window.history.record(error_msg,cmd,param,param2);
     if(cmd == "load_tracts")
     {
         // is mni space tract
@@ -1287,7 +1286,7 @@ bool TractTableWidget::command(const std::string& cmd,const std::string& param,c
                     " or current tract count " + std::to_string(tract_models[uint32_t(currentRow())]->get_visible_track_count());
         return false;
     }
-    sc.output.clear();
+    history->output.clear();
     return false;
 }
 

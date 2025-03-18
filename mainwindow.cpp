@@ -76,7 +76,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->github_release_note->setCurrentIndex(0);
     ui->github_release_note->setTabVisible(1,false);
     ui->github_open_file->setVisible(false);
-    ui->template_list->setCurrentRow(1);
+    ui->template_list->setCurrentRow(0);
 
 
 
