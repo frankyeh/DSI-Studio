@@ -21,7 +21,7 @@ namespace Ui {
 
 struct command_history{
 private:
-    bool repeating = false;
+    bool repeating = false,has_other_thread = false;
     static bool is_loading(const std::string& cmd);
     static bool is_saving(const std::string& cmd);
 public:
