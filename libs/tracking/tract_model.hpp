@@ -33,6 +33,7 @@ public:
         // it can be empty
         std::vector<unsigned int> tract_cluster;
         float loaded_value = 0.0f;
+        std::vector<float> loaded_values;
 public:
         static bool save_all(const char* file_name,
                              const std::vector<std::shared_ptr<TractModel> >& all);
