@@ -117,6 +117,7 @@ private:
     size_t cur_4d_index = 0;
     void read_4d_at(size_t index);
     void get_4d_buf(std::vector<unsigned char>& buf);
+    void set_4d_buf(const std::vector<unsigned char>& buf);
 private:// batch processing
     /*
     std::vector<tipl::image<3> > other_data;
