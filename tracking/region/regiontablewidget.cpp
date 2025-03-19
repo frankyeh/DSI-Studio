@@ -1453,19 +1453,6 @@ void RegionTableWidget::setROIs(ThreadData* data)
                                       regions[index]->to_diffusion_space,
                                       regions[index]->regions_feature,
                                       regions[index]->name.c_str());
-    // auto track
-    if(cur_tracking_window.ui->tract_target_0->currentIndex() > 0)
-    {
-        data->roi_mgr->use_auto_track = true;
-        data->roi_mgr->tract_name = cur_tracking_window.ui->tract_target_1->currentText().toStdString();
-        if(cur_tracking_window.ui->tract_target_2->currentIndex() > 0)
-        {
-            data->roi_mgr->tract_name += "_";
-            data->roi_mgr->tract_name += cur_tracking_window.ui->tract_target_2->currentText().toStdString();
-        }
-
-        data->roi_mgr->tolerance_dis_in_icbm152_mm = cur_tracking_window["tolerance"].toFloat();
-    }
 }
 
 QString RegionTableWidget::getROIname(void)

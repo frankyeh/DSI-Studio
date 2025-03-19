@@ -273,6 +273,9 @@ void TractTableWidget::start_tracking(void)
 {
 
     QString tract_name = cur_tracking_window.regionWidget->getROIname();
+    std::vector<std::string> tracking_param({std::string("run_tracking"),
+                                             tract_name.toStdString(),
+                                             cur_tracking_window.get_parameter_id()});
     if(cur_tracking_window["dt_index1"].toInt() || cur_tracking_window["dt_index2"].toInt())
     {
         if(!command({std::string("set_dt_index"),
@@ -299,14 +302,10 @@ void TractTableWidget::start_tracking(void)
             load_built_in_atlas(tract_name.toStdString());
             return;
         }
+        tracking_param[1] = tract_name.toStdString();
+        tracking_param.push_back(std::to_string(cur_tracking_window["tolerance"].toFloat()));
     }
-
-
-
-    command({std::string("run_tracking"),
-             cur_tracking_window.get_parameter_id(),
-             tract_name.toStdString()});
-
+    command(tracking_param);
 }
 
 void TractTableWidget::show_report(void)
@@ -503,7 +502,7 @@ void TractTableWidget::save_all_tracts_as(void)
         return;
     QString filename;
     filename = QFileDialog::getSaveFileName(
-                this,"Save tracts as",get_current_base_name() + output_format(),
+                this,"Save tracts as",QString::fromStdString(cur_tracking_window.history.file_stem()) + output_format(),
                 "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;NIFTI File (*nii.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -724,13 +723,6 @@ void TractTableWidget::clustering(int method_id)
     assign_colors();
 }
 
-QString TractTableWidget::get_current_base_name(void) const
-{
-    QString item_name;
-    if(currentRow() < int(tract_models.size()) && currentRow() >= 0)
-        item_name = "_" + item(currentRow(),0)->text().replace(':','_');
-    return QString::fromStdString(cur_tracking_window.history.default_base_name) + item_name;
-}
 void TractTableWidget::save_tracts_as(void)
 {
     if(currentRow() >= int(tract_models.size()) || currentRow() < 0)
@@ -738,7 +730,7 @@ void TractTableWidget::save_tracts_as(void)
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,"Save tracts as",
-                get_current_base_name() + output_format(),
+                QString::fromStdString(cur_tracking_window.history.file_stem()) + output_format(),
                  "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;TCK file (*.tck);;ROI files (*.nii *nii.gz);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -756,7 +748,7 @@ void TractTableWidget::save_all_tracts_end_point_as(void)
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,"Save end points as",
-                get_current_base_name() + "_endpoint.nii.gz",
+                QString::fromStdString(cur_tracking_window.history.file_stem()) + "_endpoint.nii.gz",
                 "NIFTI files (*nii.gz);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -777,7 +769,7 @@ void TractTableWidget::save_end_point_as(void)
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save end points as",
-                get_current_base_name() + "_endpoint.txt",
+                QString::fromStdString(cur_tracking_window.history.file_stem()) + "_endpoint.txt",
                 "Tract files (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -793,7 +785,7 @@ void TractTableWidget::save_end_point_in_mni(void)
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save end points as",
-                get_current_base_name() + "_endpoint.txt",
+                QString::fromStdString(cur_tracking_window.history.file_stem()) + "_endpoint.txt",
                 "Tract files (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -840,7 +832,7 @@ void TractTableWidget::save_transformed_tracts(void)
     filename = QFileDialog::getSaveFileName(
                 this,
                 "Save tracts as",
-                get_current_base_name() + "_" + cur_tracking_window.current_slice->get_name().c_str() + output_format(),
+                QString::fromStdString(cur_tracking_window.history.file_stem()) + "_" + cur_tracking_window.current_slice->get_name().c_str() + output_format(),
                  "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;NIFTI files (*.nii *nii.gz);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -870,7 +862,7 @@ void TractTableWidget::save_transformed_endpoints(void)
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,
-                "Save end_point as",get_current_base_name() + "_" +
+                "Save end_point as",QString::fromStdString(cur_tracking_window.history.file_stem()) + "_" +
                 cur_tracking_window.current_slice->get_name().c_str() + "_endpoints.txt",
                 "Tract files (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
@@ -895,7 +887,7 @@ void TractTableWidget::save_tracts_in_template(void)
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,
-                "Save tracts as",get_current_base_name() + " " +
+                "Save tracts as",QString::fromStdString(cur_tracking_window.history.file_stem()) + " " +
                 QFileInfo(fa_template_list[cur_tracking_window.handle->template_id].c_str()).baseName() +
                 output_format(),
                  "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;NIFTI files (*.nii *nii.gz);;All files (*)");
@@ -915,7 +907,7 @@ void TractTableWidget::save_tracts_in_mni(void)
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,
-                "Save tracts as",get_current_base_name() + "_mni" + output_format(),
+                "Save tracts as",QString::fromStdString(cur_tracking_window.history.file_stem()) + "_mni" + output_format(),
                 "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;NIFTI files (*.nii *nii.gz);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -958,7 +950,7 @@ void TractTableWidget::save_tracts_color_as(void)
         return;
     QString filename;
     filename = QFileDialog::getSaveFileName(
-                this,"Save tracts color as",get_current_base_name() + "_color.txt",
+                this,"Save tracts color as",QString::fromStdString(cur_tracking_window.history.file_stem()) + "_color.txt",
                 "Color files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -1103,7 +1095,8 @@ bool TractTableWidget::render_tracts(GLWidget* glwidget,std::chrono::high_resolu
 bool TractTableWidget::command(std::vector<std::string> cmd)
 {
     auto history = cur_tracking_window.history.record(error_msg,cmd);
-    cmd.resize(3);
+    if(cmd.size() < 3)
+        cmd.resize(3);
     if(cmd[0] == "set_dt_index")
     {
         auto pos = cmd[1].find('&');
@@ -1123,20 +1116,27 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "run_tracking")
     {
-        // cmd[1]: id
-        // cmd[2]: tract name
+        // cmd[1]: tract name
+        // cmd[2]: id
+        // cmd[3]: tolerance distance
         if(!cur_tracking_window.handle->trackable)
         {
             error_msg = "the data are not trackable";
             return false;
         }
         auto new_thread = std::make_shared<ThreadData>(cur_tracking_window.handle);
-        if(!new_thread->param.set_code(cmd[1]))
+        if(!new_thread->param.set_code(cmd[2]))
         {
             error_msg = "invalid parameter id";
             return false;
         }
-        addNewTracts(cmd[2].c_str());
+        if(cmd.size() == 4) // has auto track
+        {
+            new_thread->roi_mgr->use_auto_track = true;
+            new_thread->roi_mgr->tract_name = cmd[1];
+            new_thread->roi_mgr->tolerance_dis_in_icbm152_mm = QString(cmd[3].c_str()).toFloat();
+        }
+        addNewTracts(cmd[1].c_str());
         thread_data.back() = new_thread;
         cur_tracking_window.regionWidget->setROIs(new_thread.get());
         tipl::progress prog("initiating fiber tracking");
@@ -1147,6 +1147,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         timer->start(500);
         timer_update->start(100);
         cur_tracking_window.history.has_other_thread = true;
+        cur_tracking_window.history.default_stem2 = cmd[1];
         return true;
     }
     if(cmd[0] == "load_tracts")

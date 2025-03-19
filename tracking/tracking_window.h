@@ -25,7 +25,7 @@ private:
     static bool is_saving(const std::string& cmd);
 public:
     bool repeating = false,has_other_thread = false;
-    std::string default_base_name;
+    std::string default_parent_path,default_stem,default_stem2;
     std::vector<std::string> commands;
     bool run(tracking_window *parent,const std::vector<std::string>& cmd);
 public:
@@ -63,13 +63,23 @@ public:
         if(!repeating)
         {
             commands.push_back(output);
-            if(output.find(',') < output.find('.') && output.find('.') != std::string::npos)
+            if(is_loading(output))
             {
                 auto p = std::filesystem::path(tipl::split(output,',')[1]);
-                default_base_name = (p.parent_path() / p.stem()).string();
-                std::replace(default_base_name.begin(),default_base_name.end(),'.','_');
+                default_parent_path = p.parent_path().string();
+                default_stem2 = p.stem().string();
+                std::replace(default_stem2.begin(),default_stem2.end(),'.','_');
+                if(default_stem.empty())
+                    default_stem = default_stem2;
             }
         }
+    }
+    std::string file_stem(void) const
+    {
+        auto result = (std::filesystem::path(default_parent_path)/default_stem).string();
+        if(default_stem2 != default_stem)
+            result += "_" + default_stem2;
+        return result;
     }
 };
 class GLWidget;

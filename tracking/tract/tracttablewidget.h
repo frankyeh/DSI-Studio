@@ -48,7 +48,6 @@ public:
     void draw_tracts(unsigned char dim,int pos,
                      QImage& scaledimage,float display_ratio);
     void load_built_in_atlas(const std::string& tract_name);
-    QString get_current_base_name(void) const;
     QString output_format(void);
     template<typename fun_type>
     void for_current_bundle(fun_type&& fun)

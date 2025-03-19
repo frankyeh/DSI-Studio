@@ -67,39 +67,47 @@ bool command_history::is_saving(const std::string& cmd)
 }
 bool command_history::run(tracking_window *parent,const std::vector<std::string>& cmd)
 {
-    auto first_load = std::find_if(cmd.begin(),cmd.end(),[](const auto& cmd_line){return is_loading(cmd_line);});
-    if(first_load == cmd.end())
-    {
-        QMessageBox::critical(parent,"ERROR","the repeated code should have at least one file loading command");
-        return false;
-    }
-
-    auto param = tipl::split(*first_load,',');
-    QMessageBox::information(parent,QApplication::applicationName(),
-                             "select files for '" + QString::fromStdString(param[0]).replace('_',' ') + "' step");
-    auto file_list = QFileDialog::getOpenFileNames(parent,"files for " + QString::fromStdString(param[0]),param[1].c_str(),
-            QString("files (*%1);;all files (*)").arg(std::filesystem::path(param[1]).extension().string().c_str()));
-    if(file_list.isEmpty())
-        return false;
-
     tipl::progress p("processing files");
     repeating = true;
-    for(size_t k = 0;p(k,file_list.size());++k)
+    QStringList file_list;
+    std::string original_file;
+    int loading_index = -1;
+
+    auto first_load = std::find_if(cmd.begin(),cmd.end(),[](const auto& cmd_line){return is_loading(cmd_line);});
+    if(first_load != cmd.end())
+    {
+        loading_index = first_load-cmd.end();
+        auto param = tipl::split(*first_load,',');
+        original_file = param[1];
+        QMessageBox::information(parent,QApplication::applicationName(),
+            "select files for '" + QString::fromStdString(param[0]).replace('_',' ') + "' step");
+        file_list = QFileDialog::getOpenFileNames(parent,"files for " + QString::fromStdString(param[0]),original_file.c_str(),
+            QString("files (*%1);;all files (*)").arg(std::filesystem::path(original_file).extension().string().c_str()));
+        if(file_list.isEmpty())
+            return false;
+    }
+
+    for(size_t k = 0;p(k,std::max<int>(1,file_list.size()));++k)
     {
         tracking_window *backup_parent = nullptr;
         for(int j = 0;j < cmd.size();++j)
         {
-            auto param_j = tipl::split(cmd[j],',');
-            if(first_load-cmd.begin() == j)
-                param_j[1] = file_list[k].toStdString();
-            else
-            if(is_loading(cmd[j]) || is_saving(cmd[j]))
+            auto param = tipl::split(cmd[j],',');
+
+            if(k < file_list.size())
             {
-                std::string new_param_j1;
-                if(tipl::match_files(param[1],param_j[1],file_list[k].toStdString(),new_param_j1))
-                    param_j[1] = new_param_j1;
+                if(loading_index == j)
+                    param[1] = file_list[k].toStdString();
+                else
+                if(is_loading(cmd[j]) || is_saving(cmd[j]))
+                {
+                    std::string new_file_name;
+                    if(tipl::match_files(original_file,param[1],file_list[k].toStdString(),new_file_name))
+                        param[1] = new_file_name;
+                }
             }
-            if(!parent->command(param_j))
+
+            if(!parent->command(param))
             {
                 QMessageBox::critical(parent,"ERROR",parent->error_msg.c_str());
                 repeating = false;
@@ -113,7 +121,7 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
             if(p.aborted())
                 break;
 
-            if(param_j[0] == "open_fib")
+            if(param[0] == "open_fib")
             {
                 backup_parent = parent;
                 parent = tracking_windows.back();
