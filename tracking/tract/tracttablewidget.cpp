@@ -934,7 +934,7 @@ void TractTableWidget::load_tracts_color(void)
 
 void TractTableWidget::load_tracts_value(void)
 {
-    QMessageBox::information(this,QApplication::applicationName(),"Open text files of space-separated values between [0 1] for each bundle or streamline");
+    QMessageBox::information(this,QApplication::applicationName(),"open a text file of space-separated values between [0 1] for each bundle or streamline");
     QString filename = QFileDialog::getOpenFileName(
             this,"Load tracts color",QFileInfo(cur_tracking_window.work_path).absolutePath(),
             "Text files (*.txt);;All files (*)");
@@ -1089,6 +1089,17 @@ bool TractTableWidget::render_tracts(GLWidget* glwidget,std::chrono::high_resolu
             if(!each->render_tracts(index,glwidget,end_time))
                 return false;
     }
+    return true;
+}
+bool TractTableWidget::render_tracts(GLWidget* glwidget)
+{
+    if(!render_tracts(glwidget,std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(render_time)))
+    {
+        render_time *= 2;
+        emit show_tracts();
+        return false;
+    }
+    render_time = 200;
     return true;
 }
 
@@ -1329,7 +1340,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             return true;
         }
         error_msg = "the number of values " + std::to_string(values.size()) +
-                    " does not match bundle count " + std::to_string(values.size()) +
+                    " does not match bundle count " + std::to_string((checked_track.size()) +
                     " or current tract count " + std::to_string(tract_models[uint32_t(currentRow())]->get_visible_track_count());
         return false;
     }
