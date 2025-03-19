@@ -58,6 +58,18 @@ void view_image::get_4d_buf(std::vector<unsigned char>& buf)
         }
     });
 }
+void view_image::set_4d_buf(const std::vector<unsigned char>& buf)
+{
+    size_t size_per_image = cur_image->buf_size();
+    cur_image->apply([&](auto& I)
+    {
+        for(size_t i = 0;i < buf4d.size();++i)
+        {
+            read_4d_at(i);
+            std::memcpy(I.buf().data(),buf.data() + i*size_per_image,size_per_image);
+        }
+    });
+}
 
 bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 const std::string& cmd,
@@ -66,6 +78,7 @@ bool view_image::command(std::string cmd,std::string param1)
 {
     if(cur_image->empty())
         return true;
+    tipl::out() << std::string(param.empty() ? cmd : cmd+":"+param);
     error_msg.clear();
     bool result = true;
 
@@ -153,12 +166,27 @@ bool view_image::command(std::string cmd,std::string param1)
             read_4d_at(old_4d_index);
             goto end_command;
         }
+        if(cmd == "normalize" || cmd == "normalize_otsu_median")
+        {
+            cur_image->apply([&](auto& I)
+            {
+                typename std::remove_reference<decltype(I)>::type
+                        J(tipl::shape<3>(cur_image->shape[0],cur_image->shape[1],cur_image->shape[2]*buf4d.size()));
+                get_4d_buf(J.buf().buf());
+                result = tipl::command<void,tipl::io::gz_nifti>(J,
+                                cur_image->vs,cur_image->T,cur_image->is_mni,
+                                cmd,param1,cur_image->interpolation,cur_image->error_msg);
+                set_4d_buf(J.buf().buf());
+            });
+            read_4d_at(old_4d_index);
+            goto end_command;
+        }
         if(cmd == "concatenate_image")
         {
             cur_image->apply([&](auto& I)
             {
                 typename std::remove_reference<decltype(I)>::type new_I(I.shape());
-                result = tipl::command<tipl::out,tipl::io::gz_nifti>(new_I,cur_image->vs,cur_image->T,cur_image->is_mni,
+                result = tipl::command<void,tipl::io::gz_nifti>(new_I,cur_image->vs,cur_image->T,cur_image->is_mni,
                                 "load_image",param1,cur_image->interpolation,cur_image->error_msg);
                 if(result)
                 {
@@ -168,7 +196,7 @@ bool view_image::command(std::string cmd,std::string param1)
             });
             goto end_command;
         }
-        if(ui->apply_to_all->isChecked())
+        if(ui->apply_to_all->isChecked() || cmd == "change_type")
         {
             auto old_shape = cur_image->shape;
             auto old_vs = cur_image->vs;
