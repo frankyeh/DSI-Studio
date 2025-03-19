@@ -289,7 +289,7 @@ static const std::unordered_map<std::string, int(*)(tipl::program_option<tipl::o
 int run_action(tipl::program_option<tipl::out>& po)
 {
     std::string action = po.get("action");
-    if(!tipl::show_prog && (action == "cnt" || action =="vis"))
+    if(!tipl::show_prog && action =="vis")
     {
         tipl::error() << action << " is only supported at GUI's console";
         return 1;
