@@ -349,6 +349,9 @@
             <property name="text">
              <string>apply to all</string>
             </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
          </layout>
@@ -404,7 +407,7 @@
      <x>0</x>
      <y>0</y>
      <width>754</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
