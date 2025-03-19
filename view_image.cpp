@@ -78,7 +78,7 @@ bool view_image::command(std::string cmd,std::string param1)
 {
     if(cur_image->empty())
         return true;
-    tipl::out() << std::string(param.empty() ? cmd : cmd+":"+param);
+    tipl::out() << std::string(param1.empty() ? cmd : cmd+":"+param1);
     error_msg.clear();
     bool result = true;
 
