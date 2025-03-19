@@ -14,22 +14,22 @@ jobs:
     - name: Setup Environment
       run: |
         curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2204_cpu.zip" | jar x
-        curl -sL https://zenodo.org/record/6321169/files/mountsinai-S-sub-032156_dwi.src.gz?download=1 -o Rhesus.src.gz
+        curl -sL https://zenodo.org/record/6321169/files/mountsinai-S-sub-032156_dwi.src.gz?download=1 -o rhesus.src.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Test DTI Recon
       run: |  
         ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=1 |& tee -a log.txt
-        ls Rhesus.dti.fz
+        ls rhesus.dti.fz
         
     - name: Test GQI Recon
       run: |  
         ./dsi-studio/dsi_studio --source=*.src.gz --action=rec |& tee -a log.txt
-        ls Rhesus.gqi.fz
+        ls rhesus.gqi.fz
 
     - name: Test QSDR Recon
       run: |  
         ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=7 |& tee -a log.txt
-        ls Rhesus.qsdr.fz
+        ls rhesus.qsdr.fz
     
   test_human_recon:
     runs-on: ubuntu-22.04
@@ -37,30 +37,30 @@ jobs:
     - name: Setup Environment
       run: |
         curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2204_cpu.zip" | jar x
-        curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_DSI_203.src.gz?download=1 -o DSI.src.gz
-        curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_DTI64.src.gz?download=1 -o DTI.src.gz
-        curl -sL https://zenodo.org/record/6320992/files/20081006_M025Y_HARDI.src.gz?download=1 -o HARDI.src.gz
+        curl -sL https://github.com/data-openneuro/brain/releases/download/ds004737/sub-15852_ses-1_dwi.sz -o dsi.sz
+        curl -sL https://github.com/data-openneuro/brain/releases/download/ds000244/sub-01_ses-00_dwi.sz -o dti.sz
+        curl -sL https://github.com/data-openneuro/brain/releases/download/ds000031/sub-01_ses-004_dwi.sz -o ms.sz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Test DTI Recon
       run: |
-        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=1
-        ls DSI.dti.fz 
-        ls DTI.dti.fz 
-        ls HARDI.dti.fz 
+        ./dsi-studio/dsi_studio --source=*.sz --action=rec --method=1
+        ls dsi.dti.fz 
+        ls dti.dti.fz 
+        ls ms.dti.fz 
         
     - name: Test GQI Recon
       run: |
-        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec
-        ls DSI.gqi.fz
-        ls DTI.gqi.fz
-        ls HARDI.gqi.fz
+        ./dsi-studio/dsi_studio --source=*.sz --action=rec
+        ls dsi.gqi.fz
+        ls dti.gqi.fz
+        ls ms.gqi.fz
 
     - name: Test QSDR Recon
       run: |
-        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=7 --template=0
-        ls DSI.qsdr.fz
-        ls DTI.qsdr.fz
-        ls HARDI.qsdr.fz
+        ./dsi-studio/dsi_studio --source=*.sz --action=rec --method=7 --template=0
+        ls dsi.qsdr.fz
+        ls dti.qsdr.fz
+        ls ms.qsdr.fz
         
   test_human_tracking_qsdr:
     runs-on: ubuntu-22.04
@@ -97,31 +97,36 @@ jobs:
     - name: Setup Environment
       run: |
         curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2204_cpu.zip" | jar x
-        curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
+        curl -sL https://github.com/data-openneuro/brain/releases/download/ds001771/sub-03_dwi.gqi.fz -o gqi.fz
         curl -sL https://github.com/frankyeh/data-atlas/blob/main/human/human.QA.nii.gz?raw=true -o human.QA.nii.gz
         chmod 777 ./dsi-studio/dsi_studio
-    - name: Tracking
+    - name: Tracking&Export
       run: |
-        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --output=100206.tt.gz --export=stat,tdi
-        ls 100206.tt.gz
-        ls 100206.tt.gz.tdi.nii.gz
-        ls 100206.tt.gz.stat.txt
-        echo --------------------------------------------------------------------------------------------------
-        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --track_id=ArcuateFasciculusL --tip_iteration=0 --output=AF_L.tt.gz
+        ./dsi-studio/dsi_studio --source=gqi.fz --action=trk --output=gqi.tt.gz --export=stat,tdi
+        ls gqi.tt.gz
+        ls gqi.tt.gz.tdi.nii.gz
+        ls gqi.tt.gz.stat.txt
+    
+    - name: Tracking&Track ID
+      run: |
+        ./dsi-studio/dsi_studio --source=gqi.fz --action=trk --track_id=ArcuateFasciculusL --tip_iteration=0 --output=AF_L.tt.gz
         ls AF_L.tt.gz
-        echo --------------------------------------------------------------------------------------------------
-        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=LR.tt.gz
+    - name: Tracking&ROI
+      run: |
+        ./dsi-studio/dsi_studio --source=gqi.fz --action=trk --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=LR.tt.gz
         ls LR.tt.gz
-        echo --------------------------------------------------------------------------------------------------
-        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --fiber_count=1000000 --output=no_file --connectivity=FreeSurferDKT_Cortical --connectivity_value=count,qa
-        ls 100206.fib.gz.tt.gz.FreeSurferDKT_Cortical.count.pass.connectivity.mat
-        ls 100206.fib.gz.tt.gz.FreeSurferDKT_Cortical.count.pass.connectogram.txt
-        ls 100206.fib.gz.tt.gz.FreeSurferDKT_Cortical.count.pass.network_measures.txt
-        ls 100206.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectivity.mat
-        ls 100206.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectogram.txt
-        ls 100206.fib.gz.tt.gz.FreeSurferDKT_Cortical.qa.pass.network_measures.txt
-        echo --------------------------------------------------------------------------------------------------
-        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=trk --other_slices=human.QA.nii.gz --dt_metric1=human.QA --dt_metric2=qa --seed_count=1000000 --dt_threshold=0.1 --output=dt.tt.gz
+    - name: Tracking&Connectivity
+      run: |
+        ./dsi-studio/dsi_studio --source=gqi.fz --action=trk --output=no_file --connectivity=FreeSurferDKT_Cortical --connectivity_value=count,qa
+        ls gqi.fz.tt.gz.FreeSurferDKT_Cortical.count.pass.connectivity.mat
+        ls gqi.fz.tt.gz.FreeSurferDKT_Cortical.count.pass.connectogram.txt
+        ls gqi.fz.tt.gz.FreeSurferDKT_Cortical.count.pass.network_measures.txt
+        ls gqi.fz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectivity.mat
+        ls gqi.fz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectogram.txt
+        ls gqi.fz.tt.gz.FreeSurferDKT_Cortical.qa.pass.network_measures.txt
+    - name: Tracking&Dt
+      run: |
+        ./dsi-studio/dsi_studio --source=gqi.fz --action=trk --other_slices=human.QA.nii.gz --dt_metric1=human.QA --dt_metric2=qa --seed_count=1000000 --dt_threshold=0.1 --output=dt.tt.gz
         ls dt.tt.gz
   test_export_registration:
     runs-on: ubuntu-22.04
@@ -129,21 +134,21 @@ jobs:
     - name: Setup Environment
       run: |
         curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2204_cpu.zip" | jar x
-        curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
+        curl -sL https://github.com/data-hcp/lifespan/releases/download/hcp-ya/100206.gqi.fz -o 100206.gqi.fz
         chmod 777 ./dsi-studio/dsi_studio
         git clone https://github.com/frankyeh/data-atlas.git
         mv data-atlas atlas
     - name: Export
       run: |
-        ./dsi-studio/dsi_studio --source=100206.fib.gz --action=exp --export=qa,iso 
-        ls 100206.fib.gz.qa.nii.gz
-        ls 100206.fib.gz.iso.nii.gz
+        ./dsi-studio/dsi_studio --source=100206.gqi.fz --action=exp --export=qa,iso 
+        ls 100206.gqi.fz.qa.nii.gz
+        ls 100206.gqi.fz.iso.nii.gz
     - name: Registration
       run: |
-        ./dsi-studio/dsi_studio --action=reg --source=100206.fib.gz.qa.nii.gz --to=./atlas/human/human.QA.nii.gz
-        ls 100206.fib.gz.qa.nii.gz.wp.nii.gz
-        ./dsi-studio/dsi_studio --action=reg --source=100206.fib.gz.qa.nii.gz,100206.fib.gz.iso.nii.gz --to=./atlas/human/human.QA.nii.gz,./atlas/human/human.ISO.nii.gz
-        ls 100206.fib.gz.qa.nii.gz.wp.nii.gz
+        ./dsi-studio/dsi_studio --action=reg --source=100206.gqi.fz.qa.nii.gz --to=./atlas/human/human.QA.nii.gz
+        ls 100206.gqi.fz.qa.nii.gz.wp.nii.gz
+        ./dsi-studio/dsi_studio --action=reg --source=100206.gqi.fz.qa.nii.gz100206.gqi.fz.iso.nii.gz --to=./atlas/human/human.QA.nii.gz,./atlas/human/human.ISO.nii.gz
+        ls 100206.gqi.fz.qa.nii.gz.wp.nii.gz
 
   test_connectometry:
     runs-on: ubuntu-22.04
@@ -165,8 +170,8 @@ jobs:
     - name: Setup Environment
       run: |
         curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_ubuntu2204_cpu.zip" | jar x
-        curl -sL https://zenodo.org/record/6307812/files/100206.src.gz.gqi.1.7.fib.gz?download=1 -o 100206.fib.gz
-        curl -sL https://zenodo.org/record/6307812/files/100307.src.gz.gqi.1.7.fib.gz?download=1 -o 100307.fib.gz
+        curl -sL https://github.com/data-hcp/lifespan/releases/download/hcp-ya/100206.gqi.fz -o 100206.gqi.fz
+        curl -sL https://github.com/data-hcp/lifespan/releases/download/hcp-ya/100307.gqi.fz -o 100307.gqi.fz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Tracking
       run: |
