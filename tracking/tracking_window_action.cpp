@@ -77,7 +77,7 @@ void tracking_window::save_slice_as()
                 "NIFTI files (*nii.gz *.nii);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
-    if(!command("save_slice",filename.toStdString(),action->data().toString().toStdString()))
+    if(!command({"save_slice",filename.toStdString(),action->data().toString().toStdString()}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
@@ -92,28 +92,28 @@ void tracking_window::catch_screen()
                     "Image files (*.png *.bmp *.jpg);;All files (*)");
     if(filename.isEmpty())
             return;
-    if(!command("save_roi_image",filename.toStdString(),(*this)["roi_layout"].toString().toStdString()))
+    if(!command({"save_roi_image",filename.toStdString(),(*this)["roi_layout"].toString().toStdString()}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
 extern std::vector<tracking_window*> tracking_windows;
-bool tracking_window::command(const std::string& cmd,const std::string& param,const std::string& param2)
+bool tracking_window::command(std::vector<std::string> cmd)
 {
-    if(glWidget->command(cmd,param,param2))
+    if(glWidget->command(cmd))
         return true;
     if(!glWidget->error_msg.empty())
     {
         error_msg = glWidget->error_msg;
         return false;
     }
-    if(tractWidget->command(cmd,param,param2))
+    if(tractWidget->command(cmd))
         return true;
     if(!tractWidget->error_msg.empty())
     {
         error_msg = tractWidget->error_msg;
         return false;
     }
-    if(regionWidget->command(cmd,param,param2))
+    if(regionWidget->command(cmd))
         return true;
     if(!regionWidget->error_msg.empty())
     {
@@ -121,35 +121,36 @@ bool tracking_window::command(const std::string& cmd,const std::string& param,co
         return false;
     }
 
-    auto h = history.record(error_msg,cmd,param,param2);
-    if(cmd == "open_fib")
+    auto h = history.record(error_msg,cmd);
+    cmd.resize(3);
+    if(cmd[0] == "open_fib")
     {
         std::shared_ptr<fib_data> new_handle(new fib_data);
-        if(!new_handle->load_from_file(param))
+        if(!new_handle->load_from_file(cmd[1]))
         {
             error_msg = new_handle->error_msg;
             return false;
         }
         tracking_windows.push_back(new tracking_window(parentWidget(),new_handle));
         tracking_windows.back()->setAttribute(Qt::WA_DeleteOnClose);
-        tracking_windows.back()->setWindowTitle(param.c_str());
+        tracking_windows.back()->setWindowTitle(cmd[1].c_str());
         tracking_windows.back()->showNormal();
         tracking_windows.back()->resize(size().width(),size().height());
         return true;
     }
-    if(cmd == "save_roi_image")
+    if(cmd[0] == "save_roi_image")
     {
         slice_need_update = false; // turn off simple drawing
         scene.paint_image(scene.view_image,false);
-        auto file_name = !param.empty() ? param :
+        auto file_name = !cmd[1].empty() ? cmd[1] :
                     QFileInfo(work_path).absolutePath().toStdString() + "/" +
                     QFileInfo(windowTitle()).baseName().toStdString()+"_"+
                     ui->SliceModality->currentText().toStdString()+"_"+
                     (*this)["roi_layout"].toString().toStdString()+".jpg";
         QImage output = scene.view_image;
-        if((*this)["roi_layout"].toInt() > 2 && !param2.empty()) //mosaic
+        if((*this)["roi_layout"].toInt() > 2 && !cmd[2].empty()) //mosaic
         {
-            int cut_row = QString(param2.c_str()).toInt();
+            int cut_row = QString(cmd[2].c_str()).toInt();
             output = output.copy(QRect(0,cut_row,output.width(),output.height()-cut_row-cut_row));
         }
         if(!output.save(file_name.c_str()))
@@ -159,26 +160,41 @@ bool tracking_window::command(const std::string& cmd,const std::string& param,co
         }
         return true;
     }
-    if(cmd == "save_slice")
+    if(cmd[0] == "save_slice")
     {
-        auto file_name = !param.empty() ? param : QFileInfo(windowTitle()).baseName().toStdString()+"_"+param2+".nii.gz";
-        if(!handle->save_slice(param2,file_name))
+        auto file_name = !cmd[1].empty() ? cmd[1] :
+                QFileInfo(windowTitle()).baseName().toStdString()+"_"+cmd[2]+".nii.gz";
+        if(!handle->save_slice(cmd[2],file_name))
         {
-            error_msg = "cannot save mapping to " + param2;
+            error_msg = "cannot save mapping to " + cmd[2];
             return false;
         }
         return true;
     }
-    if(cmd == "presentation_mode")
+    if(cmd[0] == "save_all_devices")
+    {
+        auto file_name = !cmd[1].empty() ? cmd[1] :
+                QFileInfo(windowTitle()).baseName().toStdString()+".dv.csv";
+        std::ofstream out(file_name);
+        for (size_t i = 0; i < deviceWidget->devices.size(); ++i)
+            if (deviceWidget->item(int(i),0)->checkState() == Qt::Checked)
+            {
+                deviceWidget->devices[i]->name = deviceWidget->item(int(i),0)->text().toStdString();
+                out << deviceWidget->devices[i]->to_str();
+            }
+        return true;
+    }
+    if(cmd[0] == "presentation_mode")
     {
         ui->ROIdockWidget->hide();
         if(!regionWidget->rowCount())
             ui->regionDockWidget->hide();
         return true;
     }
-    if(cmd == "save_workspace")
+    if(cmd[0] == "save_workspace")
     {
-        auto dir = param.empty() ? param : QFileDialog::getExistingDirectory(this,"Save to directory",QFileInfo(windowTitle()).absolutePath()).toStdString();
+        auto dir = cmd[1].empty() ? cmd[1] :
+                QFileDialog::getExistingDirectory(this,"Save to directory",QFileInfo(windowTitle()).absolutePath()).toStdString();
         if(dir.empty())
             return false;
         if (!std::filesystem::exists(dir) || std::filesystem::is_directory(dir))
@@ -189,17 +205,17 @@ bool tracking_window::command(const std::string& cmd,const std::string& param,co
         if(tractWidget->rowCount())
         {
             std::filesystem::create_directory(dir+"/tracts");
-            tractWidget->command("save_all_tracts_to_dir",dir+"/tracts");
+            tractWidget->command({"save_all_tracts_to_dir",dir+"/tracts"});
         }
         if(regionWidget->rowCount())
         {
             std::filesystem::create_directory(dir+"/regions");
-            regionWidget->command("save_all_regions_to_dir",dir+"/regions");
+            regionWidget->command({"save_all_regions_to_dir",dir+"/regions"});
         }
         if(deviceWidget->rowCount())
         {
             std::filesystem::create_directory(dir+"/devices");
-            deviceWidget->command("save_all_devices",dir+"/devices/device.dv.csv");
+            command({"save_all_devices",dir+"/devices/device.dv.csv"});
         }
         CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
         if(reg_slice)
@@ -214,8 +230,8 @@ bool tracking_window::command(const std::string& cmd,const std::string& param,co
             reg_slice->save_mapping((dir+"/slices/" + ui->SliceModality->currentText().toStdString() + ".linear_reg.txt").c_str());
         }
 
-        command("save_setting",dir + "/setting.ini");
-        command("save_camera",dir + "/camera.txt");
+        command({"save_setting",dir + "/setting.ini"});
+        command({"save_camera",dir + "/camera.txt"});
 
         std::ofstream out(dir + "/command.txt");
         if(ui->glSagCheck->checkState())
@@ -234,9 +250,9 @@ bool tracking_window::command(const std::string& cmd,const std::string& param,co
         return true;
 
     }
-    if(cmd == "load_workspace")
+    if(cmd[0] == "load_workspace")
     {
-        auto dir = param.empty() ? param : QFileDialog::getExistingDirectory(this,"Save to directory",QFileInfo(windowTitle()).absolutePath()).toStdString();
+        auto dir = !cmd[1].empty() ? cmd[1] : QFileDialog::getExistingDirectory(this,"Save to directory",QFileInfo(windowTitle()).absolutePath()).toStdString();
         if(dir.empty())
             return false;
         if(!std::filesystem::exists(dir))
@@ -250,7 +266,7 @@ bool tracking_window::command(const std::string& cmd,const std::string& param,co
             if(tractWidget->rowCount())
                 tractWidget->delete_all_tract();
             for(const auto& each : tipl::search_files(dir+"/tracts","*tt.gz"))
-                tractWidget->command("load_tracts",each);
+                tractWidget->command({std::string("load_tracts"),each});
         }
 
         prog(1,5);
@@ -262,7 +278,7 @@ bool tracking_window::command(const std::string& cmd,const std::string& param,co
                 {
                     auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
                     if(reg_slice.get())
-                        reg_slice->load_mapping((param+"/slices/" + ui->SliceModality->currentText().toStdString() + ".linear_reg.txt").c_str());
+                        reg_slice->load_mapping((dir+"/slices/" + ui->SliceModality->currentText().toStdString() + ".linear_reg.txt").c_str());
                 }
         }
 
@@ -281,77 +297,74 @@ bool tracking_window::command(const std::string& cmd,const std::string& param,co
             if(regionWidget->rowCount())
                 regionWidget->delete_all_region();
             for(const auto& each : tipl::search_files(dir+"/regions","*nii.gz"))
-                regionWidget->command("load_region",each);
+                regionWidget->command({"load_region",each});
         }
 
         prog(4,5);
 
-        command("load_setting",param + "/setting.ini");
-        command("load_camera",param + "/camera.txt");
+        command({"load_setting",dir + "/setting.ini"});
+        command({"load_camera",dir + "/camera.txt"});
 
-        std::ifstream in(param + "/command.txt");
+        std::ifstream in(dir + "/command.txt");
         std::string line;
         while(std::getline(in,line))
         {
             std::istringstream in2(line);
-            std::string cmd_,param_,param2_;
-            in2 >> cmd_ >> param_ >> param2_;
-            command(cmd_.c_str(),param_.empty() ? "":param_.c_str(),param2_.empty() ? "":param2_.c_str());
+            std::vector<std::string> cmd2;
+            std::copy(std::istream_iterator<std::string>(in2),std::istream_iterator<std::string>(),std::back_inserter(cmd2));
+            command(cmd2);
         }
 
         std::string readme;
         if(std::filesystem::exists(dir+"/README"))
         {
-            std::ifstream in(param+"/README");
+            std::ifstream in(dir+"/README");
             readme = std::string((std::istreambuf_iterator<char>(in)),std::istreambuf_iterator<char>());
         }
         report((readme + "\r\nMethods\r\n" + handle->report).c_str());
         return true;
     }
-    if(cmd == "load_setting")
+    if(cmd[0] == "save_setting" || cmd[0] == "save_rendering_setting" || cmd[0] == "save_tracking_setting")
     {
-        if(!std::filesystem::exists(param))
-        {
-            error_msg = "cannot find " + param;
-            return false;
-        }
-        QSettings s(param.c_str(), QSettings::IniFormat);
-        for(const auto& each : renderWidget->treemodel->getParamList())
-            if(s.contains(each))
-                set_data(each,s.value(each));
-        glWidget->update();
-        return true;
-    }
-    if(cmd == "save_setting")
-    {
-        QSettings s(param.c_str(), QSettings::IniFormat);
-        for(const auto& each : renderWidget->treemodel->getParamList())
-            s.setValue(each,renderWidget->getData(each));
-        return true;
-    }
-    if(cmd == "save_rendering_setting")
-    {
-        auto filename = !param.empty() ? param :
-            QFileDialog::getSaveFileName(this,"Save INI files",QFileInfo(windowTitle()).baseName()+"_rendering.ini","Setting file (*.ini);;All files (*)").toStdString();
+        auto filename = !cmd[1].empty()  ? cmd[1] :
+                QFileDialog::getSaveFileName(this,"Save INI files",QFileInfo(windowTitle()).baseName()
+                                             +cmd[0].substr(5).c_str() + ".ini","Setting file (*.ini);;All files (*)").toStdString();
         if (filename.empty())
             return false;
         QSettings s(filename.c_str(), QSettings::IniFormat);
-        QStringList param_list = renderWidget->treemodel->get_param_list("ROI");
-        param_list += renderWidget->treemodel->get_param_list("Rendering");
-        param_list += renderWidget->treemodel->get_param_list("Slice");
-        param_list += renderWidget->treemodel->get_param_list("Tract");
-        param_list += renderWidget->treemodel->get_param_list("Region");
-        param_list += renderWidget->treemodel->get_param_list("Surface");
-        param_list += renderWidget->treemodel->get_param_list("Device");
-        param_list += renderWidget->treemodel->get_param_list("Label");
-        param_list += renderWidget->treemodel->get_param_list("ODF");
-        for(int index = 0;index < param_list.size();++index)
-            s.setValue(param_list[index],renderWidget->getData(param_list[index]));
+        if(cmd[0] == "save_setting")
+        {
+            for(const auto& each : renderWidget->treemodel->getParamList())
+                s.setValue(each,renderWidget->getData(each));
+        }
+        if(cmd[0] == "save_rendering_setting")
+        {
+            QStringList param_list = renderWidget->treemodel->get_param_list("ROI");
+            param_list += renderWidget->treemodel->get_param_list("Rendering");
+            param_list += renderWidget->treemodel->get_param_list("Slice");
+            param_list += renderWidget->treemodel->get_param_list("Tract");
+            param_list += renderWidget->treemodel->get_param_list("Region");
+            param_list += renderWidget->treemodel->get_param_list("Surface");
+            param_list += renderWidget->treemodel->get_param_list("Device");
+            param_list += renderWidget->treemodel->get_param_list("Label");
+            param_list += renderWidget->treemodel->get_param_list("ODF");
+            for(int index = 0;index < param_list.size();++index)
+                s.setValue(param_list[index],renderWidget->getData(param_list[index]));
+        }
+        if(cmd[0] == "save_tracking_setting")
+        {
+            QStringList param_list = renderWidget->treemodel->get_param_list("Tracking");
+            param_list += renderWidget->treemodel->get_param_list("Tracking_dT");
+            param_list += renderWidget->treemodel->get_param_list("Tracking_adv");
+            for(int index = 0;index < param_list.size();++index)
+                s.setValue(param_list[index],renderWidget->getData(param_list[index]));
+            return true;
+        }
         return true;
     }
-    if(cmd == "load_rendering_setting")
+    if(cmd[0] == "load_setting" || cmd[0] == "load_rendering_setting" || cmd[0] == "load_tracking_setting")
     {
-        auto filename = !param.empty() ? param :
+        auto filename = !cmd[1].empty() ? cmd[1] :
             QFileDialog::getOpenFileName(this,"Open INI files",QFileInfo(work_path).absolutePath(),"Setting file (*.ini);;All files (*)").toStdString();
         if(filename.empty())
             return false;
@@ -361,60 +374,41 @@ bool tracking_window::command(const std::string& cmd,const std::string& param,co
             return false;
         }
         QSettings s(filename.c_str(), QSettings::IniFormat);
-        QStringList param_list = renderWidget->treemodel->get_param_list("ROI");
-        param_list += renderWidget->treemodel->get_param_list("Rendering");
-        param_list += renderWidget->treemodel->get_param_list("Slice");
-        param_list += renderWidget->treemodel->get_param_list("Tract");
-        param_list += renderWidget->treemodel->get_param_list("Region");
-        param_list += renderWidget->treemodel->get_param_list("Surface");
-        param_list += renderWidget->treemodel->get_param_list("Device");
-        param_list += renderWidget->treemodel->get_param_list("Label");
-        param_list += renderWidget->treemodel->get_param_list("ODF");
-        for(int index = 0;index < param_list.size();++index)
-            if(s.contains(param_list[index]))
-                set_data(param_list[index],s.value(param_list[index]));
-        return true;
-    }
-    if(cmd == "save_tracking_setting")
-    {
-        auto filename = !param.empty() ? param :
-            QFileDialog::getSaveFileName(this,"Save INI files",QFileInfo(windowTitle()).baseName()+"_tracking.ini","Setting file (*.ini);;All files (*)").toStdString();
-        if(filename.empty())
-            return false;
-        if(!std::filesystem::exists(filename))
+        if(cmd[0] == "load_setting")
         {
-            error_msg = "cannot find " + filename;
-            return false;
+            for(const auto& each : renderWidget->treemodel->getParamList())
+                if(s.contains(each))
+                    set_data(each,s.value(each));
+            glWidget->update();
         }
-        QSettings s(filename.c_str(), QSettings::IniFormat);
-        QStringList param_list = renderWidget->treemodel->get_param_list("Tracking");
-        param_list += renderWidget->treemodel->get_param_list("Tracking_dT");
-        param_list += renderWidget->treemodel->get_param_list("Tracking_adv");
-        for(int index = 0;index < param_list.size();++index)
-            s.setValue(param_list[index],renderWidget->getData(param_list[index]));
-        return true;
-    }
-    if(cmd == "load_tracking_setting")
-    {
-        auto filename = !param.empty() ? param :
-            QFileDialog::getOpenFileName(this,"Open INI files",QFileInfo(work_path).absolutePath(),"Setting file (*.ini);;All files (*)").toStdString();
-        if(filename.empty())
-            return false;
-        if(!std::filesystem::exists(filename))
+        if(cmd[0] == "load_rendering_setting")
         {
-            error_msg = "cannot find " + filename;
-            return false;
+            QStringList param_list = renderWidget->treemodel->get_param_list("ROI");
+            param_list += renderWidget->treemodel->get_param_list("Rendering");
+            param_list += renderWidget->treemodel->get_param_list("Slice");
+            param_list += renderWidget->treemodel->get_param_list("Tract");
+            param_list += renderWidget->treemodel->get_param_list("Region");
+            param_list += renderWidget->treemodel->get_param_list("Surface");
+            param_list += renderWidget->treemodel->get_param_list("Device");
+            param_list += renderWidget->treemodel->get_param_list("Label");
+            param_list += renderWidget->treemodel->get_param_list("ODF");
+            for(int index = 0;index < param_list.size();++index)
+                if(s.contains(param_list[index]))
+                    set_data(param_list[index],s.value(param_list[index]));
         }
-        QSettings s(filename.c_str(), QSettings::IniFormat);
-        QStringList param_list = renderWidget->treemodel->get_param_list("Tracking");
-        param_list += renderWidget->treemodel->get_param_list("Tracking_dT");
-        param_list += renderWidget->treemodel->get_param_list("Tracking_adv");
-        for(int index = 0;index < param_list.size();++index)
-            if(s.contains(param_list[index]))
-                set_data(param_list[index],s.value(param_list[index]));
+        if(cmd[0] == "load_tracking_setting")
+        {
+            QStringList param_list = renderWidget->treemodel->get_param_list("Tracking");
+            param_list += renderWidget->treemodel->get_param_list("Tracking_dT");
+            param_list += renderWidget->treemodel->get_param_list("Tracking_adv");
+            for(int index = 0;index < param_list.size();++index)
+                if(s.contains(param_list[index]))
+                    set_data(param_list[index],s.value(param_list[index]));
+        }
         return true;
     }
-    if(cmd == "restore_rendering")
+
+    if(cmd[0] == "restore_rendering")
     {
         renderWidget->setDefault("ROI");
         renderWidget->setDefault("Rendering");
@@ -436,7 +430,7 @@ bool tracking_window::command(const std::string& cmd,const std::string& param,co
         glWidget->update();
         return true;
     }
-    if(cmd == "restore_tracking")
+    if(cmd[0] == "restore_tracking")
     {
         renderWidget->setDefault("Tracking");
         renderWidget->setDefault("Tracking_dT");
@@ -444,7 +438,7 @@ bool tracking_window::command(const std::string& cmd,const std::string& param,co
         on_tracking_index_currentIndexChanged((*this)["tracking_index"].toInt());
         return true;
     }
-    if(cmd == "enable_auto_track")
+    if(cmd[0] == "enable_auto_track")
     {
         if(!handle->load_track_atlas(true/*symmetric*/))
         {
@@ -466,74 +460,75 @@ bool tracking_window::command(const std::string& cmd,const std::string& param,co
         ui->perform_tracking->show();
         return true;
     }
-    if(cmd == "set_roi_view")
+    // the following must has cmd[1]
+    if(cmd[0] == "set_roi_view")
     {
-        if(param == "0")
+        if(cmd[1] == "0")
             ui->glSagView->setChecked(true);
-        if(param == "1")
+        if(cmd[1] == "1")
             ui->glCorView->setChecked(true);
-        if(param == "2")
+        if(cmd[1] == "2")
             ui->glAxiView->setChecked(true);
         return true;
     }
-    if(cmd == "set_roi_view_index")
+    if(cmd[0] == "set_roi_view_index")
     {
         bool okay = true;
-        int index = QString(param.c_str()).toInt(&okay);
+        int index = QString(cmd[1].c_str()).toInt(&okay);
         if(okay)
         {
             ui->SliceModality->setCurrentIndex(index);
             return true;
         }
-        index = ui->SliceModality->findText(param.c_str());
+        index = ui->SliceModality->findText(cmd[1].c_str());
         if(index == -1)
         {
-            error_msg = "cannot find index: " + param;
+            error_msg = "cannot find index: " + cmd[1];
             return false;
         }
         ui->SliceModality->setCurrentIndex(index);
         return true;
     }
-    if(cmd == "set_roi_view_contrast")
+    if(cmd[0] == "set_roi_view_contrast")
     {
-        ui->min_value_gl->setValue(QString(param.c_str()).toDouble());
-        ui->max_value_gl->setValue(QString(param2.c_str()).toDouble());
+        ui->min_value_gl->setValue(QString(cmd[1].c_str()).toDouble());
+        ui->max_value_gl->setValue(QString(cmd[2].c_str()).toDouble());
         change_contrast();
         return true;
     }
-    if(cmd == "set_slice_color")
+    if(cmd[0] == "set_slice_color")
     {
-        ui->min_color_gl->setColor(QString(param.c_str()).toUInt());
-        ui->max_color_gl->setColor(QString(param2.c_str()).toUInt());
+        ui->min_color_gl->setColor(QString(cmd[1].c_str()).toUInt());
+        ui->max_color_gl->setColor(QString(cmd[2].c_str()).toUInt());
         change_contrast();
         return true;
     }
-    if(cmd == "set_param")
+    if(cmd[0] == "set_param")
     {
-        set_data(param.c_str(),param2.c_str());
+        set_data(cmd[1].c_str(),cmd[2].c_str());
         glWidget->update();
         slice_need_update = true;
         return true;
     }
-    if(cmd == "tract_to_region")
+    if(cmd[0] == "tract_to_region")
     {
         on_actionTracts_to_seeds_triggered();
         return true;
     }
-    if(cmd == "set_region_color")
+    if(cmd[0] == "set_region_color")
     {
         if(regionWidget->regions.empty())
             return true;
-        regionWidget->regions.back()->region_render->color = QString(param.c_str()).toInt();
+        regionWidget->regions.back()->region_render->color = QString(cmd[1].c_str()).toInt();
         glWidget->update();
         slice_need_update = true;
         return true;
     }
-    if(cmd == "add_slice")
+    if(cmd[0] == "add_slice")
     {
-        if(!openSlices(param))
+        if(!openSlices(cmd[1]))
         {
-            error_msg = "cannot add slice " + param;
+            error_msg = "cannot add slice " + cmd[1];
             return false;
         }
         tipl::out() << "register image to the DWI space" << std::endl;
@@ -541,7 +536,7 @@ bool tracking_window::command(const std::string& cmd,const std::string& param,co
         cur_slice->wait();
         return true;
     }
-    error_msg = "unknown command: " + cmd;
+    error_msg = "unknown command: " + cmd[0];
     return false;
 }
 
@@ -1360,7 +1355,7 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
 
 void tracking_window::on_enable_auto_track_clicked()
 {
-    if(!command("enable_auto_track"))
+    if(!command({"enable_auto_track"}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 

@@ -492,8 +492,8 @@ void MainWindow::loadFib(QString filename)
     tracking_windows.back()->setWindowTitle(filename);
     if(filename.contains("/presentation/"))
     {
-        tracking_windows.back()->command("load_workspace",QFileInfo(filename).absolutePath().toStdString());
-        tracking_windows.back()->command("presentation_mode");
+        tracking_windows.back()->command({"load_workspace",QFileInfo(filename).absolutePath().toStdString()});
+        tracking_windows.back()->command({"presentation_mode"});
     }
     else
     if(!filename.contains(QCoreApplication::applicationDirPath()))

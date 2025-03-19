@@ -71,7 +71,7 @@ public:
     std::vector<std::shared_ptr<ROIRegion> > regions;
     int color_gen = 0;
     std::string error_msg;
-    bool command(const std::string& cmd,const std::string& param = "",const std::string& param2 = "");
+    bool command(std::vector<std::string> cmd);
     void check_row(size_t index,bool checked);
 public:
     explicit RegionTableWidget(tracking_window& cur_tracking_window,QWidget *parent = nullptr);

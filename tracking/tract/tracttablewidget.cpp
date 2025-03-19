@@ -275,9 +275,10 @@ void TractTableWidget::start_tracking(void)
     QString tract_name = cur_tracking_window.regionWidget->getROIname();
     if(cur_tracking_window["dt_index1"].toInt() || cur_tracking_window["dt_index2"].toInt())
     {
-        if(!command("set_dt_index",cur_tracking_window.dt_list[cur_tracking_window["dt_index1"].toInt()].toStdString() + '&' +
-                               cur_tracking_window.dt_list[cur_tracking_window["dt_index2"].toInt()].toStdString(),
-                               std::to_string(cur_tracking_window.renderWidget->getData("dt_threshold_type").toInt())))
+        if(!command({std::string("set_dt_index"),
+                     cur_tracking_window.dt_list[cur_tracking_window["dt_index1"].toInt()].toStdString() + '&' +
+                     cur_tracking_window.dt_list[cur_tracking_window["dt_index2"].toInt()].toStdString(),
+                     std::to_string(cur_tracking_window.renderWidget->getData("dt_threshold_type").toInt())}))
         {
             QMessageBox::critical(this,"ERROR",error_msg.c_str());
             return;
@@ -293,15 +294,18 @@ void TractTableWidget::start_tracking(void)
             tract_name += "_";
             tract_name += cur_tracking_window.ui->tract_target_2->currentText();
         }
+        if(!cur_tracking_window.handle->trackable)
+        {
+            load_built_in_atlas(tract_name.toStdString());
+            return;
+        }
     }
 
-    if(!cur_tracking_window.handle->trackable)
-    {
-        load_built_in_atlas(tract_name.toStdString());
-        return;
-    }
 
-    command("run_tracking",cur_tracking_window.get_parameter_id(),tract_name.toStdString());
+
+    command({std::string("run_tracking"),
+             cur_tracking_window.get_parameter_id(),
+             tract_name.toStdString()});
 
 }
 
@@ -410,7 +414,7 @@ void TractTableWidget::load_tracts(QStringList filenames,bool tract_is_mni)
     tipl::progress prog("open tracts");
     for(unsigned int index = 0;prog(index,filenames.size());++index)
     {
-        if(!command("load_tracts",filenames[index].toStdString(),tract_is_mni ? "mni" : ""))
+        if(!command({"load_tracts",filenames[index].toStdString(),tract_is_mni ? "mni" : ""}))
         {
             QMessageBox::critical(this,"ERROR",error_msg.c_str());
             break;
@@ -488,7 +492,7 @@ void TractTableWidget::save_all_tracts_to_dir(void)
     QString dir = QFileDialog::getExistingDirectory(this,"Open directory","");
     if(dir.isEmpty())
         return;
-    if(!command("save_all_tracts_to_dir",dir.toStdString()))
+    if(!command({"save_all_tracts_to_dir",dir.toStdString()}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
     else
         QMessageBox::information(this,QApplication::applicationName(),"file saved");
@@ -503,7 +507,7 @@ void TractTableWidget::save_all_tracts_as(void)
                 "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;NIFTI File (*nii.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
-    if(!command("save_tracks",filename.toStdString()))
+    if(!command({"save_tracks",filename.toStdString()}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
     else
         QMessageBox::information(this,QApplication::applicationName(),"file saved");
@@ -596,7 +600,7 @@ void TractTableWidget::open_cluster_color(void)
             "RGB Value Text(*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    if(!command("load_cluster_color",filename.toStdString(),""))
+    if(!command({"load_cluster_color",filename.toStdString()}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 void TractTableWidget::save_cluster_color(void)
@@ -738,7 +742,7 @@ void TractTableWidget::save_tracts_as(void)
                  "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;TCK file (*.tck);;ROI files (*.nii *nii.gz);;All files (*)");
     if(filename.isEmpty())
         return;
-    if(command("save_current_tracts",filename.toStdString()))
+    if(command({"save_current_tracts",filename.toStdString()}))
         QMessageBox::information(this,QApplication::applicationName(),"file saved");
     else
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
@@ -931,7 +935,7 @@ void TractTableWidget::load_tracts_color(void)
             "Color files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    if(!command("load_track_color",filename.toStdString()))
+    if(!command({"load_track_color",filename.toStdString()}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 
 }
@@ -944,7 +948,7 @@ void TractTableWidget::load_tracts_value(void)
             "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    if(!command("load_tract_values",filename.toStdString()))
+    if(!command({"load_tract_values",filename.toStdString()}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
@@ -1096,18 +1100,19 @@ bool TractTableWidget::render_tracts(GLWidget* glwidget,std::chrono::high_resolu
     return true;
 }
 
-bool TractTableWidget::command(const std::string& cmd,const std::string& param,const std::string& param2)
+bool TractTableWidget::command(std::vector<std::string> cmd)
 {
-    auto history = cur_tracking_window.history.record(error_msg,cmd,param,param2);
-    if(cmd == "set_dt_index")
+    auto history = cur_tracking_window.history.record(error_msg,cmd);
+    cmd.resize(3);
+    if(cmd[0] == "set_dt_index")
     {
-        auto pos = param.find('&');
+        auto pos = cmd[1].find('&');
         if(pos == std::string::npos)
         {
             error_msg = "invalid dt index";
             return false;
         }
-        if(!cur_tracking_window.handle->set_dt_index(std::make_pair(param.substr(0, pos), param.substr(pos + 1)),QString(param2.c_str()).toInt()))
+        if(!cur_tracking_window.handle->set_dt_index(std::make_pair(cmd[1].substr(0, pos), cmd[1].substr(pos + 1)),QString(cmd[2].c_str()).toInt()))
         {
             error_msg = cur_tracking_window.handle->error_msg;
             return false;
@@ -1116,22 +1121,22 @@ bool TractTableWidget::command(const std::string& cmd,const std::string& param,c
         cur_tracking_window.ui->tract_target_0->setCurrentIndex(0);
         return true;
     }
-    if(cmd == "run_tracking")
+    if(cmd[0] == "run_tracking")
     {
-        // param: id
-        // param2: tract name
+        // cmd[1]: id
+        // cmd[2]: tract name
         if(!cur_tracking_window.handle->trackable)
         {
             error_msg = "the data are not trackable";
             return false;
         }
         auto new_thread = std::make_shared<ThreadData>(cur_tracking_window.handle);
-        if(!new_thread->param.set_code(param))
+        if(!new_thread->param.set_code(cmd[1]))
         {
             error_msg = "invalid parameter id";
             return false;
         }
-        addNewTracts(param2.c_str());
+        addNewTracts(cmd[2].c_str());
         thread_data.back() = new_thread;
         cur_tracking_window.regionWidget->setROIs(new_thread.get());
         tipl::progress prog("initiating fiber tracking");
@@ -1144,19 +1149,19 @@ bool TractTableWidget::command(const std::string& cmd,const std::string& param,c
         cur_tracking_window.history.has_other_thread = true;
         return true;
     }
-    if(cmd == "load_tracts")
+    if(cmd[0] == "load_tracts")
     {
         // is mni space tract
-        bool is_mni_space = (param2 == "mni");
+        bool is_mni_space = (cmd[2] == "mni");
         if(is_mni_space && !cur_tracking_window.handle->map_to_mni())
         {
             error_msg = cur_tracking_window.handle->error_msg;
             return false;
         }
-        auto models = TractModel::load_from_file(param.c_str(),cur_tracking_window.handle,is_mni_space);
+        auto models = TractModel::load_from_file(cmd[1].c_str(),cur_tracking_window.handle,is_mni_space);
         if(models.empty())
         {
-            error_msg = "cannot load tracks from " + param;
+            error_msg = "cannot load tracks from " + cmd[1];
             return false;
         }
         for(auto& each : models)
@@ -1164,30 +1169,30 @@ bool TractTableWidget::command(const std::string& cmd,const std::string& param,c
                 addNewTracts(each,models.size() == 1);
         return true;
     }
-    if(cmd == "save_current_tracts")
+    if(cmd[0] == "save_current_tracts")
     {
         if(currentRow() >= int(tract_models.size()) || currentRow() < 0)
         {
             error_msg = "no tract to save";
             return false;
         }
-        tipl::progress prog_(cmd);
+        tipl::progress prog_(cmd[0]);
         auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-        if(!tract_models[uint32_t(currentRow())]->save_tracts_to_file(param.c_str()))
+        if(!tract_models[uint32_t(currentRow())]->save_tracts_to_file(cmd[1].c_str()))
         {
-            error_msg = "cannot write to file at " + param;
+            error_msg = "cannot write to file at " + cmd[1];
             return false;
         }
         return true;
     }
-    if(cmd == "save_all_tracts_to_dir")
+    if(cmd[0] == "save_all_tracts_to_dir")
     {
         tipl::progress prog_("saving files");
         auto selected_tracts = get_checked_tracks();
         auto selected_tracts_rendering = get_checked_tracks_rendering();
         for(size_t index = 0;index < selected_tracts.size();++index)
         {
-            auto filename = param + "/" + selected_tracts[index]->name + output_format().toStdString();
+            auto filename = cmd[1] + "/" + selected_tracts[index]->name + output_format().toStdString();
             auto lock = selected_tracts_rendering[index]->start_reading();
             if(!selected_tracts[index]->save_tracts_to_file(filename.c_str()))
             {
@@ -1197,7 +1202,7 @@ bool TractTableWidget::command(const std::string& cmd,const std::string& param,c
         }
         return true;
     }
-    if(cmd == "update_track")
+    if(cmd[0] == "update_track")
     {
         for(int index = 0;index < int(tract_models.size());++index)
         {
@@ -1209,12 +1214,12 @@ bool TractTableWidget::command(const std::string& cmd,const std::string& param,c
         emit show_tracts();
         return true;
     }
-    if(cmd == "cut_by_slice")
+    if(cmd[0] == "cut_by_slice")
     {
-        cut_by_slice(QString(param.c_str()).toInt(),QString(param2.c_str()).toInt());
+        cut_by_slice(QString(cmd[1].c_str()).toInt(),QString(cmd[2].c_str()).toInt());
         return true;
     }
-    if(cmd == "delete_all_tract")
+    if(cmd[0] == "delete_all_tract")
     {
         setRowCount(0);
         while(!tract_rendering.empty())
@@ -1226,32 +1231,32 @@ bool TractTableWidget::command(const std::string& cmd,const std::string& param,c
         emit show_tracts();
         return true;
     }
-    if(cmd == "save_tracks")
+    if(cmd[0] == "save_tracks")
     {
         auto locks = start_reading_checked_tracks();
-        if(!TractModel::save_all(param.c_str(),get_checked_tracks()))
+        if(!TractModel::save_all(cmd[1].c_str(),get_checked_tracks()))
         {
-            error_msg = "cannot save file to " + param;
+            error_msg = "cannot save file to " + cmd[1];
             return false;
         }
         return true;
     }
-    if(cmd == "load_track_color")
+    if(cmd[0] == "load_track_color")
     {
         int index = currentRow();
-        if(!param2.empty())
+        if(!cmd[2].empty())
         {
-            index = QString(param2.c_str()).toInt();
+            index = QString(cmd[2].c_str()).toInt();
             if(index < 0 || index >= tract_models.size())
             {
-                error_msg = "invalid track index: " + param2;
+                error_msg = "invalid track index: " + cmd[2];
                 return false;
             }
         }
         auto lock = tract_rendering[index]->start_reading();
-        if(!tract_models[index]->load_tracts_color_from_file(param.c_str()))
+        if(!tract_models[index]->load_tracts_color_from_file(cmd[1].c_str()))
         {
-            error_msg = "cannot find or open " + param;
+            error_msg = "cannot find or open " + cmd[1];
             return false;
         }
         tract_rendering[index]->need_update = true;
@@ -1259,12 +1264,12 @@ bool TractTableWidget::command(const std::string& cmd,const std::string& param,c
         emit show_tracts();
         return true;
     }
-    if(cmd == "load_cluster_color")
+    if(cmd[0] == "load_cluster_color")
     {
-        std::ifstream in(param);
+        std::ifstream in(cmd[1]);
         if(!in)
         {
-            error_msg = "cannot find or open " + param;
+            error_msg = "cannot find or open " + cmd[1];
             return false;
         }
         for(unsigned int index = 0;index < tract_models.size() && in;++index)
@@ -1280,17 +1285,17 @@ bool TractTableWidget::command(const std::string& cmd,const std::string& param,c
         emit show_tracts();
         return true;
     }
-    if(cmd == "load_tract_values")
+    if(cmd[0] == "load_tract_values")
     {
         if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
         {
             error_msg = "no tract to assign values";
             return false;
         }
-        std::ifstream in(param);
+        std::ifstream in(cmd[1]);
         if(!in)
         {
-            error_msg = "cannot find or open " + param;
+            error_msg = "cannot find or open " + cmd[1];
             return false;
         }
         std::vector<float> values;
@@ -1531,7 +1536,7 @@ void TractTableWidget::delete_all_tract(void)
         QMessageBox::critical(this,"ERROR","Please wait for the termination of data processing");
         return;
     }
-    command("delete_all_tract");
+    command({"delete_all_tract"});
 }
 
 void TractTableWidget::delete_repeated(void)

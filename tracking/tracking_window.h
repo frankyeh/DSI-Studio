@@ -41,15 +41,15 @@ public:
         }
         command_history& owner;
     };
-    std::shared_ptr<surrogate> record(std::string& error_msg_,const std::string& cmd,const std::string& param,const std::string& param2)
+    std::shared_ptr<surrogate> record(std::string& error_msg_,
+                                      const std::vector<std::string>& cmd)
     {
         auto s = std::make_shared<surrogate>(*this,error_msg_);
-        s->output = cmd;
-        if(!param.empty())
+        for(const auto& each : cmd)
         {
-            s->output += "," +  param;
-            if(!param2.empty())
-                s->output += "," +  param2;
+            if(!s->output.empty())
+                s->output += ",";
+            s->output += each;
         }
         error_msg_.clear();
         return s;
@@ -161,7 +161,7 @@ public:
     void set_roi_zoom(float zoom);
 public:
     std::string error_msg;
-    bool command(const std::string& cmd,const std::string& param = "",const std::string& param2 = "");
+    bool command(std::vector<std::string> cmd);
 
 public slots:
     void check_reg(void);

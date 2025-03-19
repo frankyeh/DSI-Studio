@@ -268,23 +268,6 @@ void DeviceTableWidget::check_all(void)
     }
     emit need_update();
 }
-bool DeviceTableWidget::command(const std::string& cmd,const std::string& param)
-{
-    if(cmd == "save_all_devices")
-    {
-        std::ofstream out(param);
-        for (size_t i = 0; i < devices.size(); ++i)
-        {
-            if (item(int(i),0)->checkState() == Qt::Checked)
-            {
-                devices[i]->name = item(int(i),0)->text().toStdString();
-                out << devices[i]->to_str();
-            }
-        }
-        return true;
-    }
-    return false;
-}
 void DeviceTableWidget::uncheck_all(void)
 {
     for(int row = 0;row < rowCount();++row)
@@ -348,7 +331,7 @@ void DeviceTableWidget::save_all_devices(void)
                            "CSV file(*dv.csv);;All files(*)");
     if (filename.isEmpty())
         return;
-    command("save_all_devices",filename.toStdString());
+    cur_tracking_window.command({std::string("save_all_devices"),filename.toStdString()});
 }
 
 void DeviceTableWidget::delete_device(void)

@@ -484,15 +484,15 @@ void group_connectometry::on_show_result_clicked()
     current_tracking_window->tractWidget->tract_models[0]->add(*(vbc->inc_track.get()));
     current_tracking_window->tractWidget->tract_models[1]->add(*(vbc->dec_track.get()));
 
-    current_tracking_window->command("set_zoom","0.8");
-    current_tracking_window->command("set_param","show_surface","1");
-    current_tracking_window->command("set_param","show_slice","0");
-    current_tracking_window->command("set_param","show_region","0");
-    current_tracking_window->command("set_param","bkg_color","16777215");
-    current_tracking_window->command("set_param","surface_alpha","0.2");
-    current_tracking_window->command("set_roi_view_index","wm_template");
-    current_tracking_window->command("add_surface","Full","25.0");
-    current_tracking_window->command("update_track");
+    current_tracking_window->command({"set_zoom","0.8"});
+    current_tracking_window->command({"set_param","show_surface","1"});
+    current_tracking_window->command({"set_param","show_slice","0"});
+    current_tracking_window->command({"set_param","show_region","0"});
+    current_tracking_window->command({"set_param","bkg_color","16777215"});
+    current_tracking_window->command({"set_param","surface_alpha","0.2"});
+    current_tracking_window->command({"set_roi_view_index","wm_template"});
+    current_tracking_window->command({"add_surface","Full","25.0"});
+    current_tracking_window->command({"update_track"});
 
 
 }

@@ -195,7 +195,7 @@ public:
          update();
      }
      std::string error_msg;
-     bool command(const std::string& cmd,const std::string& param = "",const std::string& param2 = "");
+     bool command(std::vector<std::string> cmd);
  };
 
 #endif // GLWIDGET_H

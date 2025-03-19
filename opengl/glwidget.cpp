@@ -2036,7 +2036,7 @@ void GLWidget::saveCamera(void)
             get_save_file_name("Save Translocation Matrix","camera.txt","Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    if(!command("save_camera",filename.toStdString()))
+    if(!command({"save_camera",filename.toStdString()}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
@@ -2047,12 +2047,12 @@ void GLWidget::loadCamera(void)
             "Open Translocation Matrix",QFileInfo(cur_tracking_window.work_path).absolutePath(),"Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    if(!command("load_camera",filename.toStdString()))
+    if(!command({"load_camera",filename.toStdString()}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 void GLWidget::addSurface(void)
 {
-    command("add_surface",qobject_cast<QAction*>(sender())->text().toStdString());
+    command({"add_surface",qobject_cast<QAction*>(sender())->text().toStdString()});
 }
 
 
@@ -2158,26 +2158,27 @@ QImage GLWidget::get3View(unsigned int type)
     }
     return QImage();
 }
-bool GLWidget::command(const std::string& cmd,const std::string& param,const std::string& param2)
+bool GLWidget::command(std::vector<std::string> cmd)
 {
-    auto history = cur_tracking_window.history.record(error_msg,cmd,param,param2);
-    if(cmd == "save_camera")
+    auto history = cur_tracking_window.history.record(error_msg,cmd);
+    cmd.resize(3);
+    if(cmd[0] == "save_camera")
     {
-        std::ofstream out(param);
+        std::ofstream out(cmd[1]);
         if(!out)
         {
-            error_msg = "cannot write " + param;
+            error_msg = "cannot write " + cmd[1];
             return false;
         }
         out << transformation_matrix;
         return true;
     }
-    if(cmd == "load_camera")
+    if(cmd[0] == "load_camera")
     {
-        std::ifstream in(param);
+        std::ifstream in(cmd[1]);
         if(!in)
         {
-            error_msg = "cannot read/open " + param;
+            error_msg = "cannot read/open " + cmd[1];
             return false;
         }
         {
@@ -2190,10 +2191,10 @@ bool GLWidget::command(const std::string& cmd,const std::string& param,const std
         }
         return true;
     }
-    if(cmd == "set_zoom")
+    if(cmd[0] == "set_zoom")
     {
         bool okay = false;
-        double zoom = QString(param.c_str()).toFloat(&okay);
+        double zoom = QString(cmd[1].c_str()).toFloat(&okay);
         if(!okay || zoom == 0)
         {
             error_msg = "please specify a working parameter";
@@ -2208,10 +2209,10 @@ bool GLWidget::command(const std::string& cmd,const std::string& param,const std
         }
         return true;
     }
-    if(cmd == "set_view")
+    if(cmd[0] == "set_view")
     {
         bool okay = false;
-        int view = QString(param.c_str()).toInt(&okay);
+        int view = QString(cmd[1].c_str()).toInt(&okay);
         if(!okay)
         {
             error_msg = "please specify a working parameter";
@@ -2222,39 +2223,39 @@ bool GLWidget::command(const std::string& cmd,const std::string& param,const std
         update();
         return true;
     }
-    if(cmd == "set_stereoscopic")
+    if(cmd[0] == "set_stereoscopic")
     {
         makeCurrent();
         view_mode = GLWidget::view_mode_type::stereo;
         update();
         return true;
     }
-    if(cmd == "move_slice")
+    if(cmd[0] == "move_slice")
     {
-        switch(QString(param.c_str()).toInt())
+        switch(QString(cmd[1].c_str()).toInt())
         {
         case 0:
-            cur_tracking_window.ui->glSagSlider->setValue(QString(param2.c_str()).toInt());
+            cur_tracking_window.ui->glSagSlider->setValue(QString(cmd[2].c_str()).toInt());
             break;
         case 1:
-            cur_tracking_window.ui->glCorSlider->setValue(QString(param2.c_str()).toInt());
+            cur_tracking_window.ui->glCorSlider->setValue(QString(cmd[2].c_str()).toInt());
             break;
         case 2:
-            cur_tracking_window.ui->glAxiSlider->setValue(QString(param2.c_str()).toInt());
+            cur_tracking_window.ui->glAxiSlider->setValue(QString(cmd[2].c_str()).toInt());
             break;
         }
         return true;
     }
-    if(cmd == "slice_off")
+    if(cmd[0] == "slice_off")
     {
-        if(param.empty())
+        if(cmd[1].empty())
         {
             cur_tracking_window.ui->glCorCheck->setChecked(false);
             cur_tracking_window.ui->glSagCheck->setChecked(false);
             cur_tracking_window.ui->glAxiCheck->setChecked(false);
             return true;
         }
-        switch(QString(param.c_str()).toInt())
+        switch(QString(cmd[1].c_str()).toInt())
         {
         case 0:
             cur_tracking_window.ui->glSagCheck->setChecked(false);
@@ -2270,16 +2271,16 @@ bool GLWidget::command(const std::string& cmd,const std::string& param,const std
         return true;
 
     }
-    if(cmd == "slice_on")
+    if(cmd[0] == "slice_on")
     {
-        if(param.empty())
+        if(cmd[1].empty())
         {
             cur_tracking_window.ui->glCorCheck->setChecked(true);
             cur_tracking_window.ui->glSagCheck->setChecked(true);
             cur_tracking_window.ui->glAxiCheck->setChecked(true);
             return true;
         }
-        switch(QString(param.c_str()).toInt())
+        switch(QString(cmd[1].c_str()).toInt())
         {
         case 0:
             cur_tracking_window.ui->glSagCheck->setChecked(true);
@@ -2294,7 +2295,7 @@ bool GLWidget::command(const std::string& cmd,const std::string& param,const std
         update();
         return true;
     }
-    if(cmd == "add_surface")
+    if(cmd[0] == "add_surface")
     {
         tipl::image<3> crop_image;
         float resolution_ratio = 1.0;
@@ -2326,8 +2327,8 @@ bool GLWidget::command(const std::string& cmd,const std::string& param,const std
         if(!is_wm)
             threshold = tipl::segmentation::otsu_threshold(crop_image)*1.25f;
 
-        if(!param2.empty())
-            threshold = QString(param2.c_str()).toFloat();
+        if(!cmd[2].empty())
+            threshold = QString(cmd[2].c_str()).toFloat();
         else
         {
             bool ok;
@@ -2342,10 +2343,10 @@ bool GLWidget::command(const std::string& cmd,const std::string& param,const std
 
         {
             surface = std::make_shared<RegionRender>();
-            if(!param.empty() && !tipl::contains_case_insensitive(param,"full"))
+            if(!cmd[1].empty() && !tipl::contains_case_insensitive(cmd[1],"full"))
             {
                 tipl::image<3,unsigned char> remain_part(crop_image.shape());
-                if(tipl::contains_case_insensitive(param,"left"))
+                if(tipl::contains_case_insensitive(cmd[1],"left"))
                 {
                     for(unsigned int index = 0;index < remain_part.size();index += remain_part.width())
                     {
@@ -2353,7 +2354,7 @@ bool GLWidget::command(const std::string& cmd,const std::string& param,const std
                                   remain_part.begin()+index+remain_part.width(),1);
                     }
                 }
-                if(tipl::contains_case_insensitive(param,"right"))
+                if(tipl::contains_case_insensitive(cmd[1],"right"))
                 {
                     for(unsigned int index = 0;index < remain_part.size();index += remain_part.width())
                     {
@@ -2361,17 +2362,17 @@ bool GLWidget::command(const std::string& cmd,const std::string& param,const std
                                   remain_part.begin()+index+cur_tracking_window.current_slice->slice_pos[0],1);
                     }
                 }
-                if(tipl::contains_case_insensitive(param,"upper"))
+                if(tipl::contains_case_insensitive(cmd[1],"upper"))
                 {
                     std::fill(remain_part.begin()+cur_tracking_window.current_slice->slice_pos[2]*remain_part.plane_size(),
                               remain_part.end(),1);
                 }
-                if(tipl::contains_case_insensitive(param,"lower"))
+                if(tipl::contains_case_insensitive(cmd[1],"lower"))
                 {
                     std::fill(remain_part.begin(),
                               remain_part.begin()+cur_tracking_window.current_slice->slice_pos[2]*remain_part.plane_size(),1);
                 }
-                if(tipl::contains_case_insensitive(param,"posterior"))
+                if(tipl::contains_case_insensitive(cmd[1],"posterior"))
                 {
                     for(unsigned int index = 0;index < remain_part.size();index += remain_part.plane_size())
                     {
@@ -2379,7 +2380,7 @@ bool GLWidget::command(const std::string& cmd,const std::string& param,const std
                                   remain_part.begin()+index+int64_t(remain_part.plane_size()),1);
                     }
                 }
-                if(tipl::contains_case_insensitive(param,"anterior"))
+                if(tipl::contains_case_insensitive(cmd[1],"anterior"))
                 {
                     for(unsigned int index = 0;index < remain_part.size();index += remain_part.plane_size())
                     {
@@ -2428,65 +2429,65 @@ bool GLWidget::command(const std::string& cmd,const std::string& param,const std
         update();
         return true;
     }
-    if(cmd == "save_image")
+    if(cmd[0] == "save_image")
     {
-        auto file_name = param.empty() ? param :
-                                QFileInfo(cur_tracking_window.windowTitle()).fileName().toStdString()+".image.jpg";
-        if(!param2.empty())
+        auto file_name = !cmd[1].empty() ? cmd[1] :
+            QFileInfo(cur_tracking_window.windowTitle()).fileName().toStdString()+".image.jpg";
+        if(!cmd[2].empty())
         {
-            std::istringstream in(param2);
+            std::istringstream in(cmd[2]);
             int w = 0;
             int h = 0;
             int ow = width(),oh = height();
             in >> w >> h;
             resize(w,h);
             resizeGL(w,h);
-            grab_image().save(param.c_str());
+            grab_image().save(file_name.c_str());
             resize(ow,oh);
             resizeGL(ow,oh);
         }
         else
-            grab_image().save(param.c_str());
+            grab_image().save(file_name.c_str());
         return true;
     }
-    if(cmd == "save_3view_image")
+    if(cmd[0] == "save_3view_image")
     {
-        auto file_name = param.empty() ? param :
+        auto file_name = !cmd[1].empty() ? cmd[1] :
                     QFileInfo(cur_tracking_window.windowTitle()).completeBaseName().toStdString()+".3view_image.jpg";
-        if(!get3View(0).save(param.c_str()))
+        if(!get3View(0).save(file_name.c_str()))
         {
-            error_msg = "cannot save image to " + param;
+            error_msg = "cannot save image to " + file_name;
             return false;
         }
         return true;
     }
-    if(cmd == "save_h3view_image")
+    if(cmd[0] == "save_h3view_image")
     {
-        auto file_name = param.empty() ? param :
+        auto file_name = !cmd[1].empty() ? cmd[1] :
                     QFileInfo(cur_tracking_window.windowTitle()).completeBaseName().toStdString()+".h3view_image.jpg";
-        if(!get3View(1).save(param.c_str()))
+        if(!get3View(1).save(file_name.c_str()))
         {
-            error_msg = "cannot save image to " + param;
+            error_msg = "cannot save image to " + file_name;
             return false;
         }
         return true;
     }
-    if(cmd == "save_v3view_image")
+    if(cmd[0] == "save_v3view_image")
     {
-        auto file_name = param.empty() ? param :
+        auto file_name = !cmd[1].empty() ? cmd[1] :
                 QFileInfo(cur_tracking_window.windowTitle()).completeBaseName().toStdString()+".v3view_image.jpg";
-        if(!get3View(2).save(param.c_str()))
+        if(!get3View(2).save(file_name.c_str()))
         {
-            error_msg = "cannot save image to " + param;
+            error_msg = "cannot save image to " + file_name;
             return false;
         }
         return true;
     }
-    if(cmd == "save_rotation_video")
+    if(cmd[0] == "save_rotation_video")
     {
-        auto file_name = param.empty() ? param :
+        auto file_name = !cmd[1].empty() ? cmd[1] :
                 QFileInfo(cur_tracking_window.windowTitle()).completeBaseName().toStdString()+".rotation_movie.avi";
-        if(QFileInfo(param.c_str()).suffix() == "avi")
+        if(QFileInfo(file_name.c_str()).suffix() == "avi")
         {
             tipl::progress prog("save video");
             int ow = width(),oh = height();
@@ -2503,7 +2504,7 @@ bool GLWidget::command(const std::string& cmd,const std::string& param,const std
                 QImage I = grab_image();
                 writer.write(I);
                 if(index == 0.0f)
-                    avi.open(param.c_str(),I.width(),I.height(), "MJPG", 30/*fps*/);
+                    avi.open(file_name.c_str(),I.width(),I.height(), "MJPG", 30/*fps*/);
                 QByteArray data = buffer.data();
                 avi.add_frame(data.begin(),uint32_t(data.size()),true);
             }
@@ -2513,16 +2514,16 @@ bool GLWidget::command(const std::string& cmd,const std::string& param,const std
         else
         {
             tipl::progress prog_("save image");
-            float angle = (param2.empty()) ? 1 : QString(param2.c_str()).toFloat();
+            float angle = (cmd[2].empty()) ? 1 : QString(cmd[2].c_str()).toFloat();
             for(float index = 0;prog_(index,360);index += angle)
             {
-                QString file_name = QFileInfo(param.c_str()).absolutePath()+"//"+
-                        QFileInfo(param.c_str()).completeBaseName()+"_"+QString::number(index)+"."+
-                        QFileInfo(param.c_str()).suffix();
-                tipl::out() << file_name.toStdString() << std::endl;
+                QString save = QFileInfo(file_name.c_str()).absolutePath()+"//"+
+                        QFileInfo(file_name.c_str()).completeBaseName()+"_"+QString::number(index)+"."+
+                        QFileInfo(file_name.c_str()).suffix();
+                tipl::out() << save.toStdString() << std::endl;
                 rotate_angle(angle,0,1.0,0.0);
                 QImage I = grab_image();
-                I.save(file_name);
+                I.save(save);
             }
         }
         return true;
@@ -2539,7 +2540,7 @@ void GLWidget::catchScreen(void)
                "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
-    if(!command("save_image",filename.toStdString()))
+    if(!command({"save_image",filename.toStdString()}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
@@ -2557,7 +2558,7 @@ void GLWidget::catchScreen2(void)
             "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
-    if(!command("save_image",filename.toStdString(),result.toStdString()))
+    if(!command({"save_image",filename.toStdString(),result.toStdString()}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
@@ -2570,7 +2571,7 @@ void GLWidget::save3ViewImage(void)
             "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
     if(filename.isEmpty())
         return;
-    if(!command("save_3view_image",filename.toStdString()))
+    if(!command({"save_3view_image",filename.toStdString()}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
@@ -2584,7 +2585,7 @@ void GLWidget::saveRotationSeries(void)
                 "Video file (*.avi);;Image filess (*.jpg *.png);;All files (*)");
     if(filename.isEmpty())
         return;
-    if(!command("save_rotation_video",filename.toStdString()))
+    if(!command({"save_rotation_video",filename.toStdString()}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 

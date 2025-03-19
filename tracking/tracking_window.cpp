@@ -99,8 +99,7 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
                 if(tipl::match_files(param[1],param_j[1],file_list[k].toStdString(),new_param_j1))
                     param_j[1] = new_param_j1;
             }
-            param_j.resize(3);
-            if(!parent->command(param_j[0],param_j[1],param_j[2]))
+            if(!parent->command(param_j))
             {
                 QMessageBox::critical(parent,"ERROR",parent->error_msg.c_str());
                 repeating = false;
@@ -514,8 +513,11 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             glWidget->rotation_matrix2 = glWidget->rotation_matrix;
             glWidget->update();});
         connect(ui->actionStereoscopic,&QAction::triggered, this,[this](void){glWidget->view_mode = GLWidget::view_mode_type::stereo;glWidget->update();});
-        connect(ui->actionLoad_Presentation,&QAction::triggered, this,[this](void){command("load_workspace");});
-        connect(ui->actionSave_Presentation,&QAction::triggered, this,[this](void){if(command("save_workspace"))QMessageBox::information(this,QApplication::applicationName(),"File saved");});
+        connect(ui->actionLoad_Presentation,&QAction::triggered, this,[this](void){command({"load_workspace"});});
+        connect(ui->actionSave_Presentation,&QAction::triggered, this,[this](void){
+            if(command({"save_workspace"}))
+                QMessageBox::information(this,QApplication::applicationName(),"File saved");
+        });
 
         connect(ui->action3D_Screen,&QAction::triggered,this,[this](void){QApplication::clipboard()->setImage(tipl::qt::get_bounding_box(glWidget->grab_image()));});
         connect(ui->action3D_Screen_Left_Right_Views,&QAction::triggered,this,[this](void){QApplication::clipboard()->setImage(glWidget->getLRView());});
@@ -681,18 +683,18 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     }
     // Option
     {
-        connect(ui->actionSave_tracking_parameters,&QAction::triggered, this,[this](void){command("save_tracking_setting");});
-        connect(ui->actionLoad_tracking_parameters,&QAction::triggered, this,[this](void){command("load_tracking_setting");});
+        connect(ui->actionSave_tracking_parameters,&QAction::triggered, this,[this](void){command({"save_tracking_setting"});});
+        connect(ui->actionLoad_tracking_parameters,&QAction::triggered, this,[this](void){command({"load_tracking_setting"});});
 
-        connect(ui->actionSave_Rendering_Parameters,&QAction::triggered, this,[this](void){command("save_rendering_setting");});
-        connect(ui->actionLoad_Rendering_Parameters,&QAction::triggered, this,[this](void){command("load_rendering_setting");});
+        connect(ui->actionSave_Rendering_Parameters,&QAction::triggered, this,[this](void){command({"save_rendering_setting"});});
+        connect(ui->actionLoad_Rendering_Parameters,&QAction::triggered, this,[this](void){command({"load_rendering_setting"});});
 
-        connect(ui->actionRestore_Settings,&QAction::triggered, this,[this](void){command("restore_rendering");});
-        connect(ui->actionRestore_Tracking_Settings,&QAction::triggered, this,[this](void){command("restore_tracking");});
+        connect(ui->actionRestore_Settings,&QAction::triggered, this,[this](void){command({"restore_rendering"});});
+        connect(ui->actionRestore_Tracking_Settings,&QAction::triggered, this,[this](void){command({"restore_tracking"});});
         connect(ui->reset_rendering,&QPushButton::clicked, this,[this](void)
         {
-            command("restore_tracking");
-            command("restore_rendering");
+            command({"restore_tracking"});
+            command({"restore_rendering"});
         });
 
     }
@@ -720,7 +722,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         if((*this)["orientation_convention"].toInt() == 1)
             glWidget->set_view(2);
 
-        history.record(error_msg,"open_fib",handle->fib_file_name,std::string());
+        history.record(error_msg,{"open_fib",handle->fib_file_name.c_str()});
     }
     tipl::out() << "GUI initialization complete" << std::endl;
 }
@@ -754,7 +756,7 @@ tracking_window::~tracking_window()
             break;
         }
     tractWidget->stop_tracking();
-    tractWidget->command("delete_all_tract");
+    tractWidget->command({"delete_all_tract"});
     regionWidget->delete_all_region();
     qApp->removeEventFilter(this);
     QSettings settings;
@@ -1377,7 +1379,7 @@ void tracking_window::dropEvent(QDropEvent *event)
     }
     if(!tracts.empty())
         tractWidget->load_tracts(tracts);
-    if(!regions.empty() && !regionWidget->command("load_region",regions.join(",").toStdString()))
+    if(!regions.empty() && !regionWidget->command({"load_region",regions.join(",").toStdString()}))
         QMessageBox::critical(this,"ERROR",regionWidget->error_msg.c_str());
 }
 

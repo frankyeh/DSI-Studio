@@ -371,16 +371,17 @@ tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
     return c;
 }
 
-bool RegionTableWidget::command(const std::string& cmd,const std::string& param,const std::string& param2)
+bool RegionTableWidget::command(std::vector<std::string> cmd)
 {
-    auto history = cur_tracking_window.history.record(error_msg,cmd,param,param2);
-    if(cmd == "save_all_regions_to_dir")
+    auto history = cur_tracking_window.history.record(error_msg,cmd);
+    cmd.resize(3);
+    if(cmd[0] == "save_all_regions_to_dir")
     {
         tipl::progress prog("saving files");
         for(int index = 0;prog(index,rowCount());++index)
             if (item(index,0)->checkState() == Qt::Checked) // either roi roa end or seed
             {
-                auto filename = param + "/" + regions[size_t(index)]->name + output_format().toStdString();
+                auto filename = cmd[1] + "/" + regions[size_t(index)]->name + output_format().toStdString();
                 if(!regions[size_t(index)]->save_region_to_file(filename.c_str()))
                 {
                     error_msg = "cannot save region to file " + filename;
@@ -389,26 +390,26 @@ bool RegionTableWidget::command(const std::string& cmd,const std::string& param,
             }
         return true;
     }
-    if(cmd == "delete_all_region")
+    if(cmd[0] == "delete_all_region")
     {
         delete_all_region();
         return true;
     }
-    if(cmd == "load_region")
+    if(cmd[0] == "load_region")
     {
-        if(!load_multiple_roi_nii(param.c_str(),false))
+        if(!load_multiple_roi_nii(cmd[1].c_str(),false))
             return false;
         emit need_update();
         return true;
     }
-    if(cmd == "load_mni_region")
+    if(cmd[0] == "load_mni_region")
     {
-        if(!load_multiple_roi_nii(param.c_str(),true))
+        if(!load_multiple_roi_nii(cmd[1].c_str(),true))
             return false;
         emit need_update();
         return true;
     }
-    if(cmd == "check_all_regions")
+    if(cmd[0] == "check_all_regions")
     {
         check_all();
         return true;
@@ -1031,7 +1032,7 @@ void RegionTableWidget::load_region(void)
                                 this,"Open region",QFileInfo(cur_tracking_window.work_path).absolutePath(),"Region files (*.nii *.hdr *nii.gz *.mat);;Text files (*.txt);;All files (*)" );
     if (filenames.isEmpty())
         return;
-    if(!command("load_region",filenames.join(",").toStdString()))
+    if(!command({"load_region",filenames.join(",").toStdString()}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
     emit need_update();
 }
@@ -1044,7 +1045,7 @@ void RegionTableWidget::load_mni_region(void)
         return;
 
     for (auto each : filenames)
-        if(!command("load_mni_region",each.toStdString()))
+        if(!command({"load_mni_region",each.toStdString()}))
         {
             QMessageBox::critical(this,"ERROR",error_msg.c_str());
             break;
@@ -1199,7 +1200,7 @@ void RegionTableWidget::save_all_regions_to_dir(void)
     QString dir = QFileDialog::getExistingDirectory(this,"Open directory","");
     if(dir.isEmpty())
         return;
-    if(!command("save_all_regions_to_dir",dir.toStdString()))
+    if(!command({"save_all_regions_to_dir",dir.toStdString()}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 

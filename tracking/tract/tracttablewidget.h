@@ -109,7 +109,7 @@ public:
             render_time = 200;
     }
     std::string error_msg;
-    bool command(const std::string& cmd,const std::string& param = "",const std::string& param2 = "");
+    bool command(std::vector<std::string> cmd);
 
 signals:
     void show_tracts(void);
