@@ -116,7 +116,7 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
             while (parent->history.has_other_thread && !p.aborted())
             {
                 QCoreApplication::processEvents();
-                QThread::msleep(200);
+                QThread::msleep(100);
             }
             if(p.aborted())
                 break;
