@@ -10,14 +10,11 @@ bool variant_image::command(std::string cmd,std::string param1)
     bool result = true;
     error_msg.clear();
     if(cmd == "change_type")
-    {
-        tipl::out() << "change_type:"<< param1;
         change_type(decltype(pixel_type)(std::stoi(param1)));
-    }
     else
     apply([&](auto& I)
     {
-        result = tipl::command<tipl::out,tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,interpolation,error_msg);
+        result = tipl::command<void,tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,interpolation,error_msg);
         shape = I.shape();
     });
     return result;
