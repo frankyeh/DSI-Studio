@@ -769,7 +769,6 @@ void GLWidget::renderLR()
             glDisable(GL_BLEND);
 
         cur_tracking_window.tractWidget->render_tracts(this);
-
         glPopMatrix();
         glDisable(GL_COLOR_MATERIAL);
         glDisable(GL_BLEND);
@@ -2429,6 +2428,8 @@ bool GLWidget::command(std::vector<std::string> cmd)
         update();
         return true;
     }
+    // make sure tracts are all rendered to save the images
+    cur_tracking_window.tractWidget->render_time = 60000;
     if(cmd[0] == "save_image")
     {
         auto file_name = !cmd[1].empty() ? cmd[1] :
