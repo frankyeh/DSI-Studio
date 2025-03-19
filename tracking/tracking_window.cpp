@@ -1445,9 +1445,11 @@ void tracking_window::on_actionCommand_History_triggered()
     for (const auto& line : history.commands)
         listWidget.addItem(QString::fromStdString(line));
 
-    QPushButton closeButton("Close", &dialog), repeatButton("Repeat", &dialog);
+    QPushButton closeButton("Close", &dialog), repeatButton("Repeat", &dialog), openButton("&Open...", &dialog), saveButton("&Save...", &dialog);
     repeatButton.setDisabled(true);
     QHBoxLayout buttonLayout;
+    buttonLayout.addWidget(&openButton);
+    buttonLayout.addWidget(&saveButton);
     buttonLayout.addWidget(&repeatButton);
     buttonLayout.addWidget(&closeButton);
     layout.addLayout(&buttonLayout);
@@ -1455,7 +1457,28 @@ void tracking_window::on_actionCommand_History_triggered()
     QObject::connect(&listWidget, &QListWidget::itemSelectionChanged, [&]() {
             repeatButton.setEnabled(!listWidget.selectedItems().isEmpty());
         });
-
+    QObject::connect(&openButton, &QPushButton::clicked, [&]() {
+        QString filename = QFileDialog::getOpenFileName(this,"Open text files",QString::fromStdString(history.file_stem())+".txt",
+                                         "Text files (*.txt);;All files (*)" );
+        if (filename.isEmpty())
+            return;
+        std::ifstream file(filename.toStdString());
+        if(!file)
+            return;
+        listWidget.clear();
+        for(auto& each : std::vector<std::string>({std::istream_iterator<std::string>(file), std::istream_iterator<std::string>()}))
+            listWidget.addItem(QString::fromStdString(each));
+    });
+    QObject::connect(&saveButton, &QPushButton::clicked, [&]() {
+        QString filename = QFileDialog::getSaveFileName(this,"Open text files",QString::fromStdString(history.file_stem())+".txt",
+                                         "Text files (*.txt);;All files (*)" );
+        if (filename.isEmpty())
+            return;
+        std::ofstream file(filename.toStdString());
+        for (const auto& line : history.commands)
+            file << line << '\n';
+        QMessageBox::information(this,QApplication::applicationName(),"file saved.");
+    });
     QObject::connect(&repeatButton, &QPushButton::clicked, [&]() {
         std::vector<std::string> selected;
         for (auto *item : listWidget.selectedItems())
