@@ -459,6 +459,7 @@ int img(tipl::program_option<tipl::out>& po)
             tipl::out() << info;
             continue;
         }
+        tipl::out() << std::string(param.empty() ? cmd : cmd+":"+param);
         if(!var_image.command(cmd,param))
         {
             tipl::error() << var_image.error_msg;
