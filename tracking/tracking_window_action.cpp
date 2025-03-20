@@ -84,21 +84,21 @@ bool tracking_window::command(std::vector<std::string> cmd)
 {
     if(glWidget->command(cmd))
         return true;
-    if(!glWidget->error_msg.empty())
+    if(!glWidget->error_msg.empty() && glWidget->error_msg != "not_processed")
     {
         error_msg = glWidget->error_msg;
         return false;
     }
     if(tractWidget->command(cmd))
         return true;
-    if(!tractWidget->error_msg.empty())
+    if(!tractWidget->error_msg.empty() && tractWidget->error_msg != "not_processed")
     {
         error_msg = tractWidget->error_msg;
         return false;
     }
     if(regionWidget->command(cmd))
         return true;
-    if(!regionWidget->error_msg.empty())
+    if(!regionWidget->error_msg.empty() && regionWidget->error_msg != "not_processed")
     {
         error_msg = regionWidget->error_msg;
         return false;
