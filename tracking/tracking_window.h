@@ -183,7 +183,6 @@ public:
     QString get_save_file_name(QString title,QString file_name,QString file_type);
     void report(QString string);
     void move_slice_to(tipl::vector<3,float> pos);
-    bool map_to_mni(void);
     void set_roi_zoom(float zoom);
 public:
     std::string error_msg;
