@@ -1135,22 +1135,19 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         for_current_bundle([&](void){tract_models[currentRow()]->cut_end_portion(0.25f,0.75f);});
         return true;
     }
-    if(cmd[0] == "flip_tract_x")
+    if(tipl::begins_with(cmd[0],"flip_tract_"))
     {
-        for_current_bundle([&](void){tract_models[currentRow()]->flip(0);});
+        for_current_bundle([&](void){tract_models[currentRow()]->flip(cmd[0].back()-'x');});
         return true;
     }
-    if(cmd[0] == "flip_tract_y")
+    if(tipl::begins_with(cmd[0],"cut_tract_by_"))
     {
-        for_current_bundle([&](void){tract_models[currentRow()]->flip(1);});
+        bool other_side = cmd[0].back() == '2';
+        if(other_side)
+            cmd[0].pop_back();
+        cut_by_slice(tipl::contains(cmd[0].back()-'x',!other_side));
         return true;
     }
-    if(cmd[0] == "flip_tract_z")
-    {
-        for_current_bundle([&](void){tract_models[currentRow()]->flip(2);});
-        return true;
-    }
-
 
     if(cmd[0] == "set_dt_index")
     {
