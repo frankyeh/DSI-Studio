@@ -737,7 +737,8 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         if((*this)["orientation_convention"].toInt() == 1)
             glWidget->set_view(2);
 
-        history.record(error_msg,{"open_fib",handle->fib_file_name.c_str()});
+        std::vector<std::string> cmd({"open_fib",handle->fib_file_name.c_str()});
+        history.record(error_msg,cmd);
     }
     tipl::out() << "GUI initialization complete" << std::endl;
 }
@@ -1084,8 +1085,13 @@ void tracking_window::updateSlicesMenu(void)
     };
     ui->menuSave->clear();
     ui->menuE_xport->clear();
-    for (const auto& each : handle->get_index_list())
+    auto slice_list = handle->get_index_list();
+    slice_list.push_back("fiber");
+    if(handle->has_odfs())
+        slice_list.push_back("odfs");
+    for (const auto& each : slice_list)
     {
+        if(each != "fiber" && each != "odfs")
         {
             auto Item = new_item(each);
             connect(Item, SIGNAL(triggered()),tractWidget, SLOT(save_tracts_data_as()));
@@ -1093,19 +1099,7 @@ void tracking_window::updateSlicesMenu(void)
         }
         {
             auto Item = new_item(each);
-            connect(Item, SIGNAL(triggered()),this, SLOT(save_slice_as()));
-            ui->menuE_xport->addAction(Item);
-        }
-    }
-    // export fiber directions
-    {
-        auto Item = new_item("fiber");
-        connect(Item, SIGNAL(triggered()),this, SLOT(save_slice_as()));
-        ui->menuE_xport->addAction(Item);
-        if(handle->has_odfs())
-        {
-            auto Item = new_item("odfs");
-            connect(Item, SIGNAL(triggered()),this, SLOT(save_slice_as()));
+            Item->setToolTip("run save_slice");
             ui->menuE_xport->addAction(Item);
         }
     }
@@ -1419,7 +1413,7 @@ void tracking_window::on_actionCommand_History_triggered()
     dialog.resize(600, 400);
     QVBoxLayout layout(&dialog);
 
-    QLabel label("Select the command range to repeat, make sure to include commands that open files", &dialog);
+    QLabel label("Select the commands to repeat", &dialog);
     layout.addWidget(&label);
 
     QListWidget listWidget(&dialog);

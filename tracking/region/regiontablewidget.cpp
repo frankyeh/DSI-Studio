@@ -373,7 +373,7 @@ tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
 
 bool RegionTableWidget::command(std::vector<std::string> cmd)
 {
-    auto history = cur_tracking_window.history.record(error_msg,cmd);
+    auto run = cur_tracking_window.history.record(error_msg,cmd);
     cmd.resize(3);
     if(cmd[0] == "save_all_regions_to_dir")
     {
@@ -405,7 +405,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
     if(cmd[0] == "load_mni_region")
     {
         if(!load_multiple_roi_nii(cmd[1].c_str(),true))
-            return false;
+            return run->failed("cannot load mni region");
         emit need_update();
         return true;
     }
@@ -414,8 +414,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         check_all();
         return true;
     }
-    history->output.clear();
-    return false;
+    return run->canceled();
 }
 void RegionTableWidget::move_slice_to_current_region(void)
 {

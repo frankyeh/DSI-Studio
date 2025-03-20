@@ -30,36 +30,50 @@ public:
     bool run(tracking_window *parent,const std::vector<std::string>& cmd);
 public:
     struct surrogate {
-        std::string output;
+        command_history& owner;
+        std::vector<std::string>& cmd;
         std::string& error_msg;
-        surrogate(command_history& owner,std::string& error_msg_) : owner(owner),error_msg(error_msg_){}
+        surrogate(command_history& owner,
+                  std::vector<std::string>& cmd_,
+                  std::string& error_msg_) : owner(owner),cmd(cmd_),error_msg(error_msg_){}
+        bool canceled(void)
+        {
+            cmd.clear();
+            error_msg.clear();
+            return false;
+        }
+        bool failed(const std::string& msg)
+        {
+            error_msg = msg;
+            return false;
+        }
         ~surrogate()
         {
+            while(!cmd.empty() && cmd.back().empty())
+                cmd.pop_back();
+            if(cmd.empty()) // canceled
+                return;
+            std::string output(tipl::merge(cmd,','));
+            tipl::out() << "--cmd=" << output;
             if(!error_msg.empty())
+            {
                 tipl::error() << error_msg;
-            owner.surrogate_deleted(output);
+                return;
+            }
+            owner.record(output);
         }
-        command_history& owner;
     };
     std::shared_ptr<surrogate> record(std::string& error_msg_,
-                                      const std::vector<std::string>& cmd)
+                                      std::vector<std::string>& cmd)
     {
-        auto s = std::make_shared<surrogate>(*this,error_msg_);
-        for(const auto& each : cmd)
-        {
-            if(!s->output.empty())
-                s->output += ",";
-            s->output += each;
-        }
         error_msg_.clear();
-        return s;
+        return std::make_shared<surrogate>(*this,cmd,error_msg_);
     }
 
-    void surrogate_deleted(const std::string& output)
+    void record(const std::string& output)
     {
         if(output.empty())
             return;
-        tipl::out() << "--cmd=" << output;
         if(!repeating)
         {
             commands.push_back(output);
@@ -235,7 +249,6 @@ private slots:
     void on_actionEdit_Slices_triggered();
     void on_alt_mapping_currentIndexChanged(int index);
     void on_directional_color_clicked();
-    void save_slice_as();
     void on_actionCommand_History_triggered();
 
     void run_action();

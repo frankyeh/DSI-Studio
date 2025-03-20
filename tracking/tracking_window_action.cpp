@@ -65,32 +65,19 @@ void show_info_dialog(const std::string& title, const std::string& result)
     }
 }
 
-void tracking_window::save_slice_as()
-{
-    QAction *action = qobject_cast<QAction *>(sender());
-    if(!action)
-        return;
-    QString filename = QFileDialog::getSaveFileName(
-                this,"Save as",
-                QFileInfo(windowTitle()).baseName()+"_"+
-                action->data().toString()+".nii.gz",
-                "NIFTI files (*nii.gz *.nii);;MAT files (*.mat);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    if(!command({"save_slice",filename.toStdString(),action->data().toString().toStdString()}))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
-
 void tracking_window::run_action(void)
 {
     QAction *action = qobject_cast<QAction *>(sender());
     if(!action || !action->toolTip().startsWith("run "))
         return;
     if(!command({action->toolTip().toStdString().substr(4)})) // skip "run " part
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
+    {
+        if(!error_msg.empty())
+            QMessageBox::critical(this,"ERROR",error_msg.c_str());
+    }
     else
         if(action->toolTip().contains("save_"))
-            QMessageBox::information(this,"ERROR","file saved");
+            QMessageBox::information(this,QApplication::applicationName(),"file saved");
 }
 extern std::vector<tracking_window*> tracking_windows;
 bool tracking_window::command(std::vector<std::string> cmd)
@@ -117,16 +104,13 @@ bool tracking_window::command(std::vector<std::string> cmd)
         return false;
     }
 
-    auto h = history.record(error_msg,cmd);
+    auto run = history.record(error_msg,cmd);
     cmd.resize(3);
     if(cmd[0] == "open_fib")
     {
         std::shared_ptr<fib_data> new_handle(new fib_data);
         if(!new_handle->load_from_file(cmd[1]))
-        {
-            error_msg = new_handle->error_msg;
-            return false;
-        }
+            return run->failed(new_handle->error_msg);
         tracking_windows.push_back(new tracking_window(parentWidget(),new_handle));
         tracking_windows.back()->setAttribute(Qt::WA_DeleteOnClose);
         tracking_windows.back()->setWindowTitle(cmd[1].c_str());
@@ -138,24 +122,18 @@ bool tracking_window::command(std::vector<std::string> cmd)
     {
         if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(this,"Save FIB file",
            windowTitle().replace(".fib.gz",".fz"),"FIB files (*.fz);;All files (*)").toStdString()).empty())
-           return true;
+            return run->canceled();
         if(!handle->save_to_file(cmd[1]))
-        {
-            error_msg = handle->error_msg;
-            return false;
-        }
+            return run->failed(handle->error_msg);
+
         return true;
     }
     if(cmd[0] == "open_mapping")
     {
-        if(!handle->load_template())
-            return false;
         tipl::progress prog(cmd[0],true);
-        if(!handle->load_mapping(cmd[1]))
-        {
-            error_msg = handle->error_msg;
-            return false;
-        }
+        if(!handle->load_template() || !handle->load_mapping(cmd[1]))
+            return run->failed(handle->error_msg);
+
         return true;
     }
     if(cmd[0] == "save_roi_screen")
@@ -166,25 +144,33 @@ bool tracking_window::command(std::vector<std::string> cmd)
                     regionWidget->item(regionWidget->currentRow(),0)->text()+".png" :
                     QFileInfo(windowTitle()).baseName()+"_"+ui->SliceModality->currentText()+".jpg",
                     "Image files (*.png *.bmp *.jpg);;All files (*)").toStdString()).empty())
-            return true;
+            return run->canceled();
+
         slice_need_update = false; // turn off simple drawing
         scene.paint_image(scene.view_image,false);     
         if(!scene.view_image.save(cmd[1].c_str()))
-        {
-            error_msg = "cannot save mapping to " + cmd[1];
-            return false;
-        }
+            return run->failed("cannot save mapping to " + cmd[1]);
         return true;
     }
     if(cmd[0] == "save_slice")
     {
-        auto file_name = !cmd[1].empty() ? cmd[1] :
-                QFileInfo(windowTitle()).baseName().toStdString()+"_"+cmd[2]+".nii.gz";
-        if(!handle->save_slice(cmd[2],file_name))
+        if(cmd[2].empty())
         {
-            error_msg = "cannot save mapping to " + cmd[2];
-            return false;
+            QAction *action = qobject_cast<QAction *>(sender());
+            if(!action)
+                return run->canceled();
+
+            cmd[2] = action->data().toString().toStdString();
         }
+        if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(
+                    this,"Save as",
+                    QFileInfo(windowTitle()).baseName()+"_"+ QString::fromStdString(cmd[2])+".nii.gz",
+                    "NIFTI files (*nii.gz *.nii);;MAT files (*.mat);;All files (*)").toStdString()).empty())
+            return run->canceled();
+
+        if(!handle->save_slice(cmd[2],cmd[1]))
+            return run->failed(cmd[2] + " not found or cannot save it to " + cmd[1]);
+
         return true;
     }
     if(cmd[0] == "save_all_devices")
@@ -212,12 +198,11 @@ bool tracking_window::command(std::vector<std::string> cmd)
         auto dir = cmd[1].empty() ? cmd[1] :
                 QFileDialog::getExistingDirectory(this,"Save to directory",QFileInfo(windowTitle()).absolutePath()).toStdString();
         if(dir.empty())
-            return false;
+            return run->canceled();
+
         if (!std::filesystem::exists(dir) || std::filesystem::is_directory(dir))
-        {
-            error_msg = "cannot save workspace to " + dir;
-            return false;
-        }
+            return run->failed("cannot save workspace to " + dir);
+
         if(tractWidget->rowCount())
         {
             std::filesystem::create_directory(dir+"/tracts");
@@ -270,12 +255,11 @@ bool tracking_window::command(std::vector<std::string> cmd)
     {
         auto dir = !cmd[1].empty() ? cmd[1] : QFileDialog::getExistingDirectory(this,"Save to directory",QFileInfo(windowTitle()).absolutePath()).toStdString();
         if(dir.empty())
-            return false;
+            return run->canceled();
+
         if(!std::filesystem::exists(dir))
-        {
-            error_msg = "cannot load workspace from " + dir;
-            return false;
-        }
+            return run->failed(error_msg = "cannot load workspace from " + dir);
+
         tipl::progress prog("loading data");
         if(std::filesystem::exists(dir+"/tracts"))
         {
@@ -346,7 +330,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 QFileDialog::getSaveFileName(this,"Save INI files",QFileInfo(windowTitle()).baseName()
                                              +cmd[0].substr(5).c_str() + ".ini","Setting file (*.ini);;All files (*)").toStdString();
         if (filename.empty())
-            return false;
+            return run->canceled();
+
         QSettings s(filename.c_str(), QSettings::IniFormat);
         if(cmd[0] == "save_setting")
         {
@@ -383,12 +368,10 @@ bool tracking_window::command(std::vector<std::string> cmd)
         auto filename = !cmd[1].empty() ? cmd[1] :
             QFileDialog::getOpenFileName(this,"Open INI files",QFileInfo(work_path).absolutePath(),"Setting file (*.ini);;All files (*)").toStdString();
         if(filename.empty())
-            return false;
+            return run->canceled();
+
         if(!std::filesystem::exists(filename))
-        {
-            error_msg = "cannot find " + filename;
-            return false;
-        }
+            return run->failed(error_msg = "cannot find " + filename);
         QSettings s(filename.c_str(), QSettings::IniFormat);
         if(cmd[0] == "load_setting")
         {
@@ -457,10 +440,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
     if(cmd[0] == "enable_auto_track")
     {
         if(!handle->load_track_atlas(true/*symmetric*/))
-        {
-            error_msg = handle->error_msg;
-            return false;
-        }
+            return run->failed(handle->error_msg);
+
         auto level0 = handle->get_tractography_level0();
 
         ui->enable_auto_track->setVisible(false);
@@ -498,10 +479,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         }
         index = ui->SliceModality->findText(cmd[1].c_str());
         if(index == -1)
-        {
-            error_msg = "cannot find index: " + cmd[1];
-            return false;
-        }
+            return run->failed(error_msg = "cannot find index: " + cmd[1]);
         ui->SliceModality->setCurrentIndex(index);
         return true;
     }
@@ -543,17 +521,13 @@ bool tracking_window::command(std::vector<std::string> cmd)
     if(cmd[0] == "add_slice")
     {
         if(!openSlices(cmd[1]))
-        {
-            error_msg = "cannot add slice " + cmd[1];
-            return false;
-        }
+            return run->failed("cannot add slice " + cmd[1]);
         tipl::out() << "register image to the DWI space" << std::endl;
         auto cur_slice = std::dynamic_pointer_cast<CustomSliceModel>(slices.back());
         cur_slice->wait();
         return true;
     }
-    error_msg = "unknown command: " + cmd[0];
-    return false;
+    return run->failed("unknown command: " + cmd[0]);
 }
 
 std::string tracking_window::get_parameter_id(void)

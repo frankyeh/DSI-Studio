@@ -2159,16 +2159,13 @@ QImage GLWidget::get3View(unsigned int type)
 }
 bool GLWidget::command(std::vector<std::string> cmd)
 {
-    auto history = cur_tracking_window.history.record(error_msg,cmd);
+    auto run = cur_tracking_window.history.record(error_msg,cmd);
     cmd.resize(3);
     if(cmd[0] == "save_camera")
     {
         std::ofstream out(cmd[1]);
         if(!out)
-        {
-            error_msg = "cannot write " + cmd[1];
-            return false;
-        }
+            return run->failed("cannot write " + cmd[1]);
         out << transformation_matrix;
         return true;
     }
@@ -2176,10 +2173,7 @@ bool GLWidget::command(std::vector<std::string> cmd)
     {
         std::ifstream in(cmd[1]);
         if(!in)
-        {
-            error_msg = "cannot read/open " + cmd[1];
-            return false;
-        }
+            return run->failed("cannot read/open " + cmd[1]);
         {
             std::vector<float> data;
             std::copy(std::istream_iterator<float>(in),
@@ -2195,10 +2189,7 @@ bool GLWidget::command(std::vector<std::string> cmd)
         bool okay = false;
         double zoom = QString(cmd[1].c_str()).toFloat(&okay);
         if(!okay || zoom == 0)
-        {
-            error_msg = "please specify a working parameter";
-            return false;
-        }
+            return run->failed("please specify a working parameter");
         zoom /= std::pow(transformation_matrix.det(),1.0/3.0);
 
         if(zoom < 0.99 || zoom > 1.01)
@@ -2213,10 +2204,7 @@ bool GLWidget::command(std::vector<std::string> cmd)
         bool okay = false;
         int view = QString(cmd[1].c_str()).toInt(&okay);
         if(!okay)
-        {
-            error_msg = "please specify a working parameter";
-            return true;
-        }
+            return run->failed("please specify a working parameter");
         makeCurrent();
         set_view(view);
         update();
@@ -2456,10 +2444,7 @@ bool GLWidget::command(std::vector<std::string> cmd)
         auto file_name = !cmd[1].empty() ? cmd[1] :
                     QFileInfo(cur_tracking_window.windowTitle()).completeBaseName().toStdString()+".3view_image.jpg";
         if(!get3View(0).save(file_name.c_str()))
-        {
-            error_msg = "cannot save image to " + file_name;
-            return false;
-        }
+            return run->failed("cannot save image to " + file_name);
         return true;
     }
     if(cmd[0] == "save_h3view_image")
@@ -2467,10 +2452,7 @@ bool GLWidget::command(std::vector<std::string> cmd)
         auto file_name = !cmd[1].empty() ? cmd[1] :
                     QFileInfo(cur_tracking_window.windowTitle()).completeBaseName().toStdString()+".h3view_image.jpg";
         if(!get3View(1).save(file_name.c_str()))
-        {
-            error_msg = "cannot save image to " + file_name;
-            return false;
-        }
+            return run->failed("cannot save image to " + file_name);
         return true;
     }
     if(cmd[0] == "save_v3view_image")
@@ -2478,10 +2460,7 @@ bool GLWidget::command(std::vector<std::string> cmd)
         auto file_name = !cmd[1].empty() ? cmd[1] :
                 QFileInfo(cur_tracking_window.windowTitle()).completeBaseName().toStdString()+".v3view_image.jpg";
         if(!get3View(2).save(file_name.c_str()))
-        {
-            error_msg = "cannot save image to " + file_name;
-            return false;
-        }
+            return run->failed("cannot save image to " + file_name);
         return true;
     }
     if(cmd[0] == "save_rotation_video")
@@ -2529,8 +2508,7 @@ bool GLWidget::command(std::vector<std::string> cmd)
         }
         return true;
     }
-    history->output.clear();
-    return false;
+    return run->canceled();
 }
 void GLWidget::catchScreen(void)
 {

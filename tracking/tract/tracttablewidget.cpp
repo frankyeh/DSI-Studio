@@ -1105,22 +1105,16 @@ bool TractTableWidget::render_tracts(GLWidget* glwidget)
 
 bool TractTableWidget::command(std::vector<std::string> cmd)
 {
-    auto history = cur_tracking_window.history.record(error_msg,cmd);
+    auto run = cur_tracking_window.history.record(error_msg,cmd);
     if(cmd.size() < 3)
         cmd.resize(3);
     if(cmd[0] == "set_dt_index")
     {
         auto pos = cmd[1].find('&');
         if(pos == std::string::npos)
-        {
-            error_msg = "invalid dt index";
-            return false;
-        }
+            return run->failed("invalid dt index");
         if(!cur_tracking_window.handle->set_dt_index(std::make_pair(cmd[1].substr(0, pos), cmd[1].substr(pos + 1)),QString(cmd[2].c_str()).toInt()))
-        {
-            error_msg = cur_tracking_window.handle->error_msg;
-            return false;
-        }
+            return run->failed(cur_tracking_window.handle->error_msg);
         // turn off auto_tracks
         cur_tracking_window.ui->tract_target_0->setCurrentIndex(0);
         return true;
@@ -1131,16 +1125,10 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         // cmd[2]: id
         // cmd[3]: tolerance distance
         if(!cur_tracking_window.handle->trackable)
-        {
-            error_msg = "the data are not trackable";
-            return false;
-        }
+            return run->failed("the data are not trackable");
         auto new_thread = std::make_shared<ThreadData>(cur_tracking_window.handle);
         if(!new_thread->param.set_code(cmd[2]))
-        {
-            error_msg = "invalid parameter id";
-            return false;
-        }
+            return run->failed("invalid parameter id");
         if(cmd.size() == 4) // has auto track
         {
             new_thread->roi_mgr->use_auto_track = true;
@@ -1166,16 +1154,10 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         // is mni space tract
         bool is_mni_space = (cmd[2] == "mni");
         if(is_mni_space && !cur_tracking_window.handle->map_to_mni())
-        {
-            error_msg = cur_tracking_window.handle->error_msg;
-            return false;
-        }
+            return run->failed(cur_tracking_window.handle->error_msg);
         auto models = TractModel::load_from_file(cmd[1].c_str(),cur_tracking_window.handle,is_mni_space);
         if(models.empty())
-        {
-            error_msg = "cannot load tracks from " + cmd[1];
-            return false;
-        }
+            return run->failed("cannot load tracks from " + cmd[1]);
         for(auto& each : models)
             if(each.get())
                 addNewTracts(each,models.size() == 1);
@@ -1184,17 +1166,11 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     if(cmd[0] == "save_current_tracts")
     {
         if(currentRow() >= int(tract_models.size()) || currentRow() < 0)
-        {
-            error_msg = "no tract to save";
-            return false;
-        }
+            return run->failed("no tract to save");
         tipl::progress prog_(cmd[0]);
         auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
         if(!tract_models[uint32_t(currentRow())]->save_tracts_to_file(cmd[1].c_str()))
-        {
-            error_msg = "cannot write to file at " + cmd[1];
-            return false;
-        }
+            return run->failed("cannot write to file at " + cmd[1]);
         return true;
     }
     if(cmd[0] == "save_all_tracts_to_dir")
@@ -1207,10 +1183,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             auto filename = cmd[1] + "/" + selected_tracts[index]->name + output_format().toStdString();
             auto lock = selected_tracts_rendering[index]->start_reading();
             if(!selected_tracts[index]->save_tracts_to_file(filename.c_str()))
-            {
-                error_msg = "cannot save file due to permission error" + filename;
-                return false;
-            }
+                return run->failed("cannot save file due to permission error" + filename);
         }
         return true;
     }
@@ -1247,10 +1220,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     {
         auto locks = start_reading_checked_tracks();
         if(!TractModel::save_all(cmd[1].c_str(),get_checked_tracks()))
-        {
-            error_msg = "cannot save file to " + cmd[1];
-            return false;
-        }
+            return run->failed("cannot save file to " + cmd[1]);
         return true;
     }
     if(cmd[0] == "load_track_color")
@@ -1260,17 +1230,11 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         {
             index = QString(cmd[2].c_str()).toInt();
             if(index < 0 || index >= tract_models.size())
-            {
-                error_msg = "invalid track index: " + cmd[2];
-                return false;
-            }
+                return run->failed("invalid track index: " + cmd[2]);
         }
         auto lock = tract_rendering[index]->start_reading();
         if(!tract_models[index]->load_tracts_color_from_file(cmd[1].c_str()))
-        {
-            error_msg = "cannot find or open " + cmd[1];
-            return false;
-        }
+            return run->failed("cannot find or open " + cmd[1]);
         tract_rendering[index]->need_update = true;
         cur_tracking_window.set_data("tract_color_style",1);//manual assigned
         emit show_tracts();
@@ -1280,10 +1244,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     {
         std::ifstream in(cmd[1]);
         if(!in)
-        {
-            error_msg = "cannot find or open " + cmd[1];
-            return false;
-        }
+            return run->failed("cannot find or open " + cmd[1]);
         for(unsigned int index = 0;index < tract_models.size() && in;++index)
             if(item(int(index),0)->checkState() == Qt::Checked)
             {
@@ -1300,16 +1261,10 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     if(cmd[0] == "load_tract_values")
     {
         if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
-        {
-            error_msg = "no tract to assign values";
-            return false;
-        }
+            return run->failed("no tract to assign values");
         std::ifstream in(cmd[1]);
         if(!in)
-        {
-            error_msg = "cannot find or open " + cmd[1];
-            return false;
-        }
+            return run->failed("cannot find or open " + cmd[1]);
         std::vector<float> values;
         std::copy(std::istream_iterator<float>(in),
                   std::istream_iterator<float>(),
@@ -1339,13 +1294,11 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             emit show_tracts();
             return true;
         }
-        error_msg = "the number of values " + std::to_string(values.size()) +
+        return run->failed("the number of values " + std::to_string(values.size()) +
                     " does not match bundle count " + std::to_string(checked_track.size()) +
-                    " or current tract count " + std::to_string(tract_models[uint32_t(currentRow())]->get_visible_track_count());
-        return false;
+                    " or current tract count " + std::to_string(tract_models[uint32_t(currentRow())]->get_visible_track_count()));
     }
-    history->output.clear();
-    return false;
+    return run->canceled();
 }
 
 void TractTableWidget::save_tracts_data_as(void)
