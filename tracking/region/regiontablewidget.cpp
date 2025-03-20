@@ -603,6 +603,42 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         cur_tracking_window.raise();
         return true;
     }
+    if(cmd[0] == "merge_regions")
+    {
+        std::vector<size_t> merge_list;
+        for(size_t index = 0;index < regions.size();++index)
+            if(item(int(index),0)->checkState() == Qt::Checked)
+                merge_list.push_back(index);
+        if(merge_list.size() <= 1)
+            return run->failed("select more than two regions to merge");
+
+        tipl::image<3,unsigned char> mask(regions[merge_list[0]]->dim);
+        tipl::progress prog("merging regions",true);
+        size_t p = 0;
+        tipl::adaptive_par_for(merge_list.size(),[&](size_t index)
+        {
+            if(prog.aborted())
+                return;
+            prog(p++,merge_list.size());
+            for(auto& p: regions[merge_list[index]]->to_space(
+                                    regions[merge_list[0]]->dim,
+                                    regions[merge_list[0]]->to_diffusion_space))
+                if (mask.shape().is_valid(p))
+                    mask.at(p) = 1;
+        });
+        if(prog.aborted())
+            return run->canceled();
+        regions[merge_list[0]]->load_region_from_buffer(mask);
+        begin_update();
+        for(int index = merge_list.size()-1;index >= 1;--index)
+        {
+            regions.erase(regions.begin()+merge_list[index]);
+            removeRow(merge_list[index]);
+        }
+        end_update();
+        emit need_update();
+        return true;
+    }
     return run->not_processed();
 }
 void RegionTableWidget::move_slice_to_current_region(void)
@@ -1172,42 +1208,6 @@ void RegionTableWidget::save_region_color(void)
     QMessageBox::information(this,QApplication::applicationName(),"File saved");
 }
 
-
-void RegionTableWidget::merge_all(void)
-{
-    std::vector<size_t> merge_list;
-    for(size_t index = 0;index < regions.size();++index)
-        if(item(int(index),0)->checkState() == Qt::Checked)
-            merge_list.push_back(index);
-    if(merge_list.size() <= 1)
-        return;
-
-    tipl::image<3,unsigned char> mask(regions[merge_list[0]]->dim);
-    tipl::progress prog("merging regions",true);
-    size_t p = 0;
-    tipl::adaptive_par_for(merge_list.size(),[&](size_t index)
-    {
-        if(prog.aborted())
-            return;
-        prog(p++,merge_list.size());
-        for(auto& p: regions[merge_list[index]]->to_space(
-                                regions[merge_list[0]]->dim,
-                                regions[merge_list[0]]->to_diffusion_space))
-            if (mask.shape().is_valid(p))
-                mask.at(p) = 1;
-    });
-    if(prog.aborted())
-        return;
-    regions[merge_list[0]]->load_region_from_buffer(mask);
-    begin_update();
-    for(int index = merge_list.size()-1;index >= 1;--index)
-    {
-        regions.erase(regions.begin()+merge_list[index]);
-        removeRow(merge_list[index]);
-    }
-    end_update();
-    emit need_update();
-}
 
 void RegionTableWidget::check_row(size_t row,bool checked)
 {

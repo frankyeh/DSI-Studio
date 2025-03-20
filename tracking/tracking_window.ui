@@ -3437,6 +3437,9 @@ Tracking</string>
    <property name="text">
     <string>Merge Checked Regions</string>
    </property>
+   <property name="toolTip">
+    <string>run merge_regions</string>
+   </property>
   </action>
   <action name="actionSave_All_Tracts_As_Multiple_Files">
    <property name="icon">
