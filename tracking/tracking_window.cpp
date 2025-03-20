@@ -121,7 +121,7 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
             if(p.aborted())
                 break;
 
-            if(param[0] == "open_fib")
+            if(tipl::begins_with(cmd[j],"open_fib"))
             {
                 backup_parent = parent;
                 parent = tracking_windows.back();
