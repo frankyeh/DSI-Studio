@@ -3995,6 +3995,9 @@ Tracking</string>
    <property name="text">
     <string>Open Workspace...</string>
    </property>
+   <property name="toolTip">
+    <string>run load_workspace</string>
+   </property>
   </action>
   <action name="actionSave_Presentation">
    <property name="icon">
@@ -4003,6 +4006,9 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Save Workspace...</string>
+   </property>
+   <property name="toolTip">
+    <string>run save_workspace</string>
    </property>
   </action>
   <action name="actionCopy_Device">
