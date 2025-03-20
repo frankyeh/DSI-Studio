@@ -903,17 +903,6 @@ void tracking_window::on_tracking_index_currentIndexChanged(int index)
     slice_need_update = true;
 }
 
-
-bool tracking_window::map_to_mni(void)
-{
-    if(!handle->map_to_mni())
-    {
-        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-        return false;
-    }
-    return true;
-}
-
 void tracking_window::keyPressEvent ( QKeyEvent * event )
 {
     switch(event->key())
