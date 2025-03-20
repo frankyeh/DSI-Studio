@@ -1481,6 +1481,8 @@ void RegionTableWidget::redo(void)
 
 void RegionTableWidget::do_action(QString action)
 {
+    if(action == "threshold")
+        add_region("New Region");
     if(regions.empty() || currentRow() < 0)
         return;
     tipl::progress prog(action.toStdString().c_str(),true);
@@ -1740,10 +1742,7 @@ void RegionTableWidget::do_action(QString action)
 
         std::vector<std::shared_ptr<ROIRegion> > region_to_be_processed;
         if(action == "threshold")
-        {
-            add_region("New Region");
             region_to_be_processed.push_back(regions.back());
-        }
         else
         {
             if(cur_tracking_window.ui->actionModify_All->isChecked())
