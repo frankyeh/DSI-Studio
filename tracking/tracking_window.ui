@@ -3302,10 +3302,16 @@ Tracking</string>
    <property name="text">
     <string>Check All</string>
    </property>
+   <property name="toolTip">
+    <string>run check_all_regions</string>
+   </property>
   </action>
   <action name="actionUnckech_all_regions">
    <property name="text">
     <string>Uncheck All</string>
+   </property>
+   <property name="toolTip">
+    <string>run uncheck_all_regions</string>
    </property>
   </action>
   <action name="actionCopyTrack">
