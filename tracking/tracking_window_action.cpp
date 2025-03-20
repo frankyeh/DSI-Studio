@@ -970,8 +970,13 @@ void tracking_window::on_actionInsert_MNI_images_triggered()
     QString filename = QFileDialog::getOpenFileName(
         this,"Open MNI Image",QFileInfo(work_path).absolutePath(),
                 "Image files (*.hdr *.nii *nii.gz);;All files (*)" );
-    if( filename.isEmpty() || !map_to_mni())
+    if( filename.isEmpty())
         return;
+    if(!handle->map_to_mni())
+    {
+        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
+        return;
+    }
     openSlices(filename.toStdString(),true);
 }
 
@@ -1396,8 +1401,11 @@ void tracking_window::on_addRegionFromAtlas_clicked()
         raise();
         return;
     }
-    if(!map_to_mni())
+    if(!handle->map_to_mni())
+    {
+        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
         return;
+    }
     std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,handle));
     atlas_dialog->exec();
 }
@@ -1432,8 +1440,12 @@ void tracking_window::on_actionManual_Atlas_Alignment_triggered()
         std::filesystem::remove(output_file_name);
     }
 
-    if(!map_to_mni())
+    if(!handle->map_to_mni())
+    {
+        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
         return;
+    }
+
     std::shared_ptr<AtlasDialog> atlas_dialog(new AtlasDialog(this,handle));
     atlas_dialog->exec();
 }
