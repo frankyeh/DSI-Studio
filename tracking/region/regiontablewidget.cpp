@@ -397,19 +397,122 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                                             tipl::vector<3>(params[0].toFloat(),params[1].toFloat(),params[2].toFloat()),params[3].toFloat());
         return true;
     }
-    if(cmd[0] == "save_all_regions_to_dir")
+
+    if(cmd[0] == "save_region")
     {
-        tipl::progress prog("saving files");
-        for(int index = 0;prog(index,rowCount());++index)
-            if (item(index,0)->checkState() == Qt::Checked) // either roi roa end or seed
-            {
-                auto filename = cmd[1] + "/" + regions[size_t(index)]->name + output_format().toStdString();
-                if(!regions[size_t(index)]->save_region_to_file(filename.c_str()))
+        if (regions.empty() || currentRow() >= regions.size())
+            return run->failed("no region to save");
+        if(cmd[1].empty() && (cmd[1] =
+                QFileDialog::getSaveFileName(
+                this,"Save region",QString(regions[currentRow()]->name.c_str()) + output_format(),
+                "NIFTI file(*nii.gz *.nii);;Text file(*.txt);;MAT file (*.mat);;All files(*)" ).toStdString()).empty())
+            return run->canceled();
+
+        if(!tipl::ends_with(cmd[1],".mat") &&
+           !tipl::ends_with(cmd[1],".txt") &&
+           !tipl::ends_with(cmd[1],".nii") &&
+           !tipl::ends_with(cmd[1],".nii.gz"))
+            cmd[1] += ".nii.gz";
+        if(!regions[currentRow()]->save_region_to_file(cmd[1].c_str()))
+            return run->failed("cannot save region to "+cmd[1]);
+        return true;
+    }
+    if(cmd[0] == "save_4d_region")
+    {
+        auto checked_regions = get_checked_regions();
+        if (checked_regions.empty())
+            return run->failed("no checked region to save");
+        if(cmd[1].empty() && (cmd[1] =
+                QFileDialog::getSaveFileName(
+                               this,"Save region",QString(checked_regions[0]->name.c_str()) + output_format(),
+                               "Region file(*nii.gz *.nii);;All file types (*)" ).toStdString()).empty())
+            return run->canceled();
+
+        auto dim = checked_regions[0]->dim;
+        tipl::image<4,unsigned char> multiple_I(dim.expand(uint32_t(checked_regions.size())));
+        tipl::progress prog("aggregating regions");
+        size_t p = 0;
+        tipl::par_for (checked_regions.size(),[&](unsigned int region_index)
+        {
+            if(prog.aborted())
+                return;
+            prog(p++,checked_regions.size());
+            size_t offset = region_index*dim.size();
+            for (auto& p : checked_regions[region_index]->to_space(
+                             dim,checked_regions[0]->to_diffusion_space))
+                if (dim.is_valid(p))
+                    multiple_I[offset+tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()] = 1;
+        });
+
+        if(prog.aborted())
+            return run->canceled();
+        if(!tipl::io::gz_nifti::save_to_file(cmd[1],multiple_I,
+                                  checked_regions[0]->vs,
+                                  checked_regions[0]->trans_to_mni,
+                                  cur_tracking_window.handle->is_mni))
+            return run->failed("cannot save region to " + cmd[1]);
+        save_checked_region_label_file(cmd[1].c_str(),0);  // 4d nifti index starts from 0
+        return true;
+    }
+    if(cmd[0] == "save_all_regions")
+    {
+        auto checked_regions = get_checked_regions();
+        if (checked_regions.empty())
+            return run->failed("no checked region to save");
+        if(cmd[1].empty() && (cmd[1] =
+                        QFileDialog::getSaveFileName(
+                        this,"Save region",QString(checked_regions[0]->name.c_str()) + output_format(),
+                        "Region file(*nii.gz *.nii *.mat);;Text file (*.txt);;All file types (*)" ).toStdString()).empty())
+            return run->canceled();
+        tipl::shape<3> dim = checked_regions[0]->dim;
+        tipl::image<3,unsigned short> mask(dim);
+        tipl::par_for (checked_regions.size(),[&](unsigned int region_index)
+        {
+            auto region_id = uint16_t(region_index+1);
+            for (const auto& p : checked_regions[region_index]->to_space(dim,checked_regions[0]->to_diffusion_space))
+                if (dim.is_valid(p))
                 {
-                    error_msg = "cannot save region to file " + filename;
-                    return false;
+                    auto pos = tipl::pixel_index<3>(p[0],p[1],p[2],dim).index();
+                    if(mask[pos] < region_id)
+                        mask[pos] = region_id;
                 }
-            }
+        });
+
+        bool result = true;
+        if(checked_regions.size() <= 255)
+        {
+            tipl::image<3,uint8_t> i8mask(mask);
+            result = tipl::io::gz_nifti::save_to_file(cmd[1].c_str(),i8mask,
+                               checked_regions[0]->vs,
+                               checked_regions[0]->trans_to_mni,
+                               cur_tracking_window.handle->is_mni);
+        }
+        else
+        {
+            result = tipl::io::gz_nifti::save_to_file(cmd[1].c_str(),mask,
+                               checked_regions[0]->vs,
+                               checked_regions[0]->trans_to_mni,
+                               cur_tracking_window.handle->is_mni);
+        }
+        if(!result)
+            return run->failed("cannot write to file " + cmd[1]);
+        save_checked_region_label_file(cmd[1].c_str(),1); // 3d nifti index starts from 1
+        return true;
+    }
+
+
+    if(cmd[0] == "save_regions_to_folder")
+    {
+        auto checked_regions = get_checked_regions();
+        if (checked_regions.empty())
+            return run->failed("no checked region to save");
+        if(cmd[1].empty() && (cmd[1] =
+                QFileDialog::getExistingDirectory(this,"Open directory","").toStdString()).empty())
+            return run->canceled();
+        tipl::progress prog("saving files");
+        for(auto each : checked_regions)
+            if(!each->save_region_to_file((cmd[1] + "/" + each->name + output_format().toStdString()).c_str()))
+                return run->failed("cannot save " + each->name + " to " + cmd[1]);
         return true;
     }
     if(cmd[0] == "delete_all_region")
@@ -1140,24 +1243,6 @@ void RegionTableWidget::move_down(void)
     }
 }
 
-void RegionTableWidget::save_region(void)
-{
-    if (regions.empty() || currentRow() >= regions.size())
-        return;
-    QString filename = QFileDialog::getSaveFileName(
-                           this,
-                           "Save region",QString(regions[currentRow()]->name.c_str()) + output_format(),"NIFTI file(*nii.gz *.nii);;Text file(*.txt);;MAT file (*.mat);;All files(*)" );
-    if (filename.isEmpty())
-        return;
-    if(!filename.endsWith(".mat") &&
-       !filename.endsWith(".txt") &&
-       !filename.endsWith(".nii") &&
-       !filename.endsWith(".nii.gz"))
-        filename += ".nii.gz";
-    regions[currentRow()]->save_region_to_file(filename.toStdString().c_str());
-    item(currentRow(),0)->setText(QFileInfo(filename).completeBaseName());
-    regions[currentRow()]->name = QFileInfo(filename).completeBaseName().toStdString();
-}
 QString RegionTableWidget::output_format(void)
 {
     switch(cur_tracking_window["roi_format"].toInt())
@@ -1170,17 +1255,6 @@ QString RegionTableWidget::output_format(void)
         return ".txt";
     }
     return "";
-}
-
-void RegionTableWidget::save_all_regions_to_dir(void)
-{
-    if (regions.empty())
-        return;
-    QString dir = QFileDialog::getExistingDirectory(this,"Open directory","");
-    if(dir.isEmpty())
-        return;
-    if(!command({"save_all_regions_to_dir",dir.toStdString()}))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
 void RegionTableWidget::save_checked_region_label_file(QString filename,int first_index)
@@ -1197,98 +1271,6 @@ void RegionTableWidget::save_checked_region_label_file(QString filename,int firs
     }
 }
 
-void RegionTableWidget::save_all_regions_to_4dnifti(void)
-{
-    auto checked_regions = get_checked_regions();
-    if (checked_regions.empty())
-        return;
-    QString filename = QFileDialog::getSaveFileName(
-                           this,"Save region",QString(checked_regions[0]->name.c_str()) + output_format(),
-                           "Region file(*nii.gz *.nii);;All file types (*)" );
-    if (filename.isEmpty())
-        return;
-
-    tipl::shape<3> dim = checked_regions[0]->dim;
-    tipl::image<4,unsigned char> multiple_I(tipl::shape<4>(dim[0],dim[1],dim[2],uint32_t(checked_regions.size())));
-    tipl::progress prog("aggregating regions");
-    size_t p = 0;
-    tipl::par_for (checked_regions.size(),[&](unsigned int region_index)
-    {
-        if(prog.aborted())
-            return;
-        prog(p++,checked_regions.size());
-        size_t offset = region_index*dim.size();
-        for (auto& p : checked_regions[region_index]->to_space(
-                         checked_regions[0]->dim,checked_regions[0]->to_diffusion_space))
-        {
-            if (dim.is_valid(p))
-                multiple_I[offset+tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()] = 1;
-        }
-    });
-
-    if(prog.aborted())
-        return;
-
-    if(tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),multiple_I,
-                              checked_regions[0]->vs,
-                              checked_regions[0]->trans_to_mni,
-                              cur_tracking_window.handle->is_mni))
-    {
-        save_checked_region_label_file(filename,0);  // 4d nifti index starts from 0
-        QMessageBox::information(this,QApplication::applicationName(),"saved");
-    }
-    else
-        QMessageBox::critical(this,"ERROR","cannot write to file");
-}
-void RegionTableWidget::save_all_regions(void)
-{
-    auto checked_regions = get_checked_regions();
-    if (checked_regions.empty())
-        return;
-    QString filename = QFileDialog::getSaveFileName(
-                           this,"Save region",QString(checked_regions[0]->name.c_str()) + output_format(),
-                           "Region file(*nii.gz *.nii *.mat);;Text file (*.txt);;All file types (*)" );
-    if (filename.isEmpty())
-        return;
-    tipl::shape<3> dim = checked_regions[0]->dim;
-    tipl::image<3,unsigned short> mask(dim);
-    tipl::par_for (checked_regions.size(),[&](unsigned int region_index)
-    {
-        auto region_id = uint16_t(region_index+1);
-        for (auto& p : checked_regions[region_index]->to_space(
-                            checked_regions[0]->dim,checked_regions[0]->to_diffusion_space))
-            if (dim.is_valid(p))
-            {
-                auto pos = tipl::pixel_index<3>(p[0],p[1],p[2],dim).index();
-                if(mask[pos] < region_id)
-                    mask[pos] = region_id;
-            }
-    });
-
-    bool result;
-    if(checked_regions.size() <= 255)
-    {
-        tipl::image<3,uint8_t> i8mask(mask);
-        result = tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),i8mask,
-                           checked_regions[0]->vs,
-                           checked_regions[0]->trans_to_mni,
-                           cur_tracking_window.handle->is_mni);
-    }
-    else
-    {
-        result = tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),mask,
-                           checked_regions[0]->vs,
-                           checked_regions[0]->trans_to_mni,
-                           cur_tracking_window.handle->is_mni);
-    }
-    if(result)
-    {
-        save_checked_region_label_file(filename,1); // 3d nifti index starts from 1
-        QMessageBox::information(this,QApplication::applicationName(),"saved");
-    }
-    else
-        QMessageBox::critical(this,"ERROR","cannot write to file");
-}
 
 void RegionTableWidget::save_region_info(void)
 {
