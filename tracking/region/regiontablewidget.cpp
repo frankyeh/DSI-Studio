@@ -357,7 +357,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             error_msg = "no available region";
             return false;
         }
-        bool okay = false;
+        bool okay = true;
         if(cmd_text.empty())
             cmd_text = std::to_string(cur_row);
         else
