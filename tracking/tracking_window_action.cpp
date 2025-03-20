@@ -769,13 +769,14 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
             for(size_t i = 0;i < handle->atlas_list.size();++i)
                 if(atlas == handle->atlas_list[i]->name)
                 {
+                    if(handle->atlas_list[i]->get_list().size() != row)
+                    {
+                        QMessageBox::critical(this,"ERROR","The atlas of connectivity matrix does not match the parcellation number");
+                        return;
+                    }
                     regionWidget->delete_all_region();
-                    regionWidget->begin_update();
-                    for(size_t j = 0;j < handle->atlas_list[i]->get_list().size();++j)
-                        regionWidget->add_region_from_atlas(handle->atlas_list[i],uint32_t(j));
-                    regionWidget->end_update();
+                    command({"add_region_from_atlas",std::to_string(handle->template_id),std::to_string(i)});
                     set_data("region_graph",1);
-                    glWidget->update();
                     break;
                 }
         }

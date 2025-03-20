@@ -146,15 +146,7 @@ QColor RegionTableWidget::currentRowColor(void)
 {
     return uint32_t(regions[uint32_t(currentRow())]->region_render->color);
 }
-void RegionTableWidget::add_region_from_atlas(std::shared_ptr<atlas> at,unsigned int label)
-{
-    add_region(at->get_list()[label].c_str());
-    std::vector<tipl::vector<3,short> > points;
-    cur_tracking_window.handle->get_atlas_roi(at,label,regions.back()->dim,regions.back()->to_diffusion_space,points);
-    if(points.empty())
-        return;
-    regions.back()->add_points(std::move(points));
-}
+
 void RegionTableWidget::add_merged_regions_from_atlas(std::shared_ptr<atlas> at,QString name,const std::vector<unsigned int>& roi_list)
 {
     add_region(name);
@@ -168,25 +160,6 @@ void RegionTableWidget::add_merged_regions_from_atlas(std::shared_ptr<atlas> at,
     if(all_points.empty())
         return;
     regions.back()->add_points(std::move(all_points));
-}
-void RegionTableWidget::add_all_regions_from_atlas(std::shared_ptr<atlas> at)
-{
-    tipl::progress prog("add_all_regions_from_atlas");
-    std::vector<std::vector<tipl::vector<3,short> > > points;
-    std::vector<std::string> labels;
-    if(!cur_tracking_window.handle->get_atlas_all_roi(at,
-            cur_tracking_window.current_slice->dim,
-            cur_tracking_window.current_slice->to_dif,points,labels))
-    {
-        QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
-        return;
-    }   
-    for(size_t i = 0;prog(i,points.size());++i)
-    {
-        add_region(labels[i].c_str());
-        regions.back()->add_points(std::move(points[i]));
-    }
-
 }
 void RegionTableWidget::begin_update(void)
 {
@@ -370,11 +343,12 @@ tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
     c.a = 255;
     return c;
 }
-
+extern std::vector<std::vector<std::string> > atlas_file_name_list;
 bool RegionTableWidget::command(std::vector<std::string> cmd)
 {
     auto run = cur_tracking_window.history.record(error_msg,cmd);
-    cmd.resize(3);
+    if(cmd.size() < 3)
+        cmd.resize(3);
     if(cmd[0] == "new_region")
     {
         add_region("New Region");
@@ -571,6 +545,62 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         *regions[cur_row + 1] = *regions[cur_row];
         regions[cur_row + 1]->region_render->color.color = color;
         add_row(int(cur_row+1),regions[cur_row]->name.c_str());
+        return true;
+    }
+    if(cmd[0] == "add_region_from_atlas")
+    {
+        // cmd[1] : template id  (e.g. o for human)
+        // cmd[2] : atlas id     (e.g. 0 for the first atlas of human template)
+        // cmd[3] : region label , if not supply add all
+        size_t template_id = QString::fromStdString(cmd[1]).toInt();
+        if(template_id >= atlas_file_name_list.size())
+            return run->failed("invalid template id: " + cmd[1]);
+        if(template_id != cur_tracking_window.handle->template_id)
+            cur_tracking_window.handle->set_template_id(template_id);
+        size_t atlas_id = QString::fromStdString(cmd[2]).toInt();
+        if(atlas_id >= atlas_file_name_list[template_id].size())
+            return run->failed("invalid atlas id: " + cmd[2]);
+        auto at = cur_tracking_window.handle->atlas_list[atlas_id];
+
+        std::vector<std::vector<tipl::vector<3,short> > > points;
+        std::vector<std::string> labels;
+
+        if(cmd.size() > 3)
+        {
+            std::vector<size_t> label_list;
+            for(auto each : QString::fromStdString(cmd[3]).split('&'))
+            {
+                int label = each.toInt();
+                if(label < 0 || label >= at->get_list().size())
+                    return run->failed("invalid label id: " + each.toStdString());
+                std::vector<tipl::vector<3,short> > point0;
+                if(!cur_tracking_window.handle->get_atlas_roi(at,label,
+                        cur_tracking_window.current_slice->dim,
+                        cur_tracking_window.current_slice->to_dif,point0))
+                    return run->failed(cur_tracking_window.handle->error_msg);
+                labels.push_back(at->get_list()[label]);
+                points.push_back(std::move(point0));
+            }
+        }
+        else
+        if(!cur_tracking_window.handle->get_atlas_all_roi(at,
+                    cur_tracking_window.current_slice->dim,
+                    cur_tracking_window.current_slice->to_dif,points,labels))
+            return run->failed(cur_tracking_window.handle->error_msg);
+
+
+        tipl::progress prog("adding regions");
+        begin_update();
+        for(size_t i = 0;prog(i,points.size());++i)
+        {
+            add_region(labels[i].c_str());
+            if(!points.empty())
+                regions.back()->add_points(std::move(points[i]));
+        }
+        end_update();
+        cur_tracking_window.glWidget->update();
+        cur_tracking_window.slice_need_update = true;
+        cur_tracking_window.raise();
         return true;
     }
     return run->not_processed();

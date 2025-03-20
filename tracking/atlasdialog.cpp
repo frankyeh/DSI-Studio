@@ -110,19 +110,20 @@ void AtlasDialog::on_add_atlas_clicked()
         QMessageBox::critical(this,"ERROR",handle->atlas_list[atlas_index]->error_msg.c_str());
         return;
     }
-    tipl::progress prog("adding regions");
-    w->regionWidget->begin_update();
     if(indexes.count() == ui->region_list->model()->rowCount()) // select all
-        w->regionWidget->add_all_regions_from_atlas(handle->atlas_list[atlas_index]);
+        w->command({"add_region_from_atlas",std::to_string(handle->template_id),std::to_string(atlas_index)});
     else
     {
-        for(unsigned int index = 0;prog(index,indexes.size()); ++index)
-            w->regionWidget->add_region_from_atlas(handle->atlas_list[atlas_index],uint32_t(indexes[int(index)].row()));
+        std::string label_list;
+        for(unsigned int index = 0;index < indexes.size(); ++index)
+        {
+            if(!label_list.empty())
+                label_list.push_back('&');
+            label_list += std::to_string(indexes[int(index)].row());
+        }
+        w->command({"add_region_from_atlas",std::to_string(handle->template_id),std::to_string(atlas_index),label_list});
     }
-    w->regionWidget->end_update();
-    w->glWidget->update();
-    w->slice_need_update = true;
-    w->raise();
+
 
     ui->region_list->clearSelection();
     ui->search_atlas->setText("");

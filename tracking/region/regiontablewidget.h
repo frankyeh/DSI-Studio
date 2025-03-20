@@ -77,9 +77,7 @@ public:
     explicit RegionTableWidget(tracking_window& cur_tracking_window,QWidget *parent = nullptr);
 
     QColor currentRowColor(void);
-    void add_region_from_atlas(std::shared_ptr<atlas> at,unsigned int roi_is);
     void add_merged_regions_from_atlas(std::shared_ptr<atlas> at,QString name,const std::vector<unsigned int>& roi_list);
-    void add_all_regions_from_atlas(std::shared_ptr<atlas> at);
     void add_row(int row,QString name);
     void add_region(QString name,unsigned char type = default_id,unsigned int color = 0xFFFFFFFF);
     void add_high_reso_region(QString name,float reso,unsigned char type = default_id,unsigned int color = 0xFFFFFFFF);
