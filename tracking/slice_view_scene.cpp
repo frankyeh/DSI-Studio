@@ -736,7 +736,7 @@ void slice_view_scene::mousePressEvent ( QGraphicsSceneMouseEvent * mouseEvent )
     {
         if(cur_tracking_window.regionWidget->regions.empty())
         {
-            cur_tracking_window.regionWidget->new_region();
+            cur_tracking_window.command({"new_region"});
             cur_region = -1;
         }
 
