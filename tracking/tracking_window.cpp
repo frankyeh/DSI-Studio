@@ -445,8 +445,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(regionWidget,SIGNAL(need_update()),glWidget,SLOT(update()));
 
         connect(ui->actionSave_Voxel_Data_As,SIGNAL(triggered()),regionWidget,SLOT(save_region_info()));
-        connect(ui->actionDeleteRegion,SIGNAL(triggered()),regionWidget,SLOT(delete_region()));
-        connect(ui->actionDeleteRegionAll,SIGNAL(triggered()),regionWidget,SLOT(delete_all_region()));
 
         // actions
         connect(ui->actionUndo_Edit,SIGNAL(triggered()),regionWidget,SLOT(undo()));
@@ -727,7 +725,7 @@ tracking_window::~tracking_window()
         }
     tractWidget->stop_tracking();
     tractWidget->command({"delete_all_tract"});
-    regionWidget->delete_all_region();
+    tractWidget->command({"delete_all_regions"});
     qApp->removeEventFilter(this);
     QSettings settings;
     settings.setValue("rendering_quality",ui->rendering_efficiency->currentIndex());

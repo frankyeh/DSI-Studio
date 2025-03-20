@@ -349,6 +349,27 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
     auto run = cur_tracking_window.history.record(error_msg,cmd);
     if(cmd.size() < 3)
         cmd.resize(3);
+
+    auto get_cur_row = [&](std::string& cmd_text,int cur_row)->bool
+    {
+        if (regions.empty())
+        {
+            error_msg = "no available region";
+            return false;
+        }
+        bool okay = false;
+        if(cmd_text.empty())
+            cmd_text = std::to_string(cur_row);
+        else
+            cur_row = QString::fromStdString(cmd_text).toInt(&okay);
+        if (cur_row >= regions.size() || !okay)
+        {
+            error_msg = "invalid region index: " + cmd_text;
+            return false;
+        }
+        return true;
+    };
+
     if(cmd[0] == "new_region")
     {
         add_region("New Region");
@@ -374,11 +395,15 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
 
     if(cmd[0] == "save_region")
     {
-        if (regions.empty() || currentRow() >= regions.size())
-            return run->failed("no region to save");
+        int cur_row = currentRow();
+        // cmd[1] : file name to be saved
+        // cmd[2] : the region index (default: current selected one)
+        if(!get_cur_row(cmd[2],cur_row))
+            return false;
+
         if(cmd[1].empty() && (cmd[1] =
                 QFileDialog::getSaveFileName(
-                this,"Save region",QString(regions[currentRow()]->name.c_str()) + output_format(),
+                this,"Save region",QString(regions[cur_row]->name.c_str()) + output_format(),
                 "NIFTI file(*nii.gz *.nii);;Text file(*.txt);;MAT file (*.mat);;All files(*)" ).toStdString()).empty())
             return run->canceled();
 
@@ -387,7 +412,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
            !tipl::ends_with(cmd[1],".nii") &&
            !tipl::ends_with(cmd[1],".nii.gz"))
             cmd[1] += ".nii.gz";
-        if(!regions[currentRow()]->save_region_to_file(cmd[1].c_str()))
+        if(!regions[cur_row]->save_region_to_file(cmd[1].c_str()))
             return run->failed("cannot save region to "+cmd[1]);
         return true;
     }
@@ -489,11 +514,6 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                 return run->failed("cannot save " + each->name + " to " + cmd[1]);
         return true;
     }
-    if(cmd[0] == "delete_all_region")
-    {
-        delete_all_region();
-        return true;
-    }
     if(cmd[0] == "open_region" || cmd[0] == "open_mni_region")
     {
         // cmd[1] : contain only single file name
@@ -537,9 +557,10 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "copy_region")
     {
-        if (regions.empty() || currentRow() >= regions.size())
-            return run->failed("no region to copy");
-        unsigned int cur_row = uint32_t(currentRow());
+        // cmd[1] : region index (default: current)
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[1],cur_row))
+            return false;
         unsigned int color = regions[cur_row]->region_render->color.color;
         regions.insert(regions.begin() + cur_row + 1,std::make_shared<ROIRegion>(cur_tracking_window.handle));
         *regions[cur_row + 1] = *regions[cur_row];
@@ -639,6 +660,28 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         emit need_update();
         return true;
     }
+
+    if(cmd[0] == "delete_region")
+    {
+        // cmd[1] : region index (default: current)
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[1],cur_row))
+            return false;
+        regions.erase(regions.begin()+cur_row);
+        removeRow(cur_row);
+        emit need_update();
+        return true;
+    }
+
+    if(cmd[0] == "delete_all_regions")
+    {
+        setRowCount(0);
+        regions.clear();
+        color_gen = 0;
+        emit need_update();
+        return true;
+    }
+
     return run->not_processed();
 }
 void RegionTableWidget::move_slice_to_current_region(void)
@@ -1320,24 +1363,6 @@ void RegionTableWidget::save_region_info(void)
         out << std::endl;
     }
 }
-
-void RegionTableWidget::delete_region(void)
-{
-    if (currentRow() >= regions.size())
-        return;
-    regions.erase(regions.begin()+currentRow());
-    removeRow(currentRow());
-    emit need_update();
-}
-
-void RegionTableWidget::delete_all_region(void)
-{
-    setRowCount(0);
-    regions.clear();
-    color_gen = 0;
-    emit need_update();
-}
-
 
 void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<std::shared_ptr<ROIRegion> >& regions,
                             std::string& result)

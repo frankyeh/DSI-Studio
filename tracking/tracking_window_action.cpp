@@ -303,7 +303,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         if(std::filesystem::exists(cmd[1]+"/regions"))
         {
             if(regionWidget->rowCount())
-                regionWidget->delete_all_region();
+                regionWidget->command({"delete_all_regions"});
             for(const auto& each : tipl::search_files(cmd[1]+"/regions","*nii.gz"))
                 regionWidget->command({"load_region",each});
         }
@@ -774,7 +774,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
                         QMessageBox::critical(this,"ERROR","The atlas of connectivity matrix does not match the parcellation number");
                         return;
                     }
-                    regionWidget->delete_all_region();
+                    command({"delete_all_regions"});
                     command({"add_region_from_atlas",std::to_string(handle->template_id),std::to_string(i)});
                     set_data("region_graph",1);
                     break;
