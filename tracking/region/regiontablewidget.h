@@ -96,8 +96,6 @@ public slots:
 
     void check_check_status(int,int);
     void whole_brain(void);
-    void show_statistics(void);
-    void show_t2r(void);
     void move_up(void);
     void move_down(void);
     void undo(void);

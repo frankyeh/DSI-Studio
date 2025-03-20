@@ -15,8 +15,6 @@
 #include "atlas.hpp"
 
 
-std::string show_info_dialog(const std::string& title,const std::string& result,const std::string& file_name_hint = "report.txt");
-
 TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget *parent) :
     QTableWidget(parent),cur_tracking_window(cur_tracking_window_)
 {

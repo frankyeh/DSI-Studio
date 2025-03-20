@@ -486,9 +486,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionWhole_brain_seeding,SIGNAL(triggered()),regionWidget,SLOT(whole_brain()));
         connect(ui->actionLoad_Region_Color,SIGNAL(triggered()),regionWidget,SLOT(load_region_color()));
         connect(ui->actionSave_Region_Color,SIGNAL(triggered()),regionWidget,SLOT(save_region_color()));
-        connect(ui->actionRegion_statistics,SIGNAL(triggered()),regionWidget,SLOT(show_statistics()));
-        connect(ui->actionTract_To_Region_Connectome,SIGNAL(triggered()),regionWidget,SLOT(show_t2r()));
-
         connect(ui->region_up,SIGNAL(clicked()),regionWidget,SLOT(move_up()));
         connect(ui->region_down,SIGNAL(clicked()),regionWidget,SLOT(move_down()));
     }

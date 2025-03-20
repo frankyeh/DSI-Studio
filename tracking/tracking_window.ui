@@ -3283,6 +3283,9 @@ Tracking</string>
    <property name="text">
     <string>Statistics...</string>
    </property>
+   <property name="toolTip">
+    <string>run show_region_statistics</string>
+   </property>
   </action>
   <action name="actionTract_Analysis_Report">
    <property name="text">
@@ -4373,6 +4376,9 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Tract-To-Region Connectome...</string>
+   </property>
+   <property name="toolTip">
+    <string>run show_t2r</string>
    </property>
   </action>
   <action name="action3D_Screen_Left_Right_Views">

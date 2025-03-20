@@ -19,7 +19,7 @@
 #include "reg.hpp"
 
 extern std::vector<std::string> fa_template_list;
-std::string show_info_dialog(const std::string& title, const std::string& result,const std::string& file_name_hint = "report.txt")
+std::string show_info_dialog(const std::string& title, const std::string& result,const std::string& file_name_hint)
 {
     std::string saved_file;
     QMessageBox msgBox;

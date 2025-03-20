@@ -18,7 +18,7 @@ class DeviceTableWidget;
 namespace Ui {
     class tracking_window;
 }
-
+std::string show_info_dialog(const std::string& title,const std::string& result,const std::string& file_name_hint = "report.txt");
 struct command_history{
 private:
     static bool is_loading(const std::string& cmd);

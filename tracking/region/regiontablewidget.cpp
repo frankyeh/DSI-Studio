@@ -28,6 +28,35 @@ void split(std::vector<std::string>& list,const std::string& input, const std::s
     list = {first, last};
 }
 
+void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<std::shared_ptr<ROIRegion> >& regions,
+                            std::string& result)
+{
+    std::vector<std::string> titles;
+    std::vector<std::vector<float> > data(regions.size());
+    tipl::progress p("for each region");
+    for(size_t index = 0;index < regions.size();++index)
+    {
+        std::vector<std::string> dummy;
+        regions[index]->get_quantitative_data(handle,(index == 0) ? titles : dummy,data[index]);
+    }
+    std::ostringstream out;
+    out << "Name";
+    for(auto each : regions)
+        out << "\t" << each->name;
+    out << std::endl;
+    for(unsigned int i = 0;i < titles.size();++i)
+    {
+        out << titles[i];
+        for(unsigned int j = 0;j < regions.size();++j)
+        {
+            out << "\t";
+            if(i < data[j].size())
+                out << data[j][i];
+        }
+        out << std::endl;
+    }
+    result = out.str();
+}
 QWidget *ImageDelegate::createEditor(QWidget *parent,
                                      const QStyleOptionViewItem &option,
                                      const QModelIndex &index) const
@@ -679,6 +708,46 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         regions.clear();
         color_gen = 0;
         emit need_update();
+        return true;
+    }
+    if(cmd[0] == "show_region_statistics" || cmd[0] == "show_t2r")
+    {
+        // cmd[1] : file name to save
+        auto regions = get_checked_regions();
+        if(regions.empty())
+            return run->failed("please add parcellation regions");
+
+        std::string result;
+
+        if(cmd[0] == "show_t2r")
+        {
+            auto tracts = cur_tracking_window.tractWidget->get_checked_tracks();
+            if(tracts.empty())
+                return run->failed("please specify tract(s)");
+            Parcellation p(cur_tracking_window.handle);
+            p.load_from_regions(regions);
+            result = p.get_t2r(tracts);
+        }
+        else
+        {
+            tipl::progress p("calculate region statistics",true);
+            get_regions_statistics(cur_tracking_window.handle,regions,result);
+        }
+
+        if(!cmd[1].empty())
+        {
+            std::ofstream out(cmd[1]);
+            if(!out)
+                return run->failed("cannot write to " + cmd[1]);
+            out << result;
+        }
+        else
+        {
+            if(cmd[0] == "show_t2r")
+                cmd[1] = show_info_dialog("Tract-To-Region Connectome",result,cur_tracking_window.history.file_stem() + "_t2r.txt");
+            else
+                cmd[1] = show_info_dialog("Region Statistics",result,cur_tracking_window.history.file_stem() + "_stat.txt");
+        }
         return true;
     }
 
@@ -1364,63 +1433,7 @@ void RegionTableWidget::save_region_info(void)
     }
 }
 
-void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<std::shared_ptr<ROIRegion> >& regions,
-                            std::string& result)
-{
-    std::vector<std::string> titles;
-    std::vector<std::vector<float> > data(regions.size());
-    tipl::progress p("for each region");
-    for(size_t index = 0;index < regions.size();++index)
-    {
-        std::vector<std::string> dummy;
-        regions[index]->get_quantitative_data(handle,(index == 0) ? titles : dummy,data[index]);
-    }
-    std::ostringstream out;
-    out << "Name";
-    for(auto each : regions)
-        out << "\t" << each->name;
-    out << std::endl;
-    for(unsigned int i = 0;i < titles.size();++i)
-    {
-        out << titles[i];
-        for(unsigned int j = 0;j < regions.size();++j)
-        {
-            out << "\t";
-            if(i < data[j].size())
-                out << data[j][i];
-        }
-        out << std::endl;
-    }
-    result = out.str();
-}
-std::string show_info_dialog(const std::string& title,const std::string& result,const std::string& file_name_hint = "report.txt");
-void RegionTableWidget::show_statistics(void)
-{
-    auto regions = get_checked_regions();
-    if(regions.empty())
-        return;
-    std::string result;
-    {
-        tipl::progress p("calculate region statistics",true);
-        get_regions_statistics(cur_tracking_window.handle,regions,result);
-    }
-    show_info_dialog("Region Statistics",result);
-}
-void RegionTableWidget::show_t2r(void)
-{
-    auto regions = get_checked_regions();
-    if(regions.empty())
-        return;
-    auto tracts = cur_tracking_window.tractWidget->get_checked_tracks();
-    if(tracts.empty())
-    {
-        QMessageBox::critical(this,"ERROR",cur_tracking_window.tractWidget->tract_models.empty() ? "Please generate tracts first" : "No checked tracts");
-        return;
-    }
-    Parcellation p(cur_tracking_window.handle);
-    p.load_from_regions(regions);
-    show_info_dialog("Tract-To-Region Connectome",p.get_t2r(tracts));
-}
+
 
 void RegionTableWidget::whole_brain(void)
 {
