@@ -768,8 +768,8 @@ void group_connectometry_analysis::generate_report(std::string& output)
             new_mdi->command({"set_roi_view","1"});
             new_mdi->command({"save_roi_screen",(output_file_name+"." + name + "_map2.jpg").c_str()});
             new_mdi->command({"set_roi_view","2"});
-            new_mdi->command({"delete_all_tract"});
-            new_mdi->command({"delete_all_region"});
+            new_mdi->command({"delete_all_tracts"});
+            new_mdi->command({"delete_all_regions"});
         };
         show_track_result(inc_track,"inc",0x00F01010);
         show_track_result(dec_track,"dec",0x001010F0);

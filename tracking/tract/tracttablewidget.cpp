@@ -1263,8 +1263,10 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         cut_by_slice(QString(cmd[1].c_str()).toInt(),QString(cmd[2].c_str()).toInt());
         return true;
     }
-    if(cmd[0] == "delete_all_tract")
+    if(cmd[0] == "delete_all_tracts")
     {
+        if(tipl::progress::is_running())
+            return run->failed("please wait for the termination of data processing");
         setRowCount(0);
         while(!tract_rendering.empty())
         {
@@ -1552,17 +1554,6 @@ void TractTableWidget::delete_tract(void)
     delete_row(currentRow());
     emit show_tracts();
 }
-
-void TractTableWidget::delete_all_tract(void)
-{
-    if(tipl::progress::is_running())
-    {
-        QMessageBox::critical(this,"ERROR","Please wait for the termination of data processing");
-        return;
-    }
-    command({"delete_all_tract"});
-}
-
 void TractTableWidget::delete_repeated(void)
 {
     float distance = 1.0;

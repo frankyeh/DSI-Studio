@@ -588,7 +588,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
 
         connect(ui->actionDeleteTract,SIGNAL(triggered()),tractWidget,SLOT(delete_tract()));
-        connect(ui->actionDeleteTractAll,SIGNAL(triggered()),tractWidget,SLOT(delete_all_tract()));
         connect(ui->actionDelete_By_Length,SIGNAL(triggered()),tractWidget,SLOT(delete_by_length()));
 
 
@@ -724,7 +723,7 @@ tracking_window::~tracking_window()
             break;
         }
     tractWidget->stop_tracking();
-    tractWidget->command({"delete_all_tract"});
+    tractWidget->command({"delete_all_tracts"});
     tractWidget->command({"delete_all_regions"});
     qApp->removeEventFilter(this);
     QSettings settings;

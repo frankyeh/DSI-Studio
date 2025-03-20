@@ -156,7 +156,6 @@ public slots:
     void sort_track_by_name(void);
     void merge_track_by_name(void);
     void delete_tract(void);
-    void delete_all_tract(void);
     void delete_repeated(void);
     void delete_by_length(void);
     void resample_step_size(void);
