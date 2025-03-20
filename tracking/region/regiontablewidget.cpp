@@ -380,6 +380,23 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         add_region("New Region");
         return true;
     }
+    if(cmd[0] == "new_region_from_mni")
+    {
+        if(cmd[1].empty() && (cmd[1] =
+                QInputDialog::getText(this,QApplication::applicationName(),
+                "Please specify the MNI Coordinate and radius of the region, separated by spaces (e.g. 0 -10 21 10)",
+                                                    QLineEdit::Normal,"0 0 0 10").toStdString()).empty())
+            return run->canceled();
+        QStringList params = QString::fromStdString(cmd[1]).split(' ');
+        if(params.size() != 4)
+            return run->failed("invalid numbers. please specify four numbers separated by spaces");
+        if(!cur_tracking_window.handle->map_to_mni())
+            return run->failed("cannot map to MNI space: " + cur_tracking_window.handle->error_msg);
+        add_region("New Region");
+        regions.back()->new_from_mni_sphere(cur_tracking_window.handle,
+                                            tipl::vector<3>(params[0].toFloat(),params[1].toFloat(),params[2].toFloat()),params[3].toFloat());
+        return true;
+    }
     if(cmd[0] == "save_all_regions_to_dir")
     {
         tipl::progress prog("saving files");
@@ -516,31 +533,6 @@ void RegionTableWidget::draw_region(const tipl::matrix<4,4>& current_slice_T,uns
                     cur_tracking_window["roi_draw_edge"].toInt(),
                     cur_tracking_window["roi_edge_width"].toInt(),
                     cur_roi_index,display_ratio);
-
-}
-
-void RegionTableWidget::new_region_from_mni_coordinate(void)
-{
-    bool ok;
-    QString param = QInputDialog::getText(this,QApplication::applicationName(),
-            "Please specify the MNI Coordinate and radius of the region, separated by spaces (e.g. 0 -10 21 10)",
-                                                QLineEdit::Normal,"0 0 0 10",&ok);
-    if(!ok)
-        return;
-    QStringList params = param.split(' ');
-    if(params.size() != 4)
-    {
-        QMessageBox::critical(this,"ERROR","Invalid numbers. Please specify four numbers separated by spaces");
-        return;
-    }
-    if(!cur_tracking_window.map_to_mni())
-    {
-        QMessageBox::critical(this,"ERROR","Cannot map to MNI space");
-        return;
-    }
-    add_region("New Region");
-    regions.back()->new_from_mni_sphere(cur_tracking_window.handle,
-                                        tipl::vector<3>(params[0].toFloat(),params[1].toFloat(),params[2].toFloat()),params[3].toFloat());
 
 }
 
@@ -1040,9 +1032,13 @@ void RegionTableWidget::load_mni_region(void)
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
                                 this,"Open region",QFileInfo(cur_tracking_window.work_path).absolutePath(),"NIFTI files (*.nii *nii.gz);;All files (*)" );
-    if (filenames.isEmpty() || !cur_tracking_window.map_to_mni())
+    if (filenames.isEmpty())
         return;
-
+    if(!cur_tracking_window.handle->map_to_mni())
+    {
+        QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
+        return;
+    }
     for (auto each : filenames)
         if(!command({"load_mni_region",each.toStdString()}))
         {
