@@ -106,8 +106,6 @@ public slots:
     void show_statistics(void);
     void show_t2r(void);
     void merge_all(void);
-    void check_all(void);
-    void uncheck_all(void);
     void move_up(void);
     void move_down(void);
     void undo(void);
