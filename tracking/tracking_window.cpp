@@ -444,7 +444,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(regionWidget,&RegionTableWidget::itemSelectionChanged,this,[this](void){slice_need_update = true;});
         connect(regionWidget,SIGNAL(need_update()),glWidget,SLOT(update()));
 
-        connect(ui->actionNew_Region_From_MNI_Coordinate,SIGNAL(triggered()),regionWidget,SLOT(new_region_from_mni_coordinate()));
         connect(ui->actionOpenRegion,SIGNAL(triggered()),regionWidget,SLOT(load_region()));
         connect(ui->actionOpen_MNI_Region,SIGNAL(triggered()),regionWidget,SLOT(load_mni_region()));
         connect(ui->actionSaveRegionAs,SIGNAL(triggered()),regionWidget,SLOT(save_region()));
@@ -687,7 +686,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     {
         foreach (QAction* action, findChildren<QAction*>())
         {
-            if(action->text().contains("&") || action->text().isEmpty() || !action->toolTip().startsWith("run"))
+            if(action->text().isEmpty() || !action->toolTip().startsWith("run "))
                 continue;
             connect(action, SIGNAL(triggered()),this, SLOT(run_action()));
         }
