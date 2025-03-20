@@ -1108,6 +1108,28 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     auto run = cur_tracking_window.history.record(error_msg,cmd);
     if(cmd.size() < 3)
         cmd.resize(3);
+
+    if(cmd[0] == "delete_branch")
+    {
+        for_each_bundle(cmd[0].c_str(), [&](unsigned int index){return tract_models[index]->delete_branch();});
+        return true;
+    }
+    if(cmd[0] == "undo_tract")
+    {
+        for_each_bundle(cmd[0].c_str(),[&](unsigned int index){return tract_models[index]->undo();});
+            return true;
+    }
+    if(cmd[0] == "redo_tract")
+    {
+        for_each_bundle(cmd[0].c_str(),[&](unsigned int index){return tract_models[index]->redo();});
+       return true;
+    }
+    if(cmd[0] == "trim_tract")
+    {
+        for_each_bundle(cmd[0].c_str(),[&](unsigned int index){return tract_models[index]->trim();});
+       return true;
+    }
+
     if(cmd[0] == "set_dt_index")
     {
         auto pos = cmd[1].find('&');
