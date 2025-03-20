@@ -233,12 +233,12 @@ private slots:
     void on_stay_clicked();
     void on_actionSave_3D_Model_triggered();
     void on_actionEdit_Slices_triggered();
-    void on_actionSave_FIB_As_triggered();
     void on_alt_mapping_currentIndexChanged(int index);
     void on_directional_color_clicked();
     void save_slice_as();
-    void catch_screen();
     void on_actionCommand_History_triggered();
+
+    void run_action();
 };
 
 #endif // TRACKING_WINDOW_H

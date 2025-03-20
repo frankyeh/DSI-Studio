@@ -3040,6 +3040,9 @@ Tracking</string>
    <property name="text">
     <string>Save ROI Screen...</string>
    </property>
+   <property name="toolTip">
+    <string>run save_roi_screen</string>
+   </property>
   </action>
   <action name="actionLoad_Camera">
    <property name="icon">
@@ -4261,6 +4264,9 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Save FIB As...</string>
+   </property>
+   <property name="toolTip">
+    <string>run save_fib_as</string>
    </property>
   </action>
   <action name="actionTract_To_Region_Connectome">

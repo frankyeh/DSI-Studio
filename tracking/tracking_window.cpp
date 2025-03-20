@@ -552,7 +552,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionSave_3D_screen_in_3_views,SIGNAL(triggered()),glWidget,SLOT(save3ViewImage()));
         connect(ui->actionRecord_Video,SIGNAL(triggered()),glWidget,SLOT(record_video()));
         connect(ui->actionROI,&QAction::triggered,this,[this](void){scene.copyClipBoard();});
-        connect(ui->actionSave_ROI_Screen,SIGNAL(triggered()),this,SLOT(catch_screen()));
 
 
     }
@@ -717,6 +716,14 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     }
 
+    {
+        foreach (QAction* action, findChildren<QAction*>())
+        {
+            if(action->text().contains("&") || action->text().isEmpty() || !action->toolTip().startsWith("run"))
+                continue;
+            connect(action, SIGNAL(triggered()),this, SLOT(run_action()));
+        }
+    }
     qApp->installEventFilter(this);
     // now begin visualization
     tipl::out() << "begin visualization" << std::endl;
@@ -1403,20 +1410,6 @@ void tracking_window::on_actionEdit_Slices_triggered()
     dialog->init_image();
     dialog->show();
 }
-
-
-void tracking_window::on_actionSave_FIB_As_triggered()
-{
-    QString filename = QFileDialog::getSaveFileName(this,"Save FIB file",
-                        windowTitle().replace(".fib.gz",".fz"),"FIB files (*.fz);;All files (*)");
-    if (filename.isEmpty())
-        return;
-    if(command({"save_fib",filename.toStdString()}))
-        QMessageBox::information(this,QApplication::applicationName(),"saved");
-    else
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
-
 
 
 void tracking_window::on_actionCommand_History_triggered()

@@ -81,21 +81,17 @@ void tracking_window::save_slice_as()
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
-
-void tracking_window::catch_screen()
+void tracking_window::run_action(void)
 {
-    QString filename = QFileDialog::getSaveFileName(
-                0,"Save Images files",regionWidget->currentRow() >= 0 ?
-                    regionWidget->item(regionWidget->currentRow(),0)->text()+".png" :
-                    QFileInfo(windowTitle()).baseName()+"_"+
-                    ui->SliceModality->currentText()+".jpg",
-                    "Image files (*.png *.bmp *.jpg);;All files (*)");
-    if(filename.isEmpty())
-            return;
-    if(!command({"save_roi_image",filename.toStdString(),(*this)["roi_layout"].toString().toStdString()}))
+    QAction *action = qobject_cast<QAction *>(sender());
+    if(!action || !action->toolTip().startsWith("run "))
+        return;
+    if(!command({action->toolTip().toStdString().substr(4)})) // skip "run " part
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
+    else
+        if(action->toolTip().contains("save_"))
+            QMessageBox::information(this,"ERROR","file saved");
 }
-
 extern std::vector<tracking_window*> tracking_windows;
 bool tracking_window::command(std::vector<std::string> cmd)
 {
@@ -138,8 +134,11 @@ bool tracking_window::command(std::vector<std::string> cmd)
         tracking_windows.back()->resize(size().width(),size().height());
         return true;
     }
-    if(cmd[0] == "save_fib")
+    if(cmd[0] == "save_fib_as")
     {
+        if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(this,"Save FIB file",
+           windowTitle().replace(".fib.gz",".fz"),"FIB files (*.fz);;All files (*)").toStdString()).empty())
+           return true;
         if(!handle->save_to_file(cmd[1]))
         {
             error_msg = handle->error_msg;
@@ -159,24 +158,20 @@ bool tracking_window::command(std::vector<std::string> cmd)
         }
         return true;
     }
-    if(cmd[0] == "save_roi_image")
+    if(cmd[0] == "save_roi_screen")
     {
+        if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(
+                    0,"Save Images files",
+                    regionWidget->currentRow() >= 0 ?
+                    regionWidget->item(regionWidget->currentRow(),0)->text()+".png" :
+                    QFileInfo(windowTitle()).baseName()+"_"+ui->SliceModality->currentText()+".jpg",
+                    "Image files (*.png *.bmp *.jpg);;All files (*)").toStdString()).empty())
+            return true;
         slice_need_update = false; // turn off simple drawing
-        scene.paint_image(scene.view_image,false);
-        auto file_name = !cmd[1].empty() ? cmd[1] :
-                    QFileInfo(work_path).absolutePath().toStdString() + "/" +
-                    QFileInfo(windowTitle()).baseName().toStdString()+"_"+
-                    ui->SliceModality->currentText().toStdString()+"_"+
-                    (*this)["roi_layout"].toString().toStdString()+".jpg";
-        QImage output = scene.view_image;
-        if((*this)["roi_layout"].toInt() > 2 && !cmd[2].empty()) //mosaic
+        scene.paint_image(scene.view_image,false);     
+        if(!scene.view_image.save(cmd[1].c_str()))
         {
-            int cut_row = QString(cmd[2].c_str()).toInt();
-            output = output.copy(QRect(0,cut_row,output.width(),output.height()-cut_row-cut_row));
-        }
-        if(!output.save(file_name.c_str()))
-        {
-            error_msg = "cannot save mapping to " + file_name;
+            error_msg = "cannot save mapping to " + cmd[1];
             return false;
         }
         return true;
