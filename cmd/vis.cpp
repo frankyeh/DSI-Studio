@@ -22,8 +22,7 @@ int vis(tipl::program_option<tipl::out>& po)
     po.mute("cmd");
     for(auto each : tipl::split(po.get("cmd"),'+'))
     {
-        auto param = tipl::split(each,',');
-        if(!tracking_windows.back()->command(param))
+        if(!tracking_windows.back()->command(tipl::split(each,',')))
         {
             tipl::error() << tracking_windows.back()->error_msg << std::endl;
             return 1;
