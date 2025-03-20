@@ -2742,6 +2742,9 @@ Tracking</string>
    <property name="text">
     <string>&amp;Open Region...</string>
    </property>
+   <property name="toolTip">
+    <string>run open_region</string>
+   </property>
   </action>
   <action name="actionSaveRegionAs">
    <property name="icon">
@@ -3760,6 +3763,9 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Open MNI Region...</string>
+   </property>
+   <property name="toolTip">
+    <string>run load_mni_region</string>
    </property>
   </action>
   <action name="actionA_B">
