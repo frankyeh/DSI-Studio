@@ -375,6 +375,11 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
 {
     auto run = cur_tracking_window.history.record(error_msg,cmd);
     cmd.resize(3);
+    if(cmd[0] == "new_region")
+    {
+        add_region("New Region");
+        return true;
+    }
     if(cmd[0] == "save_all_regions_to_dir")
     {
         tipl::progress prog("saving files");
@@ -514,11 +519,6 @@ void RegionTableWidget::draw_region(const tipl::matrix<4,4>& current_slice_T,uns
 
 }
 
-void RegionTableWidget::new_region(void)
-{
-    add_region("New Region");
-}
-
 void RegionTableWidget::new_region_from_mni_coordinate(void)
 {
     bool ok;
@@ -538,7 +538,7 @@ void RegionTableWidget::new_region_from_mni_coordinate(void)
         QMessageBox::critical(this,"ERROR","Cannot map to MNI space");
         return;
     }
-    new_region();
+    add_region("New Region");
     regions.back()->new_from_mni_sphere(cur_tracking_window.handle,
                                         tipl::vector<3>(params[0].toFloat(),params[1].toFloat(),params[2].toFloat()),params[3].toFloat());
 
@@ -1739,6 +1739,12 @@ void RegionTableWidget::do_action(QString action)
 
 
         std::vector<std::shared_ptr<ROIRegion> > region_to_be_processed;
+        if(action == "threshold")
+        {
+            add_region("New Region");
+            region_to_be_processed.push_back(regions.back());
+        }
+        else
         {
             if(cur_tracking_window.ui->actionModify_All->isChecked())
                 region_to_be_processed = checked_regions;
