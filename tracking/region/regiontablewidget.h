@@ -93,7 +93,6 @@ public slots:
 
     void draw_region(const tipl::matrix<4,4>& current_slice_T,unsigned char dim,int slice_pos,
                      const tipl::shape<2>& slice_image_shape,float display_ratio,QImage& scaled_image);
-    void new_region(void);
     void new_region_from_mni_coordinate(void);
     void copy_region(void);
     void save_region(void);
@@ -138,7 +137,7 @@ public slots:
     void action_shiftny(void){do_action("shiftny");}
     void action_shiftz(void){do_action("shiftz");}
     void action_shiftnz(void){do_action("shiftnz");}
-    void action_threshold(void){new_region();do_action("threshold");}
+    void action_threshold(void){do_action("threshold");}
     void action_threshold_current(void){do_action("threshold_current");}
     void action_separate(void){do_action("separate");}
     void action_A_B(void){do_action("A-B");}
