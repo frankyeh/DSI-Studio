@@ -24,7 +24,7 @@ private:
     static bool is_loading(const std::string& cmd);
     static bool is_saving(const std::string& cmd);
 public:
-    size_t current_recording_instance = 0;
+    int current_recording_instance = 0;
     bool has_other_thread = false;
     std::string default_parent_path,default_stem,default_stem2;
     std::vector<std::string> commands;
