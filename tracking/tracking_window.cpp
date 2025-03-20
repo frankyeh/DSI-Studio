@@ -684,12 +684,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     }
     // Option
     {
-        connect(ui->actionSave_tracking_parameters,&QAction::triggered, this,[this](void){command({"save_tracking_setting"});});
-        connect(ui->actionLoad_tracking_parameters,&QAction::triggered, this,[this](void){command({"load_tracking_setting"});});
-
-        connect(ui->actionSave_Rendering_Parameters,&QAction::triggered, this,[this](void){command({"save_rendering_setting"});});
-        connect(ui->actionLoad_Rendering_Parameters,&QAction::triggered, this,[this](void){command({"load_rendering_setting"});});
-
         connect(ui->actionRestore_Settings,&QAction::triggered, this,[this](void){command({"restore_rendering"});});
         connect(ui->actionRestore_Tracking_Settings,&QAction::triggered, this,[this](void){command({"restore_tracking"});});
         connect(ui->reset_rendering,&QPushButton::clicked, this,[this](void)
