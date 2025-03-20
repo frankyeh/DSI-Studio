@@ -50,10 +50,15 @@ public:
             error_msg = msg;
             return false;
         }
+        bool not_processed(void)
+        {
+            error_msg = "not_processed";
+            return false;
+        }
         ~surrogate()
         {
             --owner.current_recording_instance;
-            if(error_msg == "canceled")
+            if(error_msg == "canceled" || error_msg == "not_processed")
                 return;
             while(!cmd.empty() && cmd.back().empty())
                 cmd.pop_back();
