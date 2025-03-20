@@ -521,12 +521,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             glWidget->rotation_matrix2 = glWidget->rotation_matrix;
             glWidget->update();});
         connect(ui->actionStereoscopic,&QAction::triggered, this,[this](void){glWidget->view_mode = GLWidget::view_mode_type::stereo;glWidget->update();});
-        connect(ui->actionLoad_Presentation,&QAction::triggered, this,[this](void){command({"load_workspace"});});
-        connect(ui->actionSave_Presentation,&QAction::triggered, this,[this](void){
-            if(command({"save_workspace"}))
-                QMessageBox::information(this,QApplication::applicationName(),"File saved");
-        });
-
         connect(ui->action3D_Screen,&QAction::triggered,this,[this](void){QApplication::clipboard()->setImage(tipl::qt::get_bounding_box(glWidget->grab_image()));});
         connect(ui->action3D_Screen_Left_Right_Views,&QAction::triggered,this,[this](void){QApplication::clipboard()->setImage(glWidget->getLRView());});
         connect(ui->action3D_Screen_3_Views,&QAction::triggered,this,[this](void){QApplication::clipboard()->setImage(glWidget->get3View(0));});
