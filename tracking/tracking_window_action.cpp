@@ -138,6 +138,27 @@ bool tracking_window::command(std::vector<std::string> cmd)
         tracking_windows.back()->resize(size().width(),size().height());
         return true;
     }
+    if(cmd[0] == "save_fib")
+    {
+        if(!handle->save_to_file(cmd[1]))
+        {
+            error_msg = handle->error_msg;
+            return false;
+        }
+        return true;
+    }
+    if(cmd[0] == "open_mapping")
+    {
+        if(!handle->load_template())
+            return false;
+        tipl::progress prog(cmd[0],true);
+        if(!handle->load_mapping(cmd[1]))
+        {
+            error_msg = handle->error_msg;
+            return false;
+        }
+        return true;
+    }
     if(cmd[0] == "save_roi_image")
     {
         slice_need_update = false; // turn off simple drawing
