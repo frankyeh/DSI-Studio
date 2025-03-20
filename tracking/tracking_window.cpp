@@ -659,13 +659,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionPaint_Tracts,&QAction::triggered, this,[this](void){glWidget->setCursor(Qt::CrossCursor);glWidget->editing_option = GLWidget::selecting;tractWidget->edit_option = TractTableWidget::paint;});
         connect(ui->actionMove_Objects,&QAction::triggered, this,[this](void){glWidget->setCursor(Qt::CrossCursor);glWidget->editing_option = GLWidget::moving;});
 
-        connect(ui->actionCut_X,&QAction::triggered, this,[this](void){tractWidget->cut_by_slice(0,true);});
-        connect(ui->actionCut_X_2,&QAction::triggered, this,[this](void){tractWidget->cut_by_slice(0,false);});
-        connect(ui->actionCut_Y,&QAction::triggered, this,[this](void){tractWidget->cut_by_slice(1,true);});
-        connect(ui->actionCut_Y_2,&QAction::triggered, this,[this](void){tractWidget->cut_by_slice(1,false);});
-        connect(ui->actionCut_Z,&QAction::triggered, this,[this](void){tractWidget->cut_by_slice(2,true);});
-        connect(ui->actionCut_Z_2,&QAction::triggered, this,[this](void){tractWidget->cut_by_slice(2,false);});
-
     } 
     {
         connect(ui->actionRestore_window_layout,&QAction::triggered, this,[this](void){restoreGeometry(default_geo);restoreState(default_state);});
