@@ -42,8 +42,7 @@ public:
         }
         bool canceled(void)
         {
-            cmd.clear();
-            error_msg.clear();
+            error_msg = "canceled";
             return false;
         }
         bool failed(const std::string& msg)
@@ -54,10 +53,10 @@ public:
         ~surrogate()
         {
             --owner.current_recording_instance;
+            if(error_msg == "canceled")
+                return;
             while(!cmd.empty() && cmd.back().empty())
                 cmd.pop_back();
-            if(cmd.empty()) // canceled
-                return;
             std::string output(tipl::merge(cmd,','));
             tipl::out() << "--cmd=" << output;
             if(!error_msg.empty())
