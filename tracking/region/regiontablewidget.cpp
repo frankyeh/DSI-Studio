@@ -435,7 +435,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         check_all();
         return true;
     }
-    return run->canceled();
+    return run->not_processed();
 }
 void RegionTableWidget::move_slice_to_current_region(void)
 {
