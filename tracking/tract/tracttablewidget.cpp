@@ -1145,7 +1145,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         bool other_side = cmd[0].back() == '2';
         if(other_side)
             cmd[0].pop_back();
-        cut_by_slice(tipl::contains(cmd[0].back()-'x',!other_side));
+        cut_by_slice(cmd[0].back()-'x',!other_side);
         return true;
     }
 
