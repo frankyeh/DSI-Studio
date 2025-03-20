@@ -655,13 +655,31 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "merge_regions")
     {
+        // cmd[1] : region index to merge (default: use checked regions)
         std::vector<size_t> merge_list;
-        for(size_t index = 0;index < regions.size();++index)
-            if(item(int(index),0)->checkState() == Qt::Checked)
-                merge_list.push_back(index);
-        if(merge_list.size() <= 1)
-            return run->failed("select more than two regions to merge");
-
+        if(cmd[1].empty())
+        {
+            for(size_t index = 0;index < regions.size();++index)
+                if(item(int(index),0)->checkState() == Qt::Checked)
+                {
+                    merge_list.push_back(index);
+                    if(!cmd[1].empty())
+                        cmd[1] += '&';
+                    cmd[1] += std::to_string(index);
+                }
+            if(merge_list.size() <= 1)
+                return run->failed("select more than two regions to merge");
+        }
+        else
+        {
+            // get merge_list from cmd[1]
+            for(auto each : QString::fromStdString(cmd[1]).split('&'))
+            {
+                merge_list.push_back(each.toInt());
+                if(merge_list.back() >= regions.size())
+                    return run->failed("invalid region index: " + each.toStdString());
+            }
+        }
         tipl::image<3,unsigned char> mask(regions[merge_list[0]]->dim);
         tipl::progress prog("merging regions",true);
         size_t p = 0;
