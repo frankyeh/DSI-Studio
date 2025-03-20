@@ -93,7 +93,6 @@ public slots:
 
     void draw_region(const tipl::matrix<4,4>& current_slice_T,unsigned char dim,int slice_pos,
                      const tipl::shape<2>& slice_image_shape,float display_ratio,QImage& scaled_image);
-    void new_region_from_mni_coordinate(void);
     void copy_region(void);
     void save_region(void);
     void save_all_regions(void);
