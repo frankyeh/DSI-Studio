@@ -834,8 +834,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
         glWidget->neg_max_connectivity = -1.0f;
 
     set_data("region_graph",1);
-    regionWidget->check_all();
-    glWidget->update();
+    command({"check_all_regions"});
 }
 
 
