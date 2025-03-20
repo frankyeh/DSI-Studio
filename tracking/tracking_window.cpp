@@ -67,7 +67,6 @@ bool command_history::is_saving(const std::string& cmd)
 }
 bool command_history::run(tracking_window *parent,const std::vector<std::string>& cmd)
 {
-    tipl::progress p("processing files");
     QStringList file_list;
     std::string original_file;
     int loading_index = -1;
@@ -87,10 +86,12 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
     }
 
     current_recording_instance = 1; // don't add to history record
-    for(size_t k = 0;p(k,std::max<int>(1,file_list.size()));++k)
+    size_t total_steps = std::max<int>(1,file_list.size())*cmd.size();
+    tipl::progress p("running commands",true);
+    for(size_t k = 0,steps = 0;k < std::max<int>(1,file_list.size()) && !p.aborted();++k)
     {
         tracking_window *backup_parent = nullptr;
-        for(int j = 0;j < cmd.size();++j)
+        for(int j = 0;j < cmd.size() && !p.aborted();++j,++steps)
         {
             auto param = tipl::split(cmd[j],',');
 
@@ -113,14 +114,11 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
                 current_recording_instance = 0;
                 return false;
             }
-            while (parent->history.has_other_thread && !p.aborted())
+            while (p(steps,total_steps) && parent->history.has_other_thread)
             {
                 QCoreApplication::processEvents();
                 QThread::msleep(100);
             }
-            if(p.aborted())
-                break;
-
             if(tipl::begins_with(cmd[j],"open_fib"))
             {
                 backup_parent = parent;
@@ -134,7 +132,7 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
         }
     }
     current_recording_instance = 0;
-    return true;
+    return !p.aborted();
 }
 
 tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_handle) :
