@@ -549,9 +549,16 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             return false;
         return run->canceled(); // no need to record on history
     }
-    if(cmd[0] == "check_all_regions")
+    if(cmd[0] == "check_all_regions" || cmd[0] == "uncheck_all_regions")
     {
-        check_all();
+        bool checked = cmd[0] == "check_all_regions";
+        cur_tracking_window.glWidget->no_update = true;
+        cur_tracking_window.scene.no_update = true;
+        for(int row = 0;row < rowCount();++row)
+            check_row(row,checked);
+        cur_tracking_window.scene.no_update = false;
+        cur_tracking_window.glWidget->no_update = false;
+        emit need_update();
         return true;
     }
     return run->not_processed();
@@ -1183,27 +1190,6 @@ void RegionTableWidget::check_row(size_t row,bool checked)
         item(row,0)->setCheckState(Qt::Unchecked);
         item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
     }
-}
-void RegionTableWidget::check_all(void)
-{
-    cur_tracking_window.glWidget->no_update = true;
-    cur_tracking_window.scene.no_update = true;
-    for(int row = 0;row < rowCount();++row)
-        check_row(row,true);
-    cur_tracking_window.scene.no_update = false;
-    cur_tracking_window.glWidget->no_update = false;
-    emit need_update();
-}
-
-void RegionTableWidget::uncheck_all(void)
-{
-    cur_tracking_window.glWidget->no_update = true;
-    cur_tracking_window.scene.no_update = true;
-    for(int row = 0;row < rowCount();++row)
-        check_row(row,false);
-    cur_tracking_window.scene.no_update = false;
-    cur_tracking_window.glWidget->no_update = false;
-    emit need_update();
 }
 
 void RegionTableWidget::move_up(void)
