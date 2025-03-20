@@ -1342,17 +1342,10 @@ void tracking_window::on_actionLoad_MNI_mapping_triggered()
                        "Mapping file(*.mz);;NIFTI file(*nii.gz *.nii);;All file types (*)" );
     if (filename.isEmpty())
         return;
-    {
-        if(!handle->load_template())
-            return;
-        tipl::progress prog("loading mapping",true);
-        if(!handle->load_mapping(filename.toStdString().c_str()))
-        {
-            QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-            return;
-        }
-    }
-    QMessageBox::information(this,QApplication::applicationName(),"mapping loaded");
+    if(command({"open_mapping",filename.toStdString()}))
+        QMessageBox::information(this,QApplication::applicationName(),"mapping loaded");
+    else
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
 void tracking_window::dragEnterEvent(QDragEnterEvent *event)
@@ -1418,13 +1411,10 @@ void tracking_window::on_actionSave_FIB_As_triggered()
                         windowTitle().replace(".fib.gz",".fz"),"FIB files (*.fz);;All files (*)");
     if (filename.isEmpty())
         return;
-    if(!handle->save_to_file(filename.toStdString()))
-    {
-        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-        return;
-    }
-    setWindowTitle(filename);
-    QMessageBox::information(this,QApplication::applicationName(),"saved");
+    if(command({"save_fib",filename.toStdString()}))
+        QMessageBox::information(this,QApplication::applicationName(),"saved");
+    else
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
 
