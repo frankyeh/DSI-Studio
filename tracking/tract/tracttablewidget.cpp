@@ -1357,7 +1357,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
                     " does not match bundle count " + std::to_string(checked_track.size()) +
                     " or current tract count " + std::to_string(tract_models[uint32_t(currentRow())]->get_visible_track_count()));
     }
-    return run->canceled();
+    return run->not_processed();
 }
 
 void TractTableWidget::save_tracts_data_as(void)
