@@ -2416,12 +2416,22 @@ bool GLWidget::command(std::vector<std::string> cmd)
         update();
         return true;
     }
+
+    auto get_save_image_name = [&](const std::string& ext)->bool
+    {
+        return !cmd[1].empty() || !(cmd[1] = QFileDialog::getSaveFileName(
+                       this,"Specify File Name",
+                       QString::fromStdString(cur_tracking_window.history.file_stem() + ext),
+                       "Image files (*.png *.bmp *.jpg *.tif);;All files (*)").toStdString()).empty();
+    };
+
     // make sure tracts are all rendered to save the images
     cur_tracking_window.tractWidget->render_time = 60000;
+
     if(cmd[0] == "save_image")
     {
-        auto file_name = !cmd[1].empty() ? cmd[1] :
-            QFileInfo(cur_tracking_window.windowTitle()).fileName().toStdString()+".image.jpg";
+        if(!get_save_image_name(".jpg"))
+            return run->canceled();
         if(!cmd[2].empty())
         {
             std::istringstream in(cmd[2]);
@@ -2431,43 +2441,44 @@ bool GLWidget::command(std::vector<std::string> cmd)
             in >> w >> h;
             resize(w,h);
             resizeGL(w,h);
-            grab_image().save(file_name.c_str());
+            grab_image().save(cmd[1].c_str());
             resize(ow,oh);
             resizeGL(ow,oh);
         }
         else
-            grab_image().save(file_name.c_str());
+            grab_image().save(cmd[1].c_str());
         return true;
     }
     if(cmd[0] == "save_3view_image")
     {
-        auto file_name = !cmd[1].empty() ? cmd[1] :
-                    QFileInfo(cur_tracking_window.windowTitle()).completeBaseName().toStdString()+".3view_image.jpg";
-        if(!get3View(0).save(file_name.c_str()))
-            return run->failed("cannot save image to " + file_name);
+        if(!get_save_image_name("_3view.jpg"))
+            return run->canceled();
+        if(!get3View(0).save(cmd[1].c_str()))
+            return run->failed("cannot save image to " + cmd[1]);
         return true;
     }
     if(cmd[0] == "save_h3view_image")
     {
-        auto file_name = !cmd[1].empty() ? cmd[1] :
-                    QFileInfo(cur_tracking_window.windowTitle()).completeBaseName().toStdString()+".h3view_image.jpg";
-        if(!get3View(1).save(file_name.c_str()))
-            return run->failed("cannot save image to " + file_name);
+        if(!get_save_image_name("_h3view.jpg"))
+            return run->canceled();
+        if(!get3View(1).save(cmd[1].c_str()))
+            return run->failed("cannot save image to " + cmd[1]);
         return true;
     }
     if(cmd[0] == "save_v3view_image")
     {
-        auto file_name = !cmd[1].empty() ? cmd[1] :
-                QFileInfo(cur_tracking_window.windowTitle()).completeBaseName().toStdString()+".v3view_image.jpg";
-        if(!get3View(2).save(file_name.c_str()))
-            return run->failed("cannot save image to " + file_name);
+        if(!get_save_image_name("_v3view.jpg"))
+            return run->canceled();
+
+        if(!get3View(2).save(cmd[1].c_str()))
+            return run->failed("cannot save image to " + cmd[1]);
         return true;
     }
     if(cmd[0] == "save_rotation_video")
     {
-        auto file_name = !cmd[1].empty() ? cmd[1] :
-                QFileInfo(cur_tracking_window.windowTitle()).completeBaseName().toStdString()+".rotation_movie.avi";
-        if(QFileInfo(file_name.c_str()).suffix() == "avi")
+        if(!get_save_image_name("_rotation.avi"))
+            return run->canceled();
+        if(QFileInfo(cmd[1].c_str()).suffix() == "avi")
         {
             tipl::progress prog("save video");
             int ow = width(),oh = height();
@@ -2484,7 +2495,7 @@ bool GLWidget::command(std::vector<std::string> cmd)
                 QImage I = grab_image();
                 writer.write(I);
                 if(index == 0.0f)
-                    avi.open(file_name.c_str(),I.width(),I.height(), "MJPG", 30/*fps*/);
+                    avi.open(cmd[1].c_str(),I.width(),I.height(), "MJPG", 30/*fps*/);
                 QByteArray data = buffer.data();
                 avi.add_frame(data.begin(),uint32_t(data.size()),true);
             }
@@ -2497,9 +2508,9 @@ bool GLWidget::command(std::vector<std::string> cmd)
             float angle = (cmd[2].empty()) ? 1 : QString(cmd[2].c_str()).toFloat();
             for(float index = 0;prog_(index,360);index += angle)
             {
-                QString save = QFileInfo(file_name.c_str()).absolutePath()+"//"+
-                        QFileInfo(file_name.c_str()).completeBaseName()+"_"+QString::number(index)+"."+
-                        QFileInfo(file_name.c_str()).suffix();
+                QString save = QFileInfo(cmd[1].c_str()).absolutePath()+"//"+
+                        QFileInfo(cmd[1].c_str()).completeBaseName()+"_"+QString::number(index)+"."+
+                        QFileInfo(cmd[1].c_str()).suffix();
                 tipl::out() << save.toStdString() << std::endl;
                 rotate_angle(angle,0,1.0,0.0);
                 QImage I = grab_image();

@@ -175,9 +175,14 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "save_all_devices")
     {
-        auto file_name = !cmd[1].empty() ? cmd[1] :
-                QFileInfo(windowTitle()).baseName().toStdString()+".dv.csv";
-        std::ofstream out(file_name);
+        if (deviceWidget->devices.empty())
+            return run->canceled();
+        if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(
+                               this,"Save all devices",deviceWidget->item(deviceWidget->currentRow(),0)->text() + ".dv.csv",
+                               "CSV file(*dv.csv);;All files(*)").toStdString()).empty())
+            return run->canceled();
+
+        std::ofstream out(cmd[1]);
         for (size_t i = 0; i < deviceWidget->devices.size(); ++i)
             if (deviceWidget->item(int(i),0)->checkState() == Qt::Checked)
             {
@@ -195,47 +200,46 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "save_workspace")
     {
-        auto dir = !cmd[1].empty() ? cmd[1] :
-                QFileDialog::getExistingDirectory(this,"Specify Workspace Directory",QFileInfo(windowTitle()).absolutePath()).toStdString();
-        if(dir.empty())
+        if(cmd[1].empty() && (cmd[1] =
+            QFileDialog::getExistingDirectory(this,"Specify Workspace Directory",QFileInfo(windowTitle()).absolutePath()).toStdString()).empty())
             return run->canceled();
 
-        std::filesystem::create_directory(dir);
-        if (!std::filesystem::exists(dir) || !std::filesystem::is_directory(dir))
-            return run->failed("cannot save workspace to " + dir);
+        std::filesystem::create_directory(cmd[1]);
+        if (!std::filesystem::exists(cmd[1]) || !std::filesystem::is_directory(cmd[1]))
+            return run->failed("cannot save workspace to " + cmd[1]);
 
         if(tractWidget->rowCount())
         {
-            std::filesystem::create_directory(dir+"/tracts");
-            tractWidget->command({"save_all_tracts_to_dir",dir+"/tracts"});
+            std::filesystem::create_directory(cmd[1]+"/tracts");
+            tractWidget->command({"save_all_tracts_to_dir",cmd[1]+"/tracts"});
         }
         if(regionWidget->rowCount())
         {
-            std::filesystem::create_directory(dir+"/regions");
-            regionWidget->command({"save_all_regions_to_dir",dir+"/regions"});
+            std::filesystem::create_directory(cmd[1]+"/regions");
+            regionWidget->command({"save_all_regions_to_dir",cmd[1]+"/regions"});
         }
         if(deviceWidget->rowCount())
         {
-            std::filesystem::create_directory(dir+"/devices");
-            command({"save_all_devices",dir+"/devices/device.dv.csv"});
+            std::filesystem::create_directory(cmd[1]+"/devices");
+            command({"save_all_devices",cmd[1]+"/devices/device.dv.csv"});
         }
         auto reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
         if(reg_slice)
         {
-            std::filesystem::create_directory(dir+"/slices");
+            std::filesystem::create_directory(cmd[1]+"/slices");
             auto I = reg_slice->source_images;
             tipl::normalize_upper_lower(I,255.99);
             tipl::image<3,unsigned char> II(I.shape());
             std::copy(I.begin(),I.end(),II.begin());
-            tipl::io::gz_nifti::save_to_file((dir+"/slices/" + ui->SliceModality->currentText().toStdString() + ".nii.gz").c_str(),
+            tipl::io::gz_nifti::save_to_file((cmd[1]+"/slices/" + ui->SliceModality->currentText().toStdString() + ".nii.gz").c_str(),
                                    II,reg_slice->vs,reg_slice->trans_to_mni,reg_slice->is_mni);
-            reg_slice->save_mapping((dir+"/slices/" + ui->SliceModality->currentText().toStdString() + ".linear_reg.txt").c_str());
+            reg_slice->save_mapping((cmd[1]+"/slices/" + ui->SliceModality->currentText().toStdString() + ".linear_reg.txt").c_str());
         }
 
-        command({"save_setting",dir + "/setting.ini"});
-        command({"save_camera",dir + "/camera.txt"});
+        command({"save_setting",cmd[1] + "/setting.ini"});
+        command({"save_camera",cmd[1] + "/camera.txt"});
 
-        std::ofstream out(dir + "/command.txt");
+        std::ofstream out(cmd[1] + "/command.txt");
         if(ui->glSagCheck->checkState())
             out << "move_slice 0 " << current_slice->slice_pos[0] << std::endl;
         else
@@ -254,60 +258,59 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "load_workspace")
     {
-        auto dir = !cmd[1].empty() ? cmd[1] :
-                QFileDialog::getExistingDirectory(this,"Specify Workspace Directory",QFileInfo(windowTitle()).absolutePath()).toStdString();
-        if(dir.empty())
+        if(cmd[1].empty() && (cmd[1] =
+           QFileDialog::getExistingDirectory(this,"Specify Workspace Directory",QFileInfo(windowTitle()).absolutePath()).toStdString()).empty())
             return run->canceled();
 
-        if(!std::filesystem::exists(dir))
-            return run->failed(error_msg = "cannot load workspace from " + dir);
+        if(!std::filesystem::exists(cmd[1]))
+            return run->failed(error_msg = "cannot load workspace from " + cmd[1]);
 
         tipl::progress prog("loading data");
-        if(std::filesystem::exists(dir+"/tracts"))
+        if(std::filesystem::exists(cmd[1]+"/tracts"))
         {
             if(tractWidget->rowCount())
                 tractWidget->delete_all_tract();
-            for(const auto& each : tipl::search_files(dir+"/tracts","*tt.gz"))
+            for(const auto& each : tipl::search_files(cmd[1]+"/tracts","*tt.gz"))
                 tractWidget->command({std::string("load_tracts"),each});
         }
 
         prog(1,5);
 
-        if(std::filesystem::exists(dir+"/slices"))
+        if(std::filesystem::exists(cmd[1]+"/slices"))
         {
-            for(const auto& each : tipl::search_files(dir+"/slices","*nii.gz"))
+            for(const auto& each : tipl::search_files(cmd[1]+"/slices","*nii.gz"))
                 if(openSlices(each))
                 {
                     auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
                     if(reg_slice.get())
-                        reg_slice->load_mapping((dir+"/slices/" + ui->SliceModality->currentText().toStdString() + ".linear_reg.txt").c_str());
+                        reg_slice->load_mapping((cmd[1]+"/slices/" + ui->SliceModality->currentText().toStdString() + ".linear_reg.txt").c_str());
                 }
         }
 
         prog(2,5);
-        if(std::filesystem::exists(dir+"/devices"))
+        if(std::filesystem::exists(cmd[1]+"/devices"))
         {
             if(deviceWidget->rowCount())
                 deviceWidget->delete_all_devices();
-            for(const auto& each : tipl::search_files(dir+"/devices","*dv.csv"))
+            for(const auto& each : tipl::search_files(cmd[1]+"/devices","*dv.csv"))
                 deviceWidget->load_device(each.c_str());
         }
 
         prog(3,5);
-        if(std::filesystem::exists(dir+"/regions"))
+        if(std::filesystem::exists(cmd[1]+"/regions"))
         {
             if(regionWidget->rowCount())
                 regionWidget->delete_all_region();
-            for(const auto& each : tipl::search_files(dir+"/regions","*nii.gz"))
+            for(const auto& each : tipl::search_files(cmd[1]+"/regions","*nii.gz"))
                 regionWidget->command({"load_region",each});
         }
 
         prog(4,5);
 
-        command({"load_setting",dir + "/setting.ini"});
-        command({"load_camera",dir + "/camera.txt"});
+        command({"load_setting",cmd[1] + "/setting.ini"});
+        command({"load_camera",cmd[1] + "/camera.txt"});
 
-        std::ifstream in(dir + "/command.txt");
+        std::ifstream in(cmd[1] + "/command.txt");
         std::string line;
         while(std::getline(in,line))
         {
@@ -318,9 +321,9 @@ bool tracking_window::command(std::vector<std::string> cmd)
         }
 
         std::string readme;
-        if(std::filesystem::exists(dir+"/README"))
+        if(std::filesystem::exists(cmd[1]+"/README"))
         {
-            std::ifstream in(dir+"/README");
+            std::ifstream in(cmd[1]+"/README");
             readme = std::string((std::istreambuf_iterator<char>(in)),std::istreambuf_iterator<char>());
         }
         report((readme + "\r\nMethods\r\n" + handle->report).c_str());
@@ -328,13 +331,12 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "save_setting" || cmd[0] == "save_rendering_setting" || cmd[0] == "save_tracking_setting")
     {
-        auto filename = !cmd[1].empty()  ? cmd[1] :
-                QFileDialog::getSaveFileName(this,"Save INI files",QFileInfo(windowTitle()).baseName()
-                                             +cmd[0].substr(5).c_str() + ".ini","Setting file (*.ini);;All files (*)").toStdString();
-        if (filename.empty())
+        if(cmd[1].empty() && (cmd[1] =
+            QFileDialog::getSaveFileName(this,"Save INI files",QFileInfo(windowTitle()).baseName()
+                        +cmd[0].substr(5).c_str() + ".ini","Setting file (*.ini);;All files (*)").toStdString()).empty())
             return run->canceled();
 
-        QSettings s(filename.c_str(), QSettings::IniFormat);
+        QSettings s(cmd[1].c_str(), QSettings::IniFormat);
         if(cmd[0] == "save_setting")
         {
             for(const auto& each : renderWidget->treemodel->getParamList())
@@ -367,14 +369,14 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "load_setting" || cmd[0] == "load_rendering_setting" || cmd[0] == "load_tracking_setting")
     {
-        auto filename = !cmd[1].empty() ? cmd[1] :
-            QFileDialog::getOpenFileName(this,"Open INI files",QFileInfo(work_path).absolutePath(),"Setting file (*.ini);;All files (*)").toStdString();
-        if(filename.empty())
+        if(cmd[1].empty() && (cmd[1] =
+            QFileDialog::getOpenFileName(this,"Open INI files",
+            QFileInfo(work_path).absolutePath(),"Setting file (*.ini);;All files (*)").toStdString()).empty())
             return run->canceled();
 
-        if(!std::filesystem::exists(filename))
-            return run->failed(error_msg = "cannot find " + filename);
-        QSettings s(filename.c_str(), QSettings::IniFormat);
+        if(!std::filesystem::exists(cmd[1]))
+            return run->failed(error_msg = "cannot find " + cmd[1]);
+        QSettings s(cmd[1].c_str(), QSettings::IniFormat);
         if(cmd[0] == "load_setting")
         {
             for(const auto& each : renderWidget->treemodel->getParamList())
