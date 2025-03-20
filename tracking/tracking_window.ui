@@ -3505,30 +3505,48 @@ Tracking</string>
    <property name="text">
     <string>Cut X+</string>
    </property>
+   <property name="toolTip">
+    <string>run cut_tract_by_x</string>
+   </property>
   </action>
   <action name="actionCut_X_2">
    <property name="text">
     <string>Cut X-</string>
+   </property>
+   <property name="toolTip">
+    <string>run cut_tract_by_x2</string>
    </property>
   </action>
   <action name="actionCut_Y">
    <property name="text">
     <string>Cut Y+</string>
    </property>
+   <property name="toolTip">
+    <string>run cut_tract_by_y</string>
+   </property>
   </action>
   <action name="actionCut_Y_2">
    <property name="text">
     <string>Cut Y-</string>
+   </property>
+   <property name="toolTip">
+    <string>run cut_tract_by_y2</string>
    </property>
   </action>
   <action name="actionCut_Z">
    <property name="text">
     <string>Cut Z+</string>
    </property>
+   <property name="toolTip">
+    <string>run cut_tract_by_z</string>
+   </property>
   </action>
   <action name="actionCut_Z_2">
    <property name="text">
     <string>Cut Z-</string>
+   </property>
+   <property name="toolTip">
+    <string>run cut_tract_by_z2</string>
    </property>
   </action>
   <action name="actionUndo_Edit">
