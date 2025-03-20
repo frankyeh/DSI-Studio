@@ -72,7 +72,7 @@ void tracking_window::run_action(void)
         return;
     if(!command({action->toolTip().toStdString().substr(4)})) // skip "run " part
     {
-        if(!error_msg.empty())
+        if(!error_msg.empty() && error_msg != "canceled")
             QMessageBox::critical(this,"ERROR",error_msg.c_str());
     }
     else
