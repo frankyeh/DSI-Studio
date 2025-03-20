@@ -417,17 +417,16 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         delete_all_region();
         return true;
     }
-    if(cmd[0] == "load_region")
+    if(cmd[0] == "load_region" || cmd[0] == "load_mni_region")
     {
-        if(!load_multiple_roi_nii(cmd[1].c_str(),false))
+        if(cmd[1].empty() && (cmd[1] =
+            QFileDialog::getOpenFileNames(this,"Open Region(s)",QFileInfo(cur_tracking_window.work_path).absolutePath(),
+            "Region files (*.nii *.hdr *nii.gz *.mat);;Text files (*.txt);;All files (*)" ).join('&').toStdString()).empty())
+            return run->canceled();
+        if(cmd[0] == "load_mni_region" && !cur_tracking_window.handle->map_to_mni())
+            return run->failed(cur_tracking_window.handle->error_msg);
+        if(!load_multiple_roi_nii(cmd[1].c_str(),cmd[0] == "load_mni_region"))
             return false;
-        emit need_update();
-        return true;
-    }
-    if(cmd[0] == "load_mni_region")
-    {
-        if(!load_multiple_roi_nii(cmd[1].c_str(),true))
-            return run->failed("cannot load mni region");
         emit need_update();
         return true;
     }
@@ -888,7 +887,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 
 bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
 {
-    QStringList files = file_name.split(",");
+    QStringList files = file_name.split('&');
     std::vector<SliceModel*> transform_lookup;
     // searching for T1/T2 mappings
     for(unsigned int index = 0;index < cur_tracking_window.slices.size();++index)
@@ -925,8 +924,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
                 std::shared_ptr<ROIRegion> region(new ROIRegion(cur_tracking_window.handle));
                 if(!region->load_region_from_file(files[i].toStdString().c_str()))
                 {
-                    error_msg = "cannot read ";
-                    error_msg += files[i].toStdString();
+                    error_msg = "cannot read " + files[i].toStdString();
                     failed = true;
                     return;
                 }
@@ -1017,36 +1015,6 @@ void RegionTableWidget::save_region_color(void)
     QMessageBox::information(this,QApplication::applicationName(),"File saved");
 }
 
-void RegionTableWidget::load_region(void)
-{
-    QStringList filenames = QFileDialog::getOpenFileNames(
-                                this,"Open region",QFileInfo(cur_tracking_window.work_path).absolutePath(),"Region files (*.nii *.hdr *nii.gz *.mat);;Text files (*.txt);;All files (*)" );
-    if (filenames.isEmpty())
-        return;
-    if(!command({"load_region",filenames.join(",").toStdString()}))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-    emit need_update();
-}
-
-void RegionTableWidget::load_mni_region(void)
-{
-    QStringList filenames = QFileDialog::getOpenFileNames(
-                                this,"Open region",QFileInfo(cur_tracking_window.work_path).absolutePath(),"NIFTI files (*.nii *nii.gz);;All files (*)" );
-    if (filenames.isEmpty())
-        return;
-    if(!cur_tracking_window.handle->map_to_mni())
-    {
-        QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
-        return;
-    }
-    for (auto each : filenames)
-        if(!command({"load_mni_region",each.toStdString()}))
-        {
-            QMessageBox::critical(this,"ERROR",error_msg.c_str());
-            break;
-        }
-    emit need_update();
-}
 
 void RegionTableWidget::merge_all(void)
 {
