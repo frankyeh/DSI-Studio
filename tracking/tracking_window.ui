@@ -2730,6 +2730,9 @@ Tracking</string>
    <property name="text">
     <string>&amp;New Region</string>
    </property>
+   <property name="toolTip">
+    <string>run new_region</string>
+   </property>
   </action>
   <action name="actionOpenRegion">
    <property name="icon">
