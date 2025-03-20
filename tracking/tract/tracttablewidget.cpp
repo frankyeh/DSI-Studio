@@ -779,8 +779,13 @@ void TractTableWidget::save_end_point_as(void)
 
 void TractTableWidget::save_end_point_in_mni(void)
 {
-    if(currentRow() >= int(tract_models.size()) || currentRow() < 0 || !cur_tracking_window.map_to_mni())
+    if(currentRow() >= int(tract_models.size()) || currentRow() < 0)
         return;
+    if(!cur_tracking_window.handle->map_to_mni())
+    {
+        QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
+        return;
+    }
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,
@@ -882,8 +887,14 @@ void TractTableWidget::save_transformed_endpoints(void)
 extern std::vector<std::string> fa_template_list;
 void TractTableWidget::save_tracts_in_template(void)
 {
-    if(currentRow() >= int(tract_models.size()) || currentRow() == -1 || !cur_tracking_window.map_to_mni())
+    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
         return;
+    if(!cur_tracking_window.handle->map_to_mni())
+    {
+        QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
+        return;
+    }
+
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,
@@ -902,8 +913,15 @@ void TractTableWidget::save_tracts_in_template(void)
 
 void TractTableWidget::save_tracts_in_mni(void)
 {
-    if(currentRow() >= int(tract_models.size()) || currentRow() == -1 || !cur_tracking_window.map_to_mni())
+    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
         return;
+
+    if(!cur_tracking_window.handle->map_to_mni())
+    {
+        QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
+        return;
+    }
+
     QString filename;
     filename = QFileDialog::getSaveFileName(
                 this,
