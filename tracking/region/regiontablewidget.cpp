@@ -419,16 +419,32 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "open_region" || cmd[0] == "open_mni_region")
     {
-        if(cmd[1].empty() && (cmd[1] =
-            QFileDialog::getOpenFileNames(this,"Open Region(s)",QFileInfo(cur_tracking_window.work_path).absolutePath(),
-            "Region files (*.nii *.hdr *nii.gz *.mat);;Text files (*.txt);;All files (*)" ).join('&').toStdString()).empty())
+        // cmd[1] : contain only single file name
+        if(!cmd[1].empty())
+        {
+            if(cmd[0] == "open_mni_region" && !cur_tracking_window.handle->map_to_mni())
+                return run->failed(cur_tracking_window.handle->error_msg);
+            if(!load_multiple_roi_nii(cmd[1].c_str(),cmd[0] == "open_mni_region"))
+                return false;
+            emit need_update();
+            return true;
+        }
+        // allow for selecting multiple files
+        auto file_list = QFileDialog::getOpenFileNames(
+            this,"Open Region(s)",QFileInfo(cur_tracking_window.work_path).absolutePath(),
+            "Region files (*.nii *.hdr *nii.gz *.mat);;Text files (*.txt);;All files (*)");
+        if(file_list.isEmpty())
             return run->canceled();
-        if(cmd[0] == "open_mni_region" && !cur_tracking_window.handle->map_to_mni())
-            return run->failed(cur_tracking_window.handle->error_msg);
-        if(!load_multiple_roi_nii(cmd[1].c_str(),cmd[0] == "open_mni_region"))
+
+        // allow sub command to be recorded
+        --cur_tracking_window.history.current_recording_instance;
+        for(auto each : file_list)
+            if(!command({cmd[0],each.toStdString()}))
+                break;
+        ++cur_tracking_window.history.current_recording_instance;
+        if(!error_msg.empty())
             return false;
-        emit need_update();
-        return true;
+        return run->canceled(); // no need to record on history
     }
     if(cmd[0] == "check_all_regions")
     {
