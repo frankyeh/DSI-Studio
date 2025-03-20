@@ -161,10 +161,7 @@ public slots:
     void delete_by_length(void);
     void resample_step_size(void);
     void edit_tracts(void);
-    void cut_end_portion(void)      {for_current_bundle([&](void){tract_models[currentRow()]->cut_end_portion(0.25f,0.75f);});}
-    void flipx(void)                {for_current_bundle([&](void){tract_models[currentRow()]->flip(0);});}
-    void flipy(void)                {for_current_bundle([&](void){tract_models[currentRow()]->flip(1);});}
-    void flipz(void)                {for_current_bundle([&](void){tract_models[currentRow()]->flip(2);});}
+
     void assign_colors(void);
     void stop_tracking(void);
     void move_up(void);
