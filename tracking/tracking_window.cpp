@@ -613,7 +613,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionDeleteTract,SIGNAL(triggered()),tractWidget,SLOT(delete_tract()));
         connect(ui->actionDeleteTractAll,SIGNAL(triggered()),tractWidget,SLOT(delete_all_tract()));
         connect(ui->actionDelete_By_Length,SIGNAL(triggered()),tractWidget,SLOT(delete_by_length()));
-        connect(ui->actionDelete_Branches,SIGNAL(triggered()),tractWidget,SLOT(delete_branches()));
         connect(ui->actionCut_end_portion,SIGNAL(triggered()),tractWidget,SLOT(cut_end_portion()));
 
 
@@ -628,10 +627,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionAssign_Colors_For_Each,SIGNAL(triggered()),tractWidget,SLOT(assign_colors()));
         connect(ui->actionOpen_Cluster_Colors,SIGNAL(triggered()),tractWidget,SLOT(open_cluster_color()));
         connect(ui->actionSave_Cluster_Colors,SIGNAL(triggered()),tractWidget,SLOT(save_cluster_color()));
-
-        connect(ui->actionUndo,SIGNAL(triggered()),tractWidget,SLOT(undo_tracts()));
-        connect(ui->actionRedo,SIGNAL(triggered()),tractWidget,SLOT(redo_tracts()));
-        connect(ui->actionTrim,SIGNAL(triggered()),tractWidget,SLOT(trim_tracts()));
 
         connect(ui->actionSet_Color,SIGNAL(triggered()),tractWidget,SLOT(set_color()));
 
