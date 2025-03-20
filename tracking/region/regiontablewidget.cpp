@@ -561,6 +561,18 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         emit need_update();
         return true;
     }
+    if(cmd[0] == "copy_region")
+    {
+        if (regions.empty() || currentRow() >= regions.size())
+            return run->failed("no region to copy");
+        unsigned int cur_row = uint32_t(currentRow());
+        unsigned int color = regions[cur_row]->region_render->color.color;
+        regions.insert(regions.begin() + cur_row + 1,std::make_shared<ROIRegion>(cur_tracking_window.handle));
+        *regions[cur_row + 1] = *regions[cur_row];
+        regions[cur_row + 1]->region_render->color.color = color;
+        add_row(int(cur_row+1),regions[cur_row]->name.c_str());
+        return true;
+    }
     return run->not_processed();
 }
 void RegionTableWidget::move_slice_to_current_region(void)
@@ -661,17 +673,6 @@ void RegionTableWidget::draw_region(const tipl::matrix<4,4>& current_slice_T,uns
 
 }
 
-void RegionTableWidget::copy_region(void)
-{
-    if(currentRow() < 0)
-        return;
-    unsigned int cur_row = uint32_t(currentRow());
-    unsigned int color = regions[cur_row]->region_render->color.color;
-    regions.insert(regions.begin() + cur_row + 1,std::make_shared<ROIRegion>(cur_tracking_window.handle));
-    *regions[cur_row + 1] = *regions[cur_row];
-    regions[cur_row + 1]->region_render->color.color = color;
-    add_row(int(cur_row+1),regions[cur_row]->name.c_str());
-}
 void load_nii_label(const char* filename,std::map<int,std::string>& label_map)
 {
     std::ifstream in(filename);

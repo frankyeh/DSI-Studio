@@ -90,11 +90,8 @@ public:
     QString output_format(void);
 public slots:
     void updateRegions(QTableWidgetItem* item);
-
     void draw_region(const tipl::matrix<4,4>& current_slice_T,unsigned char dim,int slice_pos,
                      const tipl::shape<2>& slice_image_shape,float display_ratio,QImage& scaled_image);
-    void copy_region(void);
-
     void save_region_info(void);
     void load_region_color(void);
     void save_region_color(void);

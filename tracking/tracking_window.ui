@@ -3381,6 +3381,9 @@ Tracking</string>
    <property name="text">
     <string>Copy</string>
    </property>
+   <property name="toolTip">
+    <string>run copy_region</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+Shift+V</string>
    </property>
