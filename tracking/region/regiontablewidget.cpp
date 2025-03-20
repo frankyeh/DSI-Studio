@@ -1338,7 +1338,7 @@ void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<s
     }
     result = out.str();
 }
-void show_info_dialog(const std::string& title,const std::string& result);
+std::string show_info_dialog(const std::string& title,const std::string& result,const std::string& file_name_hint = "report.txt");
 void RegionTableWidget::show_statistics(void)
 {
     auto regions = get_checked_regions();

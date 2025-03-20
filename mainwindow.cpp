@@ -954,7 +954,9 @@ void MainWindow::on_nonlinear_reg_clicked()
 
 std::string quality_check_src_files(const std::vector<std::string>& file_list,
                                     bool check_btable,bool use_template,unsigned int template_id);
-void show_info_dialog(const std::string& title,const std::string& result);
+std::string show_info_dialog(const std::string& title,
+                             const std::string& result,
+                             const std::string& file_name_hint = "report.txt");
 void MainWindow::on_SRC_qc_clicked()
 {
     QString dir = QFileDialog::getExistingDirectory(

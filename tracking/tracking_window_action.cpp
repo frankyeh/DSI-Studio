@@ -19,8 +19,9 @@
 #include "reg.hpp"
 
 extern std::vector<std::string> fa_template_list;
-void show_info_dialog(const std::string& title, const std::string& result)
+std::string show_info_dialog(const std::string& title, const std::string& result,const std::string& file_name_hint = "report.txt")
 {
+    std::string saved_file;
     QMessageBox msgBox;
     msgBox.setText(title.c_str());
 
@@ -34,9 +35,10 @@ void show_info_dialog(const std::string& title, const std::string& result)
     QPushButton *viewDetailsButton = msgBox.addButton("View Full Text", QMessageBox::ActionRole);
 
     if (msgBox.exec() == QMessageBox::Save) {
-        QString filename = QFileDialog::getSaveFileName(nullptr, "Save as", "report.txt", "Text files (*.txt);;All files (*)");
+        QString filename = QFileDialog::getSaveFileName(nullptr, "Save as",
+                           QString::fromStdString(file_name_hint), "Text files (*.txt);;All files (*)");
         if (!filename.isEmpty()) {
-            std::ofstream out(filename.toStdString().c_str());
+            std::ofstream out((saved_file = filename.toStdString()).c_str());
             out << result;
         }
     }
@@ -63,6 +65,7 @@ void show_info_dialog(const std::string& title, const std::string& result)
 
         detailDialog.exec();
     }
+    return saved_file;
 }
 
 void tracking_window::run_action(void)
