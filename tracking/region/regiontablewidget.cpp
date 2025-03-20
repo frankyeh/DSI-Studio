@@ -417,15 +417,15 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         delete_all_region();
         return true;
     }
-    if(cmd[0] == "load_region" || cmd[0] == "load_mni_region")
+    if(cmd[0] == "open_region" || cmd[0] == "open_mni_region")
     {
         if(cmd[1].empty() && (cmd[1] =
             QFileDialog::getOpenFileNames(this,"Open Region(s)",QFileInfo(cur_tracking_window.work_path).absolutePath(),
             "Region files (*.nii *.hdr *nii.gz *.mat);;Text files (*.txt);;All files (*)" ).join('&').toStdString()).empty())
             return run->canceled();
-        if(cmd[0] == "load_mni_region" && !cur_tracking_window.handle->map_to_mni())
+        if(cmd[0] == "open_mni_region" && !cur_tracking_window.handle->map_to_mni())
             return run->failed(cur_tracking_window.handle->error_msg);
-        if(!load_multiple_roi_nii(cmd[1].c_str(),cmd[0] == "load_mni_region"))
+        if(!load_multiple_roi_nii(cmd[1].c_str(),cmd[0] == "open_mni_region"))
             return false;
         emit need_update();
         return true;
