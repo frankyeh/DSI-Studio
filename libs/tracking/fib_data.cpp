@@ -1439,8 +1439,7 @@ bool fib_data::load_template(void)
     tipl::io::gz_nifti read;
     if(!read.load_from_file(fa_template_list[template_id].c_str()))
     {
-        error_msg = "cannot load ";
-        error_msg += fa_template_list[template_id];
+        error_msg = "cannot load " + fa_template_list[template_id];
         return false;
     }
     read.toLPS(template_I);
@@ -1449,8 +1448,7 @@ bool fib_data::load_template(void)
     float ratio = float(template_I.width()*template_vs[0])/float(dim[0]*vs[0]);
     if(ratio < 0.25f || ratio > 8.0f)
     {
-        error_msg = "image resolution mismatch: ratio=";
-        error_msg += std::to_string(ratio);
+        error_msg = "image resolution mismatch: ratio=" + std::to_string(ratio);
         return false;
     }
     unsigned int downsampling = 0;
