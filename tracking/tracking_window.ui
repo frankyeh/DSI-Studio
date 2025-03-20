@@ -2754,6 +2754,9 @@ Tracking</string>
    <property name="text">
     <string>Save Current Region &amp;As...</string>
    </property>
+   <property name="toolTip">
+    <string>run save_region</string>
+   </property>
   </action>
   <action name="actionDeleteRegion">
    <property name="icon">
@@ -3330,6 +3333,9 @@ Tracking</string>
    <property name="text">
     <string>Save Checked Regions to one 3D NIFTI...</string>
    </property>
+   <property name="toolTip">
+    <string>run save_all_regions</string>
+   </property>
   </action>
   <action name="actionSave_Tracking_Settings">
    <property name="icon">
@@ -3404,6 +3410,9 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Save Checked Regions to multiple 3D NIFTIs...</string>
+   </property>
+   <property name="toolTip">
+    <string>run save_regions_to_folder</string>
    </property>
   </action>
   <action name="actionRestore_Settings">
@@ -4144,6 +4153,9 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Save Checked Regions to one 4D NIFTI...</string>
+   </property>
+   <property name="toolTip">
+    <string>run save_4d_region</string>
    </property>
   </action>
   <action name="actionRight_Lower">
