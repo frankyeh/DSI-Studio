@@ -600,12 +600,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionCopyTrack,SIGNAL(triggered()),tractWidget,SLOT(copy_track()));
         connect(ui->actionSort_Tracts_By_Names,SIGNAL(triggered()),tractWidget,SLOT(sort_track_by_name()));
 
-
-        connect(ui->actionFlip_X_2,SIGNAL(triggered()),tractWidget,SLOT(flipx()));
-        connect(ui->actionFlip_Y_2,SIGNAL(triggered()),tractWidget,SLOT(flipy()));
-        connect(ui->actionFlip_Z_2,SIGNAL(triggered()),tractWidget,SLOT(flipz()));
-
-
         connect(ui->actionCheck_all_tracts,SIGNAL(triggered()),tractWidget,SLOT(check_all()));
         connect(ui->actionUncheck_all_tracts,SIGNAL(triggered()),tractWidget,SLOT(uncheck_all()));
 
@@ -613,7 +607,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionDeleteTract,SIGNAL(triggered()),tractWidget,SLOT(delete_tract()));
         connect(ui->actionDeleteTractAll,SIGNAL(triggered()),tractWidget,SLOT(delete_all_tract()));
         connect(ui->actionDelete_By_Length,SIGNAL(triggered()),tractWidget,SLOT(delete_by_length()));
-        connect(ui->actionCut_end_portion,SIGNAL(triggered()),tractWidget,SLOT(cut_end_portion()));
 
 
         connect(ui->actionRemove_Repeated_Tracks,SIGNAL(triggered()),tractWidget,SLOT(delete_repeated()));
