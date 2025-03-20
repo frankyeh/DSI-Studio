@@ -24,7 +24,8 @@ private:
     static bool is_loading(const std::string& cmd);
     static bool is_saving(const std::string& cmd);
 public:
-    bool repeating = false,has_other_thread = false;
+    size_t current_recording_instance = 0;
+    bool has_other_thread = false;
     std::string default_parent_path,default_stem,default_stem2;
     std::vector<std::string> commands;
     bool run(tracking_window *parent,const std::vector<std::string>& cmd);
@@ -35,7 +36,10 @@ public:
         std::string& error_msg;
         surrogate(command_history& owner,
                   std::vector<std::string>& cmd_,
-                  std::string& error_msg_) : owner(owner),cmd(cmd_),error_msg(error_msg_){}
+                  std::string& error_msg_) : owner(owner),cmd(cmd_),error_msg(error_msg_)
+        {
+            ++owner.current_recording_instance;
+        }
         bool canceled(void)
         {
             cmd.clear();
@@ -49,6 +53,7 @@ public:
         }
         ~surrogate()
         {
+            --owner.current_recording_instance;
             while(!cmd.empty() && cmd.back().empty())
                 cmd.pop_back();
             if(cmd.empty()) // canceled
@@ -72,20 +77,17 @@ public:
 
     void record(const std::string& output)
     {
-        if(output.empty())
+        if(current_recording_instance || output.empty())
             return;
-        if(!repeating)
+        commands.push_back(output);
+        if(is_loading(output))
         {
-            commands.push_back(output);
-            if(is_loading(output))
-            {
-                auto p = std::filesystem::path(tipl::split(output,',')[1]);
-                default_parent_path = p.parent_path().string();
-                default_stem2 = p.stem().string();
-                std::replace(default_stem2.begin(),default_stem2.end(),'.','_');
-                if(default_stem.empty())
-                    default_stem = default_stem2;
-            }
+            auto p = std::filesystem::path(tipl::split(output,',')[1]);
+            default_parent_path = p.parent_path().string();
+            default_stem2 = p.stem().string();
+            std::replace(default_stem2.begin(),default_stem2.end(),'.','_');
+            if(default_stem.empty())
+                default_stem = default_stem2;
         }
     }
     std::string file_stem(void) const

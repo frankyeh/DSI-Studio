@@ -195,12 +195,13 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "save_workspace")
     {
-        auto dir = cmd[1].empty() ? cmd[1] :
-                QFileDialog::getExistingDirectory(this,"Save to directory",QFileInfo(windowTitle()).absolutePath()).toStdString();
+        auto dir = !cmd[1].empty() ? cmd[1] :
+                QFileDialog::getExistingDirectory(this,"Specify Workspace Directory",QFileInfo(windowTitle()).absolutePath()).toStdString();
         if(dir.empty())
             return run->canceled();
 
-        if (!std::filesystem::exists(dir) || std::filesystem::is_directory(dir))
+        std::filesystem::create_directory(dir);
+        if (!std::filesystem::exists(dir) || !std::filesystem::is_directory(dir))
             return run->failed("cannot save workspace to " + dir);
 
         if(tractWidget->rowCount())
@@ -218,7 +219,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             std::filesystem::create_directory(dir+"/devices");
             command({"save_all_devices",dir+"/devices/device.dv.csv"});
         }
-        CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
+        auto reg_slice = dynamic_cast<CustomSliceModel*>(current_slice.get());
         if(reg_slice)
         {
             std::filesystem::create_directory(dir+"/slices");
@@ -253,7 +254,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "load_workspace")
     {
-        auto dir = !cmd[1].empty() ? cmd[1] : QFileDialog::getExistingDirectory(this,"Save to directory",QFileInfo(windowTitle()).absolutePath()).toStdString();
+        auto dir = !cmd[1].empty() ? cmd[1] :
+                QFileDialog::getExistingDirectory(this,"Specify Workspace Directory",QFileInfo(windowTitle()).absolutePath()).toStdString();
         if(dir.empty())
             return run->canceled();
 

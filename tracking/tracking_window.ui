@@ -1302,8 +1302,8 @@
     </property>
     <addaction name="actionSave_FIB_As"/>
     <addaction name="separator"/>
-    <addaction name="actionLoad_Presentation"/>
-    <addaction name="actionSave_Presentation"/>
+    <addaction name="actionLoad_WorkSpace"/>
+    <addaction name="actionSave_WorkSpace"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_tracking_parameters"/>
     <addaction name="actionSave_tracking_parameters"/>
@@ -3987,7 +3987,7 @@ Tracking</string>
     <string>Assign Colors</string>
    </property>
   </action>
-  <action name="actionLoad_Presentation">
+  <action name="actionLoad_WorkSpace">
    <property name="icon">
     <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
@@ -3999,7 +3999,7 @@ Tracking</string>
     <string>run load_workspace</string>
    </property>
   </action>
-  <action name="actionSave_Presentation">
+  <action name="actionSave_WorkSpace">
    <property name="icon">
     <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>

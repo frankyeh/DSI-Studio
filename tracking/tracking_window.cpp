@@ -68,7 +68,6 @@ bool command_history::is_saving(const std::string& cmd)
 bool command_history::run(tracking_window *parent,const std::vector<std::string>& cmd)
 {
     tipl::progress p("processing files");
-    repeating = true;
     QStringList file_list;
     std::string original_file;
     int loading_index = -1;
@@ -87,6 +86,7 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
             return false;
     }
 
+    current_recording_instance = 1; // don't add to history record
     for(size_t k = 0;p(k,std::max<int>(1,file_list.size()));++k)
     {
         tracking_window *backup_parent = nullptr;
@@ -110,7 +110,7 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
             if(!parent->command(param))
             {
                 QMessageBox::critical(parent,"ERROR",parent->error_msg.c_str());
-                repeating = false;
+                current_recording_instance = 0;
                 return false;
             }
             while (parent->history.has_other_thread && !p.aborted())
@@ -133,7 +133,7 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
             parent = backup_parent;
         }
     }
-    repeating = false;
+    current_recording_instance = 0;
     return true;
 }
 
