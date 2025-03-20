@@ -161,10 +161,6 @@ public slots:
     void delete_by_length(void);
     void resample_step_size(void);
     void edit_tracts(void);
-    void delete_branches(void)      {for_each_bundle("delete branches", [&](unsigned int index){return tract_models[index]->delete_branch();});}
-    void undo_tracts(void)          {for_each_bundle("undo tracts",     [&](unsigned int index){return tract_models[index]->undo();},true);}
-    void redo_tracts(void)          {for_each_bundle("redo tracts",     [&](unsigned int index){return tract_models[index]->redo();},true);}
-    void trim_tracts(void)          {for_each_bundle("trim tracts",     [&](unsigned int index){return tract_models[index]->trim();},true);}
     void cut_end_portion(void)      {for_current_bundle([&](void){tract_models[currentRow()]->cut_end_portion(0.25f,0.75f);});}
     void flipx(void)                {for_current_bundle([&](void){tract_models[currentRow()]->flip(0);});}
     void flipy(void)                {for_current_bundle([&](void){tract_models[currentRow()]->flip(1);});}
