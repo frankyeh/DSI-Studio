@@ -2519,7 +2519,7 @@ bool GLWidget::command(std::vector<std::string> cmd)
         }
         return true;
     }
-    return run->canceled();
+    return run->not_processed();
 }
 void GLWidget::catchScreen(void)
 {
