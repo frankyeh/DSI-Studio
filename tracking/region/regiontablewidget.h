@@ -99,10 +99,8 @@ public slots:
     void save_all_regions_to_4dnifti(void);
     void save_all_regions_to_dir(void);
     void save_region_info(void);
-    void load_region(void);
     void load_region_color(void);
     void save_region_color(void);
-    void load_mni_region(void);
     void delete_region(void);
     void delete_all_region(void);
 
