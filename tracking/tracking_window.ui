@@ -3765,7 +3765,7 @@ Tracking</string>
     <string>Open MNI Region...</string>
    </property>
    <property name="toolTip">
-    <string>run load_mni_region</string>
+    <string>run open_mni_region</string>
    </property>
   </action>
   <action name="actionA_B">
