@@ -4194,15 +4194,24 @@ Tracking</string>
    <property name="text">
     <string>Flip X</string>
    </property>
+   <property name="toolTip">
+    <string>run flip_tract_x</string>
+   </property>
   </action>
   <action name="actionFlip_Y_2">
    <property name="text">
     <string>Flip Y</string>
    </property>
+   <property name="toolTip">
+    <string>run flip_tract_y</string>
+   </property>
   </action>
   <action name="actionFlip_Z_2">
    <property name="text">
     <string>Flip Z</string>
+   </property>
+   <property name="toolTip">
+    <string>run flip_tract_z</string>
    </property>
   </action>
   <action name="actionAll_To_First2">
@@ -4249,6 +4258,9 @@ Tracking</string>
   <action name="actionCut_end_portion">
    <property name="text">
     <string>Cut End Portion</string>
+   </property>
+   <property name="toolTip">
+    <string>run cut_tract_end_portion</string>
    </property>
   </action>
   <action name="actionLeads_to_ROI">
