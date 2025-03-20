@@ -1117,18 +1117,40 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     if(cmd[0] == "undo_tract")
     {
         for_each_bundle(cmd[0].c_str(),[&](unsigned int index){return tract_models[index]->undo();});
-            return true;
+        return true;
     }
     if(cmd[0] == "redo_tract")
     {
         for_each_bundle(cmd[0].c_str(),[&](unsigned int index){return tract_models[index]->redo();});
-       return true;
+        return true;
     }
     if(cmd[0] == "trim_tract")
     {
         for_each_bundle(cmd[0].c_str(),[&](unsigned int index){return tract_models[index]->trim();});
-       return true;
+        return true;
     }
+
+    if(cmd[0] == "cut_tract_end_portion")
+    {
+        for_current_bundle([&](void){tract_models[currentRow()]->cut_end_portion(0.25f,0.75f);});
+        return true;
+    }
+    if(cmd[0] == "flip_tract_x")
+    {
+        for_current_bundle([&](void){tract_models[currentRow()]->flip(0);});
+        return true;
+    }
+    if(cmd[0] == "flip_tract_y")
+    {
+        for_current_bundle([&](void){tract_models[currentRow()]->flip(1);});
+        return true;
+    }
+    if(cmd[0] == "flip_tract_z")
+    {
+        for_current_bundle([&](void){tract_models[currentRow()]->flip(2);});
+        return true;
+    }
+
 
     if(cmd[0] == "set_dt_index")
     {
