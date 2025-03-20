@@ -324,14 +324,7 @@ void DeviceTableWidget::assign_colors(void)
 }
 void DeviceTableWidget::save_all_devices(void)
 {
-    if (devices.empty())
-        return;
-    QString filename = QFileDialog::getSaveFileName(
-                           this,"Save all devices",item(currentRow(),0)->text() + ".dv.csv",
-                           "CSV file(*dv.csv);;All files(*)");
-    if (filename.isEmpty())
-        return;
-    cur_tracking_window.command({std::string("save_all_devices"),filename.toStdString()});
+    cur_tracking_window.command({std::string("save_all_devices")});
 }
 
 void DeviceTableWidget::delete_device(void)
