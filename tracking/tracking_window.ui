@@ -1011,11 +1011,12 @@
     </widget>
     <addaction name="actionUndo"/>
     <addaction name="actionRedo"/>
+    <addaction name="actionTrim"/>
     <addaction name="separator"/>
     <addaction name="actionSelect_Tracts"/>
     <addaction name="actionDelete_Tracts"/>
-    <addaction name="actionTrim"/>
     <addaction name="actionPaint_Tracts"/>
+    <addaction name="separator"/>
     <addaction name="actionCut_Tracts"/>
     <addaction name="actionCut_end_portion"/>
     <addaction name="menuCut_by_slice"/>
@@ -2947,6 +2948,9 @@ Tracking</string>
    <property name="text">
     <string>Undo</string>
    </property>
+   <property name="toolTip">
+    <string>run undo_tract</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+Z</string>
    </property>
@@ -2961,7 +2965,10 @@ Tracking</string>
   </action>
   <action name="actionTrim">
    <property name="text">
-    <string>Pruning (TIP)</string>
+    <string>Trim</string>
+   </property>
+   <property name="toolTip">
+    <string>run trim_tract</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+T</string>
@@ -3210,6 +3217,9 @@ Tracking</string>
   <action name="actionRedo">
    <property name="text">
     <string>Redo</string>
+   </property>
+   <property name="toolTip">
+    <string>run redo_tract</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Y</string>
@@ -3554,15 +3564,6 @@ Tracking</string>
     <string>Restore Tracking Settings</string>
    </property>
   </action>
-  <action name="actionSave_VMRL">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
-   </property>
-   <property name="text">
-    <string>Save 3D model...</string>
-   </property>
-  </action>
   <action name="actionSeparate_Deleted">
    <property name="text">
     <string>Separate Deleted Tracts</string>
@@ -3882,6 +3883,9 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Delete Branches</string>
+   </property>
+   <property name="toolTip">
+    <string>run delete_branch</string>
    </property>
   </action>
   <action name="action3D_Screen_Each_Tract">
@@ -4299,11 +4303,6 @@ Tracking</string>
   <action name="action3D_Screen_Left_Right_Views">
    <property name="text">
     <string>3D Screen Left/Right Views</string>
-   </property>
-  </action>
-  <action name="actionCommand_List">
-   <property name="text">
-    <string>Command List...</string>
    </property>
   </action>
   <action name="actionCommand_History">
