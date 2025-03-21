@@ -4402,7 +4402,7 @@ Tracking</string>
     <string>Open Template-Space Tracts...</string>
    </property>
    <property name="toolTip">
-    <string>open_mni_tract</string>
+    <string>run open_mni_tract</string>
    </property>
   </action>
   <action name="actionLoad_Built_In_Atlas">
