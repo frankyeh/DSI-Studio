@@ -1207,7 +1207,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         // allow sub command to be recorded
         --cur_tracking_window.history.current_recording_instance;
         for(auto each : file_list)
-            if(!command({cmd[0],each.toStdString(),"0"}))
+            if(!command({cmd[0],each.toStdString(),file_list.size() <= 7 ? "" : "0"}))
                 break;
         ++cur_tracking_window.history.current_recording_instance;
         if(!error_msg.empty())
