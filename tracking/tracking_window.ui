@@ -3231,6 +3231,9 @@ Tracking</string>
    <property name="text">
     <string>New Region From Thresholding...</string>
    </property>
+   <property name="toolTip">
+    <string>run new_region_from_threshold</string>
+   </property>
   </action>
   <action name="actionRedo">
    <property name="text">

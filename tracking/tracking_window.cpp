@@ -447,40 +447,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         // actions
         connect(ui->actionUndo_Edit,SIGNAL(triggered()),regionWidget,SLOT(undo()));
         connect(ui->actionRedo_Edit,SIGNAL(triggered()),regionWidget,SLOT(redo()));
-        connect(ui->actionShift_X,SIGNAL(triggered()),regionWidget,SLOT(action_shiftx()));
-        connect(ui->actionShift_X_2,SIGNAL(triggered()),regionWidget,SLOT(action_shiftnx()));
-        connect(ui->actionShift_Y,SIGNAL(triggered()),regionWidget,SLOT(action_shifty()));
-        connect(ui->actionShift_Y_2,SIGNAL(triggered()),regionWidget,SLOT(action_shiftny()));
-        connect(ui->actionShift_Z,SIGNAL(triggered()),regionWidget,SLOT(action_shiftz()));
-        connect(ui->actionShift_Z_2,SIGNAL(triggered()),regionWidget,SLOT(action_shiftnz()));
 
-        connect(ui->actionFlip_X,SIGNAL(triggered()),regionWidget,SLOT(action_flipx()));
-        connect(ui->actionFlip_Y,SIGNAL(triggered()),regionWidget,SLOT(action_flipy()));
-        connect(ui->actionFlip_Z,SIGNAL(triggered()),regionWidget,SLOT(action_flipz()));
-
-        connect(ui->actionThreshold,SIGNAL(triggered()),regionWidget,SLOT(action_threshold()));
-        connect(ui->actionThreshold_2,SIGNAL(triggered()),regionWidget,SLOT(action_threshold_current()));
-
-        connect(ui->actionSmoothing,SIGNAL(triggered()),regionWidget,SLOT(action_smoothing()));
-        connect(ui->actionErosion,SIGNAL(triggered()),regionWidget,SLOT(action_erosion()));
-        connect(ui->actionDilation,SIGNAL(triggered()),regionWidget,SLOT(action_dilation()));
-        connect(ui->actionOpening,SIGNAL(triggered()),regionWidget,SLOT(action_opening()));
-        connect(ui->actionClosing,SIGNAL(triggered()),regionWidget,SLOT(action_closing()));
-        connect(ui->actionNegate,SIGNAL(triggered()),regionWidget,SLOT(action_negate()));
-        connect(ui->actionDefragment,SIGNAL(triggered()),regionWidget,SLOT(action_defragment()));
-        connect(ui->actionDilation_by_voxel,SIGNAL(triggered()),regionWidget,SLOT(action_dilation_by_voxel()));
-
-        connect(ui->actionSeparate,SIGNAL(triggered()),regionWidget,SLOT(action_separate()));
-        connect(ui->actionA_B,SIGNAL(triggered()),regionWidget,SLOT(action_A_B()));
-        connect(ui->actionB_A,SIGNAL(triggered()),regionWidget,SLOT(action_B_A()));
-        connect(ui->actionAB,SIGNAL(triggered()),regionWidget,SLOT(action_AB()));
-        connect(ui->actionAll_To_First,SIGNAL(triggered()),regionWidget,SLOT(action_B2A()));
-        connect(ui->actionAll_To_First2,SIGNAL(triggered()),regionWidget,SLOT(action_B2A2()));
-        connect(ui->actionBy_Name,SIGNAL(triggered()),regionWidget,SLOT(action_sort_name()));
-        connect(ui->actionBy_Size,SIGNAL(triggered()),regionWidget,SLOT(action_sort_size()));
-        connect(ui->actionBy_X,SIGNAL(triggered()),regionWidget,SLOT(action_sort_x()));
-        connect(ui->actionBy_Y,SIGNAL(triggered()),regionWidget,SLOT(action_sort_y()));
-        connect(ui->actionBy_Z,SIGNAL(triggered()),regionWidget,SLOT(action_sort_z()));
         connect(ui->actionMove_Slices_To_Current_Region,SIGNAL(triggered()),regionWidget,SLOT(move_slice_to_current_region()));
 
         connect(ui->actionWhole_brain_seeding,SIGNAL(triggered()),regionWidget,SLOT(whole_brain()));

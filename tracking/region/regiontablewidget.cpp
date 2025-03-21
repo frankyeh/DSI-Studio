@@ -404,6 +404,17 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         add_region("New Region");
         return true;
     }
+    if(cmd[0] == "new_region_from_threshold")
+    {
+        add_region("New Region");
+        if(!do_action("threshold",cmd[1]))
+        {
+            if(!error_msg.empty())
+                return false;
+            return run->canceled();
+        }
+        return true;
+    }
     if(cmd[0] == "new_region_from_mni")
     {
         if(cmd[1].empty() && (cmd[1] =
@@ -421,7 +432,6 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                                             tipl::vector<3>(params[0].toFloat(),params[1].toFloat(),params[2].toFloat()),params[3].toFloat());
         return true;
     }
-
     if(cmd[0] == "save_region")
     {
         int cur_row = currentRow();
@@ -768,6 +778,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         }
         return true;
     }
+
 
     return run->not_processed();
 }
@@ -1514,12 +1525,10 @@ void RegionTableWidget::redo(void)
     emit need_update();
 }
 
-void RegionTableWidget::do_action(QString action)
+bool RegionTableWidget::do_action(QString action,std::string& value)
 {
-    if(action == "threshold")
-        add_region("New Region");
     if(regions.empty() || currentRow() < 0)
-        return;
+        return false;
     tipl::progress prog(action.toStdString().c_str(),true);
     std::vector<int> rows_to_be_updated;
     size_t roi_index = currentRow();
@@ -1529,7 +1538,7 @@ void RegionTableWidget::do_action(QString action)
         if(action == "A-B" || action == "B-A" || action == "A*B" || action == "A<<B" || action == "A>>B")
         {
             if(checked_regions.size() < 2)
-                return;
+                return false;
             auto base_dim = checked_regions[0]->dim;
             auto base_to_dif = checked_regions[0]->to_diffusion_space;
             std::vector<unsigned int> checked_row;
@@ -1794,10 +1803,17 @@ void RegionTableWidget::do_action(QString action)
 
         if(action == "dilation_by_voxel")
         {
-            bool ok;
-            int threshold = float(QInputDialog::getInt(this,QApplication::applicationName(),"Voxel distance",10,1,100,1,&ok));
-            if(!ok)
-                return;
+            int threshold = 10;
+            if(value.empty())
+            {
+                bool ok;
+                threshold = QInputDialog::getInt(this,QApplication::applicationName(),"Voxel distance",10,1,100,1,&ok);
+                if(!ok)
+                    return false;
+                value = std::to_string(threshold);
+            }
+            else
+                threshold = QString::fromStdString(value).toInt();
             size_t p = 0;
             for(auto& region : region_to_be_processed)
             {
@@ -1812,15 +1828,22 @@ void RegionTableWidget::do_action(QString action)
         {
             tipl::const_pointer_image<3,float> I = cur_tracking_window.current_slice->get_source();
             if(I.empty())
-                return;
+                return false;
             double m = tipl::max_value(I);
-            bool ok;
             bool flip = false;
-            float threshold = float(QInputDialog::getDouble(this,
-                QApplication::applicationName(),"Threshold (assign negative value to get low pass):",
-                double(tipl::segmentation::otsu_threshold(I)),-m,m,4, &ok));
-            if(!ok)
-                return;
+            float threshold = 0.0f;
+            if(value.empty())
+            {
+                bool ok;
+                threshold = float(QInputDialog::getDouble(this,
+                                  QApplication::applicationName(),"Threshold (assign negative value to get low pass):",
+                                  double(tipl::segmentation::otsu_threshold(I)),-m,m,4, &ok));
+                if(!ok)
+                    return false;
+                value = std::to_string(threshold);
+            }
+            else
+                threshold = QString::fromStdString(value).toFloat();
             if(threshold < 0)
             {
                 flip = true;
@@ -1922,4 +1945,5 @@ void RegionTableWidget::do_action(QString action)
         openPersistentEditor(item(i,2));
     }
     emit need_update();
+    return true;
 }

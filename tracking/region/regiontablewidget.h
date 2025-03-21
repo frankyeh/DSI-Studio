@@ -35,7 +35,7 @@ protected:
     void contextMenuEvent(QContextMenuEvent * event ) override;
 private:
     tracking_window& cur_tracking_window;
-    void do_action(QString action);
+    bool do_action(QString action,std::string& value);
     bool load_multiple_roi_nii(QString file_name,bool is_mni);
 private:
     template<typename func>
@@ -101,37 +101,7 @@ public slots:
     void undo(void);
     void redo(void);
     void move_slice_to_current_region(void);
-    // actions
-    void action_smoothing(void){do_action("smoothing");}
-    void action_erosion(void){do_action("erosion");}
-    void action_dilation(void){do_action("dilation");}
-    void action_dilation_by_voxel(void){do_action("dilation_by_voxel");}
-    void action_opening(void){do_action("opening");}
-    void action_closing(void){do_action("closing");}
-    void action_defragment(void){do_action("defragment");}
-    void action_negate(void){do_action("negate");}
-    void action_flipx(void){do_action("flipx");}
-    void action_flipy(void){do_action("flipy");}
-    void action_flipz(void){do_action("flipz");}
-    void action_shiftx(void){do_action("shiftx");}
-    void action_shiftnx(void){do_action("shiftnx");}
-    void action_shifty(void){do_action("shifty");}
-    void action_shiftny(void){do_action("shiftny");}
-    void action_shiftz(void){do_action("shiftz");}
-    void action_shiftnz(void){do_action("shiftnz");}
-    void action_threshold(void){do_action("threshold");}
-    void action_threshold_current(void){do_action("threshold_current");}
-    void action_separate(void){do_action("separate");}
-    void action_A_B(void){do_action("A-B");}
-    void action_B_A(void){do_action("B-A");}
-    void action_AB(void){do_action("A*B");}
-    void action_B2A(void){do_action("A<<B");}
-    void action_B2A2(void){do_action("A>>B");}
-    void action_sort_name(void){do_action("sort_name");}
-    void action_sort_size(void){do_action("sort_size");}
-    void action_sort_x(void){do_action("sort_x");}
-    void action_sort_y(void){do_action("sort_y");}
-    void action_sort_z(void){do_action("sort_z");}
+
 };
 
 #endif // REGIONTABLEWIDGET_H
