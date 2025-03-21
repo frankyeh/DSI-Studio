@@ -277,7 +277,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             if(tractWidget->rowCount())
                 tractWidget->command({"delete_all_tracts"});;
             for(const auto& each : tipl::search_files(cmd[1]+"/tracts","*tt.gz"))
-                tractWidget->command({"load_tracts",each});
+                tractWidget->command({"open_tract",each});
         }
 
         prog(1,5);

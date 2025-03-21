@@ -260,30 +260,6 @@ void MainWindow::login_with_param(QStringList param)
 void MainWindow::openFile(QStringList file_names)
 {
     QString file_name = file_names[0];
-    if(QFileInfo(file_name).isDir())
-    {
-        QStringList fib_list = QDir(file_name).entryList(QStringList("*fib.gz"),QDir::Files|QDir::NoSymLinks);
-        fib_list << QDir(file_name).entryList(QStringList("*fz"),QDir::Files|QDir::NoSymLinks);
-        QStringList tt_list = QDir(file_name).entryList(
-                    QStringList("*tt.gz") <<
-                    QString("*trk.gz") <<
-                    QString("*trk") <<
-                    QString("*tck"),QDir::Files|QDir::NoSymLinks);
-        if(!fib_list.empty())
-            loadFib(file_name + "/" + fib_list[0]);
-        else
-        {
-            loadFib(file_name + "/" + tt_list[0]);
-            tt_list.removeAt(0);
-        }
-        if(!tt_list.empty())
-        {
-            for(int i = 0;i < tt_list.size();++i)
-                tt_list[i] = file_name + "/" + tt_list[i];
-            tracking_windows.back()->tractWidget->load_tracts(tt_list);
-        }
-        return;
-    }
     if(!QFileInfo(file_name).exists())
     {
         if(file_name[0] == '-') // Mac pass a variable
@@ -297,18 +273,13 @@ void MainWindow::openFile(QStringList file_names)
            QString(file_name).endsWith(".trk") ||
            QString(file_name).endsWith(".trk.gz"))
         {
-            if(QString(file_name).remove(".tt.gz").endsWith(".fz") &&
-               QFileInfo(QString(file_name).remove(".tt.gz")).exists())
-            {
-                loadFib(QString(file_name).remove(".tt.gz"));
-                tracking_windows.back()->tractWidget->load_tracts(file_names);
-                return;
-            }
-            QStringList file_list = QFileInfo(file_name).dir().entryList(QStringList("*fz"),QDir::Files|QDir::NoSymLinks);
+            auto file_list = QFileInfo(file_name).dir().entryList(QStringList("*fz"),QDir::Files|QDir::NoSymLinks);
+            file_list << QFileInfo(file_name).dir().entryList(QStringList("*fib.gz"),QDir::Files|QDir::NoSymLinks);
             if(file_list.size() == 1)
             {
                 loadFib(QFileInfo(file_name).absolutePath() + "/" + file_list[0]);
-                tracking_windows.back()->tractWidget->load_tracts(file_names);
+                for(auto each:file_names)
+                    tracking_windows.back()->command({"open_tract",each.toStdString()});
             }
             else
                 loadFib(file_name);
@@ -505,7 +476,7 @@ void MainWindow::loadFib(QString filename)
     tracking_windows.back()->resize(1200,700);
     if(filename.endsWith("trk.gz") || filename.endsWith("trk") || filename.endsWith("tck") || filename.endsWith("tt.gz"))
     {
-        tracking_windows.back()->tractWidget->load_tracts(QStringList() << filename);
+        tracking_windows.back()->command({"open_tract",filename.toStdString()});
         if(filename.endsWith("tck"))
         {
             tipl::shape<3> geo;

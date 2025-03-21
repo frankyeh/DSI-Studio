@@ -404,36 +404,7 @@ void TractTableWidget::stop_tracking(void)
         if(thread_data[index].get())
             thread_data[index]->end_thread();
 }
-void TractTableWidget::load_tracts(QStringList filenames,bool tract_is_mni)
-{
-    if(filenames.empty())
-        return;
-    tipl::progress prog("open tracts");
-    for(unsigned int index = 0;prog(index,filenames.size());++index)
-    {
-        if(!command({"load_tracts",filenames[index].toStdString(),tract_is_mni ? "mni" : ""}))
-        {
-            QMessageBox::critical(this,"ERROR",error_msg.c_str());
-            break;
-        }
-    }
-    emit show_tracts();
-}
 
-void TractTableWidget::load_tracts(void)
-{
-    load_tracts(QFileDialog::getOpenFileNames(
-            this,"Load Tracts",QFileInfo(cur_tracking_window.work_path).absolutePath(),
-            "Tract files (*tt.gz *.trk *trk.gz *.tck);;Text files (*.txt);;All files (*)"));
-    show_report();
-}
-void TractTableWidget::load_mni_tracts(void)
-{
-    load_tracts(QFileDialog::getOpenFileNames(
-            this,"Load MNI-space Tracts",QFileInfo(cur_tracking_window.work_path).absolutePath(),
-            "Tract files (*tt.gz *.trk *trk.gz *.tck);;Text files (*.txt);;All files (*)"),true);
-    show_report();
-}
 void TractTableWidget::load_tract_label(void)
 {
     QString filename = QFileDialog::getOpenFileName(
@@ -486,10 +457,7 @@ void TractTableWidget::save_all_tracts_to_dir(void)
 {
     if (tract_models.empty())
         return;
-    QString dir = QFileDialog::getExistingDirectory(this,"Open directory","");
-    if(dir.isEmpty())
-        return;
-    if(!command({"save_all_tracts_to_dir",dir.toStdString()}))
+    if(!command({"save_all_tracts_to_dir"}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
     else
         QMessageBox::information(this,QApplication::applicationName(),"file saved");
@@ -500,7 +468,8 @@ void TractTableWidget::save_all_tracts_as(void)
         return;
     QString filename;
     filename = QFileDialog::getSaveFileName(
-                this,"Save tracts as",QString::fromStdString(cur_tracking_window.history.file_stem()) + output_format(),
+                this,"Save tracts as",
+                QString::fromStdString(cur_tracking_window.history.file_stem()) + output_format(),
                 "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;NIFTI File (*nii.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -721,22 +690,6 @@ void TractTableWidget::clustering(int method_id)
     assign_colors();
 }
 
-void TractTableWidget::save_tracts_as(void)
-{
-    if(currentRow() >= int(tract_models.size()) || currentRow() < 0)
-        return;
-    QString filename;
-    filename = QFileDialog::getSaveFileName(
-                this,"Save tracts as",
-                QString::fromStdString(cur_tracking_window.history.file_stem()) + output_format(),
-                 "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;TCK file (*.tck);;ROI files (*.nii *nii.gz);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    if(command({"save_current_tracts",filename.toStdString()}))
-        QMessageBox::information(this,QApplication::applicationName(),"file saved");
-    else
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
 
 void TractTableWidget::save_all_tracts_end_point_as(void)
 {
@@ -1125,6 +1078,26 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     if(cmd.size() < 3)
         cmd.resize(3);
 
+    auto get_cur_row = [&](std::string& cmd_text,int cur_row)->bool
+    {
+        if (tract_models.empty())
+        {
+            error_msg = "no tract available";
+            return false;
+        }
+        bool okay = true;
+        if(cmd_text.empty())
+            cmd_text = std::to_string(cur_row);
+        else
+            cur_row = QString::fromStdString(cmd_text).toInt(&okay);
+        if (cur_row >= tract_models.size() || !okay)
+        {
+            error_msg = "invalid tract index: " + cmd_text;
+            return false;
+        }
+        return true;
+    };
+
     if(cmd[0] == "delete_branch")
     {
         for_each_bundle(cmd[0].c_str(), [&](unsigned int index){return tract_models[index]->delete_branch();});
@@ -1206,32 +1179,69 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         cur_tracking_window.history.default_stem2 = cmd[1];
         return true;
     }
-    if(cmd[0] == "load_tracts")
+    if(cmd[0] == "open_tract" || cmd[0] == "open_mni_tract")
     {
-        // is mni space tract
-        bool is_mni_space = (cmd[2] == "mni");
-        if(is_mni_space && !cur_tracking_window.handle->map_to_mni())
-            return run->failed(cur_tracking_window.handle->error_msg);
-        auto models = TractModel::load_from_file(cmd[1].c_str(),cur_tracking_window.handle,is_mni_space);
-        if(models.empty())
-            return run->failed("cannot load tracks from " + cmd[1]);
-        for(auto& each : models)
-            if(each.get())
-                addNewTracts(each,models.size() == 1);
-        return true;
+        // cmd[1] : file name
+        // cmd[2] : empty() = show or otherwise no show
+        if(!cmd[1].empty())
+        {
+            bool is_mni_space = (cmd[0] == "open_mni_tract");
+            if(is_mni_space && !cur_tracking_window.handle->map_to_mni())
+                return run->failed(cur_tracking_window.handle->error_msg);
+
+            auto models = TractModel::load_from_file(cmd[1].c_str(),cur_tracking_window.handle,is_mni_space);
+            if(models.empty())
+                return run->failed("cannot load tracks from " + cmd[1]);
+            for(auto& each : models)
+                if(each.get())
+                    addNewTracts(each,cmd[2].empty());
+
+            return true;
+        }
+        // allow for selecting multiple files
+        auto file_list = QFileDialog::getOpenFileNames(this,QString::fromStdString(cmd[0]),
+                         QString::fromStdString(cur_tracking_window.history.file_stem()) + output_format(),
+                         "Tract files (*tt.gz *.trk *trk.gz *.tck);;Text files (*.txt);;All files (*)");
+        if(file_list.isEmpty())
+            return run->canceled();
+        // allow sub command to be recorded
+        --cur_tracking_window.history.current_recording_instance;
+        for(auto each : file_list)
+            if(!command({cmd[0],each.toStdString(),"0"}))
+                break;
+        ++cur_tracking_window.history.current_recording_instance;
+        if(!error_msg.empty())
+            return false;
+        return run->canceled();
     }
-    if(cmd[0] == "save_current_tracts")
+    if(cmd[0] == "save_tract")
     {
-        if(currentRow() >= int(tract_models.size()) || currentRow() < 0)
-            return run->failed("no tract to save");
+        // cmd[1] : file name to be saved
+        // cmd[2] : tract index
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[2],cur_row))
+            return false;
+
+        if(cmd[1].empty() && (cmd[1] =
+                QFileDialog::getSaveFileName(
+                    this,"Save tracts as",
+                    QString::fromStdString(cur_tracking_window.history.default_parent_path +
+                                           "/" +tract_models[cur_row]->name) + output_format(),
+                    "Tract files (*.tt.gz *tt.gz *trk.gz *.trk *.tck);;Text File (*.txt);;MAT files (*.mat);;All files (*)").toStdString()).empty())
+            return run->canceled();
+
         tipl::progress prog_(cmd[0]);
-        auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-        if(!tract_models[uint32_t(currentRow())]->save_tracts_to_file(cmd[1].c_str()))
+        auto lock = tract_rendering[cur_row]->start_reading();
+        if(!tract_models[cur_row]->save_tracts_to_file(cmd[1].c_str()))
             return run->failed("cannot write to file at " + cmd[1]);
         return true;
     }
     if(cmd[0] == "save_all_tracts_to_dir")
     {
+        // cmd[1] : directory output
+        if(cmd[1].empty() && (cmd[1] = QFileDialog::getExistingDirectory(this,
+                    "Open directory",QString::fromStdString(cur_tracking_window.history.default_parent_path)).toStdString()).empty())
+            return run->canceled();
         tipl::progress prog_("saving files");
         auto selected_tracts = get_checked_tracks();
         auto selected_tracts_rendering = get_checked_tracks_rendering();

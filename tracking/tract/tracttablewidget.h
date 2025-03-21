@@ -43,7 +43,6 @@ public:
                               tipl::vector<3,float> vs,
                               const tipl::matrix<4,4>& trans_to_mni,
                               const tipl::matrix<4,4>& T,bool color,bool endpoint);
-    void load_tracts(QStringList filenames,bool is_mni = false);
     void cut_by_slice(unsigned char dim,bool greater);
     void draw_tracts(unsigned char dim,int pos,
                      QImage& scaledimage,float display_ratio);
@@ -128,13 +127,10 @@ public slots:
     void fetch_tracts(void);
     void show_tracking_progress(void);
 
-    void load_tracts(void);
-    void load_mni_tracts(void);
     void load_tract_label(void);
     void load_tracts_color(void);
     void load_tracts_value(void);
 
-    void save_tracts_as(void);
     void save_tracts_color_as(void);
     void save_tracts_data_as(void);
     void save_all_tracts_as(void);

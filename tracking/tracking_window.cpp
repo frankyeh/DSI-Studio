@@ -528,8 +528,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
         connect(ui->actionFilter_by_ROI,SIGNAL(triggered()),tractWidget,SLOT(filter_by_roi()));
 
-        connect(ui->actionOpenTract,SIGNAL(triggered()),tractWidget,SLOT(load_tracts()));
-        connect(ui->actionOpen_MNI_space_Tracts,SIGNAL(triggered()),tractWidget,SLOT(load_mni_tracts()));
         connect(ui->actionLoad_Built_In_Atlas,SIGNAL(triggered()),tractWidget,SLOT(load_built_in_atlas()));
         connect(ui->actionOpen_Tracts_Label,SIGNAL(triggered()),tractWidget,SLOT(load_tract_label()));
         connect(ui->actionMerge_All,SIGNAL(triggered()),tractWidget,SLOT(merge_all()));
@@ -1260,10 +1258,20 @@ void tracking_window::dropEvent(QDropEvent *event)
             }
         }
     }
-    if(!tracts.empty())
-        tractWidget->load_tracts(tracts);
-    if(!regions.empty() && !regionWidget->command({"load_region",regions.join(",").toStdString()}))
-        QMessageBox::critical(this,"ERROR",regionWidget->error_msg.c_str());
+    for(auto each : tracts)
+        if(!command({"open_tract",each.toStdString()}))
+        {
+            if(!error_msg.empty())
+                QMessageBox::critical(this,"ERROR",error_msg.c_str());
+            return;
+        }
+    for(auto each : regions)
+        if(!command({"load_region",each.toStdString()}))
+        {
+            if(!error_msg.empty())
+                QMessageBox::critical(this,"ERROR",error_msg.c_str());
+            return;
+        }
 }
 
 
