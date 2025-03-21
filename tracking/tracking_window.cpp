@@ -442,8 +442,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(regionWidget,&RegionTableWidget::itemSelectionChanged,this,[this](void){slice_need_update = true;});
         connect(regionWidget,SIGNAL(need_update()),glWidget,SLOT(update()));
 
-        connect(ui->actionSave_Voxel_Data_As,SIGNAL(triggered()),regionWidget,SLOT(save_region_info()));
-
         // actions
         connect(ui->actionUndo_Edit,SIGNAL(triggered()),regionWidget,SLOT(undo()));
         connect(ui->actionRedo_Edit,SIGNAL(triggered()),regionWidget,SLOT(redo()));
@@ -1235,19 +1233,6 @@ void tracking_window::on_SliceModality_currentIndexChanged(int index)
 
     no_update = false;
     change_contrast();
-}
-
-void tracking_window::on_actionLoad_MNI_mapping_triggered()
-{
-    QString filename = QFileDialog::getOpenFileName(
-                       this,"Open MNI mapping",QFileInfo(work_path).absolutePath(),
-                       "Mapping file(*.mz);;NIFTI file(*nii.gz *.nii);;All file types (*)" );
-    if (filename.isEmpty())
-        return;
-    if(command({"open_mapping",filename.toStdString()}))
-        QMessageBox::information(this,QApplication::applicationName(),"mapping loaded");
-    else
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
 void tracking_window::dragEnterEvent(QDragEnterEvent *event)

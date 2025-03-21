@@ -620,6 +620,37 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                 return run->failed("cannot save " + each->name + " to " + cmd[1]);
         return true;
     }
+    if(cmd[0] == "save_region_info")
+    {
+        if (regions.empty() || currentRow() >= regions.size())
+            return run->failed("no region info to save");
+        if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(
+                               this,"Save voxel information",QString(regions[currentRow()]->name.c_str()) + "_info.txt",
+                               "Text files (*.txt)" ).toStdString()).empty())
+            return run->canceled();
+
+        std::ofstream out(cmd[1].c_str());
+        out << "x\ty\tz";
+        for(unsigned int index = 0;index < cur_tracking_window.handle->dir.num_fiber;++index)
+            out << "\tdx" << index << "\tdy" << index << "\tdz" << index;
+
+        for(const auto& each : cur_tracking_window.handle->get_index_list())
+            out << "\t" << each;
+        for(const auto& each : cur_tracking_window.handle->slices)
+            if(!each->optional())
+                each->get_image();
+        out << std::endl;
+        for(auto& point : regions[currentRow()]->to_space(cur_tracking_window.handle->dim))
+        {
+            std::vector<float> data;
+            cur_tracking_window.handle->get_voxel_info2(point[0],point[1],point[2],data);
+            cur_tracking_window.handle->get_voxel_information(point[0],point[1],point[2],data);
+            std::copy(point.begin(),point.end(),std::ostream_iterator<float>(out,"\t"));
+            std::copy(data.begin(),data.end(),std::ostream_iterator<float>(out,"\t"));
+            out << std::endl;
+        }
+        return true;
+    }
     if(cmd[0] == "open_region" || cmd[0] == "open_mni_region")
     {
         // cmd[1] : contain only single file name
@@ -1496,38 +1527,6 @@ void RegionTableWidget::save_checked_region_label_file(QString filename,int firs
     }
 }
 
-
-void RegionTableWidget::save_region_info(void)
-{
-    if (regions.empty() || currentRow() >= regions.size())
-        return;
-    QString filename = QFileDialog::getSaveFileName(
-                           this,"Save voxel information",QString(regions[currentRow()]->name.c_str()) + "_info.txt",
-                           "Text files (*.txt)" );
-    if (filename.isEmpty())
-        return;
-
-    std::ofstream out(filename.toStdString().c_str());
-    out << "x\ty\tz";
-    for(unsigned int index = 0;index < cur_tracking_window.handle->dir.num_fiber;++index)
-            out << "\tdx" << index << "\tdy" << index << "\tdz" << index;
-
-    for(const auto& each : cur_tracking_window.handle->get_index_list())
-        out << "\t" << each;
-    for(const auto& each : cur_tracking_window.handle->slices)
-        if(!each->optional())
-            each->get_image();
-    out << std::endl;
-    for(auto& point : regions[currentRow()]->to_space(cur_tracking_window.handle->dim))
-    {
-        std::vector<float> data;
-        cur_tracking_window.handle->get_voxel_info2(point[0],point[1],point[2],data);
-        cur_tracking_window.handle->get_voxel_information(point[0],point[1],point[2],data);
-        std::copy(point.begin(),point.end(),std::ostream_iterator<float>(out,"\t"));
-        std::copy(data.begin(),data.end(),std::ostream_iterator<float>(out,"\t"));
-        out << std::endl;
-    }
-}
 
 void RegionTableWidget::setROIs(ThreadData* data)
 {

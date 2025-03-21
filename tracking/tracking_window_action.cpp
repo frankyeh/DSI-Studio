@@ -133,10 +133,13 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "open_mapping")
     {
+        if(cmd[1].empty() && (cmd[1] = QFileDialog::getOpenFileName(
+                    this,"Open MNI mapping",QFileInfo(work_path).absolutePath(),
+                    "Mapping file(*.mz);;All file types (*)" ).toStdString()).empty())
+            return run->canceled();
         tipl::progress prog(cmd[0],true);
         if(!handle->load_template() || !handle->load_mapping(cmd[1]))
             return run->failed(handle->error_msg);
-
         return true;
     }
     if(cmd[0] == "save_roi_screen")
