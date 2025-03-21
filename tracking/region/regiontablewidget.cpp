@@ -613,8 +613,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         auto checked_regions = get_checked_regions();
         if (checked_regions.empty())
             return run->failed("no checked region to save");
-        if(cmd[1].empty() && (cmd[1] =
-                QFileDialog::getExistingDirectory(this,QString::fromStdString(cmd[0]),
+        if(cmd[1].empty() && (cmd[1] = QFileDialog::getExistingDirectory(this,QString::fromStdString(cmd[0]),
                             QString::fromStdString(cur_tracking_window.history.default_parent_path)).toStdString()).empty())
             return run->canceled();
         tipl::progress prog("saving files");
