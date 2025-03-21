@@ -218,18 +218,17 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
            std::floor(nifti.nif_header.scl_slope) != nifti.nif_header.scl_slope)
             pixel_type = float32;
 
-        bool succeed = true;
-        apply([&](auto& data)
+        if(!apply([&](auto& data)
         {
-            succeed = nifti.get_untouched_image(data,prog);
+            bool succeed = nifti.get_untouched_image(data,prog);
             if constexpr(!std::is_integral<typename std::remove_reference<decltype(*data.begin())>::type>::value)
             {
                 for(size_t pos = 0;pos < data.size();++pos)
                    if(std::isnan(data[pos]))
                        data[pos] = 0;
             }
-        });
-        if(!succeed)
+            return succeed;
+        }))
         {
             error_msg = nifti.error_msg;
             return false;
@@ -434,8 +433,33 @@ int img(tipl::program_option<tipl::out>& po)
     if(!var_image.load_from_file(source.c_str(),info))
     {
         tipl::error() << var_image.error_msg;
-        return 0;
+        return 1;
     }
+    tipl::shape<4> dim4;
+    if(var_image.dim4 > 1)
+    {
+        tipl::progress prog("loading 4d nifti");
+        tipl::io::gz_nifti nifti;
+        prepare_idx(source.c_str(),nifti.input_stream);
+        if(!nifti.load_from_file(source.c_str()))
+        {
+            tipl::error() << var_image.error_msg;
+            return 1;
+        }
+        if(!var_image.apply([&](auto& I)
+        {
+            tipl::out() << "dimension: " << (dim4 = tipl::shape<4>(I.width(),I.height(),I.depth(),var_image.dim4));
+            I.resize(var_image.shape = tipl::shape<3>(I.width(),I.height(),I.depth()*var_image.dim4));
+            if(!nifti.save_to_buffer(I.data(),dim4.size(),prog))
+            {
+                tipl::error() << nifti.error_msg;
+                return false;
+            }
+            return true;
+        }))
+            return 1;
+    }
+
     for(auto& cmd : tipl::split(po.get("cmd"),'+'))
     {
         std::string param;
@@ -465,9 +489,25 @@ int img(tipl::program_option<tipl::out>& po)
             return 1;
         }
     }
+
     if(po.has("output"))
     {
-        tipl::out() << "saving output";
+        if(var_image.dim4 > 1)
+        {
+            if(!var_image.apply([&](auto& I)->bool
+            {
+                tipl::io::gz_nifti nii;
+                nii.set_image_transformation(var_image.T,var_image.is_mni);
+                nii.set_voxel_size(var_image.vs);
+                nii << tipl::make_image(I.data(),dim4);
+                if(nii.save_to_file(po.get("output").c_str()))
+                    return true;
+                tipl::error() << nii.error_msg;
+                return false;
+            }))
+                return 1;
+        }
+        else
         if(!var_image.command("save",po.get("output")))
         {
             tipl::error() << var_image.error_msg;
