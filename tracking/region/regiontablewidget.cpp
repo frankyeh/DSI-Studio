@@ -567,8 +567,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         if (checked_regions.empty())
             return run->failed("no checked region to save");
         if(cmd[1].empty() && (cmd[1] =
-                        QFileDialog::getSaveFileName(
-                        this,QString::fromStdString(cmd[0]),
+                        QFileDialog::getSaveFileName(this,QString::fromStdString(cmd[0]),
                         QString::fromStdString(cur_tracking_window.history.file_stem()) + output_format(),
                         "Region file(*nii.gz *.nii *.mat);;Text file (*.txt);;All file types (*)" ).toStdString()).empty())
             return run->canceled();
@@ -687,6 +686,64 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         if(!error_msg.empty())
             return false;
         return run->canceled(); // no need to record on history
+    }
+    if(cmd[0] == "load_region_color")
+    {
+        if(cmd[1].empty() && (cmd[1] = QFileDialog::getOpenFileName(this,QString::fromStdString(cmd[0]),
+                    QString::fromStdString(cur_tracking_window.history.file_stem()) + "_color.txt",
+                    "Color files (*.txt);;All files (*)").toStdString()).empty())
+            return run->canceled();
+
+        std::ifstream in(cmd[1].c_str());
+        if (!in)
+            return run->failed("cannot load file "+cmd[1]);
+        std::vector<int> colors((std::istream_iterator<float>(in)),
+                                  (std::istream_iterator<float>()));
+        if(colors.size() == regions.size()*4) // RGBA
+        {
+            for(size_t index = 0,pos = 0;index < regions.size() && pos+2 < colors.size();++index,pos+=4)
+            {
+                tipl::rgb c(std::min<int>(colors[pos],255),
+                            std::min<int>(colors[pos+1],255),
+                            std::min<int>(colors[pos+2],255),
+                            std::min<int>(colors[pos+3],255));
+                regions[index]->region_render->color = c;
+                regions[index]->modified = true;
+                item(int(index),2)->setData(Qt::UserRole,uint32_t(c));
+            }
+        }
+        else
+        //RGB
+        {
+            for(size_t index = 0,pos = 0;index < regions.size() && pos+2 < colors.size();++index,pos+=3)
+            {
+                tipl::rgb c(std::min<int>(colors[pos],255),
+                            std::min<int>(colors[pos+1],255),
+                            std::min<int>(colors[pos+2],255),255);
+                regions[index]->region_render->color = c;
+                regions[index]->modified = true;
+                item(int(index),2)->setData(Qt::UserRole,uint32_t(c));
+            }
+        }
+        emit need_update();
+        return true;
+    }
+    if(cmd[0] == "save_region_color")
+    {
+        if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(this,QString::fromStdString(cmd[0]),
+                    QString::fromStdString(cur_tracking_window.history.file_stem()) + "_color.txt",
+                    "Color files (*.txt);;All files (*)").toStdString()).empty())
+            return run->canceled();
+
+        std::ofstream out(cmd[1].c_str());
+        if (!out)
+            return run->failed("cannot save region to "+cmd[1]);
+        for(size_t index = 0;index < regions.size();++index)
+        {
+            tipl::rgb c(regions[index]->region_render->color);
+            out << int(c[2]) << " " << int(c[1]) << " " << int(c[0]) << " " << int(c[3]) << std::endl;
+        }
+        return true;
     }
     if(cmd[0] == "check_all_regions" || cmd[0] == "uncheck_all_regions")
     {
@@ -1395,65 +1452,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
     return true;
 }
 
-void RegionTableWidget::load_region_color(void)
-{
-    QString filename = QFileDialog::getOpenFileName(
-                this,"Load region color",QFileInfo(cur_tracking_window.work_path).absolutePath()+"/region_color.txt",
-                "Color files (*.txt);;All files (*)");
-    if(filename.isEmpty())
-        return;
 
-    std::ifstream in(filename.toStdString().c_str());
-    if (!in)
-        return;
-    std::vector<int> colors((std::istream_iterator<float>(in)),
-                              (std::istream_iterator<float>()));
-    if(colors.size() == regions.size()*4) // RGBA
-    {
-        for(size_t index = 0,pos = 0;index < regions.size() && pos+2 < colors.size();++index,pos+=4)
-        {
-            tipl::rgb c(std::min<int>(colors[pos],255),
-                        std::min<int>(colors[pos+1],255),
-                        std::min<int>(colors[pos+2],255),
-                        std::min<int>(colors[pos+3],255));
-            regions[index]->region_render->color = c;
-            regions[index]->modified = true;
-            item(int(index),2)->setData(Qt::UserRole,uint32_t(c));
-        }
-    }
-    else
-    //RGB
-    {
-        for(size_t index = 0,pos = 0;index < regions.size() && pos+2 < colors.size();++index,pos+=3)
-        {
-            tipl::rgb c(std::min<int>(colors[pos],255),
-                        std::min<int>(colors[pos+1],255),
-                        std::min<int>(colors[pos+2],255),255);
-            regions[index]->region_render->color = c;
-            regions[index]->modified = true;
-            item(int(index),2)->setData(Qt::UserRole,uint32_t(c));
-        }
-    }
-    emit need_update();
-}
-void RegionTableWidget::save_region_color(void)
-{
-    QString filename = QFileDialog::getSaveFileName(
-                this,"Save region color",QFileInfo(cur_tracking_window.work_path).absolutePath()+"/region_color.txt",
-                "Color files (*.txt);;All files (*)");
-    if(filename.isEmpty())
-        return;
-
-    std::ofstream out(filename.toStdString().c_str());
-    if (!out)
-        return;
-    for(size_t index = 0;index < regions.size();++index)
-    {
-        tipl::rgb c(regions[index]->region_render->color);
-        out << int(c[2]) << " " << int(c[1]) << " " << int(c[0]) << " " << int(c[3]) << std::endl;
-    }
-    QMessageBox::information(this,QApplication::applicationName(),"File saved");
-}
 
 
 void RegionTableWidget::check_row(size_t row,bool checked)

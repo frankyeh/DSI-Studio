@@ -4048,6 +4048,9 @@ Tracking</string>
    <property name="text">
     <string>Load Region Color...</string>
    </property>
+   <property name="toolTip">
+    <string>run load_region_color</string>
+   </property>
   </action>
   <action name="actionSave_Region_Color">
    <property name="icon">
@@ -4056,6 +4059,9 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Save Region Color...</string>
+   </property>
+   <property name="toolTip">
+    <string>run save_region_color</string>
    </property>
   </action>
   <action name="actionLoad_Parameter_ID">

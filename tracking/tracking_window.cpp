@@ -441,15 +441,10 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(regionWidget,&RegionTableWidget::need_update,this,[this](void){slice_need_update = true;});
         connect(regionWidget,&RegionTableWidget::itemSelectionChanged,this,[this](void){slice_need_update = true;});
         connect(regionWidget,SIGNAL(need_update()),glWidget,SLOT(update()));
-
         // actions
         connect(ui->actionUndo_Edit,SIGNAL(triggered()),regionWidget,SLOT(undo()));
         connect(ui->actionRedo_Edit,SIGNAL(triggered()),regionWidget,SLOT(redo()));
-
         connect(ui->actionMove_Slices_To_Current_Region,SIGNAL(triggered()),regionWidget,SLOT(move_slice_to_current_region()));
-
-        connect(ui->actionLoad_Region_Color,SIGNAL(triggered()),regionWidget,SLOT(load_region_color()));
-        connect(ui->actionSave_Region_Color,SIGNAL(triggered()),regionWidget,SLOT(save_region_color()));
         connect(ui->region_up,SIGNAL(clicked()),regionWidget,SLOT(move_up()));
         connect(ui->region_down,SIGNAL(clicked()),regionWidget,SLOT(move_down()));
     }
