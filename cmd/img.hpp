@@ -12,6 +12,7 @@ public:
     tipl::image<3,float,tipl::buffer_container> I_float32;
     enum {int8 = 0,int16 = 1,int32 = 2,float32 = 3} pixel_type = int8;
     tipl::shape<3> shape;
+    size_t dim4 = 1;
     bool is_mni = false;
     bool interpolation = true;
     tipl::vector<3,float> vs;
