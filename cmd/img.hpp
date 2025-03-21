@@ -37,16 +37,37 @@ private:
         T = rhs.T;
     }
 public:
+    template<typename Fun, typename Arg>
+    bool call_function(Fun&& fun, Arg&& arg) {
+        if constexpr (std::is_void_v<decltype(fun(arg))>) {
+            fun(std::forward<Arg>(arg));
+            return true;
+        } else {
+            return fun(std::forward<Arg>(arg));
+        }
+    }
+
     template <typename T>
-    void apply(T&& fun)
+    bool apply(T&& fun)
     {
+        auto call_function = [&fun](auto&& arg) -> bool
+        {
+            if constexpr (std::is_void_v<decltype(fun(std::forward<decltype(arg)>(arg)))>)
+            {
+                fun(std::forward<decltype(arg)>(arg));
+                return true;
+            }
+            else
+            return fun(std::forward<decltype(arg)>(arg));
+        };
         switch(pixel_type)
         {
-            case int8:fun(I_int8);return;
-            case int16:fun(I_int16);return;
-            case int32:fun(I_int32);return;
-            case float32:fun(I_float32);return;
+            case int8:    return call_function(I_int8);
+            case int16:   return call_function(I_int16);
+            case int32:   return call_function(I_int32);
+            case float32: return call_function(I_float32);
         }
+        return false;
     }
     bool read_mat_image(size_t index,
                         tipl::io::gz_mat_read& mat);
