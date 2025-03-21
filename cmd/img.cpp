@@ -188,8 +188,7 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
             error_msg = nifti.error_msg;
             return false;
         }
-        if(nifti.dim(4) != 1)
-            error_msg = "4d image";
+        dim4 = nifti.dim(4);
         nifti.get_image_dimension(shape);
         switch (nifti.nif_header.datatype)
         {
@@ -235,7 +234,7 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
             error_msg = nifti.error_msg;
             return false;
         }
-        if(nifti.dim(4) == 1)
+        if(dim4 == 1)
             save_idx(file_name,nifti.input_stream);
         nifti.get_voxel_size(vs);
         nifti.get_image_transformation(T);

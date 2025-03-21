@@ -641,7 +641,7 @@ bool view_image::open(QStringList file_names_)
             return false;
         }
 
-    if(cur_image->error_msg == "4d image")
+    if(cur_image->dim4 > 1)
     {
         prepare_idx(file_name.toStdString().c_str(),nifti.input_stream);
         if(!nifti.load_from_file(file_name.toStdString().c_str()))
