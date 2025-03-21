@@ -35,7 +35,6 @@ protected:
     void contextMenuEvent(QContextMenuEvent * event ) override;
 private:
     tracking_window& cur_tracking_window;
-    bool do_action(QString action,std::string& value);
     bool load_multiple_roi_nii(QString file_name,bool is_mni);
 private:
     template<typename func>
@@ -72,6 +71,8 @@ public:
     int color_gen = 0;
     std::string error_msg;
     bool command(std::vector<std::string> cmd);
+    bool do_action(std::vector<std::string>& cmd);
+
     void check_row(size_t index,bool checked);
 public:
     explicit RegionTableWidget(tracking_window& cur_tracking_window,QWidget *parent = nullptr);

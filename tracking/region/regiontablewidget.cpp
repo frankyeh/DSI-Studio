@@ -406,13 +406,18 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "new_region_from_threshold")
     {
+        // cmd[1] : threshold applied
         add_region("New Region");
-        if(!do_action("threshold",cmd[1]))
+        std::vector<std::string> cmd_proxy = {"region_action_threshold",
+                                              std::to_string(regions.size()-1),
+                                              cmd[1]};
+        if(!do_action(cmd_proxy))
         {
             if(!error_msg.empty())
                 return false;
             return run->canceled();
         }
+        cmd[1] = cmd_proxy[2]; // record the threshold specified by users back to cmd[1]
         return true;
     }
     if(cmd[0] == "new_region_from_mni")
@@ -432,11 +437,43 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                                             tipl::vector<3>(params[0].toFloat(),params[1].toFloat(),params[2].toFloat()),params[3].toFloat());
         return true;
     }
+    if(tipl::begins_with(cmd[0],"region_action_"))
+    {
+        // cmd[0] : action
+        // cmd[1] : region index (default current row) separated by '&'
+        // cmd[2] : additional parameters used by threshold and dilation by voxel
+        if(cmd[1].empty())
+        {
+            if(cur_tracking_window.ui->actionModify_All->isChecked())
+            {
+                for (unsigned int roi_index = 0;roi_index < regions.size();++roi_index)
+                    if (item(roi_index,0)->checkState() == Qt::Checked)
+                    {
+                        if(!cmd[1].empty())
+                            cmd[1] += '&';
+                        cmd[1] += std::to_string(roi_index);
+                    }
+            }
+            else
+            {
+                int cur_row = currentRow();
+                if(!get_cur_row(cmd[1],cur_row))
+                    return false;
+            }
+        }
+        if(!do_action(cmd))
+        {
+            if(!error_msg.empty())
+                return false;
+            return run->canceled();
+        }
+        return true;
+    }
     if(cmd[0] == "save_region")
     {
-        int cur_row = currentRow();
         // cmd[1] : file name to be saved
         // cmd[2] : the region index (default: current selected one)
+        int cur_row = currentRow();
         if(!get_cur_row(cmd[2],cur_row))
             return false;
 
@@ -1525,17 +1562,31 @@ void RegionTableWidget::redo(void)
     emit need_update();
 }
 
-bool RegionTableWidget::do_action(QString action,std::string& value)
+bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
 {
-    if(regions.empty() || currentRow() < 0)
-        return false;
-    tipl::progress prog(action.toStdString().c_str(),true);
-    std::vector<int> rows_to_be_updated;
-    size_t roi_index = currentRow();
+    // cmd[0] : action
+    // cmd[1] : region index (default current row)
+    // cmd[2] : additional parameters
     auto checked_regions = get_checked_regions();
 
+
+    QString action = cmd[0].substr(14).c_str();
+    int roi_index = 0;
+    std::vector<std::shared_ptr<ROIRegion> > region_to_be_processed;
+    for(auto each : QString::fromStdString(cmd[1]).split('&'))
     {
-        if(action == "A-B" || action == "B-A" || action == "A*B" || action == "A<<B" || action == "A>>B")
+        auto index = each.toInt();
+        if(region_to_be_processed.empty())
+            roi_index = index;
+        if(index < regions.size())
+            region_to_be_processed.push_back(regions[each.toInt()]);
+    }
+
+
+    std::vector<int> rows_to_be_updated;
+    tipl::progress prog(action.toStdString().c_str(),true);
+    {
+        if(action == "1st_ex_all" || action == "all_ex_1st" || action == "all_inter_1st" || action == "all_to_1st" || action == "all_to_1st_2")
         {
             if(checked_regions.size() < 2)
                 return false;
@@ -1549,7 +1600,7 @@ bool RegionTableWidget::do_action(QString action,std::string& value)
             tipl::image<3,unsigned char> A;
             tipl::image<3,uint16_t> A_labels;
             checked_regions[0]->save_region_to_buffer(A);
-            if(action == "A<<B" || action == "A>>B")
+            if(action == "all_to_1st" || action == "all_to_1st_2")
                 A_labels.resize(base_dim);
 
             {
@@ -1562,17 +1613,17 @@ bool RegionTableWidget::do_action(QString action,std::string& value)
                         return;
                     tipl::image<3,unsigned char> B;
                     checked_regions[r]->save_region_to_buffer(B,base_dim,base_to_dif);
-                    if(action == "A-B")
+                    if(action == "1st_ex_all")
                     {
                         tipl::masking(A,B);
                         return; // don't update B
                     }
-                    if(action == "B-A")
+                    if(action == "all_ex_1st")
                         tipl::masking(B,A);
-                    if(action == "A*B")
+                    if(action == "all_inter_1st")
                         for(size_t i = 0;i < B.size();++i)
                             B[i] = (A[i] & B[i]);
-                    if(action == "A<<B" || action == "A>>B")
+                    if(action == "all_to_1st" || action == "all_to_1st_2")
                         for(size_t i = 0;i < A.size();++i)
                             if(A[i] && B[i] && A_labels[i] < r)
                                 A_labels[i] = uint16_t(r);
@@ -1590,11 +1641,11 @@ bool RegionTableWidget::do_action(QString action,std::string& value)
                     rows_to_be_updated.push_back(checked_row[r]);
                 });
             }
-            if(action == "A-B")
+            if(action == "1st_ex_all")
                 checked_regions[0]->load_region_from_buffer(A);
 
 
-            if(action == "A>>B")
+            if(action == "all_to_1st_2")
             {
                 auto I = tipl::resample(cur_tracking_window.current_slice->get_source(),base_dim,
                                         tipl::from_space(cur_tracking_window.current_slice->to_dif).
@@ -1658,7 +1709,7 @@ bool RegionTableWidget::do_action(QString action,std::string& value)
                     A_labels[pos.index()] = std::max_element(votes.begin(),votes.end())-votes.begin();
                 });
             }
-            if(action == "A<<B")
+            if(action == "all_to_1st")
             {
                 auto I = tipl::resample(cur_tracking_window.current_slice->get_source(),base_dim,
                                         tipl::from_space(cur_tracking_window.current_slice->to_dif).
@@ -1706,7 +1757,7 @@ bool RegionTableWidget::do_action(QString action,std::string& value)
                 }
             }
 
-            if(action == "A>>B" || action == "A<<B")
+            if(action == "all_to_1st_2" || action == "all_to_1st")
             {
                 tipl::progress prog("loading regions",true);
                 size_t prog_count = 0;
@@ -1783,18 +1834,6 @@ bool RegionTableWidget::do_action(QString action,std::string& value)
             end_update();
         }
 
-
-        std::vector<std::shared_ptr<ROIRegion> > region_to_be_processed;
-        if(action == "threshold")
-            region_to_be_processed.push_back(regions.back());
-        else
-        {
-            if(cur_tracking_window.ui->actionModify_All->isChecked())
-                region_to_be_processed = checked_regions;
-            else
-                region_to_be_processed.push_back(regions[size_t(roi_index)]);
-        }
-
         tipl::adaptive_par_for(region_to_be_processed.size(),[&](unsigned int i)
         {
             region_to_be_processed[i]->perform(action.toStdString());
@@ -1804,16 +1843,16 @@ bool RegionTableWidget::do_action(QString action,std::string& value)
         if(action == "dilation_by_voxel")
         {
             int threshold = 10;
-            if(value.empty())
+            if(cmd[2].empty())
             {
                 bool ok;
                 threshold = QInputDialog::getInt(this,QApplication::applicationName(),"Voxel distance",10,1,100,1,&ok);
                 if(!ok)
                     return false;
-                value = std::to_string(threshold);
+                cmd[2] = std::to_string(threshold);
             }
             else
-                threshold = QString::fromStdString(value).toInt();
+                threshold = QString::fromStdString(cmd[2]).toInt();
             size_t p = 0;
             for(auto& region : region_to_be_processed)
             {
@@ -1832,7 +1871,7 @@ bool RegionTableWidget::do_action(QString action,std::string& value)
             double m = tipl::max_value(I);
             bool flip = false;
             float threshold = 0.0f;
-            if(value.empty())
+            if(cmd[2].empty())
             {
                 bool ok;
                 threshold = float(QInputDialog::getDouble(this,
@@ -1840,10 +1879,10 @@ bool RegionTableWidget::do_action(QString action,std::string& value)
                                   double(tipl::segmentation::otsu_threshold(I)),-m,m,4, &ok));
                 if(!ok)
                     return false;
-                value = std::to_string(threshold);
+                cmd[2] = std::to_string(threshold);
             }
             else
-                threshold = QString::fromStdString(value).toFloat();
+                threshold = QString::fromStdString(cmd[2]).toFloat();
             if(threshold < 0)
             {
                 flip = true;

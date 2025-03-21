@@ -1224,9 +1224,9 @@
      <addaction name="actionSeparate"/>
      <addaction name="actionThreshold_2"/>
      <addaction name="separator"/>
-     <addaction name="actionAB"/>
-     <addaction name="actionB_A"/>
-     <addaction name="actionA_B"/>
+     <addaction name="actionAll_Inter_1st"/>
+     <addaction name="actionAll_Ex_1st"/>
+     <addaction name="action1st_Ex_All"/>
      <addaction name="separator"/>
      <addaction name="actionAll_To_First"/>
      <addaction name="actionAll_To_First2"/>
@@ -2837,6 +2837,9 @@ Tracking</string>
    <property name="text">
     <string>Shift +X</string>
    </property>
+   <property name="toolTip">
+    <string>run region_action_shiftx</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+1</string>
    </property>
@@ -2844,6 +2847,9 @@ Tracking</string>
   <action name="actionShift_X_2">
    <property name="text">
     <string>Shift -X</string>
+   </property>
+   <property name="toolTip">
+    <string>run region_action_shiftnx</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+2</string>
@@ -2853,6 +2859,9 @@ Tracking</string>
    <property name="text">
     <string>Shift +Y</string>
    </property>
+   <property name="toolTip">
+    <string>run region_action_shifty</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+3</string>
    </property>
@@ -2860,6 +2869,9 @@ Tracking</string>
   <action name="actionShift_Y_2">
    <property name="text">
     <string>Shift -Y</string>
+   </property>
+   <property name="toolTip">
+    <string>run region_action_shiftny</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+4</string>
@@ -2869,6 +2881,9 @@ Tracking</string>
    <property name="text">
     <string>Shift +Z</string>
    </property>
+   <property name="toolTip">
+    <string>run region_action_shiftz</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+5</string>
    </property>
@@ -2876,6 +2891,9 @@ Tracking</string>
   <action name="actionShift_Z_2">
    <property name="text">
     <string>Shift -Z</string>
+   </property>
+   <property name="toolTip">
+    <string>run region_action_shiftnz</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+6</string>
@@ -2885,6 +2903,9 @@ Tracking</string>
    <property name="text">
     <string>Flip X</string>
    </property>
+   <property name="toolTip">
+    <string>run region_action_flipx</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+7</string>
    </property>
@@ -2892,6 +2913,9 @@ Tracking</string>
   <action name="actionFlip_Y">
    <property name="text">
     <string>Flip Y</string>
+   </property>
+   <property name="toolTip">
+    <string>run region_action_flipy</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+8</string>
@@ -2901,6 +2925,9 @@ Tracking</string>
    <property name="text">
     <string>Flip Z</string>
    </property>
+   <property name="toolTip">
+    <string>run region_action_flipz</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+9</string>
    </property>
@@ -2908,6 +2935,9 @@ Tracking</string>
   <action name="actionDilation">
    <property name="text">
     <string>Dilation</string>
+   </property>
+   <property name="toolTip">
+    <string>run region_action_dilation</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+D</string>
@@ -2917,6 +2947,9 @@ Tracking</string>
    <property name="text">
     <string>Erosion</string>
    </property>
+   <property name="toolTip">
+    <string>run region_action_erosion</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+Shift+E</string>
    </property>
@@ -2924,6 +2957,9 @@ Tracking</string>
   <action name="actionSmoothing">
    <property name="text">
     <string>Smoothing</string>
+   </property>
+   <property name="toolTip">
+    <string>run region_action_smoothing</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+S</string>
@@ -2933,6 +2969,9 @@ Tracking</string>
    <property name="text">
     <string>Negate</string>
    </property>
+   <property name="toolTip">
+    <string>run region_action_negate</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+Shift+N</string>
    </property>
@@ -2940,6 +2979,9 @@ Tracking</string>
   <action name="actionDefragment">
    <property name="text">
     <string>Defragment</string>
+   </property>
+   <property name="toolTip">
+    <string>run region_action_defragment</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+F</string>
@@ -3534,6 +3576,9 @@ Tracking</string>
    <property name="text">
     <string>Separate</string>
    </property>
+   <property name="toolTip">
+    <string>run region_action_separate</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+Shift+P</string>
    </property>
@@ -3804,25 +3849,34 @@ Tracking</string>
     <string>run open_mni_region</string>
    </property>
   </action>
-  <action name="actionA_B">
+  <action name="action1st_Ex_All">
    <property name="text">
     <string>First Excludes All</string>
+   </property>
+   <property name="toolTip">
+    <string>run region_action_1st_ex_all</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+3</string>
    </property>
   </action>
-  <action name="actionB_A">
+  <action name="actionAll_Ex_1st">
    <property name="text">
     <string>All Exclude First</string>
+   </property>
+   <property name="toolTip">
+    <string>run region_action_all_ex_1st</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+2</string>
    </property>
   </action>
-  <action name="actionAB">
+  <action name="actionAll_Inter_1st">
    <property name="text">
     <string>All Intersect First</string>
+   </property>
+   <property name="toolTip">
+    <string>run region_action_all_inter_1st</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+1</string>
@@ -3832,25 +3886,40 @@ Tracking</string>
    <property name="text">
     <string>By Size</string>
    </property>
+   <property name="toolTip">
+    <string>run region_action_sort_size</string>
+   </property>
   </action>
   <action name="actionBy_X">
    <property name="text">
     <string>By X</string>
+   </property>
+   <property name="toolTip">
+    <string>run region_action_sort_x</string>
    </property>
   </action>
   <action name="actionBy_Y">
    <property name="text">
     <string>By Y</string>
    </property>
+   <property name="toolTip">
+    <string>run region_action_sort_y</string>
+   </property>
   </action>
   <action name="actionBy_Z">
    <property name="text">
     <string>By Z</string>
    </property>
+   <property name="toolTip">
+    <string>run region_action_sort_z</string>
+   </property>
   </action>
   <action name="actionBy_Name">
    <property name="text">
     <string>By Name</string>
+   </property>
+   <property name="toolTip">
+    <string>run region_action_sort_name</string>
    </property>
   </action>
   <action name="actionMove_Slices_To_Current_Region">
@@ -3864,6 +3933,9 @@ Tracking</string>
   <action name="actionThreshold_2">
    <property name="text">
     <string>Threshold</string>
+   </property>
+   <property name="toolTip">
+    <string>run region_action_threshold_current</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+T</string>
@@ -3927,6 +3999,9 @@ Tracking</string>
    <property name="text">
     <string>Opening</string>
    </property>
+   <property name="toolTip">
+    <string>run region_action_opening</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+Shift+O</string>
    </property>
@@ -3934,6 +4009,9 @@ Tracking</string>
   <action name="actionClosing">
    <property name="text">
     <string>Closing</string>
+   </property>
+   <property name="toolTip">
+    <string>run region_action_closing</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+C</string>
@@ -4172,6 +4250,9 @@ Tracking</string>
    <property name="text">
     <string>Dilation by voxel...</string>
    </property>
+   <property name="toolTip">
+    <string>run region_action_dilation_by_voxel</string>
+   </property>
   </action>
   <action name="actionSave_All_Regions_as_4D_NIFTI">
    <property name="icon">
@@ -4229,6 +4310,9 @@ Tracking</string>
    <property name="text">
     <string>All To First</string>
    </property>
+   <property name="toolTip">
+    <string>run region_action_all_to_1st</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+Shift+4</string>
    </property>
@@ -4283,6 +4367,9 @@ Tracking</string>
   <action name="actionAll_To_First2">
    <property name="text">
     <string>All To First2</string>
+   </property>
+   <property name="toolTip">
+    <string>run region_action_all_to_1st_2</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+5</string>
