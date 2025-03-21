@@ -401,7 +401,37 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
 
     if(cmd[0] == "new_region")
     {
-        add_region("New Region");
+        add_region("new region");
+        return true;
+    }
+    if(cmd[0] == "new_region_whole_brain_seed")
+    {
+        // cmd[1] : otsu ratio for threshold
+        float otsu = cur_tracking_window["otsu_threshold"].toFloat();
+        if(cmd[1].empty())
+            cmd[1] = std::to_string(otsu);
+        else
+            otsu = QString::fromStdString(cmd[1]).toFloat();
+
+        float threshold = otsu*cur_tracking_window.handle->dir.fa_otsu;
+        auto cur_slice = cur_tracking_window.current_slice;
+        tipl::image<3,unsigned char> mask(cur_slice->dim);
+        auto fa_map = tipl::make_image(cur_tracking_window.handle->dir.fa[0],cur_tracking_window.handle->dim);
+        if(cur_slice->is_diffusion_space)
+            tipl::threshold(fa_map,mask,threshold);
+        else
+            tipl::adaptive_par_for(tipl::begin_index(mask.shape()),
+                          tipl::end_index(mask.shape()),
+                          [&](const tipl::pixel_index<3>& index)
+            {
+                tipl::vector<3> pos(index);
+                pos.to(cur_slice->to_dif);
+                if(tipl::estimate(fa_map,pos) > threshold)
+                    mask[index.index()] = 1;
+            });
+        add_region("whole brain",seed_id);
+        regions.back()->load_region_from_buffer(mask);
+        emit need_update();
         return true;
     }
     if(cmd[0] == "new_region_from_threshold")
@@ -1497,32 +1527,6 @@ void RegionTableWidget::save_region_info(void)
         std::copy(data.begin(),data.end(),std::ostream_iterator<float>(out,"\t"));
         out << std::endl;
     }
-}
-
-
-
-void RegionTableWidget::whole_brain(void)
-{
-    auto cur_slice = cur_tracking_window.current_slice;
-    float threshold = cur_tracking_window.get_fa_threshold();
-    tipl::image<3,unsigned char> mask(cur_slice->dim);
-    auto fa_map = tipl::make_image(cur_tracking_window.handle->dir.fa[0],cur_tracking_window.handle->dim);
-
-    if(cur_slice->is_diffusion_space)
-        tipl::threshold(fa_map,mask,threshold);
-    else
-        tipl::adaptive_par_for(tipl::begin_index(mask.shape()),
-                      tipl::end_index(mask.shape()),
-                      [&](const tipl::pixel_index<3>& index)
-        {
-            tipl::vector<3> pos(index);
-            pos.to(cur_slice->to_dif);
-            if(tipl::estimate(fa_map,pos) > threshold)
-                mask[index.index()] = 1;
-        });
-    add_region("whole brain",seed_id);
-    regions.back()->load_region_from_buffer(mask);
-    emit need_update();
 }
 
 void RegionTableWidget::setROIs(ThreadData* data)

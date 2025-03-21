@@ -96,7 +96,6 @@ public slots:
     void save_region_color(void);
 
     void check_check_status(int,int);
-    void whole_brain(void);
     void move_up(void);
     void move_down(void);
     void undo(void);

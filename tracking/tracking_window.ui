@@ -2995,6 +2995,9 @@ Tracking</string>
    <property name="text">
     <string>Whole Brain Seeding</string>
    </property>
+   <property name="toolTip">
+    <string>run new_region_whole_brain_seed</string>
+   </property>
   </action>
   <action name="actionSelect_Tracts">
    <property name="text">
