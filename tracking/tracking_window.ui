@@ -1281,7 +1281,7 @@
     <addaction name="separator"/>
     <addaction name="menuMove_Tracts"/>
     <addaction name="separator"/>
-    <addaction name="actionOpen_Colors"/>
+    <addaction name="actionLoad_Tract_Color"/>
     <addaction name="actionOpen_Tract_Property"/>
     <addaction name="actionSave_Tracts_Colors_As"/>
     <addaction name="separator"/>
@@ -3230,13 +3230,16 @@ Tracking</string>
     <string>Save Tracts Colors As...</string>
    </property>
   </action>
-  <action name="actionOpen_Colors">
+  <action name="actionLoad_Tract_Color">
    <property name="icon">
     <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
     <string>Open Tract Colors...</string>
+   </property>
+   <property name="toolTip">
+    <string>run load_tract_color</string>
    </property>
   </action>
   <action name="actionSave_Voxel_Data_As">

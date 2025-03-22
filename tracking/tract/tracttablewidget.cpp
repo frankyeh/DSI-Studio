@@ -861,19 +861,6 @@ void TractTableWidget::save_tracts_in_mni(void)
         QMessageBox::critical(this,"ERROR","File not saved. Please check write permission");
 }
 
-void TractTableWidget::load_tracts_color(void)
-{
-    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
-        return;
-    QString filename = QFileDialog::getOpenFileName(
-            this,"Load tracts color",QFileInfo(cur_tracking_window.work_path).absolutePath(),
-            "Color files (*.txt);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    if(!command({"load_track_color",filename.toStdString()}))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-
-}
 
 void TractTableWidget::load_tracts_value(void)
 {
@@ -1274,7 +1261,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         return true;
     }
 
-    if(cmd[0] == "load_track_color")
+    if(cmd[0] == "load_tract_color")
     {
         int index = currentRow();
         if(!cmd[2].empty())
