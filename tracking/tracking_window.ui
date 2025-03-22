@@ -947,22 +947,27 @@
     </widget>
     <widget class="QMenu" name="menuSave_Tracts">
      <property name="title">
-      <string>Save Tracts</string>
+      <string>Save Tracts Misc</string>
      </property>
      <property name="icon">
       <iconset resource="../icons.qrc">
        <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
      </property>
-     <addaction name="actionSaveTractAs"/>
      <addaction name="separator"/>
-     <addaction name="actionSave_All_Tracts_As"/>
-     <addaction name="actionSave_All_Tracts_As_Multiple_Files"/>
      <addaction name="separator"/>
      <addaction name="actionSave_Tracts_in_Current_Mapping"/>
      <addaction name="actionSave_Tracts_in_Template_Space"/>
      <addaction name="actionSave_Tract_in_MNI_Coordinates"/>
      <addaction name="actionSave_Tracts_In_Native_Space"/>
-     <addaction name="separator"/>
+    </widget>
+    <widget class="QMenu" name="menuSave_Endpoints">
+     <property name="title">
+      <string>Save Endpoints</string>
+     </property>
+     <property name="icon">
+      <iconset resource="../icons.qrc">
+       <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+     </property>
      <addaction name="actionSave_End_Points_As"/>
      <addaction name="actionSave_End_Points_All_Tracts_As"/>
      <addaction name="actionSave_Endpoints_in_Current_Mapping"/>
@@ -972,7 +977,12 @@
     <addaction name="actionOpen_MNI_space_Tracts"/>
     <addaction name="actionLoad_Built_In_Atlas"/>
     <addaction name="separator"/>
+    <addaction name="actionSaveTractAs"/>
+    <addaction name="actionSave_All_Tracts_As"/>
+    <addaction name="actionSave_All_Tracts_As_Multiple_Files"/>
+    <addaction name="separator"/>
     <addaction name="menuSave_Tracts"/>
+    <addaction name="menuSave_Endpoints"/>
     <addaction name="menuSave"/>
     <addaction name="menuExport_Tract_Density"/>
     <addaction name="separator"/>
@@ -3331,6 +3341,9 @@ Tracking</string>
    <property name="text">
     <string>Save All Tracts As...</string>
    </property>
+   <property name="toolTip">
+    <string>run save_all_tracts</string>
+   </property>
   </action>
   <action name="actionRegion_statistics">
    <property name="icon">
@@ -3490,7 +3503,7 @@ Tracking</string>
     <string>Save Checked Regions to multiple 3D NIFTIs...</string>
    </property>
    <property name="toolTip">
-    <string>run save_regions_to_folder</string>
+    <string>run save_all_regions_to_folder</string>
    </property>
   </action>
   <action name="actionRestore_Settings">
@@ -3517,6 +3530,9 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Save All Tracts As Multiple Files...</string>
+   </property>
+   <property name="toolTip">
+    <string>run save_all_tracts_to_folder</string>
    </property>
   </action>
   <action name="actionQuality_Assessment">

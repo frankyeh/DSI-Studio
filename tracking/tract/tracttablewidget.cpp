@@ -453,32 +453,6 @@ QString TractTableWidget::output_format(void)
     return "";
 }
 
-void TractTableWidget::save_all_tracts_to_dir(void)
-{
-    if (tract_models.empty())
-        return;
-    if(!command({"save_all_tracts_to_dir"}))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-    else
-        QMessageBox::information(this,QApplication::applicationName(),"file saved");
-}
-void TractTableWidget::save_all_tracts_as(void)
-{
-    if(tract_models.empty())
-        return;
-    QString filename;
-    filename = QFileDialog::getSaveFileName(
-                this,"Save tracts as",
-                QString::fromStdString(cur_tracking_window.history.file_stem()) + output_format(),
-                "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;NIFTI File (*nii.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    if(!command({"save_tracks",filename.toStdString()}))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-    else
-        QMessageBox::information(this,QApplication::applicationName(),"file saved");
-}
-
 void TractTableWidget::set_color(void)
 {
     if(tract_models.empty() || currentRow() == -1 ||
@@ -1236,11 +1210,10 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             return run->failed("cannot write to file at " + cmd[1]);
         return true;
     }
-    if(cmd[0] == "save_all_tracts_to_dir")
+    if(cmd[0] == "save_all_tracts_to_folder")
     {
         // cmd[1] : directory output
-        if(cmd[1].empty() && (cmd[1] = QFileDialog::getExistingDirectory(this,
-                    "Open directory",QString::fromStdString(cur_tracking_window.history.default_parent_path)).toStdString()).empty())
+        if(tract_models.empty() || !cur_tracking_window.history.ask_dir(this,cmd[1]))
             return run->canceled();
         tipl::progress prog_("saving files");
         auto selected_tracts = get_checked_tracks();
@@ -1252,6 +1225,21 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             if(!selected_tracts[index]->save_tracts_to_file(filename.c_str()))
                 return run->failed("cannot save file due to permission error" + filename);
         }
+        return true;
+    }
+    if(cmd[0] == "save_all_tracts")
+    {
+        if(tract_models.empty())
+            return run->canceled();
+        if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(
+                    this,"Save tracts as",
+                    QString::fromStdString(cur_tracking_window.history.file_stem()) + output_format(),
+                    "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;NIFTI File (*nii.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)").toStdString()).empty())
+            return run->canceled();
+
+        auto locks = start_reading_checked_tracks();
+        if(!TractModel::save_all(cmd[1].c_str(),get_checked_tracks()))
+            return run->failed("cannot save file to " + cmd[1]);
         return true;
     }
     if(cmd[0] == "update_track")
@@ -1285,13 +1273,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         emit show_tracts();
         return true;
     }
-    if(cmd[0] == "save_tracks")
-    {
-        auto locks = start_reading_checked_tracks();
-        if(!TractModel::save_all(cmd[1].c_str(),get_checked_tracks()))
-            return run->failed("cannot save file to " + cmd[1]);
-        return true;
-    }
+
     if(cmd[0] == "load_track_color")
     {
         int index = currentRow();

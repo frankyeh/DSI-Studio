@@ -608,15 +608,14 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
     }
 
 
-    if(cmd[0] == "save_regions_to_folder")
+    if(cmd[0] == "save_all_regions_to_folder")
     {
         auto checked_regions = get_checked_regions();
-        if (checked_regions.empty())
+        if(checked_regions.empty())
             return run->failed("no checked region to save");
-        if(cmd[1].empty() && (cmd[1] = QFileDialog::getExistingDirectory(this,QString::fromStdString(cmd[0]),
-                            QString::fromStdString(cur_tracking_window.history.default_parent_path)).toStdString()).empty())
+        if(!cur_tracking_window.history.ask_dir(this,cmd[1]))
             return run->canceled();
-        tipl::progress prog("saving files");
+        tipl::progress prog(cmd[0]);
         for(auto each : checked_regions)
             if(!each->save_region_to_file((cmd[1] + "/" + each->name + output_format().toStdString()).c_str()))
                 return run->failed("cannot save " + each->name + " to " + cmd[1]);

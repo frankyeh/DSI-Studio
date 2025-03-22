@@ -206,8 +206,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "save_workspace")
     {
-        if(cmd[1].empty() && (cmd[1] =
-            QFileDialog::getExistingDirectory(this,"Specify Workspace Directory",QFileInfo(windowTitle()).absolutePath()).toStdString()).empty())
+        if(!history.ask_dir(this,cmd[1]))
             return run->canceled();
 
         std::filesystem::create_directory(cmd[1]);
@@ -264,8 +263,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "load_workspace")
     {
-        if(cmd[1].empty() && (cmd[1] =
-           QFileDialog::getExistingDirectory(this,"Specify Workspace Directory",QFileInfo(windowTitle()).absolutePath()).toStdString()).empty())
+        if(!history.ask_dir(this,cmd[1]))
             return run->canceled();
 
         if(!std::filesystem::exists(cmd[1]))

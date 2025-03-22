@@ -26,7 +26,7 @@ private:
 public:
     int current_recording_instance = 0;
     bool has_other_thread = false;
-    std::string default_parent_path,default_stem,default_stem2;
+    std::string default_parent_path,default_stem,default_stem2,current_cmd;
     std::vector<std::string> commands;
     bool run(tracking_window *parent,const std::vector<std::string>& cmd);
 public:
@@ -73,34 +73,10 @@ public:
         }
     };
     std::shared_ptr<surrogate> record(std::string& error_msg_,
-                                      std::vector<std::string>& cmd)
-    {
-        error_msg_.clear();
-        return std::make_shared<surrogate>(*this,cmd,error_msg_);
-    }
-
-    void record(const std::string& output)
-    {
-        if(current_recording_instance || output.empty())
-            return;
-        commands.push_back(output);
-        if(is_loading(output))
-        {
-            auto p = std::filesystem::path(tipl::split(output,',')[1]);
-            default_parent_path = p.parent_path().string();
-            default_stem2 = p.stem().string();
-            std::replace(default_stem2.begin(),default_stem2.end(),'.','_');
-            if(default_stem.empty())
-                default_stem = default_stem2;
-        }
-    }
-    std::string file_stem(void) const
-    {
-        auto result = (std::filesystem::path(default_parent_path)/default_stem).string();
-        if(default_stem2 != default_stem)
-            result += "_" + default_stem2;
-        return result;
-    }
+                                      std::vector<std::string>& cmd);
+    void record(const std::string& output);
+    std::string file_stem(void) const;
+    bool ask_dir(QWidget* parent,std::string& cmd);
 };
 class GLWidget;
 class tract_report;

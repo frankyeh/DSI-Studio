@@ -56,6 +56,45 @@ void tracking_window::set_data(QString name, QVariant value)
     renderWidget->setData(name,value);
 }
 
+std::shared_ptr<command_history::surrogate> command_history::record(std::string& error_msg_,
+                                  std::vector<std::string>& cmd)
+{
+    error_msg_.clear();
+    if(!cmd.empty())
+        current_cmd = cmd[0];
+    return std::make_shared<surrogate>(*this,cmd,error_msg_);
+}
+
+void command_history::record(const std::string& output)
+{
+    if(current_recording_instance || output.empty())
+        return;
+    commands.push_back(output);
+    if(is_loading(output))
+    {
+        auto p = std::filesystem::path(tipl::split(output,',')[1]);
+        default_parent_path = p.parent_path().string();
+        default_stem2 = p.stem().string();
+        std::replace(default_stem2.begin(),default_stem2.end(),'.','_');
+        if(default_stem.empty())
+            default_stem = default_stem2;
+    }
+}
+std::string command_history::file_stem(void) const
+{
+    if(tipl::contains(current_cmd,"to_folder"))
+        return default_parent_path;
+    auto result = (std::filesystem::path(default_parent_path)/default_stem).string();
+    if(default_stem2 != default_stem && tipl::contains(current_cmd,"_all"))
+        result += "_" + default_stem2;
+    return result;
+}
+bool command_history::ask_dir(QWidget* parent,std::string& cmd)
+{
+    return !cmd.empty() || !(cmd = QFileDialog::getExistingDirectory(parent,QString::fromStdString(current_cmd),
+                                            QString::fromStdString(default_parent_path)).toStdString()).empty();
+}
+
 bool command_history::is_loading(const std::string& cmd)
 {
     return cmd.find(',') < cmd.find('.') && cmd.find('.') != std::string::npos &&
@@ -564,11 +603,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionRecognize_Clustering,SIGNAL(triggered()),tractWidget,SLOT(recognize_and_cluster()));
         connect(ui->actionRecognize_and_Rename,SIGNAL(triggered()),tractWidget,SLOT(recognize_rename()));
 
-
-        //setup menu
-        connect(ui->actionSaveTractAs,SIGNAL(triggered()),tractWidget,SLOT(save_tracts_as()));
-        connect(ui->actionSave_All_Tracts_As,SIGNAL(triggered()),tractWidget,SLOT(save_all_tracts_as()));
-        connect(ui->actionSave_All_Tracts_As_Multiple_Files,SIGNAL(triggered()),tractWidget,SLOT(save_all_tracts_to_dir()));
 
         connect(ui->actionSave_End_Points_As,SIGNAL(triggered()),tractWidget,SLOT(save_end_point_as()));
         connect(ui->actionSave_End_Points_All_Tracts_As,SIGNAL(triggered()),tractWidget,SLOT(save_all_tracts_end_point_as()));
