@@ -116,8 +116,18 @@ bool command_history::get_filename(QWidget* parent,std::string& filename,const s
         default_file_name += "_values.txt";
     }
     else
+    if(tipl::ends_with(current_cmd,"_info"))
+    {
+        filter = "Text files (*.txt)";
+        default_file_name += "_info.txt";
+    }
+    else
     if(tipl::ends_with(current_cmd,"_tracts") || tipl::ends_with(current_cmd,"_tract"))
         filter = "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat)";
+    else
+    if(tipl::ends_with(current_cmd,"_regions") || tipl::ends_with(current_cmd,"_region"))
+            filter = "NIFTI file(*nii.gz *.nii);;Text file(*.txt);;MAT file (*.mat)";
+
 
     filter += ";;All files (*)";
     if(tipl::begins_with(current_cmd,"save_"))
