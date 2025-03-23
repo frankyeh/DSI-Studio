@@ -850,18 +850,6 @@ void TractTableWidget::save_tracts_in_mni(void)
 }
 
 
-void TractTableWidget::load_tracts_value(void)
-{
-    QMessageBox::information(this,QApplication::applicationName(),"open a text file of space-separated values between [0 1] for each bundle or streamline");
-    QString filename = QFileDialog::getOpenFileName(
-            this,"Load tracts color",QFileInfo(cur_tracking_window.work_path).absolutePath(),
-            "Text files (*.txt);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    if(!command({"load_tract_values",filename.toStdString()}))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
-
 void TractTableWidget::save_tracts_color_as(void)
 {
     if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
@@ -1265,7 +1253,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         if(cmd[1].empty() && (cmd[1] = QFileDialog::getOpenFileName(
                                   this,QString::fromStdString(cmd[0]),
                                   QString::fromStdString(cur_tracking_window.history.file_stem()) + "_" +
-                                  QString::fromStdString(tract_models[cur_row]->name) + ".txt",
+                                  QString::fromStdString(tract_models[cur_row]->name) + "_color.txt",
                                   "Color files (*.txt);;All files (*)").toStdString()).empty())
             return run->canceled();
 
@@ -1276,6 +1264,39 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         tract_rendering[cur_row]->need_update = true;
         cur_tracking_window.set_data("tract_color_style",1);//manual assigned
         emit show_tracts();
+        return true;
+    }
+    if(cmd[0] == "load_tract_values")
+    {
+        // cmd[1] : file name
+        // cmd[2] : current tract index
+        // open a text file of space-separated values between [0 1] for each bundle or streamline
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[2],cur_row))
+            return false;
+        if(cmd[1].empty() && (cmd[1] = QFileDialog::getOpenFileName(
+                                  this,QString::fromStdString(cmd[0]),
+                                  QString::fromStdString(cur_tracking_window.history.default_parent_path)+ "_" +
+                                  QString::fromStdString(tract_models[cur_row]->name) + "_values.txt",
+                                  "Text files(*.txt);;All files (*)").toStdString()).empty())
+            return run->canceled();
+        std::ifstream in(cmd[1]);
+        if(!in)
+            return run->failed("cannot find or open " + cmd[1]);
+        std::vector<float> values;
+        std::copy(std::istream_iterator<float>(in),
+                  std::istream_iterator<float>(),
+                  std::back_inserter(values));
+        if(tract_models[cur_row]->get_visible_track_count() != values.size())
+            return run->failed("the number of values " + std::to_string(values.size()) +
+                               " does not match current tract count " +
+                               std::to_string(tract_models[cur_row]->get_visible_track_count()));
+        auto lock = tract_rendering[cur_row]->start_reading();
+        tract_models[cur_row]->loaded_values.swap(values);
+        tract_rendering[cur_row]->need_update = true;
+        cur_tracking_window.set_data("tract_color_style",6);//loaded values
+        emit show_tracts();
+
         return true;
     }
     if(cmd[0] == "load_cluster_color")
@@ -1303,14 +1324,11 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         emit show_tracts();
         return true;
     }
-    if(cmd[0] == "load_tract_values")
+    if(cmd[1] == "load_cluster_values")
     {
-        // cmd[1] : file name
-        // cmd[2] : current tract index
         // open a text file of space-separated values between [0 1] for each bundle or streamline
-        int cur_row = currentRow();
-        if(!get_cur_row(cmd[2],cur_row))
-            return false;
+        if(tract_models.empty())
+            return run->canceled();
         if(cmd[1].empty() && (cmd[1] = QFileDialog::getOpenFileName(
                                   this,QString::fromStdString(cmd[0]),
                                   QString::fromStdString(cur_tracking_window.history.default_parent_path)+"_values.txt",
@@ -1323,35 +1341,23 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         std::copy(std::istream_iterator<float>(in),
                   std::istream_iterator<float>(),
                   std::back_inserter(values));
-        if(tract_models[cur_row]->get_visible_track_count() == values.size())
-        {
-            tipl::out() << "assign values to each track of the current bundle";
-            auto lock = tract_rendering[cur_row]->start_reading();
-            tract_models[cur_row]->loaded_values.swap(values);
-            tract_rendering[cur_row]->need_update = true;
-            cur_tracking_window.set_data("tract_color_style",6);//loaded values
-            emit show_tracts();
-            return true;
-        }
         auto checked_track = get_checked_tracks();
-        if(checked_track.size() == values.size())
-        {
-            tipl::out() << "assign values to each bundle";
-            for(unsigned int index = 0,pos = 0;index < tract_models.size();++index)
-                if(item(int(index),0)->checkState() == Qt::Checked)
-                {
-                    tract_models[index]->loaded_value = values[pos];
-                    tract_rendering[index]->need_update = true;
-                    ++pos;
-                }
-            cur_tracking_window.set_data("tract_color_style",6);//loaded values
-            emit show_tracts();
-            return true;
-        }
-        return run->failed("the number of values " + std::to_string(values.size()) +
-                    " does not match bundle count " + std::to_string(checked_track.size()) +
-                    " or current tract count " + std::to_string(tract_models[uint32_t(currentRow())]->get_visible_track_count()));
+        if(checked_track.size() != values.size())
+            return run->failed("the number of values " + std::to_string(values.size()) +
+                               " does not match bundle count " + std::to_string(checked_track.size()));
+        tipl::out() << "assign values to each bundle";
+        for(unsigned int index = 0,pos = 0;index < tract_models.size() && pos < values.size();++index)
+            if(item(int(index),0)->checkState() == Qt::Checked)
+            {
+                tract_models[index]->loaded_value = values[pos];
+                tract_rendering[index]->need_update = true;
+                ++pos;
+            }
+        cur_tracking_window.set_data("tract_color_style",6);//loaded values
+        emit show_tracts();
+        return true;
     }
+
     return run->not_processed();
 }
 

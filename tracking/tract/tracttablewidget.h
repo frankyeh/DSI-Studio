@@ -127,7 +127,6 @@ public slots:
     void show_tracking_progress(void);
 
     void load_tract_label(void);
-    void load_tracts_value(void);
 
     void save_tracts_color_as(void);
     void save_tracts_data_as(void);

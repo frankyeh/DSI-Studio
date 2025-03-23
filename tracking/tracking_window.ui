@@ -1282,7 +1282,7 @@
     <addaction name="menuMove_Tracts"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_Tract_Color"/>
-    <addaction name="actionOpen_Tract_Property"/>
+    <addaction name="actionOpen_Tract_Values"/>
     <addaction name="actionSave_Tracts_Colors_As"/>
     <addaction name="separator"/>
     <addaction name="actionRecognize_Current_Tract"/>
@@ -3759,13 +3759,16 @@ Tracking</string>
     <string>Delete Short Tracts</string>
    </property>
   </action>
-  <action name="actionOpen_Tract_Property">
+  <action name="actionOpen_Tract_Values">
    <property name="icon">
     <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
     <string>Open Tract Value...</string>
+   </property>
+   <property name="toolTip">
+    <string>run load_tract_values</string>
    </property>
   </action>
   <action name="actionK_means_Clustering">
