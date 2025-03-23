@@ -96,36 +96,36 @@ bool command_history::get_dir(QWidget* parent,std::string& cmd)
 }
 
 
-bool command_history::get_filename(QWidget* parent,std::string& cmd,const std::string& post_fix)
+bool command_history::get_filename(QWidget* parent,std::string& filename,const std::string& post_fix)
 {
-    if(!cmd.empty())
+    if(!filename.empty())
         return true;
-    QString filter,file_name(QString::fromStdString(
+    QString filter,default_file_name(QString::fromStdString(
                                 post_fix.empty() ? file_stem() :
                                 (std::filesystem::path(default_parent_path)/
                                     (post_fix[0] == '.' ? default_stem + post_fix : post_fix)).string()));
     if(tipl::ends_with(current_cmd,"_color"))
     {
         filter = "RGB values (*.txt)";
-        file_name += "_color.txt";
+        default_file_name += "_color.txt";
     }
     else
     if(tipl::ends_with(current_cmd,"_values"))
     {
         filter = "Values (*.txt)";
-        file_name += "_values.txt";
+        default_file_name += "_values.txt";
     }
     else
     if(tipl::ends_with(current_cmd,"_tracts") || tipl::ends_with(current_cmd,"_tract"))
         filter = "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat)";
 
     filter += ";;All files (*)";
-    if(tipl::begins_with(cmd,"save_"))
-        return !(cmd = QFileDialog::getSaveFileName(
-                    parent,QString::fromStdString(current_cmd),file_name,filter).toStdString()).empty();
+    if(tipl::begins_with(current_cmd,"save_"))
+        return !(filename = QFileDialog::getSaveFileName(
+                    parent,QString::fromStdString(current_cmd),default_file_name,filter).toStdString()).empty();
     else
-        return !(cmd = QFileDialog::getOpenFileName(
-                    parent,QString::fromStdString(current_cmd),file_name,filter).toStdString()).empty();
+        return !(filename = QFileDialog::getOpenFileName(
+                    parent,QString::fromStdString(current_cmd),default_file_name,filter).toStdString()).empty();
 }
 
 bool command_history::is_loading(const std::string& cmd)
