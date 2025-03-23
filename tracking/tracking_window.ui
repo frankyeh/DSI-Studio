@@ -4367,6 +4367,9 @@ Tracking</string>
    <property name="text">
     <string>Open Cluster Colors...</string>
    </property>
+   <property name="toolTip">
+    <string>run load_cluster_color</string>
+   </property>
   </action>
   <action name="actionSave_Cluster_Colors">
    <property name="icon">

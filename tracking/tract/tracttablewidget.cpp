@@ -531,18 +531,6 @@ void TractTableWidget::open_cluster_label(void)
     load_cluster_label(labels);
     assign_colors();
 }
-void TractTableWidget::open_cluster_color(void)
-{
-    if(tract_models.empty())
-        return;
-    QString filename = QFileDialog::getOpenFileName(
-            this,"Load cluster color",QFileInfo(cur_tracking_window.work_path).absolutePath(),
-            "RGB Value Text(*.txt);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    if(!command({"load_cluster_color",filename.toStdString()}))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
 void TractTableWidget::save_cluster_color(void)
 {
     if(tract_models.empty())
@@ -1082,12 +1070,18 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
 
     if(cmd[0] == "cut_tract_end_portion")
     {
-        for_current_bundle([&](void){tract_models[currentRow()]->cut_end_portion(0.25f,0.75f);});
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[1],cur_row))
+            return false;
+        for_current_bundle([&](void){tract_models[cur_row]->cut_end_portion(0.25f,0.75f);});
         return true;
     }
     if(tipl::begins_with(cmd[0],"flip_tract_"))
     {
-        for_current_bundle([&](void){tract_models[currentRow()]->flip(cmd[0].back()-'x');});
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[1],cur_row))
+            return false;
+        for_current_bundle([&](void){tract_models[cur_row]->flip(cmd[0].back()-'x');});
         return true;
     }
     if(tipl::begins_with(cmd[0],"cut_tract_by_"))
@@ -1263,23 +1257,36 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
 
     if(cmd[0] == "load_tract_color")
     {
-        int index = currentRow();
-        if(!cmd[2].empty())
-        {
-            index = QString(cmd[2].c_str()).toInt();
-            if(index < 0 || index >= tract_models.size())
-                return run->failed("invalid track index: " + cmd[2]);
-        }
-        auto lock = tract_rendering[index]->start_reading();
-        if(!tract_models[index]->load_tracts_color_from_file(cmd[1].c_str()))
+        // cmd[1] : color text file
+        // cmd[2] = tract index
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[2],cur_row))
+            return false;
+        if(cmd[1].empty() && (cmd[1] = QFileDialog::getOpenFileName(
+                                  this,QString::fromStdString(cmd[0]),
+                                  QString::fromStdString(cur_tracking_window.history.file_stem()) + "_" +
+                                  QString::fromStdString(tract_models[cur_row]->name) + ".txt",
+                                  "Color files (*.txt);;All files (*)").toStdString()).empty())
+            return run->canceled();
+
+
+        auto lock = tract_rendering[cur_row]->start_reading();
+        if(!tract_models[cur_row]->load_tracts_color_from_file(cmd[1].c_str()))
             return run->failed("cannot find or open " + cmd[1]);
-        tract_rendering[index]->need_update = true;
+        tract_rendering[cur_row]->need_update = true;
         cur_tracking_window.set_data("tract_color_style",1);//manual assigned
         emit show_tracts();
         return true;
     }
     if(cmd[0] == "load_cluster_color")
     {
+        if(tract_models.empty())
+            return run->canceled();
+        if(cmd[1].empty() && (cmd[1] = QFileDialog::getOpenFileName(
+                                  this,QString::fromStdString(cmd[0]),
+                                  QString::fromStdString(cur_tracking_window.history.default_parent_path)+"_color.txt",
+                                  "RGB Value Text(*.txt);;All files (*)").toStdString()).empty())
+            return run->canceled();
         std::ifstream in(cmd[1]);
         if(!in)
             return run->failed("cannot find or open " + cmd[1]);
@@ -1298,8 +1305,17 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "load_tract_values")
     {
-        if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
-            return run->failed("no tract to assign values");
+        // cmd[1] : file name
+        // cmd[2] : current tract index
+        // open a text file of space-separated values between [0 1] for each bundle or streamline
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[2],cur_row))
+            return false;
+        if(cmd[1].empty() && (cmd[1] = QFileDialog::getOpenFileName(
+                                  this,QString::fromStdString(cmd[0]),
+                                  QString::fromStdString(cur_tracking_window.history.default_parent_path)+"_values.txt",
+                                  "Text files(*.txt);;All files (*)").toStdString()).empty())
+            return run->canceled();
         std::ifstream in(cmd[1]);
         if(!in)
             return run->failed("cannot find or open " + cmd[1]);
@@ -1307,12 +1323,12 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         std::copy(std::istream_iterator<float>(in),
                   std::istream_iterator<float>(),
                   std::back_inserter(values));
-        if(tract_models[uint32_t(currentRow())]->get_visible_track_count() == values.size())
+        if(tract_models[cur_row]->get_visible_track_count() == values.size())
         {
             tipl::out() << "assign values to each track of the current bundle";
-            auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-            tract_models[uint32_t(currentRow())]->loaded_values.swap(values);
-            tract_rendering[uint32_t(currentRow())]->need_update = true;
+            auto lock = tract_rendering[cur_row]->start_reading();
+            tract_models[cur_row]->loaded_values.swap(values);
+            tract_rendering[cur_row]->need_update = true;
             cur_tracking_window.set_data("tract_color_style",6);//loaded values
             emit show_tracts();
             return true;
