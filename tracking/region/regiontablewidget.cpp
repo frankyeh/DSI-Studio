@@ -520,13 +520,9 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
     if(cmd[0] == "save_4d_region")
     {
         auto checked_regions = get_checked_regions();
-        if (checked_regions.empty())
+        if(checked_regions.empty())
             return run->failed("no checked region to save");
-        if(cmd[1].empty() && (cmd[1] =
-                QFileDialog::getSaveFileName(
-                               this,QString::fromStdString(cmd[0]),
-                               QString::fromStdString(cur_tracking_window.history.file_stem()) + output_format(),
-                               "Region file (*nii.gz *.nii);;All file types (*)" ).toStdString()).empty())
+        if(!cur_tracking_window.history.get_filename(this,cmd[1],output_format().toStdString()))
             return run->canceled();
 
         auto dim = checked_regions[0]->dim;
