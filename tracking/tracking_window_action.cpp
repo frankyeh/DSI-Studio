@@ -512,11 +512,6 @@ bool tracking_window::command(std::vector<std::string> cmd)
         slice_need_update = true;
         return true;
     }
-    if(cmd[0] == "tract_to_region")
-    {
-        on_actionTracts_to_seeds_triggered();
-        return true;
-    }
     if(cmd[0] == "set_region_color")
     {
         if(regionWidget->regions.empty())
@@ -618,21 +613,6 @@ void tracking_window::on_actionEndpoints_to_seeding_triggered()
     slice_need_update = true;
     glWidget->update();
 }
-
-void tracking_window::on_actionTracts_to_seeds_triggered()
-{
-    if(tractWidget->tract_models.empty()|| tractWidget->currentRow() < 0)
-        return;
-    std::vector<tipl::vector<3,short> > points;
-    tractWidget->tract_models[tractWidget->currentRow()]->to_voxel(points,
-        current_slice->is_diffusion_space ? tipl::matrix<4,4>(tipl::identity_matrix()) : current_slice->to_slice);
-    regionWidget->add_region(
-            tractWidget->item(tractWidget->currentRow(),0)->text());
-    regionWidget->regions.back()->add_points(std::move(points));
-    slice_need_update = true;
-    glWidget->update();
-}
-
 
 void tracking_window::on_actionQuality_Assessment_triggered()
 {
