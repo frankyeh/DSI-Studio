@@ -85,14 +85,42 @@ std::string command_history::file_stem(void) const
     if(tipl::contains(current_cmd,"to_folder"))
         return default_parent_path;
     auto result = (std::filesystem::path(default_parent_path)/default_stem).string();
-    if(default_stem2 != default_stem && tipl::contains(current_cmd,"_all"))
+    if(default_stem2 != default_stem && !tipl::contains(current_cmd,"_all"))
         result += "_" + default_stem2;
     return result;
 }
-bool command_history::ask_dir(QWidget* parent,std::string& cmd)
+bool command_history::get_dir(QWidget* parent,std::string& cmd)
 {
     return !cmd.empty() || !(cmd = QFileDialog::getExistingDirectory(parent,QString::fromStdString(current_cmd),
                                             QString::fromStdString(default_parent_path)).toStdString()).empty();
+}
+
+
+bool command_history::get_filename(QWidget* parent,std::string& cmd,const std::string& post_fix)
+{
+    if(!cmd.empty())
+        return true;
+    QString filter,file_name(QString::fromStdString(
+                                post_fix.empty() ? file_stem() :
+                                (std::filesystem::path(default_parent_path)/default_stem).string()+"_"+post_fix));
+    size_t first_pos = current_cmd.find('_');
+    file_name += QString::fromStdString(current_cmd.substr(first_pos));
+    if(tipl::ends_with(current_cmd,"_color"))
+    {
+        filter = "RGB values (*.txt);;All files (*)";
+        file_name += ".txt";
+    }
+    if(tipl::ends_with(current_cmd,"_values"))
+    {
+        filter = "RGB values (*.txt);;All files (*)";
+        file_name += ".txt";
+    }
+    if(tipl::begins_with(cmd,"save_"))
+        return !(cmd = QFileDialog::getSaveFileName(
+                    parent,QString::fromStdString(current_cmd),file_name,filter).toStdString()).empty();
+    else
+        return !(cmd = QFileDialog::getOpenFileName(
+                    parent,QString::fromStdString(current_cmd),file_name,filter).toStdString()).empty();
 }
 
 bool command_history::is_loading(const std::string& cmd)

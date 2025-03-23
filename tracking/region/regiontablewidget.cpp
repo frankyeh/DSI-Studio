@@ -613,7 +613,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         auto checked_regions = get_checked_regions();
         if(checked_regions.empty())
             return run->failed("no checked region to save");
-        if(!cur_tracking_window.history.ask_dir(this,cmd[1]))
+        if(!cur_tracking_window.history.get_dir(this,cmd[1]))
             return run->canceled();
         tipl::progress prog(cmd[0]);
         for(auto each : checked_regions)

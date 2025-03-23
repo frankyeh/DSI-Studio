@@ -1182,7 +1182,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     if(cmd[0] == "save_all_tracts_to_folder")
     {
         // cmd[1] : directory output
-        if(tract_models.empty() || !cur_tracking_window.history.ask_dir(this,cmd[1]))
+        if(tract_models.empty() || !cur_tracking_window.history.get_dir(this,cmd[1]))
             return run->canceled();
         tipl::progress prog_("saving files");
         auto selected_tracts = get_checked_tracks();
@@ -1248,15 +1248,9 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         // cmd[1] : color text file
         // cmd[2] = tract index
         int cur_row = currentRow();
-        if(!get_cur_row(cmd[2],cur_row))
-            return false;
-        if(cmd[1].empty() && (cmd[1] = QFileDialog::getOpenFileName(
-                                  this,QString::fromStdString(cmd[0]),
-                                  QString::fromStdString(cur_tracking_window.history.file_stem()) + "_" +
-                                  QString::fromStdString(tract_models[cur_row]->name) + "_color.txt",
-                                  "Color files (*.txt);;All files (*)").toStdString()).empty())
+        if(!get_cur_row(cmd[2],cur_row) ||
+           !cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name))
             return run->canceled();
-
 
         auto lock = tract_rendering[cur_row]->start_reading();
         if(!tract_models[cur_row]->load_tracts_color_from_file(cmd[1].c_str()))

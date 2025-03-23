@@ -76,7 +76,9 @@ public:
                                       std::vector<std::string>& cmd);
     void record(const std::string& output);
     std::string file_stem(void) const;
-    bool ask_dir(QWidget* parent,std::string& cmd);
+    bool get_dir(QWidget* parent,std::string& cmd);
+    bool get_filename(QWidget* parent,std::string& cmd,const std::string& post_fix = "");
+
 };
 class GLWidget;
 class tract_report;

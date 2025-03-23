@@ -1297,6 +1297,7 @@
     <addaction name="actionSort_Tracts_By_Names"/>
     <addaction name="separator"/>
     <addaction name="actionOpen_Cluster_Colors"/>
+    <addaction name="actionOpen_Cluster_Values"/>
     <addaction name="actionSave_Cluster_Colors"/>
     <addaction name="actionSet_Color"/>
     <addaction name="actionAssign_Colors_For_Each"/>
@@ -3765,7 +3766,7 @@ Tracking</string>
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Open Tract Value...</string>
+    <string>Open Tract Values...</string>
    </property>
    <property name="toolTip">
     <string>run load_tract_values</string>
@@ -4528,6 +4529,18 @@ Tracking</string>
   <action name="actionCommand_History">
    <property name="text">
     <string>Command History...</string>
+   </property>
+  </action>
+  <action name="actionOpen_Cluster_Values">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Open Cluster Values...</string>
+   </property>
+   <property name="toolTip">
+    <string>run load_cluster_values</string>
    </property>
   </action>
  </widget>
