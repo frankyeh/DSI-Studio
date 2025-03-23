@@ -1236,11 +1236,31 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         emit show_tracts();
         return true;
     }
-    if(cmd[0] == "load_cluster_color" || cmd[0] == "load_cluster_values")
+    if(cmd[0] == "load_cluster_color" || cmd[0] == "load_cluster_values" || cmd[0] == "save_cluster_color")
     {
         if(tract_models.empty() || !cur_tracking_window.history.get_filename(this,
                                             cmd[1],cur_tracking_window.history.default_stem))
             return run->canceled();
+
+        if(cmd[0] == "save_cluster_color")
+        {
+            std::ofstream out(cmd[1]);
+            if(!out)
+                return run->failed("cannot write to " + cmd[1]);
+            for(unsigned int index = 0;index < tract_models.size();++index)
+                if(item(int(index),0)->checkState() == Qt::Checked)
+                {
+                    auto lock = tract_rendering[index]->start_reading(true);
+                    if(tract_models[index]->get_visible_track_count())
+                    {
+                        tipl::rgb color = tract_models[index]->get_tract_color(0);
+                        out << int(color.r) << " " << int(color.g) << " " << int(color.b) << std::endl;
+                    }
+                    else
+                        out << "0 0 0" << std::endl;
+                }
+            return true;
+        }
         std::ifstream in(cmd[1]);
         if(!in)
             return run->failed("cannot find or open " + cmd[1]);
@@ -1278,28 +1298,6 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             cur_tracking_window.set_data("tract_color_style",6);//loaded values
         }
         emit show_tracts();
-        return true;
-    }
-    if(cmd[0] == "save_cluster_color")
-    {
-        if(tract_models.empty() || !cur_tracking_window.history.get_filename(this,
-                                            cmd[1],cur_tracking_window.history.default_stem))
-            return run->canceled();
-        std::ofstream out(cmd[1]);
-        if(!out)
-            return run->failed("cannot write to " + cmd[1]);
-        for(unsigned int index = 0;index < tract_models.size();++index)
-            if(item(int(index),0)->checkState() == Qt::Checked)
-            {
-                auto lock = tract_rendering[index]->start_reading(true);
-                if(tract_models[index]->get_visible_track_count())
-                {
-                    tipl::rgb color = tract_models[index]->get_tract_color(0);
-                    out << int(color.r) << " " << int(color.g) << " " << int(color.b) << std::endl;
-                }
-                else
-                    out << "0 0 0" << std::endl;
-            }
         return true;
     }
     return run->not_processed();
