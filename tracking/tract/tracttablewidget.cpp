@@ -1243,98 +1243,85 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         return true;
     }
 
-    if(cmd[0] == "load_tract_color")
-    {
-        // cmd[1] : color text file
-        // cmd[2] = tract index
-        int cur_row = currentRow();
-        if(!get_cur_row(cmd[2],cur_row) || !cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name))
-            return run->canceled();
-
-        auto lock = tract_rendering[cur_row]->start_reading();
-        if(!tract_models[cur_row]->load_tracts_color_from_file(cmd[1].c_str()))
-            return run->failed("cannot find or open " + cmd[1]);
-        tract_rendering[cur_row]->need_update = true;
-        cur_tracking_window.set_data("tract_color_style",1);//manual assigned
-        emit show_tracts();
-        return true;
-    }
-    if(cmd[0] == "load_tract_values")
+    if(cmd[0] == "load_tract_color" || cmd[0] == "load_tract_values")
     {
         // cmd[1] : file name
         // cmd[2] : current tract index
-        // open a text file of space-separated values between [0 1] for each bundle or streamline
         int cur_row = currentRow();
         if(!get_cur_row(cmd[2],cur_row) || !cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name))
             return run->canceled();
-        std::ifstream in(cmd[1]);
-        if(!in)
-            return run->failed("cannot find or open " + cmd[1]);
-        std::vector<float> values;
-        std::copy(std::istream_iterator<float>(in),
-                  std::istream_iterator<float>(),
-                  std::back_inserter(values));
-        if(tract_models[cur_row]->get_visible_track_count() != values.size())
-            return run->failed("the number of values " + std::to_string(values.size()) +
-                               " does not match current tract count " +
-                               std::to_string(tract_models[cur_row]->get_visible_track_count()));
-        auto lock = tract_rendering[cur_row]->start_reading();
-        tract_models[cur_row]->loaded_values.swap(values);
-        tract_rendering[cur_row]->need_update = true;
-        cur_tracking_window.set_data("tract_color_style",6);//loaded values
+        if(cmd[0] == "load_tract_color")
+        {
+            auto lock = tract_rendering[cur_row]->start_reading();
+            if(!tract_models[cur_row]->load_tracts_color_from_file(cmd[1].c_str()))
+                return run->failed("cannot find or open " + cmd[1]);
+            tract_rendering[cur_row]->need_update = true;
+            cur_tracking_window.set_data("tract_color_style",1);//manual assigned
+        }
+        else
+        {
+            std::ifstream in(cmd[1]);
+            if(!in)
+                return run->failed("cannot find or open " + cmd[1]);
+            std::vector<float> values;
+            std::copy(std::istream_iterator<float>(in),
+                      std::istream_iterator<float>(),
+                      std::back_inserter(values));
+            if(tract_models[cur_row]->get_visible_track_count() != values.size())
+                return run->failed("the number of values " + std::to_string(values.size()) +
+                                   " does not match current tract count " +
+                                   std::to_string(tract_models[cur_row]->get_visible_track_count()));
+            auto lock = tract_rendering[cur_row]->start_reading();
+            tract_models[cur_row]->loaded_values.swap(values);
+            tract_rendering[cur_row]->need_update = true;
+            cur_tracking_window.set_data("tract_color_style",6);//loaded values
+        }
         emit show_tracts();
-
         return true;
     }
-    if(cmd[0] == "load_cluster_color")
+    if(cmd[0] == "load_cluster_color" || cmd[0] == "load_cluster_values")
     {
         if(tract_models.empty() || !cur_tracking_window.history.get_filename(this,cmd[1]))
             return run->canceled();
         std::ifstream in(cmd[1]);
         if(!in)
             return run->failed("cannot find or open " + cmd[1]);
-        for(unsigned int index = 0;index < tract_models.size() && in;++index)
-            if(item(int(index),0)->checkState() == Qt::Checked)
-            {
-                int r(0),g(0),b(0);
-                in >> r >> g >> b;
-                auto lock = tract_rendering[index]->start_writing();
-                tract_models[index]->set_color(tipl::rgb(r,g,b));
-                tract_rendering[index]->need_update = true;
-            }
-        cur_tracking_window.set_data("tract_color_style",1);//manual assigned
+        if(cmd[0] == "load_cluster_color")
+        {
+            for(unsigned int index = 0;index < tract_models.size() && in;++index)
+                if(item(int(index),0)->checkState() == Qt::Checked)
+                {
+                    int r(0),g(0),b(0);
+                    in >> r >> g >> b;
+                    auto lock = tract_rendering[index]->start_writing();
+                    tract_models[index]->set_color(tipl::rgb(r,g,b));
+                    tract_rendering[index]->need_update = true;
+                }
+            cur_tracking_window.set_data("tract_color_style",1);//manual assigned
+        }
+        else
+        {
+            std::vector<float> values;
+            std::copy(std::istream_iterator<float>(in),
+                      std::istream_iterator<float>(),
+                      std::back_inserter(values));
+            auto checked_track = get_checked_tracks();
+            if(checked_track.size() != values.size())
+                return run->failed("the number of values " + std::to_string(values.size()) +
+                                   " does not match bundle count " + std::to_string(checked_track.size()));
+            tipl::out() << "assign values to each bundle";
+            for(unsigned int index = 0,pos = 0;index < tract_models.size() && pos < values.size();++index)
+                if(item(int(index),0)->checkState() == Qt::Checked)
+                {
+                    tract_models[index]->loaded_value = values[pos];
+                    tract_rendering[index]->need_update = true;
+                    ++pos;
+                }
+            cur_tracking_window.set_data("tract_color_style",6);//loaded values
+        }
         emit show_tracts();
         return true;
     }
-    if(cmd[0] == "load_cluster_values")
-    {
-        // open a text file of space-separated values between [0 1] for each bundle or streamline
-        if(tract_models.empty() || !cur_tracking_window.history.get_filename(this,cmd[1]))
-            return run->canceled();
-        std::ifstream in(cmd[1]);
-        if(!in)
-            return run->failed("cannot find or open " + cmd[1]);
-        std::vector<float> values;
-        std::copy(std::istream_iterator<float>(in),
-                  std::istream_iterator<float>(),
-                  std::back_inserter(values));
-        auto checked_track = get_checked_tracks();
-        if(checked_track.size() != values.size())
-            return run->failed("the number of values " + std::to_string(values.size()) +
-                               " does not match bundle count " + std::to_string(checked_track.size()));
-        tipl::out() << "assign values to each bundle";
-        for(unsigned int index = 0,pos = 0;index < tract_models.size() && pos < values.size();++index)
-            if(item(int(index),0)->checkState() == Qt::Checked)
-            {
-                tract_models[index]->loaded_value = values[pos];
-                tract_rendering[index]->need_update = true;
-                ++pos;
-            }
-        cur_tracking_window.set_data("tract_color_style",6);//loaded values
-        emit show_tracts();
-        return true;
-    }
-
     return run->not_processed();
 }
 
