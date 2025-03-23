@@ -587,33 +587,6 @@ void tracking_window::on_actionLoad_Parameter_ID_triggered()
 }
 
 
-void tracking_window::on_actionEndpoints_to_seeding_triggered()
-{
-    std::vector<tipl::vector<3,short> > points1,points2;
-    if(tractWidget->tract_models.empty() || tractWidget->currentRow() < 0)
-        return;
-
-    tractWidget->tract_models[size_t(tractWidget->currentRow())]->
-            to_end_point_voxels(points1,points2,
-                current_slice->is_diffusion_space ? tipl::matrix<4,4>(tipl::identity_matrix()) :current_slice->to_slice);
-
-    regionWidget->begin_update();
-    regionWidget->add_region(
-            tractWidget->item(tractWidget->currentRow(),0)->text()+
-            QString(" endpoints1"));
-
-
-    regionWidget->regions.back()->add_points(std::move(points1));
-
-    regionWidget->add_region(
-            tractWidget->item(tractWidget->currentRow(),0)->text()+
-            QString(" endpoints2"));
-    regionWidget->regions.back()->add_points(std::move(points2));
-    regionWidget->end_update();
-    slice_need_update = true;
-    glWidget->update();
-}
-
 void tracking_window::on_actionQuality_Assessment_triggered()
 {
     float threshold = renderWidget->getData("otsu_threshold").toFloat()*handle->dir.fa_otsu;

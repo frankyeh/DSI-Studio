@@ -996,7 +996,7 @@
     <addaction name="actionDeleteTractAll"/>
     <addaction name="separator"/>
     <addaction name="actionTracts_to_Region"/>
-    <addaction name="actionEndpoints_to_seeding"/>
+    <addaction name="actionEndpoints_to_Region"/>
     <addaction name="actionFilter_by_ROI"/>
     <addaction name="separator"/>
     <addaction name="actionTract_Analysis_Report"/>
@@ -3149,9 +3149,12 @@ Tracking</string>
     <string>Save Camera View...</string>
    </property>
   </action>
-  <action name="actionEndpoints_to_seeding">
+  <action name="actionEndpoints_to_Region">
    <property name="text">
     <string>Endpoints To Region</string>
+   </property>
+   <property name="toolTip">
+    <string>run endpoint_to_region</string>
    </property>
   </action>
   <action name="actionTracts_to_Region">

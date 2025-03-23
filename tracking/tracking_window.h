@@ -178,7 +178,6 @@ private slots:
     void on_actionTDI_Import_Slice_Space_triggered();
     void on_actionTDI_Subvoxel_Diffusion_Space_triggered();
     void on_actionTDI_Diffusion_Space_triggered();
-    void on_actionEndpoints_to_seeding_triggered();
 
     void SliderValueChanged(void);
 
