@@ -531,37 +531,6 @@ void TractTableWidget::open_cluster_label(void)
     load_cluster_label(labels);
     assign_colors();
 }
-void TractTableWidget::save_cluster_color(void)
-{
-    if(tract_models.empty())
-        return;
-    QString filename = QFileDialog::getSaveFileName(
-            this,"Save cluster color",QFileInfo(cur_tracking_window.work_path).absolutePath(),
-            "RGB Value Text(*.txt);;All files (*)");
-    if(!filename.size())
-        return;
-    std::ofstream out(filename.toStdString());
-    if(!out)
-    {
-        QMessageBox::critical(this,"ERROR","Cannot save file");
-        return;
-    }
-    for(unsigned int index = 0;index < tract_models.size();++index)
-        if(item(int(index),0)->checkState() == Qt::Checked)
-        {
-            auto lock = tract_rendering[index]->start_reading(true);
-            if(tract_models[index]->get_visible_track_count())
-            {
-                tipl::rgb color = tract_models[index]->get_tract_color(0);
-                out << int(color.r) << " " << int(color.g) << " " << int(color.b) << std::endl;
-            }
-            else
-                out << "0 0 0" << std::endl;
-        }
-    QMessageBox::information(this,QApplication::applicationName(),"saved");
-}
-
-
 
 void TractTableWidget::recog_tracks(void)
 {
@@ -1309,6 +1278,28 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             cur_tracking_window.set_data("tract_color_style",6);//loaded values
         }
         emit show_tracts();
+        return true;
+    }
+    if(cmd[0] == "save_cluster_color")
+    {
+        if(tract_models.empty() || !cur_tracking_window.history.get_filename(this,
+                                            cmd[1],cur_tracking_window.history.default_stem))
+            return run->canceled();
+        std::ofstream out(cmd[1]);
+        if(!out)
+            return run->failed("cannot write to " + cmd[1]);
+        for(unsigned int index = 0;index < tract_models.size();++index)
+            if(item(int(index),0)->checkState() == Qt::Checked)
+            {
+                auto lock = tract_rendering[index]->start_reading(true);
+                if(tract_models[index]->get_visible_track_count())
+                {
+                    tipl::rgb color = tract_models[index]->get_tract_color(0);
+                    out << int(color.r) << " " << int(color.g) << " " << int(color.b) << std::endl;
+                }
+                else
+                    out << "0 0 0" << std::endl;
+            }
         return true;
     }
     return run->not_processed();
