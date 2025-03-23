@@ -819,22 +819,6 @@ void TractTableWidget::save_tracts_in_mni(void)
 }
 
 
-void TractTableWidget::save_tracts_color_as(void)
-{
-    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
-        return;
-    QString filename;
-    filename = QFileDialog::getSaveFileName(
-                this,"Save tracts color as",QString::fromStdString(cur_tracking_window.history.file_stem()) + "_color.txt",
-                "Color files (*.txt);;All files (*)");
-    if(filename.isEmpty())
-        return;
-
-    std::string sfilename = filename.toStdString().c_str();
-    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-    tract_models[uint32_t(currentRow())]->save_tracts_color_to_file(&*sfilename.begin());
-}
-
 void TractTableWidget::cell_changed(int row, int column)
 {
     if(row >= 0 && row < tract_models.size())
@@ -1200,13 +1184,21 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         return true;
     }
 
-    if(cmd[0] == "load_tract_color" || cmd[0] == "load_tract_values")
+    if(cmd[0] == "load_tract_color" || cmd[0] == "load_tract_values" || cmd[0] == "save_tract_color")
     {
         // cmd[1] : file name
         // cmd[2] : current tract index
         int cur_row = currentRow();
         if(!get_cur_row(cmd[2],cur_row) || !cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name))
             return run->canceled();
+
+        if(cmd[0] == "save_tract_color")
+        {
+            auto lock = tract_rendering[cur_row]->start_reading();
+            tract_models[cur_row]->save_tracts_color_to_file(cmd[1].c_str());
+            return true;
+        }
+
         if(cmd[0] == "load_tract_color")
         {
             auto lock = tract_rendering[cur_row]->start_reading();

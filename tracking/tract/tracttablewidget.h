@@ -127,7 +127,6 @@ public slots:
 
     void load_tract_label(void);
 
-    void save_tracts_color_as(void);
     void save_tracts_data_as(void);
     void save_all_tracts_end_point_as(void);
 
