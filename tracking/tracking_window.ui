@@ -947,7 +947,7 @@
     </widget>
     <widget class="QMenu" name="menuSave_Tracts">
      <property name="title">
-      <string>Save Tracts Misc</string>
+      <string>Save Transformed Tracts</string>
      </property>
      <property name="icon">
       <iconset resource="../icons.qrc">
