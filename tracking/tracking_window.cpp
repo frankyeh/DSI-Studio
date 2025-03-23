@@ -102,23 +102,24 @@ bool command_history::get_filename(QWidget* parent,std::string& cmd,const std::s
         return true;
     QString filter,file_name(QString::fromStdString(
                                 post_fix.empty() ? file_stem() :
-                                (std::filesystem::path(default_parent_path)/default_stem).string()+"_"+post_fix));
+                                (std::filesystem::path(default_parent_path)/
+                                    (post_fix[0] == '.' ? default_stem + post_fix : post_fix)).string()));
     if(tipl::ends_with(current_cmd,"_color"))
     {
-        filter = "RGB values (*.txt);;All files (*)";
+        filter = "RGB values (*.txt)";
         file_name += "_color.txt";
     }
     else
     if(tipl::ends_with(current_cmd,"_values"))
     {
-        filter = "Values (*.txt);;All files (*)";
+        filter = "Values (*.txt)";
         file_name += "_values.txt";
     }
     else
-    {
-        size_t first_pos = current_cmd.find('_');
-        file_name += QString::fromStdString(current_cmd.substr(first_pos));
-    }
+    if(tipl::ends_with(current_cmd,"_tracts") || tipl::ends_with(current_cmd,"_tract"))
+        filter = "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat)";
+
+    filter += ";;All files (*)";
     if(tipl::begins_with(cmd,"save_"))
         return !(cmd = QFileDialog::getSaveFileName(
                     parent,QString::fromStdString(current_cmd),file_name,filter).toStdString()).empty();

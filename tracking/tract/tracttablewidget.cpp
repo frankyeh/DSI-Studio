@@ -1162,15 +1162,8 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         // cmd[1] : file name to be saved
         // cmd[2] : tract index
         int cur_row = currentRow();
-        if(!get_cur_row(cmd[2],cur_row))
-            return false;
-
-        if(cmd[1].empty() && (cmd[1] =
-                QFileDialog::getSaveFileName(
-                    this,"Save tracts as",
-                    QString::fromStdString(cur_tracking_window.history.default_parent_path +
-                                           "/" +tract_models[cur_row]->name) + output_format(),
-                    "Tract files (*.tt.gz *tt.gz *trk.gz *.trk *.tck);;Text File (*.txt);;MAT files (*.mat);;All files (*)").toStdString()).empty())
+        if(!get_cur_row(cmd[2],cur_row) ||
+           !cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name + output_format().toStdString()))
             return run->canceled();
 
         tipl::progress prog_(cmd[0]);
@@ -1198,12 +1191,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "save_all_tracts")
     {
-        if(tract_models.empty())
-            return run->canceled();
-        if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(
-                    this,"Save tracts as",
-                    QString::fromStdString(cur_tracking_window.history.file_stem()) + output_format(),
-                    "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;NIFTI File (*nii.gz);;Text File (*.txt);;MAT files (*.mat);;All files (*)").toStdString()).empty())
+        if(tract_models.empty() || !cur_tracking_window.history.get_filename(this,cmd[1],output_format().toStdString()))
             return run->canceled();
 
         auto locks = start_reading_checked_tracks();
@@ -1281,7 +1269,8 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "load_cluster_color" || cmd[0] == "load_cluster_values")
     {
-        if(tract_models.empty() || !cur_tracking_window.history.get_filename(this,cmd[1]))
+        if(tract_models.empty() || !cur_tracking_window.history.get_filename(this,
+                                            cmd[1],cur_tracking_window.history.default_stem))
             return run->canceled();
         std::ifstream in(cmd[1]);
         if(!in)
