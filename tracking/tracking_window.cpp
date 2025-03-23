@@ -74,7 +74,7 @@ void command_history::record(const std::string& output)
     {
         auto p = std::filesystem::path(tipl::split(output,',')[1]);
         default_parent_path = p.parent_path().string();
-        default_stem2 = p.stem().string();
+        default_stem2 = p.stem().stem().string();
         std::replace(default_stem2.begin(),default_stem2.end(),'.','_');
         if(default_stem.empty())
             default_stem = default_stem2;
