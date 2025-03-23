@@ -1152,6 +1152,22 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             return run->failed("cannot save file to " + cmd[1]);
         return true;
     }
+    if(cmd[0] == "tract_to_region")
+    {
+        // cmd[1] : tract index
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[1],cur_row))
+            return run->canceled();
+        std::vector<tipl::vector<3,short> > points;
+        tract_models[cur_row]->to_voxel(points,
+            cur_tracking_window.current_slice->is_diffusion_space ? tipl::matrix<4,4>(tipl::identity_matrix()) :
+            cur_tracking_window.current_slice->to_slice);
+        cur_tracking_window.regionWidget->add_region(item(cur_row,0)->text());
+        cur_tracking_window.regionWidget->regions.back()->add_points(std::move(points));
+        cur_tracking_window.slice_need_update = true;
+        cur_tracking_window.glWidget->update();
+        return true;
+    }
     if(cmd[0] == "update_track")
     {
         for(int index = 0;index < int(tract_models.size());++index)
