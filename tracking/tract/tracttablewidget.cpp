@@ -1248,8 +1248,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         // cmd[1] : color text file
         // cmd[2] = tract index
         int cur_row = currentRow();
-        if(!get_cur_row(cmd[2],cur_row) ||
-           !cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name))
+        if(!get_cur_row(cmd[2],cur_row) || !cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name))
             return run->canceled();
 
         auto lock = tract_rendering[cur_row]->start_reading();
@@ -1266,13 +1265,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         // cmd[2] : current tract index
         // open a text file of space-separated values between [0 1] for each bundle or streamline
         int cur_row = currentRow();
-        if(!get_cur_row(cmd[2],cur_row))
-            return false;
-        if(cmd[1].empty() && (cmd[1] = QFileDialog::getOpenFileName(
-                                  this,QString::fromStdString(cmd[0]),
-                                  QString::fromStdString(cur_tracking_window.history.default_parent_path)+ "_" +
-                                  QString::fromStdString(tract_models[cur_row]->name) + "_values.txt",
-                                  "Text files(*.txt);;All files (*)").toStdString()).empty())
+        if(!get_cur_row(cmd[2],cur_row) || !cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name))
             return run->canceled();
         std::ifstream in(cmd[1]);
         if(!in)
@@ -1295,12 +1288,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "load_cluster_color")
     {
-        if(tract_models.empty())
-            return run->canceled();
-        if(cmd[1].empty() && (cmd[1] = QFileDialog::getOpenFileName(
-                                  this,QString::fromStdString(cmd[0]),
-                                  QString::fromStdString(cur_tracking_window.history.default_parent_path)+"_color.txt",
-                                  "RGB Value Text(*.txt);;All files (*)").toStdString()).empty())
+        if(tract_models.empty() || !cur_tracking_window.history.get_filename(this,cmd[1]))
             return run->canceled();
         std::ifstream in(cmd[1]);
         if(!in)
@@ -1318,15 +1306,10 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         emit show_tracts();
         return true;
     }
-    if(cmd[1] == "load_cluster_values")
+    if(cmd[0] == "load_cluster_values")
     {
         // open a text file of space-separated values between [0 1] for each bundle or streamline
-        if(tract_models.empty())
-            return run->canceled();
-        if(cmd[1].empty() && (cmd[1] = QFileDialog::getOpenFileName(
-                                  this,QString::fromStdString(cmd[0]),
-                                  QString::fromStdString(cur_tracking_window.history.default_parent_path)+"_values.txt",
-                                  "Text files(*.txt);;All files (*)").toStdString()).empty())
+        if(tract_models.empty() || !cur_tracking_window.history.get_filename(this,cmd[1]))
             return run->canceled();
         std::ifstream in(cmd[1]);
         if(!in)
