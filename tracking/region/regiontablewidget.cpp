@@ -504,14 +504,8 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         // cmd[1] : file name to be saved
         // cmd[2] : the region index (default: current selected one)
         int cur_row = currentRow();
-        if(!get_cur_row(cmd[2],cur_row))
-            return false;
-
-        if(cmd[1].empty() && (cmd[1] =
-                QFileDialog::getSaveFileName(this,QString::fromStdString(cmd[0]),
-                            QString::fromStdString(cur_tracking_window.history.file_stem()) + "_" +
-                            QString::fromStdString(regions[cur_row]->name) + output_format(),
-                            "NIFTI file(*nii.gz *.nii);;Text file(*.txt);;MAT file (*.mat);;All files(*)" ).toStdString()).empty())
+        if(!get_cur_row(cmd[2],cur_row) ||
+           !cur_tracking_window.history.get_filename(this,cmd[1],regions[cur_row]->name + output_format().toStdString()))
             return run->canceled();
 
         if(!tipl::ends_with(cmd[1],".mat") &&
@@ -566,10 +560,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         auto checked_regions = get_checked_regions();
         if (checked_regions.empty())
             return run->failed("no checked region to save");
-        if(cmd[1].empty() && (cmd[1] =
-                        QFileDialog::getSaveFileName(this,QString::fromStdString(cmd[0]),
-                        QString::fromStdString(cur_tracking_window.history.file_stem()) + output_format(),
-                        "Region file(*nii.gz *.nii *.mat);;Text file (*.txt);;All file types (*)" ).toStdString()).empty())
+        if(!cur_tracking_window.history.get_filename(this,cmd[1],output_format().toStdString()))
             return run->canceled();
         tipl::shape<3> dim = checked_regions[0]->dim;
         tipl::image<3,unsigned short> mask(dim);
@@ -626,12 +617,8 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         // cmd[1] : file name to be saved
         // cmd[2] : the region index (default: current selected one)
         int cur_row = currentRow();
-        if(!get_cur_row(cmd[2],cur_row))
-            return false;
-        if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(this,QString::fromStdString(cmd[0]),
-                               QString::fromStdString(cur_tracking_window.history.file_stem()) + "_" +
-                               QString(regions[cur_row]->name.c_str()) + "_info.txt",
-                               "Text files (*.txt)" ).toStdString()).empty())
+        if(!get_cur_row(cmd[2],cur_row) ||
+           !cur_tracking_window.history.get_filename(this,cmd[1],regions[cur_row]->name + output_format().toStdString()))
             return run->canceled();
 
         std::ofstream out(cmd[1].c_str());
@@ -687,9 +674,8 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "load_region_color")
     {
-        if(cmd[1].empty() && (cmd[1] = QFileDialog::getOpenFileName(this,QString::fromStdString(cmd[0]),
-                    QString::fromStdString(cur_tracking_window.history.file_stem()) + "_color.txt",
-                    "Color files (*.txt);;All files (*)").toStdString()).empty())
+        // cmd[1] : file name
+        if(!cur_tracking_window.history.get_filename(this,cmd[1]))
             return run->canceled();
 
         std::ifstream in(cmd[1].c_str());
@@ -728,9 +714,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "save_region_color")
     {
-        if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(this,QString::fromStdString(cmd[0]),
-                    QString::fromStdString(cur_tracking_window.history.file_stem()) + "_color.txt",
-                    "Color files (*.txt);;All files (*)").toStdString()).empty())
+        if(!cur_tracking_window.history.get_filename(this,cmd[1]))
             return run->canceled();
 
         std::ofstream out(cmd[1].c_str());
