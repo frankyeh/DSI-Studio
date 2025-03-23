@@ -995,8 +995,8 @@
     <addaction name="actionDeleteTract"/>
     <addaction name="actionDeleteTractAll"/>
     <addaction name="separator"/>
+    <addaction name="actionTracts_to_Region"/>
     <addaction name="actionEndpoints_to_seeding"/>
-    <addaction name="actionTracts_to_seeds"/>
     <addaction name="actionFilter_by_ROI"/>
     <addaction name="separator"/>
     <addaction name="actionTract_Analysis_Report"/>
@@ -3151,12 +3151,15 @@ Tracking</string>
   </action>
   <action name="actionEndpoints_to_seeding">
    <property name="text">
-    <string>Endpoints To ROI</string>
+    <string>Endpoints To Region</string>
    </property>
   </action>
-  <action name="actionTracts_to_seeds">
+  <action name="actionTracts_to_Region">
    <property name="text">
-    <string>Tracts To ROI</string>
+    <string>Tracts To Region</string>
+   </property>
+   <property name="toolTip">
+    <string>run tract_to_region</string>
    </property>
   </action>
   <action name="actionSave_Rotation_Images">
