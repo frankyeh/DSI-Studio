@@ -1320,6 +1320,79 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         emit show_tracts();
         return true;
     }
+
+
+    if(cmd[0] == "delete_repeated_tract")
+    {
+        // cmd[1] : distance
+        float distance = 1.0;
+        if(cmd[1].empty())
+        {
+            bool ok;
+            distance = QInputDialog::getDouble(this,QApplication::applicationName(),
+                                               "Distance threshold (voxels)", distance,0,500,1,&ok);
+            if (!ok)
+                return run->canceled();
+        }
+        else
+            distance = QString::fromStdString(cmd[1]).toFloat();
+
+        for_each_bundle(cmd[0].c_str(),[&](unsigned int index)
+        {
+            return tract_models[index]->delete_repeated(distance);
+        });
+        emit show_tracts();
+        return true;
+    }
+
+    if(cmd[0] == "resample_tract")
+    {
+
+        // cmd[1] : new_step
+        float new_step = 0.5;
+        if(cmd[1].empty())
+        {
+            bool ok;
+            new_step = float(QInputDialog::getDouble(this,QApplication::applicationName(),
+                                                     "New step size (voxels)",double(new_step),0.0,5.0,1,&ok));
+            if (!ok)
+                return run->canceled();
+        }
+        else
+            new_step = QString::fromStdString(cmd[1]).toFloat();
+
+        for_each_bundle(cmd[0].c_str(),[&](unsigned int index)
+        {
+            tract_models[index]->resample(new_step);
+            return true;
+        });
+        emit show_tracts();
+        return true;
+    }
+
+    if(cmd[0] == "delete_tract_by_length")
+    {
+        // cmd[1] : new_step
+        float threshold = 0.5;
+        if(cmd[1].empty())
+        {
+            bool ok;
+            threshold = QInputDialog::getDouble(this,
+                    QApplication::applicationName(),"Length threshold in mm:", threshold,0,500,1,&ok);
+            if (!ok)
+                return run->canceled();
+        }
+        else
+            threshold = QString::fromStdString(cmd[1]).toFloat();
+
+        for_each_bundle(cmd[0].c_str(),[&](unsigned int index)
+        {
+            return tract_models[index]->delete_by_length(threshold);
+        });
+        emit show_tracts();
+        return true;
+    }
+
     if(cmd[0] == "recognize_tract")
     {
         // cmd[1] : current tract index
@@ -1518,52 +1591,6 @@ void TractTableWidget::move_down(void)
 }
 
 
-void TractTableWidget::delete_repeated(void)
-{
-    float distance = 1.0;
-    bool ok;
-    distance = QInputDialog::getDouble(this,
-        QApplication::applicationName(),"Distance threshold (voxels)", distance,0,500,1,&ok);
-    if (!ok)
-        return;
-    for_each_bundle("delete repeated",[&](unsigned int index)
-    {
-        return tract_models[index]->delete_repeated(distance);
-    });
-}
-
-void TractTableWidget::resample_step_size(void)
-{
-    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
-        return;
-    float new_step = 0.5f;
-    bool ok;
-    new_step = float(QInputDialog::getDouble(this,
-        QApplication::applicationName(),"New step size (voxels)",double(new_step),0.0,5.0,1,&ok));
-    if (!ok)
-        return;
-    for_each_bundle("resample tracks",[&](unsigned int index)
-    {
-        tract_models[index]->resample(new_step);
-        return true;
-    });
-}
-
-void TractTableWidget::delete_by_length(void)
-{
-    tipl::progress prog_("filtering tracks");
-
-    float threshold = 60;
-    bool ok;
-    threshold = QInputDialog::getDouble(this,
-        QApplication::applicationName(),"Length threshold in mm:", threshold,0,500,1,&ok);
-    if (!ok)
-        return;
-    for_each_bundle("delete by length",[&](unsigned int index)
-    {
-        return tract_models[index]->delete_by_length(threshold);
-    });
-}
 void TractTableWidget::reconnect_track(void)
 {
     for_current_bundle([&](void)

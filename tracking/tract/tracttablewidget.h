@@ -137,9 +137,7 @@ public slots:
 
     void merge_track_by_name(void);
 
-    void delete_repeated(void);
-    void delete_by_length(void);
-    void resample_step_size(void);
+
     void edit_tracts(void);
 
     void assign_colors(void);

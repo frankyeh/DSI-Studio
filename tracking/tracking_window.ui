@@ -3764,6 +3764,9 @@ Tracking</string>
    <property name="text">
     <string>Delete Repeated Tracks</string>
    </property>
+   <property name="toolTip">
+    <string>run delete_repeated_tract</string>
+   </property>
   </action>
   <action name="actionMerge_Tracts_by_Name">
    <property name="icon">
@@ -3789,6 +3792,9 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Delete Short Tracts</string>
+   </property>
+   <property name="toolTip">
+    <string>run delete_tract_by_length</string>
    </property>
   </action>
   <action name="actionOpen_Tract_Values">
@@ -4143,6 +4149,9 @@ Tracking</string>
   <action name="actionResample_Step_Size">
    <property name="text">
     <string>Resample Step Size</string>
+   </property>
+   <property name="toolTip">
+    <string>run resample_tract</string>
    </property>
   </action>
   <action name="actionDeleteAllDevices">
