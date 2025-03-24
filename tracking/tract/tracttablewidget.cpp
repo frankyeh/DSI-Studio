@@ -712,49 +712,7 @@ void TractTableWidget::cell_changed(int row, int column)
 }
 void get_track_statistics(std::shared_ptr<fib_data> handle,
                           const std::vector<std::shared_ptr<TractModel> >& tract_models,
-                          std::string& result)
-{
-    if(tract_models.empty())
-        return;
-    std::vector<std::vector<std::string> > track_results(tract_models.size());
-    {
-        tipl::progress p("for each tract");
-        for(size_t index = 0;p(index,tract_models.size());++index)
-        {
-            std::string tmp,line;
-            tract_models[index]->get_quantitative_info(handle,tmp);
-            std::istringstream in(tmp);
-            while(std::getline(in,line))
-            {
-                if(line.find("\t") == std::string::npos)
-                    continue;
-                track_results[index].push_back(line);
-            }
-        }
-        if(p.aborted())
-            return;
-    }
-    std::vector<std::string> metrics_name;
-    for(unsigned int j = 0;j < track_results[0].size();++j)
-        metrics_name.push_back(track_results[0][j].substr(0,track_results[0][j].find("\t")));
-
-    std::ostringstream out;
-    out << "Tract Name\t";
-    for(unsigned int index = 0;index < tract_models.size();++index)
-        out << tract_models[index]->name << "\t";
-    out << std::endl;
-    for(unsigned int index = 0;index < metrics_name.size();++index)
-    {
-        out << metrics_name[index];
-        for(unsigned int i = 0;i < track_results.size();++i)
-            if(index < track_results[i].size())
-                out << track_results[i][index].substr(track_results[i][index].find("\t"));
-            else
-                out << "\t";
-        out << std::endl;
-    }
-    result = out.str();
-}
+                          std::string& result);
 std::vector<std::shared_ptr<TractModel> > TractTableWidget::get_checked_tracks(void)
 {
     std::vector<std::shared_ptr<TractModel> > active_tracks;
