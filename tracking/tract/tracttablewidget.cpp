@@ -527,21 +527,6 @@ void TractTableWidget::save_all_tracts_end_point_as(void)
     auto locks = start_reading_checked_tracks();
     TractModel::export_end_pdi(filename.toStdString().c_str(),selected_tracts,dis);
 }
-void TractTableWidget::save_end_point_as(void)
-{
-    if(currentRow() >= int(tract_models.size()) || currentRow() < 0)
-        return;
-    QString filename;
-    filename = QFileDialog::getSaveFileName(
-                this,
-                "Save end points as",
-                QString::fromStdString(cur_tracking_window.history.file_stem()) + "_endpoint.txt",
-                "Tract files (*.txt);;MAT files (*.mat);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-    tract_models[uint32_t(currentRow())]->save_end_points(filename.toStdString().c_str());
-}
 
 void TractTableWidget::save_end_point_in_mni(void)
 {
@@ -594,30 +579,6 @@ void TractTableWidget::save_end_point_in_mni(void)
     }
 }
 
-void TractTableWidget::save_transformed_endpoints(void)
-{
-    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
-        return;
-    QString filename;
-    filename = QFileDialog::getSaveFileName(
-                this,
-                "Save end_point as",QString::fromStdString(cur_tracking_window.history.file_stem()) + "_" +
-                cur_tracking_window.current_slice->get_name().c_str() + "_endpoints.txt",
-                "Tract files (*.txt);;MAT files (*.mat);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
-    if(!slice)
-    {
-        QMessageBox::critical(this,"ERROR","Current slice is in the DWI space. Please use regular tract saving function");
-        return;
-    }
-    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-    if(tract_models[uint32_t(currentRow())]->save_transformed_tracts_to_file(filename.toStdString().c_str(),slice->dim,slice->vs,slice->trans_to_mni,slice->to_slice,true))
-        QMessageBox::information(this,QApplication::applicationName(),"File saved");
-    else
-        QMessageBox::critical(this,"ERROR","File not saved. Please check write permission");
-}
 void TractTableWidget::cell_changed(int row, int column)
 {
     if(row >= 0 && row < tract_models.size())
@@ -945,7 +906,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
                 return run->failed("current slice is in the DWI space. please use regular tract saving function");
             if(slice->running)
                 return run->failed("please wait until registration is completed");
-            if(!tract_models[cur_row]->save_transformed_tracts_to_file(cmd[1].c_str(),
+            if(!tract_models[cur_row]->save_transformed_tract(cmd[1].c_str(),
                                 slice->dim,slice->vs,slice->trans_to_mni,slice->to_slice,false/*not endpoint*/))
                 return run->failed("cannot write to file at " + cmd[1]);
         }
@@ -962,6 +923,35 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
                 return run->failed("cannot write to file at " + cmd[1]);
         return true;
     }
+    if(cmd[0] == "save_tract_endpoint" || cmd[0] == "save_slice_tract_endpoint")
+    {
+        // cmd[1] : file name to be saved
+        // cmd[2] : tract index
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[2],cur_row) ||
+           !cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name))
+            return run->canceled();
+        auto lock = tract_rendering[cur_row]->start_reading();
+
+        if(cmd[0] == "save_slice_tract_endpoint")
+        {
+            CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
+            if(!slice)
+                return run->failed("current slice is in the DWI space. please use regular tract saving function");
+            if(slice->running)
+                return run->failed("please wait until registration is completed");
+
+            if(!tract_models[cur_row]->save_transformed_tract(cmd[1].c_str(),
+                    slice->dim,slice->vs,slice->trans_to_mni,slice->to_slice,true))
+                return run->failed("cannot write to file at " + cmd[1]);
+
+        }
+        else
+            if(!tract_models[cur_row]->save_end_points(cmd[1].c_str()))
+                return run->failed("cannot write to file at " + cmd[1]);
+        return true;
+    }
+
     if(cmd[0] == "save_tract_values")
     {
         // cmd[1] : file name to be saved

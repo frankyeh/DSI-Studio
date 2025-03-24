@@ -545,7 +545,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
                 return false;
             }
             new_slice->wait();
-            if(!tract_model->save_transformed_tracts_to_file(tract_file_name.c_str(),new_slice->dim,new_slice->vs,new_slice->trans_to_mni,new_slice->to_slice,false))
+            if(!tract_model->save_transformed_tract(tract_file_name.c_str(),new_slice->dim,new_slice->vs,new_slice->trans_to_mni,new_slice->to_slice,false))
                 failed = true;
         }
         else
