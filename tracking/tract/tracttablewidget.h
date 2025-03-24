@@ -117,9 +117,6 @@ public slots:
     void show_tracking_progress(void);
 
     void save_all_tracts_end_point_as(void);
-
-    void save_tracts_in_template(void);
-    void save_tracts_in_mni(void);
     void save_end_point_as(void);
     void save_end_point_in_mni(void);
     void save_transformed_tracts(void);

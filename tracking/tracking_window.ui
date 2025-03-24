@@ -946,7 +946,6 @@
      <addaction name="actionSave_Tracts_in_Current_Mapping"/>
      <addaction name="actionSave_Tracts_in_Template_Space"/>
      <addaction name="actionSave_Tract_in_MNI_Coordinates"/>
-     <addaction name="actionSave_Tracts_In_Native_Space"/>
      <addaction name="separator"/>
      <addaction name="actionSave_End_Points_As"/>
      <addaction name="actionSave_End_Points_All_Tracts_As"/>
@@ -3284,7 +3283,7 @@ Tracking</string>
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Current Tract In Slice (T1WT2W) Space...</string>
+    <string>Save Current Tract In Current Slice Space...</string>
    </property>
   </action>
   <action name="actionThreshold">
@@ -3321,7 +3320,7 @@ Tracking</string>
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Endpoints In Current Slice (T1W/T2W) space...</string>
+    <string>Save Endpoints In Current Slice Space...</string>
    </property>
   </action>
   <action name="actionOpen_Cluster_Labels">
@@ -4255,6 +4254,9 @@ Tracking</string>
    <property name="text">
     <string>Save Current Tract in Template Space...</string>
    </property>
+   <property name="toolTip">
+    <string>run save_template_tract</string>
+   </property>
   </action>
   <action name="actionSave_End_Points_All_Tracts_As">
    <property name="icon">
@@ -4304,6 +4306,9 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Save Current Tract in MNI Coordinates...</string>
+   </property>
+   <property name="toolTip">
+    <string>run save_mni_tract</string>
    </property>
   </action>
   <action name="actionSave_Endpoints_in_MNI_Coordinates">

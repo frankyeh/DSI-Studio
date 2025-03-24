@@ -649,59 +649,6 @@ void TractTableWidget::save_transformed_endpoints(void)
     else
         QMessageBox::critical(this,"ERROR","File not saved. Please check write permission");
 }
-extern std::vector<std::string> fa_template_list;
-void TractTableWidget::save_tracts_in_template(void)
-{
-    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
-        return;
-    if(!cur_tracking_window.handle->map_to_mni())
-    {
-        QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
-        return;
-    }
-
-    QString filename;
-    filename = QFileDialog::getSaveFileName(
-                this,
-                "Save tracts as",QString::fromStdString(cur_tracking_window.history.file_stem()) + " " +
-                QFileInfo(fa_template_list[cur_tracking_window.handle->template_id].c_str()).baseName() +
-                output_format(),
-                 "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;NIFTI files (*.nii *nii.gz);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-    if(tract_models[uint32_t(currentRow())]->save_tracts_in_template_space(cur_tracking_window.handle,filename.toStdString().c_str()))
-        QMessageBox::information(this,QApplication::applicationName(),"File saved");
-    else
-        QMessageBox::critical(this,"ERROR","File not saved. Please check write permission");
-}
-
-void TractTableWidget::save_tracts_in_mni(void)
-{
-    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
-        return;
-
-    if(!cur_tracking_window.handle->map_to_mni())
-    {
-        QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
-        return;
-    }
-
-    QString filename;
-    filename = QFileDialog::getSaveFileName(
-                this,
-                "Save tracts as",QString::fromStdString(cur_tracking_window.history.file_stem()) + "_mni" + output_format(),
-                "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;NIFTI files (*.nii *nii.gz);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-    if(tract_models[uint32_t(currentRow())]->save_tracts_in_template_space(cur_tracking_window.handle,filename.toStdString().c_str(),true))
-        QMessageBox::information(this,QApplication::applicationName(),"File saved");
-    else
-        QMessageBox::critical(this,"ERROR","File not saved. Please check write permission");
-}
-
-
 void TractTableWidget::cell_changed(int row, int column)
 {
     if(row >= 0 && row < tract_models.size())
@@ -1004,19 +951,29 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         else
             return load_tract_atlas(cmd[1]);
     }
-    if(cmd[0] == "save_tract")
+    if(cmd[0] == "save_tract" || cmd[0] == "save_mni_tract" || cmd[0] == "save_template_tract")
     {
         // cmd[1] : file name to be saved
         // cmd[2] : tract index
+        bool output_at_mni = (cmd[0] == "save_mni_tract");
+        bool normalized = (cmd[0] == "save_template_tract" || output_at_mni);
         int cur_row = currentRow();
         if(!get_cur_row(cmd[2],cur_row) ||
            !cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name + output_format().toStdString()))
             return run->canceled();
+        if(normalized && !cur_tracking_window.handle->map_to_mni())
+            return run->failed(cur_tracking_window.handle->error_msg);
 
-        tipl::progress prog_(cmd[0]);
+        tipl::progress prog(cmd[0]);
         auto lock = tract_rendering[cur_row]->start_reading();
-        if(!tract_models[cur_row]->save_tracts_to_file(cmd[1].c_str()))
-            return run->failed("cannot write to file at " + cmd[1]);
+        if(normalized)
+        {
+            if(!tract_models[cur_row]->save_tracts_in_template_space(cur_tracking_window.handle,cmd[1].c_str(),output_at_mni))
+                return run->failed("cannot write to file at " + cmd[1]);
+        }
+        else
+            if(!tract_models[cur_row]->save_tracts_to_file(cmd[1].c_str()))
+                return run->failed("cannot write to file at " + cmd[1]);
         return true;
     }
     if(cmd[0] == "save_tract_values")
