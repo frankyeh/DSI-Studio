@@ -1005,36 +1005,29 @@ void tracking_window::on_rendering_efficiency_currentIndexChanged(int index)
 
 void tracking_window::updateSlicesMenu(void)
 {
-    auto new_item = [&](const std::string& each)
+    auto new_item = [&](const std::string& each,const char* action)
     {
         QAction* Item = new QAction(this);
-        Item->setText(QString("Save %1...").arg(each.c_str()));
+        Item->setText(QString("%1...").arg(each.c_str()));
         Item->setData(QString(each.c_str()));
+        Item->setToolTip(action);
         Item->setVisible(true);
+        connect(Item, SIGNAL(triggered()),this, SLOT(run_action()));
         return Item;
     };
     ui->menuSave->clear();
     ui->menuE_xport->clear();
-    auto slice_list = handle->get_index_list();
-    slice_list.push_back("fiber");
+    // save along tract indices
+    auto metrics_list = handle->get_index_list();
+    for (const auto& each : metrics_list)
+        ui->menuSave->addAction(new_item(each,"run save_tract_values"));
+
+    // export slices
+    metrics_list.push_back("fiber");
     if(handle->has_odfs())
-        slice_list.push_back("odfs");
-    for (const auto& each : slice_list)
-    {
-        if(each != "fiber" && each != "odfs")
-        {
-            auto Item = new_item(each);
-            Item->setToolTip("run save_tract_values");
-            ui->menuSave->addAction(Item);
-            connect(Item, SIGNAL(triggered()),this, SLOT(run_action()));
-        }
-        {
-            auto Item = new_item(each);
-            Item->setToolTip("run save_slice_image");
-            ui->menuE_xport->addAction(Item);
-            connect(Item, SIGNAL(triggered()),this, SLOT(run_action()));
-        }
-    }
+        metrics_list.push_back("odfs");
+    for (const auto& each : metrics_list)
+        ui->menuE_xport->addAction(new_item(each,"run save_slice_image"));
 
     // update options: color map
     {
