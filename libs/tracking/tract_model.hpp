@@ -216,8 +216,6 @@ public:
                                bool color,bool end_point);
         static bool export_pdi(const char* file_name,
                                const std::vector<std::shared_ptr<TractModel> >& tract_models);
-        static bool export_end_pdi(const char* file_name,
-                               const std::vector<std::shared_ptr<TractModel> >& tract_models,float end_distance = 3.0f);
 public:
         void get_quantitative_info(std::shared_ptr<fib_data> handle,std::string& result);
         tipl::vector<3> get_report(std::shared_ptr<fib_data> handle,

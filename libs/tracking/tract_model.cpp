@@ -2528,45 +2528,7 @@ void TractModel::get_density_map(
         mapping[index] = tipl::rgb(uint8_t(std::min<float>(255,v[0])),uint8_t(std::min<float>(255,v[1])),uint8_t(std::min<float>(255,v[2])));
     });
 }
-bool TractModel::export_end_pdi(
-                       const char* file_name,
-                       const std::vector<std::shared_ptr<TractModel> >& tract_models,float end_distance)
-{
-    if(tract_models.empty())
-        return false;
-    auto dim = tract_models.front()->geo;
-    auto vs = tract_models.front()->vs;
-    auto trans_to_mni = tract_models.front()->trans_to_mni;
-    auto is_mni = tract_models.front()->is_mni;
-    tipl::image<3,uint32_t> p1_map(dim),p2_map(dim);
-    for(size_t index = 0;index < tract_models.size();++index)
-    {
-        std::vector<tipl::vector<3,short> > p1,p2;
-        tract_models[index]->to_end_point_voxels(p1,p2,tipl::identity_matrix(),end_distance);
-        tipl::adaptive_par_for(p1.size(),[&](size_t j)
-        {
-            tipl::vector<3,short> p = p1[j];
-            if(dim.is_valid(p))
-                p1_map[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]++;
-        });
-        tipl::adaptive_par_for(p2.size(),[&](size_t j)
-        {
-            tipl::vector<3,short> p = p2[j];
-            if(dim.is_valid(p))
-                p2_map[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]++;
-        });
-    }
-    tipl::image<3> pdi1(p1_map),pdi2(p2_map);
-    if(tract_models.size() > 1)
-    {
-        tipl::multiply_constant(pdi1,1.0f/float(tract_models.size()));
-        tipl::multiply_constant(pdi2,1.0f/float(tract_models.size()));
-    }
-    QString f1 = QFileInfo(file_name).absolutePath() + "/"+ QFileInfo(file_name).baseName() + "_1.nii.gz";
-    QString f2 = QFileInfo(file_name).absolutePath() + "/"+ QFileInfo(file_name).baseName() + "_2.nii.gz";
-    return tipl::io::gz_nifti::save_to_file(f1.toStdString().c_str(),pdi1,vs,trans_to_mni,is_mni) &&
-           tipl::io::gz_nifti::save_to_file(f2.toStdString().c_str(),pdi2,vs,trans_to_mni,is_mni);
-}
+
 bool TractModel::export_pdi(const char* file_name,
                             const std::vector<std::shared_ptr<TractModel> >& tract_models)
 {

@@ -948,7 +948,6 @@
      <addaction name="actionSave_Tract_in_MNI_Coordinates"/>
      <addaction name="separator"/>
      <addaction name="actionSave_End_Points_As"/>
-     <addaction name="actionSave_End_Points_All_Tracts_As"/>
      <addaction name="actionSave_Endpoints_in_Current_Mapping"/>
      <addaction name="actionSave_Endpoints_in_MNI_Coordinates"/>
      <addaction name="separator"/>
@@ -3373,7 +3372,7 @@ Tracking</string>
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Endpoints (Current Tract) As...</string>
+    <string>Save Endpoints As...</string>
    </property>
    <property name="toolTip">
     <string>run save_tract_endpoint</string>
@@ -4327,6 +4326,9 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Save Endpoints in MNI Coordinates...</string>
+   </property>
+   <property name="toolTip">
+    <string>run save_mni_tract_endpoint</string>
    </property>
   </action>
   <action name="actionDetect_Electrodes">

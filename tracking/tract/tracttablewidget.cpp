@@ -505,80 +505,6 @@ void TractTableWidget::clustering(int method_id)
     assign_colors();
 }
 
-
-void TractTableWidget::save_all_tracts_end_point_as(void)
-{
-    auto selected_tracts = get_checked_tracks();
-    if(selected_tracts.empty())
-        return;
-    QString filename;
-    filename = QFileDialog::getSaveFileName(
-                this,"Save end points as",
-                QString::fromStdString(cur_tracking_window.history.file_stem()) + "_endpoint.nii.gz",
-                "NIFTI files (*nii.gz);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    bool ok;
-    float dis = float(QInputDialog::getDouble(this,
-        QApplication::applicationName(),"Assign end segment length in voxel distance:",3.0,0.0,10.0,1,&ok));
-    if (!ok)
-        return;
-
-    auto locks = start_reading_checked_tracks();
-    TractModel::export_end_pdi(filename.toStdString().c_str(),selected_tracts,dis);
-}
-
-void TractTableWidget::save_end_point_in_mni(void)
-{
-    if(currentRow() >= int(tract_models.size()) || currentRow() < 0)
-        return;
-    if(!cur_tracking_window.handle->map_to_mni())
-    {
-        QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
-        return;
-    }
-    QString filename;
-    filename = QFileDialog::getSaveFileName(
-                this,
-                "Save end points as",
-                QString::fromStdString(cur_tracking_window.history.file_stem()) + "_endpoint.txt",
-                "Tract files (*.txt);;MAT files (*.mat);;All files (*)");
-    if(filename.isEmpty())
-        return;
-
-    std::vector<tipl::vector<3,short> > points1,points2;
-    {
-        auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-        tract_models[size_t(currentRow())]->to_end_point_voxels(points1,points2);
-    }
-    points1.insert(points1.end(),points2.begin(),points2.end());
-
-    std::vector<tipl::vector<3> > points(points1.begin(),points1.end());
-    std::vector<float> buffer;
-    for(unsigned int index = 0;index < points.size();++index)
-    {
-        cur_tracking_window.handle->sub2mni(points[index]);
-        buffer.push_back(points1[index][0]);
-        buffer.push_back(points1[index][1]);
-        buffer.push_back(points1[index][2]);
-    }
-
-    if (QFileInfo(filename).suffix().toLower() == "txt")
-    {
-        std::ofstream out(filename.toStdString().c_str(),std::ios::out);
-        if (!out)
-            return;
-        std::copy(buffer.begin(),buffer.end(),std::ostream_iterator<float>(out," "));
-    }
-    if (QFileInfo(filename).suffix().toLower() == "mat")
-    {
-        tipl::io::mat_write out(filename.toStdString().c_str());
-        if(!out)
-            return;
-        out.write("end_points",buffer,3);
-    }
-}
-
 void TractTableWidget::cell_changed(int row, int column)
 {
     if(row >= 0 && row < tract_models.size())
@@ -901,13 +827,11 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         auto lock = tract_rendering[cur_row]->start_reading();
         if(cmd[0] == "save_slice_tract")
         {
-            CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
-            if(!slice)
-                return run->failed("current slice is in the DWI space. please use regular tract saving function");
-            if(slice->running)
-                return run->failed("please wait until registration is completed");
             if(!tract_models[cur_row]->save_transformed_tract(cmd[1].c_str(),
-                                slice->dim,slice->vs,slice->trans_to_mni,slice->to_slice,false/*not endpoint*/))
+                    cur_tracking_window.current_slice->dim,
+                    cur_tracking_window.current_slice->vs,
+                    cur_tracking_window.current_slice->trans_to_mni,
+                    cur_tracking_window.current_slice->to_slice,false/*not endpoint*/))
                 return run->failed("cannot write to file at " + cmd[1]);
         }
         else
@@ -923,7 +847,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
                 return run->failed("cannot write to file at " + cmd[1]);
         return true;
     }
-    if(cmd[0] == "save_tract_endpoint" || cmd[0] == "save_slice_tract_endpoint")
+    if(cmd[0] == "save_tract_endpoint" || cmd[0] == "save_slice_tract_endpoint" || cmd[0] == "save_mni_tract_endpoint")
     {
         // cmd[1] : file name to be saved
         // cmd[2] : tract index
@@ -935,18 +859,47 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
 
         if(cmd[0] == "save_slice_tract_endpoint")
         {
-            CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
-            if(!slice)
-                return run->failed("current slice is in the DWI space. please use regular tract saving function");
-            if(slice->running)
-                return run->failed("please wait until registration is completed");
-
             if(!tract_models[cur_row]->save_transformed_tract(cmd[1].c_str(),
-                    slice->dim,slice->vs,slice->trans_to_mni,slice->to_slice,true))
+                    cur_tracking_window.current_slice->dim,
+                    cur_tracking_window.current_slice->vs,
+                    cur_tracking_window.current_slice->trans_to_mni,
+                    cur_tracking_window.current_slice->to_slice,true))
                 return run->failed("cannot write to file at " + cmd[1]);
-
         }
         else
+        if(cmd[0] == "save_mni_tract_endpoint")
+        {
+            if(!cur_tracking_window.handle->map_to_mni())
+                return run->failed(cur_tracking_window.handle->error_msg);
+            std::vector<tipl::vector<3,short> > points1,points2;
+            tract_models[cur_row]->to_end_point_voxels(points1,points2);
+            points1.insert(points1.end(),points2.begin(),points2.end());
+
+            std::vector<tipl::vector<3> > points(points1.begin(),points1.end());
+            std::vector<float> buffer;
+            for(unsigned int index = 0;index < points.size();++index)
+            {
+                cur_tracking_window.handle->sub2mni(points[index]);
+                buffer.push_back(points1[index][0]);
+                buffer.push_back(points1[index][1]);
+                buffer.push_back(points1[index][2]);
+            }
+
+            if (tipl::ends_with(cmd[1],".txt"))
+            {
+                std::ofstream out(cmd[1].c_str(),std::ios::out);
+                if (!out)
+                    return run->failed("cannot write to file at " + cmd[1]);
+                std::copy(buffer.begin(),buffer.end(),std::ostream_iterator<float>(out," "));
+            }
+            if (tipl::ends_with(cmd[1],".mat"))
+            {
+                tipl::io::mat_write out(cmd[1].c_str());
+                if(!out)
+                    return run->failed("cannot write to file at " + cmd[1]);
+                out.write("end_points",buffer,3);
+            }
+        }
             if(!tract_models[cur_row]->save_end_points(cmd[1].c_str()))
                 return run->failed("cannot write to file at " + cmd[1]);
         return true;

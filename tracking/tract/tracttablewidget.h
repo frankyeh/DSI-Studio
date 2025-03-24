@@ -116,9 +116,6 @@ public slots:
     void fetch_tracts(void);
     void show_tracking_progress(void);
 
-    void save_all_tracts_end_point_as(void);
-    void save_end_point_in_mni(void);
-
     void edit_tracts(void);
 
     void assign_colors(void);
