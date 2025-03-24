@@ -609,7 +609,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             if(cmd[0] == "open_mni_region" && !cur_tracking_window.handle->map_to_mni())
                 return run->failed(cur_tracking_window.handle->error_msg);
             if(!load_multiple_roi_nii(cmd[1].c_str(),cmd[0] == "open_mni_region"))
-                return false;
+                return run->failed(error_msg);
             emit need_update();
             return true;
         }
