@@ -39,10 +39,6 @@ public:
     void addNewTracts(std::shared_ptr<TractModel> new_tract,bool checked = true);
     void addConnectometryResults(std::vector<std::vector<std::vector<float> > >& greater,
                                  std::vector<std::vector<std::vector<float> > >& lesser);
-    void export_tract_density(tipl::shape<3> dim,
-                              tipl::vector<3,float> vs,
-                              const tipl::matrix<4,4>& trans_to_mni,
-                              const tipl::matrix<4,4>& T,bool color,bool endpoint);
     void draw_tracts(unsigned char dim,int pos,
                      QImage& scaledimage,float display_ratio);
 

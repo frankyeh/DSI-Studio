@@ -1492,6 +1492,43 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         emit show_tracts();
         return true;
     }
+    if(cmd[0] == "save_tdi" || cmd[0] == "save_tdi2")
+    {
+        // cmd[1] : file name
+        // cmd[2] : current tract index
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[2],cur_row))
+            return run->canceled();
+        if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(
+                    this,QString::fromStdString(cmd[0]),item(currentRow(),0)->text()+"_tdi.nii.gz",
+                    "NIFTI files (*nii.gz *.nii);;All Files (*)").toStdString()).empty())
+            return run->canceled();
+        if(cmd[0] == "save_tdi2")
+        {
+            float ratio = 2.0f;
+            tipl::matrix<4,4> tr((tipl::identity_matrix())),
+                              inv_tr((tipl::identity_matrix())),
+                              trans_to_mni(cur_tracking_window.handle->trans_to_mni);
+            tr[0] = tr[5] = tr[10] = ratio;
+            inv_tr[0] = inv_tr[5] = inv_tr[10] = 1.0f/ratio;
+            trans_to_mni *= inv_tr;
+            if(!TractModel::export_tdi(cmd[1].c_str(),
+                        {tract_models[cur_row]},
+                         cur_tracking_window.handle->dim*ratio,
+                         cur_tracking_window.handle->vs/float(ratio),
+                         trans_to_mni,tr,false,false))
+                return run->failed("cannot save image to " + cmd[1]);
+        }
+        else
+            if(!TractModel::export_tdi(cmd[1].c_str(),
+                    {tract_models[cur_row]},
+                     cur_tracking_window.current_slice->dim,
+                     cur_tracking_window.current_slice->vs,
+                     cur_tracking_window.current_slice->trans_to_mni,
+                     cur_tracking_window.current_slice->to_slice,false,false))
+            return run->failed("cannot save image to " + cmd[1]);
+        return true;
+    }
     if(cmd[0] == "show_tract_statistics")
     {
         if(tract_models.empty())
@@ -1651,33 +1688,5 @@ void TractTableWidget::edit_tracts(void)
 
 }
 
-void TractTableWidget::export_tract_density(tipl::shape<3> dim,
-                                            tipl::vector<3,float> vs,
-                                            const tipl::matrix<4,4>& trans_to_mni,
-                                            const tipl::matrix<4,4>& T,
-                                            bool color,bool end_point)
-{
-    QString filename;
-    if(color)
-    {
-        filename = QFileDialog::getSaveFileName(
-                this,"Save Images files",item(currentRow(),0)->text()+".nii.gz",
-                "Image files (*.png *.bmp *nii.gz *.nii *.jpg *.tif);;All files (*)");
-        if(filename.isEmpty())
-            return;
-    }
-    else
-    {
-        filename = QFileDialog::getSaveFileName(
-                    this,"Save as",item(currentRow(),0)->text()+".nii.gz",
-                    "NIFTI files (*nii.gz *.nii);;MAT File (*.mat);;");
-        if(filename.isEmpty())
-            return;
-    }
-    if(TractModel::export_tdi(filename.toStdString().c_str(),get_checked_tracks(),dim,vs,trans_to_mni,T,color,end_point))
-        QMessageBox::information(this,QApplication::applicationName(),"File saved");
-    else
-        QMessageBox::critical(this,"ERROR","Failed to save file");
-}
 
 

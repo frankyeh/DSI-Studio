@@ -209,7 +209,7 @@ public:
              const tipl::matrix<4,4>& to_t1t2,bool endpoint);
         static bool export_tdi(const char* file_name,
                           std::vector<std::shared_ptr<TractModel> > tract_models,
-                          tipl::shape<3>& dim,
+                          tipl::shape<3> dim,
                           tipl::vector<3,float> vs,
                           const tipl::matrix<4,4>& trans_to_mni,
                           const tipl::matrix<4,4>& to_t1t2,

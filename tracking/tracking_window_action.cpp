@@ -594,68 +594,6 @@ void tracking_window::on_actionQuality_Assessment_triggered()
 }
 
 
-bool ask_TDI_options(int& rec,int& rec2)
-{
-    QMessageBox msgBox;
-    msgBox.setText("Export directional color ? (BMP format only)");
-    msgBox.setInformativeText("If grayscale or NIFTI format is preferred, select No.");
-    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No| QMessageBox::Cancel);
-    msgBox.setDefaultButton(QMessageBox::Yes);
-    rec = msgBox.exec();
-    if(rec == QMessageBox::Cancel)
-        return false;
-    msgBox.setText("Export whole tracts or end points?");
-    msgBox.setInformativeText("Yes: whole tracts, No: end points ");
-    rec2 = msgBox.exec();
-    if(rec2 == QMessageBox::Cancel)
-        return false;
-    return true;
-
-}
-void tracking_window::on_actionTDI_Diffusion_Space_triggered()
-{
-    tipl::matrix<4,4> tr;
-    tr.identity();
-    int rec,rec2;
-    if(!ask_TDI_options(rec,rec2))
-        return;
-    tractWidget->export_tract_density(handle->dim,handle->vs,handle->trans_to_mni,tr,rec == QMessageBox::Yes,rec2 != QMessageBox::Yes);
-}
-
-
-void tracking_window::on_actionTDI_Subvoxel_Diffusion_Space_triggered()
-{
-    int rec,rec2;
-    if(!ask_TDI_options(rec,rec2))
-        return;
-    bool ok;
-    int ratio = QInputDialog::getInt(this,
-            QApplication::applicationName(),
-            "Input super-resolution ratio (e.g. 2, 3, or 4):",2,2,8,1,&ok);
-    if(!ok)
-        return;
-    tipl::matrix<4,4> tr,inv_tr,trans_to_mni(handle->trans_to_mni);
-    tr.identity();
-    tr[0] = tr[5] = tr[10] = ratio;
-    inv_tr.identity();
-    inv_tr[0] = inv_tr[5] = inv_tr[10] = 1.0f/ratio;
-    trans_to_mni *= inv_tr;
-    tractWidget->export_tract_density(handle->dim*ratio,
-                                      handle->vs/float(ratio),
-                                      trans_to_mni,
-                                      tr,rec == QMessageBox::Yes,rec2 != QMessageBox::Yes);
-}
-
-void tracking_window::on_actionTDI_Import_Slice_Space_triggered()
-{
-    int rec,rec2;
-    if(!ask_TDI_options(rec,rec2))
-        return;
-    tractWidget->export_tract_density(current_slice->dim,current_slice->vs,current_slice->trans_to_mni,current_slice->to_slice,rec == QMessageBox::Yes,rec2 != QMessageBox::Yes);
-}
-
-
-
 void tracking_window::on_actionTract_Analysis_Report_triggered()
 {
     if(!tact_report_imp.get())

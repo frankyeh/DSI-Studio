@@ -926,28 +926,16 @@
     </property>
     <widget class="QMenu" name="menuSave">
      <property name="title">
-      <string>Save Along Tract Index</string>
+      <string>Save Along Tract Index...</string>
      </property>
      <property name="icon">
       <iconset resource="../icons.qrc">
        <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
      </property>
-    </widget>
-    <widget class="QMenu" name="menuExport_Tract_Density">
-     <property name="title">
-      <string>Save Tract Density</string>
-     </property>
-     <property name="icon">
-      <iconset resource="../icons.qrc">
-       <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
-     </property>
-     <addaction name="actionTDI_Diffusion_Space"/>
-     <addaction name="actionTDI_Subvoxel_Diffusion_Space"/>
-     <addaction name="actionTDI_Import_Slice_Space"/>
     </widget>
     <widget class="QMenu" name="menuSave_Tracts">
      <property name="title">
-      <string>Save Transformed Tracts</string>
+      <string>Save Tracts (Misc)...</string>
      </property>
      <property name="icon">
       <iconset resource="../icons.qrc">
@@ -959,19 +947,14 @@
      <addaction name="actionSave_Tracts_in_Template_Space"/>
      <addaction name="actionSave_Tract_in_MNI_Coordinates"/>
      <addaction name="actionSave_Tracts_In_Native_Space"/>
-    </widget>
-    <widget class="QMenu" name="menuSave_Endpoints">
-     <property name="title">
-      <string>Save Endpoints</string>
-     </property>
-     <property name="icon">
-      <iconset resource="../icons.qrc">
-       <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
-     </property>
+     <addaction name="separator"/>
      <addaction name="actionSave_End_Points_As"/>
      <addaction name="actionSave_End_Points_All_Tracts_As"/>
      <addaction name="actionSave_Endpoints_in_Current_Mapping"/>
      <addaction name="actionSave_Endpoints_in_MNI_Coordinates"/>
+     <addaction name="separator"/>
+     <addaction name="actionTDI_Diffusion_Space"/>
+     <addaction name="actionTDI_Subvoxel_Diffusion_Space"/>
     </widget>
     <addaction name="actionOpenTract"/>
     <addaction name="actionOpen_MNI_space_Tracts"/>
@@ -982,9 +965,7 @@
     <addaction name="actionSave_All_Tracts_As_Multiple_Files"/>
     <addaction name="separator"/>
     <addaction name="menuSave_Tracts"/>
-    <addaction name="menuSave_Endpoints"/>
     <addaction name="menuSave"/>
-    <addaction name="menuExport_Tract_Density"/>
     <addaction name="separator"/>
     <addaction name="actionCheck_all_tracts"/>
     <addaction name="actionUncheck_all_tracts"/>
@@ -3280,16 +3261,10 @@ Tracking</string>
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Diffusion Space...</string>
+    <string>Save Tract Density Images...</string>
    </property>
-  </action>
-  <action name="actionTDI_Import_Slice_Space">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
-   </property>
-   <property name="text">
-    <string>Current Slice Space...</string>
+   <property name="toolTip">
+    <string>run save_tdi</string>
    </property>
   </action>
   <action name="actionTDI_Subvoxel_Diffusion_Space">
@@ -3298,7 +3273,10 @@ Tracking</string>
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Subvoxel Diffusion Space...</string>
+    <string>Save Tract Density Images(X2)...</string>
+   </property>
+   <property name="toolTip">
+    <string>run save_tdi2</string>
    </property>
   </action>
   <action name="actionSave_Tracts_in_Current_Mapping">
@@ -3362,7 +3340,7 @@ Tracking</string>
      <normaloff>:/icons/icons/save_all.xpm</normaloff>:/icons/icons/save_all.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save All Tracts As...</string>
+    <string>Save All Tracts As ...</string>
    </property>
    <property name="toolTip">
     <string>run save_all_tracts</string>
