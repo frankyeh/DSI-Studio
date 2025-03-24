@@ -1193,7 +1193,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             return run->canceled();
         addNewTracts(item(cur_row,0)->text() + "_copy");
         *(tract_models.back()) = *(tract_models[cur_row]);
-        item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
+        item(rowCount()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
         emit show_tracts();
         return true;
     }
@@ -1402,7 +1402,28 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         emit show_tracts();
         return true;
     }
-
+    if(cmd[0] == "separate_deleted_tract")
+    {
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[1],cur_row))
+            return run->canceled();
+        std::vector<std::vector<float> > new_tracks;
+        new_tracks.swap(tract_models[cur_row]->get_deleted_tracts());
+        if(new_tracks.empty())
+            return run->canceled();
+        // clean the deleted tracks
+        tract_models[cur_row]->clear_deleted();
+        item(cur_row,1)->setText(QString::number(tract_models[cur_row]->get_visible_track_count()));
+        item(cur_row,2)->setText(QString::number(tract_models[cur_row]->get_deleted_track_count()));
+        // add deleted tracks to a new entry
+        addNewTracts(item(cur_row,0)->text(),false);
+        tract_models.back()->add_tracts(new_tracks);
+        tract_models.back()->report = tract_models[cur_row]->report;
+        item(rowCount()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
+        item(rowCount()-1,2)->setText(QString::number(tract_models.back()->get_deleted_track_count()));
+        emit show_tracts();
+        return true;
+    }
     if(cmd[0] == "reconnect_tract")
     {
         // cmd[1] : tract id
@@ -1563,27 +1584,6 @@ void TractTableWidget::delete_row(int row)
     thread_data.erase(thread_data.begin()+row);
     tract_models.erase(tract_models.begin()+row);
     removeRow(row);
-    emit show_tracts();
-}
-
-void TractTableWidget::separate_deleted_track(void)
-{
-    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
-        return;
-    std::vector<std::vector<float> > new_tracks;
-    new_tracks.swap(tract_models[uint32_t(currentRow())]->get_deleted_tracts());
-    if(new_tracks.empty())
-        return;
-    // clean the deleted tracks
-    tract_models[uint32_t(currentRow())]->clear_deleted();
-    item(currentRow(),1)->setText(QString::number(tract_models[uint32_t(currentRow())]->get_visible_track_count()));
-    item(currentRow(),2)->setText(QString::number(tract_models[uint32_t(currentRow())]->get_deleted_track_count()));
-    // add deleted tracks to a new entry
-    addNewTracts(item(currentRow(),0)->text(),false);
-    tract_models.back()->add_tracts(new_tracks);
-    tract_models.back()->report = tract_models[uint32_t(currentRow())]->report;
-    item(rowCount()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
-    item(rowCount()-1,2)->setText(QString::number(tract_models.back()->get_deleted_track_count()));
     emit show_tracts();
 }
 
