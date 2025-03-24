@@ -220,53 +220,6 @@ void TractTableWidget::addConnectometryResults(std::vector<std::vector<std::vect
     cur_tracking_window.set_data("tract_color_style",1);//manual assigned
     emit show_tracts();
 }
-void TractTableWidget::load_built_in_atlas(const std::string& tract_name)
-{
-    if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
-    {
-        QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
-        return;
-    }
-
-    if(tract_name.empty()) // load all
-    {
-        for(const auto& each : cur_tracking_window.handle->tractography_name_list)
-            load_built_in_atlas(each);
-        return;
-    }
-    auto track_ids = cur_tracking_window.handle->get_track_ids(tract_name);
-    if(track_ids.empty())
-    {
-        QMessageBox::critical(this,"ERROR",QString("cannot find a matched tract for ") + tract_name.c_str());
-        return;
-    }
-
-    auto track_atlas = cur_tracking_window.handle->track_atlas;
-    addNewTracts(tract_name.c_str());
-
-    tract_rendering.back()->need_update = true;
-    const auto& atlas_tract = track_atlas->get_tracts();
-    const auto& atlas_cluster = track_atlas->tract_cluster;
-    std::vector<std::vector<float> > new_tracts;
-    for(size_t i = 0;i < atlas_cluster.size();++i)
-        if(std::find(track_ids.begin(),track_ids.end(),atlas_cluster[i]) != track_ids.end())
-            new_tracts.push_back(atlas_tract[i]);
-
-    auto lock = tract_rendering.back()->start_writing();
-    tract_models.back()->add_tracts(new_tracts);
-    tract_models.back()->report = tract_name + (cur_tracking_window.handle->is_mni ?
-            " was shown from a population-based tractography atlas (Yeh, Nat Commun 13(1), 4933, 2022).":
-            " was mapped by nonlinearly warping a population-based tractography atlas (Yeh, Nat Commun 13(1), 4933, 2022) to the native space.");
-
-    item(int(tract_models.size()-1),1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
-    item(int(tract_models.size()-1),2)->setText(QString::number(tract_models.back()->get_deleted_track_count()));
-
-    show_report();
-}
-void TractTableWidget::load_built_in_atlas(void)
-{
-    load_built_in_atlas("");
-}
 void TractTableWidget::start_tracking(void)
 {
 
@@ -297,7 +250,8 @@ void TractTableWidget::start_tracking(void)
         }
         if(!cur_tracking_window.handle->trackable)
         {
-            load_built_in_atlas(tract_name.toStdString());
+            if(!command({"load_tract_atlas",tract_name.toStdString()}))
+                QMessageBox::critical(this,"ERROR",error_msg.c_str());
             return;
         }
         tracking_param[1] = tract_name.toStdString();
@@ -1069,6 +1023,49 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         if(!error_msg.empty())
             return false;
         return run->canceled();
+    }
+    if(cmd[0] == "load_tract_atlas")
+    {
+        // cmd[1] : name of tract or all (empty)
+        auto load_tract_atlas = [&](const std::string& tract_name)->bool
+        {
+            auto track_ids = cur_tracking_window.handle->get_track_ids(tract_name);
+            if(track_ids.empty())
+                return run->failed("cannot find a matched tract for " + tract_name);
+            auto track_atlas = cur_tracking_window.handle->track_atlas;
+            addNewTracts(tract_name.c_str());
+
+            tract_rendering.back()->need_update = true;
+            const auto& atlas_tract = track_atlas->get_tracts();
+            const auto& atlas_cluster = track_atlas->tract_cluster;
+            std::vector<std::vector<float> > new_tracts;
+            for(size_t i = 0;i < atlas_cluster.size();++i)
+                if(std::find(track_ids.begin(),track_ids.end(),atlas_cluster[i]) != track_ids.end())
+                    new_tracts.push_back(atlas_tract[i]);
+
+            auto lock = tract_rendering.back()->start_writing();
+            tract_models.back()->add_tracts(new_tracts);
+            tract_models.back()->report = tract_name + (cur_tracking_window.handle->is_mni ?
+                    " was shown from a population-based tractography atlas (Yeh, Nat Commun 13(1), 4933, 2022).":
+                    " was mapped by nonlinearly warping a population-based tractography atlas (Yeh, Nat Commun 13(1), 4933, 2022) to the native space.");
+
+            item(int(tract_models.size()-1),1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
+            item(int(tract_models.size()-1),2)->setText(QString::number(tract_models.back()->get_deleted_track_count()));
+            show_report();
+            return true;
+        };
+
+        if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
+            return run->failed(cur_tracking_window.handle->error_msg);
+
+        if(cmd[1].empty()) // load all
+        {
+            for(const auto& each : cur_tracking_window.handle->tractography_name_list)
+                load_tract_atlas(each);
+            return true;
+        }
+        else
+            return load_tract_atlas(cmd[1]);
     }
     if(cmd[0] == "save_tract")
     {

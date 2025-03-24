@@ -4456,6 +4456,9 @@ Tracking</string>
    <property name="text">
     <string>Load Built-In Atlas...</string>
    </property>
+   <property name="toolTip">
+    <string>run load_tract_atlas</string>
+   </property>
   </action>
   <action name="actionStrip_Skull">
    <property name="text">

@@ -610,7 +610,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
         connect(ui->actionFilter_by_ROI,SIGNAL(triggered()),tractWidget,SLOT(filter_by_roi()));
 
-        connect(ui->actionLoad_Built_In_Atlas,SIGNAL(triggered()),tractWidget,SLOT(load_built_in_atlas()));
         connect(ui->actionOpen_Tracts_Label,SIGNAL(triggered()),tractWidget,SLOT(load_tract_label()));
 
         connect(ui->actionMerge_Tracts_by_Name,SIGNAL(triggered()),tractWidget,SLOT(merge_track_by_name()));
