@@ -327,6 +327,7 @@ void TractTableWidget::fetch_tracts(void)
                 item(int(index),1)->setText(QString::number(tract_models[index]->get_visible_track_count()));
                 item(int(index),2)->setText(QString::number(tract_models[index]->get_deleted_track_count()));
                 item(int(index),3)->setText(QString::number(thread_data[index]->get_total_seed_count()));
+                item(int(index),0)->setCheckState(Qt::Checked);
                 thread_data[index].reset();
             }
             else
@@ -816,7 +817,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             new_thread->roi_mgr->tract_name = cmd[1];
             new_thread->roi_mgr->tolerance_dis_in_icbm152_mm = QString(cmd[3].c_str()).toFloat();
         }
-        addNewTracts(cmd[1].c_str());
+        addNewTracts(cmd[1].c_str(),false);
         thread_data.back() = new_thread;
         cur_tracking_window.regionWidget->setROIs(new_thread->roi_mgr);
         tipl::progress prog("initiating fiber tracking");
