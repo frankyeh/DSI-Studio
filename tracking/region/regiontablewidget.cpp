@@ -1133,16 +1133,11 @@ void RegionTableWidget::save_checked_region_label_file(QString filename,int firs
 }
 
 
-void RegionTableWidget::setROIs(ThreadData* data)
+void RegionTableWidget::setROIs(std::shared_ptr<RoiMgr> roi)
 {
-    for (unsigned int index = 0;index < regions.size();++index)
-        if (!regions[index]->region.empty() && item(int(index),0)->checkState() == Qt::Checked
-                && regions[index]->regions_feature != default_id)
-            data->roi_mgr->setRegions(regions[index]->region,
-                                      regions[index]->dim,
-                                      regions[index]->to_diffusion_space,
-                                      regions[index]->regions_feature,
-                                      regions[index]->name.c_str());
+    for (auto each : get_checked_regions())
+        if (!each->region.empty() && each->regions_feature != default_id)
+            roi->setRegions(each->region,each->dim,each->to_diffusion_space,each->regions_feature,each->name.c_str());
 }
 
 QString RegionTableWidget::getROIname(void)

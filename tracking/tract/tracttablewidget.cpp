@@ -267,16 +267,6 @@ void TractTableWidget::show_report(void)
     cur_tracking_window.report(tract_models[uint32_t(currentRow())]->report.c_str());
 }
 
-void TractTableWidget::filter_by_roi(void)
-{
-    ThreadData track_thread(cur_tracking_window.handle);
-    track_thread.param.set_code(cur_tracking_window.get_parameter_id());
-    cur_tracking_window.regionWidget->setROIs(&track_thread);
-    for_each_bundle("filter by roi",[&](unsigned int index)
-    {
-        return tract_models[index]->filter_by_roi(track_thread.roi_mgr);
-    });
-}
 void TractTableWidget::show_tracking_progress(void)
 {
     bool has_thread = false;
@@ -977,7 +967,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         }
         addNewTracts(cmd[1].c_str());
         thread_data.back() = new_thread;
-        cur_tracking_window.regionWidget->setROIs(new_thread.get());
+        cur_tracking_window.regionWidget->setROIs(new_thread->roi_mgr);
         tipl::progress prog("initiating fiber tracking");
         new_thread->run(cur_tracking_window.ui->thread_count->value(),false);
         tract_models.back()->report = cur_tracking_window.handle->report;
@@ -1168,7 +1158,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         cur_tracking_window.glWidget->update();
         return true;
     }
-    if(cmd[0] == "update_track")
+    if(cmd[0] == "update_tract")
     {
         for(int index = 0;index < int(tract_models.size());++index)
         {
@@ -1178,6 +1168,16 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         for(auto& t:tract_rendering)
             t->need_update = true;
         emit show_tracts();
+        return true;
+    }
+    if(cmd[0] == "filter_tract")
+    {
+        std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(cur_tracking_window.handle));
+        cur_tracking_window.regionWidget->setROIs(roi_mgr);
+        for_each_bundle("filter by roi",[&](unsigned int index)
+        {
+            return tract_models[index]->filter_by_roi(roi_mgr);
+        });
         return true;
     }
     if(cmd[0] == "cut_by_slice")

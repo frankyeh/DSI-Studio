@@ -748,7 +748,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
                 new_mdi->tractWidget->addNewTracts(name.c_str());
                 new_mdi->tractWidget->tract_models[0]->add(*track.get());
                 new_mdi->command({"set_param","tract_color_style","0"});
-                new_mdi->command({"update_track"});
+                new_mdi->command({"update_tract"});
 
                 std::vector<tipl::vector<3,short> > points;
                 new_mdi->tractWidget->tract_models[0]->to_voxel(points,new_mdi->current_slice->to_slice);
@@ -787,7 +787,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
                 new_mdi->tractWidget->tract_models.back()->add(*dec_track.get());
             }
             new_mdi->command({"set_param","tract_color_style","1"});
-            new_mdi->command({"update_track"});
+            new_mdi->command({"update_tract"});
             new_mdi->command({"save_h3view_image",(output_file_name+".pos_neg.jpg").c_str()});
             // do it twice to eliminate 3D artifact
             new_mdi->command({"save_h3view_image",(output_file_name+".pos_neg.jpg").c_str()});

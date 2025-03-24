@@ -5,7 +5,7 @@
 #include <QComboBox>
 #include <vector>
 #include "Regions.h"
-struct ThreadData;
+class RoiMgr;
 class tracking_window;
 
 
@@ -84,7 +84,7 @@ public:
     void add_high_reso_region(QString name,float reso,unsigned char type = default_id,unsigned int color = 0xFFFFFFFF);
     void begin_update(void);
     void end_update(void);
-    void setROIs(ThreadData* data);
+    void setROIs(std::shared_ptr<RoiMgr> roi);
     QString getROIname(void);
     QString output_format(void);
 public slots:
