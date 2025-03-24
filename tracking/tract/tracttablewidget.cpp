@@ -1480,6 +1480,31 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         emit show_tracts();
         return true;
     }
+    if(cmd[0] == "merge_tract_by_name")
+    {
+        if(tract_models.empty())
+            return run->canceled();
+        for(int i= 0;i < rowCount()-1;++i)
+        {
+            auto lock1 = tract_rendering[i]->start_writing();
+            for(int j= i+1;j < rowCount()-1;)
+                if(item(i,0)->text() == item(j,0)->text())
+                {
+                    {
+                        auto lock2 = tract_rendering[j]->start_reading();
+                        tract_models[i]->add(*tract_models[j]);
+                    }
+                    tract_rendering[i]->need_update = true;
+                    delete_row(j);
+                    item(i,1)->setText(QString::number(tract_models[i]->get_visible_track_count()));
+                    item(i,2)->setText(QString::number(tract_models[i]->get_deleted_track_count()));
+                }
+            else
+                ++j;
+        }
+        emit show_tracts();
+        return true;
+    }
     if(cmd[0] == "sort_tract_by_name")
     {
         std::vector<std::string> name_list;
@@ -1585,28 +1610,6 @@ void TractTableWidget::delete_row(int row)
     tract_models.erase(tract_models.begin()+row);
     removeRow(row);
     emit show_tracts();
-}
-
-void TractTableWidget::merge_track_by_name(void)
-{
-    for(int i= 0;i < rowCount()-1;++i)
-    {
-        auto lock1 = tract_rendering[i]->start_writing();
-        for(int j= i+1;j < rowCount()-1;)
-            if(item(i,0)->text() == item(j,0)->text())
-            {
-                {
-                    auto lock2 = tract_rendering[j]->start_reading();
-                    tract_models[i]->add(*tract_models[j]);
-                }
-                tract_rendering[i]->need_update = true;
-                delete_row(j);
-                item(i,1)->setText(QString::number(tract_models[i]->get_visible_track_count()));
-                item(i,2)->setText(QString::number(tract_models[i]->get_deleted_track_count()));
-            }
-        else
-            ++j;
-    }
 }
 
 void TractTableWidget::move_up(void)

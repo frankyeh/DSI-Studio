@@ -125,9 +125,6 @@ public slots:
     void save_transformed_tracts(void);
     void save_transformed_endpoints(void);
 
-    void merge_track_by_name(void);
-
-
     void edit_tracts(void);
 
     void assign_colors(void);

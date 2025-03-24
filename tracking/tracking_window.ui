@@ -3760,6 +3760,9 @@ Tracking</string>
    <property name="text">
     <string>Merge Tracts by Name</string>
    </property>
+   <property name="toolTip">
+    <string>run merge_tract_by_name</string>
+   </property>
   </action>
   <action name="actionRecognize_Current_Tract">
    <property name="text">
