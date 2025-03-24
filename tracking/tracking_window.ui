@@ -2835,6 +2835,9 @@ Tracking</string>
    <property name="text">
     <string>&amp;Delete</string>
    </property>
+   <property name="toolTip">
+    <string>run delete_tract</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+Alt+D</string>
    </property>
@@ -3748,6 +3751,9 @@ Tracking</string>
   <action name="actionSort_Tracts_By_Names">
    <property name="text">
     <string>Sort Tracts by Name</string>
+   </property>
+   <property name="toolTip">
+    <string>run sort_tract_by_name</string>
    </property>
   </action>
   <action name="actionRemove_Repeated_Tracks">

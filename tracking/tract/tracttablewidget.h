@@ -134,9 +134,9 @@ public slots:
     void copy_track(void);
     void separate_deleted_track(void);
     void reconnect_track(void);
-    void sort_track_by_name(void);
+
     void merge_track_by_name(void);
-    void delete_tract(void);
+
     void delete_repeated(void);
     void delete_by_length(void);
     void resample_step_size(void);

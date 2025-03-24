@@ -1186,6 +1186,17 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         });
         return true;
     }
+    if(cmd[0] == "delete_tract")
+    {
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[1],cur_row))
+            return run->canceled();
+        if(tipl::progress::is_running())
+            return run->failed("please wait for the termination of data processing");
+        delete_row(cur_row);
+        emit show_tracts();
+        return true;
+    }
     if(cmd[0] == "delete_all_tracts")
     {
         if(tipl::progress::is_running())
@@ -1357,6 +1368,33 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         emit show_tracts();
         return true;
     }
+    if(cmd[0] == "sort_tract_by_name")
+    {
+        std::vector<std::string> name_list;
+        for(int i= 0;i < rowCount();++i)
+            name_list.push_back(item(i,0)->text().toStdString());
+        for(int i= 0;i < rowCount()-1;++i)
+        {
+            int j = std::min_element(name_list.begin()+i,name_list.end())-name_list.begin();
+            if(i == j)
+                continue;
+            std::swap(name_list[i],name_list[j]);
+            for(unsigned int col = 0;col <= 3;++col)
+            {
+                QString tmp = item(i,col)->text();
+                item(i,col)->setText(item(j,col)->text());
+                item(j,col)->setText(tmp);
+            }
+            Qt::CheckState checked = item(i,0)->checkState();
+            item(i,0)->setCheckState(item(j,0)->checkState());
+            item(j,0)->setCheckState(checked);
+            std::swap(thread_data[i],thread_data[j]);
+            std::swap(tract_models[i],tract_models[j]);
+            std::swap(tract_rendering[i],tract_rendering[j]);
+        }
+        emit show_tracts();
+        return true;
+    }
     if(cmd[0] == "show_tract_statistics")
     {
         if(tract_models.empty())
@@ -1414,32 +1452,7 @@ void TractTableWidget::separate_deleted_track(void)
     item(rowCount()-1,2)->setText(QString::number(tract_models.back()->get_deleted_track_count()));
     emit show_tracts();
 }
-void TractTableWidget::sort_track_by_name(void)
-{
-    std::vector<std::string> name_list;
-    for(int i= 0;i < rowCount();++i)
-        name_list.push_back(item(i,0)->text().toStdString());
-    for(int i= 0;i < rowCount()-1;++i)
-    {
-        int j = std::min_element(name_list.begin()+i,name_list.end())-name_list.begin();
-        if(i == j)
-            continue;
-        std::swap(name_list[i],name_list[j]);
-        for(unsigned int col = 0;col <= 3;++col)
-        {
-            QString tmp = item(i,col)->text();
-            item(i,col)->setText(item(j,col)->text());
-            item(j,col)->setText(tmp);
-        }
-        Qt::CheckState checked = item(i,0)->checkState();
-        item(i,0)->setCheckState(item(j,0)->checkState());
-        item(j,0)->setCheckState(checked);
-        std::swap(thread_data[i],thread_data[j]);
-        std::swap(tract_models[i],tract_models[j]);
-        std::swap(tract_rendering[i],tract_rendering[j]);
-    }
-    emit show_tracts();
-}
+
 void TractTableWidget::merge_track_by_name(void)
 {
     for(int i= 0;i < rowCount()-1;++i)
@@ -1505,16 +1518,6 @@ void TractTableWidget::move_down(void)
 }
 
 
-void TractTableWidget::delete_tract(void)
-{
-    if(tipl::progress::is_running())
-    {
-        QMessageBox::critical(this,"ERROR","Please wait for the termination of data processing");
-        return;
-    }
-    delete_row(currentRow());
-    emit show_tracts();
-}
 void TractTableWidget::delete_repeated(void)
 {
     float distance = 1.0;
