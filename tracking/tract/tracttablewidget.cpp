@@ -935,7 +935,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         if(other_side)
             cmd[0].pop_back();
         auto dim = cmd[0].back()-'x';
-        for_each_bundle(cmd[0],[&](unsigned int index)
+        for_each_bundle(cmd[0].c_str(),[&](unsigned int index)
         {
             tract_models[index]->cut_by_slice(dim,cur_tracking_window.current_slice->slice_pos[dim],!other_side,
                 (cur_tracking_window.current_slice->is_diffusion_space ? nullptr:&cur_tracking_window.current_slice->to_slice));
