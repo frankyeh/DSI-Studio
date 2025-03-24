@@ -127,7 +127,6 @@ public slots:
     void save_transformed_tracts(void);
     void save_transformed_endpoints(void);
 
-    void copy_track(void);
     void separate_deleted_track(void);
 
     void merge_track_by_name(void);

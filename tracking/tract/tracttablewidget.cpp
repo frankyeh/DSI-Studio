@@ -1186,6 +1186,17 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         });
         return true;
     }
+    if(cmd[0] == "copy_tract")
+    {
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[1],cur_row))
+            return run->canceled();
+        addNewTracts(item(cur_row,0)->text() + "_copy");
+        *(tract_models.back()) = *(tract_models[cur_row]);
+        item(tract_models.size()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
+        emit show_tracts();
+        return true;
+    }
     if(cmd[0] == "delete_tract")
     {
         int cur_row = currentRow();
@@ -1552,17 +1563,6 @@ void TractTableWidget::delete_row(int row)
     thread_data.erase(thread_data.begin()+row);
     tract_models.erase(tract_models.begin()+row);
     removeRow(row);
-    emit show_tracts();
-}
-
-void TractTableWidget::copy_track(void)
-{
-    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
-        return;
-    uint32_t old_row = uint32_t(currentRow());
-    addNewTracts(item(currentRow(),0)->text() + "_copy");
-    *(tract_models.back()) = *(tract_models[old_row]);
-    item(currentRow(),1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
     emit show_tracts();
 }
 

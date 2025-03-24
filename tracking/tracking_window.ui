@@ -3401,6 +3401,9 @@ Tracking</string>
    <property name="text">
     <string>Copy Tracts</string>
    </property>
+   <property name="toolTip">
+    <string>run copy_tract</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+Alt+C</string>
    </property>
