@@ -43,7 +43,6 @@ public:
                               tipl::vector<3,float> vs,
                               const tipl::matrix<4,4>& trans_to_mni,
                               const tipl::matrix<4,4>& T,bool color,bool endpoint);
-    void cut_by_slice(unsigned char dim,bool greater);
     void draw_tracts(unsigned char dim,int pos,
                      QImage& scaledimage,float display_ratio);
 

@@ -934,7 +934,13 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         bool other_side = cmd[0].back() == '2';
         if(other_side)
             cmd[0].pop_back();
-        cut_by_slice(cmd[0].back()-'x',!other_side);
+        auto dim = cmd[0].back()-'x';
+        for_each_bundle(cmd[0],[&](unsigned int index)
+        {
+            tract_models[index]->cut_by_slice(dim,cur_tracking_window.current_slice->slice_pos[dim],!other_side,
+                (cur_tracking_window.current_slice->is_diffusion_space ? nullptr:&cur_tracking_window.current_slice->to_slice));
+            return true;
+        });
         return true;
     }
 
@@ -1178,11 +1184,6 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         {
             return tract_models[index]->filter_by_roi(roi_mgr);
         });
-        return true;
-    }
-    if(cmd[0] == "cut_by_slice")
-    {
-        cut_by_slice(QString(cmd[1].c_str()).toInt(),QString(cmd[2].c_str()).toInt());
         return true;
     }
     if(cmd[0] == "delete_all_tracts")
@@ -1612,16 +1613,6 @@ void TractTableWidget::edit_tracts(void)
     if(edit_option == paint)
         cur_tracking_window.set_data("tract_color_style",1);//manual assigned
 
-}
-
-void TractTableWidget::cut_by_slice(unsigned char dim,bool greater)
-{
-    for_each_bundle("cut by slice",[&](unsigned int index)
-    {
-        tract_models[index]->cut_by_slice(dim,cur_tracking_window.current_slice->slice_pos[dim],greater,
-            (cur_tracking_window.current_slice->is_diffusion_space ? nullptr:&cur_tracking_window.current_slice->to_slice));
-        return true;
-    });
 }
 
 void TractTableWidget::export_tract_density(tipl::shape<3> dim,
