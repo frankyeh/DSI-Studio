@@ -105,7 +105,6 @@ private:
     void delete_row(int row);
     void clustering(int method_id);
     void load_cluster_label(const std::vector<unsigned int>& labels,QStringList Names = QStringList());
-    void load_tract_label(QString FileName);
 public slots:
 
     void clustering_EM(void){clustering(2);}
@@ -122,8 +121,6 @@ public slots:
 
     void fetch_tracts(void);
     void show_tracking_progress(void);
-
-    void load_tract_label(void);
 
     void save_all_tracts_end_point_as(void);
 

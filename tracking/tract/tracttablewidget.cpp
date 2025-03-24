@@ -349,23 +349,6 @@ void TractTableWidget::stop_tracking(void)
             thread_data[index]->end_thread();
 }
 
-void TractTableWidget::load_tract_label(void)
-{
-    QString filename = QFileDialog::getOpenFileName(
-                this,"Load Tracts Label",QFileInfo(cur_tracking_window.work_path).absolutePath(),
-                "Tract files (*.txt);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    load_tract_label(filename);
-}
-void TractTableWidget::load_tract_label(QString filename)
-{
-    std::ifstream in(filename.toStdString().c_str());
-    std::vector<std::string> name((std::istream_iterator<std::string>(in)),(std::istream_iterator<std::string>()));
-    for(int i = 0;i < rowCount() && i < name.size();++i)
-        item(rowCount()-1-i,0)->setText(name[name.size()-1-i].c_str());
-}
-
 void TractTableWidget::check_all(void)
 {
     for(int row = 0;row < rowCount();++row)
@@ -931,13 +914,19 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     }
     if(tipl::begins_with(cmd[0],"cut_tract_by_"))
     {
+        // cmd [1] : slice number
         bool other_side = cmd[0].back() == '2';
         if(other_side)
             cmd[0].pop_back();
         auto dim = cmd[0].back()-'x';
+        unsigned int slice_pos = 0;
+        if(cmd[1].empty())
+            cmd[1] = std::to_string(slice_pos = cur_tracking_window.current_slice->slice_pos[dim]);
+        else
+            slice_pos = QString::fromStdString(cmd[1]).toInt();
         for_each_bundle(cmd[0].c_str(),[&](unsigned int index)
         {
-            tract_models[index]->cut_by_slice(dim,cur_tracking_window.current_slice->slice_pos[dim],!other_side,
+            tract_models[index]->cut_by_slice(dim,slice_pos,!other_side,
                 (cur_tracking_window.current_slice->is_diffusion_space ? nullptr:&cur_tracking_window.current_slice->to_slice));
             return true;
         });
@@ -1019,6 +1008,17 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         if(!error_msg.empty())
             return false;
         return run->canceled();
+    }
+    if(cmd[0] == "open_tract_name")
+    {
+        // cmd[1] : file name
+        if(!cur_tracking_window.history.get_filename(this,cmd[1]))
+            return run->canceled();
+        std::ifstream in(cmd[1].c_str());
+        std::vector<std::string> name((std::istream_iterator<std::string>(in)),(std::istream_iterator<std::string>()));
+        for(int i = 0;i < rowCount() && i < name.size();++i)
+            item(rowCount()-1-i,0)->setText(name[name.size()-1-i].c_str());
+        return true;
     }
     if(cmd[0] == "load_tract_atlas")
     {

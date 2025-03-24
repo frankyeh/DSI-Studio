@@ -1293,16 +1293,17 @@
     <property name="title">
      <string>Tracts Cluster</string>
     </property>
-    <addaction name="actionOpen_Tracts_Label"/>
+    <addaction name="actionOpen_Tracts_Name"/>
     <addaction name="actionSort_Tracts_By_Names"/>
     <addaction name="separator"/>
     <addaction name="actionOpen_Cluster_Colors"/>
+    <addaction name="actionOpen_Cluster_Labels"/>
     <addaction name="actionOpen_Cluster_Values"/>
     <addaction name="actionSave_Cluster_Colors"/>
+    <addaction name="separator"/>
     <addaction name="actionSet_Color"/>
     <addaction name="actionAssign_Colors_For_Each"/>
     <addaction name="separator"/>
-    <addaction name="actionOpen_Cluster_Labels"/>
     <addaction name="actionHierarchical"/>
     <addaction name="actionK_means_Clustering"/>
     <addaction name="actionEM_Clustering"/>
@@ -3732,13 +3733,16 @@ Tracking</string>
     <string>Testing</string>
    </property>
   </action>
-  <action name="actionOpen_Tracts_Label">
+  <action name="actionOpen_Tracts_Name">
    <property name="icon">
     <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Open Tracts Label...</string>
+    <string>Open Tracts Name...</string>
+   </property>
+   <property name="toolTip">
+    <string>run open_tract_name</string>
    </property>
   </action>
   <action name="actionSort_Tracts_By_Names">

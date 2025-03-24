@@ -104,32 +104,16 @@ bool command_history::get_filename(QWidget* parent,std::string& filename,const s
                                 post_fix.empty() ? file_stem() :
                                 (std::filesystem::path(default_parent_path)/
                                     (post_fix[0] == '.' ? default_stem + post_fix : post_fix)).string()));
-    if(tipl::ends_with(current_cmd,"_color"))
-    {
-        filter = "RGB values (*.txt)";
-        default_file_name += "_color.txt";
-    }
-    else
-    if(tipl::ends_with(current_cmd,"_values"))
-    {
-        filter = "Text files (*.txt)";
-        default_file_name += "_values.txt";
-    }
-    else
-    if(tipl::ends_with(current_cmd,"_info"))
-    {
-        filter = "Text files (*.txt)";
-        default_file_name += "_info.txt";
-    }
-    else
     if(tipl::ends_with(current_cmd,"_tracts") || tipl::ends_with(current_cmd,"_tract"))
-        filter = "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat)";
+        filter = "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;MAT files (*.mat)";
     else
     if(tipl::ends_with(current_cmd,"_regions") || tipl::ends_with(current_cmd,"_region"))
-            filter = "NIFTI file(*nii.gz *.nii);;Text file(*.txt);;MAT file (*.mat)";
-
-
-    filter += ";;All files (*)";
+            filter = "NIFTI file(*nii.gz *.nii);;MAT file (*.mat)";
+    else
+        default_file_name += "_" + QString::fromStdString(current_cmd).split('_').back() + ".txt";
+    if(!filter.isEmpty())
+        filter += ";;";
+    filter += "Text files (*.txt);;All files (*)";
     if(tipl::begins_with(current_cmd,"save_"))
         return !(filename = QFileDialog::getSaveFileName(
                     parent,QString::fromStdString(current_cmd),default_file_name,filter).toStdString()).empty();
@@ -604,8 +588,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(glWidget,SIGNAL(edited()),tractWidget,SLOT(edit_tracts()));
         connect(glWidget,SIGNAL(region_edited()),glWidget,SLOT(update()));
         connect(glWidget,&GLWidget::region_edited,this,[this](void){slice_need_update = true;});
-
-        connect(ui->actionOpen_Tracts_Label,SIGNAL(triggered()),tractWidget,SLOT(load_tract_label()));
 
         connect(ui->actionMerge_Tracts_by_Name,SIGNAL(triggered()),tractWidget,SLOT(merge_track_by_name()));
         connect(ui->actionCopyTrack,SIGNAL(triggered()),tractWidget,SLOT(copy_track()));
