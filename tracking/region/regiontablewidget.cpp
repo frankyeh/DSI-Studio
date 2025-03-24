@@ -1430,21 +1430,10 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
     return true;
 }
 
-
-
-
 void RegionTableWidget::check_row(size_t row,bool checked)
 {
-    if(checked)
-    {
-        item(row,0)->setCheckState(Qt::Checked);
-        item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
-    }
-    else
-    {
-        item(row,0)->setCheckState(Qt::Unchecked);
-        item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
-    }
+    item(row,0)->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
+    item(row,0)->setData(Qt::ForegroundRole,QBrush(checked ? Qt::black : Qt::gray));
 }
 
 void RegionTableWidget::move_up(void)
