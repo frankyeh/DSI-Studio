@@ -160,11 +160,20 @@ bool ROIRegion::load_region_from_file(const char* file_name) {
     to_diffusion_space.identity();
     if (tipl::ends_with(file_name,".txt"))
     {
-        std::ifstream in(file_name,std::ios::binary);
+
         std::vector<tipl::vector<3,short> > points;
-        std::copy(std::istream_iterator<tipl::vector<3,short> >(in),
-                  std::istream_iterator<tipl::vector<3,short> >(),
-                  std::back_inserter(points));
+        {
+            std::ifstream in(file_name,std::ios::binary);
+            std::vector<tipl::vector<3> > pointsf;
+            std::copy(std::istream_iterator<tipl::vector<3> >(in),
+                      std::istream_iterator<tipl::vector<3> >(),
+                      std::back_inserter(pointsf));
+            for(auto& each : pointsf)
+            {
+                each.round();
+                points.push_back(tipl::vector<3,short>(each));
+            }
+        }
         if(!points.empty() && points.back()[1] == -1.0f && points.back()[2] == -1.0f)
         {
             is_diffusion_space = false;
