@@ -524,7 +524,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         // actions
         connect(ui->actionUndo_Edit,SIGNAL(triggered()),regionWidget,SLOT(undo()));
         connect(ui->actionRedo_Edit,SIGNAL(triggered()),regionWidget,SLOT(redo()));
-        connect(ui->actionMove_Slices_To_Current_Region,SIGNAL(triggered()),regionWidget,SLOT(move_slice_to_current_region()));
         connect(ui->region_up,SIGNAL(clicked()),regionWidget,SLOT(move_up()));
         connect(ui->region_down,SIGNAL(clicked()),regionWidget,SLOT(move_down()));
     }

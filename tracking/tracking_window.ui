@@ -3979,6 +3979,9 @@ Tracking</string>
    <property name="text">
     <string>Move Slices To Current Region</string>
    </property>
+   <property name="toolTip">
+    <string>run move_slice_to_region</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+Shift+M</string>
    </property>

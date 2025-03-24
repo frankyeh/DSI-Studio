@@ -97,7 +97,6 @@ public slots:
     void move_down(void);
     void undo(void);
     void redo(void);
-    void move_slice_to_current_region(void);
 
 };
 

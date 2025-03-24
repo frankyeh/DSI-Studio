@@ -1664,7 +1664,7 @@ void GLWidget::mouseDoubleClickEvent(QMouseEvent *event)
         if(region_selected)
         {
             cur_tracking_window.regionWidget->setCurrentCell(selected_index,0);
-            cur_tracking_window.regionWidget->move_slice_to_current_region();
+            cur_tracking_window.command({"move_slice_to_region"});
             emit region_edited();
         }
         if(device_selected)

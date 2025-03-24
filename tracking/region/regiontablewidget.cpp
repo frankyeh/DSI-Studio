@@ -17,46 +17,6 @@
 #include "opengl/renderingtablewidget.h"
 #include "libs/tracking/fib_data.hpp"
 #include "libs/tracking/tracking_thread.hpp"
-
-
-void split(std::vector<std::string>& list,const std::string& input, const std::string& regex) {
-    // passing -1 as the submatch index parameter performs splitting
-    std::regex re(regex);
-    std::sregex_token_iterator
-        first{input.begin(), input.end(), re, -1},
-        last;
-    list = {first, last};
-}
-
-void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<std::shared_ptr<ROIRegion> >& regions,
-                            std::string& result)
-{
-    std::vector<std::string> titles;
-    std::vector<std::vector<float> > data(regions.size());
-    tipl::progress p("for each region");
-    for(size_t index = 0;index < regions.size();++index)
-    {
-        std::vector<std::string> dummy;
-        regions[index]->get_quantitative_data(handle,(index == 0) ? titles : dummy,data[index]);
-    }
-    std::ostringstream out;
-    out << "Name";
-    for(auto each : regions)
-        out << "\t" << each->name;
-    out << std::endl;
-    for(unsigned int i = 0;i < titles.size();++i)
-    {
-        out << titles[i];
-        for(unsigned int j = 0;j < regions.size();++j)
-        {
-            out << "\t";
-            if(i < data[j].size())
-                out << data[j][i];
-        }
-        out << std::endl;
-    }
-    result = out.str();
-}
 QWidget *ImageDelegate::createEditor(QWidget *parent,
                                      const QStyleOptionViewItem &option,
                                      const QModelIndex &index) const
@@ -372,6 +332,8 @@ tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
     c.a = 255;
     return c;
 }
+void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<std::shared_ptr<ROIRegion> >& regions,
+                            std::string& result);
 extern std::vector<std::vector<std::string> > atlas_file_name_list;
 bool RegionTableWidget::command(std::vector<std::string> cmd)
 {
@@ -879,6 +841,22 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         emit need_update();
         return true;
     }
+    if(cmd[0] == "move_slice_to_region")
+    {
+        // cmd[1] : region index (default: current)
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[1],cur_row))
+            return false;
+        auto current_slice = cur_tracking_window.current_slice;
+        auto current_region = regions[cur_row];
+        if(current_region->region.empty())
+            return run->canceled();
+        tipl::vector<3,float> p(current_region->get_center());
+        if(!current_slice->is_diffusion_space)
+            p.to(current_slice->to_slice);
+        cur_tracking_window.move_slice_to(p);
+        return true;
+    }
     if(cmd[0] == "show_region_statistics" || cmd[0] == "show_t2r")
     {
         // cmd[1] : file name to save
@@ -922,19 +900,6 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
 
 
     return run->not_processed();
-}
-void RegionTableWidget::move_slice_to_current_region(void)
-{
-    if(currentRow() == -1)
-        return;
-    auto current_slice = cur_tracking_window.current_slice;
-    auto current_region = regions[currentRow()];
-    if(current_region->region.empty())
-        return;
-    tipl::vector<3,float> p(current_region->get_center());
-    if(!current_slice->is_diffusion_space)
-        p.to(current_slice->to_slice);
-    cur_tracking_window.move_slice_to(p);
 }
 
 
@@ -1020,346 +985,12 @@ void RegionTableWidget::draw_region(const tipl::matrix<4,4>& current_slice_T,uns
                     cur_roi_index,display_ratio);
 
 }
-
-void load_nii_label(const char* filename,std::map<int,std::string>& label_map)
-{
-    std::ifstream in(filename);
-    if(in)
-    {
-        std::string line,txt;
-        while(std::getline(in,line))
-        {
-            if(line.empty() || line[0] == '#')
-                continue;
-            std::istringstream read_line(line);
-            int num = 0;
-            read_line >> num >> txt;
-            label_map[num] = txt;
-        }
-    }
-}
-void load_json_label(const char* filename,std::map<int,std::string>& label_map)
-{
-    std::ifstream in(filename);
-    if(!in)
-        return;
-    std::string line,label;
-    while(std::getline(in,line))
-    {
-        std::replace(line.begin(),line.end(),'\"',' ');
-        std::replace(line.begin(),line.end(),'\t',' ');
-        std::replace(line.begin(),line.end(),',',' ');
-        line.erase(std::remove(line.begin(),line.end(),' '),line.end());
-        if(line.find("arealabel") != std::string::npos)
-        {
-            label = line.substr(line.find(":")+1,std::string::npos);
-            continue;
-        }
-        if(line.find("labelIndex") != std::string::npos)
-        {
-            line = line.substr(line.find(":")+1,std::string::npos);
-            std::istringstream in3(line);
-            int num = 0;
-            in3 >> num;
-            label_map[num] = label;
-        }
-    }
-}
-
-std::string get_label_file_name(const std::string& file_name);
-void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::map<int,tipl::rgb>& label_color)
-{
-    label_map.clear();
-    label_color.clear();
-    QString base_name = QFileInfo(file_name).completeBaseName();
-    if(base_name.endsWith(".nii"))
-        base_name.chop(4);
-    QString label_file = get_label_file_name(file_name.toStdString()).c_str();
-    tipl::out() <<"looking for region label file " << label_file.toStdString() << std::endl;
-    if(QFileInfo(label_file).exists())
-    {
-        load_nii_label(label_file.toStdString().c_str(),label_map);
-        tipl::out() <<"label file loaded" << std::endl;
-        return;
-    }
-    label_file = QFileInfo(file_name).absolutePath()+"/"+base_name+".json";
-    if(QFileInfo(label_file).exists())
-    {
-        load_json_label(label_file.toStdString().c_str(),label_map);
-        tipl::out() <<"json file loaded " << label_file.toStdString() << std::endl;
-        return;
-    }
-    if(QFileInfo(file_name).fileName().contains("aparc") || QFileInfo(file_name).fileName().contains("aseg")) // FreeSurfer
-    {
-        tipl::out() <<"using freesurfer labels." << std::endl;
-        QFile data(":/data/FreeSurferColorLUT.txt");
-        if (data.open(QIODevice::ReadOnly | QIODevice::Text))
-        {
-            QTextStream in(&data);
-            while (!in.atEnd())
-            {
-                QString line = in.readLine();
-                if(line.isEmpty() || line[0] == '#')
-                    continue;
-                std::istringstream in(line.toStdString());
-                int value,r,b,g;
-                std::string name;
-                in >> value >> name >> r >> g >> b;
-                label_map[value] = name;
-                label_color[value] = tipl::rgb(uint8_t(r),uint8_t(g),uint8_t(b));
-            }
-            return;
-        }
-    }
-    tipl::out() <<"no label file found. Use default ROI numbering." << std::endl;
-}
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<SliceModel*>& transform_lookup,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::string& error_msg,
-              bool is_mni)
-{
-    tipl::progress prog("opening file ",std::filesystem::path(file_name).stem().u8string().c_str());
-
-    if(QFileInfo(file_name.c_str()).baseName().toLower().contains(".mni."))
-    {
-        tipl::out() << QFileInfo(file_name.c_str()).baseName().toStdString() <<
-                     " has '.mni.' in the file name. It will be treated as mni space image" << std::endl;
-        is_mni = true;
-    }
-
-    tipl::io::gz_nifti header;
-    if (!header.load_from_file(file_name.c_str()))
-    {
-        error_msg = header.error_msg;
-        return false;
-    }
-    bool is_4d = header.dim(4) > 1;
-    tipl::image<3,unsigned int> from;
-    std::string nifti_name = std::filesystem::path(file_name).stem().u8string();
-    nifti_name = nifti_name.substr(0,nifti_name.find('.'));
-
-    if(is_4d)
-        from.resize(tipl::shape<3>(header.dim(1),header.dim(2),header.dim(3)));
-    else
-    {
-        tipl::image<3> tmp;
-        header.toLPS(tmp);
-        if(std::filesystem::exists(get_label_file_name(file_name)) || tipl::is_label_image(tmp))
-            from = tmp;
-        else
-        {
-            tipl::out() << "The NIFTI file does not have a label text file. Using it as a mask.";
-            from.resize(tmp.shape());
-            for(size_t i = 0;i < from.size();++i)
-                from[i] = (tmp[i] > 0.0f ? 1 : 0);
-        }
-    }
-
-    tipl::vector<3> vs;
-    tipl::matrix<4,4> trans_to_mni;
-    header.get_image_transformation(trans_to_mni);
-    header.get_voxel_size(vs);
-
-    std::vector<unsigned short> value_list;
-    std::vector<unsigned short> value_map(std::numeric_limits<unsigned short>::max()+1);
-
-    if(is_4d)
-    {
-        value_list.resize(header.dim(4));
-        for(unsigned int index = 0;index <value_list.size();++index)
-        {
-            value_list[index] = uint16_t(index);
-            value_map[uint16_t(index)] = 0;
-        }
-    }
-    else
-    {
-        unsigned short max_value = 0;
-        for (tipl::pixel_index<3> index(from.shape());index < from.size();++index)
-        {
-            if(from[index.index()] >= value_map.size())
-            {
-                error_msg = "exceedingly large value found in the ROI file: ";
-                error_msg += std::to_string(from[index.index()]);
-                return false;
-            }
-            value_map[from[index.index()]] = 1;
-            max_value = std::max<unsigned short>(uint16_t(from[index.index()]),max_value);
-        }
-        for(unsigned short value = 1;value <= max_value;++value)
-            if(value_map[value])
-            {
-                value_map[value] = uint16_t(value_list.size());
-                value_list.push_back(value);
-            }
-    }
-
-    bool multiple_roi = value_list.size() > 1;
-
-
-    tipl::out() << nifti_name << (multiple_roi ? " loaded as multiple ROI file":" loaded as single ROI file") << std::endl;
-
-    std::map<int,std::string> label_map;
-    std::map<int,tipl::rgb> label_color;
-
-    std::string des(header.get_descrip());
-    if(multiple_roi)
-        get_roi_label(file_name.c_str(),label_map,label_color);
-
-    bool need_trans = false;
-    tipl::matrix<4,4> to_diffusion_space = tipl::identity_matrix();
-
-    tipl::out() << "FIB file size: " << handle->dim << " vs: " << handle->vs << (handle->is_mni ? " mni space": " not mni space") << std::endl;
-    tipl::out() << nifti_name << " size: " << from.shape() << " vs: " << vs << (is_mni ? " mni space": " not mni space (if mni space, add '.mni.' in file name)") << std::endl;
-
-    if(from.shape() != handle->dim)
-    {
-        tipl::out() << nifti_name << " has a different dimension from the FIB file. need transformation or warping." << std::endl;
-        if(handle->is_mni)
-        {
-            if(!is_mni)
-                tipl::out() << "assume " << nifti_name << " is in the mni space (likely wrong. need to check)." << std::endl;
-            else
-                tipl::out() << nifti_name << " is in the mni space." << std::endl;
-
-
-            tipl::out() <<"applying " << nifti_name << "'s header srow matrix to align." << std::endl;
-            to_diffusion_space = tipl::from_space(trans_to_mni).to(handle->trans_to_mni);
-            need_trans = true;
-            goto end;
-        }
-        else
-        {
-            if(is_mni)
-            {
-                tipl::out() << "warping " << nifti_name << " from the template space to the native space." << std::endl;
-                if(!handle->mni2sub<tipl::interpolation::majority>(from,trans_to_mni))
-                {
-                    error_msg = handle->error_msg;
-                    return false;
-                }
-                trans_to_mni = handle->trans_to_mni;
-                goto end;
-            }
-            else
-            for(unsigned int index = 0;index < transform_lookup.size();++index)
-                if(from.shape() == transform_lookup[index]->dim)
-                {
-                    tipl::out() << "applying previous transformation." << std::endl;
-                    tipl::out() << "tran_to_mni: " << std::endl;
-                    tipl::out() << (trans_to_mni = transform_lookup[index]->trans_to_mni) << std::endl;
-                    tipl::out() << "to_dif: " << std::endl;
-                    tipl::out() << (to_diffusion_space = transform_lookup[index]->to_dif) << std::endl;
-                    need_trans = true;
-                    goto end;
-                }
-        }
-        error_msg = "No strategy to align ";
-        error_msg += nifti_name;
-        error_msg += " with FIB. If ";
-        error_msg += nifti_name;
-        error_msg += " is in the MNI space, ";
-        if(tipl::show_prog)
-            error_msg += "open it using [Region][Open MNI Region]. If not, insert its reference T1W/T2W using [Slices][Insert T1WT2W] to guide the registration.";
-        else
-            error_msg += "specify mni in the file name (e.g. region_mni.nii.gz). If not, use --other_slices to load the reference T1W/T2W to guide the registration.";
-        return false;
-    }
-    else
-    {
-        if(is_mni && !handle->is_mni)
-            tipl::out() << "The '.mni.' in the filename is ignored, and " << nifti_name << " is treated as DWI regions because of identical image dimension. " << std::endl;
-    }
-
-
-    end:
-    // single region ROI
-    if(!multiple_roi)
-    {
-        regions.push_back(std::make_shared<ROIRegion>(handle));
-        regions.back()->name = nifti_name;
-        if(need_trans)
-        {
-            regions.back()->dim = from.shape();
-            regions.back()->vs = vs;
-            regions.back()->is_diffusion_space = false;
-            regions.back()->to_diffusion_space = to_diffusion_space;
-            regions.back()->trans_to_mni = trans_to_mni;
-        }
-        tipl::image<3,unsigned char> mask(from);
-        regions.back()->load_region_from_buffer(mask);
-
-        unsigned int color = 0x00FFFFFF;
-        unsigned int type = default_id;
-
-        try{
-            std::vector<std::string> info;
-            split(info,header.get_descrip(),";");
-            for(unsigned int index = 0;index < info.size();++index)
-            {
-                std::vector<std::string> name_value;
-                split(name_value,info[index],"=");
-                if(name_value.size() != 2)
-                    continue;
-                if(name_value[0] == "color")
-                    std::istringstream(name_value[1]) >> color;
-                if(name_value[0] == "roi")
-                    std::istringstream(name_value[1]) >> type;
-            }
-        }catch(...){}
-        regions.back()->region_render->color = color;
-        regions.back()->regions_feature = uint8_t(type);
-        return true;
-    }
-
-    std::vector<std::vector<tipl::vector<3,short> > > region_points(value_list.size());
-    if(is_4d)
-    {
-        tipl::progress prog_("loading");
-        for(size_t region_index = 0;prog(region_index,region_points.size());++region_index)
-        {
-            header.toLPS(from);
-            for (tipl::pixel_index<3> index(from.shape());index < from.size();++index)
-                if(from[index.index()])
-                    region_points[region_index].push_back(index);
-        }
-    }
-    else
-    {
-        for (tipl::pixel_index<3>index(from.shape());index < from.size();++index)
-            if(from[index.index()])
-                region_points[value_map[from[index.index()]]].push_back(index);
-    }
-
-    for(uint32_t i = 0;i < region_points.size();++i)
-        {
-            unsigned short value = value_list[i];
-            regions.push_back(std::make_shared<ROIRegion>(handle));
-            regions.back()->name = (label_map.find(value) == label_map.end() ?
-                                    nifti_name + "_" + std::to_string(int(value)): label_map[value]);
-            if(need_trans)
-            {
-                regions.back()->dim = from.shape();
-                regions.back()->vs = vs;
-                regions.back()->is_diffusion_space = false;
-                regions.back()->to_diffusion_space = to_diffusion_space;
-                regions.back()->trans_to_mni = trans_to_mni;
-            }
-            regions.back()->region_render->color = label_color.empty() ? 0x00FFFFFF : label_color[value].color;
-            if(!region_points[i].empty())
-                regions.back()->add_points(std::move(region_points[i]));
-        }
-    tipl::out() <<"a total of " << regions.size() << " regions are loaded." << std::endl;
-    if(regions.empty())
-    {
-        error_msg = "empty region file";
-        return false;
-    }
-    return true;
-}
-
+              bool is_mni);
 bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
 {
     QStringList files = file_name.split('&');
