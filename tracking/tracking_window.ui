@@ -968,10 +968,9 @@
     <addaction name="menuSave"/>
     <addaction name="separator"/>
     <addaction name="actionCheck_all_tracts"/>
-    <addaction name="actionUncheck_all_tracts"/>
-    <addaction name="separator"/>
     <addaction name="actionSeparate_Deleted"/>
     <addaction name="actionCopyTrack"/>
+    <addaction name="separator"/>
     <addaction name="actionMerge_All"/>
     <addaction name="actionDeleteTract"/>
     <addaction name="actionDeleteTractAll"/>
@@ -3455,12 +3454,13 @@ Tracking</string>
   </action>
   <action name="actionCheck_all_tracts">
    <property name="text">
-    <string>Check All</string>
+    <string>Check/Uncheck All</string>
    </property>
-  </action>
-  <action name="actionUncheck_all_tracts">
-   <property name="text">
-    <string>Uncheck All</string>
+   <property name="toolTip">
+    <string>run check_uncheck_all_tract</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+A</string>
    </property>
   </action>
   <action name="actionCopy_Region">

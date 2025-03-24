@@ -591,10 +591,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
         connect(ui->actionMerge_Tracts_by_Name,SIGNAL(triggered()),tractWidget,SLOT(merge_track_by_name()));
 
-
-        connect(ui->actionCheck_all_tracts,SIGNAL(triggered()),tractWidget,SLOT(check_all()));
-        connect(ui->actionUncheck_all_tracts,SIGNAL(triggered()),tractWidget,SLOT(uncheck_all()));
-
         connect(ui->actionAssign_Colors_For_Each,SIGNAL(triggered()),tractWidget,SLOT(assign_colors()));
 
         connect(ui->actionSet_Color,SIGNAL(triggered()),tractWidget,SLOT(set_color()));

@@ -349,23 +349,6 @@ void TractTableWidget::stop_tracking(void)
             thread_data[index]->end_thread();
 }
 
-void TractTableWidget::check_all(void)
-{
-    for(int row = 0;row < rowCount();++row)
-    {
-        item(row,0)->setCheckState(Qt::Checked);
-        item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
-    }
-}
-
-void TractTableWidget::uncheck_all(void)
-{
-    for(int row = 0;row < rowCount();++row)
-    {
-        item(row,0)->setCheckState(Qt::Unchecked);
-        item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
-    }
-}
 QString TractTableWidget::output_format(void)
 {
     switch(cur_tracking_window["track_format"].toInt())
@@ -1559,6 +1542,23 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
                      cur_tracking_window.current_slice->trans_to_mni,
                      cur_tracking_window.current_slice->to_slice,false,false))
             return run->failed("cannot save image to " + cmd[1]);
+        return true;
+    }
+    if(cmd[0] == "check_uncheck_all_tract")
+    {
+        if(tract_models.empty())
+            return run->canceled();
+        // cmd[1] : all or none
+        bool all = true;
+        if(cmd[1].empty())
+            cmd[1] = (all = (item(0,0)->checkState() != Qt::Checked)) ? "1":"0";
+        else
+            all = (cmd[1] == "1");
+        for(int row = 0;row < rowCount();++row)
+        {
+            item(row,0)->setCheckState(all ? Qt::Checked : Qt::Unchecked);
+            item(row,0)->setData(Qt::ForegroundRole,QBrush(all ? Qt::black : Qt::gray));
+        }
         return true;
     }
     if(cmd[0] == "show_tract_statistics")

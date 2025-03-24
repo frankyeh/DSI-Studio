@@ -111,8 +111,6 @@ public slots:
     void open_cluster_label(void);
     void set_color(void);
     void check_check_status(int,int);
-    void check_all(void);
-    void uncheck_all(void);
     void start_tracking(void);
 
     void fetch_tracts(void);
