@@ -28,7 +28,7 @@ public:
     bool has_other_thread = false;
     std::string default_parent_path,default_stem,default_stem2,current_cmd;
     std::vector<std::string> commands;
-    bool run(tracking_window *parent,const std::vector<std::string>& cmd);
+    bool run(tracking_window *parent,const std::vector<std::string>& cmd,bool apply_to_others);
 public:
     struct surrogate {
         command_history& owner;
