@@ -532,33 +532,6 @@ void TractTableWidget::open_cluster_label(void)
     assign_colors();
 }
 
-void TractTableWidget::recog_tracks(void)
-{
-    if(currentRow() >= int(tract_models.size()) || tract_models[uint32_t(currentRow())]->get_tracts().size() == 0)
-        return;
-    if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
-    {
-        QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
-        return;
-    }
-    std::multimap<float,std::string,std::greater<float> > sorted_list;
-    {
-        auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-        if(!cur_tracking_window.handle->recognize_and_sort(tract_models[uint32_t(currentRow())],sorted_list))
-        {
-            QMessageBox::critical(this,"ERROR","Cannot recognize tracks.");
-            return;
-        }
-    }
-    std::ostringstream out;
-    auto beg = sorted_list.begin();
-    for(size_t i = 0;i < sorted_list.size();++i,++beg)
-        if(beg->first != 0.0f)
-            out << beg->first*100.0f << "% " << beg->second << std::endl;
-    show_info_dialog("Tract Recognition Result",out.str());
-}
-
-
 void TractTableWidget::recognize_and_cluster(void)
 {
     std::vector<std::string> labels;
@@ -904,19 +877,6 @@ std::vector<std::shared_ptr<TractRender::end_writing> > TractTableWidget::start_
         if(item(int(index),0)->checkState() == Qt::Checked)
             locks.push_back(tract_rendering[index]->start_writing());
     return locks;
-}
-void TractTableWidget::show_tracts_statistics(void)
-{
-    if(tract_models.empty())
-        return;
-    std::string result;
-    {
-        tipl::progress p("calculate tract statistics",true);
-        get_track_statistics(cur_tracking_window.handle,get_checked_tracks(),result);
-    }
-    if(!result.empty())
-        show_info_dialog("Tract Statistics",result);
-
 }
 void TractTableWidget::need_update_all(void)
 {
@@ -1330,6 +1290,64 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         emit show_tracts();
         return true;
     }
+    if(cmd[0] == "recognize_tract")
+    {
+        // cmd[1] : current tract index
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[1],cur_row))
+            return run->canceled();
+        if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
+            return run->failed(cur_tracking_window.handle->error_msg);
+        std::multimap<float,std::string,std::greater<float> > sorted_list;
+        {
+            auto lock = tract_rendering[cur_row]->start_reading();
+            if(!cur_tracking_window.handle->recognize_and_sort(tract_models[cur_row],sorted_list))
+                return run->failed("cannot recognize tracks.");
+        }
+        std::ostringstream out;
+        auto beg = sorted_list.begin();
+        for(size_t i = 0;i < sorted_list.size();++i,++beg)
+            if(beg->first != 0.0f)
+                out << beg->first*100.0f << "% " << beg->second << std::endl;
+        show_info_dialog("Tract Recognition Result",out.str(),cur_tracking_window.history.file_stem() + "_" +
+                                            tract_models[cur_row]->name.c_str() + ".txt");
+        return true;
+    }
+    if(cmd[0] == "merge_all_tracts")
+    {
+        std::vector<unsigned int> merge_list;
+        for(int index = 0;index < tract_models.size();++index)
+            if(item(int(index),0)->checkState() == Qt::Checked)
+                merge_list.push_back(index);
+        if(merge_list.size() <= 1)
+            return run->canceled();
+        {
+            auto lock1 = tract_rendering[merge_list[0]]->start_writing();
+            for(int index = merge_list.size()-1;index >= 1;--index)
+            {
+                {
+                    auto lock2 = tract_rendering[merge_list[index]]->start_reading();
+                    tract_models[merge_list[0]]->add(*tract_models[merge_list[index]]);
+                }
+                delete_row(merge_list[index]);
+            }
+            tract_rendering[merge_list[0]]->need_update = true;
+        }
+        item(merge_list[0],1)->setText(QString::number(tract_models[merge_list[0]]->get_visible_track_count()));
+        item(merge_list[0],2)->setText(QString::number(tract_models[merge_list[0]]->get_deleted_track_count()));
+        emit show_tracts();
+        return true;
+    }
+    if(cmd[0] == "show_tract_statistics")
+    {
+        if(tract_models.empty())
+            return run->canceled();
+        std::string result;
+        tipl::progress p("calculate tract statistics",true);
+        get_track_statistics(cur_tracking_window.handle,get_checked_tracks(),result);
+        show_info_dialog("Tract Statistics",result);
+        return true;
+    }
     return run->not_processed();
 }
 
@@ -1356,31 +1374,6 @@ void TractTableWidget::save_tracts_data_as(void)
         QMessageBox::information(this,QApplication::applicationName(),"file saved");
 }
 
-
-void TractTableWidget::merge_all(void)
-{
-    std::vector<unsigned int> merge_list;
-    for(int index = 0;index < tract_models.size();++index)
-        if(item(int(index),0)->checkState() == Qt::Checked)
-            merge_list.push_back(index);
-    if(merge_list.size() <= 1)
-        return;
-    {
-        auto lock1 = tract_rendering[merge_list[0]]->start_writing();
-        for(int index = merge_list.size()-1;index >= 1;--index)
-        {
-            {
-                auto lock2 = tract_rendering[merge_list[index]]->start_reading();
-                tract_models[merge_list[0]]->add(*tract_models[merge_list[index]]);
-            }
-            delete_row(merge_list[index]);
-        }
-        tract_rendering[merge_list[0]]->need_update = true;
-    }
-    item(merge_list[0],1)->setText(QString::number(tract_models[merge_list[0]]->get_visible_track_count()));
-    item(merge_list[0],2)->setText(QString::number(tract_models[merge_list[0]]->get_deleted_track_count()));
-    emit show_tracts();
-}
 
 void TractTableWidget::delete_row(int row)
 {

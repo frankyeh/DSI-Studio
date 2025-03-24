@@ -137,8 +137,6 @@ public slots:
     void save_transformed_tracts(void);
     void save_transformed_endpoints(void);
 
-
-    void merge_all(void);
     void copy_track(void);
     void separate_deleted_track(void);
     void reconnect_track(void);
@@ -154,8 +152,6 @@ public slots:
     void stop_tracking(void);
     void move_up(void);
     void move_down(void);
-    void show_tracts_statistics(void);
-    void recog_tracks(void);
     void show_report(void);
 
     void need_update_all(void);

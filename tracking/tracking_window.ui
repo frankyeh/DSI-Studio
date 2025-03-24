@@ -3106,6 +3106,9 @@ Tracking</string>
    <property name="text">
     <string>Merge All</string>
    </property>
+   <property name="toolTip">
+    <string>run merge_all_tracts</string>
+   </property>
    <property name="shortcut">
     <string>Ctrl+Alt+M</string>
    </property>
@@ -3216,6 +3219,9 @@ Tracking</string>
    </property>
    <property name="text">
     <string>&amp;Statistics...</string>
+   </property>
+   <property name="toolTip">
+    <string>run show_tract_statistics</string>
    </property>
   </action>
   <action name="actionHierarchical">
@@ -3758,6 +3764,9 @@ Tracking</string>
   <action name="actionRecognize_Current_Tract">
    <property name="text">
     <string>Recognize...</string>
+   </property>
+   <property name="toolTip">
+    <string>run recognize_tract</string>
    </property>
   </action>
   <action name="actionDelete_By_Length">
