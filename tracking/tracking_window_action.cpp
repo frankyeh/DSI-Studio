@@ -158,16 +158,10 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->failed("cannot save mapping to " + cmd[1]);
         return true;
     }
-    if(cmd[0] == "save_slice")
+    if(cmd[0] == "save_slice_image")
     {
-        if(cmd[2].empty())
-        {
-            QAction *action = qobject_cast<QAction *>(sender());
-            if(!action)
-                return run->canceled();
-
-            cmd[2] = action->data().toString().toStdString();
-        }
+        if(cmd[2].empty() && (cmd[2] = get_action_data().toStdString()).empty())
+            return run->canceled();
         if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(
                     this,"Save as",
                     QFileInfo(windowTitle()).baseName()+"_"+ QString::fromStdString(cmd[2])+".nii.gz",

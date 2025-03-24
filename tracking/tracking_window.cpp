@@ -112,7 +112,7 @@ bool command_history::get_filename(QWidget* parent,std::string& filename,const s
     else
     if(tipl::ends_with(current_cmd,"_values"))
     {
-        filter = "Values (*.txt)";
+        filter = "Text files (*.txt)";
         default_file_name += "_values.txt";
     }
     else
@@ -286,8 +286,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
             for (auto each : handle->slices)
                 addSlices(std::make_shared<SliceModel>(handle,each));
-
-            updateSlicesMenu();
 
             if(handle->is_mni)
             {
@@ -694,6 +692,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 continue;
             connect(action, SIGNAL(triggered()),this, SLOT(run_action()));
         }
+        updateSlicesMenu();
     }
     qApp->installEventFilter(this);
     // now begin visualization
@@ -1054,13 +1053,15 @@ void tracking_window::updateSlicesMenu(void)
         if(each != "fiber" && each != "odfs")
         {
             auto Item = new_item(each);
-            connect(Item, SIGNAL(triggered()),tractWidget, SLOT(save_tracts_data_as()));
+            Item->setToolTip("run save_tract_values");
             ui->menuSave->addAction(Item);
+            connect(Item, SIGNAL(triggered()),this, SLOT(run_action()));
         }
         {
             auto Item = new_item(each);
-            Item->setToolTip("run save_slice");
+            Item->setToolTip("run save_slice_image");
             ui->menuE_xport->addAction(Item);
+            connect(Item, SIGNAL(triggered()),this, SLOT(run_action()));
         }
     }
 

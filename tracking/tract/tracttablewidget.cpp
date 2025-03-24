@@ -1082,6 +1082,27 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             return run->failed("cannot write to file at " + cmd[1]);
         return true;
     }
+    if(cmd[0] == "save_tract_values")
+    {
+        // cmd[1] : file name to be saved
+        // cmd[2] : tract index
+        // cmd[3] : metrics name
+        if(cmd.size() <= 3)
+        {
+            cmd.resize(4);
+            if(cmd[3].empty() && (cmd[3] = cur_tracking_window.get_action_data().toStdString()).empty())
+                return run->canceled();
+        }
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[2],cur_row) ||
+            !cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name + "_" + cmd[3]))
+            return run->canceled();
+        auto lock = tract_rendering[cur_row]->start_reading();
+        if(!tract_models[cur_row]->save_data_to_file(cur_tracking_window.handle,cmd[1].c_str(),cmd[3].c_str()))
+            return run->failed("fail to save " + cmd[3] + " from " + tract_models[cur_row]->name);
+        return true;
+    }
+
     if(cmd[0] == "save_all_tracts_to_folder")
     {
         // cmd[1] : directory output
@@ -1348,28 +1369,6 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     return run->not_processed();
 }
 
-void TractTableWidget::save_tracts_data_as(void)
-{
-    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
-        return;
-    QAction *action = qobject_cast<QAction *>(sender());
-    if(!action)
-        return;
-    QString filename = QFileDialog::getSaveFileName(
-                this,"Save as",item(currentRow(),0)->text() + "_" + action->data().toString() + ".txt",
-                "Text files (*.txt);;MATLAB file (*.mat);;TRK file (*.trk *.trk.gz);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-    if(!tract_models[uint32_t(currentRow())]->save_data_to_file(
-                    cur_tracking_window.handle,filename.toStdString().c_str(),
-                    action->data().toString().toStdString().c_str()))
-    {
-        QMessageBox::critical(this,"ERROR","fail to save information");
-    }
-    else
-        QMessageBox::information(this,QApplication::applicationName(),"file saved");
-}
 
 
 void TractTableWidget::delete_row(int row)

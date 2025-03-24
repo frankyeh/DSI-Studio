@@ -169,7 +169,11 @@ public:
 public:
     std::string error_msg;
     bool command(std::vector<std::string> cmd);
-
+    QString get_action_data(void) const
+    {
+        QAction *action = qobject_cast<QAction *>(sender());
+        return action ? action->data().toString() : QString();
+    }
 public slots:
     void check_reg(void);
     void change_contrast();
