@@ -1211,7 +1211,6 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         emit show_tracts();
         return true;
     }
-
     if(cmd[0] == "load_tract_color" || cmd[0] == "load_tract_values" || cmd[0] == "save_tract_color")
     {
         // cmd[1] : file name
@@ -1390,6 +1389,31 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             return tract_models[index]->delete_by_length(threshold);
         });
         emit show_tracts();
+        return true;
+    }
+
+    if(cmd[0] == "reconnect_tract")
+    {
+        // cmd[1] : tract id
+        // cmd[2] = maximum bridging distance (in voxels) and angles
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[1],cur_row))
+            return run->canceled();
+
+        if(cmd[2].empty())
+        {
+            bool ok;
+            cmd[2] = QInputDialog::getText(this,QApplication::applicationName(),"Assign maximum bridging distance (in voxels) and angles (degrees)",
+                                                           QLineEdit::Normal,"4 30",&ok).toStdString();
+            if (!ok)
+                return run->canceled();
+        }
+
+        float dis(0.0f),angle(0.0f);
+        std::istringstream(cmd[2]) >> dis >> angle;
+        if(dis <= 2.0f || angle <= 0.0f)
+            return run->failed("invalid distance and angles" + cmd[2]);
+        tract_models[cur_row]->reconnect_tract(dis,std::cos(angle*3.14159265358979323846f/180.0f));
         return true;
     }
 
@@ -1591,24 +1615,6 @@ void TractTableWidget::move_down(void)
 }
 
 
-void TractTableWidget::reconnect_track(void)
-{
-    for_current_bundle([&](void)
-    {
-        bool ok;
-        QString result = QInputDialog::getText(this,QApplication::applicationName(),"Assign maximum bridging distance (in voxels) and angles (degrees)",
-                                               QLineEdit::Normal,"4 30",&ok);
-
-        if(!ok)
-            return;
-        std::istringstream in(result.toStdString());
-        float dis,angle;
-        in >> dis >> angle;
-        if(dis <= 2.0f || angle <= 0.0f)
-            return;
-        tract_models[currentRow()]->reconnect_track(dis,std::cos(angle*3.14159265358979323846f/180.0f));
-    });
-}
 void TractTableWidget::edit_tracts(void)
 {
     QRgb color = 0;

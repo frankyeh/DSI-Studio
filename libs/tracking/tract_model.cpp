@@ -1954,10 +1954,10 @@ bool TractModel::filter_by_roi(std::shared_ptr<RoiMgr> roi_mgr)
     return delete_tracts(tracts_to_delete);
 }
 //---------------------------------------------------------------------------
-bool TractModel::reconnect_track(float distance,float angular_threshold)
+bool TractModel::reconnect_tract(float distance,float angular_threshold)
 {
     if(distance >= 2.0f)
-        return reconnect_track(distance*0.5f,angular_threshold);
+        return reconnect_tract(distance*0.5f,angular_threshold);
     bool has_merged = false;
     std::vector<std::vector<uint32_t> > endpoint_map(geo.size());
     for (unsigned int index = 0;index < tract_data.size();++index)

@@ -4058,6 +4058,9 @@ Tracking</string>
    <property name="text">
     <string>Reconnect Tracts</string>
    </property>
+   <property name="toolTip">
+    <string>run reconnect_tract</string>
+   </property>
   </action>
   <action name="actionModify_All">
    <property name="checkable">
