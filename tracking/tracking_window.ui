@@ -3285,6 +3285,9 @@ Tracking</string>
    <property name="text">
     <string>Save Current Tract In Current Slice Space...</string>
    </property>
+   <property name="toolTip">
+    <string>run save_slice_tract</string>
+   </property>
   </action>
   <action name="actionThreshold">
    <property name="icon">

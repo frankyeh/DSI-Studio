@@ -593,38 +593,6 @@ void TractTableWidget::save_end_point_in_mni(void)
     }
 }
 
-
-void TractTableWidget::save_transformed_tracts(void)
-{
-    if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
-        return;
-    QString filename;
-    filename = QFileDialog::getSaveFileName(
-                this,
-                "Save tracts as",
-                QString::fromStdString(cur_tracking_window.history.file_stem()) + "_" + cur_tracking_window.current_slice->get_name().c_str() + output_format(),
-                 "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;Text File (*.txt);;MAT files (*.mat);;NIFTI files (*.nii *nii.gz);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
-    if(!slice)
-    {
-        QMessageBox::critical(this,"ERROR","Current slice is in the DWI space. Please use regular tract saving function");
-        return;
-    }
-    if(slice->running)
-    {
-        QMessageBox::critical(this,"ERROR","Please wait until registration is complete");
-        return;
-    }
-    auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-    if(tract_models[uint32_t(currentRow())]->save_transformed_tracts_to_file(filename.toStdString().c_str(),slice->dim,slice->vs,slice->trans_to_mni,slice->to_slice,false))
-        QMessageBox::information(this,QApplication::applicationName(),"File saved");
-    else
-        QMessageBox::critical(this,"ERROR","File not saved. Please check write permission");
-}
-
-
 void TractTableWidget::save_transformed_endpoints(void)
 {
     if(currentRow() >= int(tract_models.size()) || currentRow() == -1)
@@ -951,24 +919,41 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         else
             return load_tract_atlas(cmd[1]);
     }
-    if(cmd[0] == "save_tract" || cmd[0] == "save_mni_tract" || cmd[0] == "save_template_tract")
+    if(cmd[0] == "save_tract" || cmd[0] == "save_mni_tract" || cmd[0] == "save_template_tract" || cmd[0] == "save_slice_tract")
     {
+        std::string post_fix;
+        if(cmd[0] == "save_slice_tract")
+            post_fix = "_"+cur_tracking_window.current_slice->get_name();
+        if(cmd[0] == "save_mni_tract")
+            post_fix = "_mni";
+        if(cmd[0] == "save_template_tract")
+            post_fix = "_template";
         // cmd[1] : file name to be saved
         // cmd[2] : tract index
-        bool output_at_mni = (cmd[0] == "save_mni_tract");
-        bool normalized = (cmd[0] == "save_template_tract" || output_at_mni);
         int cur_row = currentRow();
         if(!get_cur_row(cmd[2],cur_row) ||
-           !cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name + output_format().toStdString()))
+           !cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name + post_fix + output_format().toStdString()))
             return run->canceled();
-        if(normalized && !cur_tracking_window.handle->map_to_mni())
-            return run->failed(cur_tracking_window.handle->error_msg);
 
         tipl::progress prog(cmd[0]);
         auto lock = tract_rendering[cur_row]->start_reading();
-        if(normalized)
+        if(cmd[0] == "save_slice_tract")
         {
-            if(!tract_models[cur_row]->save_tracts_in_template_space(cur_tracking_window.handle,cmd[1].c_str(),output_at_mni))
+            CustomSliceModel* slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
+            if(!slice)
+                return run->failed("current slice is in the DWI space. please use regular tract saving function");
+            if(slice->running)
+                return run->failed("please wait until registration is completed");
+            if(!tract_models[cur_row]->save_transformed_tracts_to_file(cmd[1].c_str(),
+                                slice->dim,slice->vs,slice->trans_to_mni,slice->to_slice,false/*not endpoint*/))
+                return run->failed("cannot write to file at " + cmd[1]);
+        }
+        else
+        if(cmd[0] == "save_template_tract" || cmd[0] == "save_mni_tract")
+        {
+            if(!cur_tracking_window.handle->map_to_mni())
+                return run->failed(cur_tracking_window.handle->error_msg);
+            if(!tract_models[cur_row]->save_tracts_in_template_space(cur_tracking_window.handle,cmd[1].c_str(),cmd[0] == "save_mni_tract"))
                 return run->failed("cannot write to file at " + cmd[1]);
         }
         else
