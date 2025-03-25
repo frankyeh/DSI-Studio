@@ -109,6 +109,7 @@ std::string quality_check_fib_files(const std::vector<std::string>& file_list)
         out << file_list[i] << "\t";
         out << handle->dim << "\t";
         out << handle->vs << "\t";
+        out << handle->trans_to_mni << "\t";
         out << result << "\t";
         float R2 = 0.0f;
         if(handle->mat_reader.read("R2",R2))
