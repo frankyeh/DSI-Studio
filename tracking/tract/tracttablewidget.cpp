@@ -364,77 +364,6 @@ QString TractTableWidget::output_format(void)
     return "";
 }
 
-void TractTableWidget::load_cluster_label(const std::vector<unsigned int>& labels,QStringList Names)
-{
-    auto cur_row = uint32_t(currentRow());
-    std::vector<std::vector<float> > tracts;
-    tract_models[cur_row]->release_tracts(tracts);
-    tract_rendering[cur_row]->need_update = true;
-    delete_row(currentRow());
-    unsigned int cluster_count = uint32_t(Names.empty() ? int(1+tipl::max_value(labels)):int(Names.count()));
-    tipl::progress prog("loading clusters");
-    for(unsigned int cluster_index = 0;prog(cluster_index,cluster_count);++cluster_index)
-    {
-        unsigned int fiber_num = uint32_t(std::count(labels.begin(),labels.end(),cluster_index));
-        if(!fiber_num)
-            continue;
-        std::vector<std::vector<float> > add_tracts(fiber_num);
-        for(unsigned int index = 0,i = 0;index < labels.size();++index)
-            if(labels[index] == cluster_index)
-            {
-                add_tracts[i].swap(tracts[index]);
-                ++i;
-            }
-        if(int(cluster_index) < Names.size())
-            addNewTracts(Names[int(cluster_index)],true);
-        else
-            addNewTracts(QString("cluster")+QString::number(cluster_index),true);
-        tract_models.back()->add_tracts(add_tracts);
-        tract_models.back()->report = tract_models[cur_row]->report;
-        tract_models.back()->geo = tract_models[cur_row]->geo;
-        tract_models.back()->vs = tract_models[cur_row]->vs;
-        tract_models.back()->trans_to_mni = tract_models[cur_row]->trans_to_mni;
-        item(int(tract_models.size())-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
-    }
-    emit show_tracts();
-}
-
-void TractTableWidget::open_cluster_label(void)
-{
-    if(tract_models.empty())
-        return;
-    QString filename = QFileDialog::getOpenFileName(
-            this,"Load cluster label",QFileInfo(cur_tracking_window.work_path).absolutePath(),
-            "Cluster label files (*.txt);;All files (*)");
-    if(!filename.size())
-        return;
-
-    std::ifstream in(filename.toStdString().c_str());
-    std::vector<unsigned int> labels(tract_models[uint32_t(currentRow())]->get_visible_track_count());
-    std::copy(std::istream_iterator<unsigned int>(in),
-              std::istream_iterator<unsigned int>(),labels.begin());
-    load_cluster_label(labels);
-    command({"color_all_cluster"});
-}
-
-void TractTableWidget::recognize_and_cluster(void)
-{
-    std::vector<std::string> labels;
-    std::vector<unsigned int> new_c;
-    {
-        auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-        if(!cur_tracking_window.handle->recognize(tract_models[uint32_t(currentRow())],new_c,labels))
-        {
-            QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
-            return;
-        }
-    }
-    QStringList Names;
-    for(const auto& str : labels)
-        Names << str.c_str();
-    load_cluster_label(new_c,Names);
-}
-
 void TractTableWidget::recognize_rename(void)
 {
     if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
@@ -454,30 +383,6 @@ void TractTableWidget::recognize_rename(void)
         }
 }
 
-void TractTableWidget::clustering(int method_id)
-{
-    if(tract_models.empty())
-        return;
-    bool ok = false;
-    int n = QInputDialog::getInt(this,
-            QApplication::applicationName(),
-            "Assign the maximum number of groups",50,1,5000,10,&ok);
-    if(!ok)
-        return;
-    ok = true;
-    double detail = method_id ? 0.0 : QInputDialog::getDouble(this,
-            QApplication::applicationName(),"Clustering detail (mm):",cur_tracking_window.handle->vs[0],0.2,50.0,2,&ok);
-    if(!ok)
-        return;
-    std::vector<unsigned int> c;
-    {
-        auto lock = tract_rendering[uint32_t(currentRow())]->start_reading();
-        tract_models[uint32_t(currentRow())]->run_clustering(method_id,n,detail);
-        c = tract_models[uint32_t(currentRow())]->tract_cluster;
-    }
-    load_cluster_label(c);
-    command({"color_all_cluster"});
-}
 
 void TractTableWidget::cell_changed(int row, int column)
 {
@@ -1173,6 +1078,102 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         emit show_tracts();
         return true;
     }
+
+    if(tipl::contains(cmd[0],"cluster_tract"))
+    {
+        // cmd[1] : tract index
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[1],cur_row))
+            return false;
+
+        std::vector<unsigned int> labels;
+        std::vector<std::string> names;
+        {
+            auto lock = tract_rendering[cur_row]->start_reading();
+            if(cmd[0] == "cluster_tract_by_label")
+            {
+                // cmd[2] : file_name
+                if(!cur_tracking_window.history.get_filename(this,cmd[2],tract_models[cur_row]->name))
+                    return run->canceled();
+                std::ifstream in(cmd[2].c_str());
+                if(!in)
+                    return run->failed("cannot read tract label " + cmd[2]);
+                std::copy(std::istream_iterator<unsigned int>(in),
+                          std::istream_iterator<unsigned int>(),std::back_inserter(labels));
+                labels.resize(tract_models[cur_row]->get_visible_track_count());
+            }
+            else
+            if(cmd[0] == "recognize_and_cluster_tract")
+            {
+                if(!cur_tracking_window.handle->recognize(tract_models[cur_row],labels,names))
+                    return run->failed(cur_tracking_window.handle->error_msg);
+            }
+            else
+            {
+                // cmd[2] : method_id, number of cluster, details
+                int method_id = 0,n = 10;
+                double detail = 0.0f;
+                if(cmd[0] == "cluster_tract_by_hy")
+                    method_id = 0;
+                if(cmd[0] == "cluster_tract_by_km")
+                    method_id = 1;
+                if(cmd[0] == "cluster_tract_by_em")
+                    method_id = 2;
+                if(cmd[2].empty())
+                {
+                    bool ok = false;
+                    n = QInputDialog::getInt(this,QApplication::applicationName(),"assign the maximum number of groups",50,1,5000,10,&ok);
+                    if(!ok)
+                        return run->canceled();
+                    if(method_id == 0)
+                        detail = QInputDialog::getDouble(this,
+                            QApplication::applicationName(),"clustering detail (mm):",cur_tracking_window.handle->vs[0],0.2,50.0,2,&ok);
+                    if(!ok)
+                        return run->canceled();
+                    cmd[2] = std::to_string(n) + " " + std::to_string(detail);
+                }
+                else
+                {
+                    std::istringstream in(cmd[2]);
+                    in >> n >> detail;
+                }
+                tract_models[cur_row]->run_clustering(method_id,n,detail);
+                labels = tract_models[cur_row]->tract_cluster;
+            }
+        }
+
+        std::vector<std::vector<float> > tracts;
+        tract_models[cur_row]->release_tracts(tracts);
+        tract_rendering[cur_row]->need_update = true;
+        delete_row(cur_row);
+        unsigned int cluster_count = uint32_t(names.empty() ? int(1+tipl::max_value(labels)):int(names.size()));
+        tipl::progress prog("loading clusters");
+        for(unsigned int cluster_index = 0;prog(cluster_index,cluster_count);++cluster_index)
+        {
+            unsigned int fiber_num = uint32_t(std::count(labels.begin(),labels.end(),cluster_index));
+            if(!fiber_num)
+                continue;
+            std::vector<std::vector<float> > add_tracts(fiber_num);
+            for(unsigned int index = 0,i = 0;index < labels.size();++index)
+                if(labels[index] == cluster_index)
+                {
+                    add_tracts[i].swap(tracts[index]);
+                    ++i;
+                }
+            if(int(cluster_index) < names.size())
+                addNewTracts(QString::fromStdString(names[int(cluster_index)]),true);
+            else
+                addNewTracts(QString("cluster")+QString::number(cluster_index),true);
+            tract_models.back()->add_tracts(add_tracts);
+            tract_models.back()->report = tract_models[cur_row]->report;
+            tract_models.back()->geo = tract_models[cur_row]->geo;
+            tract_models.back()->vs = tract_models[cur_row]->vs;
+            tract_models.back()->trans_to_mni = tract_models[cur_row]->trans_to_mni;
+            item(int(tract_models.size())-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
+        }
+        return command({"color_all_cluster"});
+    }
+
     if(cmd[0] == "delete_repeated_tract")
     {
         // cmd[1] : distance

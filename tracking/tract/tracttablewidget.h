@@ -99,16 +99,9 @@ signals:
     void show_tracts(void);
 private:
     void delete_row(int row);
-    void clustering(int method_id);
-    void load_cluster_label(const std::vector<unsigned int>& labels,QStringList Names = QStringList());
 public slots:
 
-    void clustering_EM(void){clustering(2);}
-    void clustering_kmeans(void){clustering(1);}
-    void clustering_hie(void){clustering(0);}
-    void recognize_and_cluster(void);
     void recognize_rename(void);
-    void open_cluster_label(void);
     void check_check_status(int,int);
     void start_tracking(void);
 
