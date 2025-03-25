@@ -465,7 +465,7 @@ bool fib_data::load_from_file(const std::string& file_name)
             header.toLPS(I);
             header.get_voxel_size(vs);
             header.get_image_transformation(trans_to_mni);
-            is_mni = std::filesystem::path(file_name).filename().string().find(".mni.") != std::string::npos;
+            is_mni = header.is_mni() || std::filesystem::path(file_name).filename().string().find(".mni.") != std::string::npos;
             if(is_mni)
                 tipl::out() << "The file name contains '.mni.'. The image is used as MNI-space image." << std::endl;
             else
