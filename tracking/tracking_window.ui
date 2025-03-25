@@ -4117,6 +4117,9 @@ Tracking</string>
    <property name="text">
     <string>Recognize and Rename</string>
    </property>
+   <property name="toolTip">
+    <string>run recognize_and_rename_tract</string>
+   </property>
   </action>
   <action name="actionSave_Slices_to_DICOM">
    <property name="icon">

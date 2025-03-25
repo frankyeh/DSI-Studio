@@ -589,8 +589,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(glWidget,SIGNAL(region_edited()),glWidget,SLOT(update()));
         connect(glWidget,&GLWidget::region_edited,this,[this](void){slice_need_update = true;});
 
-        connect(ui->actionRecognize_and_Rename,SIGNAL(triggered()),tractWidget,SLOT(recognize_rename()));
-
         connect(ui->track_up,SIGNAL(clicked()),tractWidget,SLOT(move_up()));
         connect(ui->track_down,SIGNAL(clicked()),tractWidget,SLOT(move_down()));
 

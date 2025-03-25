@@ -364,26 +364,6 @@ QString TractTableWidget::output_format(void)
     return "";
 }
 
-void TractTableWidget::recognize_rename(void)
-{
-    if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
-    {
-        QMessageBox::critical(this,"ERROR",cur_tracking_window.handle->error_msg.c_str());
-        return;
-    }
-    tipl::progress prog("Recognize and rename");
-    for(unsigned int index = 0;prog(index,tract_models.size());++index)
-        if(item(int(index),0)->checkState() == Qt::Checked)
-        {
-            std::multimap<float,std::string,std::greater<float> > sorted_list;
-            auto lock = tract_rendering[index]->start_reading();
-            if(!cur_tracking_window.handle->recognize_and_sort(tract_models[index],sorted_list))
-                return;
-            item(int(index),0)->setText(sorted_list.begin()->second.c_str());
-        }
-}
-
-
 void TractTableWidget::cell_changed(int row, int column)
 {
     if(row >= 0 && row < tract_models.size())
@@ -1322,6 +1302,22 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
                 out << beg->first*100.0f << "% " << beg->second << std::endl;
         show_info_dialog("Tract Recognition Result",out.str(),cur_tracking_window.history.file_stem() + "_" +
                                             tract_models[cur_row]->name.c_str() + ".txt");
+        return true;
+    }
+    if(cmd[0] == "recognize_and_rename_tract")
+    {
+        if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
+            return run->failed(cur_tracking_window.handle->error_msg);
+        tipl::progress prog("Recognize and rename");
+        for(unsigned int index = 0;prog(index,tract_models.size());++index)
+            if(item(int(index),0)->checkState() == Qt::Checked && tract_models[index]->get_visible_track_count())
+            {
+                std::multimap<float,std::string,std::greater<float> > sorted_list;
+                auto lock = tract_rendering[index]->start_reading();
+                if(!cur_tracking_window.handle->recognize_and_sort(tract_models[index],sorted_list))
+                    return run->failed(cur_tracking_window.handle->error_msg);
+                item(int(index),0)->setText(sorted_list.begin()->second.c_str());
+            }
         return true;
     }
     if(cmd[0] == "merge_all_tracts")
