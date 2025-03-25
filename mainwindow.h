@@ -107,6 +107,8 @@ private slots:
     void on_github_release_note_currentChanged(int index);
     void on_github_repo_currentIndexChanged(int index);
     void on_github_open_file_clicked();
+    void on_NII_qc_clicked();
+    void on_FIB_qc_clicked();
 };
 
 #endif // MAINWINDOW_H
