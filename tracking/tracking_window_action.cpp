@@ -24,67 +24,77 @@ std::string show_info_dialog(const std::string& title,
                              const std::string& file_name_hint)
 {
     std::string saved_file;
-    QDialog* dlg = new QDialog(QApplication::activeWindow());
+    QWidget* parent = QApplication::activeWindow();
+    QDialog* dlg = new QDialog(parent);
     dlg->setWindowTitle(QString::fromStdString(title));
     dlg->setMinimumSize(600, 400);
-    QVBoxLayout* layout = new QVBoxLayout(dlg);
+    QVBoxLayout* mainLay = new QVBoxLayout(dlg);
+
+    // Use a vertical splitter so the user can adjust the space between the summary and table.
+    QSplitter* splitter = new QSplitter(Qt::Vertical, dlg);
     QTextEdit* txt = new QTextEdit(dlg);
     txt->setReadOnly(true);
     txt->setText(QString::fromStdString(result));
-    layout->addWidget(txt);
+    splitter->addWidget(txt);
     QTableWidget* table = new QTableWidget(dlg);
     table->setVisible(false);
-    layout->addWidget(table);
+    splitter->addWidget(table);
+    mainLay->addWidget(splitter);
+
     QHBoxLayout* btnLay = new QHBoxLayout;
-    QPushButton* copyBtn = new QPushButton("Copy to Clipboard", dlg);
-    QPushButton* saveBtn = new QPushButton("Save", dlg);
+    QPushButton* copyBtn  = new QPushButton("Copy to Clipboard", dlg);
+    QPushButton* saveBtn  = new QPushButton("Save as...", dlg);
     QPushButton* tableBtn = new QPushButton("Show Table", dlg);
     QPushButton* closeBtn = new QPushButton("Close", dlg);
     btnLay->addWidget(copyBtn); btnLay->addWidget(saveBtn);
     btnLay->addWidget(tableBtn); btnLay->addWidget(closeBtn);
-    layout->addLayout(btnLay);
+    mainLay->addLayout(btnLay);
 
     QObject::connect(copyBtn, &QPushButton::clicked, [result](){
         QApplication::clipboard()->setText(QString::fromStdString(result));
     });
     QObject::connect(saveBtn, &QPushButton::clicked, [dlg, file_name_hint, result, &saved_file](){
         QString fn = QFileDialog::getSaveFileName(dlg, "Save as",
-                       QString::fromStdString(file_name_hint),
-                       "Text files (*.txt);;All files (*)");
-        if(!fn.isEmpty()){
+                        QString::fromStdString(file_name_hint),
+                        "Text files (*.txt);;All files (*)");
+        if (!fn.isEmpty()){
             std::ofstream out(fn.toStdString());
             out << result;
             saved_file = fn.toStdString();
         }
     });
     QObject::connect(tableBtn, &QPushButton::clicked, [table, tableBtn, result](){
-        if(!table->isVisible()){
+        if (!table->isVisible()){
             QStringList lines = QString::fromStdString(result).split('\n', Qt::SkipEmptyParts);
-            int r = lines.size(), c = 0; QList<QStringList> data;
-            for(const QString &line : lines){
+            int r = lines.size(), c = 0;
+            QList<QStringList> data;
+            for (const QString &line : lines) {
                 QStringList cols = line.split('\t');
                 data.append(cols);
                 c = std::max<int>(c, cols.size());
             }
             table->clear(); table->setRowCount(r); table->setColumnCount(c);
-            for(int i = 0; i < r; ++i)
-                for(int j = 0; j < data[i].size(); ++j)
+            for (int i = 0; i < r; ++i)
+                for (int j = 0; j < data[i].size(); ++j)
                     table->setItem(i, j, new QTableWidgetItem(data[i][j]));
             table->resizeColumnsToContents(); table->resizeRowsToContents();
-            tableBtn->setText("Hide Table"); table->setVisible(true);
+            tableBtn->setText("Hide Table");
+            table->setVisible(true);
         } else {
-            table->setVisible(false); tableBtn->setText("Show Table");
+            table->setVisible(false);
+            tableBtn->setText("Show Table");
         }
     });
     QObject::connect(closeBtn, &QPushButton::clicked, dlg, &QDialog::accept);
 
+    dlg->show();
     QEventLoop loop;
     QObject::connect(dlg, &QDialog::finished, &loop, &QEventLoop::quit);
-    dlg->show();
     loop.exec();
     dlg->deleteLater();
     return saved_file;
 }
+
 
 
 
