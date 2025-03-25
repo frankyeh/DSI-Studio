@@ -891,16 +891,12 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         int cur_row = currentRow();
         if(!get_cur_row(cmd[1],cur_row))
             return false;
-        if(tipl::progress::is_running())
-            return run->failed("please wait for the termination of data processing");
         delete_row(cur_row);
         emit show_tracts();
         return true;
     }
     if(cmd[0] == "delete_all_tracts")
     {
-        if(tipl::progress::is_running())
-            return run->failed("please wait for the termination of data processing");
         setRowCount(0);
         while(!tract_rendering.empty())
         {
