@@ -341,7 +341,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
     if(cmd.size() < 3)
         cmd.resize(3);
 
-    auto get_cur_row = [&](std::string& cmd_text,int cur_row)->bool
+    auto get_cur_row = [&](std::string& cmd_text,int& cur_row)->bool
     {
         if (regions.empty())
         {
@@ -466,8 +466,9 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         // cmd[1] : file name to be saved
         // cmd[2] : the region index (default: current selected one)
         int cur_row = currentRow();
-        if(!get_cur_row(cmd[2],cur_row) ||
-           !cur_tracking_window.history.get_filename(this,cmd[1],regions[cur_row]->name + output_format().toStdString()))
+        if(!get_cur_row(cmd[2],cur_row))
+            return false;
+        if(!cur_tracking_window.history.get_filename(this,cmd[1],regions[cur_row]->name + output_format().toStdString()))
             return run->canceled();
 
         if(!tipl::ends_with(cmd[1],".mat") &&
@@ -575,8 +576,9 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         // cmd[1] : file name to be saved
         // cmd[2] : the region index (default: current selected one)
         int cur_row = currentRow();
-        if(!get_cur_row(cmd[2],cur_row) ||
-           !cur_tracking_window.history.get_filename(this,cmd[1],regions[cur_row]->name + output_format().toStdString()))
+        if(!get_cur_row(cmd[2],cur_row))
+            return false;
+        if(!cur_tracking_window.history.get_filename(this,cmd[1],regions[cur_row]->name + output_format().toStdString()))
             return run->canceled();
 
         std::ofstream out(cmd[1].c_str());
