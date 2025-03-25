@@ -1110,17 +1110,19 @@
     <addaction name="separator"/>
     <addaction name="actionSave_T1W_T2W_images"/>
     <addaction name="actionSave_Slices_to_DICOM"/>
-    <addaction name="actionEdit_Slices"/>
     <addaction name="actionMark_Tracts_on_T1W_T2W"/>
     <addaction name="actionMark_Region_on_T1W_T2W"/>
     <addaction name="separator"/>
+    <addaction name="actionDelete_Current_Slice"/>
     <addaction name="actionLoad_mapping"/>
     <addaction name="actionSave_mapping"/>
     <addaction name="actionAdjust_Mapping"/>
     <addaction name="separator"/>
+    <addaction name="actionEdit_Slices"/>
     <addaction name="actionLoad_Color_Map"/>
     <addaction name="separator"/>
     <addaction name="actionMove_Slices_To_Current_Region"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -3208,7 +3210,10 @@ Tracking</string>
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Registration...</string>
+    <string>Save Slice Registration...</string>
+   </property>
+   <property name="toolTip">
+    <string>run save_slice_mapping</string>
    </property>
   </action>
   <action name="actionLoad_mapping">
@@ -3217,7 +3222,10 @@ Tracking</string>
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Load Registration...</string>
+    <string>Load Slice Registration...</string>
+   </property>
+   <property name="toolTip">
+    <string>run open_slice_mapping</string>
    </property>
   </action>
   <action name="actionStatistics">
@@ -3651,7 +3659,7 @@ Tracking</string>
      <normaloff>:/icons/icons/preferences.xpm</normaloff>:/icons/icons/preferences.xpm</iconset>
    </property>
    <property name="text">
-    <string>Adjust Registration...</string>
+    <string>Adjust Slice Registration...</string>
    </property>
   </action>
   <action name="actionSeparate">
@@ -4650,7 +4658,7 @@ Tracking</string>
      <normaloff>:/icons/icons/report.xpm</normaloff>:/icons/icons/report.xpm</iconset>
    </property>
    <property name="text">
-    <string>Edit Slices...</string>
+    <string>Edit Slice Image...</string>
    </property>
   </action>
   <action name="actionSave_FIB_As">
@@ -4697,6 +4705,18 @@ Tracking</string>
    </property>
    <property name="toolTip">
     <string>run load_cluster_values</string>
+   </property>
+  </action>
+  <action name="actionDelete_Current_Slice">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/delete.xpm</normaloff>:/icons/icons/delete.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Delete Current Slice</string>
+   </property>
+   <property name="toolTip">
+    <string>run delete_slice</string>
    </property>
   </action>
  </widget>
@@ -5039,6 +5059,22 @@ Tracking</string>
    <hints>
     <hint type="sourcelabel">
      <x>529</x>
+     <y>33</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>deleteSlice</sender>
+   <signal>clicked()</signal>
+   <receiver>actionDelete_Current_Slice</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>557</x>
      <y>33</y>
     </hint>
     <hint type="destinationlabel">

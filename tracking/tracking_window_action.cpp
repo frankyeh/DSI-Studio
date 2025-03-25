@@ -599,6 +599,58 @@ bool tracking_window::command(std::vector<std::string> cmd)
         ++history.current_recording_instance;
         return true;
     }
+
+    if(cmd[0] == "save_slice_mapping" || cmd[0] == "open_slice_mapping")
+    {
+        // cmd[1] : file name
+        // cmd[2] : slice index
+        int slice_index = ui->SliceModality->currentIndex();
+        if(cmd[2].empty())
+            cmd[2] = std::to_string(slice_index);
+        else
+            slice_index = QString::fromStdString(cmd[2]).toInt();
+        if(slice_index < 0 || slice_index >= slices.size())
+            return run->canceled();
+        auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(slices[slice_index]);
+        if(!reg_slice.get())
+            return run->canceled();
+        if(!history.get_filename(this,cmd[1],ui->SliceModality->currentText().toStdString()))
+            return run->canceled();
+        if(cmd[0] == "save_slice_mapping")
+        {
+            if(!reg_slice->save_mapping(cmd[1].c_str()))
+                return run->failed("cannot save mapping to " + cmd[1]);
+        }
+        else
+        {
+            reg_slice->terminate();
+            if(!reg_slice->load_mapping(cmd[1].c_str()))
+                return run->failed("invalid linear registration file " + cmd[1]);
+        }
+        return true;
+    }
+    if(cmd[0] == "delete_slice")
+    {
+        // cmd[1] : slice index
+        int slice_index = ui->SliceModality->currentIndex();
+        if(cmd[1].empty())
+            cmd[1] = std::to_string(slice_index);
+        else
+            slice_index = QString::fromStdString(cmd[1]).toInt();
+
+        if(current_slice->is_overlay)
+            on_is_overlay_clicked();
+        if(current_slice->stay)
+            on_stay_clicked();
+        if(current_slice->directional_color)
+            on_directional_color_clicked();
+        slices.erase(slices.begin()+slice_index);
+        glWidget->slice_texture.erase(glWidget->slice_texture.begin()+slice_index);
+        ui->SliceModality->removeItem(slice_index);
+        updateSlicesMenu();
+        return true;
+    }
+
     return run->failed("unknown command: " + cmd[0]);
 }
 
@@ -979,22 +1031,7 @@ void tracking_window::insertPicture()
 }
 
 
-void tracking_window::on_deleteSlice_clicked()
-{
-    int index = ui->SliceModality->currentIndex();
-    if(index <= 1)
-        return;
-    if(current_slice->is_overlay)
-        on_is_overlay_clicked();
-    if(current_slice->stay)
-        on_stay_clicked();
-    if(current_slice->directional_color)
-        on_directional_color_clicked();
-    slices.erase(slices.begin()+index);
-    glWidget->slice_texture.erase(glWidget->slice_texture.begin()+index);
-    ui->SliceModality->removeItem(index);    
-    updateSlicesMenu();
-}
+
 
 
 
@@ -1543,40 +1580,6 @@ void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
     glWidget->update();
 }
 
-
-void tracking_window::on_actionSave_mapping_triggered()
-{
-    auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
-    if(!reg_slice.get())
-        return;
-    QString filename = QFileDialog::getSaveFileName(
-            this,
-            "Save Linear Registration",QString(reg_slice->source_file_name.c_str())+".linear_reg.txt",
-            "Text files (*.txt);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    if(!reg_slice->save_mapping(filename.toStdString().c_str()))
-        QMessageBox::critical(this,"ERROR","Cannot save mapping file.");
-}
-
-void tracking_window::on_actionLoad_mapping_triggered()
-{
-    auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
-    if(!reg_slice)
-        return;
-    QString filename = QFileDialog::getOpenFileName(
-            this,"Open Linear Registration",QString(reg_slice->source_file_name.c_str())+".linear_reg.txt",
-                "Text files (*.txt);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    reg_slice->terminate();
-    if(!reg_slice->load_mapping(filename.toStdString().c_str()))
-    {
-        QMessageBox::critical(this,"ERROR","Invalid linear registration file.");
-        return;
-    }
-    glWidget->update();
-}
 
 
 void tracking_window::on_actionLoad_Color_Map_triggered()

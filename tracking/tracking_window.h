@@ -181,8 +181,6 @@ public slots:
 private slots:
     void SliderValueChanged(void);
 
-    void on_deleteSlice_clicked();
-
     void on_actionTract_Analysis_Report_triggered();
     void on_actionConnectivity_matrix_triggered();
     void on_addRegionFromAtlas_clicked();
@@ -192,8 +190,6 @@ private slots:
 
     void stripSkull();
     void on_actionAdjust_Mapping_triggered();
-    void on_actionSave_mapping_triggered();
-    void on_actionLoad_mapping_triggered();
     void on_actionLoad_Color_Map_triggered();
     void on_track_style_currentIndexChanged(int index);
 
