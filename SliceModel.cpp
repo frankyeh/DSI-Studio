@@ -451,12 +451,7 @@ bool CustomSliceModel::load_slices(void)
         save_idx(source_file_name.c_str(),nifti.input_stream);
         nifti.get_voxel_size(vs);
         nifti.get_image_transformation(trans_to_mni);
-
-        if(is_mni && !nifti.is_mni())
-        {
-            tipl::warning() << "this nifti file is specified as a template space image, but the srow shows off-diagonal values...it will be used as native-space image.";
-            is_mni = false;
-        }
+        is_mni |= nifti.is_mni();
 
         if(QFileInfo(source_file_name.c_str()).fileName().toLower().contains(".mni."))
         {
@@ -465,7 +460,7 @@ bool CustomSliceModel::load_slices(void)
         }
 
         tipl::out() << "vs: " << vs;
-        tipl::out() << "srow: " << trans_to_mni;
+        tipl::out() << "trans: " << trans_to_mni;
         if(handle->is_mni) // fib in the template space
         {
             tipl::out() << "header transformation used to align image." << std::endl;
