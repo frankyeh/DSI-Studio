@@ -2686,7 +2686,7 @@ bool src_data::save_to_file(const std::string& filename)
 
 void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in)
 {
-    if(file_name.back() != 'z')
+    if(file_name.back() != 'z' || !std::filesystem::exists(file_name))
         return;
     std::string idx_name = file_name;
     idx_name += ".idx";
