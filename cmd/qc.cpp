@@ -106,7 +106,7 @@ std::string quality_check_fib_files(const std::vector<std::string>& file_list)
         auto result = evaluate_fib(handle->dim,handle->dir.fa_otsu*0.6f,handle->dir.fa,
                                                      [&](int pos,char fib)
                                                      {return handle->dir.get_fib(size_t(pos),uint32_t(fib));});
-        out << file_list[i] << "\t";
+        out << std::filesystem::path(file_list[i]).filename().string() << "\t";
         out << handle->dim << "\t";
         out << handle->vs << "\t";
         out << result << "\t";
@@ -151,7 +151,7 @@ std::string quality_check_nii_files(const std::vector<std::string>& file_list)
         tipl::io::gz_nifti nii;
         if(nii.load_from_file(file_list[i]))
         {
-            out << std::filesystem::path(file_list[i]).filename() << "\t";
+            out << std::filesystem::path(file_list[i]).filename().string() << "\t";
             if(nii.dim(4) == 1)
                 out << nii.get_image_dimension<3>() << "\t";
             else
