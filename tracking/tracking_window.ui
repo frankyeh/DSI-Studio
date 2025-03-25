@@ -3200,6 +3200,9 @@ Tracking</string>
    <property name="text">
     <string>Insert Other Images...</string>
    </property>
+   <property name="toolTip">
+    <string>run add_slice</string>
+   </property>
   </action>
   <action name="actionSave_mapping">
    <property name="icon">
@@ -3942,6 +3945,9 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Insert MNI Images...</string>
+   </property>
+   <property name="toolTip">
+    <string>run add_mni_slice</string>
    </property>
   </action>
   <action name="actionSave_Tracts_In_Native_Space">
@@ -5020,6 +5026,22 @@ Tracking</string>
     <hint type="sourcelabel">
      <x>841</x>
      <y>647</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>addSlices</sender>
+   <signal>clicked()</signal>
+   <receiver>actionInsert_T1_T2</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>529</x>
+     <y>33</y>
     </hint>
     <hint type="destinationlabel">
      <x>-1</x>

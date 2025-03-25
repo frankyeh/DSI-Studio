@@ -196,10 +196,8 @@ private slots:
     void on_actionLoad_mapping_triggered();
     void on_actionLoad_Color_Map_triggered();
     void on_track_style_currentIndexChanged(int index);
-    void on_addSlices_clicked();
 
     void on_is_overlay_clicked();
-    void on_actionInsert_MNI_images_triggered();
     void on_actionOpen_Connectivity_Matrix_triggered();
     void on_SlicePos_valueChanged(int value);
 

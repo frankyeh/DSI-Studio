@@ -515,13 +515,56 @@ bool tracking_window::command(std::vector<std::string> cmd)
         slice_need_update = true;
         return true;
     }
-    if(cmd[0] == "add_slice")
+    if(cmd[0] == "add_slice" || cmd[0] == "add_mni_slice")
     {
-        if(!openSlices(cmd[1]))
-            return run->failed("cannot add slice " + cmd[1]);
-        tipl::out() << "register image to the DWI space" << std::endl;
-        auto cur_slice = std::dynamic_pointer_cast<CustomSliceModel>(slices.back());
-        cur_slice->wait();
+        // cmd[1] : file name
+        if(!cmd[1].empty())
+        {
+            if(cmd[0] == "add_mni_slice" && !handle->map_to_mni())
+                return run->failed(handle->error_msg);
+            if(!openSlices(cmd[1],cmd[0] == "add_mni_slice"))
+                return run->failed(error_msg);
+            glWidget->update();
+            slice_need_update = true;
+            return true;
+        }
+
+        auto filenames = QFileDialog::getOpenFileNames(
+            this,"Open Images files",QFileInfo(work_path).absolutePath(),
+                    "Image files (*.dcm *.hdr *.nii *nii.gz *db.fz *db.fib.gz 2dseq);;Histology (*.jpg *.tif);;All files (*)" );
+        if(filenames.isEmpty())
+            return run->canceled();
+
+        if(QFileInfo(filenames[0]).completeSuffix() == "dcm" && filenames.size() == 1)
+        {
+            QDir directory = QFileInfo(filenames[0]).absoluteDir();
+            QStringList file_list = directory.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
+            if(file_list.size() > filenames.size())
+            {
+                QString msg =
+                  QString("There are %1 DICOM files in the directory. Select all?").arg(file_list.size());
+                int result = QMessageBox::information(this,"Input images",msg,
+                                         QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+                if(result == QMessageBox::Cancel)
+                    return run->canceled();
+                if(result == QMessageBox::Yes)
+                {
+                    filenames = file_list;
+                    for(int index = 0;index < filenames.size();++index)
+                        filenames[index] = directory.absolutePath() + "/" + filenames[index];
+                }
+            }
+        }
+        --history.current_recording_instance;
+        if(filenames[0].endsWith(".nii.gz"))
+        {
+            for(const auto& each : filenames)
+                command({cmd[0],each.toStdString()});
+
+        }
+        else
+            command({cmd[0],filenames.join(',').toStdString()});
+        ++history.current_recording_instance;
         return true;
     }
     return run->failed("unknown command: " + cmd[0]);
@@ -821,56 +864,6 @@ bool tracking_window::openSlices(const std::string& filename,bool is_mni)
     set_data("show_slice",Qt::Checked);
     glWidget->update();
     return true;
-}
-void tracking_window::on_addSlices_clicked()
-{
-    QStringList filenames = QFileDialog::getOpenFileNames(
-        this,"Open Images files",QFileInfo(work_path).absolutePath(),
-                "Image files (*.dcm *.hdr *.nii *nii.gz *db.fz *db.fib.gz 2dseq);;Histology (*.jpg *.tif);;All files (*)" );
-    if( filenames.isEmpty())
-        return;
-    if(QFileInfo(filenames[0]).completeSuffix() == "dcm" && filenames.size() == 1)
-    {
-        QDir directory = QFileInfo(filenames[0]).absoluteDir();
-        QStringList file_list = directory.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
-        if(file_list.size() > filenames.size())
-        {
-            QString msg =
-              QString("There are %1 DICOM files in the directory. Select all?").arg(file_list.size());
-            int result = QMessageBox::information(this,"Input images",msg,
-                                     QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
-            if(result == QMessageBox::Cancel)
-                return;
-            if(result == QMessageBox::Yes)
-            {
-                filenames = file_list;
-                for(int index = 0;index < filenames.size();++index)
-                    filenames[index] = directory.absolutePath() + "/" + filenames[index];
-            }
-        }
-    }
-    if(filenames[0].endsWith(".nii.gz"))
-    {
-        for(const auto& each : filenames)
-            openSlices(each.toStdString());
-    }
-    else
-        openSlices(filenames.join(",").toStdString());
-}
-
-void tracking_window::on_actionInsert_MNI_images_triggered()
-{
-    QString filename = QFileDialog::getOpenFileName(
-        this,"Open MNI Image",QFileInfo(work_path).absolutePath(),
-                "Image files (*.hdr *.nii *nii.gz);;All files (*)" );
-    if( filename.isEmpty())
-        return;
-    if(!handle->map_to_mni())
-    {
-        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-        return;
-    }
-    openSlices(filename.toStdString(),true);
 }
 
 void tracking_window::insertPicture()
