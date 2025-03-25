@@ -107,7 +107,8 @@ bool command_history::get_filename(QWidget* parent,std::string& filename,const s
     if(tipl::ends_with(current_cmd,"_tracts") || tipl::ends_with(current_cmd,"_tract"))
         filter = "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;MAT files (*.mat)";
     else
-    if(tipl::ends_with(current_cmd,"_regions") || tipl::ends_with(current_cmd,"_region"))
+    if(tipl::ends_with(current_cmd,"_regions") || tipl::ends_with(current_cmd,"_region") ||
+       tipl::ends_with(current_cmd,"_volume"))
             filter = "NIFTI file(*nii.gz *.nii);;MAT file (*.mat)";
     else
         default_file_name += "_" + QString::fromStdString(current_cmd).split('_').back() + ".txt";
