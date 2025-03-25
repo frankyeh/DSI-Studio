@@ -599,23 +599,26 @@ bool tracking_window::command(std::vector<std::string> cmd)
         ++history.current_recording_instance;
         return true;
     }
-
-    if(cmd[0] == "save_slice_mapping" || cmd[0] == "open_slice_mapping")
+    if(cmd[0] == "save_slice_mapping" || cmd[0] == "open_slice_mapping" || cmd[0] == "save_slice_volume")
     {
         // cmd[1] : file name
         // cmd[2] : slice index
-        int slice_index = ui->SliceModality->currentIndex();
-        if(cmd[2].empty())
-            cmd[2] = std::to_string(slice_index);
-        else
-            slice_index = QString::fromStdString(cmd[2]).toInt();
+        int slice_index = run->from_cmd(2,ui->SliceModality->currentIndex());
         if(slice_index < 0 || slice_index >= slices.size())
             return run->canceled();
         auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(slices[slice_index]);
         if(!reg_slice.get())
-            return run->canceled();
+            return run->failed("cannot apply to built-in slices.");
         if(!history.get_filename(this,cmd[1],ui->SliceModality->currentText().toStdString()))
             return run->canceled();
+
+        if(cmd[0] == "save_slice_volume")
+        {
+            if(!tipl::io::gz_nifti::save_to_file(cmd[1].c_str(),
+                reg_slice->source_images,reg_slice->vs,reg_slice->trans_to_mni,reg_slice->is_mni))
+                return run->failed("cannot save mapping to " + cmd[1]);
+        }
+        else
         if(cmd[0] == "save_slice_mapping")
         {
             if(!reg_slice->save_mapping(cmd[1].c_str()))
@@ -632,12 +635,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
     if(cmd[0] == "delete_slice")
     {
         // cmd[1] : slice index
-        int slice_index = ui->SliceModality->currentIndex();
-        if(cmd[1].empty())
-            cmd[1] = std::to_string(slice_index);
-        else
-            slice_index = QString::fromStdString(cmd[1]).toInt();
-
+        int slice_index = run->from_cmd(1,ui->SliceModality->currentIndex());
         if(current_slice->is_overlay)
             on_is_overlay_clicked();
         if(current_slice->stay)
@@ -1517,17 +1515,6 @@ void paint_track_on_volume(tipl::image<3,unsigned char>& track_map,const std::ve
 
 
 
-void tracking_window::on_actionSave_T1W_T2W_images_triggered()
-{
-    auto slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
-    if(!slice.get())
-        return;
-    QString filename = QFileDialog::getSaveFileName(
-        this,"Save T1W/T2W Image",QFileInfo(work_path).absolutePath()+"//"+slice->name.c_str()+"_modified.nii.gz","Image files (*nii.gz);;All files (*)" );
-    if( filename.isEmpty())
-        return;
-    tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),slice->source_images,slice->vs,slice->trans_to_mni,slice->is_mni);
-}
 
 void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
 {
