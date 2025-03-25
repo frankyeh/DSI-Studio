@@ -1171,6 +1171,16 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             tract_models.back()->trans_to_mni = tract_models[cur_row]->trans_to_mni;
             item(int(tract_models.size())-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
         }
+        if(cmd[0] == "cluster_tract_by_hy")
+        {
+            std::vector<unsigned int> track_to_delete(tract_models.back()->get_visible_track_count());
+            std::iota(track_to_delete.begin(), track_to_delete.end(), 0);
+            tract_models.back()->delete_tracts(track_to_delete);
+            tract_models.back()->name = "others";
+            item(int(tract_models.size())-1,0)->setText("others");
+            item(int(tract_models.size())-1,1)->setText("0");
+            item(int(tract_models.size())-1,2)->setText(QString::number(track_to_delete.size()));
+        }
         return command({"color_all_cluster"});
     }
 
