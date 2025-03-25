@@ -925,19 +925,56 @@ void MainWindow::on_nonlinear_reg_clicked()
 
 std::string quality_check_src_files(const std::vector<std::string>& file_list,
                                     bool check_btable,bool use_template,unsigned int template_id);
+std::string quality_check_fib_files(const std::vector<std::string>& file_list);
+std::string quality_check_nii_files(const std::vector<std::string>& file_list);
+
 void MainWindow::on_SRC_qc_clicked()
 {
-    QString dir = QFileDialog::getExistingDirectory(
-                                this,
-                                "Open directory",
-                                ui->workDir->currentText());
-    if(dir.isEmpty())
+    QStringList filenames = QFileDialog::getOpenFileNames(
+                           this,"Open SRC files",
+                           ui->workDir->currentText(),
+                           "Src files (*.sz *src.gz);;All files (*)" );
+    if (filenames.isEmpty())
         return;
-    tipl::progress prog_("checking SRC files");
-    std::vector<std::string> results;
-    tipl::search_files(dir.toStdString(),"*src.gz",results);
-    tipl::search_files(dir.toStdString(),"*sz",results);
-    show_info_dialog("SRC report",quality_check_src_files(results,false,false,0));
+    std::vector<std::string> files;
+    for(auto each : filenames)
+        files.push_back(each.toStdString());
+    tipl::progress prog("checking SRC files");
+    show_info_dialog("SRC report",quality_check_src_files(files,false,false,0));
+}
+
+
+void MainWindow::on_NII_qc_clicked()
+{
+    auto filenames = QFileDialog::getOpenFileNames(
+                           this,"Open NIFTI files",
+                           ui->workDir->currentText(),
+                           "NIFTI files (*.nii *nii.gz);;All files (*)");
+    if (filenames.isEmpty())
+        return;
+    std::vector<std::string> files;
+    for(auto each : filenames)
+        files.push_back(each.toStdString());
+    tipl::progress prog("checking NIFTI files");
+    show_info_dialog("NIFTI report",quality_check_nii_files(files));
+}
+
+
+
+void MainWindow::on_FIB_qc_clicked()
+{
+    auto filenames = QFileDialog::getOpenFileNames(
+                           this,"Open FIB files",
+                           ui->workDir->currentText(),
+                           "Fib files (*.fz *fib.gz);;All files (*)");
+
+    if (filenames.isEmpty())
+        return;
+    std::vector<std::string> files;
+    for(auto each : filenames)
+        files.push_back(each.toStdString());
+    tipl::progress prog("checking FIB files");
+    show_info_dialog("FIB report",quality_check_fib_files(files));
 }
 
 void MainWindow::on_parse_network_measures_clicked()
