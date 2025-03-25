@@ -40,6 +40,23 @@ public:
         {
             ++owner.current_recording_instance;
         }
+        template<typename value_type>
+        value_type from_cmd(size_t index,value_type default_value)
+        {
+            if(index >= cmd.size())
+                cmd.resize(index+1);
+            if(cmd[index].empty())
+                cmd[index] = std::to_string(default_value);
+            else
+            {
+                if constexpr (std::is_integral_v<value_type>)
+                    default_value = static_cast<value_type>(QString::fromStdString(cmd[index]).toInt());
+                else
+                if constexpr (std::is_floating_point_v<value_type>)
+                    default_value = static_cast<value_type>(QString::fromStdString(cmd[index]).toDouble());
+            }
+            return default_value;
+        }
         bool canceled(void)
         {
             error_msg = "canceled";
@@ -200,7 +217,7 @@ private slots:
 
     void on_actionFIB_protocol_triggered();
     void on_SliceModality_currentIndexChanged(int index);
-    void on_actionSave_T1W_T2W_images_triggered();
+
     void on_actionMark_Region_on_T1W_T2W_triggered();
     void on_actionMark_Tracts_on_T1W_T2W_triggered();
     void on_actionSave_Slices_to_DICOM_triggered();
