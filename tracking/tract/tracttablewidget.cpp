@@ -364,18 +364,6 @@ QString TractTableWidget::output_format(void)
     return "";
 }
 
-void TractTableWidget::assign_colors(void)
-{
-    for(unsigned int index = 0;index < tract_models.size();++index)
-    {
-        tipl::rgb c = tipl::rgb::generate(index);
-        auto lock = tract_rendering[index]->start_writing();
-        tract_models[index]->set_color(c.color);
-        tract_rendering[index]->need_update = true;
-    }
-    cur_tracking_window.set_data("tract_color_style",1);//manual assigned
-    emit show_tracts();
-}
 void TractTableWidget::load_cluster_label(const std::vector<unsigned int>& labels,QStringList Names)
 {
     auto cur_row = uint32_t(currentRow());
@@ -426,7 +414,7 @@ void TractTableWidget::open_cluster_label(void)
     std::copy(std::istream_iterator<unsigned int>(in),
               std::istream_iterator<unsigned int>(),labels.begin());
     load_cluster_label(labels);
-    assign_colors();
+    command({"set_all_cluster_color"});
 }
 
 void TractTableWidget::recognize_and_cluster(void)
@@ -488,7 +476,7 @@ void TractTableWidget::clustering(int method_id)
         c = tract_models[uint32_t(currentRow())]->tract_cluster;
     }
     load_cluster_label(c);
-    assign_colors();
+    command({"set_all_cluster_color"});
 }
 
 void TractTableWidget::cell_changed(int row, int column)
@@ -1168,6 +1156,19 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             color = QColor::fromRgba(QString::fromStdString(cmd[2]).toLongLong());
         tract_models[cur_row]->set_color(color.rgb());
         tract_rendering[cur_row]->need_update = true;
+        cur_tracking_window.set_data("tract_color_style",1);//manual assigned
+        emit show_tracts();
+        return true;
+    }
+    if(cmd[0] == "set_all_cluster_color")
+    {
+        for(unsigned int index = 0;index < tract_models.size();++index)
+        {
+            tipl::rgb c = tipl::rgb::generate(index);
+            auto lock = tract_rendering[index]->start_writing();
+            tract_models[index]->set_color(c.color);
+            tract_rendering[index]->need_update = true;
+        }
         cur_tracking_window.set_data("tract_color_style",1);//manual assigned
         emit show_tracts();
         return true;
