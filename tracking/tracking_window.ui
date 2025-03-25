@@ -2859,10 +2859,6 @@ Tracking</string>
    </property>
   </action>
   <action name="actionShift_X">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
-   </property>
    <property name="text">
     <string>Shift +X</string>
    </property>
@@ -3886,10 +3882,6 @@ Tracking</string>
    </property>
   </action>
   <action name="actionFull">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/add_surface.xpm</normaloff>:/icons/icons/add_surface.xpm</iconset>
-   </property>
    <property name="text">
     <string>Full</string>
    </property>
@@ -4030,10 +4022,6 @@ Tracking</string>
    </property>
   </action>
   <action name="actionBy_Name">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
-   </property>
    <property name="text">
     <string>By Name</string>
    </property>
