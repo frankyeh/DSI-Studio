@@ -917,8 +917,8 @@
     <addaction name="actionUndo_Edit"/>
     <addaction name="actionRedo_Edit"/>
     <addaction name="separator"/>
-    <addaction name="actionRegion_statistics"/>
     <addaction name="actionTract_To_Region_Connectome"/>
+    <addaction name="actionRegion_statistics"/>
    </widget>
    <widget class="QMenu" name="menuTracts">
     <property name="title">
@@ -3236,6 +3236,9 @@ Tracking</string>
    <property name="text">
     <string>Single-Linkage Clustering</string>
    </property>
+   <property name="toolTip">
+    <string>run cluster_tract_by_hy</string>
+   </property>
   </action>
   <action name="actionSet_Cluster_Color">
    <property name="icon">
@@ -3368,6 +3371,9 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Open Cluster Labels...</string>
+   </property>
+   <property name="toolTip">
+    <string>run cluster_tract_by_label</string>
    </property>
   </action>
   <action name="actionSave_All_Tracts_As">
@@ -3848,10 +3854,16 @@ Tracking</string>
    <property name="text">
     <string>K-means Clustering</string>
    </property>
+   <property name="toolTip">
+    <string>run cluster_tract_by_km</string>
+   </property>
   </action>
   <action name="actionEM_Clustering">
    <property name="text">
     <string>EM Clustering</string>
+   </property>
+   <property name="toolTip">
+    <string>run cluster_tract_by_em</string>
    </property>
   </action>
   <action name="actionSingle">
@@ -3919,6 +3931,9 @@ Tracking</string>
   <action name="actionRecognize_Clustering">
    <property name="text">
     <string>Recognize and Cluster</string>
+   </property>
+   <property name="toolTip">
+    <string>run recognize_and_cluster_tract</string>
    </property>
   </action>
   <action name="actionInsert_MNI_images">
@@ -4279,7 +4294,7 @@ Tracking</string>
     <string>Color All Clusters</string>
    </property>
    <property name="toolTip">
-    <string>run set_all_cluster_color</string>
+    <string>run color_all_cluster</string>
    </property>
   </action>
   <action name="actionUncheck_All_Devices">
