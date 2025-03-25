@@ -150,7 +150,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -914,7 +914,102 @@ SRC Files</string>
                 <set>Qt::AlignCenter</set>
                </property>
               </widget>
+              <widget class="QCommandLinkButton" name="NII_qc">
+               <property name="geometry">
+                <rect>
+                 <x>40</x>
+                 <y>460</y>
+                 <width>251</width>
+                 <height>51</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+               </property>
+               <property name="text">
+                <string>NIFTI Quality Control...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="autoRepeatDelay">
+                <number>296</number>
+               </property>
+               <property name="description">
+                <string>Select NIFTI files to run QC</string>
+               </property>
+              </widget>
+              <widget class="QCommandLinkButton" name="SRC_qc">
+               <property name="geometry">
+                <rect>
+                 <x>40</x>
+                 <y>510</y>
+                 <width>251</width>
+                 <height>51</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+               </property>
+               <property name="text">
+                <string>SRC Quality Control...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="autoRepeatDelay">
+                <number>296</number>
+               </property>
+               <property name="description">
+                <string>Select SRC files to run QC</string>
+               </property>
+              </widget>
+              <widget class="QCommandLinkButton" name="FIB_qc">
+               <property name="geometry">
+                <rect>
+                 <x>40</x>
+                 <y>560</y>
+                 <width>251</width>
+                 <height>51</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+               </property>
+               <property name="text">
+                <string>FIB Quality Control...</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="autoRepeatDelay">
+                <number>296</number>
+               </property>
+               <property name="description">
+                <string>Select FIB files to run QC</string>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_68">
+               <property name="geometry">
+                <rect>
+                 <x>25</x>
+                 <y>440</y>
+                 <width>280</width>
+                 <height>191</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
               <zorder>label_40</zorder>
+              <zorder>label_68</zorder>
               <zorder>label_67</zorder>
               <zorder>label_66</zorder>
               <zorder>line_4</zorder>
@@ -943,6 +1038,9 @@ SRC Files</string>
               <zorder>label_14</zorder>
               <zorder>label_51</zorder>
               <zorder>label_45</zorder>
+              <zorder>NII_qc</zorder>
+              <zorder>SRC_qc</zorder>
+              <zorder>FIB_qc</zorder>
              </widget>
             </item>
            </layout>
@@ -2026,9 +2124,9 @@ Tractography</string>
                <property name="geometry">
                 <rect>
                  <x>675</x>
-                 <y>200</y>
+                 <y>210</y>
                  <width>261</width>
-                 <height>71</height>
+                 <height>61</height>
                 </rect>
                </property>
                <property name="styleSheet">
@@ -2045,7 +2143,7 @@ Tractography</string>
                 <number>296</number>
                </property>
                <property name="description">
-                <string>Select FIB files for automatic tracking (Batch)</string>
+                <string>Select FIB files for automatic tracking</string>
                </property>
               </widget>
               <widget class="QCommandLinkButton" name="batch_reconstruction">
@@ -2080,7 +2178,7 @@ Tractography</string>
                  <x>345</x>
                  <y>20</y>
                  <width>280</width>
-                 <height>331</height>
+                 <height>261</height>
                 </rect>
                </property>
                <property name="styleSheet">
@@ -2294,32 +2392,6 @@ Tractography</string>
                 <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
                </property>
               </widget>
-              <widget class="QCommandLinkButton" name="SRC_qc">
-               <property name="geometry">
-                <rect>
-                 <x>360</x>
-                 <y>270</y>
-                 <width>251</width>
-                 <height>71</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Step T2a: SRC Quality Control...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-               </property>
-               <property name="autoRepeatDelay">
-                <number>296</number>
-               </property>
-               <property name="description">
-                <string>Select a directory of SRC files to run quality check</string>
-               </property>
-              </widget>
               <widget class="QLabel" name="label_38">
                <property name="geometry">
                 <rect>
@@ -2508,7 +2580,6 @@ Tractography</string>
               <zorder>label_35</zorder>
               <zorder>label_36</zorder>
               <zorder>label_37</zorder>
-              <zorder>SRC_qc</zorder>
               <zorder>label_38</zorder>
               <zorder>label_46</zorder>
               <zorder>label_47</zorder>
