@@ -369,12 +369,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
     if(cmd[0] == "new_region_whole_brain_seed")
     {
         // cmd[1] : otsu ratio for threshold
-        float otsu = cur_tracking_window["otsu_threshold"].toFloat();
-        if(cmd[1].empty())
-            cmd[1] = std::to_string(otsu);
-        else
-            otsu = QString::fromStdString(cmd[1]).toFloat();
-
+        float otsu = run->from_cmd(1,cur_tracking_window["otsu_threshold"].toFloat());
         float threshold = otsu*cur_tracking_window.handle->dir.fa_otsu;
         auto cur_slice = cur_tracking_window.current_slice;
         tipl::image<3,unsigned char> mask(cur_slice->dim);
