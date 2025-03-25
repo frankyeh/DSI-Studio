@@ -522,11 +522,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         if(other_side)
             cmd[0].pop_back();
         auto dim = cmd[0].back()-'x';
-        unsigned int slice_pos = 0;
-        if(cmd[1].empty())
-            cmd[1] = std::to_string(slice_pos = cur_tracking_window.current_slice->slice_pos[dim]);
-        else
-            slice_pos = QString::fromStdString(cmd[1]).toInt();
+        unsigned int slice_pos = run->from_cmd(1,cur_tracking_window.current_slice->slice_pos[dim]);
         for_each_bundle(cmd[0].c_str(),[&](unsigned int index)
         {
             tract_models[index]->cut_by_slice(dim,slice_pos,!other_side,
