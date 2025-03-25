@@ -1130,9 +1130,7 @@
     <addaction name="actionRestore_Settings"/>
     <addaction name="actionLoad_Parameter_ID"/>
     <addaction name="separator"/>
-    <addaction name="actionQuality_Assessment"/>
     <addaction name="actionFIB_protocol"/>
-    <addaction name="separator"/>
     <addaction name="actionCommand_History"/>
    </widget>
    <widget class="QMenu" name="menuLayout">
