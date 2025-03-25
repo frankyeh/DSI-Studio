@@ -765,7 +765,10 @@ void tracking_window::check_reg(void)
     }
     slice_need_update = true;
     if(all_ended)
+    {
         timer2.reset();
+        history.has_other_thread = false;
+    }
     else
         glWidget->update();
 }
@@ -792,6 +795,7 @@ void tracking_window::start_reg(void)
     timer2->setInterval(500);
     connect(timer2.get(), SIGNAL(timeout()), this, SLOT(check_reg()));
     timer2->start();
+    history.has_other_thread = true;
 }
 bool tracking_window::openSlices(const std::string& filename,bool is_mni)
 {
