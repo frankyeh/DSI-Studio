@@ -364,20 +364,6 @@ QString TractTableWidget::output_format(void)
     return "";
 }
 
-void TractTableWidget::set_color(void)
-{
-    if(tract_models.empty() || currentRow() == -1 ||
-       tract_models[uint32_t(currentRow())]->get_visible_track_count() == 0)
-        return;
-    QColor color = QColorDialog::getColor(tract_models[uint32_t(currentRow())]->get_tract_color(0),(QWidget*)this,"Select color",QColorDialog::ShowAlphaChannel);
-    if(!color.isValid())
-        return;
-    tract_models[uint32_t(currentRow())]->set_color(color.rgb());
-    tract_rendering[uint32_t(currentRow())]->need_update = true;
-    cur_tracking_window.set_data("tract_color_style",1);//manual assigned
-    emit show_tracts();
-}
-
 void TractTableWidget::assign_colors(void)
 {
     for(unsigned int index = 0;index < tract_models.size();++index)
@@ -599,7 +585,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     if(cmd.size() < 3)
         cmd.resize(3);
 
-    auto get_cur_row = [&](std::string& cmd_text,int cur_row)->bool
+    auto get_cur_row = [&](std::string& cmd_text,int& cur_row)->bool
     {
         if (tract_models.empty())
         {
@@ -819,8 +805,9 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         // cmd[1] : file name to be saved
         // cmd[2] : tract index
         int cur_row = currentRow();
-        if(!get_cur_row(cmd[2],cur_row) ||
-           !cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name + post_fix + output_format().toStdString()))
+        if(!get_cur_row(cmd[2],cur_row))
+            return false;
+        if(!cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name + post_fix + output_format().toStdString()))
             return run->canceled();
 
         tipl::progress prog(cmd[0]);
@@ -852,8 +839,9 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         // cmd[1] : file name to be saved
         // cmd[2] : tract index
         int cur_row = currentRow();
-        if(!get_cur_row(cmd[2],cur_row) ||
-           !cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name))
+        if(!get_cur_row(cmd[2],cur_row))
+            return false;
+        if(!cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name))
             return run->canceled();
         auto lock = tract_rendering[cur_row]->start_reading();
 
@@ -917,8 +905,9 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
                 return run->canceled();
         }
         int cur_row = currentRow();
-        if(!get_cur_row(cmd[2],cur_row) ||
-            !cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name + "_" + cmd[3]))
+        if(!get_cur_row(cmd[2],cur_row))
+            return false;
+        if(!cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name + "_" + cmd[3]))
             return run->canceled();
         auto lock = tract_rendering[cur_row]->start_reading();
         if(!tract_models[cur_row]->save_data_to_file(cur_tracking_window.handle,cmd[1].c_str(),cmd[3].c_str()))
@@ -958,7 +947,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         // cmd[1] : tract index
         int cur_row = currentRow();
         if(!get_cur_row(cmd[1],cur_row))
-            return run->canceled();
+            return false;
         std::vector<tipl::vector<3,short> > points;
         tract_models[cur_row]->to_voxel(points,
             cur_tracking_window.current_slice->is_diffusion_space ? tipl::matrix<4,4>(tipl::identity_matrix()) :
@@ -974,7 +963,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         // cmd[1] : tract index
         int cur_row = currentRow();
         if(!get_cur_row(cmd[1],cur_row))
-            return run->canceled();
+            return false;
         std::vector<tipl::vector<3,short> > points1,points2;
         tract_models[cur_row]->to_end_point_voxels(points1,points2,
                     cur_tracking_window.current_slice->is_diffusion_space ?
@@ -1017,7 +1006,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     {
         int cur_row = currentRow();
         if(!get_cur_row(cmd[1],cur_row))
-            return run->canceled();
+            return false;
         addNewTracts(item(cur_row,0)->text() + "_copy");
         *(tract_models.back()) = *(tract_models[cur_row]);
         item(rowCount()-1,1)->setText(QString::number(tract_models.back()->get_visible_track_count()));
@@ -1028,7 +1017,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     {
         int cur_row = currentRow();
         if(!get_cur_row(cmd[1],cur_row))
-            return run->canceled();
+            return false;
         if(tipl::progress::is_running())
             return run->failed("please wait for the termination of data processing");
         delete_row(cur_row);
@@ -1054,7 +1043,9 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         // cmd[1] : file name
         // cmd[2] : current tract index
         int cur_row = currentRow();
-        if(!get_cur_row(cmd[2],cur_row) || !cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name))
+        if(!get_cur_row(cmd[2],cur_row))
+            return false;
+        if(!cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name))
             return run->canceled();
 
         if(cmd[0] == "save_tract_color")
@@ -1157,8 +1148,30 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         emit show_tracts();
         return true;
     }
-
-
+    if(cmd[0] == "set_cluster_color")
+    {
+        // cmd[1] : region index
+        // cmd[2] : rgb color
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[1],cur_row))
+            return false;
+        QColor color;
+        if(cmd[2].empty())
+        {
+            color = QColorDialog::getColor(tract_models[cur_row]->get_tract_color(0),
+                                        this,QString::fromStdString(cmd[0]),QColorDialog::ShowAlphaChannel);
+            if(!color.isValid())
+                return run->canceled();
+            cmd[2] = std::to_string(color.rgb());
+        }
+        else
+            color = QColor::fromRgba(QString::fromStdString(cmd[2]).toLongLong());
+        tract_models[cur_row]->set_color(color.rgb());
+        tract_rendering[cur_row]->need_update = true;
+        cur_tracking_window.set_data("tract_color_style",1);//manual assigned
+        emit show_tracts();
+        return true;
+    }
     if(cmd[0] == "delete_repeated_tract")
     {
         // cmd[1] : distance
@@ -1233,7 +1246,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     {
         int cur_row = currentRow();
         if(!get_cur_row(cmd[1],cur_row))
-            return run->canceled();
+            return false;
         std::vector<std::vector<float> > new_tracks;
         new_tracks.swap(tract_models[cur_row]->get_deleted_tracts());
         if(new_tracks.empty())
@@ -1257,7 +1270,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         // cmd[2] = maximum bridging distance (in voxels) and angles
         int cur_row = currentRow();
         if(!get_cur_row(cmd[1],cur_row))
-            return run->canceled();
+            return false;
 
         if(cmd[2].empty())
         {
@@ -1281,7 +1294,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         // cmd[1] : current tract index
         int cur_row = currentRow();
         if(!get_cur_row(cmd[1],cur_row))
-            return run->canceled();
+            return false;
         if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
             return run->failed(cur_tracking_window.handle->error_msg);
         std::multimap<float,std::string,std::greater<float> > sorted_list;
@@ -1382,7 +1395,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         // cmd[2] : current tract index
         int cur_row = currentRow();
         if(!get_cur_row(cmd[2],cur_row))
-            return run->canceled();
+            return false;
         if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(
                     this,QString::fromStdString(cmd[0]),item(currentRow(),0)->text()+"_tdi.nii.gz",
                     "NIFTI files (*nii.gz *.nii);;All Files (*)").toStdString()).empty())

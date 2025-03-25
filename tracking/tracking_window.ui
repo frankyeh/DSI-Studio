@@ -1279,7 +1279,7 @@
     <addaction name="actionOpen_Cluster_Values"/>
     <addaction name="actionSave_Cluster_Colors"/>
     <addaction name="separator"/>
-    <addaction name="actionSet_Color"/>
+    <addaction name="actionSet_Cluster_Color"/>
     <addaction name="actionAssign_Colors_For_Each"/>
     <addaction name="separator"/>
     <addaction name="actionHierarchical"/>
@@ -3211,9 +3211,12 @@ Tracking</string>
     <string>Single-Linkage Clustering</string>
    </property>
   </action>
-  <action name="actionSet_Color">
+  <action name="actionSet_Cluster_Color">
    <property name="text">
     <string>Assign Color to Current Cluster...</string>
+   </property>
+   <property name="toolTip">
+    <string>run set_cluster_color</string>
    </property>
   </action>
   <action name="actionSave_Tracts_Colors_As">

@@ -109,7 +109,6 @@ public slots:
     void recognize_and_cluster(void);
     void recognize_rename(void);
     void open_cluster_label(void);
-    void set_color(void);
     void check_check_status(int,int);
     void start_tracking(void);
 
