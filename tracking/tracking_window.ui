@@ -1311,7 +1311,6 @@
     <addaction name="actionHierarchical"/>
     <addaction name="actionK_means_Clustering"/>
     <addaction name="actionEM_Clustering"/>
-    <addaction name="actionDeep_Learning_Train"/>
    </widget>
    <widget class="QMenu" name="menu_File">
     <property name="title">
