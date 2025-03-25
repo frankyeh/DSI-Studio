@@ -367,7 +367,7 @@ bool src_data::check_b_table(bool use_template)
         }
         else
         // for animal studies, use fiber coherence index
-            result[i] = evaluate_fib(subject_geo,otsu,fib_fa,[&](uint32_t pos,uint8_t fib){return new_dir[fib][pos];}).first;
+            result[i] = evaluate_fib(subject_geo,otsu,fib_fa,[&](uint32_t pos,uint8_t fib){return new_dir[fib][pos];});
     }
     long best = long(std::max_element(result,result+24)-result);
     tipl::out sp;

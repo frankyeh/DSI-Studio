@@ -103,7 +103,7 @@ std::string quality_check_fib_files(const std::vector<std::string>& file_list)
         std::shared_ptr<fib_data> handle = cmd_load_fib(file_list[i]);
         if(!handle.get())
             return QString("Failed to open ").toStdString() + file_list[i];
-        std::pair<float,float> result = evaluate_fib(handle->dim,handle->dir.fa_otsu*0.6f,handle->dir.fa,
+        auto result = evaluate_fib(handle->dim,handle->dir.fa_otsu*0.6f,handle->dir.fa,
                                                      [&](int pos,char fib)
                                                      {return handle->dir.get_fib(size_t(pos),uint32_t(fib));});
         out << file_list[i] << "\t";

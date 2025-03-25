@@ -454,7 +454,7 @@ void evaluate_connection(
 
 
 template<typename fib_fa_type,typename fun>
-std::pair<float,float> evaluate_fib(
+float evaluate_fib(
         const tipl::shape<3>& dim,
         float otsu,
         const fib_fa_type& fib_fa,
@@ -469,6 +469,8 @@ std::pair<float,float> evaluate_fib(
     std::mutex add_mutex;
     evaluate_connection(dim,otsu,fib_fa,dir,[&](unsigned int pos1,unsigned char fib1,unsigned int pos2,unsigned char fib2)
     {
+        if(fib_fa[fib2][pos2] == 0.0f)
+            return;
         connected[fib1][pos1] = 1;
         connected[fib2][pos2] = 1;
         auto v = fib_fa[fib2][pos2];
@@ -478,15 +480,13 @@ std::pair<float,float> evaluate_fib(
     },check_trajectory);
 
     unsigned char num_fib = fib_fa.size();
-    double no_connection_count = 0.0;
+    double total_fa = 0.0;
     for(tipl::pixel_index<3> index(dim);index < dim.size();++index)
-    {
         for(unsigned int i = 0;i < num_fib;++i)
-            if(fib_fa[i][index.index()] > otsu && !connected[i][index.index()])
-                no_connection_count += double(fib_fa[i][index.index()]);
-    }
-
-    return std::make_pair(connection_count,no_connection_count);
+            total_fa += fib_fa[i][index.index()];
+    if(total_fa != 0.0)
+        connection_count /= total_fa;
+    return connection_count;
 }
 
 #endif//FIB_DATA_HPP

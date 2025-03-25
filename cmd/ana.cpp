@@ -740,7 +740,7 @@ int ana(tipl::program_option<tipl::out>& po)
         auto result = evaluate_fib(handle->dim,handle->dir.fa_otsu*0.6f,handle->dir.fa,[handle](size_t pos,unsigned int fib)
                                         {return handle->dir.get_fib(pos,fib);});
         std::ofstream out(po.get("info"));
-        out << "fiber coherence index\t" << result.first << std::endl;
+        out << "fiber coherence index\t" << result << std::endl;
         return 0;
     }
     if(po.has("export"))
