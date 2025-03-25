@@ -19,54 +19,76 @@
 #include "reg.hpp"
 
 extern std::vector<std::string> fa_template_list;
-std::string show_info_dialog(const std::string& title, const std::string& result,const std::string& file_name_hint)
+std::string show_info_dialog(const std::string& title,
+                             const std::string& result,
+                             const std::string& file_name_hint)
 {
     std::string saved_file;
-    QMessageBox msgBox;
-    msgBox.setText(title.c_str());
+    QDialog* dlg = new QDialog(QApplication::activeWindow());
+    dlg->setWindowTitle(QString::fromStdString(title));
+    dlg->setMinimumSize(600, 400);
+    QVBoxLayout* layout = new QVBoxLayout(dlg);
+    QTextEdit* txt = new QTextEdit(dlg);
+    txt->setReadOnly(true);
+    txt->setText(QString::fromStdString(result));
+    layout->addWidget(txt);
+    QTableWidget* table = new QTableWidget(dlg);
+    table->setVisible(false);
+    layout->addWidget(table);
+    QHBoxLayout* btnLay = new QHBoxLayout;
+    QPushButton* copyBtn = new QPushButton("Copy to Clipboard", dlg);
+    QPushButton* saveBtn = new QPushButton("Save", dlg);
+    QPushButton* tableBtn = new QPushButton("Show Table", dlg);
+    QPushButton* closeBtn = new QPushButton("Close", dlg);
+    btnLay->addWidget(copyBtn); btnLay->addWidget(saveBtn);
+    btnLay->addWidget(tableBtn); btnLay->addWidget(closeBtn);
+    layout->addLayout(btnLay);
 
-    // Set a brief summary in the main message box text
-    std::string summary = result.length() > 200 ? result.substr(0, 200) + "..." : result;
-    msgBox.setInformativeText(summary.c_str());
-    msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Save);
-    msgBox.setDefaultButton(QMessageBox::Ok);
-
-    QPushButton *copyButton = msgBox.addButton("Copy To Clipboard", QMessageBox::ActionRole);
-    QPushButton *viewDetailsButton = msgBox.addButton("View Full Text", QMessageBox::ActionRole);
-
-    if (msgBox.exec() == QMessageBox::Save) {
-        QString filename = QFileDialog::getSaveFileName(nullptr, "Save as",
-                           QString::fromStdString(file_name_hint), "Text files (*.txt);;All files (*)");
-        if (!filename.isEmpty()) {
-            std::ofstream out((saved_file = filename.toStdString()).c_str());
-            out << result;
-        }
-    }
-
-    if (msgBox.clickedButton() == copyButton) {
+    QObject::connect(copyBtn, &QPushButton::clicked, [result](){
         QApplication::clipboard()->setText(QString::fromStdString(result));
-    }
+    });
+    QObject::connect(saveBtn, &QPushButton::clicked, [dlg, file_name_hint, result, &saved_file](){
+        QString fn = QFileDialog::getSaveFileName(dlg, "Save as",
+                       QString::fromStdString(file_name_hint),
+                       "Text files (*.txt);;All files (*)");
+        if(!fn.isEmpty()){
+            std::ofstream out(fn.toStdString());
+            out << result;
+            saved_file = fn.toStdString();
+        }
+    });
+    QObject::connect(tableBtn, &QPushButton::clicked, [table, tableBtn, result](){
+        if(!table->isVisible()){
+            QStringList lines = QString::fromStdString(result).split('\n', Qt::SkipEmptyParts);
+            int r = lines.size(), c = 0; QList<QStringList> data;
+            for(const QString &line : lines){
+                QStringList cols = line.split('\t');
+                data.append(cols);
+                c = std::max<int>(c, cols.size());
+            }
+            table->clear(); table->setRowCount(r); table->setColumnCount(c);
+            for(int i = 0; i < r; ++i)
+                for(int j = 0; j < data[i].size(); ++j)
+                    table->setItem(i, j, new QTableWidgetItem(data[i][j]));
+            table->resizeColumnsToContents(); table->resizeRowsToContents();
+            tableBtn->setText("Hide Table"); table->setVisible(true);
+        } else {
+            table->setVisible(false); tableBtn->setText("Show Table");
+        }
+    });
+    QObject::connect(closeBtn, &QPushButton::clicked, dlg, &QDialog::accept);
 
-    if (msgBox.clickedButton() == viewDetailsButton) {
-        // Show the full text in a separate scrollable dialog
-        QDialog detailDialog;
-        detailDialog.setWindowTitle("Detailed Text");
-        detailDialog.resize(600, 400);
-
-        QVBoxLayout layout(&detailDialog);
-        QTextEdit *textEdit = new QTextEdit(&detailDialog);
-        textEdit->setReadOnly(true);
-        textEdit->setText(QString::fromStdString(result));
-        layout.addWidget(textEdit);
-
-        QPushButton closeButton("Close", &detailDialog);
-        layout.addWidget(&closeButton);
-        QObject::connect(&closeButton, &QPushButton::clicked, &detailDialog, &QDialog::accept);
-
-        detailDialog.exec();
-    }
+    QEventLoop loop;
+    QObject::connect(dlg, &QDialog::finished, &loop, &QEventLoop::quit);
+    dlg->show();
+    loop.exec();
+    dlg->deleteLater();
     return saved_file;
 }
+
+
+
+
 
 void tracking_window::run_action(void)
 {
@@ -623,18 +645,6 @@ void tracking_window::on_actionLoad_Parameter_ID_triggered()
 
 }
 
-
-void tracking_window::on_actionQuality_Assessment_triggered()
-{
-    float threshold = renderWidget->getData("otsu_threshold").toFloat()*handle->dir.fa_otsu;
-    std::pair<float,float> result = evaluate_fib(handle->dim,threshold,handle->dir.fa,
-                                                 [&](int pos,char fib)
-                                                 {return handle->dir.get_fib(pos,fib);});
-    std::ostringstream out;
-    out << "Fiber coherence index: " << result.first << std::endl;
-    out << "Fiber incoherent index: " << result.second << std::endl;
-    show_info_dialog("Quality assessment",out.str().c_str());
-}
 
 
 void tracking_window::on_actionTract_Analysis_Report_triggered()
