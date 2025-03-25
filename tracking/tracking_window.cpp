@@ -170,7 +170,42 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
                 {
                     std::string new_file_name;
                     if(tipl::match_files(original_file,param[1],file_list[k].toStdString(),new_file_name))
+                    {
+                        if(is_loading(cmd[j]) && !std::filesystem::exists(new_file_name))
+                        {
+                            tipl::warning() << "cannot find " << new_file_name;
+                            auto search_path = std::filesystem::path(new_file_name).parent_path().string();
+                            auto wildcard = "*" + tipl::complete_suffix(new_file_name);
+                            auto files =  tipl::search_files(search_path,wildcard);
+                            tipl::warning() << "searching for " << wildcard << " at " << search_path << " ..." << files.size() << " file(s) found";
+                            auto name_cannot_find = std::filesystem::path(new_file_name).filename().string();
+                            for (const auto& each : files)
+                            {
+                                auto name = QFileInfo(each.c_str()).fileName().toStdString();
+                                if(tipl::contains(name_cannot_find,name) ||
+                                   tipl::contains(name,name_cannot_find))
+                                {
+                                    tipl::warning() << "found and will use (need to check!): " << each;
+                                    new_file_name = each;
+                                    break;
+                                }
+                            }
+                            if(!std::filesystem::exists(new_file_name))
+                                tipl::warning() << "cannot identify one to replace";
+                        }
+                        if(is_loading(cmd[j]) && !std::filesystem::exists(new_file_name))
+                        {
+                            if(QMessageBox::question(parent, QApplication::applicationName(),
+                                            QString("cannot find %1 at %2.\nCancel?\n").
+                                                   arg(QFileInfo(new_file_name.c_str()).fileName()).
+                                                   arg(QFileInfo(new_file_name.c_str()).absolutePath()),
+                                            QMessageBox::No | QMessageBox::Yes) == QMessageBox::Yes)
+
+                                file_list.clear();
+                            break;
+                        }
                         param[1] = new_file_name;
+                    }
                 }
             }
 
