@@ -39,7 +39,7 @@ void tract_report::refresh_report()
     if(cur_tracking_window->tractWidget->tract_models.size() > 1 &&
        cur_tracking_window->tractWidget->tract_models[0]->get_tract_color(0) ==
        cur_tracking_window->tractWidget->tract_models[1]->get_tract_color(0))
-        cur_tracking_window->command({"set_all_cluster_color"});
+        cur_tracking_window->command({"color_all_cluster"});
 
     report_chart->removeAllSeries();
 

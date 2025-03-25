@@ -414,7 +414,7 @@ void TractTableWidget::open_cluster_label(void)
     std::copy(std::istream_iterator<unsigned int>(in),
               std::istream_iterator<unsigned int>(),labels.begin());
     load_cluster_label(labels);
-    command({"set_all_cluster_color"});
+    command({"color_all_cluster"});
 }
 
 void TractTableWidget::recognize_and_cluster(void)
@@ -476,7 +476,7 @@ void TractTableWidget::clustering(int method_id)
         c = tract_models[uint32_t(currentRow())]->tract_cluster;
     }
     load_cluster_label(c);
-    command({"set_all_cluster_color"});
+    command({"color_all_cluster"});
 }
 
 void TractTableWidget::cell_changed(int row, int column)
@@ -1136,7 +1136,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         emit show_tracts();
         return true;
     }
-    if(cmd[0] == "set_cluster_color")
+    if(cmd[0] == "select_cluster_color")
     {
         // cmd[1] : region index
         // cmd[2] : rgb color
@@ -1160,7 +1160,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         emit show_tracts();
         return true;
     }
-    if(cmd[0] == "set_all_cluster_color")
+    if(cmd[0] == "color_all_cluster")
     {
         for(unsigned int index = 0;index < tract_models.size();++index)
         {

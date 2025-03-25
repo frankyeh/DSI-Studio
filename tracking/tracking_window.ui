@@ -1057,6 +1057,10 @@
      <property name="title">
       <string>Add Isosurface</string>
      </property>
+     <property name="icon">
+      <iconset resource="../icons.qrc">
+       <normaloff>:/icons/icons/add_surface.xpm</normaloff>:/icons/icons/add_surface.xpm</iconset>
+     </property>
      <addaction name="actionFull"/>
      <addaction name="separator"/>
      <addaction name="actionRight"/>
@@ -1081,6 +1085,10 @@
     <widget class="QMenu" name="menuInsert_Picture">
      <property name="title">
       <string>Insert Picture</string>
+     </property>
+     <property name="icon">
+      <iconset resource="../icons.qrc">
+       <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
      </property>
      <addaction name="actionInsert_Sagittal_Picture"/>
      <addaction name="actionInsert_Coronal_Pictures"/>
@@ -1176,6 +1184,10 @@
      <property name="title">
       <string>Sort Regions</string>
      </property>
+     <property name="icon">
+      <iconset resource="../icons.qrc">
+       <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+     </property>
      <addaction name="actionBy_Name"/>
      <addaction name="actionBy_Size"/>
      <addaction name="actionBy_X"/>
@@ -1185,6 +1197,10 @@
     <widget class="QMenu" name="menuMove_Current_Region">
      <property name="title">
       <string>Move Region</string>
+     </property>
+     <property name="icon">
+      <iconset resource="../icons.qrc">
+       <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
      </property>
      <addaction name="actionShift_X"/>
      <addaction name="actionShift_X_2"/>
@@ -1199,6 +1215,10 @@
     <widget class="QMenu" name="menuModify">
      <property name="title">
       <string>Modify Region</string>
+     </property>
+     <property name="icon">
+      <iconset resource="../icons.qrc">
+       <normaloff>:/icons/icons/report.xpm</normaloff>:/icons/icons/report.xpm</iconset>
      </property>
      <addaction name="actionModify_All"/>
      <addaction name="separator"/>
@@ -1245,6 +1265,10 @@
      <property name="title">
       <string>Move Tracts</string>
      </property>
+     <property name="icon">
+      <iconset resource="../icons.qrc">
+       <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
+     </property>
      <addaction name="actionFlip_X_2"/>
      <addaction name="actionFlip_Y_2"/>
      <addaction name="actionFlip_Z_2"/>
@@ -1254,6 +1278,7 @@
     <addaction name="actionRemove_Repeated_Tracks"/>
     <addaction name="actionDelete_By_Length"/>
     <addaction name="actionDelete_Branches"/>
+    <addaction name="separator"/>
     <addaction name="actionReconnect_Tracts"/>
     <addaction name="actionResample_Step_Size"/>
     <addaction name="separator"/>
@@ -1274,13 +1299,14 @@
     <addaction name="actionOpen_Tracts_Name"/>
     <addaction name="actionSort_Tracts_By_Names"/>
     <addaction name="separator"/>
+    <addaction name="actionAssign_Colors_For_Each"/>
+    <addaction name="actionSet_Cluster_Color"/>
+    <addaction name="separator"/>
     <addaction name="actionOpen_Cluster_Colors"/>
     <addaction name="actionOpen_Cluster_Labels"/>
     <addaction name="actionOpen_Cluster_Values"/>
     <addaction name="actionSave_Cluster_Colors"/>
     <addaction name="separator"/>
-    <addaction name="actionSet_Cluster_Color"/>
-    <addaction name="actionAssign_Colors_For_Each"/>
     <addaction name="separator"/>
     <addaction name="actionHierarchical"/>
     <addaction name="actionK_means_Clustering"/>
@@ -2833,6 +2859,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionShift_X">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
+   </property>
    <property name="text">
     <string>Shift +X</string>
    </property>
@@ -3212,11 +3242,15 @@ Tracking</string>
    </property>
   </action>
   <action name="actionSet_Cluster_Color">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/rgb.xpm</normaloff>:/icons/icons/rgb.xpm</iconset>
+   </property>
    <property name="text">
-    <string>Assign Color to Current Cluster...</string>
+    <string>Select Color to Current Cluster...</string>
    </property>
    <property name="toolTip">
-    <string>run set_cluster_color</string>
+    <string>run select_cluster_color</string>
    </property>
   </action>
   <action name="actionSave_Tracts_Colors_As">
@@ -3365,6 +3399,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionTract_Analysis_Report">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/tracts.xpm</normaloff>:/icons/icons/tracts.xpm</iconset>
+   </property>
    <property name="text">
     <string>Tract Profile...</string>
    </property>
@@ -3743,6 +3781,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionSort_Tracts_By_Names">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+   </property>
    <property name="text">
     <string>Sort Tracts by Name</string>
    </property>
@@ -3844,6 +3886,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionFull">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/add_surface.xpm</normaloff>:/icons/icons/add_surface.xpm</iconset>
+   </property>
    <property name="text">
     <string>Full</string>
    </property>
@@ -3984,6 +4030,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionBy_Name">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+   </property>
    <property name="text">
     <string>By Name</string>
    </property>
@@ -3992,6 +4042,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionMove_Slices_To_Current_Region">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
+   </property>
    <property name="text">
     <string>Move Slices To Current Region</string>
    </property>
@@ -4019,21 +4073,37 @@ Tracking</string>
    </property>
   </action>
   <action name="actionMark_Region_on_T1W_T2W">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/slice.xpm</normaloff>:/icons/icons/slice.xpm</iconset>
+   </property>
    <property name="text">
     <string>Mark Region on Slices</string>
    </property>
   </action>
   <action name="actionMark_Tracts_on_T1W_T2W">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/slice.xpm</normaloff>:/icons/icons/slice.xpm</iconset>
+   </property>
    <property name="text">
     <string>Mark Tracts on Slices</string>
    </property>
   </action>
   <action name="actionSave_T1W_T2W_images">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
    <property name="text">
     <string>Save Slices as...</string>
    </property>
   </action>
   <action name="actionRecord_Video">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/fullscreen.xpm</normaloff>:/icons/icons/fullscreen.xpm</iconset>
+   </property>
    <property name="text">
     <string>Record Video...</string>
    </property>
@@ -4047,6 +4117,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionSave_Slices_to_DICOM">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
    <property name="text">
     <string>Save Slices to DICOM...</string>
    </property>
@@ -4209,8 +4283,12 @@ Tracking</string>
    </property>
   </action>
   <action name="actionAssign_Colors_For_Each">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/rgb.xpm</normaloff>:/icons/icons/rgb.xpm</iconset>
+   </property>
    <property name="text">
-    <string>Assign Colors to All Clusters</string>
+    <string>Color All Clusters</string>
    </property>
    <property name="toolTip">
     <string>run set_all_cluster_color</string>
@@ -4490,6 +4568,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionLoad_Built_In_Atlas">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/tracts.xpm</normaloff>:/icons/icons/tracts.xpm</iconset>
+   </property>
    <property name="text">
     <string>Load Built-In Atlas...</string>
    </property>
@@ -4554,6 +4636,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionEdit_Slices">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/report.xpm</normaloff>:/icons/icons/report.xpm</iconset>
+   </property>
    <property name="text">
     <string>Edit Slices...</string>
    </property>
@@ -4573,7 +4659,7 @@ Tracking</string>
   <action name="actionTract_To_Region_Connectome">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/stat.xpm</normaloff>:/icons/icons/stat.xpm</iconset>
+     <normaloff>:/icons/icons/conn.xpm</normaloff>:/icons/icons/conn.xpm</iconset>
    </property>
    <property name="text">
     <string>Tract-To-Region Connectome...</string>
