@@ -186,7 +186,7 @@ private slots:
     void on_actionTract_Analysis_Report_triggered();
     void on_actionConnectivity_matrix_triggered();
     void on_addRegionFromAtlas_clicked();
-    void on_actionQuality_Assessment_triggered();
+
     void on_actionAuto_Rotate_triggered(bool checked);
     void on_rendering_efficiency_currentIndexChanged(int index);
 
