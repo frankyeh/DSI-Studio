@@ -151,9 +151,12 @@ std::string quality_check_nii_files(const std::vector<std::string>& file_list)
         tipl::io::gz_nifti nii;
         if(nii.load_from_file(file_list[i]))
         {
-            out << std::filesystem::path(file_list[i]).filename() << "\t"
-                << nii.get_image_dimension<3>() << "\t"
-                << nii.get_voxel_size<3>() << "\t"
+            out << std::filesystem::path(file_list[i]).filename() << "\t";
+            if(nii.dim(4) == 1)
+                out << nii.get_image_dimension<3>() << "\t";
+            else
+                out << nii.get_image_dimension<4>() << "\t";
+            out << nii.get_voxel_size<3>() << "\t"
                 << data_type[nii.nif_header.datatype] << "\t"
                 << nii.nif_header.scl_slope << "\t"
                 << nii.nif_header.scl_inter << "\t"
