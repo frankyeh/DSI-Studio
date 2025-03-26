@@ -599,6 +599,49 @@ bool tracking_window::command(std::vector<std::string> cmd)
         ++history.current_recording_instance;
         return true;
     }
+    if(cmd[0] == "skull_strip_slice")
+    {
+        if(!handle->map_to_mni())
+            return run->failed(handle->error_msg);
+        auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(
+                    slices[run->from_cmd(1,ui->SliceModality->currentIndex())]);
+        if(!reg_slice.get())
+            return run->canceled();
+
+        tipl::io::gz_nifti in;
+        tipl::image<3> mask;
+        if(!in.load_from_file(handle->mask_template_file_name.c_str()) || !in.toLPS(mask))
+            return run->failed("current template does not have a built-in mask");
+        tipl::filter::mean(mask);
+        tipl::filter::mean(mask);
+
+        tipl::matrix<4,4> mask_to_mni;
+        in.get_image_transformation(mask_to_mni);
+        tipl::out() << "warping template-space slices to the subject space." << std::endl;
+
+        const auto& s2t = handle->get_sub2temp_mapping();
+        if(s2t.empty())
+            return run->failed("No spatial mapping found for warping MNI images");
+
+        tipl::image<3> maskJ(reg_slice->source_images.shape()); // subject space image
+
+        auto to_mask = tipl::from_space(handle->template_to_mni).to(mask_to_mni);
+        tipl::adaptive_par_for(tipl::begin_index(maskJ.shape()),tipl::end_index(maskJ.shape()),
+        [&](const auto& pos)
+        {
+            tipl::vector<3> p1(pos),p2;
+            p1.to(reg_slice->to_dif);
+            if(!tipl::estimate(s2t,p1,p2))
+                return;
+            p2.to(to_mask);
+            tipl::estimate(mask,p2,maskJ[pos.index()]);
+        });
+
+        reg_slice->source_images *= maskJ;
+        slice_need_update = true;
+        glWidget->update_slice();
+        return true;
+    }
     if(cmd[0] == "save_slice_mapping" || cmd[0] == "open_slice_mapping" || cmd[0] == "save_slice_volume")
     {
         // cmd[1] : file name
@@ -1436,49 +1479,7 @@ void tracking_window::on_alt_mapping_currentIndexChanged(int index)
 
 void tracking_window::stripSkull()
 {
-    if(!ui->SliceModality->currentIndex() || !handle->is_human_data || handle->is_mni)
-        return;
-    auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
-    if(!reg_slice.get() || !reg_slice->skull_removed_images.empty())
-        return;
 
-    tipl::io::gz_nifti in1,in2;
-    tipl::image<3> It,Iw,J(reg_slice->get_source());
-    if(!in1.load_from_file(handle->t1w_template_file_name.c_str()) || !in1.toLPS(It))
-        return;
-    if(!in2.load_from_file(handle->mask_template_file_name.c_str()) || !in2.toLPS(Iw))
-        return;
-    if(QMessageBox::information(this,QApplication::applicationName(),
-                                QString("Does %1 need to remove tissues outside the brain?").
-                                arg(ui->SliceModality->currentText()),
-                                QMessageBox::Yes|QMessageBox::No) == QMessageBox::No)
-        return;
-
-    tipl::vector<3> vs,vsJ(reg_slice->vs);
-    in1.get_voxel_size(vs);
-
-    tipl::downsampling(It);
-    tipl::downsampling(It);
-    tipl::downsampling(Iw);
-    tipl::downsampling(Iw);
-    vs *= 4.0f;
-
-
-
-    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-            template_image_pre(tipl::image<3>(It)),tipl::image<3,unsigned char>(),vs,
-            subject_image_pre(tipl::image<3>(J)),tipl::image<3,unsigned char>(),vsJ,tipl::reg::affine,tipl::reg::cost_type::mutual_info));
-
-    manual->on_rerun_clicked();
-    if(manual->exec() != QDialog::Accepted)
-        return;
-
-    tipl::filter::mean(Iw);
-    tipl::filter::mean(Iw);
-
-    reg_slice->skull_removed_images = reg_slice->source_images;
-    reg_slice->skull_removed_images *= tipl::resample(Iw,reg_slice->source_images.shape(),manual->get_iT());
-    slice_need_update = true;
 }
 
 
