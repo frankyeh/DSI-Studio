@@ -138,6 +138,7 @@ public:
     void dropEvent(QDropEvent *event) override;
 public:
     command_history history;
+    QDialog* command_dialog = nullptr;
 public:
     slice_view_scene scene;
     bool slice_need_update = false;
