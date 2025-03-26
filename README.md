@@ -14,9 +14,8 @@ Subscribe: [![YouTube](https://img.shields.io/youtube/channel/subscribers/UCN6go
 
 DSI Studio is a lightweight and user-friendly software for diffusion MRI analysis, tractography, and connectome mapping. It enables researchers and clinicians to:
 
-- Perform deterministic and advanced fiber tracking
+- Perform deterministic fiber tracking and automated bundle mapping
 - Reconstruct diffusion models 
-- Create tract-based connectivity matrices
 - Visualize and interactively edit brain tracts
 - Export a wide variety of metrics and outputs
 
@@ -41,14 +40,16 @@ DSI Studio is a lightweight and user-friendly software for diffusion MRI analysi
 ---
 
 ## 🚀 Installation Instructions
-
 1. Visit the [official download page](https://dsi-studio.labsolver.org/download.html)
 2. Select the appropriate binary for your platform:
    - `dsi_studio_64.exe` (Windows)
    - `dsi_studio_mac.dmg` (macOS)
    - `dsi_studio_ubuntu.zip` (Linux)
 3. Extract the ZIP file (if needed)
-4. Run the executable (no installation required)
+4. Run the executable
+   - Windows: no installation required
+   - MacOS: check out the instructions at the download page for software execution permission
+   - Ubuntu: no installation required
 
 🕒 **Install Time**: Less than 1 minute
 
@@ -56,10 +57,9 @@ DSI Studio is a lightweight and user-friendly software for diffusion MRI analysi
 
 ## 🧪 Demo: Try it Now
 
-
 ### Demo Dataset and How to Run
 1. Launch `dsi_studio`
-2. Find one `.fz` file at `Fiber Data Tab` tab and click on the `Open XXX.fz` button to bring up tracking window
+2. Find one `.fz` file at THE `Fiber Data Tab` tab and click on the `Open XXX.fz` button to bring up tracking window
 <img src="https://github.com/user-attachments/assets/13049248-282d-4295-9cfb-880f1f89315c" width="400"/>
 
 Alternatively, the data can be directly downloaded from [Fiber Data Hub web portal](https://brain.labsolver.org)
@@ -88,12 +88,14 @@ Alternatively, the data can be directly downloaded from [Fiber Data Hub web port
 4. Run tractography using custom or template ROIs
 5. Export tracts, metrics, and connectome data
 
+Detailed documentation available at https://dsi-studio.labsolver.org/
+
 ---
 
 ## ⚙️ Command-Line Interface
 
 DSI Studio supports full CLI scripting for batch processing.  
-Docs: [https://dsi-studio.labsolver.org/doc/cli](https://dsi-studio.labsolver.org/doc/cli)
+Docs: [https://dsi-studio.labsolver.org/doc/cli_t1.html](https://dsi-studio.labsolver.org/doc/cli_t1.html)
 
 ---
 
@@ -113,9 +115,9 @@ Docs: [https://dsi-studio.labsolver.org/doc/cli](https://dsi-studio.labsolver.or
 
 ---
 
-## 📄 Citation
+## 📄 Citations
 
-Please cite the methods you used in DSI Studio (select only those applied to your study):
+Please cite the methods you used (select only those applied to your study):
 
 Population-based atlas and tracto-to-region connectome (2022): This study constructs a population-based probablistic tractography atlas and its associated tract-to-region connectome.
 > Yeh FC. Population-based tract-to-region connectome of the human brain and its hierarchical topology. Nature communications. 2022 Aug 22;13(1):1-3.
