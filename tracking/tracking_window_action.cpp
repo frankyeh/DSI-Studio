@@ -61,6 +61,7 @@ std::string show_info_dialog(const std::string& title,
             std::ofstream out(fn.toStdString());
             out << result;
             saved_file = fn.toStdString();
+            QMessageBox::information(dlg,QApplication::applicationName(),"file saved");
         }
     });
     QObject::connect(tableBtn, &QPushButton::clicked, [table, tableBtn, result](){
