@@ -133,7 +133,6 @@ public:
 public:
     bool is_mni = false;
     tipl::image<3> source_images;
-    tipl::image<3> skull_removed_images;
     void update_image(tipl::image<3>&& new_image);
     void update_image(void);
 public:
