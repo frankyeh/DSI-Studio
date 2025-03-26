@@ -372,9 +372,7 @@ void TractTableWidget::cell_changed(int row, int column)
         cur_tracking_window.glWidget->update();
 
 }
-void get_track_statistics(std::shared_ptr<fib_data> handle,
-                          const std::vector<std::shared_ptr<TractModel> >& tract_models,
-                          std::string& result);
+
 std::vector<std::shared_ptr<TractModel> > TractTableWidget::get_checked_tracks(void)
 {
     std::vector<std::shared_ptr<TractModel> > active_tracks;
@@ -1440,32 +1438,6 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         {
             item(row,0)->setCheckState(all ? Qt::Checked : Qt::Unchecked);
             item(row,0)->setData(Qt::ForegroundRole,QBrush(all ? Qt::black : Qt::gray));
-        }
-        return true;
-    }
-    if(cmd[0] == "show_tract_statistics" || cmd[0] == "save_tract_statistics")
-    {
-        if(tract_models.empty())
-            return run->canceled();
-        std::string result;
-        tipl::progress p("calculate tract statistics",true);
-        get_track_statistics(cur_tracking_window.handle,get_checked_tracks(),result);
-
-        if(!cmd[1].empty())
-        {
-            std::ofstream out(cmd[1]);
-            if(!out)
-                return run->failed("cannot write to " + cmd[1]);
-            out << result;
-        }
-        else
-        {
-            cmd[1] = show_info_dialog("Tract Statistics",result,cur_tracking_window.history.file_stem() + "_stat.txt");
-            if(!cmd[1].empty())
-            {
-                // change show to save
-                cmd[0][1] = 'a';cmd[0][2] = 'v';cmd[0][3] = 'e';
-            }
         }
         return true;
     }
