@@ -526,7 +526,7 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
     out << result <<std::endl;
     return 0;
 }
-void get_track_statistics(std::shared_ptr<fib_data> handle,
+void get_tract_statistics(std::shared_ptr<fib_data> handle,
                           const std::vector<std::shared_ptr<TractModel> >& tract_models,
                           std::string& result)
 {
@@ -706,7 +706,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         if(po.has("export"))
         {
             std::string result,file_name_stat("stat.txt");
-            get_track_statistics(handle,tracts,result);
+            get_tract_statistics(handle,tracts,result);
             tipl::out() << "saving " << file_name_stat;
             std::ofstream out_stat(file_name_stat.c_str());
             if(!out_stat)
