@@ -2289,12 +2289,7 @@ bool GLWidget::command(std::vector<std::string> cmd)
         bool is_wm = (cur_tracking_window.current_slice->get_name() == "wm_template");
         float threshold = 25.0f;
         CustomSliceModel* reg_slice = dynamic_cast<CustomSliceModel*>(cur_tracking_window.current_slice.get());
-        if(reg_slice)
-        {
-            if(!reg_slice->skull_removed_images.empty())
-                crop_image = reg_slice->skull_removed_images;
-        }
-        else
+        if(!reg_slice)
         {
             // use ICBM152 wm as the surface
             tipl::io::gz_nifti nifti;
