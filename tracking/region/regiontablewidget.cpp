@@ -334,6 +334,9 @@ tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
 }
 void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<std::shared_ptr<ROIRegion> >& regions,
                             std::string& result);
+void get_tract_statistics(std::shared_ptr<fib_data> handle,
+                          const std::vector<std::shared_ptr<TractModel> >& tract_models,
+                          std::string& result);
 extern std::vector<std::vector<std::string> > atlas_file_name_list;
 bool RegionTableWidget::command(std::vector<std::string> cmd)
 {
@@ -854,29 +857,46 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         cur_tracking_window.move_slice_to(p);
         return true;
     }
-    if(cmd[0] == "show_region_statistics" || cmd[0] == "show_t2r" ||
-       cmd[0] == "save_region_statistics" || cmd[0] == "save_t2r")
+
+    if(cmd[0] == "show_region_statistics" || cmd[0] == "save_region_statistics" ||
+       cmd[0] == "show_t2r" || cmd[0] == "save_t2r" ||
+       cmd[0] == "show_tract_statistics" || cmd[0] == "save_tract_statistics")
     {
         // cmd[1] : file name to save
         auto regions = get_checked_regions();
-        if(regions.empty())
-            return run->failed("please add parcellation regions");
+        auto tracts = cur_tracking_window.tractWidget->get_checked_tracks();
 
-        std::string result;
-
-        if(tipl::ends_with(cmd[0],"t2r"))
+        std::string result,title,default_file(cur_tracking_window.history.file_stem(false/*basic stem*/));
+        tipl::progress p(cmd[0],true);
+        if(tipl::contains(cmd[0],"t2r"))
         {
-            auto tracts = cur_tracking_window.tractWidget->get_checked_tracks();
+            if(regions.empty())
+                return run->failed("please add parcellation regions");
             if(tracts.empty())
                 return run->failed("please specify tract(s)");
             Parcellation p(cur_tracking_window.handle);
             p.load_from_regions(regions);
             result = p.get_t2r(tracts);
+            title = "Tract-To-Region Connectome";
+            default_file += "_" + tracts.front()->name + "_t2r.txt";
+
         }
-        else
+        if(tipl::contains(cmd[0],"tract"))
         {
-            tipl::progress p("calculate region statistics",true);
+            if(tracts.empty())
+                return run->failed("please specify tract(s)");
+            get_tract_statistics(cur_tracking_window.handle,tracts,result);
+            title = "Tract Statistics";
+            default_file += "_tract_stat.txt";
+
+        }
+        if(tipl::contains(cmd[0],"region"))
+        {
+            if(regions.empty())
+                return run->failed("please specify regions");
             get_regions_statistics(cur_tracking_window.handle,regions,result);
+            title = "Region Statistics";
+            default_file += "_region_stat.txt";
         }
 
         if(!cmd[1].empty())
@@ -888,10 +908,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         }
         else
         {
-            if(tipl::ends_with(cmd[0],"t2r"))
-                cmd[1] = show_info_dialog("Tract-To-Region Connectome",result,cur_tracking_window.history.file_stem() + "_t2r.txt");
-            else
-                cmd[1] = show_info_dialog("Region Statistics",result,cur_tracking_window.history.file_stem() + "_stat.txt");
+            cmd[1] = show_info_dialog(title,result,default_file);
             if(!cmd[1].empty())
             {
                 // change show to save
