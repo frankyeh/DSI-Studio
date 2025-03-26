@@ -180,7 +180,7 @@ public:
 public:
      std::vector<std::vector<std::shared_ptr<QOpenGLTexture> > > slice_texture;
 
-     int slice_pos[3] = {-1,-1,-1};
+     tipl::vector<3,int> slice_pos;
      QPoint lastPos,curPos,last_select_point;
      tipl::matrix<4,4> mat,transformation_matrix,transformation_matrix2,rotation_matrix,rotation_matrix2;
      enum class view_mode_type { single, two, stereo} view_mode = view_mode_type::single;
