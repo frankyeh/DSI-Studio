@@ -1517,7 +1517,7 @@ bool fib_data::load_track_atlas(bool symmetric)
     }
     if(!track_atlas.get())
     {
-        tipl::progress prog(symmetric ?  "loading symmetric ractography atlas" : "loading asymmetric tractography atlas");
+        tipl::progress prog(symmetric ?  "loading symmetric tractography atlas" : "loading asymmetric tractography atlas");
         if(!map_to_mni(tipl::show_prog))
             return false;
         // load the tract to the template space
