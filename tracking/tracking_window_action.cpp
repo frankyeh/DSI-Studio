@@ -636,6 +636,9 @@ bool tracking_window::command(std::vector<std::string> cmd)
     {
         // cmd[1] : slice index
         int slice_index = run->from_cmd(1,ui->SliceModality->currentIndex());
+        auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(slices[slice_index]);
+        if(!reg_slice.get())
+            return run->failed("cannot delete built-in slices.");
         if(current_slice->is_overlay)
             on_is_overlay_clicked();
         if(current_slice->stay)
