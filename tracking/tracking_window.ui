@@ -3906,15 +3906,24 @@ Tracking</string>
    <property name="text">
     <string>Full</string>
    </property>
+   <property name="toolTip">
+    <string>run add_surface</string>
+   </property>
   </action>
   <action name="actionRight">
    <property name="text">
     <string>Right</string>
    </property>
+   <property name="toolTip">
+    <string>run add_surface_right</string>
+   </property>
   </action>
   <action name="actionLeft">
    <property name="text">
     <string>Left</string>
+   </property>
+   <property name="toolTip">
+    <string>run add_surface_left</string>
    </property>
   </action>
   <action name="actionUpper">
@@ -3926,15 +3935,24 @@ Tracking</string>
    <property name="text">
     <string>Lower</string>
    </property>
+   <property name="toolTip">
+    <string>run add_surface_lower</string>
+   </property>
   </action>
   <action name="actionAnterior">
    <property name="text">
     <string>Anterior</string>
    </property>
+   <property name="toolTip">
+    <string>run add_surface_anterior</string>
+   </property>
   </action>
   <action name="actionPosterior">
    <property name="text">
     <string>Posterior</string>
+   </property>
+   <property name="toolTip">
+    <string>run add_surface_posterior</string>
    </property>
   </action>
   <action name="actionRecognize_Clustering">
@@ -4465,20 +4483,32 @@ Tracking</string>
    <property name="text">
     <string>Right Lower</string>
    </property>
+   <property name="toolTip">
+    <string>run add_surface_right_lower</string>
+   </property>
   </action>
   <action name="actionLeft_Lower">
    <property name="text">
     <string>Left Lower</string>
+   </property>
+   <property name="toolTip">
+    <string>run add_surface_left_lower</string>
    </property>
   </action>
   <action name="actionRight_Anterior_Lower">
    <property name="text">
     <string>Right Anterior Lower</string>
    </property>
+   <property name="toolTip">
+    <string>run add_surface_right_anterior_lower</string>
+   </property>
   </action>
   <action name="actionLeft_Anterior_Lower">
    <property name="text">
     <string>Left Anterior Lower</string>
+   </property>
+   <property name="toolTip">
+    <string>run add_surface_left_anterior_lower</string>
    </property>
   </action>
   <action name="actionRight_Posterior_Lower">
@@ -4490,15 +4520,24 @@ Tracking</string>
    <property name="text">
     <string>Left Posterior Lower</string>
    </property>
+   <property name="toolTip">
+    <string>run add_surface_left_posterior_lower</string>
+   </property>
   </action>
   <action name="actionAnterior_Lower">
    <property name="text">
     <string>Anterior Lower</string>
    </property>
+   <property name="toolTip">
+    <string>run add_surface_anterior_lower</string>
+   </property>
   </action>
   <action name="actionPosterior_Lower">
    <property name="text">
     <string>Posterior Lower</string>
+   </property>
+   <property name="toolTip">
+    <string>run add_surface_posterior_lower</string>
    </property>
   </action>
   <action name="actionAll_To_First">

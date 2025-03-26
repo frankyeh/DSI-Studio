@@ -694,6 +694,141 @@ bool tracking_window::command(std::vector<std::string> cmd)
         updateSlicesMenu();
         return true;
     }
+    if(tipl::begins_with(cmd[0],"add_surface"))
+    {
+        // cmd[1] : slice index
+        // cmd[2] : threshold
+        tipl::image<3> crop_image;
+        float resolution_ratio = 1.0;
+        auto this_slice = slices[run->from_cmd(1,ui->SliceModality->currentIndex())];
+        bool is_wm = (this_slice->get_name() == "wm_template");
+
+        if(!std::dynamic_pointer_cast<CustomSliceModel>(this_slice).get())
+        {
+            // use ICBM152 wm as the surface
+            tipl::io::gz_nifti nifti;
+            if(nifti.load_from_file(handle->wm_template_file_name.c_str()))
+            {
+                tipl::matrix<4,4,float> trans;
+                nifti.toLPS(crop_image);
+                nifti.get_image_transformation(trans);
+                if(handle->mni2sub(crop_image,trans))
+                    is_wm = true;
+                else
+                    crop_image.clear();
+            }
+        }
+
+        if(crop_image.empty())
+            crop_image = this_slice->get_source();
+
+        float threshold = is_wm ? 25.0f : tipl::segmentation::otsu_threshold(crop_image)*1.25f;
+        if(cmd[2].empty())
+        {
+            bool ok;
+            threshold = float(QInputDialog::getDouble(this,QApplication::applicationName(),"Threshold:", double(threshold),
+                    double(tipl::min_value(crop_image)),
+                    double(tipl::max_value(crop_image)),
+                    4, &ok));
+            if (!ok)
+                return run->canceled();
+        }
+        threshold = run->from_cmd(2,threshold);
+
+        {
+            glWidget->surface = std::make_shared<RegionRender>();
+            {
+                tipl::image<3,unsigned char> remain_part;
+                if(tipl::contains(cmd[0],"left"))
+                {
+                    remain_part.resize(crop_image.shape());
+                    for(unsigned int index = 0;index < remain_part.size();index += remain_part.width())
+                    {
+                        std::fill(remain_part.begin()+index+this_slice->slice_pos[0],
+                                  remain_part.begin()+index+remain_part.width(),1);
+                    }
+                }
+                if(tipl::contains(cmd[0],"right"))
+                {
+                    remain_part.resize(crop_image.shape());
+                    for(unsigned int index = 0;index < remain_part.size();index += remain_part.width())
+                    {
+                        std::fill(remain_part.begin()+index,
+                                  remain_part.begin()+index+this_slice->slice_pos[0],1);
+                    }
+                }
+                if(tipl::contains(cmd[0],"upper"))
+                {
+                    remain_part.resize(crop_image.shape());
+                    std::fill(remain_part.begin()+this_slice->slice_pos[2]*remain_part.plane_size(),
+                              remain_part.end(),1);
+                }
+                if(tipl::contains(cmd[0],"lower"))
+                {
+                    remain_part.resize(crop_image.shape());
+                    std::fill(remain_part.begin(),
+                              remain_part.begin()+this_slice->slice_pos[2]*remain_part.plane_size(),1);
+                }
+                if(tipl::contains(cmd[0],"posterior"))
+                {
+                    remain_part.resize(crop_image.shape());
+                    for(unsigned int index = 0;index < remain_part.size();index += remain_part.plane_size())
+                    {
+                        std::fill(remain_part.begin()+index+int64_t(this_slice->slice_pos[1])*remain_part.width(),
+                                  remain_part.begin()+index+int64_t(remain_part.plane_size()),1);
+                    }
+                }
+                if(tipl::contains(cmd[0],"anterior"))
+                {
+                    remain_part.resize(crop_image.shape());
+                    for(unsigned int index = 0;index < remain_part.size();index += remain_part.plane_size())
+                    {
+                        std::fill(remain_part.begin()+index,
+                                  remain_part.begin()+index+int64_t(this_slice->slice_pos[1])*remain_part.width(),1);
+                    }
+                }
+                if(!remain_part.empty())
+                    crop_image *= remain_part;
+            }
+
+
+            switch((*this)["surface_mesh_smoothed"].toInt())
+            {
+            case 1:
+                tipl::filter::gaussian(crop_image);
+                break;
+            case 2:
+                {
+                tipl::image<3,unsigned char> mask(crop_image);
+                for(size_t index = 0;index < crop_image.size();++index)
+                    if(crop_image[index] > threshold)
+                        mask[index] = 1;
+                tipl::morphology::defragment(mask);
+                tipl::morphology::negate(mask);
+                tipl::morphology::defragment(mask);
+                tipl::morphology::negate(mask);
+                tipl::morphology::smoothing(mask);
+                tipl::morphology::dilation(mask);
+                for(size_t index = 0;index < crop_image.size();++index)
+                    if(mask[index] == 0)
+                        crop_image[index] *= 0.2f;
+                tipl::filter::gaussian(crop_image);
+                }
+                break;
+            }
+            if(!glWidget->surface->load(crop_image,threshold))
+            {
+                glWidget->surface.reset();
+                return true;
+            }
+        }
+
+        if(!this_slice->is_diffusion_space)
+            glWidget->surface->transform_point_list(this_slice->to_dif);
+
+        glWidget->update();
+        return true;
+    }
 
     return run->failed("unknown command: " + cmd[0]);
 }

@@ -420,24 +420,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionInsert_Coronal_Pictures,SIGNAL(triggered()),this,SLOT(insertPicture()));
         connect(ui->actionInsert_Axial_Pictures,SIGNAL(triggered()),this,SLOT(insertPicture()));
 
-
-        connect(ui->actionFull,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
-        connect(ui->actionRight,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
-        connect(ui->actionLeft,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
-        connect(ui->actionLower,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
-        connect(ui->actionUpper,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
-        connect(ui->actionAnterior,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
-        connect(ui->actionPosterior,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
-
-        connect(ui->actionRight_Lower,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
-        connect(ui->actionLeft_Lower,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
-        connect(ui->actionAnterior_Lower,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
-        connect(ui->actionPosterior_Lower,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
-        connect(ui->actionRight_Anterior_Lower,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
-        connect(ui->actionLeft_Anterior_Lower,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
-        connect(ui->actionRight_Posterior_Lower,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
-        connect(ui->actionLeft_Posterior_Lower,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
-
     }
     // scene view
     {
