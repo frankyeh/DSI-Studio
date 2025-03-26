@@ -1107,6 +1107,7 @@
     <addaction name="separator"/>
     <addaction name="menuAdd_Isosurface"/>
     <addaction name="menuProcessing"/>
+    <addaction name="actionSkullStrip"/>
     <addaction name="separator"/>
     <addaction name="actionSave_T1W_T2W_images"/>
     <addaction name="actionSave_Slices_to_DICOM"/>
@@ -4720,6 +4721,14 @@ Tracking</string>
    </property>
    <property name="toolTip">
     <string>run delete_slice</string>
+   </property>
+  </action>
+  <action name="actionSkullStrip">
+   <property name="text">
+    <string>Skull Strip...</string>
+   </property>
+   <property name="toolTip">
+    <string>run skull_strip_slice</string>
    </property>
   </action>
  </widget>
