@@ -854,7 +854,8 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         cur_tracking_window.move_slice_to(p);
         return true;
     }
-    if(cmd[0] == "show_region_statistics" || cmd[0] == "show_t2r")
+    if(cmd[0] == "show_region_statistics" || cmd[0] == "show_t2r" ||
+       cmd[0] == "save_region_statistics" || cmd[0] == "save_t2r")
     {
         // cmd[1] : file name to save
         auto regions = get_checked_regions();
@@ -863,7 +864,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
 
         std::string result;
 
-        if(cmd[0] == "show_t2r")
+        if(tipl::ends_with(cmd[0],"t2r"))
         {
             auto tracts = cur_tracking_window.tractWidget->get_checked_tracks();
             if(tracts.empty())
@@ -887,10 +888,15 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         }
         else
         {
-            if(cmd[0] == "show_t2r")
+            if(tipl::ends_with(cmd[0],"t2r"))
                 cmd[1] = show_info_dialog("Tract-To-Region Connectome",result,cur_tracking_window.history.file_stem() + "_t2r.txt");
             else
                 cmd[1] = show_info_dialog("Region Statistics",result,cur_tracking_window.history.file_stem() + "_stat.txt");
+            if(!cmd[1].empty())
+            {
+                // change show to save
+                cmd[0][1] = 'a';cmd[0][2] = 'v';cmd[0][3] = 'e';
+            }
         }
         return true;
     }
