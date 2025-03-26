@@ -1297,102 +1297,89 @@ void tracking_window::on_actionEdit_Slices_triggered()
 
 void tracking_window::on_actionCommand_History_triggered()
 {
-    // Reuse the dialog if it already exists.
     if (!command_dialog)
     {
         command_dialog = new QDialog(this);
         command_dialog->setWindowTitle("Command History");
         command_dialog->resize(600, 400);
-
-        // Allocate the layout on the heap.
-        QVBoxLayout* layout = new QVBoxLayout(command_dialog);
-
-        // Create a label on the heap.
-        QLabel* label = new QLabel("Select the commands to repeat", command_dialog);
+        auto layout = new QVBoxLayout(command_dialog);
+        auto label = new QLabel("Select the commands to repeat", command_dialog);
         layout->addWidget(label);
-
-        // Create the list widget on the heap.
-        QListWidget* listWidget = new QListWidget(command_dialog);
+        auto listWidget = new QListWidget(command_dialog);
         listWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
         layout->addWidget(listWidget);
         for (const auto& line : history.commands)
             listWidget->addItem(QString::fromStdString(line));
 
-        // Create buttons on the heap.
-        QPushButton* openButton   = new QPushButton("&Open...", command_dialog);
-        QPushButton* saveButton   = new QPushButton("&Save...", command_dialog);
-        QPushButton* reloadButton = new QPushButton("Reload...", command_dialog);
-        QPushButton* repeatButton = new QPushButton("Repeat", command_dialog);
-        QPushButton* applyButton  = new QPushButton("Apply to Others...", command_dialog);
-        QPushButton* deleteButton = new QPushButton("Delete", command_dialog);
-        QPushButton* closeButton  = new QPushButton("Close", command_dialog);
+        // Create buttons
+        auto openButton   = new QPushButton("&Open...",   command_dialog);
+        auto saveButton   = new QPushButton("&Save...",   command_dialog);
+        auto reloadButton = new QPushButton("Reload...",  command_dialog);
+        auto repeatButton = new QPushButton("Repeat",     command_dialog);
+        auto applyButton  = new QPushButton("Apply to Others...", command_dialog);
+        auto deleteButton = new QPushButton("Delete",     command_dialog);
+        auto closeButton  = new QPushButton("Close",      command_dialog);
         repeatButton->setDisabled(true);
+        deleteButton->setDisabled(true);
+        applyButton->setDisabled(true);
 
-        // Create a horizontal layout for the buttons.
-        QHBoxLayout* buttonLayout = new QHBoxLayout;
-        buttonLayout->addWidget(openButton);
-        buttonLayout->addWidget(saveButton);
-        buttonLayout->addWidget(reloadButton);
-        buttonLayout->addWidget(repeatButton);
-        buttonLayout->addWidget(applyButton);
-        buttonLayout->addWidget(deleteButton);
-        buttonLayout->addWidget(closeButton);
+        // Add buttons using a loop
+        auto buttonLayout = new QHBoxLayout;
+        for(auto btn : {openButton, saveButton, reloadButton, repeatButton, applyButton, deleteButton, closeButton})
+            buttonLayout->addWidget(btn);
         layout->addLayout(buttonLayout);
 
-        // Connect signals.
+        // Connections
         connect(listWidget, &QListWidget::itemSelectionChanged, [=]() {
-            bool hasSelection = !listWidget->selectedItems().isEmpty();
-            repeatButton->setEnabled(hasSelection);
-            deleteButton->setEnabled(hasSelection);
-            applyButton->setEnabled(hasSelection);
+            bool hasSel = !listWidget->selectedItems().isEmpty();
+            repeatButton->setEnabled(hasSel);
+            deleteButton->setEnabled(hasSel);
+            applyButton->setEnabled(hasSel);
         });
         connect(openButton, &QPushButton::clicked, [=]() {
-            QString filename = QFileDialog::getOpenFileName(this, "Open text files",
-                                 QString::fromStdString(history.file_stem()) + ".txt",
-                                 "Text files (*.txt);;All files (*)");
-            if (filename.isEmpty())
-                return;
-            std::ifstream file(filename.toStdString());
-            if (!file)
-                return;
+            QString fn = QFileDialog::getOpenFileName(this, "Open text files",
+                            QString::fromStdString(history.file_stem()) + ".txt",
+                            "Text files (*.txt);;All files (*)");
+            if(fn.isEmpty()) return;
+            std::ifstream file(fn.toStdString());
+            if(!file) return;
             listWidget->clear();
-            for (auto& each : std::vector<std::string>(
+            for(auto& each : std::vector<std::string>(
                      {std::istream_iterator<std::string>(file), std::istream_iterator<std::string>()}))
                 listWidget->addItem(QString::fromStdString(each));
         });
         connect(saveButton, &QPushButton::clicked, [=]() {
-            QString filename = QFileDialog::getSaveFileName(this, "Save text file",
-                                 QString::fromStdString(history.file_stem()) + ".txt",
-                                 "Text files (*.txt);;All files (*)");
-            if (filename.isEmpty())
-                return;
-            std::ofstream file(filename.toStdString());
-            for (const auto& line : history.commands)
+            QString fn = QFileDialog::getSaveFileName(this, "Save text file",
+                            QString::fromStdString(history.file_stem()) + ".txt",
+                            "Text files (*.txt);;All files (*)");
+            if(fn.isEmpty()) return;
+            std::ofstream file(fn.toStdString());
+            for(const auto& line : history.commands)
                 file << line << '\n';
             QMessageBox::information(this, QApplication::applicationName(), "File saved.");
         });
         connect(reloadButton, &QPushButton::clicked, [=]() {
             listWidget->clear();
-            for (const auto& line : history.commands)
+            for(const auto& line : history.commands)
                 listWidget->addItem(QString::fromStdString(line));
         });
         connect(repeatButton, &QPushButton::clicked, [=]() {
             std::vector<std::string> selected;
-            for (auto* item : listWidget->selectedItems())
+            for(auto* item : listWidget->selectedItems())
                 selected.push_back(item->text().toStdString());
-            if (history.run(this, selected, false))
+            if(history.run(this, selected, false))
                 QMessageBox::information(this, QApplication::applicationName(), "Execution completed");
         });
         connect(applyButton, &QPushButton::clicked, [=]() {
             std::vector<std::string> selected;
-            for (auto* item : listWidget->selectedItems())
+            for(auto* item : listWidget->selectedItems())
                 selected.push_back(item->text().toStdString());
-            if (history.run(this, selected, true))
+            if(history.run(this, selected, true))
                 QMessageBox::information(this, QApplication::applicationName(), "Execution completed");
         });
         connect(deleteButton, &QPushButton::clicked, [=]() {
-            auto selectedItems = listWidget->selectedItems();
-            for (auto* item : selectedItems)
+            auto items = listWidget->selectedItems();
+            for(auto* item : items)
                 delete listWidget->takeItem(listWidget->row(item));
         });
         connect(closeButton, &QPushButton::clicked, command_dialog, &QDialog::hide);
