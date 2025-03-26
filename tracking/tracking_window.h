@@ -92,7 +92,7 @@ public:
     std::shared_ptr<surrogate> record(std::string& error_msg_,
                                       std::vector<std::string>& cmd);
     void record(const std::string& output);
-    std::string file_stem(void) const;
+    std::string file_stem(bool extended = true) const;
     bool get_dir(QWidget* parent,std::string& cmd);
     bool get_filename(QWidget* parent,std::string& cmd,const std::string& post_fix = "");
 

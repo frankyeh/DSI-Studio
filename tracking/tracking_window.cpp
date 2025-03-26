@@ -80,12 +80,12 @@ void command_history::record(const std::string& output)
             default_stem = default_stem2;
     }
 }
-std::string command_history::file_stem(void) const
+std::string command_history::file_stem(bool extended) const
 {
     if(tipl::contains(current_cmd,"to_folder"))
         return default_parent_path;
     auto result = (std::filesystem::path(default_parent_path)/default_stem).string();
-    if(default_stem2 != default_stem && !tipl::contains(current_cmd,"_all"))
+    if(extended && default_stem2 != default_stem && !tipl::contains(current_cmd,"_all"))
         result += "_" + default_stem2;
     return result;
 }
