@@ -56,19 +56,18 @@ DSI Studio is a lightweight and user-friendly software for diffusion MRI analysi
 
 ## 🧪 Demo: Try it Now
 
-### Demo Dataset
-Demo data and sample `.fz` files are available from:  
-👉 [Fiber Data Hub](https://brain.labsolver.org)
 
-### How to Run
+### Demo Dataset and How to Run
 1. Launch `dsi_studio`
-2. Find one `.fz` file at `Fiber Data Tab` tab
+2. Find one `.fz` file at `Fiber Data Tab` tab and click on the `Open XXX.fz` button to bring up tracking window
 <img src="https://github.com/user-attachments/assets/13049248-282d-4295-9cfb-880f1f89315c" width="400"/>
 
-3. Click `Open XXX.fz` button to bring up tracking window
+Alternatively, the data can be directly downloaded from [Fiber Data Hub web portal](https://brain.labsolver.org)
+
+3. Click on the `Fiber Tracking` button to initiate fiber tracking
 <img src="https://github.com/user-attachments/assets/392383ac-3425-4413-88c1-8d356f7c710b" width="400"/>
   
-4. Click `Fiber Tracking` button to visualize tractography and export results
+4. Visualize tractography and export results using functions at the top menu
 <img src="https://github.com/user-attachments/assets/7b78441a-6b76-4bc8-bfb0-ff1af82aac52" width="400"/>
 
 
@@ -118,9 +117,6 @@ Docs: [https://dsi-studio.labsolver.org/doc/cli](https://dsi-studio.labsolver.or
 
 Please cite the methods you used in DSI Studio (select only those applied to your study):
 
-> Yeh F.C., et al. *Population-averaged atlas of the human structural connectome and its network topology.* NeuroImage, 178, 57–68 (2018).  
-> [https://doi.org/10.1016/j.neuroimage.2018.05.027](https://doi.org/10.1016/j.neuroimage.2018.05.027)
-
 Population-based atlas and tracto-to-region connectome (2022): This study constructs a population-based probablistic tractography atlas and its associated tract-to-region connectome.
 > Yeh FC. Population-based tract-to-region connectome of the human brain and its hierarchical topology. Nature communications. 2022 Aug 22;13(1):1-3.
 
@@ -139,17 +135,17 @@ Topology informed pruning (TIP, 2019): A topology-based approach to remove false
 connectometry (2016): connectometry is a statistical framework for testing the significance of correlational tractography.
 > Yeh, Fang-Cheng, David Badre, and Timothy Verstynen. "Connectometry: A statistical approach harnessing the analytical potential of the local connectome." NeuroImage 125 (2016): 162-171.
 
-> Restricted diffusion imaging (RDI, 2016): RDI is a model-free method that calculates the density of diffusing spins restricted within a given displacement distance.
-Yeh, Fang-Cheng, Li Liu, T. Kevin Hitchens, and Yijen L. Wu, "Mapping Immune Cell Infiltration Using Restricted Diffusion MRI", Magn Reson Med. accepted, (2016)
+Restricted diffusion imaging (RDI, 2016): RDI is a model-free method that calculates the density of diffusing spins restricted within a given displacement distance.
+> Yeh, Fang-Cheng, Li Liu, T. Kevin Hitchens, and Yijen L. Wu, "Mapping Immune Cell Infiltration Using Restricted Diffusion MRI", Magn Reson Med. accepted, (2016)
 
-> Local connectome fingerprint (LCF, 2016): Local conectome fingerprint provides a subject-specific measurement for characterizing the white matter architectures and quantifying differences/similarity.
-Yeh, F. C., Vettel, J. M., Singh, A., Poczos, B., Grafton, S. T., Erickson, K. I., ... & Verstynen, T. D. (2016). Quantifying differences and similarities in whole-brain white matter architecture using local connectome fingerprints. PLoS computational biology, 12(11), e1005203.
+Local connectome fingerprint (LCF, 2016): Local conectome fingerprint provides a subject-specific measurement for characterizing the white matter architectures and quantifying differences/similarity.
+> Yeh, F. C., Vettel, J. M., Singh, A., Poczos, B., Grafton, S. T., Erickson, K. I., ... & Verstynen, T. D. (2016). Quantifying differences and similarities in whole-brain white matter architecture using local connectome fingerprints. PLoS computational biology, 12(11), e1005203.
 
-> Individual connectometry (2013): Individual connectometry is atlas-based analysis method that tracks the deviant pathways of one individual (e.g. a patient) by comparing subject’s data with a normal population.
-Yeh, Fang-Cheng, Pei-Fang Tang, and Wen-Yih Isaac Tseng. "Diffusion MRI connectometry automatically reveals affected fiber pathways in individuals with chronic stroke." NeuroImage: Clinical 2 (2013): 912-921.
+Individual connectometry (2013): Individual connectometry is atlas-based analysis method that tracks the deviant pathways of one individual (e.g. a patient) by comparing subject’s data with a normal population.
+> Yeh, Fang-Cheng, Pei-Fang Tang, and Wen-Yih Isaac Tseng. "Diffusion MRI connectometry automatically reveals affected fiber pathways in individuals with chronic stroke." NeuroImage: Clinical 2 (2013): 912-921.
 
-> Generalized deterministic tracking algorithm (2013): The fiber tracking algorithm implemented in DSI Studio is a generalized version of the deterministic tracking algorithm that uses quantitative anisotropy as the termination index.
-Yeh, Fang-Cheng, et al. "Deterministic diffusion fiber tracking improved by quantitative anisotropy." (2013): e80713. PLoS ONE 8(11): e80713. doi:10.1371/journal.pone.0080713
+Generalized deterministic tracking algorithm (2013): The fiber tracking algorithm implemented in DSI Studio is a generalized version of the deterministic tracking algorithm that uses quantitative anisotropy as the termination index.
+> Yeh, Fang-Cheng, et al. "Deterministic diffusion fiber tracking improved by quantitative anisotropy." (2013): e80713. PLoS ONE 8(11): e80713. doi:10.1371/journal.pone.0080713
 
 Q-space diffeormophic reconstruction (QSDR, 2011): QSDR is a model-free method that calculates the orientational distribution of the density of diffusing water in a standard space.
 > Yeh, Fang-Cheng, and Wen-Yih Isaac Tseng, "NTU-90: a high angular resolution brain atlas constructed by q-space diffeomorphic reconstruction." Neuroimage 58.1 (2011): 91-99.
