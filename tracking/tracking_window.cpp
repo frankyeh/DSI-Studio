@@ -421,24 +421,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionInsert_Axial_Pictures,SIGNAL(triggered()),this,SLOT(insertPicture()));
 
 
-        connect(ui->actionFull,SIGNAL(triggered()),this,SLOT(stripSkull()));
-        connect(ui->actionRight,SIGNAL(triggered()),this,SLOT(stripSkull()));
-        connect(ui->actionLeft,SIGNAL(triggered()),this,SLOT(stripSkull()));
-        connect(ui->actionLower,SIGNAL(triggered()),this,SLOT(stripSkull()));
-        connect(ui->actionUpper,SIGNAL(triggered()),this,SLOT(stripSkull()));
-        connect(ui->actionAnterior,SIGNAL(triggered()),this,SLOT(stripSkull()));
-        connect(ui->actionPosterior,SIGNAL(triggered()),this,SLOT(stripSkull()));
-
-        connect(ui->actionRight_Lower,SIGNAL(triggered()),this,SLOT(stripSkull()));
-        connect(ui->actionLeft_Lower,SIGNAL(triggered()),this,SLOT(stripSkull()));
-        connect(ui->actionAnterior_Lower,SIGNAL(triggered()),this,SLOT(stripSkull()));
-        connect(ui->actionPosterior_Lower,SIGNAL(triggered()),this,SLOT(stripSkull()));
-        connect(ui->actionRight_Anterior_Lower,SIGNAL(triggered()),this,SLOT(stripSkull()));
-        connect(ui->actionLeft_Anterior_Lower,SIGNAL(triggered()),this,SLOT(stripSkull()));
-        connect(ui->actionRight_Posterior_Lower,SIGNAL(triggered()),this,SLOT(stripSkull()));
-        connect(ui->actionLeft_Posterior_Lower,SIGNAL(triggered()),this,SLOT(stripSkull()));
-
-
         connect(ui->actionFull,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
         connect(ui->actionRight,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
         connect(ui->actionLeft,SIGNAL(triggered()),glWidget,SLOT(addSurface()));
