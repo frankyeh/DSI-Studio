@@ -70,6 +70,11 @@ public:
             error_msg = "canceled";
             return false;
         }
+        bool succeed(void)
+        {
+            error_msg.clear();
+            return true;
+        }
         bool failed(const std::string& msg)
         {
             error_msg = msg;
