@@ -601,9 +601,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     {
         connect(ui->SliceModality,qOverload<int>(&QComboBox::currentIndexChanged),this,[this](int index)
         {
-            if(index == -1 || !current_slice.get())
-                return;
-            command({"set_slice",std::to_string(index)});
+            command({"set_slice"});
         });
     }
     {
