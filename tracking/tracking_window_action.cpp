@@ -175,6 +175,22 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->failed(handle->error_msg);
         return true;
     }
+    if(cmd[0] == "enable_slice")
+    {
+        bool x = ui->glSagCheck->isChecked(),
+             y = ui->glCorCheck->isChecked(),
+             z = ui->glAxiCheck->isChecked();
+        if(cmd[1].empty())
+            cmd[1] = std::to_string(x?1:0) + " " + std::to_string(y?1:0) + " " + std::to_string(z?1:0);
+        else
+            std::istringstream(cmd[1]) >> x >> y >> z;
+        ui->glSagCheck->setChecked(x);
+        ui->glCorCheck->setChecked(y);
+        ui->glAxiCheck->setChecked(z);
+        glWidget->update();
+        history.overwrite(cmd[0]);
+        return true;
+    }
 
     if(cmd[0] == "move_slice")
     {
