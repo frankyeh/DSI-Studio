@@ -152,7 +152,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         tracking_windows.back()->setWindowTitle(cmd[1].c_str());
         tracking_windows.back()->showNormal();
         tracking_windows.back()->resize(size().width(),size().height());
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "save_fib_as")
     {
@@ -161,8 +161,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->canceled();
         if(!handle->save_to_file(cmd[1]))
             return run->failed(handle->error_msg);
-
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "open_mapping")
     {
@@ -173,17 +172,19 @@ bool tracking_window::command(std::vector<std::string> cmd)
         tipl::progress prog(cmd[0],true);
         if(!handle->load_template() || !handle->load_mapping(cmd[1]))
             return run->failed(handle->error_msg);
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "set_slice")
     {
+        if(no_update)
+            return run->canceled();
         size_t index = run->from_cmd(1,ui->SliceModality->currentIndex());
         if(index >= slices.size())
             return run->failed("invalid slice index " + cmd[1]);
         auto new_slice = slices[index];
         auto new_custom_slice = std::dynamic_pointer_cast<CustomSliceModel>(new_slice);
 
-        no_update = true;
+
         if(!new_slice->view->image_ready())
         {
             if(new_custom_slice.get())
@@ -197,6 +198,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 new_slice->get_source();
         }
 
+        no_update = true;
         auto previous_slice = current_slice;
         auto previous_custom_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
         current_slice = new_slice;
@@ -265,7 +267,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         no_update = false;
         change_contrast();
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "enable_slice")
     {
@@ -281,7 +283,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         ui->glAxiCheck->setChecked(z);
         glWidget->update();
         history.overwrite(cmd[0]);
-        return true;
+        return run->succeed();
     }
 
     if(cmd[0] == "move_slice")
@@ -302,7 +304,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         else
             return run->canceled();
         history.overwrite(cmd[0]);
-        return true;
+        return run->succeed();
     }
 
     if(cmd[0] == "save_roi_screen")
@@ -319,7 +321,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         scene.paint_image(scene.view_image,false);     
         if(!scene.view_image.save(cmd[1].c_str()))
             return run->failed("cannot save mapping to " + cmd[1]);
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "save_slice_image")
     {
@@ -333,8 +335,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         if(!handle->save_slice(cmd[2],cmd[1]))
             return run->failed(cmd[2] + " not found or cannot save it to " + cmd[1]);
-
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "save_all_devices")
     {
@@ -344,7 +345,6 @@ bool tracking_window::command(std::vector<std::string> cmd)
                                this,"Save all devices",deviceWidget->item(deviceWidget->currentRow(),0)->text() + ".dv.csv",
                                "CSV file(*dv.csv);;All files(*)").toStdString()).empty())
             return run->canceled();
-
         std::ofstream out(cmd[1]);
         for (size_t i = 0; i < deviceWidget->devices.size(); ++i)
             if (deviceWidget->item(int(i),0)->checkState() == Qt::Checked)
@@ -352,14 +352,14 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 deviceWidget->devices[i]->name = deviceWidget->item(int(i),0)->text().toStdString();
                 out << deviceWidget->devices[i]->to_str();
             }
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "presentation_mode")
     {
         ui->ROIdockWidget->hide();
         if(!regionWidget->rowCount())
             ui->regionDockWidget->hide();
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "save_workspace")
     {
@@ -400,9 +400,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         command({"save_setting",cmd[1] + "/setting.ini"});
         command({"save_camera",cmd[1] + "/camera.txt"});
-
-        return true;
-
+        return run->succeed();
     }
     if(cmd[0] == "load_workspace")
     {
@@ -464,7 +462,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             readme = std::string((std::istreambuf_iterator<char>(in)),std::istreambuf_iterator<char>());
         }
         report((readme + "\r\nMethods\r\n" + handle->report).c_str());
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "save_setting" || cmd[0] == "save_rendering_setting" || cmd[0] == "save_tracking_setting")
     {
@@ -500,9 +498,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
             param_list += renderWidget->treemodel->get_param_list("Tracking_adv");
             for(int index = 0;index < param_list.size();++index)
                 s.setValue(param_list[index],renderWidget->getData(param_list[index]));
-            return true;
         }
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "load_setting" || cmd[0] == "load_rendering_setting" || cmd[0] == "load_tracking_setting")
     {
@@ -545,7 +542,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 if(s.contains(param_list[index]))
                     set_data(param_list[index],s.value(param_list[index]));
         }
-        return true;
+        return run->succeed();
     }
 
     if(cmd[0] == "restore_rendering")
@@ -568,7 +565,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         tractWidget->need_update_all();
         slice_need_update = true;
         glWidget->update();
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "restore_tracking")
     {
@@ -576,7 +573,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         renderWidget->setDefault("Tracking_dT");
         renderWidget->setDefault("Tracking_adv");
         on_tracking_index_currentIndexChanged((*this)["tracking_index"].toInt());
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "enable_auto_track")
     {
@@ -596,7 +593,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         raise();
         // for adding atlas tract in t1w as fib
         ui->perform_tracking->show();
-        return true;
+        return run->succeed();
     }
     // the following must has cmd[1]
     if(cmd[0] == "set_roi_view")
@@ -607,7 +604,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             ui->glCorView->setChecked(true);
         if(cmd[1] == "2")
             ui->glAxiView->setChecked(true);
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "set_roi_view_index")
     {
@@ -616,43 +613,43 @@ bool tracking_window::command(std::vector<std::string> cmd)
         if(okay)
         {
             ui->SliceModality->setCurrentIndex(index);
-            return true;
+            return run->succeed();
         }
         index = ui->SliceModality->findText(cmd[1].c_str());
         if(index == -1)
             return run->failed(error_msg = "cannot find index: " + cmd[1]);
         ui->SliceModality->setCurrentIndex(index);
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "set_roi_view_contrast")
     {
         ui->min_value_gl->setValue(QString(cmd[1].c_str()).toDouble());
         ui->max_value_gl->setValue(QString(cmd[2].c_str()).toDouble());
         change_contrast();
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "set_slice_color")
     {
         ui->min_color_gl->setColor(QString(cmd[1].c_str()).toUInt());
         ui->max_color_gl->setColor(QString(cmd[2].c_str()).toUInt());
         change_contrast();
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "set_param")
     {
         set_data(cmd[1].c_str(),cmd[2].c_str());
         glWidget->update();
         slice_need_update = true;
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "set_region_color")
     {
         if(regionWidget->regions.empty())
-            return true;
+            return run->canceled();
         regionWidget->regions.back()->region_render->color = QString(cmd[1].c_str()).toInt();
         glWidget->update();
         slice_need_update = true;
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "add_slice" || cmd[0] == "add_mni_slice")
     {
@@ -665,7 +662,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 return run->failed(error_msg);
             glWidget->update();
             slice_need_update = true;
-            return true;
+            return run->succeed();
         }
 
         auto filenames = QFileDialog::getOpenFileNames(
@@ -747,7 +744,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         reg_slice->source_images *= maskJ;
         slice_need_update = true;
         glWidget->update_slice();
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "save_slice_mapping" || cmd[0] == "open_slice_mapping" || cmd[0] == "save_slice_volume")
     {
@@ -780,7 +777,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             if(!reg_slice->load_mapping(cmd[1].c_str()))
                 return run->failed("invalid linear registration file " + cmd[1]);
         }
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "delete_slice")
     {
@@ -799,7 +796,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         glWidget->slice_texture.erase(glWidget->slice_texture.begin()+slice_index);
         ui->SliceModality->removeItem(slice_index);
         updateSlicesMenu();
-        return true;
+        return run->succeed();
     }
     if(tipl::begins_with(cmd[0],"add_surface"))
     {
@@ -926,7 +923,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             if(!glWidget->surface->load(crop_image,threshold))
             {
                 glWidget->surface.reset();
-                return true;
+                return run->succeed();
             }
         }
 
@@ -934,7 +931,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             glWidget->surface->transform_point_list(this_slice->to_dif);
 
         glWidget->update();
-        return true;
+        return run->succeed();
     }
 
     return run->failed("unknown command: " + cmd[0]);
