@@ -633,7 +633,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         glWidget->no_update = false;
         scene.no_update = false;
         no_update = false;
-        command({"set_slice","0"});
+        command({"set_slice"});
         ui->glAxiView->setChecked(true);
         if((*this)["orientation_convention"].toInt() == 1)
             glWidget->set_view(2);
