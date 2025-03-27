@@ -378,9 +378,9 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     // opengl
     {
         connect(ui->zoom_3d,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](double zoom){command({"set_zoom",std::to_string(zoom)});});
-        connect(ui->glSagSlider,SIGNAL(valueChanged(int)),this,[this](double zoom){command({"move_slice");});
-        connect(ui->glCorSlider,SIGNAL(valueChanged(int)),this,[this](double zoom){command({"move_slice");});
-        connect(ui->glAxiSlider,SIGNAL(valueChanged(int)),this,[this](double zoom){command({"move_slice");});
+        connect(ui->glSagSlider,qOverload<int>(&QSlider::valueChanged),this,[this](int v){command({"move_slice"});});
+        connect(ui->glCorSlider,qOverload<int>(&QSlider::valueChanged),this,[this](int v){command({"move_slice"});});
+        connect(ui->glAxiSlider,qOverload<int>(&QSlider::valueChanged),this,[this](int v){command({"move_slice"});});
         connect(ui->glSagCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(update()));
         connect(ui->glCorCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(update()));
         connect(ui->glAxiCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(update()));
