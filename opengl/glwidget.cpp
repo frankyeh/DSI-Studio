@@ -2029,28 +2029,6 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     lastPos = curPos;
 }
 
-void GLWidget::saveCamera(void)
-{
-    QString filename = cur_tracking_window.
-            get_save_file_name("Save Translocation Matrix","camera.txt","Text files (*.txt);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    if(!command({"save_camera",filename.toStdString()}))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
-
-void GLWidget::loadCamera(void)
-{
-    QString filename = QFileDialog::getOpenFileName(
-            this,
-            "Open Translocation Matrix",QFileInfo(cur_tracking_window.work_path).absolutePath(),"Text files (*.txt);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    if(!command({"load_camera",filename.toStdString()}))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
-
-
 void GLWidget::copyToClipboardEach(QTableWidget* widget,unsigned int col_size)
 {
     std::vector<bool> is_checked(uint32_t(widget->rowCount()));
@@ -2157,29 +2135,7 @@ bool GLWidget::command(std::vector<std::string> cmd)
 {
     auto run = cur_tracking_window.history.record(error_msg,cmd);
     cmd.resize(3);
-    if(cmd[0] == "save_camera")
-    {
-        std::ofstream out(cmd[1]);
-        if(!out)
-            return run->failed("cannot write " + cmd[1]);
-        out << transformation_matrix;
-        return true;
-    }
-    if(cmd[0] == "load_camera")
-    {
-        std::ifstream in(cmd[1]);
-        if(!in)
-            return run->failed("cannot read/open " + cmd[1]);
-        {
-            std::vector<float> data;
-            std::copy(std::istream_iterator<float>(in),
-                      std::istream_iterator<float>(),std::back_inserter(data));
-            data.resize(16);
-            std::copy(data.begin(),data.end(),transformation_matrix.begin());
-            update();
-        }
-        return true;
-    }
+
     if(cmd[0] == "set_zoom")
     {
         bool okay = false;
