@@ -212,7 +212,6 @@ public slots:
     void change_contrast();
     void on_enable_auto_track_clicked();
 private slots:
-    void SliderValueChanged(void);
 
     void on_actionTract_Analysis_Report_triggered();
     void on_actionConnectivity_matrix_triggered();
