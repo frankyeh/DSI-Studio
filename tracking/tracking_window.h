@@ -57,6 +57,14 @@ public:
             }
             return default_value;
         }
+        const std::string& from_cmd(size_t index,const std::string& default_value)
+        {
+            if(index >= cmd.size())
+                cmd.resize(index+1);
+            if(cmd[index].empty())
+                return cmd[index] = default_value;
+            return cmd[index];
+        }
         bool canceled(void)
         {
             error_msg = "canceled";
