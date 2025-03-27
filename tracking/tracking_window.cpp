@@ -377,16 +377,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     tipl::out() << "connect signal and slots " << std::endl;
     // opengl
     {
-        connect(ui->zoom_3d,qOverload<double>(&QDoubleSpinBox::valueChanged),this,
-                [this](double zoom)
-                {
-                    zoom /= std::pow(glWidget->transformation_matrix.det(),1.0/3.0);
-                    if(zoom < 0.99 || zoom > 1.01)
-                    {
-                        glWidget->scale_by(zoom);
-                        glWidget->update();
-                    }
-                });
+        connect(ui->zoom_3d,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](double zoom){command({"set_zoom",std::to_string(zoom)});});
         connect(ui->glSagSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
         connect(ui->glCorSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
         connect(ui->glAxiSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
@@ -410,8 +401,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             ui->max_value_gl->setValue(ui->max_value_gl->minimum()+(ui->max_value_gl->maximum()-ui->max_value_gl->minimum())*
                               double(ui->max_slider->value())/double(ui->max_slider->maximum()));});
 
-
-        connect(ui->actionSave_Screen,SIGNAL(triggered()),glWidget,SLOT(catchScreen()));
         connect(ui->actionSave_3D_screen_in_high_resolution,SIGNAL(triggered()),glWidget,SLOT(catchScreen2()));
         connect(ui->actionLoad_Camera,SIGNAL(triggered()),glWidget,SLOT(loadCamera()));
         connect(ui->actionSave_Camera,SIGNAL(triggered()),glWidget,SLOT(saveCamera()));
@@ -861,50 +850,10 @@ void tracking_window::keyPressEvent ( QKeyEvent * event )
             glWidget->move_by(0,1);
             break;
         default:
-            goto next;
+            QWidget::keyPressEvent(event);
+            return;
     }
     event->accept();
-    return;
-    next:
-    if(event->key() >= Qt::Key_1 && event->key() <= Qt::Key_9)
-    {
-        QSettings settings;
-        event->accept();
-        int key_num =  event->key()-Qt::Key_1;
-        char key_str[3] = "F1";
-        key_str[1] += key_num;
-        if(event->modifiers() & Qt::AltModifier)
-        {
-            std::ostringstream out;
-            out << ui->glSagSlider->value() << " "
-                << ui->glCorSlider->value() << " "
-                << ui->glAxiSlider->value() << " ";
-            std::copy(glWidget->transformation_matrix.begin(),glWidget->transformation_matrix.end(),std::ostream_iterator<float>(out," "));
-            settings.setValue(key_str,QString(out.str().c_str()));
-            QMessageBox::information(this,QApplication::applicationName(),"View position and slice location memorized");
-        }
-        else
-        {
-            QString value = settings.value(key_str,"").toString();
-            if(value == "")
-                return;
-            std::istringstream in(value.toStdString().c_str());
-            int sag,cor,axi;
-            in >> sag >> cor >> axi;
-            std::vector<float> tran((std::istream_iterator<float>(in)),(std::istream_iterator<float>()));
-            if(tran.size() != 16)
-                return;
-            std::copy(tran.begin(),tran.begin()+16,glWidget->transformation_matrix.begin());
-            ui->glSagSlider->setValue(sag);
-            ui->glCorSlider->setValue(cor);
-            ui->glAxiSlider->setValue(axi);
-            glWidget->update();
-        }
-    }
-    if(event->isAccepted())
-        return;
-    QWidget::keyPressEvent(event);
-
 }
 
 void tracking_window::set_roi_zoom(float zoom)
