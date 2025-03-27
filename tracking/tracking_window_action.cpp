@@ -175,6 +175,42 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->failed(handle->error_msg);
         return true;
     }
+    if(tipl::begins_with(cmd[0],"store_camera"))
+    {
+        std::ostringstream out;
+        out << ui->glSagSlider->value() << " "
+            << ui->glCorSlider->value() << " "
+            << ui->glAxiSlider->value() << " ";
+        std::copy(glWidget->transformation_matrix.begin(),glWidget->transformation_matrix.end(),std::ostream_iterator<float>(out," "));
+        QSettings().setValue(QString("camera")+cmd[0].back(),QString(out.str().c_str()));
+        QMessageBox::information(this,QApplication::applicationName(),
+                                 QString("camera location stored at slot ") + cmd[0].back());
+        return run->canceled();
+    }
+    if(tipl::begins_with(cmd[0],"restore_camera"))
+    {
+        cmd[1] = QSettings().value(QString("camera")+cmd[0].back()).toString().toStdString();
+        if(cmd[1].empty())
+            return run->failed(std::string("no camera settings at slot ") + cmd[0].back());
+        cmd[0] = "set_camera";
+    }
+    if(cmd[0] == "set_camera")
+    {
+        if(cmd[1].empty())
+            return run->canceled();
+        std::istringstream in(cmd[1]);
+        int sag,cor,axi;
+        in >> sag >> cor >> axi;
+        std::vector<float> tran((std::istream_iterator<float>(in)),(std::istream_iterator<float>()));
+        if(tran.size() != 16)
+            return run->canceled();
+        std::copy(tran.begin(),tran.begin()+16,glWidget->transformation_matrix.begin());
+        ui->glSagSlider->setValue(sag);
+        ui->glCorSlider->setValue(cor);
+        ui->glAxiSlider->setValue(axi);
+        glWidget->update();
+        return true;
+    }
     if(cmd[0] == "save_roi_screen")
     {
         if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(
