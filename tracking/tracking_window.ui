@@ -1348,8 +1348,10 @@
     <addaction name="actionSagittal_view"/>
     <addaction name="actionCoronal_View"/>
     <addaction name="actionAxial_View"/>
+    <addaction name="separator"/>
     <addaction name="actionLoad_Camera"/>
     <addaction name="actionSave_Camera"/>
+    <addaction name="separator"/>
     <addaction name="menuStore_Camera_Position_3"/>
     <addaction name="menuRecall_Camera_Position_2"/>
    </widget>
