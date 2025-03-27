@@ -265,7 +265,10 @@ QImage read_qimage(QString filename,std::string& error);
 bool CustomSliceModel::load_slices(void)
 {
     if(source_file_name.empty())
+    {
+        error_msg = "cannot load image";
         return false;
+    }
     // QSDR loaded, use MNI transformation instead
     bool has_transform = false;
     auto suffix = QFileInfo(source_file_name.c_str()).suffix();
@@ -332,7 +335,10 @@ bool CustomSliceModel::load_slices(void)
                 size_t max_width = tipl::max_value(handle->dim.begin(),handle->dim.end())*2;
                 QImage in = read_qimage(source_file_name.c_str(),error_msg);
                 if(in.isNull())
+                {
+                    error_msg = "cannot read picture";
                     return false;
+                }
                 picture << in;
                 while(picture.width() > max_width)
                 {
@@ -362,8 +368,10 @@ bool CustomSliceModel::load_slices(void)
         {
             QImage in = read_qimage(source_file_name.c_str(),error_msg);
             if(in.isNull())
+            {
+                error_msg = "cannot read picture";
                 return false;
-
+            }
             dim[0] = in.width();
             dim[1] = in.height();
             dim[2] = uint32_t(source_files.size());
