@@ -197,9 +197,9 @@ bool tracking_window::command(std::vector<std::string> cmd)
         }
         return true;
     };
-    if(cmd[0] == "load_camera")
+    if(cmd[0] == "open_camera")
     {
-        if(!history.get_filename(this,cmd[1],"camera"))
+        if(!history.get_filename(this,cmd[1]))
             return run->canceled();
         std::ifstream in(cmd[1]);
         if(!in)
@@ -208,7 +208,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "save_camera")
     {
-        if(!history.get_filename(this,cmd[1],"camera"))
+        if(!history.get_filename(this,cmd[1]))
             return run->canceled();
         std::ofstream out(cmd[1]);
         if(!out)
