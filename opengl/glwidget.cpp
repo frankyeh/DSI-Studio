@@ -2187,12 +2187,12 @@ bool GLWidget::command(std::vector<std::string> cmd)
         if(!okay || zoom == 0)
             return run->failed("please specify a working parameter");
         zoom /= std::pow(transformation_matrix.det(),1.0/3.0);
-
         if(zoom < 0.99 || zoom > 1.01)
         {
             scale_by(zoom);
             update();
         }
+        cur_tracking_window.history.overwrite(cmd[0]);
         return true;
     }
     if(cmd[0] == "set_view")
@@ -2383,19 +2383,6 @@ bool GLWidget::command(std::vector<std::string> cmd)
     }
     return run->not_processed();
 }
-void GLWidget::catchScreen(void)
-{
-    QString filename = QFileDialog::getSaveFileName(
-               this,
-               "Save Images files",
-               QString::fromStdString(cur_tracking_window.history.file_stem())+".jpg",
-               "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    if(!command({"save_image",filename.toStdString()}))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
-
 void GLWidget::catchScreen2(void)
 {
     bool ok;
