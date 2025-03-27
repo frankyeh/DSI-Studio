@@ -979,6 +979,7 @@
     <addaction name="separator"/>
     <addaction name="actionTract_Analysis_Report"/>
     <addaction name="actionConnectivity_matrix"/>
+    <addaction name="actionOpen_Connectivity_Matrix"/>
     <addaction name="actionStatistics"/>
     <addaction name="separator"/>
    </widget>
@@ -1032,17 +1033,20 @@
     <addaction name="separator"/>
     <addaction name="separator"/>
     <addaction name="actionSave_Screen"/>
-    <addaction name="actionSave_3D_screen_in_3_views"/>
     <addaction name="actionSave_3D_screen_in_high_resolution"/>
+    <addaction name="separator"/>
+    <addaction name="actionSave_3D_screen_in_3_views"/>
+    <addaction name="actionSave_3D_Screen_in_3_Views_Horizontal"/>
+    <addaction name="actionSave_3D_Screen_in_3_Views_Vertical"/>
+    <addaction name="separator"/>
     <addaction name="actionSave_ROI_Screen"/>
     <addaction name="actionSave_3D_Model"/>
+    <addaction name="separator"/>
     <addaction name="menuCopy_to_Clipboard"/>
     <addaction name="separator"/>
     <addaction name="actionAuto_Rotate"/>
     <addaction name="actionRecord_Video"/>
-    <addaction name="actionSave_Rotation_Images"/>
-    <addaction name="separator"/>
-    <addaction name="actionOpen_Connectivity_Matrix"/>
+    <addaction name="actionSave_Rotation_Video"/>
    </widget>
    <widget class="QMenu" name="menu_Slices">
     <property name="title">
@@ -1363,10 +1367,10 @@
    <addaction name="menuTracts_Cluster"/>
    <addaction name="menuTracts_Misc"/>
    <addaction name="menu_Slices"/>
-   <addaction name="menuE_xport"/>
+   <addaction name="menuDevices"/>
    <addaction name="menuScreen"/>
    <addaction name="menuView"/>
-   <addaction name="menuDevices"/>
+   <addaction name="menuE_xport"/>
    <addaction name="menuLayout"/>
    <addaction name="menuTools"/>
   </widget>
@@ -3158,7 +3162,7 @@ Tracking</string>
     <string>Save 3D Screen...</string>
    </property>
    <property name="toolTip">
-    <string>run save_image</string>
+    <string>run save_screen</string>
    </property>
   </action>
   <action name="actionSave_ROI_Screen">
@@ -3213,13 +3217,19 @@ Tracking</string>
     <string>run tract_to_region</string>
    </property>
   </action>
-  <action name="actionSave_Rotation_Images">
+  <action name="actionSave_Rotation_Video">
    <property name="icon">
     <iconset resource="../icons.qrc">
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Rotation Video/Images...</string>
+    <string>Save Rotation Video...</string>
+   </property>
+   <property name="iconText">
+    <string>Save Rotation Video</string>
+   </property>
+   <property name="toolTip">
+    <string>run save_rotation_video</string>
    </property>
   </action>
   <action name="actionPaint_Tracts">
@@ -3511,6 +3521,9 @@ Tracking</string>
    <property name="text">
     <string>Save 3D Screen in High Resolution..</string>
    </property>
+   <property name="toolTip">
+    <string>run save_hd_screen</string>
+   </property>
   </action>
   <action name="actionSave_All_Regions_As">
    <property name="icon">
@@ -3647,6 +3660,9 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Save 3D Screen in 3 Views..</string>
+   </property>
+   <property name="toolTip">
+    <string>run save_3view_screen</string>
    </property>
   </action>
   <action name="actionAuto_Rotate">
@@ -4022,6 +4038,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionOpen_Connectivity_Matrix">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/add_surface.xpm</normaloff>:/icons/icons/add_surface.xpm</iconset>
+   </property>
    <property name="text">
     <string>Visualize Graph...</string>
    </property>
@@ -4898,6 +4918,35 @@ Tracking</string>
   <action name="actionSlot_9">
    <property name="text">
     <string>Slot 5</string>
+   </property>
+  </action>
+  <action name="actionSave_3D_Screen_in_3_Views_Horizontal">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save 3D Screen in 3 Views (Horizontal)...</string>
+   </property>
+   <property name="toolTip">
+    <string>run save_h3view_screen</string>
+   </property>
+  </action>
+  <action name="actionSave_3D_Screen_in_3_Views_Vertial">
+   <property name="text">
+    <string>Save 3D Screen in 3 Views (Vertical)...</string>
+   </property>
+  </action>
+  <action name="actionSave_3D_Screen_in_3_Views_Vertical">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Save 3D Screen in 3 Views (Vertical)...</string>
+   </property>
+   <property name="toolTip">
+    <string>run save_v3view_screen</string>
    </property>
   </action>
  </widget>

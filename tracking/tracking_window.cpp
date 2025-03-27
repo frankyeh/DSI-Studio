@@ -401,7 +401,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             ui->max_value_gl->setValue(ui->max_value_gl->minimum()+(ui->max_value_gl->maximum()-ui->max_value_gl->minimum())*
                               double(ui->max_slider->value())/double(ui->max_slider->maximum()));});
 
-        connect(ui->actionSave_3D_screen_in_high_resolution,SIGNAL(triggered()),glWidget,SLOT(catchScreen2()));
         connect(ui->actionInsert_Sagittal_Picture,SIGNAL(triggered()),this,SLOT(insertPicture()));
         connect(ui->actionInsert_Coronal_Pictures,SIGNAL(triggered()),this,SLOT(insertPicture()));
         connect(ui->actionInsert_Axial_Pictures,SIGNAL(triggered()),this,SLOT(insertPicture()));
@@ -526,8 +525,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 return;
             glWidget->copyToClipboardEach(regionWidget,uint32_t(col_count));
         });
-        connect(ui->actionSave_Rotation_Images,SIGNAL(triggered()),glWidget,SLOT(saveRotationSeries()));
-        connect(ui->actionSave_3D_screen_in_3_views,SIGNAL(triggered()),glWidget,SLOT(save3ViewImage()));
+
         connect(ui->actionRecord_Video,SIGNAL(triggered()),glWidget,SLOT(record_video()));
         connect(ui->actionROI,&QAction::triggered,this,[this](void){scene.copyClipBoard();});
 

@@ -756,9 +756,9 @@ void group_connectometry_analysis::generate_report(std::string& output)
                 new_mdi->regionWidget->regions.back()->add_points(std::move(points));
 
             }
-            new_mdi->command({"save_h3view_image",(output_file_name+"." + name + ".jpg").c_str()});
+            new_mdi->command({"save_h3view_screen",(output_file_name+"." + name + ".jpg").c_str()});
             // do it twice to eliminate 3D artifact
-            new_mdi->command({"save_h3view_image",(output_file_name+"." + name + ".jpg").c_str()});
+            new_mdi->command({"save_h3view_screen",(output_file_name+"." + name + ".jpg").c_str()});
 
             new_mdi->command({"set_param","roi_zoom","8"});
             new_mdi->command({"set_param","roi_layout","5"});
@@ -788,9 +788,9 @@ void group_connectometry_analysis::generate_report(std::string& output)
             }
             new_mdi->command({"set_param","tract_color_style","1"});
             new_mdi->command({"update_tract"});
-            new_mdi->command({"save_h3view_image",(output_file_name+".pos_neg.jpg").c_str()});
+            new_mdi->command({"save_h3view_screen",(output_file_name+".pos_neg.jpg").c_str()});
             // do it twice to eliminate 3D artifact
-            new_mdi->command({"save_h3view_image",(output_file_name+".pos_neg.jpg").c_str()});
+            new_mdi->command({"save_h3view_screen",(output_file_name+".pos_neg.jpg").c_str()});
             new_mdi->command({"set_param","tract_color_style","0"});
 
         }

@@ -2238,65 +2238,70 @@ bool GLWidget::command(std::vector<std::string> cmd)
     auto get_save_image_name = [&](const std::string& ext)->bool
     {
         return !cmd[1].empty() || !(cmd[1] = QFileDialog::getSaveFileName(
-                       this,"Specify File Name",
-                       QString::fromStdString(cur_tracking_window.history.file_stem() + ext),
+                       this,QString::fromStdString(cmd[0]),
+                       QString::fromStdString(cur_tracking_window.history.file_stem() + "_" + ext + ".jpg"),
                        "Image files (*.png *.bmp *.jpg *.tif);;All files (*)").toStdString()).empty();
     };
-
+    auto save_screen = [&](QImage I)->bool
+    {
+        return I.save(cmd[1].c_str()) ? true : run->failed("cannot save screen to " + cmd[1]);
+    };
     // make sure tracts are all rendered to save the images
     cur_tracking_window.tractWidget->render_time = 60000;
 
-    if(cmd[0] == "save_image")
+    if(cmd[0] == "save_screen")
     {
-        if(!get_save_image_name(".jpg"))
+        if(!get_save_image_name(""))
             return run->canceled();
-        if(!cmd[2].empty())
+        return save_screen(grab_image());
+    }
+    if(cmd[0] == "save_hd_screen")
+    {
+        if(cmd[2].empty())
         {
-            std::istringstream in(cmd[2]);
-            int w = 0;
-            int h = 0;
-            int ow = width(),oh = height();
-            in >> w >> h;
-            resize(w,h);
-            resizeGL(w,h);
-            grab_image().save(cmd[1].c_str());
-            resize(ow,oh);
-            resizeGL(ow,oh);
+            bool ok;
+            cmd[2] = QInputDialog::getText(this,QApplication::applicationName(),
+                            "specify image size (width height)",QLineEdit::Normal,"1024 800",&ok).toStdString();
+            if(!ok || cmd[2].empty())
+                return run->canceled();
         }
-        else
-            grab_image().save(cmd[1].c_str());
-        return true;
-    }
-    if(cmd[0] == "save_3view_image")
-    {
-        if(!get_save_image_name("_3view.jpg"))
+        if(!get_save_image_name("hd"))
             return run->canceled();
-        if(!get3View(0).save(cmd[1].c_str()))
-            return run->failed("cannot save image to " + cmd[1]);
-        return true;
+        std::istringstream in(cmd[2]);
+        int w = width(),h = height(),ow = width(),oh = height();
+        in >> w >> h;
+        resize(w,h);
+        resizeGL(w,h);
+        bool result = save_screen(grab_image());
+        resize(ow,oh);
+        resizeGL(ow,oh);
+        return result;
     }
-    if(cmd[0] == "save_h3view_image")
+    if(cmd[0] == "save_3view_screen")
     {
-        if(!get_save_image_name("_h3view.jpg"))
+        if(!get_save_image_name("3view"))
             return run->canceled();
-        if(!get3View(1).save(cmd[1].c_str()))
-            return run->failed("cannot save image to " + cmd[1]);
-        return true;
+        return save_screen(get3View(0));
     }
-    if(cmd[0] == "save_v3view_image")
+    if(cmd[0] == "save_h3view_screen")
     {
-        if(!get_save_image_name("_v3view.jpg"))
+        if(!get_save_image_name("h3view"))
             return run->canceled();
-
-        if(!get3View(2).save(cmd[1].c_str()))
-            return run->failed("cannot save image to " + cmd[1]);
-        return true;
+        return save_screen(get3View(1));
+    }
+    if(cmd[0] == "save_v3view_screen")
+    {
+        if(!get_save_image_name("v3view"))
+            return run->canceled();
+        return save_screen(get3View(2));
     }
     if(cmd[0] == "save_rotation_video")
     {
-        if(!get_save_image_name("_rotation.avi"))
-            return run->canceled();
-        if(QFileInfo(cmd[1].c_str()).suffix() == "avi")
+        return !cmd[1].empty() || !(cmd[1] = QFileDialog::getSaveFileName(
+                       this,QString::fromStdString(cmd[0]),
+                       QString::fromStdString(cur_tracking_window.history.file_stem() + "_rotation.avi"),
+                       "video files (*.avi);;All files (*)").toStdString()).empty();
+        //if(QFileInfo(cmd[1].c_str()).suffix() == "avi")
         {
             tipl::progress prog("save video");
             int ow = width(),oh = height();
@@ -2320,7 +2325,7 @@ bool GLWidget::command(std::vector<std::string> cmd)
             avi.close();
             resize(ow,oh);
         }
-        else
+        /*
         {
             tipl::progress prog_("save image");
             float angle = (cmd[2].empty()) ? 1 : QString(cmd[2].c_str()).toFloat();
@@ -2335,53 +2340,10 @@ bool GLWidget::command(std::vector<std::string> cmd)
                 I.save(save);
             }
         }
+        */
         return true;
     }
     return run->not_processed();
-}
-void GLWidget::catchScreen2(void)
-{
-    bool ok;
-    QString result = QInputDialog::getText(this,QApplication::applicationName(),"Assign image dimension (width height)",QLineEdit::Normal,
-                                           QString::number(cur_width)+" "+QString::number(cur_height),&ok);
-    if(!ok)
-        return;
-    QString filename = QFileDialog::getSaveFileName(
-            this,
-            "Save Images files",
-            QString::fromStdString(cur_tracking_window.history.file_stem())+"_hd.jpg",
-            "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    if(!command({"save_image",filename.toStdString(),result.toStdString()}))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
-
-void GLWidget::save3ViewImage(void)
-{
-    QString filename = QFileDialog::getSaveFileName(
-            this,
-            "Assign image name",
-            QString::fromStdString(cur_tracking_window.history.file_stem())+"_3v.jpg",
-            "Image files (*.png *.bmp *.jpg *.tif);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    if(!command({"save_3view_image",filename.toStdString()}))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
-
-
-void GLWidget::saveRotationSeries(void)
-{
-    QString filename = QFileDialog::getSaveFileName(
-                this,
-                "Assign video name",
-                QString::fromStdString(cur_tracking_window.history.file_stem())+".avi",
-                "Video file (*.avi);;Image filess (*.jpg *.png);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    if(!command({"save_rotation_video",filename.toStdString()}))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
 void GLWidget::rotate_angle(float angle,float x,float y,float z)
