@@ -602,7 +602,11 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->SliceModality,qOverload<int>(&QComboBox::currentIndexChanged),this,[this](int index)
         {
             if(!command({"set_slice"}))
+            {
                 QMessageBox::critical(this,"ERROR",error_msg.c_str());
+                if(index)
+                    ui->SliceModality->setCurrentIndex(0);
+            }
         });
     }
     {
