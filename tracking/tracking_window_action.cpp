@@ -180,29 +180,28 @@ bool tracking_window::command(std::vector<std::string> cmd)
         size_t index = run->from_cmd(1,0);
         if(index >= slices.size())
             return run->failed("invalid slice index " + cmd[1]);
-        auto previous_custom_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
-        auto current_custom_slice = std::dynamic_pointer_cast<CustomSliceModel>(slices[size_t(index)]);
+        auto new_custom_slice = std::dynamic_pointer_cast<CustomSliceModel>(slices[size_t(index)]);
 
-
+        no_update = true;
         if(!slices[size_t(index)]->view->image_ready())
         {
-            if(current_custom_slice.get())
+            if(new_custom_slice.get())
             {
-                if(!current_custom_slice->load_slices())
+                if(!new_custom_slice->load_slices())
                 {
                     ui->SliceModality->setCurrentIndex(0);
-                    return run->failed(current_custom_slice->error_msg);
+                    return run->failed(new_custom_slice->error_msg);
                 }
-                if(current_custom_slice->running)
+                if(new_custom_slice->running)
                     start_reg();
             }
             else
                 slices[size_t(index)]->get_source();
         }
 
-        no_update = true;
 
         auto previous_slice = current_slice;
+        auto previous_custom_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
         current_slice = slices[size_t(index)];
 
         ui->is_overlay->setChecked(current_slice->is_overlay);
@@ -255,7 +254,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         }
 
         if((previous_custom_slice.get() && previous_custom_slice->running) ||
-           (current_custom_slice.get() && current_custom_slice->running))
+           (new_custom_slice.get() && new_custom_slice->running))
             move_slice_to(current_slice->slice_pos);
         else
         {
