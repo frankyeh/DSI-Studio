@@ -269,13 +269,17 @@ TreeModel::TreeModel(RenderingTableWidget *parent)
 
 }
 
-TreeModel::~TreeModel()
+void TreeModel::saveParameters(void)
 {
     QSettings settings;
     settings.beginGroup("Rendering Options");
     for(auto& each : name_data_mapping)
         settings.setValue(each.first,each.second->getValue());
     settings.endGroup();
+}
+TreeModel::~TreeModel()
+{
+    saveParameters();
 }
 
 int TreeModel::columnCount(const QModelIndex &) const
