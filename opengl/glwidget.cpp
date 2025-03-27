@@ -2246,12 +2246,11 @@ bool GLWidget::command(std::vector<std::string> cmd)
             return I.save(cmd[1].c_str()) ? true : run->failed("cannot save screen to " + cmd[1]);
         };
 
-        cur_tracking_window.history.commands.push_back("set_camera,"+get_camera());
-
         if(cmd[0] == "save_screen")
         {
             if(!get_save_image_name("screen"))
                 return run->canceled();
+            cur_tracking_window.history.commands.push_back("set_camera,"+get_camera());
             return save_screen(grab_image());
         }
         if(cmd[0] == "save_hd_screen")
@@ -2266,6 +2265,7 @@ bool GLWidget::command(std::vector<std::string> cmd)
             }
             if(!get_save_image_name("hdscreen"))
                 return run->canceled();
+            cur_tracking_window.history.commands.push_back("set_camera,"+get_camera());
             std::istringstream in(cmd[2]);
             int w = width(),h = height(),ow = width(),oh = height();
             in >> w >> h;
