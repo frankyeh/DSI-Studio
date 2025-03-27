@@ -315,8 +315,7 @@ bool CustomSliceModel::load_slices(void)
         }
         if(!std::filesystem::exists(path.string()))
         {
-            error_msg = "cannot download ";
-            error_msg += source_file_name;
+            error_msg = "cannot download "+source_file_name;
             return false;
         }
         source_file_name = path.string();
