@@ -1153,11 +1153,40 @@ void RegionTableWidget::save_checked_region_label_file(QString filename,int firs
 }
 
 
-void RegionTableWidget::setROIs(std::shared_ptr<RoiMgr> roi)
+bool RegionTableWidget::set_roi(const std::string& settings,std::shared_ptr<RoiMgr> roi)
 {
-    for (auto each : get_checked_regions())
-        if (!each->region.empty() && each->regions_feature != default_id)
-            roi->setRegions(each->region,each->dim,each->to_diffusion_space,each->regions_feature,each->name.c_str());
+    for (auto each : tipl::split(settings,'&'))
+    {
+        std::replace(each.begin(),each.end(),':',' ');
+        size_t roi_index = 0,roi_type = 0;
+        std::istringstream(each) >> roi_index >> roi_type;
+        if(roi_index >= regions.size() || roi_type >= default_id)
+        {
+            error_msg = "invalid roi/roa/end region settings";
+            return false;
+        }
+        tipl::out() << "use " << regions[roi_index]->name << " as " << roi_name[roi_type];
+        roi->setRegions(regions[roi_index]->region,
+                        regions[roi_index]->dim,
+                        regions[roi_index]->to_diffusion_space,
+                        roi_type,
+                        regions[roi_index]->name.c_str());
+    }
+    return true;
+}
+std::string RegionTableWidget::get_roi_settings(void)
+{
+    std::string result;
+    for (unsigned int roi_index = 0;roi_index < regions.size();++roi_index)
+    {
+        if (item(roi_index,0)->checkState() != Qt::Checked ||
+            regions[roi_index]->regions_feature == default_id)
+            continue;
+        if(!result.empty())
+            result += '&';
+        result += std::to_string(roi_index) + ":" + std::to_string(int(regions[roi_index]->regions_feature));
+    }
+    return result;
 }
 
 QString RegionTableWidget::getROIname(void)

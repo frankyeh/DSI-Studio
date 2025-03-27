@@ -226,7 +226,8 @@ void TractTableWidget::start_tracking(void)
     QString tract_name = cur_tracking_window.regionWidget->getROIname();
     std::vector<std::string> tracking_param({std::string("run_tracking"),
                                              tract_name.toStdString(),
-                                             cur_tracking_window.get_parameter_id()});
+                                             cur_tracking_window.get_parameter_id(),
+                                             cur_tracking_window.regionWidget->get_roi_settings()});
     if(cur_tracking_window["dt_index1"].toInt() || cur_tracking_window["dt_index2"].toInt())
     {
         if(!command({std::string("set_dt_index"),
@@ -544,22 +545,24 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     if(cmd[0] == "run_tracking")
     {
         // cmd[1]: tract name
-        // cmd[2]: id
-        // cmd[3]: tolerance distance
+        // cmd[2]: parameter id
+        // cmd[3]: roi settings region_id1:type1&region_id2:type2
+        // cmd[4]: only used in autotrack, specify tolerance distance
         if(!cur_tracking_window.handle->trackable)
             return run->failed("the data are not trackable");
         auto new_thread = std::make_shared<ThreadData>(cur_tracking_window.handle);
         if(!new_thread->param.set_code(cmd[2]))
             return run->failed("invalid parameter id");
-        if(cmd.size() == 4) // has auto track
+        if(cmd.size() >= 5) // has auto track
         {
             new_thread->roi_mgr->use_auto_track = true;
             new_thread->roi_mgr->tract_name = cmd[1];
-            new_thread->roi_mgr->tolerance_dis_in_icbm152_mm = QString(cmd[3].c_str()).toFloat();
+            new_thread->roi_mgr->tolerance_dis_in_icbm152_mm = QString(cmd[4].c_str()).toFloat();
         }
         addNewTracts(cmd[1].c_str(),false);
         thread_data.back() = new_thread;
-        cur_tracking_window.regionWidget->setROIs(new_thread->roi_mgr);
+        if(cmd.size() >= 4 && !cur_tracking_window.regionWidget->set_roi(cmd[3],new_thread->roi_mgr))
+            return run->failed(cur_tracking_window.regionWidget->error_msg);
         tipl::progress prog("initiating fiber tracking");
         new_thread->run(cur_tracking_window.ui->thread_count->value(),false);
         tract_models.back()->report = cur_tracking_window.handle->report;
@@ -861,8 +864,11 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "filter_tract")
     {
+        // cmd[1] : roi settings
         std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(cur_tracking_window.handle));
-        cur_tracking_window.regionWidget->setROIs(roi_mgr);
+        if(!cur_tracking_window.regionWidget->set_roi(run->from_cmd(1,
+                    cur_tracking_window.regionWidget->get_roi_settings()),roi_mgr))
+            return run->failed(cur_tracking_window.regionWidget->error_msg);
         for_each_bundle("filter by roi",[&](unsigned int index)
         {
             return tract_models[index]->filter_by_roi(roi_mgr);
