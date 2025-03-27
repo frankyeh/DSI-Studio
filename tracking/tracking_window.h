@@ -231,7 +231,6 @@ private slots:
 
 
     void on_actionFIB_protocol_triggered();
-    void on_SliceModality_currentIndexChanged(int index);
 
     void on_actionMark_Region_on_T1W_T2W_triggered();
     void on_actionMark_Tracts_on_T1W_T2W_triggered();
