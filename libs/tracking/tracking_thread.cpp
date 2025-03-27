@@ -50,9 +50,9 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
             if(param.max_tract_count == 0)
             {
                 size_t t2v_count = std::max<uint32_t>(1,param.track_voxel_ratio*roi_mgr->seeds.size());
-                if(!trk->dt_metrics.empty())
+                if(!trk->dt_metrics.empty() || (roi_mgr->roi.empty() && roi_mgr->end.empty()))
                 {
-                    param.max_seed_count = param.max_tract_count = t2v_count; // differential tractography
+                    param.max_seed_count = param.max_tract_count = t2v_count; // differential tractography or region limiting tracking
                     tipl::out() << "for seed-to-voxel ratio of " << param.track_voxel_ratio << ", the maximum seed and tract counts are set to " << t2v_count;
                 }
                 else
