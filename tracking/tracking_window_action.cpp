@@ -177,13 +177,14 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "set_slice")
     {
-        size_t index = run->from_cmd(1,0);
+        size_t index = run->from_cmd(1,ui->SliceModality->currentIndex());
         if(index >= slices.size())
             return run->failed("invalid slice index " + cmd[1]);
-        auto new_custom_slice = std::dynamic_pointer_cast<CustomSliceModel>(slices[size_t(index)]);
+        auto new_slice = slices[index];
+        auto new_custom_slice = std::dynamic_pointer_cast<CustomSliceModel>(new_slice);
 
         no_update = true;
-        if(!slices[size_t(index)]->view->image_ready())
+        if(!new_slice->view->image_ready())
         {
             if(new_custom_slice.get())
             {
@@ -196,41 +197,41 @@ bool tracking_window::command(std::vector<std::string> cmd)
                     start_reg();
             }
             else
-                slices[size_t(index)]->get_source();
+                new_slice->get_source();
         }
 
 
         auto previous_slice = current_slice;
         auto previous_custom_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
-        current_slice = slices[size_t(index)];
+        current_slice = new_slice;
 
-        ui->is_overlay->setChecked(current_slice->is_overlay);
-        ui->stay->setChecked(current_slice->stay);
-        ui->directional_color->setChecked(current_slice->directional_color);
+        ui->is_overlay->setChecked(new_slice->is_overlay);
+        ui->stay->setChecked(new_slice->stay);
+        ui->directional_color->setChecked(new_slice->directional_color);
 
         if(!glWidget->slice_texture[index].empty())
         {
-            ui->glSagCheck->setChecked(current_slice->slice_visible[0]);
-            ui->glCorCheck->setChecked(current_slice->slice_visible[1]);
-            ui->glAxiCheck->setChecked(current_slice->slice_visible[2]);
+            ui->glSagCheck->setChecked(new_slice->slice_visible[0]);
+            ui->glCorCheck->setChecked(new_slice->slice_visible[1]);
+            ui->glAxiCheck->setChecked(new_slice->slice_visible[2]);
         }
-        ui->glSagSlider->setRange(0,int(current_slice->dim[0]-1));
-        ui->glCorSlider->setRange(0,int(current_slice->dim[1]-1));
-        ui->glAxiSlider->setRange(0,int(current_slice->dim[2]-1));
-        ui->glSagBox->setRange(0,int(current_slice->dim[0]-1));
-        ui->glCorBox->setRange(0,int(current_slice->dim[1]-1));
-        ui->glAxiBox->setRange(0,int(current_slice->dim[2]-1));
+        ui->glSagSlider->setRange(0,int(new_slice->dim[0]-1));
+        ui->glCorSlider->setRange(0,int(new_slice->dim[1]-1));
+        ui->glAxiSlider->setRange(0,int(new_slice->dim[2]-1));
+        ui->glSagBox->setRange(0,int(new_slice->dim[0]-1));
+        ui->glCorBox->setRange(0,int(new_slice->dim[1]-1));
+        ui->glAxiBox->setRange(0,int(new_slice->dim[2]-1));
 
         // update contrast color
         {
-            std::pair<unsigned int,unsigned int> contrast_color = current_slice->get_contrast_color();
+            std::pair<unsigned int,unsigned int> contrast_color = new_slice->get_contrast_color();
             ui->min_color_gl->setColor(contrast_color.first);
             ui->max_color_gl->setColor(contrast_color.second);
         }
 
         // setting up ranges
         {
-            std::pair<float,float> range = current_slice->get_value_range();
+            std::pair<float,float> range = new_slice->get_value_range();
             float r = range.second-range.first;
             float step = r/20.0f;
             ui->min_value_gl->setMinimum(double(range.first-r*0.2f));
@@ -246,7 +247,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         // setupping values
         {
-            std::pair<float,float> contrast_range = current_slice->get_contrast_range();
+            std::pair<float,float> contrast_range = new_slice->get_contrast_range();
             ui->min_value_gl->setValue(double(contrast_range.first));
             ui->max_value_gl->setValue(double(contrast_range.second));
             ui->min_slider->setValue(int((contrast_range.first-ui->min_value_gl->minimum())*double(ui->min_slider->maximum())/(ui->min_value_gl->maximum()-ui->min_value_gl->minimum())));
@@ -255,14 +256,14 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         if((previous_custom_slice.get() && previous_custom_slice->running) ||
            (new_custom_slice.get() && new_custom_slice->running))
-            move_slice_to(current_slice->slice_pos);
+            move_slice_to(new_slice->slice_pos);
         else
         {
             tipl::vector<3> slice_position(previous_slice->slice_pos);
             if(!previous_slice->is_diffusion_space)
                 slice_position.to(previous_slice->to_dif);
-            if(!current_slice->is_diffusion_space)
-                slice_position.to(current_slice->to_slice);
+            if(!new_slice->is_diffusion_space)
+                slice_position.to(new_slice->to_slice);
             move_slice_to(slice_position);
         }
 
