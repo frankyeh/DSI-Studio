@@ -350,20 +350,6 @@ bool tracking_window::command(std::vector<std::string> cmd)
         command({"save_setting",cmd[1] + "/setting.ini"});
         command({"save_camera",cmd[1] + "/camera.txt"});
 
-        std::ofstream out(cmd[1] + "/command.txt");
-        if(ui->glSagCheck->checkState())
-            out << "move_slice 0 " << current_slice->slice_pos[0] << std::endl;
-        else
-            out << "slice_off 0" << std::endl;
-        if(ui->glCorCheck->checkState())
-            out << "move_slice 1 " << current_slice->slice_pos[1] << std::endl;
-        else
-            out << "slice_off 1" << std::endl;
-        if(ui->glAxiCheck->checkState())
-            out << "move_slice 2 " << current_slice->slice_pos[2] << std::endl;
-        else
-            out << "slice_off 2" << std::endl;
-
         return true;
 
     }
@@ -419,16 +405,6 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         command({"load_setting",cmd[1] + "/setting.ini"});
         command({"load_camera",cmd[1] + "/camera.txt"});
-
-        std::ifstream in(cmd[1] + "/command.txt");
-        std::string line;
-        while(std::getline(in,line))
-        {
-            std::istringstream in2(line);
-            std::vector<std::string> cmd2;
-            std::copy(std::istream_iterator<std::string>(in2),std::istream_iterator<std::string>(),std::back_inserter(cmd2));
-            command(cmd2);
-        }
 
         std::string readme;
         if(std::filesystem::exists(cmd[1]+"/README"))
