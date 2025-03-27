@@ -110,7 +110,6 @@ public:
  public slots:
      void catchScreen2(void);
      void saveCamera(void);
-     void loadCamera(void);
      void saveRotationSeries(void);
      void save3ViewImage(void);
      void rotate(void);
