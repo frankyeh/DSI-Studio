@@ -176,6 +176,24 @@ bool tracking_window::command(std::vector<std::string> cmd)
         return true;
     }
 
+    if(cmd[0] == "move_slice")
+    {
+        int x = ui->glSagSlider->value(),y = ui->glCorSlider->value(),z = ui->glAxiSlider->value();
+        if(cmd[1].empty())
+            cmd[1] = std::to_string(x) + " " + std::to_string(y) + " " + std::to_string(z);
+        else
+            std::istringstream(cmd[1]) >> x >> y >> z;
+
+        if(!no_update && current_slice->set_slice_pos(x,y,z))
+        {
+            ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
+            if((*this)["roi_layout"].toInt() < 2) // >2 is mosaic, there is no need to update
+                slice_need_update = true;
+            glWidget->update();
+        }
+        history.overwrite(cmd[0]);
+        return true;
+    }
     auto get_camera = [&](void)->std::string
     {
         std::ostringstream out;
