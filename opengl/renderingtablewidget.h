@@ -97,6 +97,7 @@ public:
     QModelIndex parent(const QModelIndex &index) const;
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
     int columnCount(const QModelIndex &parent = QModelIndex()) const;
+    void saveParameters(void);
 public:
     void addNode(QString root_name,QString id,QVariant title);
     QModelIndex addItem(QString root_name,QString id,QVariant title, QVariant type, QVariant value, QString hint = QString());
@@ -155,6 +156,7 @@ public:
     void setMinMax(QString name,float min,float max,float step){(*treemodel)[name].setMinMax(min,max,step);}
     void setList(QString name,QStringList list){(*treemodel)[name].setList(list);}
     void initialize(void);
+    void saveParameters(void){treemodel->saveParameters();}
 public slots:
     void setDefault(QString parent_id);
     void dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight);
