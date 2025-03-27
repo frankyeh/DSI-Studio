@@ -189,17 +189,13 @@ bool tracking_window::command(std::vector<std::string> cmd)
             if(new_custom_slice.get())
             {
                 if(!new_custom_slice->load_slices())
-                {
-                    ui->SliceModality->setCurrentIndex(0);
                     return run->failed(new_custom_slice->error_msg);
-                }
                 if(new_custom_slice->running)
                     start_reg();
             }
             else
                 new_slice->get_source();
         }
-
 
         auto previous_slice = current_slice;
         auto previous_custom_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
