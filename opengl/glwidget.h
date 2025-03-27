@@ -108,7 +108,6 @@ public:
  private:
      void rotate_angle(float angle,float x,float y,float z);
  public slots:
-     void catchScreen(void);
      void catchScreen2(void);
      void saveCamera(void);
      void loadCamera(void);
