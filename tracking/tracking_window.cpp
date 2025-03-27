@@ -381,9 +381,9 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->glSagSlider,qOverload<int>(&QSlider::valueChanged),this,[this](int v){command({"move_slice"});});
         connect(ui->glCorSlider,qOverload<int>(&QSlider::valueChanged),this,[this](int v){command({"move_slice"});});
         connect(ui->glAxiSlider,qOverload<int>(&QSlider::valueChanged),this,[this](int v){command({"move_slice"});});
-        connect(ui->glSagCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(update()));
-        connect(ui->glCorCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(update()));
-        connect(ui->glAxiCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(update()));
+        connect(ui->glSagCheck,qOverload<int>(&QCheckBox::stateChanged),this,[this](int v){command({"enable_slice"});});
+        connect(ui->glCorCheck,qOverload<int>(&QCheckBox::stateChanged),this,[this](int v){command({"enable_slice"});});
+        connect(ui->glAxiCheck,qOverload<int>(&QCheckBox::stateChanged),this,[this](int v){command({"enable_slice"});});
 
         connect(ui->max_color_gl,SIGNAL(clicked()),this,SLOT(change_contrast()));
         connect(ui->min_color_gl,SIGNAL(clicked()),this,SLOT(change_contrast()));
