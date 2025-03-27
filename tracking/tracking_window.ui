@@ -1011,9 +1011,9 @@
     <addaction name="separator"/>
     <addaction name="actionMove_Objects"/>
    </widget>
-   <widget class="QMenu" name="menu_View">
+   <widget class="QMenu" name="menuScreen">
     <property name="title">
-     <string>&amp;View</string>
+     <string>&amp;Screen</string>
     </property>
     <widget class="QMenu" name="menuCopy_to_Clipboard">
      <property name="title">
@@ -1029,32 +1029,7 @@
      <addaction name="actionROI"/>
      <addaction name="actionTrack_Report"/>
     </widget>
-    <widget class="QMenu" name="menuStore_Camera_Position">
-     <property name="title">
-      <string>Store Camera Position</string>
-     </property>
-     <addaction name="actionStore_Camera_Position_1"/>
-     <addaction name="actionStore_Camera_Position_2"/>
-     <addaction name="actionStore_Camera_Position_3"/>
-     <addaction name="actionStore_Camera_Position_4"/>
-    </widget>
-    <widget class="QMenu" name="menuRecall_Camera_Position">
-     <property name="title">
-      <string>Recall Camera Position</string>
-     </property>
-     <addaction name="actionRecall_Camera_Position_1"/>
-     <addaction name="actionRecall_Camera_Position_2"/>
-     <addaction name="actionRecall_Camera_Position_3"/>
-     <addaction name="actionRecall_Camera_Position_4"/>
-    </widget>
-    <addaction name="actionSagittal_view"/>
-    <addaction name="actionCoronal_View"/>
-    <addaction name="actionAxial_View"/>
     <addaction name="separator"/>
-    <addaction name="actionLoad_Camera"/>
-    <addaction name="actionSave_Camera"/>
-    <addaction name="menuStore_Camera_Position"/>
-    <addaction name="menuRecall_Camera_Position"/>
     <addaction name="separator"/>
     <addaction name="actionSave_Screen"/>
     <addaction name="actionSave_3D_screen_in_3_views"/>
@@ -1348,6 +1323,36 @@
     <addaction name="actionLoad_Rendering_Settings"/>
     <addaction name="actionSave_Rendering_Settings"/>
    </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>&amp;View</string>
+    </property>
+    <widget class="QMenu" name="menuStore_Camera_Position_3">
+     <property name="title">
+      <string>Store Camera Position</string>
+     </property>
+     <addaction name="actionStore_Camera_Position_1"/>
+     <addaction name="actionStore_Camera_Position_2"/>
+     <addaction name="actionStore_Camera_Position_3"/>
+     <addaction name="actionStore_Camera_Position_4"/>
+    </widget>
+    <widget class="QMenu" name="menuRecall_Camera_Position_2">
+     <property name="title">
+      <string>Recall Camera Position</string>
+     </property>
+     <addaction name="actionRecall_Camera_Position_1"/>
+     <addaction name="actionRecall_Camera_Position_2"/>
+     <addaction name="actionRecall_Camera_Position_3"/>
+     <addaction name="actionRecall_Camera_Position_4"/>
+    </widget>
+    <addaction name="actionSagittal_view"/>
+    <addaction name="actionCoronal_View"/>
+    <addaction name="actionAxial_View"/>
+    <addaction name="actionLoad_Camera"/>
+    <addaction name="actionSave_Camera"/>
+    <addaction name="menuStore_Camera_Position_3"/>
+    <addaction name="menuRecall_Camera_Position_2"/>
+   </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Edit"/>
    <addaction name="menuRegions"/>
@@ -1357,7 +1362,8 @@
    <addaction name="menuTracts_Misc"/>
    <addaction name="menu_Slices"/>
    <addaction name="menuE_xport"/>
-   <addaction name="menu_View"/>
+   <addaction name="menuScreen"/>
+   <addaction name="menuView"/>
    <addaction name="menuDevices"/>
    <addaction name="menuLayout"/>
    <addaction name="menuTools"/>
@@ -3171,7 +3177,10 @@ Tracking</string>
      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
    </property>
    <property name="text">
-    <string>Open Camera View...</string>
+    <string>Open Camera Position...</string>
+   </property>
+   <property name="toolTip">
+    <string>run open_camera</string>
    </property>
   </action>
   <action name="actionSave_Camera">
@@ -3180,7 +3189,10 @@ Tracking</string>
      <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
    </property>
    <property name="text">
-    <string>Save Camera View...</string>
+    <string>Save Camera Position...</string>
+   </property>
+   <property name="toolTip">
+    <string>run save_camera</string>
    </property>
   </action>
   <action name="actionEndpoints_to_Region">
