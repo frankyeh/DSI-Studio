@@ -1165,7 +1165,6 @@ bool RegionTableWidget::set_roi(const std::string& settings,std::shared_ptr<RoiM
             error_msg = "invalid roi/roa/end region settings";
             return false;
         }
-        tipl::out() << "use " << regions[roi_index]->name << " as " << roi_name[roi_type];
         roi->setRegions(regions[roi_index]->region,
                         regions[roi_index]->dim,
                         regions[roi_index]->to_diffusion_space,
