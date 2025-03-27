@@ -2182,6 +2182,7 @@ bool GLWidget::command(std::vector<std::string> cmd)
         if(data.size() < 16)
             return run->canceled();
         std::copy(data.begin(),data.begin()+16,transformation_matrix.begin());
+        update();
         return true;
     };
     if(cmd[0] == "open_camera")
