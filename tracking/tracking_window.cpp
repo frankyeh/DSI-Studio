@@ -1154,7 +1154,7 @@ void tracking_window::on_actionCommand_History_triggered(){
         tableWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
         layout->addWidget(tableWidget);
         auto populate_table = [=](const std::vector<std::string>& lines){
-            int cols = 5;
+            int cols = 4;
             tableWidget->clear();
             tableWidget->setRowCount(lines.size());
             tableWidget->setColumnCount(cols);
