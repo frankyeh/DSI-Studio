@@ -240,6 +240,10 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
 tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_handle) :
         QMainWindow(parent),ui(new Ui::tracking_window),scene(*this),handle(new_handle),work_path(QFileInfo(new_handle->fib_file_name.c_str()).absolutePath()+"/")
 {
+    std::vector<std::string> cmd({"open_fib",handle->fib_file_name.c_str()});
+    history.record(error_msg,cmd);
+
+
     setAcceptDrops(true);
     tipl::progress prog("initializing tracking GUI");
 
@@ -628,9 +632,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         ui->glAxiView->setChecked(true);
         if((*this)["orientation_convention"].toInt() == 1)
             glWidget->set_view(2);
-
-        std::vector<std::string> cmd({"open_fib",handle->fib_file_name.c_str()});
-        history.record(error_msg,cmd);
     }
     tipl::out() << "GUI initialization complete" << std::endl;
 }
