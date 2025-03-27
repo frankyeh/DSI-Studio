@@ -361,13 +361,13 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             error_msg = "invalid region index: " + cmd_text;
             return false;
         }
-        return true;
+        return run->succeed();
     };
 
     if(cmd[0] == "new_region")
     {
         add_region("new region");
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "new_region_whole_brain_seed")
     {
@@ -392,7 +392,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         add_region("whole brain",seed_id);
         regions.back()->load_region_from_buffer(mask);
         emit need_update();
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "new_region_from_threshold")
     {
@@ -408,7 +408,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             return run->canceled();
         }
         cmd[1] = cmd_proxy[2]; // record the threshold specified by users back to cmd[1]
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "new_region_from_mni")
     {
@@ -425,7 +425,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         add_region("New Region");
         regions.back()->new_from_mni_sphere(cur_tracking_window.handle,
                                             tipl::vector<3>(params[0].toFloat(),params[1].toFloat(),params[2].toFloat()),params[3].toFloat());
-        return true;
+        return run->succeed();
     }
     if(tipl::begins_with(cmd[0],"region_action_"))
     {
@@ -457,7 +457,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                 return false;
             return run->canceled();
         }
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "save_region")
     {
@@ -476,7 +476,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             cmd[1] += ".nii.gz";
         if(!regions[cur_row]->save_region_to_file(cmd[1].c_str()))
             return run->failed("cannot save region to "+cmd[1]);
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "save_4d_region")
     {
@@ -510,7 +510,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                                   cur_tracking_window.handle->is_mni))
             return run->failed("cannot save region to " + cmd[1]);
         save_checked_region_label_file(cmd[1].c_str(),0);  // 4d nifti index starts from 0
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "save_all_regions")
     {
@@ -552,7 +552,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         if(!result)
             return run->failed("cannot write to file " + cmd[1]);
         save_checked_region_label_file(cmd[1].c_str(),1); // 3d nifti index starts from 1
-        return true;
+        return run->succeed();
     }
 
 
@@ -567,7 +567,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         for(auto each : checked_regions)
             if(!each->save_region_to_file((cmd[1] + "/" + each->name + output_format().toStdString()).c_str()))
                 return run->failed("cannot save " + each->name + " to " + cmd[1]);
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "save_region_info")
     {
@@ -599,7 +599,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             std::copy(data.begin(),data.end(),std::ostream_iterator<float>(out,"\t"));
             out << std::endl;
         }
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "open_region" || cmd[0] == "open_mni_region")
     {
@@ -611,7 +611,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             if(!load_multiple_roi_nii(cmd[1].c_str(),cmd[0] == "open_mni_region"))
                 return run->failed(error_msg);
             emit need_update();
-            return true;
+            return run->succeed();
         }
         // allow for selecting multiple files
         auto file_list = QFileDialog::getOpenFileNames(this,QString::fromStdString(cmd[0]),
@@ -668,7 +668,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             }
         }
         emit need_update();
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "save_region_color")
     {
@@ -683,7 +683,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             tipl::rgb c(regions[index]->region_render->color);
             out << int(c[2]) << " " << int(c[1]) << " " << int(c[0]) << " " << int(c[3]) << std::endl;
         }
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "check_all_regions" || cmd[0] == "uncheck_all_regions")
     {
@@ -695,7 +695,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         cur_tracking_window.scene.no_update = false;
         cur_tracking_window.glWidget->no_update = false;
         emit need_update();
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "copy_region")
     {
@@ -708,34 +708,37 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         *regions[cur_row + 1] = *regions[cur_row];
         regions[cur_row + 1]->region_render->color.color = color;
         add_row(int(cur_row+1),regions[cur_row]->name.c_str());
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "add_region_from_atlas")
     {
-        // cmd[1] : template id  (e.g. o for human)
-        // cmd[2] : atlas id     (e.g. 0 for the first atlas of human template)
-        // cmd[3] : region label , if not supply add all
-        size_t template_id = QString::fromStdString(cmd[1]).toInt();
-        if(template_id >= atlas_file_name_list.size())
-            return run->failed("invalid template id: " + cmd[1]);
+        // cmd[1] : template id  (e.g. o for human) [space]
+        //          atlas id     (e.g. 0 for the first atlas of human template) [space]
+        //          region label , if not supply add all
+
+        size_t template_id,atlas_id;
+        std::string region_label;
+        std::istringstream(cmd[1]) >> template_id >> atlas_id >> region_label;
+        if(template_id >= atlas_file_name_list.size() || atlas_id >= atlas_file_name_list[template_id].size())
+            return run->failed("invalid index " + cmd[1]);
+
         if(template_id != cur_tracking_window.handle->template_id)
             cur_tracking_window.handle->set_template_id(template_id);
-        size_t atlas_id = QString::fromStdString(cmd[2]).toInt();
-        if(atlas_id >= atlas_file_name_list[template_id].size())
-            return run->failed("invalid atlas id: " + cmd[2]);
+
         auto at = cur_tracking_window.handle->atlas_list[atlas_id];
 
         std::vector<std::vector<tipl::vector<3,short> > > points;
         std::vector<std::string> labels;
 
-        if(cmd.size() > 3)
+        if(!region_label.empty()) // has region labels
         {
             std::vector<size_t> label_list;
-            for(auto each : QString::fromStdString(cmd[3]).split('&'))
+            for(auto each : tipl::split(region_label,'&'))
             {
-                int label = each.toInt();
+                int label = 0;
+                std::istringstream(each) >> label;
                 if(label < 0 || label >= at->get_list().size())
-                    return run->failed("invalid label id: " + each.toStdString());
+                    return run->failed("invalid label id: " + each);
                 std::vector<tipl::vector<3,short> > point0;
                 if(!cur_tracking_window.handle->get_atlas_roi(at,label,
                         cur_tracking_window.current_slice->dim,
@@ -764,7 +767,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         cur_tracking_window.glWidget->update();
         cur_tracking_window.slice_need_update = true;
         cur_tracking_window.raise();
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "merge_regions")
     {
@@ -818,7 +821,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         }
         end_update();
         emit need_update();
-        return true;
+        return run->succeed();
     }
 
     if(cmd[0] == "delete_region")
@@ -830,7 +833,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         regions.erase(regions.begin()+cur_row);
         removeRow(cur_row);
         emit need_update();
-        return true;
+        return run->succeed();
     }
 
     if(cmd[0] == "delete_all_regions")
@@ -839,7 +842,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         regions.clear();
         color_gen = 0;
         emit need_update();
-        return true;
+        return run->succeed();
     }
     if(cmd[0] == "move_slice_to_region")
     {
@@ -855,7 +858,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         if(!current_slice->is_diffusion_space)
             p.to(current_slice->to_slice);
         cur_tracking_window.move_slice_to(p);
-        return true;
+        return run->succeed();
     }
 
     if(cmd[0] == "show_region_statistics" || cmd[0] == "save_region_statistics" ||
@@ -915,7 +918,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                 cmd[0][1] = 'a';cmd[0][2] = 'v';cmd[0][3] = 'e';
             }
         }
-        return true;
+        return run->succeed();
     }
 
 
@@ -1079,6 +1082,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
         end_update();
     }
     return true;
+
 }
 
 void RegionTableWidget::check_row(size_t row,bool checked)

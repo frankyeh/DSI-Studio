@@ -111,7 +111,7 @@ void AtlasDialog::on_add_atlas_clicked()
         return;
     }
     if(indexes.count() == ui->region_list->model()->rowCount()) // select all
-        w->command({"add_region_from_atlas",std::to_string(handle->template_id),std::to_string(atlas_index)});
+        w->command({"add_region_from_atlas",std::to_string(handle->template_id)+" "+std::to_string(atlas_index)});
     else
     {
         std::string label_list;
@@ -121,7 +121,7 @@ void AtlasDialog::on_add_atlas_clicked()
                 label_list.push_back('&');
             label_list += std::to_string(indexes[int(index)].row());
         }
-        w->command({"add_region_from_atlas",std::to_string(handle->template_id),std::to_string(atlas_index),label_list});
+        w->command({"add_region_from_atlas",std::to_string(handle->template_id)+" "+std::to_string(atlas_index)+" "+label_list});
     }
 
 

@@ -1059,7 +1059,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
                         return;
                     }
                     command({"delete_all_regions"});
-                    command({"add_region_from_atlas",std::to_string(handle->template_id),std::to_string(i)});
+                    command({"add_region_from_atlas",std::to_string(handle->template_id)+" "+std::to_string(i)});
                     set_data("region_graph",1);
                     break;
                 }
