@@ -103,6 +103,13 @@ public:
     std::string file_stem(bool extended = true) const;
     bool get_dir(QWidget* parent,std::string& cmd);
     bool get_filename(QWidget* parent,std::string& cmd,const std::string& post_fix = "");
+    void overwrite(const std::string& cmd)
+    {
+        if(commands.empty())
+            return;
+        if(tipl::begins_with(commands.back(),cmd))
+            commands.pop_back();
+    }
 
 };
 class GLWidget;
