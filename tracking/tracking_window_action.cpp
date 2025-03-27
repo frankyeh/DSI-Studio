@@ -207,69 +207,12 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 slice_need_update = true;
             glWidget->update();
         }
+        else
+            return run->canceled();
         history.overwrite(cmd[0]);
         return true;
     }
-    auto get_camera = [&](void)->std::string
-    {
-        std::ostringstream out;
-        std::copy(glWidget->transformation_matrix.begin(),glWidget->transformation_matrix.end(),std::ostream_iterator<float>(out," "));
-        out << " " << ui->glSagSlider->value() << " " << ui->glCorSlider->value() << " " << ui->glAxiSlider->value();
-        return out.str();
-    };
-    auto load_camera = [&](const std::vector<float>& data)->bool
-    {
-        if(data.size() < 16)
-            return run->canceled();
-        std::copy(data.begin(),data.begin()+16,glWidget->transformation_matrix.begin());
-        if(data.size() == 19)
-        {
-            ui->glSagSlider->setValue(data[16]);
-            ui->glCorSlider->setValue(data[17]);
-            ui->glAxiSlider->setValue(data[18]);
-            glWidget->update();
-        }
-        return true;
-    };
-    if(cmd[0] == "open_camera")
-    {
-        if(!history.get_filename(this,cmd[1]))
-            return run->canceled();
-        std::ifstream in(cmd[1]);
-        if(!in)
-            return run->failed("cannot read/open " + cmd[1]);
-        return load_camera(std::vector<float>((std::istream_iterator<float>(in)),(std::istream_iterator<float>())));
-    }
-    if(cmd[0] == "save_camera")
-    {
-        if(!history.get_filename(this,cmd[1]))
-            return run->canceled();
-        std::ofstream out(cmd[1]);
-        if(!out)
-            return run->failed("cannot write " + cmd[1]);
-        out << get_camera();
-        return true;
-    }
-    if(tipl::begins_with(cmd[0],"store_camera"))
-    {
-        QSettings().setValue(QString("camera")+cmd[0].back(),QString(get_camera().c_str()));
-        QMessageBox::information(this,QApplication::applicationName(),QString("camera location stored at slot ") + cmd[0].back());
-        return run->canceled();
-    }
-    if(tipl::begins_with(cmd[0],"restore_camera"))
-    {
-        cmd[1] = QSettings().value(QString("camera")+cmd[0].back()).toString().toStdString();
-        if(cmd[1].empty())
-            return run->failed(std::string("no camera settings at slot ") + cmd[0].back());
-        cmd[0] = "set_camera";
-    }
-    if(cmd[0] == "set_camera")
-    {
-        if(cmd[1].empty())
-            return run->canceled();
-        std::istringstream in(cmd[1]);
-        return load_camera(std::vector<float>((std::istream_iterator<float>(in)),(std::istream_iterator<float>())));
-    }
+
     if(cmd[0] == "save_roi_screen")
     {
         if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(

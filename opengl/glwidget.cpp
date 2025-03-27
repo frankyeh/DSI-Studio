@@ -2169,65 +2169,131 @@ bool GLWidget::command(std::vector<std::string> cmd)
         update();
         return true;
     }
-    auto get_save_image_name = [&](const std::string& ext)->bool
+
+
+    auto get_camera = [&](void)->std::string
     {
-        return !cmd[1].empty() || !(cmd[1] = QFileDialog::getSaveFileName(
-                       this,QString::fromStdString(cmd[0]),
-                       QString::fromStdString(cur_tracking_window.history.file_stem() + "_" + ext + ".jpg"),
-                       "Image files (*.png *.bmp *.jpg *.tif);;All files (*)").toStdString()).empty();
+        std::ostringstream out;
+        std::copy(transformation_matrix.begin(),transformation_matrix.end(),std::ostream_iterator<float>(out," "));
+        return out.str();
     };
-    auto save_screen = [&](QImage I)->bool
+    auto load_camera = [&](const std::vector<float>& data)->bool
     {
-        return I.save(cmd[1].c_str()) ? true : run->failed("cannot save screen to " + cmd[1]);
+        if(data.size() < 16)
+            return run->canceled();
+        std::copy(data.begin(),data.begin()+16,transformation_matrix.begin());
+        return true;
     };
+    if(cmd[0] == "open_camera")
+    {
+        if(!cur_tracking_window.history.get_filename(this,cmd[1]))
+            return run->canceled();
+        std::ifstream in(cmd[1]);
+        if(!in)
+            return run->failed("cannot read/open " + cmd[1]);
+        return load_camera(std::vector<float>((std::istream_iterator<float>(in)),(std::istream_iterator<float>())));
+    }
+    if(cmd[0] == "save_camera")
+    {
+        if(!cur_tracking_window.history.get_filename(this,cmd[1]))
+            return run->canceled();
+        std::ofstream out(cmd[1]);
+        if(!out)
+            return run->failed("cannot write " + cmd[1]);
+        out << get_camera();
+        return true;
+    }
+    if(tipl::begins_with(cmd[0],"store_camera"))
+    {
+        QSettings().setValue(QString("camera")+cmd[0].back(),QString(get_camera().c_str()));
+        QMessageBox::information(this,QApplication::applicationName(),QString("camera location stored at slot ") + cmd[0].back());
+        return run->canceled();
+    }
+    if(tipl::begins_with(cmd[0],"restore_camera"))
+    {
+        cmd[1] = QSettings().value(QString("camera")+cmd[0].back()).toString().toStdString();
+        if(cmd[1].empty())
+            return run->failed(std::string("no camera settings at slot ") + cmd[0].back());
+        cmd[0] = "set_camera";
+    }
+    if(cmd[0] == "set_camera")
+    {
+        if(cmd[1].empty())
+            return run->canceled();
+        std::istringstream in(cmd[1]);
+        return load_camera(std::vector<float>((std::istream_iterator<float>(in)),(std::istream_iterator<float>())));
+    }
+
+
+
+
     // make sure tracts are all rendered to save the images
     cur_tracking_window.tractWidget->render_time = 60000;
 
-    if(cmd[0] == "save_screen")
+    // make sure that the camera location is duplicated
+    if(tipl::contains(cmd[0],"screen"))
     {
-        if(!get_save_image_name(""))
-            return run->canceled();
-        return save_screen(grab_image());
-    }
-    if(cmd[0] == "save_hd_screen")
-    {
-        if(cmd[2].empty())
+        auto get_save_image_name = [&](const std::string& ext)->bool
         {
-            bool ok;
-            cmd[2] = QInputDialog::getText(this,QApplication::applicationName(),
-                            "specify image size (width height)",QLineEdit::Normal,"1024 800",&ok).toStdString();
-            if(!ok || cmd[2].empty())
+            return !cmd[1].empty() || !(cmd[1] = QFileDialog::getSaveFileName(
+                           this,QString::fromStdString(cmd[0]),
+                           QString::fromStdString(cur_tracking_window.history.file_stem() + "_" + ext + ".jpg"),
+                           "Image files (*.png *.bmp *.jpg *.tif);;All files (*)").toStdString()).empty();
+        };
+        auto save_screen = [&](QImage I)->bool
+        {
+            return I.save(cmd[1].c_str()) ? true : run->failed("cannot save screen to " + cmd[1]);
+        };
+
+        cur_tracking_window.history.commands.push_back("set_camera,"+get_camera());
+
+        if(cmd[0] == "save_screen")
+        {
+            if(!get_save_image_name("screen"))
                 return run->canceled();
+            return save_screen(grab_image());
         }
-        if(!get_save_image_name("hd"))
-            return run->canceled();
-        std::istringstream in(cmd[2]);
-        int w = width(),h = height(),ow = width(),oh = height();
-        in >> w >> h;
-        resize(w,h);
-        resizeGL(w,h);
-        bool result = save_screen(grab_image());
-        resize(ow,oh);
-        resizeGL(ow,oh);
-        return result;
-    }
-    if(cmd[0] == "save_3view_screen")
-    {
-        if(!get_save_image_name("3view"))
-            return run->canceled();
-        return save_screen(get3View(0));
-    }
-    if(cmd[0] == "save_h3view_screen")
-    {
-        if(!get_save_image_name("h3view"))
-            return run->canceled();
-        return save_screen(get3View(1));
-    }
-    if(cmd[0] == "save_v3view_screen")
-    {
-        if(!get_save_image_name("v3view"))
-            return run->canceled();
-        return save_screen(get3View(2));
+        if(cmd[0] == "save_hd_screen")
+        {
+            if(cmd[2].empty())
+            {
+                bool ok;
+                cmd[2] = QInputDialog::getText(this,QApplication::applicationName(),
+                                "specify image size (width height)",QLineEdit::Normal,"1024 800",&ok).toStdString();
+                if(!ok || cmd[2].empty())
+                    return run->canceled();
+            }
+            if(!get_save_image_name("hdscreen"))
+                return run->canceled();
+            std::istringstream in(cmd[2]);
+            int w = width(),h = height(),ow = width(),oh = height();
+            in >> w >> h;
+            resize(w,h);
+            resizeGL(w,h);
+            bool result = save_screen(grab_image());
+            resize(ow,oh);
+            resizeGL(ow,oh);
+            return result;
+        }
+        if(cmd[0] == "save_3view_screen")
+        {
+            if(!get_save_image_name("3view"))
+                return run->canceled();
+            return save_screen(get3View(0));
+        }
+        if(cmd[0] == "save_h3view_screen")
+        {
+            if(!get_save_image_name("h3view"))
+                return run->canceled();
+            return save_screen(get3View(1));
+        }
+        if(cmd[0] == "save_v3view_screen")
+        {
+            if(!get_save_image_name("v3view"))
+                return run->canceled();
+            return save_screen(get3View(2));
+        }
+
     }
     if(cmd[0] == "save_rotation_video")
     {
