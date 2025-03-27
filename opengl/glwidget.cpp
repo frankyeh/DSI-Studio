@@ -2169,22 +2169,6 @@ bool GLWidget::command(std::vector<std::string> cmd)
         update();
         return true;
     }
-    if(cmd[0] == "move_slice")
-    {
-        switch(QString(cmd[1].c_str()).toInt())
-        {
-        case 0:
-            cur_tracking_window.ui->glSagSlider->setValue(QString(cmd[2].c_str()).toInt());
-            break;
-        case 1:
-            cur_tracking_window.ui->glCorSlider->setValue(QString(cmd[2].c_str()).toInt());
-            break;
-        case 2:
-            cur_tracking_window.ui->glAxiSlider->setValue(QString(cmd[2].c_str()).toInt());
-            break;
-        }
-        return true;
-    }
     if(cmd[0] == "slice_off")
     {
         if(cmd[1].empty())
