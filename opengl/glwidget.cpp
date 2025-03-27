@@ -2169,56 +2169,6 @@ bool GLWidget::command(std::vector<std::string> cmd)
         update();
         return true;
     }
-    if(cmd[0] == "slice_off")
-    {
-        if(cmd[1].empty())
-        {
-            cur_tracking_window.ui->glCorCheck->setChecked(false);
-            cur_tracking_window.ui->glSagCheck->setChecked(false);
-            cur_tracking_window.ui->glAxiCheck->setChecked(false);
-            return true;
-        }
-        switch(QString(cmd[1].c_str()).toInt())
-        {
-        case 0:
-            cur_tracking_window.ui->glSagCheck->setChecked(false);
-            break;
-        case 1:
-            cur_tracking_window.ui->glCorCheck->setChecked(false);
-            break;
-        case 2:
-            cur_tracking_window.ui->glAxiCheck->setChecked(false);
-            break;
-        }
-        update();
-        return true;
-
-    }
-    if(cmd[0] == "slice_on")
-    {
-        if(cmd[1].empty())
-        {
-            cur_tracking_window.ui->glCorCheck->setChecked(true);
-            cur_tracking_window.ui->glSagCheck->setChecked(true);
-            cur_tracking_window.ui->glAxiCheck->setChecked(true);
-            return true;
-        }
-        switch(QString(cmd[1].c_str()).toInt())
-        {
-        case 0:
-            cur_tracking_window.ui->glSagCheck->setChecked(true);
-            break;
-        case 1:
-            cur_tracking_window.ui->glCorCheck->setChecked(true);
-            break;
-        case 2:
-            cur_tracking_window.ui->glAxiCheck->setChecked(true);
-            break;
-        }
-        update();
-        return true;
-    }
-
     auto get_save_image_name = [&](const std::string& ext)->bool
     {
         return !cmd[1].empty() || !(cmd[1] = QFileDialog::getSaveFileName(
