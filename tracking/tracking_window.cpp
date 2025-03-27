@@ -378,9 +378,9 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     // opengl
     {
         connect(ui->zoom_3d,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](double zoom){command({"set_zoom",std::to_string(zoom)});});
-        connect(ui->glSagSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
-        connect(ui->glCorSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
-        connect(ui->glAxiSlider,SIGNAL(valueChanged(int)),this,SLOT(SliderValueChanged()));
+        connect(ui->glSagSlider,SIGNAL(valueChanged(int)),this,[this](double zoom){command({"move_slice");});
+        connect(ui->glCorSlider,SIGNAL(valueChanged(int)),this,[this](double zoom){command({"move_slice");});
+        connect(ui->glAxiSlider,SIGNAL(valueChanged(int)),this,[this](double zoom){command({"move_slice");});
         connect(ui->glSagCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(update()));
         connect(ui->glCorCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(update()));
         connect(ui->glAxiCheck,SIGNAL(stateChanged(int)),glWidget,SLOT(update()));
@@ -763,20 +763,6 @@ float tracking_window::get_scene_zoom(std::shared_ptr<SliceModel> slice)
         display_ratio *= slice->vs[0]/handle->vs[0];
     display_ratio = std::min<float>(display_ratio,4096.0/handle->dim[0]);
     return display_ratio;
-}
-
-void tracking_window::SliderValueChanged(void)
-{
-    if(!no_update && current_slice->set_slice_pos(
-            ui->glSagSlider->value(),
-            ui->glCorSlider->value(),
-            ui->glAxiSlider->value()))
-    {
-        ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
-        if((*this)["roi_layout"].toInt() < 2) // >2 is mosaic, there is no need to update
-            slice_need_update = true;
-        glWidget->update();
-    }
 }
 
 
@@ -1315,6 +1301,7 @@ void tracking_window::on_actionCommand_History_triggered()
                 QMessageBox::information(this, QApplication::applicationName(), "Execution completed");
         });
         connect(applyButton, &QPushButton::clicked, [=]() {
+            renderWidget->saveParameters(); // make sure the rendering option is copied
             std::vector<std::string> selected;
             for(auto* item : listWidget->selectedItems())
                 selected.push_back(item->text().toStdString());
