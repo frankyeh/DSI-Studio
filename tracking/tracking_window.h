@@ -215,7 +215,6 @@ public:
     }
 public slots:
     void check_reg(void);
-    void change_contrast();
 private slots:
 
     void on_actionTract_Analysis_Report_triggered();
