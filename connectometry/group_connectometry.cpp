@@ -475,6 +475,7 @@ void group_connectometry::on_show_result_clicked()
         new_data->slices.push_back(std::make_shared<slice_model>("inc_t",result_fib->inc_ptr[0],new_data->dim));
     }
     tracking_window* current_tracking_window = new tracking_window(this,new_data);
+    current_tracking_window->set_memorize_parameters(false);
     current_tracking_window->setAttribute(Qt::WA_DeleteOnClose);
     current_tracking_window->setWindowTitle(vbc->output_file_name.c_str());
     current_tracking_window->showNormal();
@@ -484,13 +485,12 @@ void group_connectometry::on_show_result_clicked()
     current_tracking_window->tractWidget->tract_models[0]->add(*(vbc->inc_track.get()));
     current_tracking_window->tractWidget->tract_models[1]->add(*(vbc->dec_track.get()));
 
+    for(const auto& each : std::vector<std::pair<std::string, std::string>>{
+        {"show_surface", "1"},{"show_slice", "0"},{"show_region", "0"},{"bkg_color", "16777215"},{"surface_alpha", "0.2"}})
+            current_tracking_window->set_data(each.first.c_str(),each.second.c_str());
+
     current_tracking_window->command({"set_zoom","0.8"});
-    current_tracking_window->command({"set_param","show_surface","1"});
-    current_tracking_window->command({"set_param","show_slice","0"});
-    current_tracking_window->command({"set_param","show_region","0"});
-    current_tracking_window->command({"set_param","bkg_color","16777215"});
-    current_tracking_window->command({"set_param","surface_alpha","0.2"});
-    current_tracking_window->command({"set_roi_view_index","wm_template"});
+    current_tracking_window->command({"set_slice_by_name","wm_template"});
     current_tracking_window->command({"add_surface","25.0"});
     current_tracking_window->command({"update_tract"});
 

@@ -597,18 +597,13 @@ bool tracking_window::command(std::vector<std::string> cmd)
             ui->glAxiView->setChecked(true);
         return run->succeed();
     }
-    if(cmd[0] == "set_roi_view_index")
+    if(cmd[0] == "set_slice_by_name")
     {
-        bool okay = true;
-        int index = QString(cmd[1].c_str()).toInt(&okay);
-        if(okay)
-        {
-            ui->SliceModality->setCurrentIndex(index);
-            return run->succeed();
-        }
-        index = ui->SliceModality->findText(cmd[1].c_str());
+        if(cmd[1].empty())
+            return run->canceled();
+        auto index = ui->SliceModality->findText(cmd[1].c_str());
         if(index == -1)
-            return run->failed(error_msg = "cannot find index: " + cmd[1]);
+            return run->failed("cannot find index: " + cmd[1]);
         ui->SliceModality->setCurrentIndex(index);
         return run->succeed();
     }
@@ -619,14 +614,33 @@ bool tracking_window::command(std::vector<std::string> cmd)
         change_contrast();
         return run->succeed();
     }
-    if(cmd[0] == "set_slice_color")
+    if(cmd[0] == "set_slice_contrast")
     {
-        ui->min_color_gl->setColor(QString(cmd[1].c_str()).toUInt());
-        ui->max_color_gl->setColor(QString(cmd[2].c_str()).toUInt());
-        change_contrast();
-        return run->succeed();
-    }
+        // cmd[1] : min max values
+        // cmd[2] : min max colors
 
+        if(no_update)
+            return run->canceled();
+
+        double min_value_gl(ui->min_value_gl->value()),max_value_gl(ui->max_value_gl->value());
+        if(cmd[1].empty())
+            cmd[1] = std::to_string(min_value_gl) + " " +
+                     std::to_string(max_value_gl);
+        else
+            std::istringstream(cmd[1]) >> min_value_gl >> max_value_gl;
+
+        unsigned int min_color_gl(ui->min_color_gl->color().rgb()),max_color_gl(ui->max_color_gl->color().rgb());
+        if(cmd[2].empty())
+            cmd[2] =std::to_string(min_color_gl) + " " +
+                     std::to_string(max_color_gl);
+        else
+            std::istringstream(cmd[2]) >> min_color_gl >> max_color_gl;
+
+        current_slice->set_contrast_range(min_value_gl,max_value_gl);
+        current_slice->set_contrast_color(min_color_gl,max_color_gl);
+        slice_need_update = true;
+        glWidget->update_slice();
+    }
     if(cmd[0] == "set_slice_dir_color")
     {
         // cmd[1] = slice_index
