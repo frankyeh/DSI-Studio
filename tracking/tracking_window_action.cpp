@@ -632,6 +632,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         current_slice->set_contrast_color(min_color_gl,max_color_gl);
         slice_need_update = true;
         glWidget->update_slice();
+        return run->succeed();
     }
     if(cmd[0] == "set_slice_dir_color")
     {
