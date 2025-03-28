@@ -605,6 +605,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         if(index == -1)
             return run->failed("cannot find index: " + cmd[1]);
         ui->SliceModality->setCurrentIndex(index);
+        history.overwrite(cmd[0]);
         return run->succeed();
     }
     if(cmd[0] == "set_slice_contrast")
@@ -632,6 +633,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         current_slice->set_contrast_color(min_color_gl,max_color_gl);
         slice_need_update = true;
         glWidget->update_slice();
+        history.overwrite(cmd[0]);
         return run->succeed();
     }
     if(cmd[0] == "set_slice_dir_color")
