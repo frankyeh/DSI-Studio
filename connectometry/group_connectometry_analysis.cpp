@@ -739,7 +739,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
         new_mdi->command({"set_slice_by_name","wm_template"});
         new_mdi->command({"add_surface","25"});
         new_mdi->command({"set_slice_by_name","t1w_template"});
-        new_mdi->command({"set_roi_view_contrast","0.0 400.0"});
+        new_mdi->command({"set_slice_contrast","0.0 400.0"});
 
         auto show_track_result = [&](std::shared_ptr<TractModel> track,std::string name,unsigned int color){
             if(track->get_visible_track_count())
