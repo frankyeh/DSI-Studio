@@ -156,6 +156,9 @@
          </item>
          <item>
           <widget class="QCheckBox" name="stay">
+           <property name="toolTip">
+            <string>run set_slice_stay</string>
+           </property>
            <property name="text">
             <string>Stay</string>
            </property>
@@ -163,6 +166,9 @@
          </item>
          <item>
           <widget class="QCheckBox" name="is_overlay">
+           <property name="toolTip">
+            <string>run set_slice_overlay</string>
+           </property>
            <property name="text">
             <string>Overlay</string>
            </property>
@@ -170,6 +176,9 @@
          </item>
          <item>
           <widget class="QCheckBox" name="directional_color">
+           <property name="toolTip">
+            <string>run set_slice_dir_color</string>
+           </property>
            <property name="text">
             <string>Directional Color</string>
            </property>
@@ -355,6 +364,9 @@
              <height>0</height>
             </size>
            </property>
+           <property name="toolTip">
+            <string>run enable_slice</string>
+           </property>
            <property name="text">
             <string/>
            </property>
@@ -381,6 +393,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="toolTip">
+            <string>run move_slice</string>
+           </property>
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
@@ -399,6 +414,9 @@
              <width>0</width>
              <height>0</height>
             </size>
+           </property>
+           <property name="toolTip">
+            <string>run enable_slice</string>
            </property>
            <property name="text">
             <string/>
@@ -426,6 +444,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="toolTip">
+            <string>run move_slice</string>
+           </property>
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
@@ -445,6 +466,9 @@
              <height>0</height>
             </size>
            </property>
+           <property name="toolTip">
+            <string>run enable_slice</string>
+           </property>
            <property name="text">
             <string/>
            </property>
@@ -461,6 +485,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="toolTip">
+            <string/>
+           </property>
           </widget>
          </item>
          <item>
@@ -470,6 +497,9 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="toolTip">
+            <string>run move_slice</string>
            </property>
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
@@ -1630,7 +1660,10 @@
               <number>0</number>
              </property>
              <item>
-              <widget class="QPushButton" name="enable_auto_track">
+              <widget class="QPushButton" name="enable_auto_tract">
+               <property name="toolTip">
+                <string>run enable_auto_tract</string>
+               </property>
                <property name="text">
                 <string>Autotrack...</string>
                </property>

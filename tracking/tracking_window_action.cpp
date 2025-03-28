@@ -98,23 +98,18 @@ std::string show_info_dialog(const std::string& title,
 
 
 
-
-
-
-void tracking_window::run_action(void)
+void tracking_window::run_command(const std::string& cmd)
 {
-    QAction *action = qobject_cast<QAction *>(sender());
-    if(!action || !action->toolTip().startsWith("run "))
-        return;
-    if(!command({action->toolTip().toStdString().substr(4)})) // skip "run " part
+    if(!command({cmd}))
     {
         if(!error_msg.empty() && error_msg != "canceled")
             QMessageBox::critical(this,"ERROR",error_msg.c_str());
     }
     else
-        if(action->toolTip().contains("save_"))
+        if(tipl::begins_with(cmd,"save_"))
             QMessageBox::information(this,QApplication::applicationName(),"file saved");
 }
+
 extern std::vector<tracking_window*> tracking_windows;
 bool tracking_window::command(std::vector<std::string> cmd)
 {
@@ -293,16 +288,12 @@ bool tracking_window::command(std::vector<std::string> cmd)
             cmd[1] = std::to_string(x) + " " + std::to_string(y) + " " + std::to_string(z);
         else
             std::istringstream(cmd[1]) >> x >> y >> z;
-
-        if(!no_update && current_slice->set_slice_pos(x,y,z))
-        {
-            ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
-            if((*this)["roi_layout"].toInt() < 2) // >2 is mosaic, there is no need to update
-                slice_need_update = true;
-            glWidget->update();
-        }
-        else
+        if(no_update || !current_slice->set_slice_pos(x,y,z))
             return run->canceled();
+        ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
+        if((*this)["roi_layout"].toInt() < 2) // >2 is mosaic, there is no need to update
+            slice_need_update = true;
+        glWidget->update();
         history.overwrite(cmd[0]);
         return run->succeed();
     }
@@ -575,14 +566,14 @@ bool tracking_window::command(std::vector<std::string> cmd)
         on_tracking_index_currentIndexChanged((*this)["tracking_index"].toInt());
         return run->succeed();
     }
-    if(cmd[0] == "enable_auto_track")
+    if(cmd[0] == "enable_auto_tract")
     {
         if(!handle->load_track_atlas(true/*symmetric*/))
             return run->failed(handle->error_msg);
 
         auto level0 = handle->get_tractography_level0();
 
-        ui->enable_auto_track->setVisible(false);
+        ui->enable_auto_tract->setVisible(false);
         ui->tract_target_0->setVisible(true);
 
         ui->tract_target_0->clear();
@@ -634,6 +625,21 @@ bool tracking_window::command(std::vector<std::string> cmd)
         ui->max_color_gl->setColor(QString(cmd[2].c_str()).toUInt());
         change_contrast();
         return run->succeed();
+    }
+    if(cmd[0] == "set_slice_dir_color")
+    {
+        // cmd[1] = slice_index
+        // cmd[2] = checked
+        int slice_index= run->from_cmd(1,ui->SliceModality->currentIndex());
+        if(slice_index < 0 || slice_index >= slices.size())
+            return run->canceled();
+        int checked = run->from_cmd(2,ui->directional_color->isChecked()?1:0);
+        if(slices[slice_index]->directional_color == checked)
+            return run->canceled();
+        slices[slice_index]->directional_color = checked;
+        glWidget->update_slice();
+        slice_need_update = true;
+        return true;
     }
     if(cmd[0] == "set_param")
     {
@@ -786,12 +792,6 @@ bool tracking_window::command(std::vector<std::string> cmd)
         auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(slices[slice_index]);
         if(!reg_slice.get())
             return run->failed("cannot delete built-in slices.");
-        if(current_slice->is_overlay)
-            on_is_overlay_clicked();
-        if(current_slice->stay)
-            on_stay_clicked();
-        if(current_slice->directional_color)
-            on_directional_color_clicked();
         slices.erase(slices.begin()+slice_index);
         glWidget->slice_texture.erase(glWidget->slice_texture.begin()+slice_index);
         ui->SliceModality->removeItem(slice_index);
@@ -1576,14 +1576,6 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
     QMessageBox::information(this,QApplication::applicationName(),"File Saved");
 }
 
-
-
-void tracking_window::on_enable_auto_track_clicked()
-{
-    if(!command({"enable_auto_track"}))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
-
 void tracking_window::on_tract_target_0_currentIndexChanged(int index)
 {
     if(index < 0)
@@ -1698,7 +1690,7 @@ void tracking_window::on_template_box_currentIndexChanged(int index)
     ui->tract_target_0->hide();
     ui->tract_target_1->hide();
     ui->tract_target_2->hide();
-    ui->enable_auto_track->setVisible(true);
+    ui->enable_auto_tract->setVisible(true);
     ui->addRegionFromAtlas->setVisible(!handle->atlas_list.empty());
 
 }

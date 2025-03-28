@@ -215,7 +215,6 @@ public:
 public slots:
     void check_reg(void);
     void change_contrast();
-    void on_enable_auto_track_clicked();
 private slots:
 
     void on_actionTract_Analysis_Report_triggered();
@@ -258,10 +257,10 @@ private slots:
     void on_actionSave_3D_Model_triggered();
     void on_actionEdit_Slices_triggered();
     void on_alt_mapping_currentIndexChanged(int index);
-    void on_directional_color_clicked();
+
     void on_actionCommand_History_triggered();
 
-    void run_action();
+    void run_command(const std::string& cmd);
 };
 
 #endif // TRACKING_WINDOW_H

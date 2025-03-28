@@ -294,7 +294,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             {
                 ui->perform_tracking->hide();
                 ui->stop_tracking->hide();
-                ui->enable_auto_track->setText("Enable Tractography...");
+                ui->enable_auto_tract->setText("Enable Tractography...");
             }            
         }
         {
@@ -379,12 +379,9 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     // opengl
     {
         connect(ui->zoom_3d,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](double zoom){command({"set_zoom",std::to_string(zoom)});});
-        connect(ui->glSagSlider,qOverload<int>(&QSlider::valueChanged),this,[this](int v){command({"move_slice"});});
-        connect(ui->glCorSlider,qOverload<int>(&QSlider::valueChanged),this,[this](int v){command({"move_slice"});});
-        connect(ui->glAxiSlider,qOverload<int>(&QSlider::valueChanged),this,[this](int v){command({"move_slice"});});
-        connect(ui->glSagCheck,qOverload<int>(&QCheckBox::stateChanged),this,[this](int v){command({"enable_slice"});});
-        connect(ui->glCorCheck,qOverload<int>(&QCheckBox::stateChanged),this,[this](int v){command({"enable_slice"});});
-        connect(ui->glAxiCheck,qOverload<int>(&QCheckBox::stateChanged),this,[this](int v){command({"enable_slice"});});
+
+
+
 
         connect(ui->max_color_gl,SIGNAL(clicked()),this,SLOT(change_contrast()));
         connect(ui->min_color_gl,SIGNAL(clicked()),this,SLOT(change_contrast()));
@@ -621,11 +618,18 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     {
         foreach (QAction* action, findChildren<QAction*>())
-        {
-            if(action->text().isEmpty() || !action->toolTip().startsWith("run "))
-                continue;
-            connect(action, SIGNAL(triggered()),this, SLOT(run_action()));
-        }
+            if(action->toolTip().startsWith("run "))
+                connect(action,&QAction::triggered,this,[this,action](){run_command(action->toolTip().toStdString().substr(4));});
+        foreach (QCheckBox* cb, findChildren<QCheckBox*>())
+            if(cb->toolTip().startsWith("run "))
+                connect(cb,qOverload<int>(&QCheckBox::stateChanged),this,[this,cb](int){run_command(cb->toolTip().toStdString().substr(4));});
+        foreach (QPushButton* pb, findChildren<QPushButton*>())
+            if(pb->toolTip().startsWith("run "))
+                connect(pb,&QPushButton::pressed,this,[this,pb](){run_command(pb->toolTip().toStdString().substr(4));});
+        foreach (QSlider* s, findChildren<QSlider*>())
+            if(s->toolTip().startsWith("run "))
+                connect(s,qOverload<int>(&QSlider::valueChanged),this,[this,s](int){run_command(s->toolTip().toStdString().substr(4));});
+
         updateSlicesMenu();
     }
     qApp->installEventFilter(this);
@@ -923,7 +927,7 @@ void tracking_window::updateSlicesMenu(void)
         Item->setData(QString(each.c_str()));
         Item->setToolTip(action);
         Item->setVisible(true);
-        connect(Item, SIGNAL(triggered()),this, SLOT(run_action()));
+        connect(Item,&QAction::triggered,this,[this,Item](){run_command(Item->toolTip().toStdString().substr(4));});
         return Item;
     };
     ui->menuSave->clear();
@@ -1039,14 +1043,6 @@ void tracking_window::on_stay_clicked()
 }
 
 
-void tracking_window::on_directional_color_clicked()
-{
-    if(current_slice->directional_color == ui->directional_color->isChecked())
-        return;
-    current_slice->directional_color = (ui->directional_color->isChecked());
-    glWidget->update_slice();
-    slice_need_update = true;
-}
 
 
 void tracking_window::on_SlicePos_valueChanged(int value)
