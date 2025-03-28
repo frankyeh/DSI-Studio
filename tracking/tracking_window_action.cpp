@@ -261,11 +261,13 @@ bool tracking_window::command(std::vector<std::string> cmd)
         }
 
         no_update = false;
-        change_contrast();
+        command({"set_slice_contrast"});
         return run->succeed();
     }
     if(cmd[0] == "enable_slice")
     {
+        if(no_update)
+            return run->canceled();
         bool x = ui->glSagCheck->isChecked(),
              y = ui->glCorCheck->isChecked(),
              z = ui->glAxiCheck->isChecked();
@@ -283,12 +285,14 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
     if(cmd[0] == "move_slice")
     {
+        if(no_update)
+            return run->canceled();
         int x = ui->glSagSlider->value(),y = ui->glCorSlider->value(),z = ui->glAxiSlider->value();
         if(cmd[1].empty())
             cmd[1] = std::to_string(x) + " " + std::to_string(y) + " " + std::to_string(z);
         else
             std::istringstream(cmd[1]) >> x >> y >> z;
-        if(no_update || !current_slice->set_slice_pos(x,y,z))
+        if(!current_slice->set_slice_pos(x,y,z))
             return run->canceled();
         ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
         if((*this)["roi_layout"].toInt() < 2) // >2 is mosaic, there is no need to update
