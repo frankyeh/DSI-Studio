@@ -626,6 +626,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         change_contrast();
         return run->succeed();
     }
+
     if(cmd[0] == "set_slice_dir_color")
     {
         // cmd[1] = slice_index
@@ -641,6 +642,49 @@ bool tracking_window::command(std::vector<std::string> cmd)
         slice_need_update = true;
         return true;
     }
+
+    if(cmd[0] == "set_slice_overlay")
+    {
+        // cmd[1] = slice_index
+        // cmd[2] = checked
+        int slice_index= run->from_cmd(1,ui->SliceModality->currentIndex());
+        if(slice_index < 0 || slice_index >= slices.size())
+            return run->canceled();
+        int checked = run->from_cmd(2,ui->is_overlay->isChecked()?1:0);
+        if(slices[slice_index]->is_overlay == checked)
+            return run->canceled();
+
+        if((slices[slice_index]->is_overlay = checked))
+            overlay_slices.push_back(slices[slice_index]);
+        else
+            overlay_slices.erase(std::remove(overlay_slices.begin(),overlay_slices.end(),slices[slice_index]),overlay_slices.end());
+
+        glWidget->update_slice();
+        slice_need_update = true;
+        return true;
+    }
+
+    if(cmd[0] == "set_slice_stay")
+    {
+        // cmd[1] = slice_index
+        // cmd[2] = checked
+        int slice_index= run->from_cmd(1,ui->SliceModality->currentIndex());
+        if(slice_index < 0 || slice_index >= slices.size())
+            return run->canceled();
+        int checked = run->from_cmd(2,ui->stay->isChecked()?1:0);
+        if(slices[slice_index]->stay == checked)
+            return run->canceled();
+
+        if((slices[slice_index]->stay = checked))
+            stay_slices.push_back(slices[slice_index]);
+        else
+            stay_slices.erase(std::remove(stay_slices.begin(),stay_slices.end(),slices[slice_index]),stay_slices.end());
+
+        glWidget->update_slice();
+        slice_need_update = true;
+        return true;
+    }
+
     if(cmd[0] == "set_param")
     {
         set_data(cmd[1].c_str(),cmd[2].c_str());
