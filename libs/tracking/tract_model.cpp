@@ -935,10 +935,10 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     saved = true;
     if(get_visible_track_count() == 0)
         return false;
-    tipl::output() << "save tracts to " << file_name;
-    tipl::output() << "dim:" << geo;
-    tipl::output() << "vs:" << vs;
-    tipl::output() << "trans:" << trans_to_mni;
+    tipl::out() << "save tracts to " << file_name;
+    tipl::out() << "dim:" << geo;
+    tipl::out() << "vs:" << vs;
+    tipl::out() << "trans:" << trans_to_mni;
     if(tipl::ends_with(file_name,"tt.gz"))
     {
         return TinyTrack::save_to_file(file_name.c_str(),geo,vs,trans_to_mni,
