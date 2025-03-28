@@ -147,7 +147,7 @@ jobs:
       run: |
         ./dsi-studio/dsi_studio --action=reg --source=100206.gqi.fz.qa.nii.gz --to=./atlas/human/human.QA.nii.gz
         ls 100206.gqi.fz.qa.nii.gz.wp.nii.gz
-        ./dsi-studio/dsi_studio --action=reg --source=100206.gqi.fz.qa.nii.gz100206.gqi.fz.iso.nii.gz --to=./atlas/human/human.QA.nii.gz,./atlas/human/human.ISO.nii.gz
+        ./dsi-studio/dsi_studio --action=reg --source=100206.gqi.fz.qa.nii.gz,100206.gqi.fz.iso.nii.gz --to=./atlas/human/human.QA.nii.gz,./atlas/human/human.ISO.nii.gz
         ls 100206.gqi.fz.qa.nii.gz.wp.nii.gz
 
   test_connectometry:
@@ -175,7 +175,7 @@ jobs:
         chmod 777 ./dsi-studio/dsi_studio
     - name: Tracking
       run: |
-        ./dsi-studio/dsi_studio --source=*.fib.gz --action=atk --track_id=ArcuateFasciculusL
+        ./dsi-studio/dsi_studio --source=*.fz --action=atk --track_id=ArcuateFasciculusL
         ls */*ArcuateFasciculusL.tt.gz
         
   test_src_construction:
