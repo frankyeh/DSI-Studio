@@ -279,7 +279,8 @@ void TreeModel::saveParameters(void)
 }
 TreeModel::~TreeModel()
 {
-    saveParameters();
+    if(memorize_parameters)
+        saveParameters();
 }
 
 int TreeModel::columnCount(const QModelIndex &) const
