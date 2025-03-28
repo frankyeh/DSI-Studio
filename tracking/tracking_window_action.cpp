@@ -634,13 +634,14 @@ bool tracking_window::command(std::vector<std::string> cmd)
         int slice_index= run->from_cmd(1,ui->SliceModality->currentIndex());
         if(slice_index < 0 || slice_index >= slices.size())
             return run->canceled();
-        int checked = run->from_cmd(2,ui->directional_color->isChecked()?1:0);
+        bool checked = run->from_cmd(2,ui->directional_color->isChecked()?1:0);
         if(slices[slice_index]->directional_color == checked)
             return run->canceled();
         slices[slice_index]->directional_color = checked;
         glWidget->update_slice();
         slice_need_update = true;
-        return true;
+        history.overwrite(cmd[0]);
+        return run->succeed();
     }
 
     if(cmd[0] == "set_slice_overlay")
@@ -650,7 +651,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         int slice_index= run->from_cmd(1,ui->SliceModality->currentIndex());
         if(slice_index < 0 || slice_index >= slices.size())
             return run->canceled();
-        int checked = run->from_cmd(2,ui->is_overlay->isChecked()?1:0);
+        bool checked = run->from_cmd(2,ui->is_overlay->isChecked()?1:0);
         if(slices[slice_index]->is_overlay == checked)
             return run->canceled();
 
@@ -661,7 +662,9 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         glWidget->update_slice();
         slice_need_update = true;
-        return true;
+
+        history.overwrite(cmd[0]);
+        return run->succeed();
     }
 
     if(cmd[0] == "set_slice_stay")
@@ -671,7 +674,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         int slice_index= run->from_cmd(1,ui->SliceModality->currentIndex());
         if(slice_index < 0 || slice_index >= slices.size())
             return run->canceled();
-        int checked = run->from_cmd(2,ui->stay->isChecked()?1:0);
+        bool checked = run->from_cmd(2,ui->stay->isChecked()?1:0);
         if(slices[slice_index]->stay == checked)
             return run->canceled();
 
@@ -682,7 +685,9 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         glWidget->update_slice();
         slice_need_update = true;
-        return true;
+
+        history.overwrite(cmd[0]);
+        return run->succeed();
     }
 
     if(cmd[0] == "set_param")
