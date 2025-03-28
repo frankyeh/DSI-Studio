@@ -199,6 +199,7 @@ public:
     bool eventFilter(QObject *obj, QEvent *event) override;
     QVariant operator[](QString name)const;
     void set_data(QString name, QVariant value);
+    void set_memorize_parameters(bool memorize);
     void on_tracking_index_currentIndexChanged(int index);
     QString get_save_file_name(QString title,QString file_name,QString file_type);
     void report(QString string);
