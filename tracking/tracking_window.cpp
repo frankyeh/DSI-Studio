@@ -55,7 +55,10 @@ void tracking_window::set_data(QString name, QVariant value)
 {
     renderWidget->setData(name,value);
 }
-
+void tracking_window::set_memorize_parameters(bool memorize)
+{
+    renderWidget->setMemorizeParameters(memorize);
+}
 std::shared_ptr<command_history::surrogate> command_history::record(std::string& error_msg_,
                                   std::vector<std::string>& cmd)
 {
