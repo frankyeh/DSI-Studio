@@ -229,7 +229,6 @@ private slots:
     void on_actionLoad_Color_Map_triggered();
     void on_track_style_currentIndexChanged(int index);
 
-    void on_is_overlay_clicked();
     void on_actionOpen_Connectivity_Matrix_triggered();
     void on_SlicePos_valueChanged(int value);
 
@@ -252,8 +251,6 @@ private slots:
     void on_tract_target_0_currentIndexChanged(int index);
     void on_tract_target_1_currentIndexChanged(int index);
 
-
-    void on_stay_clicked();
     void on_actionSave_3D_Model_triggered();
     void on_actionEdit_Slices_triggered();
     void on_alt_mapping_currentIndexChanged(int index);
