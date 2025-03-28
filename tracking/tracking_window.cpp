@@ -1018,33 +1018,6 @@ void tracking_window::on_track_style_currentIndexChanged(int index)
     glWidget->update();
 }
 
-
-void tracking_window::on_is_overlay_clicked()
-{
-    if(current_slice->is_overlay == ui->is_overlay->isChecked())
-        return;
-    current_slice->is_overlay = (ui->is_overlay->isChecked());
-    if(current_slice->is_overlay)
-        overlay_slices.push_back(current_slice);
-    else
-        overlay_slices.erase(std::remove(overlay_slices.begin(),overlay_slices.end(),current_slice),overlay_slices.end());
-
-}
-
-void tracking_window::on_stay_clicked()
-{
-    if(current_slice->stay == ui->stay->isChecked())
-        return;
-    current_slice->stay = (ui->stay->isChecked());
-    if(current_slice->stay)
-        stay_slices.push_back(current_slice);
-    else
-        stay_slices.erase(std::remove(stay_slices.begin(),stay_slices.end(),current_slice),stay_slices.end());
-}
-
-
-
-
 void tracking_window::on_SlicePos_valueChanged(int value)
 {
     if(cur_dim ==0)
