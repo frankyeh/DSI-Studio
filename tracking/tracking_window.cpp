@@ -384,17 +384,15 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->zoom_3d,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](double zoom){command({"set_zoom",std::to_string(zoom)});});
 
 
-
-
-        connect(ui->max_color_gl,SIGNAL(clicked()),this,SLOT(change_contrast()));
-        connect(ui->min_color_gl,SIGNAL(clicked()),this,SLOT(change_contrast()));
+        connect(ui->max_color_gl,&QColorToolButton::clicked,this,[this](){run_command("set_slice_contrast");});
+        connect(ui->min_color_gl,&QColorToolButton::clicked,this,[this](){run_command("set_slice_contrast");});
 
         connect(ui->min_value_gl,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](double){
             ui->min_slider->setValue(int((ui->min_value_gl->value()-ui->min_value_gl->minimum())*double(ui->min_slider->maximum())/(ui->min_value_gl->maximum()-ui->min_value_gl->minimum())));
-            change_contrast();});
+            run_command("set_slice_contrast");});
         connect(ui->max_value_gl,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](double){
             ui->max_slider->setValue(int((ui->max_value_gl->value()-ui->max_value_gl->minimum())*double(ui->max_slider->maximum())/(ui->max_value_gl->maximum()-ui->max_value_gl->minimum())));
-            change_contrast();});
+            run_command("set_slice_contrast");});
         connect(ui->min_slider,&QSlider::sliderMoved,this,[this](void){
             ui->min_value_gl->setValue(ui->min_value_gl->minimum()+(ui->min_value_gl->maximum()-ui->min_value_gl->minimum())*
                               double(ui->min_slider->value())/double(ui->min_slider->maximum()));});
