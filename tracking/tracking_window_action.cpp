@@ -607,18 +607,10 @@ bool tracking_window::command(std::vector<std::string> cmd)
         ui->SliceModality->setCurrentIndex(index);
         return run->succeed();
     }
-    if(cmd[0] == "set_roi_view_contrast")
-    {
-        ui->min_value_gl->setValue(QString(cmd[1].c_str()).toDouble());
-        ui->max_value_gl->setValue(QString(cmd[2].c_str()).toDouble());
-        change_contrast();
-        return run->succeed();
-    }
     if(cmd[0] == "set_slice_contrast")
     {
         // cmd[1] : min max values
         // cmd[2] : min max colors
-
         if(no_update)
             return run->canceled();
 
