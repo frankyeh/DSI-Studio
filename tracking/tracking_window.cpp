@@ -810,15 +810,6 @@ void tracking_window::move_slice_to(tipl::vector<3,float> slice_position)
     glWidget->update_slice();
     slice_need_update = true;
 }
-void tracking_window::change_contrast()
-{
-    if(no_update)
-        return;
-    current_slice->set_contrast_range(ui->min_value_gl->value(),ui->max_value_gl->value());
-    current_slice->set_contrast_color(ui->min_color_gl->color().rgb(),ui->max_color_gl->color().rgb());
-    slice_need_update = true;
-    glWidget->update_slice();
-}
 
 void tracking_window::on_tracking_index_currentIndexChanged(int index)
 {
