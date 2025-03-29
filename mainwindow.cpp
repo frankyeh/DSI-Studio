@@ -269,6 +269,28 @@ void MainWindow::openFile(QStringList file_names)
     }
     else
     {
+        if(QString(file_name).endsWith(".csv"))
+        {
+            std::ifstream file(file_name.toStdString());
+            std::vector<std::string> lines((std::istream_iterator<std::string>(file)),{});
+            if(lines.empty() || !tipl::begins_with(lines[0],"open_fib,"))
+            {
+                QMessageBox::critical(this,"ERROR","invalid command csv file");
+                return;
+            }
+            loadFib(QString::fromStdString(tipl::split(lines[0],',')[1]));
+            if(!tracking_windows.empty())
+            {
+                for(size_t i = 1;i < lines.size();++i)
+                    if(!tracking_windows.back()->command(tipl::split(lines[i],',')))
+                    {
+                        if(!tracking_windows.back()->error_msg.empty())
+                        QMessageBox::critical(this,"ERROR",tracking_windows.back()->error_msg.c_str());
+                        return;
+                    }
+            }
+        }
+        else
         if(QString(file_name).endsWith(".tt.gz") ||
            QString(file_name).endsWith(".trk") ||
            QString(file_name).endsWith(".trk.gz"))
