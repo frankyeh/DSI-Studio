@@ -150,7 +150,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>4</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -2777,7 +2777,7 @@ Tractography</string>
               </column>
               <column>
                <property name="text">
-                <string>Scans</string>
+                <string>Subject(s)</string>
                </property>
               </column>
               <column>
