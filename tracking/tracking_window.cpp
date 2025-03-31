@@ -698,7 +698,6 @@ void tracking_window::report(QString string)
 extern console_stream console;
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 {
-    console.show_output();
     bool has_info = false;
     tipl::vector<3> pos;
     // update slice here
