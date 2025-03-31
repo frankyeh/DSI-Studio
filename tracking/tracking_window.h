@@ -98,13 +98,8 @@ public:
                 tipl::error() << error_msg;
                 return;
             }
-            if(owner.current_recording_instance || output.empty())
+            if(owner.current_recording_instance || output.empty() || owner.running_commands)
                 return;
-            if(owner.running_commands)
-            {
-                tipl::out() << output;
-                return;
-            }
             owner.add_record(output);
         }
     };
