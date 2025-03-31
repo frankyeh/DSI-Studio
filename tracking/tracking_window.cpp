@@ -153,12 +153,12 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
             return false;
     }
 
+    tipl::progress p("running commands",true);
     running_commands = true;
     size_t total_steps = std::max<int>(1,file_list.size())*cmd.size();
-    tipl::progress p("running commands",true);
-    std::vector<std::string> all_records;
     for(size_t k = 0,steps = 0;k < std::max<int>(1,file_list.size()) && !p.aborted();++k)
     {
+        tipl::progress p("processing " + (k < file_list.size() ? file_list[k].toStdString() : std::string()));
         tracking_window *backup_parent = nullptr;
         for(int j = 0;j < cmd.size() && !p.aborted();++j,++steps)
         {
@@ -211,7 +211,7 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
                     }
                 }
             }
-            all_records.push_back(tipl::merge(param,','));
+            tipl::out() << "run " << tipl::merge(param,',');
             if(!parent->command(param))
             {
                 QMessageBox::critical(parent,"ERROR",parent->error_msg.c_str());
@@ -236,8 +236,6 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
         }
     }
     running_commands = false;
-    for(const auto& each : all_records)
-        tipl::out() << "run " << each;
     return !p.aborted();
 }
 
