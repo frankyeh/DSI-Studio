@@ -25,7 +25,6 @@ auto_track::auto_track(QWidget *parent) :
         ui->template_list->addItem(tipl::split(std::filesystem::path(each).filename().u8string(),'.').front().c_str());
     ui->template_list->setCurrentIndex(0);
     timer = std::make_shared<QTimer>(this);
-    timer->stop();
     timer->setInterval(1000);
     connect(timer.get(),SIGNAL(timeout()),this,SLOT(check_status()));
 
