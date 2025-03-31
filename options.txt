@@ -58,7 +58,7 @@ Tract/Tract Color/Tract_color
 Tract_color/Opacity/tract_alpha/float:0:1:0.1:2/1
 Tract_color/Saturation/tract_color_saturation/float:0:1:0.1:2/0.7
 Tract_color/Brightness/tract_color_brightness/float:0:1:0.1:2/0.5
-Tract_color/Style/tract_color_style/Directional:Assigned:Local Metrics:Averaged Metrics:Averaged Directional:Max Metrics:Loaded Value/0
+Tract_color/Style/tract_color_style/Directional:Assigned:Local Metrics:Averaged Metrics:Max Metrics:Loaded Value/0
 Tract_color/Metrics/tract_color_metrics/qa:iso/0
 Tract_color/Max Value/tract_color_max_value/float:0:1:0.1:2/1.0
 Tract_color/Min Value/tract_color_min_value/float:0:1:0.1:2/0.0

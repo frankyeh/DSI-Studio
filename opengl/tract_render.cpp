@@ -413,11 +413,11 @@ void TractRender::prepare_update(tracking_window& param,
     auto index_num = param["tract_color_metrics"].toInt();
 
     std::vector<tipl::vector<3> > assigned_colors;
-    // Directional:Assigned:Local Index:Averaged Index:Averaged Directional:Max Index
+    // 0:Directional 1:Assigned 2:Local Index 3:Averaged Index 4:Max Index 5:Loaded
     if(tract_color_style == 1 || // assigned
        tract_color_style == 3 || // mean value
-       tract_color_style == 5 || // max value
-       tract_color_style == 6 )  // loaded value
+       tract_color_style == 4 || // max value
+       tract_color_style == 5 )  // loaded value
     {
         auto color_min = param["tract_color_min_value"].toFloat();
         auto color_r = param["tract_color_max_value"].toFloat()-color_min;
@@ -431,7 +431,7 @@ void TractRender::prepare_update(tracking_window& param,
                 assigned_colors[i] /= 255.0f;
                 continue;
             }
-            if(tract_color_style == 6) // loaded value
+            if(tract_color_style == 5) // loaded value
             {
                 if(active_tract_model->loaded_values.empty())
                     assigned_colors[i] = i ? assigned_colors[0] :
@@ -445,7 +445,7 @@ void TractRender::prepare_update(tracking_window& param,
             std::vector<float> metrics(active_tract_model->get_tract_data(param.handle,visible[i],index_num));
             if(tract_color_style == 3) // mean values
                 assigned_colors[i] = param.tractWidget->color_map.value2color(tipl::mean(metrics),color_min,color_r);
-            if(tract_color_style == 5) // max values
+            if(tract_color_style == 4) // max values
                 assigned_colors[i] = param.tractWidget->color_map.value2color(tipl::max_value(metrics),color_min,color_r);
 
         };

@@ -1156,11 +1156,8 @@
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
-     <string>Options</string>
+     <string>Records</string>
     </property>
-    <addaction name="actionRestore_Tracking_Settings"/>
-    <addaction name="actionRestore_Settings"/>
-    <addaction name="actionLoad_Parameter_ID"/>
     <addaction name="separator"/>
     <addaction name="actionFIB_protocol"/>
     <addaction name="actionCommand_History"/>
@@ -1353,9 +1350,12 @@
     <addaction name="separator"/>
     <addaction name="actionLoad_Tracking_Settings"/>
     <addaction name="actionSave_Tracking_Settings"/>
+    <addaction name="actionLoad_Parameter_ID"/>
+    <addaction name="actionRestore_Tracking_Settings"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_Rendering_Settings"/>
     <addaction name="actionSave_Rendering_Settings"/>
+    <addaction name="actionRestore_Settings"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -3653,6 +3653,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionRestore_Settings">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/rotate.xpm</normaloff>:/icons/icons/rotate.xpm</iconset>
+   </property>
    <property name="text">
     <string>Restore Rendering Settings</string>
    </property>
@@ -3845,6 +3849,10 @@ Tracking</string>
    </property>
   </action>
   <action name="actionRestore_Tracking_Settings">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/rotate.xpm</normaloff>:/icons/icons/rotate.xpm</iconset>
+   </property>
    <property name="text">
     <string>Restore Tracking Settings</string>
    </property>
@@ -4192,7 +4200,7 @@ Tracking</string>
   </action>
   <action name="actionFIB_protocol">
    <property name="text">
-    <string>FIB Protocol</string>
+    <string>FIB Protocol...</string>
    </property>
   </action>
   <action name="actionMark_Region_on_T1W_T2W">

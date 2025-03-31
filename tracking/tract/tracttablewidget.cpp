@@ -959,7 +959,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             auto lock = tract_rendering[cur_row]->start_reading();
             tract_models[cur_row]->loaded_values.swap(values);
             tract_rendering[cur_row]->need_update = true;
-            cur_tracking_window.set_data("tract_color_style",6);//loaded values
+            cur_tracking_window.set_data("tract_color_style",5);//loaded values
         }
         emit show_tracts();
         return true;
@@ -1023,7 +1023,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
                     tract_rendering[index]->need_update = true;
                     ++pos;
                 }
-            cur_tracking_window.set_data("tract_color_style",6);//loaded values
+            cur_tracking_window.set_data("tract_color_style",5);//loaded values
         }
         emit show_tracts();
         return true;
