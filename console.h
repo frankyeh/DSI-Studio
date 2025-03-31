@@ -3,7 +3,7 @@
 #include <mutex>
 #include <iostream>
 #include <QMainWindow>
-
+#include <QTimer>
 
 class QTextEdit;
 class console_stream :  public std::basic_streambuf<char>
@@ -15,7 +15,6 @@ protected:
     virtual int_type overflow(int_type v) override;
     virtual std::streamsize xsputn(const char *p, std::streamsize n) override;
 public:
-    void show_output(void);
     std::mutex edit_buf;
     QString buf;
     QTextEdit* log_window = nullptr;
@@ -48,9 +47,10 @@ public:
 private slots:
 
     void on_set_dir_clicked();
-
+    void check_msg(void);
 private:
     Ui::Console *ui;
+    QTimer *timer;
     bool eventFilter(QObject *obj, QEvent *event) override;
 protected:
     void closeEvent(QCloseEvent *event) override;

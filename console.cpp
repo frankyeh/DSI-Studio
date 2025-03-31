@@ -79,36 +79,12 @@ void appendColoredText(QTextEdit &textEdit, const QString &text)
 }
 
 
-void console_stream::show_output(void)
-{
-    if(!tipl::is_main_thread() || !log_window || !has_output)
-        return;
-    QStringList strSplitted;
-    {
-        std::lock_guard<std::mutex> lock(edit_buf);
-        strSplitted = buf.split('\n');
-        buf = strSplitted.back();
-    }
-    for(int i = 0; i+1 < strSplitted.size(); i++)
-        appendColoredText(*log_window,strSplitted[i]);
-
-    has_output = false; // avoid reentry of show_output due to ensureCursorVisible
-    log_window->ensureCursorVisible();
-    QApplication::processEvents();
-
-}
 std::basic_streambuf<char>::int_type console_stream::overflow(std::basic_streambuf<char>::int_type v)
 {
-    {
-        std::lock_guard<std::mutex> lock(edit_buf);
-        buf.push_back(char(v));
-    }
-
+    std::lock_guard<std::mutex> lock(edit_buf);
+    buf.push_back(char(v));
     if (v == '\n')
-    {
         has_output = true;
-        show_output();
-    }
     return v;
 }
 
@@ -124,13 +100,34 @@ Console::Console(QWidget *parent) :
     ui(new Ui::Console)
 {
     ui->setupUi(this);
+    ui->console->ensureCursorVisible();
     ui->pwd->setText(QString("[%1]$ ./dsi_studio ").arg(QDir().current().absolutePath()));
     console.log_window = ui->console;
-    console.show_output();
     ui->cmd_line->installEventFilter(this);
     ui->cmd_line->addItem("--action=rec --source=*.sz");
     ui->cmd_line->addItem("--action=trk --source=*.fz");
     ui->cmd_line->addItem("--action=atk --source=*.fz");
+
+
+    timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(check_msg()));
+    timer->setInterval(1000);
+    timer->start();
+
+}
+void Console::check_msg(void)
+{
+    if(!console.has_output)
+        return;
+    console.has_output = false;
+    QStringList strSplitted;
+    {
+        std::lock_guard<std::mutex> lock(console.edit_buf);
+        strSplitted = console.buf.split('\n');
+        console.buf = strSplitted.back();
+    }
+    for(int i = 0; i+1 < strSplitted.size(); i++)
+        appendColoredText(*(ui->console),strSplitted[i]);
 }
 
 Console::~Console()
