@@ -19,6 +19,12 @@ manual_alignment::manual_alignment(QWidget *parent,
                                    tipl::reg::cost_type cost_function) :
     QDialog(parent),from_vs(from_vs_),to_vs(to_vs_),timer(nullptr),ui(new Ui::manual_alignment)
 {
+    tipl::out() << "manual alignment";
+    tipl::out() << "from dim: " << from_.shape();
+    tipl::out() << "from vs: " << from_vs;
+    tipl::out() << "to dim: " << to_.shape();
+    tipl::out() << "to vs: " << to_vs;
+
     from.swap(from_);
     to.swap(to_);
     from2.swap(from2_);
