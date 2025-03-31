@@ -173,16 +173,6 @@ jobs:
         git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git  
         move DSI-Studio-Build/*.txt .
         move DSI-Studio-Build/build_packages .
-    - name: Install zlib via vcpkg
-      run: |
-        git clone https://github.com/microsoft/vcpkg.git
-        .\vcpkg\bootstrap-vcpkg.bat
-        .\vcpkg\vcpkg install zlib
-        mkdir build
-        cd build
-        cmake .. -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake
-        cmake --build .   
-        
     - name: Install Qt
       uses: jurplel/install-qt-action@v3.2.1
       with:
@@ -215,16 +205,6 @@ jobs:
         git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git  
         move DSI-Studio-Build/*.txt .
         move DSI-Studio-Build/build_packages .
-    - name: Install zlib via vcpkg
-      run: |
-        git clone https://github.com/microsoft/vcpkg.git
-        .\vcpkg\bootstrap-vcpkg.bat
-        .\vcpkg\vcpkg install zlib
-        mkdir build
-        cd build
-        cmake .. -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake
-        cmake --build .        
-        
     - name: Install Cuda
       uses: Jimver/cuda-toolkit@v0.2.11
     - name: Install Qt
