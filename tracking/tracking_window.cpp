@@ -68,10 +68,8 @@ std::shared_ptr<command_history::surrogate> command_history::record(std::string&
     return std::make_shared<surrogate>(*this,cmd,error_msg_);
 }
 
-void command_history::record(const std::string& output)
+void command_history::add_record(const std::string& output)
 {
-    if(current_recording_instance || output.empty())
-        return;
     commands.push_back(output);
     if(is_loading(output))
     {
@@ -155,7 +153,7 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
             return false;
     }
 
-    current_recording_instance = 1; // don't add to history record
+    running_commands = true;
     size_t total_steps = std::max<int>(1,file_list.size())*cmd.size();
     tipl::progress p("running commands",true);
     for(size_t k = 0,steps = 0;k < std::max<int>(1,file_list.size()) && !p.aborted();++k)
@@ -216,7 +214,7 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
             if(!parent->command(param))
             {
                 QMessageBox::critical(parent,"ERROR",parent->error_msg.c_str());
-                current_recording_instance = 0;
+                running_commands = false;
                 return false;
             }
             while (p(steps,total_steps) && parent->history.has_other_thread)
@@ -236,7 +234,7 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
             parent = backup_parent;
         }
     }
-    current_recording_instance = 0;
+    running_commands = false;
     return !p.aborted();
 }
 

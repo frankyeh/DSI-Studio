@@ -25,7 +25,7 @@ private:
     static bool is_saving(const std::string& cmd);
 public:
     int current_recording_instance = 0;
-    bool has_other_thread = false;
+    bool has_other_thread = false,running_commands = false;
     std::string default_parent_path,default_stem,default_stem2,current_cmd;
     std::vector<std::string> commands;
     bool run(tracking_window *parent,const std::vector<std::string>& cmd,bool apply_to_others);
@@ -93,18 +93,24 @@ public:
             while(!cmd.empty() && cmd.back().empty())
                 cmd.pop_back();
             std::string output(tipl::merge(cmd,','));
-            tipl::out() << "--cmd=" << output;
             if(!error_msg.empty())
             {
                 tipl::error() << error_msg;
                 return;
             }
-            owner.record(output);
+            if(owner.current_recording_instance || output.empty())
+                return;
+            if(owner.running_commands)
+            {
+                tipl::out() << output;
+                return;
+            }
+            owner.add_record(output);
         }
     };
     std::shared_ptr<surrogate> record(std::string& error_msg_,
                                       std::vector<std::string>& cmd);
-    void record(const std::string& output);
+    void add_record(const std::string& output);
     std::string file_stem(bool extended = true) const;
     bool get_dir(QWidget* parent,std::string& cmd);
     bool get_filename(QWidget* parent,std::string& cmd,const std::string& post_fix = "");
