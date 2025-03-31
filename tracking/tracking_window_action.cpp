@@ -1392,7 +1392,7 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
     auto iso_fa = handle->get_iso_fa();
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
         subject_image_pre(tipl::image<3>(reg_slice->get_source())),subject_image_pre(tipl::image<3>(reg_slice->get_source())),reg_slice->vs,
-        subject_image_pre(tipl::image<3>(iso_fa.first)),subject_image_pre(tipl::image<3>(iso_fa.second)),slices[0]->vs,
+        subject_image_pre(tipl::image<3>(iso_fa.first)),subject_image_pre(tipl::image<3>(iso_fa.second)),handle->vs,
         tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
 
     {
