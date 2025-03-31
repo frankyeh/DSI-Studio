@@ -1259,11 +1259,11 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                 A_labels.resize(base_dim);
 
             {
-                tipl::out() << "processing regions";
+                tipl::progress prog2("processing regions");
                 size_t prog_count = 0;
                 tipl::adaptive_par_for(checked_regions.size(),[&](size_t r)
                 {
-                    prog(prog_count++,checked_regions.size());
+                    prog2(prog_count++,checked_regions.size());
                     if(r == 0)
                         return;
                     tipl::image<3,unsigned char> B;
@@ -1366,9 +1366,58 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             }
             if(action == "all_to_1st")
             {
-                auto I = tipl::resample(cur_tracking_window.current_slice->get_source(),base_dim,
-                                        tipl::from_space(cur_tracking_window.current_slice->to_dif).
-                                        to(base_to_dif));
+                // usde region growing to assign labels
+                {
+                    tipl::image<3,unsigned char> fillup_map(A);
+                    for(size_t i = 0;i < fillup_map.size();++i)
+                        if(fillup_map[i] && A_labels[i])
+                            fillup_map[i] = 0;
+                    size_t total_fillups = std::accumulate(fillup_map.begin(),fillup_map.end(),size_t(0));
+                    std::vector<std::vector<tipl::pixel_index<3> > > region_front(checked_regions.size());
+                    for(tipl::pixel_index<3> index(base_dim);index < base_dim.size();++index)
+                        if(A_labels[index.index()])
+                        {
+                            bool is_front = false;
+                            tipl::for_each_connected_neighbors(index,base_dim,[&](const auto& index2)
+                            {
+                                if(fillup_map[index2.index()])
+                                    is_front = true;
+                            });
+                            if(is_front)
+                                region_front[A_labels[index.index()]].push_back(index);
+                        }
+                    tipl::progress prog2("region growing",true);
+                    for(size_t cur_fillups = 0;prog2(cur_fillups,total_fillups);)
+                    {
+                        size_t sum_front = 0;
+                        for(size_t r = 1;r < region_front.size();++r)
+                        {
+                            std::vector<tipl::pixel_index<3> > new_front;
+                            for(const auto& each : region_front[r])
+                            {
+                                tipl::for_each_connected_neighbors(each,base_dim,[&](const auto& index2)
+                                {
+                                    if(fillup_map[index2.index()])
+                                    {
+                                        new_front.push_back(index2);
+                                        fillup_map[index2.index()] = 0;
+                                        A_labels[index2.index()] = r;
+                                    }
+                                });
+                            }
+                            sum_front += new_front.capacity();
+                            region_front[r].swap(new_front);
+                        }
+                        if(!sum_front)
+                            break;
+                    }
+                    if(prog.aborted())
+                        return false;
+                }
+
+
+
+
                 std::vector<size_t> need_fill_up;
                 {
                     std::vector<std::vector<size_t> > need_fill_ups(tipl::max_thread_count);
@@ -1380,35 +1429,35 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                     tipl::aggregate_results(std::move(need_fill_ups),need_fill_up);
                 }
                 {
-                    tipl::out() << "assign labels";
                     size_t prog_count = 0;
-                    tipl::adaptive_par_for(need_fill_up.size(),[&](size_t i)
+                    tipl::progress prog2("assign labels",true);
+                    tipl::par_for(need_fill_up.size(),[&](size_t i)
                     {
-                        prog(prog_count++, need_fill_up.size());
-                        tipl::pixel_index<3> index(need_fill_up[i], A.shape());
-                        tipl::vector<3> pos(index);
-                        std::vector<size_t> label_count(checked_regions.size()); // Store label frequency within radius
-                        float search_radius = 2.0;
-
-                        for (size_t r = 1; r < checked_regions.size(); ++r)
-                            for (auto pos2 : checked_regions[r]->region)
-                                if (std::abs(pos2[0] - pos[0]) < search_radius &&
-                                    std::abs(pos2[1] - pos[1]) < search_radius &&
-                                    std::abs(pos2[2] - pos[2]) < search_radius &&
-                                    (pos2 - pos).length() <= search_radius)
-                                    label_count[r]++;
-
-                        size_t majority_label = 1;
-                        int max_count = label_count[1];
-                        for (size_t r = 2;r < label_count.size();++r)
-                            if (label_count[r] > max_count)
+                        prog2(prog_count++, need_fill_up.size());
+                        tipl::vector<3> pos(tipl::pixel_index<3>(need_fill_up[i], A.shape()));
+                        size_t nearest_label = 0;
+                        size_t max_distance = A_labels.size();
+                        for(tipl::pixel_index<3> index2(A_labels.shape());index2 < A_labels.size();++index2)
+                        {
+                            if(!A_labels[index2.index()])
+                                continue;
+                            tipl::vector<3> pos2(index2);
+                            if (std::abs(pos2[0] - pos[0]) < max_distance &&
+                                std::abs(pos2[1] - pos[1]) < max_distance &&
+                                std::abs(pos2[2] - pos[2]) < max_distance)
                             {
-                                majority_label = r;
-                                max_count = label_count[r];
+                                size_t length2 = (pos2 - pos).length2();
+                                if(length2 < max_distance)
+                                {
+                                    max_distance = length2;
+                                    nearest_label = A_labels[index2.index()];
+                                }
                             }
-
-                        A_labels[index.index()] = majority_label;
-                    });
+                        }
+                        A_labels[need_fill_up[i]] = nearest_label;
+                    },std::thread::hardware_concurrency());
+                    if(prog2.aborted())
+                        return false;
                 }
             }
 
@@ -1482,7 +1531,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                 for(size_t j = 0;j < col_count;++j)
                     items.push_back(takeItem(arg[i],j));
             }
-            regions.swap(new_region);           
+            regions.swap(new_region);
             for(size_t i = 0,pos = 0;i < arg.size();++i)
                 for(size_t j = 0;j < col_count;++j,++pos)
                     setItem(i,j,items[pos]);
