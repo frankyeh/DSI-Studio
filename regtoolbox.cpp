@@ -484,7 +484,6 @@ extern console_stream console;
 
 void RegToolBox::on_timer()
 {
-    console.show_output();
     if(old_arg != reg.arg)
         old_arg = reg.arg;
     if(!thread.running)
