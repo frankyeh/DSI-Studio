@@ -34,25 +34,56 @@ class CustomSliceModel;
 std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 
 
-size_t match_volume(float volume)
+size_t match_volume(tipl::const_pointer_image<3,unsigned char> mask,tipl::vector<3> vs)
 {
-    float min_dif = std::numeric_limits<float>::max();
-    size_t matched_index = 0;
+    if(mask.empty())
+        return 0;
+
+    auto get_max_axisl_count = [](tipl::const_pointer_image<3,unsigned char> mask)->size_t
+    {
+        size_t max_axial_volume = 0;
+        for(size_t z = 0;z < mask.depth();++z)
+        {
+            auto I = mask.slice_at(z);
+            size_t count = std::count_if(I.begin(),I.end(),[](unsigned char v){return v > 0;});
+            if(count > max_axial_volume)
+                max_axial_volume = count;
+        }
+        return max_axial_volume;
+    };
+    float cur_volume = get_max_axisl_count(mask)*vs[0]*vs[1];
+    std::vector<std::pair<std::string,float> > template_volume = {
+        {"human",22086.2f},{"human_neonate",8047.0f},{"rhesus",3556},{"marmoset",646.72},{"rat",367.44},{"mouse",111.75}};
+
+    /*
     for(size_t i = 0;i < fa_template_list.size();++i)
     {
         tipl::io::gz_nifti read;
+        tipl::image<3,unsigned char> I;
         if(!read.load_from_file(fa_template_list[i].c_str()))
             continue;
-        float v = float(read.nif_header.dim[1])*float(read.nif_header.dim[2])*float(read.nif_header.dim[3])*
-                float(read.nif_header.pixdim[1]*read.nif_header.pixdim[2]*read.nif_header.pixdim[3]);
-        v = std::fabs(v-volume);
-        if(v < min_dif)
+        read >> I;
+        auto tvs = read.get_voxel_size<3>();
+        tipl::out() << fa_template_list[i] << " : " << get_max_axisl_count(tipl::make_image(I.data(),I.shape()))*tvs[0]*tvs[1];
+    }
+    */
+
+    std::string best_template_name = template_volume[0].first;
+    float best_dif = std::fabs(template_volume[0].second-cur_volume);
+    for(size_t i = 1;i < template_volume.size();++i)
+    {
+        float cur_dif = std::fabs(template_volume[i].second-cur_volume);
+        if(cur_dif < best_dif)
         {
-            min_dif = v;
-            matched_index = i;
+            best_dif = cur_dif;
+            best_template_name = template_volume[i].first;
         }
     }
-    return matched_index;
+    tipl::out() << "match slice volume: " << cur_volume << " → " << best_template_name;
+    for(size_t i = 0;i < fa_template_list.size();++i)
+        if(tipl::contains(tipl::split(std::filesystem::path(fa_template_list[i]).stem().string(),'.').front(),best_template_name))
+            return i;
+    return 0;
 }
 
 QImage read_qimage(QString filename,std::string& error)

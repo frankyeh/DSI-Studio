@@ -1079,7 +1079,7 @@ void fib_data::remove_slice(size_t index)
     mat_reader.remove(slices[index]->name);
     slices.erase(slices.begin()+index);
 }
-size_t match_volume(float volume);
+size_t match_volume(tipl::const_pointer_image<3,unsigned char> mask,tipl::vector<3> vs);
 void fib_data::match_template(void)
 {
     if(is_human_size(dim,vs))
@@ -1087,7 +1087,7 @@ void fib_data::match_template(void)
     else
     {
         tipl::out() << "image volume smaller than human young adult. try matching a template...";
-        set_template_id(match_volume(std::count_if(dir.fa[0],dir.fa[0]+dim.size(),[](float v){return v > 0.0f;})*2.0f*vs[0]*vs[1]*vs[2]));
+        set_template_id(match_volume(handle_mask(mat_reader),vs));
     }
     tipl::out() << "matched template: " << std::filesystem::path(fa_template_list[template_id]).stem().stem().stem();
 }

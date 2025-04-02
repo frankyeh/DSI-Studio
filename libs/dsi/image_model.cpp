@@ -2786,7 +2786,7 @@ bool src_data::load_from_file(const std::vector<std::string>& nii_names,bool nee
     return load_from_file(dwi_files,false);
 }
 
-size_t match_volume(float volume);
+size_t match_volume(tipl::const_pointer_image<3,unsigned char> mask,tipl::vector<3> vs);
 QImage read_qimage(QString filename,std::string& error);
 tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& mat_reader);
 extern int src_ver;
@@ -3028,8 +3028,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
     if(is_human_size(voxel.dim,voxel.vs))
         voxel.template_id = 0;
     else
-        voxel.template_id = match_volume(std::count_if(voxel.mask.begin(),voxel.mask.end(),[](unsigned char v){return v > 0;})*
-                                   2.0f*voxel.vs[0]*voxel.vs[1]*voxel.vs[2]);
+        voxel.template_id = match_volume(tipl::make_image(voxel.mask.data(),voxel.mask.shape()),voxel.vs);
     return true;
 }
 extern int fib_ver;
