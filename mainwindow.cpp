@@ -470,6 +470,7 @@ void MainWindow::addSrc(QString filename)
     updateRecentList();
 }
 void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::shape<3>& geo);
+extern QByteArray default_geo,default_state;
 void MainWindow::loadFib(QString filename)
 {
     std::string file_name = filename.toStdString();
@@ -505,7 +506,10 @@ void MainWindow::loadFib(QString filename)
             shift_track_for_tck(tracking_windows.back()->tractWidget->tract_models.back()->get_tracts(),geo);
         }
     }
-
+    if(!default_geo.size())
+        default_geo = tracking_windows.back()->saveGeometry();
+    if(!default_state.size())
+        default_state = tracking_windows.back()->saveState();
 }
 
 void MainWindow::loadSrc(QStringList filenames)

@@ -33,7 +33,7 @@ extern std::vector<tracking_window*> tracking_windows;
 extern size_t auto_track_pos[7];
 extern unsigned char auto_track_rgb[6][3];               // projection
 
-static QByteArray default_geo,default_state;
+QByteArray default_geo,default_state;
 
 
 void populate_templates(QComboBox* combo,size_t index)
@@ -267,10 +267,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             ui->DeviceDockWidget->hide();
         }
         {
-            if(!default_geo.size())
-                default_geo = saveGeometry();
-            if(!default_state.size())
-                default_state = saveState();
             ui->TractWidgetHolder->show();
             ui->renderingWidgetHolder->show();
             ui->ROIdockWidget->show();
