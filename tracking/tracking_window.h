@@ -259,6 +259,7 @@ private slots:
     void on_actionCommand_History_triggered();
 
     void run_command(const std::string& cmd);
+    void on_actionOpen_FIB_Directory_triggered();
 };
 
 #endif // TRACKING_WINDOW_H
