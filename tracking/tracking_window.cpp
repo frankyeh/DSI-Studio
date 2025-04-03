@@ -1199,3 +1199,9 @@ void tracking_window::on_actionCommand_History_triggered(){
     command_dialog->show();
 }
 
+
+void tracking_window::on_actionOpen_FIB_Directory_triggered()
+{
+    QDesktopServices::openUrl(QUrl::fromLocalFile(std::filesystem::path(handle->fib_file_name).parent_path().string().c_str()));
+}
+
