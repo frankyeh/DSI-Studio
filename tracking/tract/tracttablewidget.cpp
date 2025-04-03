@@ -1288,29 +1288,6 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         return true;
     }
 
-    if(cmd[0] == "recognize_tract")
-    {
-        // cmd[1] : current tract index
-        int cur_row = currentRow();
-        if(!get_cur_row(cmd[1],cur_row))
-            return false;
-        if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
-            return run->failed(cur_tracking_window.handle->error_msg);
-        std::multimap<float,std::string,std::greater<float> > sorted_list;
-        {
-            auto lock = tract_rendering[cur_row]->start_reading();
-            if(!cur_tracking_window.handle->recognize_and_sort(tract_models[cur_row],sorted_list))
-                return run->failed("cannot recognize tracks.");
-        }
-        std::ostringstream out;
-        auto beg = sorted_list.begin();
-        for(size_t i = 0;i < sorted_list.size();++i,++beg)
-            if(beg->first != 0.0f)
-                out << beg->first*100.0f << "% " << beg->second << std::endl;
-        show_info_dialog("Tract Recognition Result",out.str(),cur_tracking_window.history.file_stem() + "_" +
-                                            tract_models[cur_row]->name.c_str() + ".txt");
-        return true;
-    }
     if(cmd[0] == "recognize_and_rename_tract")
     {
         if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
