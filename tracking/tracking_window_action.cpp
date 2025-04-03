@@ -368,12 +368,12 @@ bool tracking_window::command(std::vector<std::string> cmd)
         if(tractWidget->rowCount())
         {
             std::filesystem::create_directory(cmd[1]+"/tracts");
-            tractWidget->command({"save_all_tracts_to_dir",cmd[1]+"/tracts"});
+            tractWidget->command({"save_all_tracts_to_folder",cmd[1]+"/tracts"});
         }
         if(regionWidget->rowCount())
         {
             std::filesystem::create_directory(cmd[1]+"/regions");
-            regionWidget->command({"save_all_regions_to_dir",cmd[1]+"/regions"});
+            regionWidget->command({"save_all_regions_to_folder",cmd[1]+"/regions"});
         }
         if(deviceWidget->rowCount())
         {
@@ -456,7 +456,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             std::ifstream in(cmd[1]+"/README");
             readme = std::string((std::istreambuf_iterator<char>(in)),std::istreambuf_iterator<char>());
         }
-        report((readme + "\r\nMethods\r\n" + handle->report).c_str());
+        report((readme + handle->report).c_str());
         return run->succeed();
     }
     if(cmd[0] == "save_setting" || cmd[0] == "save_rendering_setting" || cmd[0] == "save_tracking_setting")
