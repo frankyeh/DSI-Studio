@@ -777,96 +777,6 @@ void GLWidget::renderLR()
         check_error("show_tract");
     }
 
-    if (get_param("show_slice"))
-    {
-        glEnable(GL_TEXTURE_2D);
-        glEnable(GL_COLOR_MATERIAL);
-        glDisable(GL_LIGHTING);
-        float alpha = get_param_float("slice_alpha");
-        handleAlpha(tipl::rgb(0,0,0,255),
-                        alpha,get_param("slice_bend1"),get_param("slice_bend2"));
-        glDepthMask((alpha == 1.0));
-
-        glPushMatrix();
-        glMultMatrixf(transformation_matrix.begin());
-
-
-        current_slice->slice_visible[0] = cur_tracking_window.ui->glSagCheck->isChecked();
-        current_slice->slice_visible[1] = cur_tracking_window.ui->glCorCheck->isChecked();
-        current_slice->slice_visible[2] = cur_tracking_window.ui->glAxiCheck->isChecked();
-
-        bool changed_slice = check_change("slice_match_bkcolor",slice_match_bkcolor);
-
-        for(size_t slice_index = 0;slice_index < slice_texture.size();++slice_index)
-        {
-            auto this_slice = cur_tracking_window.slices[slice_index];
-            if(!this_slice->stay && this_slice != current_slice)
-                continue;
-            if(slice_texture[slice_index].size() != 3)
-                slice_texture[slice_index].resize(3);
-            for(unsigned int dim = 0;dim < 3;++dim)
-            {
-                if(!this_slice->slice_visible[dim])
-                    continue;
-                if(this_slice == current_slice && (slice_pos[dim] != current_slice->slice_pos[dim] || changed_slice))
-                {
-                    tipl::color_image texture;
-                    current_slice->get_high_reso_slice(texture,dim,current_slice->slice_pos[dim],cur_tracking_window.overlay_slices);
-                    if(texture.empty())
-                        continue;
-                    if(get_param("slice_match_bkcolor"))
-                    {
-                        auto slice_bk = texture[0];
-                        uint32_t bkcolor = get_param("bkg_color");
-                        for(size_t index = 0;index < texture.size();++index)
-                            if(texture[index] == slice_bk)
-                                texture[index] = bkcolor;
-                    }
-
-                    for(unsigned int index = 0;index < texture.size();++index)
-                    {
-                        unsigned char value =
-                        255-texture[index].data[0];
-                        if(value >= 230)
-                            value -= (value-230)*10;
-                        texture[index].data[3] = value;
-                    }
-
-                    slice_texture[slice_index][dim] = std::make_shared<QOpenGLTexture>((QImage() << texture).mirrored());
-                    slice_pos[dim] = current_slice->slice_pos[dim];
-                }
-
-                if(slice_texture[slice_index][dim].get())
-                {
-                    slice_texture[slice_index][dim]->bind();
-                    int texparam[] = {GL_NEAREST,
-                                      GL_LINEAR};
-                    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,texparam[get_param("slice_mag_filter")]);
-
-                    glBegin(GL_QUADS);
-                    glColor4f(1.0,1.0,1.0,std::min(alpha+0.2,1.0));
-
-                    std::vector<tipl::vector<3> > points;
-                    this_slice->get_slice_positions(dim,points);
-                    glTexCoord2f(0.0f, 1.0f);
-                    glVertex3f(points[0][0],points[0][1],points[0][2]);
-                    glTexCoord2f(1.0f, 1.0f);
-                    glVertex3f(points[1][0],points[1][1],points[1][2]);
-                    glTexCoord2f(1.0f, 0.0f);
-                    glVertex3f(points[3][0],points[3][1],points[3][2]);
-                    glTexCoord2f(0.0f, 0.0f);
-                    glVertex3f(points[2][0],points[2][1],points[2][2]);
-                    glEnd();
-                    slice_texture[slice_index][dim]->release();
-                }
-            }
-        }
-        glPopMatrix();
-        glDisable(GL_BLEND);
-        glDisable(GL_TEXTURE_2D);
-        glDepthMask(true);
-        check_error("show_slice");
-    }
     if (!cur_tracking_window.deviceWidget->devices.empty() &&
         get_param("show_device"))
     {
@@ -1132,6 +1042,98 @@ void GLWidget::renderLR()
         glPopMatrix();
         check_error("show_surface");
     }
+
+    if (get_param("show_slice"))
+    {
+        glEnable(GL_TEXTURE_2D);
+        glEnable(GL_COLOR_MATERIAL);
+        glDisable(GL_LIGHTING);
+        float alpha = get_param_float("slice_alpha");
+        handleAlpha(tipl::rgb(0,0,0,255),
+                        alpha,get_param("slice_bend1"),get_param("slice_bend2"));
+        glDepthMask((alpha == 1.0));
+
+        glPushMatrix();
+        glMultMatrixf(transformation_matrix.begin());
+
+
+        current_slice->slice_visible[0] = cur_tracking_window.ui->glSagCheck->isChecked();
+        current_slice->slice_visible[1] = cur_tracking_window.ui->glCorCheck->isChecked();
+        current_slice->slice_visible[2] = cur_tracking_window.ui->glAxiCheck->isChecked();
+
+        bool changed_slice = check_change("slice_match_bkcolor",slice_match_bkcolor);
+
+        for(size_t slice_index = 0;slice_index < slice_texture.size();++slice_index)
+        {
+            auto this_slice = cur_tracking_window.slices[slice_index];
+            if(!this_slice->stay && this_slice != current_slice)
+                continue;
+            if(slice_texture[slice_index].size() != 3)
+                slice_texture[slice_index].resize(3);
+            for(unsigned int dim = 0;dim < 3;++dim)
+            {
+                if(!this_slice->slice_visible[dim])
+                    continue;
+                if(this_slice == current_slice && (slice_pos[dim] != current_slice->slice_pos[dim] || changed_slice))
+                {
+                    tipl::color_image texture;
+                    current_slice->get_high_reso_slice(texture,dim,current_slice->slice_pos[dim],cur_tracking_window.overlay_slices);
+                    if(texture.empty())
+                        continue;
+                    if(get_param("slice_match_bkcolor"))
+                    {
+                        auto slice_bk = texture[0];
+                        uint32_t bkcolor = get_param("bkg_color");
+                        for(size_t index = 0;index < texture.size();++index)
+                            if(texture[index] == slice_bk)
+                                texture[index] = bkcolor;
+                    }
+
+                    for(unsigned int index = 0;index < texture.size();++index)
+                    {
+                        unsigned char value =
+                        255-texture[index].data[0];
+                        if(value >= 230)
+                            value -= (value-230)*10;
+                        texture[index].data[3] = value;
+                    }
+
+                    slice_texture[slice_index][dim] = std::make_shared<QOpenGLTexture>((QImage() << texture).mirrored());
+                    slice_pos[dim] = current_slice->slice_pos[dim];
+                }
+
+                if(slice_texture[slice_index][dim].get())
+                {
+                    slice_texture[slice_index][dim]->bind();
+                    int texparam[] = {GL_NEAREST,
+                                      GL_LINEAR};
+                    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,texparam[get_param("slice_mag_filter")]);
+
+                    glBegin(GL_QUADS);
+                    glColor4f(1.0,1.0,1.0,std::min(alpha+0.2,1.0));
+
+                    std::vector<tipl::vector<3> > points;
+                    this_slice->get_slice_positions(dim,points);
+                    glTexCoord2f(0.0f, 1.0f);
+                    glVertex3f(points[0][0],points[0][1],points[0][2]);
+                    glTexCoord2f(1.0f, 1.0f);
+                    glVertex3f(points[1][0],points[1][1],points[1][2]);
+                    glTexCoord2f(1.0f, 0.0f);
+                    glVertex3f(points[3][0],points[3][1],points[3][2]);
+                    glTexCoord2f(0.0f, 0.0f);
+                    glVertex3f(points[2][0],points[2][1],points[2][2]);
+                    glEnd();
+                    slice_texture[slice_index][dim]->release();
+                }
+            }
+        }
+        glPopMatrix();
+        glDisable(GL_BLEND);
+        glDisable(GL_TEXTURE_2D);
+        glDepthMask(true);
+        check_error("show_slice");
+    }
+
     if (get_param("show_label"))
     {
         glEnable(GL_COLOR_MATERIAL);
