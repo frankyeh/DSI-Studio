@@ -810,7 +810,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>286</width>
+     <width>287</width>
      <height>50</height>
     </size>
    </property>
@@ -1039,8 +1039,6 @@
     <addaction name="actionCut_Tracts"/>
     <addaction name="actionCut_end_portion"/>
     <addaction name="menuCut_by_slice"/>
-    <addaction name="separator"/>
-    <addaction name="actionMove_Objects"/>
    </widget>
    <widget class="QMenu" name="menuScreen">
     <property name="title">
@@ -1273,6 +1271,7 @@
     <addaction name="actionSave_Region_Color"/>
     <addaction name="separator"/>
     <addaction name="menuMove_Current_Region"/>
+    <addaction name="actionMove_Objects"/>
     <addaction name="menuModify"/>
     <addaction name="menuSort_Regions"/>
     <addaction name="separator"/>
@@ -4348,8 +4347,12 @@ Tracking</string>
    </property>
   </action>
   <action name="actionMove_Objects">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
+   </property>
    <property name="text">
-    <string>Move Objects</string>
+    <string>Move Region at 3D</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+A</string>
