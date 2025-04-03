@@ -1540,6 +1540,17 @@ void MainWindow::on_tabWidget_currentChanged(int index)
         for (const QString &line : lines) {
             if (!line.trimmed().startsWith("<img src"))
                 filteredLines.append(line);
+            if(line.startsWith("- "))
+            {
+                QRegularExpression re("\\[([^\\]]+)\\]\\(https://github\\.com/([^/]+/[^/]+)/");
+                QRegularExpressionMatch match = re.match(line);
+                if (match.hasMatch())
+                {
+                    QString label = match.captured(1);     // "HCP lifespan studies"
+                    QString userRepo = match.captured(2);  // "data-hcp/lifespan"
+                    ui->github_repo->addItem(label,userRepo);
+                }
+            }
         }
 
         ui->github_note->setMarkdown(filteredLines.join("\n"));
@@ -1568,9 +1579,11 @@ QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
             });
 }
 
-void MainWindow::on_github_repo_currentIndexChanged(int)
+void MainWindow::on_github_repo_currentIndexChanged(int index)
 {
-    QString repo = ui->github_repo->currentText().split(' ').first();
+    if(ui->github_repo->currentIndex() < 0)
+        return;
+    QString repo = ui->github_repo->currentData().toString();
 
     if(tags[repo].empty() && fetch_github)
     {
@@ -1615,7 +1628,9 @@ void MainWindow::on_github_repo_currentIndexChanged(int)
 
 void MainWindow::on_load_tags_clicked()
 {
-    QString repo = ui->github_repo->currentText().split(' ').first();
+    if(ui->github_repo->currentIndex() < 0)
+        return;
+    QString repo = ui->github_repo->currentData().toString();
     tipl::out() << "loading " << repo.toStdString();
     QString url = QString("https://api.github.com/repos/%1/releases").arg(repo);
     ui->github_tags->setSortingEnabled(false);
@@ -1703,7 +1718,7 @@ void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array)
                 }
             }
             tags[repo] = array_;
-            if(repo == ui->github_repo->currentText().split(' ').first())
+            if(repo == ui->github_repo->currentData().toString())
                 on_github_repo_currentIndexChanged(0);
             reply->deleteLater();
         }
