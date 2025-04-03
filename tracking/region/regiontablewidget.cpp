@@ -896,9 +896,9 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                 if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
                     return run->failed(cur_tracking_window.handle->error_msg);
 
-                std::multimap<float,std::string,std::greater<float> > sorted_list;
                 auto lock = cur_tracking_window.tractWidget->tract_rendering[cur_row]->start_reading();
-                if(!cur_tracking_window.handle->recognize_and_sort(cur_tracking_window.tractWidget->tract_models[cur_row],sorted_list))
+                auto sorted_list = cur_tracking_window.handle->recognize_and_sort(cur_tracking_window.tractWidget->tract_models[cur_row]);
+                if(sorted_list.empty())
                     return run->failed("cannot recognize tracks.");
                 std::ostringstream out;
                 for(const auto& each : sorted_list)

@@ -285,7 +285,7 @@ public:
     bool recognize(std::shared_ptr<TractModel>& trk,
                    std::vector<unsigned int>& labels,
                    std::vector<std::string> & label_names);
-    bool recognize_and_sort(std::shared_ptr<TractModel>& trk,std::multimap<float,std::string,std::greater<float> >& result);
+    std::multimap<float,std::string,std::greater<float> > recognize_and_sort(std::shared_ptr<TractModel> trk);
     void recognize_report(std::shared_ptr<TractModel>& trk,std::string& report);
 public:
     void match_template(void);

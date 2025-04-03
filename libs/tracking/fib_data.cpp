@@ -1746,24 +1746,24 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,
     return true;
 }
 
-bool fib_data::recognize_and_sort(std::shared_ptr<TractModel>& trk,std::multimap<float,std::string,std::greater<float> >& result)
+std::multimap<float,std::string,std::greater<float> > fib_data::recognize_and_sort(std::shared_ptr<TractModel> trk)
 {
+    std::multimap<float,std::string,std::greater<float> > result;
     if(!load_track_atlas(false/*asymmetric*/))
-        return false;
+        return result;
     std::vector<unsigned int> labels,count;
     if(!recognize(trk,labels,count))
-        return false;
+        return result;
     auto sum = std::accumulate(count.begin(),count.end(),0);
-    result.clear();
     for(size_t i = 0;i < count.size();++i)
         if(count[i])
             result.insert(std::make_pair(float(count[i])/float(sum),tractography_name_list[i]));
-    return true;
+    return result;
 }
 void fib_data::recognize_report(std::shared_ptr<TractModel>& trk,std::string& report)
 {
-    std::multimap<float,std::string,std::greater<float> > result;
-    if(!recognize_and_sort(trk,result)) // true: connectometry may only show part of pathways. enable containing condition
+    auto result = recognize_and_sort(trk);
+    if(result.empty())
         return;
     size_t n = 0;
     std::ostringstream out;

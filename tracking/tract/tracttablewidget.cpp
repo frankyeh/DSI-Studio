@@ -1296,9 +1296,9 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         for(unsigned int index = 0;prog(index,tract_models.size());++index)
             if(item(int(index),0)->checkState() == Qt::Checked && tract_models[index]->get_visible_track_count())
             {
-                std::multimap<float,std::string,std::greater<float> > sorted_list;
                 auto lock = tract_rendering[index]->start_reading();
-                if(!cur_tracking_window.handle->recognize_and_sort(tract_models[index],sorted_list))
+                auto sorted_list = cur_tracking_window.handle->recognize_and_sort(tract_models[index]);
+                if(sorted_list.empty())
                     return run->failed(cur_tracking_window.handle->error_msg);
                 item(int(index),0)->setText(sorted_list.begin()->second.c_str());
             }
