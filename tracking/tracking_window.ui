@@ -1340,6 +1340,7 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
+    <addaction name="actionOpen_FIB_Directory"/>
     <addaction name="actionSave_FIB_As"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_WorkSpace"/>
@@ -1353,6 +1354,7 @@
     <addaction name="actionLoad_Rendering_Settings"/>
     <addaction name="actionSave_Rendering_Settings"/>
     <addaction name="actionRestore_Settings"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -4989,6 +4991,18 @@ Tracking</string>
    </property>
    <property name="toolTip">
     <string>run save_v3view_screen</string>
+   </property>
+  </action>
+  <action name="actionOpen_FIB_Directory">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Open FIB Directory...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
    </property>
   </action>
  </widget>
