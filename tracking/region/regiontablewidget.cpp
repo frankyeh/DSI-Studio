@@ -863,7 +863,8 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
 
     if(cmd[0] == "show_region_statistics" || cmd[0] == "save_region_statistics" ||
        cmd[0] == "show_t2r" || cmd[0] == "save_t2r" ||
-       cmd[0] == "show_tract_statistics" || cmd[0] == "save_tract_statistics")
+       cmd[0] == "show_tract_statistics" || cmd[0] == "save_tract_statistics" ||
+       cmd[0] == "show_tract_recognition" || cmd[0] == "save_tract_recognition")
     {
         // cmd[1] : file name to save
         auto regions = get_checked_regions();
@@ -888,9 +889,31 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         {
             if(tracts.empty())
                 return run->failed("please specify tract(s)");
-            get_tract_statistics(cur_tracking_window.handle,tracts,result);
-            title = "Tract Statistics";
-            default_file += "_tract_stat.txt";
+            if(tipl::ends_with(cmd[0],"recognition"))
+            {
+                // cmd[2] : tract id for recognition
+                int cur_row = run->from_cmd(2,cur_tracking_window.tractWidget->currentRow());
+                if(!cur_tracking_window.handle->load_track_atlas(false/*asymmetric*/))
+                    return run->failed(cur_tracking_window.handle->error_msg);
+
+                std::multimap<float,std::string,std::greater<float> > sorted_list;
+                auto lock = cur_tracking_window.tractWidget->tract_rendering[cur_row]->start_reading();
+                if(!cur_tracking_window.handle->recognize_and_sort(cur_tracking_window.tractWidget->tract_models[cur_row],sorted_list))
+                    return run->failed("cannot recognize tracks.");
+                std::ostringstream out;
+                for(const auto& each : sorted_list)
+                    if(each.first != 0.0f)
+                        out << each.first*100.0f << "%\t" << each.second << std::endl;
+                result = out.str();
+                title = "Tract Recognition";
+                default_file += "_tract_names.txt";
+            }
+            else
+            {
+                get_tract_statistics(cur_tracking_window.handle,tracts,result);
+                title = "Tract Statistics";
+                default_file += "_tract_stat.txt";
+            }
 
         }
         if(tipl::contains(cmd[0],"region"))
