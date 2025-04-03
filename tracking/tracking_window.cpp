@@ -255,7 +255,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         {
             tipl::out() << "create GUI objects" << std::endl;
             scene.statusbar = ui->statusbar;
-            setGeometry(10,10,800,600);
             ui->regionDockWidget->setMinimumWidth(0);
             ui->ROIdockWidget->setMinimumWidth(0);
             ui->renderingLayout->addWidget(renderWidget = new RenderingTableWidget(*this,ui->renderingWidgetHolder));
@@ -268,8 +267,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             ui->DeviceDockWidget->hide();
         }
         {
-            tipl::out() << "recall previous settings" << std::endl;
-            QSettings settings;
             if(!default_geo.size())
                 default_geo = saveGeometry();
             if(!default_state.size())
