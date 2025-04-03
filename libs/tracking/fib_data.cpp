@@ -1749,10 +1749,8 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,
 std::multimap<float,std::string,std::greater<float> > fib_data::recognize_and_sort(std::shared_ptr<TractModel> trk)
 {
     std::multimap<float,std::string,std::greater<float> > result;
-    if(!load_track_atlas(false/*asymmetric*/))
-        return result;
     std::vector<unsigned int> labels,count;
-    if(!recognize(trk,labels,count))
+    if(!load_track_atlas(false/*asymmetric*/) || !recognize(trk,labels,count))
         return result;
     auto sum = std::accumulate(count.begin(),count.end(),0);
     for(size_t i = 0;i < count.size();++i)
