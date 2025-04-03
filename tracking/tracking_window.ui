@@ -3923,7 +3923,7 @@ Tracking</string>
     <string>Recognize...</string>
    </property>
    <property name="toolTip">
-    <string>run recognize_tract</string>
+    <string>run show_tract_recognition</string>
    </property>
   </action>
   <action name="actionDelete_By_Length">
