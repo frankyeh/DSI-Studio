@@ -448,7 +448,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         prog(4,5);
 
         command({"load_setting",cmd[1] + "/setting.ini"});
-        command({"load_camera",cmd[1] + "/camera.txt"});
+        command({"open_camera",cmd[1] + "/camera.txt"});
 
         std::string readme;
         if(std::filesystem::exists(cmd[1]+"/README"))
