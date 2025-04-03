@@ -178,14 +178,6 @@ void DeviceTableWidget::check_status(int row, int col)
 
 void DeviceTableWidget::newDevice()
 {
-    static unsigned int device_num = 1;
-    static bool show_hint = true;
-    if(show_hint)
-    {
-        QMessageBox::information(this,QApplication::applicationName(),"Click Ctrl+A and Press on Tip/Shaft to Rotate/Move");
-        show_hint = false;
-    }
-
     if(new_device_str.isEmpty())
     {
         QAction* pAction = qobject_cast<QAction*>(sender());
