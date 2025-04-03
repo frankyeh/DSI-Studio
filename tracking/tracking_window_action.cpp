@@ -395,7 +395,13 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         command({"save_setting",cmd[1] + "/setting.ini"});
         command({"save_camera",cmd[1] + "/camera.txt"});
+
+        std::ofstream out(cmd[1] + "/commands.csv");
+        out << "move_slice" << "," << current_slice->slice_pos[0] << " " << current_slice->slice_pos[1] << " " << current_slice->slice_pos[2] << std::endl;
+        out << "enable_slice" << "," << (ui->glSagCheck->isChecked()?1:0) << " " << (ui->glCorCheck->isChecked()?1:0) << " " << (ui->glAxiCheck->isChecked()?1:0) << std::endl;
+        out << "set_zoom" << "," << ui->zoom_3d->value();
         return run->succeed();
+
     }
     if(cmd[0] == "load_workspace")
     {
@@ -445,10 +451,18 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 regionWidget->command({"open_region",each});
         }
 
-        prog(4,5);
+        prog(4,5);      
+
+        {
+            std::ifstream in(cmd[1] + "/commands.csv");
+            std::string line;
+            while(std::getline(in,line))
+                command(tipl::split(line,','));
+        }
 
         command({"load_setting",cmd[1] + "/setting.ini"});
         command({"open_camera",cmd[1] + "/camera.txt"});
+
 
         std::string readme;
         if(std::filesystem::exists(cmd[1]+"/README"))
