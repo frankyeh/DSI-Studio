@@ -150,7 +150,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>4</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -741,7 +741,7 @@ Varian (.fdf)</string>
                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 157); color: black; }</string>
                </property>
                <property name="text">
-                <string>Tractography</string>
+                <string>Tractography (*.tt.gz)</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
