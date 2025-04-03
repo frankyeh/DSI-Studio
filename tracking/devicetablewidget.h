@@ -33,6 +33,7 @@ public:
     // Header:
 public:
     tracking_window& cur_tracking_window;
+    unsigned int device_num = 1
     std::vector<std::shared_ptr<Device> > devices;
     bool load_device(const std::string& filename);
 signals:
