@@ -441,8 +441,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
         {
             if(regionWidget->rowCount())
                 regionWidget->command({"delete_all_regions"});
-            for(const auto& each : tipl::search_files(cmd[1]+"/regions","*nii.gz"))
-                regionWidget->command({"load_region",each});
+            for(const auto& each : tipl::search_files(cmd[1]+"/regions","*.nii.gz"))
+                regionWidget->command({"open_region",each});
         }
 
         prog(4,5);
