@@ -607,7 +607,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
     }
 
 
-    if(QFileInfo(QString(file_name.c_str())).completeSuffix().toLower() == "mat")
+    if(tipl::ends_with(file_name,".mat"))
     {
         tipl::io::mat_write file(file_name.c_str());
         if(!file)
