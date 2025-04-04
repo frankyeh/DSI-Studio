@@ -753,7 +753,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         if(filenames.isEmpty())
             return run->canceled();
 
-        if(QFileInfo(filenames[0]).completeSuffix() == "dcm" && filenames.size() == 1)
+        if(filenames[0].endsWith(".dcm") && filenames.size() == 1)
         {
             QDir directory = QFileInfo(filenames[0]).absoluteDir();
             QStringList file_list = directory.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
