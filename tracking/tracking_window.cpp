@@ -148,7 +148,7 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
         QMessageBox::information(parent,QApplication::applicationName(),
             "select files for '" + QString::fromStdString(param[0]).replace('_',' ') + "' step");
         file_list = QFileDialog::getOpenFileNames(parent,"files for " + QString::fromStdString(param[0]),original_file.c_str(),
-            QString("files (*%1);;all files (*)").arg(QFileInfo(original_file.c_str()).completeSuffix()));
+            QString("files (*%1);;all files (*)").arg(tipl::complete_suffix(original_file).c_str()));
         if(file_list.isEmpty())
             return false;
     }
