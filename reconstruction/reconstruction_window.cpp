@@ -325,7 +325,7 @@ void reconstruction_window::on_save_mask_clicked()
             "Nifti file(*nii.gz *.nii);;Text files (*.txt);;All files (*)" );
     if(filename.isEmpty())
         return;
-    if(QFileInfo(filename.toLower()).completeSuffix() != "txt")
+    if(!filename.toLower().endsWith(".txt"))
         filename = QFileInfo(filename).absolutePath() + "/" + QFileInfo(filename).baseName() + ".nii.gz";
     ROIRegion region(handle->dwi.shape(),handle->voxel.vs);
     region.load_region_from_buffer(handle->voxel.mask);
