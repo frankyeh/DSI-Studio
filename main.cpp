@@ -247,6 +247,30 @@ bool init_application(void)
         if(style != "default" && !style.isEmpty())
             QApplication::setStyle(style);
 
+        if(QApplication::palette().color(QPalette::Window).lightnessF() < 0.5)
+        {
+            // Iterate over available styles to find one that produces a white window background.
+            QStringList availableStyles = QStyleFactory::keys();
+            bool foundLightStyle = false;
+            QString lightStyleName;
+            for(const QString &s : availableStyles)
+            {
+                QApplication::setStyle(s);
+                if(QApplication::palette().color(QPalette::Window).lightnessF() >= 0.5)
+                {
+                    foundLightStyle = true;
+                    lightStyleName = s;
+                    break;
+                }
+            }
+            // If a light style was found, update the application style and save it to QSettings.
+            if(foundLightStyle)
+            {
+                QApplication::setStyle(lightStyleName);
+                settings.setValue("styles", lightStyleName);
+            }
+        }
+
         if(!load_file_name())
         {
             QMessageBox::critical(nullptr,"ERROR","Cannot find template data.");
