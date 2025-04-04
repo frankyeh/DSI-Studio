@@ -600,7 +600,7 @@ void MainWindow::open_DWI(QStringList filenames)
         return;
     }
 
-    if(QFileInfo(filenames[0]).completeSuffix() == "dcm")
+    if(filenames[0].endsWith(".dcm"))
     {
         QString sel = QString("*.")+QFileInfo(filenames[0]).suffix();
         QDir directory = QFileInfo(filenames[0]).absoluteDir();
