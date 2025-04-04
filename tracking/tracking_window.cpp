@@ -214,7 +214,7 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
             tipl::out() << "run " << tipl::merge(param,',');
             if(!parent->command(param))
             {
-                QMessageBox::critical(parent,"ERROR",parent->error_msg.c_str());
+                QMessageBox::critical(parent,"ERROR",(param.front() + " failed due to " + parent->error_msg).c_str());
                 running_commands = false;
                 return false;
             }
