@@ -126,8 +126,17 @@ void Console::check_msg(void)
         strSplitted = console.buf.split('\n');
         console.buf = strSplitted.back();
     }
+
+    QScrollBar *vScrollBar = ui->console->verticalScrollBar();
+    bool shouldAutoScroll = false;
+    if (vScrollBar)// If the scrollbar is not visible, or if its value is at maximum, set auto-scroll flag.
+        shouldAutoScroll = (!vScrollBar->isVisible() || vScrollBar->value() == vScrollBar->maximum());
+
     for(int i = 0; i+1 < strSplitted.size(); i++)
         appendColoredText(*(ui->console),strSplitted[i]);
+
+    if (shouldAutoScroll && vScrollBar) // Scroll to bottom after appending text.
+        vScrollBar->setValue(vScrollBar->maximum());
 }
 
 Console::~Console()
