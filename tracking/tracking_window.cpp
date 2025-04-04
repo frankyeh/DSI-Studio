@@ -1153,7 +1153,10 @@ void tracking_window::on_actionCommand_History_triggered(){
                             "CSV files (*.csv);;All files (*)");
             if(!fn.isEmpty()){
                 std::ifstream file(fn.toStdString());
-                std::vector<std::string> lines((std::istream_iterator<std::string>(file)),{});
+                std::vector<std::string> lines;
+                std::string line;
+                while (std::getline(file, line))
+                    lines.push_back(line);
                 populate_table(lines);
             }
         });
