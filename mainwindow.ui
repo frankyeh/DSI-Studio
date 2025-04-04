@@ -918,9 +918,9 @@ SRC Files</string>
                <property name="geometry">
                 <rect>
                  <x>40</x>
-                 <y>460</y>
+                 <y>440</y>
                  <width>251</width>
-                 <height>51</height>
+                 <height>61</height>
                 </rect>
                </property>
                <property name="styleSheet">
@@ -944,9 +944,9 @@ SRC Files</string>
                <property name="geometry">
                 <rect>
                  <x>40</x>
-                 <y>510</y>
+                 <y>500</y>
                  <width>251</width>
-                 <height>51</height>
+                 <height>61</height>
                 </rect>
                </property>
                <property name="styleSheet">
@@ -972,7 +972,7 @@ SRC Files</string>
                  <x>40</x>
                  <y>560</y>
                  <width>251</width>
-                 <height>51</height>
+                 <height>61</height>
                 </rect>
                </property>
                <property name="styleSheet">
@@ -996,9 +996,9 @@ SRC Files</string>
                <property name="geometry">
                 <rect>
                  <x>25</x>
-                 <y>440</y>
+                 <y>430</y>
                  <width>280</width>
-                 <height>191</height>
+                 <height>201</height>
                 </rect>
                </property>
                <property name="styleSheet">
