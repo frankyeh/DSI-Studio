@@ -271,16 +271,14 @@ void DeviceTableWidget::uncheck_all(void)
 }
 bool DeviceTableWidget::load_device(const std::string& filename)
 {
-    std::ifstream in(filename);
-    if(!in)
-        return false;
-    std::string line;
-    while(std::getline(in,line))
+    bool result = false;
+    for(const auto& line : tipl::read_text_file(filename))
     {
         new_device_str = line.c_str();
         newDevice();
+        result = true;
     }
-    return true;
+    return result;
 }
 void DeviceTableWidget::load_device(void)
 {
