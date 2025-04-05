@@ -271,8 +271,7 @@ void MainWindow::openFile(QStringList file_names)
     {
         if(QString(file_name).endsWith(".csv"))
         {
-            std::ifstream file(file_name.toStdString());
-            std::vector<std::string> lines((std::istream_iterator<std::string>(file)),{});
+            auto lines = tipl::read_text_file(file_name.toStdString());
             if(lines.empty() || !tipl::begins_with(lines[0],"open_fib,"))
             {
                 QMessageBox::critical(this,"ERROR","invalid command csv file");
