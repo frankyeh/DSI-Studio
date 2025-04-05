@@ -223,13 +223,9 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
 
 bool load_bvec(const std::string& file_name,std::vector<double>& b_table_,bool flip_by = true)
 {
-    std::ifstream in(file_name);
-    if(!in)
-        return false;
-    std::string line;
     unsigned int total_line = 0;
     std::vector<double> b_table;
-    while(std::getline(in,line))
+    for(const auto& line: tipl::read_text_file(file_name))
     {
         std::istringstream read_line(line);
         std::copy(std::istream_iterator<double>(read_line),
@@ -237,6 +233,8 @@ bool load_bvec(const std::string& file_name,std::vector<double>& b_table_,bool f
                   std::back_inserter(b_table));
         ++total_line;
     }
+    if(total_line == 0)
+        return false;
     if(total_line == 3)
         tipl::mat::transpose(b_table.begin(),tipl::shape<2>(3,b_table.size()/3));
     if(flip_by)
@@ -755,9 +753,7 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
     {
         std::unordered_map<std::string,std::string> value_list;
         {
-            std::ifstream in(file_list[i].toStdString().c_str());
-            std::string line;
-            while(std::getline(in,line))
+            for(const auto& line: tipl::read_text_file(file_list[i].toStdString()))
             {
                 std::string::size_type pos = 0;
                 if(line.empty() || line[0] == '#' || (pos = line.find(':')) == std::string::npos)
@@ -839,9 +835,7 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
     {
         std::unordered_map<std::string,std::string> value_list;
         {
-            std::ifstream in(file_list[index].toStdString().c_str());
-            std::string line;
-            while(std::getline(in,line))
+            for(const auto& line: tipl::read_text_file(file_list[index].toStdString()))
             {
                 std::string::size_type pos = 0;
                 if(line.empty() || line[0] == '#' || (pos = line.find('=')) == std::string::npos)
@@ -1189,13 +1183,10 @@ void dicom_parser::on_actionOpen_b_table_triggered()
             "Open b-table",
             QFileInfo(ui->SrcName->text()).absolutePath(),
             "Text files (*.txt);;All files (*)" );
-
-    std::ifstream in(filename.toStdString().c_str());
-    if(!in)
+    if(filename.isEmpty())
         return;
-    std::string line;
     std::vector<double> b_table;
-    while(std::getline(in,line))
+    for(auto& line: tipl::read_text_file(filename.toStdString()))
     {
         std::replace(line.begin(),line.end(),',',' ');
         std::istringstream read_line(line);
