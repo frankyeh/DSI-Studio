@@ -397,11 +397,9 @@ struct Tck{
     {
         unsigned int offset = 0;
         {
-            std::ifstream in(file_name);
-            if(!in)
+            if(!std::filesystem::exists(file_name))
                 return false;
-            std::string line;
-            while(std::getline(in,line))
+            for(const auto& line: tipl::read_text_file(file_name))
             {
                 if(line.size() <= 4)
                     continue;
@@ -673,13 +671,9 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
 
     if (QString(file_name_).endsWith(".txt"))
     {
-        std::ifstream in(file_name_);
-        if (!in)
+        if (!std::filesystem::exists(file_name_))
             return false;
-        std::string line;
-        in.seekg(0,std::ios::end);
-        in.seekg(0,std::ios::beg);
-        while (std::getline(in,line))
+        for(const auto& line: tipl::read_text_file(file_name_))
         {
             loaded_tract_data.push_back(std::vector<float>());
             std::istringstream in(line);
