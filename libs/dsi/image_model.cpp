@@ -2471,14 +2471,10 @@ bool src_data::run_topup(void)
         return false;
     }
 
+    for(const auto& line: tipl::read_text_file(topup_param_file))
     {
-        std::ifstream in(topup_param_file);
-        std::string line;
-        while(std::getline(in,line))
-        {
-            if(!line.empty() && line[0] == '-')
-               param.push_back(line);
-        }
+        if(!line.empty() && line[0] == '-')
+           param.push_back(line);
     }
 
     if(std::filesystem::exists(topup_result()))
