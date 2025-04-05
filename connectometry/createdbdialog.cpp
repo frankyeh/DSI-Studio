@@ -220,9 +220,7 @@ void CreateDBDialog::on_open_list1_clicked()
     if(filename.isEmpty())
         return;
     group.clear();
-    std::string line;
-    std::ifstream in(filename.toStdString().c_str());
-    while(std::getline(in,line))
+    for(const auto& line: tipl::read_text_file(filename.toStdString()))
         group << line.c_str();
     update_list();
 }
