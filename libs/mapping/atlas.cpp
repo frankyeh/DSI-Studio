@@ -17,15 +17,13 @@ std::string get_label_file_name(const std::string& file_name)
 void atlas::load_label(void)
 {
     std::string text_file_name = get_label_file_name(filename);
-    std::ifstream in(text_file_name.c_str());
-    if(!in)
+    if(!std::filesystem::exists(text_file_name))
     {
         error_msg = "cannot find label file at ";
         error_msg += text_file_name;
         return;
     }
-    std::string line;
-    while(std::getline(in,line))
+    for(const auto& line: tipl::read_text_file(text_file_name))
     {
         if(line.empty() || line[0] == '#')
             continue;
