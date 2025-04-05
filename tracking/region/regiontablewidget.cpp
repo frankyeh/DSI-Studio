@@ -712,7 +712,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "add_region_from_atlas")
     {
-        // cmd[1] : template id  (e.g. o for human) [space]
+        // cmd[1] : template id  (e.g. 0 for human) [space]
         //          atlas id     (e.g. 0 for the first atlas of human template) [space]
         //          region label , if not supply add all
 
