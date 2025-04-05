@@ -109,6 +109,7 @@ Console::Console(QWidget *parent) :
     ui->cmd_line->addItem("--action=atk --source=*.fz");
 
 
+    check_msg();
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(check_msg()));
     timer->setInterval(1000);
@@ -201,7 +202,7 @@ bool Console::eventFilter(QObject *obj, QEvent *event)
             if (!po.has("action"))
                 po.set("action","vis");
             run_action_with_wildcard(po,0,nullptr);
-            ui->cmd_line->addItem(ui->cmd_line->currentText());
+            ui->cmd_line->insertItem(0,ui->cmd_line->currentText());
             ui->cmd_line->setCurrentText(QString());
             return true; // Consume the event
         }
