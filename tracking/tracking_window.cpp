@@ -1151,14 +1151,9 @@ void tracking_window::on_actionCommand_History_triggered(){
             QString fn = QFileDialog::getOpenFileName(this, "Open text files",
                             QString::fromStdString(history.file_stem(false))+"_commands.csv",
                             "CSV files (*.csv);;All files (*)");
-            if(!fn.isEmpty()){
-                std::ifstream file(fn.toStdString());
-                std::vector<std::string> lines;
-                std::string line;
-                while (std::getline(file, line))
-                    lines.push_back(line);
-                populate_table(lines);
-            }
+            if(!fn.isEmpty())
+                populate_table(tipl::read_text_file(fn.toStdString()));
+
         });
         connect(saveB, &QPushButton::clicked, [=](){
             QString fn = QFileDialog::getSaveFileName(this, "Save text file",
