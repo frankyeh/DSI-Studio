@@ -453,12 +453,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         prog(4,5);      
 
-        {
-            std::ifstream in(cmd[1] + "/commands.csv");
-            std::string line;
-            while(std::getline(in,line))
-                command(tipl::split(line,','));
-        }
+        for(const auto& line : tipl::read_text_file(cmd[1] + "/commands.csv"))
+            command(tipl::split(line,','));
 
         command({"load_setting",cmd[1] + "/setting.ini"});
         command({"open_camera",cmd[1] + "/camera.txt"});
@@ -1447,13 +1443,7 @@ bool tracking_window::run_unet(void)
     filename.chop(6);
     filename += "txt";
     if(std::filesystem::exists(filename.toStdString()))
-    {
-        unet_label_name.clear();
-        std::ifstream in(filename.toStdString());
-        std::string line;
-        while(std::getline(in,line))
-            unet_label_name.push_back(line);
-    }
+        unet_label_name = tipl::read_text_file(filename.toStdString());
     return true;
 }
 
