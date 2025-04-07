@@ -1005,6 +1005,7 @@ void reconstruction_window::on_fib_output_editingFinished()
 
 void reconstruction_window::on_more_outputs_clicked()
 {
+    ui->more_outputs->hide();
     for(auto each : adv_outputs)
         each->show();
 }
