@@ -490,8 +490,7 @@ void group_connectometry::on_show_result_clicked()
             current_tracking_window->set_data(each.first.c_str(),each.second.c_str());
 
     current_tracking_window->command({"set_zoom","0.8"});
-    current_tracking_window->command({"set_slice_by_name","wm_template"});
-    current_tracking_window->command({"add_surface","25.0"});
+    current_tracking_window->command({"add_surface","0","25"});
     current_tracking_window->command({"update_tract"});
 
 
