@@ -726,19 +726,32 @@ void group_connectometry_analysis::generate_report(std::string& output)
         tipl::progress p3("create tract figures");
         std::shared_ptr<fib_data> new_data(new fib_data);
         *(new_data.get()) = *(handle);
-        tracking_window* new_mdi = new tracking_window(nullptr,new_data);
+        std::shared_ptr<tracking_window> new_mdi(new tracking_window(nullptr,new_data));
         new_mdi->set_memorize_parameters(false);
+        new_mdi->setAttribute(Qt::WA_DeleteOnClose);
         new_mdi->setWindowTitle(output_file_name.c_str());
         new_mdi->show();
         new_mdi->resize(2000,1000);
         new_mdi->update();
-        for(const auto& each : std::vector<std::pair<std::string, std::string>>{
-            {"show_surface", "1"},{"show_slice", "0"},{"show_region", "0"},{"bkg_color", "16777215"},{"surface_alpha", "0.2"}})
-                new_mdi->set_data(each.first.c_str(),each.second.c_str());
-        new_mdi->command({"set_zoom","1.0"});
+        for(auto const& [key, value] : {
+            std::pair{"show_surface", "1"},
+            std::pair{"show_slice", "0"},
+            std::pair{"show_region", "0"},
+            std::pair{"bkg_color", "16777215"},
+            std::pair{"surface_alpha", "0.2"}
+        })
+            new_mdi->set_data(key, value);
+
         new_mdi->command({"add_surface","0","25"});
-        new_mdi->command({"set_slice_by_name","t1w_template"});
-        new_mdi->command({"set_slice_contrast","0.0 400.0"});
+
+        for(auto const& [cmd1, cmd2] : {
+            std::pair{"set_slice_by_name","t1w_template"},
+            std::pair{"set_slice_contrast","0.0 400.0"},
+            std::pair{"set_zoom","1.0"}
+        })
+            new_mdi->command({cmd1,cmd2});
+
+
 
         auto show_track_result = [&](std::shared_ptr<TractModel> track,std::string name,unsigned int color){
             if(track->get_visible_track_count())
@@ -754,20 +767,28 @@ void group_connectometry_analysis::generate_report(std::string& output)
                 new_mdi->regionWidget->regions.back()->add_points(std::move(points));
 
             }
-            new_mdi->command({"save_h3view_screen",(output_file_name+"." + name + ".jpg").c_str()});
+            new_mdi->command({"save_h3view_screen",output_file_name+"." + name + ".jpg"});
             // do it twice to eliminate 3D artifact
-            new_mdi->command({"save_h3view_screen",(output_file_name+"." + name + ".jpg").c_str()});
+            new_mdi->command({"save_h3view_screen",output_file_name+"." + name + ".jpg"});
 
-            for(const auto& each : std::vector<std::pair<std::string, std::string>>{
-                {"roi_zoom","8"},{"roi_layout","5"},{"roi_track","0"},{"roi_draw_edge","0"}})
-                        new_mdi->set_data(each.first.c_str(),each.second.c_str());
+            for(auto const& [key, value] : {
+                std::pair{"roi_zoom", "8"},
+                std::pair{"roi_layout", "5"},
+                std::pair{"roi_track", "0"},
+                std::pair{"roi_draw_edge", "0"}
+            })
+                new_mdi->set_data(key, value);
 
-            new_mdi->command({"save_roi_screen",(output_file_name+"." + name + "_map.jpg").c_str()});
-            new_mdi->command({"set_roi_view","1"});
-            new_mdi->command({"save_roi_screen",(output_file_name+"." + name + "_map2.jpg").c_str()});
-            new_mdi->command({"set_roi_view","2"});
-            new_mdi->command({"delete_all_tracts"});
-            new_mdi->command({"delete_all_regions"});
+            for(auto const& [cmd, arg] : std::initializer_list<std::pair<std::string, std::string>>{
+                std::pair{"save_roi_screen", output_file_name + "." + name + "_map.jpg"},
+                std::pair{"set_roi_view", "1"},
+                std::pair{"save_roi_screen", output_file_name + "." + name + "_map2.jpg"},
+                std::pair{"set_roi_view", "2"},
+                std::pair{"delete_all_tracts", ""},
+                std::pair{"delete_all_regions", ""}
+            })
+                new_mdi->command({cmd, arg});
+
         };
         show_track_result(inc_track,"inc",0x00F01010);
         show_track_result(dec_track,"dec",0x001010F0);
@@ -790,6 +811,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
             // do it twice to eliminate 3D artifact
             new_mdi->command({"save_h3view_screen",output_file_name+".pos_neg.jpg"});
         }
+        new_mdi->deleteLater();
     }
 }
 
