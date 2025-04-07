@@ -736,8 +736,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
             {"show_surface", "1"},{"show_slice", "0"},{"show_region", "0"},{"bkg_color", "16777215"},{"surface_alpha", "0.2"}})
                 new_mdi->set_data(each.first.c_str(),each.second.c_str());
         new_mdi->command({"set_zoom","1.0"});
-        new_mdi->command({"set_slice_by_name","wm_template"});
-        new_mdi->command({"add_surface","25"});
+        new_mdi->command({"add_surface","0","25"});
         new_mdi->command({"set_slice_by_name","t1w_template"});
         new_mdi->command({"set_slice_contrast","0.0 400.0"});
 
@@ -787,9 +786,9 @@ void group_connectometry_analysis::generate_report(std::string& output)
             }
             new_mdi->set_data("tract_color_style","1");
             new_mdi->command({"update_tract"});
-            new_mdi->command({"save_h3view_screen",(output_file_name+".pos_neg.jpg").c_str()});
+            new_mdi->command({"save_h3view_screen",output_file_name+".pos_neg.jpg"});
             // do it twice to eliminate 3D artifact
-            new_mdi->command({"save_h3view_screen",(output_file_name+".pos_neg.jpg").c_str()});
+            new_mdi->command({"save_h3view_screen",output_file_name+".pos_neg.jpg"});
         }
     }
 }
