@@ -876,7 +876,10 @@ bool tracking_window::command(std::vector<std::string> cmd)
         // cmd[2] : threshold
         tipl::image<3> crop_image;
         float resolution_ratio = 1.0;
-        auto this_slice = slices[run->from_cmd(1,ui->SliceModality->currentIndex())];
+        auto slice_index = run->from_cmd(1,ui->SliceModality->currentIndex());
+        if(slice_index >= slices.size())
+            return run->failed("invalid slice index " + cmd[1]);
+        auto this_slice = slices[slice_index];
         bool is_wm = (this_slice->get_name() == "wm_template");
 
         if(!std::dynamic_pointer_cast<CustomSliceModel>(this_slice).get())
