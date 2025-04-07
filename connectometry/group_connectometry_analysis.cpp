@@ -146,7 +146,7 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
     if(id == 0 && !terminated)
     {
         wait(1); // current thread occupies 0, wait from 1
-        prog = 100;
+        prog = 99;
     }
 }
 extern int fib_ver;
