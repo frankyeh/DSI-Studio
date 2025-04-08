@@ -1058,6 +1058,7 @@ bool fib_data::load_at_resolution(const std::string& file_name,float reso)
 {
     tipl::progress prog("opening ",file_name);
     tipl::out() << "resample to resolution:" << reso;
+    fib_file_name = file_name;
     if (!mat_reader.load_from_file(file_name,prog) ||
         !modify_fib(mat_reader,"regrid",std::to_string(reso)))
     {
