@@ -827,9 +827,6 @@ bool fib_data::load_from_mat(void)
         return true;
     }
 
-    if(trans_to_mni == tipl::identity_matrix())
-        initial_LPS_nifti_srow(trans_to_mni,dim,vs);
-
     match_template();
     return true;
 }
