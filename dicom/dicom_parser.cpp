@@ -311,6 +311,7 @@ bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
 bool get_bval_bvec(const std::string& bval_file,const std::string& bvec_file,size_t dwi_count,
                    std::vector<double>& bvals,std::vector<double>& bvecs,
                    std::string& error_msg);
+void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                  bool search_bvalbvec,
                  bool must_have_bval_bvec,
@@ -318,6 +319,7 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
 {
     tipl::progress prog("opening ",file_name);
     tipl::vector<3,float> vs;
+    tipl::matrix<4,4,float> trans_to_mni;
     std::vector<tipl::image<3> > dwi_data;
     {
         tipl::io::gz_nifti nii;
@@ -346,6 +348,8 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
             dwi_data[index].swap(data);
         }
         nii.get_voxel_size(vs);
+        nii.get_image_transformation(trans_to_mni);
+
         if(dwi_data.size() <= 1 && must_have_bval_bvec)
         {
             error_msg = "not a 4D nifti file";
@@ -433,6 +437,7 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
         new_file->image = data;
         new_file->file_name = file_name;
         new_file->voxel_size = vs;
+        new_file->trans_to_mni = trans_to_mni;
         if(!bvals.empty())
         {
             new_file->bvalue = float(bvals[index]);
