@@ -128,7 +128,7 @@ public:// used in QSDR
     tipl::matrix<4,4> trans_to_mni;
     size_t template_id = 0;
     bool qsdr = false,export_r=false;
-    float R2 = 0.9f;
+    float R2 = 0.0f;
     float qsdr_reso = 1.0f;
 public:
     tipl::vector<3> partial_min,partial_max;
