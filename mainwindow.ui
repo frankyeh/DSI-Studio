@@ -150,7 +150,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -384,7 +384,7 @@
                 <string/>
                </property>
               </widget>
-              <widget class="QCommandLinkButton" name="FiberTracking">
+              <widget class="QPushButton" name="FiberTracking">
                <property name="geometry">
                 <rect>
                  <x>680</x>
@@ -393,11 +393,17 @@
                  <height>61</height>
                 </rect>
                </property>
+               <property name="font">
+                <font>
+                 <bold>true</bold>
+                </font>
+               </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                </property>
                <property name="text">
-                <string>Step T3: Fiber Tracking</string>
+                <string>Step T3: Fiber Tracking...
+Open a FIB file to run fiber tracking</string>
                </property>
                <property name="icon">
                 <iconset resource="icons.qrc">
@@ -405,9 +411,6 @@
                </property>
                <property name="autoRepeatDelay">
                 <number>296</number>
-               </property>
-               <property name="description">
-                <string>Open a FIB file to run fiber tracking</string>
                </property>
               </widget>
               <widget class="QPushButton" name="clear_src_history">
@@ -454,7 +457,7 @@
                 <set>Qt::AlignCenter</set>
                </property>
               </widget>
-              <widget class="QCommandLinkButton" name="OpenDWI_NIFTI">
+              <widget class="QPushButton" name="OpenDWI_NIFTI">
                <property name="geometry">
                 <rect>
                  <x>40</x>
@@ -463,14 +466,20 @@
                  <height>61</height>
                 </rect>
                </property>
+               <property name="font">
+                <font>
+                 <bold>true</bold>
+                </font>
+               </property>
                <property name="autoFillBackground">
                 <bool>false</bool>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                </property>
                <property name="text">
-                <string>Step T1: NIFTI to SRC...</string>
+                <string>Step T1: NIFTI to SRC...
+Convert a NIFTI to an SRC file</string>
                </property>
                <property name="icon">
                 <iconset resource="icons.qrc">
@@ -479,11 +488,8 @@
                <property name="autoDefault">
                 <bool>false</bool>
                </property>
-               <property name="description">
-                <string>Convert a NIFTI to an SRC file</string>
-               </property>
               </widget>
-              <widget class="QCommandLinkButton" name="Reconstruction">
+              <widget class="QPushButton" name="Reconstruction">
                <property name="geometry">
                 <rect>
                  <x>355</x>
@@ -492,18 +498,21 @@
                  <height>61</height>
                 </rect>
                </property>
+               <property name="font">
+                <font>
+                 <bold>true</bold>
+                </font>
+               </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                </property>
                <property name="text">
-                <string>Step T2: Reconstruction</string>
+                <string>Step T2: Reconstruction...
+Open SRC file(s) for reconstruction</string>
                </property>
                <property name="icon">
                 <iconset resource="icons.qrc">
                  <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-               </property>
-               <property name="description">
-                <string>Open SRC file(s) for reconstruction</string>
                </property>
               </widget>
               <widget class="QLabel" name="label_15">
@@ -693,7 +702,7 @@ Varian (.fdf)</string>
                 <bool>true</bool>
                </property>
               </widget>
-              <widget class="QCommandLinkButton" name="OpenDWI_DICOM">
+              <widget class="QPushButton" name="OpenDWI_DICOM">
                <property name="geometry">
                 <rect>
                  <x>40</x>
@@ -702,14 +711,20 @@ Varian (.fdf)</string>
                  <height>61</height>
                 </rect>
                </property>
+               <property name="font">
+                <font>
+                 <bold>true</bold>
+                </font>
+               </property>
                <property name="autoFillBackground">
                 <bool>false</bool>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                </property>
                <property name="text">
-                <string>Step T1: DICOM(s) to SRC...</string>
+                <string>Step T1: DICOM(s) to SRC...
+Convert DICOM to an SRC file</string>
                </property>
                <property name="icon">
                 <iconset resource="icons.qrc">
@@ -717,9 +732,6 @@ Varian (.fdf)</string>
                </property>
                <property name="autoDefault">
                 <bool>false</bool>
-               </property>
-               <property name="description">
-                <string>Convert DICOM to an SRC file</string>
                </property>
               </widget>
               <widget class="QLabel" name="label_28">
@@ -815,7 +827,7 @@ SRC Files</string>
                 <set>Qt::AlignCenter</set>
                </property>
               </widget>
-              <widget class="QCommandLinkButton" name="OpenDWI_2dseq">
+              <widget class="QPushButton" name="OpenDWI_2dseq">
                <property name="geometry">
                 <rect>
                  <x>40</x>
@@ -824,14 +836,20 @@ SRC Files</string>
                  <height>61</height>
                 </rect>
                </property>
+               <property name="font">
+                <font>
+                 <bold>true</bold>
+                </font>
+               </property>
                <property name="autoFillBackground">
                 <bool>false</bool>
                </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                </property>
                <property name="text">
-                <string>Step T1: 2dseq, *.fdf to SRC...</string>
+                <string>Step T1: 2dseq *.fdf to SRC...
+Convert 2dseq *.fdf to an SRC file</string>
                </property>
                <property name="icon">
                 <iconset resource="icons.qrc">
@@ -839,9 +857,6 @@ SRC Files</string>
                </property>
                <property name="autoDefault">
                 <bool>false</bool>
-               </property>
-               <property name="description">
-                <string>Convert 2dseq *.fdf to an SRC file</string>
                </property>
               </widget>
               <widget class="QLabel" name="label_40">
@@ -914,7 +929,7 @@ SRC Files</string>
                 <set>Qt::AlignCenter</set>
                </property>
               </widget>
-              <widget class="QCommandLinkButton" name="NII_qc">
+              <widget class="QPushButton" name="NII_qc">
                <property name="geometry">
                 <rect>
                  <x>40</x>
@@ -923,11 +938,17 @@ SRC Files</string>
                  <height>61</height>
                 </rect>
                </property>
+               <property name="font">
+                <font>
+                 <bold>true</bold>
+                </font>
+               </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                </property>
                <property name="text">
-                <string>NIFTI Quality Control...</string>
+                <string>NIFTI Quality Control...
+Select NIFTI files to run QC</string>
                </property>
                <property name="icon">
                 <iconset resource="icons.qrc">
@@ -936,11 +957,8 @@ SRC Files</string>
                <property name="autoRepeatDelay">
                 <number>296</number>
                </property>
-               <property name="description">
-                <string>Select NIFTI files to run QC</string>
-               </property>
               </widget>
-              <widget class="QCommandLinkButton" name="SRC_qc">
+              <widget class="QPushButton" name="SRC_qc">
                <property name="geometry">
                 <rect>
                  <x>40</x>
@@ -949,11 +967,17 @@ SRC Files</string>
                  <height>61</height>
                 </rect>
                </property>
+               <property name="font">
+                <font>
+                 <bold>true</bold>
+                </font>
+               </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                </property>
                <property name="text">
-                <string>SRC Quality Control...</string>
+                <string>SRC Quality Control...
+Select SRC files to run QC</string>
                </property>
                <property name="icon">
                 <iconset resource="icons.qrc">
@@ -962,11 +986,8 @@ SRC Files</string>
                <property name="autoRepeatDelay">
                 <number>296</number>
                </property>
-               <property name="description">
-                <string>Select SRC files to run QC</string>
-               </property>
               </widget>
-              <widget class="QCommandLinkButton" name="FIB_qc">
+              <widget class="QPushButton" name="FIB_qc">
                <property name="geometry">
                 <rect>
                  <x>40</x>
@@ -975,11 +996,17 @@ SRC Files</string>
                  <height>61</height>
                 </rect>
                </property>
+               <property name="font">
+                <font>
+                 <bold>true</bold>
+                </font>
+               </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                </property>
                <property name="text">
-                <string>FIB Quality Control...</string>
+                <string>FIB Quality Control...
+Select FIB files to run QC</string>
                </property>
                <property name="icon">
                 <iconset resource="icons.qrc">
@@ -987,9 +1014,6 @@ SRC Files</string>
                </property>
                <property name="autoRepeatDelay">
                 <number>296</number>
-               </property>
-               <property name="description">
-                <string>Select FIB files to run QC</string>
                </property>
               </widget>
               <widget class="QLabel" name="label_68">
@@ -1420,20 +1444,26 @@ Atlas</string>
                  <string/>
                 </property>
                </widget>
-               <widget class="QCommandLinkButton" name="T1WFiberTracking">
+               <widget class="QPushButton" name="T1WFiberTracking">
                 <property name="geometry">
                  <rect>
                   <x>55</x>
                   <y>240</y>
                   <width>250</width>
-                  <height>81</height>
+                  <height>61</height>
                  </rect>
                 </property>
+                <property name="font">
+                 <font>
+                  <bold>true</bold>
+                 </font>
+                </property>
                 <property name="styleSheet">
-                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                 <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                 </property>
                 <property name="text">
-                 <string>T1W/T2W Aligned Tractography</string>
+                 <string>T1W/T2W Aligned Tractography
+Open T1W/T2W with tract atlas</string>
                 </property>
                 <property name="icon">
                  <iconset resource="icons.qrc">
@@ -1441,9 +1471,6 @@ Atlas</string>
                 </property>
                 <property name="autoRepeatDelay">
                  <number>296</number>
-                </property>
-                <property name="description">
-                 <string>Open T1W/T2W with aligned tractography atlas</string>
                 </property>
                </widget>
                <widget class="QLabel" name="label_52">
@@ -1633,20 +1660,23 @@ Atlas</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                 <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                 </property>
                 <property name="text">
-                 <string>Step C3: Correlational Tracking</string>
+                 <string>Step C3: Correlational Tracking
+Generate correlational tractography
+and test the results using
+connectometry analysis</string>
                 </property>
                 <property name="icon">
                  <iconset resource="icons.qrc">
                   <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
                 </property>
                 <property name="description">
-                 <string>Generate correlational tractography and test the results using connectometry analysis</string>
+                 <string/>
                 </property>
                </widget>
-               <widget class="QCommandLinkButton" name="vbc">
+               <widget class="QPushButton" name="vbc">
                 <property name="geometry">
                  <rect>
                   <x>30</x>
@@ -1655,18 +1685,22 @@ Atlas</string>
                   <height>81</height>
                  </rect>
                 </property>
+                <property name="font">
+                 <font>
+                  <bold>true</bold>
+                 </font>
+                </property>
                 <property name="styleSheet">
-                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                 <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                 </property>
                 <property name="text">
-                 <string>Step C1: Create a Database</string>
+                 <string>Step C1: Create a Database
+aggregate FIB files to 
+create a database file</string>
                 </property>
                 <property name="icon">
                  <iconset resource="icons.qrc">
                   <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                </property>
-                <property name="description">
-                 <string>Aggregate FIB files to create a database</string>
                 </property>
                </widget>
                <widget class="QLabel" name="label_62">
@@ -1846,7 +1880,7 @@ Tractography</string>
                  <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
                 </property>
                </widget>
-               <widget class="QCommandLinkButton" name="open_db">
+               <widget class="QPushButton" name="open_db">
                 <property name="geometry">
                  <rect>
                   <x>350</x>
@@ -1855,18 +1889,22 @@ Tractography</string>
                   <height>81</height>
                  </rect>
                 </property>
+                <property name="font">
+                 <font>
+                  <bold>true</bold>
+                 </font>
+                </property>
                 <property name="styleSheet">
-                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                 <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                 </property>
                 <property name="text">
-                 <string>Step C2: View/Edit Database</string>
+                 <string>Step C2: View/Edit Database
+add or remove subjects
+calculate longitudinal change</string>
                 </property>
                 <property name="icon">
                  <iconset resource="icons.qrc">
                   <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                </property>
-                <property name="description">
-                 <string>Add or remove subjects, calculate longitudinal change</string>
                 </property>
                </widget>
                <widget class="Line" name="line_5">
@@ -1990,7 +2028,7 @@ Tractography</string>
               <property name="styleSheet">
                <string notr="true">QWidget { background-color : white; }</string>
               </property>
-              <widget class="QCommandLinkButton" name="RenameDICOMDir">
+              <widget class="QPushButton" name="RenameDICOMDir">
                <property name="geometry">
                 <rect>
                  <x>40</x>
@@ -1999,11 +2037,17 @@ Tractography</string>
                  <height>61</height>
                 </rect>
                </property>
+               <property name="font">
+                <font>
+                 <bold>true</bold>
+                </font>
+               </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                </property>
                <property name="text">
-                <string>Step B1b: Rename DICOM in Folders...</string>
+                <string>Step B1b: Rename DICOM in Folders...
+select a folder of DICOM files</string>
                </property>
                <property name="icon">
                 <iconset resource="icons.qrc">
@@ -2012,11 +2056,8 @@ Tractography</string>
                <property name="autoRepeatDelay">
                 <number>296</number>
                </property>
-               <property name="description">
-                <string>Rename all DICOM of a folder</string>
-               </property>
               </widget>
-              <widget class="QCommandLinkButton" name="nii2src_bids">
+              <widget class="QPushButton" name="nii2src_bids">
                <property name="geometry">
                 <rect>
                  <x>40</x>
@@ -2025,11 +2066,17 @@ Tractography</string>
                  <height>61</height>
                 </rect>
                </property>
+               <property name="font">
+                <font>
+                 <bold>true</bold>
+                </font>
+               </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                </property>
                <property name="text">
-                <string>Step B2a: NIFTI to SRC (BIDS)...</string>
+                <string>Step B2a: NIFTI to SRC (BIDS)...
+convert a BIDS folder to SRC(s)</string>
                </property>
                <property name="icon">
                 <iconset resource="icons.qrc">
@@ -2038,11 +2085,8 @@ Tractography</string>
                <property name="autoRepeatDelay">
                 <number>296</number>
                </property>
-               <property name="description">
-                <string>Convert a BIDS folder to SRC(s)</string>
-               </property>
               </widget>
-              <widget class="QCommandLinkButton" name="dicom2nii">
+              <widget class="QPushButton" name="dicom2nii">
                <property name="geometry">
                 <rect>
                  <x>40</x>
@@ -2051,11 +2095,17 @@ Tractography</string>
                  <height>61</height>
                 </rect>
                </property>
+               <property name="font">
+                <font>
+                 <bold>true</bold>
+                </font>
+               </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                </property>
                <property name="text">
-                <string>Step B1c: DICOM to SRC...</string>
+                <string>Step B1c: DICOM to SRC...
+convert a DICOM folder to SRC</string>
                </property>
                <property name="icon">
                 <iconset resource="icons.qrc">
@@ -2064,11 +2114,8 @@ Tractography</string>
                <property name="autoRepeatDelay">
                 <number>296</number>
                </property>
-               <property name="description">
-                <string>Convert a DICOM folder to SRC</string>
-               </property>
               </widget>
-              <widget class="QCommandLinkButton" name="nii2src_sf">
+              <widget class="QPushButton" name="nii2src_sf">
                <property name="geometry">
                 <rect>
                  <x>40</x>
@@ -2077,11 +2124,17 @@ Tractography</string>
                  <height>61</height>
                 </rect>
                </property>
+               <property name="font">
+                <font>
+                 <bold>true</bold>
+                </font>
+               </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                </property>
                <property name="text">
-                <string>Step B2b: NIFTI(s) to SRC(s)...</string>
+                <string>Step B2b: NIFTI(s) to SRC(s)...
+convert a folder of NIFTI to SRC(s)</string>
                </property>
                <property name="icon">
                 <iconset resource="icons.qrc">
@@ -2090,11 +2143,8 @@ Tractography</string>
                <property name="autoRepeatDelay">
                 <number>296</number>
                </property>
-               <property name="description">
-                <string>Convert a folder of NIFTI to SRC(s)</string>
-               </property>
               </widget>
-              <widget class="QCommandLinkButton" name="RenameDICOM">
+              <widget class="QPushButton" name="RenameDICOM">
                <property name="geometry">
                 <rect>
                  <x>40</x>
@@ -2103,11 +2153,17 @@ Tractography</string>
                  <height>61</height>
                 </rect>
                </property>
+               <property name="font">
+                <font>
+                 <bold>true</bold>
+                </font>
+               </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                </property>
                <property name="text">
-                <string>Step B1a: Rename DICOM...</string>
+                <string>Step B1a: Rename DICOM...
+select DICOM files to rename</string>
                </property>
                <property name="icon">
                 <iconset resource="icons.qrc">
@@ -2116,11 +2172,8 @@ Tractography</string>
                <property name="autoRepeatDelay">
                 <number>296</number>
                </property>
-               <property name="description">
-                <string>Rename DICOM files </string>
-               </property>
               </widget>
-              <widget class="QCommandLinkButton" name="auto_track">
+              <widget class="QPushButton" name="auto_track">
                <property name="geometry">
                 <rect>
                  <x>675</x>
@@ -2129,24 +2182,27 @@ Tractography</string>
                  <height>61</height>
                 </rect>
                </property>
+               <property name="font">
+                <font>
+                 <bold>true</bold>
+                </font>
+               </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                </property>
                <property name="text">
-                <string>Step B4: Automatic Tracking...</string>
+                <string>Step B4: Automatic Tracking...
+select FIB files for automatic tracking</string>
                </property>
                <property name="icon">
                 <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                 <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
                </property>
                <property name="autoRepeatDelay">
                 <number>296</number>
                </property>
-               <property name="description">
-                <string>Select FIB files for automatic tracking</string>
-               </property>
               </widget>
-              <widget class="QCommandLinkButton" name="batch_reconstruction">
+              <widget class="QPushButton" name="batch_reconstruction">
                <property name="geometry">
                 <rect>
                  <x>360</x>
@@ -2155,11 +2211,17 @@ Tractography</string>
                  <height>61</height>
                 </rect>
                </property>
+               <property name="font">
+                <font>
+                 <bold>true</bold>
+                </font>
+               </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                </property>
                <property name="text">
-                <string>Step B3: SRC(s) to FIB(s)...</string>
+                <string>Step B3: SRC(s) to FIB(s)...
+select a folder of SRC files</string>
                </property>
                <property name="icon">
                 <iconset resource="icons.qrc">
@@ -2167,9 +2229,6 @@ Tractography</string>
                </property>
                <property name="autoRepeatDelay">
                 <number>296</number>
-               </property>
-               <property name="description">
-                <string>Select a SRC file folder for reconstruction</string>
                </property>
               </widget>
               <widget class="QLabel" name="label_56">
@@ -2522,7 +2581,7 @@ Tractography</string>
                 <bool>true</bool>
                </property>
               </widget>
-              <widget class="QCommandLinkButton" name="xnat_download">
+              <widget class="QPushButton" name="xnat_download">
                <property name="geometry">
                 <rect>
                  <x>345</x>
@@ -2531,11 +2590,18 @@ Tractography</string>
                  <height>81</height>
                 </rect>
                </property>
+               <property name="font">
+                <font>
+                 <bold>true</bold>
+                </font>
+               </property>
                <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+                <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
                </property>
                <property name="text">
-                <string>Step B0: XNAT Download...</string>
+                <string>Step B0: XNAT Download...
+connect to a XNAT server to
+download and process data</string>
                </property>
                <property name="icon">
                 <iconset resource="icons.qrc">
@@ -2543,9 +2609,6 @@ Tractography</string>
                </property>
                <property name="autoRepeatDelay">
                 <number>296</number>
-               </property>
-               <property name="description">
-                <string>connect to a XNAT server to download and process data</string>
                </property>
               </widget>
               <widget class="QLabel" name="label_41">
@@ -3029,29 +3092,31 @@ p, li { white-space: pre-wrap; }
           <property name="styleSheet">
            <string notr="true">QWidget { background-color : white; }</string>
           </property>
-          <widget class="QCommandLinkButton" name="parse_network_measures">
+          <widget class="QPushButton" name="parse_network_measures">
            <property name="geometry">
             <rect>
-             <x>640</x>
+             <x>330</x>
              <y>120</y>
-             <width>321</width>
+             <width>300</width>
              <height>81</height>
             </rect>
            </property>
            <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+            <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
            </property>
            <property name="text">
-            <string>Parse Network Measure Text Files</string>
+            <string>Parse Network Measure Text Files
+select a list of network measure text files</string>
+           </property>
+           <property name="icon">
+            <iconset resource="icons.qrc">
+             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
            </property>
            <property name="autoRepeatDelay">
             <number>296</number>
            </property>
-           <property name="description">
-            <string>Select a list of network measure files and parse them into one data sheet</string>
-           </property>
           </widget>
-          <widget class="QCommandLinkButton" name="linear_reg">
+          <widget class="QPushButton" name="linear_reg">
            <property name="geometry">
             <rect>
              <x>330</x>
@@ -3061,63 +3126,67 @@ p, li { white-space: pre-wrap; }
             </rect>
            </property>
            <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+            <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
            </property>
            <property name="text">
-            <string>R1: Linear Registration...</string>
+            <string>R1: Linear Registration...
+ select NIFTI files</string>
+           </property>
+           <property name="icon">
+            <iconset resource="icons.qrc">
+             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
            </property>
            <property name="autoRepeatDelay">
             <number>296</number>
            </property>
-           <property name="description">
-            <string>Perform linear registration</string>
-           </property>
           </widget>
-          <widget class="QCommandLinkButton" name="averagefib">
+          <widget class="QPushButton" name="averagefib">
            <property name="geometry">
             <rect>
-             <x>330</x>
+             <x>640</x>
              <y>120</y>
-             <width>301</width>
+             <width>300</width>
              <height>81</height>
             </rect>
            </property>
            <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+            <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
            </property>
            <property name="text">
             <string>Create Population-Averaged Template</string>
            </property>
+           <property name="icon">
+            <iconset resource="icons.qrc">
+             <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+           </property>
            <property name="autoRepeatDelay">
             <number>296</number>
            </property>
-           <property name="description">
-            <string>Average the ODFs to create a template</string>
-           </property>
           </widget>
-          <widget class="QCommandLinkButton" name="nonlinear_reg">
+          <widget class="QPushButton" name="nonlinear_reg">
            <property name="geometry">
             <rect>
              <x>640</x>
              <y>30</y>
-             <width>321</width>
+             <width>300</width>
              <height>81</height>
             </rect>
            </property>
            <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+            <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
            </property>
            <property name="text">
             <string>R2: Nonlinear Registration...</string>
            </property>
+           <property name="icon">
+            <iconset resource="icons.qrc">
+             <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+           </property>
            <property name="autoRepeatDelay">
             <number>296</number>
            </property>
-           <property name="description">
-            <string>Perform nonlinear registration</string>
-           </property>
           </widget>
-          <widget class="QCommandLinkButton" name="view_image">
+          <widget class="QPushButton" name="view_image">
            <property name="geometry">
             <rect>
              <x>20</x>
@@ -3127,16 +3196,18 @@ p, li { white-space: pre-wrap; }
             </rect>
            </property>
            <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+            <string notr="true">QPushButton {text-align: left; padding-left: 10px;border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black}</string>
            </property>
            <property name="text">
-            <string>Step O1: View Images...</string>
+            <string>Step O1: View Images...
+select NIFTI/DICOM/2dseq files</string>
+           </property>
+           <property name="icon">
+            <iconset resource="icons.qrc">
+             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
            </property>
            <property name="autoRepeatDelay">
             <number>296</number>
-           </property>
-           <property name="description">
-            <string>Open NIFTI/DICOM/2dseq files for inspection or processing</string>
            </property>
           </widget>
           <widget class="QLabel" name="label_63">
