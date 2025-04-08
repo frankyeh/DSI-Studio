@@ -668,6 +668,11 @@ bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
         is_mni = mat_reader.has("R2");
     else
         is_mni = mat_reader.has("trans"); // in older version of fib before 2025/04/08, having the "trans" matrix means it is from qsdr
+    tipl::out() << "fib_ver: " << this_fib_ver;
+    tipl::out() << "dim: " << dim;
+    tipl::out() << "vs: " << vs;
+    tipl::out() << "trans: " << trans;
+    tipl::out() << "is qsdr: " << (is_mni ? "yes" : "no");
     return true;
 }
 tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& mat_reader)
