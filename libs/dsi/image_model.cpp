@@ -1201,6 +1201,9 @@ void src_data::rotate(const tipl::shape<3>& new_geo,
         }
     voxel.dim = new_geo;
     voxel.vs = new_vs;
+    auto trans = T.to_matrix();
+    trans *= voxel.trans_to_mni;
+    voxel.trans_to_mni = trans;
     calculate_dwi_sum(false);
 
     // rotate the mask
@@ -1992,13 +1995,11 @@ bool src_data::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
 
     {
         tipl::out() << "create topup needed b0 nii.gz file from " << pe_id << " b0" << std::endl;
-        tipl::matrix<4,4> trans;
-        initial_LPS_nifti_srow(trans,b0[0].shape(),voxel.vs);
         tipl::image<4,float> buffer(b0[0].shape().expand(2));
         std::copy(b0[0].begin(),b0[0].end(),buffer.begin());
         std::copy(rev_b0[0].begin(),rev_b0[0].end(),buffer.begin() + b0[0].size());
         if(!tipl::io::gz_nifti::save_to_file((b0_appa_file = file_name + ".topup." + pe_id + ".nii.gz"),
-                                             buffer,voxel.vs,trans))
+                                             buffer,voxel.vs,voxel.trans_to_mni))
         {
             tipl::error() << "cannot write a temporary b0_appa image volume to " << b0_appa_file;
             return false;
@@ -2226,9 +2227,7 @@ bool src_data::run_eddy(std::string exec)
     {
         tipl::image<3,unsigned char> I(topup_size);
         tipl::reshape(voxel.mask,I);
-        tipl::matrix<4,4> trans;
-        initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
-        if(!tipl::io::gz_nifti::save_to_file(mask_nifti.c_str(),I,voxel.vs,trans))
+        if(!tipl::io::gz_nifti::save_to_file(mask_nifti.c_str(),I,voxel.vs,voxel.trans_to_mni))
         {
             error_msg = "cannot save mask file to ";
             error_msg += mask_nifti;
@@ -2562,9 +2561,6 @@ bool src_data::save_to_file(const std::string& filename)
     tipl::progress prog("saving ",filename);
     if(tipl::ends_with(filename,"nii.gz"))
     {
-        tipl::matrix<4,4> trans;
-        initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
-
         tipl::shape<4> nifti_dim;
         std::copy(voxel.dim.begin(),voxel.dim.end(),nifti_dim.begin());
         nifti_dim[3] = uint32_t(src_bvalues.size());
@@ -2576,7 +2572,7 @@ bool src_data::save_to_file(const std::string& filename)
                       src_dwi_data[index]+voxel.dim.size(),
                       buffer.begin() + long(index*voxel.dim.size()));
         });
-        if(!tipl::io::gz_nifti::save_to_file(filename,buffer,voxel.vs,trans))
+        if(!tipl::io::gz_nifti::save_to_file(filename,buffer,voxel.vs,voxel.trans_to_mni))
         {
             error_msg = "cannot save ";
             error_msg += filename;
@@ -2718,7 +2714,7 @@ void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream>
         in->save_index(idx_name);
     }
 }
-
+void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 bool src_data::load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool sort_btable)
 {
     if(dwi_files.empty())
@@ -2750,6 +2746,9 @@ bool src_data::load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_file
 
     voxel.dim = dwi_files.front()->image.shape();
     voxel.vs = dwi_files.front()->voxel_size;
+    voxel.trans_to_mni = dwi_files.front()->trans_to_mni;
+    if(voxel.trans_to_mni == tipl::identity_matrix())
+        initial_LPS_nifti_srow(voxel.trans_to_mni,voxel.dim,voxel.vs);
 
     nifti_dwi.resize(dwi_files.size());
     src_bvalues.resize(dwi_files.size());
@@ -2840,8 +2839,9 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
 
 
         voxel.is_histology = true;
-        voxel.vs = {0.05f,0.05f,0.05f};
         voxel.dim = dwi.shape();
+        voxel.vs = {0.05f,0.05f,0.05f};
+        initial_LPS_nifti_srow(voxel.trans_to_mni,voxel.dim,voxel.vs);
         voxel.hist_image.swap(raw);
         voxel.report = "Histology image was loaded at a size of ";
         voxel.report += std::to_string(voxel.hist_image.width());
@@ -2871,26 +2871,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         std::vector<std::shared_ptr<DwiHeader> > dwi_files;
         if(!load_4d_nii(dwi_file_name,dwi_files,true,false,error_msg))
             return false;
-        nifti_dwi.resize(dwi_files.size());
-        src_dwi_data.resize(dwi_files.size());
-        src_bvalues.resize(dwi_files.size());
-        src_bvectors.resize(dwi_files.size());
-        for(size_t index = 0;index < dwi_files.size();++index)
-        {
-            if(index == 0)
-            {
-                voxel.vs = dwi_files[0]->voxel_size;
-                voxel.dim = dwi_files[0]->image.shape();
-            }
-            nifti_dwi[index].swap(dwi_files[index]->image);
-            src_dwi_data[index] = &nifti_dwi[index][0];
-            src_bvalues[index] = dwi_files[index]->bvalue;
-            src_bvectors[index] = dwi_files[index]->bvec;
-        }
-
-        voxel.report = get_report();
-        calculate_dwi_sum(true);
-        return true;
+        return load_from_file(dwi_files,false);
     }
     else
     {
@@ -3054,6 +3035,8 @@ bool src_data::save_fib(void)
     mat_writer.write("dimension",voxel.dim);
     mat_writer.write("voxel_size",voxel.vs);
     mat_writer.write("trans",voxel.trans_to_mni);
+    if(voxel.R2 != 0.0f) // this will be used to know if the fib is in the MNI space
+        mat_writer.write("R2",std::vector<float>({voxel.R2}));
 
     mat_writer.write("version",fib_ver);
     mat_writer.write("mask",voxel.mask,voxel.dim.plane_size());
@@ -3072,7 +3055,7 @@ bool src_data::save_fib(void)
     tipl::out() << "saving " << output_file_name;
     return true;
 }
-void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
+
 bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
 {
     tipl::progress prog("prepare file for tupup/eddy");
@@ -3100,9 +3083,7 @@ bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
             tipl::reshape(rev_pe_src->dwi_at(index),out);
         });
 
-    tipl::matrix<4,4> trans;
-    initial_LPS_nifti_srow(trans,tipl::shape<3>(buffer.shape().begin()),voxel.vs);
-    if(!tipl::io::gz_nifti::save_to_file(temp_nifti().c_str(),buffer,voxel.vs,trans))
+    if(!tipl::io::gz_nifti::save_to_file(temp_nifti().c_str(),buffer,voxel.vs,voxel.trans_to_mni))
     {
         error_msg = "failed to write a temporary nifti file: ";
         error_msg += temp_nifti();
@@ -3113,25 +3094,19 @@ bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
 }
 bool src_data::save_b0_to_nii(const std::string& nifti_file_name) const
 {
-    tipl::matrix<4,4> trans;
-    initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
     tipl::image<3> buffer(voxel.dim);
     std::copy(src_dwi_data[0],src_dwi_data[0]+buffer.size(),buffer.begin());
-    return tipl::io::gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans);
+    return tipl::io::gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,voxel.trans_to_mni);
 }
 bool src_data::save_mask_nii(const std::string& nifti_file_name) const
 {
-    tipl::matrix<4,4> trans;
-    initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
-    return tipl::io::gz_nifti::save_to_file(nifti_file_name,voxel.mask,voxel.vs,trans);
+    return tipl::io::gz_nifti::save_to_file(nifti_file_name,voxel.mask,voxel.vs,voxel.trans_to_mni);
 }
 
 bool src_data::save_dwi_sum_to_nii(const std::string& nifti_file_name) const
 {
-    tipl::matrix<4,4> trans;
-    initial_LPS_nifti_srow(trans,voxel.dim,voxel.vs);
     tipl::image<3,unsigned char> buffer(dwi);
-    return tipl::io::gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,trans);
+    return tipl::io::gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,voxel.trans_to_mni);
 }
 
 bool src_data::save_b_table(const std::string& file_name) const

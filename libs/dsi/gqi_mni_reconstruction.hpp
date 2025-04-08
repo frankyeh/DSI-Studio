@@ -303,7 +303,6 @@ public:
         mat_writer.write("native_dimension",native_geo);
         mat_writer.write("native_voxel_size",native_vs);
         mat_writer.write("template",std::filesystem::path(fa_template_list[voxel.template_id]).stem().stem().stem().string());
-        mat_writer.write("R2",std::vector<float>({voxel.R2}));
     }
 
 };

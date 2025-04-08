@@ -228,7 +228,7 @@ bool load_file_name(void)
 const char* version_string = "Hou \"\xe4\xbe\xaf\"";
 int map_ver = 202408;
 int src_ver = 202408;
-int fib_ver = 202408;
+int fib_ver = 202504;
 
 bool init_application(void)
 {
