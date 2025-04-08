@@ -639,7 +639,8 @@ extern int fib_ver;
 bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
                       tipl::shape<3>& dim,tipl::vector<3>& vs,tipl::matrix<4,4>& trans,bool& is_mni)
 {
-    if(mat_reader.has("version") && mat_reader.read_as_value<int>("version") > fib_ver)
+    int this_fib_ver(0);
+    if(mat_reader.has("version") && (this_fib_ver = mat_reader.read_as_value<int>("version")) > fib_ver)
     {
         mat_reader.error_msg = "Incompatible FIB format. please update DSI Studio to open this new FIB file.";
         return false;
@@ -662,8 +663,11 @@ bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
     // older version of gqi.fz does not have trans matrix
     if(!mat_reader.read("trans",trans))
         initial_LPS_nifti_srow(trans,dim,vs);
-    // initiate trans_to_mni matrix
-    is_mni = mat_reader.has("template") || mat_reader.has("R2");
+    // now decide whether the fib is qsdr
+    if(this_fib_ver > 202408)
+        is_mni = mat_reader.has("R2");
+    else
+        is_mni = mat_reader.has("trans"); // in older version of fib before 2025/04/08, having the "trans" matrix means it is from qsdr
     return true;
 }
 tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& mat_reader)
