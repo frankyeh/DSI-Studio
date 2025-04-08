@@ -291,6 +291,7 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
 
     auto dim_backup = handle->voxel.dim; // for QSDR
     auto vs = handle->voxel.vs; // for QSDR
+    auto trans = handle->voxel.trans_to_mni; // for QSDR
     auto mask = handle->voxel.mask;
     if (!handle->reconstruction())
     {
@@ -301,6 +302,7 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
     handle->voxel.mask = mask;
     handle->voxel.dim = dim_backup;
     handle->voxel.vs = vs;
+    handle->voxel.trans_to_mni = trans;
     if(!prompt)
         return;
     QMessageBox::information(this,QApplication::applicationName(),"FIB file created");
