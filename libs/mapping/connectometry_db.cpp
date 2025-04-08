@@ -577,6 +577,7 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
               tipl::io::gz_mat_write& matfile,
               const std::vector<std::string>& skip_list,
               const std::vector<std::string>& skip_head_list);
+extern std::vector<std::string> fa_template_list;
 bool connectometry_db::save_db(const char* output_name)
 {
     // store results
@@ -614,7 +615,9 @@ bool connectometry_db::save_db(const char* output_name)
     matfile.write("subject_names",name_string);
     matfile.write("subject_report",subject_report);
     matfile.write("index_name",index_name);
+    matfile.write("template",std::filesystem::path(fa_template_list[handle->template_id]).stem().stem().stem().string());
     matfile.write("R2",R2);
+
 
     if(is_longitudinal)
         matfile.write("report",report);
