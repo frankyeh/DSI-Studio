@@ -736,15 +736,13 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
 
     // handle trans_to_mni differences
     {
-        tipl::out() << ((is_mni) ? "host space (mni): " : "host space (native): ") << std::endl;
-        tipl::out() << trans_to_mni << std::endl;
+        tipl::out() << "host space " << ((is_mni) ? "(mni): " : "(native): ") << trans_to_mni;
         tipl::out() << ((tract_is_mni) ? "tractography space (mni): " : "tractography space (native): ") << std::endl;
         tipl::out() << source_trans_to_mni << std::endl;
 
         auto apply_transform = [&](const tipl::matrix<4,4>& T)
         {
-            tipl::out() << "apply transform to tracts: " << std::endl;
-            tipl::out() << T << std::endl;
+            tipl::out() << "apply transform to tracts: " << T << std::endl;
             tipl::adaptive_par_for(loaded_tract_data.size(),[&](size_t index)
             {
                 auto& tract = loaded_tract_data[index];
