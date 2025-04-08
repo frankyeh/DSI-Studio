@@ -636,7 +636,8 @@ bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs)
     return dim[2] > 5 && dim[0]*vs[0] > 100 && dim[1]*vs[1] > 130;
 }
 extern int fib_ver;
-bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,tipl::shape<3>& dim,tipl::vector<3>& vs)
+bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
+                      tipl::shape<3>& dim,tipl::vector<3>& vs,tipl::matrix<4,4>& trans,bool& is_mni)
 {
     if(mat_reader.has("version") && mat_reader.read_as_value<int>("version") > fib_ver)
     {
@@ -658,6 +659,11 @@ bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,tipl::shape<3>& dim,tipl
         mat_reader.error_msg = "cannot find voxel size matrix";
         return false;
     }
+    // older version of gqi.fz does not have trans matrix
+    if(!mat_reader.read("trans",trans))
+        initial_LPS_nifti_srow(trans,dim,vs);
+    // initiate trans_to_mni matrix
+    is_mni = mat_reader.has("template") || mat_reader.has("R2");
     return true;
 }
 tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& mat_reader)
@@ -694,7 +700,7 @@ tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& ma
 }
 bool fib_data::load_from_mat(void)
 {
-    if(!check_fib_dim_vs(mat_reader,dim,vs))
+    if(!check_fib_dim_vs(mat_reader,dim,vs,trans_to_mni,is_mni))
     {
         error_msg = mat_reader.error_msg;
         return false;
@@ -709,8 +715,7 @@ bool fib_data::load_from_mat(void)
     mat_reader.read("steps",steps);
     mat_reader.read("intro",intro);
     mat_reader.read("other_images",other_images);
-    if (mat_reader.read("trans",trans_to_mni))
-        is_mni = true;
+
 
     if(!dir.add_data(*this))
     {
@@ -946,15 +951,12 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
     tipl::shape<3> dim;
     tipl::vector<3> vs;
     tipl::matrix<4,4,float> trans((tipl::identity_matrix()));
-    bool is_mni = false;
-    if(!check_fib_dim_vs(mat_reader,dim,vs))
+    bool is_mni;
+    if(!check_fib_dim_vs(mat_reader,dim,vs,trans,is_mni))
         return false;
+
     handle_mask(mat_reader);
-    if(mat_reader.has("trans"))
-    {
-        mat_reader.read("trans",trans);
-        is_mni = true;
-    }
+
     if(cmd == "save" || cmd == "save_mini")
     {
         tipl::io::gz_mat_write matfile(param);
