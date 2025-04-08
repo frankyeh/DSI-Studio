@@ -377,6 +377,7 @@ bool fib_data::load_from_file(const std::string& file_name)
         {
             tipl::image<3> x,y,z;
             header.get_voxel_size(vs);
+            header.get_image_transformation(trans_to_mni);
             header >> x;
             header >> y;
             header >> z;
@@ -420,6 +421,7 @@ bool fib_data::load_from_file(const std::string& file_name)
             {
                 tipl::image<3> x,y,z;
                 header.get_voxel_size(vs);
+                header.get_image_transformation(trans_to_mni);
                 header >> x;
                 header >> y;
                 header >> z;
@@ -479,7 +481,7 @@ bool fib_data::load_from_file(const std::string& file_name)
         }
         bruker_header.get_image().swap(I);
         bruker_header.get_voxel_size(vs);
-
+        initial_LPS_nifti_srow(trans_to_mni,I.shape(),vs);
         std::ostringstream out;
         out << "Image resolution is (" << vs[0] << "," << vs[1] << "," << vs[2] << ")." << std::endl;
         report = out.str();
@@ -663,11 +665,16 @@ bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
     // older version of gqi.fz does not have trans matrix
     if(!mat_reader.read("trans",trans))
         initial_LPS_nifti_srow(trans,dim,vs);
-    // now decide whether the fib is qsdr
-    if(this_fib_ver > 202408)
-        is_mni = mat_reader.has("R2");
-    else
-        is_mni = mat_reader.has("trans"); // in older version of fib before 2025/04/08, having the "trans" matrix means it is from qsdr
+    if(!is_mni)
+    {
+        // now decide whether the fib is qsdr
+        // in fib version >= 20250408, qsdr fib == has R2 (all .fz file will have "trans" matrix now)
+        if(mat_reader.has("R2"))
+            is_mni = true;
+        // in fib version <= 202408, qsdr fib == has "trans" matrix (template fib.gz files don't have R2 matrix)
+        if(this_fib_ver <= 202408 && mat_reader.has("trans"))
+            is_mni = true;
+    }
     tipl::out() << "fib_ver: " << this_fib_ver;
     tipl::out() << "dim: " << dim << " vs: " << vs;
     tipl::out() << "trans: " << trans;
