@@ -735,9 +735,6 @@ bool fib_data::load_from_mat(void)
     for(unsigned int index = 1;index < dir.index_name.size();++index)
         slices.push_back(std::make_shared<slice_model>(dir.index_name[index],dir.index_data[index][0],dim));
 
-    tipl::out() << "dim: " << dim << " vs: " << vs << " voxels: " << mat_reader.si2vi.size();
-
-
     for (unsigned int index = 0;index < mat_reader.size();++index)
     {
         std::string matrix_name = mat_reader[index].name;
