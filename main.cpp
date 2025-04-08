@@ -241,7 +241,7 @@ bool init_application(void)
         QFont font;
         font.setFamily(QString::fromUtf8("Arial"));
         QApplication::setFont(font);
-        #else
+        #endif
         QSettings settings;
         QString style = settings.value("styles","Fusion").toString();
         if(style != "default" && !style.isEmpty())
@@ -270,7 +270,6 @@ bool init_application(void)
                 settings.setValue("styles", lightStyleName);
             }
         }
-        #endif
 
         if(!load_file_name())
         {
