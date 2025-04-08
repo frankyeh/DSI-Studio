@@ -75,8 +75,6 @@ void slice_view_scene::show_ruler(QPainter& paint,std::shared_ptr<SliceModel> cu
         if(!current_slice->is_diffusion_space)
             trans *= current_slice->to_dif;
     }
-    else
-        trans.identity();
     QPen pen;
     pen.setColor(line_color);
     paint.setPen(pen);
