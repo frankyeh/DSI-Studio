@@ -2602,6 +2602,7 @@ bool src_data::save_to_file(const std::string& filename)
             }
             mat_writer.write("dimension",voxel.dim);
             mat_writer.write("voxel_size",voxel.vs);
+            mat_writer.write("trans",voxel.trans_to_mni);
             mat_writer.write("version",src_ver);
             {
                 std::vector<float> b_table;
@@ -3052,6 +3053,8 @@ bool src_data::save_fib(void)
     }
     mat_writer.write("dimension",voxel.dim);
     mat_writer.write("voxel_size",voxel.vs);
+    mat_writer.write("trans",voxel.trans_to_mni);
+
     mat_writer.write("version",fib_ver);
     mat_writer.write("mask",voxel.mask,voxel.dim.plane_size());
 
