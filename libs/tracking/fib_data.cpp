@@ -376,11 +376,11 @@ bool fib_data::load_from_file(const std::string& file_name)
         if(header.dim(4) == 3)
         {
             tipl::image<3> x,y,z;
-            header.get_voxel_size(vs);
-            header.get_image_transformation(trans_to_mni);
             header >> x;
             header >> y;
             header >> z;
+            header.get_voxel_size(vs);
+            header.get_image_transformation(trans_to_mni);
             dim = x.shape();
             dir.check_index(0);
             dir.num_fiber = 1;
@@ -420,11 +420,11 @@ bool fib_data::load_from_file(const std::string& file_name)
             for(uint32_t i = 0;i < fib_num;++i)
             {
                 tipl::image<3> x,y,z;
-                header.get_voxel_size(vs);
-                header.get_image_transformation(trans_to_mni);
                 header >> x;
                 header >> y;
                 header >> z;
+                header.get_voxel_size(vs);
+                header.get_image_transformation(trans_to_mni);
                 if(i == 0)
                 {
                     dim = x.shape();
