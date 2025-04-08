@@ -279,11 +279,9 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             for(unsigned int index = 0;index < transform_lookup.size();++index)
                 if(from.shape() == transform_lookup[index]->dim)
                 {
-                    tipl::out() << "applying previous transformation." << std::endl;
-                    tipl::out() << "tran_to_mni: " << std::endl;
-                    tipl::out() << (trans_to_mni = transform_lookup[index]->trans_to_mni) << std::endl;
-                    tipl::out() << "to_dif: " << std::endl;
-                    tipl::out() << (to_diffusion_space = transform_lookup[index]->to_dif) << std::endl;
+                    tipl::out() << "applying previous transformation.";
+                    tipl::out() << "tran_to_mni: " << (trans_to_mni = transform_lookup[index]->trans_to_mni);
+                    tipl::out() << "to_dif: " << (to_diffusion_space = transform_lookup[index]->to_dif);
                     need_trans = true;
                     goto end;
                 }
