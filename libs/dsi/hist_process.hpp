@@ -102,7 +102,7 @@ class CalculateStructuralTensor : public BaseProcess{
 
     }
 };
-
+void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 class EigenAnalysis: public BaseProcess{
     tipl::image<3> hist_fa;
     tipl::image<3,tipl::vector<3> > hist_dir;
@@ -122,6 +122,7 @@ public:
         new_dim[2] = 2;
         voxel.dim = new_dim;
         voxel.vs = new_vs;
+        initial_LPS_nifti_srow(voxel.trans_to_mni,voxel.dim,voxel.vs);
     }
     virtual void run_hist(Voxel& voxel,HistData& hist)
     {
