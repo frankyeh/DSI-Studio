@@ -237,10 +237,13 @@ bool init_application(void)
 
     if(tipl::show_prog)
     {
+
         #ifdef __APPLE__
         QFont font;
         font.setFamily(QString::fromUtf8("Arial"));
         QApplication::setFont(font);
+        // 2024/04/09 Users reported file open won't after update MacOS
+        QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs);
         #endif
         QSettings settings;
         QString style = settings.value("styles","Fusion").toString();
@@ -484,6 +487,7 @@ int main(int ac, char *av[])
 
 
     QApplication a(ac,av);
+
     try
     {
 
