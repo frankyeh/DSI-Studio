@@ -1910,7 +1910,7 @@ void MainWindow::on_github_download_clicked()
         for (int row = ranges[i].topRow(); row <= ranges[i].bottomRow(); ++row)
             row_list.push_back(row);
 
-    tipl::progress p("downloading...");
+    tipl::progress p("downloading...",true);
     for (int i = 0; p(i,row_list.size());++i)
     {
         qint64 startTime = QDateTime::currentMSecsSinceEpoch();
@@ -1923,7 +1923,6 @@ void MainWindow::on_github_download_clicked()
             continue;
         }
 
-        tipl::progress p2(filePath.toStdString().c_str(),true);
         tipl::out() << url.toStdString();
 
         QSharedPointer<QNetworkReply> reply;
@@ -1933,7 +1932,7 @@ void MainWindow::on_github_download_clicked()
         {
             reply = get(url);
             qint64 bytesTotal = ui->github_release_files->item(row_list[i], 1)->data(Qt::UserRole).toLongLong();
-            while (!reply->isFinished() && p2(reply->bytesAvailable(),bytesTotal+1))
+            while (!reply->isFinished() && !p.aborted())
             {
                 QCoreApplication::processEvents();
                 QThread::msleep(100); // Check every 100ms
@@ -1949,7 +1948,7 @@ void MainWindow::on_github_download_clicked()
             QMessageBox::critical(this, "ERROR", showError(reply));
             return;
         }
-        if (p2.aborted())
+        if (p.aborted())
             return;
 
         {
