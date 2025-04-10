@@ -3078,7 +3078,8 @@ bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
         auto out = buffer.slice_at(index);
         tipl::reshape(dwi_at(index),out);
     });
-
+    if(prog.aborted())
+        return false;
     p = 0;
     if(rev_pe_src.get() && include_rev)
         tipl::adaptive_par_for(rev_pe_src->src_bvalues.size(),[&](unsigned int index)
@@ -3087,15 +3088,15 @@ bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
             auto out = buffer.slice_at(index+uint32_t(src_bvalues.size()));
             tipl::reshape(rev_pe_src->dwi_at(index),out);
         });
-
-    if(!tipl::io::gz_nifti::save_to_file(temp_nifti().c_str(),buffer,voxel.vs,voxel.trans_to_mni))
+    tipl::out() << "save temporary nifti file at " << temp_nifti();
+    if(!tipl::io::gz_nifti::save_to_file(temp_nifti().c_str(),buffer,voxel.vs,voxel.trans_to_mni,false,nullptr,std::move(prog)))
     {
         error_msg = "failed to write a temporary nifti file: ";
         error_msg += temp_nifti();
         error_msg += ". Please check write permission.";
         return false;
     }
-    return true;
+    return !prog.aborted();
 }
 bool src_data::save_b0_to_nii(const std::string& nifti_file_name) const
 {
