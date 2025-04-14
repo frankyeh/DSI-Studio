@@ -689,19 +689,23 @@ tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& ma
     {
         if(!mat_reader.read("mask",mask_ptr))
         {
+
+            auto mask_mat = std::make_shared<tipl::io::mat_matrix>("mask");
+            mask_mat->resize(tipl::shape<2>(dim.plane_size(),dim.depth()));
+            auto& mask_buffer = mask_mat->data_buf;
+
             const float* fa0_ptr = nullptr;
-            if(mat_reader.read("fa0",fa0_ptr))
+            if(mat_reader.read("fa0",fa0_ptr) ||    // create mask from fib's fa map
+               mat_reader.read("image0",fa0_ptr) || // create mask from src's b0
+               mat_reader.read("image",fa0_ptr))    // create mask from t1w/t2w images
             {
-                auto mask_mat = std::make_shared<tipl::io::mat_matrix>("mask");
-                mask_mat->resize(tipl::shape<2>(dim.plane_size(),dim.depth()));
-                auto& mask_buffer = mask_mat->data_buf;
                 for(size_t i = 0;i < dim.size();++i)
                     if(fa0_ptr[i] > 0.0f)
                         mask_buffer[i] = 1;
-                mask_ptr = mask_buffer.data();
-                mat_reader.push_back(mask_mat);
-                tipl::out() << "mask created from the aniostropy map";
             }
+            mask_ptr = mask_buffer.data();
+            mat_reader.push_back(mask_mat);
+            tipl::out() << "mask created from the images";
         }
     }
     if(mask_ptr)
@@ -711,7 +715,7 @@ tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& ma
         mat_reader.mask_rows = dim.depth();
         tipl::out() << "mask voxels: " << mat_reader.si2vi.size();
     }
-    return tipl::make_image(mask_ptr,dim);
+    return tipl::make_image(mask_ptr,mask_ptr ? dim : tipl::shape<3>(0,0,0));
 }
 bool fib_data::load_from_mat(void)
 {
