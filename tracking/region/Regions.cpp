@@ -73,7 +73,6 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >&& points, bool de
     if(region.empty())
     {
         region.swap(points);
-        tipl::out() << "add " << region.size() << " voxel(s) as a region with image size: " << dim << " vs: " << vs << std::endl;
         return;
     }
 
