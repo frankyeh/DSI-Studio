@@ -39,7 +39,7 @@ size_t match_volume(tipl::const_pointer_image<3,unsigned char> mask,tipl::vector
     if(mask.empty())
         return 0;
 
-    auto get_max_axisl_count = [](tipl::const_pointer_image<3,unsigned char> mask)->size_t
+    auto get_max_axisl_count = [](const auto& mask)->size_t
     {
         size_t max_axial_volume = 0;
         for(size_t z = 0;z < mask.depth();++z)
