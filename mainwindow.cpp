@@ -1246,7 +1246,7 @@ bool dcm2src_and_nii(QStringList files)
     if(files.empty())
         return false;
     files.sort();
-    tipl::progress p("processing DICOM at ",std::filesystem::path(files[0].toStdString()).parent_path().u8string().c_str());
+    tipl::progress p("processing DICOM at "+std::filesystem::path(files[0].toStdString()).parent_path().string());
     // extract information
     std::string manu,make,report,sequence;
     {
@@ -1298,6 +1298,7 @@ bool dcm2src_and_nii(QStringList files)
         }
         else
         {
+            tipl::out() << "parsing " << files.size() << " dicom files";
             std::sort(files.begin(),files.end(),compare_qstring());
             tipl::io::dicom_volume v;
             std::vector<std::string> file_list;
@@ -1308,6 +1309,10 @@ bool dcm2src_and_nii(QStringList files)
                 tipl::out() << v.error_msg.c_str() << std::endl;
                 return false;
             }
+            tipl::out() << "dim: " << v.dim;
+            tipl::out() << "vs: " << v.vs;
+            tipl::out() << "trans: " << tipl::matrix<3,3,float>(v.orientation_matrix);
+            tipl::out() << "dim order: " << tipl::vector<3,int>(v.dim_order);
             v >> source_images;
             v.get_voxel_size(vs);
         }
