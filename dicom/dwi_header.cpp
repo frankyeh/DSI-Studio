@@ -88,7 +88,7 @@ bool DwiHeader::open(const char* filename)
 
     if(header.get_image_orientation(orientation_matrix))
     {
-        tipl::get_orientation(3,orientation_matrix,dim_order,flip);
+        tipl::get_orientation(orientation_matrix,dim_order,flip);
         tipl::reorient_vector(voxel_size,dim_order);
         tipl::reorient_matrix(orientation_matrix,dim_order,flip);
         tipl::reorder(image,dim_order,flip);
