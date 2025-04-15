@@ -453,7 +453,7 @@ void reconstruction_window::on_doDTI_clicked()
         if(result == QMessageBox::Yes)
             handle->command("[Step T2][Edit][Resample]","2");
     }
-    if(!handle->is_human_data() && (handle->long_axis_direction() != 1 || handle->symmetric_axis_direction() != 0))
+    if(!handle->is_human_data() && (handle->long_axis_direction() != 1))
     {
         auto result = QMessageBox::information(this,QApplication::applicationName(),
             QString("This seems to be an animal scan in non-axial orientation. Correct image orientation?"),
