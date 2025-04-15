@@ -279,8 +279,14 @@ public:
     float dwi_contrast(void);
 public:
     bool is_human_data(void) const;
-    int long_axis_direction(void);
-    int symmetric_axis_direction(void);
+    int long_axis_direction(void) const
+    {
+        return tipl::long_axis(voxel.mask,voxel.vs);
+    }
+    int symmetric_axis_direction(void) const
+    {
+        return tipl::symmetric_axis(voxel.mask,voxel.vs);
+    }
     int64_t bottom_top_difference(void);
     int64_t anterior_posterior_difference(void);
     void correction_axis(void);
