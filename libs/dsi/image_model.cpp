@@ -2452,7 +2452,7 @@ bool src_data::run_topup(void)
 
 void calculate_shell(std::vector<float> sorted_bvalues,
                      std::vector<unsigned int>& shell);
-std::string src_data::get_report(void)
+std::string src_data::get_report(bool dwi_part_only)
 {
     std::vector<float> sorted_bvalues(src_bvalues);
     std::sort(sorted_bvalues.begin(),sorted_bvalues.end());
@@ -2503,9 +2503,9 @@ std::string src_data::get_report(void)
                 << " diffusion sampling directions were acquired."
                 << " The b-value was " << sorted_bvalues.back() << " s/mm².";
         }
-
-    out << " The in-plane resolution was " << std::fixed << std::setprecision(3) << voxel.vs[0] << " mm."
-        << " The slice thickness was " << std::fixed << std::setprecision(2) << tipl::max_value(voxel.vs.begin(),voxel.vs.end()) << " mm.";
+    if(!dwi_part_only)
+        out << " The in-plane resolution was " << std::fixed << std::setprecision(3) << voxel.vs[0] << " mm."
+            << " The slice thickness was " << std::fixed << std::setprecision(2) << tipl::max_value(voxel.vs.begin(),voxel.vs.end()) << " mm.";
     return out.str();
 }
 extern int src_ver;
@@ -2720,10 +2720,7 @@ bool src_data::load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_file
         src_dwi_data[i] = nifti_dwi[i].data();
     }
 
-    if(dwi_files.front()->report.empty())
-        voxel.report = get_report();
-    else
-        voxel.report = dwi_files.front()->report;
+    voxel.report = dwi_files.front()->report + get_report(!dwi_files.front()->report.empty());
     calculate_dwi_sum(true);
     dwi_files.clear();
     return true;
@@ -2891,8 +2888,9 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         tipl::out() << "trans: " << voxel.trans_to_mni;
         tipl::out() << "dwi count: " << src_bvalues.size();
 
-        if(!mat_reader.read("report",voxel.report))
-            voxel.report = get_report();
+        mat_reader.read("report",voxel.report);
+        if(!tipl::contains(voxel.report,"b-value"))
+            voxel.report += get_report(!voxel.report.empty());
 
         if(!apply_mask && voxel.report.find(" eddy ") != std::string::npos)
             apply_mask = true;

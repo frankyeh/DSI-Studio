@@ -272,7 +272,7 @@ public:
     bool check_b_table(bool use_template = true);
     bool load_intro(const std::string& file_name);
 public:
-    std::string get_report(void);
+    std::string get_report(bool dwi_part_only = false);
 public:
     std::vector<std::pair<size_t,size_t> > get_bad_slices(void);
     std::pair<float,float> quality_control_neighboring_dwi_corr(void);
