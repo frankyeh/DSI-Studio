@@ -118,7 +118,7 @@ jobs:
         brew update
         brew install cmake
     - name: Install Qt
-      uses: jurplel/install-qt-action@v3.3.0
+      uses: jurplel/install-qt-action@latest
       with:
         version: 6.8
         modules: qtcharts
@@ -174,7 +174,7 @@ jobs:
         move DSI-Studio-Build/*.txt .
         move DSI-Studio-Build/build_packages .
     - name: Install Qt
-      uses: jurplel/install-qt-action@v3.2.1
+      uses: jurplel/install-qt-action@latest
       with:
         version: 6.8
         modules: addons.qtcharts
@@ -208,7 +208,7 @@ jobs:
     - name: Install Cuda
       uses: Jimver/cuda-toolkit@v0.2.11
     - name: Install Qt
-      uses: jurplel/install-qt-action@v3.2.1
+      uses: jurplel/install-qt-action@latest
       with:
         version: 6.8
         modules: addons.qtcharts
