@@ -2891,6 +2891,9 @@ p, li { white-space: pre-wrap; }
                     </property>
                    </widget>
                   </item>
+                  <item>
+                   <widget class="QComboBox" name="github_open_file_mode"/>
+                  </item>
                  </layout>
                 </item>
                 <item>
