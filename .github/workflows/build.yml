@@ -5,7 +5,7 @@ on:
       tag:
         description: 'Tag'
         required: true
-        default: '2024.06.12'
+        default: '2025.04.16'
       build_windows:
         type: boolean
         description: 'Build Windows'
