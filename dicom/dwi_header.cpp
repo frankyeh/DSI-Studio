@@ -24,7 +24,34 @@ void get_report_from_dicom(const tipl::io::dicom& header,std::string& report)
         tr = header.get_float(0x2005,0x1030); // for philips scanner;
     out << "diffusion sequence (" << seq.c_str() << ")."
         << " TE=" << te << " ms, and TR=" << tr << " ms.";
+
+    float slice_thickness = header.get_float(0x0018, 0x0050);
+    out << " The slice thickness was " << slice_thickness << " mm.";
+
+    std::string pixel_spacing;
+    if(header.get_text(0x0028, 0x0030, pixel_spacing))
+    {
+        // DICOM pixel spacing is usually stored as two numbers separated by a backslash.
+        std::replace(pixel_spacing.begin(), pixel_spacing.end(), '\\', ' ');
+        std::istringstream iss(pixel_spacing);
+        float res1, res2;
+        if(iss >> res1 >> res2)
+            out << " The in-plane resolution was " << res1 << " mm x " << res2 << " mm.";
+    }
+    float spacing_between = header.get_float(0x0018, 0x0088);
+    if(spacing_between > 0.0f)
+        out << " The spacing between slices is " << spacing_between << " mm.";
+
+    float flip_angle = header.get_float(0x0018, 0x1314);
+    if(flip_angle > 0.0f)
+        out << " The flip angle was " << flip_angle << " degrees.";
+
+    float pixel_bandwidth = header.get_float(0x0018, 0x0095);
+    if(pixel_bandwidth > 0.0f)
+        out << " The pixel bandwidth was " << pixel_bandwidth << " Hz.";
+
     report += out.str();
+
 }
 void get_report_from_bruker(const tipl::io::bruker_info& header,std::string& report)
 {
