@@ -76,6 +76,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->github_release_note->setCurrentIndex(0);
     ui->github_release_note->setTabVisible(1,false);
     ui->github_open_file->setVisible(false);
+    ui->github_open_file_mode->setVisible(false);
     ui->template_list->setCurrentRow(0);
 
 
@@ -335,14 +336,7 @@ void MainWindow::openFile(QStringList file_names)
            QString(file_name).endsWith(".nii.gz") ||
                 QString(file_name).endsWith(".dcm"))
         {
-            view_image* dialog = new view_image(this);
-            dialog->setAttribute(Qt::WA_DeleteOnClose);
-            if(!dialog->open(file_names))
-            {
-                delete dialog;
-                return;
-            }
-            dialog->show();
+            loadNii(file_names);
         }
         else {
             QMessageBox::critical(this,"ERROR","Unsupported file extension");
@@ -509,6 +503,17 @@ void MainWindow::loadFib(QString filename)
         default_geo = tracking_windows.back()->saveGeometry();
     if(!default_state.size())
         default_state = tracking_windows.back()->saveState();
+}
+void MainWindow::loadNii(QStringList file_names)
+{
+    view_image* dialog = new view_image(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    if(!dialog->open(file_names))
+    {
+        delete dialog;
+        return;
+    }
+    dialog->show();
 }
 
 void MainWindow::loadSrc(QStringList filenames)
@@ -1875,11 +1880,25 @@ void MainWindow::on_github_release_files_itemSelectionChanged()
     ui->github_download->setEnabled(selectedRows > 0);
     if(selectedRows == 1 && ui->github_release_files->currentRow() >= 0)
     {
-        ui->github_open_file->setText(QString("Open %1").arg(ui->github_release_files->item(ui->github_release_files->currentRow(),0)->text()));
+        auto file_name = ui->github_release_files->item(ui->github_release_files->currentRow(),0)->text();
+        ui->github_open_file->setText(QString("Open %1 at").arg(file_name));
         ui->github_open_file->setVisible(true);
+        ui->github_open_file_mode->setVisible(true);
+        ui->github_open_file_mode->clear();
+        ui->github_open_file_mode->addItem("O1: View Image");
+        ui->github_open_file_mode->addItem(file_name.endsWith(".src.gz") || file_name.endsWith(".sz") ? "T2: Reconstruction": "T3: Fiber Tracking");
+        ui->github_open_file_mode->setCurrentIndex(file_name.endsWith(".nii.gz") || file_name.endsWith(".nii") ? 0 : 1 );
+        if(file_name.endsWith(".db.fz") || file_name.endsWith(".db.fib.gz"))
+        {
+            ui->github_open_file_mode->addItems({"C2: View Database","C3: Correlational Tracking"});
+            ui->github_open_file_mode->setCurrentIndex(2);
+        }
     }
     else
+    {
         ui->github_open_file->setVisible(false);
+        ui->github_open_file_mode->setVisible(false);
+    }
     ui->github_download->setText(selectedRows > 0 ? QString("Download %1 File(s)...").arg(selectedRows) : QString("Download"));
     ui->file_count->setText(QString("%1/%2 files").arg(selectedRows).arg(ui->github_release_files->rowCount()));
 }
@@ -2048,10 +2067,56 @@ void MainWindow::on_github_open_file_clicked()
     }
 
     QString filePath = dir.path()+ "/" + ui->github_release_files->item(row, 0)->text();
+    auto git_open = [this,filePath](void)
+    {
+        if(filePath.endsWith(".nii.gz") || filePath.endsWith(".nii") ||
+           filePath.endsWith(".fib.gz") || filePath.endsWith(".fz"))
+        {
+
+            if(ui->github_open_file_mode->currentIndex() == 0)
+                loadNii(QStringList() << filePath);
+            else
+            if(ui->github_open_file_mode->currentIndex() == 1)
+                loadFib(filePath);
+            else
+            if(ui->github_open_file_mode->currentIndex() > 1) // open db
+            {
+                auto database = std::make_shared<group_connectometry_analysis>();
+                tipl::progress prog("reading connectometry db");
+                if(!database->load_database(filePath.toStdString().c_str()))
+                {
+                    QMessageBox::critical(this,"ERROR",database->error_msg.c_str());
+                    return;
+                }
+                if(ui->github_open_file_mode->currentIndex() == 2)
+                {
+                    auto db = new db_window(this,database);
+                    db->setWindowTitle(filePath);
+                    db->setAttribute(Qt::WA_DeleteOnClose);
+                    db->show();
+                }
+                else
+                {
+                    auto group_cnt = new group_connectometry(this,database,filePath);
+                    group_cnt->setAttribute(Qt::WA_DeleteOnClose);
+                    group_cnt->show();
+                }
+            }
+        }
+        else
+        {
+            if(ui->github_open_file_mode->currentIndex() == 0)
+                loadNii(QStringList() << filePath);
+            else
+                openFile(QStringList() << filePath);
+        }
+    };
+
+
     qint64 bytesTotal = ui->github_release_files->item(row, 1)->data(Qt::UserRole).toLongLong();
     if (QFile::exists(filePath) && QFileInfo(filePath).size() == bytesTotal)
     {
-        openFile(QStringList() << filePath);
+        git_open();
         return;
     }
     tipl::out() << "download file to " << filePath.toStdString();
@@ -2065,12 +2130,12 @@ void MainWindow::on_github_open_file_clicked()
     QEventLoop loop;
 
     QObject::connect(reply.get(), &QNetworkReply::readyRead, this,
-                     [this, row, &progressDialog, &bytesReceived, bytesTotal,reply]()
+                     [this, &progressDialog, &bytesReceived, bytesTotal,reply]()
     {
         progressDialog.setValue((reply->bytesAvailable() * 100) / (bytesTotal));
     });
     QObject::connect(reply.get(), &QNetworkReply::finished, this,
-                     [this, row, filePath, &progressDialog, &loop,reply]() // Pass the loop to the lambda
+                     [this, filePath, git_open, &progressDialog, &loop,reply]() // Pass the loop to the lambda
     {
         if (reply->error() != QNetworkReply::NoError)
         {
@@ -2087,7 +2152,7 @@ void MainWindow::on_github_open_file_clicked()
             }
             downloadFile->write(reply->readAll());
             downloadFile->close();
-            QTimer::singleShot(0, this, [this, filePath](){openFile(QStringList() << filePath);});
+            QTimer::singleShot(0, this, [git_open](){git_open();});
         }
         progressDialog.close();
         loop.quit();
