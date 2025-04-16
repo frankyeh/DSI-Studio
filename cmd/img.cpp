@@ -120,14 +120,23 @@ bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<2,short>& I)
     QImage img;
     if(!qimg.read(&img))
     {
-        tipl::error() << "unsupported transfer syntax " << dicom.encoding;
-        return false;
+        dicom >> I;
+        if(dicom.is_compressed)
+        {
+            tipl::error() << "unsupported transfer syntax " << dicom.encoding;
+            return false;
+        }
+        else
+            return true;
     }
-    QImage buf = img.convertToFormat(QImage::Format_RGB32);
-    I.resize(tipl::shape<2>(buf.width(),buf.height()));
-    const uchar* ptr = buf.bits();
-    for(int j = 0;j < I.size();++j,ptr += 4)
-        I[j] = *ptr;
+    else
+    {
+        QImage buf = img.convertToFormat(QImage::Format_RGB32);
+        I.resize(tipl::shape<2>(buf.width(),buf.height()));
+        const uchar* ptr = buf.bits();
+        for(int j = 0;j < I.size();++j,ptr += 4)
+            I[j] = *ptr;
+    }
     return true;
 }
 void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
@@ -247,6 +256,7 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
         {
             pixel_type = int16;
             dicom.get_image_dimension(shape);
+            dicom.get_voxel_size(vs);
             if(dicom.is_compressed)
             {
                 tipl::image<2,short> I;
@@ -256,18 +266,11 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
                     error_msg += dicom.encoding;
                     return false;
                 }
-                if(I.size() == shape.size())
-                    std::copy(I.begin(),I.end(),I_int16.begin());
-                else
-                {
-                    error_msg = "Cannot decompress image ";
-                    error_msg += dicom.encoding;
-                    return false;
-                }
+                I_int16.resize(shape);
+                std::copy(I.begin(),I.begin()+std::min<size_t>(I.size(),shape.size()),I_int16.begin());
             }
             else
                 apply([&](auto& data){dicom >> data;});
-            dicom.get_voxel_size(vs);
             std::string info_;
             dicom >> info_;
 
@@ -332,6 +335,8 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
                 error_msg = "unsupported file format";
                 return false;
             }
+    tipl::out() << "dim: " << shape;
+    tipl::out() << "vs: " << vs;
     return true;
 }
 tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& mat_reader);
