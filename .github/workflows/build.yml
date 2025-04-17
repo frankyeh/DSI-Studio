@@ -166,7 +166,7 @@ jobs:
 
   windows_build_cpu:
     if: ${{ github.event.inputs.build_windows == 'true' }}
-    runs-on: windows-2019
+    runs-on:  windows-latest
     steps:
     - uses: actions/checkout@v4.1.1
     - name: Download Build
@@ -175,10 +175,9 @@ jobs:
         move DSI-Studio-Build/*.txt .
         move DSI-Studio-Build/build_packages .
     - name: Install Qt
-      uses: jurplel/install-qt-action@v4.1.1
+      uses: Kidev/install-qt-action@v4.6.0
       with:
-        version: 6.8
-        modules: addons.qtcharts
+        modules: qtcharts
         cache: true
     - name: Build
       run: |
@@ -199,7 +198,7 @@ jobs:
 
   windows_build:
     if: ${{ github.event.inputs.build_windows == 'true' }}
-    runs-on: windows-2019
+    runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4.1.1
     - name: Download Build
@@ -210,10 +209,9 @@ jobs:
     - name: Install Cuda
       uses: Jimver/cuda-toolkit@v0.2.11
     - name: Install Qt
-      uses: jurplel/install-qt-action@v4.1.1
+      uses: Kidev/install-qt-action@v4.6.0
       with:
-        version: 6.8
-        modules: addons.qtcharts
+        modules: qtcharts
         cache: true
     - name: Build
       run: |
