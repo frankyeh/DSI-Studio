@@ -921,6 +921,17 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             if(regions.empty())
                 return run->failed("please specify regions");
             get_regions_statistics(cur_tracking_window.handle,regions,result);
+
+            // add t2r
+            if(!tracts.empty())
+            {
+
+                Parcellation p(cur_tracking_window.handle);
+                p.load_from_regions(regions);
+                auto result2 = p.get_t2r(tracts);
+                result2.erase(0, result2.find('\n') + 1);
+                result += result2;
+            }
             title = "Region Statistics";
             default_file += "_region_stat.txt";
         }
