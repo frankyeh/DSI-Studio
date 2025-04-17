@@ -207,7 +207,7 @@ jobs:
         move DSI-Studio-Build/*.txt .
         move DSI-Studio-Build/build_packages .
     - name: Install Cuda
-      uses: Jimver/cuda-toolkit@v0.2.11
+      uses: Jimver/cuda-toolkit@v0.2.23
     - name: Install Qt
       uses: Kidev/install-qt-action@v4.6.0
       with:
