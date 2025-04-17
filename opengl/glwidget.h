@@ -1,21 +1,31 @@
 #ifndef GLWIDGET_H
 #define GLWIDGET_H
+
+#if defined(_WIN32)
+  // bring in Win32 APIENTRY, etc., and slim down Windows headers
+  #ifndef WIN32_LEAN_AND_MEAN
+    #define WIN32_LEAN_AND_MEAN
+  #endif
+  #ifndef NOMINMAX
+    #define NOMINMAX
+  #endif
+  #include <windows.h>
+  #include <GL/glu.h>
+#elif defined(__APPLE__)
+  #include <OpenGL/glu.h>
+#else
+  #include <GL/glu.h>
+#endif
+
+
 #include <QTimer>
 #include <QTime>
 #include <QOpenGLTexture>
 //#include <QOpenGLShaderProgram>
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
 #include <memory>
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
 #include <QOpenGLFunctions_3_3_Core>
-#ifdef __APPLE__
-#include <OpenGL/glu.h>
-#else
-#include <GL/glu.h>
-#endif
 #include "region_render.hpp"
 #include "tracking/tracking_window.h"
 
