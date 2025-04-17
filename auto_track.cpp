@@ -349,6 +349,10 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     thread.fetchTracks(tract_model.get());
                     thread.fetchTracks(tract_model.get());
 
+                    if(thread.param.step_size != 0.0f)
+                        tract_model->resample(1.0f);
+                    tract_model->delete_repeated(tract_model->vs[0]);
+
                     tract_model->trim(thread.param.tip_iteration);
 
                     // if trim removes too many tract, undo to at least get the smallest possible bundle.
@@ -361,9 +365,6 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         continue;
                     }
 
-                    if(thread.param.step_size != 0.0f)
-                        tract_model->resample(1.0f);
-                    tract_model->delete_repeated(1.0f);
 
                     if(export_trk)
                     {
