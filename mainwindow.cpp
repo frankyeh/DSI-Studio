@@ -1830,7 +1830,13 @@ void MainWindow::on_github_release_note_currentChanged(int index)
                     for (int i = 0; i < rows.size(); ++i) {
                         QStringList cols = rows.at(i).split("\t");
                         for (int j = 0; j < cols.size(); ++j) {
-                            QTableWidgetItem* item = new QTableWidgetItem(cols.at(j));
+                            QTableWidgetItem* item = new QTableWidgetItem;
+                            bool ok;
+                            double val = cols.at(j).toDouble(&ok);
+                            if (ok)
+                                item->setData(Qt::DisplayRole, val);
+                            else
+                                item->setText(cols.at(j));
                             tableWidget->setItem(i, j, item);
                         }
                     }
