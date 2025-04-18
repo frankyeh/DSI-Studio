@@ -259,14 +259,25 @@ int rec(tipl::program_option<tipl::out>& po)
         for(const auto& each : others)
         {
             tipl::out() << "add image: " << each;
-            if(!src.add_other_image(std::filesystem::path(each).stem().stem().string(),each))
+            auto seps = tipl::split(each,':');
+            std::string name,path;
+            if(tipl::begins_with(each,"http") || seps.size() == 1)
+            {
+                name = std::filesystem::path(each).stem().stem().string();
+                path = each;
+            }
+            else
+            {
+                name = seps[0];
+                path = seps[1];
+            }
+            if(!src.add_other_image(name,path))
             {
                 tipl::error() << src.error_msg;
                 return 1;
             }
         }
     }
-
     if(po.has("output"))
     {
         std::string output = po.get("output");
