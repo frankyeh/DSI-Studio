@@ -25,8 +25,8 @@ std::string device_content_file,topup_param_file;
 std::vector<std::string> fa_template_list,
                          iso_template_list,
                          t1w_template_list,
-                         fib_template_list,
-                         model_list_t2w;
+                         t2w_template_list,
+                         fib_template_list;
 std::vector<std::vector<std::string> > atlas_file_name_list;
 
 
@@ -181,6 +181,7 @@ bool load_file_name(void)
             QString qa_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".QA.nii.gz";
             QString iso_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".ISO.nii.gz";
             QString t1w_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".T1W.nii.gz";
+            QString t2w_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".T2W.nii.gz";
             QString tt_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".tt.gz";
             QString fib_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".fz";
             if(!QFileInfo(qa_file_path).exists())
@@ -189,6 +190,7 @@ bool load_file_name(void)
             fa_template_list.push_back(qa_file_path.toStdString());
             iso_template_list.push_back(iso_file_path.toStdString());
             t1w_template_list.push_back(t1w_file_path.toStdString());
+            t2w_template_list.push_back(t2w_file_path.toStdString());
             fib_template_list.push_back(fib_file_path.toStdString());
 
             // find related atlases
@@ -201,22 +203,6 @@ bool load_file_name(void)
                     if(QFileInfo(each).baseName() != name_list[i])
                         file_list.push_back((template_dir.absolutePath() + "/" + each).toStdString());
                 atlas_file_name_list.push_back(std::move(file_list));
-            }
-
-            // find a matching unet model
-            {
-                model_list_t2w.push_back(std::string());
-                auto name = name_list[i].split('_').back();
-                if(name == "adult" || name == "neonate")
-                    name = "human";
-                QDir network_dir = QCoreApplication::applicationDirPath() + "/network";
-                for(auto each_model : network_dir.entryList(QStringList("*.net.gz"),QDir::Files|QDir::NoSymLinks))
-                    if(QFileInfo(each_model).completeBaseName().contains(name) &&
-                       QFileInfo(each_model).completeBaseName().contains("t2w.seg5"))
-                    {
-                        model_list_t2w.back() = each_model.toStdString();
-                        break;
-                    }
             }
         }
         if(fa_template_list.empty())
