@@ -153,7 +153,9 @@ bool view_image::command(std::string cmd,std::string param1)
         auto old_4d_index = cur_4d_index;
         if(cmd == "save")
         {
+            tipl::progress prog2("save 4d nifti",true);
             std::vector<unsigned char> buf;
+            prog2(0,100);
             get_4d_buf(buf);
             cur_image->apply([&](auto& I)
             {
@@ -161,9 +163,11 @@ bool view_image::command(std::string cmd,std::string param1)
                 nii.set_image_transformation(cur_image->T,cur_image->is_mni);
                 nii.set_voxel_size(cur_image->vs);
                 nii << tipl::make_image(reinterpret_cast<decltype(&I[0])>(buf.data()),tipl::shape<4>(cur_image->shape[0],cur_image->shape[1],cur_image->shape[2],buf4d.size()));
-                result = nii.save_to_file(param1.c_str());
+                result = nii.save_to_file(param1.c_str(),prog2);
             });
             read_4d_at(old_4d_index);
+            if(prog2.aborted())
+                return false;
             goto end_command;
         }
         if(cmd == "normalize" || cmd == "normalize_otsu_median")
