@@ -1542,7 +1542,6 @@ void MainWindow::on_tabWidget_currentChanged(int index)
 {
     if(index == 4 && !ui->github_tags->rowCount() && !fetch_github)
     {
-        fetch_github = true;
         auto reply = get(QString("https://raw.githubusercontent.com/frankyeh/Brain-Data/gh-pages/index.md"));
         while (!reply->isFinished())
             qApp->processEvents();
@@ -1569,6 +1568,7 @@ void MainWindow::on_tabWidget_currentChanged(int index)
         ui->github_note->setMarkdown(filteredLines.join("\n"));
         ui->github_note->setReadOnly(true);
         ui->github_note->setOpenExternalLinks(true);
+        fetch_github = true;
         on_load_tags_clicked();
     }
 }
@@ -1594,12 +1594,13 @@ QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
 
 void MainWindow::on_github_repo_currentIndexChanged(int index)
 {
-    if(ui->github_repo->currentIndex() < 0)
+    if(ui->github_repo->currentIndex() < 0 || !fetch_github)
         return;
     QString repo = ui->github_repo->currentData().toString();
 
-    if(tags[repo].empty() && fetch_github)
+    if(tags.find(repo) == tags.end())
     {
+        tags[repo] = QJsonArray();
         on_load_tags_clicked();
         return;
     }
@@ -1641,10 +1642,9 @@ void MainWindow::on_github_repo_currentIndexChanged(int index)
 
 void MainWindow::on_load_tags_clicked()
 {
-    if(ui->github_repo->currentIndex() < 0)
+    if(ui->github_repo->currentIndex() < 0 || !fetch_github)
         return;
     QString repo = ui->github_repo->currentData().toString();
-    tipl::out() << "loading " << repo.toStdString();
     QString url = QString("https://api.github.com/repos/%1/releases").arg(repo);
     ui->github_tags->setSortingEnabled(false);
     ui->github_tags->setRowCount(0);
@@ -1653,7 +1653,10 @@ void MainWindow::on_load_tags_clicked()
     ui->load_tags->setEnabled(false);
     notes.clear();
     assets.clear();
-    loadTags(QUrl(url),repo,QJsonArray());
+    qint64 minWaitMs = 3000;
+    if(ui->github_repo->currentIndex() == 0 || ui->github_token->text().isEmpty())
+        minWaitMs = 0;
+    QTimer::singleShot(minWaitMs, this, [this, url, repo](){loadTags(QUrl(url), repo, QJsonArray());});
 }
 
 template<typename reply_type>
@@ -1664,7 +1667,10 @@ QString showError(reply_type reply)
         {304, "Not Modified - The server has fulfilled the request, but the document has not been modified."},
         {400, "Bad Request - The request was invalid."},
         {401, "invalid auth token"},
-        {403, "rate limit reached. apply for a GitHub auth token to increase bandwidth"},
+        {403, "Github api rate limit reached. Consider using a GitHub personal access token (PAT) to increase limit.\n\n"
+              "1. Go to GitHub → Settings → Developer settings.\n"
+              "2. Personal access tokens (classic) → Generate new token → check [repo][public_repo].\n"
+              "3. Copy the token to DSI Studio's [Tools][GitHub PAT] field."},
         {404, "repository currently not available"},
         {405, "Method Not Allowed - The request method is not supported for the requested resource."},
         {408, "Request Timeout - The server timed out waiting for the request."},
@@ -1672,70 +1678,54 @@ QString showError(reply_type reply)
         {502, "Bad Gateway - The server received an invalid response from an upstream server."},
         {503, "Service Unavailable - The server is currently unable to handle the request."},
         {504, "Gateway Timeout - The server did not receive a timely response from an upstream server."},
-                                  }).value(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(),
-              "Download rate limit reached. Try later or consider adding a GitHub personal access token (PAT) to enable faster downloads.");
+                                  }).value(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(),"Github api rate limit reached");
 }
+
 
 void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array)
 {
     static int retryCount = 0;
     tipl::out() << "loading " << url.toString().toStdString();
-
-    auto reply = get(url);
-
-    QObject::connect(reply.get(), &QNetworkReply::finished, this, [this, url, repo, reply, array]()
-    {
-        if (reply->error() != QNetworkReply::NoError)
-        {
-            if (reply->error() != QNetworkReply::OperationCanceledError)
-            {
-                auto status_code = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-                if (status_code != 401 && // invalid token
-                    status_code != 404 && // no repo
-                    status_code != 403 && // rate limit reached
-                    retryCount < 5)
-                {
-                    int waitTime = 2 << retryCount; // 2, 4, 8, 16, 32 seconds
-                    QTimer::singleShot(waitTime * 1000, this, [this, url, repo, array]()
-                    {
-                        retryCount++;
+    auto reply   = get(url);
+    connect(reply.get(), &QNetworkReply::finished, this, [=]() mutable {
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() != QNetworkReply::OperationCanceledError) {
+                int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+                if (status!=401 && status!=404 && status!=403 && retryCount<5) {
+                    int waitTime = 2 << retryCount;  // 2,4,8,16,32s
+                    QTimer::singleShot(waitTime*1000, this, [=]() {
+                        ++retryCount;
                         loadTags(url, repo, array);
                     });
-                }
-                else
-                {
-                    QMessageBox::critical(this, "ERROR",showError(reply));
-                    if(status_code == 401)
-                        ui->github_token->setText(QString());
+                } else {
+                    QMessageBox::critical(this, "ERROR", showError(reply));
+                    if (status==401)
+                        ui->github_token->clear();
                 }
             }
-        }
-        else
-        {
+        } else {
             retryCount = 0;
-            QJsonArray array_ = array;
+            // final object before closing ']'
             foreach (const QJsonValue& release , QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).array())
-                array_.append(release);
-            QString linkHeader = reply->rawHeader("Link");
-            if (!linkHeader.isEmpty())
+                array.append(release);
+            if (!array.isEmpty())
             {
-                QRegularExpressionMatch match = QRegularExpression("<([^>]+)>; rel=\"next\"").match(linkHeader);
-                if (match.hasMatch())
-                {
-                    QUrl nextPageUrl = match.captured(1);
-                    if (nextPageUrl.isValid())
-                    {
-                        loadTags(nextPageUrl,repo,array_);
-                        return;
-                    }
-                }
+                tags[repo] = array;
+                if (repo == ui->github_repo->currentData().toString())
+                    QTimer::singleShot(0, this, [this]() {on_github_repo_currentIndexChanged(0);});
             }
-            tags[repo] = array_;
-            if(repo == ui->github_repo->currentData().toString())
-                on_github_repo_currentIndexChanged(0);
-            reply->deleteLater();
+            // next‑page?
+            auto m = QRegularExpression("<([^>]+)>; rel=\"next\"").match(reply->rawHeader("Link"));
+            if (m.hasMatch())
+            {
+                QUrl nextPg = m.captured(1);
+                if (nextPg.isValid())
+                    QTimer::singleShot(ui->github_token->text().isEmpty() ? 10000 : 3000, this, [=]() {loadTags(nextPg, repo, array);});
+            }
+            else
+                ui->load_tags->setEnabled(true);
         }
-        ui->load_tags->setEnabled(true);
+        reply->deleteLater();
     });
 }
 
@@ -1919,20 +1909,18 @@ void MainWindow::on_github_select_all_clicked()
 void MainWindow::on_github_download_clicked()
 {
     QList<QTableWidgetSelectionRange> ranges = ui->github_release_files->selectedRanges();
-    if (ranges.isEmpty()) {
+    if (ranges.isEmpty()){
         QMessageBox::critical(this, "ERROR", "No files selected for download");
         return;
     }
 
     if(ui->github_token->text().isEmpty())
     {
-        QString message =
+        QMessageBox::information(nullptr, "DSI Studio",
             "Consider using a GitHub personal access token (PAT) to enable faster downloads.\n\n"
-            "1. Go to GitHub → Settings → Developer settings → Personal access tokens.\n"
-            "2. Generate a token with 'repo' permissions.\n"
-            "3. Copy the token (it won't be shown again).\n"
-            "4. Paste it into DSI Studio's [Tools][GitHub PAT] field.";
-            QMessageBox::information(nullptr, "DSI Studio", message);
+            "1. Go to GitHub → Settings → Developer settings.\n"
+            "2. Personal access tokens (classic) → Generate new token → check [repo][public_repo].\n"
+            "3. Copy the token to DSI Studio's [Tools][GitHub PAT] field.");
     }
 
     std::vector<int> row_list;
