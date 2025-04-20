@@ -95,6 +95,21 @@ int rec(tipl::program_option<tipl::out>& po)
     if(po.has("apply_mask"))
         src.apply_mask = true;
 
+    if(po.has("cmd"))
+    {
+        QStringList cmd_list = QString(po.get("cmd").c_str()).split("+");
+        for(int i = 0;i < cmd_list.size();++i)
+        {
+            QStringList run_list = QString(cmd_list[i]).split("=");
+            if(!src.command(run_list[0].toStdString(),
+                                run_list.count() > 1 ? run_list[1].toStdString():std::string()))
+            {
+                tipl::error() << src.error_msg << std::endl;
+                return 1;
+            }
+        }
+    }
+
     {
         tipl::progress prog("pre-processing steps");
         if(po.has("remove"))
@@ -178,20 +193,7 @@ int rec(tipl::program_option<tipl::out>& po)
             }
         }
 
-        if(po.has("cmd"))
-        {
-            QStringList cmd_list = QString(po.get("cmd").c_str()).split("+");
-            for(int i = 0;i < cmd_list.size();++i)
-            {
-                QStringList run_list = QString(cmd_list[i]).split("=");
-                if(!src.command(run_list[0].toStdString(),
-                                    run_list.count() > 1 ? run_list[1].toStdString():std::string()))
-                {
-                    tipl::error() << src.error_msg << std::endl;
-                    return 1;
-                }
-            }
-        }
+
 
         if(po.has("make_isotropic") ||
            (src.voxel.method_id != 7 &&
