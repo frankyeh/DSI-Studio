@@ -2120,7 +2120,7 @@ void MainWindow::on_github_open_file_clicked()
 
 
     qint64 bytesTotal = ui->github_release_files->item(row, 1)->data(Qt::UserRole).toLongLong();
-    if (QFile::exists(filePath) && QFileInfo(filePath).size() == bytesTotal)
+    if (QFile::exists(filePath))
     {
         git_open();
         return;
