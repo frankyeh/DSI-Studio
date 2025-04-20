@@ -141,6 +141,7 @@ bool src_data::mask_from_template(void)
         tipl::morphology::smoothing(voxel.mask);
         tipl::morphology::fit(voxel.mask,dwi);
     }
+    apply_mask = true;
     return true;
 }
 bool src_data::mask_from_unet(void)
@@ -892,6 +893,7 @@ bool src_data::command(std::string cmd,std::string param)
                 if(voxel.mask[i] == 0)
                     buf[i] = 0;
         }
+        apply_mask = true;
         voxel.steps += cmd+"\n";
         return true;
     }
