@@ -58,8 +58,6 @@ void src_data::draw_mask(tipl::color_image& buffer,int position)
     tipl::draw(buffer,buffer2,tipl::vector<2,int>(dwi.width(),0));
     buffer2.swap(buffer);
 }
-extern std::vector<std::string> model_list_t2w;
-
 void src_data::calculate_dwi_sum(bool update_mask)
 {
     if(src_dwi_data.empty())
@@ -99,21 +97,27 @@ void src_data::calculate_dwi_sum(bool update_mask)
 }
 
 
-extern std::vector<std::string> iso_template_list;
+extern std::vector<std::string> t2w_template_list,iso_template_list;
 bool src_data::mask_from_template(void)
 {
-    dual_reg r;
-    if(!r.load_template(0,iso_template_list[voxel.template_id]))
+    std::vector<tipl::image<3> > b0;
+    if(!read_b0(b0))
     {
-        error_msg = r.error_msg;
+        error_msg = "no b0 for unet to generate a mask";
         return false;
     }
-    r.I[0] = dwi;
+    dual_reg r;
+    if(!r.load_template(0,t2w_template_list[voxel.template_id]) ||
+       !r.load_template(1,iso_template_list[voxel.template_id]))
+    {
+        error_msg = "no template t2w for generating mask";
+        return false;
+    }
+
+    r.I[0] = subject_image_pre(std::move(b0[0]));
     r.IR = voxel.trans_to_mni;
     r.Ivs = voxel.vs;
-    r.Is = dwi.shape();
-    r.cost_type = tipl::reg::mutual_info;
-    r.param.speed = 0.05f;
+    r.Is = r.I[0].shape();
     r.match_resolution(true);
     {
         tipl::progress prog("registering to template");
@@ -130,8 +134,13 @@ bool src_data::mask_from_template(void)
         if(prog.aborted())
             return false;
     }
-    auto iso = r.apply_warping<false,tipl::interpolation::cubic>(r.It[0]);
-    tipl::threshold(iso,voxel.mask,0);
+    // use iso to generate mask
+    tipl::threshold(r.apply_warping<false,tipl::interpolation::linear>(r.It[1]),voxel.mask,50.0f);
+    for(size_t i = 0;i < 4;++i)
+    {
+        tipl::morphology::smoothing(voxel.mask);
+        tipl::morphology::fit(voxel.mask,dwi);
+    }
     return true;
 }
 bool src_data::mask_from_unet(void)
@@ -142,17 +151,19 @@ bool src_data::mask_from_unet(void)
         error_msg = "no b0 for unet to generate a mask";
         return false;
     }
-    std::string model_file_name = QCoreApplication::applicationDirPath().toStdString() + "/network/" + model_list_t2w[voxel.template_id];
+    std::string model_file_name = QCoreApplication::applicationDirPath().toStdString() + "/network/brain.t2w.seg5.net.gz";
     if(std::filesystem::exists(model_file_name))
     {
         tipl::progress p("generating a mask using unet",true);
-        tipl::out() << "model: " << model_list_t2w[voxel.template_id];
         auto unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(model_file_name.c_str());
         if(unet.get())
         {
+            tipl::filter::gaussian(b0[0]);
             if(unet->forward(b0[0],voxel.vs,p))
             {
+                tipl::filter::gaussian(unet->sum);
                 tipl::threshold(unet->sum,voxel.mask,0.5f,1,0);
+                tipl::morphology::defragment(voxel.mask);
                 return true;
             }
             else
@@ -760,6 +771,13 @@ bool src_data::command(std::string cmd,std::string param)
             tipl::morphology::dilation(voxel.mask.slice_at(0));
         else
             tipl::morphology::dilation(voxel.mask);
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+    if(cmd == "[Step T2a][Unet]")
+    {
+        if(!mask_from_unet())
+            return false;
         voxel.steps += cmd+"\n";
         return true;
     }
