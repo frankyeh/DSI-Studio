@@ -65,6 +65,14 @@ int rec(tipl::program_option<tipl::out>& po)
                 return 1;
             }
         }
+        if(mask_file == "template")
+        {
+            if(!src.mask_from_template())
+            {
+                tipl::error() << src.error_msg;
+                return 1;
+            }
+        }
 
         {
             tipl::out() << "opening mask file: " << mask_file << std::endl;
