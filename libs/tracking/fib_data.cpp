@@ -909,12 +909,19 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
             if(mat_reader[index].is_type<float>())
                 matfile.write<tipl::io::masked_sloped>(name,mat_reader.read_as_type<float>(index),
                                                        matfile.mask_rows,matfile.mask_cols);
-            if(mat_reader[index].is_type<short>()) // index no slope
+            else
+            if(mat_reader[index].is_type<short>() || mat_reader[index].is_type<unsigned short>()) // index no slope
                 matfile.write<tipl::io::masked>(name,mat_reader.read_as_type<short>(index),
                                                 matfile.mask_rows,matfile.mask_cols);
+            else
             if(mat_reader[index].is_type<char>())
                 matfile.write<tipl::io::masked>(name,mat_reader.read_as_type<char>(index),
                                                 matfile.mask_rows,matfile.mask_cols);
+            else
+            {
+                mat_reader.error_msg = "unspported image type in saving mat matrices";
+                return false;
+            }
             for(auto each : mat_reader[index].sub_data)
                 matfile.write(*each.get());
             continue;
