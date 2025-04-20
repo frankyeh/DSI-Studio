@@ -901,6 +901,7 @@ bool src_data::command(std::string cmd,std::string param)
     {
         std::istringstream in(param);
         in >> voxel.vs[0] >> voxel.vs[1] >> voxel.vs[2];
+        voxel.report = get_report();
         voxel.steps += cmd+"="+param+"\n";
         return true;
     }
