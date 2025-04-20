@@ -439,7 +439,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *a
                 tipl::out() << wildcard.second << "->" << apply_wildcard << std::endl;
                 po.set(wildcard.first.c_str(),apply_wildcard);
             }
-            if(run_action(po) == 1)
+            if(run_action(po) == 1 && !po.has("continue_on_error"))
                 return 1;
         }
     }
