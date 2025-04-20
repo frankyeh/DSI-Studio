@@ -1052,10 +1052,12 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
 
             if(first_mat)
             {
-                std::copy(new_image.shape.begin(),new_image.shape.end(),const_cast<unsigned int*>(mat_reader.read_as_type<unsigned int>("dimension")));
-                std::copy(new_image.vs.begin(),new_image.vs.end(),const_cast<float*>(mat_reader.read_as_type<float>("voxel_size")));
-                if(mat_reader.has("trans"))
-                    std::copy(new_image.T.begin(),new_image.T.end(),const_cast<float*>(mat_reader.read_as_type<float>("trans")));
+                if(new_image.shape != dim)
+                    mat_reader.write("dimension",new_image.shape.begin(),1,3);
+                if(new_image.vs != vs)
+                    mat_reader.write("voxel_size",new_image.vs.begin(),1,3);
+                if(mat_reader.has("trans") && new_image.T != trans)
+                    mat_reader.write("trans",new_image.T.begin(),4,4);
                 first_mat = false;
             }
         }
