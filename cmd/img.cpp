@@ -386,6 +386,12 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 const std::string& param);
 int img(tipl::program_option<tipl::out>& po)
 {
+    if(po.has("output") && std::filesystem::exists(po.get("output")) && !po.get("overwrite",0))
+    {
+        tipl::out() << "output exist, skipping";
+        return 0;
+    }
+
     std::string source(po.get("source")),info;
     if(tipl::ends_with(source,"fib.gz") || tipl::ends_with(source,".fz") ||
        tipl::ends_with(source,"src.gz") || tipl::ends_with(source,".sz") ||
