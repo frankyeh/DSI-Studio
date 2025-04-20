@@ -1054,7 +1054,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             {
                 std::copy(new_image.shape.begin(),new_image.shape.end(),const_cast<unsigned int*>(mat_reader.read_as_type<unsigned int>("dimension")));
                 std::copy(new_image.vs.begin(),new_image.vs.end(),const_cast<float*>(mat_reader.read_as_type<float>("voxel_size")));
-                if(is_mni)
+                if(mat_reader.has("trans"))
                     std::copy(new_image.T.begin(),new_image.T.end(),const_cast<float*>(mat_reader.read_as_type<float>("trans")));
                 first_mat = false;
             }
