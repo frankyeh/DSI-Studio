@@ -637,12 +637,13 @@ bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs)
 {
     return dim[2] > 5 && dim[0]*vs[0] > 100 && dim[1]*vs[1] > 130;
 }
-extern int fib_ver;
+extern int fib_ver,src_ver;
 bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
                       tipl::shape<3>& dim,tipl::vector<3>& vs,tipl::matrix<4,4>& trans,bool& is_mni)
 {
     int this_fib_ver(0);
-    if(mat_reader.has("version") && (this_fib_ver = mat_reader.read_as_value<int>("version")) > fib_ver)
+    if(mat_reader.has("version") && (this_fib_ver = mat_reader.read_as_value<int>("version")) >
+                                    (mat_reader.has("b_table") ? src_ver : fib_ver))
     {
         mat_reader.error_msg = "Incompatible FIB format. please update DSI Studio to open this new FIB file.";
         return false;
@@ -841,20 +842,6 @@ bool fib_data::load_from_mat(void)
     return true;
 }
 
-bool read_fib_data(tipl::io::gz_mat_read& mat_reader)
-{
-    // get all data in delayed read condition
-    tipl::progress prog("reading data");
-    for(size_t i = 0;prog(i,mat_reader.size());++i)
-    {
-        auto& mat = mat_reader[i];
-        if(mat.has_delay_read() && !mat.read(*(mat_reader.in.get())))
-            return false;
-    }
-    if(prog.aborted())
-        return false;
-    return true;
-}
 
 bool save_fz(tipl::io::gz_mat_read& mat_reader,
               tipl::io::gz_mat_write& matfile,
@@ -862,9 +849,10 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
               const std::vector<std::string>& skip_head_list)
 {
     tipl::progress prog("saving");
-    if(!mat_reader.si2vi.empty())
+    if(mat_reader.has("mask"))
     {
         tipl::out() << "enabled masked format";
+        handle_mask(mat_reader);
         matfile.apply_slope = true;
         matfile.apply_mask = true;
         matfile.mask_rows = mat_reader.mask_rows;
@@ -965,8 +953,19 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         return true;
     }
 
-    if(!read_fib_data(mat_reader))
-        return false;
+    {
+        // get all data in delayed read condition
+        tipl::progress prog("reading data");
+        for(size_t i = 0;prog(i,mat_reader.size());++i)
+        {
+            auto& mat = mat_reader[i];
+            if(mat.has_delay_read() && !mat.read(*(mat_reader.in.get())))
+                return false;
+        }
+        if(prog.aborted())
+            return false;
+        return true;
+    }
 
     tipl::shape<3> dim;
     tipl::vector<3> vs;
