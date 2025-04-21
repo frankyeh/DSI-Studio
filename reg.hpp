@@ -125,61 +125,24 @@ public:
             tipl::compose_mapping<itype>(input, mapping);
     }
     template<bool direction>
-    auto apply_warping(const char* input) const
-    {
-        tipl::out() << "opening " << input;
-        auto input_size = (direction ? Is : Its);
-        // check dimension
-        {
-            tipl::io::gz_nifti nii;
-            if(!nii.load_from_file(input))
-            {
-                error_msg = nii.error_msg;
-                return tipl::image<dimension>();
-            }
-            tipl::shape<3> d;
-            nii.get_image_dimension(d);
-            if(d != input_size)
-            {
-                tipl::warning() << std::filesystem::path(input).filename().string() << " has a size of " << d << " different from the expected size " << input_size;
-                tipl::warning() << "transformation will be applied. But please make sure you apply the mapping in the correct direction.";
-            }
-        }
-        tipl::image<dimension> I3(input_size);
-        if(!tipl::io::gz_nifti::load_to_space(input,I3,direction ? IR : ItR))
-        {
-            error_msg = "cannot open " + std::string(input);
-            return tipl::image<dimension>();
-        }
-        bool is_label = tipl::is_label_image(I3);
-        tipl::out() << (is_label ? "label image interpolated using majority assignment " : "scalar image interpolated using spline") << std::endl;
-        if(is_label)
-            return apply_warping<direction,tipl::interpolation::majority>(I3);
-        else
-            return apply_warping<direction,tipl::interpolation::cubic>(I3);
-    }
-
-    template<bool direction>
     bool apply_warping(const char* input,const char* output) const
     {
-        if(tipl::ends_with(input,"tt.gz"))
+        if(tipl::ends_with(input,".tt.gz"))
             return apply_warping_tt<direction>(input,output);
-        auto I = apply_warping<direction>(input);
-        if(I.empty())
-            return false;
-        tipl::out() << "saving " << output;
-        if(!tipl::io::gz_nifti::save_to_file(output,I,
-                                             direction ? Itvs : Ivs,
-                                             direction ? ItR : IR,
-                                             direction ? It_is_mni : Is_is_mni))
-        {
-            error_msg = "cannot write to file " + std::string(output);
-            return false;
-        }
-        return true;
+        if(tipl::ends_with(input,".nii.gz") || tipl::ends_with(input,".nii"))
+            return apply_warping_nii<direction>(input,output);
+        if(tipl::ends_with(input,".sz") || tipl::ends_with(input,".src.gz") ||
+           tipl::ends_with(input,".fz") || tipl::ends_with(input,".fib.gz"))
+            return apply_warping_fzsz<direction>(input,output);
+        error_msg = "unsupported file format";
+        return false;
     }
     template<bool direction>
     bool apply_warping_tt(const char* input,const char* output) const;
+    template<bool direction>
+    bool apply_warping_nii(const char* input,const char* output) const;
+    template<bool direction>
+    bool apply_warping_fzsz(const char* input,const char* output) const;
     bool load_warping(const std::string& filename);
     bool load_alternative_warping(const std::string& filename);
     bool save_warping(const char* filename) const;
