@@ -109,7 +109,7 @@ void db_window::update_subject_list()
 {
     ui->subject_list->setCurrentCell(0,0);
     ui->subject_list->clear();
-    ui->subject_list->setColumnCount(vbc->handle->db.feature_titles.size() + 1);
+    ui->subject_list->setColumnCount(vbc->handle->db.titles.size() + 1);
     ui->subject_list->setColumnWidth(0,100);
     ui->subject_list->setRowCount(vbc->handle->db.num_subjects);
     QStringList header;
