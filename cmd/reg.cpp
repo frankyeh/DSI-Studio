@@ -731,12 +731,57 @@ bool load_nifti_file(std::string file_name_cmd,tipl::image<3>& data,tipl::vector
 }
 
 
+template<bool direction>
+bool save_warping(dual_reg& r,
+                  const std::vector<std::string>& apply_warp_filename,
+                  const std::string& output_dir,
+                  bool export_r)
+{
+    for(const auto& each_file: apply_warp_filename)
+    {
+        std::string post_fix;
+        if(tipl::ends_with(each_file,".nii.gz"))
+            post_fix = ".nii.gz";
+        if(tipl::ends_with(each_file,".tt.gz"))
+            post_fix = ".tt.gz";
+        if(tipl::ends_with(each_file,".sz"))
+            post_fix = ".sz";
+        if(tipl::ends_with(each_file,".fz"))
+            post_fix = ".fz";
+        if(post_fix.empty())
+        {
+            tipl::error() << "unsupported file format: " << each_file;
+            return false;
+        }
+        if constexpr(direction)
+            post_fix = ".wp" + post_fix;
+        else
+            post_fix = ".uwp" + post_fix;
+        if(export_r)
+            post_fix = ".r" + std::to_string(int(r.r[0]*100.0f)) + post_fix;
+        std::string output_file;
+        if (!output_dir.empty())
+        {
+            std::filesystem::create_directories(output_dir);
+            output_file = (std::filesystem::path(output_dir) / (std::filesystem::path(each_file).filename().string() + post_fix)).string();
+        }
+        else
+            output_file = each_file + post_fix;
+
+        tipl::out() << (direction ? "warping " : "unwarping") << each_file << " into " << output_file;
+        if(!r.apply_warping<direction>(each_file.c_str(),output_file.c_str()))
+        {
+            tipl::error() << r.error_msg;
+            return false;
+        }
+    }
+    return true;
+}
+
 int reg(tipl::program_option<tipl::out>& po)
 {
     dual_reg r;
-    std::vector<std::string> from_filename,to_filename;
-    po.get_files("source",from_filename);
-    po.get_files("to",to_filename);
+    std::vector<std::string> from_filename(tipl::split(po.get("source"),',')),to_filename(tipl::split(po.get("to"),','));
     tipl::out() << from_filename.size() << " file(s) specified at --source";
     tipl::out() << to_filename.size() << " file(s) specified at --to";
     if(po.has("mapping"))
@@ -755,11 +800,10 @@ int reg(tipl::program_option<tipl::out>& po)
         tipl::out() << "dim: " << r.Is << " to " << r.Its;
         tipl::out() << "vs: " << r.Ivs << " to " << r.Itvs;
         bool good = true;
-        if(!from_filename.empty())
-            good &= r.apply_warping<true>(from_filename,".wp.nii.gz",po.get("output"));
-        if(!to_filename.empty())
-            good &= r.apply_warping<false>(to_filename,".uwp.nii.gz",po.get("output"));
-        return good ? 0 : 1;
+        if(!save_warping<true>(r,from_filename,po.get("output"),false) ||
+           !save_warping<false>(r,to_filename,po.get("output"),false))
+            return 1;
+        return 0;
     }
 
 
@@ -835,12 +879,10 @@ int reg(tipl::program_option<tipl::out>& po)
         tipl::error() << r.error_msg;
         return 1;
     }
-    bool good = true;
-    if(po.get("output_warp",1))
-        good &= r.apply_warping<true>(from_filename,po.get("export_r",0) ?
-                      ".wp.r"+std::to_string(int(r.r[0]*100.0f)) + std::string(".nii.gz") : std::string(".wp.nii.gz"),po.get("output"));
-    if(po.get("output_unwarp",0))
-        good &= r.apply_warping<false>(to_filename,po.get("export_r",0) ?
-                          ".uwp.r"+std::to_string(int(r.r[0]*100.0f)) + std::string(".nii.gz") : std::string(".uwp.nii.gz"),po.get("output"));
-    return good ? 0 : 1;
+
+
+    if(!save_warping<true>(r,tipl::split(po.get("s2t",po.get("source")),','),po.get("output"),po.get("export_r",0)) ||
+       !save_warping<false>(r,tipl::split(po.get("t2s"),','),po.get("output"),po.get("export_r",0)))
+        return 1;
+    return 0;
 }
