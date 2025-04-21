@@ -1578,10 +1578,13 @@ QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
     QNetworkRequest request;
     request.setUrl(url);
     request.setRawHeader("Accept", "application/json");
-    QString authToken = ui->github_token->text().trimmed();
-    if (!authToken.isEmpty())
-        request.setRawHeader("Authorization",
-                             QString("Bearer %1").arg(authToken).toUtf8());
+    if(url.toString().contains("api.github"))
+    {
+        QString authToken = ui->github_token->text().trimmed();
+        if (!authToken.isEmpty())
+            request.setRawHeader("Authorization",
+                                 QString("Bearer %1").arg(authToken).toUtf8());
+    }
 
     return QSharedPointer<QNetworkReply>(manager.get(request),
             [](QNetworkReply* reply)
@@ -1653,10 +1656,8 @@ void MainWindow::on_load_tags_clicked()
     ui->load_tags->setEnabled(false);
     notes.clear();
     assets.clear();
-    qint64 minWaitMs = 3000;
-    if(ui->github_repo->currentIndex() == 0 || ui->github_token->text().isEmpty())
-        minWaitMs = 0;
-    QTimer::singleShot(minWaitMs, this, [this, url, repo](){loadTags(QUrl(url), repo, QJsonArray());});
+    std::vector<int> per_page = {64,32,16,8,4};
+    QTimer::singleShot(0,this, [=](){loadTags(QUrl(url), repo, QJsonArray(), per_page[std::min<int>(per_page.size()-1,github_api_rate_limit/15)]);});
 }
 
 template<typename reply_type>
@@ -1681,21 +1682,39 @@ QString showError(reply_type reply)
                                   }).value(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(),"Github api rate limit reached");
 }
 
+void MainWindow::update_rate_limit(QSharedPointer<QNetworkReply> reply)
+{
+    if(reply->rawHeader("X-RateLimit-Remaining").toInt() == 0)
+        return;
+    tipl::out() << "api rate limit: " << (github_api_rate_limit = reply->rawHeader("X-RateLimit-Remaining").toInt());
+}
 
-void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array)
+void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array,int per_page)
 {
     static int retryCount = 0;
+    {
+        QUrlQuery q(url.query());
+        q.removeAllQueryItems("per_page");
+        q.addQueryItem("per_page", QString::number(per_page).toStdString().c_str());
+        url.setQuery(q);
+    }
+
+    tags[repo] = array;
+    if (!array.isEmpty() && repo == ui->github_repo->currentData().toString())
+        QTimer::singleShot(0, this, [this]() {on_github_repo_currentIndexChanged(0);});
+
     tipl::out() << "loading " << url.toString().toStdString();
-    auto reply   = get(url);
+    auto reply = get(url);
     connect(reply.get(), &QNetworkReply::finished, this, [=]() mutable {
-        if (reply->error() != QNetworkReply::NoError) {
+        if (reply->error() != QNetworkReply::NoError)
+        {
             if (reply->error() != QNetworkReply::OperationCanceledError) {
                 int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
                 if (status!=401 && status!=404 && status!=403 && retryCount<5) {
                     int waitTime = 2 << retryCount;  // 2,4,8,16,32s
                     QTimer::singleShot(waitTime*1000, this, [=]() {
                         ++retryCount;
-                        loadTags(url, repo, array);
+                        loadTags(url, repo, array,per_page);
                     });
                 } else {
                     QMessageBox::critical(this, "ERROR", showError(reply));
@@ -1703,27 +1722,34 @@ void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array)
                         ui->github_token->clear();
                 }
             }
-        } else {
+        }
+        else
+        {
+            update_rate_limit(reply);
             retryCount = 0;
-            // final object before closing ']'
             foreach (const QJsonValue& release , QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).array())
                 array.append(release);
-            if (!array.isEmpty())
-            {
-                tags[repo] = array;
-                if (repo == ui->github_repo->currentData().toString())
-                    QTimer::singleShot(0, this, [this]() {on_github_repo_currentIndexChanged(0);});
-            }
+
             // next‑page?
             auto m = QRegularExpression("<([^>]+)>; rel=\"next\"").match(reply->rawHeader("Link"));
             if (m.hasMatch())
             {
                 QUrl nextPg = m.captured(1);
                 if (nextPg.isValid())
-                    QTimer::singleShot(ui->github_token->text().isEmpty() ? 10000 : 3000, this, [=]() {loadTags(nextPg, repo, array);});
+                {
+                    int delay_time = 0;
+                    if(github_api_rate_limit < 40)
+                        delay_time = 1000;
+                    if(github_api_rate_limit < 20)
+                        delay_time = 5000;
+                    QTimer::singleShot(delay_time, this, [=]() {loadTags(nextPg, repo, array , per_page);});
+                    return;
+                }
             }
-            else
-                ui->load_tags->setEnabled(true);
+            tags[repo] = array;
+            if (!array.isEmpty() && repo == ui->github_repo->currentData().toString())
+                QTimer::singleShot(0, this, [this]() {on_github_repo_currentIndexChanged(0);});
+            ui->load_tags->setEnabled(true);
         }
         reply->deleteLater();
     });
@@ -1914,15 +1940,6 @@ void MainWindow::on_github_download_clicked()
         return;
     }
 
-    if(ui->github_token->text().isEmpty())
-    {
-        QMessageBox::information(nullptr, "DSI Studio",
-            "Consider using a GitHub personal access token (PAT) to enable faster downloads.\n\n"
-            "1. Go to GitHub → Settings → Developer settings.\n"
-            "2. Personal access tokens (classic) → Generate new token → check [repo][public_repo].\n"
-            "3. Copy the token to DSI Studio's [Tools][GitHub PAT] field.");
-    }
-
     std::vector<int> row_list;
     for (int i = 0; i < ranges.size();++i)
         for (int row = ranges[i].topRow(); row <= ranges[i].bottomRow(); ++row)
@@ -1980,30 +1997,6 @@ void MainWindow::on_github_download_clicked()
             {
                 file->write(reply->readAll());
             });
-        }
-
-        // Calculate elapsed time for download + write
-        qint64 endTime = QDateTime::currentMSecsSinceEpoch();
-        qint64 elapsed = endTime - startTime; // in ms
-
-        // Determine a minimum total time based on PAT presence
-        // For example, 10 seconds if no PAT, 3 seconds if PAT is set
-        QString pat = ui->github_token->text().trimmed();
-        int minWaitMs = pat.isEmpty() ? 10000 : 3000; // in milliseconds
-
-        // If the elapsed time is less than our minWait, sleep the difference
-        qint64 remain = minWaitMs - elapsed;
-        // If the elapsed time is less than our minWait, keep UI alive while waiting
-        if (remain > 0)
-        {
-            QElapsedTimer timer;
-            timer.start();
-            while (timer.elapsed() < remain)
-            {
-                // Process events so the user can click "Cancel" (or any other UI actions)
-                QCoreApplication::processEvents();
-                QThread::msleep(50);
-            }
         }
     }
 }

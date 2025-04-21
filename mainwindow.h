@@ -24,6 +24,8 @@ class MainWindow : public QMainWindow
     std::map<QString,QString> notes;
 public:
     std::vector<QString> github_tsv_link;
+    int github_api_rate_limit = 60;
+    void update_rate_limit(QSharedPointer<QNetworkReply>);
 public:
     bool fetch_github = false;
     QNetworkAccessManager manager;
@@ -49,7 +51,7 @@ public:
     void open_template(QString name);
     void add_work_dir(QString dir);
     bool load_db(std::shared_ptr<group_connectometry_analysis>& database,QString& file_name);
-    void loadTags(QUrl url,QString repo,QJsonArray array);
+    void loadTags(QUrl url,QString repo,QJsonArray array,int per_page);
     void loadFiles(void);
     void login_with_param(QStringList param);
 private slots:
