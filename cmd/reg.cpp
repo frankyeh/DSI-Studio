@@ -873,14 +873,11 @@ int reg(tipl::program_option<tipl::out>& po)
         r.param.min_dimension = po.get("min_dimension",r.param.min_dimension);
         r.nonlinear_reg(tipl::prog_aborted);
     }
-
     if(po.has("output_mapping") && !r.save_warping(po.get("output_mapping").c_str()))
     {
         tipl::error() << r.error_msg;
         return 1;
     }
-
-
     if(!save_warping<true>(r,tipl::split(po.get("s2t",po.get("source")),','),po.get("output"),po.get("export_r",0)) ||
        !save_warping<false>(r,tipl::split(po.get("t2s"),','),po.get("output"),po.get("export_r",0)))
         return 1;
