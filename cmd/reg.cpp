@@ -1,5 +1,6 @@
 #include <QString>
 #include <QImage>
+#include "img.hpp"
 #include "reg.hpp"
 #include "tract_model.hpp"
 
@@ -337,6 +338,138 @@ bool dual_reg::apply_warping_tt(const char* input, const char* output) const
 template bool dual_reg::apply_warping_tt<false>(const char* input, const char* output) const;
 template bool dual_reg::apply_warping_tt<true>(const char* input, const char* output) const;
 
+
+template<bool direction>
+bool dual_reg::apply_warping_nii(const char* input, const char* output) const
+{
+    tipl::out() << "opening " << input;
+    auto input_size = (direction ? Is : Its);
+    // check dimension
+    {
+        tipl::io::gz_nifti nii;
+        if(!nii.load_from_file(input))
+        {
+            error_msg = nii.error_msg;
+            return false;
+        }
+        tipl::shape<3> d;
+        nii.get_image_dimension(d);
+        if(d != input_size)
+        {
+            tipl::warning() << std::filesystem::path(input).filename().string() << " has a size of " << d << " different from the expected size " << input_size;
+            tipl::warning() << "transformation will be applied. But please make sure you apply the mapping in the correct direction.";
+        }
+    }
+    tipl::image<dimension> I3(input_size);
+    if(!tipl::io::gz_nifti::load_to_space(input,I3,direction ? IR : ItR))
+    {
+        error_msg = "cannot open " + std::string(input);
+        return false;
+    }
+    bool is_label = tipl::is_label_image(I3);
+    tipl::out() << (is_label ? "label image interpolated using majority assignment " : "scalar image interpolated using spline") << std::endl;
+    tipl::out() << "saving " << output;
+    if(!tipl::io::gz_nifti::save_to_file(output,
+                                         is_label ? apply_warping<direction,tipl::interpolation::majority>(I3) : apply_warping<direction,tipl::interpolation::cubic>(I3),
+                                         direction ? Itvs : Ivs,
+                                         direction ? ItR : IR,
+                                         direction ? It_is_mni : Is_is_mni))
+    {
+        error_msg = "cannot write to file " + std::string(output);
+        return false;
+    }
+    return true;
+}
+
+template bool dual_reg::apply_warping_nii<false>(const char* input, const char* output) const;
+template bool dual_reg::apply_warping_nii<true>(const char* input, const char* output) const;
+
+
+bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
+                      tipl::shape<3>& dim,tipl::vector<3>& vs,tipl::matrix<4,4>& trans,bool& is_mni);
+tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& mat_reader);
+bool save_fz(tipl::io::gz_mat_read& mat_reader,
+              tipl::io::gz_mat_write& matfile,
+              const std::vector<std::string>& skip_list,
+              const std::vector<std::string>& skip_head_list);
+template<bool direction>
+bool dual_reg::apply_warping_fzsz(const char* input,const char* output) const
+{
+    tipl::io::gz_mat_read mat_reader;
+    mat_reader.delay_read = false;
+    if(!mat_reader.load_from_file(input))
+    {
+        error_msg = mat_reader.error_msg;
+        return false;
+    }
+    tipl::io::gz_mat_write mat_writer(output);
+    if(!mat_writer)
+    {
+        error_msg = std::string("cannot save file to ") + output;
+        return false;
+    }
+    tipl::shape<3> dim;
+    tipl::vector<3> vs;
+    tipl::matrix<4,4,float> trans((tipl::identity_matrix()));
+    bool is_mni;
+    if(!check_fib_dim_vs(mat_reader,dim,vs,trans,is_mni))
+    {
+        error_msg = mat_reader.error_msg;
+        return false;
+    }
+    handle_mask(mat_reader);
+    if(dim != (direction ? Is : Its))
+    {
+        error_msg = "dimension does not match";
+        return false;
+    }
+    if(trans != (direction ? IR : ItR))
+    {
+        error_msg = "transformation matrix does not match";
+        return false;
+    }
+    tipl::progress prog("warping");
+    size_t p = 0;
+    bool failed = false;
+    tipl::par_for(mat_reader.size(),[&](unsigned int i)
+    {
+        if(!prog(p++,mat_reader.size()) || failed)
+            return;
+        auto& mat = mat_reader[i];
+        size_t mat_size = mat_reader.cols(i)*mat_reader.rows(i);
+        if(mat_size == dim.size()) // image volumes, including fa, and fiber index
+        {
+            variant_image new_image;
+            new_image.shape = dim;
+            if(!new_image.read_mat_image(i,mat_reader))
+                return;
+            if(tipl::begins_with(mat.name,"index"))
+                new_image.interpolation = false;
+            new_image.apply([&](auto& I)
+            {
+                if(new_image.interpolation)
+                    I = apply_warping<direction,tipl::interpolation::majority>(I);
+                else
+                    I = apply_warping<direction,tipl::interpolation::cubic>(I);
+            });
+            new_image.shape = (direction ? Its : Is);
+            new_image.write_mat_image(i,mat_reader);
+        }
+
+    },std::thread::hardware_concurrency());
+
+    {
+        if((direction ? Its : Is) != dim)
+            mat_reader.write("dimension",(direction ? Its : Is).begin(),1,3);
+        if((direction ? Itvs : Ivs) != vs)
+            mat_reader.write("voxel_size",(direction ? Itvs : Ivs).begin(),1,3);
+        if(mat_reader.has("trans") && (direction ? ItR : IR) != trans)
+            mat_reader.write("trans",(direction ? ItR : IR).begin(),4,4);
+    }
+    return save_fz(mat_reader,mat_writer,{"odf_faces","odf_vertices","z0","mapping"},{"subject"});
+}
+template bool dual_reg::apply_warping_fzsz<false>(const char* input, const char* output) const;
+template bool dual_reg::apply_warping_fzsz<true>(const char* input, const char* output) const;
 
 bool dual_reg::load_warping(const std::string& filename)
 {
