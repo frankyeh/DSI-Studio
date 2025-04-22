@@ -185,7 +185,7 @@ bool src_data::correct_by_t2w(const std::string& t2w_filename)
     }
     if(!warp_b0_to_image(r))
         return false;
-    if(r.r[0] < 0.85f)
+    if(r.r[0] < 0.5f)
     {
         error_msg = "cannot register b0 to t2w: poor goodness of fit";
         return false;
