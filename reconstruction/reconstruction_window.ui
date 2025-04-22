@@ -1355,9 +1355,11 @@ Reconstruction</string>
     <addaction name="actionTOPUP_only"/>
     <addaction name="actionEDDY"/>
     <addaction name="separator"/>
+    <addaction name="actionCorrect_Distortion_by_T2w"/>
     <addaction name="actionEddy_Motion_Correction"/>
     <addaction name="separator"/>
     <addaction name="actionVolume_Orientation_Correction"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -1640,6 +1642,11 @@ Reconstruction</string>
   <action name="actionProbablistic_Masking">
    <property name="text">
     <string>Probablistic Masking...</string>
+   </property>
+  </action>
+  <action name="actionCorrect_Distortion_by_T2w">
+   <property name="text">
+    <string>Correct Distortion by T2w...</string>
    </property>
   </action>
  </widget>
