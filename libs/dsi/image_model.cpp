@@ -129,6 +129,8 @@ bool src_data::mask_from_template(void)
         error_msg = "no template t2w for generating mask";
         return false;
     }
+    // remove skull from t2w
+    tipl::preserve(r.It[0],r.It[1]);
     if(!warp_b0_to_image(r))
         return false;
     // use iso to generate mask
