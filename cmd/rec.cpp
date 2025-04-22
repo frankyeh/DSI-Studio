@@ -51,50 +51,21 @@ int rec(tipl::program_option<tipl::out>& po)
         return 1;
     }
 
-    if(po.has("mask"))
+
+    if(po.has("mask") && std::filesystem::exists(po.get("mask")))
     {
-        std::string mask_file = po.get("mask");
-        if(mask_file == "1")
-            src.voxel.mask = 1;
-        else
-        if(mask_file == "unet")
+        tipl::out() << "opening mask file: " << po.get("mask") << std::endl;
+        if(!tipl::io::gz_nifti::load_from_file(po.get("mask"),src.voxel.mask))
         {
-            if(!src.mask_from_unet())
-            {
-                tipl::error() << src.error_msg;
-                return 1;
-            }
+            tipl::error() << "cannot read mask file";
+            return 1;
         }
-        else
-        if(mask_file == "template")
+        if(src.voxel.mask.shape() != src.voxel.dim)
         {
-            if(!src.mask_from_template())
-            {
-                tipl::error() << src.error_msg;
-                return 1;
-            }
-        }
-        else
-        {
-            tipl::out() << "opening mask file: " << mask_file << std::endl;
-            tipl::io::gz_nifti nii;
-            if(!nii.load_from_file(mask_file) || !nii.toLPS(src.voxel.mask))
-            {
-                tipl::error() << nii.error_msg << std::endl;
-                return 1;
-            }
-            if(src.voxel.mask.shape() != src.voxel.dim)
-            {
-                tipl::error() << "The mask dimension is different. terminating..." << std::endl;
-                return 1;
-            }
+            tipl::error() << "The mask dimension is different. terminating..." << std::endl;
+            return 1;
         }
     }
-    else
-        src.calculate_dwi_sum(src.voxel.mask.empty());
-
-    if(po.has("apply_mask"))
-        src.apply_mask = true;
 
     if(po.has("cmd"))
     {
@@ -209,6 +180,27 @@ int rec(tipl::program_option<tipl::out>& po)
             }
         }
     }
+
+
+    if(po.has("mask"))
+    {
+        std::string mask_file = po.get("mask");
+        if(mask_file == "1")
+        {
+            src.voxel.mask = 1;
+            src.apply_mask = false;
+        }
+        else
+        if((mask_file == "unet" && !src.command("[Step T2a][Unet]")) ||
+           (mask_file == "template" && !src.command("[Step T2a][Template]")))
+            {
+                tipl::error() << src.error_msg;
+                return 1;
+            }
+    }
+
+    if(po.has("apply_mask"))
+        src.apply_mask = true;
 
 
     if(po.get("export_r",0))
