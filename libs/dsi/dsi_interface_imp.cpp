@@ -37,8 +37,6 @@ void src_data::check_output_file_name(void)
         output_file_name += (voxel.r2_weighted ? ".gqi2.fz":".gqi.fz");
         return;
     case 7:
-        if(voxel.export_r)
-            output_file_name += ".r" + std::to_string(int(voxel.R2*100.0f));
         output_file_name += (voxel.r2_weighted ? ".qsdr2.fz":".qsdr.fz");
         return;
     default:
