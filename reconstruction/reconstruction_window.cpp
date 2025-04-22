@@ -355,7 +355,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
             return false;
         param = filename.toStdString();
     }
-    if(cmd == "[Step T2][Edit][Probablistic Masking]")
+    if(cmd == "[Step T2][Edit][Probablistic Masking]" || cmd == "[Step T2][Corrections][By T2w]")
     {
         QString filename = QFileDialog::getOpenFileName(
                     this,cmd.c_str(),QFileInfo(filenames[0]).baseName() + ".nii.gz",
