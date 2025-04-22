@@ -395,6 +395,7 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
 template<bool direction>
 bool dual_reg::apply_warping_fzsz(const char* input,const char* output) const
 {
+    tipl::progress prog("apply warp");
     tipl::io::gz_mat_read mat_reader;
     mat_reader.delay_read = false;
     if(!mat_reader.load_from_file(input))
@@ -428,7 +429,7 @@ bool dual_reg::apply_warping_fzsz(const char* input,const char* output) const
         error_msg = "transformation matrix does not match";
         return false;
     }
-    tipl::progress prog("warping");
+
     size_t p = 0;
     bool failed = false;
     tipl::par_for(mat_reader.size(),[&](unsigned int i)
@@ -443,14 +444,18 @@ bool dual_reg::apply_warping_fzsz(const char* input,const char* output) const
             new_image.shape = dim;
             if(!new_image.read_mat_image(i,mat_reader))
                 return;
-            if(tipl::begins_with(mat.name,"index"))
+            if(tipl::begins_with(mat.name,"index") || tipl::begins_with(mat.name,"mask"))
                 new_image.interpolation = false;
             new_image.apply([&](auto& I)
             {
                 if(new_image.interpolation)
-                    I = apply_warping<direction,tipl::interpolation::majority>(I);
+                {
+                    auto new_I = apply_warping<direction,tipl::interpolation::cubic>(tipl::image<3>(I));
+                    tipl::lower_threshold(new_I,0.0f);
+                    I = new_I;
+                }
                 else
-                    I = apply_warping<direction,tipl::interpolation::cubic>(I);
+                    I = apply_warping<direction,tipl::interpolation::majority>(I);
             });
             new_image.shape = (direction ? Its : Is);
             new_image.write_mat_image(i,mat_reader);
