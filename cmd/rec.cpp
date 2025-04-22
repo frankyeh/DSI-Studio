@@ -158,42 +158,16 @@ int rec(tipl::program_option<tipl::out>& po)
             std::copy(src.src_bvalues.begin(),src.src_bvalues.end(),std::ostream_iterator<float>(bvalue_list," "));
             tipl::out() << "current DWI b values: " << bvalue_list.str() << std::endl;
         }
-        if(po.has("rev_pe"))
-        {
-            if(!src.command("[Step T2][Corrections][TOPUP EDDY]",po.get("rev_pe")))
-            {
-                tipl::error() << src.error_msg << std::endl;
-                return 1;
-            }
-        }
 
-        if(po.get("volume_correction",0))
+        if((po.get("check_btable",0) && !src.command("[Step T2][B-table][Check B-table]")) ||
+           (po.has("rev_pe") && !src.command("[Step T2][Corrections][TOPUP EDDY]",po.get("rev_pe")))||
+           (po.get("volume_correction",0) && !src.command("[Step T2][Corrections][Volume Orientation Correction]")) ||
+           (po.has("correct_by_t2") && !src.command("[Step T2][Corrections][By T2w]",po.get("correct_by_t2"))) ||
+           (po.get("motion_correction",0) && !src.command("[Step T2][Corrections][Motion Correction]")))
         {
-            if(!src.command("[Step T2][Corrections][Volume Orientation Correction]"))
-            {
-                tipl::error() << src.error_msg;
-                return 1;
-            }
+            tipl::error() << src.error_msg << std::endl;
+            return 1;
         }
-
-        if(po.get("check_btable",0))
-        {
-            if(!src.command("[Step T2][B-table][Check B-table]"))
-            {
-                tipl::error() << src.error_msg;
-                return 1;
-            }
-        }
-
-        if(po.get("motion_correction",0))
-        {
-            if(!src.command("[Step T2][Corrections][Motion Correction]"))
-            {
-                tipl::error() << src.error_msg << std::endl;
-                return 1;
-            }
-        }
-
 
 
         if(po.has("make_isotropic") ||
