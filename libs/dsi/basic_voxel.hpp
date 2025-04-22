@@ -127,7 +127,7 @@ public:// manual alignment used in QSDR
 public:// used in QSDR
     tipl::matrix<4,4> trans_to_mni = tipl::identity_matrix();
     size_t template_id = 0;
-    bool qsdr = false,export_r=false;
+    bool qsdr = false;
     float R2 = 0.0f;
     float qsdr_reso = 1.0f;
 public:
