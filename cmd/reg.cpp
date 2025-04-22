@@ -739,8 +739,7 @@ bool load_nifti_file(std::string file_name_cmd,tipl::image<3>& data,tipl::vector
 template<bool direction>
 bool save_warping(dual_reg& r,
                   const std::vector<std::string>& apply_warp_filename,
-                  const std::string& output_dir,
-                  bool export_r)
+                  const std::string& output_dir)
 {
     for(const auto& each_file: apply_warp_filename)
     {
@@ -762,8 +761,6 @@ bool save_warping(dual_reg& r,
             post_fix = ".wp" + post_fix;
         else
             post_fix = ".uwp" + post_fix;
-        if(export_r)
-            post_fix = ".r" + std::to_string(int(r.r[0]*100.0f)) + post_fix;
         std::string output_file;
         if (!output_dir.empty())
         {
@@ -805,8 +802,8 @@ int reg(tipl::program_option<tipl::out>& po)
         tipl::out() << "dim: " << r.Is << " to " << r.Its;
         tipl::out() << "vs: " << r.Ivs << " to " << r.Itvs;
         bool good = true;
-        if(!save_warping<true>(r,from_filename,po.get("output"),false) ||
-           !save_warping<false>(r,to_filename,po.get("output"),false))
+        if(!save_warping<true>(r,from_filename,po.get("output")) ||
+           !save_warping<false>(r,to_filename,po.get("output")))
             return 1;
         return 0;
     }
@@ -883,8 +880,10 @@ int reg(tipl::program_option<tipl::out>& po)
         tipl::error() << r.error_msg;
         return 1;
     }
-    if(!save_warping<true>(r,tipl::split(po.get("s2t",po.get("source")),','),po.get("output"),po.get("export_r",0)) ||
-       !save_warping<false>(r,tipl::split(po.get("t2s"),','),po.get("output"),po.get("export_r",0)))
+    if(!save_warping<true>(r,tipl::split(po.get("s2t",po.get("source")),','),po.get("output")) ||
+       !save_warping<false>(r,tipl::split(po.get("t2s"),','),po.get("output")))
         return 1;
+    if(po.get("export_r",0))
+        std::ofstream(from_filename.front() + ".r" + std::to_string(int(r.r[0]*100))) << std::endl;
     return 0;
 }
