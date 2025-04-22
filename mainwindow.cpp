@@ -1758,12 +1758,6 @@ void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array,int per_page)
 
 void MainWindow::loadFiles()
 {
-    int row = ui->github_tags->currentRow();
-    if (row < 0)
-        return;
-
-    auto tag = ui->github_tags->item(row, 0)->text();
-
     ui->github_release_files->setSortingEnabled(false);
     ui->github_release_files->setUpdatesEnabled(false);
     ui->github_release_files->setRowCount(0);
@@ -1774,7 +1768,7 @@ void MainWindow::loadFiles()
     github_tsv_link.resize(1);
 
     QStringList units = {" b", " kb", " mb", " gb"};
-    foreach (const QJsonValue& asset,assets[tag])
+    foreach (const QJsonValue& asset,assets[cur_tag])
     {
         QJsonObject assetObject = asset.toObject();
         size_t size = assetObject.value("size").toInteger();
@@ -1871,10 +1865,10 @@ void MainWindow::on_github_tags_itemSelectionChanged()
     if(ui->github_tags->currentRow() >= 0 &&
        ui->github_tags->item(ui->github_tags->currentRow(), 0)->text() != "Loading...")
     {
-        QString tag = ui->github_tags->item(ui->github_tags->currentRow(), 0)->text();
+        cur_tag = ui->github_tags->item(ui->github_tags->currentRow(), 0)->text();
         QString title = ui->github_tags->item(ui->github_tags->currentRow(), 2)->text();
         ui->github_repo_title->setText(title);
-        auto content = notes[tag].split('\n');
+        auto content = notes[cur_tag].split('\n');
         if(!content.empty() && content[0].contains(title))
             content.remove(0);
         ui->github_note->setMarkdown(content.join('\n'));
@@ -2041,9 +2035,7 @@ void MainWindow::on_github_open_file_clicked()
     auto row = ui->github_release_files->currentRow();
     if(row < 0)
         return;
-
-
-    QDir dir(QDir::tempPath() + "/" + ui->github_tags->item(ui->github_tags->currentRow(), 0)->text());
+    QDir dir(QDir::tempPath() + "/" + cur_tag);
     if (!dir.exists())
     {
         if(!dir.mkpath("."))
