@@ -72,8 +72,6 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     if(!load_src(0))
         throw std::runtime_error(handle->error_msg.c_str());
 
-    ui->output_rdi->setChecked(tipl::contains(handle->voxel.report,"multishell"));
-
     setWindowTitle(filenames[0]);
     ui->ThreadCount->setMaximum(tipl::max_thread_count);
     ui->toolBox->setCurrentIndex(1);
