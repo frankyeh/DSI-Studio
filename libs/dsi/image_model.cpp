@@ -96,16 +96,32 @@ void src_data::calculate_dwi_sum(bool update_mask)
     }
 }
 
-
+bool src_data::warp_b0_to_image(dual_reg& r)
+{
+    tipl::progress prog("registering images");
+    std::vector<tipl::image<3> > b0;
+    if(!read_b0(b0))
+        return false;
+    r.I[0] = subject_image_pre(std::move(b0[0]));
+    r.IR = voxel.trans_to_mni;
+    r.Ivs = voxel.vs;
+    r.Is = r.I[0].shape();
+    r.match_resolution(true);
+    bool ended = false;
+    std::thread thread([&](void)
+    {
+        r.linear_reg(tipl::prog_aborted);
+        r.nonlinear_reg(tipl::prog_aborted);
+        ended = true;
+    });
+    while(!ended)
+        prog(0,1);
+    thread.join();
+    return !prog.aborted();
+}
 extern std::vector<std::string> t2w_template_list,iso_template_list;
 bool src_data::mask_from_template(void)
 {
-    std::vector<tipl::image<3> > b0;
-    if(!read_b0(b0))
-    {
-        error_msg = "no b0 for unet to generate a mask";
-        return false;
-    }
     dual_reg r;
     if(!r.load_template(0,t2w_template_list[voxel.template_id]) ||
        !r.load_template(1,iso_template_list[voxel.template_id]))
@@ -113,27 +129,8 @@ bool src_data::mask_from_template(void)
         error_msg = "no template t2w for generating mask";
         return false;
     }
-
-    r.I[0] = subject_image_pre(std::move(b0[0]));
-    r.IR = voxel.trans_to_mni;
-    r.Ivs = voxel.vs;
-    r.Is = r.I[0].shape();
-    r.match_resolution(true);
-    {
-        tipl::progress prog("registering to template");
-        bool ended = false;
-        std::thread thread([&](void)
-        {
-            r.linear_reg(tipl::prog_aborted);
-            r.nonlinear_reg(tipl::prog_aborted);
-            ended = true;
-        });
-        while(!ended)
-            prog(0,1);
-        thread.join();
-        if(prog.aborted())
-            return false;
-    }
+    if(!warp_b0_to_image(r))
+        return false;
     // use iso to generate mask
     tipl::threshold(r.apply_warping<false,tipl::interpolation::linear>(r.It[1]),voxel.mask,50.0f);
     for(size_t i = 0;i < 4;++i)
@@ -148,10 +145,7 @@ bool src_data::mask_from_unet(void)
 {
     std::vector<tipl::image<3> > b0;
     if(!read_b0(b0))
-    {
-        error_msg = "no b0 for unet to generate a mask";
         return false;
-    }
     std::string model_file_name = QCoreApplication::applicationDirPath().toStdString() + "/network/brain.t2w.seg5.net.gz";
     if(std::filesystem::exists(model_file_name))
     {
@@ -177,6 +171,55 @@ bool src_data::mask_from_unet(void)
         error_msg =  "no applicable unet model for generating a mask";
     return false;
 }
+
+bool src_data::correct_by_t2w(const std::string& t2w_filename)
+{
+    std::string msg = " Susceptibility distortion was corrected by nonlinearly warping the b0 image to the T2-weighted image.";
+    if(tipl::contains(voxel.report,msg))
+        return true;
+    dual_reg r;
+    if(!r.load_template(0,t2w_filename))
+    {
+        error_msg = r.error_msg;
+        return false;
+    }
+    if(!warp_b0_to_image(r))
+        return false;
+    if(r.r[0] < 0.85f)
+    {
+        error_msg = "cannot register b0 to t2w: poor goodness of fit";
+        return false;
+    }
+    voxel.R2 = r.r[0];
+    {
+        std::vector<tipl::image<3,unsigned short> > this_new_dwi(src_dwi_data.size());
+        std::vector<const unsigned short*> new_src_dwi_data(src_dwi_data.size());
+        tipl::progress prog("warping");
+        size_t p = 0;
+        tipl::adaptive_par_for(src_dwi_data.size(),[&](unsigned int index)
+        {
+            if(prog.aborted())
+                return;
+            prog(p++,src_dwi_data.size());
+            auto new_I = r.apply_warping<true,tipl::interpolation::cubic>(tipl::image<3>(dwi_at(index)));
+            tipl::lower_threshold(new_I,0.0f);
+            this_new_dwi[index] = new_I;
+            new_src_dwi_data[index] = this_new_dwi[index].data();
+        });
+        voxel.mask = r.apply_warping<true,tipl::interpolation::majority>(voxel.mask);
+        if(prog.aborted())
+            return false;
+        this_new_dwi.swap(new_dwi);
+        new_src_dwi_data.swap(src_dwi_data);
+    }
+    voxel.dim = r.Its;
+    voxel.vs = r.Itvs;
+    voxel.trans_to_mni = r.ItR;
+    calculate_dwi_sum(false);
+    voxel.recon_report << msg;
+    return true;
+}
+
 void src_data::remove(unsigned int index)
 {
     if(index >= src_dwi_data.size())
@@ -1070,6 +1113,13 @@ bool src_data::command(std::string cmd,std::string param)
         voxel.steps += cmd+"\n";
         return true;
     }
+    if(cmd == "[Step T2][Corrections][By T2w]")
+    {
+        if(!correct_by_t2w(param))
+            return false;
+        voxel.steps += cmd+"="+param+"\n";
+        return true;
+    }
     if(cmd == "[Step T2][Corrections][Volume Orientation Correction]")
     {
         correction_axis();
@@ -1478,6 +1528,7 @@ bool src_data::correct_motion(void)
     apply_mask = true;
     return true;
 }
+
 void src_data::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
 {
     tipl::progress prog("Removing background region");
