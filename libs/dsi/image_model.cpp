@@ -1526,7 +1526,6 @@ bool src_data::correct_motion(void)
         });
     }
     voxel.report += msg;
-    apply_mask = true;
     return true;
 }
 
@@ -2674,7 +2673,7 @@ bool src_data::save_to_file(const std::string& filename)
                 mat_writer.write("mask",voxel.mask,voxel.dim.plane_size());
             }
             else
-                tipl::out() << "store raw DWI signals";
+                tipl::out() << "store unmasked DWI signals";
 
             for (unsigned int index = 0;prog(index,src_bvalues.size());++index)
                 mat_writer.write<tipl::io::masked_sloped>("image"+std::to_string(index),src_dwi_data[index],
@@ -2935,7 +2934,10 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         if(!mat_reader.has("mask"))
             voxel.mask.clear();
         else
+        {
             voxel.mask = handle_mask(mat_reader);
+            apply_mask = true;
+        }
         mat_reader.read("steps",voxel.steps);
 
         unsigned int row,col;
