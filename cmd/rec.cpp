@@ -56,6 +56,7 @@ int rec(tipl::program_option<tipl::out>& po)
         std::string mask_file = po.get("mask");
         if(mask_file == "1")
             src.voxel.mask = 1;
+        else
         if(mask_file == "unet")
         {
             if(!src.mask_from_unet())
@@ -64,6 +65,7 @@ int rec(tipl::program_option<tipl::out>& po)
                 return 1;
             }
         }
+        else
         if(mask_file == "template")
         {
             if(!src.mask_from_template())
@@ -72,7 +74,7 @@ int rec(tipl::program_option<tipl::out>& po)
                 return 1;
             }
         }
-
+        else
         {
             tipl::out() << "opening mask file: " << mask_file << std::endl;
             tipl::io::gz_nifti nii;
@@ -89,7 +91,7 @@ int rec(tipl::program_option<tipl::out>& po)
         }
     }
     else
-        src.calculate_dwi_sum(true);
+        src.calculate_dwi_sum(src.voxel.mask.empty());
 
     if(po.has("apply_mask"))
         src.apply_mask = true;
