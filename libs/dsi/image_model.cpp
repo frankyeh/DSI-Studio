@@ -183,6 +183,7 @@ bool src_data::correct_by_t2w(const std::string& t2w_filename)
         error_msg = r.error_msg;
         return false;
     }
+    r.param.speed = 1.0f;
     if(!warp_b0_to_image(r))
         return false;
     if(r.r[0] < 0.5f)
