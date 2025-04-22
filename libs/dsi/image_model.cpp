@@ -185,6 +185,7 @@ bool src_data::correct_by_t2w(const std::string& t2w_filename)
         error_msg = r.error_msg;
         return false;
     }
+    r.reg_type = tipl::reg::rigid_body;
     r.param.speed = 1.0f;
     if(!warp_b0_to_image(r))
         return false;
