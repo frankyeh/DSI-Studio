@@ -461,7 +461,7 @@ bool dual_reg::apply_warping_fzsz(const char* input,const char* output) const
             new_image.write_mat_image(i,mat_reader);
         }
 
-    },std::thread::hardware_concurrency());
+    },tipl::max_thread_count);
 
     {
         if((direction ? Its : Is) != dim)
