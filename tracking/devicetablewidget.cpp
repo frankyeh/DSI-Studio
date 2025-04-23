@@ -699,7 +699,7 @@ void DeviceTableWidget::lead_to_roi(void)
     tipl::adaptive_par_for(lead_pos.size(),[&](unsigned int i)
     {
         auto points = voxels;
-        tipl::add_constant(points,tipl::vector<3,short>(lead_pos[i]*resolution+0.5f));
+        tipl::add_constant(points.begin(),points.end(),tipl::vector<3,short>(lead_pos[i]*resolution+0.5f));
         new_regions[i]->add_points(std::move(points));
     });
     cur_tracking_window.regionWidget->end_update();
