@@ -150,7 +150,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -2564,7 +2564,136 @@ Tractography</string>
                 <string/>
                </property>
               </widget>
+              <widget class="QLabel" name="label_39">
+               <property name="geometry">
+                <rect>
+                 <x>677</x>
+                 <y>372</y>
+                 <width>250</width>
+                 <height>171</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_43">
+               <property name="geometry">
+                <rect>
+                 <x>669</x>
+                 <y>360</y>
+                 <width>250</width>
+                 <height>171</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_44">
+               <property name="geometry">
+                <rect>
+                 <x>685</x>
+                 <y>384</y>
+                 <width>250</width>
+                 <height>171</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_69">
+               <property name="geometry">
+                <rect>
+                 <x>660</x>
+                 <y>350</y>
+                 <width>280</width>
+                 <height>281</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+              <widget class="QCommandLinkButton" name="averagefib">
+               <property name="geometry">
+                <rect>
+                 <x>674</x>
+                 <y>560</y>
+                 <width>261</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+               </property>
+               <property name="text">
+                <string>Create Population Average</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+               </property>
+               <property name="autoRepeatDelay">
+                <number>296</number>
+               </property>
+               <property name="description">
+                <string>Select FIB or NIFTI files for averaging</string>
+               </property>
+              </widget>
+              <widget class="QLabel" name="label_49">
+               <property name="geometry">
+                <rect>
+                 <x>720</x>
+                 <y>440</y>
+                 <width>191</width>
+                 <height>61</height>
+                </rect>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>15</pointsize>
+                 <bold>true</bold>
+                </font>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127);color: black }</string>
+               </property>
+               <property name="text">
+                <string>FIB Files (*.fz)
+ NIFTI Files (*.nii.gz)</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
+              </widget>
               <zorder>label_41</zorder>
+              <zorder>label_69</zorder>
               <zorder>line_8</zorder>
               <zorder>label_65</zorder>
               <zorder>label_59</zorder>
@@ -2588,6 +2717,11 @@ Tractography</string>
               <zorder>xnat_download</zorder>
               <zorder>label_33</zorder>
               <zorder>label_32</zorder>
+              <zorder>label_43</zorder>
+              <zorder>label_39</zorder>
+              <zorder>label_44</zorder>
+              <zorder>averagefib</zorder>
+              <zorder>label_49</zorder>
              </widget>
             </item>
            </layout>
@@ -3076,28 +3210,6 @@ p, li { white-space: pre-wrap; }
             <string>Perform linear registration</string>
            </property>
           </widget>
-          <widget class="QCommandLinkButton" name="averagefib">
-           <property name="geometry">
-            <rect>
-             <x>330</x>
-             <y>120</y>
-             <width>301</width>
-             <height>81</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-           </property>
-           <property name="text">
-            <string>Create Population-Averaged Template</string>
-           </property>
-           <property name="autoRepeatDelay">
-            <number>296</number>
-           </property>
-           <property name="description">
-            <string>Average the ODFs to create a template</string>
-           </property>
-          </widget>
           <widget class="QCommandLinkButton" name="nonlinear_reg">
            <property name="geometry">
             <rect>
@@ -3254,7 +3366,6 @@ p, li { white-space: pre-wrap; }
           <zorder>label_12</zorder>
           <zorder>parse_network_measures</zorder>
           <zorder>linear_reg</zorder>
-          <zorder>averagefib</zorder>
           <zorder>nonlinear_reg</zorder>
           <zorder>view_image</zorder>
           <zorder>label_63</zorder>
