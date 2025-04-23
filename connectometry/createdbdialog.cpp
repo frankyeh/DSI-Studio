@@ -22,8 +22,9 @@ CreateDBDialog::CreateDBDialog(QWidget *parent,bool create_db_) :
     ui->group_list->setSelectionModel(new QItemSelectionModel(ui->group_list->model()));
     if(!create_db)
     {
-        ui->index_of_interest->hide();
-        ui->template_widget->hide();
+        setWindowTitle("Create template");
+        ui->metric_template_box->hide();
+        ui->output_box->setTitle("");
         ui->movedown->hide();
         ui->moveup->hide();
         ui->create_data_base->setText("Create template");
@@ -77,10 +78,9 @@ void CreateDBDialog::update_list(void)
             }
         }
     }    
-    if(!group.empty() && sample_fib != group[0])
+    if(create_db && !group.empty() && sample_fib != group[0])
     {
         sample_fib = group[0];
-
         if(group[0].endsWith("nii") || group[0].endsWith("nii.gz"))
         {
             bool ok;
