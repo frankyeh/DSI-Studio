@@ -709,6 +709,7 @@ void view_image::init_image(void)
     ui->actionSet_MNI->setStatusTip(cur_image->is_mni ? "1":"0");
     ui->actionRegrid->setStatusTip(QString("%1 %2 %3").arg(cur_image->vs[0]).arg(cur_image->vs[1]).arg(cur_image->vs[2]));
     ui->actionResize->setStatusTip(QString("%1 %2 %3").arg(cur_image->shape[0]).arg(cur_image->shape[1]).arg(cur_image->shape[2]));
+    ui->actionResize_At_Center->setStatusTip(QString("%1 %2 %3").arg(cur_image->shape[0]).arg(cur_image->shape[1]).arg(cur_image->shape[2]));
     ui->actionReshape->setStatusTip(buf4d.empty() ? QString("%1 %2 %3").arg(cur_image->shape[0]).arg(cur_image->shape[1]).arg(cur_image->shape[2]) :
                                                     QString("%1 %2 %3 %4").arg(cur_image->shape[0]).arg(cur_image->shape[1]).arg(cur_image->shape[2]).arg(buf4d.size()));
     ui->actionSet_Translocation->setStatusTip(QString("%1 %2 %3").arg(cur_image->T[3]).arg(cur_image->T[7]).arg(cur_image->T[11]));
