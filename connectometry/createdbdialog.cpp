@@ -138,8 +138,7 @@ void CreateDBDialog::on_group1open_clicked()
                                      this,
                                      "Open Fib files",
                                      "",
-                                     create_db ? "Fib Files (*.fz *fib.gz);;NIFTI Files (*nii *nii.gz);;All Files (*)":
-                                                 "Fib Files (*.fz *fib.gz);;All Files (*)");
+                                     "Fib Files (*.fz *fib.gz);;NIFTI Files (*nii *nii.gz);;All Files (*)");
     if (filenames.isEmpty())
         return;
     group << filenames;
@@ -258,8 +257,7 @@ void CreateDBDialog::on_select_output_file_clicked()
     QString filename = QFileDialog::getSaveFileName(
                                  this,
                                  "Save file",
-                                 "",
-                                 "FIB file (*.fz *fib.gz);;All files (*)");
+                                 "","FIB files (*.fz *fib.gz);;NIFTI Files(*nii.gz);;All files (*)");
     if(filename.isEmpty())
         return;
 #ifdef __APPLE__
@@ -269,7 +267,7 @@ void CreateDBDialog::on_select_output_file_clicked()
 #endif
     ui->output_file_name->setText(filename);
 }
-const char* odf_average(const char* out_name,std::vector<std::string>& file_names);
+bool odf_average(const char* out_name,std::vector<std::string>& file_names,std::string& error_msg);
 void CreateDBDialog::on_create_data_base_clicked()
 {
     if(ui->output_file_name->text().isEmpty())
@@ -350,9 +348,13 @@ void CreateDBDialog::on_create_data_base_clicked()
         std::vector<std::string> name_list(group.count());
         for (unsigned int index = 0;index < group.count();++index)
             name_list[index] = group[index].toStdString().c_str();
-        const char* error_msg = odf_average(ui->output_file_name->text().toStdString().c_str(),name_list);
-        if(error_msg)
-            QMessageBox::critical(this,"ERROR",error_msg);
+
+        std::string error_msg;
+        if(!odf_average(ui->output_file_name->text().toStdString().c_str(),name_list,error_msg))
+        {
+            if(!error_msg.empty())
+                QMessageBox::critical(this,"ERROR",error_msg.c_str());
+        }
         else
             QMessageBox::information(this,QApplication::applicationName(),"File created");
     }
@@ -374,7 +376,12 @@ void CreateDBDialog::on_index_of_interest_currentTextChanged(const QString &arg1
         if(create_db)
             ui->output_file_name->setText(base_name + "." + ui->index_of_interest->currentText() + ".db.fz");
         else
-            ui->output_file_name->setText(base_name + ".avg.fz");
+        {
+            if(tipl::ends_with(front,".nii.gz") || tipl::ends_with(front,".nii"))
+                ui->output_file_name->setText(base_name + ".nii.gz");
+            else
+                ui->output_file_name->setText(base_name + ".avg.fz");
+        }
     }
 }
 
