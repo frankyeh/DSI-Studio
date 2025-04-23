@@ -1489,7 +1489,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                             }
                         }
                         A_labels[need_fill_up[i]] = nearest_label;
-                    },std::thread::hardware_concurrency());
+                    },tipl::max_thread_count);
                     if(prog2.aborted())
                         return false;
                 }
