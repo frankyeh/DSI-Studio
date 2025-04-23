@@ -427,6 +427,7 @@
     </property>
     <addaction name="actionRegrid"/>
     <addaction name="actionResize"/>
+    <addaction name="actionResize_At_Center"/>
     <addaction name="actionReshape"/>
     <addaction name="actionCropToFit"/>
     <addaction name="separator"/>
@@ -1036,6 +1037,14 @@
    </property>
    <property name="statusTip">
     <string>1.0</string>
+   </property>
+  </action>
+  <action name="actionResize_At_Center">
+   <property name="text">
+    <string>Resize At Center...</string>
+   </property>
+   <property name="toolTip">
+    <string>Change the image size</string>
    </property>
   </action>
  </widget>
