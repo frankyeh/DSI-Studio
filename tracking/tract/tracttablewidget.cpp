@@ -186,8 +186,7 @@ void TractTableWidget::addNewTracts(std::shared_ptr<TractModel> new_tract,bool c
     setItem(tract_models.size()-1, 0, item0);
     for(unsigned int index = 1;index <= 3;++index)
     {
-        QTableWidgetItem *item1 = new QTableWidgetItem(index == 1 && new_tract->get_visible_track_count() ?
-                                                       QString::number(new_tract->get_visible_track_count()) : QString());
+        QTableWidgetItem *item1 = new QTableWidgetItem(index == 1 ? QString::number(new_tract->get_visible_track_count()) : QString());
         item1->setFlags(item1->flags() & ~Qt::ItemIsEditable);
         setItem(tract_models.size()-1, index, item1);
     }
