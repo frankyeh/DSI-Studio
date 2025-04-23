@@ -560,6 +560,8 @@ void RenderingTableWidget::dataChanged(const QModelIndex &, const QModelIndex &b
                 }
             }
         }
+        setData("max_seed_count",1000000);
+        setData("max_tract_count",0);
         setData("check_ending",0); // no check ending
         cur_tracking_window.handle->dir.dt_fa.clear(); // avoid slice showing previous dt
         cur_tracking_window.slice_need_update = true;
