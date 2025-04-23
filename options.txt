@@ -29,10 +29,10 @@ Tracking/Tract-to-Voxel Ratio/track_voxel_ratio/float:0.1:20:0.1:0.5/1.0/Specify
 Tracking/Topology-Informed Pruning (iteration)/tip_iteration/int:0:100:2/4/The number of pruning iterations used to remove noisy tracks
 Tracking/Autotrack tolerance (mm)/tolerance/float:0:100:10:1/22/The inclusion distance for automated fiber tracking
 Tracking/Differential Tracking/Tracking_dT
-Tracking_dT/Metrics1/dt_index1/none:adc/0/The baseline metrics
-Tracking_dT/Metrics2/dt_index2/none:adc/0/The followup metrics
-Tracking_dT/Metrics1>Metrics2 Threshold/dt_threshold/float:0.0:2.0:0.05:2/0.2/0.05 means tracking differences > 5%
-Tracking_dT/Threshold Type/dt_threshold_type/(m1-m2)÷m1:(m1-m2)÷m2:m1-m2:(m2-m1)÷m1:(m2-m1)÷m2:m2-m1:m1÷max(m1):m2÷max(m2)/0
+Tracking_dT/Metrics1(m1)/dt_index1/none:adc/0/The baseline metrics
+Tracking_dT/Metrics2(m2)/dt_index2/none:adc/0/The followup metrics
+Tracking_dT/Type/dt_threshold_type/(m1-m2)÷m1:(m1-m2)÷m2:m1-m2:(m2-m1)÷m1:(m2-m1)÷m2:m2-m1:m1÷max(m1):m2÷max(m2)/0
+Tracking_dT/Threshold/dt_threshold/float:0.0:2.0:0.05:2/0.2/0.05 means tracking differences > 5%
 Tracking/Advanced Options/Tracking_adv
 Tracking_adv/Tracking Algorithm/tracking_method/Euler:RK4:Voxel tracking/0
 Tracking_adv/Smoothing (1=random)/smoothing/float:-1.5:1:0.1:2/0
