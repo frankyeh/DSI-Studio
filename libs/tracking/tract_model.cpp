@@ -2439,9 +2439,9 @@ void TractModel::get_density_map(tipl::image<3,unsigned int>& mapping,
                                  const tipl::matrix<4,4>& to_t1t2,bool endpoint)
 {
     tipl::shape<3> s(mapping.shape());
-    std::vector<tipl::image<3,unsigned int> > maps(std::thread::hardware_concurrency());
+    std::vector<tipl::image<3,unsigned int> > maps(tipl::max_thread_count);
     bool is_identity = (to_t1t2 == tipl::matrix<4,4>(tipl::identity_matrix()));
-    tipl::adaptive_par_for<tipl::sequential_with_id>(tract_data.size(),[&](unsigned int i,unsigned int id)
+    tipl::par_for<tipl::sequential_with_id>(tract_data.size(),[&](unsigned int i,unsigned int id)
     {
         auto& m = maps[id];
         if(m.empty())
@@ -2462,7 +2462,7 @@ void TractModel::get_density_map(tipl::image<3,unsigned int>& mapping,
         }
         for(auto pos : point_set)
             ++m[pos];
-    });
+    },tipl::max_thread_count);
 
     while(maps.back().empty() && !maps.empty())
         maps.pop_back();
