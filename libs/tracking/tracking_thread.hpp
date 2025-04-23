@@ -25,6 +25,9 @@ private:
 public:
     std::shared_ptr<tracking_data> trk;
     std::shared_ptr<RoiMgr> roi_mgr;
+private:
+    unsigned int max_tract_count = 0;
+    unsigned int max_seed_count = 0;
 public:
     std::ostringstream report;
     TrackingParam param;
