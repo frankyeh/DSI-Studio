@@ -1731,7 +1731,7 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,
             return;
         prog(total++,trk->get_tracts().size());
         labels[i] = find_nearest_contain(&(trk->get_tracts()[i][0]),uint32_t(trk->get_tracts()[i].size()),track_atlas->get_tracts(),track_atlas->tract_cluster);
-    },std::thread::hardware_concurrency());
+    },tipl::max_thread_count);
     if(prog.aborted())
         return false;
     std::vector<unsigned int> count(tractography_name_list.size());
@@ -2184,7 +2184,7 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,
         error_msg += at->filename;
         return false;
     }
-    std::vector<std::vector<std::vector<tipl::vector<3,short> > > > region_voxels(std::thread::hardware_concurrency());
+    std::vector<std::vector<std::vector<tipl::vector<3,short> > > > region_voxels(tipl::max_thread_count);
     for(auto& region : region_voxels)
     {
         region.clear();
@@ -2227,7 +2227,7 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,
                 return;
             region_voxels[id][uint32_t(region_index)].push_back(tipl::vector<3,short>(index.begin()));
         }
-    },std::thread::hardware_concurrency());
+    },tipl::max_thread_count);
 
     for(size_t i = 0;i < at->get_list().size();++i)
     {
