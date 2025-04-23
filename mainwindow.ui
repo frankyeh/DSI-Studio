@@ -150,7 +150,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>3</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -2308,7 +2308,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">Line { background-color: rgba(0, 0, 0, 255); }</string>
+                <string notr="true">Line { background-color: rgba(0, 0, 0, 255); color: black; }</string>
                </property>
                <property name="frameShadow">
                 <enum>QFrame::Plain</enum>
@@ -2567,7 +2567,7 @@ Tractography</string>
               <widget class="QLabel" name="label_39">
                <property name="geometry">
                 <rect>
-                 <x>677</x>
+                 <x>680</x>
                  <y>372</y>
                  <width>250</width>
                  <height>171</height>
@@ -2586,7 +2586,7 @@ Tractography</string>
               <widget class="QLabel" name="label_43">
                <property name="geometry">
                 <rect>
-                 <x>669</x>
+                 <x>672</x>
                  <y>360</y>
                  <width>250</width>
                  <height>171</height>
@@ -2605,7 +2605,7 @@ Tractography</string>
               <widget class="QLabel" name="label_44">
                <property name="geometry">
                 <rect>
-                 <x>685</x>
+                 <x>688</x>
                  <y>384</y>
                  <width>250</width>
                  <height>171</height>
@@ -2624,7 +2624,7 @@ Tractography</string>
               <widget class="QLabel" name="label_69">
                <property name="geometry">
                 <rect>
-                 <x>660</x>
+                 <x>665</x>
                  <y>350</y>
                  <width>280</width>
                  <height>281</height>
@@ -2640,7 +2640,7 @@ Tractography</string>
               <widget class="QCommandLinkButton" name="averagefib">
                <property name="geometry">
                 <rect>
-                 <x>674</x>
+                 <x>675</x>
                  <y>560</y>
                  <width>261</width>
                  <height>61</height>
