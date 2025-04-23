@@ -8,7 +8,6 @@
 #include <filesystem>
 
 extern std::vector<std::string> fa_template_list,fib_template_list;
-const char* odf_average(const char* out_name,std::vector<std::string>& file_names);
 bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list)
 {
     QStringList name_list = QString(atlas_name.c_str()).split(",");
@@ -161,6 +160,7 @@ int db(tipl::program_option<tipl::out>& po)
     }
     return 0;
 }
+bool odf_average(const char* out_name,std::vector<std::string>& file_names,std::string& error_msg);
 int tmp(tipl::program_option<tipl::out>& po)
 {
     std::vector<std::string> name_list = get_source_list(po);
@@ -169,44 +169,23 @@ int tmp(tipl::program_option<tipl::out>& po)
         tipl::error() << "no file found in " << po.get("source") << std::endl;
         return 1;
     }
-
+    std::string error_msg;
     tipl::out() << "constructing a group average template" << std::endl;
     if(tipl::ends_with(name_list[0],".fib.gz") ||
        tipl::ends_with(name_list[0],".fz"))
     {
-        const char* msg = odf_average(po.get("output",(QFileInfo(name_list[0].c_str()).absolutePath()+"/template").toStdString()).c_str(),name_list);
-        if(msg)
+        if(!odf_average(po.get("output",(QFileInfo(name_list[0].c_str()).absolutePath()+"/template").toStdString()).c_str(),name_list,error_msg))
         {
-            tipl::error() << msg << std::endl;
+            tipl::error() << error_msg;
             return 1;
         }
         return 0;
     }
     if(tipl::ends_with(name_list[0],".nii.gz"))
     {
-        tipl::image<3,double> sum;
-        tipl::image<3> each;
-        tipl::vector<3> vs;
-        tipl::matrix<4,4> T;
-        bool is_mni;
-        for(auto name : name_list)
+        if(!odf_average(po.get("output",name_list[0] + ".avg.nii.gz").c_str(),name_list,error_msg))
         {
-            tipl::out() << "adding " << name;
-            if(!tipl::io::gz_nifti::load_from_file(name.c_str(),each,vs,T,is_mni))
-            {
-                tipl::error() << "cannot load file" << name_list[0] << std::endl;
-                return 1;
-            }
-            if(sum.empty())
-                sum.resize(each.shape());
-            sum += each;
-        }
-        sum /= name_list.size();
-        auto output = po.get("output",name_list[0] + ".avg.nii.gz");
-        tipl::out() << "saving " << output;
-        if(!tipl::io::gz_nifti::save_to_file(output.c_str(),sum,vs,T,is_mni))
-        {
-            tipl::error() << "cannot save file" << output << std::endl;
+            tipl::error() << error_msg;
             return 1;
         }
         return 0;
