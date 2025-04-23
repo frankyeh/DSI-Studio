@@ -215,7 +215,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupBox">
+    <widget class="QGroupBox" name="metric_template_box">
      <property name="title">
       <string>Step C1b: Select Metric and Template</string>
      </property>
@@ -309,7 +309,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupBox_2">
+    <widget class="QGroupBox" name="output_box">
      <property name="title">
       <string>Step C1c: Construct Database</string>
      </property>
