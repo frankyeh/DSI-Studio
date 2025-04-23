@@ -224,7 +224,7 @@ bool output_odfs(const tipl::image<3,unsigned char>& mni_mask,
     image_model.voxel.trans_to_mni = mni;
     image_model.voxel.vs = vs;
     image_model.voxel.R2 = 1.0f;
-    image_model.voxel.other_output = record_odf ? "odf,gfa" : "gfa";
+    image_model.voxel.other_output = record_odf ? "odf" : "";
     swap_data();
     if (!image_model.reconstruct2<ODFLoader,
             SaveMetrics>("template"))
@@ -240,9 +240,42 @@ bool output_odfs(const tipl::image<3,unsigned char>& mni_mask,
 }
 
 
-const char* odf_average(const char* out_name,std::vector<std::string>& file_names)
+bool odf_average(const char* out_name,std::vector<std::string>& file_names,std::string& error_msg)
 {
-    static std::string report,error_msg;
+    if(tipl::ends_with(file_names[0],".nii.gz"))
+    {
+        tipl::image<3,double> sum;
+        tipl::image<3> each;
+        tipl::vector<3> vs;
+        tipl::matrix<4,4> T;
+        bool is_mni;
+        tipl::progress p0("adding images",true);
+        for(size_t i = 0;p0(i,file_names.size());++i)
+        {
+            tipl::out() << "adding " << file_names[i];
+            if(!tipl::io::gz_nifti::load_from_file(file_names[i].c_str(),each,vs,T,is_mni))
+            {
+                error_msg = "cannot load file" + file_names[i];
+                return false;
+            }
+            if(sum.empty())
+                sum.resize(each.shape());
+            sum += each;
+        }
+        if(p0.aborted())
+            return false;
+        sum /= file_names.size();
+        tipl::out() << "saving " << out_name;
+        if(!tipl::io::gz_nifti::save_to_file(out_name,sum,vs,T,is_mni))
+        {
+            error_msg = std::string("cannot save file") + out_name;
+            return false;
+        }
+        return true;
+    }
+
+
+    std::string report;
     tessellated_icosahedron ti;
     tipl::vector<3> vs;
     tipl::shape<3> dim;
@@ -254,10 +287,9 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
     std::vector<std::string> other_metrics_name;
     std::vector<tipl::image<3> > other_metrics_images;
     std::vector<size_t> other_metrics_count;
-
     try {
-        tipl::progress prog("loading data");
-        for (unsigned int index = 0;prog(index,file_names.size());++index)
+        tipl::progress p0("loading data");
+        for (unsigned int index = 0;p0(index,file_names.size());++index)
         {
             file_name = file_names[index];
             fib_data fib;
@@ -266,9 +298,6 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                 throw std::runtime_error(fib.error_msg);
             if(!fib.is_mni)
                 throw std::runtime_error("not QSDR fib file");
-            if(!fib.has_odfs())
-                throw std::runtime_error("cannot find ODF data in fib file");
-
             if(index == 0)
             {
                 report = fib.report;
@@ -281,13 +310,12 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                 ti.fold = uint16_t(std::floor(std::sqrt((ti.vertices_count-2)/10.0)+0.5));
                 mni = fib.trans_to_mni;
                 other_metrics_name = fib.get_index_list();
-                 // remove odf metrics generated from averaged ODFs
-                other_metrics_name.erase(std::remove(other_metrics_name.begin(),other_metrics_name.end(),std::string("iso")),other_metrics_name.end());
-                other_metrics_name.erase(std::remove(other_metrics_name.begin(),other_metrics_name.end(),std::string("qa")),other_metrics_name.end());
-                other_metrics_name.erase(std::remove(other_metrics_name.begin(),other_metrics_name.end(),std::string("gfa")),other_metrics_name.end());
-                other_metrics_name.erase(std::remove(other_metrics_name.begin(),other_metrics_name.end(),std::string("nqa")),other_metrics_name.end());
                 other_metrics_images.resize(other_metrics_name.size());
                 other_metrics_count.resize(other_metrics_name.size());
+
+                odfs.resize(dim.size());
+                if(fib.has_odfs())
+                    odf_count.resize(dim);
             }
             else
             // check odf consistency
@@ -305,31 +333,71 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             }
 
             tipl::out() << "accumulating ODFs";
-            if(index == 0)
+
+            if(!odf_count.empty())
             {
-                odfs.resize(dim.size());
-                odf_count.resize(dim);
+                odf_data odf;
+                if(!odf.read(fib))
+                    throw std::runtime_error(odf.error_msg);
+                tipl::adaptive_par_for(dim.size(),[&](size_t i)
+                {
+                    if(fib.dir.fa[0][i] == 0.0f)
+                        return;
+                    const float* odf_data = odf.get_odf_data(i);
+                    if(odf_data == nullptr)
+                        return;
+                    if(odfs[i].empty())
+                        odfs[i] = std::vector<double>(odf_data,odf_data+ti.half_vertices_count);
+                    else
+                        tipl::add(odfs[i].begin(),odfs[i].end(),odf_data);
+                    odf_count[i]++;
+                });
             }
-            odf_data odf;
-            if(!odf.read(fib))
-                throw std::runtime_error(odf.error_msg);
-            tipl::adaptive_par_for(dim.size(),[&](size_t i)
+            else
             {
-                if(fib.dir.fa[0][i] == 0.0f)
-                    return;
-                const float* odf_data = odf.get_odf_data(i);
-                if(odf_data == nullptr)
-                    return;
-                if(odfs[i].empty())
-                    odfs[i] = std::vector<double>(odf_data,odf_data+ti.half_vertices_count);
+                if(!fib.dir.findex.empty())
+                {
+                    for(size_t pos = 0;pos < dim.size();++pos)
+                        for(size_t f_index = 0;f_index < fib.dir.num_fiber;++f_index)
+                            if(fib.dir.fa[f_index][pos] > 0.0f)
+                            {
+                                if(odfs[pos].empty())
+                                    odfs[pos].resize(ti.half_vertices_count);
+                                odfs[pos][fib.dir.findex[f_index][pos]] += fib.dir.fa[f_index][pos];
+                            }
+                }
                 else
-                    tipl::add(odfs[i].begin(),odfs[i].end(),odf_data);
-                odf_count[i]++;
-            });
+                if(!fib.dir.findex.empty())
+                {
+                    tipl::par_for(dim.size(),[&](size_t pos)
+                    {
+                        if(fib.dir.fa[0][pos] > 0.0f)
+                        {
+                            auto fdir = fib.dir.get_fib(pos,0);
+                            size_t best_dir = 0;
+                            float best_cos = 0.0f;
+                            for(size_t i = 0;i < fib.dir.odf_table.size();++i)
+                            {
+                                auto cur_cos = std::fabs(fdir*fib.dir.odf_table[i]);
+                                if(cur_cos > best_cos)
+                                {
+                                    best_cos = cur_cos;
+                                    best_dir = i;
+                                }
+                            }
+                            if(odfs[pos].empty())
+                                odfs[pos].resize(ti.half_vertices_count);
+                            odfs[pos][best_dir] += fib.dir.fa[0][pos];
+                        }
+                    },tipl::max_thread_count);
 
+                }
+                else
+                    throw std::runtime_error("no fiber orientation information");
+            }
 
-            tipl::out() << "accumulating other metrics";
-            for(size_t i = 0;prog(i,other_metrics_name.size());++i)
+            tipl::progress p2("accumulating other metrics");
+            for(size_t i = 0;p2(i,other_metrics_name.size());++i)
             {
                 auto metric_index = fib.get_name_index(other_metrics_name[i]);
                 if(metric_index < fib.slices.size())
@@ -342,19 +410,15 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
                     other_metrics_count[i]++;
                 }
             }
-
-            if (prog.aborted())
-                return nullptr;
         }
+        if (p0.aborted())
+            return false;
     } catch (const std::exception& e) {
         error_msg = e.what();
         error_msg += " at ";
         error_msg += file_name;
-        return error_msg.c_str();
+        return false;
     }
-
-
-
     {
         tipl::progress prog("averaging other metrics");
         size_t total = 0;
@@ -363,50 +427,50 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
             if(other_metrics_count[i])
                 other_metrics_images[i] *= 1.0f/other_metrics_count[i];
             prog(total++,other_metrics_name.size());
+            other_metrics_name[i] = "avg_" + other_metrics_name[i];
         },other_metrics_name.size());
         if (prog.aborted())
-            return nullptr;
+            return false;
     }
-
     {
         tipl::progress prog("averaging odf");
-        auto thread_count = tipl::max_thread_count;
-        bool terminated = false;
-        tipl::par_for(thread_count,[&](size_t id)
+        size_t p = 0;
+        tipl::par_for(dim.size(),[&](size_t pos)
         {
-            size_t next_report_pos = 0;
-            for(size_t pos = id;pos < dim.size() && !terminated;pos += thread_count)
+            prog(p++,dim.size());
+            if(odfs[pos].empty())
+                return;
+            if(!odf_count.empty())
             {
                 if(odf_count[pos] > 1)
-                    tipl::divide_constant(odfs[pos],float(odf_count[pos]));
-                if(id == 0 && pos > next_report_pos)
-                {
-                    next_report_pos += dim.size()/50;
-                    prog(pos,dim.size());
-                    if (prog.aborted())
-                        terminated = true;
-                }
+                    tipl::divide_constant(odfs[pos].begin(),odfs[pos].end(),float(odf_count[pos]));
             }
-        },thread_count);
+            else
+                tipl::divide_constant(odfs[pos].begin(),odfs[pos].end(),float(file_names.size()));
+        },tipl::max_thread_count);
         if (prog.aborted())
-            return nullptr;
+            return false;
     }
-
     // eliminate ODF if missing more than half of the population
     tipl::image<3,unsigned char> mask(dim);
-    size_t odf_size = 0;
-    for(size_t i = 0;i < mask.size();++i)
     {
-        if(odf_count[i] > (file_names.size() >> 1))
+        tipl::progress prog("creating mask");
+        size_t odf_size = 0;
+        for(size_t i = 0;prog(i,mask.size());++i)
         {
-            mask[i] = 1;
-            odfs[odf_size].swap(odfs[i]);
-            ++odf_size;
+            if((!odf_count.empty() && odf_count[i] > (file_names.size() >> 1)) || !odfs[i].empty())
+            {
+                mask[i] = 1;
+                odfs[odf_size].swap(odfs[i]);
+                ++odf_size;
+            }
         }
+        if(prog.aborted())
+            return false;
+        odfs.resize(odf_size);
     }
-    odfs.resize(odf_size);
     std::ostringstream out;
-    out << "A group-average template was constructed from a total of " << file_names.size() << " scans." << report.c_str();
+    out << "A group-average template was constructed from a total of " << file_names.size() << " scans." << report;
     report = out.str();
 
 
@@ -422,11 +486,8 @@ const char* odf_average(const char* out_name,std::vector<std::string>& file_name
 
     if(!output_odfs(mask,out_name,".mean.fz",odfs_float,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg,false) ||
        !output_odfs(mask,out_name,".mean.odf.fz",odfs_float,other_metrics_images,other_metrics_name,ti,vs.begin(),mni.begin(),report,error_msg))
-    {
-        tipl::error() << error_msg;
-        return nullptr;
-    }
-    return nullptr;
+        return false;
+    return true;
 }
 
 
