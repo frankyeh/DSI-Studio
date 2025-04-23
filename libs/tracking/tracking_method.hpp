@@ -150,34 +150,15 @@ struct TrackingParam
 
         report << " Tracks with length shorter than " << min_length << " or longer than " << max_length  << " mm were discarded.";
 
-
-        if(max_seed_count && max_tract_count == 0) // stop by seed condition, set tract_count = seed count
-            max_tract_count = max_seed_count;
-        if(max_seed_count == 0 && max_tract_count) // stop by tract condition, set seed_count = tract_count*5000
-            max_seed_count = max_tract_count*5000;
-        if(max_seed_count < max_tract_count)
-            max_seed_count = max_tract_count;
-
-        if(max_tract_count)
+        if(max_tract_count || max_seed_count)
         {
-            if(max_seed_count == max_tract_count)
+            if(max_seed_count)
                 report << " A total of " << max_seed_count << " seeds were placed.";
-            else
+            if(max_tract_count)
                 report << " A total of " << max_tract_count << " tracts were tracked.";
         }
         else
-        {
-            if(dt_threshold == 0.0f)
-            {
-                report << " The seed-to-voxel ratio was set to " << track_voxel_ratio << ".";
-                tipl::out() << "differential fiber tracking using seed-to-voxel as exist point";
-            }
-            else
-            {
-                report << " The tract-to-voxel ratio was set to " << track_voxel_ratio << ".";
-                tipl::out() << "fiber tracking using tract-to-voxel as exist point";
-            }
-        }
+            report << " The tract-to-voxel ratio was set to " << track_voxel_ratio << ".";
 
         if(tip_iteration)
             report << " Topology-informed pruning (Yeh et al. Neurotherapeutics, 16(1), 52-58, 2019) was applied to the tractography with " << int(tip_iteration) <<

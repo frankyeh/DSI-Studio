@@ -47,21 +47,31 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
                 roi_mgr->setWholeBrainSeed(fa_threshold1);
             }
 
-            if(param.max_tract_count == 0)
+            max_tract_count = param.max_tract_count;
+            max_seed_count = param.max_seed_count;
+
+            if(max_seed_count && max_tract_count == 0) // stop by seed condition, set tract_count = seed count
+                max_tract_count = max_seed_count;
+
+            if(max_seed_count == 0 && max_tract_count) // stop by tract condition, set seed_count = tract_count*5000
+                max_seed_count = max_tract_count*5000;
+            if(max_seed_count < max_tract_count)
+                max_seed_count = max_tract_count;
+
+            if(max_tract_count == 0)
             {
                 size_t t2v_count = std::max<uint32_t>(1,param.track_voxel_ratio*roi_mgr->seeds.size());
                 if(!roi_mgr->use_auto_track && (!trk->dt_metrics.empty() || !roi_mgr->roi.empty() || !roi_mgr->end.empty()))
                 {
-                    param.max_seed_count = param.max_tract_count = t2v_count; // differential tractography or region limiting tracking
+                    max_seed_count = max_tract_count = t2v_count; // differential tractography or region limiting tracking
                     tipl::out() << "for seed-to-voxel ratio of " << param.track_voxel_ratio << ", the maximum seed and tract counts are set to " << t2v_count;
                 }
                 else
                 {
-                    param.max_seed_count = (param.max_tract_count = t2v_count)*size_t(5000); //yield rate easy:1/100 hard:1/5000
+                    max_seed_count = (max_tract_count = t2v_count)*size_t(5000); //yield rate easy:1/100 hard:1/5000
                     tipl::out() << "for tract-to-voxel ratio of " << param.track_voxel_ratio << ", the maximum tract counts are set to " << t2v_count;
                 }
             }
-
         }
         ready_to_track = true;
     }
@@ -79,12 +89,13 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
         method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/param.step_size));
         method->current_min_steps3 = 3*uint32_t(std::round(param.min_length/param.step_size));
     }
+
     unsigned int termination_tract_count = (thread_id == 0 ?
-        param.max_tract_count-(param.max_tract_count/thread_count)*(thread_count-1):
-        param.max_tract_count/thread_count);
+        max_tract_count-(max_tract_count/thread_count)*(thread_count-1):
+        max_tract_count/thread_count);
     unsigned int termination_seed_count = (thread_id == 0 ?
-        param.max_seed_count-(param.max_seed_count/thread_count)*(thread_count-1):
-        param.max_seed_count/thread_count);
+        max_seed_count-(max_seed_count/thread_count)*(thread_count-1):
+        max_seed_count/thread_count);
 
     if(!roi_mgr->seeds.empty())
     try{
