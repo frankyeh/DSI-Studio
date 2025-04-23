@@ -25,7 +25,7 @@ Tracking/Min Length(mm)/min_length/float:0:800:10:2/30/Remove tracks with length
 Tracking/Max Length(mm)/max_length/float:0:10000:10:2/300/Remove tracks with length longer than this threshold
 Tracking/Max Seeds(0=default)/max_seed_count/int:0:100000000:1000/0/Specify the maximum number of seeds
 Tracking/Max Tracts(0=default)/max_tract_count/int:0:100000000:1000/0/Specify the maximum number of tracks
-Tracking/Tract-to-Voxel Ratio/track_voxel_ratio/float:0.1:5.0:0.1:0.5/1.0/Specify the maximum tracks to voxel ratio
+Tracking/Tract-to-Voxel Ratio/track_voxel_ratio/float:0.1:20:0.1:0.5/1.0/Specify the maximum tracks to voxel ratio
 Tracking/Topology-Informed Pruning (iteration)/tip_iteration/int:0:100:2/4/The number of pruning iterations used to remove noisy tracks
 Tracking/Autotrack tolerance (mm)/tolerance/float:0:100:10:1/22/The inclusion distance for automated fiber tracking
 Tracking/Differential Tracking/Tracking_dT
