@@ -93,7 +93,7 @@ void CreateDBDialog::update_list(void)
             populate_templates(ui->template_list,0);
             ui->template_list->setEnabled(true);
             tipl::io::gz_nifti nii;
-            if(nii.load_from_file(group[0].toStdString()))
+            if(!nii.load_from_file(group[0].toStdString()))
             {
                 QMessageBox::critical(this,"ERROR","The first file is not a valid NIFTI file.");
                 raise(); // for Mac
