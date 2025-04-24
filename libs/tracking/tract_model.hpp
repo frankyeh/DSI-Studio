@@ -157,12 +157,12 @@ public:
                   const std::vector<tipl::vector<3,float> > & dirs,
                   const tipl::vector<3,float>& from_pos,
                   bool delete_track);
-        void cut(const std::vector<unsigned int>& tract_to_delete,
+        bool cut(const std::vector<unsigned int>& tract_to_delete,
                  const std::vector<std::vector<float> >& new_tract,
                  const std::vector<unsigned int>& new_tract_color);
         bool cut(float select_angle,const std::vector<tipl::vector<3,float> > & dirs,
                   const tipl::vector<3,float>& from_pos);
-        void cut_end_portion(float from,float to);
+        bool cut_end_portion(float from,float to);
         bool cut_by_slice(unsigned int dim, unsigned int pos,bool greater,const tipl::matrix<4,4>* T = nullptr);
         void cut_by_mask(const char* file_name);
         bool paint(float select_angle,const std::vector<tipl::vector<3,float> > & dirs,

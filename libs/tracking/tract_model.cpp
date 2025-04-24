@@ -23,6 +23,10 @@
 void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 const tipl::rgb default_tract_color(255,160,60);
+inline unsigned int get_cluster_color(const std::vector<unsigned int>& tract_color)
+{
+    return tract_color.empty() ? uint32_t(default_tract_color) : tract_color.front();
+}
 void smoothed_tracks(const std::vector<float>& track,std::vector<float>& smoothed)
 {
     smoothed.clear();
@@ -208,14 +212,10 @@ class TinyTrack{
         for(unsigned int block = 0;1;block++)
         {
             const char* track_buf = nullptr;
-            if(block == 0)
             {
-                if(!in.read("track",row,col,track_buf))
-                    return false;
-            }
-            else
-            {
-                auto name = std::string("track")+std::to_string(block);
+                auto name = std::string("track");
+                if(block)
+                    name += std::to_string(block);
                 if(!in.has(name.c_str()))
                     break;
                 if(!in.read(name.c_str(),row,col,track_buf))
@@ -720,11 +720,6 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
     }
 
 
-
-
-
-    if (loaded_tract_data.empty())
-        return false;
     if(loaded_tract_cluster.size() == loaded_tract_data.size())
     {
         tipl::out() << "cluster information loaded";
@@ -820,9 +815,6 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
 //---------------------------------------------------------------------------
 bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const char* file_name,const std::string& index_name)
 {
-    if(get_visible_track_count() == 0)
-        return false;
-
     std::vector<std::vector<float> > data(get_tracts_data(handle,index_name));
     if(data.empty())
         return false;
@@ -832,13 +824,13 @@ bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const char* 
     {
         bool result = TinyTrack::save_to_file(file_name,geo,vs,trans_to_mni,tract_data,
                                               std::vector<uint16_t>(tract_cluster.begin(),tract_cluster.end()),report,parameter_id,
-                                              std::vector<unsigned int>{tract_color.front()});
+                                              std::vector<unsigned int>{get_cluster_color(tract_color)});
         return result;
     }
     if(tipl::ends_with(file_name_s,".trk"))
         file_name_s += ".gz";
     if(tipl::ends_with(file_name_s,".trk.gz"))
-        return TrackVis::save_to_file(file_name_s.c_str(),geo,vs,trans_to_mni,tract_data,data,parameter_id,tract_color.front());
+        return TrackVis::save_to_file(file_name_s.c_str(),geo,vs,trans_to_mni,tract_data,data,parameter_id,get_cluster_color(tract_color));
     if(tipl::ends_with(file_name_s,".txt"))
     {
         std::ofstream out(file_name,std::ios::binary);
@@ -925,8 +917,6 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
 {
     std::string file_name(file_name_);
     saved = true;
-    if(get_visible_track_count() == 0)
-        return false;
     tipl::out() << "save tracts to " << file_name;
     tipl::out() << "dim:" << geo;
     tipl::out() << "vs:" << vs;
@@ -935,12 +925,12 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     {
         return TinyTrack::save_to_file(file_name.c_str(),geo,vs,trans_to_mni,
                                        tract_data,std::vector<uint16_t>(tract_cluster.begin(),tract_cluster.end()),report,parameter_id,
-                                       std::vector<unsigned int>{tract_color.front()});
+                                       std::vector<unsigned int>{get_cluster_color(tract_color)});
     }
     if(tipl::ends_with(file_name,".trk") || tipl::ends_with(file_name,".trk.gz"))
     {
         return TrackVis::save_to_file(file_name.c_str(),geo,vs,trans_to_mni,
-                tract_data,std::vector<std::vector<float> >(),parameter_id,tract_color.front());
+                tract_data,std::vector<std::vector<float> >(),parameter_id,get_cluster_color(tract_color));
     }
     if(tipl::ends_with(file_name,".tck"))
     {
@@ -1208,7 +1198,7 @@ bool TractModel::save_all(const char* file_name,
                 all_tract[pos].swap(tract[j]);
                 cluster[pos] = uint16_t(cluster_index);
             }
-            colors[cluster_index] = all[cluster_index]->tract_color.front();
+            colors[cluster_index] = get_cluster_color(all[cluster_index]->tract_color);
         }
         // save file
         bool result = TinyTrack::save_to_file(file_name,all[0]->geo,all[0]->vs,all[0]->trans_to_mni,
@@ -1571,12 +1561,22 @@ void TractModel::clear(void)
 //---------------------------------------------------------------------------
 void TractModel::erase_empty(void)
 {
-    tract_color.erase(std::remove_if(tract_color.begin(),tract_color.end(),
-                        [&](const unsigned int& data){return tract_data[&data-&tract_color[0]].empty();}), tract_color.end());
-    tract_tag.erase(std::remove_if(tract_tag.begin(),tract_tag.end(),
-                        [&](const unsigned int& data){return tract_data[&data-&tract_tag[0]].empty();}), tract_tag.end());
-    tract_data.erase(std::remove_if(tract_data.begin(),tract_data.end(),
-                        [&](const std::vector<float>& data){return data.empty();}), tract_data.end() );
+    size_t dst = 0,n = tract_data.size();
+    for (size_t src = 0; src < n; ++src)
+    {
+        if (tract_data[src].empty())
+            continue;
+        if(dst != src)
+        {
+            tract_data[dst]  = std::move(tract_data[src]);
+            tract_color[dst] = tract_color[src];
+            tract_tag[dst]   = tract_tag[src];
+        }
+        ++dst;
+    }
+    tract_data .resize(dst);
+    tract_color.resize(dst);
+    tract_tag  .resize(dst);
 }
 //---------------------------------------------------------------------------
 bool TractModel::delete_tracts(const std::vector<unsigned int>& tracts_to_delete)
@@ -1739,7 +1739,7 @@ bool TractModel::delete_by_length(float length)
     return delete_tracts(track_to_delete);
 }
 //---------------------------------------------------------------------------
-void TractModel::cut(const std::vector<unsigned int>& tract_to_delete,
+bool TractModel::cut(const std::vector<unsigned int>& tract_to_delete,
          const std::vector<std::vector<float> >& new_tract,
          const std::vector<unsigned int>& new_tract_color)
 {
@@ -1753,6 +1753,7 @@ void TractModel::cut(const std::vector<unsigned int>& tract_to_delete,
     }
     ++cur_cut_id;
     redo_size.clear();
+    return !tract_to_delete.empty();
 }
 bool TractModel::cut(float select_angle,const std::vector<tipl::vector<3,float> >& dirs,
                      const tipl::vector<3,float>& from_pos)
@@ -1817,7 +1818,7 @@ void get_cut_points(const std::vector<std::vector<float> >& tract_data,
 }
 tipl::vector<3> get_tract_dir(const std::vector<std::vector<float> >& tract_data,
                    std::vector<char>& dir);
-void TractModel::cut_end_portion(float from,float to)
+bool TractModel::cut_end_portion(float from,float to)
 {
     tipl::vector<3,double> from_point,to_point;
     std::vector<char> dir;
@@ -1876,7 +1877,7 @@ void TractModel::cut_end_portion(float from,float to)
             std::swap(from,to);
         new_tract[i] = std::vector<float>(from,to+3);
     });
-    cut(tract_to_delete,new_tract,new_tract_color);
+    return cut(tract_to_delete,new_tract,new_tract_color);
 }
 bool TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater,const tipl::matrix<4,4>* T)
 {
@@ -2805,22 +2806,19 @@ float TractModel::get_tract_length_in_mm(unsigned int index) const
 }
 void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::string& result)
 {
-    if(tract_data.empty())
-    {
-        result = "number of tracts\t0";
-        return;
-    }
     std::ostringstream out;
     std::vector<std::string> titles;
     std::vector<float> data;
+    float na = std::numeric_limits<float>::quiet_NaN();
+
     {
         const float resolution_ratio = 2.0f;
         tipl::matrix<4,4> resolution_trans((tipl::identity_matrix()));
         resolution_trans[0] = resolution_trans[5] = resolution_trans[10] = 2.0f;
         float voxel_volume = vs[0]*vs[1]*vs[2];
         const float PI = 3.14159265358979323846f;
-        float tract_volume(0.0f), branch_volume1(0.0f), branch_volume2(0.0f),
-              tract_area(0.0f), tract_length(0.0f), span(0.0f), curl(0.0f), bundle_diameter(1.0f);
+        float tract_volume(na), branch_volume1(na), branch_volume2(na),
+              tract_area(na), tract_length(na), span(na), curl(na), bundle_diameter(na);
 
 
         titles.push_back("number of tracts");
@@ -2841,10 +2839,9 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
             float sum_length = tipl::sum(length_each);
             float sum_end_dis = tipl::sum(end_dis_each);
 
-            tract_length = sum_length/float(tract_data.size());
-            span = sum_end_dis/float(tract_data.size());
-            if(sum_end_dis != 0.0f)
-                curl = sum_length/sum_end_dis;
+            tract_length = tract_data.empty() ? na : sum_length/float(tract_data.size());
+            span = tract_data.empty() ? na : sum_end_dis/float(tract_data.size());
+            curl = (sum_end_dis == 0.0f ? na : sum_length/sum_end_dis);
 
         }
 
@@ -2853,8 +2850,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
             std::vector<tipl::vector<3,short> > points;
             to_voxel(points,resolution_trans);
             tract_volume = points.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
-            if(tract_length != 0.0f)
-                bundle_diameter = 2.0f*float(std::sqrt(tract_volume/tract_length/PI));
+            bundle_diameter = (tract_length == 0.0f ? na : 2.0f*float(std::sqrt(tract_volume/tract_length/PI)));
 
             // now next convert point list to volume
             if(!points.empty())
@@ -2930,21 +2926,23 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
         // mid_portion as the trunk
         {
             std::vector<tipl::vector<3,short> > branch1,branch2;
-            cut_end_portion(0.0f,0.25f);
-            to_voxel(branch1,resolution_trans);
-            undo();
-            cut_end_portion(0.75f,1.0f);
-            to_voxel(branch2,resolution_trans);
-            undo();
-
+            if(cut_end_portion(0.0f,0.25f))
+            {
+                to_voxel(branch1,resolution_trans);
+                undo();
+            }
+            if(cut_end_portion(0.75f,1.0f))
+            {
+                to_voxel(branch2,resolution_trans);
+                undo();
+            }
             branch_volume1 = branch1.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
             branch_volume2 = branch2.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
-
         }
         data.push_back(tract_length);   titles.push_back("mean length(mm)");
         data.push_back(span);           titles.push_back("span(mm)");
         data.push_back(curl);           titles.push_back("curl");
-        data.push_back(tract_length/bundle_diameter);titles.push_back("elongation");
+        data.push_back(bundle_diameter == 0.0f ? na: tract_length/bundle_diameter);titles.push_back("elongation");
 
         data.push_back(tract_volume);   titles.push_back("total volume(mm^3)");
         data.push_back(branch_volume1);   titles.push_back("1st quarter volume(mm^3)");
@@ -2954,7 +2952,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
         data.push_back(tract_area);     titles.push_back("total surface area(mm^2)");
         data.push_back(radius1+radius2);titles.push_back("total radius of end regions(mm)");
         data.push_back(end_area1+end_area2);      titles.push_back("total area of end regions(mm^2)");
-        data.push_back(tract_length == 0.0f ? 0.0f : float(tract_area/PI/bundle_diameter/tract_length));  titles.push_back("irregularity");
+        data.push_back(tract_length == 0.0f ? na : float(tract_area/PI/bundle_diameter/tract_length));  titles.push_back("irregularity");
 
         data.push_back(end_area1);      titles.push_back("area of end region 1(mm^2)");
         data.push_back(radius1);        titles.push_back("radius of end region 1(mm)");
@@ -2969,14 +2967,18 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
     {
         if(handle->slices[data_index]->optional())
             break;
-        data.push_back(get_tracts_mean(handle,data_index));
+        data.push_back(tract_data.empty() ? na : get_tracts_mean(handle,data_index));
         titles.push_back(handle->slices[data_index]->name);
     }
 
 
     for(unsigned int index = 0;index < data.size() && index < titles.size();++index)
-        out << titles[index] << "\t" << data[index] << std::endl;
-
+    {
+        out << titles[index] << "\t";
+        if(!std::isnan(data[index]))
+            out << data[index];
+        out << std::endl;
+    }
     if(handle->db.has_db()) // connectometry database
     {
         tipl::progress p("for each subject");
@@ -2984,12 +2986,17 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
         {
             for(unsigned int i = 0;p(i,handle->db.num_subjects);++i)
             {
-                std::vector<std::vector<float> > fa_data;
-                handle->db.get_subject_fa(i,fa_data);
-                for(unsigned int j = 0;j < fa_data.size();++j)
-                    handle->dir.index_data[0][j] = &fa_data[j][0];
                 out << handle->db.subject_names[i] << " mean_" <<
-                       handle->db.index_name << "\t" << get_tracts_mean(handle,0) << std::endl;
+                       handle->db.index_name << "\t";
+                if(!tract_data.empty())
+                {
+                    std::vector<std::vector<float> > fa_data;
+                    handle->db.get_subject_fa(i,fa_data);
+                    for(unsigned int j = 0;j < fa_data.size();++j)
+                        handle->dir.index_data[0][j] = &fa_data[j][0];
+                    out <<  get_tracts_mean(handle,0);
+                }
+                out << std::endl;
             }
         }
         handle->dir.index_data[0] = old_index_data;
