@@ -467,7 +467,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     {
         if (tract_models.empty())
         {
-            error_msg = "no tract available";
+            error_msg = "canceled";
             return false;
         }
         bool okay = true;
