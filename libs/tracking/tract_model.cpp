@@ -1743,7 +1743,8 @@ bool TractModel::cut(const std::vector<unsigned int>& tract_to_delete,
          const std::vector<std::vector<float> >& new_tract,
          const std::vector<unsigned int>& new_tract_color)
 {
-    delete_tracts(tract_to_delete);
+    if(!delete_tracts(tract_to_delete))
+        return false;
     is_cut.back() = cur_cut_id;
     for (unsigned int index = 0;index < new_tract.size();++index)
     {
