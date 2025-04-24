@@ -585,7 +585,7 @@ void group_connectometry::on_variable_list_clicked(const QModelIndex &)
     for(int i =0;i < ui->variable_list->count();++i)
         if((db.feature_selected[uint32_t(i)] = (ui->variable_list->item(i)->checkState() == Qt::Checked)))
             ui->foi->addItem(ui->variable_list->item(i)->text());
-    if(db.is_longitudinal)
+    if(db.is_longitudinal && db.longitudinal_filter_type == 0)
         ui->foi->addItem(QString("longitudinal change"));
     ui->foi->setCurrentText(foi_str);
 }
