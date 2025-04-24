@@ -77,10 +77,7 @@ std::string quality_check_src_files(const std::vector<std::string>& file_list,
         output.push_back(std::move(output_each));
 
     }
-    auto ndc_copy = ndc;
-    float m = tipl::median(ndc_copy.begin(),ndc_copy.end());
-    float mad = float(tipl::median_absolute_deviation(ndc_copy.begin(),ndc_copy.end(),double(m)));
-    float outlier_threshold = m-3.0f*1.482602218505602f*mad;
+    float outlier_threshold = tipl::outlier_range(ndc.begin(),ndc.end()).first;
     // 3 "scaled" MAD approach. The scale is -1/(sqrt(2)*erfcinv(3/2)) = 1.482602218505602f
     for(size_t i = 0;i < output.size();++i)
     {
