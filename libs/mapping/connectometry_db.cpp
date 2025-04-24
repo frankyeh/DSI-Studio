@@ -1,6 +1,7 @@
 #include <filesystem>
 #include "connectometry_db.hpp"
 #include "fib_data.hpp"
+#include "reg.hpp"
 
 bool parse_age_sex(const std::string& file_name,std::string& age,std::string& sex)
 {
@@ -427,10 +428,14 @@ void connectometry_db::sample_from_image(tipl::const_pointer_image<3,float> I,
                        const tipl::matrix<4,4>& trans,std::vector<float>& data)
 {
     tipl::image<3> J(handle->dim);
-    tipl::resample<tipl::interpolation::cubic>(I,J,
+    if(I.shape() != J.shape() && trans != handle->trans_to_mni)
+    {
+        tipl::resample<tipl::interpolation::cubic>(I,J,
             tipl::transformation_matrix<float>(tipl::from_space(handle->trans_to_mni).to(trans)));
-
-
+    }
+    else
+        J = I;
+    tipl::lower_threshold(J,0.0f);
     const auto& si2vi = handle->mat_reader.si2vi;
     data.clear();
     data.resize(si2vi.size());
@@ -457,6 +462,8 @@ void connectometry_db::add(float subject_R2,std::vector<float>& data,
     num_subjects++;
     modified = true;
 }
+
+extern std::vector<std::string> t2w_template_list;
 bool connectometry_db::add(const std::string& file_name,
                                          const std::string& subject_name)
 {
@@ -465,7 +472,7 @@ bool connectometry_db::add(const std::string& file_name,
     float subject_R2 = 1.0f;
     if(tipl::ends_with(file_name,".nii") || tipl::ends_with(file_name,".nii.gz"))
     {
-        tipl::image<3> I;
+
         tipl::matrix<4,4> trans;
         tipl::io::gz_nifti nii;
         if(!nii.load_from_file(file_name))
@@ -477,11 +484,58 @@ bool connectometry_db::add(const std::string& file_name,
         nii.get_image_transformation(trans);
         if(nii.dim(4) > 1)
         {
-            for(size_t i = 0;prog(i,nii.dim(4));++i)
+            if(nii.is_mni())
             {
-                nii >> I;
-                sample_from_image(I.alias(),trans,data);
-                add(subject_R2,data,subject_name+std::to_string(i));
+                for(size_t i = 0;prog(i,nii.dim(4));++i)
+                {
+                    tipl::image<3> I;
+                    nii >> I;
+                    sample_from_image(I.alias(),trans,data);
+                    add(subject_R2,data,subject_name+std::to_string(i));
+                }
+            }
+            else
+            {
+                std::vector<tipl::image<3> > image_data(nii.dim(4));
+                for(size_t i = 0;prog(i,nii.dim(4));++i)
+                    nii >> image_data[i];
+                if(prog.aborted())
+                {
+                    error_msg = "aborted";
+                    return false;
+                }
+
+                dual_reg r;
+                if(!r.load_template(0,t2w_template_list[handle->template_id]))
+                {
+                    error_msg = r.error_msg;
+                    return false;
+                }
+                r.I[0] = subject_image_pre(tipl::sum(image_data.begin(),image_data.end()));
+                r.IR = trans;
+                r.Is = r.I[0].shape();
+                nii.get_voxel_size(r.Ivs);
+                bool ended = false;
+                r.match_resolution(true);
+                std::thread thread([&](void)
+                {
+                    r.linear_reg(tipl::prog_aborted);
+                    r.nonlinear_reg(tipl::prog_aborted);
+                    ended = true;
+                });
+                while(!ended)
+                    prog(0,1);
+                thread.join();
+                if(prog.aborted())
+                {
+                    error_msg = "aborted";
+                    return false;
+                }
+                for(size_t i = 0;prog(i,nii.dim(4));++i)
+                {
+                    sample_from_image(r.apply_warping<true,tipl::cubic>(image_data[i]).alias(),r.ItR,data);
+                    add(subject_R2,data,subject_name+std::to_string(i));
+                }
             }
             if(prog.aborted())
             {
@@ -492,6 +546,7 @@ bool connectometry_db::add(const std::string& file_name,
         }
         else
         {
+            tipl::image<3> I;
             nii >> I;
             sample_from_image(I.alias(),trans,data);
         }
