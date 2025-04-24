@@ -152,9 +152,6 @@ bool connectometry_db::parse_demo(const std::string& filename)
 
 bool connectometry_db::parse_demo(void)
 {
-
-
-    tipl::out() << "parsing demographics" << std::endl;
     std::string saved_demo(std::move(demo));
     titles.clear();
     items.clear();
@@ -205,24 +202,46 @@ bool connectometry_db::parse_demo(void)
                 }
             last_item_size = items.size();
         }
-
-        if(items.size() != (num_subjects+1)*col_count)
+        if(items.empty())
         {
-            size_t found = 0;
-            std::vector<std::string> new_items((num_subjects+1)*col_count);
+            error_msg = "no demographics";
+            return false;
+        }
+        size_t found = 0;
+        std::vector<std::string> new_items((num_subjects+1)*col_count);
+        std::string first_column_title = QString::fromStdString(items.front()).toLower().toStdString();
+        bool first_column_has_text = false;
+        if(!tipl::contains(first_column_title,"age") && !tipl::contains(first_column_title,"sex"))
+        {
             // copy titles
             std::copy(items.begin(),items.begin()+int(col_count),new_items.begin());
             for(size_t i = 0;i < num_subjects;++i)
-                for(size_t j = col_count;j+col_count <= items.size();j += col_count)
+            {
+                size_t matched_pos = 0;
+                size_t matched_length = 0;
+                for(size_t pos = col_count;pos+col_count <= items.size();pos += col_count)
                 {
-                    if(subject_names[i].find(items[j]) != std::string::npos ||
-                       items[j].find(subject_names[i]) != std::string::npos)
+                    if(!items[pos].empty() && items[pos][0] >= 'A')
+                        first_column_has_text = true;
+                    if(subject_names[i].find(items[pos]) != std::string::npos ||
+                       items[pos].find(subject_names[i]) != std::string::npos)
                     {
-                        ++found;
-                        std::copy(items.begin()+int(j),items.begin()+int(j+col_count),new_items.begin() + (i+1)*col_count);
-                        break;
+                        if(items[pos].size() > matched_length)
+                        {
+                            matched_pos = pos;
+                            matched_length = items[pos].size();
+                        }
                     }
                 }
+                if(matched_length > 1)
+                {
+                    ++found;
+                    std::copy(items.begin()+matched_pos,items.begin()+matched_pos+col_count,new_items.begin() + size_t(i+1)*col_count);
+                }
+            }
+        }
+        if(items.size() != (num_subjects+1)*col_count)
+        {
             if(found > num_subjects*0.75f)
             {
                 tipl::out() << "rematch subject name with the first column.";
@@ -236,6 +255,15 @@ bool connectometry_db::parse_demo(void)
                 return false;
             }
         }
+        else
+        {
+            if(found == num_subjects && first_column_has_text)
+            {
+                tipl::out() << "rematch subject name with the first column.";
+                items.swap(new_items);
+            }
+        }
+
     }
     // first line moved to title vector
     titles.insert(titles.end(),items.begin(),items.begin()+int(col_count));
@@ -248,7 +276,7 @@ bool connectometry_db::parse_demo(void)
     {
         for(char each : std::string("/://|*?<>\"\\^~[]"))
             std::replace(titles[i].begin(),titles[i].end(),each,'_');
-        pout << "\t" << titles[i];
+        pout << "," << titles[i];
     }
     pout << std::endl;
 
@@ -295,7 +323,7 @@ bool connectometry_db::parse_demo(void)
                 }
                 if(group1.empty())
                     continue;
-                tipl::out() << titles[i] << " is group label, assign numbers 0:" << group1 << " 1:" << group2;
+                tipl::out() << "'" << titles[i] << "' treated as a group label, assign numbers 0:" << group1 << " 1:" << group2;
                 titles[i] += "(0=" + group1 + " 1=" + group2 + ")";
                 for(size_t j = i;j < items.size();j += titles.size())
                     items[j] = (items[j] == group1 ? "0":"1");
