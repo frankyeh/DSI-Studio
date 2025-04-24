@@ -230,7 +230,11 @@ void db_window::on_actionCalculate_change_triggered()
     }
     std::unique_ptr<match_db> mdb(new match_db(this,vbc));
     if(mdb->exec() == QDialog::Accepted)
+    {
+        if(!vbc->handle->db.demo.empty())
+            vbc->handle->db.parse_demo();
         update_db();
+    }
 }
 
 void db_window::on_actionSave_DB_as_triggered()
