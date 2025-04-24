@@ -101,7 +101,7 @@ void CreateDBDialog::update_list(void)
             }
             tipl::vector<3> vs;
             nii.get_voxel_size(vs);
-            template_reso = vs[0];
+            template_reso = std::min<float>(2.0f,vs[0]);
         }
         else
         {
