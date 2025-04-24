@@ -224,6 +224,8 @@ float dual_reg::linear_reg(bool& terminated)
 
 void dual_reg::nonlinear_reg(bool& terminated)
 {
+    if(!data_ready())
+        return;
     tipl::progress prog("nonlinear registration");
     f2t_dis.clear();
     t2f_dis.clear();
