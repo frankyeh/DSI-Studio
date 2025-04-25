@@ -308,7 +308,6 @@ public:
     void crop(tipl::shape<3> range_min,tipl::shape<3> range_max);
     void trim(void);
     bool correct_motion(void);
-    bool correct_bias_field(void);
     bool add_other_image(const std::string& name,const std::string& filename);
 public:
     std::shared_ptr<src_data> rev_pe_src;
