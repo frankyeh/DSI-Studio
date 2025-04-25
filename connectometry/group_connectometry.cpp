@@ -642,7 +642,7 @@ void group_connectometry::on_threshold_valueChanged(double t)
             level = "(moderate)";
         if(rho > 0.5)
             level = "(large)";
-        ui->effect_size->setText(QString("effect size=%1 %2").arg(rho).arg(level));
+        ui->effect_size->setText(QString("effect size=%1 %2").arg(QString::number(rho, 'f', 2)).arg(level));
     }
 }
 
