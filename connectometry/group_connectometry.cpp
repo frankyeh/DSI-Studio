@@ -638,9 +638,9 @@ void group_connectometry::on_threshold_valueChanged(double t)
     {
         double rho = t/std::sqrt(t*t+selected_count-2);
         QString level = "(small)";
-        if(rho > 0.3)
+        if(rho >= 0.3)
             level = "(moderate)";
-        if(rho > 0.5)
+        if(rho >= 0.5)
             level = "(large)";
         ui->effect_size->setText(QString("effect size=%1 %2").arg(QString::number(rho, 'f', 2)).arg(level));
     }
