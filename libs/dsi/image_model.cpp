@@ -174,7 +174,7 @@ bool src_data::mask_from_unet(void)
     return false;
 }
 
-bool src_data::correct_by_t2w(const std::string& t2w_filename)
+bool src_data::correct_distortion_by_t2w(const std::string& t2w_filename)
 {
     std::string msg = " Susceptibility distortion was corrected by nonlinearly warping the b0 image to the T2-weighted image.";
     if(tipl::contains(voxel.report,msg))
@@ -1119,7 +1119,7 @@ bool src_data::command(std::string cmd,std::string param)
     }
     if(cmd == "[Step T2][Corrections][By T2w]")
     {
-        if(!correct_by_t2w(param))
+        if(!correct_distortion_by_t2w(param))
             return false;
         voxel.steps += cmd+"="+param+"\n";
         return true;
