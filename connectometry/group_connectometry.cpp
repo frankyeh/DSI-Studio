@@ -599,7 +599,7 @@ void group_connectometry::on_show_cohort_clicked()
         QMessageBox::critical(this,"ERROR",model->error_msg.c_str());
         return;
     }
-    size_t selected_count = 0;
+    selected_count = 0;
     ui->subject_demo->setUpdatesEnabled(false);
     for(size_t i = 0;i < model->remove_list.size();++i)
     {
@@ -610,6 +610,7 @@ void group_connectometry::on_show_cohort_clicked()
     }
     ui->subject_demo->setUpdatesEnabled(true);
     ui->cohort_report->setText(QString("n=%1").arg(selected_count));
+    on_threshold_valueChanged(ui->threshold->value());
 }
 
 void group_connectometry::on_fdr_control_toggled(bool checked)
@@ -628,5 +629,20 @@ void group_connectometry::on_apply_selection_clicked()
     new_text += ui->cohort_value->text();
     ui->select_text->setText(new_text);
     on_show_cohort_clicked();
+}
+
+
+void group_connectometry::on_threshold_valueChanged(double t)
+{
+    if(selected_count > 2)
+    {
+        double rho = t/std::sqrt(t*t+selected_count-2);
+        QString level = "(small)";
+        if(rho > 0.3)
+            level = "(moderate)";
+        if(rho > 0.5)
+            level = "(large)";
+        ui->effect_size->setText(QString("effect size=%1 %2").arg(rho).arg(level));
+    }
 }
 
