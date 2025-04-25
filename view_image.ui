@@ -491,6 +491,7 @@
     <addaction name="actionGaussian_Filter"/>
     <addaction name="actionSmoothing_Filter"/>
     <addaction name="actionSobel_Filter"/>
+    <addaction name="actionHistogram_Sharpening"/>
     <addaction name="separator"/>
     <addaction name="actionAddImage"/>
     <addaction name="actionMinusImage"/>
@@ -1045,6 +1046,11 @@
    </property>
    <property name="toolTip">
     <string>Change the image size</string>
+   </property>
+  </action>
+  <action name="actionHistogram_Sharpening">
+   <property name="text">
+    <string>Histogram Sharpening</string>
    </property>
   </action>
  </widget>
