@@ -57,7 +57,7 @@ public:
     connectometry_db& db;
     std::shared_ptr<stat_model> model;
     std::shared_ptr<QTimer> timer;
-
+    size_t selected_count = 0;
     explicit group_connectometry(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_ptr,QString db_file_name_);
     ~group_connectometry();
 
@@ -89,6 +89,7 @@ private slots:
     void on_show_cohort_clicked();
     void on_fdr_control_toggled(bool checked);
     void on_apply_selection_clicked();
+    void on_threshold_valueChanged(double arg1);
 };
 
 #endif // VBC_DIALOG_HPP
