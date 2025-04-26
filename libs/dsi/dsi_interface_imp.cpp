@@ -406,7 +406,7 @@ bool odf_average(const char* out_name,std::vector<std::string>& file_names,std::
                     if(other_metrics_images[i].empty())
                         other_metrics_images[i] = I;
                     else
-                        tipl::add(other_metrics_images[i],I);
+                        tipl::add(other_metrics_images[i].begin(),other_metrics_images[i].end(),I.begin());
                     other_metrics_count[i]++;
                 }
             }
