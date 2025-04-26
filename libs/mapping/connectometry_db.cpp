@@ -452,7 +452,7 @@ void connectometry_db::add(float subject_R2,std::vector<float>& data,
     {
         float m = tipl::max_value(data);
         if(m != 1.0f && m != 0.0f)
-            tipl::multiply_constant(data,1.0f/m);
+            tipl::multiply_constant(data.begin(),data.end(),1.0f/m);
     }
     R2.push_back(subject_R2);
     subject_qa_length = std::min<size_t>(subject_qa_length,data.size());
