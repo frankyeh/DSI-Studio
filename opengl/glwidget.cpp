@@ -1394,7 +1394,7 @@ void GLWidget::add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos_)
             {
                 new_odf_buffer.resize(half_odf);
                 std::copy(odf_buffer,odf_buffer+half_odf,new_odf_buffer.begin());
-                tipl::minus(new_odf_buffer,odf);
+                tipl::minus(new_odf_buffer.begin(),new_odf_buffer.end(),odf.begin());
             }
             else
             {
