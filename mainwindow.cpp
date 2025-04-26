@@ -537,7 +537,8 @@ void MainWindow::loadSrc(QStringList filenames)
     }
     catch(const std::runtime_error& error)
     {
-        QMessageBox::critical(this,"ERROR",error.what());
+        if(!tipl::prog_aborted)
+            QMessageBox::critical(this,"ERROR",error.what());
     }
 
 }
