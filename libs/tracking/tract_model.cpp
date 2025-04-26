@@ -4265,9 +4265,9 @@ void ConnectivityMatrix::network_property(std::string& report)
         float sum_wei = std::accumulate(pagerank_centrality_wei.begin(),pagerank_centrality_wei.end(),0.0);
 
         if(sum_bin != 0)
-            tipl::divide_constant(pagerank_centrality_bin,sum_bin);
+            tipl::divide_constant(pagerank_centrality_bin.begin(),pagerank_centrality_bin.end(),sum_bin);
         if(sum_wei != 0)
-            tipl::divide_constant(pagerank_centrality_wei,sum_wei);
+            tipl::divide_constant(pagerank_centrality_wei.begin(),pagerank_centrality_wei.end(),sum_wei);
     }
     output_node_measures(out,"network_measures",region_name);
     output_node_measures(out,"degree(binary)",degree);
