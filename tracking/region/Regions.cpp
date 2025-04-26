@@ -105,7 +105,7 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >&& points, bool de
             mask.at(p) = 0;
     });
     region = tipl::volume2points(mask);
-    tipl::add_constant(region,min_value);
+    tipl::add_constant(region.begin(),region.end(),min_value);
 }
 
 // ---------------------------------------------------------------------------
