@@ -632,7 +632,7 @@ void reconstruction_window::on_actionRotate_triggered()
     tipl::progress prog_("rotating");
     tipl::image<3> ref2(ref);
     float m = tipl::median(ref2.begin(),ref2.end());
-    tipl::multiply_constant(ref,0.5f/m);
+    ref *= 0.5f/m;
     handle->rotate(ref.shape(),vs,manual->get_iT());
     handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";
     handle->voxel.report += QFileInfo(filenames[0]).baseName().toStdString();
