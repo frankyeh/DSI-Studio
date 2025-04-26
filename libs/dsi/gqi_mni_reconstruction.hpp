@@ -152,7 +152,7 @@ public:
             tipl::crop(cdm_dis,bmin,bmax);
 
             // add the coordinate shift to the displacement matrix
-            tipl::add_constant(cdm_dis,bmin);
+            cdm_dis += bmin;
 
             tipl::crop(VG,bmin,bmax);
 
@@ -247,7 +247,7 @@ public:
                     voxel.other_image_trans[i].identity();
                 }
             }
-            if(voxel.needs("jdet"))
+            if(voxel.needs("size"))
                 jdet.resize(VG.size());
             // setup raw DWI
             ptr_images.clear();
