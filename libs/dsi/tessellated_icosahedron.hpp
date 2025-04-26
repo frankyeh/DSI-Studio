@@ -328,8 +328,8 @@ public:
         for(unsigned int index = 0;index < redges.size();++index)
         {
             redges[index] = edges[index];
-            tipl::add_constant(redges[index],half_vertices_count);
-            tipl::mod_constant(redges[index],vertices_count);
+            tipl::add_constant(redges[index].begin(),redges[index].end(),half_vertices_count);
+            tipl::mod_constant(redges[index].begin(),redges[index].end(),vertices_count);
 
         }
 		// hat faces
