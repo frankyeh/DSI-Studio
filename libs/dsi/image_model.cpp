@@ -2975,14 +2975,19 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
 
         mat_reader.read("intro",voxel.intro);
 
-
-        src_dwi_data.resize(src_bvalues.size());
-        for (size_t index = 0;index < src_dwi_data.size();++index)
-            if(!mat_reader.read("image"+std::to_string(index),src_dwi_data[index]))
-            {
-                error_msg = "cannot read image. incomplete file ?";
+        {
+            tipl::progress p2("reading data");
+            src_dwi_data.resize(src_bvalues.size());
+            for (size_t index = 0;p2(index,src_dwi_data.size());++index)
+                if(!mat_reader.read("image"+std::to_string(index),src_dwi_data[index]))
+                {
+                    error_msg = "cannot read image. incomplete file ?";
+                    return false;
+                }
+            if(p2.aborted())
                 return false;
-            }
+        }
+
         {
             const float* grad_dev_ptr = nullptr;
             std::vector<tipl::pointer_image<3,float> > grad_dev;
