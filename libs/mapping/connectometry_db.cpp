@@ -1086,13 +1086,13 @@ bool stat_model::pre_process(void)
         }
 
     X_range = X_max;
-    tipl::minus(X_range,X_min);
+    tipl::minus(X_range.begin(),X_range.end(),X_min.begin());
 
     {
         std::vector<double> sum(x_col_count);
         for(unsigned int pos = 0;pos < X.size();pos += x_col_count)
             tipl::add(sum.begin(),sum.end(),X.begin()+pos);
-        tipl::divide_constant(sum,subject_count);
+        tipl::divide_constant(sum.begin(),sum.end(),subject_count);
         X_mean.swap(sum);
     }
 
