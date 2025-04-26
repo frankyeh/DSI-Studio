@@ -946,7 +946,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         const float inf = std::numeric_limits<float>::infinity();
         for (const auto& t : tract_data) {
             std::vector<float> buf(t);
-            tipl::multiply_constant(buf, vs[0]);
+            tipl::multiply_constant(buf.begin(),buf.end(), vs[0]);
             out.write(reinterpret_cast<const char*>(buf.data()), buf.size() * sizeof(float));
             out.write(reinterpret_cast<const char*>(&nan),sizeof(nan));
             out.write(reinterpret_cast<const char*>(&nan),sizeof(nan));
@@ -2546,7 +2546,7 @@ bool TractModel::export_pdi(const char* file_name,
     }
     tipl::image<3> pdi(accumulate_map);
     if(tract_models.size() > 1)
-        tipl::multiply_constant(pdi,1.0f/float(tract_models.size()));
+        tipl::multiply_constant(pdi.begin(),pdi.end(),1.0f/float(tract_models.size()));
     return tipl::io::gz_nifti::save_to_file(file_name,pdi,vs,trans_to_mni,is_mni);
 }
 bool TractModel::export_tdi(const char* filename,
@@ -3687,7 +3687,7 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
             if(num_steps >= 6)
             {
                 auto dis = tract_model.get_tract_point(index,0)-tract_model.get_tract_point(index,1);
-                tipl::multiply(dis,handle->vs);
+                tipl::multiply(dis.begin(),dis.end(),handle->vs.begin());
                 sum_length[i][j] += dis.length()*num_steps;
                 ++sum_n[i][j];
             }
@@ -4255,13 +4255,11 @@ void ConnectivityMatrix::network_property(std::string& report)
                     B_wei[index] += 1.0;
                 }
             }
-        std::vector<unsigned int> pivot(n);
+
         std::vector<float> b(n);
         std::fill(b.begin(),b.end(),(1.0-d)/n);
-        tipl::mat::lu_decomposition(B_bin.begin(),pivot.begin(),tipl::shape<2>(n,n));
-        tipl::mat::lu_solve(B_bin.begin(),pivot.begin(),b.begin(),pagerank_centrality_bin.begin(),tipl::shape<2>(n,n));
-        tipl::mat::lu_decomposition(B_wei.begin(),pivot.begin(),tipl::shape<2>(n,n));
-        tipl::mat::lu_solve(B_wei.begin(),pivot.begin(),b.begin(),pagerank_centrality_wei.begin(),tipl::shape<2>(n,n));
+        tipl::mat::lu_solve(B_bin.begin(),b.begin(),pagerank_centrality_bin.begin(),tipl::shape<2>(n,n));
+        tipl::mat::lu_solve(B_wei.begin(),b.begin(),pagerank_centrality_wei.begin(),tipl::shape<2>(n,n));
 
         float sum_bin = std::accumulate(pagerank_centrality_bin.begin(),pagerank_centrality_bin.end(),0.0);
         float sum_wei = std::accumulate(pagerank_centrality_wei.begin(),pagerank_centrality_wei.end(),0.0);
