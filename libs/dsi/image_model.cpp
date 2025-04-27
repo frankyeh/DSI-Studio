@@ -1117,6 +1117,14 @@ bool src_data::command(std::string cmd,std::string param)
         voxel.steps += cmd+"\n";
         return true;
     }
+    if(cmd == "[Step T2][Corrections][Bias Field]")
+    {
+        if(!correct_bias_field())
+            return false;
+        voxel.steps += cmd+"\n";
+        return true;
+    }
+
     if(cmd == "[Step T2][Corrections][By T2w]")
     {
         if(!correct_distortion_by_t2w(param))
@@ -1198,9 +1206,10 @@ void src_data::rotate(const tipl::shape<3>& new_geo,
                         const tipl::image<3,tipl::vector<3> >& cdm_dis)
 {
     std::vector<tipl::image<3,unsigned short> > rotated_dwi(src_dwi_data.size());
+    std::vector<const unsigned short*> new_src_dwi_data(src_dwi_data.size());
     tipl::progress prog("rotating");
     size_t p = 0;
-    tipl::adaptive_par_for(src_dwi_data.size(),[&](unsigned int index)
+    tipl::adaptive_par_for(new_src_dwi_data.size(),[&](unsigned int index)
     {
         if(prog.aborted())
             return;
@@ -1210,11 +1219,12 @@ void src_data::rotate(const tipl::shape<3>& new_geo,
             tipl::resample<tipl::interpolation::cubic>(dwi_at(index),rotated_dwi[index],T);
         else
             tipl::resample_dis<tipl::interpolation::cubic>(dwi_at(index),rotated_dwi[index],T,cdm_dis);
-        src_dwi_data[index] = rotated_dwi[index].data();
+        new_src_dwi_data[index] = rotated_dwi[index].data();
     });
     if(prog.aborted())
         return;
     rotated_dwi.swap(new_dwi);
+    new_src_dwi_data.swap(src_dwi_data);
 
     tipl::matrix<3,3,float> r = get_inv_rotation(voxel,T);
     for (auto& vec : src_bvectors)
@@ -1417,6 +1427,167 @@ bool src_data::align_acpc(float reso)
     return true;
 }
 
+
+template<typename T>
+inline T B3_sym(T u)
+{
+    u = std::abs(u);
+    if (u < T(1)) return (T(4) - T(6)*u*u + T(3)*u*u*u) / T(6);
+    if (u < T(2)) {T v = T(2) - u;return (v*v*v) / T(6);}
+    return T(0);
+}
+void correct_bias_field(tipl::image<3> I,
+                        const tipl::image<3,unsigned char>& mask,
+                        tipl::image<3>& log_bias_field,
+                        const tipl::vector<3>& spacing)
+{
+    constexpr int spline_range = 3;
+    constexpr int max_iters = 50;
+    constexpr float tol = 1e-4f;
+
+    std::vector<size_t> position;     // nearest control‐point grid index
+    std::vector<double> logI;
+
+    if(!log_bias_field.empty())
+        for(size_t i = 0;i < mask.size();++i)
+            if(mask[i])
+                I[i] *= std::exp(-log_bias_field[i]);
+    tipl::histogram_sharpening(I);
+
+    for(size_t i = 0;i < mask.size();++i)
+        if(mask[i])
+        {
+            position.push_back(i);
+            logI.push_back(std::log(I[i] + 1e-6f));
+        }
+
+
+    tipl::minus_constant(logI.begin(),logI.end(),tipl::mean(logI.begin(),logI.end()));
+
+    // 1) Compute control‐point grid size exactly as before
+    tipl::shape<3> c_shape(int(std::floor((mask.width()-1)/spacing[0])) + spline_range + spline_range + 1,
+                           int(std::floor((mask.height()-1)/spacing[1])) + spline_range + spline_range + 1,
+                           int(std::floor((mask.depth()-1)/spacing[2])) + spline_range + spline_range + 1);
+    // 2) Precompute B3‐weights per sample
+    std::vector<std::vector<std::pair<size_t,float>>> basis(position.size());
+
+    tipl::par_for(position.size(), [&](size_t i)
+    {
+        tipl::pixel_index<3> pos(position[i],mask.shape());
+        // normalized continuous coords
+        float fx = float(pos[0]) / spacing[0] + spline_range,fy = float(pos[1]) / spacing[1] + spline_range,fz = float(pos[2]) / spacing[2] + spline_range;
+        // nearest control‐point grid index
+        int cx = int(std::floor(fx)),cy = int(std::floor(fy)),cz = int(std::floor(fz));
+        auto& b = basis[i];
+        double sumw = 0.0;
+        for (int iz = cz - spline_range; iz < cz + spline_range; ++iz)
+        {
+            float wz = B3_sym(fz - iz);
+            for (int iy = cy - spline_range; iy < cy + spline_range; ++iy)
+            {
+                float wyz = B3_sym(fy - iy)*wz;
+                for (int ix = cx - spline_range; ix < cx + spline_range; ++ix)
+                {
+                    float wxyz = B3_sym(fx - ix) * wyz;
+                    if(wxyz == 0.0f)
+                        continue;
+                    sumw += wxyz;
+                    b.emplace_back(tipl::voxel2index(ix,iy,iz,c_shape), wxyz);
+                }
+            }
+        }
+        if (sumw > 0.0)
+            for (auto& each : b)
+                each.second /= sumw;
+    });
+    std::vector<double> ATA(c_shape.size()*c_shape.size());
+    for (auto& each : basis)
+        for (size_t i = 0,n = each.size(); i < n; ++i)
+        {
+            auto i_value = each[i].second;
+            auto* row_ptr = &ATA[each[i].first * c_shape.size()];
+            for (size_t j = i; j < n; ++j)
+                row_ptr[each[j].first] += i_value * each[j].second;
+        }
+    for (int j = 0; j < c_shape.size(); ++j)
+        ATA[j*c_shape.size() + j] += 1e-3f;// regularize
+    std::vector<double> piv(c_shape.size());
+    std::initializer_list<size_t> dim{c_shape.size(), c_shape.size()};
+    if (!tipl::mat::ll_decomposition(ATA.begin(), piv.begin(), dim))
+        return;
+
+    tipl::image<3,double> cc_img(c_shape);   // control‐point coefficients
+    std::vector<float> correction(position.size());
+    double prev_rms = std::numeric_limits<double>::max();
+    for (int iter = 0; iter < max_iters; ++iter)
+    {
+        // a) residuals
+        std::vector<double> resid(logI),rhs(c_shape.size());
+        tipl::minus(resid.begin(),resid.end(),correction.begin());
+        for(size_t i = 0;i < resid.size();++i)
+        {
+            auto& resid_i = resid[i];
+            for (auto& tpl : basis[i])
+                rhs[tpl.first] += tpl.second * resid_i;
+        }
+        // c) solve via LL
+        tipl::mat::ll_solve(ATA.begin(), piv.begin(), rhs.begin(), cc_img.begin(), dim);
+        // d) update correction & RMS
+        std::vector<double> each_sumsq(tipl::max_thread_count),each_count(tipl::max_thread_count);
+        tipl::par_for<tipl::sequential_with_id>(correction.size(),[&](size_t i,size_t id)
+        {
+            double d = 0.0;
+            for(const auto& each : basis[i])
+                d += double(cc_img[each.first])*each.second;
+            correction[i] += float(d);
+            each_sumsq[id] += d*d;
+            ++each_count[id];
+        });
+        double rms = std::sqrt(tipl::sum(each_sumsq.begin(),each_sumsq.end()) / double(tipl::sum(each_count.begin(),each_count.end())));
+        if (std::abs(prev_rms - rms) < tol)
+            break;
+        prev_rms = rms;
+
+    }
+    log_bias_field.resize(mask.shape());
+    for(size_t i = 0;i < position.size();++i)
+        log_bias_field[position[i]] += correction[i]*3.0f;
+
+}
+bool src_data::correct_bias_field(void)
+{
+    std::vector<tipl::image<3> > b0s;
+    if(!read_b0(b0s))
+        return false;
+    if(tipl::contains(voxel.report,"bias field"))
+    {
+        tipl::warning() << "bias field correction has been previously applied";
+        return true;
+    }
+    auto& b0 = b0s[0];
+    tipl::image<3>  bias_field;
+    {
+        float length[3] = {float(voxel.dim[0]),voxel.dim[0]*0.75f,voxel.dim[0]*0.5f};
+        tipl::progress prog("estimate bias field",true);
+        for(size_t i = 0;prog(i,3);++i)
+            ::correct_bias_field(b0,voxel.mask,bias_field,
+                tipl::vector<3>(length[i],length[i]*voxel.vs[0]/voxel.vs[1],length[i]*voxel.vs[0]/voxel.vs[2]));
+        if(prog.aborted())
+            return false;
+    }
+    {
+        tipl::progress prog("apply correction");
+        for(auto& each : bias_field)
+            each = std::exp(-each);
+        tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
+        {
+            dwi_at(index) *= bias_field;
+        });
+        calculate_dwi_sum(true);
+        voxel.report += " The bias field was corrected using b0 image.";
+    }
+    return true;
+}
 extern bool has_cuda;
 extern int gpu_count;
 bool src_data::correct_motion(void)
@@ -2873,12 +3044,9 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         voxel.vs = {0.05f,0.05f,0.05f};
         initial_LPS_nifti_srow(voxel.trans_to_mni,voxel.dim,voxel.vs);
         voxel.hist_image.swap(raw);
-        voxel.report = "Histology image was loaded at a size of ";
-        voxel.report += std::to_string(voxel.hist_image.width());
-        voxel.report += " by ";
-        voxel.report += std::to_string(voxel.hist_image.height());
-        voxel.report += " pixels.";
-
+        voxel.report = "Histology image was loaded at a size of "
+                     + std::to_string(voxel.hist_image.width()) + " by "
+                     + std::to_string(voxel.hist_image.height()) + " pixels.";
         tipl::out() << "generating mask";
         tipl::segmentation::otsu(dwi,voxel.mask);
         tipl::negate(voxel.mask);
