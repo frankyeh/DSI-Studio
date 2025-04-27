@@ -1359,8 +1359,8 @@ Reconstruction</string>
     <addaction name="actionEDDY"/>
     <addaction name="separator"/>
     <addaction name="actionCorrect_Distortion_by_T2w"/>
+    <addaction name="actionCorrect_Bias_Field"/>
     <addaction name="actionEddy_Motion_Correction"/>
-    <addaction name="separator"/>
     <addaction name="actionVolume_Orientation_Correction"/>
     <addaction name="separator"/>
    </widget>
@@ -1649,7 +1649,12 @@ Reconstruction</string>
   </action>
   <action name="actionCorrect_Distortion_by_T2w">
    <property name="text">
-    <string>Correct Distortion by T2w...</string>
+    <string>T2w Distortion Correction...</string>
+   </property>
+  </action>
+  <action name="actionCorrect_Bias_Field">
+   <property name="text">
+    <string>Bias Field Correction...</string>
    </property>
   </action>
  </widget>
