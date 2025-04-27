@@ -179,6 +179,11 @@ int rec(tipl::program_option<tipl::out>& po)
                 tipl::out() << "DWI rotated." << std::endl;
             }
         }
+        if(po.get("correct_bias_field",1) && !src.command("[Step T2][Corrections][Bias Field]"))
+        {
+            tipl::error() << src.error_msg << std::endl;
+            return 1;
+        }
     }
 
 
