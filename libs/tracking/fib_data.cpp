@@ -536,7 +536,30 @@ bool fib_data::load_from_file(const std::string& file_name)
         return false;
     return true;
 }
-
+void correct_bias_field(tipl::image<3> I,
+                        const tipl::image<3,unsigned char>& mask,
+                        tipl::image<3>& log_bias_field,
+                        const tipl::vector<3>& spacing);
+bool fib_data::correct_bias_field(void)
+{
+    size_t iso_index = get_name_index("iso");
+    if(slices.size() == iso_index)
+        return false;
+    tipl::progress prog("correct bias field",true);
+    tipl::image<3>  bias_field;
+    float length[3] = {float(dim[0]),dim[0]*0.75f,dim[0]*0.5f};
+    for(size_t i = 0;prog(i,3);++i)
+        ::correct_bias_field(slices[iso_index]->get_image(),mask,bias_field,
+            tipl::vector<3>(length[i],length[i]*vs[0]/vs[1],length[i]*vs[0]/vs[2]));
+    if(prog.aborted())
+        return false;
+    for(auto& each : bias_field)
+        each = std::exp(-each);
+    tipl::make_image(const_cast<float*>(mat_reader.read_as_type<float>("iso")),dim) *= bias_field;
+    for(auto each : dir.fa)
+        tipl::make_image(const_cast<float*>(each),dim) *= bias_field;
+    return true;
+}
 
 bool fib_data::save_slice(const std::string& index_name,const std::string& file_name)
 {
