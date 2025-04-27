@@ -149,6 +149,12 @@ bool tracking_window::command(std::vector<std::string> cmd)
         tracking_windows.back()->resize(size().width(),size().height());
         return run->succeed();
     }
+    if(cmd[0] == "correct_bias_field")
+    {
+        if(handle->correct_bias_field())
+            return run->succeed();
+        return run->failed("cannot find iso");
+    }
     if(cmd[0] == "save_fib_as")
     {
         if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(this,"Save FIB file",
