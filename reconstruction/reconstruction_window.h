@@ -98,6 +98,7 @@ private slots:
     void on_actionTOPUP_only_triggered()            {command("[Step T2][Corrections][TOPUP]");}
     void on_actionEDDY_triggered()                  {command("[Step T2][Corrections][EDDY]");}
     void on_actionCorrect_Distortion_by_T2w_triggered()                  {command("[Step T2][Corrections][By T2w]");}
+    void on_actionCorrect_Bias_Field_triggered()                  {command("[Step T2][Corrections][Bias Field]");}
     void on_actionEddy_Motion_Correction_triggered(){command("[Step T2][Corrections][Motion Correction]");}
     void on_actionVolume_Orientation_Correction_triggered(){command("[Step T2][Corrections][Volume Orientation Correction]");}
 
