@@ -634,9 +634,9 @@ void reconstruction_window::on_actionRotate_triggered()
     float m = tipl::median(ref2.begin(),ref2.end());
     ref *= 0.5f/m;
     handle->rotate(ref.shape(),vs,manual->get_iT());
-    handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";
-    handle->voxel.report += QFileInfo(filenames[0]).baseName().toStdString();
-    handle->voxel.report += ". The b-table was also rotated accordingly.";
+    handle->voxel.report += " The diffusion images were rotated and scaled to the space of "
+                         + QFileInfo(filenames[0]).baseName().toStdString()
+                         + ". The b-table was also rotated accordingly.";
     ui->report->setText(handle->voxel.report.c_str());
     load_b_table();
     update_dimension();
