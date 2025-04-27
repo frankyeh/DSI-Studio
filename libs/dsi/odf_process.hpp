@@ -82,9 +82,7 @@ public:
                     effective_b += t[j]*double(voxel.bvalues[j]);
                 }
                 double sum_t = std::accumulate(t.begin(),t.end(),0.0);
-                tipl::multiply_constant(t,avg_b/1000.0/sum_t);
-                if(std::isnan(t[0])) // the sampling is too sparse
-                    throw "Scheme balance failed due to insufficient sampling";
+                tipl::multiply_constant(t.begin(),t.end(),avg_b/1000.0/sum_t);
                 std::copy(t.begin(),t.end(),trans.begin() + int64_t(trans_old_size + size_t(i) * size_t(b_count)));
                 new_bvalues.push_back(float(effective_b/sum_t));
                 new_bvectors.push_back(new_dir.vertices[i]);
@@ -193,7 +191,7 @@ public:
     virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
         for(auto& each : odf_data)
-            tipl::multiply_constant(each,voxel.z0);
+            tipl::multiply_constant(each.begin(),each.end(),voxel.z0);
         tipl::progress prog("odf",true);
         for (unsigned int index = 0;prog(index,odf_data.size());++index)
             mat_writer.write<tipl::io::sloped>((std::string("odf")+std::to_string(index)).c_str(),odf_data[index],voxel.ti.half_vertices_count);
@@ -415,10 +413,10 @@ struct SaveMetrics : public BaseProcess
 protected:
     SearchLocalMaximum lm;
     ODFShaping shaping;
-    std::vector<std::vector<short> > findex;
+    std::vector<tipl::image<3,short> > findex;
 protected:
-    std::vector<float> iso,gfa;
-    std::vector<std::vector<float> > fa,rdi;
+    tipl::image<3> iso,gfa;
+    std::vector<tipl::image<3> > fa,rdi;
 public:
     virtual void init(Voxel& voxel)
     {
@@ -427,19 +425,22 @@ public:
         lm.init(voxel);
 
         voxel.z0 = 1.0f;
-        fa = std::vector<std::vector<float> >(voxel.max_fiber_number,std::vector<float>(voxel.dim.size()));
+        fa.resize(voxel.max_fiber_number);
+        for(auto& each : fa)
+            each = std::move(tipl::image<3>(voxel.dim));
+
         if(voxel.needs("gfa"))
-            gfa = std::vector<float>(voxel.dim.size());
-        iso = std::vector<float>(voxel.dim.size());
+            gfa = std::move(tipl::image<3>(voxel.dim));
+        iso = std::move(tipl::image<3>(voxel.dim));
         if(voxel.needs("rdi"))
         {
             float sigma = voxel.param[0]; //optimal 1.24
             for(float L = 0.2f;L <= sigma;L+= 0.2f)
-                rdi.push_back(std::vector<float>(voxel.dim.size()));
+                rdi.emplace_back(voxel.dim);
         }
         findex.resize(voxel.max_fiber_number);
-        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-            findex[index].resize(voxel.dim.size());
+        for(auto& each : findex)
+            each = std::move(tipl::image<3>(voxel.dim));
     }
     virtual void run(Voxel& voxel, VoxelData& data)
     {
@@ -521,27 +522,22 @@ public:
     }
     virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
-        // output normalized qa
         {
             float max_qa = tipl::max_value(fa[0]);
-            if(max_qa == 0.0f)
-                max_qa = 1.0f;
-            voxel.z0 = float(1.0/double(max_qa));
-            for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
-            {
-                tipl::multiply_constant(fa[index],voxel.z0);
-                mat_writer.write<tipl::io::masked_sloped>("fa" + std::to_string(index),fa[index],voxel.dim.plane_size());
-            }
+            if(max_qa != 0.0f)
+                voxel.z0 = float(1.0/double(max_qa));
         }
-        mat_writer.write<tipl::io::masked_sloped>("gfa",gfa,voxel.dim.plane_size());
 
-        tipl::multiply_constant(iso,voxel.z0);
-        mat_writer.write<tipl::io::masked_sloped>("iso",iso,voxel.dim.plane_size());
+        mat_writer.write<tipl::io::masked_sloped>("iso",iso*=voxel.z0,voxel.dim.plane_size());
+        for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
+            mat_writer.write<tipl::io::masked_sloped>("fa" + std::to_string(index),fa[index]*=voxel.z0,voxel.dim.plane_size());
+        mat_writer.write<tipl::io::masked_sloped>("gfa",gfa,voxel.dim.plane_size());
 
         if(!rdi.empty())
         {
-            for(unsigned int i = 0;i < rdi.size();++i)
-                tipl::multiply_constant(rdi[i],voxel.z0);
+            for(auto& each : rdi)
+                each *= voxel.z0;
+
             float L = 0.2f;
             mat_writer.write<tipl::io::masked_sloped>("rdi",rdi[0],voxel.dim.plane_size());
             if(voxel.shell.size() > 1)
