@@ -390,60 +390,43 @@ struct TrackVis
 };
 
 struct Tck{
-    tipl::vector<3> vs;
-    tipl::shape<3> geo;
+    tipl::matrix<4,4> trans;
     bool load_from_file(const char* file_name,
                         std::vector<std::vector<float> >& loaded_tract_data)
     {
         unsigned int offset = 0;
+        std::ifstream in(file_name, std::ios::binary);
+        if (!in)
+            return false;
+        std::string line;
+        while (std::getline(in, line) && line != "END")
         {
-            if(!std::filesystem::exists(file_name))
-                return false;
-            for(const auto& line: tipl::read_text_file(file_name))
+            std::size_t colon_pos = line.find(':');
+            if (colon_pos != std::string::npos && line.substr(0, colon_pos) == "file")
             {
-                if(line.size() <= 4)
-                    continue;
-                std::istringstream str(line);
-                std::string s1,s2;
-                str >> s1 >> s2;
-                if(line.substr(0,7) == std::string("file: ."))
-                {
-                    str >> offset;
-                    break;
-                }
-                std::replace(s2.begin(),s2.end(),',',' ');
-                if(s1 == "dim:")
-                {
-                    std::istringstream str(s2);
-                    str >> geo[0] >> geo[1] >> geo[2];
-                }
-                if(s1 == "vox:")
-                {
-                    std::istringstream str(s2);
-                    str >> vs[0] >> vs[1] >> vs[2];
-                }
+                std::stringstream(line.substr(colon_pos + 2)) >> line >> offset;
+                break;
             }
         }
 
-        std::ifstream in(file_name,std::ios::binary);
-        if(!in)
-            return false;
         in.seekg(0,std::ios::end);
         unsigned int total_size = uint32_t(in.tellg());
         in.seekg(offset,std::ios::beg);
         std::vector<unsigned int> buf((total_size-offset)/4);
-        in.read((char*)&*buf.begin(),total_size-offset-16);// 16 skip the final inf
+        in.read(reinterpret_cast<char*>(buf.data()),total_size-offset-16);// 16 skip the final inf
         for(unsigned int index = 0;index < buf.size();)
         {
             unsigned int end = std::find(buf.begin()+index,buf.end(),0x7FC00000)-buf.begin(); // NaN
             if(end-index > 3)
             {
-                std::vector<float> track(end-index);
-                std::copy((const float*)&*buf.begin() + index,
-                          (const float*)&*buf.begin() + end,
-                          track.begin());
+                std::vector<float> track(reinterpret_cast<const float*>(buf.data()) + index,reinterpret_cast<const float*>(buf.data()) + end);
+                for(size_t pos = 0;pos < track.size();pos += 3)
+                {
+                    track[pos] = (track[pos]-trans[3])/ trans[0];
+                    track[pos+1] = (track[pos+1]-trans[7])/ trans[5];
+                    track[pos+2] = (track[pos+2]-trans[11])/ trans[10];
+                }
                 loaded_tract_data.push_back(std::move(track));
-                tipl::divide_constant(loaded_tract_data.back().begin(),loaded_tract_data.back().end(),vs[0]);
             }
             index = end+3;
         }
@@ -541,7 +524,7 @@ bool load_fib_from_tracks(const char* file_name,
     if(QString(file_name).endsWith("tck"))
     {
         Tck tck;
-        tck.vs = tipl::vector<3>(1.0f,1.0f,1.0f);
+        tck.trans = trans_to_mni;
         if(!tck.load_from_file(file_name,loaded_tract_data))
         {
             std::cout << "cannot read " << file_name << std::endl;
@@ -714,7 +697,7 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
     if (QString(file_name_).endsWith("tck"))
     {
         Tck tck;
-        tck.vs = vs;
+        tck.trans = handle->trans_to_mni;
         if(!tck.load_from_file(file_name_,loaded_tract_data))
             return false;
     }
