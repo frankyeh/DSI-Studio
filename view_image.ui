@@ -491,6 +491,7 @@
     <addaction name="actionGaussian_Filter"/>
     <addaction name="actionSmoothing_Filter"/>
     <addaction name="actionSobel_Filter"/>
+    <addaction name="actionBias_Field"/>
     <addaction name="separator"/>
     <addaction name="actionAddImage"/>
     <addaction name="actionMinusImage"/>
@@ -1050,6 +1051,17 @@
   <action name="actionHistogram_Sharpening">
    <property name="text">
     <string>Histogram Sharpening</string>
+   </property>
+  </action>
+  <action name="actionBias_Field">
+   <property name="text">
+    <string>Bias Field...</string>
+   </property>
+   <property name="toolTip">
+    <string>Computing the bias field given spline spacing</string>
+   </property>
+   <property name="statusTip">
+    <string>1.0</string>
    </property>
   </action>
  </widget>
