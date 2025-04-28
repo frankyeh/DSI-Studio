@@ -4,7 +4,10 @@
 #include <QTextStream>
 #include "img.hpp"
 std::map<std::string,std::string> dicom_dictionary;
-
+void correct_bias_field(tipl::image<3> I,
+                        const tipl::image<3,unsigned char>& mask,
+                        tipl::image<3>& log_bias_field,
+                        const tipl::vector<3>& spacing);
 bool variant_image::command(std::string cmd,std::string param1)
 {
     bool result = true;
@@ -14,7 +17,20 @@ bool variant_image::command(std::string cmd,std::string param1)
     else
     apply([&](auto& I)
     {
-        result = tipl::command<void,tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,interpolation,error_msg);
+        if(cmd == "bias_field")
+        {
+            tipl::image<3,unsigned char> mask;
+            tipl::threshold(I,mask,0);
+            tipl::image<3> bias_field;
+            correct_bias_field(I,mask,bias_field,tipl::vector<3>(1.0f,vs[0]/vs[1],vs[0]/vs[2]));
+            for(auto& each : bias_field)
+                each = std::exp(each);
+            if constexpr(!std::is_floating_point_v<decltype(T[0])>)
+                tipl::normalize(bias_field,255.5f);
+            I = bias_field;
+        }
+        else
+            result = tipl::command<void,tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,interpolation,error_msg);
         shape = I.shape();
     });
     return result;
