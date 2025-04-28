@@ -502,6 +502,7 @@ bool fib_data::load_from_file(const std::string& file_name)
     {
         mat_reader.push_back(std::make_shared<tipl::io::mat_matrix>("dimension",I.shape().data(),1,3));
         mat_reader.push_back(std::make_shared<tipl::io::mat_matrix>("voxel_size",vs.data(),1,3));
+        mat_reader.push_back(std::make_shared<tipl::io::mat_matrix>("trans",trans_to_mni.data(),4,4));
         mat_reader.push_back(std::make_shared<tipl::io::mat_matrix>("image",I.data(),uint32_t(I.plane_size()),I.depth()));
         load_from_mat();
         dir.index_name[0] = "image";
