@@ -1452,30 +1452,40 @@ void correct_bias_field(tipl::image<3> I,
         for(size_t i = 0;i < mask.size();++i)
             if(mask[i])
                 I[i] *= std::exp(-log_bias_field[i]);
-    tipl::histogram_sharpening(I);
 
-    for(size_t i = 0;i < mask.size();++i)
-        if(mask[i])
-        {
-            position.push_back(i);
-            logI.push_back(std::log(I[i] + 1e-6f));
-        }
+    {
+        auto otsu = tipl::segmentation::otsu_threshold_sharpening(I);
+        double sum_signal = 0.0;
+        size_t sum_signal_count = 0;
+        for(size_t i = 0;i < mask.size();++i)
+            if(mask[i])
+            {
+                position.push_back(i);
+                if(I[i] <= otsu)
+                    logI.push_back(std::numeric_limits<double>::max());
+                else
+                {
+                    logI.push_back(std::log(I[i] + 1e-6f));
+                    sum_signal += logI.back();
+                    ++sum_signal_count;
+                }
+            }
+        tipl::minus_constant(logI.begin(),logI.end(),sum_signal/sum_signal_count);
+    }
 
-
-    tipl::minus_constant(logI.begin(),logI.end(),tipl::mean(logI.begin(),logI.end()));
 
     // 1) Compute control‐point grid size exactly as before
-    tipl::shape<3> c_shape(int(std::floor((mask.width()-1)/spacing[0])) + spline_range + spline_range + 1,
-                           int(std::floor((mask.height()-1)/spacing[1])) + spline_range + spline_range + 1,
-                           int(std::floor((mask.depth()-1)/spacing[2])) + spline_range + spline_range + 1);
+    tipl::shape<3> c_shape(int(std::ceil(1.0f/spacing[0])) + spline_range + spline_range,
+                           int(std::ceil(1.0f/spacing[1])) + spline_range + spline_range,
+                           int(std::ceil(1.0f/spacing[2])) + spline_range + spline_range);
     // 2) Precompute B3‐weights per sample
     std::vector<std::vector<std::pair<size_t,float>>> basis(position.size());
-
+    tipl::vector<3> scale(1.0f/spacing[0]/float(I.width()-1),1.0f/spacing[1]/float(I.height()-1),1.0f/spacing[2]/float(I.depth()-1));
     tipl::par_for(position.size(), [&](size_t i)
     {
         tipl::pixel_index<3> pos(position[i],mask.shape());
         // normalized continuous coords
-        float fx = float(pos[0]) / spacing[0] + spline_range,fy = float(pos[1]) / spacing[1] + spline_range,fz = float(pos[2]) / spacing[2] + spline_range;
+        float fx = pos[0]*scale[0] + spline_range,fy = pos[1]*scale[1] + spline_range,fz = pos[2]*scale[2] + spline_range;
         // nearest control‐point grid index
         int cx = int(std::floor(fx)),cy = int(std::floor(fy)),cz = int(std::floor(fz));
         auto& b = basis[i];
@@ -1522,13 +1532,14 @@ void correct_bias_field(tipl::image<3> I,
     for (int iter = 0; iter < max_iters; ++iter)
     {
         // a) residuals
-        std::vector<double> resid(logI),rhs(c_shape.size());
-        tipl::minus(resid.begin(),resid.end(),correction.begin());
-        for(size_t i = 0;i < resid.size();++i)
+        std::vector<double> rhs(c_shape.size());
+        for(size_t i = 0;i < logI.size();++i)
         {
-            auto& resid_i = resid[i];
+            if(logI[i] == std::numeric_limits<double>::max())
+                continue;
+            auto resid = logI[i] - correction[i];
             for (auto& tpl : basis[i])
-                rhs[tpl.first] += tpl.second * resid_i;
+                rhs[tpl.first] += tpl.second * resid;
         }
         // c) solve via LL
         tipl::mat::ll_solve(ATA.begin(), piv.begin(), rhs.begin(), cc_img.begin(), dim);
@@ -1551,27 +1562,21 @@ void correct_bias_field(tipl::image<3> I,
     }
     log_bias_field.resize(mask.shape());
     for(size_t i = 0;i < position.size();++i)
-        log_bias_field[position[i]] += correction[i]*3.0f;
+        log_bias_field[position[i]] += correction[i];
 
 }
 bool src_data::correct_bias_field(void)
 {
-    std::vector<tipl::image<3> > b0s;
-    if(!read_b0(b0s))
-        return false;
     if(tipl::contains(voxel.report,"bias field"))
     {
         tipl::warning() << "bias field correction has been previously applied";
         return true;
     }
-    auto& b0 = b0s[0];
     tipl::image<3>  bias_field;
     {
-        float length[3] = {float(voxel.dim[0]),voxel.dim[0]*0.75f,voxel.dim[0]*0.5f};
         tipl::progress prog("estimate bias field",true);
-        for(size_t i = 0;prog(i,3);++i)
-            ::correct_bias_field(b0,voxel.mask,bias_field,
-                tipl::vector<3>(length[i],length[i]*voxel.vs[0]/voxel.vs[1],length[i]*voxel.vs[0]/voxel.vs[2]));
+        for(size_t i = 0;prog(i,1);++i)
+            ::correct_bias_field(dwi,voxel.mask,bias_field,tipl::vector<3>(1.0f,voxel.vs[0]/voxel.vs[1],voxel.vs[0]/voxel.vs[2]));
         if(prog.aborted())
             return false;
     }
@@ -2493,7 +2498,7 @@ bool src_data::run_eddy(std::string exec)
     }
     if(!load_topup_eddy_result())
     {
-        error_msg += " please check if memory is enough to run eddy";
+        error_msg += " please install CUDA toolkit to run topup or eddy";
         return false;
     }
     std::filesystem::remove(temp_nifti());
@@ -3298,9 +3303,8 @@ bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
     tipl::out() << "save temporary nifti file at " << temp_nifti();
     if(!tipl::io::gz_nifti::save_to_file(temp_nifti().c_str(),buffer,voxel.vs,voxel.trans_to_mni,false,nullptr,std::move(prog)))
     {
-        error_msg = "failed to write a temporary nifti file: ";
-        error_msg += temp_nifti();
-        error_msg += ". Please check write permission.";
+        if(!tipl::prog_aborted)
+            error_msg = "failed to write a temporary nifti file: " + temp_nifti() + ". Please check write permission.";
         return false;
     }
     return !prog.aborted();
