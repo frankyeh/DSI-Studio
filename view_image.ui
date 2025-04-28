@@ -491,7 +491,6 @@
     <addaction name="actionGaussian_Filter"/>
     <addaction name="actionSmoothing_Filter"/>
     <addaction name="actionSobel_Filter"/>
-    <addaction name="actionHistogram_Sharpening"/>
     <addaction name="separator"/>
     <addaction name="actionAddImage"/>
     <addaction name="actionMinusImage"/>
