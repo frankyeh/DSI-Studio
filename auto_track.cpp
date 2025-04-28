@@ -309,15 +309,13 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     auto_track_report = report;
                     bool no_result = false;
                     {
-                        while(!thread.is_ended() && !prog2.aborted())
-                        {
+                        // pre tracking stage
+                        while(!thread.is_ended() && !thread.max_tract_count && prog2(0,1))
                             std::this_thread::yield();
-                            if(!thread.param.max_tract_count)
-                            {
-                                prog2(0,1);
-                                continue;
-                            }
-                            prog2(thread.get_total_tract_count(),thread.param.max_tract_count);
+                        // now start tracking
+                        while(!thread.is_ended() &&
+                              prog2(thread.get_total_tract_count(),thread.max_tract_count))
+                        {
                             // terminate if yield rate is very low, likely quality problem
                             if(thread.get_total_seed_count() > yield_check_count &&
                                thread.get_total_tract_count() < float(thread.get_total_seed_count())*yield_rate)
@@ -325,10 +323,13 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                                 tipl::out() << "low yield rate (" << thread.get_total_tract_count() << "/" <<
                                                     thread.get_total_seed_count() << "), terminating" << std::endl;
                                 no_result = true;
-                                thread.end_thread();
                                 break;
                             }
+                            std::this_thread::yield();
                         }
+                        thread.end_thread();
+                        if(prog2.aborted())
+                            return std::string("aborted.");
 
                         float sec = float(std::chrono::duration_cast<std::chrono::milliseconds>(
                                     thread.end_time-thread.begin_time).count())*0.001f;
@@ -343,8 +344,6 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         }
 
                     }
-                    if(prog2.aborted())
-                        return std::string("aborted.");
                     // fetch both front and back buffer
                     thread.fetchTracks(tract_model.get());
                     thread.fetchTracks(tract_model.get());
