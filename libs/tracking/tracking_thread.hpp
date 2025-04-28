@@ -25,7 +25,7 @@ private:
 public:
     std::shared_ptr<tracking_data> trk;
     std::shared_ptr<RoiMgr> roi_mgr;
-private:
+public:
     unsigned int max_tract_count = 0;
     unsigned int max_seed_count = 0;
 public:
@@ -46,17 +46,17 @@ public:
 public:
     bool joining = false;
     std::vector<std::thread> threads;
-    std::vector<unsigned int> seed_count,tract_count;
+    std::vector<size_t> seed_count,tract_count;
     std::vector<unsigned char> running;
     std::mutex lock_seed_function;
     std::chrono::high_resolution_clock::time_point begin_time,end_time;
-    unsigned int get_total_seed_count(void)const
+    size_t get_total_seed_count(void)const
     {
-        return seed_count.empty() ? 0 : std::accumulate(seed_count.begin(),seed_count.end(),uint32_t(0));
+        return seed_count.empty() ? 0 : std::accumulate(seed_count.begin(),seed_count.end(),size_t(0));
     }
-    unsigned int get_total_tract_count(void)const
+    size_t get_total_tract_count(void)const
     {
-        return tract_count.empty() ? 0 : std::accumulate(tract_count.begin(),tract_count.end(),uint32_t(0));
+        return tract_count.empty() ? 0 : std::accumulate(tract_count.begin(),tract_count.end(),size_t(0));
     }
     bool is_ended(void)
     {

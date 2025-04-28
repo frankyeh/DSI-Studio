@@ -238,8 +238,8 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
 
     //  multi-thread controls
     {
-        seed_count  = std::move(std::vector<unsigned int>(thread_count));
-        tract_count = std::move(std::vector<unsigned int>(thread_count));
+        seed_count  = std::move(std::vector<size_t>(thread_count));
+        tract_count = std::move(std::vector<size_t>(thread_count));
         running     = std::move(std::vector<unsigned char>(thread_count,1));
     }
     // setting up output buffers
