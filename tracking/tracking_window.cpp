@@ -927,6 +927,12 @@ void tracking_window::updateSlicesMenu(void)
     for (const auto& each : metrics_list)
         ui->menuE_xport->addAction(new_item(each,"run save_slice_image"));
 
+    if(std::find(metrics_list.begin(),metrics_list.end(),"iso") != metrics_list.end())
+    {
+        ui->menuE_xport->addSeparator();
+        ui->menuE_xport->addAction(new_item("Correct Bias Field","run correct_bias_field"));
+    }
+
     // update options: color map
     {
         QStringList tract_index_list;
