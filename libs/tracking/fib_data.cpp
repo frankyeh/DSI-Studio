@@ -547,17 +547,17 @@ bool fib_data::correct_bias_field(void)
         return false;
     tipl::progress prog("correct bias field",true);
     tipl::image<3>  bias_field;
-    float length[3] = {float(dim[0]),dim[0]*0.75f,dim[0]*0.5f};
-    for(size_t i = 0;prog(i,3);++i)
-        ::correct_bias_field(slices[iso_index]->get_image(),mask,bias_field,
-            tipl::vector<3>(length[i],length[i]*vs[0]/vs[1],length[i]*vs[0]/vs[2]));
+    ::correct_bias_field(slices[iso_index]->get_image(),mask,bias_field,tipl::vector<3>(1.0f,vs[0]/vs[1],vs[0]/vs[2]));
     if(prog.aborted())
         return false;
     for(auto& each : bias_field)
         each = std::exp(-each);
     tipl::make_image(const_cast<float*>(mat_reader.read_as_type<float>("iso")),dim) *= bias_field;
     for(auto each : dir.fa)
+    {
         tipl::make_image(const_cast<float*>(each),dim) *= bias_field;
+        //std::copy(bias_field.begin(),bias_field.end(),const_cast<float*>(each));
+    }
     return true;
 }
 
