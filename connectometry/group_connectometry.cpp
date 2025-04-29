@@ -415,6 +415,7 @@ void group_connectometry::on_run_clicked()
 
         vbc->t_threshold = float(ui->threshold->value());
         vbc->rho_threshold = float(ui->effect_size->value());
+        vbc->region_pruning = ui->region_pruning->isChecked();
         vbc->output_file_name = ui->output_name->text().toStdString();
     }
 
