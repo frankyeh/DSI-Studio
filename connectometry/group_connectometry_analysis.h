@@ -56,7 +56,7 @@ public:// Multiple regression
     std::shared_ptr<connectometry_result> spm_map;
     std::vector<std::vector<float> > population_value_adjusted;
     std::string index_name,hypothesis_inc,hypothesis_dec;
-    float t_threshold;
+    float t_threshold,rho_threshold;
     unsigned int length_threshold_voxels;
     float fdr_threshold;
     unsigned int tip_iteration;
