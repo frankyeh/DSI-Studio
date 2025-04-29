@@ -356,7 +356,7 @@
              </size>
             </property>
             <property name="currentIndex">
-             <number>0</number>
+             <number>3</number>
             </property>
             <widget class="QWidget" name="tab_6">
              <attribute name="title">
@@ -1023,6 +1023,16 @@
                   </property>
                   <property name="value">
                    <number>16</number>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QCheckBox" name="region_pruning">
+                  <property name="text">
+                   <string>region pruning</string>
+                  </property>
+                  <property name="checked">
+                   <bool>true</bool>
                   </property>
                  </widget>
                 </item>
