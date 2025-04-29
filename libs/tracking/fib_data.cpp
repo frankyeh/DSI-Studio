@@ -669,7 +669,7 @@ bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
     if(mat_reader.has("version") && (this_fib_ver = mat_reader.read_as_value<int>("version")) >
                                     (mat_reader.has("b_table") ? src_ver : fib_ver))
     {
-        mat_reader.error_msg = "Incompatible FIB format. please update DSI Studio to open this new FIB file.";
+        mat_reader.error_msg = "Incompatible format. please update DSI Studio to open this new format file.";
         return false;
     }
     if (!mat_reader.read("dimension",dim))
@@ -696,8 +696,10 @@ bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
         // in fib version >= 20250408, qsdr fib == has R2 (all .fz file will have "trans" matrix now)
         if(mat_reader.has("R2"))
             is_mni = true;
+        else
         // in fib version <= 202408, qsdr fib == has "trans" matrix (template fib.gz files don't have R2 matrix)
-        if(this_fib_ver <= 202408 && mat_reader.has("trans"))
+        if(this_fib_ver <= 202408 && mat_reader.has("trans") &&
+           tipl::contains(mat_reader.read<std::string>("report"),"q-space diffeomorphic reconstruction"))
             is_mni = true;
     }
     tipl::out() << "fib_ver: " << this_fib_ver;
@@ -867,7 +869,7 @@ bool fib_data::load_from_mat(void)
     return true;
 }
 
-
+extern int fib_ver,src_ver;
 bool save_fz(tipl::io::gz_mat_read& mat_reader,
               tipl::io::gz_mat_write& matfile,
               const std::vector<std::string>& skip_list,
@@ -887,6 +889,8 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
     else
         tipl::out() << "no mask information. saving unmasked format";
 
+    matfile.write("version",mat_reader.has("b_table") ? src_ver : fib_ver);
+
     for(unsigned int index = 0;prog(index,mat_reader.size());++index)
     {
         if(!matfile)
@@ -895,7 +899,7 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
             return false;
         }
         const auto& name = mat_reader[index].name;
-        bool skip = false;
+        bool skip = (name == "version");
         for(const auto& each : skip_list)
             if(name == each)
             {
