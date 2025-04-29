@@ -115,7 +115,11 @@ void CreateDBDialog::update_list(void)
             template_reso = fib.vs[0];
             ui->index_of_interest->clear();
             for(const auto& name : fib.get_index_list())
+            {
+                if(name == "qa")
+                    ui->index_of_interest->addItem("qir");
                 ui->index_of_interest->addItem(name.c_str());
+            }
             populate_templates(ui->template_list,fib.template_id);
             ui->template_list->setEnabled(!fib.is_mni);
         }
@@ -367,6 +371,10 @@ void CreateDBDialog::on_index_of_interest_currentTextChanged(const QString &arg1
 {
     if(!group.empty())
     {
+        if(ui->index_of_interest->currentText() == "qir")
+            ui->info->setText("QIR: qa-iso ratio, which provides a more robust metric for tract integrity");
+        else
+            ui->info->setText("");
         std::string front = group.front().toStdString();
         std::string back = group.back().toStdString();
         QString base_name = std::string(front.begin(),
@@ -374,7 +382,7 @@ void CreateDBDialog::on_index_of_interest_currentTextChanged(const QString &arg1
                         int64_t(std::min(front.length(),back.length())),back.begin()).first).c_str();
 
         if(create_db)
-            ui->output_file_name->setText(base_name + "." + ui->index_of_interest->currentText() + ".db.fz");
+            ui->output_file_name->setText(base_name + "_" + ui->index_of_interest->currentText() + ".db.fz");
         else
         {
             if(tipl::ends_with(front,".nii.gz") || tipl::ends_with(front,".nii"))
