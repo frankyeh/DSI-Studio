@@ -3219,12 +3219,13 @@ float TractModel::get_tracts_mean(std::shared_ptr<fib_data> handle,unsigned int 
         return 0.0f;
     // avoid multithread racing
     handle->slices[data_index]->get_image();
-    std::vector<double> mean(tract_data.size());
+    std::vector<double> m(tract_data.size());
     tipl::adaptive_par_for(tract_data.size(),[&](unsigned int i)
     {
-        mean[i] = tipl::mean(get_tract_data(handle,i,data_index));
+        auto data(get_tract_data(handle,i,data_index));
+        m[i] = tipl::mean(data.begin(),data.end());
     });
-    return tipl::mean(mean);
+    return tipl::mean(m.begin(),m.end());
 }
 
 void TractModel::get_passing_list(const tipl::image<3,std::vector<short> >& region_map,
