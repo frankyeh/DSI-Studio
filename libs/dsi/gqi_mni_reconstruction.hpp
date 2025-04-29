@@ -247,7 +247,7 @@ public:
                     voxel.other_image_trans[i].identity();
                 }
             }
-            if(voxel.needs("size"))
+            if(voxel.needs("volume"))
                 jdet.resize(VG.size());
             // setup raw DWI
             ptr_images.clear();
@@ -299,10 +299,9 @@ public:
     virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
         voxel.qsdr = false;
-        mat_writer.write<tipl::io::masked_sloped>("jdet",jdet,voxel.dim.plane_size());
+        mat_writer.write<tipl::io::masked_sloped>("volume",jdet,voxel.dim.plane_size());
         mat_writer.write("native_dimension",native_geo);
         mat_writer.write("native_voxel_size",native_vs);
-        mat_writer.write("template",std::filesystem::path(fa_template_list[voxel.template_id]).stem().stem().stem().string());
     }
 
 };
