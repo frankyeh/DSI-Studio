@@ -2327,8 +2327,42 @@ void TractModel::trim(unsigned int tip_iteration)
     auto last = get_deleted_track_count();
     for(size_t i = 0;i < tip_iteration && get_visible_track_count() && trim();++i)
                 ;
-    tipl::out() << get_deleted_track_count()-last << " tracts removed by pruning.";
-    tipl::out() << "tract count after pruning: " << get_visible_track_count();
+    tipl::out() << get_deleted_track_count()-last << " tracts removed by trimming.";
+    tipl::out() << "tract count after trimming: " << get_visible_track_count();
+}
+//---------------------------------------------------------------------------
+void TractModel::region_pruning(float region_ratio)
+{
+    std::vector<tipl::vector<3,short> > points;
+    to_voxel(points);
+    tipl::image<3,unsigned char> mask(geo);
+    for(size_t index = 0;index < points.size();++index)
+    {
+        if(!geo.is_valid(points[index]))
+            return;
+        mask.at(points[index]) = 1;
+    }
+
+    tipl::morphology::defragment_by_size_ratio(mask,region_ratio);
+
+    std::vector<unsigned char> included(tract_data.size());
+    tipl::par_for(tract_data.size(),[&](size_t index)
+    {
+        for (auto iter = tract_data[index].begin(),end = tract_data[index].end();iter < end;iter += 3)
+        {
+            tipl::vector<3,short> pos(std::round(iter[0]),std::round(iter[1]),std::round(iter[2]));
+            if(geo.is_valid(pos) && mask.at(pos))
+            {
+                included[index] = 1;
+                return;
+            }
+        }
+    });
+    std::vector<unsigned int> tract_to_delete;
+    for (size_t i = 0; i < included.size(); ++i)
+        if (!included[i])
+            tract_to_delete.push_back(i);
+    delete_tracts(tract_to_delete);
 }
 //---------------------------------------------------------------------------
 void TractModel::clear_deleted(void)
