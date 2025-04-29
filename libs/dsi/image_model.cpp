@@ -3251,12 +3251,14 @@ bool src_data::save_fib(void)
     }
     mat_writer.write("dimension",voxel.dim);
     mat_writer.write("voxel_size",voxel.vs);
-    mat_writer.write("trans",voxel.trans_to_mni);
-    if(voxel.R2 != 0.0f) // this will be used to know if the fib is in the MNI space
-        mat_writer.write("R2",std::vector<float>({voxel.R2}));
-
+    mat_writer.write("trans",voxel.trans_to_mni);       
     mat_writer.write("version",fib_ver);
     mat_writer.write("mask",voxel.mask,voxel.dim.plane_size());
+    if(voxel.qsdr)
+    {
+        mat_writer.write("template",std::filesystem::path(fa_template_list[voxel.template_id]).stem().stem().stem().string());
+        mat_writer.write("R2",std::vector<float>({voxel.R2}));
+    }
 
     if(!voxel.end(mat_writer))
     {
