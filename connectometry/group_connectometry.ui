@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Connectometry</string>
+   <string>Correlational Tractography</string>
   </property>
   <property name="windowIcon">
    <iconset resource="../icons.qrc">
@@ -374,22 +374,55 @@
                    <number>0</number>
                   </property>
                   <item>
+                   <widget class="QLabel" name="label_9">
+                    <property name="text">
+                     <string>Effect Size Threshold:</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QDoubleSpinBox" name="effect_size">
+                    <property name="decimals">
+                     <number>2</number>
+                    </property>
+                    <property name="maximum">
+                     <double>2.000000000000000</double>
+                    </property>
+                    <property name="singleStep">
+                     <double>0.050000000000000</double>
+                    </property>
+                    <property name="value">
+                     <double>0.300000000000000</double>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="label_10">
+                    <property name="text">
+                     <string>(0.1/0.3/0.5=small/med/large)</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <spacer name="horizontalSpacer_5">
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>40</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                  <item>
                    <widget class="QCheckBox" name="fdr_control">
                     <property name="toolTip">
                      <string>Check &quot;FDR control&quot; to show only significant results. Uncheck it to report FDR value of all findings.</string>
                     </property>
                     <property name="text">
                      <string>FDR Control</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QLabel" name="fdr_label">
-                    <property name="enabled">
-                     <bool>false</bool>
-                    </property>
-                    <property name="text">
-                     <string>FDR&lt;</string>
                     </property>
                    </widget>
                   </item>
@@ -411,34 +444,21 @@
                      </size>
                     </property>
                     <property name="decimals">
-                     <number>4</number>
+                     <number>2</number>
                     </property>
                     <property name="minimum">
-                     <double>0.001000000000000</double>
+                     <double>0.000000000000000</double>
                     </property>
                     <property name="maximum">
                      <double>0.500000000000000</double>
                     </property>
                     <property name="singleStep">
-                     <double>0.005000000000000</double>
+                     <double>0.010000000000000</double>
                     </property>
                     <property name="value">
                      <double>0.050000000000000</double>
                     </property>
                    </widget>
-                  </item>
-                  <item>
-                   <spacer name="horizontalSpacer_5">
-                    <property name="orientation">
-                     <enum>Qt::Horizontal</enum>
-                    </property>
-                    <property name="sizeHint" stdset="0">
-                     <size>
-                      <width>40</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                   </spacer>
                   </item>
                  </layout>
                 </item>
@@ -464,13 +484,13 @@
                    <widget class="QDoubleSpinBox" name="threshold">
                     <property name="minimumSize">
                      <size>
-                      <width>60</width>
+                      <width>0</width>
                       <height>0</height>
                      </size>
                     </property>
                     <property name="maximumSize">
                      <size>
-                      <width>60</width>
+                      <width>40</width>
                       <height>16777215</height>
                      </size>
                     </property>
@@ -491,13 +511,6 @@
                     </property>
                     <property name="value">
                      <double>2.500000000000000</double>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QLabel" name="effect_size">
-                    <property name="text">
-                     <string> </string>
                     </property>
                    </widget>
                   </item>
@@ -525,13 +538,13 @@
                    <widget class="QSpinBox" name="length_threshold">
                     <property name="minimumSize">
                      <size>
-                      <width>60</width>
+                      <width>0</width>
                       <height>0</height>
                      </size>
                     </property>
                     <property name="maximumSize">
                      <size>
-                      <width>60</width>
+                      <width>40</width>
                       <height>16777215</height>
                      </size>
                     </property>
