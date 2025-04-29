@@ -10,11 +10,10 @@
 
 bool group_connectometry_analysis::create_database(std::shared_ptr<fib_data> handle_)
 {
-
     handle = handle_;
     fiber_threshold = 0.6f*handle->dir.fa_otsu;
     handle->db.calculate_vi2si();
-    handle->db.subject_qa_length = handle->mat_reader.si2vi.size()*size_t(handle->dir.num_fiber);
+    handle->db.subject_qa_length = handle->mat_reader.si2vi.size();
     handle->db.clear();
     if(handle->mat_reader.si2vi.empty())
     {
@@ -163,6 +162,13 @@ void group_connectometry_analysis::save_result(void)
         pos_null_corr_track->trim();
         dec_track->trim();
         inc_track->trim();
+    }
+    if(region_pruning)
+    {
+        neg_null_corr_track->region_pruning(0.2f);
+        pos_null_corr_track->region_pruning(0.2f);
+        dec_track->region_pruning(0.2f);
+        inc_track->region_pruning(0.2f);
     }
     // update fdr table
     std::fill(tract_count_dec_null.begin(),tract_count_dec_null.end(),0);
@@ -332,22 +338,16 @@ void group_connectometry_analysis::calculate_adjusted_qa(stat_model& info)
     population_value_adjusted.clear();
     population_value_adjusted.resize(handle->db.subject_qa_length);
     const auto& si2vi = handle->mat_reader.si2vi;
-    tipl::par_for(si2vi.size(),[&](size_t s_index)
+    const auto& dir = handle->dir;
+    tipl::par_for(si2vi.size(),[&](size_t si)
     {
-        size_t pos = si2vi[s_index];
-        for(size_t fib = 0;s_index < handle->db.subject_qa_length &&
-                           handle->dir.fa[fib][pos] > fiber_threshold;++fib,s_index += si2vi.size())
-        {
-            std::vector<float> population(info.selected_subject.size());
-            for(unsigned int index = 0;index < info.selected_subject.size();++index)
-                population[index] = handle->db.subject_qa[info.selected_subject[index]][s_index];
-
-            if(!population.empty())
-            {
-                info.partial_correlation(population);
-                population_value_adjusted[s_index] = std::move(population);
-            }
-        }
+        if(dir.fa[0][si2vi[si]] < fiber_threshold)
+            return;
+        std::vector<float> population(info.selected_subject.size());
+        for(unsigned int index = 0;index < info.selected_subject.size();++index)
+            population[index] = handle->db.subject_qa[info.selected_subject[index]][si];
+        info.partial_correlation(population);
+        population_value_adjusted[si] = std::move(population);
     });
 }
 
