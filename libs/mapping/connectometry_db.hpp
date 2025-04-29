@@ -34,7 +34,7 @@ public:
     std::list<std::vector<float> > subject_qa_buf;// merged from other db
     unsigned int subject_qa_length = 0;
     tipl::image<3,size_t> vi2si;
-    std::string index_name = "qa";
+    std::string index_name = "qir";
 public://longitudinal studies
     std::vector<std::pair<int,int> > match;
     void calculate_change(unsigned char dif_type,unsigned char filter_type);
@@ -47,6 +47,7 @@ public:
     void calculate_vi2si(void);
     void sample_from_image(tipl::const_pointer_image<3,float> I,
                            const tipl::matrix<4,4>& trans,std::vector<float>& data);
+    std::vector<float> sample_from_image(fib_data& fib,const std::string& index_name);
     void add(float subject_R2,std::vector<float>& data,
              const std::string& subject_name);
     bool add(const std::string& file_name,
