@@ -473,7 +473,11 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         out << " A total of " << model->selected_subject.size() << " subjects were included in the analysis.";
 
         // report other parameters
-        out << " A T-score threshold of " << t_threshold << " was assigned in the fiber tracking algorithm (Yeh et al. PLoS ONE 8(11): e80713, 2013).";
+        if(rho_threshold == 0.1f || rho_threshold == 0.3f || rho_threshold == 0.5f)
+            out << " An effect size of " << rho_threshold << " (T statistics = " << t_threshold;
+        else
+            out << " A T-score threshold of " << t_threshold << " (effect size = " << rho_threshold;
+        out << ") was used in the fiber tracking algorithm (Yeh et al. PLoS ONE 8(11): e80713, 2013).";
 
         if(!roi_mgr->report.empty())
             out << roi_mgr->report << std::endl;
@@ -600,7 +604,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
 {
     std::ostringstream html_report((output_file_name+".report.html").c_str());
     html_report << "<!DOCTYPE html>" << std::endl;
-    html_report << "<html><head><title>Connectometry Report</title></head>" << std::endl;
+    html_report << "<html><head><title>Report</title></head>" << std::endl;
     html_report << "<body>" << std::endl;
     if(!handle->report.empty())
     {
@@ -609,7 +613,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
     }
     if(!report.empty())
     {
-        html_report << "<h2>Connectometry analysis</h2>" << std::endl;
+        html_report << "<h2>Correlational Tractography Analysis</h2>" << std::endl;
         html_report << "<p>" << report.c_str() << "</p>" << std::endl;
     }
 
