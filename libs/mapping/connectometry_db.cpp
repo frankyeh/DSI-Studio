@@ -573,10 +573,9 @@ bool connectometry_db::add(const std::string& file_name,
             auto iso(sample_from_image(fib,"iso"));
             if(data.empty() || iso.empty())
                 return false;
-            auto iso_threshold = tipl::max_value(iso.begin(),iso.end())*0.1f;
+            auto iso_threshold = tipl::median(std::vector<float>(iso))*0.25f;
             for(size_t i = 0;i < iso.size();++i)
-                if(iso[i] >= iso_threshold)
-                    data[i] /= iso[i];
+                data[i] /= std::max<float>(iso[i],iso_threshold);
         }
         else
         {
