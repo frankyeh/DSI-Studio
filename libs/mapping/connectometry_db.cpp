@@ -28,8 +28,8 @@ bool connectometry_db::read_db(fib_data* handle_)
     handle = handle_;
     subject_qa.clear();
     size_t matrix_index = 0;
-    for(unsigned int index = 0;(matrix_index = std::min(handle->mat_reader.index_of(std::string("subjects")+std::to_string(index)),
-                                                        handle->mat_reader.index_of(std::string("subject")+std::to_string(index))))
+    for(unsigned int index = 0;(matrix_index = std::min(handle->mat_reader.index_of("subjects"+std::to_string(index)),
+                                                        handle->mat_reader.index_of("subject"+std::to_string(index))))
                                     < handle->mat_reader.size();++index)
     {
         auto& matrix = handle->mat_reader[matrix_index];
@@ -425,6 +425,29 @@ void connectometry_db::sample_from_image(tipl::const_pointer_image<3,float> I,
     for(size_t i = 0;i < si2vi.size();++i)
         data[i] = J[si2vi[i]];
 }
+std::vector<float> connectometry_db::sample_from_image(fib_data& fib,const std::string& index_name)
+{
+    std::vector<float> data;
+    auto index = fib.get_name_index(index_name);
+    if(index == fib.slices.size())
+    {
+        error_msg = "cannot export " + index_name + " from " + fib.fib_file_name;
+        return data;
+    }
+    if(fib.is_mni)
+        sample_from_image(fib.slices[index]->get_image(),fib.trans_to_mni,data);
+    else
+    {
+        fib.set_template_id(handle->template_id);
+        if(!fib.map_to_mni(tipl::show_prog))
+        {
+            error_msg = fib.error_msg;
+            return data;
+        }
+        sample_from_image(tipl::compose_mapping(fib.slices[index]->get_image(),fib.t2s).alias(),fib.template_to_mni,data);
+    }
+    return data;
+}
 void connectometry_db::add(float subject_R2,std::vector<float>& data,
                            const std::string& subject_name)
 {
@@ -532,10 +555,7 @@ bool connectometry_db::add(const std::string& file_name,
         fib_data fib;
         if(!fib.load_from_file(file_name.c_str()))
         {
-            error_msg = "Cannot read file ";
-            error_msg += file_name;
-            error_msg += " : ";
-            error_msg += fib.error_msg;
+            error_msg = fib.error_msg + " at " + file_name;
             return false;
         }
 
@@ -547,40 +567,27 @@ bool connectometry_db::add(const std::string& file_name,
         if(intro.empty())
             intro = fib.intro;
         fib.mat_reader.read("R2",subject_R2);
-
+        if(index_name == "qir")
         {
-            auto index = fib.get_name_index(index_name);
-            if(index == fib.slices.size())
-            {
-                error_msg = "cannot export ";
-                error_msg += index_name;
-                error_msg += " from ";
-                error_msg += file_name;
+            data = std::move(sample_from_image(fib,"qa"));
+            auto iso(sample_from_image(fib,"iso"));
+            if(data.empty() || iso.empty())
                 return false;
-            }
-
-            {
-                if(fib.is_mni)
-                    sample_from_image(fib.slices[index]->get_image(),fib.trans_to_mni,data);
-                else
-                {
-                    fib.set_template_id(handle->template_id);
-                    if(!fib.map_to_mni(tipl::show_prog))
-                    {
-                        error_msg = fib.error_msg;
-                        return false;
-                    }
-                    sample_from_image(tipl::compose_mapping(fib.slices[index]->get_image(),fib.t2s).alias(),fib.template_to_mni,data);
-                }
-            }
+            auto iso_threshold = tipl::max_value(iso.begin(),iso.end())*0.1f;
+            for(size_t i = 0;i < iso.size();++i)
+                if(iso[i] >= iso_threshold)
+                    data[i] /= iso[i];
+        }
+        else
+        {
+            data = std::move(sample_from_image(fib,index_name));
+            if(data.empty())
+                return false;
         }
     }
     if(data.empty())
     {
-        error_msg = "failed to sample ";
-        error_msg += index_name;
-        error_msg += " in ";
-        error_msg += file_name;
+        error_msg = "failed to sample " + index_name + " from " + file_name;
         return false;
     }
     if(prog.aborted())
@@ -616,8 +623,7 @@ bool connectometry_db::save_db(const char* output_name)
 
     const auto& si2vi = handle->mat_reader.si2vi;
     for(unsigned int index = 0;prog(index,subject_qa.size());++index)
-        matfile.write<tipl::io::sloped>(std::string("subjects")+std::to_string(index),subject_qa[index],
-                                        subject_qa_length/si2vi.size(),si2vi.size());
+        matfile.write<tipl::io::sloped>("subjects"+std::to_string(index),subject_qa[index],subject_qa_length/si2vi.size(),si2vi.size());
     if(prog.aborted())
     {
         error_msg = "aborted";
@@ -646,7 +652,12 @@ bool connectometry_db::save_db(const char* output_name)
         if(index_name.find("sdf") != std::string::npos || index_name.find("qa") != std::string::npos)
             out << " The quantitative anisotropy was extracted as the local connectome fingerprint (LCF, Yeh et al. PLoS Comput Biol 12(11): e1005203) and used in the connectometry analysis.";
         else
-            out << " The " << index_name << " values were used in the connectometry analysis.";
+        {
+            if(index_name == "qir")
+                out << " The QA-ISO ratios (QIR) were used in the connectometry analysis.";
+            else
+                out << " The " << index_name << " values were used in the connectometry analysis.";
+        }
         matfile.write("report",out.str());
     }
     matfile.write("intro",intro);
