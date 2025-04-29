@@ -41,9 +41,9 @@ bool connectometry_db::read_db(fib_data* handle_)
         subject_qa.push_back(matrix.get_data<float>());
         if(!index)
         {
-            subject_qa_length = matrix.size();
+            subject_qa_length = handle->mat_reader.si2vi.size();
             auto buf = subject_qa.front();
-            if((is_longitudinal = (std::find_if(buf,buf+subject_qa_length,[&](auto v){return v < 0.0f;}) != buf+subject_qa_length)))
+            if((is_longitudinal = std::any_of(buf,buf+subject_qa_length,[&](auto v){return v < 0.0f;})))
                 tipl::out() << "longitudinal data (negative value found)";
         }
     }
@@ -144,46 +144,32 @@ bool connectometry_db::parse_demo(void)
         size_t row_count = 0,last_item_size = 0;
         std::string line;
         bool is_csv = true;
-        bool is_tsv = true;
         std::istringstream in(saved_demo);
         while(std::getline(in,line))
         {
-            if(row_count == 0)
-            {
-                is_csv = line.find(',') != std::string::npos;
-                if(!is_csv)
-                    is_tsv = line.find('\t') != std::string::npos;
-            }
+            if(row_count == 0 && std::count(line.begin(),line.end(),',') < std::count(line.begin(),line.end(),'\t'))
+                is_csv = false;
 
-            if(is_csv || is_tsv)
             {
                 std::string col;
                 std::istringstream in2(line);
                 while(std::getline(in2,col,is_csv ? ',' : '\t'))
                     items.push_back(col);
-                if((line.back() == ',' && is_csv) || (line.back() == '\t' && is_csv))
-                    items.push_back(std::string());
             }
-            else
-            {
-                std::istringstream in2(line);
-                std::copy(std::istream_iterator<std::string>(in2),
-                          std::istream_iterator<std::string>(),std::back_inserter(items));
-            }
+
+
             if(items.size() == last_item_size)
                 break;
             ++row_count;
             if(col_count == 0)
                 col_count = items.size();
             else
-                if(items.size()-last_item_size != col_count)
-                {
-                    std::ostringstream out;
-                    out << subject_names[row_count-1] << " at row=" << row_count << " has " << items.size()-last_item_size <<
-                            " fields, which is different from the column size " << col_count << ".";
-                    error_msg = out.str();
-                    return false;
-                }
+            {
+                while(items.size()-last_item_size < col_count)
+                    items.push_back(std::string());
+                while(items.size()-last_item_size > col_count)
+                    items.pop_back();
+            }
             last_item_size = items.size();
         }
         if(items.empty())
@@ -622,7 +608,7 @@ bool connectometry_db::save_db(const char* output_name)
 
     const auto& si2vi = handle->mat_reader.si2vi;
     for(unsigned int index = 0;prog(index,subject_qa.size());++index)
-        matfile.write<tipl::io::sloped>("subjects"+std::to_string(index),subject_qa[index],subject_qa_length/si2vi.size(),si2vi.size());
+        matfile.write<tipl::io::sloped>("subjects"+std::to_string(index),subject_qa[index],1,si2vi.size());
     if(prog.aborted())
     {
         error_msg = "aborted";
@@ -764,20 +750,20 @@ void connectometry_db::get_subject_volume(unsigned int subject_index,tipl::image
 void connectometry_db::get_subject_fa(unsigned int subject_index,std::vector<std::vector<float> >& fa_data) const
 {
     fa_data.resize(handle->dir.num_fiber);
-    for(char index = 0;index < handle->dir.num_fiber;++index)
-        fa_data[index].resize(handle->dim.size());
+    for(auto& each : fa_data)
+        each.resize(handle->dim.size());
 
     const auto& si2vi = handle->mat_reader.si2vi;
-    tipl::adaptive_par_for(si2vi.size(),[&](unsigned int s_index)
+    for(size_t si = 0;si < si2vi.size();++si)
     {
-        size_t cur_index = si2vi[s_index];
-        size_t fib_offset = 0;
-        for(char i = 0;i < handle->dir.num_fiber && handle->dir.fa[i][cur_index] > 0;++i,fib_offset+=si2vi.size())
+        size_t vi = si2vi[si];
+        auto qa = subject_qa[subject_index][si];
+        for(char fi = 0;fi < handle->dir.num_fiber;++fi)
         {
-            size_t pos = s_index + fib_offset;
-            fa_data[i][cur_index] = (pos < subject_qa_length ? subject_qa[subject_index][pos] : fa_data[0][cur_index]);
+            if(handle->dir.fa[fi][vi] > 0)
+                fa_data[fi][vi] = qa;
         }
-    });
+    }
 }
 bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vector<float> >& data)
 {
