@@ -113,6 +113,7 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
             check_quality += out.str();
         }
     }
+    selected_count = db.num_subjects;
 
     if(!check_quality.empty())
     {
@@ -130,6 +131,7 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
 
     if(!db.demo.empty())
         load_demographics();
+    on_effect_size_valueChanged(0.3);
 }
 
 group_connectometry::~group_connectometry()
@@ -412,6 +414,7 @@ void group_connectometry::on_run_clicked()
             vbc->fdr_threshold = 0.0f;
 
         vbc->t_threshold = float(ui->threshold->value());
+        vbc->rho_threshold = float(ui->effect_size->value());
         vbc->output_file_name = ui->output_name->text().toStdString();
     }
 
@@ -610,13 +613,17 @@ void group_connectometry::on_show_cohort_clicked()
     }
     ui->subject_demo->setUpdatesEnabled(true);
     ui->cohort_report->setText(QString("n=%1").arg(selected_count));
-    on_threshold_valueChanged(ui->threshold->value());
+
+
+    ui->run->setEnabled(selected_count > 2);
+    ui->effect_size->setEnabled(selected_count > 2);
+    ui->threshold->setEnabled(selected_count > 2);
+
 }
 
 void group_connectometry::on_fdr_control_toggled(bool checked)
 {
     ui->fdr_threshold->setEnabled(checked);
-    ui->fdr_label->setEnabled(checked);
 }
 
 void group_connectometry::on_apply_selection_clicked()
@@ -632,17 +639,18 @@ void group_connectometry::on_apply_selection_clicked()
 }
 
 
+void group_connectometry::on_effect_size_valueChanged(double rho)
+{
+    ui->threshold->blockSignals(true);
+    ui->threshold->setValue(rho*std::sqrt(double(selected_count)-2)/(1-rho*rho));
+    ui->threshold->blockSignals(false);
+}
+
+
 void group_connectometry::on_threshold_valueChanged(double t)
 {
-    if(selected_count > 2)
-    {
-        double rho = t/std::sqrt(t*t+selected_count-2);
-        QString level = "(small)";
-        if(rho >= 0.3)
-            level = "(moderate)";
-        if(rho >= 0.5)
-            level = "(large)";
-        ui->effect_size->setText(QString("effect size=%1 %2").arg(QString::number(rho, 'f', 2)).arg(level));
-    }
+    ui->effect_size->blockSignals(true);
+    ui->effect_size->setValue(t/std::sqrt(t*t+selected_count-2));
+    ui->effect_size->blockSignals(false);
 }
 
