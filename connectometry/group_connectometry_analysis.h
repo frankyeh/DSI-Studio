@@ -42,6 +42,7 @@ public:// for FDR analysis
     unsigned int prog;// 0~100
     bool terminated = false;
     bool no_tractogram = false;
+    bool region_pruning = true;
     unsigned int preprocess = 0;
 public:
     std::shared_ptr<RoiMgr> roi_mgr;
