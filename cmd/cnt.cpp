@@ -102,7 +102,7 @@ int cnt(tipl::program_option<tipl::out>& po)
         vbc->length_threshold_voxels = po.get("length_threshold",(vbc->handle->dim[0]/4)/5*5);
         vbc->tip_iteration = po.get("tip_iteration",16);
         vbc->fdr_threshold = po.get("fdr_threshold",0.0f);
-        vbc->t_threshold = po.get("t_threshold",2.5f);
+
 
         // select cohort and feature
         vbc->model.reset(new stat_model);
@@ -111,6 +111,30 @@ int cnt(tipl::program_option<tipl::out>& po)
         {
             tipl::error() << vbc->model->error_msg.c_str() << std::endl;
             return 1;
+        }
+        size_t n = 0;
+        for(size_t i = 0;i < vbc->model->remove_list.size();++i)
+        {
+            if(!vbc->model->remove_list[i])
+                n++;
+        }
+        tipl::out() << "sample size:" << n;
+        if(n <= 2)
+        {
+            tipl::error() << "not enough sample size: " << n;
+            return 1;
+        }
+
+
+        if(po.has("t_threshold"))
+        {
+            auto t = vbc->t_threshold = po.get("t_threshold",2.5f);
+            vbc->rho_threshold = t/std::sqrt(t*t+n-2);
+        }
+        else
+        {
+            auto rho = vbc->rho_threshold = po.get("effect_size",0.3f);
+            vbc->t_threshold = rho*std::sqrt(double(n)-2)/(1-rho*rho);
         }
 
         // setup roi
