@@ -89,6 +89,7 @@ private slots:
     void on_show_cohort_clicked();
     void on_fdr_control_toggled(bool checked);
     void on_apply_selection_clicked();
+    void on_effect_size_valueChanged(double arg1);
     void on_threshold_valueChanged(double arg1);
 };
 
