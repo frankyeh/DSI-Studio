@@ -99,14 +99,18 @@ int db(tipl::program_option<tipl::out>& po)
     }
 
 
-    if(po.get("index_name","qa") == std::string("*"))
+    if(po.get("index_name","qir") == std::string("*"))
     {
         for(size_t i = 0;i < item_list.size();++i)
+        {
+            if(item_list[i] == "qa")
+                index_name.push_back("qir");
             index_name.push_back(item_list[i]);
+        }
     }
     else
     {
-        std::istringstream in(po.get("index_name","qa"));
+        std::istringstream in(po.get("index_name","qir"));
         std::string line;
         while(std::getline(in,line,','))
             index_name.push_back(line);
