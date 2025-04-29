@@ -773,24 +773,25 @@ bool fib_data::load_from_mat(void)
     for (unsigned int index = 0;index < mat_reader.size();++index)
     {
         std::string matrix_name = mat_reader[index].name;
-        if (matrix_name == "image" ||
-            matrix_name == "mask" ||
+        if (matrix_name == "image" || matrix_name == "mask" ||
             matrix_name.find("subjects") == 0)
             continue;
-        std::string prefix_name(matrix_name.begin(),matrix_name.end()-1);
-        char post_fix = matrix_name[matrix_name.length()-1];
+        char post_fix = matrix_name.back();
         if(post_fix >= '0' && post_fix <= '9')
         {
-            if (prefix_name == "index" || prefix_name == "fa" || prefix_name == "dir" ||
-                std::find_if(slices.begin(),
+            matrix_name.pop_back();
+            if (matrix_name == "index" ||
+                matrix_name == "fa" ||
+                matrix_name == "dir" ||
+                    std::find_if(slices.begin(),
                              slices.end(),
-                             [&prefix_name](const auto& view)
-                             {return view->name == prefix_name;}) != slices.end())
+                             [=](const auto& view)
+                             {return view->name == matrix_name;}) != slices.end())
                 continue;
         }
         if (mat_reader.rows(index)*mat_reader.cols(index) != dim.size())
             continue;
-        slices.push_back(std::make_shared<slice_model>(matrix_name,this));
+        slices.push_back(std::make_shared<slice_model>(mat_reader[index].name,this));
     }
 
     is_human_data = is_human_size(dim,vs); // 1 percentile head size in mm
