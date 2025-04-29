@@ -175,6 +175,7 @@ public:
         bool redo(void);
         bool trim(void);
         void trim(unsigned int iterations);
+        void region_pruning(float region_ratio);
         void flip(char dim);
 
         void resample(float new_step);
