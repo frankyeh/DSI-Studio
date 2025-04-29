@@ -79,23 +79,6 @@ bool connectometry_db::read_db(fib_data* handle_)
             longitudinal_filter_type = 2;
     }
 
-    // make sure qa is normalized
-    if(!is_longitudinal && (index_name == "qa" || index_name.empty()))
-    {
-        auto max_qa = tipl::max_value(subject_qa[0],subject_qa[0]+subject_qa_length);
-        if(max_qa != 1.0f)
-        {
-            tipl::out() << "converting raw QA to normalized QA" << std::endl;
-            tipl::adaptive_par_for(subject_qa.size(),[&](size_t i)
-            {
-                auto max_qa = tipl::max_value(subject_qa[i],subject_qa[i]+subject_qa_length);
-                if(max_qa != 0.0f)
-                    tipl::multiply_constant(const_cast<float*>(subject_qa[i]),
-                                            const_cast<float*>(subject_qa[i])+subject_qa_length,1.0f/max_qa);
-            });
-        }
-    }
-
     // process subject names
     {
         std::istringstream in(subject_names_str);
@@ -447,13 +430,6 @@ void connectometry_db::add(float subject_R2,std::vector<float>& data,
 {
     // remove negative values due to interpolation
     tipl::lower_threshold(data,0.0f);
-    // normalize QA
-    if(index_name == "qa" || index_name == "nqa" || index_name.empty())
-    {
-        float m = tipl::max_value(data);
-        if(m != 1.0f && m != 0.0f)
-            tipl::multiply_constant(data.begin(),data.end(),1.0f/m);
-    }
     R2.push_back(subject_R2);
     subject_qa_length = std::min<size_t>(subject_qa_length,data.size());
     subject_qa_buf.push_back(std::move(data));
@@ -572,47 +548,6 @@ bool connectometry_db::add(const std::string& file_name,
             intro = fib.intro;
         fib.mat_reader.read("R2",subject_R2);
 
-        if(fib.is_mni && fib.has_odfs() &&
-           (index_name == "qa" || index_name == "nqa" || index_name.empty()))
-        {
-            odf_data subject_odf;
-            if(!subject_odf.read(fib))
-            {
-                error_msg = "Failed to read ODF at ";
-                error_msg += file_name;
-                error_msg += " : ";
-                error_msg += subject_odf.error_msg;
-                return false;
-            }
-            tipl::transformation_matrix<float> template2subject(tipl::from_space(handle->trans_to_mni).to(fib.trans_to_mni));
-            const auto& si2vi = handle->mat_reader.si2vi;
-            data.clear();
-            data.resize(si2vi.size()*size_t(handle->dir.num_fiber));
-            tipl::adaptive_par_for(si2vi.size(),[&](size_t si)
-            {
-                size_t vi = si2vi[si];
-                if(!handle->mask[vi])
-                    return;
-                tipl::vector<3> pos(tipl::pixel_index<3>(vi,handle->dim));
-                template2subject(pos);
-                pos.round();
-                if(!fib.dim.is_valid(pos))
-                    return;
-                tipl::pixel_index<3> subject_pos(pos[0],pos[1],pos[2],fib.dim);
-                const float* odf = subject_odf.get_odf_data(uint32_t(subject_pos.index()));
-                if(odf == nullptr)
-                    return;
-                float min_value = tipl::min_value(odf, odf + handle->dir.half_odf_size);
-                for(char i = 0;i < handle->dir.num_fiber;++i,si += si2vi.size())
-                {
-                    if(handle->dir.fa[i][vi] == 0.0f)
-                        break;
-                    // 0: subject index 1:findex by s_index (fa > 0)
-                    data[si] = odf[handle->dir.findex[i][vi]]-min_value;
-                }
-            });
-        }
-        else
         {
             auto index = fib.get_name_index(index_name);
             if(index == fib.slices.size())
@@ -635,7 +570,7 @@ bool connectometry_db::add(const std::string& file_name,
                         error_msg = fib.error_msg;
                         return false;
                     }
-                    sample_from_image(tipl::compose_mapping(fib.slices[index]->get_image(),fib.t2s),fib.template_to_mni,data);
+                    sample_from_image(tipl::compose_mapping(fib.slices[index]->get_image(),fib.t2s).alias(),fib.template_to_mni,data);
                 }
             }
         }
@@ -792,11 +727,6 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
             predict += b[i]*v[i-1];
         I[si2vi[index]] = std::max<float>(0.0f,float(predict));
     });
-    if(index_name == "qa")
-    {
-        tipl::out() << "normalizing qa map" << std::endl;
-        tipl::normalize(I);
-    }
     volume.swap(I);
     return true;
 }
