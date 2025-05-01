@@ -747,23 +747,13 @@ void connectometry_db::get_subject_volume(unsigned int subject_index,tipl::image
         I[si2vi[index]] = subject_qa[subject_index][index];
     volume.swap(I);
 }
-void connectometry_db::get_subject_fa(unsigned int subject_index,std::vector<std::vector<float> >& fa_data) const
+tipl::image<3> connectometry_db::get_index_image(unsigned int subject_index) const
 {
-    fa_data.resize(handle->dir.num_fiber);
-    for(auto& each : fa_data)
-        each.resize(handle->dim.size());
-
+    tipl::image<3> result(handle->dim);
     const auto& si2vi = handle->mat_reader.si2vi;
     for(size_t si = 0;si < si2vi.size();++si)
-    {
-        size_t vi = si2vi[si];
-        auto qa = subject_qa[subject_index][si];
-        for(char fi = 0;fi < handle->dir.num_fiber;++fi)
-        {
-            if(handle->dir.fa[fi][vi] > 0)
-                fa_data[fi][vi] = qa;
-        }
-    }
+        result[si2vi[si]] = subject_qa[subject_index][si];
+    return result;
 }
 bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vector<float> >& data)
 {

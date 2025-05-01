@@ -3008,11 +3008,10 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
                        handle->db.index_name << "\t";
                 if(!tract_data.empty())
                 {
-                    std::vector<std::vector<float> > fa_data;
-                    handle->db.get_subject_fa(i,fa_data);
-                    for(unsigned int j = 0;j < fa_data.size();++j)
-                        handle->dir.index_data[0][j] = &fa_data[j][0];
-                    out <<  get_tracts_mean(handle,0);
+                    auto I = handle->db.get_index_image(i);
+                    for(auto& each : handle->dir.index_data[0])
+                        each = I.data();
+                    out << get_tracts_mean(handle,0);
                 }
                 out << std::endl;
             }

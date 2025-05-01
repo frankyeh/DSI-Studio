@@ -498,11 +498,9 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
         tipl::progress p("compute subject data");
         for(unsigned int subject_index = 0;p(subject_index,handle->db.num_subjects);++subject_index)
         {
-            std::vector<std::vector<float> > fa_data;
-            handle->db.get_subject_fa(subject_index,fa_data);
+            auto I = handle->db.get_index_image(subject_index);
             float mean,max,min;
-            tipl::pointer_image<3> I(&fa_data[0][0],handle->dim);
-            calculate_region_stat(I,points,mean,max,min,is_diffusion_space ? nullptr : &to_diffusion_space[0]);
+            calculate_region_stat(I.alias(),points,mean,max,min,is_diffusion_space ? nullptr : &to_diffusion_space[0]);
             data.push_back(mean);
             std::ostringstream out;
             out << handle->db.subject_names[subject_index] << (" mean_") << handle->db.index_name;
