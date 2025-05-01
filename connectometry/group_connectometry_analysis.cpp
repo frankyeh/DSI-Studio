@@ -13,7 +13,7 @@ bool group_connectometry_analysis::create_database(std::shared_ptr<fib_data> han
     handle = handle_;
     fiber_threshold = 0.6f*handle->dir.fa_otsu;
     handle->db.calculate_vi2si();
-    handle->db.subject_qa_length = handle->mat_reader.si2vi.size();
+    handle->db.mask_size = handle->mat_reader.si2vi.size();
     handle->db.clear();
     if(handle->mat_reader.si2vi.empty())
     {
@@ -336,7 +336,7 @@ void group_connectometry_analysis::calculate_adjusted_qa(stat_model& info)
 
     // population_value_adjusted is a transpose of handle->db.subject_qa
     population_value_adjusted.clear();
-    population_value_adjusted.resize(handle->db.subject_qa_length);
+    population_value_adjusted.resize(handle->db.mask_size);
     const auto& si2vi = handle->mat_reader.si2vi;
     const auto& dir = handle->dir;
     tipl::par_for(si2vi.size(),[&](size_t si)

@@ -41,9 +41,9 @@ bool connectometry_db::read_db(fib_data* handle_)
         subject_qa.push_back(matrix.get_data<float>());
         if(!index)
         {
-            subject_qa_length = handle->mat_reader.si2vi.size();
+            mask_size = handle->mat_reader.si2vi.size();
             auto buf = subject_qa.front();
-            if((is_longitudinal = std::any_of(buf,buf+subject_qa_length,[&](auto v){return v < 0.0f;})))
+            if((is_longitudinal = std::any_of(buf,buf+mask_size,[&](auto v){return v < 0.0f;})))
                 tipl::out() << "longitudinal data (negative value found)";
         }
     }
@@ -440,7 +440,7 @@ void connectometry_db::add(float subject_R2,std::vector<float>& data,
     // remove negative values due to interpolation
     tipl::lower_threshold(data,0.0f);
     R2.push_back(subject_R2);
-    subject_qa_length = std::min<size_t>(subject_qa_length,data.size());
+    mask_size = std::min<size_t>(mask_size,data.size());
     index_buf.push_back(std::move(data));
     subject_qa.push_back(&(index_buf.back()[0]));
     subject_names.push_back(subject_name);
@@ -803,7 +803,7 @@ bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vec
 }
 bool connectometry_db::is_db_compatible(const connectometry_db& rhs)
 {
-    if(rhs.handle->dim != handle->dim || subject_qa_length != rhs.subject_qa_length)
+    if(rhs.handle->dim != handle->dim || mask_size != rhs.mask_size)
     {
         error_msg = "Image dimension does not match";
         return false;
@@ -826,9 +826,9 @@ bool connectometry_db::add_db(const connectometry_db& rhs)
     // copy the qa memory
     for(unsigned int index = 0;index < rhs.num_subjects;++index)
     {
-        index_buf.push_back(std::vector<float>(subject_qa_length));
+        index_buf.push_back(std::vector<float>(mask_size));
         std::copy(rhs.subject_qa[index],
-                  rhs.subject_qa[index]+subject_qa_length,index_buf.back().begin());
+                  rhs.subject_qa[index]+mask_size,index_buf.back().begin());
         subject_qa.push_back(&(index_buf.back()[0]));
     }
     num_subjects += rhs.num_subjects;
@@ -872,14 +872,14 @@ void connectometry_db::calculate_change(unsigned char dif_type,unsigned char fil
         const float* scan1 = subject_qa[first];
         const float* scan2 = subject_qa[second];
         new_R2[index] = std::min<float>(R2[first],R2[second]);
-        std::vector<float> change(subject_qa_length);
+        std::vector<float> change(mask_size);
         switch(dif_type)
         {
         case 0:
             {
                 if(!index)
                     out << " The difference between longitudinal scans were calculated by scan2-scan1.";
-                for(unsigned int i = 0;i < subject_qa_length;++i)
+                for(unsigned int i = 0;i < mask_size;++i)
                     change[i] = scan2[i]-scan1[i];
                 new_subject_names[index] = subject_names[second] + "-" + subject_names[first];
             }
@@ -888,7 +888,7 @@ void connectometry_db::calculate_change(unsigned char dif_type,unsigned char fil
             {
                 if(!index)
                     out << " The percentage difference between longitudinal scans were calculated by (scan2-scan1)/scan1.";
-                for(unsigned int i = 0;i < subject_qa_length;++i)
+                for(unsigned int i = 0;i < mask_size;++i)
                 {
                     float s = scan1[i];
                     change[i] = (s == 0.0f? 0 : (scan2[i]-scan1[i])/s);
