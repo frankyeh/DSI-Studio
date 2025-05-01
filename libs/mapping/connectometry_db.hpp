@@ -57,9 +57,7 @@ public:
                             tipl::image<2,float>& slice) const;
     bool get_demo_matched_volume(const std::string& matched_demo,tipl::image<3>& volume) const;
     bool save_demo_matched_image(const std::string& matched_demo,const std::string& filename) const;
-    void get_subject_volume(unsigned int subject_index,tipl::image<3>& volume) const;
     tipl::image<3> get_index_image(unsigned int subject_index) const;
-    bool get_qa_profile(const char* file_name,std::vector<std::vector<float> >& data);
     bool is_db_compatible(const connectometry_db& rhs);
     bool add_db(const connectometry_db& rhs);
     void move_up(int id);
