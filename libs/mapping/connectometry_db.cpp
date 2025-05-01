@@ -739,14 +739,6 @@ bool connectometry_db::save_demo_matched_image(const std::string& matched_demo,c
     }
     return true;
 }
-void connectometry_db::get_subject_volume(unsigned int subject_index,tipl::image<3>& volume) const
-{
-    tipl::image<3> I(handle->dim);
-    const auto& si2vi = handle->mat_reader.si2vi;
-    for(unsigned int index = 0;index < si2vi.size();++index)
-        I[si2vi[index]] = subject_qa[subject_index][index];
-    volume.swap(I);
-}
 tipl::image<3> connectometry_db::get_index_image(unsigned int subject_index) const
 {
     tipl::image<3> result(handle->dim);
@@ -754,42 +746,6 @@ tipl::image<3> connectometry_db::get_index_image(unsigned int subject_index) con
     for(size_t si = 0;si < si2vi.size();++si)
         result[si2vi[si]] = subject_qa[subject_index][si];
     return result;
-}
-bool connectometry_db::get_qa_profile(const char* file_name,std::vector<std::vector<float> >& data)
-{
-    fib_data fib;
-    if(!fib.load_from_file(file_name))
-    {
-        error_msg = "fail to load the fib file";
-        return false;
-    }
-    odf_data subject_odf;
-    if(!subject_odf.read(fib))
-    {
-        error_msg = subject_odf.error_msg;
-        return false;
-    }
-    data.clear();
-    data.resize(handle->dir.num_fiber);
-    for(unsigned int index = 0;index < data.size();++index)
-        data[index].resize(handle->dim.size());
-
-    for(size_t index = 0;index < handle->dim.size();++index)
-        if(handle->mask[index])
-        {
-            const float* odf = subject_odf.get_odf_data(index);
-            if(!odf)
-                continue;
-            float min_value = tipl::min_value(odf, odf + handle->dir.half_odf_size);
-            for(char i = 0;i < handle->dir.num_fiber;++i)
-            {
-                if(handle->dir.fa[i][index] == 0.0f)
-                    break;
-                data[i][index] = odf[handle->dir.findex[i][index]]-min_value;
-            }
-        }
-    subject_report = fib.report;
-    return true;
 }
 bool connectometry_db::is_db_compatible(const connectometry_db& rhs)
 {
