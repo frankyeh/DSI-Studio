@@ -130,7 +130,7 @@ void db_window::update_subject_list()
 void db_window::on_subject_list_itemSelectionChanged()
 {
     if(ui->subject_list->currentRow() == -1 ||
-            ui->subject_list->currentRow() >= vbc->handle->db.subject_qa.size())
+            ui->subject_list->currentRow() >= vbc->handle->db.subject_names.size())
         return;
     if(ui->view_x->isChecked())
         ui->x_pos->setValue(ui->slice_pos->value());
