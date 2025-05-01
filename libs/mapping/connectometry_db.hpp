@@ -33,7 +33,7 @@ public:
     tipl::image<3,size_t> vi2si;
 public:
     std::list<std::vector<float> > index_buf;// merged from other db
-    std::vector<const float*> subject_qa;
+    std::vector<const float*> subject_metrics;
     std::string index_name = "qir";
 public://longitudinal studies
     std::vector<std::pair<int,int> > match;

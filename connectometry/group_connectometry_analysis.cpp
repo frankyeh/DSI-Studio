@@ -334,7 +334,7 @@ void group_connectometry_analysis::calculate_adjusted_qa(stat_model& info)
             tipl::out() << "adjusting " << handle->db.index_name << " using partial correlation of " << out.str();
     }
 
-    // population_value_adjusted is a transpose of handle->db.subject_qa
+    // population_value_adjusted is a transpose of handle->db.subject_metrics
     population_value_adjusted.clear();
     population_value_adjusted.resize(handle->db.mask_size);
     const auto& si2vi = handle->mat_reader.si2vi;
@@ -345,7 +345,7 @@ void group_connectometry_analysis::calculate_adjusted_qa(stat_model& info)
             return;
         std::vector<float> population(info.selected_subject.size());
         for(unsigned int index = 0;index < info.selected_subject.size();++index)
-            population[index] = handle->db.subject_qa[info.selected_subject[index]][si];
+            population[index] = handle->db.subject_metrics[info.selected_subject[index]][si];
         info.partial_correlation(population);
         population_value_adjusted[si] = std::move(population);
     });

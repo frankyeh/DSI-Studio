@@ -26,7 +26,7 @@ bool parse_age_sex(const std::string& file_name,std::string& age,std::string& se
 bool connectometry_db::read_db(fib_data* handle_)
 {
     handle = handle_;
-    subject_qa.clear();
+    subject_metrics.clear();
     subject_names.clear();
     {
         std::string subject_names_str,name;
@@ -63,11 +63,11 @@ bool connectometry_db::read_db(fib_data* handle_)
             clear();
             return false;
         }
-        subject_qa.push_back(matrix.get_data<float>());
+        subject_metrics.push_back(matrix.get_data<float>());
         if(!index)
         {
             mask_size = handle->mat_reader.si2vi.size();
-            auto buf = subject_qa.front();
+            auto buf = subject_metrics.front();
             if((is_longitudinal = std::any_of(buf,buf+mask_size,[&](auto v){return v < 0.0f;})))
                 tipl::out() << "longitudinal data (negative value found)";
         }
@@ -352,16 +352,16 @@ void connectometry_db::clear(void)
 {
     subject_names.clear();
     R2.clear();
-    subject_qa.clear();
+    subject_metrics.clear();
     index_buf.clear();
     modified = true;
 }
 
 void connectometry_db::remove_subject(unsigned int index)
 {
-    if(index >= subject_qa.size())
+    if(index >= subject_metrics.size())
         return;
-    subject_qa.erase(subject_qa.begin()+index);
+    subject_metrics.erase(subject_metrics.begin()+index);
     subject_names.erase(subject_names.begin()+index);
     R2.erase(R2.begin()+index);
     modified = true;
@@ -441,7 +441,7 @@ void connectometry_db::add(float subject_R2,std::vector<float>& data,
     R2.push_back(subject_R2);
     mask_size = std::min<size_t>(mask_size,data.size());
     index_buf.push_back(std::move(data));
-    subject_qa.push_back(&(index_buf.back()[0]));
+    subject_metrics.push_back(&(index_buf.back()[0]));
     subject_names.push_back(subject_name);
     modified = true;
 }
@@ -605,8 +605,8 @@ bool connectometry_db::save_db(const char* output_name)
     save_fz(handle->mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping","report","steps"},{"subject"});
 
     const auto& si2vi = handle->mat_reader.si2vi;
-    for(unsigned int index = 0;prog(index,subject_qa.size());++index)
-        matfile.write<tipl::io::sloped>("subjects"+std::to_string(index),subject_qa[index],1,si2vi.size());
+    for(unsigned int index = 0;prog(index,subject_metrics.size());++index)
+        matfile.write<tipl::io::sloped>("subjects"+std::to_string(index),subject_metrics[index],1,si2vi.size());
     if(prog.aborted())
     {
         error_msg = "aborted";
@@ -653,7 +653,7 @@ void connectometry_db::get_subject_slice(unsigned int subject_index,unsigned cha
     slice.resize(tmp.shape());
     for(unsigned int index = 0;index < slice.size();++index)
         if(tmp[index])
-            slice[index] = subject_qa[subject_index][tmp[index]];
+            slice[index] = subject_metrics[subject_index][tmp[index]];
 }
 
 bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,tipl::image<3>& volume) const
@@ -698,16 +698,16 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
     }
     size_t feature_size = 1+feature_location.size(); // +1 for intercept
     tipl::multiple_regression<double> mr;
-    mr.set_variables(X.begin(),uint32_t(feature_size),uint32_t(subject_qa.size()));
+    mr.set_variables(X.begin(),uint32_t(feature_size),uint32_t(subject_metrics.size()));
 
 
     tipl::image<3> I(handle->dim);
     const auto& si2vi = handle->mat_reader.si2vi;
     tipl::adaptive_par_for(si2vi.size(),[&](size_t index)
     {
-        std::vector<double> y(subject_qa.size());
-        for(size_t s = 0;s < subject_qa.size();++s)
-            y[s] = double(subject_qa[s][index]);
+        std::vector<double> y(subject_metrics.size());
+        for(size_t s = 0;s < subject_metrics.size();++s)
+            y[s] = double(subject_metrics[s][index]);
         std::vector<double> b(feature_size);
         mr.regress(y.begin(),b.begin());
         double predict = b[0];
@@ -736,7 +736,7 @@ tipl::image<3> connectometry_db::get_index_image(unsigned int subject_index) con
     tipl::image<3> result(handle->dim);
     const auto& si2vi = handle->mat_reader.si2vi;
     for(size_t si = 0;si < si2vi.size();++si)
-        result[si2vi[si]] = subject_qa[subject_index][si];
+        result[si2vi[si]] = subject_metrics[subject_index][si];
     return result;
 }
 bool connectometry_db::is_db_compatible(const connectometry_db& rhs)
@@ -765,9 +765,9 @@ bool connectometry_db::add_db(const connectometry_db& rhs)
     for(unsigned int index = 0;index < rhs.subject_names.size();++index)
     {
         index_buf.push_back(std::vector<float>(mask_size));
-        std::copy(rhs.subject_qa[index],
-                  rhs.subject_qa[index]+mask_size,index_buf.back().begin());
-        subject_qa.push_back(&(index_buf.back()[0]));
+        std::copy(rhs.subject_metrics[index],
+                  rhs.subject_metrics[index]+mask_size,index_buf.back().begin());
+        subject_metrics.push_back(&(index_buf.back()[0]));
     }
     modified = true;
     return true;
@@ -778,7 +778,7 @@ void connectometry_db::move_up(int id)
         return;
     std::swap(subject_names[uint32_t(id)],subject_names[uint32_t(id-1)]);
     std::swap(R2[uint32_t(id)],R2[uint32_t(id-1)]);
-    std::swap(subject_qa[uint32_t(id)],subject_qa[uint32_t(id-1)]);
+    std::swap(subject_metrics[uint32_t(id)],subject_metrics[uint32_t(id-1)]);
 }
 
 void connectometry_db::move_down(int id)
@@ -787,7 +787,7 @@ void connectometry_db::move_down(int id)
         return;
     std::swap(subject_names[uint32_t(id)],subject_names[uint32_t(id+1)]);
     std::swap(R2[uint32_t(id)],R2[uint32_t(id+1)]);
-    std::swap(subject_qa[uint32_t(id)],subject_qa[uint32_t(id+1)]);
+    std::swap(subject_metrics[uint32_t(id)],subject_metrics[uint32_t(id+1)]);
 }
 
 void connectometry_db::calculate_change(unsigned char dif_type,unsigned char filter_type)
@@ -800,14 +800,14 @@ void connectometry_db::calculate_change(unsigned char dif_type,unsigned char fil
 
 
     std::list<std::vector<float> > new_index_buf;
-    std::vector<const float*> new_subject_qa;
+    std::vector<const float*> new_subject_metrics;
     tipl::progress prog("calculating");
     for(unsigned int index = 0;prog(index,match.size());++index)
     {
         auto first = uint32_t(match[index].first);
         auto second = uint32_t(match[index].second);
-        const float* scan1 = subject_qa[first];
-        const float* scan2 = subject_qa[second];
+        const float* scan1 = subject_metrics[first];
+        const float* scan2 = subject_metrics[second];
         new_R2[index] = std::min<float>(R2[first],R2[second]);
         std::vector<float> change(mask_size);
         switch(dif_type)
@@ -856,13 +856,13 @@ void connectometry_db::calculate_change(unsigned char dif_type,unsigned char fil
             break;
         }
         new_index_buf.push_back(change);
-        new_subject_qa.push_back(&(new_index_buf.back()[0]));
+        new_subject_metrics.push_back(&(new_index_buf.back()[0]));
     }
     out << " The total number of longitudinal subjects was " << match.size() << ".";
     R2.swap(new_R2);
     subject_names.swap(new_subject_names);
     index_buf.swap(new_index_buf);
-    subject_qa.swap(new_subject_qa);
+    subject_metrics.swap(new_subject_metrics);
     match.clear();
     report += out.str();
     modified = true;
