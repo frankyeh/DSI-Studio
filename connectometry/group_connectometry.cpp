@@ -102,7 +102,7 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
 
     // CHECK R2
     std::string check_quality;
-    for(unsigned int index = 0;index < db.num_subjects;++index)
+    for(unsigned int index = 0;index < db.subject_names.size();++index)
     {
         if(db.R2[index] < 0.5)
         {
@@ -113,7 +113,7 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
             check_quality += out.str();
         }
     }
-    selected_count = db.num_subjects;
+    selected_count = db.subject_names.size();
 
     if(!check_quality.empty())
     {
@@ -123,7 +123,7 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
     ui->subject_demo->clear();
     ui->subject_demo->setColumnCount(1);
     ui->subject_demo->setHorizontalHeaderLabels(QStringList("Subject ID"));
-    ui->subject_demo->setRowCount(db.num_subjects);
+    ui->subject_demo->setRowCount(db.subject_names.size());
     for(unsigned int row = 0;row < ui->subject_demo->rowCount();++row)
         ui->subject_demo->setItem(row,0,new QTableWidgetItem(QString(db.subject_names[row].c_str())));
 
@@ -260,8 +260,8 @@ void fill_demo_table(const connectometry_db& db,
     table->clear();
     table->setColumnCount(t2.size());
     table->setHorizontalHeaderLabels(t2);
-    table->setRowCount(int(db.num_subjects));
-    for(size_t row = 0;row < db.num_subjects;++row)
+    table->setRowCount(int(db.subject_names.size()));
+    for(size_t row = 0;row < db.subject_names.size();++row)
     {
         table->setItem(int(row),0,new QTableWidgetItem(QString(db.subject_names[row].c_str())));
         for(size_t col = 0;col < db.titles.size();++col)

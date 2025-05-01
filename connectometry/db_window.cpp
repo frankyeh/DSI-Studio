@@ -111,14 +111,14 @@ void db_window::update_subject_list()
     ui->subject_list->clear();
     ui->subject_list->setColumnCount(vbc->handle->db.titles.size() + 1);
     ui->subject_list->setColumnWidth(0,100);
-    ui->subject_list->setRowCount(vbc->handle->db.num_subjects);
+    ui->subject_list->setRowCount(vbc->handle->db.subject_names.size());
     QStringList header;
     header << "id";
     for(auto& str : vbc->handle->db.titles)
         header << str.c_str();
     ui->subject_list->setHorizontalHeaderLabels(header);
 
-    for(unsigned int i = 0;i < vbc->handle->db.num_subjects;++i)
+    for(unsigned int i = 0;i < vbc->handle->db.subject_names.size();++i)
     {
         ui->subject_list->setItem(i,0, new QTableWidgetItem(QString(vbc->handle->db.subject_names[i].c_str())));
         for(unsigned int j = 0;j < vbc->handle->db.titles.size();++j)
@@ -176,8 +176,8 @@ void db_window::on_actionSave_Subject_Name_as_triggered()
     if(filename.isEmpty())
         return;
     std::ofstream out(filename.toStdString().c_str());
-    for(unsigned int index = 0;index < vbc->handle->db.num_subjects;++index)
-        out << vbc->handle->db.subject_names[index] << std::endl;
+    for(const auto& each : vbc->handle->db.subject_names)
+        out << each << std::endl;
 }
 
 void db_window::on_action_Save_R2_values_as_triggered()
@@ -212,7 +212,7 @@ void db_window::update_db(void)
 
 void db_window::on_delete_subject_clicked()
 {
-    if(ui->subject_list->currentRow() >= 0 && vbc->handle->db.num_subjects > 1)
+    if(ui->subject_list->currentRow() >= 0 && vbc->handle->db.subject_names.size() > 1)
     {
         unsigned int index = ui->subject_list->currentRow();
         vbc->handle->db.remove_subject(index);
@@ -270,7 +270,7 @@ void db_window::on_actionSave_DB_as_triggered()
 void db_window::on_move_down_clicked()
 {
 
-    if(ui->subject_list->currentRow() >= vbc->handle->db.num_subjects-1)
+    if(ui->subject_list->currentRow() >= vbc->handle->db.subject_names.size()-1)
         return;
     vbc->handle->db.move_down(ui->subject_list->currentRow());
     QString t = ui->subject_list->item(ui->subject_list->currentRow(),0)->text();
@@ -321,7 +321,7 @@ void db_window::on_actionSelect_Subjects_triggered()
     std::ifstream in(filename.toStdString().c_str());
     std::vector<char> selected;
     std::copy(std::istream_iterator<int>(in),std::istream_iterator<int>(),std::back_inserter(selected));
-    selected.resize(vbc->handle->db.num_subjects);
+    selected.resize(vbc->handle->db.subject_names.size());
     for(int i = int(selected.size())-1;i >=0;--i)
         if(selected[uint32_t(i)])
         {

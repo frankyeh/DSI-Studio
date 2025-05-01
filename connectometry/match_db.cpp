@@ -79,7 +79,7 @@ void match_db::on_load_match_clicked()
 void match_db::on_match_consecutive_clicked()
 {
     vbc->handle->db.match.clear();
-    for(int i = 0;i < vbc->handle->db.num_subjects;i += 2)
+    for(int i = 0;i < vbc->handle->db.subject_names.size();i += 2)
         vbc->handle->db.match.push_back(std::make_pair(i,i+1));
     show_match_table();
 }

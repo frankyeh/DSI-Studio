@@ -496,7 +496,7 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
     if(handle->db.has_db()) // connectometry database
     {
         tipl::progress p("compute subject data");
-        for(unsigned int subject_index = 0;p(subject_index,handle->db.num_subjects);++subject_index)
+        for(unsigned int subject_index = 0;p(subject_index,handle->db.subject_names.size());++subject_index)
         {
             auto I = handle->db.get_index_image(subject_index);
             float mean,max,min;

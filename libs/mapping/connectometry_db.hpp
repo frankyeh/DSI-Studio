@@ -11,7 +11,6 @@ public:
     fib_data* handle = nullptr;
     std::string report,intro,subject_report;
     mutable std::string error_msg;
-    unsigned int num_subjects = 0;
     bool modified = false;
 
 public: // demographic information
@@ -40,7 +39,7 @@ public://longitudinal studies
     void calculate_change(unsigned char dif_type,unsigned char filter_type);
 public:
     connectometry_db(){}
-    bool has_db(void)const{return num_subjects > 0;}
+    bool has_db(void)const{return !subject_names.empty();}
     bool read_db(fib_data* handle);
     void clear(void);
     void remove_subject(unsigned int index);

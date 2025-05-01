@@ -3002,7 +3002,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
         tipl::progress p("for each subject");
         std::vector<const float*> old_index_data(handle->dir.index_data[0]);
         {
-            for(unsigned int i = 0;p(i,handle->db.num_subjects);++i)
+            for(unsigned int i = 0;p(i,handle->db.subject_names.size());++i)
             {
                 out << handle->db.subject_names[i] << " mean_" <<
                        handle->db.index_name << "\t";

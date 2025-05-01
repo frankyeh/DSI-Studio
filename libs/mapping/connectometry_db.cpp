@@ -27,15 +27,40 @@ bool connectometry_db::read_db(fib_data* handle_)
 {
     handle = handle_;
     subject_qa.clear();
-    size_t matrix_index = 0;
-    for(unsigned int index = 0;(matrix_index = std::min(handle->mat_reader.index_of("subjects"+std::to_string(index)),
-                                                        handle->mat_reader.index_of("subject"+std::to_string(index))))
-                                    < handle->mat_reader.size();++index)
+    subject_names.clear();
     {
+        std::string subject_names_str,name;
+        if(!handle->mat_reader.read("subject_names",subject_names_str))
+            return true;
+        std::istringstream in(subject_names_str);
+        while(std::getline(in,name))
+            subject_names.push_back(name);
+        R2.resize(subject_names.size());
+        if(!handle->mat_reader.read("R2",R2))
+        {
+            subject_names.clear();
+            return true;
+        }
+    }
+
+    tipl::progress prog("loading database");
+    size_t matrix_index = 0;
+    for(unsigned int index = 0;index < subject_names.size();++index)
+    {
+        auto matrix_index = std::min<size_t>(handle->mat_reader.index_of("subjects"+std::to_string(index)),
+                                             handle->mat_reader.index_of("subject"+std::to_string(index)));
+        if(matrix_index == handle->mat_reader.size())
+        {
+            error_msg = "corrupted database";
+            clear();
+            return false;
+        }
+
         auto& matrix = handle->mat_reader[matrix_index];
         if(matrix.cols % handle->mat_reader.si2vi.size())
         {
             error_msg = "corrupted database: mask size mismatch ";
+            clear();
             return false;
         }
         subject_qa.push_back(matrix.get_data<float>());
@@ -47,22 +72,7 @@ bool connectometry_db::read_db(fib_data* handle_)
                 tipl::out() << "longitudinal data (negative value found)";
         }
     }
-    num_subjects = uint32_t(subject_qa.size());
-    subject_names.resize(num_subjects);
-    R2.resize(num_subjects);
-    if(!num_subjects)
-        return true;
 
-    tipl::progress prog("loading database");
-    std::string subject_names_str;
-    if(!handle->mat_reader.read("subject_names",subject_names_str) ||
-       !handle->mat_reader.read("R2",R2))
-    {
-        error_msg = "invalid connectometry DB format.";
-        num_subjects = 0;
-        subject_qa.clear();
-        return false;
-    }
     // optional
     handle->mat_reader.read("report",report);
     handle->mat_reader.read("intro",intro);
@@ -79,18 +89,9 @@ bool connectometry_db::read_db(fib_data* handle_)
             longitudinal_filter_type = 2;
     }
 
-    // process subject names
-    {
-        std::istringstream in(subject_names_str);
-        for(unsigned int index = 0;in && index < num_subjects;++index)
-            std::getline(in,subject_names[index]);
-    }
 
     if(handle->mat_reader.read("demo",demo))
-    {
-        if(!parse_demo())
-            return false;
-    }
+        parse_demo();
     else
     {
         // try to get demo from subject bame
@@ -178,14 +179,14 @@ bool connectometry_db::parse_demo(void)
             return false;
         }
         size_t found = 0;
-        std::vector<std::string> new_items((num_subjects+1)*col_count);
+        std::vector<std::string> new_items((subject_names.size()+1)*col_count);
         std::string first_column_title = QString::fromStdString(items.front()).toLower().toStdString();
         bool first_column_has_text = false;
         if(!tipl::contains(first_column_title,"age") && !tipl::contains(first_column_title,"sex"))
         {
             // copy titles
             std::copy(items.begin(),items.begin()+int(col_count),new_items.begin());
-            for(size_t i = 0;i < num_subjects;++i)
+            for(size_t i = 0;i < subject_names.size();++i)
             {
                 size_t matched_pos = 0;
                 size_t matched_length = 0;
@@ -210,9 +211,9 @@ bool connectometry_db::parse_demo(void)
                 }
             }
         }
-        if(items.size() != (num_subjects+1)*col_count)
+        if(items.size() != (subject_names.size()+1)*col_count)
         {
-            if(found > num_subjects*0.75f)
+            if(found > subject_names.size()*0.75f)
             {
                 tipl::out() << "rematch subject name with the first column.";
                 items.swap(new_items);
@@ -220,14 +221,14 @@ bool connectometry_db::parse_demo(void)
             else
             {
                 std::ostringstream out;
-                out << "Subject number mismatch. The demographic file has " << row_count-1 << " subject rows, but the database has " << num_subjects << " subjects.";
+                out << "Subject number mismatch. The demographic file has " << row_count-1 << " subject rows, but the database has " << subject_names.size() << " subjects.";
                 error_msg = out.str();
                 return false;
             }
         }
         else
         {
-            if(found == num_subjects && first_column_has_text)
+            if(found == subject_names.size() && first_column_has_text)
             {
                 tipl::out() << "rematch subject name with the first column.";
                 items.swap(new_items);
@@ -314,7 +315,7 @@ bool connectometry_db::parse_demo(void)
 
     //  get feature matrix
     X.clear();
-    for(unsigned int i = 0;i < num_subjects;++i)
+    for(unsigned int i = 0;i < subject_names.size();++i)
     {
         X.push_back(1); // for the intercep
         for(unsigned int j = 0;j < feature_location.size();++j)
@@ -353,7 +354,6 @@ void connectometry_db::clear(void)
     R2.clear();
     subject_qa.clear();
     index_buf.clear();
-    num_subjects = 0;
     modified = true;
 }
 
@@ -364,7 +364,6 @@ void connectometry_db::remove_subject(unsigned int index)
     subject_qa.erase(subject_qa.begin()+index);
     subject_names.erase(subject_names.begin()+index);
     R2.erase(R2.begin()+index);
-    --num_subjects;
     modified = true;
 }
 void connectometry_db::calculate_vi2si(void)
@@ -444,7 +443,6 @@ void connectometry_db::add(float subject_R2,std::vector<float>& data,
     index_buf.push_back(std::move(data));
     subject_qa.push_back(&(index_buf.back()[0]));
     subject_names.push_back(subject_name);
-    num_subjects++;
     modified = true;
 }
 
@@ -614,14 +612,8 @@ bool connectometry_db::save_db(const char* output_name)
         error_msg = "aborted";
         return false;
     }
-    std::string name_string;
-    for(unsigned int index = 0;index < num_subjects;++index)
-    {
-        name_string += subject_names[index];
-        name_string += "\n";
-    }
 
-    matfile.write("subject_names",name_string);
+    matfile.write("subject_names",tipl::merge(subject_names,'\n'));
     matfile.write("subject_report",subject_report);
     matfile.write("index_name",index_name);
     matfile.write("template",std::filesystem::path(fa_template_list[handle->template_id]).stem().stem().stem().string());
@@ -633,7 +625,7 @@ bool connectometry_db::save_db(const char* output_name)
     else
     {
         std::ostringstream out;
-        out << "A total of " << num_subjects << " diffusion MRI scans were included in the connectometry database." << subject_report.c_str();
+        out << "A total of " << subject_names.size() << " diffusion MRI scans were included in the connectometry database." << subject_report.c_str();
         if(index_name.find("sdf") != std::string::npos || index_name.find("qa") != std::string::npos)
             out << " The quantitative anisotropy was extracted as the local connectome fingerprint (LCF, Yeh et al. PLoS Comput Biol 12(11): e1005203) and used in the connectometry analysis.";
         else
@@ -770,14 +762,13 @@ bool connectometry_db::add_db(const connectometry_db& rhs)
     R2.insert(R2.end(),rhs.R2.begin(),rhs.R2.end());
     subject_names.insert(subject_names.end(),rhs.subject_names.begin(),rhs.subject_names.end());
     // copy the qa memory
-    for(unsigned int index = 0;index < rhs.num_subjects;++index)
+    for(unsigned int index = 0;index < rhs.subject_names.size();++index)
     {
         index_buf.push_back(std::vector<float>(mask_size));
         std::copy(rhs.subject_qa[index],
                   rhs.subject_qa[index]+mask_size,index_buf.back().begin());
         subject_qa.push_back(&(index_buf.back()[0]));
     }
-    num_subjects += rhs.num_subjects;
     modified = true;
     return true;
 }
@@ -792,7 +783,7 @@ void connectometry_db::move_up(int id)
 
 void connectometry_db::move_down(int id)
 {
-    if(uint32_t(id) >= num_subjects-1)
+    if(uint32_t(id) >= subject_names.size()-1)
         return;
     std::swap(subject_names[uint32_t(id)],subject_names[uint32_t(id+1)]);
     std::swap(R2[uint32_t(id)],R2[uint32_t(id+1)]);
@@ -872,7 +863,6 @@ void connectometry_db::calculate_change(unsigned char dif_type,unsigned char fil
     subject_names.swap(new_subject_names);
     index_buf.swap(new_index_buf);
     subject_qa.swap(new_subject_qa);
-    num_subjects = uint32_t(match.size());
     match.clear();
     report += out.str();
     modified = true;
@@ -904,12 +894,10 @@ void connectometry_result::clear_result(char num_fiber,size_t image_size)
 
 void stat_model::read_demo(const connectometry_db& db)
 {
-    selected_subject.resize(db.num_subjects);
+    selected_subject.resize(db.subject_names.size());
     std::iota(selected_subject.begin(),selected_subject.end(),0);
-
     X = db.X;
     x_col_count = db.feature_location.size()+1; // additional one for longitudinal change
-
 }
 
 void stat_model::select_variables(const std::vector<char>& sel)
