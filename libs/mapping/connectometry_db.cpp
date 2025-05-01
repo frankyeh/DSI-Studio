@@ -542,9 +542,11 @@ bool connectometry_db::add(const std::string& file_name,
             error_msg = fib.error_msg + " at " + file_name;
             return false;
         }
-
         if(fib.db.has_db())
-            return add_db(fib.db);
+        {
+            error_msg = "cannot add database " + file_name + " as a subject file";
+            return false;
+        }
 
         if(subject_report.empty())
             subject_report = fib.report;
