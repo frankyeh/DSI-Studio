@@ -26,13 +26,14 @@ public: // demographic information
 public:// subject specific data
     std::vector<std::string> subject_names;
     std::vector<float> R2;
-    std::vector<const float*> subject_qa;
     bool is_longitudinal = false;
     unsigned char longitudinal_filter_type = 0; // 0: no filter 1: only increased value 2:only decreased values
 public:
-    std::list<std::vector<float> > index_buf;// merged from other db
     unsigned int mask_size = 0;
     tipl::image<3,size_t> vi2si;
+public:
+    std::list<std::vector<float> > index_buf;// merged from other db
+    std::vector<const float*> subject_qa;
     std::string index_name = "qir";
 public://longitudinal studies
     std::vector<std::pair<int,int> > match;
