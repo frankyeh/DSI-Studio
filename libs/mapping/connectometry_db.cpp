@@ -352,7 +352,7 @@ void connectometry_db::clear(void)
     subject_names.clear();
     R2.clear();
     subject_qa.clear();
-    subject_qa_buf.clear();
+    index_buf.clear();
     num_subjects = 0;
     modified = true;
 }
@@ -441,8 +441,8 @@ void connectometry_db::add(float subject_R2,std::vector<float>& data,
     tipl::lower_threshold(data,0.0f);
     R2.push_back(subject_R2);
     subject_qa_length = std::min<size_t>(subject_qa_length,data.size());
-    subject_qa_buf.push_back(std::move(data));
-    subject_qa.push_back(&(subject_qa_buf.back()[0]));
+    index_buf.push_back(std::move(data));
+    subject_qa.push_back(&(index_buf.back()[0]));
     subject_names.push_back(subject_name);
     num_subjects++;
     modified = true;
@@ -826,10 +826,10 @@ bool connectometry_db::add_db(const connectometry_db& rhs)
     // copy the qa memory
     for(unsigned int index = 0;index < rhs.num_subjects;++index)
     {
-        subject_qa_buf.push_back(std::vector<float>(subject_qa_length));
+        index_buf.push_back(std::vector<float>(subject_qa_length));
         std::copy(rhs.subject_qa[index],
-                  rhs.subject_qa[index]+subject_qa_length,subject_qa_buf.back().begin());
-        subject_qa.push_back(&(subject_qa_buf.back()[0]));
+                  rhs.subject_qa[index]+subject_qa_length,index_buf.back().begin());
+        subject_qa.push_back(&(index_buf.back()[0]));
     }
     num_subjects += rhs.num_subjects;
     modified = true;
@@ -862,7 +862,7 @@ void connectometry_db::calculate_change(unsigned char dif_type,unsigned char fil
     std::vector<float> new_R2(match.size());
 
 
-    std::list<std::vector<float> > new_subject_qa_buf;
+    std::list<std::vector<float> > new_index_buf;
     std::vector<const float*> new_subject_qa;
     tipl::progress prog("calculating");
     for(unsigned int index = 0;prog(index,match.size());++index)
@@ -918,13 +918,13 @@ void connectometry_db::calculate_change(unsigned char dif_type,unsigned char fil
             }
             break;
         }
-        new_subject_qa_buf.push_back(change);
-        new_subject_qa.push_back(&(new_subject_qa_buf.back()[0]));
+        new_index_buf.push_back(change);
+        new_subject_qa.push_back(&(new_index_buf.back()[0]));
     }
     out << " The total number of longitudinal subjects was " << match.size() << ".";
     R2.swap(new_R2);
     subject_names.swap(new_subject_names);
-    subject_qa_buf.swap(new_subject_qa_buf);
+    index_buf.swap(new_index_buf);
     subject_qa.swap(new_subject_qa);
     num_subjects = uint32_t(match.size());
     match.clear();

@@ -31,7 +31,7 @@ public:// subject specific data
     bool is_longitudinal = false;
     unsigned char longitudinal_filter_type = 0; // 0: no filter 1: only increased value 2:only decreased values
 public:
-    std::list<std::vector<float> > subject_qa_buf;// merged from other db
+    std::list<std::vector<float> > index_buf;// merged from other db
     unsigned int subject_qa_length = 0;
     tipl::image<3,size_t> vi2si;
     std::string index_name = "qir";
