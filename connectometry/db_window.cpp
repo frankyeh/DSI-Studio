@@ -382,7 +382,7 @@ void db_window::on_actionOpen_Demographics_triggered()
                 this,
                 "Open demographics",
                 QFileInfo(vbc->handle->fib_file_name.c_str()).absoluteDir().absolutePath(),
-                "Text or CSV file (*.txt *.csv);;All files (*)");
+                "Comma- or Tab-Separated Values(*.csv *.tsv);;All files (*)");
     if(filename.isEmpty())
         return;
     if(vbc->handle->db.parse_demo(filename.toStdString()))
@@ -406,7 +406,7 @@ void db_window::on_actionSave_Demographics_triggered()
                 this,
                 "Save demographics",
                 QFileInfo(vbc->handle->fib_file_name.c_str()).absoluteDir().absolutePath(),
-                "Text or CSV file (*.txt *.csv);;All files (*)");
+                "Comma- or Tab-Separated Values(*.csv *.tsv);;All files (*)");
     if(filename.isEmpty())
         return;
     std::ofstream out(filename.toStdString().c_str());
