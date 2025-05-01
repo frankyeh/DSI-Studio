@@ -32,8 +32,8 @@ public:
     unsigned int mask_size = 0;
     tipl::image<3,size_t> vi2si;
 public:
-    std::list<std::vector<float> > index_buf;// merged from other db
-    std::vector<const float*> subject_metrics;
+    std::list<std::vector<float> > index_buf;
+    std::vector<const float*> subject_indices;
     std::string index_name = "qir";
 public://longitudinal studies
     std::vector<std::pair<int,int> > match;
