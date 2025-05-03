@@ -427,7 +427,7 @@ bool CustomSliceModel::load_slices(void)
             tipl::out() << "subject's demo: " << demo;
             if(!db_handle->db.get_demo_matched_volume(demo,source_images))
             {
-                error_msg = db_handle->db.error_msg;
+                error_msg = db_handle->error_msg;
                 return false;
             }
         }
