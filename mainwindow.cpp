@@ -311,7 +311,9 @@ void MainWindow::openFile(QStringList file_names)
            QString(file_name).endsWith(".fz") ||
            QString(file_name).endsWith("tck"))
         {
-            if(QString(file_name).endsWith("db.fib.gz") || QString(file_name).endsWith("db.fz"))
+            if(QString(file_name).endsWith("db.fib.gz") ||
+               QString(file_name).endsWith("db.fz") ||
+               QString(file_name).endsWith(".dz"))
             {
                 std::shared_ptr<group_connectometry_analysis> database(new group_connectometry_analysis);
                 if(database->load_database(file_name.toStdString().c_str()))
@@ -878,7 +880,7 @@ bool MainWindow::load_db(std::shared_ptr<group_connectometry_analysis>& database
                            this,
                            "Open Database files",
                            ui->workDir->currentText(),
-                           "Database (*db.fz *db?fib.gz);;All files (*)");
+                           "Database (*.dz *db.fz *db?fib.gz);;All files (*)");
     if (filename.isEmpty())
         return false;
     add_work_dir(QFileInfo(filename).absolutePath());
@@ -1623,7 +1625,7 @@ void MainWindow::on_github_repo_currentIndexChanged(int index)
         foreach (const auto& each,asset)
         {
             auto file_name = each.toObject().value("name").toString().toStdString();
-            if(file_name.back() != 'z' || tipl::ends_with(file_name,".db.fz"))
+            if(file_name.back() != 'z' || tipl::ends_with(file_name,".db.fz") || tipl::ends_with(file_name,".dz"))
                 continue;
             names.insert(file_name.substr(0,std::min(file_name.find('_'),file_name.find('.'))));
         }
@@ -1905,7 +1907,7 @@ void MainWindow::on_github_release_files_itemSelectionChanged()
         ui->github_open_file_mode->addItem("O1: View Image");
         ui->github_open_file_mode->addItem(file_name.endsWith(".src.gz") || file_name.endsWith(".sz") ? "T2: Reconstruction": "T3: Fiber Tracking");
         ui->github_open_file_mode->setCurrentIndex(file_name.endsWith(".nii.gz") || file_name.endsWith(".nii") ? 0 : 1 );
-        if(file_name.endsWith(".db.fz") || file_name.endsWith(".db.fib.gz"))
+        if(file_name.endsWith(".db.fz") || file_name.endsWith(".db.fib.gz") || file_name.endsWith(".dz"))
         {
             ui->github_open_file_mode->addItems({"C2: View Database","C3: Correlational Tracking"});
             ui->github_open_file_mode->setCurrentIndex(2);
