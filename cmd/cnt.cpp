@@ -23,7 +23,7 @@ int cnt(tipl::program_option<tipl::out>& po)
             return 1;
         if(!db.parse_demo(po.get("demo")))
         {
-            tipl::error() << db.error_msg << std::endl;
+            tipl::error() << vbc->handle->error_msg << std::endl;
             return 1;
         }
     }
