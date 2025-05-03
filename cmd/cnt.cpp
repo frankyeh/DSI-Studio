@@ -26,11 +26,6 @@ int cnt(tipl::program_option<tipl::out>& po)
             tipl::error() << db.error_msg << std::endl;
             return 1;
         }
-        if(po.has("save_db"))
-        {
-            db.save_db(po.get("save_db").c_str());
-            return 0;
-        }
     }
 
     if(!po.check("voi") || !po.check("variable_list"))
