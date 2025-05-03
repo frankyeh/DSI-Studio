@@ -751,7 +751,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         auto filenames = QFileDialog::getOpenFileNames(
             this,"Open Images files",QFileInfo(work_path).absolutePath(),
-                    "Image files (*.dcm *.hdr *.nii *nii.gz *db.fz *db.fib.gz 2dseq);;Histology (*.jpg *.tif);;All files (*)" );
+                    "Image files (*.dcm *.hdr *.nii *nii.gz *db.fz *db.fib.gz *.dz 2dseq);;Histology (*.jpg *.tif);;All files (*)" );
         if(filenames.isEmpty())
             return run->canceled();
 
