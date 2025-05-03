@@ -76,7 +76,7 @@ int exp(tipl::program_option<tipl::out>& po)
             }
             if(!handle->db.save_demo_matched_image(po.get("match"),po.get("output",po.get("source")+".matched.nii.gz")))
             {
-                tipl::error() << handle->db.error_msg << std::endl;
+                tipl::error() << handle->error_msg << std::endl;
                 return 1;
             }
             return 0;
