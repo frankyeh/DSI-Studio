@@ -47,7 +47,7 @@ int cnn(tipl::program_option<tipl::out>& po)
 
     if(!gca->handle->db.parse_demo(po.get("demo").c_str()))
     {
-        tipl::out() << gca->handle->db.error_msg << std::endl;
+        tipl::out() << gca->handle->error_msg << std::endl;
         return 1;
     }
 
