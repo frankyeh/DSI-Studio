@@ -7,7 +7,7 @@
 
 #include <filesystem>
 
-extern std::vector<std::string> fa_template_list,fib_template_list;
+extern std::vector<std::string> fa_template_list;
 bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list)
 {
     QStringList name_list = QString(atlas_name.c_str()).split(",");
@@ -72,95 +72,30 @@ int db(tipl::program_option<tipl::out>& po)
         template_reso = fib.vs[0];
     }
 
-    for(size_t id = 0;id < fib_template_list.size();++id)
-        if(!fib_template_list[id].empty())
-            tipl::out() << "template " << id << ": " << std::filesystem::path(fib_template_list[id]).stem() << std::endl;
-    auto template_id = po.get("template",0);
-    if(template_id >= fib_template_list.size())
     {
-        tipl::error() << "invalid template value" << std::endl;
-        return 1;
-    }
-    if(fib_template_list[template_id].empty())
-    {
-        tipl::error() << "no FIB template for " <<  std::filesystem::path(fa_template_list[template_id]).stem().stem().stem() << std::endl;
-        return 1;
-    }
-
-    std::shared_ptr<fib_data> template_fib(new fib_data);
-    {
-        tipl::out() << "load template at resolution " << template_reso;
-        if(!template_fib->load_at_resolution(fib_template_list[template_id],template_reso))
+        fib_data fib;
+        if(!fib.load_template_fib(po.get("template",0),template_reso) ||
+           !fib.db.create_db(name_list) ||
+           (po.has("demo") && !fib.db.parse_demo(po.get("demo"))))
         {
-            tipl::error() <<  template_fib->error_msg << std::endl;
-            return 1;
-        }
-        template_fib->set_template_id(template_id);
-    }
-
-
-    if(po.get("index_name","qir") == std::string("*"))
-    {
-        for(size_t i = 0;i < item_list.size();++i)
-        {
-            if(item_list[i] == "qa")
-                index_name.push_back("qir");
-            index_name.push_back(item_list[i]);
-        }
-    }
-    else
-    {
-        std::istringstream in(po.get("index_name","qir"));
-        std::string line;
-        while(std::getline(in,line,','))
-            index_name.push_back(line);
-    }
-
-    for(size_t i = 0; i < index_name.size();++i)
-    {
-        std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);
-        if(!data->create_database(template_fib))
-        {
-            tipl::error() << data->error_msg << std::endl;
-            return 1;
-        }
-        tipl::out() << "extracting " << index_name[i] << std::endl;
-        data->handle->db.index_name = index_name[i];
-        for (unsigned int index = 0;index < name_list.size();++index)
-        {
-            if(tipl::ends_with(name_list[index],".db.fib.gz") ||
-               tipl::ends_with(name_list[index],".db.fz"))
-                continue;
-            tipl::out() << "reading " << name_list[index] << std::endl;
-            if(!data->handle->db.add(name_list[index],
-                QFileInfo(name_list[index].c_str()).baseName().toStdString()))
-            {
-                tipl::error() << "failed to load subject fib file " << data->handle->db.error_msg << std::endl;
-                return 1;
-            }
-        }
-        // Output
-
-        if(po.has("demo") && !data->handle->db.parse_demo(po.get("demo")))
-        {
-            tipl::error() << data->handle->db.error_msg <<std::endl;
+            tipl::error() <<  fib.error_msg << std::endl;
             return 1;
         }
         std::string output = std::string(name_list.front().begin(),
                                          std::mismatch(name_list.front().begin(),name_list.front().begin()+
                                          int64_t(std::min(name_list.front().length(),name_list.back().length())),
-                                           name_list.back().begin()).first) + "." + index_name[i] + ".db.fz";
+                                           name_list.back().begin()).first) + ".dz";
         tipl::out() << "saving " << po.get("output",output);
-        if(!data->handle->db.save_db(po.get("output",output).c_str()))
+        if(!fib.save_to_file(po.get("output",output)))
         {
-            tipl::error() << "cannot save db file " << data->handle->db.error_msg << std::endl;
+            tipl::error() << "cannot save db file " << fib.error_msg << std::endl;
             return 1;
         }
         tipl::out() << "saving " << (po.get("output",output)+".R2.tsv");
         std::ofstream out((po.get("output",output)+".R2.tsv").c_str());
         out << "name\tR2" << std::endl;
-        for(size_t i = 0;i < data->handle->db.subject_names.size();++i)
-            out << data->handle->db.subject_names[i] << "\t" << data->handle->db.R2[i] << std::endl;
+        for(size_t i = 0;i < fib.db.subject_names.size();++i)
+            out << fib.db.subject_names[i] << "\t" << fib.db.R2[i] << std::endl;
     }
     return 0;
 }
