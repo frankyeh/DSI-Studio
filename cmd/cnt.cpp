@@ -15,7 +15,6 @@ int cnt(tipl::program_option<tipl::out>& po)
     }
 
     auto& db = vbc->handle->db;
-
     if(db.demo.empty() || po.has("demo"))
     {
         // read demographic file
@@ -27,6 +26,9 @@ int cnt(tipl::program_option<tipl::out>& po)
             return 1;
         }
     }
+
+    tipl::out() << "available index name: " << tipl::merge(db.index_list,',');
+    db.set_current_index(po.get("index_name",db.index_list.front()));
 
     if(!po.check("voi") || !po.check("variable_list"))
         return 1;
