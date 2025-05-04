@@ -9,7 +9,7 @@
 #include "connectometry/group_connectometry_analysis.h"
 #include "image_model.hpp"
 
-extern std::vector<std::string> fib_template_list;
+
 void populate_templates(QComboBox* combo,size_t index);
 CreateDBDialog::CreateDBDialog(QWidget *parent,bool create_db_) :
     QDialog(parent),
@@ -23,13 +23,10 @@ CreateDBDialog::CreateDBDialog(QWidget *parent,bool create_db_) :
     if(!create_db)
     {
         setWindowTitle("Create template");
-        ui->metric_template_box->hide();
-        ui->output_box->setTitle("");
         ui->movedown->hide();
         ui->moveup->hide();
         ui->create_data_base->setText("Create template");
         ui->subject_list_group->setTitle("Select subject FIB files");
-        ui->index_label->hide();
     }
 }
 
@@ -43,23 +40,12 @@ void CreateDBDialog::on_close_clicked()
     close();
 }
 
-QString CreateDBDialog::get_file_name(QString file_path)
-{
-    if(dir_length)
-    {
-        for(int j = dir_length;j < file_path.length();++j)
-            if(file_path[j] == '\\' || file_path[j] == '/' || file_path[j] == ' ')
-                file_path[j] = '_';
-
-    }
-    return QFileInfo(file_path).baseName();
-}
-
 void CreateDBDialog::update_list(void)
 {
     dir_length = 0;
     for(size_t i = 0;i < group.size();)
-        if(group[i].endsWith("db.fib.gz") || group[i].endsWith("db.fz"))
+        if(group[i].endsWith("db.fib.gz") || group[i].endsWith("db.fz") || group[i].endsWith("dz") ||
+           (QFileInfo(group[0]).completeSuffix() != QFileInfo(group[i]).completeSuffix()))
             group.removeAt(i);
         else
             ++i;
@@ -81,56 +67,25 @@ void CreateDBDialog::update_list(void)
     if(create_db && !group.empty() && sample_fib != group[0])
     {
         sample_fib = group[0];
-        if(group[0].endsWith("nii") || group[0].endsWith("nii.gz"))
-        {
-            bool ok;
-            QString metrics = QInputDialog::getText(this,QApplication::applicationName(),"Please specify the name of the metrics",QLineEdit::Normal,"metrics",&ok);
-            if(!ok)
-                metrics = "metrics";
-            ui->index_of_interest->clear();
-            ui->index_of_interest->addItem(metrics);
-            ui->index_of_interest->setCurrentIndex(0);
-            populate_templates(ui->template_list,0);
-            ui->template_list->setEnabled(true);
-            tipl::io::gz_nifti nii;
-            if(!nii.load_from_file(group[0].toStdString()))
-            {
-                QMessageBox::critical(this,"ERROR","The first file is not a valid NIFTI file.");
-                raise(); // for Mac
-                return;
-            }
-            tipl::vector<3> vs;
-            nii.get_voxel_size(vs);
-            template_reso = std::min<float>(2.0f,vs[0]);
-        }
-        else
+        if(create_db)
         {
             fib_data fib;
-            if(!fib.load_from_file(sample_fib.toStdString().c_str()))
+            if(!fib.load_from_file(sample_fib.toStdString()))
             {
-                QMessageBox::critical(this,"ERROR","The first file is not a valid FIB file.");
+                QMessageBox::critical(this,"ERROR",fib.error_msg.c_str());
                 raise(); // for Mac
                 return;
             }
             template_reso = fib.vs[0];
-            ui->index_of_interest->clear();
-            for(const auto& name : fib.get_index_list())
-            {
-                if(name == "qa")
-                    ui->index_of_interest->addItem("qir");
-                ui->index_of_interest->addItem(name.c_str());
-            }
-            populate_templates(ui->template_list,fib.template_id);
-            ui->template_list->setEnabled(!fib.is_mni);
+            template_id = fib.template_id;
         }
-        ui->template_list->addItem("Open...");
     }
     if(ui->output_file_name->text().isEmpty())
-        on_index_of_interest_currentTextChanged(QString());
+        update_output_file_name();
 
     QStringList filenames;
     for(unsigned int index = 0;index < group.size();++index)
-        filenames << get_file_name(group[index]);
+        filenames << QFileInfo(group[index]).baseName();
     ((QStringListModel*)ui->group_list->model())->setStringList(filenames);
 
     raise(); // for Mac
@@ -139,15 +94,15 @@ void CreateDBDialog::update_list(void)
 void CreateDBDialog::on_group1open_clicked()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
-                                     this,
-                                     "Open Fib files",
-                                     "",
+                                     this,"Open Files","",
+                                     create_db ?
+                                     "Fib Files (*.fz *fib.gz);;All Files (*)" :
                                      "Fib Files (*.fz *fib.gz);;NIFTI Files (*nii *nii.gz);;All Files (*)");
     if (filenames.isEmpty())
         return;
     group << filenames;
     update_list();
-    on_index_of_interest_currentTextChanged(QString());
+    update_output_file_name();
 }
 
 void CreateDBDialog::on_group1delete_clicked()
@@ -194,21 +149,7 @@ void CreateDBDialog::on_sort_clicked()
 {
     if(group.empty())
         return;
-    if(QFileInfo(group[0]).baseName().count('_') == 2)
-    {
-        std::map<QString,QString> sort_map;
-        for(unsigned int index = 0;index < group.size();++index)
-        {
-            QString str = QFileInfo(group[index]).baseName();
-            int pos = str.lastIndexOf('_')+1;
-            sort_map[pos ? str.right(str.length()-pos):str] = group[index];
-        }
-        std::vector<std::pair<QString,QString> > sorted_groups(sort_map.begin(),sort_map.end());
-        for(unsigned int index = 0;index < sorted_groups.size();++index)
-            group[index] = sorted_groups[index].second;
-    }
-    else
-        group.sort();
+    group.sort();
     update_list();
 }
 
@@ -252,7 +193,7 @@ void CreateDBDialog::on_open_dir1_clicked()
                                 "");
     if(dir.isEmpty())
         return;
-    group << search_files(dir,"*.fib.gz");
+    group << search_files(dir,"*.fz");
     update_list();
 }
 
@@ -287,63 +228,18 @@ void CreateDBDialog::on_create_data_base_clicked()
 
     if(create_db)
     {
-        std::string template_file_name;
-        auto template_id = ui->template_list->currentIndex();
-        if(template_id >= fib_template_list.size())
-        {
-            template_file_name = QFileDialog::getOpenFileName(
-                                             this,
-                                             "Open Template FIB File",
-                                             "","Fib Files (*.fz *fib.gz);;All Files (*)").toStdString();
-            if(template_file_name.empty())
-                return;
-        }
-        else
-        {
-            if(template_id == -1 || fib_template_list[template_id].empty())
-            {
-                QMessageBox::critical(this,"ERROR","Cannot find the template for creating database");
-                return;
-            }
-            template_file_name = fib_template_list[template_id];
-        }
-        std::shared_ptr<fib_data> template_fib;
-        template_fib.reset(new fib_data);
-        if(!template_fib->load_at_resolution(template_file_name,template_reso))
-        {
-            QMessageBox::critical(this,"ERROR",template_fib->error_msg.c_str());
-            return;
-        }
+        std::vector<std::string> name_list;
+        for(auto each : group)
+            name_list.push_back(each.toStdString());
 
-        tipl::progress prog_("creating database");
-        std::shared_ptr<group_connectometry_analysis> data(new group_connectometry_analysis);
-
-        if(!data->create_database(template_fib))
+        fib_data fib;
+        if(!fib.load_template_fib(template_id,template_reso) ||
+           !fib.db.create_db(name_list) ||
+           !fib.save_to_file(ui->output_file_name->text().toStdString()))
         {
-            QMessageBox::critical(this,"ERROR",data->error_msg.c_str());
-            return;
+            if(!fib.error_msg.empty())
+                QMessageBox::critical(this,"ERROR",fib.error_msg.c_str());
         }
-        if(!data->handle->is_mni)
-        {
-            QMessageBox::critical(this,"ERROR","the template has to be QSDR reconstructed FIB file");
-            return;
-        }
-        data->handle->db.index_name = ui->index_of_interest->currentText().toStdString();
-
-        tipl::progress prog("reading data");
-        for (unsigned int index = 0;prog(index,group.count());++index)
-        {
-            if(!data->handle->db.add(group[index].toStdString(),get_file_name(group[index]).toStdString()))
-            {
-                QMessageBox::critical(this,"ERROR",data->handle->db.error_msg.c_str());
-                raise(); // for Mac
-                return;
-            }
-        }
-        if(prog.aborted())
-            return;
-        if(!data->handle->db.save_db(ui->output_file_name->text().toStdString().c_str()))
-            QMessageBox::critical(this,"ERROR",data->handle->db.error_msg.c_str());
         else
             QMessageBox::information(this,QApplication::applicationName(),"database created");
     }
@@ -367,22 +263,17 @@ void CreateDBDialog::on_create_data_base_clicked()
 
 
 
-void CreateDBDialog::on_index_of_interest_currentTextChanged(const QString &arg1)
+void CreateDBDialog::update_output_file_name(void)
 {
     if(!group.empty())
     {
-        if(ui->index_of_interest->currentText() == "qir")
-            ui->info->setText("QIR: qa-iso ratio, which provides a more robust metric for tract integrity");
-        else
-            ui->info->setText("");
         std::string front = group.front().toStdString();
         std::string back = group.back().toStdString();
         QString base_name = std::string(front.begin(),
                         std::mismatch(front.begin(),front.begin()+
                         int64_t(std::min(front.length(),back.length())),back.begin()).first).c_str();
-
         if(create_db)
-            ui->output_file_name->setText(base_name + "_" + ui->index_of_interest->currentText() + ".db.fz");
+            ui->output_file_name->setText(base_name + ".dz");
         else
         {
             if(tipl::ends_with(front,".nii.gz") || tipl::ends_with(front,".nii"))
