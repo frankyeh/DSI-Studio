@@ -18,7 +18,7 @@ db_window::db_window(QWidget *parent,std::shared_ptr<group_connectometry_analysi
     ui(new Ui::db_window)
 {
     ui->setupUi(this);
-    ui->report->setText(vbc->handle->db.report.c_str());
+    ui->report->setText(QString::fromStdString(vbc->handle->report));
     ui->vbc_view->setScene(&vbc_scene);
 
     ui->x_pos->setMaximum(vbc->handle->dim[0]-1);
@@ -30,9 +30,10 @@ db_window::db_window(QWidget *parent,std::shared_ptr<group_connectometry_analysi
     connect(ui->view_z,SIGNAL(toggled(bool)),this,SLOT(on_view_x_toggled(bool)));
 
     connect(ui->zoom,SIGNAL(valueChanged(double)),this,SLOT(on_subject_list_itemSelectionChanged()));
-    connect(ui->add,SIGNAL(clicked()),this,SLOT(on_actionAdd_DB_triggered()));
 
     on_view_x_toggled(true);
+    for(const auto& each : vbc->handle->db.index_list)
+        ui->index_name->addItem(QString::fromStdString(each));
     update_subject_list();
     ui->subject_list->selectRow(0);
     qApp->installEventFilter(this);
@@ -206,7 +207,7 @@ void db_window::on_view_x_toggled(bool checked)
 void db_window::update_db(void)
 {
     update_subject_list();
-    ui->report->setText(vbc->handle->db.report.c_str());
+    ui->report->setText(vbc->handle->report.c_str());
 }
 
 
@@ -239,32 +240,32 @@ void db_window::on_actionCalculate_change_triggered()
 
 void db_window::on_actionSave_DB_as_triggered()
 {
-    QString default_ext = ".mod.db.fz";
+    QString default_ext = ".mod.dz";
     if(vbc->handle->db.is_longitudinal)
     {
-        default_ext = ".dif.db.fz";
+        default_ext = ".dif.dz";
         if(vbc->handle->db.longitudinal_filter_type == 1)
-            default_ext = ".pos_dif.db.fz";
+            default_ext = ".pos_dif.dz";
         if(vbc->handle->db.longitudinal_filter_type == 2)
-            default_ext = ".neg_dif.db.fz";
+            default_ext = ".neg_dif.dz";
 
     }
     QString filename = QFileDialog::getSaveFileName(
                            this,
                            "Save Database",
                            windowTitle()+default_ext,
-                           "Database files (*db.fz *db?fib.gz *.fz *fib.gz);;All files (*)");
+                           "Database files (*.dz);;All files (*)");
     if (filename.isEmpty())
         return;
     tipl::progress prog_("saving ",std::filesystem::path(filename.toStdString()).filename().u8string().c_str());
     if(!vbc->handle->db.demo.empty() && !vbc->handle->db.parse_demo())
         QMessageBox::information(this,QApplication::applicationName(),
-        QString("demographics not saved due to mismatch: ") + vbc->handle->db.error_msg.c_str());
+        QString("demographics not saved due to mismatch: ") + vbc->handle->error_msg.c_str());
 
-    if(vbc->handle->db.save_db(filename.toStdString().c_str()))
+    if(vbc->handle->save_to_file(filename.toStdString()))
         QMessageBox::information(this,QApplication::applicationName(),"File saved");
     else
-        QMessageBox::critical(this,"ERROR",vbc->handle->db.error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",vbc->handle->error_msg.c_str());
 }
 
 void db_window::on_move_down_clicked()
@@ -295,19 +296,33 @@ void db_window::on_actionAdd_DB_triggered()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
                            this,
-                           "Open Database files",
+                           "Select file to add",
                            windowTitle(),
-                           "Database files (*db.fz *db?fib.gz *.fz *fib.gz *nii.gz);;All files (*)");
+                           "Database files (*.fz *fib.gz);;All files (*)");
     if (filenames.isEmpty())
         return;
-    for(int i =0;i < filenames.count();++i)
-        if(!vbc->handle->db.add(filenames[i].toStdString(),QFileInfo(filenames[i]).baseName().toStdString()))
-        {
-            QMessageBox::critical(this,"ERROR",vbc->handle->db.error_msg.c_str());
-            break;
-        }
+    std::vector<std::string> file_names;
+    for(auto each: filenames)
+        file_names.push_back(each.toStdString());
+    if(!vbc->handle->db.add_subjects(file_names) && !vbc->handle->error_msg.empty())
+        QMessageBox::critical(this,"ERROR",vbc->handle->error_msg.c_str());
     update_db();
 }
+
+void db_window::on_actionAdd_Database_triggered()
+{
+    QString filename = QFileDialog::getOpenFileName(
+                           this,
+                           "Select file to add",
+                           windowTitle(),
+                           "Database files (*.dz *.db.fib.gz *.db.fz);;All files (*)");
+    if (filename.isEmpty())
+        return;
+    if(!vbc->handle->db.add_db(filename.toStdString()) && !vbc->handle->error_msg.empty())
+        QMessageBox::critical(this,"ERROR",vbc->handle->error_msg.c_str());
+    update_db();
+}
+
 
 void db_window::on_actionSelect_Subjects_triggered()
 {
@@ -391,7 +406,7 @@ void db_window::on_actionOpen_Demographics_triggered()
         update_subject_list();
     }
     else
-        QMessageBox::critical(this,"ERROR",vbc->handle->db.error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",vbc->handle->error_msg.c_str());
 }
 
 
@@ -457,7 +472,18 @@ void db_window::on_actionSave_DemoMatched_Image_as_triggered()
     if(vbc->handle->db.save_demo_matched_image(param.toStdString(),filename.toStdString()))
         QMessageBox::information(this,QApplication::applicationName(),"File Saved");
     else
-        QMessageBox::critical(this,"ERROR",vbc->handle->db.error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",vbc->handle->error_msg.c_str());
 
 }
+
+
+void db_window::on_index_name_currentIndexChanged(int index)
+{
+    if(ui->index_name->currentText().toStdString() != vbc->handle->db.index_name)
+    {
+        vbc->handle->db.set_current_index(index);
+        on_subject_list_itemSelectionChanged();
+    }
+}
+
 
