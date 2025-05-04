@@ -9,8 +9,7 @@ class connectometry_db
 {
 public:
     fib_data* handle = nullptr;
-    std::string report,intro,subject_report;
-    mutable std::string error_msg;
+    std::string subject_report;
     bool modified = false;
 
 public: // demographic information
@@ -29,37 +28,36 @@ public:// subject specific data
     bool is_longitudinal = false;
     unsigned char longitudinal_filter_type = 0; // 0: no filter 1: only increased value 2:only decreased values
 public:
-    unsigned int mask_size = 0;
+    size_t mask_size = 0;
     tipl::image<3,size_t> vi2si;
 public:
-    std::list<std::vector<float> > index_buf;
+    std::vector<std::string> index_list;
     std::vector<const float*> subject_indices;
     std::string index_name = "qir";
+    void set_current_index(size_t index);
+    void set_current_index(const std::string& name);
 public://longitudinal studies
     std::vector<std::pair<int,int> > match;
     void calculate_change(unsigned char dif_type,unsigned char filter_type);
 public:
     connectometry_db(){}
     bool has_db(void)const{return !subject_names.empty();}
-    bool read_db(fib_data* handle);
-    void clear(void);
-    void remove_subject(unsigned int index);
-    void calculate_vi2si(void);
-    void sample_from_image(tipl::const_pointer_image<3,float> I,
-                           const tipl::matrix<4,4>& trans,std::vector<float>& data);
-    std::vector<float> sample_from_image(fib_data& fib,const std::string& index_name);
-    void add(float subject_R2,std::vector<float>& data,
-             const std::string& subject_name);
-    bool add(const std::string& file_name,
-                            const std::string& subject_name);
-    bool save_db(const char* output_name);
+    bool load_db_from_fib(fib_data* handle);
+    void init_db(void);
+    void sample_from_image(tipl::const_pointer_image<3,float> I,const tipl::matrix<4,4>& trans,float*  data);
+    bool sample_from_image(fib_data& fib,const std::string& index_name,float* out_data);
+    bool extract_indices(const std::string& file_name,const std::vector<std::string>& index_list_to_extract,
+              float& R2,const std::vector<float*>& data);
+    bool create_db(const std::vector<std::string>& file_names);
+    bool add_subjects(const std::vector<std::string>& file_names);
+    bool add_db(const std::string& file_name);
     void get_subject_slice(unsigned int subject_index,unsigned char dim,unsigned int pos,
                             tipl::image<2,float>& slice) const;
     bool get_demo_matched_volume(const std::string& matched_demo,tipl::image<3>& volume) const;
+    bool get_avg_volume(tipl::image<3>& volume) const;
     bool save_demo_matched_image(const std::string& matched_demo,const std::string& filename) const;
     tipl::image<3> get_index_image(unsigned int subject_index) const;
-    bool is_db_compatible(const connectometry_db& rhs);
-    bool add_db(const connectometry_db& rhs);
+    void remove_subject(unsigned int index);
     void move_up(int id);
     void move_down(int id);
 
