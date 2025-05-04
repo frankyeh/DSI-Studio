@@ -407,35 +407,22 @@ bool CustomSliceModel::load_slices(void)
     // load and match demographics DB file
     if(source_images.empty() &&
        (tipl::ends_with(source_file_name,".db.fib.gz") ||
-        tipl::ends_with(source_file_name,".db.fz")))
+        tipl::ends_with(source_file_name,".db.fz")) ||
+        tipl::ends_with(source_file_name,".dz"))
     {
         std::shared_ptr<fib_data> db_handle(new fib_data);
-        if(!db_handle->load_from_file(source_file_name) || !db_handle->db.has_db())
+        if(!db_handle->load_from_file(source_file_name) || !db_handle->db.has_db() ||
+           !db_handle->db.get_avg_volume(source_images))
         {
             error_msg = db_handle->error_msg;
             return false;
-        }
-
-        {
-            std::string age,sex,demo;
-            if(parse_age_sex(QFileInfo(handle->fib_file_name.c_str()).baseName().toStdString(),age,sex))
-                demo = age+" "+sex;
-            if(!handle->demo.empty())
-                demo = handle->demo;
-            if(demo.empty() && tipl::show_prog)
-                demo = get_matched_demo(nullptr,db_handle).toStdString();
-            tipl::out() << "subject's demo: " << demo;
-            if(!db_handle->db.get_demo_matched_volume(demo,source_images))
-            {
-                error_msg = db_handle->error_msg;
-                return false;
-            }
         }
         if(!handle->mni2sub(source_images,db_handle->trans_to_mni))
         {
             error_msg = handle->error_msg;
             return false;
         }
+        name += "." + db_handle->db.index_name;
         is_diffusion_space = true;
         has_transform = true;
     }
