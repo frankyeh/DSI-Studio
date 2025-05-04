@@ -114,6 +114,8 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
         }
     }
     selected_count = db.subject_names.size();
+    for(const auto& each : db.index_list)
+        ui->index_name->addItem(QString::fromStdString(each));
 
     if(!check_quality.empty())
     {
@@ -406,6 +408,7 @@ void group_connectometry::on_run_clicked()
     {
         vbc->no_tractogram = ui->no_tractogram->isChecked();
         vbc->foi_str = ui->foi->currentText().toStdString();
+        vbc->handle->db.set_current_index(ui->index_name->currentIndex());
         vbc->length_threshold_voxels = uint32_t(ui->length_threshold->value());
         vbc->tip_iteration = uint32_t(ui->tip->value());
         if(ui->fdr_control->isChecked())
