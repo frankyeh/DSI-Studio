@@ -39,17 +39,6 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="QPushButton" name="add">
-        <property name="text">
-         <string>Add subjects...</string>
-        </property>
-        <property name="icon">
-         <iconset resource="../icons.qrc">
-          <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QPushButton" name="delete_subject">
         <property name="text">
          <string>Delete</string>
@@ -81,6 +70,9 @@
           <normaloff>:/icons/icons/up.xpm</normaloff>:/icons/icons/up.xpm</iconset>
         </property>
        </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="index_name"/>
       </item>
       <item>
        <spacer name="horizontalSpacer_2">
@@ -307,7 +299,7 @@
      <x>0</x>
      <y>0</y>
      <width>699</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -315,17 +307,18 @@
      <string>File&amp;</string>
     </property>
     <addaction name="actionAdd_DB"/>
-    <addaction name="actionSave_DB_as"/>
+    <addaction name="actionAdd_Database"/>
     <addaction name="separator"/>
+    <addaction name="actionSave_DB_as"/>
     <addaction name="actionCurrent_Subject"/>
     <addaction name="actionAll_Subjects"/>
-    <addaction name="separator"/>
     <addaction name="actionSave_Subject_Name_as"/>
     <addaction name="action_Save_R2_values_as"/>
     <addaction name="separator"/>
     <addaction name="actionOpen_Demographics"/>
     <addaction name="actionSave_Demographics"/>
     <addaction name="actionSave_DemoMatched_Image_as"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -370,19 +363,10 @@
     <string>Save R2 values as...</string>
    </property>
   </action>
-  <action name="actionSave_fingerprints">
-   <property name="icon">
-    <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/save.xpm</normaloff>:/icons/icons/save.xpm</iconset>
-   </property>
-   <property name="text">
-    <string>Save fingerprints...</string>
-   </property>
-  </action>
   <action name="actionAdd_DB">
    <property name="icon">
     <iconset resource="../icons.qrc">
-     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+     <normaloff>:/icons/icons/add.xpm</normaloff>:/icons/icons/add.xpm</iconset>
    </property>
    <property name="text">
     <string>Add Subjects...</string>
@@ -436,6 +420,15 @@
    </property>
    <property name="text">
     <string>Save Regressed Image as...</string>
+   </property>
+  </action>
+  <action name="actionAdd_Database">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/add.xpm</normaloff>:/icons/icons/add.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Add Database...</string>
    </property>
   </action>
  </widget>
