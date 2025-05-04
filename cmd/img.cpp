@@ -38,7 +38,7 @@ bool variant_image::command(std::string cmd,std::string param1)
 void variant_image::write_mat_image(size_t index,
                     tipl::io::gz_mat_read& mat)
 {
-    mat[index].resize(tipl::vector<2,unsigned int>(shape.plane_size(),shape.depth()));
+    mat[index].set_row_col(shape.plane_size(),shape.depth());
     apply([&](const auto& image_data)
     {
         if(mat[index].type_compatible<short>())
@@ -58,6 +58,8 @@ bool variant_image::read_mat_image(size_t index,
     unsigned int row(mat.rows(index)), col(mat.cols(index));
     if(row*col != shape.size())
         return false;
+    if(mat[index].is_scaled())
+        mat[index].convert_to<float>();
     if(mat[index].type_compatible<unsigned int>())
     {
         I_int32.resize(shape);
