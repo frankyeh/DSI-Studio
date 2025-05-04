@@ -655,7 +655,7 @@ void MainWindow::on_FiberTracking_clicked()
                            this,
                            "Open Fib files",
                            ui->workDir->currentText(),
-                           "Fib files (*.fz *fib.gz);;All files (*)");
+                           "Fib files (*.fz *fib.gz *.dz);;All files (*)");
     if (filename.isEmpty())
         return;
     add_work_dir(QFileInfo(filename).absolutePath());
@@ -854,7 +854,7 @@ void MainWindow::on_view_image_clicked()
                                 this,
                                 "Open Image",
                                 ui->workDir->currentText(),
-                                "image files (*.nii *nii.gz *.dcm *.nhdr 2dseq *.fz *fib.gz *.sz *src.gz)" );
+                                "image files (*.nii *nii.gz *.dcm *.nhdr 2dseq *.fz *.dz *fib.gz *.sz *src.gz)" );
     if(filename.isEmpty())
         return;
     add_work_dir(QFileInfo(filename[0]).absolutePath());
