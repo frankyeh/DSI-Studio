@@ -100,11 +100,11 @@ int cnt(tipl::program_option<tipl::out>& po)
         tipl::progress prog("connectometry parameters");
         vbc->no_tractogram = (po.get("no_tractogram",1) == 1);
         vbc->region_pruning = (po.get("region_pruning",1) == 1);
+        vbc->normalize_iso = (po.get("normalize_iso",1) == 1);
         vbc->foi_str = foi_str;
         vbc->length_threshold_voxels = po.get("length_threshold",(vbc->handle->dim[0]/4)/5*5);
         vbc->tip_iteration = po.get("tip_iteration",16);
         vbc->fdr_threshold = po.get("fdr_threshold",0.0f);
-
 
         // select cohort and feature
         vbc->model.reset(new stat_model);
