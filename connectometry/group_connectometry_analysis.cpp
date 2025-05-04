@@ -373,7 +373,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
     clear();
 
     {
-        index_name = QString(handle->db.index_name.c_str()).toUpper().toStdString();
+        auto index_name = QString(handle->db.index_name.c_str()).toUpper().toStdString();
         // if study intercept (changes)
         if(model->study_feature == 0)
         {
@@ -436,7 +436,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         out << "\nCorrelational tractography (Yeh, et al. Neuroimage 245 (2021): 118651) was derived to visualize pathways that have ";
         if(handle->db.is_longitudinal)
             out << "a longitudinal change of ";
-        out << index_name;
+        out << handle->db.index_name;
         if(model->study_feature)
             out << " correlated with " << foi_str;
         out << ".";
