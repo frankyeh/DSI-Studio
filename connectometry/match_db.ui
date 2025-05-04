@@ -74,6 +74,13 @@
           </widget>
          </item>
          <item>
+          <widget class="QCheckBox" name="normalize_iso">
+           <property name="text">
+            <string>Normalize QA/RDI/NRDI by ISO (Recommended)</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QComboBox" name="inc_dec_filter">
            <item>
             <property name="text">
@@ -82,12 +89,12 @@
            </item>
            <item>
             <property name="text">
-             <string>Study increased values in follow-up (scan2)</string>
+             <string>Study only increased values in follow-up (scan2)</string>
             </property>
            </item>
            <item>
             <property name="text">
-             <string>Study decreased values in follow-up (scan2)</string>
+             <string>Study only decreased values in follow-up (scan2)</string>
             </property>
            </item>
           </widget>
