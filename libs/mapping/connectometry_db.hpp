@@ -44,8 +44,6 @@ public:
     bool has_db(void)const{return !subject_names.empty();}
     bool load_db_from_fib(fib_data* handle);
     void init_db(void);
-    void sample_from_image(tipl::const_pointer_image<3,float> I,const tipl::matrix<4,4>& trans,float*  data);
-    bool sample_from_image(fib_data& fib,const std::string& index_name,float* out_data);
     bool extract_indices(const std::string& file_name,const std::vector<std::string>& index_list_to_extract,
               float& R2,const std::vector<float*>& data);
     bool create_db(const std::vector<std::string>& file_names);
@@ -54,7 +52,7 @@ public:
     void get_subject_slice(unsigned int subject_index,unsigned char dim,unsigned int pos,
                             tipl::image<2,float>& slice) const;
     bool get_demo_matched_volume(const std::string& matched_demo,tipl::image<3>& volume) const;
-    bool get_avg_volume(tipl::image<3>& volume) const;
+    void get_avg_volume(tipl::image<3>& volume) const;
     bool save_demo_matched_image(const std::string& matched_demo,const std::string& filename) const;
     tipl::image<3> get_index_image(unsigned int subject_index) const;
     void remove_subject(unsigned int index);
