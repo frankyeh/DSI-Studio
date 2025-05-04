@@ -8,20 +8,7 @@
 #include "tracking/region/regiontablewidget.h"
 #include <filesystem>
 
-bool group_connectometry_analysis::create_database(std::shared_ptr<fib_data> handle_)
-{
-    handle = handle_;
-    fiber_threshold = 0.6f*handle->dir.fa_otsu;
-    handle->db.calculate_vi2si();
-    handle->db.mask_size = handle->mat_reader.si2vi.size();
-    handle->db.clear();
-    if(handle->mat_reader.si2vi.empty())
-    {
-        error_msg = "invalid mask";
-        return false;
-    }
-    return true;
-}
+
 bool group_connectometry_analysis::load_database(const char* database_name)
 {
     handle.reset(new fib_data);
@@ -609,7 +596,7 @@ void group_connectometry_analysis::generate_report(std::string& output)
     if(!handle->report.empty())
     {
         html_report << "<h2>MRI Acquisition</h2>" << std::endl;
-        html_report << "<p>" << handle->db.report << "</p>" << std::endl;
+        html_report << "<p>" << handle->report << "</p>" << std::endl;
     }
     if(!report.empty())
     {
