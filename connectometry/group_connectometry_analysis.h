@@ -26,6 +26,8 @@ public:
 public:// database information
     float fiber_threshold;
 public:
+    std::vector<float> subject_data_buffer;
+    std::vector<const float*> subject_data;
     void calculate_adjusted_qa(stat_model& info);
     void calculate_spm(connectometry_result& data,stat_model& info);
 private: // single subject analysis result
