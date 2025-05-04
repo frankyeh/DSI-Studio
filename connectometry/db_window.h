@@ -56,6 +56,10 @@ private slots:
 
     void on_actionSave_DemoMatched_Image_as_triggered();
 
+    void on_index_name_currentIndexChanged(int index);
+
+    void on_actionAdd_Database_triggered();
+
 private:
     Ui::db_window *ui;
 };
