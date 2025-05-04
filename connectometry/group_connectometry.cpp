@@ -244,7 +244,7 @@ void group_connectometry::on_open_mr_files_clicked()
     if(filename.isEmpty())
         return;
     if(!db.parse_demo(filename.toStdString()))
-        QMessageBox::critical(this,"ERROR",db.error_msg.c_str());
+        QMessageBox::critical(this,"ERROR",db.handle->error_msg.c_str());
     else
         load_demographics();
 }
