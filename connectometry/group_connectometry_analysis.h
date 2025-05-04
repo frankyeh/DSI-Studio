@@ -60,6 +60,7 @@ public:// Multiple regression
     unsigned int length_threshold_voxels;
     float fdr_threshold;
     unsigned int tip_iteration;
+    bool normalize_iso = true;
     std::string foi_str;
     std::string get_file_post_fix(void);
     void run_permutation_multithread(unsigned int id,unsigned int thread_count,unsigned int permutation_count);
