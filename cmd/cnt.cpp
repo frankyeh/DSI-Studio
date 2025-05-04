@@ -28,7 +28,11 @@ int cnt(tipl::program_option<tipl::out>& po)
     }
 
     tipl::out() << "available index name: " << tipl::merge(db.index_list,',');
-    db.set_current_index(po.get("index_name",db.index_list.front()));
+    if(!db.set_current_index(po.get("index_name",db.index_list.front())))
+    {
+        tipl::error() << "cannot find " << po.get("index_name") << " in the database";
+        return 1;
+    }
 
     if(!po.check("voi") || !po.check("variable_list"))
         return 1;
