@@ -19,40 +19,6 @@ bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_
 {
     if(!other_slices.empty() || !po.has("other_slices"))
         return true;
-
-    // allow adding other slices for creating new metrics
-    if(po.has("subject_demo"))
-    {
-        auto subject_demo = po.get("subject_demo");
-        bool found = false;
-        if(std::filesystem::exists(subject_demo))
-        {
-            std::ifstream in(subject_demo);
-            std::string line;
-            while(std::getline(in,line))
-            {
-                std::replace(line.begin(),line.end(),',','\t');
-                std::istringstream in2(line);
-                std::string name;
-                in2 >> name;
-                if(po.get("source").find(name) != std::string::npos ||
-                   po.get("other_slices").find(name) != std::string::npos)
-                {
-                    tipl::out() << "found subject's demographics: " << line << std::endl;
-                    found = true;
-                    handle->demo = line.substr(name.length()+1);
-                }
-            }
-            if(!found)
-            {
-                tipl::error() << "cannot find subject in " << subject_demo << ". Please make sure that the FIB or NIFTI file name includes subject's id." << std::endl;
-                return 1;
-            }
-        }
-        else
-            handle->demo = subject_demo;
-    }
-
     std::vector<std::string> filenames;
     if(!po.get_files("other_slices",filenames))
     {
