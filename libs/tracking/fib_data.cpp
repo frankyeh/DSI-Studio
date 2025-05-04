@@ -71,12 +71,17 @@ tipl::const_pointer_image<3,float> slice_model::get_image(void)
 {
     if(!image_data.data() && handle)
     {
-        auto prior_show_prog = tipl::show_prog;
-        tipl::show_prog = false;
+        bool restore_show_prog = false;
+        if(tipl::is_main_thread() && tipl::show_prog)
+        {
+            tipl::show_prog = false;
+            restore_show_prog = true;
+        }
         image_data = tipl::make_image(handle->mat_reader.read_as_type<float>(name),handle->dim);
+        if(restore_show_prog)
+            tipl::show_prog = true;
         max_value = 0.0f;
         tipl::out() << name << " loaded" << std::endl;
-        tipl::show_prog = prior_show_prog;
     }
     return image_data;
 }
@@ -715,9 +720,7 @@ tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& ma
     {
         if(!mat_reader.read("mask",mask_ptr))
         {
-
-            auto mask_mat = std::make_shared<tipl::io::mat_matrix>("mask");
-            mask_mat->resize(tipl::shape<2>(dim.plane_size(),dim.depth()));
+            auto mask_mat = std::make_shared<tipl::io::mat_matrix>("mask",uint8_t(0),dim.plane_size(),dim.depth());
             auto& mask_buffer = mask_mat->data_buf;
 
             const float* fa0_ptr = nullptr;
@@ -802,9 +805,9 @@ bool fib_data::load_from_mat(void)
 
 
 
-    if(!db.read_db(this))
+    if(!db.load_db_from_fib(this))
     {
-        error_msg = db.error_msg;
+        error_msg = error_msg;
         return false;
     }
 
@@ -890,6 +893,7 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
 
     matfile.write("version",mat_reader.has("b_table") ? src_ver : fib_ver);
 
+    const std::unordered_set<std::string> skip_set(skip_list.begin(), skip_list.end());
     for(unsigned int index = 0;prog(index,mat_reader.size());++index)
     {
         if(!matfile)
@@ -898,20 +902,8 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
             return false;
         }
         const auto& name = mat_reader[index].name;
-        bool skip = (name == "version");
-        for(const auto& each : skip_list)
-            if(name == each)
-            {
-                skip = true;
-                break;
-            }
-        for(const auto& each : skip_head_list)
-            if(name.find(each) == 0)
-            {
-                skip = true;
-                break;
-            }
-        if(skip)
+        if(name == "version" || skip_set.count(name) > 0 ||
+           std::find_if(skip_head_list.begin(), skip_head_list.end(),[&name](const auto& each) { return name.find(each) == 0; }) != skip_head_list.end())
         {
             tipl::out() << "skip " << name;
             continue;
@@ -1041,6 +1033,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             for(size_t d = 0;d < 3;++d)
             {
                 tipl::image<3> new_image(dim);
+                mat.convert_to<float>();
                 auto ptr = mat.get_data<float>()+d;
                 for(size_t j = 0;j < dim.size();++j,ptr += 3)
                     new_image[j] = *ptr;
@@ -1052,7 +1045,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                     return;
                 }
                 if(d == 0)
-                    mat.resize(tipl::vector<2,unsigned int>(3*new_image.width()*new_image.height(),new_image.depth()));
+                    mat.set_row_col(3*new_image.width()*new_image.height(),new_image.depth());
                 for(size_t d = 0;d < 3;++d)
                 {
                     auto ptr = mat.get_data<float>()+d;
@@ -1101,12 +1094,24 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         return false;
     return !prog.aborted();
 }
-bool fib_data::load_at_resolution(const std::string& file_name,float reso)
+
+extern std::vector<std::string> fib_template_list;
+bool fib_data::load_template_fib(size_t id,float reso)
 {
-    tipl::progress prog("opening ",file_name);
-    tipl::out() << "resample to resolution:" << reso;
-    fib_file_name = file_name;
-    if (!mat_reader.load_from_file(file_name,prog) ||
+    if(id >= fib_template_list.size())
+    {
+        error_msg = "invalid template id " + std::to_string(id);
+        return false;
+    }
+    if(fib_template_list[id].empty())
+    {
+        error_msg = "cannot find template files";
+        return false;
+    }
+    tipl::progress prog("opening");
+    tipl::out() << "load template " << fib_template_list[id] << " at resolution " << reso;
+    fib_file_name = fib_template_list[id];
+    if (!mat_reader.load_from_file(fib_template_list[id],prog) ||
         !modify_fib(mat_reader,"regrid",std::to_string(reso)))
     {
         error_msg = mat_reader.error_msg;
@@ -1114,16 +1119,44 @@ bool fib_data::load_at_resolution(const std::string& file_name,float reso)
     }
     if(!load_from_mat())
         return false;
+    set_template_id(id);
     return true;
 }
 bool fib_data::save_to_file(const std::string& file_name)
 {
-    if(!modify_fib(mat_reader,"save",file_name))
+    tipl::progress prog("save file");
+    fib_file_name = file_name;
+    tipl::io::gz_mat_write matfile(file_name);
+    if(!matfile)
     {
-        error_msg = mat_reader.error_msg;
+        error_msg = "cannot save file " + file_name;
         return false;
     }
-    fib_file_name = file_name;
+    std::vector<std::string> skip_list({"odf_faces","odf_vertices","z0","mapping",
+                                        "report","intro","R2","template","index_name","demo","steps"});
+    skip_list.insert(skip_list.end(),db.index_list.begin(),db.index_list.end());
+    if(!save_fz(mat_reader,matfile,skip_list,{"subject"}))
+        return false;
+
+    for(unsigned int index = 0;prog(index,db.index_list.size());++index)
+        matfile.write<tipl::io::sloped>(db.index_list[index],mat_reader[db.index_list[index]].get_data<float>(),db.subject_names.size(),db.mask_size);
+
+    if(prog.aborted())
+        return false;
+
+    if(db.has_db())
+    {
+        matfile.write("subject_names",tipl::merge(db.subject_names,'\n'));
+        matfile.write("subject_report",db.subject_report);
+        matfile.write("index_name",tipl::merge(db.index_list,','));
+        matfile.write("demo",db.demo);
+    }
+    if(is_mni)
+        matfile.write("R2",R2);
+    matfile.write("template",std::filesystem::path(fa_template_list[template_id]).stem().stem().stem().string());
+    matfile.write("report",report);
+    matfile.write("intro",intro);
+    db.modified = false;
     return true;
 }
 void fib_data::remove_slice(size_t index)
@@ -1131,6 +1164,7 @@ void fib_data::remove_slice(size_t index)
     mat_reader.remove(slices[index]->name);
     slices.erase(slices.begin()+index);
 }
+
 size_t match_volume(tipl::const_pointer_image<3,unsigned char> mask,tipl::vector<3> vs);
 void fib_data::match_template(void)
 {
@@ -1410,7 +1444,6 @@ void fib_data::set_template_id(size_t new_id)
         alternative_mapping = { "" };
         auto files = tipl::search_files(std::filesystem::path(fa_template_list[template_id]).parent_path().string(),"*.mz");
         alternative_mapping.insert(alternative_mapping.end(),files.begin(),files.end());
-
     }
 }
 std::vector<std::string> fib_data::get_tractography_all_levels(void)
@@ -1957,7 +1990,7 @@ bool fib_data::map_to_mni(bool background)
         prog = 3;
 
         reg.nonlinear_reg(tipl::prog_aborted);
-        if(reg.r[0] < 0.3f)
+        if((R2 = reg.r[0]) < 0.3f)
         {
             error_msg = "cannot perform normalization";
             tipl::prog_aborted = true;
