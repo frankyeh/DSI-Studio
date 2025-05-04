@@ -91,6 +91,7 @@ private slots:
     void on_apply_selection_clicked();
     void on_effect_size_valueChanged(double arg1);
     void on_threshold_valueChanged(double arg1);
+    void on_index_name_currentIndexChanged(int index);
 };
 
 #endif // VBC_DIALOG_HPP
