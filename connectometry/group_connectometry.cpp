@@ -419,6 +419,7 @@ void group_connectometry::on_run_clicked()
         vbc->t_threshold = float(ui->threshold->value());
         vbc->rho_threshold = float(ui->effect_size->value());
         vbc->region_pruning = ui->region_pruning->isChecked();
+        vbc->normalize_iso = ui->normalize_iso->isChecked();
         vbc->output_file_name = ui->output_name->text().toStdString();
     }
 
@@ -656,5 +657,15 @@ void group_connectometry::on_threshold_valueChanged(double t)
     ui->effect_size->blockSignals(true);
     ui->effect_size->setValue(t/std::sqrt(t*t+selected_count-2));
     ui->effect_size->blockSignals(false);
+}
+
+
+void group_connectometry::on_index_name_currentIndexChanged(int index)
+{
+    auto name = ui->index_name->currentText().toStdString();
+    if(name == "qa" || name == "rdi" || tipl::begins_with(name,"nrdi"))
+        ui->normalize_iso->show();
+    else
+        ui->normalize_iso->hide();
 }
 
