@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <cstring>
 #include "connectometry_db.hpp"
 #include "fib_data.hpp"
 #include "reg.hpp"
@@ -23,69 +24,86 @@ bool parse_age_sex(const std::string& file_name,std::string& age,std::string& se
     }
     return false;
 }
-bool connectometry_db::read_db(fib_data* handle_)
+bool connectometry_db::load_db_from_fib(fib_data* handle_)
 {
     handle = handle_;
-    subject_indices.clear();
-    subject_names.clear();
     {
+        std::vector<std::string> cur_subject_names;
         std::string subject_names_str,name;
         if(!handle->mat_reader.read("subject_names",subject_names_str))
             return true;
         std::istringstream in(subject_names_str);
         while(std::getline(in,name))
-            subject_names.push_back(name);
-        R2.resize(subject_names.size());
-        if(!handle->mat_reader.read("R2",R2))
-        {
-            subject_names.clear();
+            cur_subject_names.push_back(name);
+        std::vector<float> cur_R2(cur_subject_names.size());
+        if(!handle->mat_reader.read("R2",cur_R2))
             return true;
-        }
+        subject_names = std::move(cur_subject_names);
+        R2 = std::move(cur_R2);
     }
+    init_db();
 
     tipl::progress prog("loading database");
     size_t matrix_index = 0;
-    for(unsigned int index = 0;index < subject_names.size();++index)
+    // the old version database store subject matrices
+    if(handle->mat_reader.has("subjects0") || handle->mat_reader.has("subject0"))
     {
-        auto matrix_index = std::min<size_t>(handle->mat_reader.index_of("subjects"+std::to_string(index)),
-                                             handle->mat_reader.index_of("subject"+std::to_string(index)));
-        if(matrix_index == handle->mat_reader.size())
+        tipl::out() << "parsing old single-metric database";
+        if(!handle->mat_reader.read("index_name",index_name))
         {
-            error_msg = "corrupted database";
-            clear();
+            handle->error_msg = "incompatible database format";
             return false;
         }
+        // allocate memory in the mat reader
+        auto mat = std::make_shared<tipl::io::mat_matrix>(index_name,float(0),subject_names.size(),mask_size);
+        handle->mat_reader.push_back(mat);
+        auto index_ptr = mat->get_data<float>();
 
-        auto& matrix = handle->mat_reader[matrix_index];
-        if(matrix.cols % handle->mat_reader.si2vi.size())
+        for(size_t index = 0;index < subject_names.size();++index,index_ptr += mask_size)
         {
-            error_msg = "corrupted database: mask size mismatch ";
-            clear();
+            auto matrix_index = std::min<size_t>(handle->mat_reader.index_of("subjects"+std::to_string(index)),
+                                                 handle->mat_reader.index_of("subject"+std::to_string(index)));
+            if(matrix_index == handle->mat_reader.size() || handle->mat_reader[matrix_index].cols % mask_size)
+            {
+                handle->error_msg = "incompatible database format";
+                return false;
+            }
+            auto ptr = handle->mat_reader[matrix_index].get_data<float>();
+            std::copy(ptr,ptr+mask_size,index_ptr);
+            handle->mat_reader.remove(matrix_index); // save memory
+        }
+        index_list = {index_name};
+    }
+    else
+    {
+        for (unsigned int matrix_index = 0;matrix_index < handle->mat_reader.size();++matrix_index)
+            if(handle->mat_reader[matrix_index].cols == mask_size &&
+               handle->mat_reader[matrix_index].rows == subject_names.size())
+            {
+                // make sure the scale and inter are applied to uint8
+                handle->mat_reader[matrix_index].convert_to<float>();
+                index_list.push_back(handle->mat_reader[matrix_index].name);
+            }
+        if(index_list.empty())
+        {
+            handle->error_msg = "incompatible database format";
             return false;
         }
-        subject_indices.push_back(matrix.get_data<float>());
-        if(!index)
-        {
-            mask_size = handle->mat_reader.si2vi.size();
-            auto buf = subject_indices.front();
-            if((is_longitudinal = std::any_of(buf,buf+mask_size,[&](auto v){return v < 0.0f;})))
-                tipl::out() << "longitudinal data (negative value found)";
-        }
+        tipl::out() << "available database: " << tipl::merge(index_list,',');
     }
 
-    // optional
-    handle->mat_reader.read("report",report);
-    handle->mat_reader.read("intro",intro);
+    set_current_index(0);
+
     handle->mat_reader.read("subject_report",subject_report);
-    handle->mat_reader.read("index_name",index_name);
+
 
     // new db can be all positive, the checking the report text can confirm longitudinal setting
-    if(report.find("longitudinal scans were calculated") != std::string::npos)
+    if(handle->report.find("longitudinal scans were calculated") != std::string::npos)
     {
         is_longitudinal = true;
-        if(report.find("Only increased longitudinal changes") != std::string::npos)
+        if(handle->report.find("Only increased longitudinal changes") != std::string::npos)
             longitudinal_filter_type = 1;
-        if(report.find("Only decreased longitudinal changes") != std::string::npos)
+        if(handle->report.find("Only decreased longitudinal changes") != std::string::npos)
             longitudinal_filter_type = 2;
     }
 
@@ -94,7 +112,7 @@ bool connectometry_db::read_db(fib_data* handle_)
         parse_demo();
     else
     {
-        // try to get demo from subject bame
+        // try to get demo from subject name
         demo += "age,sex\n";
         for(size_t i = 0;i < subject_names.size();++i)
         {
@@ -112,16 +130,15 @@ bool connectometry_db::read_db(fib_data* handle_)
         if(!demo.empty() && !parse_demo())
             demo.clear();
     }
-    calculate_vi2si();
     return true;
 }
 
 bool connectometry_db::parse_demo(const std::string& filename)
 {
-    std::ifstream in(filename.c_str());
+    std::ifstream in(filename);
     if(!in)
     {
-        error_msg = "Cannot open the demographic file";
+        handle->error_msg = "cannot open the demographic file " + filename;
         return false;
     }
     // CSV BOM at the front
@@ -137,7 +154,7 @@ bool connectometry_db::parse_demo(const std::string& filename)
 
 bool connectometry_db::parse_demo(void)
 {
-    std::string saved_demo(std::move(demo));
+    std::string saved_demo(demo);
     titles.clear();
     items.clear();
     size_t col_count = 0;
@@ -175,7 +192,7 @@ bool connectometry_db::parse_demo(void)
         }
         if(items.empty())
         {
-            error_msg = "no demographics";
+            handle->error_msg = "no demographics";
             return false;
         }
         size_t found = 0;
@@ -222,7 +239,7 @@ bool connectometry_db::parse_demo(void)
             {
                 std::ostringstream out;
                 out << "Subject number mismatch. The demographic file has " << row_count-1 << " subject rows, but the database has " << subject_names.size() << " subjects.";
-                error_msg = out.str();
+                handle->error_msg = out.str();
                 return false;
             }
         }
@@ -338,317 +355,225 @@ bool connectometry_db::parse_demo(void)
             {
                 std::ostringstream out;
                 out << "cannot parse '" << items[item_pos] << "' at " << subject_names[i] << "'s " << titles[feature_location[j]] << ".";
-                error_msg = out.str();
+                handle->error_msg = out.str();
                 X.clear();
                 return false;
             }
         }
     }
-    demo.swap(saved_demo);
     return true;
 }
 
-void connectometry_db::clear(void)
+void connectometry_db::init_db(void)
 {
-    subject_names.clear();
-    R2.clear();
-    subject_indices.clear();
-    index_buf.clear();
-    modified = true;
-}
-
-void connectometry_db::remove_subject(unsigned int index)
-{
-    if(index >= subject_indices.size())
-        return;
-    subject_indices.erase(subject_indices.begin()+index);
-    subject_names.erase(subject_names.begin()+index);
-    R2.erase(R2.begin()+index);
-    modified = true;
-}
-void connectometry_db::calculate_vi2si(void)
-{
+    mask_size = handle->mat_reader.si2vi.size();
     vi2si.resize(handle->dim);
-    size_t mask_size = 0;
+    size_t ms = 0;
     for(size_t index = 0;index < handle->dim.size();++index)
         if(handle->mask[index])
-            vi2si[index] = (mask_size++);    
+            vi2si[index] = (ms++);
 }
 
-size_t convert_index(size_t old_index,
-                     const tipl::shape<3>& from_geo,
-                     const tipl::shape<3>& to_geo,
-                     float ratio,
-                     const tipl::vector<3>& shift)
+bool connectometry_db::extract_indices(const std::string& file_name,const std::vector<std::string>& index_list_to_extract,
+                                       float& R2,const std::vector<float*>& data)
 {
-    tipl::pixel_index<3> pos(old_index,from_geo);
-    tipl::vector<3> v(pos);
-    if(ratio != 1.0f)
-        v *= ratio;
-    v += shift;
-    v.round();
-    tipl::pixel_index<3> new_pos(v[0],v[1],v[2],to_geo);
-    return new_pos.index();
-}
-
-
-void connectometry_db::sample_from_image(tipl::const_pointer_image<3,float> I,
-                       const tipl::matrix<4,4>& trans,std::vector<float>& data)
-{
-    tipl::image<3> J(handle->dim);
-    if(I.shape() != J.shape() && trans != handle->trans_to_mni)
+    fib_data fib;
+    if(!fib.load_from_file(file_name) ||
+       fib.db.has_db() ||
+       (fib.is_mni && !fib.mat_reader.read("R2",R2)))
     {
-        tipl::resample<tipl::interpolation::cubic>(I,J,
-            tipl::transformation_matrix<float>(tipl::from_space(handle->trans_to_mni).to(trans)));
+        handle->error_msg = "cannot use " + file_name + " as a subject file..." + fib.error_msg;
+        return false;
     }
-    else
-        J = I;
-    tipl::lower_threshold(J,0.0f);
-    const auto& si2vi = handle->mat_reader.si2vi;
-    data.clear();
-    data.resize(si2vi.size());
-    for(size_t i = 0;i < si2vi.size();++i)
-        data[i] = J[si2vi[i]];
-}
-std::vector<float> connectometry_db::sample_from_image(fib_data& fib,const std::string& index_name)
-{
-    std::vector<float> data;
-    auto index = fib.get_name_index(index_name);
-    if(index == fib.slices.size())
-    {
-        error_msg = "cannot export " + index_name + " from " + fib.fib_file_name;
-        return data;
-    }
-    if(fib.is_mni)
-        sample_from_image(fib.slices[index]->get_image(),fib.trans_to_mni,data);
-    else
+    if(!fib.is_mni)
     {
         fib.set_template_id(handle->template_id);
         if(!fib.map_to_mni(tipl::show_prog))
         {
-            error_msg = fib.error_msg;
-            return data;
-        }
-        sample_from_image(tipl::compose_mapping(fib.slices[index]->get_image(),fib.t2s).alias(),fib.template_to_mni,data);
-    }
-    return data;
-}
-void connectometry_db::add(float subject_R2,std::vector<float>& data,
-                           const std::string& subject_name)
-{
-    // remove negative values due to interpolation
-    tipl::lower_threshold(data,0.0f);
-    R2.push_back(subject_R2);
-    mask_size = std::min<size_t>(mask_size,data.size());
-    index_buf.push_back(std::move(data));
-    subject_indices.push_back(&(index_buf.back()[0]));
-    subject_names.push_back(subject_name);
-    modified = true;
-}
-
-extern std::vector<std::string> t2w_template_list;
-bool connectometry_db::add(const std::string& file_name,
-                                         const std::string& subject_name)
-{
-    tipl::progress prog("adding ",std::filesystem::path(file_name).filename().string());
-    std::vector<float> data;
-    float subject_R2 = 1.0f;
-    if(tipl::ends_with(file_name,".nii") || tipl::ends_with(file_name,".nii.gz"))
-    {
-
-        tipl::matrix<4,4> trans;
-        tipl::io::gz_nifti nii;
-        if(!nii.load_from_file(file_name))
-        {
-            error_msg = "Cannot read file ";
-            error_msg += file_name;
+            handle->error_msg = fib.error_msg + " at " + file_name;
             return false;
         }
-        nii.get_image_transformation(trans);
-        if(nii.dim(4) > 1)
-        {
-            if(nii.is_mni())
-            {
-                for(size_t i = 0;prog(i,nii.dim(4));++i)
-                {
-                    tipl::image<3> I;
-                    nii >> I;
-                    sample_from_image(I.alias(),trans,data);
-                    add(subject_R2,data,subject_name+std::to_string(i));
-                }
-            }
-            else
-            {
-                std::vector<tipl::image<3> > image_data(nii.dim(4));
-                for(size_t i = 0;prog(i,nii.dim(4));++i)
-                    nii >> image_data[i];
-                if(prog.aborted())
-                {
-                    error_msg = "aborted";
-                    return false;
-                }
+        R2 = fib.R2;
+    }
 
-                dual_reg r;
-                if(!r.load_template(0,t2w_template_list[handle->template_id]))
-                {
-                    error_msg = r.error_msg;
-                    return false;
-                }
-                r.I[0] = subject_image_pre(tipl::sum(image_data.begin(),image_data.end()));
-                r.IR = trans;
-                r.Is = r.I[0].shape();
-                nii.get_voxel_size(r.Ivs);
-                bool ended = false;
-                r.match_resolution(true);
-                std::thread thread([&](void)
-                {
-                    r.linear_reg(tipl::prog_aborted);
-                    r.nonlinear_reg(tipl::prog_aborted);
-                    ended = true;
-                });
-                while(!ended)
-                    prog(0,1);
-                thread.join();
-                if(prog.aborted())
-                {
-                    error_msg = "aborted";
-                    return false;
-                }
-                for(size_t i = 0;prog(i,nii.dim(4));++i)
-                {
-                    sample_from_image(r.apply_warping<true,tipl::cubic>(image_data[i]).alias(),r.ItR,data);
-                    add(subject_R2,data,subject_name+std::to_string(i));
-                }
-            }
-            if(prog.aborted())
-            {
-                error_msg = "aborted";
-                return false;
-            }
-            return true;
+    auto sample = [this](tipl::const_pointer_image<3,float> I,const tipl::matrix<4,4>& trans,float* data)
+    {
+        tipl::image<3> J(handle->dim);
+        if(I.shape() != J.shape() && trans != handle->trans_to_mni)
+        {
+            tipl::resample<tipl::interpolation::cubic>(I,J,
+                tipl::transformation_matrix<float>(tipl::from_space(handle->trans_to_mni).to(trans)));
         }
         else
-        {
-            tipl::image<3> I;
-            nii >> I;
-            sample_from_image(I.alias(),trans,data);
-        }
-    }
-    else
+            J = I;
+        tipl::lower_threshold(J,0.0f);
+        const auto& si2vi = handle->mat_reader.si2vi;
+        for(size_t i = 0;i < si2vi.size();++i)
+            data[i] = J[si2vi[i]];
+    };
+
+    for(size_t i = 0;i < index_list_to_extract.size();++i)
     {
-        fib_data fib;
-        if(!fib.load_from_file(file_name.c_str()))
+        auto index = fib.get_name_index(index_list_to_extract[i]);
+        if(index == fib.slices.size())
         {
-            error_msg = fib.error_msg + " at " + file_name;
+            handle->error_msg = "cannot find " + index_name + " in " + fib.fib_file_name;
             return false;
         }
-        if(fib.db.has_db())
-        {
-            error_msg = "cannot add database " + file_name + " as a subject file";
-            return false;
-        }
-
-        if(subject_report.empty())
-            subject_report = fib.report;
-        if(intro.empty())
-            intro = fib.intro;
-        fib.mat_reader.read("R2",subject_R2);
-        if(index_name == "qir")
-        {
-            data = std::move(sample_from_image(fib,"qa"));
-            auto iso(sample_from_image(fib,"iso"));
-            if(data.empty() || iso.empty())
-                return false;
-            std::vector<float> inv_iso;
-            inv_iso.reserve(iso.size());
-            for(auto& each : iso)
-                if(each != 0.0f)
-                    inv_iso.push_back(each = 1.0f/each);
-
-            auto iso_threshold = tipl::outlier_range(inv_iso.begin(),inv_iso.end()).second;
-            for(size_t i = 0;i < iso.size();++i)
-                data[i] *= std::min<float>(iso[i],iso_threshold);
-        }
+        if(fib.is_mni)
+            sample(fib.slices[index]->get_image(),fib.trans_to_mni,data[i]);
         else
-        {
-            data = std::move(sample_from_image(fib,index_name));
-            if(data.empty())
-                return false;
-        }
+            sample(tipl::compose_mapping(fib.slices[index]->get_image(),fib.t2s).alias(),fib.template_to_mni,data[i]);
+        tipl::lower_threshold(data[i],data[i] + mask_size,0.0f);
     }
-    if(data.empty())
-    {
-        error_msg = "failed to sample " + index_name + " from " + file_name;
-        return false;
-    }
-    if(prog.aborted())
-    {
-        error_msg = "aborted";
-        return false;
-    }
-    add(subject_R2,data,subject_name);
     return true;
 }
-bool save_fz(tipl::io::gz_mat_read& mat_reader,
-              tipl::io::gz_mat_write& matfile,
-              const std::vector<std::string>& skip_list,
-              const std::vector<std::string>& skip_head_list);
-extern std::vector<std::string> fa_template_list;
-bool connectometry_db::save_db(const char* output_name)
+void connectometry_db::set_current_index(size_t m)
 {
-    // store results
-    tipl::io::gz_mat_write matfile(output_name);
-    if(!matfile)
+    if(m < index_list.size())
     {
-        error_msg = "cannot save file ";
-        error_msg += output_name;
-        return false;
+        auto index_ptr = handle->mat_reader[index_name = index_list[m]].get_data<float>();
+        subject_indices.resize(subject_names.size());
+        for(size_t i = 0;i < subject_indices.size();++i,index_ptr += mask_size)
+            subject_indices[i] = index_ptr;
     }
-    if(tipl::ends_with(output_name,".fib.gz"))
-    {
-        error_msg = "cannot save fib.gz format";
-        return false;
-    }
-    tipl::progress prog("save db");
-    save_fz(handle->mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping","report","steps"},{"subject"});
-
-    const auto& si2vi = handle->mat_reader.si2vi;
-    for(unsigned int index = 0;prog(index,subject_indices.size());++index)
-        matfile.write<tipl::io::sloped>("subjects"+std::to_string(index),subject_indices[index],1,si2vi.size());
-    if(prog.aborted())
-    {
-        error_msg = "aborted";
-        return false;
-    }
-
-    matfile.write("subject_names",tipl::merge(subject_names,'\n'));
-    matfile.write("subject_report",subject_report);
-    matfile.write("index_name",index_name);
-    matfile.write("template",std::filesystem::path(fa_template_list[handle->template_id]).stem().stem().stem().string());
-    matfile.write("R2",R2);
-
-
-    if(is_longitudinal)
-        matfile.write("report",report);
-    else
-    {
-        std::ostringstream out;
-        out << "A total of " << subject_names.size() << " diffusion MRI scans were included in the connectometry database." << subject_report.c_str();
-        if(index_name.find("sdf") != std::string::npos || index_name.find("qa") != std::string::npos)
-            out << " The quantitative anisotropy was extracted as the local connectome fingerprint (LCF, Yeh et al. PLoS Comput Biol 12(11): e1005203) and used in the connectometry analysis.";
-        else
+}
+void connectometry_db::set_current_index(const std::string& name)
+{
+    for(size_t m = 0;m < index_list.size();++m)
+        if(index_list[m] == name)
         {
-            if(index_name == "qir")
-                out << " The QA-ISO ratios (QIR) were used in the connectometry analysis.";
-            else
-                out << " The " << index_name << " values were used in the connectometry analysis.";
+            set_current_index(m);
+            return;
         }
-        matfile.write("report",out.str());
+}
+bool connectometry_db::create_db(const std::vector<std::string>& file_names)
+{        
+    if(file_names.empty())
+        return false;
+    tipl::progress prog("create database",true);
+    if(has_db())
+    {
+        handle->error_msg = "cannot create database from a database file " + handle->fib_file_name;
+        return false;
     }
-    matfile.write("intro",intro);
-    if(!demo.empty())
-        matfile.write("demo",demo);
-    modified = false;
+    if(!handle->is_mni)
+    {
+        handle->error_msg = "invalid template. not a QSDR FIB file: " + handle->fib_file_name;
+        return false;
+    }
+    if(handle->mat_reader.si2vi.empty())
+    {
+        handle->error_msg = "invalid mask";
+        return false;
+    }
+    init_db();
+    fib_data fib;
+    if(!fib.load_from_file(file_names[0]))
+    {
+        handle->error_msg = fib.error_msg + " at " + file_names[0];
+        return false;
+    }
+    index_list = fib.get_index_list(); // needed when adding subjects
+    if(!add_subjects(file_names))
+    {
+        index_list.clear();
+        return false;
+    }
+    subject_report = fib.report;
+    handle->intro = fib.intro;
+    return true;
+}
+
+bool connectometry_db::add_subjects(const std::vector<std::string>& file_names)
+{
+    tipl::progress prog("extract data",true);
+    bool failed = false;
+    std::vector<std::shared_ptr<tipl::io::mat_matrix> > extracted_matrix;
+    std::vector<std::string> extracted_subject_name(file_names.size());
+    std::vector<float> extracted_R2(file_names.size());
+    for(const auto& each : index_list)
+    {
+        extracted_matrix.push_back(std::make_shared<tipl::io::mat_matrix>(each,float(0),file_names.size() + subject_names.size(),mask_size));
+        if(!subject_names.empty())
+        {
+            auto ptr = handle->mat_reader[each].get_data<float>();
+            std::copy(ptr,ptr+subject_names.size()*mask_size,extracted_matrix.back()->get_data<float>());
+        }
+    }
+    size_t p = 0;
+    tipl::par_for(file_names.size(),[&](size_t subject_index)
+    {
+        if(!prog(p++,file_names.size()) || failed)
+            return;
+        std::vector<float*> data(index_list.size());
+        for(size_t i = 0;i < extracted_matrix.size();++i)
+            data[i] = extracted_matrix[i]->get_data<float>()+mask_size*(subject_index + subject_names.size());
+        if(!extract_indices(file_names[subject_index],index_list,extracted_R2[subject_index],data))
+        {
+            failed = true;
+            return;
+        }
+        extracted_subject_name[subject_index] = tipl::split(std::filesystem::path(file_names[subject_index]).filename().string(),'.')[0];
+    });
+    if(prog.aborted() || failed)
+        return false;
+    R2.insert(R2.end(),extracted_R2.begin(),extracted_R2.end());
+    subject_names.insert(subject_names.end(),extracted_subject_name.begin(),extracted_subject_name.end());
+    for(auto each : extracted_matrix)
+        handle->mat_reader.push_back(each);
+    set_current_index(index_name);
+    modified = true;
+    return true;
+
+}
+
+bool connectometry_db::add_db(const std::string& file_name)
+{
+    fib_data fib;
+    if(!fib.load_from_file(file_name))
+        return false;
+    if(!fib.db.has_db())
+    {
+        handle->error_msg = "not a database file: " + file_name;
+        return false;
+    }
+    if(fib.dim != handle->dim || fib.db.mask_size != mask_size)
+    {
+        handle->error_msg = "mask does not match";
+        return false;
+    }
+    for(const auto& each : index_list)
+        if(!fib.mat_reader.has(each))
+        {
+            handle->error_msg = "cannot find " + each + " in database " + file_name;
+            return false;
+        }
+    if(!std::equal(handle->mask.begin(),handle->mask.end(),fib.mask.begin()))
+        {
+            handle->error_msg = "The connectometry db was created using a different template.";
+            return false;
+        }
+
+    tipl::progress prog("copying data",true);
+    // load all delayed load data
+    for(const auto& each : index_list)
+    {
+        handle->mat_reader[each].convert_to<float>();
+        handle->mat_reader[each].set_row_col(subject_names.size()+fib.db.subject_names.size(),mask_size);
+    }
+    size_t p = 0;
+    for(const auto& each : index_list)
+    {
+        prog(p++,index_list.size());
+        auto src_ptr = fib.mat_reader[each].get_data<float>();
+        auto dst_ptr = handle->mat_reader[each].get_data<float>();
+        std::copy(src_ptr,src_ptr + fib.db.subject_names.size()*mask_size,
+                  dst_ptr + subject_names.size()*mask_size);
+    }
+    R2.insert(R2.end(),fib.db.R2.begin(),fib.db.R2.end());
+    subject_names.insert(subject_names.end(),fib.db.subject_names.begin(),fib.db.subject_names.end());
+    set_current_index(index_name);
     return true;
 }
 
@@ -668,12 +593,12 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
 {
     if(demo.empty())
     {
-        error_msg = "no demographic data found in the database";
+        handle->error_msg = "no demographic data found in the database";
         return false;
     }
     if(matched_demo.empty())
     {
-        error_msg = "no demographics provided for the study subject";
+        handle->error_msg = "no demographics provided for the study subject";
         return false;
     }
 
@@ -694,8 +619,7 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
         }
         if(v.size() != feature_location.size())
         {
-            error_msg = "invalid demographic input: ";
-            error_msg += matched_demo;
+            handle->error_msg = "invalid demographic input: " + matched_demo;
             return false;
         }
         tipl::out out;
@@ -726,6 +650,19 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
     volume.swap(I);
     return true;
 }
+void connectometry_db::get_avg_volume(tipl::image<3>& volume) const
+{
+    tipl::image<3> I(handle->dim);
+    const auto& si2vi = handle->mat_reader.si2vi;
+    tipl::adaptive_par_for(si2vi.size(),[&](size_t index)
+    {
+        std::vector<float> data(subject_indices.size());
+        for(size_t s = 0;s < subject_indices.size();++s)
+            data[s] = double(subject_indices[s][index]);
+        I[si2vi[index]] = tipl::mean(data.begin(),data.end());
+    });
+    volume.swap(I);
+}
 bool connectometry_db::save_demo_matched_image(const std::string& matched_demo,const std::string& filename) const
 {
     tipl::image<3> I;
@@ -733,8 +670,7 @@ bool connectometry_db::save_demo_matched_image(const std::string& matched_demo,c
         return false;
     if(!tipl::io::gz_nifti::save_to_file(filename.c_str(),I,handle->vs,handle->trans_to_mni,true,matched_demo.c_str()))
     {
-        error_msg = "Cannot save file to ";
-        error_msg += filename;
+        handle->error_msg = "cannot save file to " + filename;
         return false;
     }
     return true;
@@ -747,46 +683,39 @@ tipl::image<3> connectometry_db::get_index_image(unsigned int subject_index) con
         result[si2vi[si]] = subject_indices[subject_index][si];
     return result;
 }
-bool connectometry_db::is_db_compatible(const connectometry_db& rhs)
+
+
+void connectometry_db::remove_subject(unsigned int index)
 {
-    if(rhs.handle->dim != handle->dim || mask_size != rhs.mask_size)
-    {
-        error_msg = "Image dimension does not match";
-        return false;
-    }
-    for(size_t index = 0;index < handle->dim.size();++index)
-        if(handle->mask[index] != rhs.handle->mask[index])
+    if(index >= subject_names.size())
+        return;
+    subject_names.erase(subject_names.begin()+index);
+    R2.erase(R2.begin()+index);
+    size_t new_n = subject_names.size();
+    size_t offset = index * mask_size;
+    size_t copy_count = (new_n - index)*mask_size;
+    if(copy_count)
+        for(const auto& each : index_list)
         {
-            error_msg = "The connectometry db was created using a different template.";
-            return false;
+            auto ptr = handle->mat_reader[each].get_data<float>() + offset;
+            std::memmove(ptr, ptr + mask_size, copy_count * sizeof *ptr);
+            handle->mat_reader[each].set_row_col(new_n,mask_size);
         }
-    return true;
+    subject_indices.resize(new_n);
+    modified = true;
 }
 
-bool connectometry_db::add_db(const connectometry_db& rhs)
-{
-    if(!is_db_compatible(rhs))
-        return false;
-    R2.insert(R2.end(),rhs.R2.begin(),rhs.R2.end());
-    subject_names.insert(subject_names.end(),rhs.subject_names.begin(),rhs.subject_names.end());
-    // copy the qa memory
-    for(unsigned int index = 0;index < rhs.subject_names.size();++index)
-    {
-        index_buf.push_back(std::vector<float>(mask_size));
-        std::copy(rhs.subject_indices[index],
-                  rhs.subject_indices[index]+mask_size,index_buf.back().begin());
-        subject_indices.push_back(&(index_buf.back()[0]));
-    }
-    modified = true;
-    return true;
-}
 void connectometry_db::move_up(int id)
 {
     if(id == 0)
         return;
     std::swap(subject_names[uint32_t(id)],subject_names[uint32_t(id-1)]);
     std::swap(R2[uint32_t(id)],R2[uint32_t(id-1)]);
-    std::swap(subject_indices[uint32_t(id)],subject_indices[uint32_t(id-1)]);
+    for(const auto& each : index_list)
+    {
+        auto ptr = handle->mat_reader[each].get_data<float>() + id*mask_size;
+        std::swap_ranges(ptr, ptr + mask_size, ptr - mask_size);
+    }
 }
 
 void connectometry_db::move_down(int id)
@@ -795,88 +724,90 @@ void connectometry_db::move_down(int id)
         return;
     std::swap(subject_names[uint32_t(id)],subject_names[uint32_t(id+1)]);
     std::swap(R2[uint32_t(id)],R2[uint32_t(id+1)]);
-    std::swap(subject_indices[uint32_t(id)],subject_indices[uint32_t(id+1)]);
+    for(const auto& each : index_list)
+    {
+        auto ptr = handle->mat_reader[each].get_data<float>() + id*mask_size;
+        std::swap_ranges(ptr, ptr + mask_size, ptr + mask_size);
+    }
 }
 
 void connectometry_db::calculate_change(unsigned char dif_type,unsigned char filter_type)
 {
-    std::ostringstream out;
-
-
     std::vector<std::string> new_subject_names(match.size());
     std::vector<float> new_R2(match.size());
+    std::vector<std::shared_ptr<tipl::io::mat_matrix> > dif_matrices;
 
-
-    std::list<std::vector<float> > new_index_buf;
-    std::vector<const float*> new_subject_indices;
     tipl::progress prog("calculating");
-    for(unsigned int index = 0;prog(index,match.size());++index)
+    for(size_t m = 0;prog(m,index_list.size());++m)
     {
-        auto first = uint32_t(match[index].first);
-        auto second = uint32_t(match[index].second);
-        const float* scan1 = subject_indices[first];
-        const float* scan2 = subject_indices[second];
-        new_R2[index] = std::min<float>(R2[first],R2[second]);
-        std::vector<float> change(mask_size);
-        switch(dif_type)
+        auto ptr = handle->mat_reader[index_list[m]].get_data<float>();
+        auto dif_mat = std::make_shared<tipl::io::mat_matrix>(index_list[m],float(0),match.size(),mask_size);
+        auto ptr_dif = dif_mat->get_data<float>();
+        for(unsigned int index = 0;index < match.size();++index)
         {
-        case 0:
+            auto first = uint32_t(match[index].first);
+            auto second = uint32_t(match[index].second);
+            auto scan1 = ptr + first*mask_size;
+            auto scan2 = ptr + second*mask_size;
+            new_R2[index] = std::min<float>(R2[first],R2[second]);
+            auto change = ptr_dif + index*mask_size;
+            switch(dif_type)
             {
-                if(!index)
-                    out << " The difference between longitudinal scans were calculated by scan2-scan1.";
-                for(unsigned int i = 0;i < mask_size;++i)
-                    change[i] = scan2[i]-scan1[i];
-                new_subject_names[index] = subject_names[second] + "-" + subject_names[first];
-            }
-            break;
-        case 1:
-            {
-                if(!index)
-                    out << " The percentage difference between longitudinal scans were calculated by (scan2-scan1)/scan1.";
-                for(unsigned int i = 0;i < mask_size;++i)
+            case 0:
                 {
-                    float s = scan1[i];
-                    change[i] = (s == 0.0f? 0 : (scan2[i]-scan1[i])/s);
+                    if(!index)
+                        handle->report += " The difference between longitudinal scans were calculated by scan2-scan1.";
+                    for(unsigned int i = 0;i < mask_size;++i)
+                        change[i] = scan2[i]-scan1[i];
+                    new_subject_names[index] = subject_names[second] + "-" + subject_names[first];
                 }
-                new_subject_names[index] = subject_names[second] + "-" + subject_names[first];
+                break;
+            case 1:
+                {
+                    if(!index)
+                        handle->report += " The percentage difference between longitudinal scans were calculated by (scan2-scan1)/scan1.";
+                    for(unsigned int i = 0;i < mask_size;++i)
+                    {
+                        float s = scan1[i];
+                        change[i] = (s == 0.0f? 0 : (scan2[i]-scan1[i])/s);
+                    }
+                    new_subject_names[index] = subject_names[second] + "-" + subject_names[first];
+                }
+                break;
             }
-            break;
-        }
 
-        switch(filter_type)
-        {
-        case 1: // increase only
-            if(!index)
-                out << " Only increased longitudinal changes were used in the analysis.";
-            for(auto& v : change)
-                if(v <= 0.0f)
-                    v = 0.0;
-            break;
-        case 2: // decrease only
-            if(!index)
-                out << " Only decreased longitudinal changes were used in the analysis.";
-            for(auto& v : change)
+            switch(filter_type)
             {
-                if(v >= 0.0f)
-                    v = 0.0;
-                v = -v;
+            case 1: // increase only
+                if(!index)
+                    handle->report += " Only increased longitudinal changes were used in the analysis.";
+                    tipl::lower_threshold(change,change+mask_size,0.0f);
+                break;
+            case 2: // decrease only
+                if(!index)
+                    handle->report += " Only decreased longitudinal changes were used in the analysis.";
+                    tipl::neg(change,change+mask_size);
+                    tipl::lower_threshold(change,change+mask_size,0.0f);
+                break;
             }
-            break;
         }
-        new_index_buf.push_back(change);
-        new_subject_indices.push_back(&(new_index_buf.back()[0]));
+        dif_matrices.push_back(dif_mat);
     }
-    out << " The total number of longitudinal subjects was " << match.size() << ".";
+    if(prog.aborted())
+        return;
+
+    handle->report += " The total number of longitudinal subjects was " + std::to_string(match.size()) + ".";
+    match.clear();
+
     R2.swap(new_R2);
     subject_names.swap(new_subject_names);
-    index_buf.swap(new_index_buf);
-    subject_indices.swap(new_subject_indices);
-    match.clear();
-    report += out.str();
+    for(const auto& each : dif_matrices)
+        handle->mat_reader.push_back(each);
+    set_current_index(0);
+
     modified = true;
     is_longitudinal = true;
     longitudinal_filter_type = filter_type;
-
 }
 
 
