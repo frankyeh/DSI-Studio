@@ -210,7 +210,6 @@ class fib_data
 public:
     mutable std::string error_msg;
     std::string report,steps,intro,other_images,fib_file_name;
-    std::string demo; // used in cli for dT analysis
     tipl::io::gz_mat_read mat_reader;
 public:
     tipl::shape<3> dim;
@@ -240,11 +239,11 @@ public:
     }
 public:
     tipl::const_pointer_image<3,unsigned char> mask;
-public:
     fiber_directions dir;
-    connectometry_db db;
     mutable std::vector<std::shared_ptr<slice_model> > slices;
     void remove_slice(size_t index);
+public:
+    connectometry_db db;
 public:
     std::shared_ptr<fib_data> high_reso;
 public:
@@ -364,7 +363,7 @@ public:
     bool save_to_file(const std::string& file_name);
     bool load_from_mat(void);
     bool save_slice(const std::string& index_name,const std::string& file_name);
-    bool load_at_resolution(const std::string& file_name,float vs);
+    bool load_template_fib(size_t template_id,float vs);
     bool correct_bias_field(void);
 public:
     bool has_odfs(void) const{return mat_reader.has("odf0");}
