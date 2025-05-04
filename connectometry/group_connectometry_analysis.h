@@ -22,7 +22,6 @@ public:
     void wait(size_t index = 0);
     void clear(void);
 public:
-    bool create_database(std::shared_ptr<fib_data> handle_);
     bool load_database(const char* database_name);
 public:// database information
     float fiber_threshold;
