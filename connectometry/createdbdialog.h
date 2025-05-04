@@ -18,13 +18,14 @@ public:
     QStringList group;
     unsigned int dir_length;
     float template_reso = 1.0f;
+    unsigned int template_id = 0;
     explicit CreateDBDialog(QWidget *parent,bool create_db_);
     ~CreateDBDialog();
 private:
     Ui::CreateDBDialog *ui;
-    QString get_file_name(QString);
     void update_list(void);
     void load_data(void);
+    void update_output_file_name(void);
 private slots:
     void on_save_list1_clicked();
     void on_open_list1_clicked();
@@ -37,7 +38,7 @@ private slots:
     void on_select_output_file_clicked();
     void on_create_data_base_clicked();
     void on_sort_clicked();
-    void on_index_of_interest_currentTextChanged(const QString &arg1);
+
 };
 
 #endif // VBCDIALOG_H
