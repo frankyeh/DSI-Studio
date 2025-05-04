@@ -1150,7 +1150,9 @@ bool fib_data::save_to_file(const std::string& file_name)
         matfile.write("subject_report",db.subject_report);
         matfile.write("index_name",tipl::merge(db.index_list,','));
         matfile.write("demo",db.demo);
+        matfile.write("R2",db.R2);
     }
+    else
     if(is_mni)
         matfile.write("R2",R2);
     matfile.write("template",std::filesystem::path(fa_template_list[template_id]).stem().stem().stem().string());
