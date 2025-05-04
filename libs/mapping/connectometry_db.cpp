@@ -438,14 +438,15 @@ void connectometry_db::set_current_index(size_t m)
             subject_indices[i] = index_ptr;
     }
 }
-void connectometry_db::set_current_index(const std::string& name)
+bool connectometry_db::set_current_index(const std::string& name)
 {
     for(size_t m = 0;m < index_list.size();++m)
         if(index_list[m] == name)
         {
             set_current_index(m);
-            return;
+            return true;
         }
+    return false;
 }
 bool connectometry_db::create_db(const std::vector<std::string>& file_names)
 {        
