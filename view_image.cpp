@@ -626,7 +626,8 @@ bool view_image::open(QStringList file_names_)
            QString(file_name).endsWith("fib.gz") ||
            QString(file_name).endsWith("src.gz") ||
            QString(file_name).endsWith(".fz") ||
-           QString(file_name).endsWith(".sz"))
+           QString(file_name).endsWith(".sz") ||
+           QString(file_name).endsWith(".dz"))
         {
             tipl::progress prog("open file ",std::filesystem::path(file_name.toStdString()).filename().u8string().c_str());
             if(!mat.load_from_file(file_name.toStdString().c_str()))
