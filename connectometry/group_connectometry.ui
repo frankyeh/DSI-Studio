@@ -260,6 +260,9 @@
             <item>
              <widget class="QComboBox" name="foi"/>
             </item>
+            <item>
+             <widget class="QComboBox" name="index_name"/>
+            </item>
            </layout>
           </item>
           <item>
@@ -356,7 +359,7 @@
              </size>
             </property>
             <property name="currentIndex">
-             <number>3</number>
+             <number>0</number>
             </property>
             <widget class="QWidget" name="tab_6">
              <attribute name="title">
