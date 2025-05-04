@@ -33,9 +33,9 @@ public:
 public:
     std::vector<std::string> index_list;
     std::vector<const float*> subject_indices;
-    std::string index_name = "qir";
+    std::string index_name;
     void set_current_index(size_t index);
-    void set_current_index(const std::string& name);
+    bool set_current_index(const std::string& name);
 public://longitudinal studies
     std::vector<std::pair<int,int> > match;
     void calculate_change(unsigned char dif_type,unsigned char filter_type);
