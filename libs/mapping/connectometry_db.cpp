@@ -748,15 +748,10 @@ void connectometry_db::calculate_change(unsigned char dif_type,unsigned char fil
     for(size_t m = 0;prog(m,index_list.size());++m)
     {
         const float* iso_ptr = nullptr;
-        if(normalize_iso)
+        if(normalize_iso && can_be_normalized_by_iso(index_list[m]))
         {
-            if(index_list[m] == "iso")
-                continue;
-            if(can_be_normalized_by_iso(index_list[m]))
-            {
-                iso_ptr = handle->mat_reader["iso"].get_data<float>();
-                index_normalized_by_iso.push_back(index_list[m]);
-            }
+            iso_ptr = handle->mat_reader["iso"].get_data<float>();
+            index_normalized_by_iso.push_back(index_list[m]);
         }
 
         auto ptr = handle->mat_reader[index_list[m]].get_data<float>();
@@ -799,34 +794,29 @@ void connectometry_db::calculate_change(unsigned char dif_type,unsigned char fil
         return;
 
 
-    std::vector<std::string> new_subject_names(match.size());
-    std::vector<float> new_R2(match.size());
-    for(size_t index = 0;index < match.size();++index)
     {
-        new_subject_names[index] = subject_names[match[index].second] + "-" + subject_names[match[index].first];
-        new_R2[index] = std::min<float>(R2[match[index].first],R2[match[index].second]);
-    }
-    R2.swap(new_R2);
-    subject_names.swap(new_subject_names);
-
-    switch(dif_type)
-    {
-        case 0:
-            handle->report += " The difference between longitudinal scans were calculated by scan2-scan1.";
-            break;
-        case 1:
-            handle->report += " The percentage difference between longitudinal scans were calculated by (scan2-scan1)/scan1.";
-            break;
+        std::vector<std::string> new_subject_names(match.size());
+        std::vector<float> new_R2(match.size());
+        for(size_t index = 0;index < match.size();++index)
+        {
+            new_subject_names[index] = subject_names[match[index].second] + "-" + subject_names[match[index].first];
+            new_R2[index] = std::min<float>(R2[match[index].first],R2[match[index].second]);
+        }
+        R2.swap(new_R2);
+        subject_names.swap(new_subject_names);
     }
 
-    switch(filter_type)
+    if(dif_type)
+        handle->report += " The percentage difference between longitudinal scans were calculated by (scan2-scan1)/scan1.";
+    else
+        handle->report += " The difference between longitudinal scans were calculated by scan2-scan1.";
+
+    if(filter_type)
     {
-        case 1: // increase only
+        if(filter_type == 1)
             handle->report += " Only increased longitudinal changes were used in the analysis.";
-            break;
-        case 2: // decrease only
+        if(filter_type == 2)
             handle->report += " Only decreased longitudinal changes were used in the analysis.";
-            break;
     }
     if(!index_normalized_by_iso.empty())
         handle->report += " " + tipl::merge(index_normalized_by_iso,',') + " were normalized by iso.";
