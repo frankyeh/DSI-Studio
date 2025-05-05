@@ -10,7 +10,6 @@
 #include "image_model.hpp"
 
 
-void populate_templates(QComboBox* combo,size_t index);
 CreateDBDialog::CreateDBDialog(QWidget *parent,bool create_db_) :
     QDialog(parent),
     create_db(create_db_),
