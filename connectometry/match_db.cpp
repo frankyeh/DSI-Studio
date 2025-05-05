@@ -10,15 +10,14 @@ match_db::match_db(QWidget *parent,std::shared_ptr<group_connectometry_analysis>
 {
     ui->setupUi(this);
     on_match_consecutive_clicked();
+    if(!tipl::contains(vbc->handle->db.index_list,"iso"))
+        ui->normalize_iso->hide();
 }
 
 match_db::~match_db()
 {
     delete ui;
 }
-
-
-
 
 void match_db::show_match_table(void)
 {
