@@ -50,7 +50,7 @@ void match_db::on_buttonBox_accepted()
         dif_type = 0;
     if(ui->dif_type2->isChecked())
         dif_type = 1;
-    vbc->handle->db.calculate_change(dif_type,ui->inc_dec_filter->currentIndex());
+    vbc->handle->db.calculate_change(dif_type,ui->inc_dec_filter->currentIndex(),ui->normalize_iso->isChecked());
     QMessageBox::information(this,QApplication::applicationName(),"database updated");
     accept();
 }
@@ -64,14 +64,12 @@ void match_db::on_load_match_clicked()
                                 "Text file (*.txt);;All files (*)");
     if(FileName.isEmpty())
         return;
-    std::vector<int> data;
+    std::vector<size_t> data;
     std::ifstream in(FileName.toStdString().c_str());
     std::copy(std::istream_iterator<int>(in),
               std::istream_iterator<int>(),std::back_inserter(data));
-
-
     vbc->handle->db.match.clear();
-    for(int i = 0 ;i+1 < data.size();i+= 2)
+    for(size_t i = 0 ;i+1 < data.size();i+= 2)
         vbc->handle->db.match.push_back(std::make_pair(data[i],data[i+1]));
     show_match_table();
 }
@@ -79,7 +77,7 @@ void match_db::on_load_match_clicked()
 void match_db::on_match_consecutive_clicked()
 {
     vbc->handle->db.match.clear();
-    for(int i = 0;i < vbc->handle->db.subject_names.size();i += 2)
+    for(size_t i = 0;i < vbc->handle->db.subject_names.size();i += 2)
         vbc->handle->db.match.push_back(std::make_pair(i,i+1));
     show_match_table();
 }

@@ -731,77 +731,108 @@ void connectometry_db::move_down(int id)
         std::swap_ranges(ptr, ptr + mask_size, ptr + mask_size);
     }
 }
-
-void connectometry_db::calculate_change(unsigned char dif_type,unsigned char filter_type)
+bool can_be_normalized_by_iso(const std::string& name);
+void normalize_data_by_iso(const float* iso_ptr,float* out_data_ptr,size_t n);
+void connectometry_db::calculate_change(unsigned char dif_type,unsigned char filter_type,bool normalize_iso)
 {
-    std::vector<std::string> new_subject_names(match.size());
-    std::vector<float> new_R2(match.size());
+
     std::vector<std::shared_ptr<tipl::io::mat_matrix> > dif_matrices;
 
+    // for used when normalized by iso
+    std::vector<float> scan1_buf(mask_size),scan2_buf(mask_size);
+    std::vector<std::string> index_normalized_by_iso;
+
+
     tipl::progress prog("calculating");
+
     for(size_t m = 0;prog(m,index_list.size());++m)
     {
+        const float* iso_ptr = nullptr;
+        if(normalize_iso)
+        {
+            if(index_list[m] == "iso")
+                continue;
+            if(can_be_normalized_by_iso(index_list[m]))
+            {
+                iso_ptr = handle->mat_reader["iso"].get_data<float>();
+                index_normalized_by_iso.push_back(index_list[m]);
+            }
+        }
+
         auto ptr = handle->mat_reader[index_list[m]].get_data<float>();
         auto dif_mat = std::make_shared<tipl::io::mat_matrix>(index_list[m],float(0),match.size(),mask_size);
-        auto ptr_dif = dif_mat->get_data<float>();
-        for(unsigned int index = 0;index < match.size();++index)
+        auto change = dif_mat->get_data<float>();
+
+        for(const auto& each : match)
         {
-            auto first = uint32_t(match[index].first);
-            auto second = uint32_t(match[index].second);
-            auto scan1 = ptr + first*mask_size;
-            auto scan2 = ptr + second*mask_size;
-            new_R2[index] = std::min<float>(R2[first],R2[second]);
-            auto change = ptr_dif + index*mask_size;
-            switch(dif_type)
+            auto first_base = each.first*mask_size;
+            auto second_base = each.second*mask_size;
+
+            auto scan1 = ptr + first_base;
+            auto scan2 = ptr + second_base;
+            if(iso_ptr)
             {
-            case 0:
-                {
-                    if(!index)
-                        handle->report += " The difference between longitudinal scans were calculated by scan2-scan1.";
-                    for(unsigned int i = 0;i < mask_size;++i)
-                        change[i] = scan2[i]-scan1[i];
-                    new_subject_names[index] = subject_names[second] + "-" + subject_names[first];
-                }
-                break;
-            case 1:
-                {
-                    if(!index)
-                        handle->report += " The percentage difference between longitudinal scans were calculated by (scan2-scan1)/scan1.";
-                    for(unsigned int i = 0;i < mask_size;++i)
-                    {
-                        float s = scan1[i];
-                        change[i] = (s == 0.0f? 0 : (scan2[i]-scan1[i])/s);
-                    }
-                    new_subject_names[index] = subject_names[second] + "-" + subject_names[first];
-                }
-                break;
+                std::copy(scan1,scan1+mask_size,scan1_buf.data());
+                std::copy(scan2,scan2+mask_size,scan2_buf.data());
+                normalize_data_by_iso(iso_ptr + first_base,scan1_buf.data(),mask_size);
+                normalize_data_by_iso(iso_ptr + second_base,scan2_buf.data(),mask_size);
+                scan1 = scan1_buf.data();
+                scan2 = scan2_buf.data();
             }
 
-            switch(filter_type)
-            {
-            case 1: // increase only
-                if(!index)
-                    handle->report += " Only increased longitudinal changes were used in the analysis.";
-                    tipl::lower_threshold(change,change+mask_size,0.0f);
-                break;
-            case 2: // decrease only
-                if(!index)
-                    handle->report += " Only decreased longitudinal changes were used in the analysis.";
-                    tipl::neg(change,change+mask_size);
-                    tipl::lower_threshold(change,change+mask_size,0.0f);
-                break;
-            }
+            for(unsigned int i = 0;i < mask_size;++i)
+                change[i] = scan2[i]-scan1[i];
+            if(dif_type == 1)
+                for(unsigned int i = 0;i < mask_size;++i)
+                    change[i] = (scan1[i] == 0.0f ? 0.0f : change[i] / scan1[i]);
+
+            if(filter_type == 2)
+                tipl::neg(change,change+mask_size);
+            if(filter_type)  // 1 or 2
+                tipl::lower_threshold(change,change+mask_size,0.0f);
+
+            change += mask_size;
         }
         dif_matrices.push_back(dif_mat);
     }
     if(prog.aborted())
         return;
 
+
+    std::vector<std::string> new_subject_names(match.size());
+    std::vector<float> new_R2(match.size());
+    for(size_t index = 0;index < match.size();++index)
+    {
+        new_subject_names[index] = subject_names[match[index].second] + "-" + subject_names[match[index].first];
+        new_R2[index] = std::min<float>(R2[match[index].first],R2[match[index].second]);
+    }
+    R2.swap(new_R2);
+    subject_names.swap(new_subject_names);
+
+    switch(dif_type)
+    {
+        case 0:
+            handle->report += " The difference between longitudinal scans were calculated by scan2-scan1.";
+            break;
+        case 1:
+            handle->report += " The percentage difference between longitudinal scans were calculated by (scan2-scan1)/scan1.";
+            break;
+    }
+
+    switch(filter_type)
+    {
+        case 1: // increase only
+            handle->report += " Only increased longitudinal changes were used in the analysis.";
+            break;
+        case 2: // decrease only
+            handle->report += " Only decreased longitudinal changes were used in the analysis.";
+            break;
+    }
+    if(!index_normalized_by_iso.empty())
+        handle->report += " " + tipl::merge(index_normalized_by_iso,',') + " were normalized by iso.";
     handle->report += " The total number of longitudinal subjects was " + std::to_string(match.size()) + ".";
     match.clear();
 
-    R2.swap(new_R2);
-    subject_names.swap(new_subject_names);
     for(const auto& each : dif_matrices)
         handle->mat_reader.push_back(each);
     set_current_index(0);

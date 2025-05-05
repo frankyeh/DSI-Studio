@@ -37,8 +37,8 @@ public:
     void set_current_index(size_t index);
     bool set_current_index(const std::string& name);
 public://longitudinal studies
-    std::vector<std::pair<int,int> > match;
-    void calculate_change(unsigned char dif_type,unsigned char filter_type);
+    std::vector<std::pair<size_t,size_t> > match;
+    void calculate_change(unsigned char dif_type,unsigned char filter_type,bool normalize_iso);
 public:
     connectometry_db(){}
     bool has_db(void)const{return !subject_names.empty();}
