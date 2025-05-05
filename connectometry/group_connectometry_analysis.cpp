@@ -305,6 +305,20 @@ std::string group_connectometry_analysis::get_file_post_fix(void)
     return postfix;
 }
 
+bool can_be_normalized_by_iso(const std::string& name)
+{
+    return name == "qa" || name == "rdi" || tipl::begins_with(name,"nrdi");
+}
+void normalize_data_by_iso(const float* iso_ptr,float* out_data_ptr,size_t n)
+{
+    std::vector<float> iso(iso_ptr,iso_ptr+n),inv_iso;
+    for(auto& each : iso)
+        if(each != 0.0f)
+            inv_iso.push_back(each = 1.0f/each);
+    tipl::upper_threshold(iso.begin(),iso.end(),tipl::outlier_range(inv_iso.begin(),inv_iso.end()).second);
+    tipl::multiply(out_data_ptr,out_data_ptr+n,iso.begin());
+}
+
 void group_connectometry_analysis::calculate_adjusted_qa(stat_model& info)
 {
     if(!info.X.empty())
@@ -324,7 +338,8 @@ void group_connectometry_analysis::calculate_adjusted_qa(stat_model& info)
     subject_data.resize(info.selected_subject.size());
     for(size_t index = 0;index < info.selected_subject.size();++index)
         subject_data[index] = handle->db.subject_indices[info.selected_subject[index]];
-    if(normalize_iso && tipl::contains(handle->db.index_list,"iso"))
+    if(!handle->db.is_longitudinal && normalize_iso &&
+        tipl::contains(handle->db.index_list,"iso"))
     {
         tipl::progress prog("normalize "+handle->db.index_name + " by iso");
         size_t n = handle->db.mask_size;
@@ -339,13 +354,8 @@ void group_connectometry_analysis::calculate_adjusted_qa(stat_model& info)
             auto data_ptr = subject_data_buffer.data() + index*n;
             std::copy(subject_data[index],subject_data[index]+n,data_ptr);
 
-            auto iso_ptr = handle->db.subject_indices[info.selected_subject[index]];
-            std::vector<float> iso(iso_ptr,iso_ptr+n),inv_iso;
-            for(auto& each : iso)
-                if(each != 0.0f)
-                    inv_iso.push_back(each = 1.0f/each);
-            tipl::upper_threshold(iso.begin(),iso.end(),tipl::outlier_range(inv_iso.begin(),inv_iso.end()).second);
-            tipl::multiply(data_ptr,data_ptr+n,iso.begin());
+            normalize_data_by_iso(handle->db.subject_indices[info.selected_subject[index]],data_ptr,n);
+
             subject_data[index] = data_ptr;
         });
         handle->db.set_current_index(old_index);
@@ -474,8 +484,8 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         out << ".";
 
         if(normalize_iso && tipl::contains(handle->db.index_list,"iso") &&
-           (handle->db.index_name == "qa" || handle->db.index_name == "rdi" || tipl::begins_with(handle->db.index_name,"nrdi")))
-            out << " The " << handle->db.index_name << " values were normalized by isotropic values to minimize influence of bias field.";
+           (can_be_normalized_by_iso(handle->db.index_name)))
+            out << " The " << handle->db.index_name << " values were normalized by the isotropic diffusion.";
         else
             normalize_iso = false;
 
