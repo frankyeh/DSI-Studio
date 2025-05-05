@@ -419,7 +419,7 @@ void group_connectometry::on_run_clicked()
         vbc->t_threshold = float(ui->threshold->value());
         vbc->rho_threshold = float(ui->effect_size->value());
         vbc->region_pruning = ui->region_pruning->isChecked();
-        vbc->normalize_iso = ui->normalize_iso->isChecked();
+        vbc->normalize_iso = db.is_longitudinal ? false : ui->normalize_iso->isChecked();
         vbc->output_file_name = ui->output_name->text().toStdString();
     }
 
@@ -659,11 +659,10 @@ void group_connectometry::on_threshold_valueChanged(double t)
     ui->effect_size->blockSignals(false);
 }
 
-
+bool can_be_normalized_by_iso(const std::string& name);
 void group_connectometry::on_index_name_currentIndexChanged(int index)
 {
-    auto name = ui->index_name->currentText().toStdString();
-    if(name == "qa" || name == "rdi" || tipl::begins_with(name,"nrdi"))
+    if(can_be_normalized_by_iso(ui->index_name->currentText().toStdString()) && !db.is_longitudinal)
         ui->normalize_iso->show();
     else
         ui->normalize_iso->hide();
