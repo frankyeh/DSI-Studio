@@ -24,7 +24,7 @@ std::string quality_check_src_files(const std::vector<std::string>& file_list,
         std::string file_name = file_list[i];
 
         tipl::out() << "checking " << file_name << std::endl;
-        output_each.push_back(std::filesystem::path(file_name).stem().stem().string());
+        output_each.push_back(tipl::split(std::filesystem::path(file_name).filename().string(),'.').front());
         src_data handle;
         if (!handle.load_from_file(file_name.c_str()))
         {
