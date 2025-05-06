@@ -37,22 +37,12 @@ std::string jsonarray2tsv(QJsonArray data)
     }
     return result;
 }
-
+QString showQNetworkReplyError(QNetworkReply* reply);
 bool xnat_facade::good(void)
 {
     if (cur_response && cur_response->error() != QNetworkReply::NoError)
     {
-        error_msg = "connection error code ";
-        error_msg += std::to_string(cur_response->error());
-        if(cur_response->error() == 204)
-            error_msg = "Authentication Failed";
-        if(cur_response->error() == 11)
-            error_msg = "Cannot login using guest";
-        if(cur_response->error() == 3)
-            error_msg = "XNAT Server not found";
-        if(cur_response->error() == 6)
-            error_msg = "SSL Failed. Please update SSL library";
-        tipl::error() << error_msg;
+        error_msg = showQNetworkReplyError(cur_response).toStdString();
         cur_response = nullptr;
     }
     return cur_response != nullptr;
