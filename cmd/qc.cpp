@@ -11,21 +11,25 @@ std::string quality_check_src_files(const std::vector<std::string>& file_list,
 {
     std::ostringstream out;
     out << "file name\tdimension\tresolution\tdwi count(b0/dwi)\tmax b-value\tDWI contrast\tneighboring DWI correlation\tneighboring DWI correlation(masked)\t#bad slices\toutlier" << std::endl;
-    std::vector<std::vector<std::string> > output;
-    std::vector<float> ndc;
+    std::vector<std::vector<std::string> > output(file_list.size());
+    std::vector<float> ndc(file_list.size());
     tipl::progress prog("checking SRC files");
-    for(int i = 0;prog(i,file_list.size());++i)
+    size_t p = 0;
+    tipl::par_for(file_list.size(),[&](size_t i)
     {
+        prog(p++,file_list.size());
+        if(prog.aborted())
+            return;
         std::vector<std::string> output_each;
         std::string file_name = file_list[i];
 
         tipl::out() << "checking " << file_name << std::endl;
-        output_each.push_back(std::filesystem::path(file_name).filename().string());
+        output_each.push_back(std::filesystem::path(file_name).stem().stem().string());
         src_data handle;
         if (!handle.load_from_file(file_name.c_str()))
         {
             out << "cannot load SRC file " << file_list[i] << std::endl;
-            continue;
+            return;
         }
         // output image dimension
         {
@@ -69,14 +73,14 @@ std::string quality_check_src_files(const std::vector<std::string>& file_list,
 
         // calculate neighboring DWI correlation
         auto n = handle.quality_control_neighboring_dwi_corr();
-        ndc.push_back(n.second);
+        ndc[i] = n.second;
 
         output_each.push_back(std::to_string(n.first));
         output_each.push_back(std::to_string(n.second)); // masked
         output_each.push_back(std::to_string(handle.get_bad_slices().size()));
-        output.push_back(std::move(output_each));
+        output[i] = std::move(output_each);
+    });
 
-    }
     float outlier_threshold = tipl::outlier_range(ndc.begin(),ndc.end()).first;
     // 3 "scaled" MAD approach. The scale is -1/(sqrt(2)*erfcinv(3/2)) = 1.482602218505602f
     for(size_t i = 0;i < output.size();++i)
