@@ -1667,15 +1667,12 @@ QString showQNetworkReplyError(QNetworkReply* reply)
 {
     int http_error = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     if(http_error)
-        return QMap<int, QString>({{301, "Moved Permanently - The requested resource has been permanently moved to a new location."},
+        return QMap<int, QString>({
+            {301, "Moved Permanently - The requested resource has been permanently moved to a new location."},
             {302, "Found - The requested resource resides temporarily under a different URI."},
             {304, "Not Modified - The server has fulfilled the request, but the document has not been modified."},
             {400, "Bad Request - The request was invalid."},
             {401, "invalid auth token"},
-            {403, "Github api rate limit reached. Consider using a GitHub personal access token (PAT) to increase limit.\n\n"
-                  "1. Go to GitHub → Settings → Developer settings.\n"
-                  "2. Personal access tokens (classic) → Generate new token → check [repo][public_repo].\n"
-                  "3. Copy the token to DSI Studio's [Tools][GitHub PAT] field."},
             {404, "repository currently not available"},
             {405, "Method Not Allowed - The request method is not supported for the requested resource."},
             {408, "Request Timeout - The server timed out waiting for the request."},
@@ -1683,7 +1680,7 @@ QString showQNetworkReplyError(QNetworkReply* reply)
             {502, "Bad Gateway - The server received an invalid response from an upstream server."},
             {503, "Service Unavailable - The server is currently unable to handle the request."},
             {504, "Gateway Timeout - The server did not receive a timely response from an upstream server."},
-                                      }).value(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(),"Github api rate limit reached");
+                                      }).value(http_error,"error code: " + QString::number(http_error));
 
     return reply->errorString();
 }
