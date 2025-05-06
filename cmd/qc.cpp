@@ -188,7 +188,7 @@ int qc(tipl::program_option<tipl::out>& po)
     std::string source = po.get("source");
 
     bool is_fib = po.get("is_fib",tipl::ends_with(source,"fib.gz") || tipl::ends_with(source,".fz") ? 1:0);
-
+    tipl::max_thread_count = po.get("thread_count",tipl::max_thread_count);
     std::vector<std::string> file_list;
     if(QFileInfo(source.c_str()).isDir())
     {
