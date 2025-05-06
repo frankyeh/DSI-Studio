@@ -534,13 +534,13 @@ std::pair<float,float> src_data::quality_control_neighboring_dwi_corr(void)
             corr_pairs.push_back(std::make_pair(i,min_j));
     }
     std::vector<float> masked_ndc(corr_pairs.size()),ndc(corr_pairs.size());
-    tipl::adaptive_par_for(corr_pairs.size(),[&](size_t index)
+    for(size_t index = 0;index < corr_pairs.size();++index)
     {
         size_t i1 = corr_pairs[index].first;
         size_t i2 = corr_pairs[index].second;
         ndc[index] = float(tipl::correlation(src_dwi_data[i1],src_dwi_data[i1]+voxel.dim.size(),src_dwi_data[i2]));
         masked_ndc[index] = masked_correlation(src_dwi_data[i1],src_dwi_data[i2],voxel.mask);
-    });
+    }
     return std::make_pair(tipl::mean(ndc),tipl::mean(masked_ndc));
 }
 
