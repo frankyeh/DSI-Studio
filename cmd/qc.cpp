@@ -17,7 +17,7 @@ std::string quality_check_src_files(const std::vector<std::string>& file_list,
     size_t p = 0;
     tipl::par_for(file_list.size(),[&](size_t i)
     {
-        prog(p++,file_list.size());
+        prog(++p,file_list.size());
         if(prog.aborted())
             return;
         std::vector<std::string> output_each;
