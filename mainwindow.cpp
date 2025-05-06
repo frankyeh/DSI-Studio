@@ -1663,26 +1663,29 @@ void MainWindow::on_load_tags_clicked()
     QTimer::singleShot(0,this, [=](){loadTags(QUrl(url), repo, QJsonArray(), per_page[std::min<int>(per_page.size()-1,github_api_rate_limit/15)]);});
 }
 
-template<typename reply_type>
-QString showError(reply_type reply)
+QString showQNetworkReplyError(QNetworkReply* reply)
 {
-    return QMap<int, QString>({{301, "Moved Permanently - The requested resource has been permanently moved to a new location."},
-        {302, "Found - The requested resource resides temporarily under a different URI."},
-        {304, "Not Modified - The server has fulfilled the request, but the document has not been modified."},
-        {400, "Bad Request - The request was invalid."},
-        {401, "invalid auth token"},
-        {403, "Github api rate limit reached. Consider using a GitHub personal access token (PAT) to increase limit.\n\n"
-              "1. Go to GitHub → Settings → Developer settings.\n"
-              "2. Personal access tokens (classic) → Generate new token → check [repo][public_repo].\n"
-              "3. Copy the token to DSI Studio's [Tools][GitHub PAT] field."},
-        {404, "repository currently not available"},
-        {405, "Method Not Allowed - The request method is not supported for the requested resource."},
-        {408, "Request Timeout - The server timed out waiting for the request."},
-        {500, "Internal Server Error - The server encountered an unexpected condition."},
-        {502, "Bad Gateway - The server received an invalid response from an upstream server."},
-        {503, "Service Unavailable - The server is currently unable to handle the request."},
-        {504, "Gateway Timeout - The server did not receive a timely response from an upstream server."},
-                                  }).value(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(),"Github api rate limit reached");
+    int http_error = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    if(http_error)
+        return QMap<int, QString>({{301, "Moved Permanently - The requested resource has been permanently moved to a new location."},
+            {302, "Found - The requested resource resides temporarily under a different URI."},
+            {304, "Not Modified - The server has fulfilled the request, but the document has not been modified."},
+            {400, "Bad Request - The request was invalid."},
+            {401, "invalid auth token"},
+            {403, "Github api rate limit reached. Consider using a GitHub personal access token (PAT) to increase limit.\n\n"
+                  "1. Go to GitHub → Settings → Developer settings.\n"
+                  "2. Personal access tokens (classic) → Generate new token → check [repo][public_repo].\n"
+                  "3. Copy the token to DSI Studio's [Tools][GitHub PAT] field."},
+            {404, "repository currently not available"},
+            {405, "Method Not Allowed - The request method is not supported for the requested resource."},
+            {408, "Request Timeout - The server timed out waiting for the request."},
+            {500, "Internal Server Error - The server encountered an unexpected condition."},
+            {502, "Bad Gateway - The server received an invalid response from an upstream server."},
+            {503, "Service Unavailable - The server is currently unable to handle the request."},
+            {504, "Gateway Timeout - The server did not receive a timely response from an upstream server."},
+                                      }).value(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(),"Github api rate limit reached");
+
+    return reply->errorString();
 }
 
 void MainWindow::update_rate_limit(QSharedPointer<QNetworkReply> reply)
@@ -1720,7 +1723,7 @@ void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array,int per_page)
                         loadTags(url, repo, array,per_page);
                     });
                 } else {
-                    QMessageBox::critical(this, "ERROR", showError(reply));
+                    QMessageBox::critical(this, "ERROR", showQNetworkReplyError(reply.get()));
                     if (status==401)
                         ui->github_token->clear();
                 }
@@ -1977,7 +1980,7 @@ void MainWindow::on_github_download_clicked()
 
         if (retry >= max_retry)
         {
-            QMessageBox::critical(this, "ERROR", showError(reply));
+            QMessageBox::critical(this, "ERROR", showQNetworkReplyError(reply.get()));
             return;
         }
         if (p.aborted())
@@ -2122,7 +2125,7 @@ void MainWindow::on_github_open_file_clicked()
         if (reply->error() != QNetworkReply::NoError)
         {
             if(reply->error() != QNetworkReply::OperationCanceledError)
-                QMessageBox::critical(this, "ERROR", showError(reply));
+                QMessageBox::critical(this, "ERROR", showQNetworkReplyError(reply.get()));
         }
         else
         {
