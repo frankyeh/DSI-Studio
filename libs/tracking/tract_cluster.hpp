@@ -54,11 +54,11 @@ public:
                 const float* points = &tracks[i][0];
                 unsigned int count = tracks[i].size();
                 std::vector<double> feature(10);
-                std::copy(points,points+3,feature.begin());
-                std::copy(points+count-3,points+count,feature.begin()+3);
+                std::copy_n(points,3,feature.begin());
+                std::copy_n(points+count-3,3,feature.begin()+3);
                 count >>= 1;
                 count -= count%3;
-                std::copy(points+count-3,points+count,feature.begin()+6);
+                std::copy_n(points+count-3,3,feature.begin()+6);
                 feature.back() = count;
                 features.push_back(feature);
             }
