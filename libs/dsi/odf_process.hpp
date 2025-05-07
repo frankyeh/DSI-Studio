@@ -238,10 +238,8 @@ public:
     virtual void run(Voxel& voxel, VoxelData& data)
     {
         size_t cur_index = data.voxel_index;
-        std::copy(voxel.template_odfs[index_mapping1[cur_index]].begin() +
-                  int64_t(index_mapping2[cur_index]),
-                  voxel.template_odfs[index_mapping1[cur_index]].begin() +
-                  int64_t(index_mapping2[cur_index])+int64_t(data.odf.size()),
+        std::copy_n(voxel.template_odfs[index_mapping1[cur_index]].begin() +
+                  int64_t(index_mapping2[cur_index]),int64_t(data.odf.size()),
                   data.odf.begin());
 
     }
