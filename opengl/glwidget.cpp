@@ -1358,7 +1358,7 @@ void GLWidget::add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos_)
         if(odf_smoothing)
         {
             new_odf_buffer.resize(half_odf);
-            std::copy(odf_buffer,odf_buffer+half_odf,new_odf_buffer.begin());
+            std::copy_n(odf_buffer,half_odf,new_odf_buffer.begin());
             auto& odf_faces = handle->dir.odf_faces;
             for(size_t index = 0;index < odf_faces.size();++index)
             {
@@ -1386,14 +1386,14 @@ void GLWidget::add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos_)
         if(odf_shape)
         {
             std::vector<float> odf(half_odf);
-            std::copy(odf_buffer,odf_buffer+half_odf,odf.begin());
+            std::copy_n(odf_buffer,half_odf,odf.begin());
 
             shaping.shape(odf,uint16_t(std::max_element(odf.begin(),odf.end())-odf.begin()));
 
             if(odf_shape == 1)
             {
                 new_odf_buffer.resize(half_odf);
-                std::copy(odf_buffer,odf_buffer+half_odf,new_odf_buffer.begin());
+                std::copy_n(odf_buffer,half_odf,new_odf_buffer.begin());
                 tipl::minus(new_odf_buffer.begin(),new_odf_buffer.end(),odf.begin());
             }
             else
@@ -2183,7 +2183,7 @@ bool GLWidget::command(std::vector<std::string> cmd)
     {
         if(data.size() < 16)
             return run->canceled();
-        std::copy(data.begin(),data.begin()+16,transformation_matrix.begin());
+        std::copy_n(data.begin(),16,transformation_matrix.begin());
         update();
         return true;
     };
