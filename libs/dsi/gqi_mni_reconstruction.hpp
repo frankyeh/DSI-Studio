@@ -270,7 +270,7 @@ public:
     {
         // calculate jacobian
         {
-            std::copy(affine.data(),affine.data()+9,data.jacobian.begin());
+            std::copy_n(affine.data(),9,data.jacobian.begin());
             tipl::pixel_index<3> pos_index(data.voxel_index,voxel.dim);
             if(!cdm_dis.shape().is_edge(pos_index))
             {
