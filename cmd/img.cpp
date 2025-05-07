@@ -285,7 +285,7 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
                     return false;
                 }
                 I_int16.resize(shape);
-                std::copy(I.begin(),I.begin()+std::min<size_t>(I.size(),shape.size()),I_int16.begin());
+                std::copy_n(I.begin(),std::min<size_t>(I.size(),shape.size()),I_int16.begin());
             }
             else
                 apply([&](auto& data){dicom >> data;});
