@@ -698,13 +698,18 @@ bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
     if(!is_mni)
     {
         // now decide whether the fib is qsdr
-        // in fib version >= 20250408, qsdr fib == has R2 (all .fz file will have "trans" matrix now)
-        if(mat_reader.has("R2"))
-            is_mni = true;
+        // in fib version >= 202504, qsdr fib == has R2 (all .fz file will have "trans" matrix now)
+        if(this_fib_ver >= 202504)
+        {
+            if(mat_reader.has("R2"))
+                is_mni = true;
+        }
         else
-        // in fib version <= 202408, qsdr fib == has "trans" matrix (template fib.gz files don't have R2 matrix)
-        if(this_fib_ver <= 202408 && mat_reader.has("trans"))
-            is_mni = true;
+        {
+            if(mat_reader.has("trans") && !mat_reader.has("image") && mat_reader.has("report")
+                && tipl::contains(mat_reader.read<std::string>("report"),"q-space diffeomorphic"))
+                is_mni = true;
+        }
     }
     tipl::out() << "fib_ver: " << this_fib_ver;
     tipl::out() << "dim: " << dim << " vs: " << vs;
