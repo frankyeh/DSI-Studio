@@ -524,8 +524,8 @@ bool dual_reg::load_warping(const std::string& filename)
         error_msg = "invalid displacement field";
         return false;
     }
-    std::copy(f2t_dis_ptr,f2t_dis_ptr+f2t_dis.size()*dimension,&f2t_dis[0][0]);
-    std::copy(t2f_dis_ptr,t2f_dis_ptr+t2f_dis.size()*dimension,&t2f_dis[0][0]);
+    std::copy_n(f2t_dis_ptr,f2t_dis.size()*dimension,&f2t_dis[0][0]);
+    std::copy_n(t2f_dis_ptr,t2f_dis.size()*dimension,&t2f_dis[0][0]);
     tipl::upsample_with_padding(t2f_dis,Its);
     tipl::upsample_with_padding(f2t_dis,Its);
     compute_mapping_from_displacement();
