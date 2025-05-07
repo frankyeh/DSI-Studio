@@ -349,7 +349,7 @@ public:
 			std::vector<float>::iterator iter = reverse_buffer.begin();
 			std::vector<float>::iterator end = reverse_buffer.begin()+buffer_back_pos-buffer_front_pos;
 			for(;iter < end;iter += 3,src -= 3)
-				std::copy(src,src+3,iter);
+                std::copy_n(src,3,iter);
 			return &*reverse_buffer.begin();
 		}
 
