@@ -159,10 +159,10 @@ public:
 
         // create additional layer
         hist_fa.resize(tipl::shape<3>(hist_fa.width(),hist_fa.height(),2));
-        std::copy(hist_fa.begin(),hist_fa.begin()+int64_t(hist_fa.plane_size()),hist_fa.begin()+int64_t(hist_fa.plane_size()));
+        std::copy_n(hist_fa.begin(),hist_fa.plane_size(),hist_fa.begin()+int64_t(hist_fa.plane_size()));
 
         hist_dir.resize(tipl::shape<3>(hist_dir.width(),hist_dir.height(),2));
-        std::copy(hist_dir.begin(),hist_dir.begin()+int64_t(hist_dir.plane_size()),hist_dir.begin()+int64_t(hist_dir.plane_size()));
+        std::copy_n(hist_dir.begin(),hist_dir.plane_size(),hist_dir.begin()+int64_t(hist_dir.plane_size()));
 
         mat_writer.write<tipl::io::masked_sloped>("fa0",hist_fa,voxel.dim.plane_size());
         mat_writer.write<tipl::io::masked_sloped>("dir0",hist_dir,voxel.dim.plane_size());
