@@ -2760,8 +2760,7 @@ bool src_data::save_to_file(const std::string& filename)
         tipl::image<4,unsigned short> buffer(nifti_dim);
         tipl::adaptive_par_for(src_bvalues.size(),[&](size_t index)
         {
-            std::copy(src_dwi_data[index],
-                      src_dwi_data[index]+voxel.dim.size(),
+            std::copy_n(src_dwi_data[index],voxel.dim.size(),
                       buffer.begin() + long(index*voxel.dim.size()));
         });
         if(!tipl::io::gz_nifti::save_to_file(filename,buffer,voxel.vs,voxel.trans_to_mni))
@@ -3297,7 +3296,7 @@ bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
 bool src_data::save_b0_to_nii(const std::string& nifti_file_name) const
 {
     tipl::image<3> buffer(voxel.dim);
-    std::copy(src_dwi_data[0],src_dwi_data[0]+buffer.size(),buffer.begin());
+    std::copy_n(src_dwi_data[0],buffer.size(),buffer.begin());
     return tipl::io::gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,voxel.trans_to_mni);
 }
 bool src_data::save_mask_nii(const std::string& nifti_file_name) const
