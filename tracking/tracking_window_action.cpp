@@ -1124,7 +1124,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
             return;
         }
         glWidget->connectivity.resize(tipl::shape<2>(row,col));
-        std::copy(buf,buf+row*col,glWidget->connectivity.begin());
+        std::copy_n(buf,row*col,glWidget->connectivity.begin());
 
 
 
@@ -1630,8 +1630,7 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
                 return;
             }
         }
-        std::copy(out.begin()+pos,out.begin()+pos+int(read_size),
-                  reinterpret_cast<short*>(&*(buf.end()-int(read_size*sizeof(short)))));
+        std::copy_n(out.begin()+pos,read_size,reinterpret_cast<short*>(&*(buf.end()-int(read_size*sizeof(short)))));
 
         QString output_name = dir + "/mod_" + QFileInfo(slice->source_files[i].c_str()).completeBaseName() + ".dcm";
 
