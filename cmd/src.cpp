@@ -112,11 +112,10 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
     if(dwi_nii_files.empty())
         return false;
 
-    std::vector<std::string> dwi_file;
-    std::vector<tipl::shape<3> > image_size;
-    std::vector<size_t> dwi_count;
-    std::vector<std::string> phase_dir;
-    // extract all information
+    std::vector<std::tuple<std::filesystem::path/*file path*/,
+                           std::string /*phase dir*/,
+                           tipl::shape<3> /*image dimension*/,
+                           size_t/*dwi count*/> > dwi_info;
     for(const auto& each : dwi_nii_files)
     {
         if (!tipl::ends_with(each,".nii.gz") &&
@@ -164,53 +163,52 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
             error_msg = nii.error_msg;
             return false;
         }
-        dwi_count.push_back(nii.dim(4));
         tipl::shape<3> s;
         nii.get_image_dimension(s);
-        image_size.push_back(s);
-        phase_dir.push_back(phase_str);
-        dwi_file.push_back(each);
-        tipl::out() << "image size: " << image_size.back() << " dwi count: " << dwi_count.back() << " phase encoding: " << phase_dir.back();
+
+        dwi_info.emplace_back(std::filesystem::path(each),phase_str,s,nii.dim(4));
+        tipl::out() << "image size: " << s << " dwi count: " << nii.dim(4) << " phase encoding: " << phase_str;
     }
-    auto arg = tipl::arg_sort(dwi_count,std::greater<float>());
-    tipl::reorder(dwi_file,arg);
-    tipl::reorder(image_size,arg);
-    tipl::reorder(dwi_count,arg);
-    tipl::reorder(phase_dir,arg);
+
+    // sort based on dwi count
+    std::sort(dwi_info.begin(),dwi_info.end(),
+              [&](const auto& lhs,const auto& rhs){return std::get<size_t>(lhs) > std::get<size_t>(rhs);});
+
     // for each image size, generate an SRC
-    for(size_t i = 0;i < arg.size();++i)
+    for(size_t i = 0;i < dwi_info.size();++i)
     {
-        if(!image_size[i].size())
+        if(!std::get<tipl::shape<3> >(dwi_info[i]).size())
             continue;
         std::vector<std::string> main_dwi_list,rev_pe_list;
-        main_dwi_list.push_back(dwi_file[i]);
-        tipl::out() << "creating src for " << dwi_file[i];
+        main_dwi_list.push_back(std::get<std::filesystem::path>(dwi_info[i]).string());
+        tipl::out() << "creating src for " << main_dwi_list.back();
         // match phase encoding
-        for(size_t j = i + 1;j < arg.size();++j)
-            if(image_size[i] == image_size[j])
+        for(size_t j = i + 1;j < dwi_info.size();++j)
+            if(std::get<tipl::shape<3> >(dwi_info[i]) == std::get<tipl::shape<3> >(dwi_info[j])) // image dimension the same
             {
-                if(phase_dir[i] == phase_dir[j])
+                if(std::get<std::string>(dwi_info[i]) == std::get<std::string>(dwi_info[j])) //phase direction the same
                 {
-                    tipl::out() << "adding " << dwi_file[j];
-                    main_dwi_list.push_back(dwi_file[j]);
+                    main_dwi_list.push_back(std::get<std::filesystem::path>(dwi_info[j]).string());
+                    tipl::out() << "adding " << main_dwi_list.back();
                 }
                 else
                 {
-                    tipl::out() << "reverse encoding adding " << dwi_file[j];
-                    rev_pe_list.push_back(dwi_file[j]);
-                }
-                image_size[j] = tipl::shape<3>();
-            }
-        image_size[i] = tipl::shape<3>();
-        dwi_file[i].erase(dwi_file[i].length() - 7, 7); // remove .nii.gz
-        auto src_name = dwi_file[i] + ".sz";
-        auto rsrc_name = dwi_file[i] + ".rz";
+                    rev_pe_list.push_back(std::get<std::filesystem::path>(dwi_info[j]).string());
+                    tipl::out() << "reverse encoding adding " << rev_pe_list.back();
 
+                }
+                std::get<tipl::shape<3> >(dwi_info[j]) = tipl::shape<3>();
+            }
+        std::get<tipl::shape<3> >(dwi_info[i]) = tipl::shape<3>();
+
+
+        auto dwi_file_name = main_dwi_list.back();
         if(!output_dir.empty())
-        {
-            src_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).stem().stem().u8string() + ".sz";
-            rsrc_name = output_dir + "/" + std::filesystem::path(dwi_file[i]).stem().stem().u8string() + ".rz";
-        }
+            dwi_file_name = output_dir + "/" + tipl::split(std::filesystem::path(dwi_file_name).filename().string(),'.').front();
+        else
+            dwi_file_name.erase(dwi_file_name.length() - 7, 7); // remove .nii.gz
+        auto src_name = dwi_file_name + ".sz";
+        auto rsrc_name = dwi_file_name + ".rz";
         if(!overwrite && std::filesystem::exists(src_name))
         {
             tipl::out() << "skipping " << src_name << ": already exists";
