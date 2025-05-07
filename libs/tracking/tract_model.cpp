@@ -173,7 +173,7 @@ class TinyTrack{
                     hr.h.x = t32[0];
                     hr.h.y = t32[1];
                     hr.h.z = t32[2];
-                    std::copy(hr.buf,hr.buf+16,out);
+                    std::copy_n(hr.buf,16,out);
                     out += sizeof(tract_header)-3;
                     for(size_t j = 3;j < t32.size();j++)
                         out[j] = char(t32[j]);
@@ -235,7 +235,7 @@ class TinyTrack{
             {
                 auto& cur_tract = tract_data[i+add_tract_index];
                 tract_header hr;
-                std::copy(&track_buf[pos[i]],&track_buf[pos[i]]+16,hr.buf);
+                std::copy_n(&track_buf[pos[i]],16,hr.buf);
                 if(hr.h.count > buf_size)
                     return;
                 cur_tract.resize(hr.h.count);
@@ -282,7 +282,7 @@ struct TrackVis
         std::copy(geo_.begin(),geo_.end(),dim);
         std::copy(voxel_size_.begin(),voxel_size_.end(),voxel_size);
         std::copy(trans.begin(),trans.end(),&vox_to_ras[0][0]);
-        std::copy(voxel_order,voxel_order+4,pad2);
+        std::copy_n(voxel_order,4,pad2);
     }
     bool load_from_file(const char* file_name,
                 std::vector<std::vector<float> >& loaded_tract_data,
@@ -297,9 +297,9 @@ struct TrackVis
         if (!in.open(file_name))
             return false;
         in.read((char*)this,1000);
-        std::copy(dim,dim+3,geo.begin());
-        std::copy(voxel_size,voxel_size+3,vs.begin());
-        std::copy(&vox_to_ras[0][0],&vox_to_ras[0][0]+16,trans_to_mni.begin());
+        std::copy_n(dim,3,geo.begin());
+        std::copy_n(voxel_size,3,vs.begin());
+        std::copy_n(&vox_to_ras[0][0],16,trans_to_mni.begin());
         unsigned int track_number = n_count;
         info = reserved;
         if(info.find(' ') != std::string::npos)
@@ -543,8 +543,8 @@ bool load_fib_from_tracks(const char* file_name,
             std::cout << "cannot read " << file_name << std::endl;
             return false;
         }
-        std::copy(vis.voxel_size,vis.voxel_size+3,vs.begin());
-        std::copy(vis.dim,vis.dim+3,geo.begin());
+        std::copy_n(vis.voxel_size,3,vs.begin());
+        std::copy_n(vis.dim,3,geo.begin());
     }
     else
         if(QString(file_name).endsWith("tt.gz"))
@@ -688,7 +688,7 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
             loaded_tract_data[index].resize(length[index]*3);
             if(cluster)
                 loaded_tract_cluster.push_back(cluster[index]);
-            std::copy(buf,buf + loaded_tract_data[index].size(),loaded_tract_data[index].begin());
+            std::copy_n(buf,loaded_tract_data[index].size(),loaded_tract_data[index].begin());
             buf += loaded_tract_data[index].size();
         }
         in.read("trans",source_trans_to_mni);
@@ -1222,8 +1222,7 @@ bool TractModel::save_all(const char* file_name,
             trk.init(all[0]->geo,all[0]->vs,all[0]->trans_to_mni);
             trk.n_count = 0;
             trk.n_properties = 1;
-            std::copy(all[0]->report.begin(),all[0]->report.begin()+
-                    std::min<int>(439,all[0]->report.length()),trk.reserved);
+            std::copy_n(all[0]->report.begin(),std::min<int>(439,all[0]->report.length()),trk.reserved);
             for(unsigned int index = 0;index < all.size();++index)
                 trk.n_count += all[index]->tract_data.size();
             out.write((const char*)&trk,1000);
@@ -1292,7 +1291,7 @@ bool TractModel::load_tracts_color_from_file(const char* file_name)
               std::istream_iterator<float>(),
               std::back_inserter(colors));
     if(colors.size() <= tract_color.size())
-        std::copy(colors.begin(),colors.begin()+colors.size(),tract_color.begin());
+        std::copy_n(colors.begin(),colors.size(),tract_color.begin());
     if(colors.size()/3 <= tract_color.size())
         for(unsigned int index = 0,pos = 0;pos+2 < colors.size();++index,pos += 3)
             tract_color[index] = tipl::rgb(std::min<int>(colors[pos],255),
@@ -4248,9 +4247,9 @@ void ConnectivityMatrix::network_property(std::string& report)
         bin = binary_matrix;
         std::vector<float> V(binary_matrix.size()),d(n);
         tipl::mat::eigen_decomposition_sym(bin.begin(),V.begin(),d.begin(),tipl::shape<2>(n,n));
-        std::copy(V.begin(),V.begin()+n,eigenvector_centrality_bin.begin());
+        std::copy_n(V.begin(),n,eigenvector_centrality_bin.begin());
         tipl::mat::eigen_decomposition_sym(norm_matrix.begin(),V.begin(),d.begin(),tipl::shape<2>(n,n));
-        std::copy(V.begin(),V.begin()+n,eigenvector_centrality_wei.begin());
+        std::copy_n(V.begin(),n,eigenvector_centrality_wei.begin());
     }
 
     std::vector<float> pagerank_centrality_bin(n),pagerank_centrality_wei(n);
