@@ -1321,6 +1321,7 @@ bool dcm2src_and_nii(QStringList files)
             tipl::out() << "vs: " << v.vs;
             tipl::out() << "trans: " << tipl::matrix<3,3,float>(v.orientation_matrix);
             tipl::out() << "dim order: " << tipl::vector<3,int>(v.dim_order);
+            tipl::out() << "flipping: " << tipl::vector<3,int>(v.flip);
             v >> source_images;
             v.get_voxel_size(vs);
         }
