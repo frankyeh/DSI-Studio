@@ -129,7 +129,7 @@ bool view_image::command(std::string cmd,std::string param1)
                 for(size_t i = 1,pos = size_per_image;i < dim4;++i,pos += size_per_image)
                 {
                     buf4d[i].resize(size_per_image);
-                    std::copy(buf.data()+pos,buf.data()+pos+size_per_image,buf4d[i].data());
+                    std::copy_n(buf.data()+pos,size_per_image,buf4d[i].data());
                 }
                 nifti.set_dim(cur_image->shape.expand(dim4));
                 cur_4d_index = 0;
