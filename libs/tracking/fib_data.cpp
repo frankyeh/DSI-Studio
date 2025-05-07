@@ -613,7 +613,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
         {
             auto* ptr = odf.get_odf_data(pos);
             if(ptr!= nullptr)
-                std::copy(ptr,ptr+dir.half_odf_size,buf.begin()+int64_t(pos)*dir.half_odf_size);
+                std::copy_n(ptr,dir.half_odf_size,buf.begin()+int64_t(pos)*dir.half_odf_size);
         }
         return save(buf);
     }
