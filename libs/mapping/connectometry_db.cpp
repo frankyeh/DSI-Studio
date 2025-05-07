@@ -68,8 +68,7 @@ bool connectometry_db::load_db_from_fib(fib_data* handle_)
                 handle->error_msg = "incompatible database format";
                 return false;
             }
-            auto ptr = handle->mat_reader[matrix_index].get_data<float>();
-            std::copy(ptr,ptr+mask_size,index_ptr);
+            std::copy_n(handle->mat_reader[matrix_index].get_data<float>(),mask_size,index_ptr);
             handle->mat_reader.remove(matrix_index); // save memory
         }
         index_list = {index_name};
@@ -202,7 +201,7 @@ bool connectometry_db::parse_demo(void)
         if(!tipl::contains(first_column_title,"age") && !tipl::contains(first_column_title,"sex"))
         {
             // copy titles
-            std::copy(items.begin(),items.begin()+int(col_count),new_items.begin());
+            std::copy_n(items.begin(),col_count,new_items.begin());
             for(size_t i = 0;i < subject_names.size();++i)
             {
                 size_t matched_pos = 0;
@@ -224,7 +223,7 @@ bool connectometry_db::parse_demo(void)
                 if(matched_length > 1)
                 {
                     ++found;
-                    std::copy(items.begin()+matched_pos,items.begin()+matched_pos+col_count,new_items.begin() + size_t(i+1)*col_count);
+                    std::copy_n(items.begin()+matched_pos,col_count,new_items.begin() + size_t(i+1)*col_count);
                 }
             }
         }
@@ -497,10 +496,7 @@ bool connectometry_db::add_subjects(const std::vector<std::string>& file_names)
     {
         extracted_matrix.push_back(std::make_shared<tipl::io::mat_matrix>(each,float(0),file_names.size() + subject_names.size(),mask_size));
         if(!subject_names.empty())
-        {
-            auto ptr = handle->mat_reader[each].get_data<float>();
-            std::copy(ptr,ptr+subject_names.size()*mask_size,extracted_matrix.back()->get_data<float>());
-        }
+            std::copy_n(handle->mat_reader[each].get_data<float>(),subject_names.size()*mask_size,extracted_matrix.back()->get_data<float>());
     }
     size_t p = 0;
     tipl::par_for(file_names.size(),[&](size_t subject_index)
@@ -569,8 +565,7 @@ bool connectometry_db::add_db(const std::string& file_name)
         prog(p++,index_list.size());
         auto src_ptr = fib.mat_reader[each].get_data<float>();
         auto dst_ptr = handle->mat_reader[each].get_data<float>();
-        std::copy(src_ptr,src_ptr + fib.db.subject_names.size()*mask_size,
-                  dst_ptr + subject_names.size()*mask_size);
+        std::copy_n(src_ptr,fib.db.subject_names.size()*mask_size,dst_ptr + subject_names.size()*mask_size);
     }
     R2.insert(R2.end(),fib.db.R2.begin(),fib.db.R2.end());
     subject_names.insert(subject_names.end(),fib.db.subject_names.begin(),fib.db.subject_names.end());
@@ -767,8 +762,8 @@ void connectometry_db::calculate_change(unsigned char dif_type,unsigned char fil
             auto scan2 = ptr + second_base;
             if(iso_ptr)
             {
-                std::copy(scan1,scan1+mask_size,scan1_buf.data());
-                std::copy(scan2,scan2+mask_size,scan2_buf.data());
+                std::copy_n(scan1,mask_size,scan1_buf.data());
+                std::copy_n(scan2,mask_size,scan2_buf.data());
                 normalize_data_by_iso(iso_ptr + first_base,scan1_buf.data(),mask_size);
                 normalize_data_by_iso(iso_ptr + second_base,scan2_buf.data(),mask_size);
                 scan1 = scan1_buf.data();
@@ -1178,8 +1173,7 @@ bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap,unsigned int 
             {
                 unsigned int new_index = resample_order[index] = uint32_t(rand_gen(uint32_t(rhs.selected_subject.size())));
                 if(!X.empty())
-                    std::copy(rhs.X.begin()+int64_t(new_index)*x_col_count,
-                              rhs.X.begin()+int64_t(new_index)*x_col_count+x_col_count,X.begin()+pos);
+                    std::copy_n(rhs.X.begin()+int64_t(new_index)*x_col_count,x_col_count,X.begin()+pos);
             }
         }
 
