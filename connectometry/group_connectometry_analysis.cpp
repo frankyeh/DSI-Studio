@@ -350,7 +350,7 @@ void group_connectometry_analysis::calculate_adjusted_qa(stat_model& info)
         tipl::par_for(subject_data.size(),[&](size_t index)
         {
             auto data_ptr = subject_data_buffer.data() + index*n;
-            std::copy(subject_data[index],subject_data[index]+n,data_ptr);
+            std::copy_n(subject_data[index],n,data_ptr);
 
             normalize_data_by_iso(handle->db.subject_indices[info.selected_subject[index]],data_ptr,n);
 
