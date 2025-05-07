@@ -387,8 +387,7 @@ void DeviceTableWidget::detect_electrodes(void)
             {
                 std::sort(regions[i].begin(),regions[i].end());
                 tipl::pixel_index<3> pos(regions[i][regions[i].size()/2],I.shape());
-                std::vector<float> values;
-                tipl::get_window(pos,I,uint32_t(contact_distance_in_mm),values);
+                std::vector<float> values = tipl::get_window(pos,I,uint32_t(contact_distance_in_mm));
                 if(tipl::min_value(values) > 100)
                     regions[i].clear();
             }
