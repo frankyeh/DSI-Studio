@@ -204,8 +204,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
                                                  uint32_t(buf_image.height()),slice_num));
 
         for(size_t j = 0;j < slice_num;++j)
-        std::copy(buf_image.begin()+int64_t((j*num_gradient + index)*plane_size),
-                  buf_image.begin()+int64_t((j*num_gradient + index+1)*plane_size),
+        std::copy_n(buf_image.begin()+int64_t((j*num_gradient + index)*plane_size),plane_size,
                   new_file->image.begin()+int64_t(j*plane_size));
         new_file->file_name = file_name;
         std::ostringstream out;
@@ -556,8 +555,7 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
         new_file->report = report;
         new_file->image.resize(dim);
-        std::copy(bruker_header.get_image().begin()+index*new_file->image.size(),
-                  bruker_header.get_image().begin()+(index+1)*new_file->image.size(),
+        std::copy_n(bruker_header.get_image().begin()+index*new_file->image.size(),new_file->image.size(),
                     new_file->image.begin());
         new_file->file_name = file_name;
         std::ostringstream out;
@@ -705,7 +703,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             {
                 for(size_t pos = 0,pos2 = slice_index*geo[0];
                     pos < dwis[index]->image.size();pos += geo[0],pos2 += geo.plane_size())
-                    std::copy(dwis[index]->image.begin()+pos,dwis[index]->image.begin()+pos+geo[0],dwi_files[b_index]->image.begin() + pos2);
+                    std::copy_n(dwis[index]->image.begin()+pos,geo[0],dwi_files[b_index]->image.begin() + pos2);
             }
             if(slice_axis == 0)
             {
@@ -1217,11 +1215,8 @@ void dicom_parser::on_actionOpen_b_table_triggered()
             new_file->bvec[2] = b_table[i*4+3];
             new_file->image.resize(dim);
             for(int j = 0;j < dim.depth();++j)
-            {
-                unsigned int slice_pos = i+j*b_count;
-                std::copy(I.slice_at(slice_pos).begin(),I.slice_at(slice_pos).begin()+plane_size,
+                std::copy_n(I.slice_at(i+j*b_count).begin(),plane_size,
                           new_file->image.slice_at(j).begin());
-            }
             new_files.push_back(new_file);
         }
         dwi_files.swap(new_files);
