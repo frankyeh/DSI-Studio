@@ -150,7 +150,7 @@ public:
         d[1] = std::max(0.0,d[1]);
         d[2] = std::max(0.0,d[2]);
 
-        std::copy(V,V+3,voxel.fib_dir[data.voxel_index].begin());
+        std::copy_n(V,3,voxel.fib_dir[data.voxel_index].begin());
         voxel.fib_fa[data.voxel_index] = get_fa(float(d[0]),float(d[1]),float(d[2]));
 
         if(!md.empty())
