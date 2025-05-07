@@ -35,6 +35,61 @@
 #include "xnat_dialog.h"
 #include "console.h"
 
+
+void checkForVersionSpecificBugs_Minimal(const QString& bugListText)
+{
+    QDate compDate = QDate::fromString(__DATE__, "MMM dd yyyy");
+    if (!compDate.isValid())
+        return;
+
+    auto match_date = [&](auto op,auto date) -> bool
+    {
+        QDate rangeDate = QDate::fromString(date, "M/d/yyyy");
+        if (!rangeDate.isValid())
+            rangeDate = QDate::fromString(date, "MM/dd/yyyy");
+        if (!rangeDate.isValid())
+            return false;
+        if (op == ">=") return (compDate >= rangeDate);
+        else if (op == "<=") return (compDate <= rangeDate);
+        else if (op == ">") return (compDate > rangeDate);
+        else if (op == "<") return (compDate < rangeDate);
+        return false;
+    };
+
+    QStringList matchingBugs;
+    for (auto line : bugListText.split('\n', Qt::SkipEmptyParts))
+    {
+        tipl::out() << line.toStdString();
+        if (!line.contains("versions"))
+            continue;
+        int start = line.indexOf('['), end = line.indexOf(']');
+        if (start == -1 || end == -1 || end <= start)
+            continue;
+        QString spec = line.mid(start + 1, end - start - 1).trimmed();
+        QString desc = line.mid(end + 1).trimmed();
+        tipl::out() << "spec:" << spec.toStdString();
+        tipl::out() << "desc:" << spec.toStdString();
+        if (!spec.startsWith("versions ") || desc.isEmpty())
+            continue;
+        QStringList conds = spec.trimmed().split(' ', Qt::SkipEmptyParts);
+        bool match = true;
+        for(size_t i = 2;i < conds.size(); i += 2)
+            if(!match_date(conds[i-1].trimmed(),conds[i].trimmed()))
+            {
+                match = false;
+                break;
+            }
+        if (match)
+            matchingBugs.append(desc);
+    }
+
+    if (!matchingBugs.isEmpty())
+        QMessageBox::critical(nullptr, "Program Update Recommended",
+                              "Your program version is affected by the following known issues:\n\n- " +
+                              matchingBugs.join("\n- ") +
+                              "\n\nIt is highly recommended to update your program to the latest version to avoid these bugs.");
+}
+
 extern std::vector<std::string> fib_template_list;
 std::vector<tracking_window*> tracking_windows;
 MainWindow::MainWindow(QWidget *parent) :
@@ -199,6 +254,7 @@ MainWindow::MainWindow(QWidget *parent) :
                 NewsBrowser->setReadOnly(true);
                 NewsBrowser->setOpenExternalLinks(true);
                 left_layout->addWidget(NewsBrowser);
+                checkForVersionSpecificBugs_Minimal(news);
             }
 
             main_layout->addLayout(left_layout, 1);
