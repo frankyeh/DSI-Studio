@@ -104,13 +104,10 @@ struct distortion_map{
                 p[i2v+n] += 1.0f-w2p[i];
                 p[i2v+1+n] += w2p[i];
             }
-            const float* v1p = &*v1.begin()+pos;
-            const float* v2p = &*v2.begin()+pos;
-            std::vector<float> y;
-            y.resize(size_t(n2));
-            std::copy(v1p,v1p+n,y.begin());
-            std::copy(v2p,v2p+n,y.begin()+n);
-            tipl::mat::pseudo_inverse_solve(&M[0],&y[0],&v[0]+pos,tipl::shape<2>(uint32_t(n),uint32_t(n2)));
+            std::vector<float> y(n2);
+            std::copy_n(v1.data()+pos,n,y.data());
+            std::copy_n(v2.data()+pos,n,y.data()+n);
+            tipl::mat::pseudo_inverse_solve(&M[0],y.data(),v.data()+pos,tipl::shape<2>(uint32_t(n),uint32_t(n2)));
         });
     }
     void sample_gradient(const tipl::image<3>& g1,
