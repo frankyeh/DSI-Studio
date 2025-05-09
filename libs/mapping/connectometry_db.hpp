@@ -46,7 +46,7 @@ public:
     void init_db(void);
     bool extract_indices(const std::string& file_name,const std::vector<std::string>& index_list_to_extract,
               float& R2,const std::vector<float*>& data);
-    bool create_db(const std::vector<std::string>& file_names);
+    bool create_db(const std::vector<std::string>& file_names,const std::vector<std::string>& included_index = std::vector<std::string>());
     bool add_subjects(const std::vector<std::string>& file_names);
     bool add_db(const std::string& file_name);
     void get_subject_slice(unsigned int subject_index,unsigned char dim,unsigned int pos,

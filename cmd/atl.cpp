@@ -75,7 +75,7 @@ int db(tipl::program_option<tipl::out>& po)
     {
         fib_data fib;
         if(!fib.load_template_fib(po.get("template",0),template_reso) ||
-           !fib.db.create_db(name_list) ||
+           !fib.db.create_db(name_list,tipl::split(po.get("index_name","dti_fa,qa,rdi,iso"),',')) ||
            (po.has("demo") && !fib.db.parse_demo(po.get("demo"))))
         {
             tipl::error() <<  fib.error_msg << std::endl;

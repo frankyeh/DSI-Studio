@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <cstring>
+#include <unordered_set>
 #include "connectometry_db.hpp"
 #include "fib_data.hpp"
 #include "reg.hpp"
@@ -447,7 +448,8 @@ bool connectometry_db::set_current_index(const std::string& name)
         }
     return false;
 }
-bool connectometry_db::create_db(const std::vector<std::string>& file_names)
+bool connectometry_db::create_db(const std::vector<std::string>& file_names,
+                                 const std::vector<std::string>& included_index)
 {        
     if(file_names.empty())
         return false;
@@ -474,7 +476,7 @@ bool connectometry_db::create_db(const std::vector<std::string>& file_names)
         handle->error_msg = fib.error_msg + " at " + file_names[0];
         return false;
     }
-    index_list = fib.get_index_list(); // needed when adding subjects
+    index_list = (!included_index.empty() ? included_index:fib.get_index_list());
     if(!add_subjects(file_names))
     {
         index_list.clear();
