@@ -365,6 +365,7 @@ void MainWindow::openFile(QStringList file_names)
         else
         if(QString(file_name).endsWith("fib.gz") ||
            QString(file_name).endsWith(".fz") ||
+           QString(file_name).endsWith(".dz") ||
            QString(file_name).endsWith("tck"))
         {
             if(QString(file_name).endsWith("db.fib.gz") ||
