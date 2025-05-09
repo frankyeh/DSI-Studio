@@ -100,7 +100,7 @@ int cnn(tipl::program_option<tipl::out>& po)
     if(network_list.size() > 1)
     {       
         int thread_id = po.get("thread_id",0);
-        int thread_count = po.get("thread_count",1);
+        int thread_count = po.get("thread_count",tipl::max_thread_count);
         std::string output_name = po.get("network")+"."+std::to_string(thread_id)+".txt";
         int start_count = 0;
         {
