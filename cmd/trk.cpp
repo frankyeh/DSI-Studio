@@ -715,7 +715,7 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
     std::shared_ptr<TractModel> tract_model(new TractModel(handle));
     {
         tipl::progress prog("fiber tracking");
-        tracking_thread.run(tipl::max_thread_count,true);
+        tracking_thread.run(tipl::max_thread_count = po.get("thread_count",tipl::max_thread_count),true);
         tract_model->report += tracking_thread.report.str();
         if(po.has("report"))
         {
