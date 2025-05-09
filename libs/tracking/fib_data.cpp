@@ -753,7 +753,8 @@ tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& ma
 }
 bool fib_data::load_from_mat(void)
 {
-    if(!check_fib_dim_vs(mat_reader,dim,vs,trans_to_mni,is_mni))
+    if(!check_fib_dim_vs(mat_reader,dim,vs,trans_to_mni,
+                         is_mni = tipl::contains(std::filesystem::path(fib_file_name).filename().string(),".qsdr.")))
     {
         error_msg = mat_reader.error_msg;
         return false;
