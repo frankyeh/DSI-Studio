@@ -480,7 +480,7 @@ bool connectometry_db::create_db(const std::vector<std::string>& file_names)
         index_list.clear();
         return false;
     }
-    subject_report = fib.report;
+    handle->report = subject_report = fib.report;
     handle->intro = fib.intro;
     return true;
 }
