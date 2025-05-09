@@ -366,6 +366,8 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *a
         }
     }
 
+    tipl::max_thread_count = po.get("thread_count",tipl::max_thread_count);
+
     std::string loop;
     if(po.has("loop"))
         loop = po.get("loop");
