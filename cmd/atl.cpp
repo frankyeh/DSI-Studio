@@ -81,6 +81,14 @@ int db(tipl::program_option<tipl::out>& po)
             tipl::error() <<  fib.error_msg << std::endl;
             return 1;
         }
+
+        if(po.has("intro"))
+        {
+            std::ifstream file(po.get("intro"));
+            fib.intro = std::string(std::istreambuf_iterator<char>(file),std::istreambuf_iterator<char>());
+        }
+
+
         std::string output = std::string(name_list.front().begin(),
                                          std::mismatch(name_list.front().begin(),name_list.front().begin()+
                                          int64_t(std::min(name_list.front().length(),name_list.back().length())),
