@@ -45,6 +45,26 @@ int rec(tipl::program_option<tipl::out>& po)
                     std::min<float>(2.0f,std::max<float>(src.voxel.vs[0],src.voxel.vs[2])) : src.voxel.vs[2]);
 
     }
+
+    {
+        if(po.has("output"))
+        {
+            std::string output = po.get("output");
+            if(QFileInfo(output.c_str()).isDir())
+                src.output_file_name = output + "/" + std::filesystem::path(src.file_name).filename().u8string();
+            else
+                src.output_file_name = output;
+        }
+
+        src.check_output_file_name();
+
+        if(po.get("overwrite",1) == 0 && std::filesystem::exists(src.output_file_name))
+        {
+            tipl::out() << "output file exist at " << src.output_file_name;
+            return 0;
+        }
+    }
+
     if(po.has("intro") && !src.load_intro(po.get("intro")))
     {
         tipl::error() << src.error_msg;
@@ -262,14 +282,6 @@ int rec(tipl::program_option<tipl::out>& po)
                 return 1;
             }
         }
-    }
-    if(po.has("output"))
-    {
-        std::string output = po.get("output");
-        if(QFileInfo(output.c_str()).isDir())
-            src.output_file_name = output + "/" + std::filesystem::path(src.file_name).filename().u8string();
-        else
-            src.output_file_name = output;
     }
     if (!src.reconstruction())
     {
