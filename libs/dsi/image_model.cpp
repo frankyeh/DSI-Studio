@@ -1979,6 +1979,7 @@ bool src_data::run_plugin(std::string exec_name,
         }
         else
         {
+            tipl::out() << "FSL installation not found: cannot find environmental variable FSLDIR";
             exec = (QCoreApplication::applicationDirPath() +  + "/plugin/" + exec_name.c_str()).toStdString();
             if(!std::filesystem::exists(exec))
             {
