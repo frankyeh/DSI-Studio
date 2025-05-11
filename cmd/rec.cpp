@@ -58,7 +58,7 @@ int rec(tipl::program_option<tipl::out>& po)
 
         src.check_output_file_name();
 
-        if(po.get("overwrite",1) == 0 && std::filesystem::exists(src.output_file_name))
+        if(po.get("overwrite",0) == 0 && std::filesystem::exists(src.output_file_name))
         {
             tipl::out() << "output file exist at " << src.output_file_name;
             return 0;
