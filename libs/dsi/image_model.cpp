@@ -1942,6 +1942,7 @@ bool src_data::distortion_correction(const std::string& filename)
 
 #include <QCoreApplication>
 #include <QRegularExpression>
+extern bool has_cuda;
 bool src_data::run_plugin(std::string exec_name,
                             std::string keyword,
                             size_t total_keyword_count,std::vector<std::string> param,std::string working_dir,std::string exec)
@@ -1957,39 +1958,26 @@ bool src_data::run_plugin(std::string exec_name,
             return false;
         }
         #else
+        std::string fsl_path = "/usr/local/fsl/bin";
         auto index = QProcess::systemEnvironment().indexOf(QRegularExpression("^FSLDIR=.+"));
         if(index != -1)
-        {
-            std::string fsl_path = QProcess::systemEnvironment()[index].split("=")[1].toStdString();
+            fsl_path = QProcess::systemEnvironment()[index].split("=")[1].toStdString() + "/bin/";
+        if(std::filesystem::exists(fsl_path))
             tipl::out() << "FSL installation found at " << fsl_path << std::endl;
-            exec = fsl_path + "/bin/" + exec_name;
-            if(exec_name == "eddy")
-            {
-                if(std::filesystem::exists(fsl_path + "/bin/eddy_openmp"))
-                    exec = fsl_path + "/bin/eddy_openmp";
-                if(std::filesystem::exists(fsl_path + "/bin/eddy_cpu"))
-                    exec = fsl_path + "/bin/eddy_cpu";
-            }
-            if(!std::filesystem::exists(exec))
-            {
-                error_msg = "cannot find ";
-                error_msg += exec;
-                return false;
-            }
-        }
         else
         {
-            tipl::out() << "FSL installation not found: cannot find environmental variable FSLDIR";
-            exec = (QCoreApplication::applicationDirPath() +  + "/plugin/" + exec_name.c_str()).toStdString();
-            if(!std::filesystem::exists(exec))
-            {
-                exec = std::string("/usr/local/fsl/bin/") + exec_name;
-                if(!std::filesystem::exists(exec))
-                {
-                    error_msg = "Cannot find FSL";
-                    return false;
-                }
-            }
+            tipl::out() << "FSL installation not found: cannot find environmental variable FSLDIR, try calling directly";
+            fsl_path.clear();
+        }
+        exec = fsl_path + exec_name;
+        if(exec_name == "eddy")
+        {
+            if(std::filesystem::exists(fsl_path + "eddy_cpu"))
+                exec = fsl_path + "eddy_cpu";
+            if(std::filesystem::exists(fsl_path + "eddy_openmp"))
+                exec = fsl_path + "eddy_openmp";
+            if(has_cuda && std::filesystem::exists(fsl_path + "eddy_cuda"))
+                exec = fsl_path + "eddy_cuda";
         }
         #endif
     }
@@ -2011,10 +1999,10 @@ bool src_data::run_plugin(std::string exec_name,
         switch(program.error())
         {
         case QProcess::FailedToStart:
-            error_msg = "The process failed to start. Either the invoked program is missing, or you may have insufficient permissions to invoke the program.";
+            error_msg = exec_name + " failed to start. Either " + exec_name + " is missing, or you have no permission to run it.";
         break;
         case QProcess::Crashed:
-            error_msg = "The process crashed some time after starting successfully.";
+            error_msg = exec_name + " crashed some time after starting successfully.";
         break;
         case QProcess::WriteError:
             error_msg = "An error occurred when attempting to write to the process. For example, the process may not be running, or it may have closed its input channel.";
