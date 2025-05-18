@@ -59,7 +59,6 @@ void checkForVersionSpecificBugs_Minimal(const QString& bugListText)
     QStringList matchingBugs;
     for (auto line : bugListText.split('\n', Qt::SkipEmptyParts))
     {
-        tipl::out() << line.toStdString();
         if (!line.contains("versions"))
             continue;
         int start = line.indexOf('['), end = line.indexOf(']');
@@ -67,8 +66,6 @@ void checkForVersionSpecificBugs_Minimal(const QString& bugListText)
             continue;
         QString spec = line.mid(start + 1, end - start - 1).trimmed();
         QString desc = line.mid(end + 1).trimmed();
-        tipl::out() << "spec:" << spec.toStdString();
-        tipl::out() << "desc:" << spec.toStdString();
         if (!spec.startsWith("versions ") || desc.isEmpty())
             continue;
         QStringList conds = spec.trimmed().split(' ', Qt::SkipEmptyParts);
