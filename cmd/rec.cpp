@@ -47,20 +47,26 @@ int rec(tipl::program_option<tipl::out>& po)
     }
 
     {
-        if(po.has("output"))
+        std::string check_exist_file;
+        if(po.has("save_src") || po.has("save_nii"))
+            check_exist_file = po.has("save_src") ? po.get("save_src") : po.get("save_nii");
+        else
         {
-            std::string output = po.get("output");
-            if(QFileInfo(output.c_str()).isDir())
-                src.output_file_name = output + "/" + std::filesystem::path(src.file_name).filename().u8string();
-            else
-                src.output_file_name = output;
+            if(po.has("output"))
+            {
+                std::string output = po.get("output");
+                if(QFileInfo(output.c_str()).isDir())
+                    src.output_file_name = output + "/" + std::filesystem::path(src.file_name).filename().u8string();
+                else
+                    src.output_file_name = output;
+            }
+            src.check_output_file_name();
+            check_exist_file = src.output_file_name;
         }
 
-        src.check_output_file_name();
-
-        if(po.get("overwrite",0) == 0 && std::filesystem::exists(src.output_file_name))
+        if(po.get("overwrite",0) == 0 && std::filesystem::exists(check_exist_file))
         {
-            tipl::out() << "output file exist at " << src.output_file_name;
+            tipl::out() << "output file exist at " << check_exist_file;
             return 0;
         }
     }
