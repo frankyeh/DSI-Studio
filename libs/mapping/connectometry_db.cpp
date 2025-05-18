@@ -165,6 +165,9 @@ bool connectometry_db::parse_demo(void)
         std::istringstream in(saved_demo);
         while(std::getline(in,line))
         {
+            if (!line.empty() && line.back() == '\r')
+                line.pop_back();
+
             if(row_count == 0 && std::count(line.begin(),line.end(),',') < std::count(line.begin(),line.end(),'\t'))
                 is_csv = false;
 
@@ -264,7 +267,9 @@ bool connectometry_db::parse_demo(void)
     {
         for(char each : std::string("/://|*?<>\"\\^~[]"))
             std::replace(titles[i].begin(),titles[i].end(),each,'_');
-        pout << "," << titles[i];
+        if(i)
+            pout << ",";
+        pout << titles[i];
     }
     pout << std::endl;
 
