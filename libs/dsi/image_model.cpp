@@ -2470,7 +2470,10 @@ bool src_data::run_eddy(std::string exec)
     }
     if(!load_topup_eddy_result())
     {
-        error_msg += " please install CUDA toolkit to run topup or eddy";
+        if(has_cuda)
+            error_msg += " please install CUDA toolkit to run eddy";
+        else
+            error_msg += " eddy terminated prematurely likely due to insufficient memory";
         return false;
     }
     std::filesystem::remove(temp_nifti());
