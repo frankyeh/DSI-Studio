@@ -117,7 +117,6 @@ MainWindow::MainWindow(QWidget *parent) :
     else
         ui->workDir->addItem(QDir::currentPath());
     ui->download_dir->setText(ui->workDir->currentText());
-    ui->github_token->setText(settings.value("github_token").toString());
 
     for(auto& each : fib_template_list)
     {        
@@ -451,7 +450,6 @@ MainWindow::~MainWindow()
         workdir_list << ui->workDir->itemText(index);
     std::swap(workdir_list[0],workdir_list[ui->workDir->currentIndex()]);
     settings.setValue("WORK_PATH", workdir_list);
-    settings.setValue("github_token", ui->github_token->text());
     delete ui;
 
 }
@@ -1635,14 +1633,13 @@ QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
 {
     QNetworkRequest request;
     request.setUrl(url);
-    request.setRawHeader("Accept", "application/json");
-    if(url.toString().contains("api.github"))
+    if(url.toString().contains("releases/assets/") && !token.isEmpty())
     {
-        QString authToken = ui->github_token->text().trimmed();
-        if (!authToken.isEmpty())
-            request.setRawHeader("Authorization",
-                                 QString("Bearer %1").arg(authToken).toUtf8());
+        request.setRawHeader("Accept", "application/octet-stream");
+        request.setRawHeader("Authorization",QString("token %1").arg(token).toUtf8());
     }
+    else
+        request.setRawHeader("Accept", "application/json");
 
     return QSharedPointer<QNetworkReply>(manager.get(request),
             [](QNetworkReply* reply)
@@ -1658,6 +1655,16 @@ void MainWindow::on_github_repo_currentIndexChanged(int index)
     if(ui->github_repo->currentIndex() < 0 || !fetch_github)
         return;
     QString repo = ui->github_repo->currentData().toString();
+    if(repo.contains("restricted"))
+    {
+        bool ok;
+        token = QInputDialog::getText(this,QApplication::applicationName(),"Please enter access token",QLineEdit::Normal,token,&ok);
+        if(!ok)
+        {
+            ui->github_repo->setCurrentIndex(0);
+            return;
+        }
+    }
 
     if(tags.find(repo) == tags.end())
     {
@@ -1776,8 +1783,6 @@ void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array,int per_page)
                     });
                 } else {
                     QMessageBox::critical(this, "ERROR", showQNetworkReplyError(reply.get()));
-                    if (status==401)
-                        ui->github_token->clear();
                 }
             }
         }
@@ -1816,6 +1821,7 @@ void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array,int per_page)
 
 void MainWindow::loadFiles()
 {
+    bool is_restricted = ui->github_repo->currentText().contains("restricted");
     ui->github_release_files->setSortingEnabled(false);
     ui->github_release_files->setUpdatesEnabled(false);
     ui->github_release_files->setRowCount(0);
@@ -1843,7 +1849,10 @@ void MainWindow::loadFiles()
         ui->github_release_files->setItem(row, 1, new QTableWidgetItem(QString::number(size)+units[i]));
         ui->github_release_files->setItem(row, 2, new QTableWidgetItem(assetObject.value("created_at").toString()));
         ui->github_release_files->setItem(row, 3, new QTableWidgetItem(QString::number(assetObject.value("download_count").toInteger())));
-        ui->github_release_files->setItem(row, 4, new QTableWidgetItem(assetObject.value("browser_download_url").toString()));
+        if(is_restricted)
+            ui->github_release_files->setItem(row, 4, new QTableWidgetItem(assetObject.value("url").toString()));
+        else
+            ui->github_release_files->setItem(row, 4, new QTableWidgetItem(assetObject.value("browser_download_url").toString()));
         ui->github_release_files->item(row,1)->setData(Qt::UserRole, assetObject.value("size").toInteger()); // Save the original size
         if(file_name.contains(".tsv"))
         {
