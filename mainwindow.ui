@@ -150,7 +150,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>5</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -3334,35 +3334,6 @@ p, li { white-space: pre-wrap; }
             <string/>
            </property>
           </widget>
-          <widget class="QLabel" name="label_50">
-           <property name="geometry">
-            <rect>
-             <x>40</x>
-             <y>160</y>
-             <width>71</width>
-             <height>24</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QLabel { color: black; }</string>
-           </property>
-           <property name="text">
-            <string>GitHub PAT:</string>
-           </property>
-          </widget>
-          <widget class="QLineEdit" name="github_token">
-           <property name="geometry">
-            <rect>
-             <x>120</x>
-             <y>160</y>
-             <width>191</width>
-             <height>22</height>
-            </rect>
-           </property>
-           <property name="echoMode">
-            <enum>QLineEdit::PasswordEchoOnEdit</enum>
-           </property>
-          </widget>
           <zorder>label_12</zorder>
           <zorder>parse_network_measures</zorder>
           <zorder>linear_reg</zorder>
@@ -3372,8 +3343,6 @@ p, li { white-space: pre-wrap; }
           <zorder>label_11</zorder>
           <zorder>clear_settings</zorder>
           <zorder>styles</zorder>
-          <zorder>label_50</zorder>
-          <zorder>github_token</zorder>
          </widget>
         </item>
        </layout>
