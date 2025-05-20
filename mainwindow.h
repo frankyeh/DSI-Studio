@@ -25,7 +25,7 @@ class MainWindow : public QMainWindow
 public:
     std::vector<QString> github_tsv_link;
     int github_api_rate_limit = 60;
-    QString cur_tag;
+    QString cur_tag,token;
     void update_rate_limit(QSharedPointer<QNetworkReply>);
 public:
     bool fetch_github = false;
