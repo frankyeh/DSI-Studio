@@ -1633,14 +1633,13 @@ QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
 {
     QNetworkRequest request;
     request.setUrl(url);
-    if(url.toString().contains("releases/assets/") && !token.isEmpty())
-    {
+    if(url.toString().contains("releases/assets/"))
         request.setRawHeader("Accept", "application/octet-stream");
-        request.setRawHeader("Authorization",QString("token %1").arg(token).toUtf8());
-    }
     else
         request.setRawHeader("Accept", "application/json");
 
+    if(!token.isEmpty())
+        request.setRawHeader("Authorization",QString("token %1").arg(token).toUtf8());
     return QSharedPointer<QNetworkReply>(manager.get(request),
             [](QNetworkReply* reply)
             {
@@ -1655,7 +1654,7 @@ void MainWindow::on_github_repo_currentIndexChanged(int index)
     if(ui->github_repo->currentIndex() < 0 || !fetch_github)
         return;
     QString repo = ui->github_repo->currentData().toString();
-    if(repo.contains("restricted"))
+    if(repo.contains("restricted") && token.isEmpty())
     {
         bool ok;
         token = QInputDialog::getText(this,QApplication::applicationName(),"Please enter access token",QLineEdit::Normal,token,&ok);
