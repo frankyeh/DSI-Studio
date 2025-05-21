@@ -148,11 +148,14 @@ MainWindow::MainWindow(QWidget *parent) :
         {
             // Get the vcardArray
             QJsonObject jsonObject = QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).object();
-            adrValue = jsonObject.value("city").toString() + "," +
-                       jsonObject.value("region").toString() + "," +
-                       jsonObject.value("countryCode").toString() + " " +
-                       jsonObject.value("zip").toString() + " ";
-            fnValue = jsonObject.value("as").toString();
+            if(!jsonObject.isEmpty())
+            {
+                adrValue = jsonObject.value("city").toString() + "," +
+                           jsonObject.value("region").toString() + "," +
+                           jsonObject.value("countryCode").toString() + " " +
+                           jsonObject.value("zip").toString() + " ";
+                fnValue = jsonObject.value("as").toString();
+            }
         }
 
         {
@@ -1809,8 +1812,8 @@ void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array,int per_page)
             tags[repo] = array;
             if (!array.isEmpty() && repo == ui->github_repo->currentData().toString())
                 QTimer::singleShot(0, this, [this]() {on_github_repo_currentIndexChanged(0);});
-            ui->load_tags->setEnabled(true);
         }
+        ui->load_tags->setEnabled(true);
         reply->deleteLater();
     });
 }
