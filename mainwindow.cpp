@@ -1645,12 +1645,12 @@ QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
 {
     QNetworkRequest request;
     request.setUrl(url);
-    if(url.toString().contains("releases/assets/"))
+    if(url.toString().contains("releases/assets/")) // when downloading restricted, the url is replaced by asset id
         request.setRawHeader("Accept", "application/octet-stream");
     else
         request.setRawHeader("Accept", "application/json");
 
-    if(!token.isEmpty())
+    if(!token.isEmpty() && url.toString().contains("restricted"))
         request.setRawHeader("Authorization",QString("token %1").arg(token).toUtf8());
     return QSharedPointer<QNetworkReply>(manager.get(request),
             [](QNetworkReply* reply)
