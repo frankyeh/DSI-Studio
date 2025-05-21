@@ -302,10 +302,19 @@ void MainWindow::login_with_param(QStringList param)
     {
         if (reply->error() == QNetworkReply::NoError)
         {
-            auto reg_info = reply->readAll().toStdString();
-            setWindowTitle(windowTitle().remove("(Offline)") + " " + reg_info.c_str());
-            if(tipl::contains(reg_info,"expired"))
-                QMessageBox::critical(this,"Notice",reg_info.c_str());
+            QString result = reply->readAll();
+            if(result.startsWith('{')) // json format
+            {
+                auto data = QJsonDocument::fromJson(result.toUtf8()).object();
+                if (data.contains("title"))
+                    setWindowTitle(windowTitle().remove("(Offline)") + " " + data["title"].toString());
+                if (data.contains("token"))
+                    token = data["token"].toString();
+                if (data.contains("notice"))
+                    QMessageBox::critical(this,"Notice",data["notice"].toString());
+            }
+            else
+                setWindowTitle(windowTitle().remove("(Offline)") + " " + result);
         }
         reply->deleteLater();
     });
@@ -1654,17 +1663,6 @@ void MainWindow::on_github_repo_currentIndexChanged(int index)
     if(ui->github_repo->currentIndex() < 0 || !fetch_github)
         return;
     QString repo = ui->github_repo->currentData().toString();
-    if(repo.contains("restricted") && token.isEmpty())
-    {
-        bool ok;
-        token = QInputDialog::getText(this,QApplication::applicationName(),"Please enter access token",QLineEdit::Normal,token,&ok);
-        if(!ok)
-        {
-            ui->github_repo->setCurrentIndex(0);
-            return;
-        }
-    }
-
     if(tags.find(repo) == tags.end())
     {
         tags[repo] = QJsonArray();
