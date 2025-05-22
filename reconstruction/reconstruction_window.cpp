@@ -51,6 +51,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->output_fa,
         ui->output_rd,
         ui->output_md,
+        ui->output_ad,
         ui->output_rd12,
         ui->output_tensor,
         ui->output_helix,
