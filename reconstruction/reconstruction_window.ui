@@ -393,8 +393,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>848</width>
-         <height>637</height>
+         <width>852</width>
+         <height>623</height>
         </rect>
        </property>
        <attribute name="label">
@@ -1013,6 +1013,16 @@
                    </property>
                    <property name="text">
                     <string>rd1,rd2</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="output_ad">
+                   <property name="statusTip">
+                    <string>ad</string>
+                   </property>
+                   <property name="text">
+                    <string>ad</string>
                    </property>
                   </widget>
                  </item>
