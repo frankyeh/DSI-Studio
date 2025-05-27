@@ -212,31 +212,27 @@ bool load_nii(tipl::program_option<tipl::out>& po,
               std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<std::shared_ptr<ROIRegion> >& regions);
-bool get_parcellation(tipl::program_option<tipl::out>& po,Parcellation& p,std::string connectivity)
+bool get_parcellation(tipl::program_option<tipl::out>& po,Parcellation& p,std::string roi_file_name)
 {
-    for(auto roi_file_name : tipl::split(connectivity,'+'))
+    if(!tipl::contains(roi_file_name,".")) // specify atlas name (e.g. --connectivity=AAL2)
     {
-        if(!tipl::contains(roi_file_name,".")) // specify atlas name (e.g. --connectivity=AAL2)
+        if(!p.load_from_atlas(roi_file_name))
         {
-            if(!p.load_from_atlas(roi_file_name))
-            {
-                tipl::error() << p.error_msg << std::endl;
-                return false;
-            }
+            tipl::error() << p.error_msg << std::endl;
+            return false;
         }
-        else
-        {
-            std::vector<std::shared_ptr<ROIRegion> > regions;
-            tipl::out() << "opening " << roi_file_name << std::endl;
-            if(!load_nii(po,p.handle,roi_file_name,regions)) // specify atlas file (e.g. --connectivity=subject_file.nii.gz)
-                return false;
-            p.load_from_regions(regions);
-        }
-        if(p.name.empty())
-            p.name = (std::filesystem::exists(roi_file_name)) ?
-                        std::filesystem::path(roi_file_name).stem().string():roi_file_name;
-
     }
+    else
+    {
+        std::vector<std::shared_ptr<ROIRegion> > regions;
+        tipl::out() << "opening " << roi_file_name << std::endl;
+        if(!load_nii(po,p.handle,roi_file_name,regions)) // specify atlas file (e.g. --connectivity=subject_file.nii.gz)
+            return false;
+        p.load_from_regions(regions);
+    }
+    if(p.name.empty())
+        p.name = (std::filesystem::exists(roi_file_name)) ?
+                    std::filesystem::path(roi_file_name).stem().string():roi_file_name;
     return true;
 }
 bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
@@ -576,21 +572,15 @@ bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
     if (po.has(roi_names[index]))
     {
         ROIRegion roi(handle);
-        QStringList roi_list = QString(po.get(roi_names[index]).c_str()).split("+");
-        std::string region_name;
-        for(int i = 0;i < roi_list.size();++i)
+        for(const auto& each : tipl::split(po.get(roi_names[index]),','))
         {
             ROIRegion other_roi(handle);
-            if(!load_region(po,handle,i ? other_roi : roi,roi_list[i].toStdString()))
+            if(!load_region(po,handle,roi.region.empty() ? roi : other_roi,each))
                 return false;
-            if(i)
-            {
+            if(!other_roi.region.empty())
                 roi.add_points(std::move(other_roi.region));
-                region_name += ",";
-            }
-            region_name += roi_list[0].toStdString();
         }
-        roi_mgr->setRegions(roi.region,roi.dim,roi.to_diffusion_space,type[index],region_name.c_str());
+        roi_mgr->setRegions(roi.region,roi.dim,roi.to_diffusion_space,type[index],po.get(roi_names[index]).c_str());
     }
     if(po.has("track_id"))
     {
