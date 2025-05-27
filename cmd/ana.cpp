@@ -22,7 +22,7 @@ bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std:
 bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
 
 bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
-                 ROIRegion& roi,const std::string& region_text);
+                 ROIRegion& roi,std::string region_text);
 
 void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<std::shared_ptr<ROIRegion> >& regions,
                             std::string& result)

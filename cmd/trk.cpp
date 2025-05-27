@@ -348,12 +348,9 @@ std::shared_ptr<fib_data> cmd_load_fib(tipl::program_option<tipl::out>& po)
     return handle;
 }
 bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
-                 ROIRegion& roi,const std::string& region_text)
+                 ROIRegion& roi,std::string file_name)
 {
-    QStringList str_list = QString(region_text.c_str()).split(",");// splitting actions
-    std::string file_name = str_list[0].toStdString();
     std::string region_name;
-
     // --roi=file_name:value but avoid windows path that includes drive letter
     {
         auto pos = file_name.find_last_of(':');
@@ -411,12 +408,6 @@ bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> h
             }
     }
 
-    // now perform actions
-    for(int i = 1;i < str_list.size();++i)
-    {
-        tipl::out() << str_list[i].toStdString() << " applied." << std::endl;
-        roi.perform(str_list[i].toStdString());
-    }
     if(roi.region.empty())
         tipl::warning() << file_name << " is an empty region file" << std::endl;
 
@@ -574,6 +565,12 @@ bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         ROIRegion roi(handle);
         for(const auto& each : tipl::split(po.get(roi_names[index]),','))
         {
+            if(each.find('.') == std::string::npos)
+            {
+                tipl::out() << "apply region operation: " << each;
+                roi.perform(each);
+                continue;
+            }
             ROIRegion other_roi(handle);
             if(!load_region(po,handle,roi.region.empty() ? roi : other_roi,each))
                 return false;
