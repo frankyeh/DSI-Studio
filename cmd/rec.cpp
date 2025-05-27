@@ -95,12 +95,11 @@ int rec(tipl::program_option<tipl::out>& po)
 
     if(po.has("cmd"))
     {
-        QStringList cmd_list = QString(po.get("cmd").c_str()).split("+");
-        for(int i = 0;i < cmd_list.size();++i)
+        for(const auto& each : tipl::split(po.get("cmd"),'+'))
         {
-            QStringList run_list = QString(cmd_list[i]).split("=");
-            if(!src.command(run_list[0].toStdString(),
-                                run_list.count() > 1 ? run_list[1].toStdString():std::string()))
+            auto run_list = tipl::split(each,'=');
+            run_list.resize(2);
+            if(!src.command(run_list[0],run_list[1]))
             {
                 tipl::error() << src.error_msg << std::endl;
                 return 1;
