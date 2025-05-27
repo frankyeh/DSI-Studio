@@ -242,7 +242,7 @@
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">QWidget {color: black} QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
+                <string notr="true">QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black;alternate-background-color: white}  QHeaderView::section { border: 0px ;background-color: white;color: black;}</string>
                </property>
                <property name="selectionMode">
                 <enum>QAbstractItemView::SingleSelection</enum>
@@ -305,7 +305,7 @@
                 </size>
                </property>
                <property name="styleSheet">
-                <string notr="true">QWidget {color: black} QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
+                <string notr="true">QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black;alternate-background-color: white}  QHeaderView::section { border: 0px ;background-color: white;color: black;}</string>
                </property>
                <property name="selectionMode">
                 <enum>QAbstractItemView::SingleSelection</enum>
@@ -566,7 +566,7 @@
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">Line { background-color: rgba(0, 0, 0, 255); color: black; }</string>
+                <string notr="true">Line { background-color: black; color: black; }</string>
                </property>
                <property name="frameShadow">
                 <enum>QFrame::Plain</enum>
@@ -1173,7 +1173,7 @@ SRC Files</string>
                  </font>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QWidget { color: black} QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px; color: black; }</string>
+                 <string notr="true">QListWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black;alternate-background-color: white}</string>
                 </property>
                </widget>
                <widget class="QLabel" name="label_4">
@@ -1208,7 +1208,7 @@ SRC Files</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">Line { background-color: rgba(0, 0, 0, 255); color: black; }</string>
+                 <string notr="true">Line { background-color: black; color: black; }</string>
                 </property>
                 <property name="frameShadow">
                  <enum>QFrame::Plain</enum>
@@ -1348,7 +1348,7 @@ Atlas</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">Line { background-color: rgba(0, 0, 0, 255); color: black; }</string>
+                 <string notr="true">Line { background-color: black; color: black; }</string>
                 </property>
                 <property name="frameShadow">
                  <enum>QFrame::Plain</enum>
@@ -1879,7 +1879,7 @@ Tractography</string>
                  </rect>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QWidget {border: 4px solid black;border-radius: 0px;padding: 0px;background-color: black}</string>
+                 <string notr="true">Line { background-color: black; color: black; }</string>
                 </property>
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
@@ -2308,7 +2308,7 @@ Tractography</string>
                 </rect>
                </property>
                <property name="styleSheet">
-                <string notr="true">Line { background-color: rgba(0, 0, 0, 255); color: black; }</string>
+                <string notr="true">Line { background-color: black; color: black; }</string>
                </property>
                <property name="frameShadow">
                 <enum>QFrame::Plain</enum>
@@ -3324,7 +3324,7 @@ p, li { white-space: pre-wrap; }
              <x>10</x>
              <y>10</y>
              <width>971</width>
-             <height>241</height>
+             <height>661</height>
             </rect>
            </property>
            <property name="styleSheet">
