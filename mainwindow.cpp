@@ -182,7 +182,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
             {
                 auto title = new QLabel("License Information:");
-                title->setStyleSheet("color: black; font-weight: bold;");
+                title->setStyleSheet("font-weight: bold;");
                 right_layout->addWidget(title);
             }
 
@@ -216,7 +216,7 @@ MainWindow::MainWindow(QWidget *parent) :
             {
                 auto note = new QLabel("By clicking 'Accept & Sign in', you agree to the licensing terms and will sign in using the registration information.");
                 note->setWordWrap(true);
-                note->setStyleSheet("color: black; font-weight: bold;");
+                note->setStyleSheet("font-weight: bold;");
                 right_layout->addWidget(note);
             }
 
@@ -243,7 +243,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
             {
                 auto title = new QLabel("News and Updates:");
-                title->setStyleSheet("color: black; font-weight: bold;");
+                title->setStyleSheet("font-weight: bold;");
                 left_layout->addWidget(title);
             }
 
@@ -2213,5 +2213,8 @@ void MainWindow::on_github_open_file_clicked()
     loop.exec();
 }
 
-
+void MainWindow::on_apply_style_clicked()
+{
+    qApp->setStyleSheet(ui->style->toPlainText());
+}
 
