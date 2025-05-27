@@ -98,11 +98,20 @@ DeviceTableWidget::DeviceTableWidget(tracking_window& cur_tracking_window_,QWidg
     setSelectionBehavior(QAbstractItemView::SelectRows);
     setSelectionMode(QAbstractItemView::SingleSelection);
     setAlternatingRowColors(true);
-    setStyleSheet("QTableView {selection-background-color: #AAAAFF; selection-color: #000000;}");
 
     setItemDelegate(new DeviceTypeDelegate(this));
 
-    connect(this,SIGNAL(cellClicked(int,int)),this,SLOT(check_status(int,int)));
+    connect(this, &QTableWidget::itemChanged, this, [=](QTableWidgetItem* item) {
+        if (item->column() != 0 || !(item->flags() & Qt::ItemIsUserCheckable))
+            return;
+        auto current = item->checkState();
+        auto previous = static_cast<Qt::CheckState>(item->data(Qt::UserRole+1).toInt());
+        if (current != previous) {
+            item->setData(Qt::UserRole+1, current);
+            emit need_update();
+        }
+    });
+
     connect(this,SIGNAL(itemChanged(QTableWidgetItem*)),this,SLOT(updateDevices(QTableWidgetItem*)));
     setEditTriggers(QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed);
 }
@@ -152,29 +161,6 @@ void DeviceTableWidget::updateDevices(QTableWidgetItem* cur_item)
     }
     emit need_update();
 }
-void DeviceTableWidget::check_status(int row, int col)
-{
-    if (col != 0)
-        return;
-    setCurrentCell(row,col);
-    if (item(row,0)->checkState() == Qt::Checked)
-    {
-        if (item(row,0)->data(Qt::ForegroundRole) == QBrush(Qt::gray))
-        {
-            item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
-            emit need_update();
-        }
-    }
-    else
-    {
-        if (item(row,0)->data(Qt::ForegroundRole) != QBrush(Qt::gray))
-        {
-            item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
-            emit need_update();
-        }
-    }
-}
-
 
 void DeviceTableWidget::newDevice()
 {
@@ -209,12 +195,9 @@ void DeviceTableWidget::new_device(std::shared_ptr<Device> device)
     QTableWidgetItem *item0 = new QTableWidgetItem(device->name.c_str());
     item0->setCheckState(Qt::Checked);
     QTableWidgetItem *item1 = new QTableWidgetItem(device->type.c_str());
-    item1->setData(Qt::ForegroundRole,QBrush(Qt::white));
     QTableWidgetItem *item2 = new QTableWidgetItem(QString::number(uint32_t(device->color)));
-    item2->setData(Qt::ForegroundRole,QBrush(Qt::white));
     item2->setData(Qt::UserRole,uint32_t(device->color));
     QTableWidgetItem *item3 = new QTableWidgetItem(QString::number(double(device->length)));
-    item3->setData(Qt::ForegroundRole,QBrush(Qt::white));
 
 
     setItem(int(devices.size())-1, 0, item0);
@@ -254,19 +237,13 @@ void DeviceTableWidget::copy_device()
 void DeviceTableWidget::check_all(void)
 {
     for(int row = 0;row < rowCount();++row)
-    {
         item(row,0)->setCheckState(Qt::Checked);
-        item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
-    }
     emit need_update();
 }
 void DeviceTableWidget::uncheck_all(void)
 {
     for(int row = 0;row < rowCount();++row)
-    {
         item(row,0)->setCheckState(Qt::Unchecked);
-        item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
-    }
     emit need_update();
 }
 bool DeviceTableWidget::load_device(const std::string& filename)

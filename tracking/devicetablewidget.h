@@ -43,7 +43,6 @@ private:
     void new_device(std::shared_ptr<Device> device);
 public slots:
     void updateDevices(QTableWidgetItem* item);
-    void check_status(int,int);
     void newDevice();
     void copy_device();
     void delete_all_devices();
