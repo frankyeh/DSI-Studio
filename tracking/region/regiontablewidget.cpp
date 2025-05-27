@@ -97,12 +97,30 @@ RegionTableWidget::RegionTableWidget(tracking_window& cur_tracking_window_,QWidg
     setSelectionBehavior(QAbstractItemView::SelectRows);
     setSelectionMode(QAbstractItemView::SingleSelection);
     setAlternatingRowColors(true);
-    setStyleSheet("QTableView {selection-background-color: #AAAAFF; selection-color: #000000;}");
 
     setItemDelegate(new ImageDelegate(this));
 
     connect(this,SIGNAL(cellClicked(int,int)),this,SLOT(check_check_status(int,int)));
-    connect(this,SIGNAL(itemChanged(QTableWidgetItem*)),this,SLOT(updateRegions(QTableWidgetItem*)));
+    connect(this, &QTableWidget::itemChanged, this, [=](QTableWidgetItem* item)
+    {
+        if (item->column() == 0)
+        {
+            regions[uint32_t(item->row())]->name = item->text().toStdString();
+            auto current = item->checkState();
+            if (current != static_cast<Qt::CheckState>(item->data(Qt::UserRole+1).toInt()))
+            {
+                item->setData(Qt::UserRole+1, current);
+                emit need_update();
+            }
+        }
+        if (item->column() == 1)
+            regions[uint32_t(item->row())]->regions_feature = uint8_t(item->text().toInt());
+        if (item->column() == 2)
+        {
+            regions[uint32_t(item->row())]->region_render->color = uint32_t(item->data(Qt::UserRole).toInt());
+            emit need_update();
+        }
+    });
     setEditTriggers(QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed);
 
 
@@ -115,19 +133,6 @@ void RegionTableWidget::contextMenuEvent ( QContextMenuEvent * event )
     if (event->reason() == QContextMenuEvent::Mouse)
     {
         cur_tracking_window.ui->menuRegions->popup(event->globalPos());
-    }
-}
-
-void RegionTableWidget::updateRegions(QTableWidgetItem* item)
-{
-    if (item->column() == 0)
-        regions[uint32_t(item->row())]->name = item->text().toStdString();
-    if (item->column() == 1)
-        regions[uint32_t(item->row())]->regions_feature = uint8_t(item->text().toInt());
-    if (item->column() == 2)
-    {
-        regions[uint32_t(item->row())]->region_render->color = uint32_t(item->data(Qt::UserRole).toInt());
-        emit need_update();
     }
 }
 
@@ -186,9 +191,6 @@ void RegionTableWidget::add_row(int row,QString name)
                                                     .arg(regions[row]->vs[0])
                                                     .arg(regions[row]->vs[1])
                                                     .arg(regions[row]->vs[2]));
-
-    item1->setData(Qt::ForegroundRole,QBrush(Qt::white));
-    item2->setData(Qt::ForegroundRole,QBrush(Qt::white));
     item2->setData(Qt::UserRole,uint32_t(regions[row]->region_render->color));
 
 
@@ -238,28 +240,6 @@ void RegionTableWidget::add_region(QString name,unsigned char feature,unsigned i
     regions.back()->is_diffusion_space = cur_tracking_window.current_slice->is_diffusion_space;
     regions.back()->to_diffusion_space = cur_tracking_window.current_slice->to_dif;
     add_row(int(regions.size()-1),name);
-}
-void RegionTableWidget::check_check_status(int row, int col)
-{
-    if (col != 0)
-        return;
-    setCurrentCell(row,col);
-    if (item(row,0)->checkState() == Qt::Checked)
-    {
-        if (item(row,0)->data(Qt::ForegroundRole) == QBrush(Qt::gray))
-        {
-            item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
-            emit need_update();
-        }
-    }
-    else
-    {
-        if (item(row,0)->data(Qt::ForegroundRole) != QBrush(Qt::gray))
-        {
-            item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
-            emit need_update();
-        }
-    }
 }
 
 void RegionTableWidget::update_color_map(void)
@@ -1122,7 +1102,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
 void RegionTableWidget::check_row(size_t row,bool checked)
 {
     item(row,0)->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
-    item(row,0)->setData(Qt::ForegroundRole,QBrush(checked ? Qt::black : Qt::gray));
+    item(row,0)->setData(Qt::UserRole+1,checked ? Qt::Unchecked : Qt::Checked);
 }
 
 void RegionTableWidget::move_up(void)
