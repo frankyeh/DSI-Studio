@@ -228,7 +228,7 @@ bool init_application(void)
         QFont font;
         font.setFamily(QString::fromUtf8("Arial"));
         QApplication::setFont(font);
-        // 2024/04/09 Users reported file open won't after update MacOS
+        // 2024/04/09 Users reported file open won't work after update MacOS
         QCoreApplication::setAttribute(Qt::AA_DontUseNativeDialogs);
         #endif
         QSettings settings;
