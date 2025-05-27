@@ -74,7 +74,7 @@ int cnt(tipl::program_option<tipl::out>& po)
         }
         else
         {
-            unsigned int voi_index = po.get("voi",uint32_t(0));
+            unsigned int voi_index = po.get("voi",variable_list.front());
             if(voi_index >= db.feature_titles.size())
             {
                 tipl::error() << "invalid variable of interest: " << voi_index << std::endl;
