@@ -475,25 +475,23 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
     }
     if(po.has("region"))
     {
-        QStringList roi_list = QString(po.get("region").c_str()).split("+");
-        for(int i = 0;i < roi_list.size();++i)
+        for(const auto& each : tipl::split(po.get("region"),','))
         {
             std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
-            if(!load_region(po,handle,*region.get(),roi_list[i].toStdString()))
+            if(!load_region(po,handle,*region.get(),each))
             {
                 tipl::error() << "fail to load the ROI file." << std::endl;
                 return 1;
             }
-            region->name = roi_list[i].toStdString();
+            region->name = each;
             regions.push_back(region);
         }
     }
     if(po.has("regions"))
     {
-        QStringList roi_list = QString(po.get("regions").c_str()).split("+");
-        for(int i = 0;i < roi_list.size();++i)
+        for(const auto& each : tipl::split(po.get("regions"),','))
         {
-            if(!load_nii(po,handle,po.get("regions"),regions))
+            if(!load_nii(po,handle,each,regions))
                 return 1;
         }
     }
