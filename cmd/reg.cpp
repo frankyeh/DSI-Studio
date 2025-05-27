@@ -697,47 +697,6 @@ void dual_reg::to_It_space(const tipl::shape<3>& new_Its)
 }
 
 
-bool load_nifti_file(std::string file_name_cmd,
-                     tipl::image<3>& data,
-                     tipl::vector<3>& vs,
-                     tipl::matrix<4,4>& trans,
-                     bool& is_mni)
-{
-    std::istringstream in(file_name_cmd);
-    std::string file_name,cmd;
-    std::getline(in,file_name,'+');
-    if(!tipl::io::gz_nifti::load_from_file(file_name.c_str(),data,vs,trans,is_mni))
-    {
-        tipl::error() << "cannot load file " << file_name << std::endl;
-        return false;
-    }
-    while(std::getline(in,cmd,'+'))
-    {
-        tipl::out() << "apply " << cmd << std::endl;
-        if(cmd == "gaussian")
-            tipl::filter::gaussian(data);
-        else
-        if(cmd == "sobel")
-            tipl::filter::sobel(data);
-        else
-        if(cmd == "mean")
-            tipl::filter::mean(data);
-        else
-        {
-            tipl::error() << "unknown command " << cmd << std::endl;
-            return false;
-        }
-    }
-    return true;
-}
-bool load_nifti_file(std::string file_name_cmd,tipl::image<3>& data,tipl::vector<3>& vs)
-{
-    tipl::matrix<4,4> trans;
-    bool is_mni;
-    return load_nifti_file(file_name_cmd,data,vs,trans,is_mni);
-}
-
-
 template<bool direction>
 bool save_warping(dual_reg& r,
                   const std::vector<std::string>& apply_warp_filename,
