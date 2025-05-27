@@ -551,11 +551,6 @@ void RegToolBox::on_run_reg_clicked()
     ui->run_reg->hide();
 
 }
-bool load_nifti_file(std::string file_name_cmd,
-                     tipl::image<3>& data,
-                     tipl::vector<3>& vs,
-                     tipl::matrix<4,4>& trans,
-                     bool& is_mni);
 
 void RegToolBox::on_stop_clicked()
 {
