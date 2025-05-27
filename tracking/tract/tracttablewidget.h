@@ -101,7 +101,6 @@ private:
     void delete_row(int row);
 public slots:
 
-    void check_check_status(int,int);
     void start_tracking(void);
 
     void fetch_tracts(void);

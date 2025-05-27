@@ -30,9 +30,18 @@ TractTableWidget::TractTableWidget(tracking_window& cur_tracking_window_,QWidget
     setSelectionBehavior(QAbstractItemView::SelectRows);
     setSelectionMode(QAbstractItemView::SingleSelection);
     setAlternatingRowColors(true);
-    setStyleSheet("QTableView {selection-background-color: #AAAAFF; selection-color: #000000;}");
 
-    QObject::connect(this,SIGNAL(cellClicked(int,int)),this,SLOT(check_check_status(int,int)));
+
+    connect(this, &QTableWidget::itemChanged, this, [=](QTableWidgetItem* item) {
+        if (item->column() != 0 || !(item->flags() & Qt::ItemIsUserCheckable))
+            return;
+        auto current = item->checkState();
+        auto previous = static_cast<Qt::CheckState>(item->data(Qt::UserRole+1).toInt());
+        if (current != previous) {
+            item->setData(Qt::UserRole+1, current);
+            emit show_tracts();
+        }
+    });
 
     timer = new QTimer(this);
     timer_update = new QTimer(this);
@@ -73,30 +82,6 @@ void TractTableWidget::contextMenuEvent(QContextMenuEvent * event )
     if(event->reason() == QContextMenuEvent::Mouse)
         cur_tracking_window.ui->menuTracts->popup(event->globalPos());
 }
-
-void TractTableWidget::check_check_status(int row, int col)
-{
-    if(col != 0)
-        return;
-    setCurrentCell(row,col);
-    if (item(row,0)->checkState() == Qt::Checked)
-    {
-        if (item(row,0)->data(Qt::ForegroundRole) == QBrush(Qt::gray))
-        {
-            item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::black));
-            emit show_tracts();
-        }
-    }
-    else
-    {
-        if (item(row,0)->data(Qt::ForegroundRole) != QBrush(Qt::gray))
-        {
-            item(row,0)->setData(Qt::ForegroundRole,QBrush(Qt::gray));
-            emit show_tracts();
-        }
-    }
-}
-
 
 
 void TractTableWidget::draw_tracts(unsigned char dim,int pos,
@@ -182,7 +167,7 @@ void TractTableWidget::addNewTracts(std::shared_ptr<TractModel> new_tract,bool c
     insertRow(tract_models.size()-1);
     QTableWidgetItem *item0 = new QTableWidgetItem(QString(new_tract->name.c_str()));
     item0->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
-    item0->setData(Qt::ForegroundRole,checked ? QBrush(Qt::black) : QBrush(Qt::gray));
+    item0->setData(Qt::UserRole+1,checked ? Qt::Unchecked : Qt::Checked);
     setItem(tract_models.size()-1, 0, item0);
     for(unsigned int index = 1;index <= 3;++index)
     {
@@ -1430,7 +1415,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         for(int row = 0;row < rowCount();++row)
         {
             item(row,0)->setCheckState(all ? Qt::Checked : Qt::Unchecked);
-            item(row,0)->setData(Qt::ForegroundRole,QBrush(all ? Qt::black : Qt::gray));
+            item(row,0)->setData(Qt::UserRole+1,all ? Qt::Unchecked : Qt::Checked);
         }
         return true;
     }
