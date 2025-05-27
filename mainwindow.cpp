@@ -2213,8 +2213,3 @@ void MainWindow::on_github_open_file_clicked()
     loop.exec();
 }
 
-void MainWindow::on_apply_style_clicked()
-{
-    qApp->setStyleSheet(ui->style->toPlainText());
-}
-
