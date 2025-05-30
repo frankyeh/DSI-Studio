@@ -463,7 +463,7 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
     tipl::io::bruker_2dseq bruker_header;
     if(!bruker_header.load_from_file(file_name))
     {
-        error_msg = "failed to load image from 2dseq";
+        error_msg = bruker_header.error_msg;
         return false;
     }
     tipl::vector<3,float> vs;
