@@ -399,6 +399,7 @@ void MainWindow::openFile(QStringList file_names)
         }
         else
         if(QString(file_name).endsWith(".nhdr") ||
+           QString(file_name).endsWith(".nrrd") ||
            QString(file_name).endsWith(".nii") ||
            QString(file_name).endsWith(".nii.gz") ||
                 QString(file_name).endsWith(".dcm"))
@@ -918,7 +919,7 @@ void MainWindow::on_view_image_clicked()
                                 this,
                                 "Open Image",
                                 ui->workDir->currentText(),
-                                "image files (*.nii *nii.gz *.dcm *.nhdr 2dseq *.fz *.dz *fib.gz *.sz *src.gz)" );
+                                "image files (*.nii *nii.gz *.dcm *.nhdr *.nrrd 2dseq *.fz *.dz *fib.gz *.sz *src.gz)" );
     if(filename.isEmpty())
         return;
     add_work_dir(QFileInfo(filename[0]).absolutePath());
@@ -1604,7 +1605,7 @@ void MainWindow::on_OpenDWI_2dseq_clicked()
                          this,
                          "Open 2dseq or Variant files",
                          ui->workDir->currentText(),
-                         "2dseq files (2dseq *.fdf);;All files (*)" ));
+                         "2dseq files (2dseq);;FDF files (*.fdf);;NRRD Files (*.nrrd);;All files (*)" ));
 }
 void MainWindow::on_tabWidget_currentChanged(int index)
 {
