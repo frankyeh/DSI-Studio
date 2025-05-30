@@ -165,7 +165,7 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
     is_mni = false;
     T.identity();
     tipl::progress prog("open image file ",std::filesystem::path(file_name).filename().u8string().c_str());
-    if(QString(file_name).endsWith(".nhdr"))
+    if(QString(file_name).endsWith(".nhdr") || QString(file_name).endsWith(".nrrd"))
     {
         tipl::io::nrrd<tipl::progress> nrrd;
         if(!nrrd.load_from_file(file_name))
