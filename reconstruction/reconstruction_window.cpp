@@ -801,39 +801,6 @@ void reconstruction_window::on_actionEnable_TEST_features_triggered()
     ui->align_slices->setVisible(true);
 }
 
-void reconstruction_window::on_actionImage_upsample_to_T1W_TESTING_triggered()
-{
-    QStringList filenames = QFileDialog::getOpenFileNames(
-            this,"Open Images files",absolute_path,
-            "Images (*.nii *nii.gz *.dcm);;All files (*)" );
-    if( filenames.isEmpty())
-        return;
-
-    tipl::image<3> ref;
-    tipl::vector<3> vs;
-    tipl::matrix<4,4> t;
-    if(!load_image_from_files(filenames,ref,vs,t))
-        return;
-    std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-                                                                subject_image_pre(tipl::image<3>(handle->dwi)),tipl::image<3,unsigned char>(),handle->voxel.vs,
-                                                                subject_image_pre(tipl::image<3>(ref)),tipl::image<3,unsigned char>(),vs,
-                                                                tipl::reg::rigid_body,
-                                                                tipl::reg::cost_type::mutual_info));
-    manual->on_rerun_clicked();
-    if(manual->exec() != QDialog::Accepted)
-        return;
-    tipl::progress prog_("rotating");
-    handle->rotate(ref.shape(),vs,manual->get_iT(),tipl::image<3,tipl::vector<3> >());
-    handle->voxel.report += " The diffusion images were rotated and scaled to the space of ";
-    handle->voxel.report += QFileInfo(filenames[0]).baseName().toStdString();
-    handle->voxel.report += ". The b-table was also rotated accordingly.";
-    ui->report->setText(handle->voxel.report.c_str());
-
-    update_dimension();
-    load_b_table();
-    on_SlicePos_valueChanged(ui->SlicePos->value());
-}
-
 void reconstruction_window::on_SagView_clicked()
 {
     view_orientation = 0;
