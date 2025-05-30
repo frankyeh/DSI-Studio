@@ -297,8 +297,7 @@ public:
     void rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_matrix<double>& affine);
     void rotate(const tipl::shape<3>& new_geo,
                 const tipl::vector<3>& new_vs,
-                const tipl::transformation_matrix<double>& affine,
-                const tipl::image<3,tipl::vector<3> >& cdm_dis = tipl::image<3,tipl::vector<3> >());
+                const tipl::transformation_matrix<double>& affine);
     void resample(float nv);
     void smoothing(void);
     bool align_acpc(float reso);

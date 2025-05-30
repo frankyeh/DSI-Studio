@@ -1185,8 +1185,7 @@ void src_data::rotate_one_dwi(unsigned int dwi_index,const tipl::transformation_
 
 void src_data::rotate(const tipl::shape<3>& new_geo,
                         const tipl::vector<3>& new_vs,
-                        const tipl::transformation_matrix<double>& T,
-                        const tipl::image<3,tipl::vector<3> >& cdm_dis)
+                        const tipl::transformation_matrix<double>& T)
 {
     std::vector<tipl::image<3,unsigned short> > rotated_dwi(src_dwi_data.size());
     std::vector<const unsigned short*> new_src_dwi_data(src_dwi_data.size());
@@ -1198,10 +1197,7 @@ void src_data::rotate(const tipl::shape<3>& new_geo,
             return;
         prog(p++,src_dwi_data.size());
         rotated_dwi[index].resize(new_geo);
-        if(cdm_dis.empty())
-            tipl::resample<tipl::interpolation::cubic>(dwi_at(index),rotated_dwi[index],T);
-        else
-            tipl::resample_dis<tipl::interpolation::cubic>(dwi_at(index),rotated_dwi[index],T,cdm_dis);
+        tipl::resample<tipl::interpolation::cubic>(dwi_at(index),rotated_dwi[index],T);
         new_src_dwi_data[index] = rotated_dwi[index].data();
     });
     if(prog.aborted())
