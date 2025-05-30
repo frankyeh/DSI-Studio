@@ -748,6 +748,48 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
                std::string& error_msg)
 {
     tipl::progress prog("opening ",file_list[0].toStdString().c_str());
+    if(file_list.size() == 1) // 4D NRRD FILES
+    {
+        tipl::io::nrrd<tipl::progress> nrrd;
+        if(!nrrd.load_from_file(file_list[0].toStdString()))
+        {
+            error_msg = nrrd.error_msg;
+            return false;
+        }
+        if(nrrd.values["dimension"] != "4" || nrrd.dim4 <= 1)
+        {
+            error_msg = "invalid dimension: expect DWI to be 4D Volumes";
+            return false;
+        }
+        if(!nrrd.values["modality"].empty() && nrrd.values["modality"] != "DWMRI")
+        {
+            error_msg = "invalid modality: " + nrrd.values["modality"];
+            return false;
+        }
+        tipl::image<4,float> image_buffer;
+        if(!(nrrd >> image_buffer))
+        {
+            error_msg = nrrd.error_msg;
+            return false;
+        }
+        for(int i = 0;prog(i,nrrd.dim4);++i)
+        {
+            dwi_files.push_back(std::make_shared<DwiHeader>());
+            dwi_files.back()->voxel_size = nrrd.vs;
+            dwi_files.back()->file_name = file_list[0].toStdString();
+            dwi_files.back()->image = image_buffer.slice_at(i);
+            dwi_files.back()->bvec = {0,0,0};
+            char gradient_name[32];
+            snprintf(gradient_name, sizeof(gradient_name), "DWMRI_gradient_%04d", i);
+            if(nrrd.values.find(gradient_name) != nrrd.values.end())
+                std::istringstream(nrrd.values[gradient_name]) >> dwi_files.back()->bvec[0] >> dwi_files.back()->bvec[1] >> dwi_files.back()->bvec[2];
+            if(dwi_files.back()->bvec.length2() > 0.0f)
+                std::istringstream(nrrd.values["DWMRI_b-value"]) >> dwi_files.back()->bvalue;
+        }
+        if(prog.aborted())
+            return false;
+        return true;
+    }
     std::vector<tipl::image<3> > image_buf;
     tipl::shape<3> dim;
     tipl::vector<3> vs;
@@ -1044,7 +1086,7 @@ bool parse_dwi(QStringList file_list,
     }
     if(QFileInfo(file_list[0]).suffix() == "fdf")
         return load_4d_fdf(file_list,dwi_files,error_msg);
-    if(QFileInfo(file_list[0]).suffix() == "nhdr")
+    if(QFileInfo(file_list[0]).suffix() == "nhdr" || QFileInfo(file_list[0]).suffix() == "nrrd")
         return load_nhdr(file_list,dwi_files,error_msg);
     if(QFileInfo(file_list[0]).fileName().endsWith(".nii") ||
             QFileInfo(file_list[0]).fileName().endsWith(".nii.gz"))
