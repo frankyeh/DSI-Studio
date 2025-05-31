@@ -750,7 +750,7 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
     tipl::progress prog("opening ",file_list[0].toStdString().c_str());
     if(file_list.size() == 1) // 4D NRRD FILES
     {
-        tipl::io::nrrd<tipl::progress> nrrd;
+        tipl::io::gz_nrrd nrrd;
         if(!nrrd.load_from_file(file_list[0].toStdString()))
         {
             error_msg = nrrd.error_msg;
