@@ -936,7 +936,8 @@ void MainWindow::on_view_image_clicked()
 
 void MainWindow::on_workDir_currentTextChanged(const QString &arg1)
 {
-    QDir::setCurrent(arg1);
+    if(!arg1.isEmpty())
+        QDir::setCurrent(arg1);
 }
 
 bool MainWindow::load_db(std::shared_ptr<group_connectometry_analysis>& database,QString& filename)
