@@ -368,16 +368,9 @@ int src(tipl::program_option<tipl::out>& po)
             }
         }
 
-        tipl::out() << "searching DICOM files in directory " << source.c_str() << std::endl;
-        tipl::search_files(source,"*.dcm",file_list);
-        if(file_list.empty())
-            tipl::search_files(source,"*.fdf",file_list);
-        if(file_list.empty())
-        {
-            dicom2src_and_nii(source);
-            return 0;
-        }
-        tipl::out() << "a total of " << file_list.size() << " files found in the directory" << std::endl;
+        tipl::out() << "converting DICOM files in directory " << source.c_str() << std::endl;
+        dicom2src_and_nii(source);
+        return 0;
     }
     else
         file_list.push_back(source);
