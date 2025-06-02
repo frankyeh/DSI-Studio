@@ -1060,7 +1060,7 @@ void tracking_window::dropEvent(QDropEvent *event)
                 if(tipl::is_label_image(I))
                     regions << file_name;
                 else
-                    openSlices(file_name.toStdString());
+                    command({"add_slice",file_name.toStdString()});
             }
         }
     }
