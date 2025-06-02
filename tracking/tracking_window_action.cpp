@@ -1424,14 +1424,11 @@ bool tracking_window::run_unet(void)
     unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(filename.toStdString().c_str());
     if(!unet.get())
     {
-        QMessageBox::critical(this,"ERROR","Cannot read the model file");
+        QMessageBox::critical(this,"ERROR","cannot read the model file");
         return false;
     }
     if(!unet->forward(current_slice->get_source(),current_slice->vs,p))
-    {
-        QMessageBox::critical(this,"ERROR","Cannot process image");
         return false;
-    }
     filename.chop(6);
     filename += "txt";
     if(std::filesystem::exists(filename.toStdString()))
