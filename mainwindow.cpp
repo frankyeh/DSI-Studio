@@ -35,6 +35,7 @@
 #include "xnat_dialog.h"
 #include "console.h"
 
+QString access_token;
 
 void checkForVersionSpecificBugs_Minimal(const QString& bugListText)
 {
@@ -312,7 +313,7 @@ void MainWindow::login_with_param(QStringList param)
                 if (data.contains("title"))
                     setWindowTitle(windowTitle().remove("(Offline)") + " " + data["title"].toString());
                 if (data.contains("token"))
-                    token = data["token"].toString();
+                    access_token = data["token"].toString();
                 if (data.contains("notice"))
                     QMessageBox::critical(this,"Notice",data["notice"].toString());
             }
@@ -1652,8 +1653,8 @@ QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
     else
         request.setRawHeader("Accept", "application/json");
 
-    if(!token.isEmpty() && url.toString().contains("restricted"))
-        request.setRawHeader("Authorization",QString("token %1").arg(token).toUtf8());
+    if(!access_token.isEmpty() && url.toString().contains("restricted"))
+        request.setRawHeader("Authorization",QString("token %1").arg(access_token).toUtf8());
     return QSharedPointer<QNetworkReply>(manager.get(request),
             [](QNetworkReply* reply)
             {
