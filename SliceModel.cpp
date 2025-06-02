@@ -10,6 +10,9 @@
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 #include "SliceModel.h"
 #include "fib_data.hpp"
 #include "reg.hpp"
@@ -265,12 +268,87 @@ tipl::const_pointer_image<3> CustomSliceModel::get_source(void) const
     return tipl::const_pointer_image<3>(source_images.empty() ? (const float*)(0) : &source_images[0],source_images.shape());
 }
 // ---------------------------------------------------------------------------
+
+
+bool download_private_github_asset(QString conceptualUrlString, QString accessToken, QString saveFilePath, std::string& error_msg)
+{
+    QNetworkAccessManager mgr;
+
+    auto performNetworkRequest = [&](QNetworkRequest& request, QNetworkReply::NetworkError& outError) -> QByteArray {
+        auto reply = mgr.get(request);
+        QEventLoop loop;
+        QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+        loop.exec();
+        QByteArray data;
+        if (reply->error() == QNetworkReply::NoError) data = reply->readAll();
+        else { outError = reply->error(); error_msg = reply->errorString().toStdString(); }
+        reply->deleteLater();
+        return data;
+    };
+
+    QUrl conceptualUrl(conceptualUrlString);
+    if (!conceptualUrl.isValid() || conceptualUrl.host() != "github.com") {
+        error_msg = "Invalid or non-GitHub URL."; return false;
+    }
+    QStringList segments = conceptualUrl.path().split('/', Qt::SkipEmptyParts);
+    if (segments.size() < 6 || segments[2] != "releases" || segments[3] != "download") {
+        error_msg = "URL format mismatch for GitHub Release asset."; return false;
+    }
+    QString account = segments[0], repo = segments[1],
+            tag = segments[4], fileName = segments[5];
+
+    QNetworkRequest apiReq;
+    apiReq.setUrl(QUrl(QString("https://api.github.com/repos/%1/%2/releases/tags/%3").arg(account, repo, tag)));
+    apiReq.setRawHeader("Accept", "application/vnd.github.v3+json");
+    apiReq.setRawHeader("Authorization", QString("token %1").arg(accessToken).toUtf8());
+
+    QNetworkReply::NetworkError apiError = QNetworkReply::NoError;
+    QByteArray apiResponse = performNetworkRequest(apiReq, apiError);
+
+    if (apiError != QNetworkReply::NoError) {
+        error_msg = "GitHub API query failed: " + error_msg; return false;
+    }
+
+    QString actualDownloadUrl;
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(apiResponse);
+    if (jsonDoc.isObject() && jsonDoc.object().contains("assets") && jsonDoc.object()["assets"].isArray()) {
+        for (const QJsonValue& val : jsonDoc.object()["assets"].toArray())
+            if (val.isObject() && val.toObject()["name"].toString().compare(fileName, Qt::CaseInsensitive) == 0) {
+                actualDownloadUrl = val.toObject()["url"].toString(); break;
+            }
+    }
+    if (actualDownloadUrl.isEmpty()) {
+        error_msg = "asset not found or no download URL in API response."; return false;
+    }
+
+    QNetworkRequest downloadReq;
+    downloadReq.setUrl(QUrl(actualDownloadUrl));
+    downloadReq.setRawHeader("Accept", "application/octet-stream");
+    downloadReq.setRawHeader("Authorization", QString("token %1").arg(accessToken).toUtf8());
+
+    QNetworkReply::NetworkError downloadError = QNetworkReply::NoError;
+    QByteArray fileData = performNetworkRequest(downloadReq, downloadError);
+
+    if (downloadError != QNetworkReply::NoError) {
+        error_msg = "file download failed: " + error_msg; return false;
+    }
+
+    QFile file(saveFilePath);
+    if (!file.open(QFile::WriteOnly)) {
+        error_msg = "failed to open file for writing: " + saveFilePath.toStdString(); return false;
+    }
+    file.write(fileData); file.close();
+
+    return true;
+}
+
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 bool parse_age_sex(const std::string& file_name,std::string& age,std::string& sex);
 QString get_matched_demo(QWidget *parent,std::shared_ptr<fib_data>);
 QImage read_qimage(QString filename,std::string& error);
+extern QString access_token;
 bool CustomSliceModel::load_slices(void)
 {
     if(source_file_name.empty())
@@ -290,41 +368,57 @@ bool CustomSliceModel::load_slices(void)
     {
         auto path = std::filesystem::path(handle->fib_file_name).parent_path() / std::filesystem::path(source_file_name).filename();
         if(!std::filesystem::exists(path.string()))
-        {
+        {   
             tipl::progress p("downloading data from ",source_file_name);
-            QNetworkAccessManager manager;
-            QNetworkRequest request;
-            request.setUrl(QString(source_file_name.c_str()));
-            request.setRawHeader("Accept", "application/json");
-            auto reply = QSharedPointer<QNetworkReply>(manager.get(request),
-                    [](QNetworkReply* r)
-                    {
-                        if(r->isRunning())
-                            r->abort();
-                        r->deleteLater();
-                    });
-            while (!reply->isFinished() && p(reply->bytesAvailable(),
-                                             reply->bytesAvailable()+1))
-                QApplication::processEvents();
-            if(p.aborted())
+            if(tipl::contains(source_file_name,"github.com") &&
+               tipl::contains(source_file_name,"restricted") && !access_token.isEmpty())
             {
-                error_msg = "download aborted";
-                return false;
+                if(!download_private_github_asset(QString::fromStdString(source_file_name),access_token,
+                                                  QString::fromStdString(path.string()),error_msg))
+                    return false;
             }
-            if (reply->error() == QNetworkReply::NoError)
+            else
             {
-                auto file = std::make_shared<QFile>(path.string().c_str());
-                if (!file->open(QFile::WriteOnly))
+                QNetworkAccessManager manager;
+                QNetworkRequest request;
+                auto url = QString::fromStdString(source_file_name);
+                request.setUrl(url);
+                request.setRawHeader("Accept", "application/json");
+                if(!access_token.isEmpty() && url.contains("restricted"))
+                    request.setRawHeader("Authorization",QString("token %1").arg(access_token).toUtf8());
+                auto reply = QSharedPointer<QNetworkReply>(manager.get(request),
+                        [](QNetworkReply* r)
+                        {
+                            if(r->isRunning())
+                                r->abort();
+                            r->deleteLater();
+                        });
+                while (!reply->isFinished() && p(reply->bytesAvailable(),
+                                                 reply->bytesAvailable()+1))
+                    QApplication::processEvents();
+                if(p.aborted())
                 {
-                    error_msg = "failed to save file with the fib file";
+                    error_msg = "download aborted";
                     return false;
                 }
-                file->write(reply->readAll());
+                if (reply->error() == QNetworkReply::NoError)
+                {
+                    auto file = std::make_shared<QFile>(path.string().c_str());
+                    if (!file->open(QFile::WriteOnly))
+                    {
+                        error_msg = "failed to save file with the fib file";
+                        return false;
+                    }
+                    file->write(reply->readAll());
+                }
             }
         }
         if(!std::filesystem::exists(path.string()))
         {
-            error_msg = "cannot download "+source_file_name;
+            if(tipl::contains(source_file_name,"restricted"))
+                error_msg = "need access privilege to download " + source_file_name;
+            else
+                error_msg = "cannot download "+source_file_name;
             return false;
         }
         source_file_name = path.string();
