@@ -100,7 +100,6 @@ RegionTableWidget::RegionTableWidget(tracking_window& cur_tracking_window_,QWidg
 
     setItemDelegate(new ImageDelegate(this));
 
-    connect(this,SIGNAL(cellClicked(int,int)),this,SLOT(check_check_status(int,int)));
     connect(this, &QTableWidget::itemChanged, this, [=](QTableWidgetItem* item)
     {
         if (item->column() == 0)
