@@ -2828,7 +2828,7 @@ bool src_data::save_to_file(const std::string& filename)
                 mat_writer.write<tipl::io::masked_sloped>("image"+std::to_string(index),src_dwi_data[index],
                                                    voxel.dim.plane_size(),voxel.dim.depth());
 
-            mat_writer.write("report",voxel.report);
+            mat_writer.write("report",voxel.report + voxel.recon_report);
             mat_writer.write("steps",voxel.steps);
             if(voxel.intro.empty() && std::filesystem::exists(std::filesystem::path(filename).parent_path() / "README"))
                 load_intro((std::filesystem::path(filename).parent_path() / "README").string());
