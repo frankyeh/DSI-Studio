@@ -126,6 +126,7 @@ public:
     void update_transform(void);
 public:
     CustomSliceModel(std::shared_ptr<fib_data> new_handle,const std::string& source_file_name_);
+    CustomSliceModel(std::shared_ptr<fib_data> new_handle,const std::vector<std::string>& file_list);
     CustomSliceModel(std::shared_ptr<fib_data> new_handle,std::shared_ptr<slice_model> new_slice);
     ~CustomSliceModel(void);
     bool save_mapping(const char* file_name);
