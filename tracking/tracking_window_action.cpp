@@ -431,7 +431,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         if(std::filesystem::exists(cmd[1]+"/slices"))
         {
             for(const auto& each : tipl::search_files(cmd[1]+"/slices","*nii.gz"))
-                if(openSlices(each))
+                if(command({"add_slice",each}))
                 {
                     auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
                     if(reg_slice.get())
@@ -742,8 +742,16 @@ bool tracking_window::command(std::vector<std::string> cmd)
         {
             if(cmd[0] == "add_mni_slice" && !handle->map_to_mni())
                 return run->failed(handle->error_msg);
-            if(!openSlices(cmd[1],cmd[0] == "add_mni_slice"))
-                return run->failed(error_msg);
+            auto slice = std::make_shared<CustomSliceModel>(handle,tipl::split(cmd[1],','));
+            slice->is_mni = (cmd[0] == "add_mni_slice");
+            if(!slice->load_slices())
+                return run->failed(error_msg = slice->error_msg);
+            addSlices(slice);
+            ui->SliceModality->setCurrentIndex(ui->SliceModality->count()-1);
+            if(slice->running)
+                start_reg();
+            updateSlicesMenu();
+            set_data("show_slice",Qt::Checked);
             glWidget->update();
             slice_need_update = true;
             return run->succeed();
@@ -1276,31 +1284,6 @@ void tracking_window::start_reg(void)
     timer2->start();
     history.has_other_thread = true;
 }
-bool tracking_window::openSlices(const std::string& filename,bool is_mni)
-{
-    auto files = tipl::split(filename,',');
-    if(files.empty())
-        return false;
-    auto slice = std::make_shared<CustomSliceModel>(handle,std::make_shared<slice_model>(
-                            std::filesystem::path(files[0]).stem().stem().string(),files[0]));
-    if(files.size() > 1)
-        slice->source_files = files;
-    slice->is_mni = is_mni;
-    if(!slice->load_slices())
-    {
-        QMessageBox::critical(this,"ERROR",slice->error_msg.c_str());
-        tipl::error() << slice->error_msg << std::endl;
-        return false;
-    }
-    addSlices(slice);
-    ui->SliceModality->setCurrentIndex(ui->SliceModality->count()-1);
-    if(slice->running)
-        start_reg();
-    updateSlicesMenu();
-    set_data("show_slice",Qt::Checked);
-    glWidget->update();
-    return true;
-}
 
 void tracking_window::insertPicture()
 {
@@ -1331,7 +1314,7 @@ void tracking_window::insertPicture()
     }
     QString filename = QFileDialog::getOpenFileName(
         this,"Open Picture",QFileInfo(work_path).absolutePath(),"Pictures (*.jpg *.tif *.bmp *.png);;All files (*)" );
-    if(filename.isEmpty() || !openSlices(filename.toStdString()))
+    if(filename.isEmpty() || !command({"add_slice",filename.toStdString()}))
         return;
     auto reg_slice_ptr = std::dynamic_pointer_cast<CustomSliceModel>(slices.back());
     if(!reg_slice_ptr.get())
