@@ -168,6 +168,15 @@ CustomSliceModel::CustomSliceModel(std::shared_ptr<fib_data> new_handle,
     handle->slices.push_back(view);
     is_diffusion_space = false;
 }
+CustomSliceModel::CustomSliceModel(std::shared_ptr<fib_data> new_handle,const std::vector<std::string>& file_list):
+    SliceModel(new_handle,std::make_shared<slice_model>(file_list[0])),
+    source_file_name(file_list[0])
+{
+    if(file_list.size() > 1)
+        source_files = file_list;
+    handle->slices.push_back(view);
+    is_diffusion_space = false;
+}
 // ---------------------------------------------------------------------------
 CustomSliceModel::CustomSliceModel(std::shared_ptr<fib_data> new_handle,
                                    std::shared_ptr<slice_model> new_slice):
