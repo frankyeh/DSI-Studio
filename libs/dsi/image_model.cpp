@@ -3243,6 +3243,25 @@ bool src_data::save_fib(void)
         error_msg = "aborted";
         return false;
     }
+    if(!voxel.other_image.empty())
+    {
+        // for htmls
+        {
+            std::string other_image_text;
+            for(unsigned int index = 0;index < voxel.other_image.size();++index)
+                if(voxel.other_image[index].empty())
+                {
+                    other_image_text += voxel.other_image_name[index];
+                    other_image_text += ",";
+                    continue;
+                }
+            mat_writer.write("other_images",other_image_text);
+        }
+        for(unsigned int index = 0;index < voxel.other_image.size();++index)
+            if(voxel.other_image[index].shape() == voxel.dim)
+                mat_writer.write<tipl::io::masked_sloped>(voxel.other_image_name[index],
+                                                          voxel.other_image[index],voxel.dim.plane_size());
+    }
     mat_writer.write("report",voxel.report + voxel.recon_report.str());
     mat_writer.write("steps",voxel.steps + voxel.step_report.str() + "[Step T2b][Run reconstruction]\n");
     mat_writer.write("intro",voxel.intro);
