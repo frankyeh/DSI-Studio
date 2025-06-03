@@ -545,3 +545,55 @@ int img(tipl::program_option<tipl::out>& po)
     }
     return 0;
 }
+
+
+
+
+int seg(tipl::program_option<tipl::out>& po)
+{
+    if(po.has("output") && std::filesystem::exists(po.get("output")) && !po.get("overwrite",0))
+    {
+        tipl::out() << "output exist, skipping";
+        return 0;
+    }
+
+    std::string source= po.get("source"),info;
+    variant_image var_image;
+    tipl::out() << "open " << source;
+    if(!var_image.load_from_file(source.c_str(),info))
+    {
+        tipl::error() << var_image.error_msg;
+        return 1;
+    }
+
+    {
+        tipl::progress p("run u-net");
+        auto model_path = QCoreApplication::applicationDirPath().toStdString()+ "/network/" + po.get("network","human.t1w.seg5.net.gz");
+        auto unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(model_path.c_str());
+        if(!unet.get())
+        {
+            tipl::error() << "cannot read network file at" + model_path;
+            return 1;
+        }
+
+        var_image.apply([&](auto& I){
+            unet->forward(I,var_image.vs,p);
+            auto cmd = po.get("cmd","be");
+            if(cmd == "be")
+                I *= unet->sum;
+            if(cmd == "seg")
+            {
+                I.clear();
+                var_image.I_int8 = unet->get_label();
+                var_image.pixel_type = variant_image::int8;
+            }
+        });
+
+        if(!var_image.command("save",po.get("output")))
+        {
+            tipl::error() << var_image.error_msg;
+            return 1;
+        }
+    }
+    return 0;
+}
