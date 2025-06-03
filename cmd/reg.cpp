@@ -288,7 +288,7 @@ void dual_reg::nonlinear_reg(bool& terminated)
     if(export_intermediate)
     {
         for(size_t i = 0;i < J.size();++i)
-            tipl::io::gz_nifti::save_to_file("J" + std::to_string(i) + ".nii.gz",J[i],Itvs,ItR);
+            tipl::io::gz_nifti::save_to_file("JJ" + std::to_string(i) + ".nii.gz",J[i],Itvs,ItR);
         tipl::image<dimension+1> buffer(f2t_dis.shape().expand(2*dimension));
         tipl::par_for(2*dimension,[&](unsigned int d)
         {
