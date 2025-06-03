@@ -111,6 +111,7 @@ void tracking_window::run_command(const std::string& cmd)
 }
 
 extern std::vector<tracking_window*> tracking_windows;
+extern std::vector<std::string> iso_template_list;
 bool tracking_window::command(std::vector<std::string> cmd)
 {
     if(glWidget->command(cmd))
@@ -806,8 +807,11 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         tipl::io::gz_nifti in;
         tipl::image<3> mask;
-        if(!in.load_from_file(handle->mask_template_file_name.c_str()) || !in.toLPS(mask))
+        if(!in.load_from_file(iso_template_list[handle->template_id]) || !in.toLPS(mask))
             return run->failed("current template does not have a built-in mask");
+        for(size_t i = 0;i < mask.size();++i)
+            if(mask[i] > 0.0f)
+                mask[i] = 1.0f;
         tipl::filter::mean(mask);
         tipl::filter::mean(mask);
 
