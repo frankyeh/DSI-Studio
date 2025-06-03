@@ -48,6 +48,7 @@ public:
     bool use_cuda = true;
     bool skip_linear = false;
     bool skip_nonlinear = false;
+    bool match_fov = true;
 public:
     dual_reg(void):modality_names(max_modality),I(max_modality),J(max_modality),It(max_modality),r(max_modality)
     {
@@ -85,6 +86,7 @@ public:
     void show_r(const std::string& prompt);
     void compute_mapping_from_displacement(void);
     void calculate_linear_r(void);
+    void It_match_fov(void);
     void calculate_nonlinear_r(void);
 public:
     float linear_reg(bool& terminated);
