@@ -1456,37 +1456,10 @@ void tracking_window::on_actionSegment_Tissue_triggered()
 {
     if(!run_unet())
         return;
-    // soft_max
-    {
-        tipl::adaptive_par_for(current_slice->dim.size(),[&](size_t pos)
-        {
-            float m = 0.0f;
-            for(size_t i = pos;i < unet->out.size();i += current_slice->dim.size())
-                if(unet->out[i] > m)
-                    m = unet->out[i];
-            if(unet->sum[pos] <= 0.5f)
-            {
-                for(size_t i = pos;i < unet->out.size();i += current_slice->dim.size())
-                    unet->out[i] = 0.0f;
-                return;
-            }
-            for(size_t i = pos;i < unet->out.size();i += current_slice->dim.size())
-                unet->out[i] = (unet->out[i] >= m ? 1.0f:0.0f);
-        });
 
-    }
     {
         // to 3d label
-        tipl::image<3> I(current_slice->dim);
-        tipl::adaptive_par_for(current_slice->dim.size(),[&](size_t pos)
-        {
-            for(size_t i = pos,label = 1;i < unet->out.size();i += current_slice->dim.size(),++label)
-                if(unet->out[i])
-                {
-                    I[pos] = label;
-                    return;
-                }
-        });
+        tipl::image<3> I = unet->get_label();
         std::vector<std::vector<tipl::vector<3,short> > > regions(unet->out_channels_);
         tipl::adaptive_par_for(unet->out_channels_,[&](size_t label)
         {
