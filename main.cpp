@@ -308,7 +308,7 @@ int reg(tipl::program_option<tipl::out>& po);
 int atk(tipl::program_option<tipl::out>& po);
 int xnat(tipl::program_option<tipl::out>& po);
 int img(tipl::program_option<tipl::out>& po);
-
+int seg(tipl::program_option<tipl::out>& po);
 static const std::unordered_map<std::string, int(*)(tipl::program_option<tipl::out>&)> action_map = {
     {"rec", rec},
     {"trk", trk},
@@ -326,7 +326,8 @@ static const std::unordered_map<std::string, int(*)(tipl::program_option<tipl::o
     {"reg", reg},
     {"atk", atk},
     {"xnat", xnat},
-    {"img", img}
+    {"img", img},
+    {"seg", seg}
 };
 
 
