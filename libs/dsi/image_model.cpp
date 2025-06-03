@@ -179,14 +179,47 @@ bool src_data::correct_distortion_by_t2w(const std::string& t2w_filename)
     std::string msg = " Susceptibility distortion was corrected by nonlinearly warping the b0 image to the T2-weighted image.";
     if(tipl::contains(voxel.report,msg))
         return true;
+    tipl::progress p("distortion correction using t2w image",true);
     dual_reg r;
     if(!r.load_template(0,t2w_filename))
     {
         error_msg = r.error_msg;
         return false;
     }
+
+    if(apply_mask)
+    {
+        tipl::progress p2("SRC file is masked, need to apply skull removal for t2w");
+
+        tipl::image<3> It2w;
+        tipl::vector<3> t2w_vs;
+        tipl::io::gz_nifti nii;
+
+        if(!nii.load_from_file(t2w_filename) || !nii.toLPS(It2w))
+        {
+            error_msg = nii.error_msg;
+            return false;
+        }
+        nii.get_voxel_size(t2w_vs);
+
+        auto t2wbet_model = (QCoreApplication::applicationDirPath()+"/network/brain.t2w.seg5.net.gz").toStdString();
+        if(!std::filesystem::exists(t2wbet_model))
+        {
+            error_msg = "cannot find segmentation model for t2w image at " + t2wbet_model;
+            return false;
+        }
+        auto unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(t2wbet_model.c_str());
+        if(!unet.get())
+        {
+            error_msg = "cannot read the model file " + t2wbet_model;
+            return false;
+        }
+        if(!unet->forward(It2w,t2w_vs,p2))
+            return false;
+        r.It[0] *= unet->sum;
+    }
+
     r.reg_type = tipl::reg::rigid_body;
-    r.param.speed = 1.0f;
     if(!warp_b0_to_image(r))
         return false;
     if(r.r[0] < 0.5f)
@@ -2828,7 +2861,7 @@ bool src_data::save_to_file(const std::string& filename)
                 mat_writer.write<tipl::io::masked_sloped>("image"+std::to_string(index),src_dwi_data[index],
                                                    voxel.dim.plane_size(),voxel.dim.depth());
 
-            mat_writer.write("report",voxel.report + voxel.recon_report);
+            mat_writer.write("report",voxel.report + voxel.recon_report.str());
             mat_writer.write("steps",voxel.steps);
             if(voxel.intro.empty() && std::filesystem::exists(std::filesystem::path(filename).parent_path() / "README"))
                 load_intro((std::filesystem::path(filename).parent_path() / "README").string());
