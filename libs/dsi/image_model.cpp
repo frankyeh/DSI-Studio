@@ -111,6 +111,15 @@ bool src_data::warp_b0_to_image(dual_reg& r)
     std::thread thread([&](void)
     {
         r.linear_reg(tipl::prog_aborted);
+        if(r.reg_type == tipl::reg::rigid_body)
+        {
+            tipl::image<3> mask;
+            tipl::threshold(r.J[0],mask,0.0f,1.0f,0.0f);
+            tipl::filter::mean(mask);
+            tipl::filter::mean(mask);
+            tipl::filter::mean(mask);
+            r.It[0] *= mask;
+        }
         r.nonlinear_reg(tipl::prog_aborted);
         ended = true;
     });
@@ -179,18 +188,20 @@ bool src_data::correct_distortion_by_t2w(const std::string& t2w_filename)
     std::string msg = " Susceptibility distortion was corrected by nonlinearly warping the b0 image to the T2-weighted image.";
     if(tipl::contains(voxel.report,msg))
         return true;
-    tipl::progress p("distortion correction using t2w image",true);
+
+
     dual_reg r;
     if(!r.load_template(0,t2w_filename))
     {
         error_msg = r.error_msg;
         return false;
     }
-
+    tipl::progress p("distortion correction using t2w image",true);
+    tipl::filter::gaussian(r.It[0]);
     r.reg_type = tipl::reg::rigid_body;
     if(!warp_b0_to_image(r))
         return false;
-    if(r.r[0] < 0.5f)
+    if(r.r[0] < 0.7f)
     {
         error_msg = "cannot register b0 to t2w: poor goodness of fit";
         return false;
