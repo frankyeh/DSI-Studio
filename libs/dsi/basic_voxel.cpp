@@ -43,8 +43,13 @@ void calculate_shell(std::vector<float> sorted_bvalues,
             }
     if(shell.empty())
         return;
+
+    float max_dif = 0.0f;
     for(uint32_t index = shell.back()+1;index < sorted_bvalues.size();++index)
-        if(std::abs(sorted_bvalues[index]-sorted_bvalues[index-1]) > 100.0f)
+        max_dif = std::max<float>(max_dif,std::abs(std::sqrt(sorted_bvalues[index])-std::sqrt(sorted_bvalues[index-1])));
+    max_dif *= 0.5f;
+    for(uint32_t index = shell.back()+1;index < sorted_bvalues.size();++index)
+        if(std::abs(std::sqrt(sorted_bvalues[index])-std::sqrt(sorted_bvalues[index-1])) > max_dif)
             shell.push_back(index);
 }
 
@@ -73,10 +78,14 @@ void Voxel::load_from_src(src_data& image_model)
         }
 
     calculate_shell(bvalues,shell);
-
     auto is_dsi = [this](void){return shell.size() > 4 && shell[1] - shell[0] <= 6;};
 
-    scheme_balance = !is_dsi() && shell.size() < 5 && (method_id == 7 || method_id == 4);
+    if(method_id == 7 || method_id == 4)
+    {
+        need_resample_shells = shell.size() < 5;
+        if((need_resample_dsi = shell.size() >= 5 && dwi_data.size() < 64))
+            tipl::out() << "dsi resampling needed";
+    }
     if(method_id == 1)
         max_fiber_number = 1;
     else

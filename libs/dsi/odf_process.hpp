@@ -20,7 +20,7 @@ public:
     BalanceScheme(void){}
     virtual bool needed(Voxel& voxel)
     {
-        return voxel.scheme_balance;
+        return voxel.need_resample_shells || voxel.need_resample_dsi;
     }
     virtual void init(Voxel& voxel)
     {
@@ -39,8 +39,59 @@ public:
             trans[0] = 1;
             new_bvectors.resize(1);
             new_bvalues.resize(1);
-            total_signals += 1;
+            total_signals = 1;
         }
+
+        if(voxel.need_resample_dsi)
+        {
+            float mean_dis = 0.0f;
+            // estimate average grid distance
+            {
+                std::vector<float> grid_distance;
+                for(size_t i = 1;i < voxel.bvalues.size();++i)
+                    grid_distance.push_back(voxel.bvalues[i]-voxel.bvalues[i-1]);
+                float dis_threshold = tipl::max_value(grid_distance.begin(),grid_distance.end())*0.5f;
+                grid_distance.erase(std::remove_if(grid_distance.begin(),grid_distance.end(),[dis_threshold](auto v){return v < dis_threshold;}),grid_distance.end());
+                mean_dis = tipl::mean(grid_distance.begin(),grid_distance.end())*2.0f;
+            }
+
+            float max_q2 = 16.0f;
+            float b_max = voxel.bvalues.back();
+            for(int z = -4;z <= 4;++z)
+                for(int y = -4;y <= 4;++y)
+                    for(int x = -4;x <= 4;++x)
+                    {
+                        auto l2 = x*x+y*y+z*z;
+                        if(l2 == 0)
+                            goto end;
+                        if(l2 <= max_q2)
+                        {
+                            new_bvalues.push_back(b_max*float(l2)/max_q2);
+                            new_bvectors.push_back(tipl::v(x,y,z));
+                            new_bvectors.back().normalize();
+                        }
+                    }
+            end:
+            trans.resize(new_bvectors.size()*size_t(b_count));
+            for(size_t i = total_signals; i < new_bvectors.size();++i)
+            {
+                auto nb = new_bvectors[i];
+                nb *= new_bvalues[i]/mean_dis;
+                std::vector<double> w;
+                for(size_t b = total_signals;b < b_count;++b)
+                {
+                    auto cb = voxel.bvectors[b];
+                    cb *= voxel.bvalues[b]/mean_dis;
+                    auto d2 = std::min<float>((nb + cb).length2(),(nb - cb).length2());
+                    w.push_back(std::exp(-2.0*d2));
+                }
+                auto sum_w = tipl::sum(w.begin(),w.end());
+                tipl::multiply_constant(w.begin(),w.end(),1.0/sum_w/double(new_bvectors.size()));
+                std::copy(w.begin(),w.end(),trans.begin() + total_signals + b_count*i);
+            }
+            total_signals = new_bvectors.size();
+        }
+        else
         for(unsigned int shell_index = 0;shell_index < voxel.shell.size();++shell_index)
         {
             unsigned int from = voxel.shell[shell_index];
