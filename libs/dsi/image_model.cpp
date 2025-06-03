@@ -201,11 +201,6 @@ bool src_data::correct_distortion_by_t2w(const std::string& t2w_filename)
     r.reg_type = tipl::reg::rigid_body;
     if(!warp_b0_to_image(r))
         return false;
-    if(r.r[0] < 0.7f)
-    {
-        error_msg = "cannot register b0 to t2w: poor goodness of fit";
-        return false;
-    }
     voxel.R2 = r.r[0];
     {
         std::vector<tipl::image<3,unsigned short> > this_new_dwi(src_dwi_data.size());
