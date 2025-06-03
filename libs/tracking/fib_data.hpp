@@ -266,7 +266,7 @@ public:
     std::vector<std::string> alternative_mapping;
     size_t alternative_mapping_index = 0;
 public:
-    std::string t1w_template_file_name,t2w_template_file_name,wm_template_file_name,mask_template_file_name;
+    std::string t1w_template_file_name,t2w_template_file_name,wm_template_file_name;
     std::string tractography_atlas_file_name;
     std::shared_ptr<atlas> tractography_atlas_roi,tractography_atlas_roa;
 public:
