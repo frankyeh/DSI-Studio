@@ -183,6 +183,24 @@ void dual_reg::calculate_linear_r(void)
                                  It[i].empty() ? It[0]:It[i]);
     },max_modality);
     show_r("linear r: ");
+    if(match_fov)
+        It_match_fov();
+}
+void dual_reg::It_match_fov(void)
+{
+    auto trans = T();
+    size_t max_It = 1;
+    while(max_It < max_modality && !It[max_It].empty())
+        ++max_It;
+    for(tipl::pixel_index<3> index(Its);index < Its.size();++index)
+    {
+        tipl::vector<3> pos;
+        trans(index,pos);
+        if(Is.is_valid(pos))
+            continue;
+        for(size_t i = 0;i < max_It;++i)
+            It[i][index.index()] = 0;
+    }
 }
 
 void dual_reg::calculate_nonlinear_r(void)
