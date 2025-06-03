@@ -609,27 +609,6 @@ public:
         for (unsigned int index = 0;index < voxel.max_fiber_number;++index)
             mat_writer.write<tipl::io::masked>("index" + std::to_string(index),findex[index],voxel.dim.plane_size());
 
-        if(!voxel.other_image.empty())
-        {
-            // for htmls
-            {
-                std::string other_image_text;
-                for(unsigned int index = 0;index < voxel.other_image.size();++index)
-                    if(voxel.other_image[index].empty())
-                    {
-                        other_image_text += voxel.other_image_name[index];
-                        other_image_text += ",";
-                        continue;
-                    }
-                mat_writer.write("other_images",other_image_text);
-            }
-
-            for(unsigned int index = 0;index < voxel.other_image.size();++index)
-                if(voxel.other_image[index].shape() == voxel.dim)
-                    mat_writer.write<tipl::io::masked_sloped>(voxel.other_image_name[index],
-                                                              voxel.other_image[index],voxel.dim.plane_size());
-        }
-
     }
 };
 
