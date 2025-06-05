@@ -46,10 +46,10 @@ void calculate_shell(std::vector<float> sorted_bvalues,
 
     float max_dif = 0.0f;
     for(uint32_t index = shell.back()+1;index < sorted_bvalues.size();++index)
-        max_dif = std::max<float>(max_dif,std::abs(std::sqrt(sorted_bvalues[index])-std::sqrt(sorted_bvalues[index-1])));
+        max_dif = std::max<float>(max_dif,std::abs(sorted_bvalues[index]-sorted_bvalues[index-1]));
     max_dif *= 0.5f;
     for(uint32_t index = shell.back()+1;index < sorted_bvalues.size();++index)
-        if(std::abs(std::sqrt(sorted_bvalues[index])-std::sqrt(sorted_bvalues[index-1])) > max_dif)
+        if(std::abs(sorted_bvalues[index]-sorted_bvalues[index-1]) > max_dif)
             shell.push_back(index);
 }
 
