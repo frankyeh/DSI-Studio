@@ -103,6 +103,9 @@ bool src_data::warp_b0_to_image(dual_reg& r)
     if(!read_b0(b0))
         return false;
     r.I[0] = subject_image_pre(std::move(b0[0]));
+    r.I[1] = subject_image_pre(tipl::image<3>(dwi));
+    r.I[2] = voxel.mask;
+    r.modality_names = {"b0","dwi sum","mask"};
     r.IR = voxel.trans_to_mni;
     r.Ivs = voxel.vs;
     r.Is = r.I[0].shape();
@@ -113,12 +116,17 @@ bool src_data::warp_b0_to_image(dual_reg& r)
         r.linear_reg(tipl::prog_aborted);
         if(r.reg_type == tipl::reg::rigid_body)
         {
-            tipl::image<3> mask;
-            tipl::threshold(r.J[0],mask,0.0f,1.0f,0.0f);
+            tipl::image<3> mask(r.J[2]);
             tipl::filter::mean(mask);
             tipl::filter::mean(mask);
             tipl::filter::mean(mask);
+            tipl::normalize(mask);
             r.It[0] *= mask;
+        }
+        if(r.r[0] < r.r[1]) // sum_dwi correlates better
+        {
+            tipl::out() << "use sum of dwi for nonlinear registration";
+            r.J[0].swap(r.J[1]);
         }
         r.nonlinear_reg(tipl::prog_aborted);
         ended = true;
@@ -188,14 +196,22 @@ bool src_data::correct_distortion_by_t2w(const std::string& t2w_filename)
     std::string msg = " Susceptibility distortion was corrected by nonlinearly warping the b0 image to the T2-weighted image.";
     if(tipl::contains(voxel.report,msg))
         return true;
-
-
+    if(!mask_from_template())
+        return false;
     dual_reg r;
     if(!r.load_template(0,t2w_filename))
     {
         error_msg = r.error_msg;
         return false;
     }
+    if(r.Itvs[2] > r.Itvs[0]*1.1f)
+    {
+        tipl::out() << "nonisotropic image found: regrid images applied";
+        if(!tipl::command<void,tipl::io::gz_nifti>(r.It[0],r.Itvs,r.ItR,r.It_is_mni,
+                "regrid","1",true,error_msg))
+            return false;
+    }
+
     tipl::progress p("distortion correction using t2w image",true);
     tipl::filter::gaussian(r.It[0]);
     r.reg_type = tipl::reg::rigid_body;
@@ -1551,9 +1567,13 @@ void correct_bias_field(tipl::image<3> I,
         log_bias_field[position[i]] += correction[i];
 
 }
+bool src_data::has_bias_field_correction(void) const
+{
+    return tipl::contains(voxel.report,"bias field");
+}
 bool src_data::correct_bias_field(void)
 {
-    if(tipl::contains(voxel.report,"bias field"))
+    if(has_bias_field_correction())
     {
         tipl::warning() << "bias field correction has been previously applied";
         return true;
