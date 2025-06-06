@@ -174,14 +174,14 @@ void dual_reg::calculate_linear_r(void)
 {
     auto trans = T();
     std::fill(r.begin(),r.end(),0.0f);
-    J.resize(max_modality);
-    tipl::par_for(max_modality,[&](size_t i)
+    J.resize(I.size());
+    tipl::par_for(I.size(),[&](size_t i)
     {
         if(I[i].empty())
             return;
         r[i] = tipl::correlation(J[i] = tipl::resample(I[i],Its,trans),
                                  It[i].empty() ? It[0]:It[i]);
-    },max_modality);
+    },I.size());
     show_r("linear r: ");
     if(match_fov)
         It_match_fov();
@@ -190,7 +190,7 @@ void dual_reg::It_match_fov(void)
 {
     auto trans = T();
     size_t max_It = 1;
-    while(max_It < max_modality && !It[max_It].empty())
+    while(max_It < It.size() && !It[max_It].empty())
         ++max_It;
     for(tipl::pixel_index<3> index(Its);index < Its.size();++index)
     {
@@ -206,13 +206,13 @@ void dual_reg::It_match_fov(void)
 void dual_reg::calculate_nonlinear_r(void)
 {
     std::fill(r.begin(),r.end(),0.0f);
-    tipl::par_for(max_modality,[&](size_t i)
+    tipl::par_for(I.size(),[&](size_t i)
     {
         if(I[i].empty() || It[i].empty())
             return;
         r[i] = tipl::correlation(J[i] = tipl::compose_mapping(I[i],to2from),
                                  previous_It.empty() ? It[i] : previous_It[i]);
-    },max_modality);
+    },I.size());
     show_r("nonlinear r: ");
 }
 
