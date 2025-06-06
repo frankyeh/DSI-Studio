@@ -1869,6 +1869,51 @@ void fib_data::recognize_report(std::shared_ptr<TractModel>& trk,std::string& re
     report += out.str();
 }
 
+bool to_t1wt2w_templates(dual_reg& reg,size_t template_id)
+{
+    reg.modality_names = {"t1w","t2w","qa","iso"};
+    tipl::out() << "reloading all t1w/t2w/qa/iso";
+    if(!reg.load_template(0,QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T1W.nii.gz").toStdString()) ||
+       !reg.load_template(1,QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T2W.nii.gz").toStdString()) ||
+       !reg.load_template(2,fa_template_list[template_id]) ||
+       !reg.load_template(3,iso_template_list[template_id]))
+        return false;
+    reg.match_resolution(true);
+    tipl::out() << "try using t1w image for registration..." << std::endl;
+    reg.cost_type = tipl::reg::mutual_info;
+    reg.linear_reg(tipl::prog_aborted);
+    if(tipl::prog_aborted)
+        return true;
+    auto best_index = std::max_element(reg.r.begin(),reg.r.end())-reg.r.begin();
+    float best_r = reg.r[best_index];
+    auto It = reg.It;
+    auto arg = reg.arg;
+
+    tipl::out() << "try using skull-stripped t1w for registration..." << std::endl;
+    tipl::preserve(It[0].begin(),It[0].end(),It[3].begin());
+    tipl::preserve(It[1].begin(),It[1].end(),It[3].begin());
+    reg.It.swap(It);
+    reg.linear_reg(tipl::prog_aborted);
+    if(tipl::prog_aborted)
+        return true;
+    if(best_r > tipl::max_value(reg.r))
+    {
+        tipl::out() << "using with-skull registration";
+        reg.arg = arg; //restore linear transformation
+        reg.It.swap(It); // restore It
+    }
+    else
+    {
+        tipl::out() << "using without-skull registration";
+        best_index = std::max_element(reg.r.begin(),reg.r.end())-reg.r.begin();
+    }
+    reg.It[0] = reg.It[best_index];
+    reg.It[1].clear();
+    reg.cost_type = tipl::reg::corr;
+    tipl::out() << "using " << reg.modality_names[best_index] << " for registration";
+    reg.modality_names = {reg.modality_names[best_index]};
+    return true;
+}
 
 bool fib_data::map_to_mni(bool background)
 {
@@ -1928,51 +1973,12 @@ bool fib_data::map_to_mni(bool background)
         // not FIB file, use t1w/t1w or others as template
         if(dir.index_name[0] == "image")
         {
-            reg.modality_names = {"t1w","t2w","qa","iso"};
-            tipl::out() << "reloading all t1w/t2w/qa/iso";
-            if(!reg.load_template(0,t1w_template_file_name) ||
-               !reg.load_template(1,t2w_template_file_name) ||
-               !reg.load_template(2,fa_template_list[template_id]) ||
-               !reg.load_template(3,iso_template_list[template_id]))
+            if(!to_t1wt2w_templates(reg,template_id))
             {
                 error_msg = "cannot perform normalization";
                 tipl::prog_aborted = true;
                 return;
             }
-            reg.match_resolution(true);
-            tipl::out() << "try using t1w image for registration..." << std::endl;
-            reg.cost_type = tipl::reg::mutual_info;
-            reg.linear_reg(tipl::prog_aborted);
-            if(tipl::prog_aborted)
-                return;
-            auto best_index = std::max_element(reg.r.begin(),reg.r.end())-reg.r.begin();
-            float best_r = reg.r[best_index];
-            auto It = reg.It;
-            auto arg = reg.arg;
-
-            tipl::out() << "try using skull-stripped t1w for registration..." << std::endl;
-            tipl::preserve(It[0].begin(),It[0].end(),It[3].begin());
-            tipl::preserve(It[1].begin(),It[1].end(),It[3].begin());
-            reg.It.swap(It);
-            reg.linear_reg(tipl::prog_aborted);
-            if(tipl::prog_aborted)
-                return;
-            if(best_r > tipl::max_value(reg.r))
-            {
-                tipl::out() << "using with-skull registration";
-                reg.arg = arg; //restore linear transformation
-                reg.It.swap(It); // restore It
-            }
-            else
-            {
-                tipl::out() << "using without-skull registration";
-                best_index = std::max_element(reg.r.begin(),reg.r.end())-reg.r.begin();
-            }
-            reg.It[0] = reg.It[best_index];
-            reg.It[1].clear();
-            reg.cost_type = tipl::reg::corr;
-            tipl::out() << "using " << reg.modality_names[best_index] << " for registration";
-            reg.modality_names = {reg.modality_names[best_index]};
         }
 
 
