@@ -127,6 +127,7 @@ bool src_data::warp_b0_to_image(dual_reg& r)
         {
             tipl::out() << "use sum of dwi for nonlinear registration";
             r.J[0].swap(r.J[1]);
+            r.I[0].swap(r.I[1]);
         }
         r.nonlinear_reg(tipl::prog_aborted);
         ended = true;
@@ -147,7 +148,7 @@ bool src_data::mask_from_template(void)
         return false;
     }
     // remove skull from t2w
-    tipl::preserve(r.It[0],r.It[1]);
+    tipl::preserve(r.It[0].begin(),r.It[0].end(),r.It[1].begin());
     if(!warp_b0_to_image(r))
         return false;
     // use iso to generate mask
@@ -175,8 +176,7 @@ bool src_data::mask_from_unet(void)
             tipl::filter::gaussian(b0[0]);
             if(unet->forward(b0[0],voxel.vs,p))
             {
-                tipl::filter::gaussian(unet->sum);
-                tipl::threshold(unet->sum,voxel.mask,0.5f,1,0);
+                tipl::threshold(unet->get_mask(),voxel.mask,0.5f,1,0);
                 tipl::morphology::defragment(voxel.mask);
                 return true;
             }
