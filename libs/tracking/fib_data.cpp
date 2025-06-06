@@ -1879,7 +1879,7 @@ bool to_t1wt2w_templates(dual_reg& reg,size_t template_id)
        !reg.load_template(3,iso_template_list[template_id]))
         return false;
     reg.match_resolution(true);
-    tipl::out() << "try using t1w image for registration..." << std::endl;
+    tipl::out() << "using t1w/t2w/qa/iso for registration..." << std::endl;
     reg.cost_type = tipl::reg::mutual_info;
     reg.linear_reg(tipl::prog_aborted);
     if(tipl::prog_aborted)
@@ -1889,7 +1889,7 @@ bool to_t1wt2w_templates(dual_reg& reg,size_t template_id)
     auto It = reg.It;
     auto arg = reg.arg;
 
-    tipl::out() << "try using skull-stripped t1w for registration..." << std::endl;
+    tipl::out() << "try using skull-stripped images for registration..." << std::endl;
     tipl::preserve(It[0].begin(),It[0].end(),It[3].begin());
     tipl::preserve(It[1].begin(),It[1].end(),It[3].begin());
     reg.It.swap(It);
