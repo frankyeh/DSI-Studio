@@ -1951,8 +1951,8 @@ bool fib_data::map_to_mni(bool background)
             auto arg = reg.arg;
 
             tipl::out() << "try using skull-stripped t1w for registration..." << std::endl;
-            tipl::preserve(It[0],It[3]);
-            tipl::preserve(It[1],It[3]);
+            tipl::preserve(It[0].begin(),It[0].end(),It[3].begin());
+            tipl::preserve(It[1].begin(),It[1].end(),It[3].begin());
             reg.It.swap(It);
             reg.linear_reg(tipl::prog_aborted);
             if(tipl::prog_aborted)
