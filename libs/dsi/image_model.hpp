@@ -266,7 +266,6 @@ public:
     bool warp_b0_to_image(dual_reg& r);
     bool mask_from_unet(void);
     bool mask_from_template(void);
-    bool correct_distortion_by_t2w(const std::string& t2w_filename);
     void remove(unsigned int index);
     std::shared_ptr<fib_data> get_template_fib(tipl::affine_transform<float>& arg);
     bool check_b_table(bool use_template = true);
@@ -289,7 +288,7 @@ public:
     }
     int64_t bottom_top_difference(void);
     int64_t anterior_posterior_difference(void);
-    void correction_axis(void);
+
 public:
     std::vector<size_t> get_sorted_dwi_index(void);
     void flip_b_table(const unsigned char* order);
@@ -303,6 +302,11 @@ public:
     bool align_acpc(float reso);
     void crop(tipl::shape<3> range_min,tipl::shape<3> range_max);
     void trim(void);
+public:
+    bool has_bias_field_correction(void) const;
+public:
+    bool correct_distortion_by_t2w(const std::string& t2w_filename);
+    void correction_axis(void);
     bool correct_motion(void);
     bool correct_bias_field(void);
     bool add_other_image(const std::string& name,const std::string& filename);
