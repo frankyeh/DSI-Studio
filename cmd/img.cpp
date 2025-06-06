@@ -580,7 +580,7 @@ int seg(tipl::program_option<tipl::out>& po)
             unet->forward(I,var_image.vs,p);
             auto cmd = po.get("cmd","be");
             if(cmd == "be")
-                I *= unet->sum;
+                I *= unet->get_mask();
             if(cmd == "seg")
             {
                 I.clear();
