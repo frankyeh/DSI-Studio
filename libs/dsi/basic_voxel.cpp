@@ -34,22 +34,22 @@ void calculate_shell(std::vector<float> sorted_bvalues,
                      std::vector<unsigned int>& shell)
 {
     shell.clear();
+    float b_dif_threshold = 0.0f;
     std::sort(sorted_bvalues.begin(),sorted_bvalues.end());
     for(uint32_t i = 0;i < sorted_bvalues.size();++i)
         if(sorted_bvalues[i] > 100.0f)
             {
                 shell.push_back(i);
+                b_dif_threshold = sorted_bvalues[i];
+                for(uint32_t index = i+1;index < sorted_bvalues.size();++index)
+                    b_dif_threshold = std::max<float>(b_dif_threshold,std::abs(sorted_bvalues[index]-sorted_bvalues[index-1]));
+                b_dif_threshold *= 0.5f;
                 break;
             }
     if(shell.empty())
         return;
-
-    float max_dif = 0.0f;
     for(uint32_t index = shell.back()+1;index < sorted_bvalues.size();++index)
-        max_dif = std::max<float>(max_dif,std::abs(sorted_bvalues[index]-sorted_bvalues[index-1]));
-    max_dif *= 0.5f;
-    for(uint32_t index = shell.back()+1;index < sorted_bvalues.size();++index)
-        if(std::abs(sorted_bvalues[index]-sorted_bvalues[index-1]) > max_dif)
+        if(std::abs(sorted_bvalues[index]-sorted_bvalues[index-1]) > b_dif_threshold)
             shell.push_back(index);
 }
 
