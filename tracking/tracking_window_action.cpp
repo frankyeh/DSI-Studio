@@ -1451,7 +1451,7 @@ void tracking_window::on_actionStrip_Skull_triggered()
     }
     if(!run_unet())
         return;
-    reg_slice->source_images *= unet->sum;
+    reg_slice->source_images *= unet->get_mask();
     slice_need_update = true;
     glWidget->update_slice();
 }
