@@ -79,6 +79,7 @@ void src_data::calculate_dwi_sum(bool update_mask)
 
     if(update_mask)
     {
+        tipl::out() << "create mask from dwi sum";
         tipl::threshold(dwi,voxel.mask,25,1,0);
         if(dwi.depth() < 300)
         {
@@ -94,6 +95,8 @@ void src_data::calculate_dwi_sum(bool update_mask)
 
         }
     }
+    else
+        tipl::preserve(dwi.begin(),dwi.end(),voxel.mask.begin());
 }
 
 bool src_data::warp_b0_to_image(dual_reg& r)
@@ -196,8 +199,15 @@ bool src_data::correct_distortion_by_t2w(const std::string& t2w_filename)
     std::string msg = " Susceptibility distortion was corrected by nonlinearly warping the b0 image to the T2-weighted image.";
     if(tipl::contains(voxel.report,msg))
         return true;
-    if(!mask_from_template())
-        return false;
+
+
+    if(!apply_mask)
+    {
+        if(!mask_from_template())
+            return false;
+    }
+
+
     dual_reg r;
     if(!r.load_template(0,t2w_filename))
     {
@@ -210,6 +220,7 @@ bool src_data::correct_distortion_by_t2w(const std::string& t2w_filename)
         if(!tipl::command<void,tipl::io::gz_nifti>(r.It[0],r.Itvs,r.ItR,r.It_is_mni,
                 "regrid","1",true,error_msg))
             return false;
+        r.Its = r.It[0].shape();
     }
 
     tipl::progress p("distortion correction using t2w image",true);
