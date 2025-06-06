@@ -1763,7 +1763,7 @@ void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array,int per_page)
     {
         QUrlQuery q(url.query());
         q.removeAllQueryItems("per_page");
-        q.addQueryItem("per_page", QString::number(per_page).toStdString().c_str());
+        q.addQueryItem("per_page", repo.contains("restricted") ? "64" : QString::number(per_page).toStdString().c_str());
         url.setQuery(q);
     }
 
