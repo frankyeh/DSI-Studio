@@ -3,6 +3,7 @@
 #include <QFile>
 #include <QTextStream>
 #include "img.hpp"
+#include "reg.hpp"
 std::map<std::string,std::string> dicom_dictionary;
 void correct_bias_field(tipl::image<3> I,
                         const tipl::image<3,unsigned char>& mask,
@@ -17,17 +18,15 @@ bool variant_image::command(std::string cmd,std::string param1)
     else
     apply([&](auto& I)
     {
-        if(cmd == "bias_field")
+        if(cmd == "bias_field_correction")
         {
             tipl::image<3,unsigned char> mask;
             tipl::threshold(I,mask,0);
             tipl::image<3> bias_field;
             correct_bias_field(I,mask,bias_field,tipl::vector<3>(1.0f,vs[0]/vs[1],vs[0]/vs[2]));
             for(auto& each : bias_field)
-                each = std::exp(each);
-            if constexpr(!std::is_floating_point_v<decltype(T[0])>)
-                tipl::normalize(bias_field,255.5f);
-            I = bias_field;
+                each = std::exp(-each);
+            I *= bias_field;
         }
         else
             result = tipl::command<void,tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,interpolation,error_msg);
@@ -402,6 +401,7 @@ void show_slice(tipl::io::gz_mat_read& mat_reader,const char* name)
 bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 const std::string& cmd,
                 const std::string& param);
+extern std::vector<std::string> iso_template_list;
 int img(tipl::program_option<tipl::out>& po)
 {
     if(po.has("output") && std::filesystem::exists(po.get("output")) && !po.get("overwrite",0))
@@ -489,35 +489,101 @@ int img(tipl::program_option<tipl::out>& po)
             return 1;
     }
 
-    for(auto& cmd : tipl::split(po.get("cmd"),'+'))
     {
-        std::string param;
-        auto sep_pos = cmd.find(':');
-        if(sep_pos != std::string::npos)
+        tipl::progress prog("run command");
+        for(auto& cmd : tipl::split(po.get("cmd","info"),'+'))
         {
-            param = cmd.substr(sep_pos+1);
-            cmd = cmd.substr(0,sep_pos);
+            std::string param;
+            auto sep_pos = cmd.find(':');
+            if(sep_pos != std::string::npos)
+            {
+                param = cmd.substr(sep_pos+1);
+                cmd = cmd.substr(0,sep_pos);
+            }
+
+            if(cmd == "brain_extraction" || cmd == "segmentation")
+            {
+                if(cmd == "brain_extraction" && param.length() < 2)
+                {
+                    size_t template_id = param.empty() ? 0 : param[0]-'0';
+                    dual_reg reg;
+                    var_image.apply([&](auto& I){
+                        reg.I[0] = subject_image_pre(tipl::image<3>(I.alias()));
+                        reg.Is = I.shape();
+                    });
+                    reg.Ivs = var_image.vs;
+                    reg.IR = var_image.T;
+
+                    if(!reg.load_template(0,QString(iso_template_list[template_id].c_str()).replace(".ISO.nii.gz",".T1W.nii.gz").toStdString()) ||
+                       !reg.load_template(1,QString(iso_template_list[template_id].c_str()).replace(".ISO.nii.gz",".T2W.nii.gz").toStdString()) ||
+                       !reg.load_template(2,iso_template_list[template_id]))
+                    {
+                        tipl::error() << reg.error_msg;
+                        return 1;
+                    }
+                    reg.modality_names = {"t1w","t2w"};
+                    tipl::out() << "using t1w/t2w for registration..." << std::endl;
+                    reg.cost_type = tipl::reg::mutual_info;
+                    reg.linear_reg(tipl::prog_aborted);
+                    if(reg.r[1] > reg.r[0])
+                    {
+                        reg.It[0].swap(reg.It[1]);
+                        reg.modality_names[0].swap(reg.modality_names[1]);
+                    }
+                    reg.modality_names = {reg.modality_names[0]};
+                    tipl::out() << "using " << reg.modality_names[0] << " for registration..." << std::endl;
+                    reg.nonlinear_reg(tipl::prog_aborted);
+                    auto iso = reg.apply_warping<false,tipl::interpolation::linear>(reg.It[2]);
+                    var_image.apply([&](auto& I){
+                        tipl::preserve(I.begin(),I.end(),iso.begin());
+                    });
+                    if(po.get("export_r",0))
+                        std::ofstream(source + ".r" + std::to_string(int(reg.r[0]*100))) << std::endl;
+                    continue;
+                }
+
+                auto model_path = QCoreApplication::applicationDirPath().toStdString()+ "/network/" + po.get("network",param);
+                auto unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(model_path.c_str());
+                if(!unet.get())
+                {
+                    tipl::error() << "cannot read network file at" + model_path;
+                    return 1;
+                }
+                var_image.apply([&](auto& I)
+                {
+                    unet->forward(I,var_image.vs,prog);
+                    if(cmd == "brain_extraction")
+                        I *= unet->get_mask();
+                    if(cmd == "segmentation")
+                    {
+                        I.clear();
+                        var_image.I_int8 = unet->get_label();
+                        var_image.pixel_type = variant_image::int8;
+                    }
+                });
+                continue;
+            }
+            if(cmd == "info")
+            {
+                if(var_image.pixel_type == variant_image::int8)
+                    show_slice(tipl::image<2,float>(var_image.I_int8.slice_at(var_image.shape.depth()/2)));
+                if(var_image.pixel_type == variant_image::int16)
+                    show_slice(tipl::image<2,float>(var_image.I_int16.slice_at(var_image.shape.depth()/2)));
+                if(var_image.pixel_type == variant_image::int32)
+                    show_slice(tipl::image<2,float>(var_image.I_int32.slice_at(var_image.shape.depth()/2)));
+                if(var_image.pixel_type == variant_image::float32)
+                    show_slice(tipl::image<2,float>(var_image.I_float32.slice_at(var_image.shape.depth()/2)));
+                tipl::out() << info;
+                continue;
+            }
+            tipl::out() << std::string(param.empty() ? cmd : cmd+":"+param);
+            if(!var_image.command(cmd,param))
+            {
+                tipl::error() << var_image.error_msg;
+                return 1;
+            }
         }
-        if(cmd == "info")
-        {
-            if(var_image.pixel_type == variant_image::int8)
-                show_slice(tipl::image<2,float>(var_image.I_int8.slice_at(var_image.shape.depth()/2)));
-            if(var_image.pixel_type == variant_image::int16)
-                show_slice(tipl::image<2,float>(var_image.I_int16.slice_at(var_image.shape.depth()/2)));
-            if(var_image.pixel_type == variant_image::int32)
-                show_slice(tipl::image<2,float>(var_image.I_int32.slice_at(var_image.shape.depth()/2)));
-            if(var_image.pixel_type == variant_image::float32)
-                show_slice(tipl::image<2,float>(var_image.I_float32.slice_at(var_image.shape.depth()/2)));
-            tipl::out() << info;
-            continue;
         }
-        tipl::out() << std::string(param.empty() ? cmd : cmd+":"+param);
-        if(!var_image.command(cmd,param))
-        {
-            tipl::error() << var_image.error_msg;
-            return 1;
-        }
-    }
 
     if(po.has("output"))
     {
@@ -548,52 +614,3 @@ int img(tipl::program_option<tipl::out>& po)
 
 
 
-
-int seg(tipl::program_option<tipl::out>& po)
-{
-    if(po.has("output") && std::filesystem::exists(po.get("output")) && !po.get("overwrite",0))
-    {
-        tipl::out() << "output exist, skipping";
-        return 0;
-    }
-
-    std::string source= po.get("source"),info;
-    variant_image var_image;
-    tipl::out() << "open " << source;
-    if(!var_image.load_from_file(source.c_str(),info))
-    {
-        tipl::error() << var_image.error_msg;
-        return 1;
-    }
-
-    {
-        tipl::progress p("run u-net");
-        auto model_path = QCoreApplication::applicationDirPath().toStdString()+ "/network/" + po.get("network","human.t1w.seg5.net.gz");
-        auto unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(model_path.c_str());
-        if(!unet.get())
-        {
-            tipl::error() << "cannot read network file at" + model_path;
-            return 1;
-        }
-
-        var_image.apply([&](auto& I){
-            unet->forward(I,var_image.vs,p);
-            auto cmd = po.get("cmd","be");
-            if(cmd == "be")
-                I *= unet->get_mask();
-            if(cmd == "seg")
-            {
-                I.clear();
-                var_image.I_int8 = unet->get_label();
-                var_image.pixel_type = variant_image::int8;
-            }
-        });
-
-        if(!var_image.command("save",po.get("output")))
-        {
-            tipl::error() << var_image.error_msg;
-            return 1;
-        }
-    }
-    return 0;
-}
