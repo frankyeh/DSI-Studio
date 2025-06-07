@@ -231,7 +231,6 @@ bool src_data::correct_distortion_by_t2w(const std::string& t2w_filename)
         dual_reg reg;
         reg.I[0] = r.It[0];reg.Is = r.Its;reg.Ivs = r.Itvs;reg.IR = r.ItR;
         to_t1wt2w_templates(reg,voxel.template_id);
-        reg.match_resolution(true);
         reg.linear_reg(tipl::prog_aborted);
         if(tipl::prog_aborted)
             return false;
