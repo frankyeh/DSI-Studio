@@ -108,6 +108,7 @@ bool src_data::warp_b0_to_image(dual_reg& r)
     r.I[0] = subject_image_pre(std::move(b0[0]));
     r.I[1] = subject_image_pre(tipl::image<3>(dwi));
     r.I[2] = voxel.mask;
+    tipl::morphology::dilation(r.I[2]);
     r.modality_names = {"b0","dwi sum","mask"};
     r.IR = voxel.trans_to_mni;
     r.Ivs = voxel.vs;
@@ -195,7 +196,7 @@ bool src_data::mask_from_unet(void)
     return false;
 }
 
-bool to_t1wt2w_templates(dual_reg& reg,size_t template_id);
+
 bool src_data::correct_distortion_by_t2w(const std::string& t2w_filename)
 {
     std::string msg = " Susceptibility distortion was corrected by nonlinearly warping the b0 image to the T2-weighted image.";
@@ -221,27 +222,8 @@ bool src_data::correct_distortion_by_t2w(const std::string& t2w_filename)
         if(!tipl::command<void,tipl::io::gz_nifti>(r.It[0],r.Itvs,r.ItR,r.It_is_mni,
                 "regrid","1",true,error_msg))
             return false;
-        tipl::filter::gaussian(r.It[0]);
         r.Its = r.It[0].shape();
     }
-
-    // removing skull
-    {
-        tipl::progress prog("removing skull using registration method");
-        dual_reg reg;
-        reg.I[0] = r.It[0];reg.Is = r.Its;reg.Ivs = r.Itvs;reg.IR = r.ItR;
-        to_t1wt2w_templates(reg,voxel.template_id);
-        reg.linear_reg(tipl::prog_aborted);
-        if(tipl::prog_aborted)
-            return false;
-        reg.nonlinear_reg(tipl::prog_aborted);
-        if(tipl::prog_aborted)
-            return false;
-        auto iso = reg.apply_warping<false,tipl::interpolation::linear>(reg.It[3]);
-        tipl::preserve(reg.I[0].begin(),reg.I[0].end(),iso.begin());
-        r.It[0] = reg.I[0];r.Its = reg.Is;r.Ivs = reg.Itvs;r.IR = reg.ItR;
-    }
-
 
     tipl::progress p("distortion correction using t2w image",true);
     tipl::filter::gaussian(r.It[0]);
