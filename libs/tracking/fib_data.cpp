@@ -1889,7 +1889,7 @@ bool to_t1wt2w_templates(dual_reg& reg,size_t template_id)
     auto It = reg.It;
     auto arg = reg.arg;
 
-    tipl::out() << "try using skull-stripped images for registration..." << std::endl;
+    tipl::out() << "using skull-stripped images for registration..." << std::endl;
     tipl::preserve(It[0].begin(),It[0].end(),It[3].begin());
     tipl::preserve(It[1].begin(),It[1].end(),It[3].begin());
     reg.It.swap(It);
