@@ -74,7 +74,7 @@ public:
     bool save_template(const std::string& file_name);
     bool load_subject(size_t id,const std::string& file_name);
     bool load_template(size_t id,const std::string& file_name);
-    void match_resolution(bool use_vs);
+    void match_resolution(bool use_vs,float lr = 0.5f,float hr = 2.0f);
 public:
     auto T(void) const  {return tipl::transformation_matrix<float,dimension>(arg,Its,Itvs,Is,Ivs);}
     auto invT(void) const{auto t = tipl::transformation_matrix<float,dimension>(arg,Its,Itvs,Is,Ivs);t.inverse();return t;}

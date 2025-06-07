@@ -115,7 +115,7 @@ bool dual_reg::load_template(size_t id, const std::string& file_name)
 }
 
 
-void dual_reg::match_resolution(bool use_vs)
+void dual_reg::match_resolution(bool use_vs,float lr,float hr)
 {
     if(!data_ready())
         return;
@@ -135,13 +135,13 @@ void dual_reg::match_resolution(bool use_vs)
             trans[each] *= 2.0f;
         Is = I[0].shape();
     };
-    while(ratio <= 0.5f)
+    while(ratio <= lr)
     {
         downsample(It,Its,Itvs,ItR);
         ratio *= 2.0f;
         tipl::out() << "downsampling template to " << Itvs[0] << " mm resolution" << std::endl;
     }
-    while(ratio >= 2.0f)
+    while(ratio >= hr)
     {
         downsample(I,Is,Ivs,IR);
         ratio /= 2.0f;
@@ -152,13 +152,14 @@ void dual_reg::match_resolution(bool use_vs)
 void dual_reg::show_r(const std::string& prompt)
 {
     std::string result(prompt);
-    for(size_t i = 0;i < r.size() && r[i] != 0.0;++i)
+    if(!modality_names.empty())
     {
-        result += (i ? "," : " ");
-        result += modality_names[i];
-        result += " ";
-        result += std::to_string(r[i]);
+        for(size_t i = 0;i < modality_names.size();++i)
+            result += (i ? ", " : " ") + modality_names[i] + ":" + std::to_string(r[i]);
     }
+    else
+        for(size_t i = 0;i < r.size() && r[i] != 0.0;++i)
+            result += (i ? ", " : " ") + std::to_string(r[i]);
     tipl::out() << result;
 }
 void dual_reg::compute_mapping_from_displacement(void)
@@ -177,10 +178,16 @@ void dual_reg::calculate_linear_r(void)
     J.resize(I.size());
     tipl::par_for(I.size(),[&](size_t i)
     {
-        if(I[i].empty())
+        if(!I[i].empty())
+            J[i] = tipl::resample(I[i],Its,trans);
+    },I.size());
+    tipl::par_for(I.size(),[&](size_t i)
+    {
+        if(J[i].empty() && It[i].empty())
             return;
-        r[i] = tipl::correlation(J[i] = tipl::resample(I[i],Its,trans),
-                                 It[i].empty() ? It[0]:It[i]);
+        const auto& x = J[i].empty() ? J[0]:J[i];
+        const auto& y = It[i].empty() ? It[0]:It[i];
+        r[i] = tipl::correlation(x.begin(),x.end(),y.begin());
     },I.size());
     show_r("linear r: ");
     if(match_fov)
