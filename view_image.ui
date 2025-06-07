@@ -1055,10 +1055,10 @@
   </action>
   <action name="actionBias_Field">
    <property name="text">
-    <string>Bias Field...</string>
+    <string>Bias Field Correction...</string>
    </property>
    <property name="toolTip">
-    <string>Computing the bias field given spline spacing</string>
+    <string>Apply the bias field correction given spline spacing</string>
    </property>
    <property name="statusTip">
     <string>1.0</string>
