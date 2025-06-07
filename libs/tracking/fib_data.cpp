@@ -1871,14 +1871,17 @@ void fib_data::recognize_report(std::shared_ptr<TractModel>& trk,std::string& re
 
 bool to_t1wt2w_templates(dual_reg& reg,size_t template_id)
 {
-    reg.modality_names = {"t1w","t2w","qa","iso"};
     tipl::out() << "reloading all t1w/t2w/qa/iso";
-    if(!reg.load_template(0,QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T1W.nii.gz").toStdString()) ||
-       !reg.load_template(1,QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T2W.nii.gz").toStdString()) ||
+    if(!reg.load_template(0,QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T1W.nii.gz").toStdString()))
+        return false;
+    reg.match_resolution(true,0.5f,std::numeric_limits<float>::max() /* won't downsize I[0]*/);
+
+    if(!reg.load_template(1,QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T2W.nii.gz").toStdString()) ||
        !reg.load_template(2,fa_template_list[template_id]) ||
        !reg.load_template(3,iso_template_list[template_id]))
         return false;
-    reg.match_resolution(true);
+
+    reg.modality_names = {"t1w","t2w","qa","iso"};
     tipl::out() << "using t1w/t2w/qa/iso for registration..." << std::endl;
     reg.cost_type = tipl::reg::mutual_info;
     reg.linear_reg(tipl::prog_aborted);
@@ -1886,10 +1889,12 @@ bool to_t1wt2w_templates(dual_reg& reg,size_t template_id)
         return true;
     auto best_index = std::max_element(reg.r.begin(),reg.r.end())-reg.r.begin();
     float best_r = reg.r[best_index];
+    auto best_m = reg.modality_names[best_index];
     auto It = reg.It;
     auto arg = reg.arg;
 
-    tipl::out() << "using skull-stripped images for registration..." << std::endl;
+    reg.modality_names = {"t1w_be","t2w_be","qa","iso"};
+    tipl::out() << "using t1w_be/t2w_be/qa/iso for registration..." << std::endl;
     tipl::preserve(It[0].begin(),It[0].end(),It[3].begin());
     tipl::preserve(It[1].begin(),It[1].end(),It[3].begin());
     reg.It.swap(It);
@@ -1898,20 +1903,19 @@ bool to_t1wt2w_templates(dual_reg& reg,size_t template_id)
         return true;
     if(best_r > tipl::max_value(reg.r))
     {
-        tipl::out() << "using with-skull registration";
         reg.arg = arg; //restore linear transformation
         reg.It.swap(It); // restore It
     }
     else
     {
-        tipl::out() << "using without-skull registration";
         best_index = std::max_element(reg.r.begin(),reg.r.end())-reg.r.begin();
+        best_m = reg.modality_names[best_index];
     }
     reg.It[0] = reg.It[best_index];
     reg.It[1].clear();
     reg.cost_type = tipl::reg::corr;
-    tipl::out() << "using " << reg.modality_names[best_index] << " for registration";
-    reg.modality_names = {reg.modality_names[best_index]};
+    reg.modality_names = {best_m};
+    tipl::out() << "using " << best_m << " for registration";
     return true;
 }
 
