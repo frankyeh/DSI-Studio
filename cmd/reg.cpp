@@ -187,7 +187,10 @@ void dual_reg::calculate_linear_r(void)
             return;
         const auto& x = J[i].empty() ? J[0]:J[i];
         const auto& y = It[i].empty() ? It[0]:It[i];
-        r[i] = tipl::correlation(x.begin(),x.end(),y.begin());
+        if(masked_r)
+            r[i] = tipl::correlation_ygz(x.begin(),x.end(),y.begin());
+        else
+            r[i] = tipl::correlation(x.begin(),x.end(),y.begin());
     },I.size());
     show_r("linear r: ");
     if(match_fov)
@@ -217,8 +220,12 @@ void dual_reg::calculate_nonlinear_r(void)
     {
         if(I[i].empty() || It[i].empty())
             return;
-        r[i] = tipl::correlation(J[i] = tipl::compose_mapping(I[i],to2from),
-                                 previous_It.empty() ? It[i] : previous_It[i]);
+        auto& x = (J[i] = tipl::compose_mapping(I[i],to2from));
+        auto& y = previous_It.empty() ? It[i] : previous_It[i];
+        if(masked_r)
+            r[i] = tipl::correlation_ygz(x.begin(),x.end(),y.begin());
+        else
+            r[i] = tipl::correlation(x.begin(),x.end(),y.begin());
     },I.size());
     show_r("nonlinear r: ");
 }
