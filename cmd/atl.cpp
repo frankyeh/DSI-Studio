@@ -102,8 +102,14 @@ int db(tipl::program_option<tipl::out>& po)
         tipl::out() << "saving " << (po.get("output",output)+".R2.tsv");
         std::ofstream out((po.get("output",output)+".R2.tsv").c_str());
         out << "name\tR2" << std::endl;
+        std::vector<float> R2(fib.db.subject_names.size());
         for(size_t i = 0;i < fib.db.subject_names.size();++i)
-            out << fib.db.subject_names[i] << "\t" << fib.db.R2[i] << std::endl;
+            out << fib.db.subject_names[i] << "\t" << (R2[i] = fib.db.R2[i]) << std::endl;
+
+        float outlier_threshold = tipl::outlier_range(R2.begin(),R2.end()).first;
+        for(size_t i = 0;i < fib.db.subject_names.size();++i)
+            if(R2[i] < outlier_threshold)
+                tipl::warning() << "low R2: " << fib.db.subject_names[i];
     }
     return 0;
 }
