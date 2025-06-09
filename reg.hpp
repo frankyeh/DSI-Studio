@@ -49,6 +49,7 @@ public:
     bool skip_linear = false;
     bool skip_nonlinear = false;
     bool match_fov = true;
+    bool masked_r = true;
 public:
     dual_reg(void):modality_names(max_modality),I(max_modality),J(max_modality),It(max_modality),r(max_modality)
     {
