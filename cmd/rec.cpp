@@ -235,8 +235,6 @@ int rec(tipl::program_option<tipl::out>& po)
         src.apply_mask = true;
 
 
-    if(po.get("export_r",0))
-        std::ofstream(file_name + ".r" + std::to_string(int(src.voxel.R2*100))) << std::endl;
 
     if(po.has("save_src") || po.has("save_nii"))
     {
@@ -295,5 +293,7 @@ int rec(tipl::program_option<tipl::out>& po)
         tipl::error() << src.error_msg << std::endl;
         return 1;
     }
+    if(po.get("export_r",0) && src.voxel.R2 != 0.0f)
+        std::ofstream(file_name + ".r" + std::to_string(int(src.voxel.R2*100))) << std::endl;
     return 0;
 }
