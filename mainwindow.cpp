@@ -859,17 +859,17 @@ QStringList rename_dicom_at_dir(QString path,QString output)
                     << "output directory is " << output.toStdString() << std::endl;
     QStringList dirs = GetSubDir(path);
     QStringList subject_dirs;
-    for(int index = 0;prog(index,dirs.size());++index)
+    subject_dirs.resize(dirs.size());
+    tipl::par_for(dirs.size(),[&](size_t index)
     {
-        QStringList files = QDir(dirs[index]).entryList(QStringList("*"),
-                                    QDir::Files | QDir::NoSymLinks);
+        QStringList files = QDir(dirs[index]).entryList(QStringList("*"),QDir::Files | QDir::NoSymLinks);
         for(int j = 0;j < files.size() && index < dirs.size();++j)
         {
             auto dir = QFileInfo(RenameDICOMToDir(dirs[index] + "/" + files[j],output)).absoluteDir();
             dir.cdUp();
-            subject_dirs << dir.absolutePath();
+            subject_dirs[index] = dir.absolutePath();
         }
-    }
+    });
     subject_dirs.removeDuplicates();
     return subject_dirs;
 }
