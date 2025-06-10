@@ -610,7 +610,7 @@ bool dual_reg::save_warping(const char* filename) const
     std::string output_name(filename);
     if(!tipl::ends_with(output_name,".mz"))
         output_name += ".mz";
-    tipl::io::gz_mat_write out((output_name + ".tmp.gz").c_str());
+    tipl::io::gz_mat_write out(output_name + ".tmp");
     if(!out)
     {
         error_msg = "cannot write to file ";
@@ -634,7 +634,7 @@ bool dual_reg::save_warping(const char* filename) const
     out.write("arg",arg);
     out.write("version",map_ver);
     out.close();
-    std::filesystem::rename((output_name + ".tmp.gz").c_str(),output_name);
+    std::filesystem::rename(output_name + ".tmp",output_name);
     return true;
 }
 
