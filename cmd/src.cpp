@@ -14,7 +14,7 @@ bool load_bval(const std::string& file_name,std::vector<double>& bval);
 bool load_bvec(const std::string& file_name,std::vector<double>& b_table,bool flip_by = true);
 bool parse_dwi(const std::vector<std::string>& file_list,
                     std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg);
-void dicom2src_and_nii(std::string dir_);
+void dicom2src_and_nii(std::string dir_,bool overwrite);
 bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                  bool search_bvalbvec,
                  bool must_have_bval_bvec,std::string& error_msg);
@@ -369,7 +369,7 @@ int src(tipl::program_option<tipl::out>& po)
         }
 
         tipl::out() << "converting DICOM files in directory " << source.c_str() << std::endl;
-        dicom2src_and_nii(source);
+        dicom2src_and_nii(source,po.get("overwrite",0));
         return 0;
     }
     else
