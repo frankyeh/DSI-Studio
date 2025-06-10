@@ -3,7 +3,7 @@
 #include "TIPL/tipl.hpp"
 QStringList rename_dicom_at_dir(QString path,QString output);
 QStringList GetSubDir(QString Dir,bool recursive = true);
-void dicom2src_and_nii(std::string dir_);
+void dicom2src_and_nii(std::string dir_,bool overwrite);
 int ren(tipl::program_option<tipl::out>& po)
 {
     tipl::progress prog("run ren");
@@ -15,7 +15,7 @@ int ren(tipl::program_option<tipl::out>& po)
         for(auto dir : subject_dir)
         {
             tipl::progress prog("Converting DICOM to SRC/NII ",dir.toStdString().c_str());
-            dicom2src_and_nii(dir.toStdString().c_str());
+            dicom2src_and_nii(dir.toStdString().c_str(),po.get("overwrite",0));
         }
     }
     return 0;
