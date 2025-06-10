@@ -1316,7 +1316,7 @@ void MainWindow::on_nii2src_sf_clicked()
     batch_create_src(dwi_nii_files,dir.toStdString());
 }
 
-bool dcm2src_and_nii(QStringList files)
+bool dcm2src_and_nii(QStringList files,bool overwrite)
 {
     if(files.empty())
         return false;
@@ -1347,6 +1347,8 @@ bool dcm2src_and_nii(QStringList files)
 
     std::vector<std::shared_ptr<DwiHeader> > dicom_files;
     std::string error_msg;
+    auto nii_file_name = get_dicom_output_name(files[0],("_" + sequence + ".nii.gz").c_str(),true).toStdString();
+
     if(!parse_dwi(files,dicom_files,error_msg) || dicom_files.size() == 1)
     {
         if(tipl::prog_aborted)
@@ -1356,6 +1358,13 @@ bool dcm2src_and_nii(QStringList files)
             tipl::error() << error_msg;
             return false;
         }
+
+        if(!overwrite && std::filesystem::exists(nii_file_name))
+        {
+            tipl::out() << nii_file_name << " exists. skipping";
+            return true;
+        }
+
         tipl::out() << "handled as structure images";
         tipl::image<3> source_images;
         tipl::vector<3> vs;
@@ -1399,16 +1408,22 @@ bool dcm2src_and_nii(QStringList files)
         }
         tipl::matrix<4,4,float> trans;
         initial_LPS_nifti_srow(trans,source_images.shape(),vs);
-        std::string suffix("_");
-        suffix += sequence;
-        suffix += ".nii.gz";
-        QString output = get_dicom_output_name(files[0],suffix.c_str(),true);
-        tipl::out() << "converted to NIFTI: " << std::filesystem::path(output.toStdString()).filename().u8string() << std::endl;
-        return tipl::io::gz_nifti::save_to_file(output.toStdString().c_str(),source_images,vs,trans);
+        tipl::out() << "converted to NIFTI: " << std::filesystem::path(nii_file_name).filename().u8string() << std::endl;
+        if(!tipl::io::gz_nifti::save_to_file(nii_file_name + ".tmp",source_images,vs,trans))
+            return false;
+        if(std::filesystem::exists(nii_file_name))
+            std::filesystem::remove(nii_file_name);
+        std::filesystem::rename(nii_file_name + ".tmp",nii_file_name);
+        return true;
     }
 
     if(!DwiHeader::has_b_table(dicom_files))
     {
+        if(!overwrite && std::filesystem::exists(nii_file_name))
+        {
+            tipl::out() << nii_file_name << " exists. skipping";
+            return true;
+        }
         tipl::out() << "The images do not have b-table. Save as 4D NIFTI" << std::endl;
         auto dicom = dicom_files[0];
         tipl::matrix<4,4> trans;
@@ -1426,15 +1441,24 @@ bool dcm2src_and_nii(QStringList files)
                       dicom_files[index]->image.end(),
                       buffer.begin() + long(index*dicom_files[index]->image.size()));
         }
-        QString nii_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".nii.gz").c_str(),true);
-        tipl::out() << "Create 4D NII file: " << nii_name.toStdString() << std::endl;
-        return tipl::io::gz_nifti::save_to_file(nii_name.toStdString().c_str(),buffer,dicom->voxel_size,trans,false,report.c_str());
+        tipl::out() << "Create 4D NII file: " << nii_file_name << std::endl;
+        if(!tipl::io::gz_nifti::save_to_file(nii_file_name + ".tmp",buffer,dicom->voxel_size,trans,false,report.c_str()))
+            return false;
+        if(std::filesystem::exists(nii_file_name))
+            std::filesystem::remove(nii_file_name);
+        std::filesystem::rename(nii_file_name + ".tmp",nii_file_name);
+        return true;
     }
 
-    QString src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".sz").c_str(),true);
+    auto src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".sz").c_str(),true).toStdString();
+    if(!overwrite && std::filesystem::exists(src_name))
+    {
+        tipl::out() << src_name << " exists. skipping";
+        return true;
+    }
     src_data src;
     if(!src.load_from_file(dicom_files,false) ||
-       !src.save_to_file(src_name.toStdString()))
+       !src.save_to_file(src_name))
     {
         tipl::error() << src.error_msg;
         return false;
@@ -1442,7 +1466,7 @@ bool dcm2src_and_nii(QStringList files)
     return true;
 }
 
-void dicom2src_and_nii(std::string dir_)
+void dicom2src_and_nii(std::string dir_,bool overwrite)
 {
     tipl::progress prog("convert DICOM to NIFTI/SRC");
     QStringList dir_list = GetSubDir(dir_.c_str(),false);
@@ -1463,11 +1487,11 @@ void dicom2src_and_nii(std::string dir_)
             if(i+1 < dir_list.size() && !QFileInfo(dir_list[i+1] + "/" + dicom_file_list[0]).exists())
                 break;
         }
-        dcm2src_and_nii(aggregated_file_list);
+        dcm2src_and_nii(aggregated_file_list,overwrite);
     }
     if(!has_dicom)
         for(auto dir : dir_list)
-            dicom2src_and_nii(dir.toStdString());
+            dicom2src_and_nii(dir.toStdString(),overwrite);
 }
 
 void MainWindow::on_dicom2nii_clicked()
@@ -1479,7 +1503,7 @@ void MainWindow::on_dicom2nii_clicked()
     if(dir.isEmpty())
         return;
     add_work_dir(dir);
-    dicom2src_and_nii(dir.toStdString());
+    dicom2src_and_nii(dir.toStdString(),false);
 }
 
 
