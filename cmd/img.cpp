@@ -603,10 +603,13 @@ int img(tipl::program_option<tipl::out>& po)
                 return 1;
         }
         else
-        if(!var_image.command("save",po.get("output")))
         {
-            tipl::error() << var_image.error_msg;
-            return 1;
+            tipl::out() << "save to " << po.get("output");
+            if(!var_image.command("save",po.get("output")))
+            {
+                tipl::error() << var_image.error_msg;
+                return 1;
+            }
         }
     }
     return 0;
