@@ -1987,8 +1987,12 @@ bool fib_data::map_to_mni(bool background)
 
 
         prog = 2;
+        reg.match_resolution(false);
         if(has_manual_atlas)
+        {
             reg.arg = manual_template_T;
+            reg.calculate_linear_r();
+        }
         else
         {
             if(alternative_mapping_index && alternative_mapping_index < alternative_mapping.size() &&
@@ -1998,7 +2002,6 @@ bool fib_data::map_to_mni(bool background)
                 tipl::prog_aborted = true;
                 return;
             }
-            reg.match_resolution(false);
             reg.linear_reg(tipl::prog_aborted);
         }
 
@@ -2007,9 +2010,9 @@ bool fib_data::map_to_mni(bool background)
         prog = 3;
 
         reg.nonlinear_reg(tipl::prog_aborted);
-        if((R2 = reg.r[0]) < 0.3f)
+        if((R2 = tipl::max_value(reg.r)) < 0.3f)
         {
-            error_msg = "cannot perform normalization";
+            error_msg = "poor registration result.";
             tipl::prog_aborted = true;
         }
         if(tipl::prog_aborted)
@@ -2023,6 +2026,7 @@ bool fib_data::map_to_mni(bool background)
             tipl::error() << reg.error_msg;
     };
 
+    error_msg.clear();
     if(background)
     {
         reg_threads.push_back(std::make_shared<std::thread>(lambda));
@@ -2030,7 +2034,8 @@ bool fib_data::map_to_mni(bool background)
             std::this_thread::yield();
         if(p.aborted())
         {
-            error_msg = "aborted.";
+            if(error_msg.empty())
+                error_msg = "aborted.";
             prog = 0;
         }
         return !p.aborted();
