@@ -404,7 +404,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
 extern std::vector<std::string> iso_template_list;
 int img(tipl::program_option<tipl::out>& po)
 {
-    if(po.has("output") && std::filesystem::exists(po.get("output")) && !po.get("overwrite",0))
+    if(!po.get("overwrite",0) && po.has("output") && std::filesystem::exists(po.get("output")))
     {
         tipl::out() << "output exist, skipping";
         return 0;
