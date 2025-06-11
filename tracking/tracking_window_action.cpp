@@ -336,7 +336,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->canceled();
 
         if(!handle->save_slice(cmd[2],cmd[1]))
-            return run->failed(cmd[2] + " not found or cannot save it to " + cmd[1]);
+            return run->failed(handle->error_msg);
         return run->succeed();
     }
     if(cmd[0] == "save_all_devices")
@@ -1668,8 +1668,8 @@ void tracking_window::on_actionManual_Atlas_Alignment_triggered()
     }
     auto iso_fa = handle->get_iso_fa();
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-        subject_image_pre(tipl::image<3>(iso_fa.first)),subject_image_pre(tipl::image<3>(iso_fa.second)),handle->vs,
         template_image_pre(tipl::image<3>(handle->template_I)),template_image_pre(tipl::image<3>(handle->template_I2)),handle->template_vs,
+        subject_image_pre(tipl::image<3>(iso_fa.first)),subject_image_pre(tipl::image<3>(iso_fa.second)),handle->vs,
         tipl::reg::affine,tipl::reg::cost_type::mutual_info));
     if(manual->exec() != QDialog::Accepted)
         return;
