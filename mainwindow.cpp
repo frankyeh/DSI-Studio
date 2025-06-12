@@ -2143,7 +2143,7 @@ void MainWindow::on_github_open_file_clicked()
     auto git_open = [this,filePath](void)
     {
         if(filePath.endsWith(".nii.gz") || filePath.endsWith(".nii") ||
-           filePath.endsWith(".fib.gz") || filePath.endsWith(".fz"))
+           filePath.endsWith(".fib.gz") || filePath.endsWith(".fz") || filePath.endsWith(".dz"))
         {
 
             if(ui->github_open_file_mode->currentIndex() == 0)
