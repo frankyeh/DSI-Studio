@@ -215,7 +215,7 @@ void group_connectometry::show_dis_table(void)
 {
     ui->dist_table->setRowCount(100);
     ui->dist_table->setHorizontalHeaderLabels(
-                QStringList() << "length (mm)"
+                QStringList() << "voxel spacing"
                 << QString("FDR (%1)").arg(vbc->hypothesis_inc.c_str())
                 << QString("FDR (%1)").arg(vbc->hypothesis_dec.c_str())
                 << QString("#Tracts(%1)(permuted)").arg(vbc->hypothesis_inc.c_str())
