@@ -812,8 +812,6 @@ bool fib_data::load_from_mat(void)
         if (mat_reader.rows(index)*mat_reader.cols(index) != dim.size())
             continue;
         slices.push_back(std::make_shared<slice_model>(mat_reader[index].name,this));
-        if(mat_reader[index].name == "iso")
-            slices.push_back(std::make_shared<slice_model>("qir",this));
     }
 
     is_human_data = is_human_size(dim,vs); // 1 percentile head size in mm
@@ -824,10 +822,10 @@ bool fib_data::load_from_mat(void)
 
 
     if(!db.load_db_from_fib(this))
-    {
-        error_msg = error_msg;
         return false;
-    }
+
+    if(!db.has_db() && mat_reader.has("iso"))
+        slices.push_back(std::make_shared<slice_model>("qir",this));
 
     if(is_mni)
     {
