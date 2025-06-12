@@ -66,7 +66,7 @@ void slice_model::get_slice(
 {
     v2c.convert(tipl::volume2slice(get_image(),d_index,pos),show_image);
 }
-
+void normalize_data_by_iso(const float* iso_ptr,float* out_data_ptr,size_t n);
 tipl::const_pointer_image<3,float> slice_model::get_image(void)
 {
     if(!image_data.data() && handle)
@@ -77,7 +77,17 @@ tipl::const_pointer_image<3,float> slice_model::get_image(void)
             tipl::show_prog = false;
             restore_show_prog = true;
         }
-        image_data = tipl::make_image(handle->mat_reader.read_as_type<float>(name),handle->dim);
+        if(name == "qir")
+        {
+            tipl::out() << "compute qir from qa and iso";
+            image_data = tipl::make_image(handle->mat_reader.read_as_type<float>("iso"),handle->dim);
+            qir_buffer.resize(handle->dim);
+            std::copy_n(handle->dir.fa[0],qir_buffer.size(),qir_buffer.data());
+            normalize_data_by_iso(image_data.data(),qir_buffer.data(),qir_buffer.size());
+            image_data = qir_buffer.alias();
+        }
+        else
+            image_data = tipl::make_image(handle->mat_reader.read_as_type<float>(name),handle->dim);
         if(restore_show_prog)
             tipl::show_prog = true;
         max_value = 0.0f;
@@ -802,6 +812,8 @@ bool fib_data::load_from_mat(void)
         if (mat_reader.rows(index)*mat_reader.cols(index) != dim.size())
             continue;
         slices.push_back(std::make_shared<slice_model>(mat_reader[index].name,this));
+        if(mat_reader[index].name == "iso")
+            slices.push_back(std::make_shared<slice_model>("qir",this));
     }
 
     is_human_data = is_human_size(dim,vs); // 1 percentile head size in mm
