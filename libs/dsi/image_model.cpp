@@ -3091,13 +3091,8 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         prepare_idx(dwi_file_name,mat_reader.in);
         if(!mat_reader.load_from_file(dwi_file_name,prog))
         {
-            if(prog.aborted())
-            {
-                error_msg = "aborted";
-                return false;
-            }
-            error_msg = dwi_file_name;
-            error_msg += " is not a valid SRC file";
+            if(!prog.aborted())
+                error_msg = mat_reader.error_msg;
             return false;
         }
         save_idx(dwi_file_name,mat_reader.in);
