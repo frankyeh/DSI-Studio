@@ -2805,7 +2805,7 @@ bool src_data::save_to_file(const std::string& filename)
        tipl::ends_with(filename,".sz") ||
        tipl::ends_with(filename,".rz"))
     {
-        auto temp_file = filename + ".tmp";
+        auto temp_file = filename + ".tmp.gz";
         {
 
             tipl::io::gz_mat_write mat_writer(temp_file);
@@ -3236,9 +3236,9 @@ bool src_data::save_fib(void)
 {
     check_output_file_name();
 
-    std::string tmp_file = output_file_name + ".tmp";
+    std::string tmp_file = output_file_name + ".tmp.gz";
     while(std::filesystem::exists(tmp_file))
-        tmp_file += ".tmp";
+        tmp_file += ".gz";
 
     tipl::io::gz_mat_write mat_writer(tmp_file);
     if(!mat_writer)
