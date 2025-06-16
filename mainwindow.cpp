@@ -1409,11 +1409,11 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
         tipl::matrix<4,4,float> trans;
         initial_LPS_nifti_srow(trans,source_images.shape(),vs);
         tipl::out() << "converted to NIFTI: " << std::filesystem::path(nii_file_name).filename().u8string() << std::endl;
-        if(!tipl::io::gz_nifti::save_to_file(nii_file_name + ".tmp",source_images,vs,trans))
+        if(!tipl::io::gz_nifti::save_to_file(nii_file_name + ".tmp.gz",source_images,vs,trans))
             return false;
         if(std::filesystem::exists(nii_file_name))
             std::filesystem::remove(nii_file_name);
-        std::filesystem::rename(nii_file_name + ".tmp",nii_file_name);
+        std::filesystem::rename(nii_file_name + ".tmp.gz",nii_file_name);
         return true;
     }
 
@@ -1442,11 +1442,11 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
                       buffer.begin() + long(index*dicom_files[index]->image.size()));
         }
         tipl::out() << "Create 4D NII file: " << nii_file_name << std::endl;
-        if(!tipl::io::gz_nifti::save_to_file(nii_file_name + ".tmp",buffer,dicom->voxel_size,trans,false,report.c_str()))
+        if(!tipl::io::gz_nifti::save_to_file(nii_file_name + ".tmp.gz",buffer,dicom->voxel_size,trans,false,report.c_str()))
             return false;
         if(std::filesystem::exists(nii_file_name))
             std::filesystem::remove(nii_file_name);
-        std::filesystem::rename(nii_file_name + ".tmp",nii_file_name);
+        std::filesystem::rename(nii_file_name + ".tmp.gz",nii_file_name);
         return true;
     }
 
