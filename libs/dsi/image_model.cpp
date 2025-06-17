@@ -2805,14 +2805,13 @@ bool src_data::save_to_file(const std::string& filename)
        tipl::ends_with(filename,".sz") ||
        tipl::ends_with(filename,".rz"))
     {
-        auto temp_file = filename + ".tmp.gz";
+        std::string temp_file = filename + ".tmp";
         {
 
             tipl::io::gz_mat_write mat_writer(temp_file);
             if(!mat_writer)
             {
-                error_msg = "cannot write ";
-                error_msg += temp_file;
+                error_msg = "cannot write to a temporary file " + temp_file;
                 return false;
             }
             mat_writer.write("dimension",voxel.dim);
@@ -3236,14 +3235,12 @@ bool src_data::save_fib(void)
 {
     check_output_file_name();
 
-    std::string tmp_file = output_file_name + ".tmp.gz";
-    while(std::filesystem::exists(tmp_file))
-        tmp_file += ".gz";
-
+    tipl::out() << "saving " << output_file_name;
+    std::string tmp_file = output_file_name + ".tmp";
     tipl::io::gz_mat_write mat_writer(tmp_file);
     if(!mat_writer)
     {
-        error_msg = "cannot save fib file";
+        error_msg = "cannot write to a temporary file " + tmp_file;
         return false;
     }
     if(tipl::ends_with(output_file_name,".fz"))
@@ -3295,7 +3292,7 @@ bool src_data::save_fib(void)
     mat_writer.write("intro",voxel.intro);
     mat_writer.close();
     std::filesystem::rename(tmp_file,output_file_name);
-    tipl::out() << "saving " << output_file_name;
+
     return true;
 }
 
