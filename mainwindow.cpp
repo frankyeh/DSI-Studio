@@ -1399,17 +1399,21 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
         }
         if(source_images.empty())
         {
-            tipl::out() << "cannot parse as image volume";
+            tipl::error() << "cannot parse as image volume";
             return false;
         }
         tipl::matrix<4,4,float> trans;
         initial_LPS_nifti_srow(trans,source_images.shape(),vs);
         tipl::out() << "converted to NIFTI: " << std::filesystem::path(nii_file_name).filename().u8string() << std::endl;
-        if(!tipl::io::gz_nifti::save_to_file(nii_file_name + ".tmp.gz",source_images,vs,trans))
+        std::string nii_file_name_tmp = nii_file_name + ".tmp";
+        if(!tipl::io::gz_nifti::save_to_file(nii_file_name_tmp,source_images,vs,trans))
+        {
+            tipl::error() << "cannot write to a temporary file " + nii_file_name_tmp;
             return false;
+        }
         if(std::filesystem::exists(nii_file_name))
             std::filesystem::remove(nii_file_name);
-        std::filesystem::rename(nii_file_name + ".tmp.gz",nii_file_name);
+        std::filesystem::rename(nii_file_name_tmp,nii_file_name);
         return true;
     }
 
@@ -1438,11 +1442,15 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
                       buffer.begin() + long(index*dicom_files[index]->image.size()));
         }
         tipl::out() << "Create 4D NII file: " << nii_file_name << std::endl;
-        if(!tipl::io::gz_nifti::save_to_file(nii_file_name + ".tmp.gz",buffer,dicom->voxel_size,trans,false,report.c_str()))
+        std::string nii_file_name_tmp = nii_file_name + ".tmp";
+        if(!tipl::io::gz_nifti::save_to_file(nii_file_name_tmp,buffer,dicom->voxel_size,trans,false,report.c_str()))
+        {
+            tipl::error() << "cannot write to a temporary file " + nii_file_name_tmp;
             return false;
+        }
         if(std::filesystem::exists(nii_file_name))
             std::filesystem::remove(nii_file_name);
-        std::filesystem::rename(nii_file_name + ".tmp.gz",nii_file_name);
+        std::filesystem::rename(nii_file_name_tmp,nii_file_name);
         return true;
     }
 
