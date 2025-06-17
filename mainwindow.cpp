@@ -478,12 +478,10 @@ void MainWindow::updateRecentList(void)
         for (int index = 0;index < file_list.size();++index)
         {
             ui->recentFib->setRowHeight(index,20);
-            ui->recentFib->setItem(index, 0, new QTableWidgetItem(QFileInfo(file_list[index]).fileName()));
-            ui->recentFib->setItem(index, 1, new QTableWidgetItem(QFileInfo(file_list[index]).absolutePath()));
-            ui->recentFib->setItem(index, 2, new QTableWidgetItem(QFileInfo(file_list[index]).lastModified().toString()));
+            ui->recentFib->setItem(index, 0, new QTableWidgetItem(std::filesystem::path(file_list[index].toStdString()).filename().string().c_str()));
+            ui->recentFib->setItem(index, 1, new QTableWidgetItem(std::filesystem::path(file_list[index].toStdString()).parent_path().string().c_str()));
             ui->recentFib->item(index,0)->setFlags(ui->recentFib->item(index,0)->flags() & ~Qt::ItemIsEditable);
             ui->recentFib->item(index,1)->setFlags(ui->recentFib->item(index,1)->flags() & ~Qt::ItemIsEditable);
-            ui->recentFib->item(index,2)->setFlags(ui->recentFib->item(index,2)->flags() & ~Qt::ItemIsEditable);
         }
     }
     {
@@ -493,16 +491,14 @@ void MainWindow::updateRecentList(void)
         for (int index = 0;index < file_list.size();++index)
         {
             ui->recentSrc->setRowHeight(index,20);
-            ui->recentSrc->setItem(index, 0, new QTableWidgetItem(QFileInfo(file_list[index]).fileName()));
-            ui->recentSrc->setItem(index, 1, new QTableWidgetItem(QFileInfo(file_list[index]).absolutePath()));
-            ui->recentSrc->setItem(index, 2, new QTableWidgetItem(QFileInfo(file_list[index]).lastModified().toString()));
+            ui->recentSrc->setItem(index, 0, new QTableWidgetItem(std::filesystem::path(file_list[index].toStdString()).filename().string().c_str()));
+            ui->recentSrc->setItem(index, 1, new QTableWidgetItem(std::filesystem::path(file_list[index].toStdString()).parent_path().string().c_str()));
             ui->recentSrc->item(index,0)->setFlags(ui->recentSrc->item(index,0)->flags() & ~Qt::ItemIsEditable);
             ui->recentSrc->item(index,1)->setFlags(ui->recentSrc->item(index,1)->flags() & ~Qt::ItemIsEditable);
-            ui->recentSrc->item(index,2)->setFlags(ui->recentSrc->item(index,2)->flags() & ~Qt::ItemIsEditable);
         }
     }
     QStringList header;
-    header << "File Name" << "Directory" << "Date";
+    header << "File Name" << "Directory";
     ui->recentFib->setHorizontalHeaderLabels(header);
     ui->recentSrc->setHorizontalHeaderLabels(header);
 }
