@@ -131,24 +131,42 @@ bool command_history::is_loading(const std::string& cmd)
 }
 bool command_history::is_saving(const std::string& cmd)
 {
-    return cmd.find(',') < cmd.find('.') && cmd.find('.') != std::string::npos &&  tipl::begins_with(cmd,"save_");
+    return cmd.find(',') < cmd.find('.') && cmd.find('.') != std::string::npos && tipl::begins_with(cmd,"save_");
 }
-bool command_history::run(tracking_window *parent,const std::vector<std::string>& cmd,bool apply_to_others)
+QStringList search_files(QString dir,QString filter);
+bool command_history::run(tracking_window *parent,const std::vector<std::string>& cmd,char type)
 {
     QStringList file_list;
     std::string original_file;
     int loading_index = -1;
 
     auto first_load = std::find_if(cmd.begin(),cmd.end(),[](const auto& cmd_line){return is_loading(cmd_line);});
-    if(first_load != cmd.end() && apply_to_others)
+    if(first_load != cmd.end() && type)
     {
         loading_index = first_load-cmd.end();
         auto param = tipl::split(*first_load,',');
         original_file = param[1];
-        QMessageBox::information(parent,QApplication::applicationName(),
-            "select files for '" + QString::fromStdString(param[0]).replace('_',' ') + "' step");
-        file_list = QFileDialog::getOpenFileNames(parent,"files for " + QString::fromStdString(param[0]),original_file.c_str(),
-            QString("files (*%1);;all files (*)").arg(tipl::complete_suffix(original_file).c_str()));
+        if(type == 1) // select files
+        {
+            QMessageBox::information(parent,QApplication::applicationName(),
+                "select files for '" + QString::fromStdString(param[0]).replace('_',' ') + "' step");
+            file_list = QFileDialog::getOpenFileNames(parent,"files for " + QString::fromStdString(param[0]),original_file.c_str(),
+                QString("files (*%1);;all files (*)").arg(tipl::complete_suffix(original_file).c_str()));
+        }
+        else
+        // select folder
+        {
+            QMessageBox::information(parent,QApplication::applicationName(),
+                "select a folder for '" + QString::fromStdString(param[0]).replace('_',' ') + "' step");
+
+            QString dir = QFileDialog::getExistingDirectory(parent,"Browse Directory",original_file.c_str());
+            if(dir.isEmpty())
+                return false;
+            QString search_filter = "*"+QFileInfo(original_file.c_str()).completeSuffix();
+            tipl::out() << "search " << search_filter.toStdString() << " at " << dir.toStdString();
+            file_list = search_files(dir,search_filter);
+            tipl::out() << "A total of " << file_list.size() << " file(s) found";
+        }
         if(file_list.isEmpty())
             return false;
     }
@@ -158,6 +176,8 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
     size_t total_steps = std::max<int>(1,file_list.size())*cmd.size();
     for(size_t k = 0,steps = 0;k < std::max<int>(1,file_list.size()) && !p.aborted();++k)
     {
+        if(original_file == file_list[k].toStdString())
+            continue;
         tipl::progress p("processing " + (k < file_list.size() ? file_list[k].toStdString() : std::string()));
         tracking_window *backup_parent = nullptr;
         for(int j = 0;j < cmd.size() && !p.aborted();++j,++steps)
@@ -171,9 +191,13 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
                 else
                 if(is_loading(cmd[j]) || is_saving(cmd[j]))
                 {
+                    tipl::out() << "matching " << original_file << "=>" << param[1];
+                    tipl::out() << file_list[k].toStdString() << "=> ?";
                     std::string new_file_name;
                     if(tipl::match_files(original_file,param[1],file_list[k].toStdString(),new_file_name))
                     {
+                        tipl::out() << original_file << "=>" << param[1];
+                        tipl::out() << file_list[k].toStdString() << "=>" << new_file_name;
                         if(is_loading(cmd[j]) && !std::filesystem::exists(new_file_name))
                         {
                             tipl::warning() << "cannot find " << new_file_name;
@@ -1139,19 +1163,20 @@ void tracking_window::on_actionCommand_History_triggered(){
             }
             return sel;
         };
-        QStringList btns{"&Open...", "&Save...", "Reload...", "Repeat", "Apply to Others...", "Delete", "Close"};
+        QStringList btns{"&Open...", "&Save...", "Reload...", "Repeat", "Apply to Files...", "Apply to Folders...", "Delete", "Close"};
         std::vector<QPushButton*> buttons;
         for(auto &b : btns) buttons.push_back(new QPushButton(b, command_dialog));
         auto openB = buttons[0], saveB = buttons[1], reloadB = buttons[2],
-             repeatB = buttons[3], applyB = buttons[4], deleteB = buttons[5], closeB = buttons[6];
+             repeatB = buttons[3], applyA = buttons[4], applyB = buttons[5],
+             deleteB = buttons[6], closeB = buttons[7];
         reloadB->setObjectName("reloadButton");
-        repeatB->setDisabled(true); deleteB->setDisabled(true); applyB->setDisabled(true);
+        repeatB->setDisabled(true); deleteB->setDisabled(true); applyA->setDisabled(true); applyB->setDisabled(true);
         auto btnLayout = new QHBoxLayout;
         for(auto b : buttons) btnLayout->addWidget(b);
         layout->addLayout(btnLayout);
         connect(tableWidget, &QTableWidget::itemSelectionChanged, [=](){
             bool has = !tableWidget->selectionModel()->selectedRows().isEmpty();
-            repeatB->setEnabled(has); deleteB->setEnabled(has); applyB->setEnabled(has);
+            repeatB->setEnabled(has); deleteB->setEnabled(has); applyA->setEnabled(has); applyB->setEnabled(has);
         });
         connect(openB, &QPushButton::clicked, [=](){
             QString fn = QFileDialog::getOpenFileName(this, "Open text files",
@@ -1178,12 +1203,17 @@ void tracking_window::on_actionCommand_History_triggered(){
         });
         connect(reloadB, &QPushButton::clicked, [=](){ populate_table(history.commands); });
         connect(repeatB, &QPushButton::clicked, [=](){
-            if(history.run(this, get_sel(), false))
+            if(history.run(this, get_sel(), 0 /* no open file or folder*/))
+                QMessageBox::information(this, QApplication::applicationName(), "Execution completed");
+        });
+        connect(applyA, &QPushButton::clicked, [=](){
+            renderWidget->saveParameters();
+            if(history.run(this, get_sel(), 1 /* open files*/))
                 QMessageBox::information(this, QApplication::applicationName(), "Execution completed");
         });
         connect(applyB, &QPushButton::clicked, [=](){
             renderWidget->saveParameters();
-            if(history.run(this, get_sel(), true))
+            if(history.run(this, get_sel(), 2 /* open a folder*/))
                 QMessageBox::information(this, QApplication::applicationName(), "Execution completed");
         });
         connect(deleteB, &QPushButton::clicked, [=](){
