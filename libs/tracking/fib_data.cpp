@@ -584,8 +584,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
     {
         if(!tipl::io::gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni))
         {
-            error_msg = "cannot save file ";
-            error_msg += file_name;
+            error_msg = "cannot save file " + file_name;
             return false;
         }
         return true;
@@ -630,8 +629,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
     size_t index = get_name_index(index_name);
     if(index >= slices.size())
     {
-        error_msg = "cannot find metrics ";
-        error_msg += index_name;
+        error_msg = "cannot find metrics " + index_name;
         return false;
     }
 
@@ -653,8 +651,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
         tipl::io::mat_write file(file_name.c_str());
         if(!file)
         {
-            error_msg = "cannot save file ";
-            error_msg += file_name;
+            error_msg = "cannot save file " + file_name;
             return false;
         }
         file << slices[index]->get_image();
