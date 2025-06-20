@@ -191,13 +191,10 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
                 else
                 if(is_loading(cmd[j]) || is_saving(cmd[j]))
                 {
-                    tipl::out() << "matching " << original_file << "=>" << param[1];
-                    tipl::out() << file_list[k].toStdString() << "=> ?";
                     std::string new_file_name;
                     if(tipl::match_files(original_file,param[1],file_list[k].toStdString(),new_file_name))
                     {
-                        tipl::out() << original_file << "=>" << param[1];
-                        tipl::out() << file_list[k].toStdString() << "=>" << new_file_name;
+                        tipl::out() << "matching " << file_list[k].toStdString() << "=>" << new_file_name;
                         if(is_loading(cmd[j]) && !std::filesystem::exists(new_file_name))
                         {
                             tipl::warning() << "cannot find " << new_file_name;
@@ -233,6 +230,8 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
                         }
                         param[1] = new_file_name;
                     }
+                    else
+                        tipl::warning() << "Please check. not sure if this is the correct file name for the current command: " << param[1];
                 }
             }
             tipl::out() << "run " << tipl::merge(param,',');
