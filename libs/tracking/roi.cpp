@@ -8,8 +8,7 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
     track_ids = handle->get_track_ids(tract_name);
     if(track_ids.empty())
     {
-        handle->error_msg = "invalid tract name: ";
-        handle->error_msg += tract_name;
+        handle->error_msg = "invalid tract name: " + tract_name;
         return false;
     }
     if(terminated)
@@ -40,28 +39,30 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
         }
     }
 
-
+    if(tract_coverage.empty())
+    {
+        handle->error_msg = "targeted tract is not in the field of view";
+        return false;
+    }
 
     {
-        // add limiting region to speed up tracking
-        tipl::out() << "creating limiting region to limit tracking results" << std::endl;
 
+        tipl::progress p("create limiting mask");
         bool is_left = (tract_name.back() == 'L' || tipl::contains(tract_name,"L_")) ;
         bool is_right = (tract_name.back() == 'R' || tipl::contains(tract_name,"R_"));
         auto mid_x = handle->template_I.width() >> 1;
         auto& s2t = handle->get_sub2temp_mapping();
         if(is_left)
-            tipl::out() << "apply left limiting mask for " << tract_name << std::endl;
+            tipl::out() << "apply left mask for " + tract_name;
         if(is_right)
-            tipl::out() << "apply right limiting mask for " << tract_name << std::endl;
+            tipl::out() << "apply right mask for " + tract_name;
 
         tipl::image<3,char> limiting_mask(handle->dim);
-        const float *fa0 = handle->dir.fa[0];
-        tipl::adaptive_par_for(tract_coverage.size(),[&](unsigned int i)
+        auto fa0 = handle->dir.fa[0];
+        tipl::par_for(tract_coverage.size(),[&](unsigned int i)
         {
             tipl::for_each_neighbors(tipl::pixel_index<3>(tract_coverage[i].begin(),handle->dim),
-                                handle->dim,int(std::ceil(tolerance_dis_in_subject_voxels)),
-                    [&](const auto& pos)
+                                handle->dim,int(std::ceil(tolerance_dis_in_subject_voxels)),[&](const auto& pos)
             {
                 if(fa0[pos.index()] <= 0.0f)
                     return;
@@ -75,33 +76,43 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
         if(terminated)
             return false;
 
-        std::vector<std::vector<tipl::vector<3,short> > > limiting_points(tipl::max_thread_count),
-                                                          seed_points(tipl::max_thread_count),
-                                                          not_end_points(tipl::max_thread_count);
-        tipl::par_for<tipl::sequential_with_id>(tipl::begin_index(limiting_mask.shape()),tipl::end_index(limiting_mask.shape()),
-                      [&](const auto& pos,unsigned int thread_id)
         {
-            if(!limiting_mask[pos.index()])
-                return;
-            auto point = tipl::vector<3,short>(pos.x(), pos.y(),pos.z());
-            limiting_points[thread_id].push_back(point);
-            if(fa0[pos.index()] >= seed_threshold)
-                seed_points[thread_id].push_back(point);
-            if(not_end_threshold != 0.0f && fa0[pos.index()] >= not_end_threshold)
-                not_end_points[thread_id].push_back(point);
-        });
+            tipl::progress p("create limiting/seeding/not end regions");
+            std::vector<std::vector<tipl::vector<3,short> > > limiting_points(tipl::max_thread_count),
+                                                              seed_points(tipl::max_thread_count),
+                                                              not_end_points(tipl::max_thread_count);
+            auto fa0 = handle->dir.fa[0];
+            tipl::par_for<tipl::sequential_with_id>(tipl::begin_index(limiting_mask.shape()),tipl::end_index(limiting_mask.shape()),
+                          [&](const auto& pos,unsigned int thread_id)
+            {
+                if(!limiting_mask[pos.index()])
+                    return;
+                auto point = tipl::vector<3,short>(pos.x(), pos.y(),pos.z());
+                limiting_points[thread_id].push_back(point);
+                if(fa0[pos.index()] >= seed_threshold)
+                    seed_points[thread_id].push_back(point);
+                if(not_end_threshold != 0.0f && fa0[pos.index()] >= not_end_threshold)
+                    not_end_points[thread_id].push_back(point);
+            });
 
-        tipl::aggregate_results(std::move(limiting_points),atlas_limiting);
-        tipl::aggregate_results(std::move(seed_points),atlas_seed);
-        tipl::aggregate_results(std::move(not_end_points),atlas_not_end);
+            tipl::aggregate_results(std::move(limiting_points),atlas_limiting);
+            tipl::aggregate_results(std::move(seed_points),atlas_seed);
+            tipl::aggregate_results(std::move(not_end_points),atlas_not_end);
 
-        setRegions(atlas_limiting,limiting_id,"track tolerance region");
-        if(!atlas_not_end.empty())
-            setRegions(atlas_not_end,not_end_id,"white matter region");
-        if(seeds.empty())
-            setRegions(atlas_seed,seed_id,tract_name.c_str());
+            setRegions(atlas_limiting,limiting_id,"track tolerance region");
 
+            if(!atlas_not_end.empty())
+                setRegions(atlas_not_end,not_end_id,"white matter region");
+
+            if(seeds.empty())
+                setRegions(atlas_seed,seed_id,tract_name.c_str());
+            else
+                tipl::out() << "An external seed region is used";
+            if(terminated)
+                return false;
+        }
     }
+
 
     if(handle->tractography_atlas_roi.get())
     {
@@ -123,6 +134,7 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
                 setRegions(atlas_roi,roi_id,regions[i].c_str());
             }
     }
+
     if(handle->tractography_atlas_roa.get())
     {
         const auto& regions = handle->tractography_atlas_roa->get_list();
@@ -143,7 +155,10 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
                 setRegions(atlas_roa,roa_id,regions[i].c_str());
             }
     }
+
     {
+        tipl::progress p("configure tract targets");
+
         const auto& atlas_tract = handle->track_atlas->get_tracts();
         const auto& atlas_cluster = handle->track_atlas->tract_cluster;
         auto tolerance_dis_in_subject_voxels2 = tolerance_dis_in_subject_voxels*2;
