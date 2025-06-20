@@ -3096,7 +3096,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         if(!mat_reader.load_from_file(dwi_file_name,prog))
         {
             if(!prog.aborted())
-                error_msg = mat_reader.error_msg;
+                error_msg = "cannot open file: " + mat_reader.error_msg;
             return false;
         }
         save_idx(dwi_file_name,mat_reader.in);
