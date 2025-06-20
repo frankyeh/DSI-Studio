@@ -96,7 +96,10 @@ void src_data::calculate_dwi_sum(bool update_mask)
         }
     }
     else
-        tipl::preserve(dwi.begin(),dwi.end(),voxel.mask.begin());
+    {
+        if(dwi.shape() == voxel.mask.shape())
+            tipl::preserve(dwi.begin(),dwi.end(),voxel.mask.begin());
+    }
 }
 
 bool src_data::warp_b0_to_image(dual_reg& r)
@@ -1252,12 +1255,14 @@ void src_data::rotate(const tipl::shape<3>& new_geo,
     auto trans = T.to_matrix();
     trans *= voxel.trans_to_mni;
     voxel.trans_to_mni = trans;
-    calculate_dwi_sum(false);
 
     // rotate the mask
     tipl::image<3,unsigned char> mask(voxel.dim);
     tipl::resample<tipl::interpolation::majority>(voxel.mask,mask,T);
     mask.swap(voxel.mask);
+
+    calculate_dwi_sum(false);
+
 }
 void src_data::resample(float nv)
 {
