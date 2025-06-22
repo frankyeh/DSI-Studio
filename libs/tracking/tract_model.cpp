@@ -2624,8 +2624,7 @@ void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,const tipl
                 if(need_trans)
                     cur.to(trans);
                 cur.round();
-                if(geo.is_valid(cur))
-                    pass_map[thread].insert(tipl::vector<3,short>(cur));
+                pass_map[thread].insert(tipl::vector<3,short>(cur));
             }
 
         }
