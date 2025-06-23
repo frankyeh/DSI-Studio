@@ -854,7 +854,8 @@ void GLWidget::renderLR()
                         else
                             glColor4f(0.2f,0.2f,0.2f,a);
                         glTranslatef(0.0f,0.0f,radius*0.5f);
-                        seg_length[j+1] -= radius*0.5f;
+                        if (j + 1 < seg_type.size())
+                            seg_length[j+1] -= radius*0.5f;
                         gluSphere(DeviceQua->get(),double(radius),20,10);
                         continue;
                     case 0:
