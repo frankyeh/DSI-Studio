@@ -404,9 +404,9 @@ void evaluate_connection(
         bool check_trajectory = true)
 {
     unsigned char num_fib = fib_fa.size();
-    char dx[13] = {1,0,0,1,1,0, 1, 1, 0, 1,-1, 1, 1};
-    char dy[13] = {0,1,0,1,0,1,-1, 0, 1, 1, 1,-1, 1};
-    char dz[13] = {0,0,1,0,1,1, 0,-1,-1, 1, 1, 1,-1};
+    int dx[13] = {1,0,0,1,1,0, 1, 1, 0, 1,-1, 1, 1};
+    int dy[13] = {0,1,0,1,0,1,-1, 0, 1, 1, 1,-1, 1};
+    int dz[13] = {0,0,1,0,1,1, 0,-1,-1, 1, 1, 1,-1};
     std::vector<tipl::vector<3> > dis(13);
     const double angular_threshold = 0.984;
     for(unsigned int i = 0;i < 13;++i)
