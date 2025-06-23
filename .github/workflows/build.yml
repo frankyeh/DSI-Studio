@@ -34,87 +34,6 @@ on:
  
 jobs:    
 
-  linux-build-cpu:
-    if: ${{ github.event.inputs.build_linux == 'true' }}
-    strategy:
-      matrix:
-        os: [ubuntu2404,ubuntu2204,ubuntu2004]
-      fail-fast: false
-    runs-on: ubuntu-latest
-    steps:
-    - name: Download Build
-      run: |
-        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git  
-        mv DSI-Studio-Build/build_packages .
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3.0.0
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3.0.0
-    - name: Build and push
-      uses: docker/build-push-action@v5.1.0
-      with:
-        context: .
-        build-args: |
-          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}        
-        file: build_packages/${{ matrix.os }}/Dockerfile
-        push: false
-        outputs: dsi-studio
-    - name: Packaging
-      run: |
-        zip -r dsi_studio_${{ matrix.os }}_cpu.zip dsi-studio
-    - name: Create Release
-      env:
-        GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
-      run: |
-        gh release upload ${{ github.event.inputs.tag }} *.zip --clobber --repo frankyeh/DSI-Studio
-
-  linux-build-cpu-arm:
-    if: ${{ github.event.inputs.build_linux_arm == 'true' }}
-    strategy:
-      matrix:
-        os: [ubuntu2404,ubuntu2204]
-      fail-fast: false
-    runs-on: ubuntu-24.04-arm
-    steps:
-    - name: Download Build
-      run: |
-        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git  
-        mv DSI-Studio-Build/build_packages .
-    - name: Prepare Dockerfile for ARM build
-      run: |
-        DOCKERFILE_PATH="build_packages/${{ matrix.os }}/Dockerfile"
-        echo "Modifying Dockerfile: $DOCKERFILE_PATH"
-        # 1. Modify the FROM line to use the _arm base image
-        sed -i '1s|\(:latest as builder-stage\)$|_arm\1|' "$DOCKERFILE_PATH"
-        # 2. Modify the linuxdeployqt download URL to use the aarch64 version
-        # This replaces 'x86_64.AppImage' with 'aarch64.AppImage' in the download URL.
-        sed -i 's|linuxdeployqt-continuous-x86_64.AppImage|linuxdeployqt-continuous-aarch64.AppImage|' "$DOCKERFILE_PATH"
-        echo "Modified Dockerfile content:"
-        cat "$DOCKERFILE_PATH"
-
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3.0.0
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3.0.0
-    - name: Build and push
-      uses: docker/build-push-action@v5.1.0
-      with:
-        context: .
-        build-args: |
-          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}        
-        file: build_packages/${{ matrix.os }}/Dockerfile
-        push: false
-        outputs: dsi-studio
-    - name: Packaging
-      run: |
-        zip -r dsi_studio_${{ matrix.os }}_cpu_arm64.zip dsi-studio
-    - name: Create Release
-      env:
-        GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
-      run: |
-        gh release upload ${{ github.event.inputs.tag }} *.zip --clobber --repo frankyeh/DSI-Studio
-
-
   linux-build:
     if: ${{ github.event.inputs.build_linux == 'true' }}
     strategy:
@@ -137,12 +56,89 @@ jobs:
         context: .
         build-args: |
           DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}        
+        file: build_packages/${{ matrix.os }}/Dockerfile
+        push: false
+        outputs: dsi-studio-cpu
+    - name: Build and push
+      uses: docker/build-push-action@v5.1.0
+      with:
+        context: .
+        build-args: |
+          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}        
         file: build_packages/${{ matrix.os }}/Dockerfile_cuda
         push: false
         outputs: dsi-studio
     - name: Packaging
       run: |
+        zip -r dsi_studio_${{ matrix.os }}_cpu.zip dsi-studio-cpu
         zip -r dsi_studio_${{ matrix.os }}.zip dsi-studio
+    - name: Create Release
+      env:
+        GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
+      run: |
+        gh release upload ${{ github.event.inputs.tag }} *.zip --clobber --repo frankyeh/DSI-Studio
+
+  linux-build-arm:
+    if: ${{ github.event.inputs.build_linux_arm == 'true' }}
+    strategy:
+      matrix:
+        os: [ubuntu2404,ubuntu2204]
+      fail-fast: false
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - name: Download Build
+      run: |
+        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git  
+        mv DSI-Studio-Build/build_packages .
+    - name: Prepare Dockerfile for ARM build (CPU)
+      run: |
+        DOCKERFILE_PATH="build_packages/${{ matrix.os }}/Dockerfile"
+        echo "Modifying Dockerfile: $DOCKERFILE_PATH"
+        # 1. Modify the FROM line to use the _arm base image
+        sed -i '1s|\(:latest as builder-stage\)$|_arm\1|' "$DOCKERFILE_PATH"
+        # 2. Modify the linuxdeployqt download URL to use the aarch64 version
+        # This replaces 'x86_64.AppImage' with 'aarch64.AppImage' in the download URL.
+        sed -i 's|linuxdeployqt-continuous-x86_64.AppImage|linuxdeployqt-continuous-aarch64.AppImage|' "$DOCKERFILE_PATH"
+        echo "Modified Dockerfile content:"
+        cat "$DOCKERFILE_PATH"
+    - name: Prepare Dockerfile for ARM build (CUDA)
+      run: |
+        DOCKERFILE_PATH="build_packages/${{ matrix.os }}/Dockerfile_cuda"
+        echo "Modifying Dockerfile: $DOCKERFILE_PATH"
+        # 1. Modify the FROM line to use the _arm base image
+        sed -i '1s|\(:latest as builder-stage\)$|_arm\1|' "$DOCKERFILE_PATH"
+        # 2. Modify the linuxdeployqt download URL to use the aarch64 version
+        # This replaces 'x86_64.AppImage' with 'aarch64.AppImage' in the download URL.
+        sed -i 's|linuxdeployqt-continuous-x86_64.AppImage|linuxdeployqt-continuous-aarch64.AppImage|' "$DOCKERFILE_PATH"
+        echo "Modified Dockerfile content:"
+        cat "$DOCKERFILE_PATH"
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3.0.0
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3.0.0
+    - name: Build and push (CPU)
+      uses: docker/build-push-action@v5.1.0
+      with:
+        context: .
+        build-args: |
+          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}        
+        file: build_packages/${{ matrix.os }}/Dockerfile
+        push: false
+        outputs: dsi-studio-cpu
+    - name: Build and push (CUDA)
+      uses: docker/build-push-action@v5.1.0
+      with:
+        context: .
+        build-args: |
+          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}        
+        file: build_packages/${{ matrix.os }}/Dockerfile_cuda
+        push: false
+        outputs: dsi-studio
+    - name: Packaging
+      run: |
+        zip -r dsi_studio_${{ matrix.os }}_cpu_arm64.zip dsi-studio-cpu
+        zip -r dsi_studio_${{ matrix.os }}_arm64.zip dsi-studio
     - name: Create Release
       env:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
