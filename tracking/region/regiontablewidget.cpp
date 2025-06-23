@@ -10,6 +10,7 @@
 #include <QHeaderView>
 #include "regiontablewidget.h"
 #include "tracking/tracking_window.h"
+#include "tracking/devicetablewidget.h"
 #include "qcolorcombobox.h"
 #include "ui_tracking_window.h"
 #include "mapping/atlas.hpp"
@@ -312,6 +313,8 @@ tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
     return c;
 }
 void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<std::shared_ptr<ROIRegion> >& regions,
+                            std::string& result);
+void get_devices_statistics(std::shared_ptr<fib_data> handle,const std::vector<std::shared_ptr<Device> >& devices,
                             std::string& result);
 void get_tract_statistics(std::shared_ptr<fib_data> handle,
                           const std::vector<std::shared_ptr<TractModel> >& tract_models,
@@ -840,7 +843,8 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         return run->succeed();
     }
 
-    if(cmd[0] == "show_region_statistics" || cmd[0] == "save_region_statistics" ||
+    if(cmd[0] == "show_device_statistics" || cmd[0] == "save_device_statistics" ||
+       cmd[0] == "show_region_statistics" || cmd[0] == "save_region_statistics" ||
        cmd[0] == "show_t2r" || cmd[0] == "save_t2r" ||
        cmd[0] == "show_tract_statistics" || cmd[0] == "save_tract_statistics" ||
        cmd[0] == "show_tract_recognition" || cmd[0] == "save_tract_recognition")
@@ -848,6 +852,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         // cmd[1] : file name to save
         auto regions = get_checked_regions();
         auto tracts = cur_tracking_window.tractWidget->get_checked_tracks();
+        auto devices = cur_tracking_window.deviceWidget->devices;
 
         std::string result,title,default_file(cur_tracking_window.history.file_stem(false/*basic stem*/));
         tipl::progress p(cmd[0],true);
@@ -913,6 +918,14 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             }
             title = "Region Statistics";
             default_file += "_region_stat.txt";
+        }
+        if(tipl::contains(cmd[0],"device"))
+        {
+            if(devices.empty())
+                return run->failed("please specify devices");
+            get_devices_statistics(cur_tracking_window.handle,devices,result);
+            title = "Device Statistics";
+            default_file += "_device_stat.txt";
         }
 
         if(!cmd[1].empty())
