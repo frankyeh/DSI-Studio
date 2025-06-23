@@ -68,7 +68,7 @@ Device::Device()
 {
 }
 
-std::vector<tipl::vector<3> > Device::get_lead_positions(void) const
+std::vector<tipl::vector<3> > Device::get_lead_positions(float vs0,float seg_pos) const
 {
     std::vector<tipl::vector<3> > results;
     std::vector<float> seg_length;
@@ -78,7 +78,7 @@ std::vector<tipl::vector<3> > Device::get_lead_positions(void) const
     float cur_length = 0.0f;
     for(size_t i = 0;i < seg_type.size();cur_length += seg_length[i],++i)
         if(seg_type[i] == 1) // lead
-            results.push_back(pos + dir*(cur_length + seg_length[i]*0.5f));
+            results.push_back(pos + dir*(cur_length + seg_length[i]*seg_pos)/vs0);
     return results;
 }
 

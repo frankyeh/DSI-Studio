@@ -26,7 +26,7 @@ public:
     void get_rendering(std::vector<float>& seg_length,
                        std::vector<char>& seg_type,
                        float& radius) const;
-    std::vector<tipl::vector<3> > get_lead_positions(void) const;
+    std::vector<tipl::vector<3>> get_lead_positions(float vs0,float seg_pos = 0.5) const;
 };
 
 extern std::vector<std::string> device_types;

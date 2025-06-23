@@ -888,6 +888,28 @@ bool tracking_window::command(std::vector<std::string> cmd)
         updateSlicesMenu();
         return run->succeed();
     }
+    if(cmd[0] == "move_device")
+    {
+        // cmd[1] : device index
+        // cmd[2] : shift
+        int device_index = run->from_cmd(1,deviceWidget->currentRow());
+        if(device_index >= deviceWidget->devices.size())
+            return run->failed("invalid device index");
+        if(cmd[2].empty())
+        {
+            bool ok;
+            cmd[2] = QInputDialog::getText(this,QApplication::applicationName(),"Please specify shift distance in voxel spacing:",
+                                               QLineEdit::Normal,"0.0 0.0 0.0",&ok).toStdString();
+
+            if(!ok || cmd[2].empty())
+                return run->canceled();
+        }
+        float dx(0),dy(0),dz(0);
+        std::istringstream(cmd[2]) >> dx >> dy >> dz;
+        deviceWidget->devices[device_index]->pos += tipl::vector<3>(dx,dy,dz);
+        glWidget->update();
+        return run->succeed();
+    }
     if(tipl::begins_with(cmd[0],"add_surface"))
     {
         // cmd[1] : slice index

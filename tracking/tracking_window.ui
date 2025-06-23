@@ -1197,9 +1197,12 @@
     <addaction name="actionUncheck_All_Devices"/>
     <addaction name="actionCheck_All_Devices"/>
     <addaction name="separator"/>
+    <addaction name="actionMove_Device"/>
     <addaction name="actionAssign_Colors_For_Devices"/>
     <addaction name="actionLeads_to_ROI"/>
     <addaction name="actionDetect_Electrodes"/>
+    <addaction name="separator"/>
+    <addaction name="actionDeviceStatistics"/>
    </widget>
    <widget class="QMenu" name="menuRegions_Misc">
     <property name="title">
@@ -5003,6 +5006,25 @@ Tracking</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionDeviceStatistics">
+   <property name="text">
+    <string>Statistics...</string>
+   </property>
+   <property name="toolTip">
+    <string>run show_device_statistics</string>
+   </property>
+   <property name="statusTip">
+    <string/>
+   </property>
+  </action>
+  <action name="actionMove_Device">
+   <property name="text">
+    <string>Move Device...</string>
+   </property>
+   <property name="toolTip">
+    <string>run move_device</string>
    </property>
   </action>
  </widget>

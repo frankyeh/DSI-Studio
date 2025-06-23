@@ -82,6 +82,69 @@ void DeviceTypeDelegate::emitCommitData()
     emit commitData(qobject_cast<QWidget *>(sender()));
 }
 
+void get_devices_statistics(std::shared_ptr<fib_data> handle,
+                            const std::vector<std::shared_ptr<Device> >& devices,
+                            std::string& result)
+{
+    std::vector<std::vector<tipl::vector<3>>> lead_positions_distal,
+                                              lead_positions_center,
+                                              lead_positions_proximal;
+    size_t max_contact_count = 0;
+    for(auto each : devices)
+    {
+        lead_positions_proximal.emplace_back(each->get_lead_positions(handle->vs[0],1.0f));
+        lead_positions_center.emplace_back(each->get_lead_positions(handle->vs[0],0.5f));
+        lead_positions_distal.emplace_back(each->get_lead_positions(handle->vs[0],0.0f));
+        max_contact_count = std::max<size_t>(max_contact_count,lead_positions_center.back().size());
+    }
+
+    std::ostringstream out;
+    out << "Name";
+    for(auto each : devices)
+        out << "\t" << each->name;
+    out << std::endl;
+
+    out << "tip location (voxels)";
+    for(auto each : devices)
+        out << "\t" << each->pos;
+    out << std::endl;
+
+    out << "direction";
+    for(auto each : devices)
+        out << "\t" << each->dir;
+    out << std::endl;
+
+    for(unsigned int i = 0;i < max_contact_count;++i)
+    {
+        out << "contact" << i << " distal end position (voxels)";
+        for(unsigned int j = 0;j < lead_positions_distal.size();++j)
+        {
+            out << "\t";
+            if(i < lead_positions_distal[j].size())
+                out << lead_positions_distal[j][i];
+        }
+        out << std::endl;
+        out << "contact" << i << " center position (voxels)";
+        for(unsigned int j = 0;j < lead_positions_center.size();++j)
+        {
+            out << "\t";
+            if(i < lead_positions_center[j].size())
+                out << lead_positions_center[j][i];
+        }
+        out << std::endl;
+
+        out << "contact" << i << " proximal end position (voxels)";
+        for(unsigned int j = 0;j < lead_positions_proximal.size();++j)
+        {
+            out << "\t";
+            if(i < lead_positions_proximal[j].size())
+                out << lead_positions_proximal[j][i];
+        }
+        out << std::endl;
+
+    }
+    result = out.str();
+}
 
 DeviceTableWidget::DeviceTableWidget(tracking_window& cur_tracking_window_,QWidget *parent)
     : QTableWidget(parent),cur_tracking_window(cur_tracking_window_)
@@ -166,6 +229,9 @@ void DeviceTableWidget::newDevice()
 {
     if(new_device_str.isEmpty())
     {
+        if(cur_tracking_window.handle->vs[0] != cur_tracking_window.handle->vs[2])
+            QMessageBox::warning(&cur_tracking_window,"WARNING",
+                                 "Non-isotropic voxels in the current space could cause substantial errors in device location.");
         QAction* pAction = qobject_cast<QAction*>(sender());
         devices.push_back(std::make_shared<Device>());
         std::random_device rd;
@@ -655,7 +721,7 @@ void DeviceTableWidget::lead_to_roi(void)
     if (!okay)
         return;
     auto& cur_device = devices[uint32_t(currentRow())];
-    auto lead_pos = cur_device->get_lead_positions();
+    auto lead_pos = cur_device->get_lead_positions(cur_tracking_window.handle->vs[0]);
 
     cur_tracking_window.regionWidget->begin_update();
 
