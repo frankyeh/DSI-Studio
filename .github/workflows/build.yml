@@ -68,7 +68,7 @@ jobs:
       run: |
         gh release upload ${{ github.event.inputs.tag }} *.zip --clobber --repo frankyeh/DSI-Studio
 
-linux-build-cpu-arm:
+  linux-build-cpu-arm:
     if: ${{ github.event.inputs.build_linux_arm == 'true' }}
     strategy:
       matrix:
