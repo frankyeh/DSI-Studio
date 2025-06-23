@@ -3,9 +3,9 @@
 #include "zlib.h"
 #include "TIPL/tipl.hpp"
 
-extern char fib_dx[80];
-extern char fib_dy[80];
-extern char fib_dz[80];
+extern int fib_dx[80];
+extern int fib_dy[80];
+extern int fib_dz[80];
 
 struct VoxelTracking{
 
