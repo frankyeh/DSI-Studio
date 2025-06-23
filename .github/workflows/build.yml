@@ -16,6 +16,11 @@ on:
         description: 'Build Linux'
         required: false
         default: 'true'
+      build_linux_arm:
+        type: boolean
+        description: 'Build Linux (Arm64)'
+        required: false
+        default: 'true'
       build_mac:
         type: boolean
         description: 'Build Mac'
@@ -62,6 +67,49 @@ jobs:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
       run: |
         gh release upload ${{ github.event.inputs.tag }} *.zip --clobber --repo frankyeh/DSI-Studio
+
+linux-build-cpu-arm:
+    if: ${{ github.event.inputs.build_linux_arm == 'true' }}
+    strategy:
+      matrix:
+        os: [ubuntu2404,ubuntu2204]
+      fail-fast: false
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - name: Download Build
+      run: |
+        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git  
+        mv DSI-Studio-Build/build_packages .
+    - name: Prepare Dockerfile for ARM build
+      run: |
+        DOCKERFILE_PATH="build_packages/${{ matrix.os }}/Dockerfile"
+        echo "Modifying Dockerfile: $DOCKERFILE_PATH"
+        sed -i '1s|\(:latest as builder-stage\)$|_arm\1|' "$DOCKERFILE_PATH"
+        echo "Modified Dockerfile content:"
+        cat "$DOCKERFILE_PATH"
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3.0.0
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3.0.0
+    - name: Build and push
+      uses: docker/build-push-action@v5.1.0
+      with:
+        context: .
+        build-args: |
+          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}        
+        file: build_packages/${{ matrix.os }}/Dockerfile
+        push: false
+        outputs: dsi-studio
+    - name: Packaging
+      run: |
+        zip -r dsi_studio_${{ matrix.os }}_cpu_arm64.zip dsi-studio
+    - name: Create Release
+      env:
+        GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
+      run: |
+        gh release upload ${{ github.event.inputs.tag }} *.zip --clobber --repo frankyeh/DSI-Studio
+
 
   linux-build:
     if: ${{ github.event.inputs.build_linux == 'true' }}
