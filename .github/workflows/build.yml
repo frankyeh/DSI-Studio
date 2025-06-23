@@ -84,7 +84,11 @@ jobs:
       run: |
         DOCKERFILE_PATH="build_packages/${{ matrix.os }}/Dockerfile"
         echo "Modifying Dockerfile: $DOCKERFILE_PATH"
+        # 1. Modify the FROM line to use the _arm base image
         sed -i '1s|\(:latest as builder-stage\)$|_arm\1|' "$DOCKERFILE_PATH"
+        # 2. Modify the linuxdeployqt download URL to use the aarch64 version
+        # This replaces 'x86_64.AppImage' with 'aarch64.AppImage' in the download URL.
+        sed -i 's|linuxdeployqt-continuous-x86_64.AppImage|linuxdeployqt-continuous-aarch64.AppImage|' "$DOCKERFILE_PATH"
         echo "Modified Dockerfile content:"
         cat "$DOCKERFILE_PATH"
 
