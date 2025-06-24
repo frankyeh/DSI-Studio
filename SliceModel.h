@@ -1,5 +1,6 @@
 #ifndef SliceModelH
 #define SliceModelH
+#include <memory>
 #include <future>
 #include "zlib.h"
 #include "TIPL/tipl.hpp"
