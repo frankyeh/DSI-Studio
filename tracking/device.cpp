@@ -26,7 +26,7 @@ bool load_device_content(void)
             std::copy(std::istream_iterator<float>(in2),std::istream_iterator<float>(),std::back_inserter(seg_length));
             device_seg_length.push_back(std::move(seg_length));
         }
-        // read device segmentation length
+        // read device segmentation type
         {
             std::getline(in,line);
             std::istringstream in2(line);
@@ -108,7 +108,7 @@ bool Device::selected(const tipl::vector<3>& p,float vs,float& device_selected_l
 
 void Device::move(float device_selected_length,const tipl::vector<3>& dis)
 {
-    if(device_selected_length < 5.0f)
+    if(device_selected_length < 5.0f || length <= 1.0f)
         pos += dis;
     else
     {
