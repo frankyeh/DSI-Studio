@@ -58,6 +58,7 @@ std::string show_info_dialog(const std::string& title,
                         QString::fromStdString(file_name_hint),
                         "Text files (*.txt);;All files (*)");
         if (!fn.isEmpty()){
+            tipl::out() << "save " << fn.toStdString();
             std::ofstream out(fn.toStdString());
             out << result;
             saved_file = fn.toStdString();
