@@ -4,6 +4,7 @@
 #include <QContextMenuEvent>
 #include <QColorDialog>
 #include <QInputDialog>
+#include "SliceModel.h"
 #include "tracttablewidget.h"
 #include "tracking/tracking_window.h"
 #include "libs/tracking/tract_model.hpp"
@@ -527,10 +528,17 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         auto pos = cmd[1].find('&');
         if(pos == std::string::npos)
             return run->failed("invalid dt index");
+        bool first_time = cur_tracking_window.handle->dir.dt_fa_data.empty();
         if(!cur_tracking_window.handle->set_dt_index(std::make_pair(cmd[1].substr(0, pos), cmd[1].substr(pos + 1)),QString(cmd[2].c_str()).toInt()))
             return run->failed(cur_tracking_window.handle->error_msg);
         // turn off auto_tracks
         cur_tracking_window.ui->tract_target_0->setCurrentIndex(0);
+        if(first_time)
+        {
+            for(auto& each : cur_tracking_window.handle->slices)
+                if(each->name == "dT_metrics")
+                    cur_tracking_window.addSlices(std::make_shared<SliceModel>(cur_tracking_window.handle,each));
+        }
         return true;
     }
     if(cmd[0] == "run_tracking")
