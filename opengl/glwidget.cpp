@@ -849,7 +849,7 @@ void GLWidget::renderLR()
                         glPopMatrix();
                         break;
                     case -1: // tip ball
-                        if(j+1 < seg_type.size() && seg_type[j+1] == 0)
+                        if((j+1 < seg_type.size() && seg_type[j+1] == 0) || seg_type.size() == 1)
                             glColor4f(r,g,b,a);
                         else
                             glColor4f(0.2f,0.2f,0.2f,a);
@@ -1528,7 +1528,7 @@ float GLWidget::get_slice_projection_point(unsigned char dim,
     m[8] = -v3[2];
 
     if(!m.inv())
-        return 0.0;
+        return 0.0f;
     pos_offset.rotate(m);
     dx = pos_offset[0];
     dy = pos_offset[1];
@@ -1709,13 +1709,13 @@ bool GLWidget::get_mouse_pos(QPoint cur_pos,tipl::vector<3,float>& position)
     // select slice
     {
         // now check whether the slices are selected
-        std::vector<float> x(3),y(3),d(3);
+        std::vector<float> x(3),y(3),d(3,std::numeric_limits<float>::max());
         for(unsigned char dim = 0;dim < 3;++dim)
         {
             if(!show_slice[dim])
                 continue;
             d[dim] = get_slice_projection_point(dim,pos,cur_dir,x[dim],y[dim]);
-            if(d[dim] == 0.0 || x[dim] < 0.0 || x[dim] > 1.0 || y[dim] < 0.0 || y[dim] > 1.0)
+            if(d[dim] == 0.0f || x[dim] < 0.0 || x[dim] > 1.0 || y[dim] < 0.0 || y[dim] > 1.0)
                 d[dim] = std::numeric_limits<float>::max();
         }
         unsigned int min_index = std::min_element(d.begin(),d.end())-d.begin();
@@ -1789,7 +1789,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
                 angle[dim] = std::fabs(dir1*get_norm(points));
             }
             moving_at_slice_index = std::max_element(angle,angle+3)-angle;
-            if(get_slice_projection_point(moving_at_slice_index,pos,dir1,slice_dx,slice_dy) == 0.0)
+            if(get_slice_projection_point(moving_at_slice_index,pos,dir1,slice_dx,slice_dy) == 0.0f)
             {
                 editing_option = none;
                 setCursor(Qt::ArrowCursor);
@@ -1909,7 +1909,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
         if(device_selected && selected_index < cur_tracking_window.deviceWidget->devices.size())
         {
-            cur_tracking_window.deviceWidget->devices[selected_index]->move(device_selected_length,dis);    
+            cur_tracking_window.deviceWidget->move_device(selected_index,device_selected_length,dis);
             update();
             return;
         }
