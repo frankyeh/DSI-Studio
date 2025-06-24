@@ -156,7 +156,7 @@ struct slice_model
 private:
     fib_data* handle = nullptr;
     tipl::const_pointer_image<3> image_data;
-    tipl::image<3> qir_buffer;
+    tipl::image<3> image_buffer;
 public:
     template<typename value_type>
     slice_model(const std::string& name_,const value_type* pointer,const tipl::shape<3>& dim_):

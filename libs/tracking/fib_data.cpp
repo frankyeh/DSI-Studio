@@ -81,10 +81,10 @@ tipl::const_pointer_image<3,float> slice_model::get_image(void)
         {
             tipl::out() << "compute qir from qa and iso";
             image_data = tipl::make_image(handle->mat_reader.read_as_type<float>("iso"),handle->dim);
-            qir_buffer.resize(handle->dim);
-            std::copy_n(handle->dir.fa[0],qir_buffer.size(),qir_buffer.data());
-            normalize_data_by_iso(image_data.data(),qir_buffer.data(),qir_buffer.size());
-            image_data = qir_buffer.alias();
+            image_buffer.resize(handle->dim);
+            std::copy_n(handle->dir.fa[0],image_buffer.size(),image_buffer.data());
+            normalize_data_by_iso(image_data.data(),image_buffer.data(),image_buffer.size());
+            image_data = image_buffer.alias();
         }
         else
             image_data = tipl::make_image(handle->mat_reader.read_as_type<float>(name),handle->dim);
@@ -1251,8 +1251,9 @@ bool fib_data::set_dt_index(const std::pair<std::string,std::string>& name_pair,
     if(pair.second < slices.size())
         slices[pair.second]->get_image_in_dwi(m2);
 
-    dir.dt_fa_data = std::move(tipl::image<3>(dim));
     auto& dif = dir.dt_fa_data;
+    dif.resize(dim);
+    std::fill(dif.begin(),dif.end(),0);
     switch(type)
     {
         case 0: // (m1-m2)÷m1
@@ -1313,7 +1314,11 @@ bool fib_data::set_dt_index(const std::pair<std::string,std::string>& name_pair,
         break;
     }
     tipl::out() << "dt metrics:" << dir.dt_metrics;
-    dir.dt_fa = std::vector<const float*>(size_t(dir.num_fiber),(const float*)&dif[0]);
+    if(dir.dt_fa.empty())
+    {
+        dir.dt_fa = std::vector<const float*>(size_t(dir.num_fiber),dif.data());
+        slices.push_back(std::make_shared<slice_model>("dT_metrics",dif.data(),dim));
+    }
     return true;
 }
 
