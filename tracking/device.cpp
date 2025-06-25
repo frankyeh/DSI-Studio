@@ -62,6 +62,9 @@ void Device::get_rendering(std::vector<float>& seg_length,
     auto pos = std::find(seg_type.begin(),seg_type.end(),3);
     if(pos != seg_type.end())
          seg_length[size_t(pos-seg_type.begin())] = length;
+    if(type == "Locator")
+        radius = length;
+
 }
 
 Device::Device()
