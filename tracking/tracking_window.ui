@@ -1197,7 +1197,6 @@
     <addaction name="actionUncheck_All_Devices"/>
     <addaction name="actionCheck_All_Devices"/>
     <addaction name="separator"/>
-    <addaction name="actionMove_Device"/>
     <addaction name="actionAssign_Colors_For_Devices"/>
     <addaction name="actionLeads_to_ROI"/>
     <addaction name="actionDetect_Electrodes"/>
