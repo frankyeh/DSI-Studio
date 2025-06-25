@@ -136,6 +136,13 @@ bool tracking_window::command(std::vector<std::string> cmd)
         error_msg = regionWidget->error_msg;
         return false;
     }
+    if(deviceWidget->command(cmd))
+        return true;
+    if(!deviceWidget->error_msg.empty() && deviceWidget->error_msg != "not_processed")
+    {
+        error_msg = deviceWidget->error_msg;
+        return false;
+    }
 
     auto run = history.record(error_msg,cmd);
     cmd.resize(3);
@@ -340,23 +347,6 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->failed(handle->error_msg);
         return run->succeed();
     }
-    if(cmd[0] == "save_all_devices")
-    {
-        if (deviceWidget->devices.empty())
-            return run->canceled();
-        if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(
-                               this,"Save all devices",deviceWidget->item(deviceWidget->currentRow(),0)->text() + ".dv.csv",
-                               "CSV file(*dv.csv);;All files(*)").toStdString()).empty())
-            return run->canceled();
-        std::ofstream out(cmd[1]);
-        for (size_t i = 0; i < deviceWidget->devices.size(); ++i)
-            if (deviceWidget->item(int(i),0)->checkState() == Qt::Checked)
-            {
-                deviceWidget->devices[i]->name = deviceWidget->item(int(i),0)->text().toStdString();
-                out << deviceWidget->devices[i]->to_str();
-            }
-        return run->succeed();
-    }
     if(cmd[0] == "presentation_mode")
     {
         ui->ROIdockWidget->hide();
@@ -445,7 +435,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         if(std::filesystem::exists(cmd[1]+"/devices"))
         {
             if(deviceWidget->rowCount())
-                deviceWidget->delete_all_devices();
+                deviceWidget->command({"delete_all_devices"});
             for(const auto& each : tipl::search_files(cmd[1]+"/devices","*dv.csv"))
                 deviceWidget->load_device(each.c_str());
         }
@@ -907,7 +897,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         }
         float dx(0),dy(0),dz(0);
         std::istringstream(cmd[2]) >> dx >> dy >> dz;
-        deviceWidget->devices[device_index]->pos += tipl::vector<3>(dx,dy,dz);
+        deviceWidget->move_device(device_index,0.0f,tipl::vector<3>(dx,dy,dz));
         glWidget->update();
         return run->succeed();
     }

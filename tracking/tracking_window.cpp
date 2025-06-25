@@ -548,16 +548,10 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     // Device
     {
         connect(deviceWidget,SIGNAL(need_update()),glWidget,SLOT(update()));
-        connect(ui->actionNewDevice,SIGNAL(triggered()),deviceWidget,SLOT(newDevice()));
 
         connect(ui->actionOpenDevice,SIGNAL(triggered()),deviceWidget,SLOT(load_device()));
         connect(ui->actionSaveDevice,SIGNAL(triggered()),deviceWidget,SLOT(save_device()));
-        connect(ui->actionSave_All_Device,SIGNAL(triggered()),deviceWidget,SLOT(save_all_devices()));
 
-        connect(ui->actionDeleteDevice,SIGNAL(triggered()),deviceWidget,SLOT(delete_device()));
-        connect(ui->actionDeleteAllDevices,SIGNAL(triggered()),deviceWidget,SLOT(delete_all_devices()));
-
-        connect(ui->actionCopy_Device,SIGNAL(triggered()),deviceWidget,SLOT(copy_device()));
         connect(ui->actionCheck_All_Devices,SIGNAL(triggered()),deviceWidget,SLOT(check_all()));
         connect(ui->actionUncheck_All_Devices,SIGNAL(triggered()),deviceWidget,SLOT(uncheck_all()));
 
@@ -726,29 +720,28 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 
     if (event->type() == QEvent::MouseMove && obj->isWidgetType())
     {
-        if (obj == glWidget &&
-            glWidget->editing_option == GLWidget::moving &&
-                    (ui->glSagCheck->isChecked() ||
-                     ui->glCorCheck->isChecked() ||
-                     ui->glAxiCheck->isChecked()))
-            has_info = glWidget->get_mouse_pos(static_cast<QMouseEvent*>(event)->pos(),pos);
+        auto mouseEvent = static_cast<QMouseEvent*>(event);
+        if (obj->parent() == ui->graphicsView)
+        {
+            auto point = ui->graphicsView->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
+            has_info = scene.to_3d_space(point.x(),point.y(),pos);
+        }
         else
-            if (obj->parent() == ui->graphicsView)
-            {
-                QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
-                QPointF point = ui->graphicsView->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
-                has_info = scene.to_3d_space(point.x(),point.y(),pos);
-            }
+            if (ui->glSagCheck->isChecked() ||
+                ui->glCorCheck->isChecked() ||
+                ui->glAxiCheck->isChecked())
+                has_info = glWidget->get_mouse_pos(mouseEvent->pos(),pos);
+
 
         // for connectivity matrix
         if(connectivity_matrix.get() && connectivity_matrix->is_graphic_view(obj->parent()))
-            connectivity_matrix->mouse_move(static_cast<QMouseEvent*>(event));
+            connectivity_matrix->mouse_move(mouseEvent);
 
     }
     if(!has_info)
         return false;
 
-    QString status = QString("LPS=(%1,%2,%3)")
+    QString status = QString("(%1,%2,%3)")
             .arg(std::round(pos[0]*10.0)/10.0)
             .arg(std::round(pos[1]*10.0)/10.0)
             .arg(std::round(pos[2]*10.0)/10.0);
@@ -768,8 +761,7 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     if(!current_slice->is_diffusion_space)
     {
         pos.to(current_slice->to_dif);
-        status += QString(" %4=(%5,%6,%7)")
-                .arg(ui->SliceModality->currentText())
+        status += QString(" dwi=(%1,%2,%3)")
                 .arg(std::round(pos[0]*10.0)/10.0)
                 .arg(std::round(pos[1]*10.0)/10.0)
                 .arg(std::round(pos[2]*10.0)/10.0);

@@ -32,10 +32,12 @@ QWidget *DeviceTypeDelegate::createEditor(QWidget *parent,
         return sd;
     }
     else
-        if (index.column() == 3)
+        if (index.column() >= 3 && index.column() <= 8)
         {
+            float max_v[6] = {100.0f,float(dim[0]),float(dim[1]),float(dim[2]),180.0f,180.0f};
+            float min_v[6] = {0.5f,0.0f,0.0f,0.0f,-180.0f,0.0f};
             QDoubleSpinBox* sb = new QDoubleSpinBox(parent);
-            sb->setRange(0.0,100.0);
+            sb->setRange(min_v[index.column()-3],max_v[index.column()-3]);
             sb->setDecimals(1);
             connect(sb, SIGNAL(valueChanged(double)), this, SLOT(emitCommitData()));
             return sb;
@@ -57,7 +59,7 @@ void DeviceTypeDelegate::setEditorData(QWidget *editor,
                 QColor(color.r,color.g,color.b,color.a));
         }
         else
-            if (index.column() == 3)
+            if (index.column() >= 3 && index.column() <= 8)
                 dynamic_cast<QDoubleSpinBox*>(editor)->setValue(index.model()->data(index).toDouble());
             return QItemDelegate::setEditorData(editor,index);
 }
@@ -71,7 +73,7 @@ void DeviceTypeDelegate::setModelData(QWidget *editor, QAbstractItemModel *model
         if (index.column() == 2)
             model->setData(index,int((dynamic_cast<QColorToolButton*>(editor)->color().rgba())),Qt::UserRole);
         else
-            if (index.column() == 3)
+            if (index.column() >= 3 && index.column() <= 8)
                 model->setData(index,dynamic_cast<QDoubleSpinBox*>(editor)->value());
             else
                 QItemDelegate::setModelData(editor,model,index);
@@ -149,20 +151,25 @@ void get_devices_statistics(std::shared_ptr<fib_data> handle,
 DeviceTableWidget::DeviceTableWidget(tracking_window& cur_tracking_window_,QWidget *parent)
     : QTableWidget(parent),cur_tracking_window(cur_tracking_window_)
 {
-    setColumnCount(4);
-    setColumnWidth(0,100);
+    setColumnCount(9);
+    setColumnWidth(0,90);
     setColumnWidth(1,140);
     setColumnWidth(2,40);
     setColumnWidth(3,60);
+    setColumnWidth(4,60);
+    setColumnWidth(5,60);
+    setColumnWidth(6,60);
+    setColumnWidth(7,60);
+    setColumnWidth(8,60);
 
     QStringList header;
-    header << "Name" << "Type" << "Color" << "Length";
+    header << "Name" << "Type" << "Color" << "Length" << "x" << "y" << "z" << "phi" << "theta";
     setHorizontalHeaderLabels(header);
     setSelectionBehavior(QAbstractItemView::SelectRows);
     setSelectionMode(QAbstractItemView::SingleSelection);
     setAlternatingRowColors(true);
 
-    setItemDelegate(new DeviceTypeDelegate(this));
+    setItemDelegate(new DeviceTypeDelegate(this,cur_tracking_window.handle->dim));
 
     connect(this, &QTableWidget::itemChanged, this, [=](QTableWidgetItem* item) {
         if (item->column() != 0 || !(item->flags() & Qt::ItemIsUserCheckable))
@@ -188,6 +195,16 @@ void DeviceTableWidget::contextMenuEvent ( QContextMenuEvent * event )
 
 void DeviceTableWidget::updateDevices(QTableWidgetItem* cur_item)
 {
+    const double PI = 3.14159265358979323846;
+    auto a2v = [](float phi,float theta, tipl::vector<3>& v)
+    {
+        float sin_theta = std::sin(theta);
+        v[0] = sin_theta * std::cos(phi);
+        v[1] = sin_theta * std::sin(phi);
+        v[2] = std::cos(theta);
+    };
+
+
     auto& device = devices[uint32_t(cur_item->row())];
     switch(cur_item->column())
     {
@@ -203,16 +220,21 @@ void DeviceTableWidget::updateDevices(QTableWidgetItem* cur_item)
                head_item->text().length() > previous_name.length() &&
                head_item->text().left(previous_name.length()) == previous_name)
                head_item->setText(new_default_name+head_item->text().right(head_item->text().length()-previous_name.length()));
-            if(previous_name == "Device" && tipl::begins_with(device->type,"Scale"))
-            {
-                device->pos = {cur_tracking_window.handle->dim[2]/2.0f-25.0f/cur_tracking_window.handle->vs[0],
-                               float(cur_tracking_window.handle->dim[1]),cur_tracking_window.handle->dim[2]/2.0f};
-                device->dir = {1,0,0};
-                device->name = "50 mm";
-                item(cur_item->row(),2)->setData(Qt::UserRole,uint32_t(device->color));
-                item(cur_item->row(),3)->setText(QString::number(double(device->length = 50)));
-            }
 
+            // when creating new device, other items may not be created yet
+            if(item(cur_item->row(),3))
+            {
+                if(previous_name == "Device" && tipl::begins_with(device->type,"Scale"))
+                {
+                    device->name = "50 mm";
+                    item(cur_item->row(),3)->setText(QString::number(double(device->length = 50)));
+                }
+                if(device->type == "Locator" && device->length > 5)
+                    item(cur_item->row(),3)->setText(QString::number(double(device->length = 1)));
+
+                if(device->type != "Locator" && device->length < 5)
+                    item(cur_item->row(),3)->setText(QString::number(double(device->length = 30)));
+            }
         }
         break;
     case 2:
@@ -221,84 +243,62 @@ void DeviceTableWidget::updateDevices(QTableWidgetItem* cur_item)
     case 3:
         device->length = float(cur_item->text().toDouble());
         break;
+    case 4:
+        device->pos[0] = float(cur_item->text().toDouble());
+        break;
+    case 5:
+        device->pos[1] = float(cur_item->text().toDouble());
+        break;
+    case 6:
+        device->pos[2] = float(cur_item->text().toDouble());
+        break;
+    case 7:
+        {
+            float phi = float(cur_item->text().toDouble()*PI/180.0);
+            float theta = std::acos(device->dir[2]);
+            a2v(phi,theta,device->dir);
+        }
+        break;
+    case 8:
+        {
+            float phi = std::atan2(device->dir[1], device->dir[0]);
+            float theta = float(cur_item->text().toDouble()*PI/180.0);
+            a2v(phi,theta,device->dir);
+        }
+        break;
     }
     emit need_update();
 }
 
-void DeviceTableWidget::newDevice()
-{
-    if(new_device_str.isEmpty())
-    {
-        if(cur_tracking_window.handle->vs[0] != cur_tracking_window.handle->vs[2])
-            QMessageBox::warning(&cur_tracking_window,"WARNING",
-                                 "Non-isotropic voxels in the current space could cause substantial errors in device location.");
-        QAction* pAction = qobject_cast<QAction*>(sender());
-        devices.push_back(std::make_shared<Device>());
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_real_distribution<> dis(-10.0,10.0);
-        auto dx = dis(gen);
-        auto dy = dis(gen);
-        devices.back()->pos = tipl::vector<3>(
-                cur_tracking_window.handle->dim[0]/2+dx,
-                cur_tracking_window.handle->dim[1]/2+dy,
-                cur_tracking_window.handle->dim[2]/2+dis(gen)/4.0);
-        devices.back()->dir = tipl::vector<3>(dx,dy,50.0);
-        devices.back()->dir.normalize();
-        devices.back()->name = (pAction->text().split(':')[0].split(' ').back()+QString::number(device_num++)).toStdString();
-    }
-    else {
-        devices.push_back(std::make_shared<Device>());
-        devices.back()->from_str(new_device_str.toStdString());
-        new_device_str.clear();
-    }
-    new_device(devices.back());
-}
 void DeviceTableWidget::new_device(std::shared_ptr<Device> device)
 {
-
+    const double PI = 3.14159265358979323846;
     insertRow(int(devices.size())-1);
-    QTableWidgetItem *item0 = new QTableWidgetItem(device->name.c_str());
-    item0->setCheckState(Qt::Checked);
-    QTableWidgetItem *item1 = new QTableWidgetItem(device->type.c_str());
-    QTableWidgetItem *item2 = new QTableWidgetItem(QString::number(uint32_t(device->color)));
-    item2->setData(Qt::UserRole,uint32_t(device->color));
-    QTableWidgetItem *item3 = new QTableWidgetItem(QString::number(double(device->length)));
+    QTableWidgetItem *items[9] =
+    {
+        new QTableWidgetItem(device->name.c_str()),
+        new QTableWidgetItem(device->type.c_str()),
+        new QTableWidgetItem(QString::number(uint32_t(device->color))),
+        new QTableWidgetItem(QString::number(double(device->length))),
+        new QTableWidgetItem(QString::number(double(device->pos[0]))),
+        new QTableWidgetItem(QString::number(double(device->pos[1]))),
+        new QTableWidgetItem(QString::number(double(device->pos[2]))),
+        new QTableWidgetItem(QString::number(double(std::atan2(device->dir[1], device->dir[0]))*180.0/PI)),
+        new QTableWidgetItem(QString::number(double(std::acos(device->dir[2]))*180.0/PI))
+    };
+    items[0]->setCheckState(Qt::Checked);
+    items[2]->setData(Qt::UserRole,uint32_t(device->color));
 
-
-    setItem(int(devices.size())-1, 0, item0);
-    setItem(int(devices.size())-1, 1, item1);
-    setItem(int(devices.size())-1, 2, item2);
-    setItem(int(devices.size())-1, 3, item3);
-
-    openPersistentEditor(item1);
-    openPersistentEditor(item2);
-    openPersistentEditor(item3);
+    for(size_t i = 0;i < 9;++i)
+        setItem(int(devices.size())-1, i, items[i]);
+    for(size_t i = 1;i < 9;++i)
+        openPersistentEditor(items[i]);
 
     setRowHeight(int(devices.size())-1,22);
     setCurrentCell(int(devices.size())-1,0);
 
     cur_tracking_window.ui->DeviceDockWidget->show();
     emit need_update();
-}
-void DeviceTableWidget::copy_device()
-{
-    if(devices.empty())
-        return;
-    auto device_to_copy = devices.back();
-    devices.push_back(std::make_shared<Device>());
-    // random location
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(-2.0,2.0);
-
-    devices.back()->pos = device_to_copy->pos + tipl::vector<3>(dis(gen),dis(gen),dis(gen));
-    devices.back()->dir = device_to_copy->dir;
-    devices.back()->name = device_to_copy->name;
-    devices.back()->type = device_to_copy->type;
-    devices.back()->length = device_to_copy->length;
-
-    new_device(devices.back());
 }
 void DeviceTableWidget::check_all(void)
 {
@@ -317,11 +317,25 @@ bool DeviceTableWidget::load_device(const std::string& filename)
     bool result = false;
     for(const auto& line : tipl::read_text_file(filename))
     {
-        new_device_str = line.c_str();
-        newDevice();
+        devices.push_back(std::make_shared<Device>());
+        devices.back()->from_str(line);
+        new_device(devices.back());
         result = true;
     }
     return result;
+}
+void DeviceTableWidget::move_device(size_t index,float sel_length,const tipl::vector<3>& dis)
+{
+    const double PI = 3.14159265358979323846;
+    if(index >= devices.size())
+        return;
+    devices[index]->move(sel_length,dis);
+    item(index,4)->setText(QString::number(double(devices[index]->pos[0])));
+    item(index,5)->setText(QString::number(double(devices[index]->pos[1])));
+    item(index,6)->setText(QString::number(double(devices[index]->pos[2])));
+    item(index,7)->setText(QString::number(double(std::atan2(devices[index]->dir[1], devices[index]->dir[0]))*180.0/PI));
+    item(index,8)->setText(QString::number(double(std::acos(devices[index]->dir[2]))*180.0/PI));
+
 }
 void DeviceTableWidget::load_device(void)
 {
@@ -355,26 +369,120 @@ void DeviceTableWidget::assign_colors(void)
     }
     emit need_update();
 }
-void DeviceTableWidget::save_all_devices(void)
+
+bool DeviceTableWidget::command(std::vector<std::string> cmd)
 {
-    cur_tracking_window.command({std::string("save_all_devices")});
+    auto run = cur_tracking_window.history.record(error_msg,cmd);
+    if(cmd.size() < 3)
+        cmd.resize(3);
+
+    auto get_cur_row = [&](std::string& cmd_text,int& cur_row)->bool
+    {
+        if (devices.empty())
+        {
+            error_msg = "no available device";
+            return false;
+        }
+        bool okay = true;
+        if(cmd_text.empty())
+            cmd_text = std::to_string(cur_row);
+        else
+            cur_row = QString::fromStdString(cmd_text).toInt(&okay);
+        if (cur_row >= devices.size() || !okay)
+        {
+            error_msg = "invalid device index: " + cmd_text;
+            return false;
+        }
+        return run->succeed();
+    };
+
+    if(cmd[0] == "new_device")
+    {
+        // cmd[1]: position
+        if(cur_tracking_window.handle->vs[0] !=
+           cur_tracking_window.handle->vs[2])
+            QMessageBox::warning(&cur_tracking_window,"WARNING",
+                                 "Non-isotropic voxels in the current space could cause substantial errors in device location.");
+
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<> dis(-10.0,10.0);
+        auto dx = dis(gen);
+        auto dy = dis(gen);
+
+        devices.push_back(std::make_shared<Device>());
+        if(cmd[1].empty())
+            devices.back()->pos = tipl::vector<3>(
+                    cur_tracking_window.handle->dim[0]/2+dx,
+                    cur_tracking_window.handle->dim[1]/2+dy,
+                    cur_tracking_window.handle->dim[2]/2+dis(gen)/4.0);
+        else
+            std::istringstream(cmd[1]) >> devices.back()->pos[0] >> devices.back()->pos[1] >> devices.back()->pos[2];
+        devices.back()->name = "Device"+std::to_string(device_num++);
+        devices.back()->dir = tipl::vector<3>(dx,dy,50.0);
+        devices.back()->dir.normalize();
+        devices.back()->color = tipl::rgb::generate(devices.size()) | 0xFF000000;
+        new_device(devices.back());
+        return run->succeed();
+    }
+    if(cmd[0] == "copy_device")
+    {
+        // cmd[1] : device index (default: current)
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[1],cur_row))
+            return false;
+        devices.push_back(std::make_shared<Device>());
+        devices.back()->pos = devices[cur_row]->pos;
+        devices.back()->pos[0] += 1.0f;
+        devices.back()->length = devices[cur_row]->length;
+        devices.back()->dir = devices[cur_row]->dir;
+        devices.back()->color = tipl::rgb::generate(devices.size()) | 0xFF000000;
+        devices.back()->type = devices[cur_row]->type;
+        devices.back()->name = tipl::split(tipl::split(devices[cur_row]->type,':').front(),' ').back() +
+                                std::to_string(devices.size());
+        new_device(devices.back());
+        return run->succeed();
+    }
+    if(cmd[0] == "delete_device")
+    {
+        // cmd[1] : device index (default: current)
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[1],cur_row))
+            return false;
+        devices.erase(devices.begin()+cur_row);
+        removeRow(cur_row);
+        emit need_update();
+        return run->succeed();
+    }
+    if(cmd[0] == "delete_all_devices")
+    {
+        setRowCount(0);
+        devices.clear();
+        emit need_update();
+        return run->succeed();
+    }
+    if(cmd[0] == "save_all_devices")
+    {
+        if (devices.empty())
+            return run->canceled();
+        if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(
+                               this,"Save all devices",item(currentRow(),0)->text() + ".dv.csv",
+                               "CSV file(*dv.csv);;All files(*)").toStdString()).empty())
+            return run->canceled();
+        std::ofstream out(cmd[1]);
+        for (size_t i = 0; i < devices.size(); ++i)
+            if (item(int(i),0)->checkState() == Qt::Checked)
+            {
+                devices[i]->name = item(int(i),0)->text().toStdString();
+                out << devices[i]->to_str();
+            }
+        return run->succeed();
+    }
+
+
+    return run->not_processed();
 }
 
-void DeviceTableWidget::delete_device(void)
-{
-    if (devices.empty() || currentRow() >= devices.size())
-        return;
-    devices.erase(devices.begin()+currentRow());
-    removeRow(currentRow());
-    emit need_update();
-}
-
-void DeviceTableWidget::delete_all_devices(void)
-{
-    setRowCount(0);
-    devices.clear();
-    emit need_update();
-}
 
 void DeviceTableWidget::detect_electrodes(void)
 {

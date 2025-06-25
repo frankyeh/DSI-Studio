@@ -10,8 +10,9 @@ class DeviceTypeDelegate : public QItemDelegate
     Q_OBJECT
 
     public:
-    DeviceTypeDelegate(QObject *parent)
-         : QItemDelegate(parent){}
+    tipl::shape<3> dim;
+    DeviceTypeDelegate(QObject *parent,tipl::shape<3> dim_)
+         : QItemDelegate(parent),dim(dim_){}
 
     QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option,
                                 const QModelIndex &index) const;
@@ -36,6 +37,10 @@ public:
     unsigned int device_num = 1;
     std::vector<std::shared_ptr<Device> > devices;
     bool load_device(const std::string& filename);
+    void move_device(size_t index,float sel_length,const tipl::vector<3>& dis);
+public:
+    std::string error_msg;
+    bool command(std::vector<std::string> cmd);
 signals:
     void need_update(void);
 private:
@@ -43,13 +48,8 @@ private:
     void new_device(std::shared_ptr<Device> device);
 public slots:
     void updateDevices(QTableWidgetItem* item);
-    void newDevice();
-    void copy_device();
-    void delete_all_devices();
-    void delete_device();
     void load_device(void);
     void save_device(void);
-    void save_all_devices(void);
     void assign_colors(void);
     void check_all(void);
     void uncheck_all(void);
