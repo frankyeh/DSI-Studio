@@ -130,7 +130,8 @@ public:
      void resizeGL(int width, int height) override;
      void setFrustum(void);
  public:
-     bool edit_right;
+     bool edit_right = false;
+     bool show_menu = false;
      void copyToClipboardEach(QTableWidget* widget,unsigned int col_size);
      QPoint convert_pos(QMouseEvent *event);
      void mousePressEvent(QMouseEvent *event) override;
