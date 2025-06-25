@@ -746,6 +746,16 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
             .arg(std::round(pos[1]*10.0)/10.0)
             .arg(std::round(pos[2]*10.0)/10.0);
 
+    if(!current_slice->is_diffusion_space)
+    {
+        pos.to(current_slice->to_slice);
+        status += QString(" %1=(%2,%3,%4)")
+                .arg(ui->SliceModality->currentText())
+                .arg(std::round(pos[0]*10.0)/10.0)
+                .arg(std::round(pos[1]*10.0)/10.0)
+                .arg(std::round(pos[2]*10.0)/10.0);
+    }
+
     if((handle->template_id == handle->matched_template_id && handle->is_mni && !handle->template_I.empty()) || !handle->s2t.empty())
     {
         tipl::vector<3,float> mni(pos);
@@ -758,14 +768,6 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     else
         status += QString(" MNI=(click [atlas]...)");
 
-    if(!current_slice->is_diffusion_space)
-    {
-        pos.to(current_slice->to_dif);
-        status += QString(" dwi=(%1,%2,%3)")
-                .arg(std::round(pos[0]*10.0)/10.0)
-                .arg(std::round(pos[1]*10.0)/10.0)
-                .arg(std::round(pos[2]*10.0)/10.0);
-    }
 
     std::vector<float> data;
     pos.round();
