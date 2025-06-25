@@ -849,7 +849,7 @@ void GLWidget::renderLR()
                         glPopMatrix();
                         break;
                     case -1: // tip ball
-                        if((j+1 < seg_type.size() && seg_type[j+1] == 0) || seg_type.size() == 1)
+                        if(j+1 < seg_type.size() && seg_type[j+1] == 0)
                             glColor4f(r,g,b,a);
                         else
                             glColor4f(0.2f,0.2f,0.2f,a);
@@ -859,11 +859,11 @@ void GLWidget::renderLR()
                         gluSphere(DeviceQua->get(),double(radius),20,10);
                         continue;
                     case 0:
-                    case 3:
+                    case 3:   // other structures
                         glColor4f(r,g,b,a);
                         Cylinder(radius,seg_length[j]);
                         break;
-                    case 1:
+                    case 1:   //lead
                         glColor4f(0.2f,0.2f,0.2f,a);
                         Cylinder(radius,seg_length[j]);
                         break;
