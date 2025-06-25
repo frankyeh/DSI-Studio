@@ -921,23 +921,8 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         if(!out)
             return false;
         std::array<char, 200> header;
-        snprintf(header.data(), header.size(),
-                 "mrtrix tracks\n"
-                 "datatype: Float32LE\n"
-                 "dim: %d,%d,%d\n"
-                 "vox: %f,%f,%f\n"
-                 "transform: %f,%f,%f,%f\n"
-                 "transform: %f,%f,%f,%f\n"
-                 "transform: %f,%f,%f,%f\n"
-                 "file: . 200\n"
-                 "count: %zu\n"
-                 "END\n",
-                 geo[0], geo[1], geo[2],
-                 vs[0], vs[1], vs[2],
-                 trans_to_mni[0], trans_to_mni[1], trans_to_mni[2], trans_to_mni[3],
-                 trans_to_mni[4], trans_to_mni[5], trans_to_mni[6], trans_to_mni[7],
-                 trans_to_mni[8], trans_to_mni[9], trans_to_mni[10], trans_to_mni[11],
-                 tract_data.size());
+        std::sprintf(header.data(), "mrtrix tracks\ndatatype: Float32LE\ndim: %d,%d,%d\nvox: %f,%f,%f\ndatatype: Float32LE\nfile: . 200\ncount: %d\nEND\n",
+                             geo[0], geo[1], geo[2], vs[0], vs[1], vs[2], static_cast<int>(tract_data.size()));
         out.write(header.data(), header.size());
 
         const float nan = std::numeric_limits<float>::quiet_NaN();
