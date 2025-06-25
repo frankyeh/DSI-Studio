@@ -1745,6 +1745,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
     setFocus();// for key stroke to work
     edit_right = (view_mode != view_mode_type::single && (event->pos().x() > cur_width / 2));
     lastPos = curPos = convert_pos(event);
+    show_menu = true;
     if(editing_option != none)
         get_pos();
     if(editing_option == selecting)
@@ -1807,7 +1808,7 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
         last_select_point = convert_pos(event);
         dirs.push_back(tipl::vector<3,float>());
         get_view_dir(last_select_point,dirs.back());
-        angular_selection = event->button() == Qt::RightButton;
+        angular_selection = (event->button() == Qt::RightButton);
         emit edited();
     }
     if(device_selected)
@@ -1819,6 +1820,20 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
     region_color_bar_selected = false;
     editing_option = none;
     setCursor(Qt::ArrowCursor);
+    if(show_menu && event->button() == Qt::RightButton)
+    {
+        QMenu contextMenu(this);
+        connect(contextMenu.addAction("New Device"), &QAction::triggered, this, [this,event]()
+        {
+            tipl::vector<3> pos;
+            if(get_mouse_pos(event->pos(),pos))
+                cur_tracking_window.command({"new_device",
+                    std::to_string(pos[0]) + " " +
+                    std::to_string(pos[1]) + " " +
+                    std::to_string(pos[2])});
+        });
+        contextMenu.exec(event->globalPosition().toPoint());
+    }
 }
 void GLWidget::move_by(int x,int y)
 {
@@ -2007,6 +2022,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         {
             double scalefactor = (-dx-dy+100.0)/100.0;
             glScaled(scalefactor,scalefactor,scalefactor);
+            show_menu = false;
         }
         else
         // middle button down or right/left both down
