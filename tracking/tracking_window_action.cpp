@@ -307,12 +307,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             cmd[1] = std::to_string(x) + " " + std::to_string(y) + " " + std::to_string(z);
         else
             std::istringstream(cmd[1]) >> x >> y >> z;
-        if(!current_slice->set_slice_pos(x,y,z))
-            return run->canceled();
-        ui->SlicePos->setValue(current_slice->slice_pos[cur_dim]);
-        if((*this)["roi_layout"].toInt() < 2) // >2 is mosaic, there is no need to update
-            slice_need_update = true;
-        glWidget->update();
+        move_slice_to(tipl::vector<3>(x,y,z));
         history.overwrite(cmd[0]);
         return run->succeed();
     }
@@ -877,28 +872,6 @@ bool tracking_window::command(std::vector<std::string> cmd)
         glWidget->slice_texture.erase(glWidget->slice_texture.begin()+slice_index);
         ui->SliceModality->removeItem(slice_index);
         updateSlicesMenu();
-        return run->succeed();
-    }
-    if(cmd[0] == "move_device")
-    {
-        // cmd[1] : device index
-        // cmd[2] : shift
-        int device_index = run->from_cmd(1,deviceWidget->currentRow());
-        if(device_index >= deviceWidget->devices.size())
-            return run->failed("invalid device index");
-        if(cmd[2].empty())
-        {
-            bool ok;
-            cmd[2] = QInputDialog::getText(this,QApplication::applicationName(),"Please specify shift distance in voxel spacing:",
-                                               QLineEdit::Normal,"0.0 0.0 0.0",&ok).toStdString();
-
-            if(!ok || cmd[2].empty())
-                return run->canceled();
-        }
-        float dx(0),dy(0),dz(0);
-        std::istringstream(cmd[2]) >> dx >> dy >> dz;
-        deviceWidget->move_device(device_index,0.0f,tipl::vector<3>(dx,dy,dz));
-        glWidget->update();
         return run->succeed();
     }
     if(tipl::begins_with(cmd[0],"add_surface"))

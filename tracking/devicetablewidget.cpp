@@ -324,7 +324,7 @@ bool DeviceTableWidget::load_device(const std::string& filename)
     }
     return result;
 }
-void DeviceTableWidget::move_device(size_t index,float sel_length,const tipl::vector<3>& dis)
+void DeviceTableWidget::shift_device(size_t index,float sel_length,const tipl::vector<3>& dis)
 {
     const double PI = 3.14159265358979323846;
     if(index >= devices.size())
@@ -423,6 +423,20 @@ bool DeviceTableWidget::command(std::vector<std::string> cmd)
         devices.back()->dir.normalize();
         devices.back()->color = tipl::rgb::generate(devices.size()) | 0xFF000000;
         new_device(devices.back());
+        return run->succeed();
+    }
+    if(cmd[0] == "move_device")
+    {
+        // cmd[1]: position
+        // cmd[2]: device index (default: current)
+        if(cmd[1].empty())
+            return run->failed("please specify location");
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[2],cur_row))
+            return false;
+        tipl::vector<3> pos;
+        std::istringstream(cmd[1]) >> pos[0] >> pos[1] >> pos[2];
+        shift_device(cur_row,0,pos-devices[cur_row]->pos);
         return run->succeed();
     }
     if(cmd[0] == "copy_device")

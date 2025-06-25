@@ -96,7 +96,7 @@ public: // rendering options
             return c;
         }
 public:
-        void new_from_mni_sphere(std::shared_ptr<fib_data> handle,tipl::vector<3> mni,float radius);
+        void new_from_sphere(tipl::vector<3> mni,float radius);
         std::vector<tipl::vector<3,short> > to_space(const tipl::shape<3>& dim_to,
                                                      const tipl::matrix<4,4>& trans_to) const;
         std::vector<tipl::vector<3,short> > to_space(const tipl::shape<3>& dim_to) const;

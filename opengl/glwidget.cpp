@@ -1822,17 +1822,60 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
     setCursor(Qt::ArrowCursor);
     if(show_menu && event->button() == Qt::RightButton)
     {
-        QMenu contextMenu(this);
-        connect(contextMenu.addAction("New Device"), &QAction::triggered, this, [this,event]()
+        tipl::vector<3> pos;
+        if(get_mouse_pos(event->pos(),pos))
         {
-            tipl::vector<3> pos;
-            if(get_mouse_pos(event->pos(),pos))
+            QMenu contextMenu(this);
+            connect(contextMenu.addAction("New &Region"), &QAction::triggered, this, [&]()
+            {
+                if(!cur_tracking_window.current_slice->is_diffusion_space)
+                    pos.to(cur_tracking_window.current_slice->to_slice);
+                pos.round();
+                cur_tracking_window.command({"new_region_from_sphere",
+                                             std::to_string(int(pos[0])) + " " +
+                                             std::to_string(int(pos[1])) + " " +
+                                             std::to_string(int(pos[2]))});
+            });
+            connect(contextMenu.addAction("New &Device"), &QAction::triggered, this, [&]()
+            {
                 cur_tracking_window.command({"new_device",
-                    std::to_string(pos[0]) + " " +
-                    std::to_string(pos[1]) + " " +
-                    std::to_string(pos[2])});
-        });
-        contextMenu.exec(event->globalPosition().toPoint());
+                        std::to_string(pos[0]) + " " +
+                        std::to_string(pos[1]) + " " +
+                        std::to_string(pos[2])});
+            });
+
+            contextMenu.addSeparator();
+
+            connect(contextMenu.addAction("Move Current Region Here"), &QAction::triggered, this, [&]()
+            {
+                if(!cur_tracking_window.current_slice->is_diffusion_space)
+                    pos.to(cur_tracking_window.current_slice->to_slice);
+                pos.round();
+                cur_tracking_window.command({"move_region",
+                                             std::to_string(int(pos[0])) + " " +
+                                             std::to_string(int(pos[1])) + " " +
+                                             std::to_string(int(pos[2]))});
+            });
+
+            connect(contextMenu.addAction("Move Current Device Here"), &QAction::triggered, this, [&]()
+            {
+                cur_tracking_window.command({"move_device",
+                        std::to_string(pos[0]) + " " +
+                        std::to_string(pos[1]) + " " +
+                        std::to_string(pos[2])});
+            });
+            connect(contextMenu.addAction("Move &Slices Here"), &QAction::triggered, this, [&]()
+            {
+                if(!cur_tracking_window.current_slice->is_diffusion_space)
+                    pos.to(cur_tracking_window.current_slice->to_slice);
+                pos.round();
+                cur_tracking_window.command({"move_slice",
+                        std::to_string(int(pos[0])) + " " +
+                        std::to_string(int(pos[1])) + " " +
+                        std::to_string(int(pos[2]))});
+            });
+            contextMenu.exec(event->globalPosition().toPoint());
+        }
     }
 }
 void GLWidget::move_by(int x,int y)
@@ -1924,7 +1967,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
         if(device_selected && selected_index < cur_tracking_window.deviceWidget->devices.size())
         {
-            cur_tracking_window.deviceWidget->move_device(selected_index,device_selected_length,dis);
+            cur_tracking_window.deviceWidget->shift_device(selected_index,device_selected_length,dis);
             update();
             return;
         }

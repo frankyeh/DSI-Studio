@@ -37,7 +37,7 @@ public:
     unsigned int device_num = 1;
     std::vector<std::shared_ptr<Device> > devices;
     bool load_device(const std::string& filename);
-    void move_device(size_t index,float sel_length,const tipl::vector<3>& dis);
+    void shift_device(size_t index,float sel_length,const tipl::vector<3>& dis);
 public:
     std::string error_msg;
     bool command(std::vector<std::string> cmd);

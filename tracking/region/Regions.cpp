@@ -5,23 +5,16 @@
 #include "Regions.h"
 #include "SliceModel.h"
 
-void ROIRegion::new_from_mni_sphere(std::shared_ptr<fib_data> handle,tipl::vector<3> mni,float radius)
+void ROIRegion::new_from_sphere(tipl::vector<3> pos,float radius)
 {
-    handle->mni2sub(mni);
-    if(!is_diffusion_space)
-    {
-        auto T = to_diffusion_space;
-        T.inv();
-        mni.to(T);
-    }
     tipl::image<3,unsigned char> mask(dim);
     tipl::adaptive_par_for(tipl::begin_index(dim),tipl::end_index(dim),
-                  [&](const tipl::pixel_index<3>& pos)
+                  [&](const tipl::pixel_index<3>& index)
     {
-        if(std::abs((float(pos[0])-mni[0])) > radius)
+        if(std::abs((float(index[0])-pos[0])) > radius)
             return;
-        if((tipl::vector<3>(pos)-mni).length() <= radius)
-            mask[pos.index()] = 1;
+        if((tipl::vector<3>(index)-pos).length() <= radius)
+            mask[index.index()] = 1;
     });
     load_region_from_buffer(mask);
 }

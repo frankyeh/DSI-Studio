@@ -392,7 +392,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         cmd[1] = cmd_proxy[2]; // record the threshold specified by users back to cmd[1]
         return run->succeed();
     }
-    if(cmd[0] == "new_region_from_mni")
+    if(cmd[0] == "new_region_from_mni" || cmd[0] == "new_region_from_sphere")
     {
         if(cmd[1].empty() && (cmd[1] =
                 QInputDialog::getText(this,QApplication::applicationName(),
@@ -400,13 +400,35 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                                                     QLineEdit::Normal,"0 0 0 10").toStdString()).empty())
             return run->canceled();
         QStringList params = QString::fromStdString(cmd[1]).split(' ');
+        if(params.size() == 3)
+        {
+            bool ok;
+            int radius = QInputDialog::getInt(this,QApplication::applicationName(),"radius (voxels):",
+                                                     5,1,100,1,&ok);
+            if (!ok)
+                return run->canceled();
+            params.push_back(QString::number(radius));
+            cmd[1] += " " + std::to_string(radius);
+        }
         if(params.size() != 4)
             return run->failed("invalid numbers. please specify four numbers separated by spaces");
-        if(!cur_tracking_window.handle->map_to_mni())
-            return run->failed("cannot map to MNI space: " + cur_tracking_window.handle->error_msg);
+
         add_region("New Region");
-        regions.back()->new_from_mni_sphere(cur_tracking_window.handle,
-                                            tipl::vector<3>(params[0].toFloat(),params[1].toFloat(),params[2].toFloat()),params[3].toFloat());
+        tipl::vector<3> pos(params[0].toFloat(),params[1].toFloat(),params[2].toFloat());
+
+        if(cmd[0] == "new_region_from_mni")
+        {
+            if(!cur_tracking_window.handle->map_to_mni())
+                return run->failed("cannot map to MNI space: " + cur_tracking_window.handle->error_msg);
+            cur_tracking_window.handle->mni2sub(pos);
+            if(!regions.back()->is_diffusion_space)
+            {
+                auto T = regions.back()->to_diffusion_space;
+                T.inv();
+                pos.to(T);
+            }
+        }
+        regions.back()->new_from_sphere(pos,params[3].toFloat());
         return run->succeed();
     }
     if(tipl::begins_with(cmd[0],"region_action_"))
@@ -439,6 +461,26 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                 return false;
             return run->canceled();
         }
+        return run->succeed();
+    }
+    if(cmd[0] == "move_region")
+    {
+        // cmd[1] : target location in region space
+        // cmd[2] : the region index (default: current selected one)
+        if(cmd[1].empty())
+            return run->failed("please specify location");
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[2],cur_row))
+            return false;
+        auto& cur_region = regions[cur_row];
+        tipl::vector<3> pos;
+        std::istringstream(cmd[1]) >> pos[0] >> pos[1] >> pos[2];
+
+        if(cur_region->region.empty())
+            return run->succeed();
+        auto cm = std::accumulate(cur_region->region.begin(),cur_region->region.end(),tipl::vector<3>(0,0,0));
+        cm /= cur_region->region.size();
+        cur_region->shift(pos-cm);
         return run->succeed();
     }
     if(cmd[0] == "save_region")
