@@ -80,7 +80,7 @@ std::vector<tipl::vector<3> > Device::get_lead_positions(float vs0,float seg_pos
     get_rendering(seg_length,seg_type,radius);
     float cur_length = 0.0f;
     for(size_t i = 0;i < seg_type.size();cur_length += seg_length[i],++i)
-        if(seg_type[i] == 1) // lead
+        if(seg_type[i] == 1/*lead*/ || seg_type[i] == -3/*locator*/)
             results.push_back(pos + dir*(cur_length + seg_length[i]*seg_pos)/vs0);
     return results;
 }
@@ -91,11 +91,11 @@ bool Device::selected(const tipl::vector<3>& p,float vs,float& device_selected_l
     float dis_length = float(dis.length());
     if(dis_length > length/vs)
         return false;
-    float radius = 0.5f+rendering_radius/vs;
+    float radius = 1.5f*rendering_radius/vs;
     if(dis_length < radius) // selecting the tip
     {
         device_selected_length = 0.0f;
-        distance_in_voxel = dis_length;
+        distance_in_voxel = dis_length-radius;
         return true;
     }
     // now consider selecting the shaft
@@ -105,7 +105,7 @@ bool Device::selected(const tipl::vector<3>& p,float vs,float& device_selected_l
         return false;
     proj *= device_selected_length;
     dis -= proj;
-    distance_in_voxel = float(dis.length());
+    distance_in_voxel = float(dis.length())-radius;
     return float(dis.length()) < radius;
 }
 
