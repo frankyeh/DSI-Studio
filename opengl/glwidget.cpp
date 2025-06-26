@@ -838,6 +838,24 @@ void GLWidget::renderLR()
             {
                 switch(seg_type[j])
                 {
+                    case -3: // locator
+                        {
+                            float rotations[3][4] = {
+                                {0.f, 1.f, 0.f, 0.f},    // Z-axis (0-degree rotation is identity)
+                                {90.f, 1.f, 0.f, 0.f},   // To align Z with Y-axis
+                                {-90.f, 0.f, 1.f, 0.f}   // To align Z with X-axis
+                            };
+                            glColor4f(r,g,b,a);
+                            for (const auto& rot : rotations)
+                            {
+                                glPushMatrix();
+                                glRotatef(rot[0], rot[1], rot[2], rot[3]);
+                                glTranslatef(0.f, 0.f, -radius); // Center the cylinder
+                                Cylinder(0.1f, 2.f * radius); // Draw one long cylinder
+                                glPopMatrix();
+                            }
+                        }
+                        break;
                     case -2: // cylindercap
                         glColor4f(r,g,b,a);
                         gluDisk(DeviceQua->get(),radius,radius+5,8,2);
