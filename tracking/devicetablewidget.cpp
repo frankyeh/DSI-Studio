@@ -167,7 +167,7 @@ DeviceTableWidget::DeviceTableWidget(tracking_window& cur_tracking_window_,QWidg
     setSelectionMode(QAbstractItemView::SingleSelection);
     setAlternatingRowColors(true);
 
-    setItemDelegate(delegate = new DeviceTypeDelegate(this,cur_tracking_window.handle->dim));
+    setItemDelegate(new DeviceTypeDelegate(this,cur_tracking_window.handle->dim));
 
     connect(this, &QTableWidget::itemChanged, this, [=](QTableWidgetItem* item) {
         if (item->column() != 0 || !(item->flags() & Qt::ItemIsUserCheckable))
