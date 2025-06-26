@@ -557,8 +557,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
         connect(ui->actionAssign_Colors_For_Devices,SIGNAL(triggered()),deviceWidget,SLOT(assign_colors()));
 
-        connect(ui->actionDetect_Electrodes,SIGNAL(triggered()),deviceWidget,SLOT(detect_electrodes()));
-
         connect(ui->actionLeads_to_ROI,SIGNAL(triggered()),deviceWidget,SLOT(lead_to_roi()));
 
 
@@ -748,17 +746,18 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
 
     if(!current_slice->is_diffusion_space)
     {
-        pos.to(current_slice->to_slice);
+        tipl::vector<3> slice_pos(pos);
+        slice_pos.to(current_slice->to_slice);
         status += QString(" %1=(%2,%3,%4)")
                 .arg(ui->SliceModality->currentText())
-                .arg(std::round(pos[0]*10.0)/10.0)
-                .arg(std::round(pos[1]*10.0)/10.0)
-                .arg(std::round(pos[2]*10.0)/10.0);
+                .arg(std::round(slice_pos[0]*10.0)/10.0)
+                .arg(std::round(slice_pos[1]*10.0)/10.0)
+                .arg(std::round(slice_pos[2]*10.0)/10.0);
     }
 
     if((handle->template_id == handle->matched_template_id && handle->is_mni && !handle->template_I.empty()) || !handle->s2t.empty())
     {
-        tipl::vector<3,float> mni(pos);
+        tipl::vector<3> mni(pos);
         handle->sub2mni(mni);
         status += QString(" MNI=(%1,%2,%3)")
                 .arg(std::round(mni[0]*10.0)/10.0)
@@ -1230,5 +1229,11 @@ void tracking_window::on_actionCommand_History_triggered(){
 void tracking_window::on_actionOpen_FIB_Directory_triggered()
 {
     QDesktopServices::openUrl(QUrl::fromLocalFile(std::filesystem::path(handle->fib_file_name).parent_path().string().c_str()));
+}
+
+
+void tracking_window::on_device_coordinate_currentIndexChanged(int index)
+{
+    deviceWidget->set_coordinate(index == 1);
 }
 
