@@ -259,6 +259,7 @@ private slots:
 
     void run_command(const std::string& cmd);
     void on_actionOpen_FIB_Directory_triggered();
+    void on_device_coordinate_currentIndexChanged(int index);
 };
 
 #endif // TRACKING_WINDOW_H
