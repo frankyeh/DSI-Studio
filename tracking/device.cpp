@@ -111,7 +111,7 @@ bool Device::selected(const tipl::vector<3>& p,float vs,float& device_selected_l
 
 void Device::move(float device_selected_length,const tipl::vector<3>& dis)
 {
-    if(device_selected_length < 5.0f || length <= 1.0f)
+    if(device_selected_length < length*0.5f || length <= 3.0f)
         pos += dis;
     else
     {
