@@ -227,7 +227,8 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
     report << roi_mgr->report
            << param.get_report()
            << " Shape analysis (Yeh, Neuroimage, 2020 Dec;223:117329) was conducted to derive shape metrics for tractography."
-           << " The analysis was conducted using " + QApplication::applicationName().toStdString() + " (http://dsi-studio.labsolver.org)";
+           << " The analysis was conducted using " + QApplication::applicationName().toStdString() +
+              " (Yeh, Nat Methods, 2025)(http://dsi-studio.labsolver.org)";
     end_thread();
     if(thread_count < 1)
         thread_count = 1;
