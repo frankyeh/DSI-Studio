@@ -12,13 +12,13 @@
 #include "TIPL/tipl.hpp"
 
 #include <filesystem>
-
+QString check_citation(QString str);
 db_window::db_window(QWidget *parent,std::shared_ptr<group_connectometry_analysis> vbc_) :
     QMainWindow(parent),vbc(vbc_),
     ui(new Ui::db_window)
 {
     ui->setupUi(this);
-    ui->report->setText(QString::fromStdString(vbc->handle->report));
+    ui->report->setText(check_citation(QString::fromStdString(vbc->handle->report)));
     ui->vbc_view->setScene(&vbc_scene);
 
     ui->x_pos->setMaximum(vbc->handle->dim[0]-1);
@@ -207,7 +207,7 @@ void db_window::on_view_x_toggled(bool checked)
 void db_window::update_db(void)
 {
     update_subject_list();
-    ui->report->setText(vbc->handle->report.c_str());
+    ui->report->setText(check_citation(vbc->handle->report.c_str()));
 }
 
 

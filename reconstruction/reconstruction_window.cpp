@@ -42,6 +42,7 @@ bool reconstruction_window::load_src(int index)
     return true;
 }
 
+QString check_citation(QString str);
 extern std::vector<std::string> fa_template_list,iso_template_list;
 reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *parent) :
     QMainWindow(parent),filenames(filenames_),ui(new Ui::reconstruction_window)
@@ -116,7 +117,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     ui->odf_resolving->setChecked(settings.value("odf_resolving",0).toInt());
 
-    ui->report->setText(handle->voxel.report.c_str());
+    ui->report->setText(check_citation(handle->voxel.report.c_str()));
     ui->dti_ignore_high_b->setChecked(handle->is_human_data());
 
     ui->method_group->setVisible(!handle->voxel.is_histology);

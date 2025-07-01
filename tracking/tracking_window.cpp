@@ -698,9 +698,18 @@ tracking_window::~tracking_window()
     delete ui;
     //tipl::out() << __FUNCTION__ << " " << __FILE__ << std::endl;
 }
+
+QString check_citation(QString str)
+{
+    if(!str.contains(QApplication::applicationName()))
+        str += " The analysis was conducted using " +
+                  QApplication::applicationName() +
+                  " version (Yeh, Nat Methods, 2025)(http://dsi-studio.labsolver.org).";
+    return str;
+}
 void tracking_window::report(QString string)
 {
-    ui->text_report->setText(string);
+    ui->text_report->setText(check_citation(string));
 }
 extern console_stream console;
 bool tracking_window::eventFilter(QObject *obj, QEvent *event)

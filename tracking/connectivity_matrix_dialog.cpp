@@ -86,7 +86,7 @@ void connectivity_matrix_dialog::mouse_move(QMouseEvent *mouseEvent)
 
 }
 
-
+QString check_citation(QString str);
 void connectivity_matrix_dialog::on_recalculate_clicked()
 {
     if(cur_tracking_window->tractWidget->tract_models.size() == 0)
@@ -126,7 +126,7 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
     QString out = QString("%1 %2 was used as the brain parcellation, and the connectivity matrix was calculated by using %3 of the connecting tracks.").
             arg(method).arg(ui->region_list->currentText()).arg(ui->matrix_value->currentText());
     out += " The connectivity matrix and graph theoretical analysis was conducted.";
-    ui->report->setText(out);
+    ui->report->setText(check_citation(out));
 
     std::string report;
     data.network_property(report);

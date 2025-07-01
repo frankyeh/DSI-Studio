@@ -516,12 +516,13 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
     }
     return std::string();
 }
+QString check_citation(QString str);
 void auto_track::check_status()
 {
     progress_bar->setValue(prog);
     ui->file_list_view->setCurrentRow(prog);
     if(!auto_track_report.empty())
-        ui->report->setText(auto_track_report.c_str());
+        ui->report->setText(check_citation(auto_track_report.c_str()));
 }
 void auto_track::on_run_clicked()
 {
