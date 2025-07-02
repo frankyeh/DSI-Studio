@@ -642,7 +642,7 @@
           </size>
          </property>
          <property name="toolTip">
-          <string>Load region from file</string>
+          <string>Open a region</string>
          </property>
          <property name="text">
           <string/>
@@ -668,7 +668,7 @@
           </size>
          </property>
          <property name="toolTip">
-          <string>Save region to file</string>
+          <string>Save current region</string>
          </property>
          <property name="text">
           <string/>
@@ -694,7 +694,7 @@
           </size>
          </property>
          <property name="toolTip">
-          <string>Remove a region</string>
+          <string>Remove current region</string>
          </property>
          <property name="text">
           <string/>
@@ -720,7 +720,7 @@
           </size>
          </property>
          <property name="toolTip">
-          <string>Move a region up in the list</string>
+          <string>Move current region up</string>
          </property>
          <property name="text">
           <string/>
@@ -746,7 +746,7 @@
           </size>
          </property>
          <property name="toolTip">
-          <string>Move a region down in the list</string>
+          <string>Move current region down</string>
          </property>
          <property name="text">
           <string/>
@@ -1498,7 +1498,7 @@
                 </size>
                </property>
                <property name="toolTip">
-                <string>Load tracks from file</string>
+                <string>Load a tract</string>
                </property>
                <property name="icon">
                 <iconset resource="../icons.qrc">
@@ -1521,7 +1521,7 @@
                 </size>
                </property>
                <property name="toolTip">
-                <string>Save current track to a file</string>
+                <string>Save current tract</string>
                </property>
                <property name="icon">
                 <iconset resource="../icons.qrc">
@@ -1544,7 +1544,7 @@
                 </size>
                </property>
                <property name="toolTip">
-                <string>Save all tracks to a file</string>
+                <string>Save all tracts</string>
                </property>
                <property name="icon">
                 <iconset resource="../icons.qrc">
@@ -1567,7 +1567,7 @@
                 </size>
                </property>
                <property name="toolTip">
-                <string>Remove a track</string>
+                <string>Remove current tract</string>
                </property>
                <property name="icon">
                 <iconset resource="../icons.qrc">
@@ -1590,7 +1590,7 @@
                 </size>
                </property>
                <property name="toolTip">
-                <string>Move a track up in the list</string>
+                <string>Move current tract up</string>
                </property>
                <property name="icon">
                 <iconset resource="../icons.qrc">
@@ -1613,7 +1613,7 @@
                 </size>
                </property>
                <property name="toolTip">
-                <string>Move a track down in the list</string>
+                <string>Move current tract down</string>
                </property>
                <property name="icon">
                 <iconset resource="../icons.qrc">
@@ -1901,7 +1901,7 @@ Tracking</string>
           </size>
          </property>
          <property name="toolTip">
-          <string>Assign a rectangle region by click-and-drag</string>
+          <string>Draw: Left-click | Erase: Right-click</string>
          </property>
          <property name="text">
           <string/>
@@ -1942,7 +1942,7 @@ Tracking</string>
           </size>
          </property>
          <property name="toolTip">
-          <string>Assign a region by free-hand drawing</string>
+          <string>Draw: Left-click | Erase: Right-click</string>
          </property>
          <property name="text">
           <string/>
@@ -1983,7 +1983,7 @@ Tracking</string>
           </size>
          </property>
          <property name="toolTip">
-          <string>Assign a polygon region by clicks</string>
+          <string>Draw: Left-click | Erase: Right-click</string>
          </property>
          <property name="text">
           <string/>
@@ -2015,7 +2015,7 @@ Tracking</string>
           </size>
          </property>
          <property name="toolTip">
-          <string>Assign a sphere region by click-and-drag</string>
+          <string>Draw: Left-click | Erase: Right-click</string>
          </property>
          <property name="text">
           <string/>
@@ -2053,7 +2053,7 @@ Tracking</string>
           </size>
          </property>
          <property name="toolTip">
-          <string>Assign a cubic region by click-and-drag</string>
+          <string>Draw: Left-click | Erase: Right-click</string>
          </property>
          <property name="text">
           <string/>
@@ -2121,7 +2121,7 @@ Tracking</string>
           </size>
          </property>
          <property name="toolTip">
-          <string>Click on a region to move it</string>
+          <string>Move region</string>
          </property>
          <property name="text">
           <string/>
@@ -2153,7 +2153,7 @@ Tracking</string>
           </size>
          </property>
          <property name="toolTip">
-          <string>Click and drag to measure length</string>
+          <string>Drag to measure length</string>
          </property>
          <property name="text">
           <string/>
@@ -2599,7 +2599,7 @@ Tracking</string>
    </property>
    <property name="minimumSize">
     <size>
-     <width>321</width>
+     <width>346</width>
      <height>129</height>
     </size>
    </property>
