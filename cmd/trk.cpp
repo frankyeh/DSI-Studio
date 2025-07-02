@@ -472,8 +472,14 @@ int trk_post(tipl::program_option<tipl::out>& po,
             output_track = false;
         else
         {
-            if(QFileInfo(output.c_str()).isDir())
-                tract_file_name = output+"/"+QFileInfo(po.get("source").c_str()).baseName().toStdString();
+            std::filesystem::path out(output);
+            if(std::filesystem::is_directory(out))
+            {
+                if(tract_file_name.empty())
+                    tract_file_name = (out/std::filesystem::path(po.get("source")).stem().stem()).string();
+                else
+                    tract_file_name = (out/std::filesystem::path(tract_file_name).filename()).string();
+            }
             else
             {
                 tract_file_name = output;
