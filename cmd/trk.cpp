@@ -473,11 +473,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
         else
         {
             if(QFileInfo(output.c_str()).isDir())
-            {
                 tract_file_name = output+"/"+QFileInfo(po.get("source").c_str()).baseName().toStdString();
-                if(output_track)
-                    tract_file_name += ".tt.gz";
-            }
             else
             {
                 tract_file_name = output;
@@ -488,6 +484,8 @@ int trk_post(tipl::program_option<tipl::out>& po,
 
     if(output_track)
     {
+        if(!tipl::ends_with(tract_file_name,{".tt.gz",".trk.gz",".tck",".txt",".mat"}))
+            tract_file_name += "." + po.get("trk_format","tt.gz");
         bool failed = false;
         if(po.has("ref")) // save track in T1W/T2W space
         {
@@ -512,19 +510,26 @@ int trk_post(tipl::program_option<tipl::out>& po,
         }
     }
 
-    if(po.has(("template_track")) && !tract_model->save_tracts_in_template_space(handle,po.get("template_track").c_str()))
+    auto addPrefixToFilename = [](std::filesystem::path p,std::string prefix) -> std::string
     {
-        tipl::error() << "failed to save file to " << po.get("template_track") << std::endl;
+        p.replace_filename(prefix + p.filename().string());
+        return p.string();
+    };
+
+    if(po.has(("template_track")) &&
+       !tract_model->save_tracts_in_template_space(handle,po.get("template_track",addPrefixToFilename(tract_file_name,"T_")).c_str()))
+    {
+        tipl::error() << "failed to save --template_track" << std::endl;
         return 1;
     }
-    if(po.has(("mni_track")) && !tract_model->save_tracts_in_template_space(handle,po.get("mni_track").c_str(),true))
+    if(po.has(("mni_track")) && !tract_model->save_tracts_in_template_space(handle,po.get("mni_track",addPrefixToFilename(tract_file_name,"mni_")).c_str(),true))
     {
-        tipl::error() << "failed to save file to " << po.get("mni_track") << std::endl;
+        tipl::error() << "failed to save --mni_track" << std::endl;
         return 1;
     }
-    if(po.has(("end_point")) && !tract_model->save_end_points(po.get("end_point").c_str()))
+    if(po.has(("end_point")) && !tract_model->save_end_points(po.get("end_point",tract_file_name + ".end.txt").c_str()))
     {
-        tipl::error() << "failed to save file to " << po.get("end_point") << std::endl;
+        tipl::error() << "failed to save --end_point" << std::endl;
         return 1;
     }
     if(po.has(("end_point1")) || po.has(("end_point2")))
@@ -534,14 +539,14 @@ int trk_post(tipl::program_option<tipl::out>& po,
         ROIRegion end1(handle),end2(handle);
         end1.add_points(std::move(points1));
         end2.add_points(std::move(points2));
-        if(po.has(("end_point1")) && !end1.save_region_to_file(po.get("end_point1").c_str()))
+        if(po.has(("end_point1")) && !end1.save_region_to_file(po.get("end_point1",tract_file_name + ".end1.txt").c_str()))
         {
-            tipl::error() << "failed to save file to " << po.get("end_point1") << std::endl;
+            tipl::error() << "failed to save --end_point1" << std::endl;
             return 1;
         }
-        if(po.has(("end_point2")) && !end2.save_region_to_file(po.get("end_point2").c_str()))
+        if(po.has(("end_point2")) && !end2.save_region_to_file(po.get("end_point2",tract_file_name + ".end2.txt").c_str()))
         {
-            tipl::error() << "failed to save file to " << po.get("end_point2") << std::endl;
+            tipl::error() << "failed to save --end_point2" << std::endl;
             return 1;
         }
     }
