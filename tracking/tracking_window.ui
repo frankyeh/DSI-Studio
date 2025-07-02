@@ -2121,7 +2121,7 @@ Tracking</string>
           </size>
          </property>
          <property name="toolTip">
-          <string>Move region</string>
+          <string>Drag to move region</string>
          </property>
          <property name="text">
           <string/>
