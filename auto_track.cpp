@@ -98,39 +98,24 @@ void auto_track::on_open_dir_clicked()
 extern std::string auto_track_report;
 std::string auto_track_report;
 
-struct file_holder{
-    std::string file_name;
-    file_holder(std::string file_name_):file_name(file_name_)
-    {
-        // create a zero-sized file to hold it
-        std::ofstream(file_name.c_str());
-    }
-    ~file_holder()
-    {
-        // at the end, check if the file size is zero.
-        if(std::filesystem::exists(file_name) && !std::filesystem::file_size(file_name))
-            std::filesystem::remove(file_name);
-    }
-};
-
 void set_template(std::shared_ptr<fib_data> handle,tipl::program_option<tipl::out>& po);
-bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
-                             std::shared_ptr<fib_data> handle,
-                             std::string output_name,
-                             std::shared_ptr<TractModel> tract_model);
+int trk_post(tipl::program_option<tipl::out>& po,
+             std::shared_ptr<fib_data> handle,
+             std::shared_ptr<TractModel> tract_model,
+             std::string tract_file_name,bool output_track);
 std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector<std::string>& file_list,int& prog)
 {
+    std::string trk_format = po.get("trk_format","tt.gz");
     std::string tolerance_string = po.get("tolerance","22,26,30");
     float yield_rate = po.get("yield_rate",0.00001f);
     size_t yield_check_count = 10.0f/yield_rate;
-    bool export_stat = po.get("export_stat",1);
-    bool export_trk = po.get("export_trk",1);
     bool overwrite = po.get("overwrite",0);
-    bool export_template_trk = po.get("export_template_trk",0);
     uint32_t thread_count = tipl::max_thread_count;
-    std::string trk_format = po.get("trk_format","tt.gz");
-    std::string stat_format = po.get("stat_format","stat.txt");
     std::vector<float> tolerance;
+    {
+        if(!po.has("export"))
+            po.set("export","stat");
+    }
     {
         std::istringstream in(tolerance_string);
         std::string num;
@@ -224,39 +209,28 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     tipl::out() << std::string("cannot create directory: ") + output_path << std::endl;
             }
             std::string fib_base = QFileInfo(fib_file_name.c_str()).baseName().toStdString();
-            std::string no_result_file_name = output_path + "/" + fib_base+"."+tract_name+".no_result.txt";
-            std::string trk_file_name = output_path + "/" + fib_base+"."+tract_name+ "." + trk_format;
-            std::string template_trk_file_name = output_path + "/T_" + fib_base+"."+tract_name + "." + trk_format;
-            std::string stat_file_name = output_path + "/" + fib_base+"."+tract_name+"." + stat_format;
+            std::string trk_base = output_path + "/" + fib_base+"."+tract_name;
+            std::string no_result_file_name = trk_base+".no_result.txt";
+            std::string trk_file_name = trk_base + "." + trk_format;
+            std::string stat_file_name = trk_file_name +".stat.txt";
             std::string report_file_name = dir+"/"+tract_name+".report.txt";
             stat_files[j].push_back(stat_file_name);
-            if(std::filesystem::exists(no_result_file_name) && !overwrite)
+
+            if(!overwrite)
             {
-                tipl::out() << "skip " << tract_name << " due to no result" << std::endl;
-                continue;
+                if(std::filesystem::exists(no_result_file_name))
+                {
+                    tipl::out() << "exists " << no_result_file_name << ", skipping tracking and data export";
+                    continue;
+                }
+                if(std::filesystem::exists(trk_file_name) && std::filesystem::exists(stat_file_name))
+                {
+                    tipl::out() << "exist " << trk_file_name << " and " << stat_file_name <<
+                                   ", skipping tracking and data export";
+                    continue;
+                }
             }
-
-            bool has_stat_file = std::filesystem::exists(stat_file_name);
-            bool has_trk_file = std::filesystem::exists(trk_file_name) &&
-                    (!export_template_trk || std::filesystem::exists(template_trk_file_name));
-            if(has_stat_file)
-                tipl::out() << "found stat file: " << stat_file_name << std::endl;
-            if(has_trk_file)
-                tipl::out() << "found track file: " << trk_file_name << std::endl;
-
-            if(!overwrite && (!export_stat || has_stat_file) && (!export_trk || has_trk_file))
             {
-                tipl::out() << "skip " << tract_name << std::endl;
-                continue;
-            }
-
-            {
-                std::shared_ptr<file_holder> stat_file,trk_file;
-                if(export_stat && !has_stat_file)
-                    stat_file = std::make_shared<file_holder>(stat_file_name);
-                if(export_trk && !has_trk_file)
-                    trk_file = std::make_shared<file_holder>(trk_file_name);
-
                 if (!handle.get())
                 {
                     handle = std::make_shared<fib_data>();
@@ -265,7 +239,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     set_template(handle,po);
                 }
                 std::shared_ptr<TractModel> tract_model(new TractModel(handle));
-                if(!overwrite && has_trk_file)
+                if(!overwrite && std::filesystem::exists(trk_file_name))
                     tract_model->load_tracts_from_file(trk_file_name.c_str(),handle.get());
 
                 // each iteration increases tolerance
@@ -298,15 +272,13 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     }
                     {
                         thread.roi_mgr->use_auto_track = true;
-
                         thread.roi_mgr->tract_name = tract_name;
                         thread.roi_mgr->tolerance_dis_in_icbm152_mm = tolerance[tracking_iteration];
                     }
+
                     tipl::progress prog2("tracking ",tract_name.c_str(),true);
                     thread.run(thread_count,false);
-                    std::string report = handle->report;
-                    report += thread.report.str();
-                    auto_track_report = report;
+                    tract_model->report = auto_track_report = handle->report + thread.report.str();
                     bool no_result = false;
                     {
                         // pre tracking stage
@@ -320,8 +292,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                             if(thread.get_total_seed_count() > yield_check_count &&
                                thread.get_total_tract_count() < float(thread.get_total_seed_count())*yield_rate)
                             {
-                                tipl::out() << "low yield rate (" << thread.get_total_tract_count() << "/" <<
-                                                    thread.get_total_seed_count() << "), terminating" << std::endl;
+                                tipl::out() << "low yield rate, adjusting tolerance and restart...";
                                 no_result = true;
                                 break;
                             }
@@ -344,61 +315,34 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         }
 
                     }
+                    if(no_result)
+                        continue;
                     // fetch both front and back buffer
                     thread.fetchTracks(tract_model.get());
                     thread.fetchTracks(tract_model.get());
-
                     if(thread.param.step_size != 0.0f)
                         tract_model->resample(1.0f);
                     tract_model->delete_repeated(tract_model->vs[0]);
-
                     tract_model->trim(thread.param.tip_iteration);
-
                     // if trim removes too many tract, undo to at least get the smallest possible bundle.
                     if(thread.param.tip_iteration && tract_model->get_visible_track_count() == 0)
                         tract_model->undo();
-
-                    if(no_result || tract_model->get_visible_track_count() == 0)
-                    {
-                        tract_model->clear();
-                        continue;
-                    }
-
-
-                    if(export_trk)
-                    {
-                        tract_model->report = report;
-                        if(!tract_model->save_tracts_to_file(trk_file_name.c_str()))
-                            return std::string("fail to save ")+trk_file_name;
-                        if(export_template_trk &&
-                           !tract_model->save_tracts_in_template_space(handle,template_trk_file_name.c_str()))
-                                return std::string("fail to save ")+template_trk_file_name;
-                    }
-                    if(po.has("connectivity") && !get_connectivity_matrix(po,handle,trk_file_name,tract_model))
-                        return std::string("fail to output connectivity matrix");
-                    break;
                 }
 
                 if(tract_model->get_visible_track_count() == 0)
                 {
-                    std::ofstream out(no_result_file_name.c_str());
-                    continue;
+                    tipl::warning() << " no tracking result generated for " << tract_name;
+                    std::ofstream out(no_result_file_name);
                 }
-
-                if(export_stat &&
-                   (overwrite || !std::filesystem::exists(stat_file_name) || !std::filesystem::file_size(stat_file_name)))
-                {
-                    tipl::out() << "saving " << stat_file_name;
-                    std::ofstream out_stat(stat_file_name.c_str());
-                    std::string result;
-                    tract_model->get_quantitative_info(handle,result);
-                    out_stat << result;
-                }
+                else
+                    if(trk_post(po,handle,tract_model,trk_file_name,true))
+                        return std::string("terminated due to error");
             }
         }
     }
     if(prog0.aborted())
         return std::string("aborted");
+    if(tipl::contains(po.get("export"),"stat"))
     {
         tipl::out() << "check if there is any incomplete task";
         bool has_incomplete = false;
