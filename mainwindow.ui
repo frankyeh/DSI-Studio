@@ -29,9 +29,6 @@
   <property name="windowOpacity">
    <double>1.000000000000000</double>
   </property>
-  <property name="styleSheet">
-   <string notr="true">QMainWindow { color: black;  background-color : white; }</string>
-  </property>
   <widget class="QWidget" name="centralWidget">
    <property name="sizePolicy">
     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -150,7 +147,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>5</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -218,7 +215,7 @@
                </size>
               </property>
               <property name="styleSheet">
-               <string notr="true">QWidget { background-color : white; }</string>
+               <string notr="true">QWidget { color: black;  background-color : white; }</string>
               </property>
               <widget class="QTableWidget" name="recentFib">
                <property name="geometry">
@@ -1112,7 +1109,7 @@ SRC Files</string>
                </size>
               </property>
               <property name="styleSheet">
-               <string notr="true">QWidget { background-color : white; }</string>
+               <string notr="true">QWidget { color: black;  background-color : white; }</string>
               </property>
               <widget class="QWidget" name="widget_4" native="true">
                <property name="geometry">
@@ -1571,7 +1568,7 @@ Atlas</string>
                </size>
               </property>
               <property name="styleSheet">
-               <string notr="true">QWidget { background-color : white; }</string>
+               <string notr="true">QWidget { color: black;  background-color : white; }</string>
               </property>
               <widget class="QWidget" name="widget_2" native="true">
                <property name="geometry">
@@ -1988,7 +1985,7 @@ Tractography</string>
                </size>
               </property>
               <property name="styleSheet">
-               <string notr="true">QWidget { background-color : white; }</string>
+               <string notr="true">QWidget { color: black;  background-color : white; }</string>
               </property>
               <widget class="QCommandLinkButton" name="RenameDICOMDir">
                <property name="geometry">
@@ -3164,7 +3161,7 @@ p, li { white-space: pre-wrap; }
         <item>
          <widget class="QWidget" name="widget_5" native="true">
           <property name="styleSheet">
-           <string notr="true">QWidget { background-color : white; }</string>
+           <string notr="true">QWidget { color: black;  background-color : white; }</string>
           </property>
           <widget class="QCommandLinkButton" name="parse_network_measures">
            <property name="geometry">
