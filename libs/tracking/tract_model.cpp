@@ -927,9 +927,10 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
 
         const float nan = std::numeric_limits<float>::quiet_NaN();
         const float inf = std::numeric_limits<float>::infinity();
+        tipl::transformation_matrix<float,3> trans(trans_to_mni);
         for (const auto& t : tract_data) {
             std::vector<float> buf(t);
-            tipl::multiply_constant(buf.begin(),buf.end(), vs[0]);
+            trans(buf);
             out.write(reinterpret_cast<const char*>(buf.data()), buf.size() * sizeof(float));
             out.write(reinterpret_cast<const char*>(&nan),sizeof(nan));
             out.write(reinterpret_cast<const char*>(&nan),sizeof(nan));
