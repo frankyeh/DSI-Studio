@@ -213,7 +213,6 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
             std::string no_result_file_name = trk_base+".no_result.txt";
             std::string trk_file_name = trk_base + "." + trk_format;
             std::string stat_file_name = trk_file_name +".stat.txt";
-            std::string report_file_name = dir+"/"+tract_name+".report.txt";
             stat_files[j].push_back(stat_file_name);
 
             if(!overwrite)
@@ -335,8 +334,12 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     std::ofstream out(no_result_file_name);
                 }
                 else
+                {
+                    if(po.has("output"))
+                        po.set("output",trk_file_name);
                     if(trk_post(po,handle,tract_model,trk_file_name,true))
                         return std::string("terminated due to error");
+                }
             }
         }
     }
