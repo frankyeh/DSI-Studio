@@ -176,7 +176,7 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
     size_t total_steps = std::max<int>(1,file_list.size())*cmd.size();
     for(size_t k = 0,steps = 0;k < std::max<int>(1,file_list.size()) && !p.aborted();++k)
     {
-        if(original_file == file_list[k].toStdString())
+        if(k < file_list.size() && original_file == file_list[k].toStdString())
             continue;
         tipl::progress p("processing " + (k < file_list.size() ? file_list[k].toStdString() : std::string()));
         tracking_window *backup_parent = nullptr;
