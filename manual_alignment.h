@@ -29,7 +29,8 @@ public:
     tipl::affine_transform<float> arg;
     std::vector<tipl::image<3> > other_images;
     std::vector<std::string> other_images_name;
-    tipl::matrix<4,4> nifti_srow = tipl::identity_matrix();
+    tipl::matrix<4,4> to_T = tipl::identity_matrix();
+    tipl::matrix<4,4> from_T = tipl::identity_matrix();
     std::vector<tipl::transformation_matrix<float> > other_image_T;
 public:
     QTimer* timer;

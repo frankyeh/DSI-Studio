@@ -1386,6 +1386,8 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
         subject_image_pre(tipl::image<3>(reg_slice->get_source())),subject_image_pre(tipl::image<3>(reg_slice->get_source())),reg_slice->vs,
         subject_image_pre(tipl::image<3>(iso_fa.first)),subject_image_pre(tipl::image<3>(iso_fa.second)),handle->vs,
         tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
+    manual->from_T = reg_slice->trans_to_mni;
+    manual->to_T = handle->trans_to_mni;
 
     {
         reg_slice->update_transform();
@@ -1657,6 +1659,7 @@ void tracking_window::on_actionManual_Atlas_Alignment_triggered()
         template_image_pre(tipl::image<3>(handle->template_I)),template_image_pre(tipl::image<3>(handle->template_I2)),handle->template_vs,
         subject_image_pre(tipl::image<3>(iso_fa.first)),subject_image_pre(tipl::image<3>(iso_fa.second)),handle->vs,
         tipl::reg::affine,tipl::reg::cost_type::mutual_info));
+    manual->from_T = manual->to_T = handle->trans_to_mni;
     if(manual->exec() != QDialog::Accepted)
         return;
     handle->manual_template_T = manual->arg;

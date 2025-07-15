@@ -627,6 +627,8 @@ void reconstruction_window::on_actionRotate_triggered()
                                                                 template_image_pre(tipl::image<3>(ref)),tipl::image<3,unsigned char>(),vs,
                                                                 tipl::reg::rigid_body,
                                                                 tipl::reg::cost_type::mutual_info));
+    manual->from_T = handle->voxel.trans_to_mni;
+    manual->to_T = t;
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
         return;
@@ -739,6 +741,8 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
     std::shared_ptr<manual_alignment> manual(
                 new manual_alignment(this,subject_image_pre(tipl::image<3>(handle->dwi)),tipl::image<3,unsigned char>(),handle->voxel.vs,
                                           subject_image_pre(tipl::image<3>(handle->dwi)),tipl::image<3,unsigned char>(),handle->voxel.vs,tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
+    manual->from_T = handle->voxel.trans_to_mni;
+    manual->to_T = handle->voxel.trans_to_mni;
     if(manual->exec() != QDialog::Accepted)
         return;
     tipl::progress prog_("rotating");
@@ -864,6 +868,8 @@ void reconstruction_window::on_align_slices_clicked()
                                                                 subject_image_pre(std::move(to)),tipl::image<3,unsigned char>(),handle->voxel.vs,
                                                                 tipl::reg::rigid_body,
                                                                 tipl::reg::cost_type::mutual_info));
+    manual->from_T = handle->voxel.trans_to_mni;
+    manual->to_T = handle->voxel.trans_to_mni;
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
         return;
@@ -925,6 +931,7 @@ void reconstruction_window::on_actionManual_Align_triggered()
 {
     tipl::image<3> VG,VG2,VF(handle->dwi);
     tipl::vector<3> VGvs,VFvs(handle->voxel.vs);
+    tipl::matrix<4,4> VG_T;
     handle->voxel.template_id = ui->primary_template->currentIndex();
     {
         tipl::io::gz_nifti read,read2;
@@ -935,6 +942,7 @@ void reconstruction_window::on_actionManual_Align_triggered()
         }
         read.toLPS(VG);
         read.get_voxel_size(VGvs);
+        read.get_image_transformation(VG_T);
         if(read2.load_from_file(iso_template_list[handle->voxel.template_id]))
             read2.toLPS(VG2);
     }
@@ -945,6 +953,8 @@ void reconstruction_window::on_actionManual_Align_triggered()
                                                                 subject_image_pre(VF),subject_image_pre(VF),VFvs,
                                                                 tipl::reg::affine,
                                                                 tipl::reg::cost_type::mutual_info));
+    manual->from_T = VG_T;
+    manual->to_T = handle->voxel.trans_to_mni;
     manual->on_rerun_clicked();
     if(manual->exec() != QDialog::Accepted)
         return;

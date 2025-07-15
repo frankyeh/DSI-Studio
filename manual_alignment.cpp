@@ -7,7 +7,7 @@
 
 
 
-
+void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 manual_alignment::manual_alignment(QWidget *parent,
                                    tipl::image<3,unsigned char>&& from_,
                                    tipl::image<3,unsigned char>&& from2_,
@@ -30,6 +30,9 @@ manual_alignment::manual_alignment(QWidget *parent,
     from2.swap(from2_);
     to2.swap(to2_);
     from_original = from;
+
+    initial_LPS_nifti_srow(to_T,to.shape(),to_vs);
+    initial_LPS_nifti_srow(from_T,from.shape(),from_vs);
     while(from.size() < to.size()/8)
     {
         tipl::downsample_with_padding(to);
@@ -303,7 +306,7 @@ void manual_alignment::slice_pos_moved()
         slice_image = slice_image.mirrored(false,dim != 2);
         QPainter painter(&slice_image);
         if(ui->grid->checkState() != Qt::Unchecked)
-            tipl::qt::draw_ruler(painter,to.shape(),nifti_srow,
+            tipl::qt::draw_ruler(painter,to.shape(),to_T,
                         dim,dim,dim != 2,ratio,ui->grid->checkState() == Qt::Checked);
         scene[dim] << slice_image;
     }
@@ -451,7 +454,7 @@ void manual_alignment::on_actionSave_Warped_Image_triggered()
         tipl::resample<tipl::interpolation::majority>(from_original,I,iT);
     else
         tipl::resample<tipl::interpolation::cubic>(from_original,I,iT);
-    tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),I,to_vs,nifti_srow);
+    tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),I,to_vs,to_T);
 }
 
 void manual_alignment::on_advance_options_clicked()
@@ -513,25 +516,20 @@ void manual_alignment::on_actionApply_Transformation_triggered()
     if(to_filename.isEmpty())
         return;
 
-    tipl::image<3> from;
-    tipl::vector<3> vs;
-    if(!tipl::io::gz_nifti::load_from_file(filename.toStdString().c_str(),from,vs))
+    tipl::image<3> from(from_original.shape());
+    if(!tipl::io::gz_nifti::load_to_space(filename.toStdString(),from,from_T))
     {
         QMessageBox::critical(this,"ERROR","Cannot read the file");
         return;
     }
-    if(from.shape() != from_original.shape())
-    {
-        QMessageBox::critical(this,"ERROR","The NIFTI file has different dimension");
-        return;
-    }
+
 
     tipl::image<3> I(to.shape());
     if(tipl::is_label_image(from))
         tipl::resample<tipl::interpolation::majority>(from,I,iT);
     else
         tipl::resample<tipl::interpolation::cubic>(from,I,iT);
-    tipl::io::gz_nifti::save_to_file(to_filename.toStdString().c_str(),I,to_vs,nifti_srow);
+    tipl::io::gz_nifti::save_to_file(to_filename.toStdString().c_str(),I,to_vs,to_T);
 
 
 

@@ -1007,7 +1007,9 @@ void MainWindow::on_linear_reg_clicked()
         return;
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,subject_image_pre(tipl::image<3>(ref1)),tipl::image<3,unsigned char>(),vs1,
                                                                        template_image_pre(tipl::image<3>(ref2)),tipl::image<3,unsigned char>(),vs2,tipl::reg::affine,tipl::reg::mutual_info));
-    manual->nifti_srow = t2;
+    manual->from_T = t1;
+    manual->to_T = t2;
+
     if(manual->exec() != QDialog::Accepted)
         return;
 }
