@@ -433,21 +433,30 @@ int trk_post(tipl::program_option<tipl::out>& po,
         tract_model->delete_repeated(distance);
         tipl::out() << "repeat tracks with distance smaller than " << distance <<" voxel distance are deleted" << std::endl;
     }
+    if (po.has("delete_by_length"))
+    {
+        tipl::out() << "deleting short tracks..." << std::endl;
+        float length = po.get("delete_repeat",float(1));
+        tract_model->delete_by_length(length);
+        tipl::out() << "tracks with voxel distance shorter than " << length << " are deleted" << std::endl;
+    }
     if(po.has("cluster"))
     {
         std::string cmd = po.get("cluster");
         std::replace(cmd.begin(),cmd.end(),',',' ');
         std::istringstream in(cmd);
         int method = 0,count = 0,detail = 0;
-        std::string name;
-        in >> method >> count >> detail >> name;
+        std::string output;
+        in >> method >> count >> detail >> output;
         tipl::out() << "cluster method: " << method << std::endl;
         tipl::out() << "cluster count: " << count << std::endl;
         tipl::out() << "cluster resolution (if method is 0) : " << detail << " mm" << std::endl;
         tipl::out() << "run clustering." << std::endl;
         tract_model->run_clustering(uint8_t(method),uint32_t(count),detail);
-        tipl::out() << "saving " << tract_file_name << "." << name << std::endl;
-        std::ofstream out(tract_file_name + "." + name);
+        if(output.empty())
+            output = tract_file_name + "_cluster.txt";
+        tipl::out() << "saving " << output << std::endl;
+        std::ofstream out(output);
         std::copy(tract_model->tract_cluster.begin(),tract_model->tract_cluster.end(),std::ostream_iterator<int>(out," "));
     }
     if(po.has("recognize"))
