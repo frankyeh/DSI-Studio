@@ -704,7 +704,7 @@ QString check_citation(QString str)
     if(!str.contains(QApplication::applicationName()))
         str += " The analysis was conducted using " +
                   QApplication::applicationName() +
-                  " version (Yeh, Nat Methods, 2025)(http://dsi-studio.labsolver.org).";
+                  " version (Yeh FC, Nat Methods, July 2025, doi:10.1038/s41592-025-02762-8).";
     return str;
 }
 void tracking_window::report(QString string)
