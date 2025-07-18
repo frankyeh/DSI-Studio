@@ -130,6 +130,7 @@ public:
     void to_I_space(const tipl::shape<3>& new_Is,const tipl::matrix<4,4>& new_IR);
     void to_It_space(const tipl::shape<3>& new_Its,const tipl::matrix<4,4>& new_ItR);
     void to_It_space(const tipl::shape<3>& new_Its);
+    void to_I_space(const tipl::shape<3>& new_Its);
 
 
 };
