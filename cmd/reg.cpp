@@ -64,6 +64,7 @@ bool load_image(size_t id, const std::string& file_name,
         images.resize(size);
     }
 
+    tipl::out() << "open " << file_name;
     tipl::io::gz_nifti nifti;
     if(!nifti.load_from_file(file_name))
     {
@@ -96,6 +97,12 @@ bool load_image(size_t id, const std::string& file_name,
             nifti.get_image_transformation(curr_transform);
             if(images[id].shape() != image_shape || curr_transform != ref_transform)
                 images[id] = tipl::resample(images[id], image_shape, tipl::from_space(ref_transform).to(curr_transform));
+        }
+
+        if(tipl::max_value(images[id]) == 1)
+        {
+            tipl::out() << "scale values to 255";
+            images[id] *= 255;
         }
     }
     return true;
@@ -727,7 +734,13 @@ void dual_reg::to_It_space(const tipl::shape<3>& new_Its)
         new_ItR[3+i*4] -= new_ItR[i*5]*(float(new_Its[i])-float(Its[i]))*0.5f;
     to_It_space(new_Its,new_ItR);
 }
-
+void dual_reg::to_I_space(const tipl::shape<3>& new_Is)
+{
+    auto new_IR = IR;
+    for(int i = 0;i < 3;++i)
+        new_IR[3+i*4] -= new_IR[i*5]*(float(new_Is[i])-float(Is[i]))*0.5f;
+    to_I_space(new_Is,new_IR);
+}
 
 template<bool direction>
 bool save_warping(dual_reg& r,
