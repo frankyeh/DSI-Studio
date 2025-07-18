@@ -73,12 +73,13 @@ void RegToolBox::on_OpenTemplate_clicked()
 {
     if(file_names[1].size() >= reg.max_modality)
         return;
-    QString filename = QFileDialog::getOpenFileName(
+    QStringList filenames = QFileDialog::getOpenFileNames(
             this,"Open Template Image",QDir::currentPath(),
             "Images (*.nii *nii.gz);;All files (*)" );
-    if(filename.isEmpty())
+    if(filenames.isEmpty())
         return;
-    load_template(filename.toStdString());
+    for(auto filename : filenames)
+        load_template(filename.toStdString());
     show_image();
 }
 void RegToolBox::on_ClearTemplate_clicked()
@@ -112,27 +113,30 @@ void RegToolBox::on_OpenSubject_clicked()
 {
     if(file_names[0].size() >= reg.max_modality)
         return;
-    QString filename = QFileDialog::getOpenFileName(
+    QStringList filenames = QFileDialog::getOpenFileNames(
             this,"Open Subject Image",QDir::currentPath(),
             "Images (*.nii *nii.gz);;All files (*)" );
-    if(filename.isEmpty())
+    if(filenames.isEmpty())
         return;
-    load_subject(filename.toStdString());
-    if(filename.contains("qa"))
+    for(auto filename : filenames)
     {
-        auto iso_file_name = QString(filename).replace("qa","iso");
-        if(iso_file_name != filename && QFileInfo(iso_file_name).exists() &&
-           QMessageBox::question(this,QApplication::applicationName(),QString("load iso from ") + iso_file_name + "?",
-           QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
-                load_subject(iso_file_name.toStdString());
+        load_subject(filename.toStdString());
+        if(filename.contains("qa"))
+        {
+            auto iso_file_name = QString(filename).replace("qa","iso");
+            if(iso_file_name != filename && QFileInfo(iso_file_name).exists() &&
+               QMessageBox::question(this,QApplication::applicationName(),QString("load iso from ") + iso_file_name + "?",
+               QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
+                    load_subject(iso_file_name.toStdString());
 
-        if(reg.It[0].empty() &&
-           QMessageBox::question(this,QApplication::applicationName(),"load QA/ISO templates?",
-           QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
-            {
-                load_template(fa_template_list[0]);
-                load_template(iso_template_list[0]);
-            }
+            if(reg.It[0].empty() &&
+               QMessageBox::question(this,QApplication::applicationName(),"load QA/ISO templates?",
+               QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
+                {
+                    load_template(fa_template_list[0]);
+                    load_template(iso_template_list[0]);
+                }
+        }
     }
     show_image();
 }
@@ -713,7 +717,7 @@ void RegToolBox::on_actionApply_Template_To_Subject_Warping_triggered()
 void RegToolBox::on_actionSet_Template_Size_triggered()
 {
     bool okay = false;
-    auto text = QInputDialog::getMultiLineText(this,QApplication::applicationName(),"Input size",
+    auto text = QInputDialog::getText(this,QApplication::applicationName(),"input template dimension",QLineEdit::Normal,
                                                QString::number(reg.Its[0])+" "+QString::number(reg.Its[1])+" "+QString::number(reg.Its[2]),&okay);
     if(!okay)
         return;
@@ -723,6 +727,22 @@ void RegToolBox::on_actionSet_Template_Size_triggered()
         reg.to_It_space(tipl::shape<3>(w,h,d));
     setup_slice_pos();
     show_image();
+}
+
+void RegToolBox::on_actionSet_Subject_Dimension_triggered()
+{
+    bool okay = false;
+    auto text = QInputDialog::getText(this,QApplication::applicationName(),"input subject dimension",QLineEdit::Normal,
+                                               QString::number(reg.Is[0])+" "+QString::number(reg.Is[1])+" "+QString::number(reg.Is[2]),&okay);
+    if(!okay)
+        return;
+    int w(0),h(0),d(0);
+    std::istringstream(text.toStdString()) >> w >> h >> d;
+    if(w*h*d)
+        reg.to_I_space(tipl::shape<3>(w,h,d));
+    setup_slice_pos();
+    show_image();
+
 }
 
 
@@ -755,6 +775,7 @@ void RegToolBox::on_anchor_toggled(bool checked)
     ui->I_view->setCursor(checked ? Qt::CrossCursor:Qt::ArrowCursor);
     ui->It_view->setCursor(checked ? Qt::CrossCursor:Qt::ArrowCursor);
 }
+
 
 
 

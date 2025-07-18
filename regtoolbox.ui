@@ -714,7 +714,7 @@
      <x>0</x>
      <y>0</y>
      <width>1208</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Open">
@@ -738,6 +738,7 @@
     <addaction name="actionTemplate_Image"/>
     <addaction name="separator"/>
     <addaction name="actionSet_Template_Size"/>
+    <addaction name="actionSet_Subject_Dimension"/>
    </widget>
    <addaction name="menu_Open"/>
    <addaction name="menuEdit"/>
@@ -791,7 +792,7 @@
   </action>
   <action name="actionSet_Template_Size">
    <property name="text">
-    <string>Set Template Size...</string>
+    <string>Set Template Dimension...</string>
    </property>
   </action>
   <action name="actionSave_Subject_Images">
@@ -810,6 +811,11 @@
    </property>
    <property name="text">
     <string>Save Template Images...</string>
+   </property>
+  </action>
+  <action name="actionSet_Subject_Dimension">
+   <property name="text">
+    <string>Set Subject Dimension...</string>
    </property>
   </action>
  </widget>

@@ -99,6 +99,8 @@ private slots:
 
     void on_rb_switch_clicked();
 
+    void on_actionSet_Subject_Dimension_triggered();
+
 private:
     Ui::RegToolBox *ui;
     QGraphicsScene scene[2];
