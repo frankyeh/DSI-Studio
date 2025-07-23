@@ -176,7 +176,8 @@ void RegToolBox::auto_fill(void)
     if(file_names[1].size() > file_names[0].size())
     {
         if(!file_names[0].empty() &&
-           tipl::match_files(file_names[1][0],file_names[1][file_names[0].size()],file_names[0].front(),new_file_name) &&
+           tipl::match_files(file_names[1].front(),file_names[1][file_names[0].size()],
+                             file_names[0].front(),new_file_name) &&
            std::filesystem::exists(new_file_name) &&
            QMessageBox::question(this,QApplication::applicationName(),QString("load subject ") + new_file_name.c_str() + "?\n",
                         QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
@@ -186,7 +187,8 @@ void RegToolBox::auto_fill(void)
     {
 
         if(!file_names[1].empty() &&
-           tipl::match_files(file_names[0][0],file_names[0][file_names[1].size()],file_names[1].front(),new_file_name) &&
+           tipl::match_files(file_names[0].front(),file_names[0][file_names[1].size()],
+                             file_names[1].front(),new_file_name) &&
            std::filesystem::exists(new_file_name) &&
            QMessageBox::question(this,QApplication::applicationName(),QString("load template ") + new_file_name.c_str() + "?\n",
                         QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
