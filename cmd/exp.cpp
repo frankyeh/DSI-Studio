@@ -58,10 +58,7 @@ int exp(tipl::program_option<tipl::out>& po)
         std::shared_ptr<fib_data> handle;
         handle = cmd_load_fib(po);
         if(!handle.get())
-        {
-            tipl::error() << handle->error_msg << std::endl;
             return 1;
-        }
         if(po.has("match"))
         {
             if(!handle->db.has_db())
