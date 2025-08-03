@@ -151,10 +151,7 @@ int atl(tipl::program_option<tipl::out>& po)
 {
     std::shared_ptr<fib_data> handle = cmd_load_fib(po);
     if(!handle.get())
-    {
-        tipl::error() << handle->error_msg << std::endl;
         return 1;
-    }
     std::vector<std::shared_ptr<atlas> > atlas_list;
     if(!atl_load_atlas(handle,po.get("atlas"),atlas_list))
         return 1;
