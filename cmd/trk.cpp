@@ -662,7 +662,7 @@ void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_threa
     tracking_thread.param.random_seed = uint8_t(po.get("random_seed",int(tracking_thread.param.random_seed)));
     tracking_thread.param.tracking_method = uint8_t(po.get("method",int(tracking_thread.param.tracking_method)));
     tracking_thread.param.check_ending = uint8_t(po.get("check_ending",po.has("track_id") ? 1 : 0)) && !(po.has("dt_metric1"));
-    tracking_thread.param.tip_iteration = uint8_t(po.get("tip_iteration", (po.has("track_id") | po.has("dt_metric1") ) ? 16 : 0));
+    tracking_thread.param.tip_iteration = uint8_t(po.get("tip_iteration", (po.has("track_id") || po.has("dt_metric1") ) ? 16 : 0));
 
     if(po.has("dt_metric1") || po.has("seed_count"))
         tracking_thread.param.max_tract_count = tracking_thread.param.max_seed_count = po.get("seed_count",tracking_thread.param.max_seed_count);
