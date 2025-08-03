@@ -63,7 +63,7 @@ int cnt(tipl::program_option<tipl::out>& po)
             }
 
 
-        if(po.get("voi") == "Intercept" | po.get("voi") == "longitudinal")
+        if(po.get("voi") == "Intercept" || po.get("voi") == "longitudinal")
         {
             if(!db.is_longitudinal)
             {
