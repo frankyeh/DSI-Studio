@@ -10,6 +10,7 @@
 #include <unordered_set>
 #include <map>
 #include <cmath>
+#include <cstdio>
 #include "roi.hpp"
 #include "tract_model.hpp"
 #include "fib_data.hpp"
@@ -920,10 +921,14 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         std::ofstream out(file_name.c_str(), std::ios::binary);
         if(!out)
             return false;
-        std::array<char, 200> header;
-        std::sprintf(header.data(), "mrtrix tracks\ndatatype: Float32LE\ndim: %d,%d,%d\nvox: %f,%f,%f\ndatatype: Float32LE\nfile: . 200\ncount: %d\nEND\n",
-                             geo[0], geo[1], geo[2], vs[0], vs[1], vs[2], static_cast<int>(tract_data.size()));
-        out.write(header.data(), header.size());
+        std::array<char, 200> header{};
+        int len = std::snprintf(header.data(), header.size(),
+                                "mrtrix tracks\ndatatype: Float32LE\ndim: %d,%d,%d\nvox: %f,%f,%f\ndatatype: Float32LE\nfile: . 200\ncount: %d\nEND\n",
+                                geo[0], geo[1], geo[2], vs[0], vs[1], vs[2],
+                                static_cast<int>(tract_data.size()));
+        if(len < 0 || len >= static_cast<int>(header.size()))
+            return false;
+        out.write(header.data(), len);
 
         const float nan = std::numeric_limits<float>::quiet_NaN();
         const float inf = std::numeric_limits<float>::infinity();
