@@ -32,9 +32,12 @@ private:
         I_int8 = rhs.I_int8;
         pixel_type = decltype(pixel_type)(rhs.pixel_type);
         shape = rhs.shape;
+        dim4 = rhs.dim4;
         is_mni = rhs.is_mni;
+        interpolation = rhs.interpolation;
         vs = rhs.vs;
         T = rhs.T;
+        error_msg = rhs.error_msg;
     }
 public:
     template<typename Fun, typename Arg>
