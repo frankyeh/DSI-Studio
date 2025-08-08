@@ -62,6 +62,10 @@ public:
     tipl::matrix<dimension+1,dimension+1> ItR,IR;
     tipl::shape<dimension> Its,Is;
 public:
+    bool resolution_changed = false;
+    tipl::shape<dimension> original_Its,original_Is;
+    tipl::matrix<dimension+1,dimension+1> original_ItR,original_IR;
+public:
     std::vector<tipl::vector<3> > anchor[2];
 public:
     mapping_type previous_t2f,previous_f2t;
