@@ -1591,18 +1591,42 @@ void fib_data::temp2sub(std::vector<std::vector<float> >&tracts) const
 {
     tipl::adaptive_par_for(tracts.size(),[&](size_t i)
     {
-        if(tracts.size() < 6)
+        auto& each = tracts[i];
+        if(each.size() < 6)
             return;
-        auto beg = tracts[i].begin();
-        auto end = tracts[i].end();
-        for(;beg != end;beg += 3)
         {
-            tipl::vector<3> p(beg);
-            temp2sub(p);
-            beg[0] = p[0];
-            beg[1] = p[1];
-            beg[2] = p[2];
+            auto beg = each.begin();
+            auto end = each.end();
+            for(;beg != end;beg += 3)
+            {
+                tipl::vector<3> p(beg);
+                temp2sub(p);
+                beg[0] = p[0];
+                beg[1] = p[1];
+                beg[2] = p[2];
+            }
         }
+
+        // modification 2025/08/08: trim invalid points to solve no result problem in cropped volume
+        auto first = each.begin();
+        while (first + 2 < each.end() && !dim.is_valid(*first, *(first + 1), *(first + 2)))
+            first += 3;
+
+        if (first >= each.end())
+        {
+            each.clear();
+            return;
+        }
+
+        auto last = each.end() - 3;
+        while (last > first && !dim.is_valid(*last, *(last + 1), *(last + 2)))
+            last -= 3;
+
+        // Move the valid segment to the beginning of the vector
+        size_t new_size = (last - first) + 3;
+        std::move(first, last + 3, each.begin());
+
+        each.resize(new_size);
     });
 }
 bool fib_data::load_track_atlas(bool symmetric)
@@ -1633,6 +1657,7 @@ bool fib_data::load_track_atlas(bool symmetric)
             error_msg += tractography_atlas_file_name;
             return false;
         }
+
 
         // find left right pairs
         std::vector<unsigned int> pair(tractography_name_list.size(),uint32_t(tractography_name_list.size()));
