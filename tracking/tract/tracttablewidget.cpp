@@ -305,10 +305,20 @@ void TractTableWidget::fetch_tracts(void)
                             regions[1]->modified = true;
                             regions[2]->region = thread_data[index]->roi_mgr->atlas_not_end;
                             regions[2]->modified = true;
-                            if(regions.size() >= 4)
+                            cur_tracking_window.regionWidget->item(int(0),0)->setText("atk seed");
+                            cur_tracking_window.regionWidget->item(int(1),0)->setText("atk limiting");
+                            cur_tracking_window.regionWidget->item(int(2),0)->setText("atk not end");
+                            if(regions.size() >= 4 && !thread_data[index]->roi_mgr->atlas_roi.empty())
                             {
                                 regions[3]->region = thread_data[index]->roi_mgr->atlas_roi;
                                 regions[3]->modified = true;
+                                cur_tracking_window.regionWidget->item(int(3),0)->setText("atk roi");
+                            }
+                            if(regions.size() >= 5 && !thread_data[index]->roi_mgr->atlas_roa.empty())
+                            {
+                                regions[4]->region = thread_data[index]->roi_mgr->atlas_roa;
+                                regions[4]->modified = true;
+                                cur_tracking_window.regionWidget->item(int(4),0)->setText("atk roa");
                             }
                         }
                 }
