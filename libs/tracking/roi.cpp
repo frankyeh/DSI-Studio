@@ -76,6 +76,9 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
         if(terminated)
             return false;
 
+        if(!seeds.empty())
+            tipl::out() << "external seed region found, disable built-in seeding";
+        else
         {
             tipl::progress p("create limiting/seeding/not end regions");
             std::vector<std::vector<tipl::vector<3,short> > > limiting_points(tipl::max_thread_count),
@@ -113,48 +116,54 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
         }
     }
 
-
-    if(use_roi && handle->tractography_atlas_roi.get())
+    if(!roi.empty() || !roa.empty())
+        tipl::out() << "external roi or roa found, disable built-in roi";
+    else
     {
-        const auto& regions = handle->tractography_atlas_roi->get_list();
-        for(size_t i = 0;i < regions.size();++i)
-            if(tipl::contains_case_insensitive(tract_name,regions[i]))
-            {
-                if(!handle->get_atlas_roi(handle->tractography_atlas_roi,i,atlas_roi))
+        if(use_roi && handle->tractography_atlas_roi.get())
+        {
+            const auto& regions = handle->tractography_atlas_roi->get_list();
+            for(size_t i = 0;i < regions.size();++i)
+                if(tipl::contains_case_insensitive(tract_name,regions[i]))
                 {
-                    tipl::out() << "cannot add ROI: " << regions[i] << " " << handle->error_msg;
-                    return false;
+                    if(!handle->get_atlas_roi(handle->tractography_atlas_roi,i,atlas_roi))
+                    {
+                        tipl::out() << "cannot add ROI: " << regions[i] << " " << handle->error_msg;
+                        return false;
+                    }
+                    if(atlas_roi.empty())
+                    {
+                        tipl::out() << "no region in the ROI. skipping";
+                        continue;
+                    }
+                    tipl::out() << "additional ROI added: " << regions[i];
+                    setRegions(atlas_roi,roi_id,regions[i].c_str());
                 }
-                if(atlas_roi.empty())
+        }
+
+        if(use_roi && handle->tractography_atlas_roa.get())
+        {
+            const auto& regions = handle->tractography_atlas_roa->get_list();
+            for(size_t i = 0;i < regions.size();++i)
+                if(tipl::contains_case_insensitive(tract_name,regions[i]))
                 {
-                    tipl::out() << "no region in the ROI. skipping";
-                    continue;
+                    if(!handle->get_atlas_roi(handle->tractography_atlas_roa,i,atlas_roa))
+                    {
+                        tipl::out() << "cannot add ROA: " << regions[i] << " " << handle->error_msg;
+                        return false;
+                    }
+                    if(atlas_roa.empty())
+                    {
+                        tipl::out() << "no region in the ROA. skipping";
+                        continue;
+                    }
+                    tipl::out() << "additional ROA added: " << regions[i];
+                    setRegions(atlas_roa,roa_id,regions[i].c_str());
                 }
-                tipl::out() << "additional ROI added: " << regions[i];
-                setRegions(atlas_roi,roi_id,regions[i].c_str());
-            }
+        }
     }
 
-    if(use_roi && handle->tractography_atlas_roa.get())
-    {
-        const auto& regions = handle->tractography_atlas_roa->get_list();
-        for(size_t i = 0;i < regions.size();++i)
-            if(tipl::contains_case_insensitive(tract_name,regions[i]))
-            {
-                if(!handle->get_atlas_roi(handle->tractography_atlas_roa,i,atlas_roa))
-                {
-                    tipl::out() << "cannot add ROA: " << regions[i] << " " << handle->error_msg;
-                    return false;
-                }
-                if(atlas_roa.empty())
-                {
-                    tipl::out() << "no region in the ROA. skipping";
-                    continue;
-                }
-                tipl::out() << "additional ROA added: " << regions[i];
-                setRegions(atlas_roa,roa_id,regions[i].c_str());
-            }
-    }
+
 
     {
         tipl::progress p("configure tract targets");
