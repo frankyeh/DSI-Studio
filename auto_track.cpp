@@ -236,6 +236,11 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     if(!handle->load_from_file(fib_file_name.c_str()))
                        return handle->error_msg;
                     set_template(handle,po);
+                    if(po.has("tractography_atlas"))
+                    {
+                        tipl::out() << "switch tractography atlas to " <<
+                            (handle->tractography_atlas_file_name = po.get("tractography_atlas"));
+                    }
                 }
                 std::shared_ptr<TractModel> tract_model(new TractModel(handle));
                 if(!overwrite && std::filesystem::exists(trk_file_name))
