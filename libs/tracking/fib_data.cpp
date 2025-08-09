@@ -1434,30 +1434,15 @@ void fib_data::set_template_id(size_t new_id)
         wm_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".WM.nii.gz").toStdString();
 
         // handle tractography atlas
-        tractography_atlas_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".tt.gz").toStdString();
+        tipl::search_files(std::filesystem::path(fa_template_list[template_id]).parent_path().string(),"*.tt.gz",tractography_atlas_list);
+        if(tractography_atlas_list.size())
+            tractography_atlas_file_name = tractography_atlas_list.front();
+        else
+            tractography_atlas_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".tt.gz").toStdString();
         tractography_name_list.clear();
+        tractography_atlas_roi.reset();
+        tractography_atlas_roa.reset();
         track_atlas.reset();
-        std::ifstream in(tractography_atlas_file_name+".txt");
-        if(std::filesystem::exists(tractography_atlas_file_name) && in)
-        {
-            std::copy(std::istream_iterator<std::string>(in),std::istream_iterator<std::string>(),std::back_inserter(tractography_name_list));
-            auto tractography_atlas_roi_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".roi.nii.gz").toStdString();
-            if(std::filesystem::exists(tractography_atlas_roi_file_name))
-            {
-                tractography_atlas_roi = std::make_shared<atlas>();
-                tractography_atlas_roi->name = "tractography atlas ROI";
-                tractography_atlas_roi->filename = tractography_atlas_roi_file_name;
-                tractography_atlas_roi->template_to_mni = trans_to_mni;
-            }
-            auto tractography_atlas_roa_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".roa.nii.gz").toStdString();
-            if(std::filesystem::exists(tractography_atlas_roa_file_name))
-            {
-                tractography_atlas_roa = std::make_shared<atlas>();
-                tractography_atlas_roa->name = "tractography atlas ROA";
-                tractography_atlas_roa->filename = tractography_atlas_roa_file_name;
-                tractography_atlas_roa->template_to_mni = trans_to_mni;
-            }
-        }
 
         alternative_mapping_index = 0;
         alternative_mapping = { "" };
@@ -1640,10 +1625,35 @@ bool fib_data::load_track_atlas(bool symmetric)
         error_msg += " template";
         return false;
     }
+
+    auto tractography_atlas_roi_file_name = QString(tractography_atlas_file_name.c_str()).replace(".tt.gz",".roi.nii.gz").toStdString();
+    auto tractography_atlas_roa_file_name = QString(tractography_atlas_file_name.c_str()).replace(".tt.gz",".roa.nii.gz").toStdString();
+
+
+    if(!tractography_atlas_roi.get() && std::filesystem::exists(tractography_atlas_roi_file_name))
+    {
+        tractography_atlas_roi = std::make_shared<atlas>();
+        tractography_atlas_roi->name = "tractography atlas ROI";
+        tractography_atlas_roi->filename = tractography_atlas_roi_file_name;
+        tractography_atlas_roi->template_to_mni = trans_to_mni;
+    }
+    if(!tractography_atlas_roa.get() && std::filesystem::exists(tractography_atlas_roa_file_name))
+    {
+        tractography_atlas_roa = std::make_shared<atlas>();
+        tractography_atlas_roa->name = "tractography atlas ROA";
+        tractography_atlas_roa->filename = tractography_atlas_roa_file_name;
+        tractography_atlas_roa->template_to_mni = trans_to_mni;
+    }
+
     if(tractography_name_list.empty())
     {
-        error_msg = "no label text file for the tractography atlas";
-        return false;
+        std::ifstream in(tractography_atlas_file_name+".txt");
+        if(!in)
+        {
+            error_msg = "no label text file for the tractography atlas";
+            return false;
+        }
+        std::copy(std::istream_iterator<std::string>(in),std::istream_iterator<std::string>(),std::back_inserter(tractography_name_list));
     }
     if(!track_atlas.get())
     {
