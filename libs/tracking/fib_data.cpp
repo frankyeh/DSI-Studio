@@ -1568,6 +1568,8 @@ bool fib_data::load_template(void)
         atlas_list[i]->template_to_mni = template_to_mni;
     if(tractography_atlas_roi.get())
         tractography_atlas_roi->template_to_mni = template_to_mni;
+    if(tractography_atlas_roa.get())
+        tractography_atlas_roa->template_to_mni = template_to_mni;
 
     // load iso template if exists
     {
