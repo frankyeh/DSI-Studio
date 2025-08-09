@@ -268,6 +268,7 @@ public:
     size_t alternative_mapping_index = 0;
 public:
     std::string t1w_template_file_name,t2w_template_file_name,wm_template_file_name;
+    std::vector<std::string> tractography_atlas_list;
     std::string tractography_atlas_file_name;
     std::shared_ptr<atlas> tractography_atlas_roi,tractography_atlas_roa;
 public:
