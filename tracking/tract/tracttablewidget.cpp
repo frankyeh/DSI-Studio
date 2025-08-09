@@ -295,33 +295,28 @@ void TractTableWidget::fetch_tracts(void)
             if(thread_data[index]->is_ended())
             {
                 // used in debugging autotrack
+                auto regions = cur_tracking_window.regionWidget->regions;
+                if(thread_data[index]->roi_mgr->use_auto_track && regions.size() >= 1 &&
+                   cur_tracking_window.regionWidget->item(int(0),0)->text() == "debug")
                 {
-                    auto regions = cur_tracking_window.regionWidget->regions;
-                    if(regions.size() >= 3 && cur_tracking_window.regionWidget->item(int(0),0)->text() == "debug")
-                        {
-                            regions[0]->region = thread_data[index]->roi_mgr->atlas_seed;
-                            regions[0]->modified = true;
-                            regions[1]->region = thread_data[index]->roi_mgr->atlas_limiting;
-                            regions[1]->modified = true;
-                            regions[2]->region = thread_data[index]->roi_mgr->atlas_not_end;
-                            regions[2]->modified = true;
-                            cur_tracking_window.regionWidget->item(int(0),0)->setText("atk seed");
-                            cur_tracking_window.regionWidget->item(int(1),0)->setText("atk limiting");
-                            cur_tracking_window.regionWidget->item(int(2),0)->setText("atk not end");
-                            if(regions.size() >= 4 && !thread_data[index]->roi_mgr->atlas_roi.empty())
-                            {
-                                regions[3]->region = thread_data[index]->roi_mgr->atlas_roi;
-                                regions[3]->modified = true;
-                                cur_tracking_window.regionWidget->item(int(3),0)->setText("atk roi");
-                            }
-                            if(regions.size() >= 5 && !thread_data[index]->roi_mgr->atlas_roa.empty())
-                            {
-                                regions[4]->region = thread_data[index]->roi_mgr->atlas_roa;
-                                regions[4]->modified = true;
-                                cur_tracking_window.regionWidget->item(int(4),0)->setText("atk roa");
-                            }
-                        }
+                    int cur_index = 0;
+                    auto show_region = [&](const char* name,const auto& region)
+                    {
+                        if(cur_index >= regions.size() || region.empty())
+                            return;
+                        regions[cur_index]->region = region;
+                        regions[cur_index]->modified = true;
+                        cur_tracking_window.regionWidget->item(cur_index,0)->setText(name);
+                        ++cur_index;
+                    };
+
+                    show_region("atk seed",thread_data[index]->roi_mgr->atlas_seed);
+                    show_region("atk limiting",thread_data[index]->roi_mgr->atlas_limiting);
+                    show_region("atk not end",thread_data[index]->roi_mgr->atlas_not_end);
+                    show_region("atk roi",thread_data[index]->roi_mgr->atlas_roi);
+                    show_region("atk roa",thread_data[index]->roi_mgr->atlas_roa);
                 }
+
                 tract_rendering[index]->need_update = true;
                 auto lock = tract_rendering[index]->start_writing();
                 has_tracts |= thread_data[index]->fetchTracks(tract_models[index].get()); // clear both front and back buffer
