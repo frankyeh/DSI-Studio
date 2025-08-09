@@ -126,6 +126,50 @@ void dual_reg::match_resolution(bool use_vs,float lr,float hr)
 {
     if(!data_ready())
         return;
+
+    original_Its = Its;
+    original_Is = Is;
+    original_ItR = ItR;
+    original_IR = IR;
+    resolution_changed = false;
+
+
+    {
+        tipl::vector<3,int> range_min,range_max;
+        tipl::bounding_box(I[0],range_min,range_max);
+        bool need_cropping = false;
+        for(int i = 0;i < 3;++i)
+            if(range_max[i]-range_min[i] < Is[i]*0.7f)
+                need_cropping = true;
+        if(need_cropping)
+        {
+            for(int d = 0; d < 3;++d)
+            {
+                range_min[d] = std::max<int>(0,range_min[d]-float(Is[d])*0.05f);
+                range_max[d] = std::min<int>(Is[d],range_max[d]+float(Is[d])*0.05f);
+            }
+            tipl::progress prog("cropping subject image");
+            tipl::out() << "cropping from " << Is << " to " << (range_max-range_min) << " and shifting " << range_min;
+
+            for(auto& each : I)
+            {
+                if(each.empty())
+                    break;
+                image_type newI;
+                tipl::crop(each,newI,range_min,range_max);
+                each.swap(newI);
+            }
+            tipl::out() << "IR:" << IR;
+            Is = I[0].shape();
+            IR[3] -= range_min[0]*Ivs[0];
+            IR[7] -= range_min[1]*Ivs[1];
+            IR[11] -= range_min[2]*Ivs[2];
+            tipl::out() << "new IR:" << IR;
+            resolution_changed = true;
+        }
+    }
+
+
     float ratio = (use_vs ? Itvs[0]/Ivs[0] : float(Is.width())/float(Its.width()));
     auto downsample = [](auto& I,auto& Is,auto& vs,auto& trans)
     {
@@ -142,17 +186,21 @@ void dual_reg::match_resolution(bool use_vs,float lr,float hr)
             trans[each] *= 2.0f;
         Is = I[0].shape();
     };
+
+
     while(ratio <= lr)
     {
         downsample(It,Its,Itvs,ItR);
         ratio *= 2.0f;
-        tipl::out() << "downsampling template to " << Itvs[0] << " mm resolution" << std::endl;
+        resolution_changed = true;
+        tipl::out() << "downsampling template to " << Itvs[0] << " mm resolution";
     }
     while(ratio >= hr)
     {
         downsample(I,Is,Ivs,IR);
         ratio /= 2.0f;
-        tipl::out() << "downsample subject to " << Ivs[0] << " mm resolution" << std::endl;
+        resolution_changed = true;
+        tipl::out() << "downsample subject to " << Ivs[0] << " mm resolution";
     }
 }
 
@@ -305,6 +353,12 @@ void dual_reg::nonlinear_reg(bool& terminated)
     }
     compute_mapping_from_displacement();
     calculate_nonlinear_r();
+
+    if(resolution_changed)
+    {
+        to_It_space(original_Its,original_ItR);
+        to_I_space(original_Is,original_IR);
+    }
 
     if(export_intermediate)
     {
@@ -700,28 +754,43 @@ void dual_reg::to_I_space(const tipl::shape<3>& new_Is,const tipl::matrix<4,4>& 
 {
     if(new_Is == Is && new_IR == IR)
         return;
+    tipl::progress prog("transform subject space");
+    tipl::out() << "Is: " << Is << " new Is:" << new_Is;
+    tipl::out() << "IR: " << IR;
+    tipl::out() << "new IR:" << new_IR;
+    tipl::vector<3> new_Ivs(tipl::to_vs(new_IR));
     auto trans = tipl::transformation_matrix<float,dimension>(tipl::from_space(new_IR).to(IR));
+    tipl::out() << "trans: " << trans;
     for(auto& each : I)
         if(!each.empty())
             each = tipl::resample(each,new_Is,trans);
-    arg = T().accumulate(tipl::from_space(IR).to(new_IR)).
-            to_affine_transform(Its,Itvs,new_Is,Ivs);
+    tipl::out() << "arg: " << arg;
+    arg = T().accumulate(tipl::from_space(IR).to(new_IR)).to_affine_transform(Its,Itvs,new_Is,new_Ivs);
+    tipl::out() << "new arg: " << arg;
     Is = new_Is;
     IR = new_IR;
-    Ivs = tipl::to_vs(IR);
+    Ivs = new_Ivs;
     compute_mapping_from_displacement();
 }
 void dual_reg::to_It_space(const tipl::shape<3>& new_Its,const tipl::matrix<4,4>& new_ItR)
 {
     if(new_Its == Its && new_ItR == ItR)
         return;
+    tipl::progress prog("transform template space");
+    tipl::out() << "Its: " << Its << " new Its:" << new_Its;
+    tipl::out() << "ItR: " << ItR;
+    tipl::out() << "new ItR:" << new_ItR;
+
     tipl::vector<3> new_Itvs(tipl::to_vs(new_ItR));
     auto trans = tipl::transformation_matrix<float,dimension>(tipl::from_space(new_ItR).to(ItR));
+    tipl::out() << "trans: " << trans;
     for(auto& each : It)
         if(!each.empty())
             each = tipl::resample(each,new_Its,trans);
     dis_to_space(new_Its,new_ItR);
+    tipl::out() << "arg: " << arg;
     arg = trans.accumulate(T()).to_affine_transform(new_Its,new_Itvs,Is,Ivs);
+    tipl::out() << "new arg: " << arg;
     Its = new_Its;
     ItR = new_ItR;
     Itvs = new_Itvs;
