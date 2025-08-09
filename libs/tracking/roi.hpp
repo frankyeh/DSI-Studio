@@ -173,6 +173,7 @@ public:
     std::vector<tipl::matrix<4,4> > to_diffusion_space;
 public:
     bool use_auto_track = false;
+    bool atk_use_roi = true;
     float tolerance_dis_in_icbm152_mm = 0.0f;
     float tolerance_dis_in_subject_voxels = 0.0f;
     std::vector<size_t> track_ids;
