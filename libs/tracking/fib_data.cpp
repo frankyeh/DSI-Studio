@@ -2024,7 +2024,6 @@ bool fib_data::map_to_mni(bool background)
 
 
         prog = 2;
-        reg.match_resolution(false);
         if(has_manual_atlas)
         {
             reg.arg = manual_template_T;
@@ -2039,9 +2038,9 @@ bool fib_data::map_to_mni(bool background)
                 tipl::prog_aborted = true;
                 return;
             }
+            reg.match_resolution(false);
             reg.linear_reg(tipl::prog_aborted);
         }
-
         if(tipl::prog_aborted)
             return;
         prog = 3;
@@ -2055,7 +2054,6 @@ bool fib_data::map_to_mni(bool background)
         if(tipl::prog_aborted)
             return;
 
-        reg.to_It_space(template_I.shape(),template_to_mni);
         s2t.swap(reg.from2to);
         t2s.swap(reg.to2from);
         prog = 4;
