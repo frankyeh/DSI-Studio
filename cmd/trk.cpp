@@ -674,11 +674,6 @@ void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_threa
     if(po.has("parameter_id"))
         tracking_thread.param.set_code(po.get("parameter_id"));
 
-    if(po.has("tractography_atlas"))
-    {
-        tipl::out() << "switch tractography atlas to " <<
-            (handle->tractography_atlas_file_name = po.get("tractography_atlas"));
-    }
 }
 extern std::vector<std::string> fa_template_list;
 void set_template(std::shared_ptr<fib_data> handle,tipl::program_option<tipl::out>& po)
@@ -688,6 +683,11 @@ void set_template(std::shared_ptr<fib_data> handle,tipl::program_option<tipl::ou
         for(size_t id = 0;id < fa_template_list.size();++id)
             tipl::out() << "template " << id << ": " << std::filesystem::path(fa_template_list[id]).stem().stem().stem() << std::endl;
         handle->set_template_id(po.get("template",handle->template_id));
+    }
+    if(po.has("tractography_atlas"))
+    {
+        tipl::out() << "switch tractography atlas to " <<
+            (handle->tractography_atlas_file_name = po.get("tractography_atlas"));
     }
 }
 int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
