@@ -114,7 +114,7 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
     }
 
 
-    if(atk_use_roi && handle->tractography_atlas_roi.get())
+    if(use_roi && handle->tractography_atlas_roi.get())
     {
         const auto& regions = handle->tractography_atlas_roi->get_list();
         for(size_t i = 0;i < regions.size();++i)
@@ -135,7 +135,7 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
             }
     }
 
-    if(atk_use_roi && handle->tractography_atlas_roa.get())
+    if(use_roi && handle->tractography_atlas_roa.get())
     {
         const auto& regions = handle->tractography_atlas_roa->get_list();
         for(size_t i = 0;i < regions.size();++i)

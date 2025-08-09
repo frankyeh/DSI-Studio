@@ -271,6 +271,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     }
                     {
                         thread.roi_mgr->use_auto_track = true;
+                        thread.roi_mgr->use_roi = po.get("use_roi",1);
                         thread.roi_mgr->tract_name = tract_name;
                         thread.roi_mgr->tolerance_dis_in_icbm152_mm = tolerance[tracking_iteration];
                     }
