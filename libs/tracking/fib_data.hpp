@@ -273,6 +273,7 @@ public:
     std::shared_ptr<atlas> tractography_atlas_roi,tractography_atlas_roa;
 public:
     std::vector<std::string> tractography_name_list;
+    bool load_tractography_name_list(void);
     std::vector<std::string> get_tractography_all_levels(void);
     std::vector<std::string> get_tractography_level0(void);
     std::vector<std::string> get_tractography_level1(const std::string& group);
@@ -291,6 +292,7 @@ public:
     void recognize_report(std::shared_ptr<TractModel>& trk,std::string& report);
 public:
     void match_template(void);
+    void set_tractography_atlas(const std::string& atlas_file_name);
     void set_template_id(size_t new_id);
     bool load_template(void);
     bool load_track_atlas(bool symmetric);
