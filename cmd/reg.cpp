@@ -354,12 +354,6 @@ void dual_reg::nonlinear_reg(bool& terminated)
     compute_mapping_from_displacement();
     calculate_nonlinear_r();
 
-    if(resolution_changed)
-    {
-        to_It_space(original_Its,original_ItR);
-        to_I_space(original_Is,original_IR);
-    }
-
     if(export_intermediate)
     {
         for(size_t i = 0;i < J.size();++i)
