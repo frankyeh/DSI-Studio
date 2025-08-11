@@ -685,10 +685,7 @@ void set_template(std::shared_ptr<fib_data> handle,tipl::program_option<tipl::ou
         handle->set_template_id(po.get("template",0));
     }
     if(po.has("tractography_atlas"))
-    {
-        tipl::out() << "switch tractography atlas to " <<
-            (handle->tractography_atlas_file_name = po.get("tractography_atlas"));
-    }
+        handle->set_tractography_atlas(po.get("tractography_atlas"));
 }
 int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 {
