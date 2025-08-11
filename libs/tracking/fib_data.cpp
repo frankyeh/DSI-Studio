@@ -2077,7 +2077,11 @@ bool fib_data::map_to_mni(bool background)
         }
         if(tipl::prog_aborted)
             return;
-
+        if(reg.resolution_changed)
+        {
+            reg.to_It_space(reg.original_Its,reg.original_ItR);
+            reg.to_I_space(reg.original_Is,reg.original_IR);
+        }
         s2t.swap(reg.from2to);
         t2s.swap(reg.to2from);
         prog = 4;
