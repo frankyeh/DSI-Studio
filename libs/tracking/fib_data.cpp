@@ -1416,9 +1416,33 @@ bool fib_data::add_atlas(const std::string& file_name)
     atlas_list.back()->template_to_mni = template_I.empty() ? trans_to_mni : template_to_mni;
     return true;
 }
+bool fib_data::load_tractography_name_list(void)
+{
+    if(!tractography_name_list.empty())
+        return true;
+    std::ifstream in(tractography_atlas_file_name+".txt");
+    if(!in)
+    {
+        error_msg = "cannot find tractography atlas label text file at " + tractography_atlas_file_name+".txt";
+        return false;
+    }
+    tipl::out() << "loading tractography atlas label from " << tractography_atlas_file_name << ".txt";
+    std::copy(std::istream_iterator<std::string>(in),std::istream_iterator<std::string>(),std::back_inserter(tractography_name_list));
+    return true;
+}
+
+void fib_data::set_tractography_atlas(const std::string& atlas_file_name)
+{
+    tractography_atlas_file_name = atlas_file_name;
+    tractography_name_list.clear();
+    tractography_atlas_roi.reset();
+    tractography_atlas_roa.reset();
+    track_atlas.reset();
+}
+
 void fib_data::set_template_id(size_t new_id)
 {
-    if(new_id != template_id)
+    if(new_id != template_id || tractography_atlas_file_name.empty())
     {
         template_id = new_id;
         template_I.clear();
@@ -1435,14 +1459,8 @@ void fib_data::set_template_id(size_t new_id)
 
         // handle tractography atlas
         tipl::search_files(std::filesystem::path(fa_template_list[template_id]).parent_path().string(),"*.tt.gz",tractography_atlas_list);
-        if(tractography_atlas_list.size())
-            tractography_atlas_file_name = tractography_atlas_list.front();
-        else
-            tractography_atlas_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".tt.gz").toStdString();
-        tractography_name_list.clear();
-        tractography_atlas_roi.reset();
-        tractography_atlas_roa.reset();
-        track_atlas.reset();
+        set_tractography_atlas(tractography_atlas_list.size() ? tractography_atlas_list.front() :
+            QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".tt.gz").toStdString());
 
         alternative_mapping_index = 0;
         alternative_mapping = { "" };
@@ -1452,6 +1470,7 @@ void fib_data::set_template_id(size_t new_id)
 }
 std::vector<std::string> fib_data::get_tractography_all_levels(void)
 {
+    load_tractography_name_list();
     std::vector<std::string> list;
     std::string last_insert;
     for(size_t index = 0;index < tractography_name_list.size();++index)
@@ -1626,6 +1645,8 @@ bool fib_data::load_track_atlas(bool symmetric)
             error_msg = "cannot find atlas file at " + tractography_atlas_file_name;
         return false;
     }
+    if(!load_tractography_name_list())
+        return false;
 
     auto tractography_atlas_roi_file_name = QString(tractography_atlas_file_name.c_str()).replace(".tt.gz",".roi.nii.gz").toStdString();
     auto tractography_atlas_roa_file_name = QString(tractography_atlas_file_name.c_str()).replace(".tt.gz",".roa.nii.gz").toStdString();
@@ -1646,17 +1667,6 @@ bool fib_data::load_track_atlas(bool symmetric)
         tractography_atlas_roa->template_to_mni = trans_to_mni;
     }
 
-    if(tractography_name_list.empty())
-    {
-        tipl::out() << "loading atlas from " << tractography_atlas_file_name;
-        std::ifstream in(tractography_atlas_file_name+".txt");
-        if(!in)
-        {
-            error_msg = "no label text file for the tractography atlas";
-            return false;
-        }
-        std::copy(std::istream_iterator<std::string>(in),std::istream_iterator<std::string>(),std::back_inserter(tractography_name_list));
-    }
     if(!track_atlas.get())
     {
         tipl::progress prog(symmetric ?  "loading symmetric tractography atlas" : "loading asymmetric tractography atlas");
