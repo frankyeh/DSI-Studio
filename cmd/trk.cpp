@@ -678,7 +678,7 @@ void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_threa
 extern std::vector<std::string> fa_template_list;
 void set_template(std::shared_ptr<fib_data> handle,tipl::program_option<tipl::out>& po)
 {
-    if(po.has("template"))
+    if(po.has("template") || handle->tractography_atlas_file_name.empty())
     {
         for(size_t id = 0;id < fa_template_list.size();++id)
             tipl::out() << "template " << id << ": " << std::filesystem::path(fa_template_list[id]).stem().stem().stem() << std::endl;
