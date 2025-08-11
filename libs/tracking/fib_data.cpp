@@ -1620,9 +1620,10 @@ bool fib_data::load_track_atlas(bool symmetric)
 {
     if(!std::filesystem::exists(tractography_atlas_file_name))
     {
-        error_msg = "no tractography atlas in ";
-        error_msg += QFileInfo(fa_template_list[template_id].c_str()).baseName().toStdString();
-        error_msg += " template";
+        if(tractography_atlas_file_name.empty())
+            error_msg = "no tractography atlas in " + QFileInfo(fa_template_list[template_id].c_str()).baseName().toStdString() + " template";
+        else
+            error_msg = "cannot find atlas file at " + tractography_atlas_file_name;
         return false;
     }
 
@@ -1647,6 +1648,7 @@ bool fib_data::load_track_atlas(bool symmetric)
 
     if(tractography_name_list.empty())
     {
+        tipl::out() << "loading atlas from " << tractography_atlas_file_name;
         std::ifstream in(tractography_atlas_file_name+".txt");
         if(!in)
         {
