@@ -585,7 +585,7 @@ bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         ROIRegion roi(handle);
         for(const auto& each : tipl::split(po.get(roi_names[index]),','))
         {
-            if(each.find('.') == std::string::npos)
+            if(std::all_of(each.begin(),each.end(),[](char c){return c >= 'a' && c <= 'z';}))
             {
                 tipl::out() << "apply region operation: " << each;
                 roi.perform(each);
