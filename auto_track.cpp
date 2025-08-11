@@ -133,9 +133,9 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
 
     std::vector<std::string> tract_name_list;
     {
-        fib_data fib;
-        fib.set_template_id(po.get("template",size_t(0)));
-        auto list = fib.get_tractography_all_levels();
+        std::shared_ptr<fib_data> fib(new fib_data);
+        set_template(fib,po);
+        auto list = fib->get_tractography_all_levels();
         auto selections = tipl::split(po.get("track_id","Arcuate,Cingulum,Aslant,InferiorFronto,InferiorLongitudinal,SuperiorLongitudinal,Uncinate,Fornix,Corticos,ThalamicR,Optic,Lemniscus,Reticular,Corpus"),',');
         std::vector<bool> selected(list.size());
         std::vector<size_t> backup_subcomponents;
@@ -236,7 +236,6 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     if(!handle->load_from_file(fib_file_name.c_str()))
                        return handle->error_msg;
                     set_template(handle,po);
-
                 }
                 std::shared_ptr<TractModel> tract_model(new TractModel(handle));
                 if(!overwrite && std::filesystem::exists(trk_file_name))
