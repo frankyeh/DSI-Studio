@@ -2039,6 +2039,7 @@ bool fib_data::map_to_mni(bool background)
         reg.Itvs = template_vs;
         reg.ItR = template_to_mni;
 
+
         // not FIB file, use t1w/t1w or others as template
         if(dir.index_name[0] == "image")
         {
@@ -2049,6 +2050,8 @@ bool fib_data::map_to_mni(bool background)
                 return;
             }
         }
+        else
+            reg.match_resolution(false);
 
 
         prog = 2;
@@ -2066,7 +2069,6 @@ bool fib_data::map_to_mni(bool background)
                 tipl::prog_aborted = true;
                 return;
             }
-            reg.match_resolution(false);
             reg.linear_reg(tipl::prog_aborted);
         }
         if(tipl::prog_aborted)
@@ -2081,11 +2083,10 @@ bool fib_data::map_to_mni(bool background)
         }
         if(tipl::prog_aborted)
             return;
-        if(reg.resolution_changed)
-        {
-            reg.to_It_space(reg.original_Its,reg.original_ItR);
-            reg.to_I_space(reg.original_Is,reg.original_IR);
-        }
+
+        reg.to_It_space(template_I.shape(),template_to_mni);
+        reg.to_I_space(dim,trans_to_mni);
+
         s2t.swap(reg.from2to);
         t2s.swap(reg.to2from);
         prog = 4;
