@@ -124,15 +124,8 @@ bool dual_reg::load_template(size_t id, const std::string& file_name)
 
 void dual_reg::match_resolution(bool use_vs,float lr,float hr)
 {
-    if(!data_ready() || resolution_changed)
+    if(!data_ready())
         return;
-
-    original_Its = Its;
-    original_Is = Is;
-    original_ItR = ItR;
-    original_IR = IR;
-    resolution_changed = false;
-
 
     {
         tipl::vector<3,int> range_min,range_max;
@@ -165,7 +158,6 @@ void dual_reg::match_resolution(bool use_vs,float lr,float hr)
             IR[7] -= range_min[1]*Ivs[1];
             IR[11] -= range_min[2]*Ivs[2];
             tipl::out() << "new IR:" << IR;
-            resolution_changed = true;
         }
     }
 
@@ -192,14 +184,12 @@ void dual_reg::match_resolution(bool use_vs,float lr,float hr)
     {
         downsample(It,Its,Itvs,ItR);
         ratio *= 2.0f;
-        resolution_changed = true;
         tipl::out() << "downsampling template to " << Itvs[0] << " mm resolution";
     }
     while(ratio >= hr)
     {
         downsample(I,Is,Ivs,IR);
         ratio /= 2.0f;
-        resolution_changed = true;
         tipl::out() << "downsample subject to " << Ivs[0] << " mm resolution";
     }
 }
