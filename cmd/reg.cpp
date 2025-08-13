@@ -124,7 +124,7 @@ bool dual_reg::load_template(size_t id, const std::string& file_name)
 
 void dual_reg::match_resolution(bool use_vs,float lr,float hr)
 {
-    if(!data_ready())
+    if(!data_ready() || resolution_changed)
         return;
 
     original_Its = Its;
