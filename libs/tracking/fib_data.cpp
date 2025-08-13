@@ -79,12 +79,16 @@ tipl::const_pointer_image<3,float> slice_model::get_image(void)
         }
         if(name == "qir")
         {
-            tipl::out() << "compute qir from qa and iso";
-            image_data = tipl::make_image(handle->mat_reader.read_as_type<float>("iso"),handle->dim);
             image_buffer.resize(handle->dim);
             std::copy_n(handle->dir.fa[0],image_buffer.size(),image_buffer.data());
-            normalize_data_by_iso(image_data.data(),image_buffer.data(),image_buffer.size());
             image_data = image_buffer.alias();
+
+            auto iso_index = handle->get_name_index("iso");
+            if(iso_index < handle->slices.size())
+            {
+                tipl::out() << "compute qir from qa and iso";
+                normalize_data_by_iso(handle->slices[iso_index]->get_image().data(),image_buffer.data(),image_buffer.size());
+            }
         }
         else
             image_data = tipl::make_image(handle->mat_reader.read_as_type<float>(name),handle->dim);
