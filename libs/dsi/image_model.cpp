@@ -1983,6 +1983,8 @@ bool src_data::distortion_correction(const std::string& filename)
 
 #include <QCoreApplication>
 #include <QRegularExpression>
+#include <QDir>
+#include <QtGlobal>
 extern bool has_cuda;
 bool src_data::run_plugin(std::string exec_name,
                             std::string keyword,
@@ -2000,15 +2002,29 @@ bool src_data::run_plugin(std::string exec_name,
         }
         #else
         std::string fsl_path = "/usr/local/fsl/bin";
-        auto index = QProcess::systemEnvironment().indexOf(QRegularExpression("^FSLDIR=.+"));
-        if(index != -1)
-            fsl_path = QProcess::systemEnvironment()[index].split("=")[1].toStdString() + "/bin/";
-        if(std::filesystem::exists(fsl_path))
-            tipl::out() << "FSL installation found at " << fsl_path << std::endl;
-        else
+        if (!std::filesystem::exists(fsl_path))
         {
-            tipl::out() << "FSL installation not found: cannot find environmental variable FSLDIR, try calling directly";
-            fsl_path.clear();
+            const QString fsl = qEnvironmentVariable("FSLDIR");
+            if (fsl.isEmpty())
+            {
+                tipl::warning() << "Cannot locate FSL: FSLDIR is not set. "
+                                << "FSLDIR is a system environment variable that should point to your FSL install folder (e.g., /usr/local/fsl). "
+                                << "Proceeding to call FSL tools via your PATH.";
+                fsl_path.clear();
+            }
+            else
+            {
+                auto p = (std::filesystem::path(fsl.toStdString()) / "bin").string();
+                if (std::filesystem::exists(p))
+                    fsl_path = p + std::string(1, std::filesystem::path::preferred_separator);
+                else
+                {
+                    tipl::warning() << "Cannot find directory: " << p
+                                    << " (expected <FSLDIR>/bin). Was FSL moved or uninstalled? "
+                                    << "Please update FSLDIR or reinstall FSL. Proceeding to call tools via PATH.";
+                    fsl_path.clear();
+                }
+            }
         }
         exec = fsl_path + exec_name;
         if(exec_name == "eddy")
