@@ -2827,13 +2827,9 @@ float TractModel::get_tract_length_in_mm(unsigned int index) const
     }
     return float(length);
 }
-void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::string& result)
+void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vector<std::string>& titles,std::vector<float>& data)
 {
-    std::ostringstream out;
-    std::vector<std::string> titles;
-    std::vector<float> data;
     float na = std::numeric_limits<float>::quiet_NaN();
-
     {
         const float resolution_ratio = 2.0f;
         tipl::matrix<4,4> resolution_trans((tipl::identity_matrix()));
@@ -2994,34 +2990,37 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::str
         titles.push_back(handle->slices[data_index]->name);
     }
 
-
-    for(unsigned int index = 0;index < data.size() && index < titles.size();++index)
-    {
-        out << titles[index] << "\t";
-        if(!std::isnan(data[index]))
-            out << data[index];
-        out << std::endl;
-    }
     if(handle->db.has_db()) // connectometry database
     {
         tipl::progress p("for each subject");
         std::vector<const float*> old_index_data(handle->dir.index_data[0]);
+        for(unsigned int i = 0;p(i,handle->db.subject_names.size());++i)
         {
-            for(unsigned int i = 0;p(i,handle->db.subject_names.size());++i)
+            titles.push_back(handle->db.subject_names[i] + " mean_");
+            if(!tract_data.empty())
             {
-                out << handle->db.subject_names[i] << " mean_" <<
-                       handle->db.index_name << "\t";
-                if(!tract_data.empty())
-                {
-                    auto I = handle->db.get_index_image(i);
-                    for(auto& each : handle->dir.index_data[0])
-                        each = I.data();
-                    out << get_tracts_mean(handle,0);
-                }
-                out << std::endl;
+                auto I = handle->db.get_index_image(i);
+                for(auto& each : handle->dir.index_data[0])
+                    each = I.data();
+                data.push_back(get_tracts_mean(handle,0));
             }
+            else
+                data.push_back(na);
         }
         handle->dir.index_data[0] = old_index_data;
+    }
+}
+void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::string& result)
+{
+    std::vector<std::string> titles;
+    std::vector<float> data;
+    get_quantitative_info(handle,titles,data);
+
+    std::ostringstream out;
+    for (size_t i = 0; i < std::min(data.size(), titles.size()); ++i)
+    {
+        out << titles[i] << "\t";
+        out << (!std::isnan(data[i]) ? std::to_string(data[i]) : "") << "\n";
     }
     result = out.str();
 }
@@ -3603,6 +3602,7 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
                     ij_pair.push_back(std::make_pair(i,j));
 
         bool return_value = true;
+        std::vector<std::string> results(ij_pair.size());
         tipl::adaptive_par_for(ij_pair.size(),[&](size_t index)
         {
             auto i = ij_pair[index].first;
@@ -3627,6 +3627,7 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
                 }
                 matrix_value[i+j*region_count] = matrix_value[j+i*region_count] = tm.get_visible_track_count();
             }
+            tm.get_quantitative_info(handle,results[index]);
         });
         return return_value;
     }
