@@ -464,7 +464,7 @@ void ROIRegion::get_quantitative_data(std::shared_ptr<fib_data> handle,std::vect
     for(const auto& each : handle->slices)
     {
         if(each->optional())
-            break;
+            continue;
         index_titles.push_back(each->name);
         max_values.push_back(0.0f);
         min_values.push_back(0.0f);
