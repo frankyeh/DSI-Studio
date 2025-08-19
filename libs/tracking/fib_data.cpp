@@ -1243,11 +1243,11 @@ size_t fib_data::get_name_index(const std::string& index_name) const
             return index_num;
     return slices.size();
 }
-std::vector<std::string> fib_data::get_index_list(bool exclude_optional) const
+std::vector<std::string> fib_data::get_index_list() const
 {
     std::vector<std::string> index_list;
     for (const auto& each : slices)
-        if(!exclude_optional || !each->optional())
+        if(!each->optional())
             index_list.push_back(each->name);
     return index_list;
 }

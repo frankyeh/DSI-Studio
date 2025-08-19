@@ -373,7 +373,7 @@ public:
     bool has_odfs(void) const{return mat_reader.has("odf0");}
 public:
     size_t get_name_index(const std::string& index_name) const;
-    std::vector<std::string> get_index_list(bool exclude_optional = true) const;
+    std::vector<std::string> get_index_list() const;
 public:
     bool set_dt_index(const std::pair<std::string,std::string>& pair,size_t type);
 public:
