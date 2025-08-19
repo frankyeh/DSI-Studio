@@ -247,6 +247,11 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
         if(!get_parcellation(po,p,each))
             return false;
 
+        {
+            tipl::progress prog("load all image volume");
+            for(auto& each : handle->slices)
+                each->get_image();
+        }
 
         tipl::out() << "generating tract-to-region connectome";
         if(!po.has("track_id") && !po.has("tract") && !po.has("roi") && po.get("action") != "atk")
