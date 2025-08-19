@@ -177,7 +177,7 @@ public:
     }
     tipl::const_pointer_image<3> get_image(void);
     bool image_ready(void){return image_data.data();}
-    bool optional(void){return !image_data.data() && !path.empty();}
+    bool optional(void);
     void get_image_in_dwi(tipl::image<3>& I);
     void set_image(tipl::const_pointer_image<3> new_image)
     {
@@ -373,7 +373,7 @@ public:
     bool has_odfs(void) const{return mat_reader.has("odf0");}
 public:
     size_t get_name_index(const std::string& index_name) const;
-    std::vector<std::string> get_index_list(void) const;
+    std::vector<std::string> get_index_list(bool exclude_optional = true) const;
 public:
     bool set_dt_index(const std::pair<std::string,std::string>& pair,size_t type);
 public:
