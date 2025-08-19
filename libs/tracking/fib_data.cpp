@@ -67,6 +67,18 @@ void slice_model::get_slice(
     v2c.convert(tipl::volume2slice(get_image(),d_index,pos),show_image);
 }
 void normalize_data_by_iso(const float* iso_ptr,float* out_data_ptr,size_t n);
+
+bool slice_model::optional(void)
+{
+    if(image_data.data()) // if already have data
+        return false;
+    if(!path.empty()) // if the image is from internet
+        return true;
+    if(name == "vol" && handle && !handle->mat_reader.has("voi")) // if require normalization to get vol
+        return true;
+    return false;
+}
+
 tipl::const_pointer_image<3,float> slice_model::get_image(void)
 {
     if(!image_data.data() && handle)
@@ -1231,11 +1243,11 @@ size_t fib_data::get_name_index(const std::string& index_name) const
             return index_num;
     return slices.size();
 }
-std::vector<std::string> fib_data::get_index_list(void) const
+std::vector<std::string> fib_data::get_index_list(bool exclude_optional) const
 {
     std::vector<std::string> index_list;
     for (const auto& each : slices)
-        if(!each->optional())
+        if(!exclude_optional || !each->optional())
             index_list.push_back(each->name);
     return index_list;
 }
