@@ -970,6 +970,7 @@ void tracking_window::updateSlicesMenu(void)
     // update dt metric menu
     dt_list.clear();
     dt_list << "zero";
+    dt_list << "one";
     for (const auto& each : handle->get_index_list())
         dt_list << each.c_str();
     renderWidget->setList("dt_index1",dt_list);
