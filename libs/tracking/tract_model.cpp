@@ -3586,7 +3586,7 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
     matrix_value.clear();
     matrix_value.resize(tipl::shape<2>(uint32_t(region_count),uint32_t(region_count)));
 
-    if(tipl::begins_with(matrix_value_type,"trk"))
+    if(matrix_value_type == "trk")
     {
         std::vector<std::vector<std::vector<unsigned int> > > region_passing_list;
         init_matrix(region_passing_list,uint32_t(region_count));
@@ -3595,10 +3595,6 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
                               [&](unsigned int index,unsigned int i,unsigned int j){
             region_passing_list[i][j].push_back(index);
         });
-
-        const float resolution_ratio = 2.0f;
-        tipl::matrix<4,4> resolution_trans((tipl::identity_matrix()));
-        resolution_trans[0] = resolution_trans[5] = resolution_trans[10] = 2.0f;
 
         std::vector<std::pair<size_t,size_t> > ij_pair;
         for(unsigned int i = 0;i < region_passing_list.size();++i)
@@ -3630,14 +3626,6 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
                     return;
                 }
                 matrix_value[i+j*region_count] = matrix_value[j+i*region_count] = tm.get_visible_track_count();
-            }
-            if(tipl::ends_with(matrix_value_type,"area"))
-            {
-                std::vector<tipl::vector<3,short> > endpoint1,endpoint2;
-                tm.to_end_point_voxels(endpoint1,endpoint2,resolution_trans);
-                // end point surface 1 and 2
-                matrix_value[i+j*region_count] = matrix_value[j+i*region_count] =
-                    float(endpoint1.size()+endpoint2.size())*tract_model.vs[0]*tract_model.vs[1]/resolution_ratio/resolution_ratio;
             }
         });
         return return_value;
