@@ -38,7 +38,7 @@ void slice_model::get_minmax(void)
         return;
     }
     float slope;
-    if(handle && handle->mat_reader.index_of(name) < handle->mat_reader.size() &&
+    if(handle && handle->mat_reader.has(name) &&
        handle->mat_reader[handle->mat_reader.index_of(name)].get_sub_data(name+".inter",min_value) &&
        handle->mat_reader[handle->mat_reader.index_of(name)].get_sub_data(name+".slope",slope))
     {
@@ -53,7 +53,7 @@ void slice_model::get_minmax(void)
         min_value = 0.0f;
         max_value = 1.0f;
     }
-    contrast_min = 0;
+    contrast_min = (min_value >= 0.0f ? 0: min_value);
     contrast_max = max_value;
     if(image_data.size() < 256*256*256 && contrast_min != contrast_max)
         contrast_max = min_value+(tipl::segmentation::otsu_median(image_data)-min_value)*2.0f;
@@ -71,30 +71,52 @@ tipl::const_pointer_image<3,float> slice_model::get_image(void)
 {
     if(!image_data.data() && handle)
     {
-        bool restore_show_prog = false;
-        if(tipl::is_main_thread() && tipl::show_prog)
+        max_value = 0.0f;
+        if(handle->mat_reader.has(name))
         {
-            tipl::show_prog = false;
-            restore_show_prog = true;
-        }
-        if(name == "qir")
-        {
-            image_buffer.resize(handle->dim);
-            std::copy_n(handle->dir.fa[0],image_buffer.size(),image_buffer.data());
-            image_data = image_buffer.alias();
-
-            auto iso_index = handle->get_name_index("iso");
-            if(iso_index < handle->slices.size())
+            bool restore_show_prog = false;
+            if(tipl::is_main_thread() && tipl::show_prog)
             {
-                tipl::out() << "compute qir from qa and iso";
-                normalize_data_by_iso(handle->slices[iso_index]->get_image().data(),image_buffer.data(),image_buffer.size());
+                tipl::show_prog = false;
+                restore_show_prog = true;
             }
+            image_data = tipl::make_image(handle->mat_reader.read_as_type<float>(name),handle->dim);
+            if(restore_show_prog)
+                tipl::show_prog = true;
         }
         else
-            image_data = tipl::make_image(handle->mat_reader.read_as_type<float>(name),handle->dim);
-        if(restore_show_prog)
-            tipl::show_prog = true;
-        max_value = 0.0f;
+        {
+            image_buffer.resize(handle->dim);
+            image_data = image_buffer.alias();
+
+            if(name == "qir")
+            {
+                std::copy_n(handle->dir.fa[0],image_buffer.size(),image_buffer.data());
+                auto iso_index = handle->get_name_index("iso");
+                if(iso_index < handle->slices.size())
+                {
+                    tipl::out() << "compute qir from qa and iso";
+                    normalize_data_by_iso(handle->slices[iso_index]->get_image().data(),image_buffer.data(),image_buffer.size());
+                }
+            }
+
+            if(name == "vol")
+            {
+                float volume_ratio = std::fabs(handle->trans_to_mni.det());
+                if(handle->map_to_mni() && !handle->t2s.empty())
+                {
+                    auto J = tipl::jacobian_determinant(handle->t2s);
+                    tipl::compose_mapping(J,handle->s2t,image_buffer);
+                    for(size_t i = 0;i < image_buffer.size();++i)
+                        if(handle->dir.fa[0][i] != 0.0f)
+                            image_buffer[i] /= volume_ratio;
+                        else
+                            image_buffer[i] = 1.0f;
+                }
+            }
+        }
+
+
         tipl::out() << name << " loaded" << std::endl;
     }
     return image_data;
@@ -827,7 +849,8 @@ bool fib_data::load_from_mat(void)
 
     if(!db.has_db() && mat_reader.has("iso"))
         slices.push_back(std::make_shared<slice_model>("qir",this));
-
+    if(!is_mni)
+        slices.push_back(std::make_shared<slice_model>("vol",this));
     if(is_mni)
     {
         // matching templates
@@ -883,6 +906,7 @@ bool fib_data::load_from_mat(void)
         set_template_id(matched_template_id);
         return true;
     }
+
 
     match_template();
     return true;
@@ -1226,6 +1250,8 @@ bool fib_data::set_dt_index(const std::pair<std::string,std::string>& name_pair,
         m_name = metric;
         if(metric == "zero")
             return true;
+        if(metric == "one")
+            return true;
         index = get_name_index(metric);
         if(index == slices.size())
         {
@@ -1251,9 +1277,36 @@ bool fib_data::set_dt_index(const std::pair<std::string,std::string>& name_pair,
 
     tipl::image<3> m1(dim),m2(dim);
     if(pair.first < slices.size())
+    {
+        tipl::out() << " set m1:" << slices[pair.first]->name;
         slices[pair.first]->get_image_in_dwi(m1);
+    }
+    else
+    {
+        if(name_pair.first == "one")
+        {
+            m1 = 1.0f;
+            tipl::out() << " set m1: 1";
+        }
+        else
+            tipl::out() << " set m1: 0";
+    }
+
     if(pair.second < slices.size())
+    {
+        tipl::out() << " set m2:" << slices[pair.second]->name;
         slices[pair.second]->get_image_in_dwi(m2);
+    }
+    else
+    {
+        if(name_pair.second == "one")
+        {
+            m2 = 1.0f;
+            tipl::out() << " set m2: 1";
+        }
+        else
+            tipl::out() << " set m2: 0";
+    }
 
     auto& dif = dir.dt_fa_data;
     dif.resize(dim);
@@ -1276,7 +1329,7 @@ bool fib_data::set_dt_index(const std::pair<std::string,std::string>& name_pair,
         case 2: // m1-m2
             dir.dt_metrics = m1_name + "-" + m2_name;
             for(size_t k = 0;k < m1.size();++k)
-                if(dir.fa[0][k] > 0.0f && m1[k] > 0.0f && m2[k] > 0.0f)
+                if(dir.fa[0][k] > 0.0f)
                     dif[k] = m1[k]-m2[k];
         break;
         case 3: // (m2-m1)÷m1
@@ -1295,7 +1348,7 @@ bool fib_data::set_dt_index(const std::pair<std::string,std::string>& name_pair,
         case 5: // m2-m1
             dir.dt_metrics = m2_name + "-" + m1_name;
             for(size_t k = 0;k < m1.size();++k)
-                if(dir.fa[0][k] > 0.0f && m1[k] > 0.0f && m2[k] > 0.0f)
+                if(dir.fa[0][k] > 0.0f)
                     dif[k] = m2[k]-m1[k];
         break;
         case 6: // m1/max(m1)
@@ -2089,6 +2142,7 @@ bool fib_data::map_to_mni(bool background)
 
         s2t.swap(reg.from2to);
         t2s.swap(reg.to2from);
+
         prog = 4;
         if(!reg.save_warping(output_file_name.c_str()))
             tipl::error() << reg.error_msg;
