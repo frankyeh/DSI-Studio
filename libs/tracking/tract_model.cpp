@@ -3526,14 +3526,6 @@ void ConnectivityMatrix::set_parcellation(const Parcellation& p)
 }
 
 
-template<class m_type>
-void init_matrix(m_type& m,unsigned int size)
-{
-    m.resize(size);
-    for(unsigned int i = 0;i < size;++i)
-        m[i].resize(size);
-}
-
 template<class T,class fun_type>
 void for_each_connectivity(const T& end_list1,
                            const T& end_list2,
@@ -3585,10 +3577,18 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
     matrix_value.clear();
     matrix_value.resize(tipl::shape<2>(uint32_t(region_count),uint32_t(region_count)));
 
-    if(matrix_value_type == "trk")
+
+    auto init_matrix = [=](auto& m)
+    {
+        m.resize(region_count);
+        for(size_t i = 0;i < region_count;++i)
+            m[i].resize(region_count);
+    };
+
+    if(matrix_value_type.empty())
     {
         std::vector<std::vector<std::vector<unsigned int> > > region_passing_list;
-        init_matrix(region_passing_list,uint32_t(region_count));
+        init_matrix(region_passing_list);
 
         for_each_connectivity(end_list1,end_list2,
                               [&](unsigned int index,unsigned int i,unsigned int j){
@@ -3601,39 +3601,39 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
                 if(!region_passing_list[i][j].empty())
                     ij_pair.push_back(std::make_pair(i,j));
 
-        bool return_value = true;
-        std::vector<std::string> results(ij_pair.size());
+
+        std::mutex metrics_mutex;
+        metrics.clear();
+        metrics_data.clear();
+        metrics_data.resize(ij_pair.size());
         tipl::adaptive_par_for(ij_pair.size(),[&](size_t index)
         {
             auto i = ij_pair[index].first;
             auto j = ij_pair[index].second;
+            if(region_passing_list[i][j].empty())
+                return;
             TractModel tm(tract_model.geo,tract_model.vs);
             tm.report = tract_model.report;
             tm.trans_to_mni = tract_model.trans_to_mni;
             tm.is_mni = tract_model.is_mni;
 
             std::vector<std::vector<float> > new_tracts;
-            for (unsigned int k = 0;k < region_passing_list[i][j].size();++k)
-                new_tracts.push_back(tract_model.get_tract(region_passing_list[i][j][k]));
+            for (auto each : region_passing_list[i][j])
+                new_tracts.push_back(tract_model.get_tract(each));
             tm.add_tracts(new_tracts);
-            if(matrix_value_type == "trk")
-            {
-                auto file_name = region_name[i]+"_"+region_name[j]+".tt.gz";
-                if(!tm.save_tracts_to_file(file_name.c_str()))
-                {
-                    tipl::error() << "cannot write to file: " << file_name;
-                    return_value = false;
-                    return;
-                }
-                matrix_value[i+j*region_count] = matrix_value[j+i*region_count] = tm.get_visible_track_count();
-            }
-            tm.get_quantitative_info(handle,results[index]);
+
+
+            std::vector<std::string> cur_metrics;
+            tm.get_quantitative_info(handle,cur_metrics,metrics_data[index]);
+            std::lock_guard<std::mutex> lock(metrics_mutex);
+            if(metrics.empty())
+                cur_metrics.swap(metrics);
         });
-        return return_value;
+        return !metrics.empty();
     }
 
     std::vector<std::vector<unsigned int> > count;
-    init_matrix(count,uint32_t(region_count));
+    init_matrix(count);
     for_each_connectivity(end_list1,end_list2,
                           [&](unsigned int,unsigned int i,unsigned int j){
         ++count[i][j];
@@ -3657,7 +3657,7 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
     if(matrix_value_type == "ncount" || matrix_value_type == "ncount2")
     {
         std::vector<std::vector<std::vector<unsigned int> > > length_matrix;
-        init_matrix(length_matrix,uint32_t(region_count));
+        init_matrix(length_matrix);
 
         for_each_connectivity(end_list1,end_list2,
                               [&](unsigned int index,unsigned int i,unsigned int j){
@@ -3689,8 +3689,8 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
     {
         std::vector<std::vector<float> > sum_length;
         std::vector<std::vector<unsigned int> > sum_n;
-        init_matrix(sum_length,uint32_t(region_count));
-        init_matrix(sum_n,uint32_t(region_count));
+        init_matrix(sum_length);
+        init_matrix(sum_n);
 
         for_each_connectivity(end_list1,end_list2,
                               [&](unsigned int index,unsigned int i,unsigned int j){
@@ -3719,7 +3719,7 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
         return false;
     }
     std::vector<std::vector<float> > sum;
-    init_matrix(sum,uint32_t(region_count));
+    init_matrix(sum);
 
     std::vector<float> m(data.size());
     for(unsigned int index = 0;index < data.size();++index)
