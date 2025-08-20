@@ -268,7 +268,9 @@ public:
 
 class ConnectivityMatrix{
 public:
-
+    std::vector<std::string> metrics;
+    std::vector<std::vector<float> > metrics_data;
+public:
     tipl::image<2> matrix_value;
 public:
     tipl::image<3,std::vector<short> > region_map;
