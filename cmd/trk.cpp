@@ -269,7 +269,7 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
         data.set_parcellation(p);
 
         bool use_end_only = (po.get("connectivity_type","pass") == "end");
-        std::string connectivity_output = po.get("connectivity_output","matrix,connectogram,measure");
+        std::string connectivity_output = po.get("connectivity_output","matrix,measure");
 
         if(po.get("connectivity_value","all") != "all")
         {
