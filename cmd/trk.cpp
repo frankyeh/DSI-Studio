@@ -268,57 +268,89 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
         ConnectivityMatrix data;
         data.set_parcellation(p);
 
-        QStringList connectivity_type_list = QString(po.get("connectivity_type","pass").c_str()).split(",");
-        QStringList connectivity_value_list = QString(po.get("connectivity_value","count").c_str()).split(",");
+        bool use_end_only = (po.get("connectivity_type","pass") != "end");
         std::string connectivity_output = po.get("connectivity_output","matrix,connectogram,measure");
 
-        for(int j = 0;j < connectivity_type_list.size();++j)
-        for(int k = 0;k < connectivity_value_list.size();++k)
+        if(po.get("connectivity_value","all") != "all")
         {
-            std::string connectivity_value = connectivity_value_list[k].toStdString();
-            bool use_end_only = connectivity_type_list[j].toLower() == QString("end");
-            QDir pwd = QDir::current();
-            if(connectivity_value == "trk")
-                QDir::setCurrent(QFileInfo(output_name.c_str()).absolutePath());
-            if(!data.calculate(handle,*(tract_model.get()),
-                               connectivity_value,
-                               use_end_only,po.get("connectivity_threshold",0.001f)))
+            QStringList connectivity_value_list = QString(po.get("connectivity_value").c_str()).split(",");
+            for(int k = 0;k < connectivity_value_list.size();++k)
+            {
+                std::string connectivity_value = connectivity_value_list[k].toStdString();
+                if(!data.calculate(handle,*(tract_model.get()),
+                                   connectivity_value,
+                                   use_end_only,po.get("connectivity_threshold",0.001f)))
+                {
+                    tipl::error() << data.error_msg << std::endl;
+                    return false;
+                }
+
+                std::string file_name_stat(output_name + "." + p.name + "." + connectivity_value);
+                file_name_stat += use_end_only ? ".end":".pass";
+
+                if(connectivity_output.find("matrix") != std::string::npos)
+                {
+                    std::string matrix = file_name_stat + ".connectivity.mat";
+                    tipl::out() << "saving " << matrix << std::endl;
+                    data.save_to_file(matrix.c_str());
+                }
+
+                if(connectivity_output.find("connectogram") != std::string::npos)
+                {
+                    std::string connectogram = file_name_stat + ".connectogram.txt";
+                    tipl::out() << "saving " << connectogram << std::endl;
+                    data.save_to_connectogram(connectogram.c_str());
+                }
+
+                if(connectivity_output.find("measure") != std::string::npos)
+                {
+                    std::string measure = file_name_stat + ".network_measures.txt";
+                    tipl::out() << "saving " << measure << std::endl;
+                    std::string report;
+                    data.network_property(report);
+                    std::ofstream out(measure.c_str());
+                    out << report;
+                }
+            }
+        }
+        else
+        {
+            if(!data.calculate(handle,*(tract_model.get()),"all",use_end_only,
+                               po.get("connectivity_threshold",0.001f)))
             {
                 tipl::error() << data.error_msg << std::endl;
                 return false;
             }
-            if(connectivity_value == "trk")
-            {
-                // restore previous working directory
-                QDir::setCurrent(pwd.path());
-                continue;
-            }
 
-            std::string file_name_stat(output_name + "." + p.name + "." + connectivity_value);
-            file_name_stat += use_end_only ? ".end":".pass";
-
-            if(connectivity_output.find("matrix") != std::string::npos)
+            bool macro = true;
+            for(size_t m_index = 0;m_index < data.metrics.size();++m_index)
             {
-                std::string matrix = file_name_stat + ".connectivity.mat";
-                tipl::out() << "saving " << matrix << std::endl;
-                data.save_to_file(matrix.c_str());
-            }
+                std::string metrics_name = data.metrics[m_index].substr(0,data.metrics[m_index].find('('));
+                std::replace(metrics_name.begin(),metrics_name.end(),' ','_');
+                if(metrics_name == "qa" || metrics_name == "dti_fa")
+                    macro = false;
 
-            if(connectivity_output.find("connectogram") != std::string::npos)
-            {
-                std::string connectogram = file_name_stat + ".connectogram.txt";
-                tipl::out() << "saving " << connectogram << std::endl;
-                data.save_to_connectogram(connectogram.c_str());
-            }
+                std::string file_name_stat = output_name +
+                    "." + p.name +
+                    "." + (macro?"macro":"micro") +
+                    "." + metrics_name +
+                    "." + (use_end_only ? "end" : "pass");
 
-            if(connectivity_output.find("measure") != std::string::npos)
-            {
-                std::string measure = file_name_stat + ".network_measures.txt";
-                tipl::out() << "saving " << measure << std::endl;
-                std::string report;
-                data.network_property(report);
-                std::ofstream out(measure.c_str());
-                out << report;
+                data.set_metrics(m_index);
+                if(connectivity_output.find("matrix") != std::string::npos)
+                {
+                    std::string matrix = file_name_stat + ".connectivity.mat";
+                    tipl::out() << "saving " << matrix << std::endl;
+                    data.save_to_file(matrix.c_str());
+                }
+
+                if(connectivity_output.find("connectogram") != std::string::npos)
+                {
+                    std::string connectogram = file_name_stat + ".connectogram.txt";
+                    tipl::out() << "saving " << connectogram << std::endl;
+                    data.save_to_connectogram(connectogram.c_str());
+                }
+
             }
         }
     }
