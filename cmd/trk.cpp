@@ -268,7 +268,7 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
         ConnectivityMatrix data;
         data.set_parcellation(p);
 
-        bool use_end_only = (po.get("connectivity_type","pass") != "end");
+        bool use_end_only = (po.get("connectivity_type","pass") == "end");
         std::string connectivity_output = po.get("connectivity_output","matrix,connectogram,measure");
 
         if(po.get("connectivity_value","all") != "all")
@@ -285,8 +285,10 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                     return false;
                 }
 
-                std::string file_name_stat(output_name + "." + p.name + "." + connectivity_value);
-                file_name_stat += use_end_only ? ".end":".pass";
+                std::string file_name_stat = output_name +
+                    "." + p.name +
+                    "." + connectivity_value +
+                    "." + (use_end_only ? ".end":".pass");
 
                 if(connectivity_output.find("matrix") != std::string::npos)
                 {
