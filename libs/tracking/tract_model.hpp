@@ -270,6 +270,7 @@ class ConnectivityMatrix{
 public:
     std::vector<std::string> metrics;
     std::vector<std::vector<float> > metrics_data;
+    void set_metrics(size_t index);
 public:
     tipl::image<2> matrix_value;
 public:
