@@ -219,6 +219,7 @@ public:
     bool is_human_data = true;
     bool is_histology = true;
     bool is_mni = false;
+    bool is_be = false;
     size_t matched_template_id = 0;
     bool trackable = true;
     float min_length(void) const
