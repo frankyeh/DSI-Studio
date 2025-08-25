@@ -3551,7 +3551,17 @@ void for_each_connectivity(const T& end_list1,
             lambda_fun(index,pair.first,pair.second);
     }
 }
-
+void ConnectivityMatrix::set_metrics(size_t m_index)
+{
+    if(m_index >= metrics.size() || metrics_data.empty())
+        return;
+    matrix_value.clear();
+    matrix_value.resize(tipl::shape<2>(uint32_t(region_count),uint32_t(region_count)));
+    for(size_t i = 0,index = 0;i < region_count;++i)
+        for(size_t j = i+1;j < region_count;++j,++index)
+            if(m_index < metrics_data[index].size())
+                matrix_value[i*region_count+j] = matrix_value[i*region_count+j] = metrics_data[index][m_index];
+}
 bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
                                    TractModel& tract_model,std::string matrix_value_type,bool use_end_only,float threshold)
 {
@@ -3596,17 +3606,16 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
         });
 
         std::vector<std::pair<size_t,size_t> > ij_pair;
-        for(unsigned int i = 0;i < region_passing_list.size();++i)
-            for(unsigned int j = i+1;j < region_passing_list.size();++j)
-                if(!region_passing_list[i][j].empty())
-                    ij_pair.push_back(std::make_pair(i,j));
+        for(unsigned int i = 0;i < region_count;++i)
+            for(unsigned int j = i+1;j < region_count;++j)
+                ij_pair.push_back(std::make_pair(i,j));
 
 
         std::mutex metrics_mutex;
         metrics.clear();
         metrics_data.clear();
         metrics_data.resize(ij_pair.size());
-        tipl::adaptive_par_for(ij_pair.size(),[&](size_t index)
+        tipl::par_for(ij_pair.size(),[&](size_t index)
         {
             auto i = ij_pair[index].first;
             auto j = ij_pair[index].second;
