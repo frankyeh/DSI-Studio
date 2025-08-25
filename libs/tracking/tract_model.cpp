@@ -3595,7 +3595,7 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
             m[i].resize(region_count);
     };
 
-    if(matrix_value_type.empty())
+    if(matrix_value_type == "all")
     {
         std::vector<std::vector<std::vector<unsigned int> > > region_passing_list;
         init_matrix(region_passing_list);
