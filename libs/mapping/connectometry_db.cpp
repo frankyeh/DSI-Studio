@@ -1189,7 +1189,7 @@ bool stat_model::resample(stat_model& rhs,bool null,bool bootstrap,unsigned int 
             std::vector<double> x_study_feature;
             for(size_t index = study_feature;index< X.size();index += x_col_count)
                 x_study_feature.push_back(X[index]);
-            x_study_feature_rank = tipl::rank(x_study_feature,std::less<double>());
+            x_study_feature_rank = tipl::rank_avg_tie(x_study_feature,std::less<double>());
             unsigned int n = uint32_t(X.size()/x_col_count);
             rank_c = 6.0/double(n)/double(n*n-1);
         }
@@ -1269,14 +1269,14 @@ double stat_model::operator()(const std::vector<float>& original_population) con
     // calculate t-statistics
     if(study_feature)
     {
-        auto rank = tipl::rank(population,std::less<float>());
-        int sum_d2 = 0;
+        auto rank = tipl::rank_avg_tie(population,std::less<float>());
+        double sum_d2 = 0.0;
         for(size_t i = 0;i < rank.size();++i)
         {
-            int d = int(rank[i])-int(x_study_feature_rank[i]);
+            auto d = rank[i]-x_study_feature_rank[i];
             sum_d2 += d*d;
         }
-        double r = 1.0-double(sum_d2)*rank_c;
+        double r = 1.0-sum_d2*rank_c;
         double result = r*std::sqrt(double(population.size()-2.0)/(1.0-r*r));
         return std::isnormal(result) ? result : 0.0;
     }
