@@ -79,7 +79,7 @@ public:
 public:
     tipl::multiple_regression<double> mr;
     // for nonlinear correlation
-    std::vector<unsigned int> x_study_feature_rank;
+    std::vector<float> x_study_feature_rank;
     double rank_c = 0;
     void select_variables(const std::vector<char>& sel);
 public: // individual
