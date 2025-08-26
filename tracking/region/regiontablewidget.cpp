@@ -1570,7 +1570,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                 {
                     auto lstr = regions[lhs]->name;
                     auto rstr = regions[rhs]->name;
-                    return negate ^ (lstr.length() == rstr.length() ? lstr < rstr : lstr.length() < rstr.length());
+                    return negate ^ (lstr < rstr);
                 });
             }
             else
