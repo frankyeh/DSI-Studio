@@ -120,10 +120,9 @@ void manual_alignment::add_images(std::shared_ptr<fib_data> handle)
     for(const auto& each : handle->slices)
     {
         if(each->optional())
-            break;
+            continue;
         add_image(each->name,each->get_image(),tipl::transformation_matrix<float>(each->T));
     }
-
 }
 
 void manual_alignment::connect_arg_update()
