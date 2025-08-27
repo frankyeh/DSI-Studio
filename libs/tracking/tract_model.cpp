@@ -2985,7 +2985,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
     for(size_t data_index = 0;data_index < handle->slices.size();++data_index)
     {
         if(handle->slices[data_index]->optional())
-            break;
+            continue;
         data.push_back(tract_data.empty() ? na : get_tracts_mean(handle,data_index));
         titles.push_back(handle->slices[data_index]->name);
     }
