@@ -359,7 +359,7 @@ bool CustomSliceModel::load_slices(void)
     // QSDR loaded, use MNI transformation instead
     bool has_transform = false;
     auto suffix = QFileInfo(source_file_name.c_str()).suffix();
-    name = QFileInfo(source_file_name.c_str()).completeBaseName().remove(".nii").toStdString();
+    auto name = view->name;
     to_dif.identity();
     to_slice.identity();
 
@@ -525,7 +525,6 @@ bool CustomSliceModel::load_slices(void)
             error_msg = handle->error_msg;
             return false;
         }
-        name += "." + db_handle->db.index_name;
         is_diffusion_space = true;
         has_transform = true;
     }
