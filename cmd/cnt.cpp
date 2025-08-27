@@ -157,7 +157,7 @@ int cnt(tipl::program_option<tipl::out>& po)
         tipl::progress prog("running connectometry");
         if(po.has("output"))
             vbc->output_file_name = po.get("output",std::string());
-        vbc->run_permutation(tipl::max_thread_count,po.get("permutation_count",uint32_t(2000)));
+        vbc->run_permutation(tipl::max_thread_count,po.get("permutation",uint32_t(2000)));
         vbc->wait(0);
         vbc->generate_report();
     }
