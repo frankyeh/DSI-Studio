@@ -632,7 +632,7 @@ void group_connectometry_analysis::calculate_FDR(void)
         std::replace(fdr_dec.begin(),fdr_dec.end(),1.0f,0.0f);
 }
 
-void group_connectometry_analysis::generate_report(std::string& output)
+std::string group_connectometry_analysis::generate_report(void)
 {
     std::ostringstream html_report((output_file_name+".report.html").c_str());
     html_report << "<!DOCTYPE html>" << std::endl;
@@ -754,8 +754,13 @@ void group_connectometry_analysis::generate_report(std::string& output)
     }
 
     html_report << "</body></html>" << std::endl;
-    output = html_report.str();
+    auto output = html_report.str();
+    if(prog != 100)
+        return output;
 
+    {
+        std::ofstream((output_file_name+".report.html").c_str()) << output << std::endl;
+    }
 
     if(prog == 100 && !no_tractogram)
     {
@@ -849,5 +854,6 @@ void group_connectometry_analysis::generate_report(std::string& output)
         }
         new_mdi->deleteLater();
     }
+    return output;
 }
 

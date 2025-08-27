@@ -305,11 +305,8 @@ void group_connectometry::load_demographics(void)
 
 void group_connectometry::calculate_FDR(void)
 {
-    if(vbc->prog == 100)
-    {
-        if(timer.get())
-            timer->stop();
-    }
+    if(vbc->prog == 100 && timer.get())
+        timer->stop();
 
     ui->progressBar->setValue(vbc->prog);
     vbc->calculate_FDR();
@@ -318,12 +315,9 @@ void group_connectometry::calculate_FDR(void)
     show_fdr_report();
 
 
-    std::string output;
-    vbc->generate_report(output);
     int pos = ui->textBrowser->verticalScrollBar()->value();
-    ui->textBrowser->setHtml(output.c_str());
+    ui->textBrowser->setHtml(vbc->generate_report().c_str());
     ui->textBrowser->verticalScrollBar()->setValue(pos);
-
 
     if(vbc->prog < 100)
         return;
@@ -361,12 +355,6 @@ void group_connectometry::calculate_FDR(void)
             QMessageBox::information(this,QApplication::applicationName(),"tractography saved");
         else
             QMessageBox::information(this,QApplication::applicationName(),"no significant finding");
-
-        // save report in text
-        {
-            std::ofstream out((vbc->output_file_name+".report.html").c_str());
-            out << output << std::endl;
-        }
 
         ui->run->setText("Run");
         ui->progressBar->setValue(100);

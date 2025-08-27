@@ -69,7 +69,7 @@ public:// Multiple regression
     void run_permutation(unsigned int thread_count,unsigned int permutation_count);
     void calculate_FDR(void);
     void save_result(void);
-    void generate_report(std::string& output);
+    std::string generate_report(void);
 };
 
 #endif // VBC_DATABASE_H
