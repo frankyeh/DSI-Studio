@@ -70,12 +70,18 @@ void normalize_data_by_iso(const float* iso_ptr,float* out_data_ptr,size_t n);
 
 bool slice_model::optional(void)
 {
-    if(image_data.data()) // if already have data
+    if(image_data.data()) // if already have data, then it is not optional
         return false;
-    if(!path.empty()) // if the image is from internet
+    if(tipl::begins_with(path,"http")) // if the image is from internet
+    {
+        tipl::out() << "skip optional image volume: " << path;
         return true;
-    if(name == "vol" && handle && !handle->mat_reader.has("voi")) // if require normalization to get vol
+    }
+    if(handle && !handle->is_mni && name == "vol") // if require normalization to get vol
+    {
+        tipl::out() << "skip optional image volume: vol";
         return true;
+    }
     return false;
 }
 
