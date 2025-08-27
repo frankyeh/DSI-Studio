@@ -153,31 +153,13 @@ int cnt(tipl::program_option<tipl::out>& po)
 
     }
 
-
-
     {
         tipl::progress prog("running connectometry");
         if(po.has("output"))
             vbc->output_file_name = po.get("output",std::string());
-        vbc->run_permutation(tipl::max_thread_count,po.get("permutation",uint32_t(2000)));
+        vbc->run_permutation(tipl::max_thread_count,po.get("permutation_count",uint32_t(2000)));
         vbc->wait(0);
-    }
-
-    std::string output;
-    vbc->generate_report(output);
-    {
-        std::string report_file_name = vbc->output_file_name+".report.html";
-        std::ofstream out(report_file_name.c_str());
-        if(!out)
-        {
-            tipl::error() << "cannot output file to " << report_file_name << std::endl;
-            return 1;
-        }
-        else
-        {
-            tipl::out() << "saving " << report_file_name;
-            out << output << std::endl;
-        }
+        vbc->generate_report();
     }
     return 0;
 }
