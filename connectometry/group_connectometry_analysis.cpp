@@ -132,7 +132,8 @@ void group_connectometry_analysis::run_permutation_multithread(unsigned int id,u
     if(id == 0 && !terminated)
     {
         wait(1); // current thread occupies 0, wait from 1
-        prog = 99;
+        save_result();
+        prog = 100;
     }
 }
 extern int fib_ver;
@@ -142,7 +143,7 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
               const std::vector<std::string>& skip_head_list);
 void group_connectometry_analysis::save_result(void)
 {
-    tipl::progress prog("save correlational tractography results");
+    tipl::progress p("save correlational tractography results");
     for(size_t index = 0;index < tip_iteration;++index)
     {
         neg_null_corr_track->trim();

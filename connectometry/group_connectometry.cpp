@@ -305,12 +305,10 @@ void group_connectometry::load_demographics(void)
 
 void group_connectometry::calculate_FDR(void)
 {
-    if(vbc->prog == 99)
+    if(vbc->prog == 100)
     {
-        vbc->save_result();
         if(timer.get())
             timer->stop();
-        vbc->prog = 100;
     }
 
     ui->progressBar->setValue(vbc->prog);
