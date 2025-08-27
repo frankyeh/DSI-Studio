@@ -300,6 +300,7 @@ public:
     std::vector<size_t> get_track_ids(const std::string& tract_name);
     std::pair<float,float> get_track_minmax_length(const std::string& tract_name);
 public:
+    std::string get_mapping_file_name(void) const;
     bool map_to_mni(bool background = true);
     void temp2sub(std::vector<std::vector<float> >&tracts) const;
     void temp2sub(tipl::vector<3>& pos) const;
