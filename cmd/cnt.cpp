@@ -34,16 +34,15 @@ int cnt(tipl::program_option<tipl::out>& po)
         return 1;
     }
 
-    if(!po.check("voi") || !po.check("variable_list"))
-        return 1;
-
-
     {
         std::string sout("selectable variables include ");
         for(size_t i = 0;i < db.feature_titles.size();++i)
              sout += "\t(" + std::to_string(i) + ")" +db.feature_titles[i];
         tipl::out() << sout;
     }
+
+    if(!po.check("voi") || !po.check("variable_list"))
+        return 1;
 
     std::vector<unsigned int> variable_list;
     std::string foi_str;
@@ -98,7 +97,7 @@ int cnt(tipl::program_option<tipl::out>& po)
 
     {
         tipl::progress prog("connectometry parameters");
-        vbc->no_tractogram = (po.get("no_tractogram",1) == 1);
+        vbc->no_tractogram = (po.get("no_tractogram",0) == 1);
         vbc->region_pruning = (po.get("region_pruning",1) == 1);
         if(!db.is_longitudinal)
             vbc->normalize_iso = (po.get("normalize_iso",1) == 1);
@@ -161,12 +160,9 @@ int cnt(tipl::program_option<tipl::out>& po)
         if(po.has("output"))
             vbc->output_file_name = po.get("output",std::string());
         vbc->run_permutation(tipl::max_thread_count,po.get("permutation",uint32_t(2000)));
-        for(auto& thread: vbc->threads)
-            if(thread.joinable())
-                thread.join();
+        vbc->wait(0);
     }
-    vbc->save_result();
-    vbc->calculate_FDR();
+
     std::string output;
     vbc->generate_report(output);
     {
