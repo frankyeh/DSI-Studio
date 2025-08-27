@@ -113,7 +113,7 @@ public:
 
 class CustomSliceModel : public SliceModel {
 public:
-    std::string source_file_name,name,error_msg = "unknown error";
+    std::string source_file_name,error_msg = "unknown error";
     std::vector<std::string> source_files;
 public:
     std::shared_ptr<std::thread> thread;
