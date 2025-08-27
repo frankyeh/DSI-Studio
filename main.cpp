@@ -332,11 +332,6 @@ static const std::unordered_map<std::string, int(*)(tipl::program_option<tipl::o
 int run_action(tipl::program_option<tipl::out>& po)
 {
     std::string action = po.get("action");
-    if(!tipl::show_prog && action =="vis")
-    {
-        tipl::error() << action << " is only supported at GUI's console";
-        return 1;
-    }
     tipl::progress prog("run ",action.c_str());
     auto it = action_map.find(action);
     if (it != action_map.end())
@@ -429,24 +424,22 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *a
                 return 1;
         }
     }
-
-    if(po.has("stay_open") && cmd.get())
-        cmd->exec();
     return prog.aborted() ? 1 : 0;
 }
 int gpu_count = 0;
 extern console_stream console;
 int main(int ac, char *av[])
 {
+
     std::string show_ver = std::string("DSI Studio version: ") + version_string + " " + __DATE__;
     std::cout << show_ver << std::endl;
 
     if(ac == 2 && std::string(av[1]) == "--version")
         return 0;
 
+    tipl::program_option<tipl::out> po;
     if(ac > 2)
     {
-        tipl::program_option<tipl::out> po;
         try
         {
             if(!po.parse(ac,av) || !po.check("action"))
@@ -454,10 +447,16 @@ int main(int ac, char *av[])
                 tipl::error() << po.error_msg << std::endl;
                 return 1;
             }
-            if(run_action_with_wildcard(po,ac,av))
+            std::string action = po.get("action");
+            if(action != "vis" && action != "cnt")
+            {
+                if(run_action_with_wildcard(po,ac,av))
+                    return 1;
+                po.check_end_param<tipl::warning>();
+                return 0;
+            }
+            if(!po.check("source"))
                 return 1;
-            po.check_end_param<tipl::warning>();
-            return 0;
         }
         catch(const std::exception& e ) {
             tipl::error() << e.what() << std::endl;
@@ -468,7 +467,6 @@ int main(int ac, char *av[])
             tipl::error() <<"unknown error occurred" << std::endl;
             return 1;
         }
-        return 0;
     }
 
 
@@ -570,6 +568,12 @@ int main(int ac, char *av[])
                     clientSocket->deleteLater();
                 }
             });
+        }
+        if(ac > 2) // now handle vis and cnt
+        {
+            run_action(po);
+            if(!po.has("stay_open"))
+                return 0;
         }
         return a.exec();
     }
