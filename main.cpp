@@ -430,7 +430,7 @@ int gpu_count = 0;
 extern console_stream console;
 int main(int ac, char *av[])
 {
-
+    bool run_gui_command = false;
     std::string show_ver = std::string("DSI Studio version: ") + version_string + " " + __DATE__;
     std::cout << show_ver << std::endl;
 
@@ -448,7 +448,9 @@ int main(int ac, char *av[])
                 return 1;
             }
             std::string action = po.get("action");
-            if(action != "vis" && action != "cnt")
+            if(action == "vis" || action == "cnt")
+                run_gui_command = true;
+            else
             {
                 if(run_action_with_wildcard(po,ac,av))
                     return 1;
@@ -498,7 +500,9 @@ int main(int ac, char *av[])
         }
 
         tipl::show_prog = true;
-        console.attach();
+
+        if(!run_gui_command)
+            console.attach();
 
         tipl::progress prog(show_ver);
 
@@ -569,7 +573,7 @@ int main(int ac, char *av[])
                 }
             });
         }
-        if(ac > 2) // now handle vis and cnt
+        if(run_gui_command)
         {
             run_action(po);
             if(!po.has("stay_open"))
