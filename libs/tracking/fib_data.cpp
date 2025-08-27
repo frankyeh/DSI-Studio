@@ -70,19 +70,15 @@ void normalize_data_by_iso(const float* iso_ptr,float* out_data_ptr,size_t n);
 
 bool slice_model::optional(void)
 {
-    if(image_data.data()) // if already have data, then it is not optional
+    if(image_data.data() ||
+       (handle && handle->mat_reader.has(name)) ||
+       name == "qir") // if already have data, then not optional
         return false;
-    if(tipl::begins_with(path,"http")) // if the image is from internet
-    {
-        tipl::out() << "skip optional image volume: " << path;
-        return true;
-    }
-    if(handle && !handle->is_mni && name == "vol") // if require normalization to get vol
-    {
-        tipl::out() << "skip optional image volume: vol";
-        return true;
-    }
-    return false;
+    if(name == "vol" && handle &&
+       (handle->is_mni || std::filesystem::exists(handle->get_mapping_file_name()))) // vol already have normalization
+        return false;
+    tipl::out() << "skip optional image volume: " << name;
+    return true;
 }
 
 tipl::const_pointer_image<3,float> slice_model::get_image(void)
@@ -2045,7 +2041,15 @@ bool to_t1wt2w_templates(dual_reg& reg,size_t template_id,bool be)
     tipl::out() << "using " << best_m << " for registration";
     return true;
 }
-
+std::string fib_data::get_mapping_file_name(void) const
+{
+    std::string output_file_name(fib_file_name + "." +
+                                 std::filesystem::path(fa_template_list[template_id]).filename().stem().stem().stem().string());
+    if(alternative_mapping_index)
+        output_file_name += std::to_string(alternative_mapping_index);
+    output_file_name += ".mz";
+    return output_file_name;
+}
 bool fib_data::map_to_mni(bool background)
 {
     if(!load_template())
@@ -2054,12 +2058,7 @@ bool fib_data::map_to_mni(bool background)
         return true;
     if(!s2t.empty() && !t2s.empty())
         return true;
-    std::string output_file_name(fib_file_name);
-    output_file_name += ".";
-    output_file_name += QFileInfo(fa_template_list[template_id].c_str()).baseName().toLower().toStdString();
-    if(alternative_mapping_index)
-        output_file_name += std::to_string(alternative_mapping_index);
-    output_file_name += ".mz";
+    auto output_file_name = get_mapping_file_name();
     if(std::filesystem::exists(output_file_name))
     {
         tipl::out() << "use existing mapping";
