@@ -1604,81 +1604,77 @@ bool TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select
 bool TractModel::delete_repeated(float d)
 {   
     std::vector<std::vector<size_t> > x_reg;
-    std::vector<size_t> track_reg;
-    if(tract_data.size() > 50000)
+    std::vector<size_t> track_location1,track_location2;
     {
-        x_reg.resize(geo.plane_size());
-        track_reg.resize(tract_data.size());
+        auto ratio = d;
+        tipl::shape<3> new_geo(geo[0]/ratio+1,geo[1]/ratio+1,geo[2]/ratio+1);
+        x_reg.resize(new_geo.size());
+        track_location1.resize(tract_data.size());
+        track_location2.resize(tract_data.size());
         for(size_t i = 0; i < tract_data.size();++i)
         {
-            int x = int(std::round(tract_data[i][0]));
-            int y = int(std::round(tract_data[i][1]));
-            if(x < 0)
-                x = 0;
-            if(y < 0)
-                y = 0;
-            if(x >= geo[0])
-                x = geo[0]-1;
-            if(y >= geo[1])
-                y = geo[1]-1;
-            x_reg[track_reg[i] = size_t(x + y*geo[0])].push_back(i);
+            int x = std::max<int>(0,std::min<int>(std::round(tract_data[i][0]/ratio),new_geo[0]-1));
+            int y = std::max<int>(0,std::min<int>(std::round(tract_data[i][1]/ratio),new_geo[1]-1));
+            int z = std::max<int>(0,std::min<int>(std::round(tract_data[i][2]/ratio),new_geo[2]-1));
+
+            x_reg[track_location1[i] = tipl::voxel2index(x,y,z,new_geo)].push_back(i);
+            x = std::max<int>(0,std::min<int>(std::round(tract_data[i][tract_data[i].size()-3]/ratio),new_geo[0]-1));
+            y = std::max<int>(0,std::min<int>(std::round(tract_data[i][tract_data[i].size()-2]/ratio),new_geo[1]-1));
+            z = std::max<int>(0,std::min<int>(std::round(tract_data[i][tract_data[i].size()-1]/ratio),new_geo[2]-1));
+            x_reg[track_location2[i] = tipl::voxel2index(x,y,z,new_geo)].push_back(i);
         }
     }
-    auto norm1 = [](const float* v1,const float* v2){return std::fabs(v1[0]-v2[0])+std::fabs(v1[1]-v2[1])+std::fabs(v1[2]-v2[2]);};
-    struct min_min{
-        inline float operator()(float min_dis,const float* v1,const float* v2)
-        {
-            float d1 = std::fabs(v1[0]-v2[0]);
-            if(d1 > min_dis)
-                return min_dis;
-            d1 += std::fabs(v1[1]-v2[1]);
-            if(d1 > min_dis)
-                return min_dis;
-            d1 += std::fabs(v1[2]-v2[2]);
-            if(d1 > min_dis)
-                return min_dis;
-            return d1;
-        }
-    }min_min_fun;
-    std::vector<bool> repeated(tract_data.size());
-    tipl::adaptive_par_for(tract_data.size(),[&](size_t i)
+    auto min_distance = [](const float* v1,const float* v2,float min_dis)
     {
-        if(repeated[i])
-            return;
-        size_t max_k = x_reg.empty() ? tract_data.size():x_reg[track_reg[i]].size();
-        for(size_t k = x_reg.empty() ? i+1:0;k < max_k;++k)
+        float d1 = std::fabs(v1[0]-v2[0]);
+        if(d1 > min_dis)
+            return min_dis;
+        d1 += std::fabs(v1[1]-v2[1]);
+        if(d1 > min_dis)
+            return min_dis;
+        d1 += std::fabs(v1[2]-v2[2]);
+        if(d1 > min_dis)
+            return min_dis;
+        return d1;
+    };
+    auto track_repeated = [&](size_t i,size_t j)
+    {
+        size_t m_size = tract_data[i].size();
+        size_t n_size = tract_data[j].size();
+        for(size_t m = 0;m < m_size;m += 3)
         {
-            size_t j = x_reg.empty() ? k :  x_reg[track_reg[i]][k];
-            if(j <= i || repeated[j] ||
-               min_min_fun(d,&tract_data[i][0],&tract_data[j][0]) >= d ||
-               min_min_fun(d,&tract_data[i][tract_data[i].size()-3],&tract_data[j][tract_data[j].size()-3]) >= d)
+            bool found_near_point = false;
+            for(size_t n = 0;n < n_size;n += 3)
+                if(min_distance(&tract_data[i][m],&tract_data[j][n],d) < d)
+                {
+                    found_near_point = true;
+                    break;
+                }
+            if(!found_near_point)
+                return false;
+        }
+        return true;
+    };
+    std::vector<char> repeated(tract_data.size());
+    std::mutex m;
+    tipl::par_for(tract_data.size(),[&](size_t i)
+    {
+        std::vector<size_t> check_set;
+        std::set_union(x_reg[track_location1[i]].begin(), x_reg[track_location1[i]].end(),
+                       x_reg[track_location2[i]].begin(), x_reg[track_location2[i]].end(),
+                       std::back_inserter(check_set));
+        for(size_t j : check_set)
+        {
+            if(i == j || repeated[j])
                 continue;
-            bool not_repeated = false;
-            for(size_t m = 0;m < tract_data[i].size();m += 3)
+            if(min_distance(&tract_data[i][0],&tract_data[j][0],d) < d &&
+               min_distance(&tract_data[i][tract_data[i].size()-3],&tract_data[j][tract_data[j].size()-3],d) < d &&
+               track_repeated(i,j) &&
+               track_repeated(j,i))
             {
-                float min_dis = norm1(&tract_data[i][m],&tract_data[j][0]);
-                for(size_t n = 3;n < tract_data[j].size();n += 3)
-                    min_dis = min_min_fun(min_dis,&tract_data[i][m],&tract_data[j][n]);
-                if(min_dis > d)
-                {
-                    not_repeated = true;
-                    break;
-                }
-            }
-            if(!not_repeated)
-            for(size_t m = 0;m < tract_data[j].size();m += 3)
-            {
-                float min_dis = norm1(&tract_data[j][m],&tract_data[i][0]);
-                for(size_t n = 0;n < tract_data[i].size();n += 3)
-                    min_dis = min_min_fun(min_dis,&tract_data[j][m],&tract_data[i][n]);
-                if(min_dis > d)
-                {
-                    not_repeated = true;
-                    break;
-                }
-            }
-            if(!not_repeated)
+                std::scoped_lock lock(m);
                 repeated[j] = true;
+            }
         }
     });
     std::vector<unsigned int> track_to_delete;
