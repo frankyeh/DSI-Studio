@@ -164,6 +164,7 @@ jobs:
     - name: brew update
       run: |
         brew update
+        brew uninstall cmake
         brew install cmake
     - name: Install Qt
       uses: jurplel/install-qt-action@v4.1.1
