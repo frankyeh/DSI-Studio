@@ -741,6 +741,6 @@ int ana(tipl::program_option<tipl::out>& po)
     }
     if(po.has("export"))
         return exp(po);
-    tipl::error() << "no tract file or ROI file assigned." << std::endl;
+    tipl::error() << "please specify --tract or --regions" << std::endl;
     return 1;
 }
