@@ -218,6 +218,7 @@ QImage slice_view_scene::get_view_image(std::shared_ptr<SliceModel> current_slic
         {
             QPainter painter(&scaled_image);
             painter.setCompositionMode(QPainter::CompositionMode(cur_tracking_window["roi_composition"].toInt() + QPainter::CompositionMode_SourceAtop));
+            painter.setOpacity(cur_tracking_window["roi_opacity"].toFloat());
             painter.drawImage(0,0,region_image);
         }
 
