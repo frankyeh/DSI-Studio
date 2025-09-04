@@ -217,7 +217,7 @@ QImage slice_view_scene::get_view_image(std::shared_ptr<SliceModel> current_slic
         if(!region_image.isNull())
         {
             QPainter painter(&scaled_image);
-            painter.setCompositionMode(QPainter::CompositionMode_SourceAtop);
+            painter.setCompositionMode(QPainter::CompositionMode(cur_tracking_window["roi_composition"].toInt() + QPainter::CompositionMode_SourceAtop));
             painter.drawImage(0,0,region_image);
         }
 
@@ -482,7 +482,7 @@ void slice_view_scene::paint_image(QImage& out,bool simple)
     {
         auto dim = current_slice->dim;
 
-        unsigned int skip = uint32_t(std::pow(2,cur_tracking_window["roi_layout"].toInt()-2));
+        unsigned int skip = uint32_t(cur_tracking_window["roi_layout"].toInt()-1);
         unsigned int skip_row = uint32_t(cur_tracking_window["roi_mosaic_skip_row"].toInt());
         mosaic_column_count = cur_tracking_window["roi_mosaic_column"].toInt() ?
                 uint32_t(cur_tracking_window["roi_mosaic_column"].toInt()):
