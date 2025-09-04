@@ -2,6 +2,7 @@ ROI/Orientation Convention/orientation_convention/Radiology:Neurology/0/Radiolog
 ROI/Zoom/roi_zoom/float:0.2:40:0.5:1/5.0/Zoom in or zoom out
 ROI/Draw Edge/roi_draw_edge/Off:On/0/Draw edge of the region
 ROI/Composition/roi_composition/SourceAtop:DestinationAtop:Xor:Plus:Multiply:Screen:Overlay:Darken:Lighten:ColorDodge:ColorBun:HardLight:SoftLight:Difference:Exclusion/0/The composition mode for drawing region
+ROI/Opacity/roi_opacity/float:0:1:0.1:2/1
 ROI/Edge Width/roi_edge_width/int:1:5:1/1/Line width for edge
 ROI/Show Tracts/roi_track/Off:On/1/Show tracts
 ROI/Visible Tracts Count/roi_track_count/int:1000:500000:1000/5000/Visible track count
@@ -14,7 +15,7 @@ ROI/"R" label/roi_label/Off:On/1
 ROI/Position Line/roi_position/Off:On/1
 ROI/Ruler/roi_ruler/Off:On/1/show ruler
 ROI/Ruler Tic/roi_tic/int:1:8:1/2/Tic distance on ruler
-ROI/Slice Layout/roi_layout/Single Slice:3 Slices:Mosaic:Mosaic 2:Mosaic 3:Mosaic 4:Mosaic 5:Mosaic 6/0
+ROI/Slice Layout/roi_layout/Single Slice:3 Slices:Mosaic:Mosaic 2:Mosaic 3:Mosaic 4:Mosaic 5:Mosaic 6:Mosaic 7:Mosaic 8:Mosaic 9:Mosaic 10/0
 ROI/Mosaic Column Number/roi_mosaic_column/int:0:30:5/0/Column count for the mosaic view (0 for default square number)
 ROI/Mosaic Skip Row/roi_mosaic_skip_row/int:0:10:1/1/Remove first and last row from the mosaic view
 ROI/Default Output Format/roi_format/nii.gz:mat:txt/0
