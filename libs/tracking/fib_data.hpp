@@ -368,7 +368,7 @@ public:
     bool load_from_file(const std::string& file_name);
     bool save_to_file(const std::string& file_name);
     bool load_from_mat(void);
-    bool save_slice(const std::string& index_name,const std::string& file_name);
+    bool save_slice(const std::string& index_name,const std::string& file_name,bool in_mni = false);
     bool load_template_fib(size_t template_id,float vs);
     bool correct_bias_field(void);
 public:
