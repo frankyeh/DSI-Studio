@@ -31,7 +31,7 @@ std::vector<std::string> get_source_list(tipl::program_option<tipl::out>& po)
     if(QFileInfo(source.c_str()).isDir())
     {
         tipl::out() << "Searching all fib files in directory " << source << std::endl;
-        tipl::search_filesystem<tipl::out,tipl::error>(source + "/*.fib.gz",name_list);
+        tipl::search_filesystem<tipl::out>(source + "/*.fib.gz",name_list);
     }
     else
         po.get_files("source",name_list);
