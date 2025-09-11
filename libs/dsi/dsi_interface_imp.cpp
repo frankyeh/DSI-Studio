@@ -224,6 +224,7 @@ bool output_odfs(const tipl::image<3,unsigned char>& mni_mask,
     image_model.voxel.trans_to_mni = mni;
     image_model.voxel.vs = vs;
     image_model.voxel.R2 = 1.0f;
+    image_model.voxel.qsdr = true;
     image_model.voxel.other_output = record_odf ? "odf" : "";
     swap_data();
     if (!image_model.reconstruct2<ODFLoader,
