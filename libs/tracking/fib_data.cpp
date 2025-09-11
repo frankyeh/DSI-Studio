@@ -121,10 +121,18 @@ tipl::const_pointer_image<3,float> slice_model::get_image(void)
                 {
                     auto J = tipl::jacobian_determinant(handle->t2s);
                     tipl::compose_mapping(J,handle->s2t,image_buffer);
+                    double sum = 0.0;
+                    size_t sum_count = 0;
                     for(size_t i = 0;i < image_buffer.size();++i)
-                        if(handle->dir.fa[0][i] != 0.0f)
-                            image_buffer[i] /= volume_ratio;
-                        else
+                        if(handle->dir.fa[0][i] != 0.0)
+                        {
+                            sum += image_buffer[i];
+                            ++sum_count;
+                        }
+                    if(sum != 0.0f)
+                        image_buffer *= double(sum_count)/sum;
+                    for(size_t i = 0;i < image_buffer.size();++i)
+                        if(handle->dir.fa[0][i] == 0.0)
                             image_buffer[i] = 1.0f;
                 }
             }
@@ -617,7 +625,7 @@ bool fib_data::correct_bias_field(void)
     return true;
 }
 
-bool fib_data::save_slice(const std::string& index_name,const std::string& file_name)
+bool fib_data::save_slice(const std::string& index_name,const std::string& file_name,bool in_mni)
 {
     tipl::progress prog("saving "+file_name);
     auto save = [this,file_name](const auto& buf)->bool
@@ -700,6 +708,16 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
     else
     {
         tipl::image<3> buf(slices[index]->get_image());
+        if(is_mni && !get_sub2temp_mapping().empty() && !t2s.empty())
+        {
+            auto J = tipl::compose_mapping(slices[index]->get_image(),t2s);
+            if(!tipl::io::gz_nifti::save_to_file(file_name.c_str(),J,template_vs,template_to_mni,true))
+            {
+                error_msg = "cannot save file " + file_name;
+                return false;
+            }
+            return true;
+        }
         if(slices[index]->get_image().shape() != dim)
         {
             tipl::image<3> new_buf(dim);
