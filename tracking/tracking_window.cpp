@@ -928,10 +928,10 @@ void tracking_window::on_rendering_efficiency_currentIndexChanged(int index)
 
 void tracking_window::updateSlicesMenu(void)
 {
-    auto new_item = [&](const std::string& each,const char* action)
+    auto new_item = [&](const std::string& each,const std::string& title,const char* action)
     {
         QAction* Item = new QAction(this);
-        Item->setText(QString("%1...").arg(each.c_str()));
+        Item->setText(QString("%1...").arg(title.c_str()));
         Item->setData(QString(each.c_str()));
         Item->setToolTip(action);
         Item->setVisible(true);
@@ -943,19 +943,26 @@ void tracking_window::updateSlicesMenu(void)
     // save along tract indices
     auto metrics_list = handle->get_index_list();
     for (const auto& each : metrics_list)
-        ui->menuSave->addAction(new_item(each,"run save_tract_values"));
+        ui->menuSave->addAction(new_item(each,each,"run save_tract_values"));
 
     // export slices
-    metrics_list.push_back("fiber");
-    if(handle->has_odfs())
-        metrics_list.push_back("odfs");
     for (const auto& each : metrics_list)
-        ui->menuE_xport->addAction(new_item(each,"run save_slice_image"));
+        ui->menuE_xport->addAction(new_item(each,each,"run save_slice_image"));
+    ui->menuE_xport->addAction(new_item("fiber","fiber","run save_slice_image"));
+    if(handle->has_odfs())
+        ui->menuE_xport->addAction(new_item("odfs","odfs","run save_slice_image"));
 
-    if(std::find(metrics_list.begin(),metrics_list.end(),"iso") != metrics_list.end())
+    if(!handle->is_mni)
     {
         ui->menuE_xport->addSeparator();
-        ui->menuE_xport->addAction(new_item("Correct Bias Field","run correct_bias_field"));
+        for (const auto& each : metrics_list)
+            ui->menuE_xport->addAction(new_item(each,each + " in mni","run save_slice_mni_image"));
+    }
+
+    if(tipl::contains(metrics_list,std::string("iso")))
+    {
+        ui->menuE_xport->addSeparator();
+        ui->menuE_xport->addAction(new_item("Correct Bias Field","Correct Bias Field","run correct_bias_field"));
     }
 
     // update options: color map
