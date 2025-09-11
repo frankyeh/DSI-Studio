@@ -77,7 +77,6 @@ bool slice_model::optional(void)
     if(name == "vol" && handle &&
        (handle->is_mni || std::filesystem::exists(handle->get_mapping_file_name()))) // vol already have normalization
         return false;
-    tipl::out() << "skip optional image volume: " << name;
     return true;
 }
 
