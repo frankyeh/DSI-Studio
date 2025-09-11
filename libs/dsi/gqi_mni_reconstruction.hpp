@@ -299,6 +299,20 @@ public:
     virtual void end(Voxel& voxel,tipl::io::gz_mat_write& mat_writer)
     {
         voxel.qsdr = false;
+        double sum = 0.0;
+        size_t sum_count = 0;
+        for(size_t i = 0;i < jdet.size();++i)
+            if(jdet[i] != 0.0f)
+            {
+                sum += jdet[i];
+                ++sum_count;
+            }
+        if(sum != 0.0)
+            tipl::multiply_constant(jdet,double(sum_count)/sum);
+        for(size_t i = 0;i < jdet.size();++i)
+            if(jdet[i] == 0.0f)
+                jdet[i] = 1.0f;
+
         mat_writer.write<tipl::io::masked_sloped>("vol",jdet,voxel.dim.plane_size());
         mat_writer.write("native_dimension",native_geo);
         mat_writer.write("native_voxel_size",native_vs);
