@@ -328,7 +328,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->failed("cannot save mapping to " + cmd[1]);
         return run->succeed();
     }
-    if(cmd[0] == "save_slice_image")
+    if(cmd[0] == "save_slice_image" || cmd[0] == "save_slice_mni_image")
     {
         if(cmd[2].empty() && (cmd[2] = get_action_data().toStdString()).empty())
             return run->canceled();
@@ -338,7 +338,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                     "NIFTI files (*nii.gz *.nii);;MAT files (*.mat);;All files (*)").toStdString()).empty())
             return run->canceled();
 
-        if(!handle->save_slice(cmd[2],cmd[1]))
+        if(!handle->save_slice(cmd[2],cmd[1],cmd[0] == "save_slice_mni_image"))
             return run->failed(handle->error_msg);
         return run->succeed();
     }
