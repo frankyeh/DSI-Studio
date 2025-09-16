@@ -1105,7 +1105,7 @@ void tracking_window::dropEvent(QDropEvent *event)
             return;
         }
     for(auto each : regions)
-        if(!command({"load_region",each.toStdString()}))
+        if(!command({"open_region",each.toStdString()}))
         {
             if(!error_msg.empty())
                 QMessageBox::critical(this,"ERROR",error_msg.c_str());
