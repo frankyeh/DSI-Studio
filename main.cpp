@@ -428,6 +428,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *a
 }
 int gpu_count = 0;
 extern console_stream console;
+MainWindow* main_window = nullptr;
 int main(int ac, char *av[])
 {
     bool run_gui_command = false;
@@ -525,6 +526,7 @@ int main(int ac, char *av[])
 
         MainWindow w;
         w.setWindowTitle(show_ver.c_str());
+        main_window = &w;
         // presentation mode
         QStringList fib_list = QDir(QCoreApplication::applicationDirPath()+ "/presentation").
                                 entryList(QStringList("*fib.gz") << QString("*.fz"),QDir::Files|QDir::NoSymLinks);
