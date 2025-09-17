@@ -500,8 +500,8 @@ int main(int ac, char *av[])
         }
 
         tipl::show_prog = true;
-        console.attach();
-
+        if(!po.has("action"))
+            console.attach();
         tipl::progress prog(show_ver);
         if(!init_application())
             return 1;
