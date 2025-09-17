@@ -635,6 +635,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         tipl::out() << "merging all tract clusters into a single one";
         for(size_t index = 1;index < tracts.size();++index)
             tracts[0]->add(*tracts[index].get());
+        tracts.resize(1);
     }
 
     if(tracts.size() > 1)
