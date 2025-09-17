@@ -2857,8 +2857,11 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
                 if(tract_data[i].size() < 6)
                     return;
                 length_each[i] = get_tract_length_in_mm(i);
-                end_dis_each[i] = float((tipl::vector<3,float>(&tract_data[i][0])-
-                                    tipl::vector<3,float>(&tract_data[i][tract_data[i].size()-3])).length());
+                end_dis_each[i] = float(tipl::vector<3,float>(
+                            vs[0]*(tract_data[i][0]-tract_data[i][tract_data[i].size()-3]),
+                            vs[1]*(tract_data[i][1]-tract_data[i][tract_data[i].size()-2]),
+                            vs[2]*(tract_data[i][2]-tract_data[i][tract_data[i].size()-1])).length());
+
             });
             float sum_length = tipl::sum(length_each);
             float sum_end_dis = tipl::sum(end_dis_each);
