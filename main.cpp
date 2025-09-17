@@ -224,8 +224,6 @@ bool init_application(void)
 
     if(tipl::show_prog)
     {
-        console.attach();
-
         #ifdef __APPLE__
         QFont font;
         font.setFamily(QString::fromUtf8("Arial"));
@@ -502,6 +500,8 @@ int main(int ac, char *av[])
         }
 
         tipl::show_prog = true;
+        console.attach();
+
         tipl::progress prog(show_ver);
         if(!init_application())
             return 1;
