@@ -540,7 +540,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
 
     if(output_track)
     {
-        if(!tipl::ends_with(tract_file_name,{".tt.gz",".trk.gz",".tck",".txt",".mat"}))
+        if(!tipl::ends_with(tract_file_name,{".tt.gz",".trk.gz",".trk",".tck",".txt",".mat"}))
             tract_file_name += "." + po.get("trk_format","tt.gz");
         bool failed = false;
         if(po.has("ref")) // save track in T1W/T2W space
