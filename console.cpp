@@ -146,7 +146,7 @@ Console::~Console()
     delete ui;
 }
 
-int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *av[]);
+int run_action_with_wildcard(tipl::program_option<tipl::out>& po);
 
 void Console::on_set_dir_clicked()
 {
@@ -201,7 +201,7 @@ bool Console::eventFilter(QObject *obj, QEvent *event)
             }
             if (!po.has("action"))
                 po.set("action","vis");
-            run_action_with_wildcard(po,0,nullptr);
+            run_action_with_wildcard(po);
             ui->cmd_line->insertItem(0,ui->cmd_line->currentText());
             ui->cmd_line->setCurrentText(QString());
             return true; // Consume the event
