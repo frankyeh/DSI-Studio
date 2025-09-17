@@ -194,7 +194,8 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
                     std::string new_file_name;
                     if(tipl::match_files(original_file,param[1],file_list[k].toStdString(),new_file_name))
                     {
-                        tipl::out() << "matching " << file_list[k].toStdString() << "=>" << new_file_name;
+                        tipl::out() << "matching " << std::filesystem::path(file_list[k].toStdString()).filename()
+                                    << "=>" << std::filesystem::path(new_file_name).filename();
                         if(is_loading(cmd[j]) && !std::filesystem::exists(new_file_name))
                         {
                             tipl::warning() << "cannot find " << new_file_name;
