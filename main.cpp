@@ -215,7 +215,8 @@ const char* version_string = "Hou \"\xe4\xbe\xaf\"";
 int map_ver = 202408;
 int src_ver = 202408;
 int fib_ver = 202504;
-
+bool has_cuda = false;
+void check_cuda(std::string& error_msg);
 bool init_application(void)
 {
     QCoreApplication::setOrganizationName("LabSolver");
@@ -223,6 +224,7 @@ bool init_application(void)
 
     if(tipl::show_prog)
     {
+        console.attach();
 
         #ifdef __APPLE__
         QFont font;
@@ -274,6 +276,20 @@ bool init_application(void)
             tipl::error() << "cannot find template data." << std::endl;
             return false;
         }
+    }
+
+    if constexpr(tipl::use_cuda)
+    {
+        std::string cuda_msg;
+        check_cuda(cuda_msg);
+        if(!has_cuda)
+        {
+            if(tipl::show_prog)
+                QMessageBox::critical(nullptr,"ERROR",cuda_msg.c_str());
+            return 1;
+        }
+        else
+            tipl::out() << "CPU/GPU computation enabled "<< std::endl;
     }
     return true;
 }
@@ -339,27 +355,11 @@ int run_action(tipl::program_option<tipl::out>& po)
     tipl::error() << "unknown action: " << action;
     return 1;
 }
-void check_cuda(std::string& error_msg);
-bool has_cuda = false;
-int run_action_with_wildcard(tipl::program_option<tipl::out>& po,int ac, char *av[])
+
+int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
 {
     tipl::progress prog("command line");
     std::string action = po.get("action");
-    std::shared_ptr<QCoreApplication> cmd;
-    if(av)
-    {
-        cmd.reset(new QCoreApplication(ac, av));
-        if(!init_application())
-            return 1;
-        if constexpr(tipl::use_cuda)
-        {
-            std::string cuda_msg;
-            check_cuda(cuda_msg);
-            if(has_cuda)
-                tipl::out() << "CPU/GPU computation enabled "<< std::endl;
-        }
-    }
-
     tipl::max_thread_count = po.get("thread_count",tipl::max_thread_count);
 
     std::string loop;
@@ -431,7 +431,6 @@ extern console_stream console;
 MainWindow* main_window = nullptr;
 int main(int ac, char *av[])
 {
-    bool run_gui_command = false;
     std::string show_ver = std::string("DSI Studio version: ") + version_string + " " + __DATE__;
     std::cout << show_ver << std::endl;
 
@@ -449,11 +448,13 @@ int main(int ac, char *av[])
                 return 1;
             }
             std::string action = po.get("action");
-            if(action == "vis" || action == "cnt")
-                run_gui_command = true;
-            else
+            if(action != "vis" && action != "cnt")
             {
-                if(run_action_with_wildcard(po,ac,av))
+                std::shared_ptr<QCoreApplication> cmd;
+                cmd.reset(new QCoreApplication(ac, av));
+                if(!init_application())
+                    return 1;
+                if(run_action_with_wildcard(po))
                     return 1;
                 po.check_end_param<tipl::warning>();
                 return 0;
@@ -501,29 +502,9 @@ int main(int ac, char *av[])
         }
 
         tipl::show_prog = true;
-
-        if(!run_gui_command)
-            console.attach();
-
         tipl::progress prog(show_ver);
-
-
         if(!init_application())
             return 1;
-
-        if constexpr(tipl::use_cuda)
-        {
-            std::string cuda_msg;
-            check_cuda(cuda_msg);
-            if(!has_cuda)
-            {
-                QMessageBox::critical(nullptr,"ERROR",cuda_msg.c_str());
-                return 1;
-            }
-            else
-                tipl::out() << "CPU/GPU computation enabled "<< std::endl;
-        }
-
         MainWindow w;
         w.setWindowTitle(show_ver.c_str());
         main_window = &w;
@@ -575,9 +556,9 @@ int main(int ac, char *av[])
                 }
             });
         }
-        if(run_gui_command)
+        if(po.has("action"))
         {
-            run_action(po);
+            run_action_with_wildcard(po);
             if(!po.has("stay_open"))
                 return 0;
         }
