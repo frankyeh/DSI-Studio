@@ -1172,12 +1172,12 @@ void tracking_window::on_actionCommand_History_triggered(){
             }
             return sel;
         };
-        QStringList btns{"&Open...", "&Save...", "Reload...", "Repeat", "Apply to Files...", "Apply to Folders...", "Delete", "Close"};
+        QStringList btns{"&Open...", "&Save...", "Reload...", "Clear", "Repeat", "Apply to Files...", "Apply to Folders...", "Delete", "Close"};
         std::vector<QPushButton*> buttons;
         for(auto &b : btns) buttons.push_back(new QPushButton(b, command_dialog));
-        auto openB = buttons[0], saveB = buttons[1], reloadB = buttons[2],
-             repeatB = buttons[3], applyA = buttons[4], applyB = buttons[5],
-             deleteB = buttons[6], closeB = buttons[7];
+        auto openB = buttons[0], saveB = buttons[1], reloadB = buttons[2], clearB = buttons[3],
+             repeatB = buttons[4], applyA = buttons[5], applyB = buttons[6],
+             deleteB = buttons[7], closeB = buttons[8];
         reloadB->setObjectName("reloadButton");
         repeatB->setDisabled(true); deleteB->setDisabled(true); applyA->setDisabled(true); applyB->setDisabled(true);
         auto btnLayout = new QHBoxLayout;
@@ -1211,6 +1211,7 @@ void tracking_window::on_actionCommand_History_triggered(){
             }
         });
         connect(reloadB, &QPushButton::clicked, [=](){ populate_table(history.commands); });
+        connect(clearB,  &QPushButton::clicked, [=](){ history.commands.resize(1);populate_table(history.commands); });
         connect(repeatB, &QPushButton::clicked, [=](){
             if(history.run(this, get_sel(), 0 /* no open file or folder*/))
                 QMessageBox::information(this, QApplication::applicationName(), "Execution completed");
