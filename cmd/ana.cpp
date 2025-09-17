@@ -630,8 +630,18 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
             tracts[i]->name = line;
     }
 
+    if(po.has("merge_all") && tracts.size() > 1)
+    {
+        tipl::out() << "merging all tract clusters into a single one";
+        for(size_t index = 1;index < tracts.size();++index)
+            tracts[0]->add(*tracts[index].get());
+    }
+
     if(tracts.size() > 1)
     {
+        tipl::out() << "multiple cluster tracts found. only --output, --connectivity, and --export are supported and cannot use other post-tracking routines.";
+        tipl::out() << "To use other post-tracking routines, please specify --merge_all to merge all clusters into one single cluster.";
+
         if(po.has("output"))
         {
             std::string output = po.get("output");
@@ -712,19 +722,13 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
             }
             out_stat << result;
         }
-    }
 
-    if(tracts.size() > 1)
-    {
-        tipl::out() << "merging all tract clusters for post-tracking routine";
-        for(size_t index = 1;index < tracts.size();++index)
-            tracts[0]->add(*tracts[index].get());
+        return 0;
     }
 
     if(po.has("tip_iteration"))
         tracts[0]->trim(po.get("tip_iteration",0));
     return trk_post(po,handle,tracts[0],tract_files[0],false);
-
 }
 int exp(tipl::program_option<tipl::out>& po);
 int ana(tipl::program_option<tipl::out>& po)
