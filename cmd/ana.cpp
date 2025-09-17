@@ -713,13 +713,18 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
             out_stat << result;
         }
     }
-    if(tracts.size() == 1)
+
+    if(tracts.size() > 1)
     {
-        if(po.has("tip_iteration"))
-            tracts[0]->trim(po.get("tip_iteration",0));
-        return trk_post(po,handle,tracts[0],tract_files[0],false);
+        tipl::out() << "merging all tract clusters for post-tracking routine";
+        for(size_t index = 1;index < tracts.size();++index)
+            tracts[0]->add(*tracts[index].get());
     }
-    return 0;
+
+    if(po.has("tip_iteration"))
+        tracts[0]->trim(po.get("tip_iteration",0));
+    return trk_post(po,handle,tracts[0],tract_files[0],false);
+
 }
 int exp(tipl::program_option<tipl::out>& po);
 int ana(tipl::program_option<tipl::out>& po)
