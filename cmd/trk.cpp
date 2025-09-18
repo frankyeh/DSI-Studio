@@ -131,6 +131,7 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
             to_t1t2.identity();
             dim = handle->dim;
             vs = handle->vs;
+            trans_to_mni = handle->trans_to_mni;
 
             if(po.has("ref"))
             {
@@ -153,6 +154,8 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
                     to_t1t2[0] = to_t1t2[5] = to_t1t2[10] = ratio;
                     dim = handle->dim*ratio;
                     vs /= ratio;
+                    for(auto i : {0,1,2,4,5,6,8,9,10})
+                        trans_to_mni[i] /= ratio;
                 }
             }
             std::vector<std::shared_ptr<TractModel> > tract;
@@ -164,6 +167,7 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
             tipl::out() << std::endl;
             tipl::out() << "TDI dimension: " << dim << std::endl;
             tipl::out() << "TDI voxel size: " << vs << std::endl;
+            tipl::out() << "TDI srow: " << trans_to_mni << std::endl;
             tipl::out() << std::endl;
             tipl::out() << "saving " << file_name_stat;
             if(!TractModel::export_tdi(file_name_stat.c_str(),tract,dim,vs,trans_to_mni,to_t1t2,output_color,output_end))
