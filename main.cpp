@@ -429,7 +429,7 @@ extern console_stream console;
 MainWindow* main_window = nullptr;
 int main(int ac, char *av[])
 {
-    std::string show_ver = std::string("DSI Studio version: ") + version_string + " " + __DATE__;
+    std::string show_ver = std::string("DSI Studio (Yeh 2025, doi:10.1038/s41592-025-02762-8), the ") + version_string + " version (" + __DATE__ + ", http://dsi-studio.labsolver.org)";
     std::cout << show_ver << std::endl;
 
     if(ac == 2 && std::string(av[1]) == "--version")
