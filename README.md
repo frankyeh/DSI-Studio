@@ -5,8 +5,8 @@
 Follow: [![Twitter](https://img.shields.io/twitter/follow/FangChengYeh?style=social&logo=twitter)](https://twitter.com/FangChengYeh)  
 Subscribe: [![YouTube](https://img.shields.io/youtube/channel/subscribers/UCN6gohY_zeBpK6SwJ7hnz1Q?style=social)](https://www.youtube.com/c/FrankYeh)
 
-📘 **Documentation:** [https://dsi-studio.labsolver.org/manual](https://dsi-studio.labsolver.org/manual)  
-💬 **User Forum:** [https://groups.google.com/g/dsi-studio](https://groups.google.com/g/dsi-studio)
+**Official Website:** [https://dsi-studio.labsolver.org](https://dsi-studio.labsolver.org)  
+**User Forum:** [https://groups.google.com/g/dsi-studio](https://groups.google.com/g/dsi-studio)
 
 ---
 
