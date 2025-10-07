@@ -345,7 +345,6 @@ bool download_private_github_asset(QString conceptualUrlString, QString accessTo
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
-bool parse_age_sex(const std::string& file_name,std::string& age,std::string& sex);
 QString get_matched_demo(QWidget *parent,std::shared_ptr<fib_data>);
 QImage read_qimage(QString filename,std::string& error);
 extern QString access_token;
@@ -519,12 +518,28 @@ bool CustomSliceModel::load_slices(void)
             error_msg = db_handle->error_msg;
             return false;
         }
-        db_handle->db.get_avg_volume(source_images);
+
+        if(!handle->db.has_db() && !handle->db.demo.empty())
+        {
+            tipl::out() << "computing matched volume of " << db_handle->db.index_name << " using subject demographics: " << handle->db.demo;
+            if(!db_handle->db.get_demo_matched_volume(handle->db.demo,source_images))
+            {
+                error_msg = db_handle->error_msg;
+                return false;
+            }
+        }
+        else
+        {
+            tipl::out() << "computing subject averaged volume of " << db_handle->db.index_name;
+            db_handle->db.get_avg_volume(source_images);
+        }
+
         if(!handle->mni2sub(source_images,db_handle->trans_to_mni))
         {
             error_msg = handle->error_msg;
             return false;
         }
+        name += "." + db_handle->db.index_name;
         is_diffusion_space = true;
         has_transform = true;
     }
