@@ -345,7 +345,6 @@ bool download_private_github_asset(QString conceptualUrlString, QString accessTo
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
-QString get_matched_demo(QWidget *parent,std::shared_ptr<fib_data>);
 QImage read_qimage(QString filename,std::string& error);
 extern QString access_token;
 bool CustomSliceModel::load_slices(void)
