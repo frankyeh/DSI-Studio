@@ -250,7 +250,7 @@ bool load_nii(tipl::program_option<tipl::out>& po,
               std::shared_ptr<fib_data> handle,
               const std::string& file_name,
               std::vector<std::shared_ptr<ROIRegion> >& regions);
-bool get_parcellation(tipl::program_option<tipl::out>& po,Parcellation& p,std::string roi_file_name)
+bool get_parcellation(tipl::program_option<tipl::out>& po,ConnectivityMatrix& p,std::string roi_file_name)
 {
     if(!tipl::contains(roi_file_name,".")) // specify atlas name (e.g. --connectivity=AAL2)
     {
@@ -266,7 +266,7 @@ bool get_parcellation(tipl::program_option<tipl::out>& po,Parcellation& p,std::s
         tipl::out() << "opening " << roi_file_name << std::endl;
         if(!load_nii(po,p.handle,roi_file_name,regions)) // specify atlas file (e.g. --connectivity=subject_file.nii.gz)
             return false;
-        p.load_from_regions(regions);
+        p.load_from_regions(regions,std::filesystem::path(roi_file_name).stem().stem().string());
     }
     if(p.name.empty())
         p.name = (std::filesystem::exists(roi_file_name)) ?
@@ -281,8 +281,8 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
 
     for(auto each : tipl::split(po.get("connectivity"),','))
     {
-        Parcellation p(handle);
-        if(!get_parcellation(po,p,each))
+        ConnectivityMatrix data(handle);
+        if(!get_parcellation(po,data,each))
             return false;
 
         {
@@ -295,18 +295,16 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
             tipl::out() << "generating tract-to-region connectome";
             if(!po.has("track_id") && !po.has("tract") && !po.has("roi") && po.get("action") != "atk")
                 tipl::warning() << "t2r connectome may not work well with whole-brain tracking. please consider using autotrack --action=atk for t2r connectome.";
-            auto file_name = output_name + "." + p.name + ".tract2region.txt";
+            auto file_name = output_name + "." + data.name + ".tract2region.txt";
             tipl::out() << "saving " << file_name;
-            if(!p.save_t2r(file_name,std::vector<std::shared_ptr<TractModel> >{tract_model}))
+            if(!data.save_t2r(file_name,std::vector<std::shared_ptr<TractModel> >{tract_model}))
             {
-                tipl::error() << p.error_msg;
+                tipl::error() << data.error_msg;
                 return false;
             }
         }
 
         tipl::out() << "generating region-to-region connectome";
-        ConnectivityMatrix data;
-        data.set_parcellation(p);
 
         bool use_end_only = (po.get("connectivity_type","pass") == "end");
         std::string connectivity_output = po.get("connectivity_output","matrix,measure");
@@ -326,7 +324,7 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                 }
 
                 std::string file_name_stat = output_name +
-                    "." + p.name +
+                    "." + data.name +
                     "." + connectivity_value +
                     "." + (use_end_only ? ".end":".pass");
 
@@ -373,7 +371,7 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                     macro = false;
 
                 std::string file_name_stat = output_name +
-                    "." + p.name +
+                    "." + data.name +
                     "." + (macro?"macro":"micro") +
                     "." + metrics_name +
                     "." + (use_end_only ? "end" : "pass");

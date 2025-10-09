@@ -13,7 +13,7 @@
 #include "libs/tracking/fib_data.hpp"
 connectivity_matrix_dialog::connectivity_matrix_dialog(tracking_window *parent,QString method_) :
     QDialog(parent),method(method_),cur_tracking_window(parent),
-    ui(new Ui::connectivity_matrix_dialog)
+    ui(new Ui::connectivity_matrix_dialog),data(cur_tracking_window->handle)
 {
     ui->setupUi(this);
     ui->graphicsView->setScene(&scene);
@@ -92,23 +92,11 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
     if(cur_tracking_window->tractWidget->tract_models.size() == 0)
         return;
     tipl::progress prog("calculating connectivity matrix");
-    Parcellation p(cur_tracking_window->handle);
     cm.clear();
     if(ui->region_list->currentIndex() == 0)
-        p.load_from_regions(cur_tracking_window->regionWidget->get_checked_regions());
+        data.load_from_regions(cur_tracking_window->regionWidget->get_checked_regions(),"current regions");
     else
-    if(!p.load_from_atlas(ui->region_list->currentText().toStdString()))
-    {
-        QMessageBox::critical(this,"ERROR",p.error_msg.c_str());
-        return;
-    }
-
-    if(p.points.empty())
-    {
-        QMessageBox::critical(this,"ERROR","No checked ROI in the region list. Please assign/check ROIs.");
-        return;
-    }
-    data.set_parcellation(p);
+        data.load_from_atlas(ui->region_list->currentText().toStdString());
 
     TractModel tracks(cur_tracking_window->handle);
     for(int index = 0;index < cur_tracking_window->tractWidget->tract_models.size();++index)

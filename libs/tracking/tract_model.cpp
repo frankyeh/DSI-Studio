@@ -3375,53 +3375,56 @@ void TractModel::run_clustering(unsigned char method_id,unsigned int cluster_cou
     }
 }
 
-bool Parcellation::load_from_atlas(std::string atlas_name)
+bool ConnectivityMatrix::load_from_atlas(std::string name_)
 {
-    auto at = handle->get_atlas(atlas_name);
+    auto at = handle->get_atlas(name_);
     if(!at.get())
     {
         error_msg = handle->error_msg;
         return false;
     }
-    name = at->name;
-    if(!handle->get_atlas_all_roi(at,handle->dim,tipl::matrix<4,4>(tipl::identity_matrix()),points,labels))
+    if(!handle->get_atlas_all_roi(at,handle->dim,tipl::matrix<4,4>(tipl::identity_matrix()),region_points,region_name))
     {
         error_msg = handle->error_msg;
         return false;
     }
+    name = at->name;
+    region_map.clear();
     return true;
 }
-void Parcellation::load_from_regions(const std::vector<std::shared_ptr<ROIRegion> >& regions)
+void ConnectivityMatrix::load_from_regions(const std::vector<std::shared_ptr<ROIRegion> >& regions,std::string name_)
 {
     for(auto each : regions)
     {
-        points.push_back(each->to_space(handle->dim));
-        labels.push_back(each->name);
+        region_points.push_back(each->to_space(handle->dim));
+        region_name.push_back(each->name);
     }
+    name = name_;
+    region_map.clear();
 }
 
-std::vector<float> Parcellation::get_t2r_values(std::shared_ptr<TractModel> tract) const
+std::vector<float> ConnectivityMatrix::get_t2r_values(std::shared_ptr<TractModel> tract) const
 {
     tipl::image<3,unsigned int> tract_map(handle->dim);
     tract->get_density_map(tract_map,tipl::matrix<4,4>(tipl::identity_matrix()),false);
     unsigned int t = tipl::max_value(tract_map)*0.005f;
-    std::vector<float> values(points.size());
-    tipl::adaptive_par_for(points.size(),[&](unsigned int j)
+    std::vector<float> values(region_points.size());
+    tipl::adaptive_par_for(region_points.size(),[&](unsigned int j)
     {
-        if(points[j].empty())
+        if(region_points[j].empty())
             return;
         size_t sum = 0;
-        for(const auto& each : points[j])
+        for(const auto& each : region_points[j])
         {
             size_t index = tipl::voxel2index(each.begin(),tract_map.shape());
             if(index < tract_map.size() && tract_map[index] > t)
                 ++sum;
         }
-        values[j] = float(sum)/float(points[j].size());
+        values[j] = float(sum)/float(region_points[j].size());
     });
     return values;
 }
-std::string Parcellation::get_t2r(const std::vector<std::shared_ptr<TractModel> >& tracts) const
+std::string ConnectivityMatrix::get_t2r(const std::vector<std::shared_ptr<TractModel> >& tracts) const
 {
     std::vector<std::string> lines(tracts.size());
     for(size_t i = 0;i < tracts.size();++i)
@@ -3432,7 +3435,7 @@ std::string Parcellation::get_t2r(const std::vector<std::shared_ptr<TractModel> 
     }
     std::ostringstream out;
     out << "Name";
-    for(auto each : labels)
+    for(auto each : region_name)
         out << "\t" << each;
     out << std::endl;
 
@@ -3440,7 +3443,7 @@ std::string Parcellation::get_t2r(const std::vector<std::shared_ptr<TractModel> 
         out << each << std::endl;
     return out.str();
 }
-bool Parcellation::save_t2r(const std::string& filename,const std::vector<std::shared_ptr<TractModel> >& tracts) const
+bool ConnectivityMatrix::save_t2r(const std::string& filename,const std::vector<std::shared_ptr<TractModel> >& tracts) const
 {
     std::ofstream out(filename);
     if(!out)
@@ -3474,7 +3477,7 @@ void ConnectivityMatrix::save_to_file(const char* file_name)
     std::copy(region_name.begin(),region_name.end(),std::ostream_iterator<std::string>(out,"\n"));
     std::string result(out.str());
     mat_header.write("name",result);
-    mat_header.write("atlas",atlas_name);
+    mat_header.write("atlas",name);
 }
 
 void ConnectivityMatrix::save_to_text(std::string& text)
@@ -3519,20 +3522,6 @@ void ConnectivityMatrix::save_to_connectogram(const char* file_name)
     }
 }
 
-void ConnectivityMatrix::set_parcellation(const Parcellation& p)
-{
-    auto geo = p.handle->dim;
-    region_count = p.points.size();
-    region_name = p.labels;
-    region_map.clear();
-    region_map.resize(geo);
-    for(size_t roi = 0;roi < p.points.size();++roi)
-        for(auto& pos : p.points[roi])
-            if(geo.is_valid(pos))
-                region_map.at(pos).push_back(uint16_t(roi));
-    atlas_name = "roi";
-}
-
 
 template<class T,class fun_type>
 void for_each_connectivity(const T& end_list1,
@@ -3561,29 +3550,47 @@ void for_each_connectivity(const T& end_list1,
 }
 void ConnectivityMatrix::set_metrics(size_t m_index)
 {
-    if(m_index >= metrics.size() || metrics_data.empty())
+    if(m_index >= metrics.size() || metrics_data.empty() || region_points.empty())
         return;
+    size_t region_count = region_points.size();
     matrix_value.clear();
     matrix_value.resize(tipl::shape<2>(uint32_t(region_count),uint32_t(region_count)));
+    t2r_value.clear();
+    t2r_value.resize(region_count);
     for(size_t i = 0,index = 0;i < region_count;++i)
-        for(size_t j = i+1;j < region_count;++j,++index)
+        for(size_t j = i;j < region_count;++j,++index)
             if(m_index < metrics_data[index].size())
-                matrix_value[i*region_count+j] = matrix_value[i*region_count+j] = metrics_data[index][m_index];
+            {
+                if(i == j)
+                    t2r_value[i] = metrics_data[index][m_index];
+                else
+                    matrix_value[i*region_count+j] = matrix_value[i*region_count+j] = metrics_data[index][m_index];
+            }
 }
 bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
                                    TractModel& tract_model,std::string matrix_value_type,bool use_end_only,float threshold)
 {
-    tipl::progress p("calculating connectivity matrix");
-    tipl::out() << "tract count: " << tract_model.get_visible_track_count();
-    tipl::out() << "value: " << matrix_value_type;
-    tipl::out() << "use_end_only: " << (use_end_only ? "yes":"no");
-    if(!atlas_name.empty())
-        tipl::out() << "atlas_name: " << atlas_name;
-
+    size_t region_count = region_points.size();
     if(region_count == 0)
     {
         error_msg = "No region information. Please assign regions";
         return false;
+    }
+
+    tipl::progress p("calculating connectivity matrix");
+    tipl::out() << "tract count: " << tract_model.get_visible_track_count();
+    tipl::out() << "value: " << matrix_value_type;
+    tipl::out() << "use_end_only: " << (use_end_only ? "yes":"no");
+    tipl::out() << "atlas_name: " << name;
+
+    if(region_map.empty())
+    {
+        auto geo = handle->dim;
+        region_map.resize(geo);
+        for(size_t roi = 0;roi < region_points.size();++roi)
+            for(auto& pos : region_points[roi])
+                if(geo.is_valid(pos))
+                    region_map.at(pos).push_back(uint16_t(roi));
     }
 
     std::vector<std::vector<short> > end_list1,end_list2;
@@ -3615,7 +3622,7 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
 
         std::vector<std::pair<size_t,size_t> > ij_pair;
         for(unsigned int i = 0;i < region_count;++i)
-            for(unsigned int j = i+1;j < region_count;++j)
+            for(unsigned int j = i;j < region_count;++j)
                 ij_pair.push_back(std::make_pair(i,j));
 
 
@@ -3639,7 +3646,13 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
                 new_tracts.push_back(tract_model.get_tract(each));
             tm.add_tracts(new_tracts);
 
+            // get tract coverage
+            tipl::image<3,unsigned int> tract_map(handle->dim);
+            tm.get_density_map(tract_map,tipl::matrix<4,4>(tipl::identity_matrix()),false);
+            unsigned int t = tipl::max_value(tract_map)*0.005f;
 
+
+            // get tract shape analysis
             std::vector<std::string> cur_metrics;
             tm.get_quantitative_info(handle,cur_metrics,metrics_data[index]);
             std::lock_guard<std::mutex> lock(metrics_mutex);

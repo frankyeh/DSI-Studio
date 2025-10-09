@@ -296,8 +296,8 @@ tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
                     if(id != tract_map_id)
                     {
                         tract_map_id = id;
-                        Parcellation p(cur_tracking_window.handle);
-                        p.load_from_regions(regions);
+                        ConnectivityMatrix p(cur_tracking_window.handle);
+                        p.load_from_regions(regions,"current regions");
                         color_map_values = p.get_t2r_values(tract);
                     }
                 }
@@ -904,8 +904,8 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                 return run->failed("please add parcellation regions");
             if(tracts.empty())
                 return run->failed("please specify tract(s)");
-            Parcellation p(cur_tracking_window.handle);
-            p.load_from_regions(regions);
+            ConnectivityMatrix p(cur_tracking_window.handle);
+            p.load_from_regions(regions,"current regions");
             result = p.get_t2r(tracts);
             title = "Tract-To-Region Connectome";
             default_file += "_" + tracts.front()->name + "_t2r.txt";
@@ -952,8 +952,8 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             if(!tracts.empty())
             {
 
-                Parcellation p(cur_tracking_window.handle);
-                p.load_from_regions(regions);
+                ConnectivityMatrix p(cur_tracking_window.handle);
+                p.load_from_regions(regions,"current regions");
                 auto result2 = p.get_t2r(tracts);
                 result2.erase(0, result2.find('\n') + 1);
                 result += result2;

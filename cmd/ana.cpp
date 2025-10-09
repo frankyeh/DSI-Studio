@@ -567,7 +567,7 @@ void get_tract_statistics(std::shared_ptr<fib_data> handle,
     }
     result = out.str();
 }
-bool get_parcellation(tipl::program_option<tipl::out>& po,Parcellation& p,std::string connectivity);
+bool get_parcellation(tipl::program_option<tipl::out>& po,ConnectivityMatrix& p,std::string connectivity);
 int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 {
     std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
@@ -698,7 +698,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         {
             for(auto each : tipl::split(po.get("connectivity"),','))
             {
-                Parcellation p(handle);
+                ConnectivityMatrix p(handle);
                 if(!get_parcellation(po,p,each))
                     return false;
                 tipl::out() << "saving " << p.name + ".t2r.txt";
