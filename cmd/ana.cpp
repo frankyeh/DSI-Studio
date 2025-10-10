@@ -693,23 +693,6 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
                 }
             }
         }
-
-        if(po.has("connectivity"))
-        {
-            for(auto each : tipl::split(po.get("connectivity"),','))
-            {
-                ConnectivityMatrix p(handle);
-                if(!get_parcellation(po,p,each))
-                    return false;
-                tipl::out() << "saving " << p.name + ".t2r.txt";
-                if(!p.save_t2r(p.name + ".t2r.txt",tracts))
-                {
-                    tipl::error() << p.error_msg;
-                    return false;
-                }
-            }
-        }
-
         if(po.has("export"))
         {
             std::string result,file_name_stat("stat.txt");
