@@ -2834,15 +2834,14 @@ float TractModel::get_tract_length_in_mm(unsigned int index) const
 }
 void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vector<std::string>& titles,std::vector<float>& data)
 {
-    float na = std::numeric_limits<float>::quiet_NaN();
     {
         const float resolution_ratio = 2.0f;
         tipl::matrix<4,4> resolution_trans((tipl::identity_matrix()));
         resolution_trans[0] = resolution_trans[5] = resolution_trans[10] = 2.0f;
         float voxel_volume = vs[0]*vs[1]*vs[2];
         const float PI = 3.14159265358979323846f;
-        float tract_volume(na), branch_volume1(na), branch_volume2(na),
-              tract_area(na), tract_length(na), span(na), curl(na), bundle_diameter(na);
+        float tract_volume(0.0f), branch_volume1(0.0f), branch_volume2(0.0f),
+              tract_area(0.0f), tract_length(0.0f), median_tract_length(0.0f), span(0.0f), curl(0.0f), bundle_diameter(0.0f);
 
 
         titles.push_back("number of tracts");
@@ -2866,9 +2865,10 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
             float sum_length = tipl::sum(length_each);
             float sum_end_dis = tipl::sum(end_dis_each);
 
-            tract_length = tract_data.empty() ? na : sum_length/float(tract_data.size());
-            span = tract_data.empty() ? na : sum_end_dis/float(tract_data.size());
-            curl = (sum_end_dis == 0.0f ? na : sum_length/sum_end_dis);
+            tract_length = tract_data.empty() ? 0.0f : sum_length/float(tract_data.size());
+            median_tract_length = tract_data.empty() ? 0.0f : tipl::median(length_each.begin(),length_each.end());
+            span = tract_data.empty() ? 0.0f : sum_end_dis/float(tract_data.size());
+            curl = (sum_end_dis == 0.0f ? 0.0f : sum_length/sum_end_dis);
 
         }
 
@@ -2877,7 +2877,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
             std::vector<tipl::vector<3,short> > points;
             to_voxel(points,resolution_trans);
             tract_volume = points.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
-            bundle_diameter = (tract_length == 0.0f ? na : 2.0f*float(std::sqrt(tract_volume/tract_length/PI)));
+            bundle_diameter = (tract_length == 0.0f ? 0.0f : 2.0f*float(std::sqrt(tract_volume/tract_length/PI)));
 
             // now next convert point list to volume
             if(!points.empty())
@@ -2967,9 +2967,10 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
             branch_volume2 = branch2.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
         }
         data.push_back(tract_length);   titles.push_back("mean length(mm)");
+        data.push_back(median_tract_length);   titles.push_back("median length(mm)");
         data.push_back(span);           titles.push_back("span(mm)");
         data.push_back(curl);           titles.push_back("curl");
-        data.push_back(bundle_diameter == 0.0f ? na: tract_length/bundle_diameter);titles.push_back("elongation");
+        data.push_back(bundle_diameter == 0.0f ? 0.0f: tract_length/bundle_diameter);titles.push_back("elongation");
 
         data.push_back(tract_volume);   titles.push_back("total volume(mm^3)");
         data.push_back(branch_volume1);   titles.push_back("1st quarter volume(mm^3)");
@@ -2979,7 +2980,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
         data.push_back(tract_area);     titles.push_back("total surface area(mm^2)");
         data.push_back(radius1+radius2);titles.push_back("total radius of end regions(mm)");
         data.push_back(end_area1+end_area2);      titles.push_back("total area of end regions(mm^2)");
-        data.push_back(tract_length == 0.0f ? na : float(tract_area/PI/bundle_diameter/tract_length));  titles.push_back("irregularity");
+        data.push_back(tract_length == 0.0f ? 0.0f : float(tract_area/PI/bundle_diameter/tract_length));  titles.push_back("irregularity");
 
         data.push_back(end_area1);      titles.push_back("area of end region 1(mm^2)");
         data.push_back(radius1);        titles.push_back("radius of end region 1(mm)");
@@ -2994,7 +2995,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
     {
         if(handle->slices[data_index]->optional())
             continue;
-        data.push_back(tract_data.empty() ? na : get_tracts_mean(handle,data_index));
+        data.push_back(tract_data.empty() ? 0.0f : get_tracts_mean(handle,data_index));
         titles.push_back(handle->slices[data_index]->name);
     }
 
@@ -3013,7 +3014,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
                 data.push_back(get_tracts_mean(handle,0));
             }
             else
-                data.push_back(na);
+                data.push_back(0.0f);
         }
         handle->dir.index_data[0] = old_index_data;
     }
@@ -3262,10 +3263,8 @@ float TractModel::get_tracts_mean(std::shared_ptr<fib_data> handle,unsigned int 
 {
     if(handle->slices[data_index]->optional() || tract_data.empty())
         return 0.0f;
-    // avoid multithread racing
-    handle->slices[data_index]->get_image();
     std::vector<double> m(tract_data.size());
-    tipl::adaptive_par_for(tract_data.size(),[&](unsigned int i)
+    tipl::par_for(tract_data.size(),[&](unsigned int i)
     {
         auto data(get_tract_data(handle,i,data_index));
         m[i] = tipl::mean(data.begin(),data.end());
@@ -3275,15 +3274,11 @@ float TractModel::get_tracts_mean(std::shared_ptr<fib_data> handle,unsigned int 
 
 void TractModel::get_passing_list(const tipl::image<3,std::vector<short> >& region_map,
                                   unsigned int region_count,
-                                  std::vector<std::vector<short> >& passing_list1,
-                                  std::vector<std::vector<short> >& passing_list2) const
+                                  std::vector<std::vector<short> >& passing_list) const
 {
-    passing_list1.clear();
-    passing_list1.resize(tract_data.size());
-    passing_list2.clear();
-    passing_list2.resize(tract_data.size());
+    passing_list.clear();
+    passing_list.resize(tract_data.size());
     // create regions maps
-
     tipl::adaptive_par_for(tract_data.size(),[&](unsigned int index)
     {
         if(tract_data[index].size() < 6)
@@ -3302,10 +3297,7 @@ void TractModel::get_passing_list(const tipl::image<3,std::vector<short> >& regi
         }
         for(unsigned int i = 0;i < has_region.size();++i)
             if(has_region[i])
-            {
-                passing_list1[index].push_back(short(i));
-                passing_list2[index].push_back(short(i));
-            }
+                passing_list[index].push_back(short(i));
     });
 }
 
@@ -3383,6 +3375,8 @@ bool ConnectivityMatrix::load_from_atlas(std::string name_)
         error_msg = handle->error_msg;
         return false;
     }
+    region_points.clear();
+    region_name.clear();
     if(!handle->get_atlas_all_roi(at,handle->dim,tipl::matrix<4,4>(tipl::identity_matrix()),region_points,region_name))
     {
         error_msg = handle->error_msg;
@@ -3394,6 +3388,8 @@ bool ConnectivityMatrix::load_from_atlas(std::string name_)
 }
 void ConnectivityMatrix::load_from_regions(const std::vector<std::shared_ptr<ROIRegion> >& regions,std::string name_)
 {
+    region_points.clear();
+    region_name.clear();
     for(auto each : regions)
     {
         region_points.push_back(each->to_space(handle->dim));
@@ -3403,47 +3399,23 @@ void ConnectivityMatrix::load_from_regions(const std::vector<std::shared_ptr<ROI
     region_map.clear();
 }
 
-std::vector<float> ConnectivityMatrix::get_t2r_values(std::shared_ptr<TractModel> tract) const
+std::string ConnectivityMatrix::get_t2r(void) const
 {
-    tipl::image<3,unsigned int> tract_map(handle->dim);
-    tract->get_density_map(tract_map,tipl::matrix<4,4>(tipl::identity_matrix()),false);
-    unsigned int t = tipl::max_value(tract_map)*0.005f;
-    std::vector<float> values(region_points.size());
-    tipl::adaptive_par_for(region_points.size(),[&](unsigned int j)
-    {
-        if(region_points[j].empty())
-            return;
-        size_t sum = 0;
-        for(const auto& each : region_points[j])
-        {
-            size_t index = tipl::voxel2index(each.begin(),tract_map.shape());
-            if(index < tract_map.size() && tract_map[index] > t)
-                ++sum;
-        }
-        values[j] = float(sum)/float(region_points[j].size());
-    });
-    return values;
-}
-std::string ConnectivityMatrix::get_t2r(const std::vector<std::shared_ptr<TractModel> >& tracts) const
-{
-    std::vector<std::string> lines(tracts.size());
-    for(size_t i = 0;i < tracts.size();++i)
-    {
-        lines[i] += tracts[i]->name;
-        for(auto each : get_t2r_values(tracts[i]))
-            lines[i] += "\t"+std::to_string(each);
-    }
     std::ostringstream out;
-    out << "Name";
-    for(auto each : region_name)
+    out << "metrics";
+    for(auto& each : region_name)
         out << "\t" << each;
     out << std::endl;
-
-    for(const auto& each : lines)
-        out << each << std::endl;
+    for(size_t i = 0;i < metrics.size();++i)
+    {
+        out << metrics[i];
+        for(size_t j = 0;j < region_points.size();++j)
+            out << "\t" << metrics_data[j][i];
+        out << std::endl;
+    }
     return out.str();
 }
-bool ConnectivityMatrix::save_t2r(const std::string& filename,const std::vector<std::shared_ptr<TractModel> >& tracts) const
+bool ConnectivityMatrix::save_t2r(const std::string& filename) const
 {
     std::ofstream out(filename);
     if(!out)
@@ -3451,8 +3423,8 @@ bool ConnectivityMatrix::save_t2r(const std::string& filename,const std::vector<
         error_msg = "cannot write output to " + filename;
         return false;
     }
-    out << get_t2r(tracts);
-    return true;
+    out << get_t2r();
+    return !!out;
 }
 
 void ConnectivityMatrix::save_to_image(tipl::color_image& cm)
@@ -3471,6 +3443,8 @@ void ConnectivityMatrix::save_to_image(tipl::color_image& cm)
 
 void ConnectivityMatrix::save_to_file(const char* file_name)
 {
+    if(matrix_value.empty())
+        return;
     tipl::io::mat_write mat_header(file_name);
     mat_header.write("connectivity",matrix_value,matrix_value.width());
     std::ostringstream out;
@@ -3482,6 +3456,8 @@ void ConnectivityMatrix::save_to_file(const char* file_name)
 
 void ConnectivityMatrix::save_to_text(std::string& text)
 {
+    if(matrix_value.empty())
+        return;
     std::ostringstream out;
     int w = matrix_value.width();
     for(int i = 0;i < w;++i)
@@ -3495,6 +3471,8 @@ void ConnectivityMatrix::save_to_text(std::string& text)
 
 void ConnectivityMatrix::save_to_connectogram(const char* file_name)
 {
+    if(matrix_value.empty())
+        return;
     std::ofstream out(file_name);
     unsigned int w = uint32_t(matrix_value.width());
     std::vector<float> sum(w);
@@ -3523,53 +3501,27 @@ void ConnectivityMatrix::save_to_connectogram(const char* file_name)
 }
 
 
-template<class T,class fun_type>
-void for_each_connectivity(const T& end_list1,
-                           const T& end_list2,
-                           fun_type lambda_fun)
-{
-    for(unsigned int index = 0;index < end_list1.size();++index)
-    {
-        const auto& r1 = end_list1[index];
-        const auto& r2 = end_list2[index];
-        std::vector<std::pair<uint32_t,uint32_t> > region_pair;
-        for(unsigned int i = 0;i < r1.size();++i)
-            for(unsigned int j = 0;j < r2.size();++j)
-                if(r1[i] != r2[j])
-                {
-                    region_pair.push_back(std::make_pair(uint32_t(r1[i]),uint32_t(r2[j])));
-                    region_pair.push_back(std::make_pair(uint32_t(r2[j]),uint32_t(r1[i])));
-                }
-        // remove duplicates
-        std::sort(region_pair.begin(), region_pair.end());
-        region_pair.erase(std::unique(region_pair.begin(), region_pair.end()), region_pair.end());
 
-        for(const auto& pair : region_pair)
-            lambda_fun(index,pair.first,pair.second);
-    }
-}
 void ConnectivityMatrix::set_metrics(size_t m_index)
 {
     if(m_index >= metrics.size() || metrics_data.empty() || region_points.empty())
         return;
     size_t region_count = region_points.size();
-    matrix_value.clear();
-    matrix_value.resize(tipl::shape<2>(uint32_t(region_count),uint32_t(region_count)));
     t2r_value.clear();
     t2r_value.resize(region_count);
-    for(size_t i = 0,index = 0;i < region_count;++i)
-        for(size_t j = i;j < region_count;++j,++index)
-            if(m_index < metrics_data[index].size())
-            {
-                if(i == j)
-                    t2r_value[i] = metrics_data[index][m_index];
-                else
-                    matrix_value[i*region_count+j] = matrix_value[i*region_count+j] = metrics_data[index][m_index];
-            }
+    for(size_t i = 0;i < region_count;++i)
+        t2r_value[i] = metrics_data[i][m_index];
+
+    matrix_value.clear();
+    matrix_value.resize(tipl::shape<2>(uint32_t(region_count),uint32_t(region_count)));
+
+    for(size_t i = 0,index = region_count;i < region_count;++i)
+        for(size_t j = i + 1;j < region_count;++j,++index)
+            matrix_value[i*region_count+j] = matrix_value[j*region_count+i] = metrics_data[index][m_index];
 }
-bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
-                                   TractModel& tract_model,std::string matrix_value_type,bool use_end_only,float threshold)
+bool ConnectivityMatrix::calculate(TractModel& tract_model,bool use_end_only)
 {
+
     size_t region_count = region_points.size();
     if(region_count == 0)
     {
@@ -3579,17 +3531,16 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
 
     tipl::progress p("calculating connectivity matrix");
     tipl::out() << "tract count: " << tract_model.get_visible_track_count();
-    tipl::out() << "value: " << matrix_value_type;
     tipl::out() << "use_end_only: " << (use_end_only ? "yes":"no");
     tipl::out() << "atlas_name: " << name;
 
+
     if(region_map.empty())
     {
-        auto geo = handle->dim;
-        region_map.resize(geo);
+        region_map.resize(handle->dim);
         for(size_t roi = 0;roi < region_points.size();++roi)
             for(auto& pos : region_points[roi])
-                if(geo.is_valid(pos))
+                if(handle->dim.is_valid(pos))
                     region_map.at(pos).push_back(uint16_t(roi));
     }
 
@@ -3597,176 +3548,121 @@ bool ConnectivityMatrix::calculate(std::shared_ptr<fib_data> handle,
     if(use_end_only)
         tract_model.get_end_list(region_map,end_list1,end_list2);
     else
-        tract_model.get_passing_list(region_map,uint32_t(region_count),end_list1,end_list2);
-
-    matrix_value.clear();
-    matrix_value.resize(tipl::shape<2>(uint32_t(region_count),uint32_t(region_count)));
-
-
-    auto init_matrix = [=](auto& m)
     {
-        m.resize(region_count);
-        for(size_t i = 0;i < region_count;++i)
-            m[i].resize(region_count);
-    };
+        tract_model.get_passing_list(region_map,uint32_t(region_count),end_list1);
+        end_list2 = end_list1;
+    }
 
-    if(matrix_value_type == "all")
+    std::vector<std::vector<std::vector<unsigned int> > > region_passing_list(region_count);
+    for(size_t i = 0;i < region_count;++i)
+        region_passing_list[i].resize(region_count);
+
+    for(unsigned int index = 0;index < end_list1.size();++index)
     {
-        std::vector<std::vector<std::vector<unsigned int> > > region_passing_list;
-        init_matrix(region_passing_list);
+        const auto& r1 = end_list1[index];
+        const auto& r2 = end_list2[index];
+        std::vector<std::pair<uint32_t,uint32_t> > region_pair;
+        for(unsigned int i = 0;i < r1.size();++i)
+            for(unsigned int j = 0;j < r2.size();++j)
+                {
+                    region_pair.push_back(std::make_pair(uint32_t(r1[i]),uint32_t(r2[j])));
+                    region_pair.push_back(std::make_pair(uint32_t(r2[j]),uint32_t(r1[i])));
+                }
+        // remove duplicates
+        std::sort(region_pair.begin(), region_pair.end());
+        region_pair.erase(std::unique(region_pair.begin(), region_pair.end()), region_pair.end());
 
-        for_each_connectivity(end_list1,end_list2,
-                              [&](unsigned int index,unsigned int i,unsigned int j){
-            region_passing_list[i][j].push_back(index);
-        });
+        for(const auto& pair : region_pair)
+            region_passing_list[pair.first][pair.second].push_back(index);
+    }
 
-        std::vector<std::pair<size_t,size_t> > ij_pair;
-        for(unsigned int i = 0;i < region_count;++i)
-            for(unsigned int j = i;j < region_count;++j)
-                ij_pair.push_back(std::make_pair(i,j));
+    tipl::image<3,unsigned int> tract_map(handle->dim);
+    tract_model.get_density_map(tract_map,tipl::matrix<4,4>(tipl::identity_matrix()),false);
+    unsigned int t = tipl::max_value(tract_map)*0.005f;
 
 
-        std::mutex metrics_mutex;
+    std::vector<std::pair<size_t,size_t> > ij_pair;
+    std::vector<size_t> ij_pair_index;
+    // t2r
+    for(size_t i = 0;i < region_count;++i)
+        ij_pair.push_back(std::make_pair(i,i));
+    // r2r
+    for(size_t i = 0;i < region_count;++i)
+        for(size_t j = i+1;j < region_count;++j)
+            ij_pair.push_back(std::make_pair(i,j));
+    for(size_t index = 0;index < ij_pair.size();++index)
+        if(!region_passing_list[ij_pair[index].first][ij_pair[index].second].empty())
+            ij_pair_index.push_back(index);
+
+
+    std::mutex metrics_mutex;
+    metrics.clear();
+    metrics_data.clear();
+    metrics_data.resize(ij_pair.size());
+
+
+    tipl::progress prog("calculating matrices");
+    size_t prog_ = 0;
+    tipl::par_for(ij_pair_index.size(),[&](size_t pair_index)
+    {
+        size_t index = ij_pair_index[pair_index];
+        prog(prog_++,ij_pair_index.size());
+        auto i = ij_pair[index].first;
+        auto j = ij_pair[index].second;
+        if(tipl::prog_aborted)
+            return;
+        TractModel tm(tract_model.geo,tract_model.vs);
+        tm.report = tract_model.report;
+        tm.trans_to_mni = tract_model.trans_to_mni;
+        tm.is_mni = tract_model.is_mni;
+
+        std::vector<std::vector<float> > new_tracts;
+        for (auto each : region_passing_list[i][j])
+            new_tracts.push_back(tract_model.get_tract(each));
+
+        tm.add_tracts(new_tracts);
+        // get tract shape analysis
+
+        std::vector<std::string> cur_metrics;
+        tm.get_quantitative_info(handle,cur_metrics,metrics_data[index]);
+
+        // get tract coverage
+        {
+            float voxel_volume = handle->vs[0]*handle->vs[1]*handle->vs[2];
+            size_t sum = 0;
+            auto count = [&](auto& each)
+            {
+                if(handle->dim.is_valid(each) &&
+                   tract_map[tipl::voxel2index(each.begin(),tract_map.shape())] > t)
+                    ++sum;
+            };
+            for(const auto& each : region_points[i])
+                count(each);
+            for(const auto& each : region_points[j])
+                count(each);
+            cur_metrics.push_back("intersect ratio");
+            metrics_data[index].push_back(float(sum)/float(region_points[j].size() + region_points[i].size()));
+            cur_metrics.push_back("intersect volume (mm^3)");
+            metrics_data[index].push_back(float(sum)/voxel_volume);
+
+        }
+        std::lock_guard<std::mutex> lock(metrics_mutex);
+        if(metrics.empty())
+            cur_metrics.swap(metrics);
+    });
+
+    if(tipl::prog_aborted)
+    {
         metrics.clear();
         metrics_data.clear();
-        metrics_data.resize(ij_pair.size());
-        tipl::par_for(ij_pair.size(),[&](size_t index)
-        {
-            auto i = ij_pair[index].first;
-            auto j = ij_pair[index].second;
-            if(region_passing_list[i][j].empty())
-                return;
-            TractModel tm(tract_model.geo,tract_model.vs);
-            tm.report = tract_model.report;
-            tm.trans_to_mni = tract_model.trans_to_mni;
-            tm.is_mni = tract_model.is_mni;
-
-            std::vector<std::vector<float> > new_tracts;
-            for (auto each : region_passing_list[i][j])
-                new_tracts.push_back(tract_model.get_tract(each));
-            tm.add_tracts(new_tracts);
-
-            // get tract coverage
-            tipl::image<3,unsigned int> tract_map(handle->dim);
-            tm.get_density_map(tract_map,tipl::matrix<4,4>(tipl::identity_matrix()),false);
-            unsigned int t = tipl::max_value(tract_map)*0.005f;
-
-
-            // get tract shape analysis
-            std::vector<std::string> cur_metrics;
-            tm.get_quantitative_info(handle,cur_metrics,metrics_data[index]);
-            std::lock_guard<std::mutex> lock(metrics_mutex);
-            if(metrics.empty())
-                cur_metrics.swap(metrics);
-        });
-        return !metrics.empty();
-    }
-
-    std::vector<std::vector<unsigned int> > count;
-    init_matrix(count);
-    for_each_connectivity(end_list1,end_list2,
-                          [&](unsigned int,unsigned int i,unsigned int j){
-        ++count[i][j];
-    });
-
-    // determine the threshold for counting the connectivity
-    tipl::out() << "threshold: " << threshold;
-    unsigned int threshold_count = 0;
-    for (const auto& inner : count)
-        for (const auto& val : inner)
-            threshold_count = std::max(threshold_count, val);
-    threshold_count *= threshold;
-
-    if(matrix_value_type == "count")
-    {
-        for(unsigned int i = 0,index = 0;i < count.size();++i)
-            for(unsigned int j = 0;j < count[i].size();++j,++index)
-                matrix_value[index] = (count[i][j] > threshold_count ? count[i][j] : 0);
-        return true;
-    }
-    if(matrix_value_type == "ncount" || matrix_value_type == "ncount2")
-    {
-        std::vector<std::vector<std::vector<unsigned int> > > length_matrix;
-        init_matrix(length_matrix);
-
-        for_each_connectivity(end_list1,end_list2,
-                              [&](unsigned int index,unsigned int i,unsigned int j){
-            length_matrix[i][j].push_back(uint32_t(tract_model.get_tract(index).size()));
-        });
-
-        for(unsigned int i = 0,index = 0;i < count.size();++i)
-            for(unsigned int j = 0;j < count[i].size();++j,++index)
-                if(!length_matrix[i][j].empty() && count[i][j] > threshold_count)
-                {
-                    float length = 0.0;
-                    if(matrix_value_type == "ncount")
-                        length = 1.0f/tipl::median(length_matrix[i][j].begin(),length_matrix[i][j].end());
-                    else
-                    {
-                        for(unsigned int k = 0;k < length_matrix[i][j].size();++k)
-                            length += 1.0f/length_matrix[i][j][k];
-                    }
-                    matrix_value[index] = count[i][j]*length;
-                }
-                else
-                    matrix_value[index] = 0;
-
-        return true;
-    }
-
-
-    if(matrix_value_type == "mean_length")
-    {
-        std::vector<std::vector<float> > sum_length;
-        std::vector<std::vector<unsigned int> > sum_n;
-        init_matrix(sum_length);
-        init_matrix(sum_n);
-
-        for_each_connectivity(end_list1,end_list2,
-                              [&](unsigned int index,unsigned int i,unsigned int j){
-            auto num_steps = tract_model.get_tract(index).size();
-            if(num_steps >= 6)
-            {
-                auto dis = tract_model.get_tract_point(index,0)-tract_model.get_tract_point(index,1);
-                tipl::multiply(dis.begin(),dis.end(),handle->vs.begin());
-                sum_length[i][j] += dis.length()*num_steps;
-                ++sum_n[i][j];
-            }
-
-        });
-
-        for(unsigned int i = 0,index = 0;i < count.size();++i)
-            for(unsigned int j = 0;j < count[i].size();++j,++index)
-                if(sum_n[i][j] && count[i][j] > threshold_count)
-                    matrix_value[index] = float(sum_length[i][j])/float(sum_n[i][j])/3.0f;
-        return true;
-    }
-    std::vector<std::vector<float> > data(tract_model.get_tracts_data(handle,matrix_value_type));
-    if(data.empty())
-    {
-        error_msg = "Cannot quantify matrix value using ";
-        error_msg += matrix_value_type;
         return false;
     }
-    std::vector<std::vector<float> > sum;
-    init_matrix(sum);
+    for(auto& each : metrics_data)
+        if(each.empty())
+            each.resize(metrics.size());
+    set_metrics(0);
 
-    std::vector<float> m(data.size());
-    for(unsigned int index = 0;index < data.size();++index)
-        if(!data[index].empty())
-            m[index] = float(tipl::mean(data[index].begin(),data[index].end()));
-
-    for_each_connectivity(end_list1,end_list2,
-                          [&](unsigned int index,unsigned int i,unsigned int j){
-        sum[i][j] += m[index];
-    });
-
-
-    for(unsigned int i = 0,index = 0;i < count.size();++i)
-        for(unsigned int j = 0;j < count[i].size();++j,++index)
-            matrix_value[index] = (count[i][j] > threshold_count ? sum[i][j]/float(count[i][j]) : 0.0f);
     return true;
-
 }
 template<class matrix_type>
 void distance_bin(const matrix_type& bin,tipl::image<2,float>& D)
@@ -3864,12 +3760,16 @@ void output_node_measures(std::ostream& out,const char* name,const vec_type& dat
 
 void ConnectivityMatrix::network_property(std::string& report)
 {
+    if(matrix_value.empty())
+        return;
     std::ostringstream out;
     size_t n = matrix_value.width();
     tipl::image<2,unsigned char> binary_matrix(matrix_value.shape());
     tipl::image<2,float> norm_matrix(matrix_value.shape());
 
     float max_value = tipl::max_value(matrix_value);
+    if(max_value == 0.0f)
+        return;
     for(unsigned int i = 0;i < binary_matrix.size();++i)
     {
         binary_matrix[i] = matrix_value[i] > 0 ? 1 : 0;
@@ -3897,7 +3797,8 @@ void ConnectivityMatrix::network_property(std::string& report)
                 if(binary_matrix[posi + j] && binary_matrix[posi + k])
                     cluster_co[i] += binary_matrix[index];
         float d = degree[i];
-        cluster_co[i] /= (d*d-d);
+        if(d != 0.0f && d != 1.0f)
+            cluster_co[i] /= (d*d-d);
     }
     float cc_bin = tipl::mean(cluster_co.begin(),cluster_co.end());
     out << "clustering_coeff_average(binary)\t" << cc_bin << std::endl;
@@ -3919,7 +3820,8 @@ void ConnectivityMatrix::network_property(std::string& report)
         if(degree[i] >= 2)
         {
             float d = degree[i];
-            wcluster_co[i] = cyc3[i*(n+1)]/(d*d-d);
+            if(d != 0.0f && d != 1.0f)
+                wcluster_co[i] = cyc3[i*(n+1)]/(d*d-d);
         }
     }
     float cc_wei = tipl::mean(wcluster_co.begin(),wcluster_co.end());

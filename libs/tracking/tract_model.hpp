@@ -235,8 +235,7 @@ public:
 
         void get_passing_list(const tipl::image<3,std::vector<short> >& region_map,
                               unsigned int region_count,
-                                     std::vector<std::vector<short> >& passing_list1,
-                                     std::vector<std::vector<short> >& passing_list2) const;
+                                     std::vector<std::vector<short> >& passing_list) const;
         void get_end_list(const tipl::image<3,std::vector<short> >& region_map,
                                      std::vector<std::vector<short> >& end_list1,
                                      std::vector<std::vector<short> >& end_list2) const;
@@ -260,9 +259,8 @@ public:
     ConnectivityMatrix(std::shared_ptr<fib_data> handle_):handle(handle_){}
     bool load_from_atlas(std::string atlas_name);
     void load_from_regions(const std::vector<std::shared_ptr<ROIRegion> >& regions,std::string name_);
-    std::vector<float> get_t2r_values(std::shared_ptr<TractModel> tract) const;
-    std::string get_t2r(const std::vector<std::shared_ptr<TractModel> >& tracts) const;
-    bool save_t2r(const std::string& filename,const std::vector<std::shared_ptr<TractModel> >& tracts) const;
+    std::string get_t2r(void) const;
+    bool save_t2r(const std::string& filename) const;
 
 public:
     std::vector<std::string> metrics;
@@ -280,7 +278,7 @@ public:
     void save_to_file(const char* file_name);
     void save_to_connectogram(const char* file_name);
     void save_to_text(std::string& text);
-    bool calculate(std::shared_ptr<fib_data> handle,TractModel& tract_model,std::string matrix_value_type,bool use_end_only,float threshold);
+    bool calculate(TractModel& tract_model,bool use_end_only);
     void network_property(std::string& report);
 };
 
