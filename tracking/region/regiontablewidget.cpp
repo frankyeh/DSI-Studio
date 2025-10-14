@@ -297,8 +297,9 @@ tipl::rgb RegionTableWidget::get_region_rendering_color(size_t index)
                     {
                         tract_map_id = id;
                         ConnectivityMatrix p(cur_tracking_window.handle);
-                        p.load_from_regions(regions,"current regions");
-                        color_map_values = p.get_t2r_values(tract);
+                        p.load_from_regions(regions,"roi");
+                        p.calculate(*tract.get(),false);
+                        color_map_values = p.t2r_value;
                     }
                 }
             }
@@ -905,8 +906,15 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             if(tracts.empty())
                 return run->failed("please specify tract(s)");
             ConnectivityMatrix p(cur_tracking_window.handle);
-            p.load_from_regions(regions,"current regions");
-            result = p.get_t2r(tracts);
+            p.load_from_regions(regions,"roi");
+            result.clear();
+            for(auto& each : tracts)
+            {
+                p.calculate(*each.get(),false);
+                if(tracts.size() > 1)
+                    result += each->name + "\n";
+                result += p.get_t2r();
+            }
             title = "Tract-To-Region Connectome";
             default_file += "_" + tracts.front()->name + "_t2r.txt";
 
@@ -947,17 +955,6 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             if(regions.empty())
                 return run->failed("please specify regions");
             get_regions_statistics(cur_tracking_window.handle,regions,result);
-
-            // add t2r
-            if(!tracts.empty())
-            {
-
-                ConnectivityMatrix p(cur_tracking_window.handle);
-                p.load_from_regions(regions,"current regions");
-                auto result2 = p.get_t2r(tracts);
-                result2.erase(0, result2.find('\n') + 1);
-                result += result2;
-            }
             title = "Region Statistics";
             default_file += "_region_stat.txt";
         }
