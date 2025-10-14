@@ -278,121 +278,53 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                              std::string output_name,
                              std::shared_ptr<TractModel> tract_model)
 {
+    tipl::progress prog("load all image volume");
+    for(auto& each : handle->slices)
+        each->get_image();
 
     for(auto each : tipl::split(po.get("connectivity"),','))
     {
         ConnectivityMatrix data(handle);
         if(!get_parcellation(po,data,each))
             return false;
-
+        auto save_file_name = output_name + "." + data.name;
+        if(!data.calculate(*(tract_model.get()),(po.get("connectivity_type","pass") == "end")))
         {
-            tipl::progress prog("load all image volume");
-            for(auto& each : handle->slices)
-                each->get_image();
+            tipl::error() << data.error_msg << std::endl;
+            return false;
         }
 
+        tipl::out() << "saving region-to-region connectome";
+        for(size_t m_index = 0;m_index < data.metrics.size();++m_index)
         {
-            tipl::out() << "generating tract-to-region connectome";
-            if(!po.has("track_id") && !po.has("tract") && !po.has("roi") && po.get("action") != "atk")
-                tipl::warning() << "t2r connectome may not work well with whole-brain tracking. please consider using autotrack --action=atk for t2r connectome.";
-            auto file_name = output_name + "." + data.name + ".tract2region.txt";
-            tipl::out() << "saving " << file_name;
-            if(!data.save_t2r(file_name,std::vector<std::shared_ptr<TractModel> >{tract_model}))
+            std::string metrics_name = data.metrics[m_index].substr(0,data.metrics[m_index].find('('));
+            std::replace(metrics_name.begin(),metrics_name.end(),' ','_');
+            std::string file_name_stat = save_file_name + "." + metrics_name;
+            data.set_metrics(m_index);
             {
-                tipl::error() << data.error_msg;
-                return false;
+                std::string matrix = file_name_stat + ".connectivity.mat";
+                tipl::out() << "saving " << matrix << std::endl;
+                data.save_to_file(matrix.c_str());
+            }
+
+            {
+                std::string connectogram = file_name_stat + ".connectogram.txt";
+                tipl::out() << "saving " << connectogram << std::endl;
+                data.save_to_connectogram(connectogram.c_str());
+            }
+
+            {
+                std::string measure = file_name_stat + ".network_measures.txt";
+                tipl::out() << "saving " << measure << std::endl;
+                std::string report;
+                data.network_property(report);
+                std::ofstream out(measure.c_str());
+                out << report;
             }
         }
 
-        tipl::out() << "generating region-to-region connectome";
-
-        bool use_end_only = (po.get("connectivity_type","pass") == "end");
-        std::string connectivity_output = po.get("connectivity_output","matrix,measure");
-
-        if(po.get("connectivity_value","all") != "all")
-        {
-            QStringList connectivity_value_list = QString(po.get("connectivity_value").c_str()).split(",");
-            for(int k = 0;k < connectivity_value_list.size();++k)
-            {
-                std::string connectivity_value = connectivity_value_list[k].toStdString();
-                if(!data.calculate(handle,*(tract_model.get()),
-                                   connectivity_value,
-                                   use_end_only,po.get("connectivity_threshold",0.001f)))
-                {
-                    tipl::error() << data.error_msg << std::endl;
-                    return false;
-                }
-
-                std::string file_name_stat = output_name +
-                    "." + data.name +
-                    "." + connectivity_value +
-                    "." + (use_end_only ? ".end":".pass");
-
-                if(connectivity_output.find("matrix") != std::string::npos)
-                {
-                    std::string matrix = file_name_stat + ".connectivity.mat";
-                    tipl::out() << "saving " << matrix << std::endl;
-                    data.save_to_file(matrix.c_str());
-                }
-
-                if(connectivity_output.find("connectogram") != std::string::npos)
-                {
-                    std::string connectogram = file_name_stat + ".connectogram.txt";
-                    tipl::out() << "saving " << connectogram << std::endl;
-                    data.save_to_connectogram(connectogram.c_str());
-                }
-
-                if(connectivity_output.find("measure") != std::string::npos)
-                {
-                    std::string measure = file_name_stat + ".network_measures.txt";
-                    tipl::out() << "saving " << measure << std::endl;
-                    std::string report;
-                    data.network_property(report);
-                    std::ofstream out(measure.c_str());
-                    out << report;
-                }
-            }
-        }
-        else
-        {
-            if(!data.calculate(handle,*(tract_model.get()),"all",use_end_only,
-                               po.get("connectivity_threshold",0.001f)))
-            {
-                tipl::error() << data.error_msg << std::endl;
-                return false;
-            }
-
-            bool macro = true;
-            for(size_t m_index = 0;m_index < data.metrics.size();++m_index)
-            {
-                std::string metrics_name = data.metrics[m_index].substr(0,data.metrics[m_index].find('('));
-                std::replace(metrics_name.begin(),metrics_name.end(),' ','_');
-                if(metrics_name == "qa" || metrics_name == "dti_fa")
-                    macro = false;
-
-                std::string file_name_stat = output_name +
-                    "." + data.name +
-                    "." + (macro?"macro":"micro") +
-                    "." + metrics_name +
-                    "." + (use_end_only ? "end" : "pass");
-
-                data.set_metrics(m_index);
-                if(connectivity_output.find("matrix") != std::string::npos)
-                {
-                    std::string matrix = file_name_stat + ".connectivity.mat";
-                    tipl::out() << "saving " << matrix << std::endl;
-                    data.save_to_file(matrix.c_str());
-                }
-
-                if(connectivity_output.find("connectogram") != std::string::npos)
-                {
-                    std::string connectogram = file_name_stat + ".connectogram.txt";
-                    tipl::out() << "saving " << connectogram << std::endl;
-                    data.save_to_connectogram(connectogram.c_str());
-                }
-
-            }
-        }
+        tipl::out() << "generating tract-to-region connectome";
+        data.save_t2r(save_file_name + ".tract2region.txt");
     }
     return true;
 }
