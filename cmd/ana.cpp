@@ -567,7 +567,6 @@ void get_tract_statistics(std::shared_ptr<fib_data> handle,
     }
     result = out.str();
 }
-bool get_parcellation(tipl::program_option<tipl::out>& po,ConnectivityMatrix& p,std::string connectivity);
 int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 {
     std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
