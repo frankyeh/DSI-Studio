@@ -22,7 +22,7 @@ public:
     ConnectivityMatrix data;
 public:
     tracking_window* cur_tracking_window;
-    explicit connectivity_matrix_dialog(tracking_window *parent, QString method);
+    explicit connectivity_matrix_dialog(tracking_window *parent);
     ~connectivity_matrix_dialog();
 
     void mouse_move(QMouseEvent *mouseEvent);
@@ -42,6 +42,8 @@ private slots:
     void on_save_connectogram_clicked();
 
     void on_copy_to_clipboard_clicked();
+
+    void on_matrix_value_currentIndexChanged(int index);
 
 private:
     Ui::connectivity_matrix_dialog *ui;
