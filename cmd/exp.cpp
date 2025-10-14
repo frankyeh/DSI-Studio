@@ -80,7 +80,7 @@ int exp(tipl::program_option<tipl::out>& po)
         }
 
         for(const auto& each : tipl::split(po.get("export"),','))
-            if(!handle->save_slice(each,file_name + "." + each + ".nii.gz"))
+            if(!handle->save_slice(each,file_name + "." + each + ".nii.gz",po.has("export_to_mni")))
             {
                 tipl::error() << handle->error_msg;
                 return 1;
