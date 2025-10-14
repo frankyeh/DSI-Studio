@@ -175,6 +175,7 @@ public:
         name(name_),path(path_)
     {
     }
+    std::mutex get_image_mutex;
     tipl::const_pointer_image<3> get_image(void);
     bool image_ready(void){return image_data.data();}
     bool optional(void);
