@@ -154,9 +154,9 @@ void dual_reg::match_resolution(bool use_vs,float lr,float hr)
             }
             tipl::out() << "IR:" << IR;
             Is = I[0].shape();
-            IR[3] -= range_min[0]*Ivs[0];
-            IR[7] -= range_min[1]*Ivs[1];
-            IR[11] -= range_min[2]*Ivs[2];
+            IR[3] += range_min[0]*IR[0];
+            IR[7] += range_min[1]*IR[5];
+            IR[11] += range_min[2]*IR[10];
             tipl::out() << "new IR:" << IR;
         }
     }
