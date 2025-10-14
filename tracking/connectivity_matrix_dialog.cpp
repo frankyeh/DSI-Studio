@@ -11,29 +11,28 @@
 #include "ui_tracking_window.h"
 #include "mapping/atlas.hpp"
 #include "libs/tracking/fib_data.hpp"
-connectivity_matrix_dialog::connectivity_matrix_dialog(tracking_window *parent,QString method_) :
-    QDialog(parent),method(method_),cur_tracking_window(parent),
-    ui(new Ui::connectivity_matrix_dialog),data(cur_tracking_window->handle)
+connectivity_matrix_dialog::connectivity_matrix_dialog(tracking_window *parent) :
+    QDialog(parent),cur_tracking_window(parent),ui(new Ui::connectivity_matrix_dialog),data(parent->handle)
 {
     ui->setupUi(this);
     ui->graphicsView->setScene(&scene);
 
-    for (const auto& each: cur_tracking_window->handle->get_index_list())
-        ui->matrix_value->addItem(each.c_str());
-
     // atlas
     ui->region_list->addItem("ROIs");
+    size_t sel_index = 0;
     for(int index = 0;index < parent->handle->atlas_list.size();++index)
+    {
         ui->region_list->addItem(parent->handle->atlas_list[index]->name.c_str());
-    if(ui->region_list->count() > 1)
-        ui->region_list->setCurrentIndex(1);
+        if(tipl::contains(parent->handle->atlas_list[index]->name,"HCP-MMP"))
+            sel_index = index + 1;
+    }
+    if(sel_index == 0 && ui->region_list->count() > 1)
+        sel_index = 1;
 
-    for(unsigned int index = 0;index < cur_tracking_window->regionWidget->regions.size();++index)
-        if(cur_tracking_window->regionWidget->item(index,0)->checkState() == Qt::Checked)
-        {
-            ui->region_list->setCurrentIndex(0);
-            break;
-        }
+    if(!cur_tracking_window->regionWidget->get_checked_regions().empty())
+        sel_index = 0;
+
+    ui->region_list->setCurrentIndex(sel_index);
     on_recalculate_clicked();
 
 }
@@ -94,28 +93,29 @@ void connectivity_matrix_dialog::on_recalculate_clicked()
     tipl::progress prog("calculating connectivity matrix");
     cm.clear();
     if(ui->region_list->currentIndex() == 0)
-        data.load_from_regions(cur_tracking_window->regionWidget->get_checked_regions(),"current regions");
+        data.load_from_regions(cur_tracking_window->regionWidget->get_checked_regions(),"roi");
     else
         data.load_from_atlas(ui->region_list->currentText().toStdString());
-
     TractModel tracks(cur_tracking_window->handle);
     for(int index = 0;index < cur_tracking_window->tractWidget->tract_models.size();++index)
         if(cur_tracking_window->tractWidget->item(index,0)->checkState() == Qt::Checked)
             tracks.add(*cur_tracking_window->tractWidget->tract_models[index]);
-    if(!data.calculate(cur_tracking_window->handle,tracks,ui->matrix_value->currentText().toStdString().c_str(),
-                       ui->end_only->currentIndex(),
-                       ui->apply_threshold->isChecked() ? ui->network_threshold->value() : 0.0))
+    tipl::progress p("calculate connectivity",true);
+    if(!data.calculate(tracks,ui->end_only->currentIndex()))
     {
         QMessageBox::critical(this,"ERROR",data.error_msg.c_str());
         return;
     }
-    data.save_to_image(cm);
-    on_zoom_valueChanged(0);
-    QString out = QString("%1 %2 was used as the brain parcellation, and the connectivity matrix was calculated by using %3 of the connecting tracks.").
-            arg(method).arg(ui->region_list->currentText()).arg(ui->matrix_value->currentText());
+    ui->matrix_value->setUpdatesEnabled(false);
+    ui->matrix_value->clear();
+    for(auto& each : data.metrics)
+        ui->matrix_value->addItem(each.c_str());
+    ui->matrix_value->setUpdatesEnabled(true);
+    ui->matrix_value->setCurrentIndex(0);
+    QString out = QString("%1 was used as the brain parcellation, and the connectivity matrix was calculated by using %2 of the connecting tracks.").
+            arg(ui->region_list->currentText()).arg(ui->matrix_value->currentText());
     out += " The connectivity matrix and graph theoretical analysis was conducted.";
     ui->report->setText(check_citation(out));
-
     std::string report;
     data.network_property(report);
     ui->network_measures->setText(report.c_str());
@@ -184,3 +184,14 @@ void connectivity_matrix_dialog::on_copy_to_clipboard_clicked()
     QApplication::clipboard()->setText(text.c_str());
     QMessageBox::information(this,QApplication::applicationName(),"Results copied to clipboard");
 }
+
+void connectivity_matrix_dialog::on_matrix_value_currentIndexChanged(int index)
+{
+    if(index >= 0 && index < data.metrics.size())
+    {
+        data.set_metrics(index);
+        data.save_to_image(cm);
+        on_zoom_valueChanged(0);
+    }
+}
+
