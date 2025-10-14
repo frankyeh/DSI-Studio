@@ -1088,10 +1088,7 @@ void tracking_window::on_actionConnectivity_matrix_triggered()
         QMessageBox::information(this,QApplication::applicationName(),"Run fiber tracking first");
         return;
     }
-    std::ostringstream out;
-    if(tractWidget->currentRow() < tractWidget->tract_models.size())
-        out << tractWidget->tract_models[tractWidget->currentRow()]->report.c_str() << std::endl;
-    connectivity_matrix.reset(new connectivity_matrix_dialog(this,out.str().c_str()));
+    connectivity_matrix.reset(new connectivity_matrix_dialog(this));
     connectivity_matrix->show();
 }
 
