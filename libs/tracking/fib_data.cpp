@@ -82,6 +82,7 @@ bool slice_model::optional(void)
 
 tipl::const_pointer_image<3,float> slice_model::get_image(void)
 {
+    std::lock_guard<std::mutex> lock(get_image_mutex);
     if(!image_data.data() && handle)
     {
         max_value = 0.0f;
