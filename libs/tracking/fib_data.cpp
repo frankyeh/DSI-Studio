@@ -712,7 +712,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
         {
             if(get_sub2temp_mapping().empty() || t2s.empty())
             {
-                error_msg += " : cannot save file to the template space due to empty mapping matrix";
+                error_msg += "cannot save file to the template space due to empty mapping matrix";
                 return false;
             }
             tipl::out() << "save " << slices[index]->name << " to template space at " << file_name;
