@@ -625,7 +625,7 @@ bool fib_data::correct_bias_field(void)
     return true;
 }
 
-bool fib_data::save_slice(const std::string& index_name,const std::string& file_name,bool in_mni)
+bool fib_data::save_slice(const std::string& index_name,const std::string& file_name,bool to_mni)
 {
     tipl::progress prog("saving "+file_name);
     auto save = [this,file_name](const auto& buf)->bool
@@ -708,8 +708,14 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
     else
     {
         tipl::image<3> buf(slices[index]->get_image());
-        if(is_mni && !get_sub2temp_mapping().empty() && !t2s.empty())
+        if(to_mni)
         {
+            if(get_sub2temp_mapping().empty() || t2s.empty())
+            {
+                error_msg += " : cannot save file to the template space due to empty mapping matrix";
+                return false;
+            }
+            tipl::out() << "save " << slices[index]->name << " to template space at " << file_name;
             auto J = tipl::compose_mapping(slices[index]->get_image(),t2s);
             if(!tipl::io::gz_nifti::save_to_file(file_name.c_str(),J,template_vs,template_to_mni,true))
             {
