@@ -3417,6 +3417,7 @@ std::string ConnectivityMatrix::get_t2r(void) const
 }
 bool ConnectivityMatrix::save_t2r(const std::string& filename) const
 {
+    tipl::out() << "saving " << filename;
     std::ofstream out(filename);
     if(!out)
     {
@@ -3441,10 +3442,11 @@ void ConnectivityMatrix::save_to_image(tipl::color_image& cm)
     }
 }
 
-void ConnectivityMatrix::save_to_file(const char* file_name)
+void ConnectivityMatrix::save_to_file(const std::string& file_name)
 {
     if(matrix_value.empty())
         return;
+    tipl::out() << "saving " << file_name;
     tipl::io::mat_write mat_header(file_name);
     mat_header.write("connectivity",matrix_value,matrix_value.width());
     std::ostringstream out;
@@ -3469,10 +3471,11 @@ void ConnectivityMatrix::save_to_text(std::string& text)
     text = out.str();
 }
 
-void ConnectivityMatrix::save_to_connectogram(const char* file_name)
+void ConnectivityMatrix::save_connectogram(const std::string& file_name)
 {
     if(matrix_value.empty())
         return;
+    tipl::out() << "saving " << file_name;
     std::ofstream out(file_name);
     unsigned int w = uint32_t(matrix_value.width());
     std::vector<float> sum(w);
@@ -3499,8 +3502,14 @@ void ConnectivityMatrix::save_to_connectogram(const char* file_name)
         out << std::endl;
     }
 }
-
-
+void ConnectivityMatrix::save_network_property(const std::string& file_name)
+{
+    std::string report;
+    network_property(report);
+    tipl::out() << "saving " << file_name;
+    std::ofstream out(file_name);
+    out << report;
+}
 
 void ConnectivityMatrix::set_metrics(size_t m_index)
 {

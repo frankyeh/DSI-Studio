@@ -275,8 +275,9 @@ public:
     std::vector<std::string> region_name;
 public:
     void save_to_image(tipl::color_image& cm);
-    void save_to_file(const char* file_name);
-    void save_to_connectogram(const char* file_name);
+    void save_to_file(const std::string& file_name);
+    void save_connectogram(const std::string& file_name);
+    void save_network_property(const std::string& file_name);
     void save_to_text(std::string& text);
     bool calculate(TractModel& tract_model,bool use_end_only);
     void network_property(std::string& report);

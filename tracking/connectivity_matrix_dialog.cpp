@@ -174,7 +174,7 @@ void connectivity_matrix_dialog::on_save_connectogram_clicked()
                 "Text File (*.txt)");
     if(filename.isEmpty())
         return;
-    data.save_to_connectogram(filename.toStdString().c_str());
+    data.save_connectogram(filename.toStdString().c_str());
 }
 
 void connectivity_matrix_dialog::on_copy_to_clipboard_clicked()

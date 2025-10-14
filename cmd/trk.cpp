@@ -297,30 +297,16 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
         tipl::out() << "saving region-to-region connectome";
         for(size_t m_index = 0;m_index < data.metrics.size();++m_index)
         {
+            data.set_metrics(m_index);
+
             std::string metrics_name = data.metrics[m_index].substr(0,data.metrics[m_index].find('('));
             std::replace(metrics_name.begin(),metrics_name.end(),' ','_');
+
             std::string file_name_stat = save_file_name + "." + metrics_name;
-            data.set_metrics(m_index);
-            {
-                std::string matrix = file_name_stat + ".connectivity.mat";
-                tipl::out() << "saving " << matrix << std::endl;
-                data.save_to_file(matrix.c_str());
-            }
+            data.save_to_file(file_name_stat + ".connectivity.mat");
+            data.save_connectogram(file_name_stat + ".connectogram.txt");
+            data.save_network_property(file_name_stat + ".network_measures.txt");
 
-            {
-                std::string connectogram = file_name_stat + ".connectogram.txt";
-                tipl::out() << "saving " << connectogram << std::endl;
-                data.save_to_connectogram(connectogram.c_str());
-            }
-
-            {
-                std::string measure = file_name_stat + ".network_measures.txt";
-                tipl::out() << "saving " << measure << std::endl;
-                std::string report;
-                data.network_property(report);
-                std::ofstream out(measure.c_str());
-                out << report;
-            }
         }
 
         tipl::out() << "generating tract-to-region connectome";
