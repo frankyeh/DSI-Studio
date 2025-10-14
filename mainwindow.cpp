@@ -1711,28 +1711,37 @@ void MainWindow::on_github_repo_currentIndexChanged(int index)
     ui->github_tags->setSortingEnabled(false);
     ui->github_tags->setRowCount(0);
 
-    foreach (const QJsonValue& release, tags[repo])
-    {
-        QJsonObject releaseObject = release.toObject();
-        auto asset = releaseObject.value("assets").toArray();
+    QMap<QString, std::set<std::string>> agg_names;
+    QMap<QString, QJsonArray> agg_assets;
+    QMap<QString, QString> agg_title, agg_body;
+
+    foreach (const QJsonValue& release, tags[repo]) {
+        auto o = release.toObject(); auto a = o.value("assets").toArray();
+        QString tag = o.value("tag_name").toString(), base = tag;
+        if(tag.length() > 2 && tag[tag.length()-2] == '_' && tag[tag.length()-1] >= '1' && tag[tag.length()-1] <= '9')
+            base.chop(2);
 
         std::set<std::string> names;
-        foreach (const auto& each,asset)
-        {
-            auto file_name = each.toObject().value("name").toString().toStdString();
-            if(file_name.back() != 'z' || tipl::ends_with(file_name,".db.fz") || tipl::ends_with(file_name,".dz"))
-                continue;
-            names.insert(file_name.substr(0,std::min(file_name.find('_'),file_name.find('.'))));
+        foreach (const auto& each, a) {
+            auto fn = each.toObject().value("name").toString().toStdString();
+            if (fn.empty() || fn.back()!='z' || tipl::ends_with(fn,".db.fz") || tipl::ends_with(fn,".dz")) continue;
+            names.insert(fn.substr(0, std::min(fn.find('_'), fn.find('.'))));
         }
 
-        int row = ui->github_tags->rowCount();
-        ui->github_tags->insertRow(row);
-        ui->github_tags->setItem(row, 0, new QTableWidgetItem(releaseObject.value("tag_name").toString()));
-        ui->github_tags->setItem(row, 1, new QTableWidgetItem(QString::number(names.size())));
-        ui->github_tags->setItem(row, 2, new QTableWidgetItem(releaseObject.value("name").toString()));
-        notes[releaseObject.value("tag_name").toString()] = releaseObject.value("body").toString();
-        assets[releaseObject.value("tag_name").toString()] = asset;
+        auto& dst = agg_names[base]; dst.insert(names.begin(), names.end());
+        foreach (const auto& v, a) agg_assets[base].append(v);
+        if (agg_title[base].isEmpty()) agg_title[base]=o.value("name").toString();
+        if (agg_body[base].isEmpty())  agg_body[base] =o.value("body").toString();
     }
+
+    for (auto it=agg_names.cbegin(); it!=agg_names.cend(); ++it) {
+        int row=ui->github_tags->rowCount(); ui->github_tags->insertRow(row);
+        ui->github_tags->setItem(row,0,new QTableWidgetItem(it.key()));
+        ui->github_tags->setItem(row,1,new QTableWidgetItem(QString::number(it.value().size())));
+        ui->github_tags->setItem(row,2,new QTableWidgetItem(agg_title[it.key()]));
+        notes[it.key()]=agg_body[it.key()]; assets[it.key()]=agg_assets[it.key()];
+    }
+
     ui->github_tags->sortByColumn(0,Qt::AscendingOrder);
     ui->github_tags->setSortingEnabled(true);
     ui->github_tags->resizeRowsToContents();
