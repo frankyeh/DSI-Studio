@@ -1711,35 +1711,41 @@ void MainWindow::on_github_repo_currentIndexChanged(int index)
     ui->github_tags->setSortingEnabled(false);
     ui->github_tags->setRowCount(0);
 
-    QMap<QString, std::set<std::string>> agg_names;
-    QMap<QString, QJsonArray> agg_assets;
-    QMap<QString, QString> agg_title, agg_body;
+    std::map<QString, std::set<std::string>> agg_names;
+    std::map<QString, QString> agg_title;
 
-    foreach (const QJsonValue& release, tags[repo]) {
-        auto o = release.toObject(); auto a = o.value("assets").toArray();
+    foreach (const QJsonValue& release, tags[repo])
+    {
+        auto o = release.toObject();
+        auto a = o.value("assets").toArray();
         QString tag = o.value("tag_name").toString(), base = tag;
         if(tag.length() > 2 && tag[tag.length()-2] == '_' && tag[tag.length()-1] >= '1' && tag[tag.length()-1] <= '9')
             base.chop(2);
 
         std::set<std::string> names;
-        foreach (const auto& each, a) {
+        foreach (const auto& each, a)
+        {
             auto fn = each.toObject().value("name").toString().toStdString();
-            if (fn.empty() || fn.back()!='z' || tipl::ends_with(fn,".db.fz") || tipl::ends_with(fn,".dz")) continue;
+            if (fn.empty() || fn.back()!='z' || tipl::ends_with(fn,".db.fz") || tipl::ends_with(fn,".dz"))
+                continue;
             names.insert(fn.substr(0, std::min(fn.find('_'), fn.find('.'))));
         }
 
-        auto& dst = agg_names[base]; dst.insert(names.begin(), names.end());
-        foreach (const auto& v, a) agg_assets[base].append(v);
-        if (agg_title[base].isEmpty()) agg_title[base]=o.value("name").toString();
-        if (agg_body[base].isEmpty())  agg_body[base] =o.value("body").toString();
+        agg_names[base].insert(names.begin(), names.end());
+        foreach (const auto& v, a)
+            assets[base].append(v);
+        agg_title[base]=o.value("name").toString();
+        notes[base] =o.value("body").toString();
     }
 
-    for (auto it=agg_names.cbegin(); it!=agg_names.cend(); ++it) {
-        int row=ui->github_tags->rowCount(); ui->github_tags->insertRow(row);
-        ui->github_tags->setItem(row,0,new QTableWidgetItem(it.key()));
-        ui->github_tags->setItem(row,1,new QTableWidgetItem(QString::number(it.value().size())));
-        ui->github_tags->setItem(row,2,new QTableWidgetItem(agg_title[it.key()]));
-        notes[it.key()]=agg_body[it.key()]; assets[it.key()]=agg_assets[it.key()];
+    for (auto& each : agg_names)
+    {
+        int row=ui->github_tags->rowCount();
+        ui->github_tags->insertRow(row);
+        ui->github_tags->setItem(row,0,new QTableWidgetItem(each.first));
+        ui->github_tags->setItem(row,1,new QTableWidgetItem(QString::number(each.second.size())));
+        ui->github_tags->setItem(row,2,new QTableWidgetItem(QString::number(assets[each.first].size())));
+        ui->github_tags->setItem(row,3,new QTableWidgetItem(agg_title[each.first]));
     }
 
     ui->github_tags->sortByColumn(0,Qt::AscendingOrder);
@@ -1747,6 +1753,7 @@ void MainWindow::on_github_repo_currentIndexChanged(int index)
     ui->github_tags->resizeRowsToContents();
     ui->github_tags->resizeColumnToContents(0);
     ui->github_tags->resizeColumnToContents(1);
+    ui->github_tags->resizeColumnToContents(2);
 }
 
 
@@ -1975,7 +1982,7 @@ void MainWindow::on_github_tags_itemSelectionChanged()
        ui->github_tags->item(ui->github_tags->currentRow(), 0)->text() != "Loading...")
     {
         cur_tag = ui->github_tags->item(ui->github_tags->currentRow(), 0)->text();
-        QString title = ui->github_tags->item(ui->github_tags->currentRow(), 2)->text();
+        QString title = ui->github_tags->item(ui->github_tags->currentRow(), 3)->text();
         ui->github_repo_title->setText(title);
         auto content = notes[cur_tag].split('\n');
         if(!content.empty() && content[0].contains(title))
@@ -1984,7 +1991,7 @@ void MainWindow::on_github_tags_itemSelectionChanged()
         ui->github_release_note->setCurrentIndex(0);
         loadFiles();
     }
-    ui->github_tags->setColumnWidth(2,50);
+    ui->github_tags->setColumnWidth(3,50);
 }
 
 void MainWindow::on_browseDownloadDir_clicked()
