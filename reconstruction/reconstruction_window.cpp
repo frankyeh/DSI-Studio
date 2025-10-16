@@ -123,7 +123,22 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->method_group->setVisible(!handle->voxel.is_histology);
     ui->hist_param_group->setVisible(handle->voxel.is_histology);
 
-    ui->qsdr_reso->setValue(handle->is_human_data() ? std::min<float>(2.0f,std::max<float>(handle->voxel.vs[0],handle->voxel.vs[2])) : handle->voxel.vs[2]);
+    if(handle->is_human_data())
+    {
+        auto reso = std::max<float>(handle->voxel.vs[0],handle->voxel.vs[2]);
+        if(reso > 1.75f)
+            reso = 2.0f;
+        else
+        {
+            if(reso >= 1.5f)
+                reso = 1.5f;
+            else
+                reso = 1.0f;
+        }
+        ui->qsdr_reso->setValue(reso);
+    }
+    else
+        handle->voxel.vs[2];
 
     if(handle->voxel.is_histology)
     {
@@ -302,6 +317,7 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
     handle->voxel.dim = dim_backup;
     handle->voxel.vs = vs;
     handle->voxel.trans_to_mni = trans;
+
     if(!prompt)
         return;
     QMessageBox::information(this,QApplication::applicationName(),"FIB file created");
