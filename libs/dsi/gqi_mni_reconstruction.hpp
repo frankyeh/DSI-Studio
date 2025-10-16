@@ -27,11 +27,6 @@ public:
     virtual void init(Voxel& voxel)
     {
         tipl::progress prog("QA/ISO normalization");
-        if(voxel.vs[0] == 0.0f ||
-           voxel.vs[1] == 0.0f ||
-           voxel.vs[2] == 0.0f)
-            throw std::runtime_error("No spatial information found in src file. Recreate src file or contact developer for assistance");
-
         dual_reg reg;
         reg.modality_names = {"qa","iso"};
         reg.export_intermediate = voxel.needs("debug");
@@ -39,13 +34,13 @@ public:
         if(!reg.load_template(0,fa_template_list[voxel.template_id]) ||
            !reg.load_template(1,iso_template_list[voxel.template_id]))
             throw std::runtime_error("cannot load anisotropy/isotropy template");
-        voxel.trans_to_mni = reg.IR = reg.ItR;
 
         reg.I[0] = subject_image_pre(std::move(voxel.qa_map));
         reg.I[1] = subject_image_pre(std::move(voxel.iso_map));
         reg.Is = native_geo = voxel.dim;
         reg.Ivs = native_vs = voxel.vs;
-
+        initial_LPS_nifti_srow(reg.IR,native_geo,native_vs);
+        auto native_trans = reg.IR;
 
 
         bool t1w_reg = false;
@@ -84,14 +79,7 @@ public:
 
             }
 
-            {
-                affine = reg.T();
-                float VFratio = reg.Ivs[0]/voxel.vs[0]; // if subject data are downsampled, then VFratio=2, 4, 8, ...etc
-                if(VFratio != 1.0f)
-                    tipl::multiply_constant(affine.data(),affine.data()+12,VFratio);
-                if(t1w_reg)
-                    affine.accumulate(voxel.other_modality_trans);
-            }
+
         }
 
         {
@@ -102,129 +90,73 @@ public:
             if(tipl::prog_aborted)
                 throw std::runtime_error("reconstruction canceled");
 
+
             voxel.R2 = reg.r[1];
-            cdm_dis.swap(reg.t2f_dis);
             voxel.R2 = voxel.R2*voxel.R2;
             tipl::out() << "nonlinear R2: " << voxel.R2 << std::endl;
             if(voxel.R2 < 0.3f)
                 tipl::warning() << "poor registration found in nonlinear registration. Please check image quality or image orientation";
-        }
 
 
-        // VG: FA TEMPLATE
-        // VF: SUBJECT QA
-        // VF2: SUBJECT ISO
-        auto& VG = reg.It[0];
-        auto& VG2 = reg.It[1];
-        auto& VGvs = reg.Itvs;
-        auto& VF = reg.I[0];
-        auto& VF2 = reg.I[1];
-        auto& VFvs = reg.Ivs;
+            reg.to_I_space(native_geo,native_trans);
 
 
+            auto new_ItR = reg.ItR;
+            auto new_Its = reg.Its;
+            new_ItR[0] = new_ItR[5] = -voxel.qsdr_reso;
+            new_ItR[10] = voxel.qsdr_reso;
+            if(reg.Itvs[0] != voxel.qsdr_reso)
+                new_Its = tipl::shape<3>(uint32_t(float(reg.Its.width())*reg.Itvs[0]/voxel.qsdr_reso),
+                                         uint32_t(float(reg.Its.height())*reg.Itvs[0]/voxel.qsdr_reso),
+                                         uint32_t(float(reg.Its.depth())*reg.Itvs[0]/voxel.qsdr_reso));
 
-        // if subject data is only a fragment of FOV, crop images
-        if(voxel.partial_min != voxel.partial_max)
-        {
-            for(int d = 0;d < 3;++d)
-                if(voxel.partial_min[d] > voxel.partial_max[d])
-                    std::swap(voxel.partial_min[d],voxel.partial_max[d]);
-            tipl::out() << "partial reconstruction" << std::endl;
-            tipl::out() << "partial_min: " << voxel.partial_min << std::endl;
-            tipl::out() << "partial_max: " << voxel.partial_max << std::endl;
-            tipl::vector<3,int> bmin((voxel.partial_min[0]-voxel.trans_to_mni[3])/voxel.trans_to_mni[0],
-                                     (voxel.partial_min[1]-voxel.trans_to_mni[7])/voxel.trans_to_mni[5],
-                                     (voxel.partial_min[2]-voxel.trans_to_mni[11])/voxel.trans_to_mni[10]);
-            tipl::vector<3,int> bmax((voxel.partial_max[0]-voxel.trans_to_mni[3])/voxel.trans_to_mni[0],
-                                     (voxel.partial_max[1]-voxel.trans_to_mni[7])/voxel.trans_to_mni[5],
-                                     (voxel.partial_max[2]-voxel.trans_to_mni[11])/voxel.trans_to_mni[10]);
-            tipl::out() << "bmin: " << bmin << std::endl;
-            tipl::out() << "bmax: " << bmax << std::endl;
-            for(int i = 0;i < 3;++i)
+            // if subject data is only a fragment of FOV, crop images
+            if(voxel.partial_min != voxel.partial_max)
             {
-                if(bmin[i] > bmax[i])
-                    std::swap(bmin[i],bmax[i]);
-                if(bmin[i] < 0.0f || bmax[i] > VG.shape()[i])
-                    throw std::runtime_error("out of bounding box in partial reconstruction.");
+                tipl::out() << "partial reconstruction" << std::endl;
+                tipl::vector<3> shift(reg.ItR[3],reg.ItR[7],reg.ItR[11]);
+                auto bmin = voxel.partial_min - shift;
+                auto bmax = voxel.partial_max - shift;
+                tipl::out() << "partial min/max: " << voxel.partial_min << " " << voxel.partial_max;
+                tipl::out() << "voxel min/max: " << bmin << " " << bmax;
+                for(int i = 0;i < 3;++i)
+                {
+                    if(bmin[i] > bmax[i])
+                        std::swap(bmin[i],bmax[i]);
+                    if(bmin[i] < 0.0f || bmax[i] > reg.Its[i]*reg.Itvs[i])
+                        throw std::runtime_error("out of bounding box in partial reconstruction.");
+                }
+
+                // update transformation and dimension
+                new_ItR[3] -= bmin[0];
+                new_ItR[7] -= bmin[1];
+                new_ItR[11] += bmin[2];
+                bmax -= bmin;
+                bmax /= voxel.qsdr_reso;
+                new_Its = tipl::shape<3>(bmax.begin());
             }
 
-            // update cdm_dis
-            tipl::crop(cdm_dis,bmin,bmax);
+            reg.to_It_space(new_Its,new_ItR);
+            affine = reg.T();
+            if(t1w_reg)
+                affine.accumulate(voxel.other_modality_trans);
+            cdm_dis.swap(reg.t2f_dis);
+            mapping.swap(reg.to2from);
 
-            // add the coordinate shift to the displacement matrix
-            cdm_dis += bmin;
-
-            tipl::crop(VG,bmin,bmax);
-
-            // update transformation and dimension
-            voxel.trans_to_mni[3] -= bmin[0]*VGvs[0];
-            voxel.trans_to_mni[7] -= bmin[1]*VGvs[1];
-            voxel.trans_to_mni[11] += bmin[2]*VGvs[2];
-
-        }
-
-        // output resolution = acquisition resolution
-        float VG_ratio = voxel.qsdr_reso/VGvs[0];
-
-        // update registration results;
-        if(voxel.qsdr_reso != VGvs[0])
-        {
-            tipl::shape<3> new_geo(uint32_t(float(VG.width())*VGvs[0]/voxel.qsdr_reso),
-                                   uint32_t(float(VG.height())*VGvs[0]/voxel.qsdr_reso),
-                                   uint32_t(float(VG.depth())*VGvs[0]/voxel.qsdr_reso));
-            // update VG,VFFF (for mask) and cdm_dis (for mapping)
-            tipl::image<3,unsigned char> new_VG(new_geo);
-            tipl::image<3,tipl::vector<3> > new_cdm_dis(new_geo);
-            tipl::adaptive_par_for(tipl::begin_index(new_geo),tipl::end_index(new_geo),
-                          [&](const tipl::pixel_index<3>& pos)
-            {
-                tipl::vector<3> p(pos);
-                p *= VG_ratio;
-                tipl::interpolator::linear<3> interp;
-                if(!interp.get_location(VG.shape(),p))
-                    return;
-                interp.estimate(cdm_dis,new_cdm_dis[pos.index()]);
-                // here the displacement values are still in the VGvs resolution
-                interp.estimate(VG,new_VG[pos.index()]);
-            });
-            new_cdm_dis.swap(cdm_dis);
-            new_VG.swap(VG);
-            VGvs[0] = VGvs[1] = VGvs[2] = voxel.qsdr_reso;
         }
 
         // assign mask
-        {
-            voxel.mask.resize(VG.shape());
-            for(size_t index = 0;index < VG.size();++index)
-                voxel.mask[index] = VG[index] > 0.0f ? 1:0;
-        }
-
-        // compute mappings
-        {
-            mapping.resize(cdm_dis.shape());
-            tipl::adaptive_par_for(tipl::begin_index(cdm_dis.shape()),tipl::end_index(cdm_dis.shape()),
-            [&](const tipl::pixel_index<3>& pos)
-            {
-                tipl::vector<3> Jpos(pos);
-                if(VG_ratio != 1.0f) // if upsampled due to subject high resolution
-                    Jpos *= VG_ratio;
-                Jpos += cdm_dis[pos.index()]; // VFF space
-                affine(Jpos);// VFF to VF space
-                mapping[pos.index()] = Jpos;
-            });
-        }
+        tipl::threshold(reg.It[0],voxel.mask,0.0f);
 
 
         // setup voxel data for QSDR
         {
             voxel.qsdr = true;
-            voxel.dim = VG.shape();
-            voxel.vs = VGvs;
-            voxel.trans_to_mni[0] = -VGvs[0];
-            voxel.trans_to_mni[5] = -VGvs[1];
-            voxel.trans_to_mni[10] = VGvs[2];
-            tipl::out() << "output resolution: " << VGvs[0] << std::endl;
-            tipl::out() << "output dimension: " << VG.shape() << std::endl;
+            voxel.dim = reg.Its;
+            voxel.vs = reg.Itvs;
+            voxel.trans_to_mni = reg.ItR;
+            tipl::out() << "output resolution: " << reg.Itvs[0] << std::endl;
+            tipl::out() << "output dimension: " << reg.Its << std::endl;
 
             // other image
             if(!voxel.other_image.empty())
@@ -233,8 +165,8 @@ public:
                 {
                     if(voxel.other_image[i].empty())
                         continue;
-                    tipl::image<3> new_other_image(VG.shape());
-                    tipl::adaptive_par_for(VG.shape().size(),[&](size_t index)
+                    tipl::image<3> new_other_image(voxel.dim);
+                    tipl::adaptive_par_for(voxel.dim.size(),[&](size_t index)
                     {
                         tipl::vector<3,float> Jpos(mapping[index]);
                         if(voxel.other_image[i].shape() != native_geo)
@@ -243,12 +175,12 @@ public:
                     });
                     tipl::lower_threshold(new_other_image,0);
                     voxel.other_image[i].swap(new_other_image);
-                    voxel.other_image_voxel_size[i] = VGvs;
+                    voxel.other_image_voxel_size[i] = voxel.vs;
                     voxel.other_image_trans[i].identity();
                 }
             }
             //if(voxel.needs("vol"))
-            jdet.resize(VG.size());
+            jdet.resize(voxel.dim.size());
             // setup raw DWI
             ptr_images.clear();
             for (unsigned int index = 0; index < voxel.dwi_data.size(); ++index)
