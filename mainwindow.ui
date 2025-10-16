@@ -147,7 +147,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>4</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="icon">
@@ -2839,6 +2839,11 @@ Tractography</string>
               <column>
                <property name="text">
                 <string>Subject(s)</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>Files(s)</string>
                </property>
               </column>
               <column>
