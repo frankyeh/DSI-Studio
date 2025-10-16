@@ -91,15 +91,10 @@ public:
                 throw std::runtime_error("reconstruction canceled");
 
 
-            voxel.R2 = reg.r[1];
-            voxel.R2 = voxel.R2*voxel.R2;
+            voxel.R2 = reg.r[1]*reg.r[1];
             tipl::out() << "nonlinear R2: " << voxel.R2 << std::endl;
             if(voxel.R2 < 0.3f)
                 tipl::warning() << "poor registration found in nonlinear registration. Please check image quality or image orientation";
-
-
-            reg.to_I_space(native_geo,native_trans);
-
 
             auto new_ItR = reg.ItR;
             auto new_Its = reg.Its;
@@ -107,8 +102,8 @@ public:
             new_ItR[10] = voxel.qsdr_reso;
             if(reg.Itvs[0] != voxel.qsdr_reso)
                 new_Its = tipl::shape<3>(uint32_t(float(reg.Its.width())*reg.Itvs[0]/voxel.qsdr_reso),
-                                         uint32_t(float(reg.Its.height())*reg.Itvs[0]/voxel.qsdr_reso),
-                                         uint32_t(float(reg.Its.depth())*reg.Itvs[0]/voxel.qsdr_reso));
+                                         uint32_t(float(reg.Its.height())*reg.Itvs[1]/voxel.qsdr_reso),
+                                         uint32_t(float(reg.Its.depth())*reg.Itvs[2]/voxel.qsdr_reso));
 
             // if subject data is only a fragment of FOV, crop images
             if(voxel.partial_min != voxel.partial_max)
@@ -136,6 +131,7 @@ public:
                 new_Its = tipl::shape<3>(bmax.begin());
             }
 
+            reg.to_I_space(native_geo,native_trans);
             reg.to_It_space(new_Its,new_ItR);
             affine = reg.T();
             if(t1w_reg)
