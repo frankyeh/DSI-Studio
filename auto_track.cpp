@@ -307,6 +307,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
 
                         float sec = float(std::chrono::duration_cast<std::chrono::milliseconds>(
                                     thread.end_time-thread.begin_time).count())*0.001f;
+                        tipl::out() << "total tract generated: " << thread.get_total_tract_count();
                         if(thread.get_total_seed_count())
                         {
                             tipl::out() << "yield rate (tract generated per seed): " <<
@@ -318,6 +319,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         }
 
                     }
+
                     if(no_result)
                         continue;
                     // fetch both front and back buffer
@@ -325,7 +327,6 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     thread.fetchTracks(tract_model.get());
                     if(thread.param.step_size != 0.0f)
                         tract_model->resample(1.0f);
-                    tract_model->delete_repeated(tract_model->vs[0]);
                     tract_model->trim(thread.param.tip_iteration);
                     // if trim removes too many tract, undo to at least get the smallest possible bundle.
                     if(thread.param.tip_iteration && tract_model->get_visible_track_count() == 0)
