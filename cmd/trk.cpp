@@ -421,12 +421,12 @@ int trk_post(tipl::program_option<tipl::out>& po,
         return 0;
     }
 
-    if (po.has("delete_repeat"))
+    if (po.has("delete_repeat") || po.get("action") == "atk" || po.has("track_id"))
     {
-        tipl::out() << "deleting repeat tracks..." << std::endl;
-        float distance = po.get("delete_repeat",float(1));
+        float distance = po.get("delete_repeat",float(0.5f));
+        tipl::out() << "repeated tracks with distance smaller than " << distance <<" voxel distance are deleted";
         tract_model->delete_repeated(distance);
-        tipl::out() << "repeat tracks with distance smaller than " << distance <<" voxel distance are deleted" << std::endl;
+        tipl::out() << "tract count after removing repeated tracts: " << tract_model->get_visible_track_count();
     }
     if (po.has("delete_by_length"))
     {
