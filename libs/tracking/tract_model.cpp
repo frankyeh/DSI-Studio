@@ -901,9 +901,8 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
 {
     std::string file_name(file_name_);
     saved = true;
-    tipl::out() << "save tracts to " << file_name;
-    tipl::out() << "dim:" << geo;
-    tipl::out() << "vs:" << vs;
+    tipl::out() << "save " << tract_data.size() << " tracts to " << file_name;
+    tipl::out() << "dim:" << geo << " vs:" << vs;
     tipl::out() << "trans:" << trans_to_mni;
     if(tipl::ends_with(file_name,"tt.gz"))
     {
