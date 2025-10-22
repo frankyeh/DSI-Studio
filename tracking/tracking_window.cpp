@@ -699,10 +699,11 @@ tracking_window::~tracking_window()
     //tipl::out() << __FUNCTION__ << " " << __FILE__ << std::endl;
 }
 
+extern std::string dsi_studio_citation;
 QString check_citation(QString str)
 {
     if(!str.contains("DSI Studio"))
-        str += " The analysis was conducted using " + QApplication::applicationName();
+        str += (" The analysis was conducted using " + dsi_studio_citation + ".").c_str();
     return str;
 }
 void tracking_window::report(QString string)
