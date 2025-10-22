@@ -265,6 +265,22 @@ MainWindow::MainWindow(QWidget *parent) :
         }
     }
 
+    // load fiber data hub file list
+    {
+        QJsonDocument doc = QJsonDocument::fromJson(settings.value("file data hub").toString().toUtf8());
+        QJsonObject root = doc.object();
+        if (root.contains("dates"))
+        {
+            QJsonObject datesObj = root["dates"].toObject();
+            for (const QString& key : datesObj.keys()) dates[key] = datesObj[key].toString();
+        }
+        if (root.contains("tags"))
+        {
+            QJsonObject tagsObj = root["tags"].toObject();
+            for (const QString& key : tagsObj.keys()) tags[key] = tagsObj[key].toArray();
+        }
+    }
+
 }
 
 extern const char* version_string;
@@ -458,6 +474,16 @@ void MainWindow::closeEvent(QCloseEvent *event)
 }
 MainWindow::~MainWindow()
 {
+    // save fiber data hub file list
+    {
+        QJsonObject root, datesObj, tagsObj;
+        for (const auto& pair : dates) datesObj[pair.first] = pair.second;
+        for (const auto& pair : tags) tagsObj[pair.first] = pair.second;
+        root["dates"] = datesObj;
+        root["tags"] = tagsObj;
+        settings.setValue("file data hub", QJsonDocument(root).toJson(QJsonDocument::Compact));
+    }
+
     console.log_window = nullptr;
     QStringList workdir_list;
     for (int index = 0;index < 10 && index < ui->workDir->count();++index)
@@ -1670,7 +1696,7 @@ void MainWindow::on_tabWidget_currentChanged(int index)
         ui->github_note->setReadOnly(true);
         ui->github_note->setOpenExternalLinks(true);
         fetch_github = true;
-        on_load_tags_clicked();
+        on_github_repo_currentIndexChanged(0);
     }
 }
 
@@ -1702,6 +1728,7 @@ void MainWindow::on_github_repo_currentIndexChanged(int index)
     if(tags.find(repo) == tags.end())
     {
         tags[repo] = QJsonArray();
+        dates[repo] = QString();
         on_load_tags_clicked();
         return;
     }
@@ -1732,6 +1759,10 @@ void MainWindow::on_github_repo_currentIndexChanged(int index)
             assets[tag].append(each);
         }
     }
+    if(dates[repo].isEmpty())
+        ui->tag_date->setText("Loading...");
+    else
+        ui->tag_date->setText("Last sync:" + dates[repo]);
 
     for (const auto& each : agg)
     {
@@ -1760,8 +1791,7 @@ void MainWindow::on_load_tags_clicked()
     QString url = QString("https://api.github.com/repos/%1/releases").arg(repo);
     ui->github_tags->setSortingEnabled(false);
     ui->github_tags->setRowCount(0);
-    ui->github_tags->setRowCount(1);
-    ui->github_tags->setItem(0, 0, new QTableWidgetItem("Loading..."));
+    ui->tag_date->setText("Loading...");
     ui->load_tags->setEnabled(false);
     notes.clear();
     assets.clear();
@@ -1854,6 +1884,7 @@ void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array,int per_page)
                 }
             }
             tags[repo] = array;
+            dates[repo] = QDate::currentDate().toString("yyyy/MM/dd");
             if (!array.isEmpty() && repo == ui->github_repo->currentData().toString())
                 QTimer::singleShot(0, this, [this]() {on_github_repo_currentIndexChanged(0);});
         }
@@ -1973,8 +2004,7 @@ void MainWindow::on_github_release_note_currentChanged(int index)
 
 void MainWindow::on_github_tags_itemSelectionChanged()
 {
-    if(ui->github_tags->currentRow() >= 0 &&
-       ui->github_tags->item(ui->github_tags->currentRow(), 0)->text() != "Loading...")
+    if(ui->github_tags->currentRow() >= 0 && ui->github_tags->rowCount())
     {
         cur_tag = ui->github_tags->item(ui->github_tags->currentRow(), 0)->text();
         QString title = ui->github_tags->item(ui->github_tags->currentRow(), 3)->text();
