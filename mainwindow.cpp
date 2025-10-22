@@ -1752,11 +1752,11 @@ void MainWindow::on_github_repo_currentIndexChanged(int index)
         auto& names = agg_at_tag.second;
         foreach (const auto& each, object.value("assets").toArray())
         {
+            assets[tag].append(each);
             auto fn = each.toObject().value("name").toString().toStdString();
             if (fn.empty() || fn.back()!='z' || tipl::ends_with(fn,".db.fz") || tipl::ends_with(fn,".dz"))
                 continue;
             names.insert(fn.substr(0, std::min(fn.find('_'), fn.find('.'))));
-            assets[tag].append(each);
         }
     }
     if(dates[repo].isEmpty())
