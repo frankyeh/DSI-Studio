@@ -21,7 +21,7 @@ class MainWindow : public QMainWindow
     enum { MaxRecentFiles = 50 };
     void updateRecentList(void);
     QSettings settings;
-    std::map<QString,QString> notes;
+
 public:
     std::vector<QString> github_tsv_link;
     int github_api_rate_limit = 60;
@@ -30,6 +30,7 @@ public:
 public:
     bool fetch_github = false;
     QNetworkAccessManager manager;
+    std::map<QString,QString> notes,dates;
     std::map<QString,QJsonArray> tags,assets;
     QSharedPointer<QNetworkReply> get(QUrl url);
     QString fnValue,adrValue;
