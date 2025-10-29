@@ -1762,7 +1762,7 @@ void src_data::trim(size_t border)
     if(border)
         for(int d = 0; d < 3;++d)
         {
-            range_min[d] = std::max<int>(0,range_min[d] - border);
+            range_min[d] = std::max<int>(0,range_min[d] - int(border));
             range_max[d] = std::min<int>(range_max[d] + border,voxel.dim[d]);
         }
     crop(range_min,range_max);
