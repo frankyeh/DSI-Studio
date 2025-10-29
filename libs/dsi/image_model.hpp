@@ -300,8 +300,8 @@ public:
     void resample(float nv);
     void smoothing(void);
     bool align_acpc(float reso);
-    void crop(tipl::shape<3> range_min,tipl::shape<3> range_max);
-    void trim(void);
+    void crop(tipl::vector<3,int> range_min,tipl::vector<3,int> range_max);
+    void trim(size_t border = 0);
 public:
     bool has_bias_field_correction(void) const;
 public:

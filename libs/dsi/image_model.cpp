@@ -982,8 +982,15 @@ bool src_data::command(std::string cmd,std::string param)
     }
     if(cmd == "[Step T2][Edit][Crop Background]")
     {
-        trim();
-        voxel.steps += cmd+"\n";
+        int border = 0;
+        if(!param.empty())
+        {
+            border = std::stoi(param);
+            voxel.steps += cmd+"="+param+"\n";
+        }
+        else
+            voxel.steps += cmd+"\n";
+        trim(border);
         return true;
     }
     if(cmd == "[Step T2][Edit][Image flip x]")
@@ -1732,7 +1739,7 @@ bool src_data::correct_motion(void)
     return true;
 }
 
-void src_data::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
+void src_data::crop(tipl::vector<3,int> range_min,tipl::vector<3,int> range_max)
 {
     tipl::progress prog("Removing background region");
     size_t p = 0;
@@ -1748,10 +1755,16 @@ void src_data::crop(tipl::shape<3> range_min,tipl::shape<3> range_max)
     tipl::crop(dwi,range_min,range_max);
     voxel.dim = voxel.mask.shape();
 }
-void src_data::trim(void)
+void src_data::trim(size_t border)
 {
-    tipl::shape<3> range_min,range_max;
+    tipl::vector<3,int> range_min,range_max;
     tipl::bounding_box(voxel.mask,range_min,range_max);
+    if(border)
+        for(int d = 0; d < 3;++d)
+        {
+            range_min[d] -= border;
+            range_max[d] -= border;
+        }
     crop(range_min,range_max);
 }
 
