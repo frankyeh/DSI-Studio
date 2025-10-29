@@ -2464,7 +2464,10 @@ bool src_data::run_eddy(std::string exec)
                 return false;
             tipl::warning() << error_msg;
             error_msg.clear();
-            return run_applytopup();
+            if(!run_applytopup())
+                return false;
+            correct_motion();
+            return true;
         }
     }
     if(!save_nii_for_applytopup_or_eddy(true))
