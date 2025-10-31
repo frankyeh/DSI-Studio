@@ -28,14 +28,15 @@ int rec(tipl::program_option<tipl::out>& po)
     {
         tipl::progress prog("reconstruction parameters");
         src.voxel.method_id = uint8_t(po.get("method",4));
-        src.voxel.odf_resolving = po.get("odf_resolving",int(0));
         src.voxel.dti_ignore_high_b = po.get("dti_ignore_high_b",src.is_human_data());
         src.voxel.other_output = po.get("other_output","fa,rd,rdi");
-        src.voxel.r2_weighted = po.get("r2_weighted",int(0));
         src.voxel.thread_count = tipl::max_thread_count;
-        src.voxel.param[0] = po.get("param0",src.voxel.param[0]);
-        src.voxel.param[1] = po.get("param1",src.voxel.param[1]);
-        src.voxel.param[2] = po.get("param2",src.voxel.param[2]);
+        if(src.voxel.method_id == 4 or src.voxel.method_id == 7)
+        {
+            src.voxel.param[0] = po.get("param",src.voxel.param[0]);
+            src.voxel.r2_weighted = po.get("r2_weighted",int(0));
+            src.voxel.odf_resolving = po.get("odf_resolving",int(0));
+        }
         for(size_t id = 0;id < fa_template_list.size();++id)
             tipl::out() << "template " << id << ": " << std::filesystem::path(fa_template_list[id]).stem().stem().stem() << std::endl;
         src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
