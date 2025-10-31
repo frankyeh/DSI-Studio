@@ -170,8 +170,7 @@ int rec(tipl::program_option<tipl::out>& po)
             src.is_human_data()))
             src.command("[Step T2][Edit][Resample]",po.get("make_isotropic",std::to_string(src.is_human_data() ? 2.0f : src.voxel.vs[2])));
 
-        if((po.get("correct_bias_field",!src.has_bias_field_correction()) && !src.command("[Step T2][Corrections][Bias Field]")) ||
-           (po.get("volume_correction",0) && !src.command("[Step T2][Corrections][Volume Orientation Correction]")) ||
+        if((po.get("volume_correction",0) && !src.command("[Step T2][Corrections][Volume Orientation Correction]")) ||
            (po.has("correct_by_t2") && !src.command("[Step T2][Corrections][By T2w]",po.get("correct_by_t2"))) ||
            (po.get("motion_correction",0) && !src.command("[Step T2][Corrections][Motion Correction]")))
         {
