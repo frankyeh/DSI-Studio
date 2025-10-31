@@ -262,7 +262,8 @@ public:
     auto dwi_at(size_t index) const {return tipl::make_image(src_dwi_data[index],voxel.dim);}
 public:
     void draw_mask(tipl::color_image& buffer,int position);
-    void calculate_dwi_sum(bool update_mask);
+    void update_dwi_sum(void);
+    void update_mask(void);
     bool warp_b0_to_image(dual_reg& r);
     bool mask_from_unet(void);
     bool mask_from_template(void);
@@ -308,6 +309,7 @@ public:
     bool correct_distortion_by_t2w(const std::string& t2w_filename);
     void correction_axis(void);
     bool correct_motion(void);
+    tipl::image<3> get_bias_field(void);
     bool correct_bias_field(void);
     bool add_other_image(const std::string& name,const std::string& filename);
 public:

@@ -58,61 +58,72 @@ void src_data::draw_mask(tipl::color_image& buffer,int position)
     tipl::draw(buffer,buffer2,tipl::vector<2,int>(dwi.width(),0));
     buffer2.swap(buffer);
 }
-void src_data::calculate_dwi_sum(bool update_mask)
+void src_data::update_dwi_sum(void)
 {
     if(src_dwi_data.empty())
         return;
+    tipl::image<3> dwi_sum(voxel.dim);
+    bool skip_b0 = tipl::max_value(src_bvalues) >= 100.0;
+    tipl::par_for(dwi_sum.size(),[&](size_t i)
     {
-        tipl::image<3> dwi_sum(voxel.dim);
-        bool skip_b0 = tipl::max_value(src_bvalues) >= 100.0;
-        tipl::adaptive_par_for(dwi_sum.size(),[&](size_t i)
+        for(size_t j = 0;j < src_dwi_data.size();++j)
         {
-            for(size_t j = 0;j < src_dwi_data.size();++j)
-            {
-                if(skip_b0 && src_bvalues[j] < 100.0f)
-                    continue;
-                dwi_sum[i] += src_dwi_data[j][i];
-            }
-        });
-        dwi = subject_image_pre(dwi_sum);
-    }
-
-    if(update_mask)
-    {
-        tipl::out() << "create mask from dwi sum";
-        tipl::threshold(dwi,voxel.mask,25,1,0);
-        if(dwi.depth() < 300)
-        {
-            tipl::morphology::defragment(voxel.mask);
-            for(size_t i = 0;i < 6;++i)
-                tipl::morphology::fit(voxel.mask,dwi);
-            tipl::morphology::defragment(voxel.mask);
-            tipl::morphology::smoothing(voxel.mask);
-            tipl::morphology::defragment_slice(voxel.mask);
-            for(size_t i = 0;i < 6;++i)
-                tipl::morphology::fit(voxel.mask,dwi);
-            tipl::morphology::defragment(voxel.mask);
-
+            if(skip_b0 && src_bvalues[j] < 100.0f)
+                continue;
+            dwi_sum[i] += src_dwi_data[j][i];
         }
+    });
+    dwi = subject_image_pre(dwi_sum);
+}
+void src_data::update_mask(void)
+{
+    tipl::progress("create mask from dwi sum",true);
+    if(dwi.depth() >= 300)
+    {
+        tipl::segmentation::otsu(dwi,voxel.mask,1,0);
+        return;
     }
+
+    if(has_bias_field_correction())
+        tipl::segmentation::otsu(dwi,voxel.mask,1,0);
     else
     {
-        if(dwi.shape() == voxel.mask.shape())
-            tipl::preserve(dwi.begin(),dwi.end(),voxel.mask.begin());
+        tipl::image<3> dwi_corrected(dwi);
+        dwi_corrected *= get_bias_field();
+        tipl::segmentation::otsu(dwi_corrected,voxel.mask,1,0);
     }
-}
 
+    tipl::morphology::erosion(voxel.mask);
+    tipl::morphology::erosion(voxel.mask);
+    tipl::morphology::defragment(voxel.mask);
+    tipl::morphology::smoothing(voxel.mask);
+    tipl::morphology::defragment(voxel.mask);
+    tipl::morphology::fit(voxel.mask,dwi);
+    tipl::morphology::dilation(voxel.mask);
+    tipl::morphology::smoothing(voxel.mask);
+    tipl::morphology::fit(voxel.mask,dwi);
+    tipl::morphology::dilation(voxel.mask);
+    tipl::morphology::smoothing(voxel.mask);
+    tipl::morphology::fit(voxel.mask,dwi);
+    tipl::morphology::dilation(voxel.mask);
+    tipl::morphology::fit(voxel.mask,dwi);
+    tipl::morphology::fit(voxel.mask,dwi);
+    tipl::morphology::fit(voxel.mask,dwi);
+    tipl::morphology::defragment_slice(voxel.mask);
+    tipl::morphology::defragment(voxel.mask);
+}
+extern std::vector<std::string> t2w_template_list,iso_template_list;
 bool src_data::warp_b0_to_image(dual_reg& r)
 {
     tipl::progress prog("registering images");
     std::vector<tipl::image<3> > b0;
     if(!read_b0(b0))
         return false;
-    r.I[0] = subject_image_pre(std::move(b0[0]));
     r.I[1] = subject_image_pre(tipl::image<3>(dwi));
+    r.I[0] = std::filesystem::exists(t2w_template_list[voxel.template_id]) ? subject_image_pre(std::move(b0[0])) : r.I[1];
     r.I[2] = voxel.mask;
     tipl::morphology::dilation(r.I[2]);
-    r.modality_names = {"b0","dwi sum","mask"};
+    r.modality_names = {"b0/dwi","dwi sum","mask"};
     r.IR = voxel.trans_to_mni;
     r.Ivs = voxel.vs;
     r.Is = r.I[0].shape();
@@ -144,7 +155,6 @@ bool src_data::warp_b0_to_image(dual_reg& r)
     thread.join();
     return !prog.aborted();
 }
-extern std::vector<std::string> t2w_template_list,iso_template_list;
 bool src_data::mask_from_template(void)
 {
     tipl::progress prog("generate mask from template");
@@ -259,7 +269,7 @@ bool src_data::correct_distortion_by_t2w(const std::string& t2w_filename)
     voxel.dim = r.Its;
     voxel.vs = r.Itvs;
     voxel.trans_to_mni = r.ItR;
-    calculate_dwi_sum(false);
+    update_dwi_sum();
     voxel.recon_report << msg;
     return true;
 }
@@ -948,7 +958,7 @@ bool src_data::command(std::string cmd,std::string param)
                 buf[i] *= prob[i];
         });
         tipl::threshold(prob,voxel.mask,0.0f);
-        calculate_dwi_sum(false);
+        update_dwi_sum();
         voxel.steps += cmd+"="+param+"\n";
         return true;
     }
@@ -1269,8 +1279,7 @@ void src_data::rotate(const tipl::shape<3>& new_geo,
     tipl::image<3,unsigned char> mask(voxel.dim);
     tipl::resample<tipl::interpolation::majority>(voxel.mask,mask,T);
     mask.swap(voxel.mask);
-
-    calculate_dwi_sum(false);
+    update_dwi_sum();
 
 }
 void src_data::resample(float nv)
@@ -1304,7 +1313,7 @@ void src_data::smoothing(void)
         prog(p++,src_dwi_data.size());
         tipl::filter::gaussian(dwi_at(index));
     });
-    calculate_dwi_sum(false);
+    update_dwi_sum();
 }
 
 bool src_data::add_other_image(const std::string& name,const std::string& filename)
@@ -1598,6 +1607,34 @@ bool src_data::has_bias_field_correction(void) const
 {
     return tipl::contains(voxel.report,"bias field");
 }
+tipl::image<3> src_data::get_bias_field(void)
+{
+    tipl::progress prog("compute bias field",true);
+    tipl::image<3>  bias_field;
+    if(src_dwi_data.empty())
+        return bias_field;
+
+    tipl::image<3> dwi_sum(voxel.dim);
+    bool skip_b0 = tipl::max_value(src_bvalues) >= 100.0;
+    tipl::par_for(dwi_sum.size(),[&](size_t i)
+    {
+        for(size_t j = 0;j < src_dwi_data.size();++j)
+        {
+            if(skip_b0 && src_bvalues[j] < 100.0f)
+                continue;
+            dwi_sum[i] += src_dwi_data[j][i];
+        }
+    });
+    tipl::image<3,unsigned char> mask;
+    tipl::threshold(subject_image_pre(dwi_sum),mask,25,1,0);
+    for(size_t i = 0;prog(i,1);++i)
+        ::correct_bias_field(dwi,mask,bias_field,tipl::vector<3>(1.0f,voxel.vs[0]/voxel.vs[1],voxel.vs[0]/voxel.vs[2]));
+    if(prog.aborted())
+        return bias_field;
+    for(auto& each : bias_field)
+        each = std::exp(-each);
+    return bias_field;
+}
 bool src_data::correct_bias_field(void)
 {
     if(has_bias_field_correction())
@@ -1605,25 +1642,15 @@ bool src_data::correct_bias_field(void)
         tipl::warning() << "bias field correction has been previously applied";
         return true;
     }
-    tipl::image<3>  bias_field;
+    tipl::progress prog("correct bias field correction");
+    voxel.report += " The bias field was corrected using b0 image.";
+    auto bias_field = get_bias_field();
+    tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
     {
-        tipl::progress prog("estimate bias field",true);
-        for(size_t i = 0;prog(i,1);++i)
-            ::correct_bias_field(dwi,voxel.mask,bias_field,tipl::vector<3>(1.0f,voxel.vs[0]/voxel.vs[1],voxel.vs[0]/voxel.vs[2]));
-        if(prog.aborted())
-            return false;
-    }
-    {
-        tipl::progress prog("apply correction");
-        for(auto& each : bias_field)
-            each = std::exp(-each);
-        tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
-        {
-            dwi_at(index) *= bias_field;
-        });
-        calculate_dwi_sum(true);
-        voxel.report += " The bias field was corrected using b0 image.";
-    }
+        dwi_at(index) *= bias_field;
+    });
+    update_dwi_sum();
+    update_mask();
     return true;
 }
 extern bool has_cuda;
@@ -1990,7 +2017,8 @@ bool src_data::distortion_correction(const std::string& filename)
     for(size_t i = 0;i < new_dwi.size();++i)
         src_dwi_data[i] = &(new_dwi[i][0]);
 
-    calculate_dwi_sum(false);
+    update_dwi_sum();
+    update_mask();
     voxel.report += " The phase distortion was correlated using data from an opposite phase encoding direction.";
     return true;
 }
@@ -2319,7 +2347,10 @@ bool src_data::load_topup_eddy_result(void)
         topup_eddy_report = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     }
     voxel.report += topup_eddy_report;
-    calculate_dwi_sum(true);
+    if(!has_bias_field_correction())
+        correct_bias_field();
+    update_dwi_sum();
+    update_mask();
     apply_mask = true;
     return true;
 }
@@ -3020,7 +3051,8 @@ bool src_data::load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_file
     }
 
     voxel.report = dwi_files.front()->report + get_report(!dwi_files.front()->report.empty());
-    calculate_dwi_sum(true);
+    update_dwi_sum();
+    update_mask();
     dwi_files.clear();
     return true;
 }
@@ -3261,8 +3293,9 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         return false;
     }
 
-    calculate_dwi_sum(voxel.mask.empty());
-    // create mask if not loaded from SRC file
+    update_dwi_sum();
+    if(voxel.mask.empty())
+        update_mask();
     if(is_human_size(voxel.dim,voxel.vs))
         voxel.template_id = 0;
     else
