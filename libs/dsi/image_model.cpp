@@ -149,22 +149,6 @@ bool src_data::mask_from_template(void)
 {
     tipl::progress prog("generate mask from template");
     dual_reg r;
-    if(!std::filesystem::exists(t2w_template_list[voxel.template_id]) &&
-       !std::filesystem::exists(iso_template_list[voxel.template_id]))
-        {
-            error_msg = "no t2w/iso templates for generating mask";
-            return false;
-        }
-        if(!std::filesystem::exists(t2w_template_list[voxel.template_id]))
-        {
-            if(!r.load_template(0,iso_template_list[voxel.template_id]))
-            {
-                error_msg = "no template iso for generating mask";
-                return false;
-            }
-        }
-
-
     if(!r.load_template(0,std::filesystem::exists(t2w_template_list[voxel.template_id]) ?
                           t2w_template_list[voxel.template_id] : iso_template_list[voxel.template_id]) ||
        !r.load_template(1,iso_template_list[voxel.template_id]))
@@ -912,7 +896,8 @@ bool src_data::command(std::string cmd,std::string param)
     }
     if(cmd == "[Step T2a][Template]")
     {
-        mask_from_template();
+        if(!mask_from_template())
+            return false;
         voxel.steps += cmd+"\n";
         return true;
     }
