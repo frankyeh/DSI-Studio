@@ -205,7 +205,8 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
         }
     }
     else
-    if(tipl::ends_with(file_name,".nii.gz") || tipl::ends_with(file_name,".nii"))
+    if(tipl::ends_with(file_name,".nii.gz") || tipl::ends_with(file_name,".nii") ||
+       tipl::ends_with(file_name,".hdr"))
     {
         tipl::io::gz_nifti nifti;
         prepare_idx(file_name,nifti.input_stream);
