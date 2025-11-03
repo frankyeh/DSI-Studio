@@ -33,7 +33,7 @@ public:
     std::map<QString,QString> notes,dates;
     std::map<QString,QJsonArray> tags,assets;
     QSharedPointer<QNetworkReply> get(QUrl url);
-    QString fnValue,adrValue;
+    QString username,news,host_name,address;
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
@@ -55,9 +55,11 @@ public:
     bool load_db(std::shared_ptr<group_connectometry_analysis>& database,QString& file_name);
     void loadTags(QUrl url,QString repo,QJsonArray array,int per_page);
     void loadFiles(void);
-    void login_with_param(QStringList param);
+private:
+    QStringList info;
+    void login(void);
 private slots:
-    void login();
+
     void on_averagefib_clicked();
     void on_vbc_clicked();
     void on_RenameDICOMDir_clicked();

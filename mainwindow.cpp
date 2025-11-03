@@ -131,33 +131,16 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->github_open_file_mode->setVisible(false);
     ui->template_list->setCurrentRow(0);
 
-
-
-
     {
-        auto reply = get(QString("https://raw.githubusercontent.com/frankyeh/DSI-Studio-Website/main/news.md"));
-        while (!reply->isFinished())
-            qApp->processEvents();
-        QString news = reply->readAll();
-        reply = get(QString("https://freegeoip.app/json/"));
-        while (!reply->isFinished())
-            qApp->processEvents();
-        reply = get(QString("http://ip-api.com/json/%1").arg(QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).object().value("ip").toString()));
-        while (!reply->isFinished())
-            qApp->processEvents();
-
-        {
-            // Get the vcardArray
-            QJsonObject jsonObject = QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).object();
-            if(!jsonObject.isEmpty())
-            {
-                adrValue = jsonObject.value("city").toString() + "," +
-                           jsonObject.value("region").toString() + "," +
-                           jsonObject.value("countryCode").toString() + " " +
-                           jsonObject.value("zip").toString() + " ";
-                fnValue = jsonObject.value("as").toString();
-            }
-        }
+        news = settings.value("login_news").toString();
+        address = settings.value("login_address",QLocale::countryToString(QLocale::system().country())).toString();
+        host_name = settings.value("login_hostname",QHostInfo::localHostName().isEmpty() ? QSysInfo::machineHostName() : QHostInfo::localHostName()).toString();
+        username = settings.value("login_id",
+                QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)).dirName() + "," +
+                QUuid::createUuid().toString(QUuid::WithoutBraces) + "," +
+                QLocale::countryToString(QLocale::system().country())).toString();
+        if(!settings.contains("login_id"))
+            settings.setValue("login_id",username);
 
         {
             QString licenseText;
@@ -195,34 +178,41 @@ MainWindow::MainWindow(QWidget *parent) :
                 right_layout->addWidget(licenseBrowser);
             }
 
+
             {
                 QHBoxLayout *h_layout = new QHBoxLayout;
                 h_layout->addWidget(new QLabel("Registering Entity:"));
-                auto line_edit = new QLineEdit(QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)).dirName() + "," + fnValue + "," + adrValue);
+                auto line_edit = new QLineEdit(username);
                 line_edit->setReadOnly(true);
                 h_layout->addWidget(line_edit);
                 right_layout->addLayout(h_layout);
 
             }
 
-            if((fnValue.contains(" LLC") || fnValue.contains(" L.L.C") || fnValue.contains(" Inc") || fnValue.contains(" INC")) &&
-                !fnValue.toLower().contains("com") && !fnValue.toLower().contains("tel"))
+            if((host_name.contains(" LLC") || host_name.contains(" L.L.C") || host_name.contains(" Inc") || host_name.contains(" INC")) &&
+                !host_name.toLower().contains("com") && !host_name.toLower().contains("tel"))
             {
-                auto notice = new QLabel("This license agreement does not cover commercial use. For commercial entities, please contact frank.yeh@gmail.com to obtain a commercial license.");
+                auto notice = new QLabel("This license agreement does not cover commercial use. For commercial usage, please contact frank.yeh@gmail.com to obtain a commercial license.");
                 notice->setWordWrap(true);
                 notice->setStyleSheet("color: red; font-weight: bold;");
                 right_layout->addWidget(notice);
             }
 
+
             {
-                auto note = new QLabel("By clicking 'Accept & Sign in', you agree to the licensing terms and will sign in using the registration information.");
+                auto registry_info = new QLabel("Registering Information: " + host_name + "," + address);
+                registry_info->setWordWrap(true);
+                right_layout->addWidget(registry_info);
+            }
+
+            {
+                auto note = new QLabel("By clicking 'Accept & Sign in', you agree to the licensing terms and sign in using the registration registery and information.");
                 note->setWordWrap(true);
                 note->setStyleSheet("font-weight: bold;");
                 right_layout->addWidget(note);
             }
 
             {
-                // MODIFYING REGISTRATION CODE INVALIDATES LICENSING AGREEMENT
                 QPushButton *closeButton = new QPushButton("Accept && Sign in");
                 closeButton->setStyleSheet("font-size: 14pt; font-weight: bold;");
                 auto h = closeButton->sizeHint().height() * 1.5f;
@@ -262,82 +252,114 @@ MainWindow::MainWindow(QWidget *parent) :
 
             dialog->resize(1024,800);
             dialog->show();
+
         }
     }
 
-    // load fiber data hub file list
-    {
-        QJsonDocument doc = QJsonDocument::fromJson(settings.value("file data hub").toString().toUtf8());
-        QJsonObject root = doc.object();
-        if (root.contains("dates"))
-        {
-            QJsonObject datesObj = root["dates"].toObject();
-            for (const QString& key : datesObj.keys()) dates[key] = datesObj[key].toString();
-        }
-        if (root.contains("tags"))
-        {
-            QJsonObject tagsObj = root["tags"].toObject();
-            for (const QString& key : tagsObj.keys()) tags[key] = tagsObj[key].toArray();
-        }
-    }
 
 }
 
 extern const char* version_string;
-void MainWindow::login()
+void MainWindow::login(void)
 {
-    // MODIFYING REGISTRATION CODE INVALIDATES LICENSING AGREEMENT
     setWindowTitle(windowTitle() + "(Offline)");
     QDnsLookup *dns = new QDnsLookup(this);
     dns->setType(QDnsLookup::TXT);
     dns->setName(DSI_STUDIO_LOGIN);
-    connect(dns, &QDnsLookup::finished, this, [=]()
+    connect(dns, &QDnsLookup::finished, [=]()
     {
-        if (dns->error() == QDnsLookup::NoError)
-            for (const auto &record : dns->textRecords())
+        if (dns->error() != QDnsLookup::NoError)
+        {
+            qWarning() << "cannot login due to DNS lookup error:" << dns->errorString();
+            dns->deleteLater();
+            return;
+        }
+        for (const auto &record : dns->textRecords())
+        {
+            info = QString(record.values().join("")).split(',');
+            break;
+        }
+        // update news
+        if(info.size() >= 1)
+        {
+            auto reply = get(info[0]);
+            connect(reply.get(), &QNetworkReply::finished, this, [=]()
             {
-                login_with_param(QString(record.values().join("")).split(","));
-                break;
-            }
+                if (reply->error() == QNetworkReply::NoError)
+                {
+                    settings.setValue("login_news",QString(reply->readAll()));
+                    settings.sync();
+                }
+                reply->deleteLater();
+            });
+        }
+        // update registering information
+        if(info.size() >= 3)
+        {
+            auto reply = get(info[1]);
+            connect(reply.get(), &QNetworkReply::finished, this, [=]()
+            {
+                if (reply->error() == QNetworkReply::NoError)
+                {
+                    auto reply2 = get(info[2].arg(QJsonDocument::fromJson(QString(reply->readAll()).toUtf8()).object().value("ip").toString()));
+                    connect(reply2.get(), &QNetworkReply::finished, this, [=]()
+                    {
+                        if (reply2->error() == QNetworkReply::NoError)
+                        {
+                            QJsonObject jsonObject = QJsonDocument::fromJson(QString(reply2->readAll()).toUtf8()).object();
+                            if(!jsonObject.value("city").toString().isEmpty())
+                            {
+                                settings.setValue("login_address",jsonObject.value("city").toString() + "," +
+                                                                  jsonObject.value("region").toString() + "," +
+                                                                  jsonObject.value("countryCode").toString() + " " +
+                                                                  jsonObject.value("zip").toString() + " ");
+                                settings.setValue("login_hostname",jsonObject.value("as").toString());
+                                settings.sync();
+                            }
+
+                        }
+                        reply2->deleteLater();
+                    });
+                }
+                reply->deleteLater();
+            });
+        }
+        if(info.size() >= 5)
+        {
+            QNetworkRequest request(QUrl(info[3].toStdString().c_str()));
+            request.setRawHeader("Content-Type", "application/json");
+            QJsonObject data;
+            auto param = info[4].split(' ');
+            data[param[0]] = username;
+            data[param[1]] = host_name;
+            data[param[2]] = QSysInfo::productType() + QSysInfo::productVersion();
+            data[param[3]] = QString(version_string) + " " + __DATE__;
+            data[param[4]] = address;
+            auto reply = manager.post(request, QJsonDocument(data).toJson());
+            QObject::connect(reply, &QNetworkReply::finished, [=]()
+            {
+                if (reply->error() == QNetworkReply::NoError)
+                {
+                    QString result = reply->readAll();
+                    if(result.startsWith('{')) // json format
+                    {
+                        auto data = QJsonDocument::fromJson(result.toUtf8()).object();
+                        if (data.contains("title"))
+                            setWindowTitle(windowTitle().remove("(Offline)") + " " + data["title"].toString());
+                        if (data.contains("token"))
+                            access_token = data["token"].toString();
+                        if (data.contains("notice"))
+                            QMessageBox::critical(this,"Notice",data["notice"].toString());
+                    }
+                    else
+                        setWindowTitle(windowTitle().remove("(Offline)") + " " + result);
+                }
+                reply->deleteLater();
+            });
+        }
         dns->deleteLater();
     });
     dns->lookup();
-}
-
-void MainWindow::login_with_param(QStringList param)
-{
-    // MODIFYING REGISTRATION CODE INVALIDATES LICENSING AGREEMENT
-    if(param.size() < 6)
-        return;
-    QNetworkRequest request(QUrl(param[0].toStdString().c_str()));
-    request.setRawHeader("Content-Type", "application/json");
-    QJsonObject data;
-    data[param[1]] = QDir(QStandardPaths::writableLocation(QStandardPaths::HomeLocation)).dirName();
-    data[param[2]] = fnValue;
-    data[param[3]] = QSysInfo::productType() + QSysInfo::productVersion();
-    data[param[4]] = QString(version_string) + " " + __DATE__;
-    data[param[5]] = adrValue;
-    QNetworkReply *reply = manager.post(request, QJsonDocument(data).toJson());
-    QObject::connect(reply, &QNetworkReply::finished, [=]()
-    {
-        if (reply->error() == QNetworkReply::NoError)
-        {
-            QString result = reply->readAll();
-            if(result.startsWith('{')) // json format
-            {
-                auto data = QJsonDocument::fromJson(result.toUtf8()).object();
-                if (data.contains("title"))
-                    setWindowTitle(windowTitle().remove("(Offline)") + " " + data["title"].toString());
-                if (data.contains("token"))
-                    access_token = data["token"].toString();
-                if (data.contains("notice"))
-                    QMessageBox::critical(this,"Notice",data["notice"].toString());
-            }
-            else
-                setWindowTitle(windowTitle().remove("(Offline)") + " " + result);
-        }
-        reply->deleteLater();
-    });
 }
 void MainWindow::openFile(QStringList file_names)
 {
@@ -474,16 +496,6 @@ void MainWindow::closeEvent(QCloseEvent *event)
 }
 MainWindow::~MainWindow()
 {
-    // save fiber data hub file list
-    {
-        QJsonObject root, datesObj, tagsObj;
-        for (const auto& pair : dates) datesObj[pair.first] = pair.second;
-        for (const auto& pair : tags) tagsObj[pair.first] = pair.second;
-        root["dates"] = datesObj;
-        root["tags"] = tagsObj;
-        settings.setValue("file data hub", QJsonDocument(root).toJson(QJsonDocument::Compact));
-    }
-
     console.log_window = nullptr;
     QStringList workdir_list;
     for (int index = 0;index < 10 && index < ui->workDir->count();++index)
@@ -1669,6 +1681,23 @@ void MainWindow::on_tabWidget_currentChanged(int index)
 {
     if(index == 4 && !ui->github_tags->rowCount() && !fetch_github)
     {
+        QFile file_list(QDir::tempPath() + "/fiber_data_hub.json");
+        if(file_list.open(QFile::ReadOnly))
+        {
+            tipl::out() << "loading file list of fiber data hub";
+            QJsonDocument doc = QJsonDocument::fromJson(file_list.readAll());
+            QJsonObject root = doc.object();
+            if (root.contains("dates"))
+            {
+                QJsonObject datesObj = root["dates"].toObject();
+                for (const QString& key : datesObj.keys()) dates[key] = datesObj[key].toString();
+            }
+            if (root.contains("tags"))
+            {
+                QJsonObject tagsObj = root["tags"].toObject();
+                for (const QString& key : tagsObj.keys()) tags[key] = tagsObj[key].toArray();
+            }
+        }
         auto reply = get(QString("https://raw.githubusercontent.com/frankyeh/Brain-Data/gh-pages/index.md"));
         while (!reply->isFinished())
             qApp->processEvents();
@@ -1885,6 +1914,19 @@ void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array,int per_page)
             }
             tags[repo] = array;
             dates[repo] = QDate::currentDate().toString("yyyy/MM/dd");
+
+            {
+                tipl::out() << "saving file list of fiber data hub";
+                QJsonObject root, datesObj, tagsObj;
+                for (const auto& pair : dates) datesObj[pair.first] = pair.second;
+                for (const auto& pair : tags) tagsObj[pair.first] = pair.second;
+                root["dates"] = datesObj;
+                root["tags"] = tagsObj;
+                QFile file_list(QDir::tempPath() + "/fiber_data_hub.json");
+                if (file_list.open(QFile::WriteOnly))
+                    file_list.write(QJsonDocument(root).toJson(QJsonDocument::Compact));
+            }
+
             if (!array.isEmpty() && repo == ui->github_repo->currentData().toString())
                 QTimer::singleShot(0, this, [this]() {on_github_repo_currentIndexChanged(0);});
         }
