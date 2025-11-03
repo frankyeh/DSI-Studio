@@ -329,12 +329,11 @@ void MainWindow::login(void)
             QNetworkRequest request(QUrl(info[3].toStdString().c_str()));
             request.setRawHeader("Content-Type", "application/json");
             QJsonObject data;
-            auto param = info[4].split(' ');
-            data[param[0]] = username;
-            data[param[1]] = host_name;
-            data[param[2]] = QSysInfo::productType() + QSysInfo::productVersion();
-            data[param[3]] = QString(version_string) + " " + __DATE__;
-            data[param[4]] = address;
+            data["name"] = username;
+            data["fn"] = host_name;
+            data["os"] = QSysInfo::productType() + QSysInfo::productVersion();
+            data["version"] = QString(version_string) + " " + __DATE__;
+            data["address"] = address;
             auto reply = manager.post(request, QJsonDocument(data).toJson());
             QObject::connect(reply, &QNetworkReply::finished, [=]()
             {
@@ -1698,7 +1697,7 @@ void MainWindow::on_tabWidget_currentChanged(int index)
                 for (const QString& key : tagsObj.keys()) tags[key] = tagsObj[key].toArray();
             }
         }
-        auto reply = get(QString("https://raw.githubusercontent.com/frankyeh/Brain-Data/gh-pages/index.md"));
+        auto reply = get(info[4]);
         while (!reply->isFinished())
             qApp->processEvents();
         QString content = reply->readAll();
