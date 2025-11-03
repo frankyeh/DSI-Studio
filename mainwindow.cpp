@@ -1680,28 +1680,60 @@ void MainWindow::on_tabWidget_currentChanged(int index)
 {
     if(index == 4 && !ui->github_tags->rowCount() && !fetch_github)
     {
+        tipl::progress prog("loading hub content",true);
+
+        prog(0,3);
+        tipl::out() << "loading file list of fiber data hub";
+
         QFile file_list(QDir::tempPath() + "/fiber_data_hub.json");
         if(file_list.open(QFile::ReadOnly))
         {
-            tipl::out() << "loading file list of fiber data hub";
-            QJsonDocument doc = QJsonDocument::fromJson(file_list.readAll());
-            QJsonObject root = doc.object();
-            if (root.contains("dates"))
+            auto root = QJsonDocument::fromJson(file_list.readAll()).object();
+            auto d = root.value("dates").toObject();
+            for(auto it=d.begin(); it!=d.end(); ++it)
+                dates[it.key()] = it.value().toString();
+
+            auto t = root.value("tags").toObject();
+            for(auto it=t.begin(); it!=t.end(); ++it)
+                tags[it.key()] = it.value().toArray();
+        }
+
+        prog(1,3);
+        tipl::out() << "loading existing hub content";
+
+        QString content;
+        if(settings.contains("hub_content"))
+        {
+            content = settings.value("hub_content").toString();
+            if(info.size() >= 5)
             {
-                QJsonObject datesObj = root["dates"].toObject();
-                for (const QString& key : datesObj.keys()) dates[key] = datesObj[key].toString();
-            }
-            if (root.contains("tags"))
-            {
-                QJsonObject tagsObj = root["tags"].toObject();
-                for (const QString& key : tagsObj.keys()) tags[key] = tagsObj[key].toArray();
+                tipl::out() << "updating hub content";
+                auto reply = get(info[4]);
+                connect(reply.get(), &QNetworkReply::finished, this, [=]()
+                {
+                    if (reply->error() == QNetworkReply::NoError)
+                    {
+                        settings.setValue("hub_content",QString(reply->readAll()));
+                        settings.sync();
+                    }
+                    reply->deleteLater();
+                });
             }
         }
-        info.resize(5);
-        auto reply = get(info[4]);
-        while (!reply->isFinished())
-            qApp->processEvents();
-        QString content = reply->readAll();
+        else
+        if(info.size() >= 5)
+            {
+                tipl::out() << "downloading hub content";
+                auto reply = get(info[4]);
+                while (!reply->isFinished())
+                    qApp->processEvents();
+                settings.setValue("hub_content",content = reply->readAll());
+                settings.sync();
+
+            }
+
+        prog(2,3);
+
         QStringList lines = content.split('\n');
         lines.removeFirst();
         QStringList filteredLines;
@@ -1726,6 +1758,7 @@ void MainWindow::on_tabWidget_currentChanged(int index)
         ui->github_note->setOpenExternalLinks(true);
         fetch_github = true;
         on_github_repo_currentIndexChanged(0);
+        prog(3,3);
     }
 }
 
