@@ -1697,6 +1697,7 @@ void MainWindow::on_tabWidget_currentChanged(int index)
                 for (const QString& key : tagsObj.keys()) tags[key] = tagsObj[key].toArray();
             }
         }
+        info.resize(5);
         auto reply = get(info[4]);
         while (!reply->isFinished())
             qApp->processEvents();
