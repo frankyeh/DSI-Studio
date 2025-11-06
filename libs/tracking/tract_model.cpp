@@ -2691,7 +2691,7 @@ tipl::vector<3> get_tract_dir(const std::vector<std::vector<float> >& tract_data
     return total_dis;
 }
 
-void check_order(tipl::shape<3> geo,
+bool check_order(tipl::shape<3> geo,
                  std::vector<tipl::vector<3,short> >& s1,
                  std::vector<tipl::vector<3,short> >& s2)
 {
@@ -2707,8 +2707,11 @@ void check_order(tipl::shape<3> geo,
     dir.abs();
     auto max_sum_dim = std::max_element(dir.begin(),dir.end())-dir.begin();
     if(sum_s1[uint32_t(max_sum_dim)] < 0.0f)
+    {
         s1.swap(s2);
-
+        return true;
+    }
+    return false;
 }
 inline tipl::vector<3> get_rounded_voxel(const float* ptr,bool need_trans,const tipl::matrix<4,4>& trans)
 {
@@ -2718,7 +2721,7 @@ inline tipl::vector<3> get_rounded_voxel(const float* ptr,bool need_trans,const 
     p.round();
     return p;
 }
-void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
+bool TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
                                std::vector<tipl::vector<3,short> >& points2,const tipl::matrix<4,4>& trans)
 {
     bool need_trans = (trans != tipl::identity_matrix());
@@ -2745,15 +2748,16 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
         }
     }
 
-    check_order(geo,s1,s2);
+    bool swapped = check_order(geo,s1,s2);
 
     std::sort(s1.begin(),s1.end());
     std::sort(s2.begin(),s2.end());
     std::unique_copy(s1.begin(),s1.end(),std::back_inserter(points1));
     std::unique_copy(s2.begin(),s2.end(),std::back_inserter(points2));
+    return swapped;
 }
 
-void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
+bool TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
                                      std::vector<tipl::vector<3,short> >& points2,
                                      const tipl::matrix<4,4>& trans,float end_dis)
 {
@@ -2810,12 +2814,12 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
         }
     }
 
-    check_order(geo,s1,s2);
-
+    bool swapped = check_order(geo,s1,s2);
     std::sort(s1.begin(),s1.end());
     std::sort(s2.begin(),s2.end());
     std::unique_copy(s1.begin(),s1.end(),std::back_inserter(points1));
     std::unique_copy(s2.begin(),s2.end(),std::back_inserter(points2));
+    return swapped;
 }
 
 float TractModel::get_tract_length_in_mm(unsigned int index) const
@@ -2913,7 +2917,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
         float end_area1,end_area2,radius1,radius2;
         {
             std::vector<tipl::vector<3,short> > endpoint1,endpoint2;
-            to_end_point_voxels(endpoint1,endpoint2,resolution_trans);
+            bool swapped = to_end_point_voxels(endpoint1,endpoint2,resolution_trans);
             // end point surface 1 and 2
             end_area1 = float(endpoint1.size())*vs[0]*vs[1]/resolution_ratio/resolution_ratio;
             end_area2 = float(endpoint2.size())*vs[0]*vs[1]/resolution_ratio/resolution_ratio;
@@ -2948,9 +2952,9 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
             radius1 = 1.5f*mean_dis1/resolution_ratio;
             radius2 = 1.5f*mean_dis2/resolution_ratio;
 
-        }
-        // mid_portion as the trunk
-        {
+
+            // mid_portion as the trunk
+
             std::vector<tipl::vector<3,short> > branch1,branch2;
             if(cut_end_portion(0.0f,0.25f))
             {
@@ -2962,6 +2966,10 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
                 to_voxel(branch2,resolution_trans);
                 undo();
             }
+
+            // BUG FIX 11/6/2025 the cut_end_portion function does not use check_order information
+            if(swapped)
+                std::swap(branch1,branch2);
             branch_volume1 = branch1.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
             branch_volume2 = branch2.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
         }
