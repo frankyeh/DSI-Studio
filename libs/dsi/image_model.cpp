@@ -15,8 +15,7 @@
 #include "reg.hpp"
 
 bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
-                 bool search_bvalbvec,
-                 bool must_have_bval_bvec,std::string& error_msg);
+                 bool search_bvalbvec,bool must_have_bval_bvec,bool scale_signal,std::string& error_msg);
 
 void sort_dwi(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
@@ -77,7 +76,7 @@ void src_data::update_dwi_sum(void)
 }
 void src_data::update_mask(void)
 {
-    tipl::progress("create mask from dwi sum",true);
+    tipl::progress prog("create mask from dwi sum");
     if(dwi.depth() >= 300)
     {
         tipl::segmentation::otsu(dwi,voxel.mask,1,0);
@@ -1609,7 +1608,7 @@ bool src_data::has_bias_field_correction(void) const
 }
 tipl::image<3> src_data::get_bias_field(void)
 {
-    tipl::progress prog("compute bias field",true);
+    tipl::progress prog("compute bias field");
     tipl::image<3>  bias_field;
     if(src_dwi_data.empty())
         return bias_field;
@@ -2328,7 +2327,7 @@ bool src_data::load_topup_eddy_result(void)
 
     tipl::out() << "load topup/eddy results" << std::endl;
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-    if(!load_4d_nii(corrected_file(),dwi_files,false,false,error_msg))
+    if(!load_4d_nii(corrected_file(),dwi_files,false,false,true,error_msg))
         return false;
     nifti_dwi.resize(dwi_files.size());
     src_dwi_data.resize(dwi_files.size());
@@ -3062,7 +3061,7 @@ bool src_data::load_from_file(const std::vector<std::string>& nii_names,bool nee
     for(auto& nii_name : nii_names)
     {
         tipl::out() << "opening " << nii_name;
-        if(!load_4d_nii(nii_name,dwi_files,true,need_bval_bvec,error_msg))
+        if(!load_4d_nii(nii_name,dwi_files,true,need_bval_bvec,nii_names.size() == 1,error_msg))
             tipl::warning() << "skipping " << nii_name << ": " << error_msg;
     }
     return load_from_file(dwi_files,false);
@@ -3152,7 +3151,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
     if(tipl::ends_with(dwi_file_name,".nii.gz"))
     {
         std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-        if(!load_4d_nii(dwi_file_name,dwi_files,true,false,error_msg))
+        if(!load_4d_nii(dwi_file_name,dwi_files,true,false,true,error_msg))
             return false;
         return load_from_file(dwi_files,false);
     }
