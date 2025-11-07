@@ -314,6 +314,7 @@ void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const
 bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                  bool search_bvalbvec,
                  bool must_have_bval_bvec,
+                 bool scale_signal,
                  std::string& error_msg)
 {
     tipl::progress prog("opening ",file_name);
@@ -358,6 +359,7 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
 
 
     // if the imaging value is larger than 16-bit integer, then scale it.
+    if(scale_signal)
     {
         float max_value = 0.0f;
         for(unsigned int index = 0;index < dwi_data.size();++index)
@@ -1092,7 +1094,7 @@ bool parse_dwi(QStringList file_list,
             QFileInfo(file_list[0]).fileName().endsWith(".nii.gz"))
     {
         for(int i = 0;i < file_list.size();++i)
-            if(!load_4d_nii(file_list[i].toStdString(),dwi_files,true,false,error_msg))
+            if(!load_4d_nii(file_list[i].toStdString(),dwi_files,true,false,file_list.size() == 1,error_msg))
                 return false;
         return !dwi_files.empty();
     }
