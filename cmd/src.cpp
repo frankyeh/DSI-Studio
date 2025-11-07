@@ -338,8 +338,9 @@ int src(tipl::program_option<tipl::out>& po)
 
             if(dwi_nii_files.empty())
             {
-                tipl::out() << "searching NIFTI files in the folder";
-                search_dwi_nii(source,dwi_nii_files);
+                tipl::out() << "could not find bids format files, try searching NIFTI files in " << source;
+                tipl::search_filesystem<tipl::out>((std::filesystem::path(source)/"*.nii.gz").string(),dwi_nii_files);
+                tipl::search_filesystem<tipl::out>((std::filesystem::path(source)/"*.nii").string(),dwi_nii_files);
             }
 
             if(!dwi_nii_files.empty())
@@ -368,15 +369,24 @@ int src(tipl::program_option<tipl::out>& po)
             }
         }
 
-        tipl::out() << "converting DICOM files in directory " << source.c_str() << std::endl;
+        tipl::out() << "cannot find NIFTI files...try looking for DICOM files in directory " << source.c_str() << std::endl;
         dicom2src_and_nii(source,po.get("overwrite",0));
         return 0;
     }
     else
-        file_list.push_back(source);
+        po.get_files("source",file_list);
 
     if(po.has("other_source"))
-        po.get_files("other_source",file_list);
+    {
+        if(std::filesystem::is_directory(source))
+        {
+            tipl::out() << "try searching NIFTI files in " << source;
+            tipl::search_filesystem<tipl::out>((std::filesystem::path(source)/"*.nii.gz").string(),file_list);
+            tipl::search_filesystem<tipl::out>((std::filesystem::path(source)/"*.nii").string(),file_list);
+        }
+        else
+            po.get_files("other_source",file_list);
+    }
 
     if(file_list.empty())
     {
