@@ -339,8 +339,9 @@ int src(tipl::program_option<tipl::out>& po)
             if(dwi_nii_files.empty())
             {
                 tipl::out() << "could not find bids format files, try searching NIFTI files in " << source;
-                tipl::search_filesystem<tipl::out>((std::filesystem::path(source)/"*.nii.gz").string(),dwi_nii_files);
-                tipl::search_filesystem<tipl::out>((std::filesystem::path(source)/"*.nii").string(),dwi_nii_files);
+                if(!tipl::search_filesystem<tipl::out>((std::filesystem::path(source)/"*.nii.gz").string(),dwi_nii_files) &&
+                   !tipl::search_filesystem<tipl::out>((std::filesystem::path(source)/"*.nii").string(),dwi_nii_files))
+                    tipl::out() << "cannot find NIFTI files in " << source;
             }
 
             if(!dwi_nii_files.empty())
@@ -381,8 +382,9 @@ int src(tipl::program_option<tipl::out>& po)
         if(std::filesystem::is_directory(source))
         {
             tipl::out() << "try searching NIFTI files in " << source;
-            tipl::search_filesystem<tipl::out>((std::filesystem::path(source)/"*.nii.gz").string(),file_list);
-            tipl::search_filesystem<tipl::out>((std::filesystem::path(source)/"*.nii").string(),file_list);
+            if(!tipl::search_filesystem<tipl::out>((std::filesystem::path(source)/"*.nii.gz").string(),file_list) &&
+               !tipl::search_filesystem<tipl::out>((std::filesystem::path(source)/"*.nii").string(),file_list))
+                tipl::warning() << "cannot find NIFTI files in " << source;
         }
         else
             po.get_files("other_source",file_list);
@@ -409,7 +411,7 @@ int src(tipl::program_option<tipl::out>& po)
 
     src_data src;
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-
+    std::sort(file_list.begin(),file_list.end());
     if(!parse_dwi(file_list,dwi_files,src.error_msg))
     {
         tipl::error() << src.error_msg;
