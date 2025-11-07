@@ -15,9 +15,6 @@ bool load_bvec(const std::string& file_name,std::vector<double>& b_table,bool fl
 bool parse_dwi(const std::vector<std::string>& file_list,
                     std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg);
 void dicom2src_and_nii(std::string dir_,bool overwrite);
-bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
-                 bool search_bvalbvec,
-                 bool must_have_bval_bvec,std::string& error_msg);
 
 bool get_bval_bvec(const std::string& bval_file,const std::string& bvec_file,size_t dwi_count,
                    std::vector<double>& bvals_out,std::vector<double>& bvecs_out,
