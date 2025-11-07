@@ -207,7 +207,7 @@ int rec(tipl::program_option<tipl::out>& po)
 
                 src.rotate(I.shape(),vs,
                            tipl::reg::linear<tipl::out>(tipl::reg::make_list(I),vs,tipl::reg::make_list(src.dwi),src.voxel.vs,
-                                  po.has("rotate_to") ? tipl::reg::rigid_body : tipl::reg::affine,tipl::prog_aborted));
+                                  po.has("rotate_to") ? tipl::reg::rigid_body : tipl::reg::affine));
                 tipl::out() << "DWI rotated." << std::endl;
             }
         }
