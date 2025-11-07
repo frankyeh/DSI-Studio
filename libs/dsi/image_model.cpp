@@ -92,6 +92,9 @@ void src_data::update_mask(void)
         tipl::segmentation::otsu(dwi_corrected,voxel.mask,1,0);
     }
 
+    tipl::morphology::smoothing(voxel.mask);
+    tipl::morphology::smoothing(voxel.mask);
+    tipl::morphology::smoothing(voxel.mask);
     tipl::morphology::erosion(voxel.mask);
     tipl::morphology::erosion(voxel.mask);
     tipl::morphology::defragment(voxel.mask);
