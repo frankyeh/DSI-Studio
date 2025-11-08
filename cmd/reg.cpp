@@ -86,9 +86,7 @@ bool load_image(size_t id, const std::string& file_name,
 
         if(id == 0)
         {
-            nifti.get_image_transformation(ref_transform);
-            nifti.get_voxel_size(voxel_size);
-            nifti.get_image_dimension(image_shape);
+            nifti >> std::tie(ref_transform,voxel_size,image_shape);
             is_mni = nifti.is_mni();
         }
         else

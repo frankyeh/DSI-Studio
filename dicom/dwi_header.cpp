@@ -87,8 +87,7 @@ bool DwiHeader::open(const char* filename)
             error_msg = "unsupported file format";
             return false;
         }
-        nii.toLPS(image);
-        nii.get_voxel_size(voxel_size);
+        nii >> std::tie(image,voxel_size);
         return true;
     }
     header >> image;

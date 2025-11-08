@@ -191,8 +191,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 
     tipl::vector<3> vs;
     tipl::matrix<4,4> trans_to_mni;
-    header.get_image_transformation(trans_to_mni);
-    header.get_voxel_size(vs);
+    header >> std::tie(vs,trans_to_mni);
 
     std::vector<unsigned short> value_list;
     std::vector<unsigned short> value_map(std::numeric_limits<unsigned short>::max()+1);

@@ -1334,14 +1334,12 @@ bool src_data::add_other_image(const std::string& name,const std::string& filena
     tipl::transformation_matrix<float> trans;
 
     tipl::io::gz_nifti in;
-    if(!in.load_from_file(filename.c_str()) || !in.toLPS(ref))
+    if(!in.load_from_file(filename.c_str()) || !(in >> std::tie(ref,vs)))
     {
         error_msg = "not a valid nifti file ";
         error_msg += filename;
         return false;
     }
-    in.get_voxel_size(vs);
-
     tipl::out() << "add " << filename << " as " << name;
 
     bool has_registered = false;

@@ -331,13 +331,11 @@ bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vecto
     if(filenames.size() == 1 && filenames[0].toLower().contains("nii"))
     {
         tipl::io::gz_nifti in;
-        if(!in.load_from_file(filenames[0].toStdString().c_str()) || !in.toLPS(ref))
+        if(!in.load_from_file(filenames[0].toStdString().c_str()) || !(in >> std::tie(ref,vs,trans)))
         {
             QMessageBox::information(nullptr,"Error","Not a valid nifti file");
             return false;
         }
-        in.get_voxel_size(vs);
-        in.get_image_transformation(trans);
         return true;
     }
     else

@@ -347,8 +347,7 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
             std::replace_if(data.begin(),data.end(),[](float v){return std::isnan(v) || std::isinf(v) || v < 0.0f;},0.0f);
             dwi_data[index].swap(data);
         }
-        nii.get_voxel_size(vs);
-        nii.get_image_transformation(trans_to_mni);
+        nii >> std::tie(vs,trans_to_mni);
 
         if(dwi_data.size() <= 1 && must_have_bval_bvec)
         {

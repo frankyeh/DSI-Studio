@@ -442,8 +442,7 @@ bool fib_data::load_from_file(const std::string& file_name)
             header >> x;
             header >> y;
             header >> z;
-            header.get_voxel_size(vs);
-            header.get_image_transformation(trans_to_mni);
+            header >> std::tie(vs,trans_to_mni);
             dim = x.shape();
             dir.check_index(0);
             dir.num_fiber = 1;
@@ -486,8 +485,7 @@ bool fib_data::load_from_file(const std::string& file_name)
                 header >> x;
                 header >> y;
                 header >> z;
-                header.get_voxel_size(vs);
-                header.get_image_transformation(trans_to_mni);
+                header >> std::tie(vs,trans_to_mni);
                 if(i == 0)
                 {
                     dim = x.shape();
@@ -527,9 +525,7 @@ bool fib_data::load_from_file(const std::string& file_name)
         }
         else
         {
-            header.toLPS(I);
-            header.get_voxel_size(vs);
-            header.get_image_transformation(trans_to_mni);
+            header >> std::tie(I,vs,trans_to_mni);
             tipl::out() << ((is_mni = header.is_mni()) ? "image treated as MNI-space image." : "image treated used as subject-space image" )<< std::endl;
         }
     }
@@ -1641,9 +1637,7 @@ bool fib_data::load_template(void)
         error_msg = "cannot load " + fa_template_list[template_id];
         return false;
     }
-    read.toLPS(template_I);
-    read.get_voxel_size(template_vs);
-    read.get_image_transformation(template_to_mni);
+    read >> std::tie(template_I,template_vs,template_to_mni);
     float ratio = float(template_I.width()*template_vs[0])/float(dim[0]*vs[0]);
     if(ratio < 0.25f || ratio > 8.0f)
     {

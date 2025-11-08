@@ -956,9 +956,7 @@ void reconstruction_window::on_actionManual_Align_triggered()
             QMessageBox::critical(this,"ERROR",QString("Cannot load template:"));
             return;
         }
-        read.toLPS(VG);
-        read.get_voxel_size(VGvs);
-        read.get_image_transformation(VG_T);
+        read >> std::tie(VG,VGvs,VG_T);
         if(read2.load_from_file(iso_template_list[handle->voxel.template_id]))
             read2.toLPS(VG2);
     }

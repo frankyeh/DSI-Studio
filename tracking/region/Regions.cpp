@@ -193,16 +193,12 @@ bool ROIRegion::load_region_from_file(const char* file_name) {
     {
         tipl::io::gz_nifti header;
         tipl::image<3> I;
-        if (!header.load_from_file(file_name) || !header.toLPS(I))
+        if(!header.load_from_file(file_name) || !(header >> std::tie(I,vs,trans_to_mni,dim)))
         {
             std::cout << header.error_msg << std::endl;
             return false;
         }
-        // use unsigned int to avoid the nan background problem
-        dim = I.shape();
         is_mni = header.is_mni();
-        header.get_voxel_size(vs);
-        header.get_image_transformation(trans_to_mni);
         tipl::image<3,unsigned char> mask = I;
         load_region_from_buffer(mask);
         return true;

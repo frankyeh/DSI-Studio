@@ -195,13 +195,11 @@ int rec(tipl::program_option<tipl::out>& po)
                 }
                 tipl::image<3,unsigned char> I;
                 tipl::vector<3> vs;
-                in.get_voxel_size(vs);
-                in >> I;
+                in >> std::tie(I,vs);
                 if(po.has("rotate_to"))
                     tipl::out() << "running rigid body transformation" << std::endl;
                 else
                     tipl::out() << "running affine transformation" << std::endl;
-
                 tipl::filter::gaussian(I);
                 tipl::filter::gaussian(src.dwi);
 

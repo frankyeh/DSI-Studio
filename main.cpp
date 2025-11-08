@@ -55,19 +55,6 @@ size_t match_volume(tipl::const_pointer_image<3,unsigned char> mask,tipl::vector
     std::vector<std::pair<std::string,float> > template_volume = {
         {"human",22086.2f},{"human_neonate",8047.0f},{"rhesus",3556},{"marmoset",646.72},{"rat",367.44},{"mouse",111.75}};
 
-    /*
-    for(size_t i = 0;i < fa_template_list.size();++i)
-    {
-        tipl::io::gz_nifti read;
-        tipl::image<3,unsigned char> I;
-        if(!read.load_from_file(fa_template_list[i].c_str()))
-            continue;
-        read >> I;
-        auto tvs = read.get_voxel_size<3>();
-        tipl::out() << fa_template_list[i] << " : " << get_max_axisl_count(tipl::make_image(I.data(),I.shape()))*tvs[0]*tvs[1];
-    }
-    */
-
     std::string best_template_name = template_volume[0].first;
     float best_dif = std::fabs(template_volume[0].second-cur_volume);
     for(size_t i = 1;i < template_volume.size();++i)

@@ -216,7 +216,7 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
             return false;
         }
         dim4 = nifti.dim(4);
-        nifti.get_image_dimension(shape);
+        nifti >> std::tie(vs,T,shape);
         switch (nifti.nif_header.datatype)
         {
         case 2://DT_UNSIGNED_CHAR 2
@@ -263,8 +263,6 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
         }
         if(dim4 == 1)
             save_idx(file_name,nifti.input_stream);
-        nifti.get_voxel_size(vs);
-        nifti.get_image_transformation(T);
         is_mni = nifti.is_mni();
         std::ostringstream out;
         out << nifti;
