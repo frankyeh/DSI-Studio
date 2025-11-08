@@ -247,7 +247,8 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
 
         if(!apply([&](auto& data)
         {
-            bool succeed = nifti.get_untouched_image(data,prog);
+            nifti.cur_prog = &prog;
+            bool succeed = nifti.get_untouched_image(data);
             if constexpr(!std::is_integral<typename std::remove_reference<decltype(*data.begin())>::type>::value)
             {
                 for(size_t pos = 0;pos < data.size();++pos)
