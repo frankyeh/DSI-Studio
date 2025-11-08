@@ -557,20 +557,19 @@ bool CustomSliceModel::load_slices(void)
             error_msg = nifti.error_msg;
             return false;
         }
-        nifti.toLPS(source_images,prog);
-        save_idx(source_file_name.c_str(),nifti.input_stream);
-        nifti.get_voxel_size(vs);
-        nifti.get_image_transformation(trans_to_mni);
+        nifti.cur_prog = &prog;
+        nifti >> std::tie(source_images,vs,trans_to_mni);
+        tipl::out() << "slice dim: " << source_images.shape();
+        tipl::out() << "slice vs: " << vs;
+        tipl::out() << "slice trans: " << trans_to_mni;
 
+        save_idx(source_file_name.c_str(),nifti.input_stream);
         if(QFileInfo(source_file_name.c_str()).fileName().toLower().contains(".mni."))
         {
             tipl::out() << source_file_name << " has '.mni.' in the file name. It will be treated as mni space image.";
             is_mni = true;
         }
 
-        tipl::out() << "slice dim: " << source_images.shape();
-        tipl::out() << "slice vs: " << vs;
-        tipl::out() << "slice trans: " << trans_to_mni;
         if(handle->is_mni) // fib in the template space
         {
             tipl::out() << "header transformation used to align image." << std::endl;
