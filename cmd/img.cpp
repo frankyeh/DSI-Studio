@@ -271,9 +271,9 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
     else
         if(dicom.load_from_file(file_name))
         {
+            std::string info_;
             pixel_type = int16;
-            dicom.get_image_dimension(shape);
-            dicom.get_voxel_size(vs);
+            dicom >> std::tie(I_int16,shape,vs,info_);
             if(dicom.is_compressed)
             {
                 tipl::image<2,short> I;
@@ -286,10 +286,6 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
                 I_int16.resize(shape);
                 std::copy_n(I.begin(),std::min<size_t>(I.size(),shape.size()),I_int16.begin());
             }
-            else
-                apply([&](auto& data){dicom >> data;});
-            std::string info_;
-            dicom >> info_;
 
             if(dicom_dictionary.empty())
             {
