@@ -924,8 +924,7 @@ bool fib_data::load_from_mat(void)
                 continue;
             tipl::vector<3> Itvs;
             tipl::shape<3> Itdim;
-            read.get_image_dimension(Itdim);
-            read.get_voxel_size(Itvs);
+            read >> std::tie(Itdim,Itvs);
             if(std::abs(dim[0]-Itdim[0]*Itvs[0]/vs[0]) < 4.0f)
             {
                 matched_template_id = index;
