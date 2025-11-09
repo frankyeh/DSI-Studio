@@ -181,8 +181,7 @@ int atl(tipl::program_option<tipl::out>& po)
                     roi[k] = 1;
             if(multiple)
             {
-                tipl::out() << "saving " << output << std::endl;
-                if(!tipl::io::gz_nifti::save_to_file(output.c_str(),roi,handle->vs,handle->trans_to_mni,handle->is_mni))
+                if(!tipl::io::gz_nifti::save_to_file<tipl::progress>(output.c_str(),handle->bind_vs_trans(roi)))
                     tipl::out() << "cannot write output to " << output << std::endl;
             }
         }
