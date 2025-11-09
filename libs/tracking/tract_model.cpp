@@ -2573,7 +2573,7 @@ bool TractModel::export_pdi(const char* file_name,
     tipl::image<3> pdi(accumulate_map);
     if(tract_models.size() > 1)
         tipl::multiply_constant(pdi.begin(),pdi.end(),1.0f/float(tract_models.size()));
-    return tipl::io::gz_nifti::save_to_file<tipl::progress>(file_name,pdi,vs,trans_to_mni,is_mni);
+    return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(file_name,pdi,vs,trans_to_mni,is_mni);
 }
 bool TractModel::export_tdi(const char* filename,
                   std::vector<std::shared_ptr<TractModel> > tract_models,
@@ -2591,14 +2591,14 @@ bool TractModel::export_tdi(const char* filename,
         tipl::image<3,tipl::rgb> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
             tract_models[index]->get_density_map(tdi,to_t1t2,end_point);
-        return tipl::io::gz_nifti::save_to_file<tipl::progress>(filename,tdi,vs,trans_to_mni,tract_models[0]->is_mni);
+        return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(filename,tdi,vs,trans_to_mni,tract_models[0]->is_mni);
     }
     else
     {
         tipl::image<3,unsigned int> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
             tract_models[index]->get_density_map(tdi,to_t1t2,end_point);
-        return tipl::io::gz_nifti::save_to_file<tipl::progress>(filename,tdi,vs,trans_to_mni,tract_models[0]->is_mni);
+        return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(filename,tdi,vs,trans_to_mni,tract_models[0]->is_mni);
     }
 }
 void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,const tipl::matrix<4,4>& trans,int id)
