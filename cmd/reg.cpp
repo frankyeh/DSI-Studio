@@ -41,11 +41,11 @@ auto read_buffer(const std::vector<image_type>& data)
 }
 bool dual_reg::save_subject(const std::string& file_name)
 {
-    return tipl::io::gz_nifti::save_to_file<tipl::progress>(file_name,read_buffer(I),Ivs,IR,Is_is_mni);
+    return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(file_name,read_buffer(I),Ivs,IR,Is_is_mni);
 }
 bool dual_reg::save_template(const std::string& file_name)
 {
-    return tipl::io::gz_nifti::save_to_file<tipl::progress>(file_name,read_buffer(It),Itvs,ItR,It_is_mni);
+    return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(file_name,read_buffer(It),Itvs,ItR,It_is_mni);
 }
 
 template<typename T>
@@ -288,9 +288,9 @@ float dual_reg::linear_reg(bool& terminated)
     if(export_intermediate)
         for(size_t i = 0;i < I.size() && !I[i].empty();++i)
         {
-            tipl::io::gz_nifti::save_to_file<tipl::progress>(("I" + std::to_string(i) + ".nii.gz").c_str(),std::tie(I[i],Itvs,ItR));
-            tipl::io::gz_nifti::save_to_file<tipl::progress>(("It" + std::to_string(i) + ".nii.gz").c_str(),std::tie(It[i],Itvs,ItR));
-            tipl::io::gz_nifti::save_to_file<tipl::progress>(("J" + std::to_string(i) + ".nii.gz").c_str(),std::tie(J[i],Itvs,ItR));
+            tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(("I" + std::to_string(i) + ".nii.gz").c_str(),std::tie(I[i],Itvs,ItR));
+            tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(("It" + std::to_string(i) + ".nii.gz").c_str(),std::tie(It[i],Itvs,ItR));
+            tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(("J" + std::to_string(i) + ".nii.gz").c_str(),std::tie(J[i],Itvs,ItR));
         }
     return cost;
 }
@@ -345,7 +345,7 @@ void dual_reg::nonlinear_reg(bool& terminated)
     if(export_intermediate)
     {
         for(size_t i = 0;i < J.size();++i)
-            tipl::io::gz_nifti::save_to_file<tipl::progress>("JJ" + std::to_string(i) + ".nii.gz",J[i],Itvs,ItR);
+            tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>("JJ" + std::to_string(i) + ".nii.gz",J[i],Itvs,ItR);
         tipl::image<dimension+1> buffer(f2t_dis.shape().expand(2*dimension));
         tipl::par_for(2*dimension,[&](unsigned int d)
         {
@@ -363,7 +363,7 @@ void dual_reg::nonlinear_reg(bool& terminated)
                     buffer[i+shift] = t2f_dis[i][d];
             }
         },2*dimension);
-        tipl::io::gz_nifti::save_to_file<tipl::progress>("dis.nii.gz",buffer,Itvs,ItR);
+        tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>("dis.nii.gz",buffer,Itvs,ItR);
     }
 }
 
@@ -445,8 +445,7 @@ bool dual_reg::apply_warping_nii(const char* input, const char* output) const
     }
     bool is_label = tipl::is_label_image(I3);
     tipl::out() << (is_label ? "label image interpolated using majority assignment " : "scalar image interpolated using spline") << std::endl;
-    tipl::out() << "saving " << output;
-    if(!tipl::io::gz_nifti::save_to_file<tipl::progress>(output,
+    if(!tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(output,
                                          is_label ? apply_warping<direction,tipl::interpolation::majority>(I3) : apply_warping<direction,tipl::interpolation::cubic>(I3),
                                          direction ? Itvs : Ivs,
                                          direction ? ItR : IR,
@@ -677,7 +676,14 @@ bool dual_reg::save_warping(const char* filename) const
     out.write("arg",arg);
     out.write("version",map_ver);
     out.close();
+    std::error_code error;
     std::filesystem::rename(output_name_tmp,output_name);
+    if(error)
+    {
+        error_msg = error.message();
+        std::filesystem::remove(output_name_tmp);
+        return false;
+    }
     return true;
 }
 
