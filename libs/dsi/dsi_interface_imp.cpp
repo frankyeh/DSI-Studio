@@ -269,12 +269,9 @@ bool odf_average(const char* out_name,std::vector<std::string>& file_names,std::
         if(p0.aborted())
             return false;
         sum /= file_names.size();
-        if(!tipl::io::gz_nifti::save_to_file<tipl::progress>(out_name,std::tie(sum,vs,T,is_mni)))
-        {
-            error_msg = std::string("cannot save file") + out_name;
-            return false;
-        }
-        return true;
+        return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(out_name,
+                            std::tie(sum,vs,T,is_mni),
+                            [&](const std::string& e){tipl::error() << (error_msg = e);});
     }
 
 
