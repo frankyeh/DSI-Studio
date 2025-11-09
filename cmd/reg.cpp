@@ -445,16 +445,10 @@ bool dual_reg::apply_warping_nii(const char* input, const char* output) const
     }
     bool is_label = tipl::is_label_image(I3);
     tipl::out() << (is_label ? "label image interpolated using majority assignment " : "scalar image interpolated using spline") << std::endl;
-    if(!tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(output,
-                                         is_label ? apply_warping<direction,tipl::interpolation::majority>(I3) : apply_warping<direction,tipl::interpolation::cubic>(I3),
-                                         direction ? Itvs : Ivs,
-                                         direction ? ItR : IR,
-                                         direction ? It_is_mni : Is_is_mni))
-    {
-        error_msg = "cannot write to file " + std::string(output);
-        return false;
-    }
-    return true;
+    auto I = is_label ? apply_warping<direction,tipl::interpolation::majority>(I3) : apply_warping<direction,tipl::interpolation::cubic>(I3);
+    return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(output,
+            std::tie(I,direction ? Itvs : Ivs,direction ? ItR : IR,direction ? It_is_mni : Is_is_mni),
+            [&](const std::string& e){tipl::error() << (error_msg = e);});
 }
 
 template bool dual_reg::apply_warping_nii<false>(const char* input, const char* output) const;
