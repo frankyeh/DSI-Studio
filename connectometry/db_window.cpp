@@ -356,8 +356,9 @@ void db_window::on_actionCurrent_Subject_triggered()
                            "NIFTI files (*.nii *nii.gz);;All files (*)");
     if (filename.isEmpty())
         return;
-    tipl::image<3> I = vbc->handle->db.get_index_image(uint32_t(ui->subject_list->currentRow()));
-    if(tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),I,vbc->handle->vs,vbc->handle->trans_to_mni,true))
+    if(tipl::io::gz_nifti::save_to_file<tipl::progress>(filename.toStdString().c_str(),
+                                                        vbc->handle->bind(
+                    vbc->handle->db.get_index_image(uint32_t(ui->subject_list->currentRow())))))
         QMessageBox::information(this,QApplication::applicationName(),"file saved");
     else
         QMessageBox::critical(this,"ERROR","Cannot save file.");
