@@ -381,8 +381,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             tipl::normalize_upper_lower(I,255.99);
             tipl::image<3,unsigned char> II(I.shape());
             std::copy(I.begin(),I.end(),II.begin());
-            tipl::io::gz_nifti::save_to_file((cmd[1]+"/slices/" + ui->SliceModality->currentText().toStdString() + ".nii.gz").c_str(),
-                                   II,reg_slice->vs,reg_slice->trans_to_mni,reg_slice->is_mni);
+            tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>((cmd[1]+"/slices/" + ui->SliceModality->currentText().toStdString() + ".nii.gz"),reg_slice->bind(II));
             reg_slice->save_mapping((cmd[1]+"/slices/" + ui->SliceModality->currentText().toStdString() + ".linear_reg.txt").c_str());
         }
 
@@ -843,8 +842,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         if(cmd[0] == "save_slice_volume")
         {
-            if(!tipl::io::gz_nifti::save_to_file(cmd[1].c_str(),
-                reg_slice->source_images,reg_slice->vs,reg_slice->trans_to_mni,reg_slice->is_mni))
+            if(!tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(cmd[1],reg_slice->binded_image()))
                 return run->failed("cannot save mapping to " + cmd[1]);
         }
         else
