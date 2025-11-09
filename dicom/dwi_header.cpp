@@ -90,8 +90,7 @@ bool DwiHeader::open(const char* filename)
         nii >> std::tie(image,voxel_size);
         return true;
     }
-    header >> image;
-    header.get_voxel_size(voxel_size);
+    header >> std::tie(image,voxel_size);
     slice_location = header.get_slice_location();
 
     if(header.is_compressed)
@@ -106,7 +105,6 @@ bool DwiHeader::open(const char* filename)
         if(I.size() == image.size())
             std::copy(I.begin(),I.end(),image.begin());
     }
-    header.get_voxel_size(voxel_size);
     get_report_from_dicom(header,report);
 
     float orientation_matrix[9];
