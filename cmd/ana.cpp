@@ -672,8 +672,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
                     });
                     tipl::image<3> pdi(accumulate_map);
                     pdi *= 1.0f/float(tract_files.size());
-                    tipl::out() << "saving " << output << std::endl;
-                    if(!tipl::io::gz_nifti::save_to_file(output.c_str(),pdi,handle->vs,handle->trans_to_mni,handle->is_mni))
+                    if(!tipl::io::gz_nifti::save_to_file<tipl::progress>(output,handle->bind_vs_trans(pdi)))
                     {
                         tipl::error() << "cannot write to " << output << std::endl;
                         return 1;
