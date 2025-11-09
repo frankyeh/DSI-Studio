@@ -2279,8 +2279,7 @@ bool src_data::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
         tipl::image<4,float> buffer(b0[0].shape().expand(2));
         std::copy(b0[0].begin(),b0[0].end(),buffer.begin());
         std::copy(rev_b0[0].begin(),rev_b0[0].end(),buffer.begin() + b0[0].size());
-        if(!tipl::io::gz_nifti::save_to_file((b0_appa_file = file_name + ".topup." + pe_id + ".nii.gz"),
-                                             buffer,voxel.vs,voxel.trans_to_mni))
+        if(!tipl::io::gz_nifti::save_to_file<tipl::progress>((b0_appa_file = file_name + ".topup." + pe_id + ".nii.gz"),voxel.bind(buffer)))
         {
             tipl::error() << "cannot write a temporary b0_appa image volume to " << b0_appa_file;
             return false;
@@ -2514,7 +2513,7 @@ bool src_data::run_eddy(std::string exec)
     {
         tipl::image<3,unsigned char> I(topup_size);
         tipl::reshape(voxel.mask,I);
-        if(!tipl::io::gz_nifti::save_to_file(mask_nifti.c_str(),I,voxel.vs,voxel.trans_to_mni))
+        if(!tipl::io::gz_nifti::save_to_file<tipl::progress>(mask_nifti.c_str(),voxel.bind(I)))
         {
             error_msg = "cannot save mask file to ";
             error_msg += mask_nifti;
@@ -2861,7 +2860,7 @@ bool src_data::save_to_file(const std::string& filename)
             std::copy_n(src_dwi_data[index],voxel.dim.size(),
                       buffer.begin() + long(index*voxel.dim.size()));
         });
-        if(!tipl::io::gz_nifti::save_to_file(filename,buffer,voxel.vs,voxel.trans_to_mni))
+        if(!tipl::io::gz_nifti::save_to_file<tipl::progress>(filename,voxel.bind(buffer)))
         {
             error_msg = "cannot save ";
             error_msg += filename;
@@ -3396,7 +3395,7 @@ bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
             tipl::reshape(rev_pe_src->dwi_at(index),out);
         });
     tipl::out() << "save temporary nifti file at " << temp_nifti();
-    if(!tipl::io::gz_nifti::save_to_file(temp_nifti().c_str(),buffer,voxel.vs,voxel.trans_to_mni,false,nullptr,std::move(prog)))
+    if(!tipl::io::gz_nifti::save_to_file<tipl::progress>(temp_nifti(),voxel.bind(buffer)))
     {
         if(!tipl::prog_aborted)
             error_msg = "failed to write a temporary nifti file: " + temp_nifti() + ". Please check write permission.";
@@ -3406,19 +3405,15 @@ bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
 }
 bool src_data::save_b0_to_nii(const std::string& nifti_file_name) const
 {
-    tipl::image<3> buffer(voxel.dim);
-    std::copy_n(src_dwi_data[0],buffer.size(),buffer.begin());
-    return tipl::io::gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,voxel.trans_to_mni);
+    return tipl::io::gz_nifti::save_to_file<tipl::progress>(nifti_file_name,voxel.bind(tipl::make_image(src_dwi_data[0],voxel.dim)));
 }
 bool src_data::save_mask_nii(const std::string& nifti_file_name) const
 {
-    return tipl::io::gz_nifti::save_to_file(nifti_file_name,voxel.mask,voxel.vs,voxel.trans_to_mni);
+    return tipl::io::gz_nifti::save_to_file<tipl::progress>(nifti_file_name,voxel.bind(voxel.mask));
 }
-
 bool src_data::save_dwi_sum_to_nii(const std::string& nifti_file_name) const
 {
-    tipl::image<3,unsigned char> buffer(dwi);
-    return tipl::io::gz_nifti::save_to_file(nifti_file_name,buffer,voxel.vs,voxel.trans_to_mni);
+    return tipl::io::gz_nifti::save_to_file<tipl::progress>(nifti_file_name,voxel.bind(dwi));
 }
 
 bool src_data::save_b_table(const std::string& file_name) const
