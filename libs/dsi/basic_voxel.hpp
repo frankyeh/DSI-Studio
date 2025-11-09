@@ -73,6 +73,11 @@ private:
 public:
     tipl::shape<3> dim;
     tipl::vector<3> vs;
+    template<typename T>
+    auto bind(const T& I) const
+    {
+        return std::tie(I,vs,trans_to_mni);
+    }
 public:
     tipl::image<3,unsigned char> mask;
 public:
