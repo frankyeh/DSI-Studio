@@ -583,19 +583,19 @@ int img(tipl::program_option<tipl::out>& po)
 
     if(po.has("output"))
     {
+        auto output = po.get("output");
         if(var_image.dim4 > 1)
         {
             if(!var_image.apply([&](auto& I)->bool
             {
-                return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(po.get("output"),
+                return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(output,
                                                     var_image.bind(tipl::make_image(I.data(),dim4)));
             }))
                 return 1;
         }
         else
         {
-            tipl::out() << "save to " << po.get("output");
-            if(!var_image.command("save",po.get("output")))
+            if(!var_image.command("save",output))
             {
                 tipl::error() << var_image.error_msg;
                 return 1;
