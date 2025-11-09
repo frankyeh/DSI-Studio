@@ -138,7 +138,7 @@ bool ROIRegion::save_region_to_file(const char* file_name)
         std::string tmp = out.str();
         if(tmp.size() < 80)
             tmp.resize(80);
-        return tipl::io::gz_nifti::save_to_file(file_name,mask,vs,trans_to_mni,is_mni,tmp.c_str());
+        return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(file_name,std::tie(mask,vs,trans_to_mni,is_mni,tmp));
     }
     return false;
 }
