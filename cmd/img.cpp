@@ -587,14 +587,8 @@ int img(tipl::program_option<tipl::out>& po)
         {
             if(!var_image.apply([&](auto& I)->bool
             {
-                tipl::io::gz_nifti nii;
-                nii.set_image_transformation(var_image.T,var_image.is_mni);
-                nii.set_voxel_size(var_image.vs);
-                nii << tipl::make_image(I.data(),dim4);
-                if(nii.save_to_file(po.get("output").c_str()))
-                    return true;
-                tipl::error() << nii.error_msg;
-                return false;
+                return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(po.get("output"),
+                                                    var_image.bind(tipl::make_image(I.data(),dim4)));
             }))
                 return 1;
         }
