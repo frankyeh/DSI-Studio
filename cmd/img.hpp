@@ -18,6 +18,11 @@ public:
     tipl::vector<3,float> vs;
     tipl::matrix<4,4> T;
     std::string error_msg;
+    template<typename U>
+    auto bind(const U& I) const
+    {
+        return std::tie(I,vs,T,is_mni);
+    }
 public:
     variant_image(void){}
     variant_image(const variant_image& rhs)
