@@ -529,7 +529,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
 
         if(prog.aborted())
             return run->canceled();
-        if(!tipl::io::gz_nifti::save_to_file(cmd[1],multiple_I,
+        if(!tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(cmd[1],multiple_I,
                                   checked_regions[0]->vs,
                                   checked_regions[0]->trans_to_mni,
                                   cur_tracking_window.handle->is_mni))
@@ -562,14 +562,14 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         if(checked_regions.size() <= 255)
         {
             tipl::image<3,uint8_t> i8mask(mask);
-            result = tipl::io::gz_nifti::save_to_file(cmd[1].c_str(),i8mask,
+            result = tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(cmd[1].c_str(),i8mask,
                                checked_regions[0]->vs,
                                checked_regions[0]->trans_to_mni,
                                cur_tracking_window.handle->is_mni);
         }
         else
         {
-            result = tipl::io::gz_nifti::save_to_file(cmd[1].c_str(),mask,
+            result = tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(cmd[1].c_str(),mask,
                                checked_regions[0]->vs,
                                checked_regions[0]->trans_to_mni,
                                cur_tracking_window.handle->is_mni);
