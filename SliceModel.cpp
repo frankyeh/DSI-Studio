@@ -558,7 +558,7 @@ bool CustomSliceModel::load_slices(void)
             return false;
         }
         nifti.cur_prog = &prog;
-        nifti >> bind(source_images);
+        nifti >> binded_image();
         tipl::out() << "slice dim: " << source_images.shape() << " vs: " << vs << " trans: " << trans_to_mni;
 
         save_idx(source_file_name.c_str(),nifti.input_stream);
