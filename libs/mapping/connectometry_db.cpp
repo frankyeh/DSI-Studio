@@ -671,7 +671,7 @@ bool connectometry_db::save_demo_matched_image(const std::string& matched_demo,c
     tipl::image<3> I;
     if(!get_demo_matched_volume(matched_demo,I))
         return false;
-    if(!tipl::io::gz_nifti::save_to_file(filename.c_str(),I,handle->vs,handle->trans_to_mni,true,matched_demo.c_str()))
+    if(!tipl::io::gz_nifti::save_to_file<tipl::progress>(filename.c_str(),handle->bind(I)))
     {
         handle->error_msg = "cannot save file to " + filename;
         return false;
