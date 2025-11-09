@@ -217,6 +217,11 @@ public:
     tipl::shape<3> dim;
     tipl::vector<3> vs;
     tipl::matrix<4,4> trans_to_mni;
+    template<typename T>
+    auto bind_vs_trans(const T& I) const
+    {
+        return std::tie(I,vs,trans_to_mni,is_mni);
+    }
     bool is_human_data = true;
     bool is_histology = true;
     bool is_mni = false;
