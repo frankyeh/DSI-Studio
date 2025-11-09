@@ -1412,8 +1412,7 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
                 tipl::error() << "cannot parse dicom file" << std::endl;
                 return false;
             }
-            v >> source_images;
-            v.get_voxel_size(vs);
+            v >> std::tie(source_images,vs);
         }
         else
         {
