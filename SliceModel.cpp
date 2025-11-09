@@ -558,10 +558,8 @@ bool CustomSliceModel::load_slices(void)
             return false;
         }
         nifti.cur_prog = &prog;
-        nifti >> std::tie(source_images,vs,trans_to_mni);
-        tipl::out() << "slice dim: " << source_images.shape();
-        tipl::out() << "slice vs: " << vs;
-        tipl::out() << "slice trans: " << trans_to_mni;
+        nifti >> bind(source_images);
+        tipl::out() << "slice dim: " << source_images.shape() << " vs: " << vs << " trans: " << trans_to_mni;
 
         save_idx(source_file_name.c_str(),nifti.input_stream);
         if(QFileInfo(source_file_name.c_str()).fileName().toLower().contains(".mni."))
