@@ -623,17 +623,7 @@ bool fib_data::correct_bias_field(void)
 
 bool fib_data::save_slice(const std::string& index_name,const std::string& file_name,bool to_mni)
 {
-    tipl::progress prog("saving "+file_name);
-    auto save = [this,file_name](const auto& buf)->bool
-    {
-        if(!tipl::io::gz_nifti::save_to_file(file_name.c_str(),buf,vs,trans_to_mni,is_mni))
-        {
-            error_msg = "cannot save file " + file_name;
-            return false;
-        }
-        return true;
-    };
-
+    error_msg = "cannot save file " + file_name;
     if(index_name == "fiber" || index_name == "dirs") // command line exp use "dirs"
     {
         tipl::image<4,float> buf(dim.expand(3*uint32_t(dir.num_fiber)));
@@ -641,7 +631,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
         for(int k = 0;k < 3;++k)
         for(size_t i = 0;i < dim.size();++i,++index)
             buf[index] = dir.get_fib(i,j)[k];
-        return save(buf);
+        return tipl::io::gz_nifti::save_to_file<tipl::progress>(file_name.c_str(),bind(buf));
     }
     if(index_name.length() == 4 && index_name.substr(0,3) == "dir" && index_name[3]-'0' >= 0 && index_name[3]-'0' < int(dir.num_fiber))
     {
@@ -651,7 +641,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
         for(size_t index = 0;index < dim.size();++index,++ptr)
             if(dir.fa[dir_index][index] > 0.0f)
                 buf[ptr] = dir.get_fib(index,dir_index)[j];
-        return save(buf);
+        return tipl::io::gz_nifti::save_to_file<tipl::progress>(file_name.c_str(),bind(buf));
     }
     if(index_name == "odfs")
     {
@@ -668,7 +658,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
             if(ptr!= nullptr)
                 std::copy_n(ptr,dir.half_odf_size,buf.begin()+int64_t(pos)*dir.half_odf_size);
         }
-        return save(buf);
+        return tipl::io::gz_nifti::save_to_file<tipl::progress>(file_name.c_str(),bind(buf));
     }
     size_t index = get_name_index(index_name);
     if(index >= slices.size())
@@ -686,7 +676,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
             slices[index]->get_slice(uint8_t(2),uint32_t(z),I);
             std::copy(I.begin(),I.end(),buf.begin()+size_t(z)*buf.plane_size());
         }
-        return save(buf);
+        return tipl::io::gz_nifti::save_to_file<tipl::progress>(file_name.c_str(),bind(buf));
     }
 
 
@@ -713,7 +703,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
             }
             tipl::out() << "save " << slices[index]->name << " to template space at " << file_name;
             auto J = tipl::compose_mapping(slices[index]->get_image(),t2s);
-            if(!tipl::io::gz_nifti::save_to_file(file_name.c_str(),J,template_vs,template_to_mni,true))
+            if(!tipl::io::gz_nifti::save_to_file<tipl::progress>(file_name.c_str(),J,template_vs,template_to_mni,true))
             {
                 error_msg = "cannot save file " + file_name;
                 return false;
@@ -726,8 +716,8 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
             tipl::resample<tipl::interpolation::cubic>(buf,new_buf,slices[index]->iT);
             new_buf.swap(buf);
         }
-        return save(buf);
-    }    
+        return tipl::io::gz_nifti::save_to_file<tipl::progress>(file_name.c_str(),bind(buf));
+    }
 }
 bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs)
 {
