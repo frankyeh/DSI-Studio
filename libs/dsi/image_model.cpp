@@ -2855,7 +2855,7 @@ bool src_data::save_to_file(const std::string& filename)
         nifti_dim[3] = uint32_t(src_bvalues.size());
 
         tipl::image<4,unsigned short> buffer(nifti_dim);
-        tipl::adaptive_par_for(src_bvalues.size(),[&](size_t index)
+        tipl::par_for(src_bvalues.size(),[&](size_t index)
         {
             std::copy_n(src_dwi_data[index],voxel.dim.size(),
                       buffer.begin() + long(index*voxel.dim.size()));
