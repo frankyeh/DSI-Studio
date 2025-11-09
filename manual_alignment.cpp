@@ -453,7 +453,10 @@ void manual_alignment::on_actionSave_Warped_Image_triggered()
         tipl::resample<tipl::interpolation::majority>(from_original,I,iT);
     else
         tipl::resample<tipl::interpolation::cubic>(from_original,I,iT);
-    tipl::io::gz_nifti::save_to_file(filename.toStdString().c_str(),I,to_vs,to_T);
+    if(tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(filename.toStdString().c_str(),I,to_vs,to_T))
+        QMessageBox::information(this,QApplication::applicationName(),"file saved");
+    else
+        QMessageBox::critical(this,"ERROR","cannot save file.");
 }
 
 void manual_alignment::on_advance_options_clicked()
@@ -528,10 +531,11 @@ void manual_alignment::on_actionApply_Transformation_triggered()
         tipl::resample<tipl::interpolation::majority>(from,I,iT);
     else
         tipl::resample<tipl::interpolation::cubic>(from,I,iT);
-    tipl::io::gz_nifti::save_to_file(to_filename.toStdString().c_str(),I,to_vs,to_T);
 
-
-
+    if(tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(to_filename.toStdString().c_str(),I,to_vs,to_T))
+        QMessageBox::information(this,QApplication::applicationName(),"file saved");
+    else
+        QMessageBox::critical(this,"ERROR","cannot save file.");
 }
 
 
