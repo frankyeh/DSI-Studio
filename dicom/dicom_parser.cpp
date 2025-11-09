@@ -78,7 +78,8 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
     if(!dicom_header.load_from_file(file_name))
         return false;
     tipl::image<3> buf_image;
-    dicom_header >> buf_image;
+    tipl::vector<3> vs;
+    dicom_header >> std::tie(buf_image,vs);
     unsigned int slice_num = dicom_header.get_int(0x2001,0x1018);
     std::vector<float> b_table;
     {
@@ -210,7 +211,7 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
         std::ostringstream out;
         out << index;
         new_file->file_name += out.str();
-        dicom_header.get_voxel_size(new_file->voxel_size);
+        new_file->voxel_size = vs;
         new_file->bvalue = b_table[index*4];
         new_file->bvec = tipl::vector<3, float>(b_table[index*4+1],b_table[index*4+2],b_table[index*4+3]);
         new_file->bvec.rotate(T);
