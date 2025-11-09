@@ -1442,17 +1442,7 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
         }
         tipl::matrix<4,4,float> trans;
         initial_LPS_nifti_srow(trans,source_images.shape(),vs);
-        tipl::out() << "converted to NIFTI: " << std::filesystem::path(nii_file_name).filename().u8string() << std::endl;
-        std::string nii_file_name_tmp = nii_file_name + ".tmp";
-        if(!tipl::io::gz_nifti::save_to_file(nii_file_name_tmp,source_images,vs,trans))
-        {
-            tipl::error() << "cannot write to a temporary file " + nii_file_name_tmp;
-            return false;
-        }
-        if(std::filesystem::exists(nii_file_name))
-            std::filesystem::remove(nii_file_name);
-        std::filesystem::rename(nii_file_name_tmp,nii_file_name);
-        return true;
+        return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(nii_file_name,source_images,vs,trans);
     }
 
     if(!DwiHeader::has_b_table(dicom_files))
@@ -1479,17 +1469,8 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
                       dicom_files[index]->image.end(),
                       buffer.begin() + long(index*dicom_files[index]->image.size()));
         }
-        tipl::out() << "Create 4D NII file: " << nii_file_name << std::endl;
-        std::string nii_file_name_tmp = nii_file_name + ".tmp";
-        if(!tipl::io::gz_nifti::save_to_file(nii_file_name_tmp,buffer,dicom->voxel_size,trans,false,report.c_str()))
-        {
-            tipl::error() << "cannot write to a temporary file " + nii_file_name_tmp;
-            return false;
-        }
-        if(std::filesystem::exists(nii_file_name))
-            std::filesystem::remove(nii_file_name);
-        std::filesystem::rename(nii_file_name_tmp,nii_file_name);
-        return true;
+        tipl::out() << "output 4D NII file";
+        return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(nii_file_name,std::tie(buffer,dicom->voxel_size,trans,report));
     }
 
     auto src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".sz").c_str(),true).toStdString();
