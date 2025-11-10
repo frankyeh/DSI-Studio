@@ -381,7 +381,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             tipl::normalize_upper_lower(I,255.99);
             tipl::image<3,unsigned char> II(I.shape());
             std::copy(I.begin(),I.end(),II.begin());
-            tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>((cmd[1]+"/slices/" + ui->SliceModality->currentText().toStdString() + ".nii.gz"),reg_slice->bind(II));
+            tipl::io::gz_nifti(cmd[1]+"/slices/" + ui->SliceModality->currentText().toStdString() + ".nii.gz",std::ios::out) << reg_slice->bind(II);
             reg_slice->save_mapping((cmd[1]+"/slices/" + ui->SliceModality->currentText().toStdString() + ".linear_reg.txt").c_str());
         }
 
@@ -790,18 +790,15 @@ bool tracking_window::command(std::vector<std::string> cmd)
         if(!reg_slice.get())
             return run->canceled();
 
-        tipl::io::gz_nifti in;
         tipl::image<3> mask;
-        if(!in.load_from_file(iso_template_list[handle->template_id]) || !in.toLPS(mask))
+        tipl::matrix<4,4> mask_to_mni;
+        if(!(tipl::io::gz_nifti(iso_template_list[handle->template_id],std::ios::in) >> mask_to_mni >> mask))
             return run->failed("current template does not have a built-in mask");
         for(size_t i = 0;i < mask.size();++i)
             if(mask[i] > 0.0f)
                 mask[i] = 1.0f;
         tipl::filter::mean(mask);
         tipl::filter::mean(mask);
-
-        tipl::matrix<4,4> mask_to_mni;
-        in.get_image_transformation(mask_to_mni);
         tipl::out() << "warping template-space slices to the subject space." << std::endl;
 
         const auto& s2t = handle->get_sub2temp_mapping();
@@ -842,7 +839,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         if(cmd[0] == "save_slice_volume")
         {
-            if(!tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(cmd[1],reg_slice->binded_image()))
+            if(!(tipl::io::gz_nifti(cmd[1],std::ios::out) << reg_slice->binded_image()))
                 return run->failed("cannot save mapping to " + cmd[1]);
         }
         else
@@ -887,12 +884,9 @@ bool tracking_window::command(std::vector<std::string> cmd)
         if(!std::dynamic_pointer_cast<CustomSliceModel>(this_slice).get())
         {
             // use ICBM152 wm as the surface
-            tipl::io::gz_nifti nifti;
-            if(nifti.load_from_file(handle->wm_template_file_name.c_str()))
+            tipl::matrix<4,4,float> trans;
+            if(tipl::io::gz_nifti(handle->wm_template_file_name,std::ios::in) >> crop_image >> trans)
             {
-                tipl::matrix<4,4,float> trans;
-                nifti.toLPS(crop_image);
-                nifti.get_image_transformation(trans);
                 if(handle->mni2sub(crop_image,trans))
                     is_wm = true;
                 else
