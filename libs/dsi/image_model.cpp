@@ -940,14 +940,10 @@ bool src_data::command(std::string cmd,std::string param)
             error_msg = " please assign file name ";
             return false;
         }
-        tipl::io::gz_nifti in;
-        if(!in.load_from_file(param))
-        {
-            error_msg = in.error_msg;
-            return false;
-        }
         tipl::image<3> prob;
-        in >> prob;
+        if(!(tipl::io::gz_nifti(param,std::ios::in) >> prob >>
+             [&](const std::string& e){tipl::error() << (error_msg = e);}))
+            return false;        
         if(prob.shape() != dwi.shape())
         {
             error_msg = "mask has a different image dimension";
@@ -1332,9 +1328,7 @@ bool src_data::add_other_image(const std::string& name,const std::string& filena
     tipl::image<3> ref;
     tipl::vector<3> vs;
     tipl::transformation_matrix<float> trans;
-
-    tipl::io::gz_nifti in;
-    if(!in.load_from_file(filename.c_str()) || !(in >> std::tie(ref,vs)))
+    if(!(tipl::io::gz_nifti(filename,std::ios::in) >> ref >> vs))
     {
         error_msg = "not a valid nifti file ";
         error_msg += filename;
@@ -1400,8 +1394,8 @@ bool src_data::align_acpc(float reso)
     tipl::vector<3> Ivs,Jvs(reso,reso,reso);
 
     // prepare template images
-    if(!tipl::io::gz_nifti::load_from_file(iso_template_list[voxel.template_id].c_str(),I,Ivs) && !
-        tipl::io::gz_nifti::load_from_file(fa_template_list[voxel.template_id].c_str(),I,Ivs))
+    if(!(tipl::io::gz_nifti(iso_template_list[voxel.template_id],std::ios::in) >> Ivs >> I) &&
+       !(tipl::io::gz_nifti(fa_template_list[voxel.template_id],std::ios::in) >> Ivs >> I))
     {
         error_msg = "Failed to load/find MNI template.";
         return false;
@@ -2278,7 +2272,7 @@ bool src_data::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
     tipl::image<4,float> buffer(b0[0].shape().expand(2));
     std::copy(b0[0].begin(),b0[0].end(),buffer.begin());
     std::copy(rev_b0[0].begin(),rev_b0[0].end(),buffer.begin() + b0[0].size());
-    return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>((b0_appa_file = file_name + ".topup." + pe_id + ".nii.gz"),voxel.bind(buffer));
+    return tipl::io::gz_nifti((b0_appa_file = file_name + ".topup." + pe_id + ".nii.gz"),std::ios::out) << voxel.bind(buffer);
 
 }
 
@@ -2507,7 +2501,7 @@ bool src_data::run_eddy(std::string exec)
     {
         tipl::image<3,unsigned char> I(topup_size);
         tipl::reshape(voxel.mask,I);
-        if(!tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(mask_nifti.c_str(),voxel.bind(I),[&](const std::string& e){tipl::error() << (error_msg = e);}))
+        if(!(tipl::io::gz_nifti(mask_nifti,std::ios::out) << voxel.bind(I) << [&](const std::string& e){tipl::error() << (error_msg = e);}))
             return false;
     }
 
@@ -2615,8 +2609,8 @@ std::string src_data::find_topup_reverse_pe(void)
                tipl::contains(file,std::filesystem::path(file_name).filename().string()))
                 continue;
             tipl::out() << "checking " << file;
-            tipl::io::gz_nifti nii;
-            if(!nii.load_from_file(file))
+            tipl::io::gz_nifti nii(file,std::ios::in);
+            if(!nii)
             {
                 tipl::out() << "cannot open " << file << " " << nii.error_msg;
                 continue;
@@ -2850,7 +2844,9 @@ bool src_data::save_to_file(const std::string& filename)
             std::copy_n(src_dwi_data[index],voxel.dim.size(),
                       buffer.begin() + long(index*voxel.dim.size()));
         });
-        if(!tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(filename,voxel.bind(buffer),[&](const std::string& e){tipl::error() << (error_msg = e);}))
+        if(!(tipl::io::gz_nifti(filename,std::ios::out)
+             << voxel.bind(buffer)
+             << [&](const std::string& e){tipl::error() << (error_msg = e);}))
             return false;
         error_msg = "cannot save bval bvec";
         return save_bval((filename.substr(0,filename.size()-7)+".bval").c_str()) &&
@@ -2956,6 +2952,8 @@ void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istre
     std::string idx_name = file_name;
     idx_name += ".idx";
     {
+        if(!in.get())
+            in.reset(new tipl::io::gz_istream);
         in->buffer_all = true;
         if(std::filesystem::exists(idx_name) &&
            std::filesystem::last_write_time(idx_name) >
@@ -3386,20 +3384,21 @@ bool src_data::save_nii_for_applytopup_or_eddy(bool include_rev) const
             tipl::reshape(rev_pe_src->dwi_at(index),out);
         });
     tipl::out() << "store temporary nifti file";
-    return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(temp_nifti(),
-                voxel.bind(buffer),[&](const std::string& e){tipl::error() << (error_msg = e);});
+    return tipl::io::gz_nifti(temp_nifti(),std::ios::out)
+            << voxel.bind(buffer)
+            << [&](const std::string& e){tipl::error() << (error_msg = e);};
 }
 bool src_data::save_b0_to_nii(const std::string& nifti_file_name) const
 {
-    return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(nifti_file_name,voxel.bind(tipl::make_image(src_dwi_data[0],voxel.dim)));
+    return tipl::io::gz_nifti(nifti_file_name,std::ios::out) << voxel.bind(tipl::make_image(src_dwi_data[0],voxel.dim));
 }
 bool src_data::save_mask_nii(const std::string& nifti_file_name) const
 {
-    return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(nifti_file_name,voxel.bind(voxel.mask));
+    return tipl::io::gz_nifti(nifti_file_name,std::ios::out) << voxel.bind(voxel.mask);
 }
 bool src_data::save_dwi_sum_to_nii(const std::string& nifti_file_name) const
 {
-    return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(nifti_file_name,voxel.bind(dwi));
+    return tipl::io::gz_nifti(nifti_file_name,std::ios::out) << voxel.bind(dwi);
 }
 
 bool src_data::save_b_table(const std::string& file_name) const
