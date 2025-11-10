@@ -21,7 +21,12 @@ public:
     template<typename U>
     auto bind(const U& I) const
     {
-        return std::tie(I,vs,T,is_mni);
+        return std::tie(vs,T,is_mni,I);
+    }
+    template<typename U>
+    auto bind(U& I)
+    {
+        return std::tie(vs,T,is_mni,I);
     }
 public:
     variant_image(void){}
