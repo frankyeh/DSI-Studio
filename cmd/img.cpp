@@ -163,7 +163,7 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
     tipl::io::dicom dicom;
     is_mni = false;
     T.identity();
-    tipl::progress prog("open image file ",std::filesystem::path(file_name).filename().u8string().c_str());
+    tipl::progress prog("open " + std::string(file_name));
     if(QString(file_name).endsWith(".nhdr") || QString(file_name).endsWith(".nrrd"))
     {
         tipl::io::gz_nrrd nrrd;
@@ -210,13 +210,13 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
     {
         tipl::io::gz_nifti nifti;
         prepare_idx(file_name,nifti.input_stream);
-        if(!nifti.load_from_file(file_name))
+        if(!nifti.open(file_name,std::ios::in))
         {
             error_msg = nifti.error_msg;
             return false;
         }
+        nifti >> vs >> T >> shape >> is_mni;
         dim4 = nifti.dim(4);
-        nifti >> std::tie(vs,T,shape);
         switch (nifti.nif_header.datatype)
         {
         case 2://DT_UNSIGNED_CHAR 2
@@ -247,7 +247,6 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
 
         if(!apply([&](auto& data)
         {
-            nifti.cur_prog = &prog;
             bool succeed = nifti.get_untouched_image(data);
             if constexpr(!std::is_integral<typename std::remove_reference<decltype(*data.begin())>::type>::value)
             {
@@ -263,7 +262,6 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
         }
         if(dim4 == 1)
             save_idx(file_name,nifti.input_stream);
-        is_mni = nifti.is_mni();
         std::ostringstream out;
         out << nifti;
         info = out.str();
@@ -273,7 +271,7 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
         {
             std::string info_;
             pixel_type = int16;
-            dicom >> std::tie(I_int16,shape,vs,info_);
+            dicom >> std::tie(shape,vs,info_,I_int16);
             if(dicom.is_compressed)
             {
                 tipl::image<2,short> I;
@@ -466,7 +464,7 @@ int img(tipl::program_option<tipl::out>& po)
         tipl::progress prog("loading 4d nifti");
         tipl::io::gz_nifti nifti;
         prepare_idx(source.c_str(),nifti.input_stream);
-        if(!nifti.load_from_file(source.c_str()))
+        if(!nifti.open(source,std::ios::in))
         {
             tipl::error() << var_image.error_msg;
             return 1;
@@ -475,7 +473,7 @@ int img(tipl::program_option<tipl::out>& po)
         {
             tipl::out() << "dimension: " << (dim4 = tipl::shape<4>(I.width(),I.height(),I.depth(),var_image.dim4));
             I.resize(var_image.shape = tipl::shape<3>(I.width(),I.height(),I.depth()*var_image.dim4));
-            if(!nifti.save_to_buffer(I.data(),dim4.size(),prog))
+            if(!nifti.save_to_buffer(I.data(),dim4.size()))
             {
                 tipl::error() << nifti.error_msg;
                 return false;
@@ -588,8 +586,7 @@ int img(tipl::program_option<tipl::out>& po)
         {
             if(!var_image.apply([&](auto& I)->bool
             {
-                return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(output,
-                                                    var_image.bind(tipl::make_image(I.data(),dim4)));
+                return tipl::io::gz_nifti(output,std::ios::out) << var_image.bind(tipl::make_image(I.data(),dim4));
             }))
                 return 1;
         }
