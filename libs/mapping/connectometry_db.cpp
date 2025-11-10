@@ -671,8 +671,9 @@ bool connectometry_db::save_demo_matched_image(const std::string& matched_demo,c
     tipl::image<3> I;
     if(!get_demo_matched_volume(matched_demo,I))
         return false;
-    return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(filename.c_str(),handle->bind(I),
-                                                                        [&](const std::string& e){tipl::error() << (handle->error_msg = e);});
+    return tipl::io::gz_nifti(filename,std::ios::out)
+            << handle->bind(I)
+            << [&](const std::string& e){tipl::error() << (handle->error_msg = e);};
 }
 tipl::image<3> connectometry_db::get_index_image(unsigned int subject_index) const
 {
