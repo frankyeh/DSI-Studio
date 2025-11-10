@@ -422,11 +422,10 @@ bool CustomSliceModel::load_slices(void)
         source_file_name = path.string();
     }
 
-    tipl::progress prog("open ",source_file_name);
     // picture as slice
     if(suffix == "bmp" || suffix == "jpg" || suffix == "png" || suffix == "tif" || suffix == "tiff")
-
     {
+        tipl::progress prog("open ",source_file_name);
         QString info_file = QString(source_file_name.c_str()) + ".info.txt";
         if(source_files.size() <= 1) // single slice
         {
@@ -511,6 +510,7 @@ bool CustomSliceModel::load_slices(void)
         tipl::ends_with(source_file_name,".db.fz")) ||
         tipl::ends_with(source_file_name,".dz"))
     {
+        tipl::progress prog("open ",source_file_name);
         std::shared_ptr<fib_data> db_handle(new fib_data);
         if(!db_handle->load_from_file(source_file_name) || !db_handle->db.has_db())
         {
@@ -549,16 +549,12 @@ bool CustomSliceModel::load_slices(void)
        (QString(source_file_name.c_str()).endsWith("nii.gz") || QString(source_file_name.c_str()).endsWith("nii")))
     {
         tipl::io::gz_nifti nifti;
-        //  prepare idx file
         prepare_idx(source_file_name.c_str(),nifti.input_stream);
-        tipl::progress prog("opening ",source_file_name);
-        if(!nifti.load_from_file(source_file_name))
+        if(!nifti.open(source_file_name,std::ios::in) || !(nifti >> binded_image()))
         {
             error_msg = nifti.error_msg;
             return false;
         }
-        nifti.cur_prog = &prog;
-        nifti >> binded_image();
         tipl::out() << "slice dim: " << source_images.shape() << " vs: " << vs << " trans: " << trans_to_mni;
 
         save_idx(source_file_name.c_str(),nifti.input_stream);
@@ -617,6 +613,7 @@ bool CustomSliceModel::load_slices(void)
     // bruker images
     if(source_images.empty())
     {
+        tipl::progress prog("open ",source_file_name);
         tipl::io::bruker_2dseq bruker;
         if(bruker.load_from_file(source_file_name.c_str()))
         {
@@ -637,6 +634,7 @@ bool CustomSliceModel::load_slices(void)
     // dicom images
     if(source_images.empty() && !source_files.empty())
     {
+        tipl::progress prog("open ",source_file_name);
         tipl::io::dicom_volume volume;
         if(!volume.load_from_files(source_files))
         {
