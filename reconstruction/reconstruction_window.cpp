@@ -790,14 +790,8 @@ bool get_src(std::string filename,src_data& src2,std::string& error_msg)
     if(QString(filename.c_str()).endsWith(".nii.gz") ||
        QString(filename.c_str()).endsWith(".nii"))
     {
-        tipl::io::gz_nifti in;
-        if(!in.load_from_file(filename.c_str()))
-        {
-            error_msg = "invalid NIFTI format";
+        if(!(tipl::io::gz_nifti(filename,std::ios::in) >> I >> src2.voxel.dim >> [&](const std::string& e){error_msg = e;}))
             return false;
-        }
-        in.toLPS(I);
-        src2.voxel.dim = I.shape();
         src2.src_dwi_data.push_back(&I[0]);
     }
     else
@@ -950,15 +944,10 @@ void reconstruction_window::on_actionManual_Align_triggered()
     tipl::matrix<4,4> VG_T;
     handle->voxel.template_id = ui->primary_template->currentIndex();
     {
-        tipl::io::gz_nifti read,read2;
-        if(!read.load_from_file(fa_template_list[handle->voxel.template_id]))
-        {
-            QMessageBox::critical(this,"ERROR",QString("Cannot load template:"));
+        if(!(tipl::io::gz_nifti(fa_template_list[handle->voxel.template_id],std::ios::in) >> VG >> VGvs >> VG_T
+             >> [&](const std::string& e){QMessageBox::critical(this,"ERROR",e.c_str());}))
             return;
-        }
-        read >> std::tie(VG,VGvs,VG_T);
-        if(read2.load_from_file(iso_template_list[handle->voxel.template_id]))
-            read2.toLPS(VG2);
+        tipl::io::gz_nifti(iso_template_list[handle->voxel.template_id],std::ios::in) >> VG2;
     }
 
     match_template_resolution(VG,VGvs,VF,VFvs);
