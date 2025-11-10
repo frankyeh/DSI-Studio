@@ -1442,7 +1442,7 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
         }
         tipl::matrix<4,4,float> trans;
         initial_LPS_nifti_srow(trans,source_images.shape(),vs);
-        return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(nii_file_name,source_images,vs,trans);
+        return tipl::io::gz_nifti(nii_file_name,std::ios::out) << vs << trans << source_images;
     }
 
     if(!DwiHeader::has_b_table(dicom_files))
@@ -1470,7 +1470,7 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
                       buffer.begin() + long(index*dicom_files[index]->image.size()));
         }
         tipl::out() << "output 4D NII file";
-        return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(nii_file_name,std::tie(buffer,dicom->voxel_size,trans,report));
+        return tipl::io::gz_nifti(nii_file_name,std::ios::out) << dicom->voxel_size << trans << report << buffer;
     }
 
     auto src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".sz").c_str(),true).toStdString();
