@@ -162,7 +162,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     }
 
     tipl::io::gz_nifti header;
-    if (!header.load_from_file(file_name.c_str()))
+    if (!header.open(file_name,std::ios::in))
     {
         error_msg = header.error_msg;
         return false;
@@ -177,7 +177,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     else
     {
         tipl::image<3> tmp;
-        header.toLPS(tmp);
+        header >> tmp;
         if(std::filesystem::exists(get_label_file_name(file_name)) || tipl::is_label_image(tmp))
             from = tmp;
         else
@@ -191,7 +191,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 
     tipl::vector<3> vs;
     tipl::matrix<4,4> trans_to_mni;
-    header >> std::tie(vs,trans_to_mni);
+    header >> vs >> trans_to_mni;
 
     std::vector<unsigned short> value_list;
     std::vector<unsigned short> value_map(std::numeric_limits<unsigned short>::max()+1);
@@ -346,7 +346,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         tipl::progress prog_("loading");
         for(size_t region_index = 0;prog(region_index,region_points.size());++region_index)
         {
-            header.toLPS(from);
+            header >> from;
             for (tipl::pixel_index<3> index(from.shape());index < from.size();++index)
                 if(from[index.index()])
                     region_points[region_index].push_back(index);
@@ -672,7 +672,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
                     });
                     tipl::image<3> pdi(accumulate_map);
                     pdi *= 1.0f/float(tract_files.size());
-                    if(!tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(output,handle->bind(pdi)))
+                    if(!(tipl::io::gz_nifti(output,std::ios::out) << handle->bind(pdi)))
                         return 1;
                 }
             }
