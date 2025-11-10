@@ -138,7 +138,7 @@ bool ROIRegion::save_region_to_file(const char* file_name)
         std::string tmp = out.str();
         if(tmp.size() < 80)
             tmp.resize(80);
-        return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(file_name,std::tie(mask,vs,trans_to_mni,is_mni,tmp));
+        return tipl::io::gz_nifti(file_name,std::ios::out) << vs << trans_to_mni << is_mni << tmp << mask;
     }
     return false;
 }
@@ -191,14 +191,11 @@ bool ROIRegion::load_region_from_file(const char* file_name) {
     }
     if (tipl::ends_with(file_name,".nii") || tipl::ends_with(file_name,".nii.gz"))
     {
-        tipl::io::gz_nifti header;
         tipl::image<3> I;
-        if(!header.load_from_file(file_name) || !(header >> std::tie(I,vs,trans_to_mni,dim)))
-        {
-            std::cout << header.error_msg << std::endl;
+        if(!(tipl::io::gz_nifti(file_name,std::ios::in)
+             >> vs >> trans_to_mni >> dim >> is_mni >> I
+             >> [&](const std::string& e){tipl::error() << e;}))
             return false;
-        }
-        is_mni = header.is_mni();
         tipl::image<3,unsigned char> mask = I;
         load_region_from_buffer(mask);
         return true;
