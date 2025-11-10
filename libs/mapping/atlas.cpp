@@ -45,8 +45,8 @@ bool atlas::load_from_file(void)
 {
     if(!I.empty())
         return true;
-    tipl::io::gz_nifti nii;
-    if(!nii.load_from_file(filename.c_str()))
+    tipl::io::gz_nifti nii(filename,std::ios::in);
+    if(!nii)
     {
         error_msg = nii.error_msg;
         return false;
@@ -56,16 +56,16 @@ bool atlas::load_from_file(void)
     is_multiple_roi = (nii.dim(4) > 1); // 4d nifti as multiple roi
     if(is_multiple_roi)
     {
-        nii.toLPS(multiple_I);
+        nii >> multiple_I;
         I.resize(tipl::shape<3>(multiple_I.width(),multiple_I.height(),multiple_I.depth()));
         multiple_I_3d.clear();
         for(size_t pos = 0;pos < multiple_I.size();pos += I.size())
             multiple_I_3d.push_back(tipl::make_image(&*multiple_I.data() + pos,I.shape()));
     }
     else
-        nii.toLPS(I);
+        nii >> I;
 
-    nii.get_image_transformation(T);
+    nii >> T;
     if(T == template_to_mni)
     {
         in_template_space = true;
