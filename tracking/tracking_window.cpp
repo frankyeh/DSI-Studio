@@ -1084,11 +1084,9 @@ void tracking_window::dropEvent(QDropEvent *event)
             tracts << file_name;
         if(file_name.endsWith("nii.gz") || file_name.endsWith("nii"))
         {
-            tipl::io::gz_nifti nii;
-            if(nii.load_from_file(file_name.toStdString()))
+            tipl::image<3> I;
+            if(tipl::io::gz_nifti(file_name.toStdString(),std::ios::in) >> I)
             {
-                tipl::image<3> I;
-                nii >> I;
                 if(tipl::is_label_image(I))
                     regions << file_name;
                 else
