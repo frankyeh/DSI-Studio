@@ -545,13 +545,10 @@ void group_connectometry::on_load_roi_from_file_clicked()
         return;
     tipl::image<3> I;
     tipl::matrix<4,4> transform;
-    tipl::io::gz_nifti nii;
-    if(!nii.load_from_file(file.toStdString().c_str()) || !nii.toLPS(I))
-    {
-        QMessageBox::critical(this,"ERROR",nii.error_msg.c_str());
+    if(!(tipl::io::gz_nifti(file.toStdString(),std::ios::in)
+            >> transform >> I
+            >> [this](const std::string& e){QMessageBox::critical(this,"ERROR",e.c_str());}))
         return;
-    }
-    nii.get_image_transformation(transform);
     transform.inv();
     transform *= vbc->handle->trans_to_mni;
     std::vector<tipl::vector<3,short> > new_roi;
