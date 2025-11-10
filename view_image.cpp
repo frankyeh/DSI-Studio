@@ -159,11 +159,8 @@ bool view_image::command(std::string cmd,std::string param1)
             get_4d_buf(buf);
             cur_image->apply([&](auto& I)
             {
-                tipl::io::gz_nifti nii;
-                nii.set_image_transformation(cur_image->T,cur_image->is_mni);
-                nii.set_voxel_size(cur_image->vs);
-                nii << tipl::make_image(reinterpret_cast<decltype(&I[0])>(buf.data()),tipl::shape<4>(cur_image->shape[0],cur_image->shape[1],cur_image->shape[2],buf4d.size()));
-                result = nii.save_to_file(param1.c_str(),prog2);
+                auto I2 = tipl::make_image(reinterpret_cast<decltype(&I[0])>(buf.data()),tipl::shape<4>(cur_image->shape[0],cur_image->shape[1],cur_image->shape[2],buf4d.size()));
+                result = tipl::io::gz_nifti(param1,std::ios::out) << cur_image->bind(I2);
             });
             read_4d_at(old_4d_index);
             if(prog2.aborted())
@@ -330,13 +327,9 @@ bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vecto
 {
     if(filenames.size() == 1 && filenames[0].toLower().contains("nii"))
     {
-        tipl::io::gz_nifti in;
-        if(!in.load_from_file(filenames[0].toStdString().c_str()) || !(in >> std::tie(ref,vs,trans)))
-        {
-            QMessageBox::information(nullptr,"Error","Not a valid nifti file");
-            return false;
-        }
-        return true;
+        return tipl::io::gz_nifti(filenames[0].toStdString(),std::ios::in)
+               >> vs >> trans >> ref
+               >> [&](const std::string& e){QMessageBox::information(nullptr,"ERROR",e.c_str());};
     }
     else
         if(filenames.size() == 1 && filenames[0].contains("2dseq"))
@@ -541,7 +534,7 @@ void view_image::on_actionLoad_Image_to_4D_triggered()
     if(filename.isEmpty())
         return;
     tipl::image<3> new_image(cur_image->shape);
-    if(!tipl::io::gz_nifti::load_to_space(filename.toStdString().c_str(),new_image,cur_image->T))
+    if(!tipl::io::gz_nifti(filename.toStdString(),std::ios::in).to_space(new_image,cur_image->T))
     {
         QMessageBox::critical(this,"ERROR","Invalid NIFTI file");
         return;
@@ -647,7 +640,7 @@ bool view_image::open(QStringList file_names_)
     if(cur_image->dim4 > 1)
     {
         prepare_idx(file_name.toStdString().c_str(),nifti.input_stream);
-        if(!nifti.load_from_file(file_name.toStdString().c_str()))
+        if(!nifti.open(file_name.toStdString(),std::ios::in))
         {
             error_msg = nifti.error_msg;
             return false;
