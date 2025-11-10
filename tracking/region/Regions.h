@@ -24,6 +24,11 @@ public:
         tipl::vector<3> vs;
         tipl::matrix<4,4> trans_to_mni;
         bool is_mni = false;
+        template<typename T>
+        auto bind(const T& I) const
+        {
+            return std::tie(vs,trans_to_mni,is_mni,I);
+        }
 public:
         std::vector<tipl::vector<3,short> > region;
         std::vector<std::vector<tipl::vector<3,short> > > undo_backup;
