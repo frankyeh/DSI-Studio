@@ -434,15 +434,12 @@ bool fib_data::load_from_file(const std::string& file_name)
     fib_file_name = file_name;
     if((tipl::ends_with(file_name,".nii") ||
         tipl::ends_with(file_name,".nii.gz")) &&
-        header.load_from_file(file_name))
+        header.open(file_name,std::ios::in))
     {
         if(header.dim(4) == 3)
         {
             tipl::image<3> x,y,z;
-            header >> x;
-            header >> y;
-            header >> z;
-            header >> std::tie(vs,trans_to_mni);
+            header >> vs >> trans_to_mni >> x >> y >> z;
             dim = x.shape();
             dir.check_index(0);
             dir.num_fiber = 1;
@@ -482,10 +479,7 @@ bool fib_data::load_from_file(const std::string& file_name)
             for(uint32_t i = 0;i < fib_num;++i)
             {
                 tipl::image<3> x,y,z;
-                header >> x;
-                header >> y;
-                header >> z;
-                header >> std::tie(vs,trans_to_mni);
+                header >> x >> y >> z >> vs >> trans_to_mni;
                 if(i == 0)
                 {
                     dim = x.shape();
@@ -525,8 +519,8 @@ bool fib_data::load_from_file(const std::string& file_name)
         }
         else
         {
-            header >> std::tie(I,vs,trans_to_mni);
-            tipl::out() << ((is_mni = header.is_mni()) ? "image treated as MNI-space image." : "image treated used as subject-space image" )<< std::endl;
+            header >> vs >> trans_to_mni >> is_mni >> I;
+            tipl::out() << (is_mni ? "image treated as MNI-space image." : "image treated used as subject-space image");
         }
     }
     else
@@ -631,7 +625,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
         for(int k = 0;k < 3;++k)
         for(size_t i = 0;i < dim.size();++i,++index)
             buf[index] = dir.get_fib(i,j)[k];
-        return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(file_name.c_str(),bind(buf));
+        return tipl::io::gz_nifti(file_name,std::ios::out) << bind(buf);
     }
     if(index_name.length() == 4 && index_name.substr(0,3) == "dir" && index_name[3]-'0' >= 0 && index_name[3]-'0' < int(dir.num_fiber))
     {
@@ -641,7 +635,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
         for(size_t index = 0;index < dim.size();++index,++ptr)
             if(dir.fa[dir_index][index] > 0.0f)
                 buf[ptr] = dir.get_fib(index,dir_index)[j];
-        return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(file_name.c_str(),bind(buf));
+        return tipl::io::gz_nifti(file_name,std::ios::out) << bind(buf);
     }
     if(index_name == "odfs")
     {
@@ -658,7 +652,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
             if(ptr!= nullptr)
                 std::copy_n(ptr,dir.half_odf_size,buf.begin()+int64_t(pos)*dir.half_odf_size);
         }
-        return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(file_name.c_str(),bind(buf));
+        return tipl::io::gz_nifti(file_name,std::ios::out) << bind(buf);
     }
     size_t index = get_name_index(index_name);
     if(index >= slices.size())
@@ -676,7 +670,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
             slices[index]->get_slice(uint8_t(2),uint32_t(z),I);
             std::copy(I.begin(),I.end(),buf.begin()+size_t(z)*buf.plane_size());
         }
-        return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(file_name.c_str(),bind(buf));
+        return tipl::io::gz_nifti(file_name,std::ios::out) << bind(buf);
     }
 
 
@@ -704,9 +698,9 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
             tipl::out() << "save " << slices[index]->name << " to template space at " << file_name;
             auto J = tipl::compose_mapping(slices[index]->get_image(),t2s);
             bool is_mni = true;
-            return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(file_name,
-                            std::tie(J,template_vs,template_to_mni,is_mni),
-                            [&](const std::string& e){tipl::error() << (error_msg = e);});
+            return tipl::io::gz_nifti(file_name,std::ios::out)
+                    << template_vs << template_to_mni << is_mni << J
+                    << [&](const std::string& e){tipl::error() << (error_msg = e);};
         }
         if(slices[index]->get_image().shape() != dim)
         {
@@ -714,7 +708,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
             tipl::resample<tipl::interpolation::cubic>(buf,new_buf,slices[index]->iT);
             new_buf.swap(buf);
         }
-        return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(file_name.c_str(),bind(buf));
+        return tipl::io::gz_nifti(file_name,std::ios::out) << bind(buf);
     }
 }
 bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs)
@@ -907,13 +901,10 @@ bool fib_data::load_from_mat(void)
 
         for(size_t index = 0;index < fa_template_list.size();++index)
         {
-            tipl::io::gz_nifti read;
-            if(!read.load_from_file(fa_template_list[index]))
-                continue;
             tipl::vector<3> Itvs;
             tipl::shape<3> Itdim;
-            read >> std::tie(Itdim,Itvs);
-            if(std::abs(dim[0]-Itdim[0]*Itvs[0]/vs[0]) < 4.0f)
+            if((tipl::io::gz_nifti(fa_template_list[index],std::ios::in) >> Itdim >> Itvs) &&
+                std::abs(dim[0]-Itdim[0]*Itvs[0]/vs[0]) < 4.0f)
             {
                 matched_template_id = index;
                 tipl::out() << "matched template (by image size): " <<
@@ -1618,13 +1609,12 @@ bool fib_data::load_template(void)
         template_to_mni = trans_to_mni;
         return true;
     }
-    tipl::io::gz_nifti read;
-    if(!read.load_from_file(fa_template_list[template_id].c_str()))
+    if(!(tipl::io::gz_nifti(fa_template_list[template_id],std::ios::in) >>
+         template_I >> template_vs >> template_to_mni))
     {
         error_msg = "cannot load " + fa_template_list[template_id];
         return false;
     }
-    read >> std::tie(template_I,template_vs,template_to_mni);
     float ratio = float(template_I.width()*template_vs[0])/float(dim[0]*vs[0]);
     if(ratio < 0.25f || ratio > 8.0f)
     {
@@ -1653,15 +1643,10 @@ bool fib_data::load_template(void)
 
     // load iso template if exists
     {
-        tipl::io::gz_nifti read2;
         if(!iso_template_list[template_id].empty() &&
-           read2.load_from_file(iso_template_list[template_id].c_str()))
-        {
-            read2.toLPS(template_I2);
+           tipl::io::gz_nifti(iso_template_list[template_id],std::ios::in) >> template_I2)
             for(unsigned int i = 0;i < downsampling;++i)
                 tipl::downsampling(template_I2);
-        }
-
     }
     template_I *= 1.0f/float(tipl::mean(template_I));
     if(!template_I2.empty())
@@ -2214,22 +2199,12 @@ bool fib_data::load_mapping(const std::string& file_name)
         return true;
     }
 
-    tipl::io::gz_nifti nii;
-    tipl::out() << "opening " << file_name;
-    if(!nii.load_from_file(file_name))
-    {
-        error_msg = nii.error_msg;
-        return false;
-    }
     tipl::image<3> shiftx,shifty,shiftz;
     tipl::matrix<4,4,float> trans;
-    nii >> shiftx;
-    nii >> shifty;
-    nii >> shiftz;
-    nii.get_image_transformation(trans);
+    if(!(tipl::io::gz_nifti(file_name,std::ios::in) >> shiftx >> shifty >> shiftz >> trans >> [&](const std::string& e){error_msg = e;}))
+        return false;
     tipl::out() << "dimension: " << shiftx.shape();
     tipl::out() << "trans_to_mni: " << trans;
-
     if(shiftx.shape() != dim || shifty.shape() != dim || shiftz.shape() != dim)
     {
         error_msg = "image size does not match";
