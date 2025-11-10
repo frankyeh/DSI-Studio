@@ -76,7 +76,7 @@ public:
     template<typename T>
     auto bind(const T& I) const
     {
-        return std::tie(I,vs,trans_to_mni);
+        return std::tie(vs,trans_to_mni,I);
     }
 public:
     tipl::image<3,unsigned char> mask;
