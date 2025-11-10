@@ -155,14 +155,13 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
         }
 
         tipl::io::gz_nifti nii;
-        if(!nii.load_from_file(each))
+        if(!nii.open(each,std::ios::in))
         {
             error_msg = nii.error_msg;
             return false;
         }
         tipl::shape<3> s;
-        nii.get_image_dimension(s);
-
+        nii >> s;
         dwi_info.emplace_back(std::filesystem::path(each),phase_str,s,nii.dim(4));
         tipl::out() << "image size: " << s << " dwi count: " << nii.dim(4) << " phase encoding: " << phase_str;
     }
