@@ -180,7 +180,7 @@ int atl(tipl::program_option<tipl::out>& po)
                 if (atlas_list[i]->is_labeled_as(mapping[k], j))
                     roi[k] = 1;
             if(multiple)
-                tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(output.c_str(),handle->bind(roi));
+                tipl::io::gz_nifti(output,std::ios::out) << handle->bind(roi);
         }
         {
             std::string label_name = base_name;
