@@ -529,10 +529,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
 
         if(prog.aborted())
             return run->canceled();
-        if(!tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(cmd[1],multiple_I,
-                                  checked_regions[0]->vs,
-                                  checked_regions[0]->trans_to_mni,
-                                  cur_tracking_window.handle->is_mni))
+        if(!(tipl::io::gz_nifti(cmd[1],std::ios::out) << checked_regions[0]->bind(multiple_I)))
             return run->failed("cannot save region to " + cmd[1]);
         save_checked_region_label_file(cmd[1].c_str(),0);  // 4d nifti index starts from 0
         return run->succeed();
@@ -562,18 +559,10 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         if(checked_regions.size() <= 255)
         {
             tipl::image<3,uint8_t> i8mask(mask);
-            result = tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(cmd[1].c_str(),i8mask,
-                               checked_regions[0]->vs,
-                               checked_regions[0]->trans_to_mni,
-                               cur_tracking_window.handle->is_mni);
+            result = tipl::io::gz_nifti(cmd[1],std::ios::out) << checked_regions[0]->bind(i8mask);
         }
         else
-        {
-            result = tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(cmd[1].c_str(),mask,
-                               checked_regions[0]->vs,
-                               checked_regions[0]->trans_to_mni,
-                               cur_tracking_window.handle->is_mni);
-        }
+            result = tipl::io::gz_nifti(cmd[1],std::ios::out) << checked_regions[0]->bind(mask);
         if(!result)
             return run->failed("cannot write to file " + cmd[1]);
         save_checked_region_label_file(cmd[1].c_str(),1); // 3d nifti index starts from 1
