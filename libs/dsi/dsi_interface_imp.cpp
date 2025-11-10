@@ -256,12 +256,9 @@ bool odf_average(const char* out_name,std::vector<std::string>& file_names,std::
         tipl::progress p0("adding images",true);
         for(size_t i = 0;p0(i,file_names.size());++i)
         {
-            tipl::out() << "adding " << file_names[i];
-            if(!tipl::io::gz_nifti::load_from_file(file_names[i].c_str(),each,vs,T,is_mni))
-            {
-                error_msg = "cannot load file" + file_names[i];
+            if(!(tipl::io::gz_nifti(file_names[i],std::ios::in) >> vs >> T >> is_mni >> each >>
+                [&](const std::string& e){tipl::error() << (error_msg = e);}))
                 return false;
-            }
             if(sum.empty())
                 sum.resize(each.shape());
             sum += each;
@@ -269,9 +266,9 @@ bool odf_average(const char* out_name,std::vector<std::string>& file_names,std::
         if(p0.aborted())
             return false;
         sum /= file_names.size();
-        return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(out_name,
-                            std::tie(sum,vs,T,is_mni),
-                            [&](const std::string& e){tipl::error() << (error_msg = e);});
+        return tipl::io::gz_nifti(out_name,std::ios::out)
+                    << vs << T << is_mni << sum
+                    << [&](const std::string& e){tipl::error() << (error_msg = e);};
     }
 
 
