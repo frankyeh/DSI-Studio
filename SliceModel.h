@@ -20,12 +20,12 @@ public:
     template<typename T>
     auto bind(T& I)
     {
-        return std::tie(I,vs,trans_to_mni);
+        return std::tie(vs,trans_to_mni,I);
     }
     template<typename T>
     auto bind(const T& I) const
     {
-        return std::tie(I,vs,trans_to_mni);
+        return std::tie(vs,trans_to_mni,I);
     }
 public:
     bool is_overlay = false;
@@ -145,10 +145,10 @@ public:
 public:
     bool is_mni = false;
     tipl::image<3> source_images;
-    auto binded_image(void)         {return std::tie(source_images,vs,trans_to_mni,is_mni);}
-    auto binded_image(void) const   {return std::tie(source_images,vs,trans_to_mni,is_mni);}
-    template<typename T> auto bind(T& I)             {return std::tie(I,vs,trans_to_mni,is_mni);}
-    template<typename T> auto bind(const T& I) const {return std::tie(I,vs,trans_to_mni,is_mni);}
+    auto binded_image(void)         {return std::tie(vs,trans_to_mni,is_mni,source_images);}
+    auto binded_image(void) const   {return std::tie(vs,trans_to_mni,is_mni,source_images);}
+    template<typename T> auto bind(T& I)             {return std::tie(vs,trans_to_mni,is_mni,I);}
+    template<typename T> auto bind(const T& I) const {return std::tie(vs,trans_to_mni,is_mni,I);}
     void update_image(tipl::image<3>&& new_image);
     void update_image(void);
 public:
