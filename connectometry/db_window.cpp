@@ -356,9 +356,8 @@ void db_window::on_actionCurrent_Subject_triggered()
                            "NIFTI files (*.nii *nii.gz);;All files (*)");
     if (filename.isEmpty())
         return;
-    if(tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(filename.toStdString().c_str(),
-                                                        vbc->handle->bind(
-                    vbc->handle->db.get_index_image(uint32_t(ui->subject_list->currentRow())))))
+    if(tipl::io::gz_nifti(filename.toStdString(),std::ios::out)
+            << vbc->handle->bind(vbc->handle->db.get_index_image(uint32_t(ui->subject_list->currentRow()))))
         QMessageBox::information(this,QApplication::applicationName(),"file saved");
     else
         QMessageBox::critical(this,"ERROR","cannot save file.");
@@ -378,18 +377,12 @@ void db_window::on_actionAll_Subjects_triggered()
         QString file_name = dir + "\\"+
                 vbc->handle->db.subject_names[i].c_str()+"."+
                 vbc->handle->db.index_name.c_str()+".nii.gz";
-        tipl::image<3> I = vbc->handle->db.get_index_image(uint32_t(i));
-        tipl::io::gz_nifti out;
-        out.set_voxel_size(vbc->handle->vs);
-        out.set_image_transformation(vbc->handle->trans_to_mni);
-        out << I;
-        if(!out.save_to_file(file_name.toStdString().c_str()))
-        {
-            QMessageBox::critical(this,"ERROR","Cannot save file.");
+        if(!(tipl::io::gz_nifti(file_name.toStdString(),std::ios::out)
+                    << vbc->handle->bind(vbc->handle->db.get_index_image(uint32_t(i)))
+                    << [this](const std::string& e){QMessageBox::critical(this,"ERROR",e.c_str());}))
             return;
-        }
     }
-    QMessageBox::information(this,QApplication::applicationName(),"Files exported");
+    QMessageBox::information(this,QApplication::applicationName(),"files exported");
 }
 
 void db_window::on_actionOpen_Demographics_triggered()
