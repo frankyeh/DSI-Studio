@@ -220,7 +220,7 @@ public:
     template<typename T>
     auto bind(const T& I) const
     {
-        return std::tie(I,vs,trans_to_mni,is_mni);
+        return std::tie(vs,trans_to_mni,is_mni,I);
     }
     bool is_human_data = true;
     bool is_histology = true;
