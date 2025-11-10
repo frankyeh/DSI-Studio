@@ -453,7 +453,7 @@ void manual_alignment::on_actionSave_Warped_Image_triggered()
         tipl::resample<tipl::interpolation::majority>(from_original,I,iT);
     else
         tipl::resample<tipl::interpolation::cubic>(from_original,I,iT);
-    if(tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(filename.toStdString().c_str(),I,to_vs,to_T))
+    if(tipl::io::gz_nifti(filename.toStdString(),std::ios::out) << to_vs << to_T << I)
         QMessageBox::information(this,QApplication::applicationName(),"file saved");
     else
         QMessageBox::critical(this,"ERROR","cannot save file.");
@@ -519,7 +519,7 @@ void manual_alignment::on_actionApply_Transformation_triggered()
         return;
 
     tipl::image<3> from(from_original.shape());
-    if(!tipl::io::gz_nifti::load_to_space(filename.toStdString(),from,from_T))
+    if(!tipl::io::gz_nifti(filename.toStdString(),std::ios::in).to_space(from,from_T))
     {
         QMessageBox::critical(this,"ERROR","Cannot read the file");
         return;
@@ -532,7 +532,7 @@ void manual_alignment::on_actionApply_Transformation_triggered()
     else
         tipl::resample<tipl::interpolation::cubic>(from,I,iT);
 
-    if(tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(to_filename.toStdString().c_str(),I,to_vs,to_T))
+    if(tipl::io::gz_nifti(to_filename.toStdString(),std::ios::out) << to_vs << to_T << I)
         QMessageBox::information(this,QApplication::applicationName(),"file saved");
     else
         QMessageBox::critical(this,"ERROR","cannot save file.");
