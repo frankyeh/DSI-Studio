@@ -150,7 +150,7 @@ std::string quality_check_nii_files(const std::vector<std::string>& file_list)
     for(int i = 0;prog(i,file_list.size());++i)
     {
         tipl::io::gz_nifti nii;
-        if(nii.load_from_file(file_list[i]))
+        if(nii.open(file_list[i],std::ios::in))
         {
             out << std::filesystem::path(file_list[i]).filename().string() << "\t";
             if(nii.dim(4) == 1)
