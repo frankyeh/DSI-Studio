@@ -81,12 +81,9 @@ int rec(tipl::program_option<tipl::out>& po)
 
     if(po.has("mask") && std::filesystem::exists(po.get("mask")))
     {
-        tipl::out() << "opening mask file: " << po.get("mask") << std::endl;
-        if(!tipl::io::gz_nifti::load_from_file(po.get("mask"),src.voxel.mask))
-        {
-            tipl::error() << "cannot read mask file";
+        if(!(tipl::io::gz_nifti(po.get("mask"),std::ios::in) >> src.voxel.mask
+             >>[](const std::string& e){tipl::error() << e;}))
             return 1;
-        }
         if(src.voxel.mask.shape() != src.voxel.dim)
         {
             tipl::error() << "The mask dimension is different. terminating..." << std::endl;
@@ -187,22 +184,19 @@ int rec(tipl::program_option<tipl::out>& po)
             if(po.has("rotate_to") || po.has("align_to"))
             {
                 std::string file_name = po.has("rotate_to") ? po.get("rotate_to"):po.get("align_to");
-                tipl::io::gz_nifti in;
-                if(!in.load_from_file(file_name.c_str()))
-                {
-                    tipl::out() << "failed to read " << file_name << std::endl;
-                    return 1;
-                }
                 tipl::image<3,unsigned char> I;
                 tipl::vector<3> vs;
-                in >> std::tie(I,vs);
+                if(!(tipl::io::gz_nifti(file_name,std::ios::in)
+                     >> vs >> I
+                     >> [&](const std::string& e){tipl::error() << e;}))
+                    return 1;
+
                 if(po.has("rotate_to"))
                     tipl::out() << "running rigid body transformation" << std::endl;
                 else
                     tipl::out() << "running affine transformation" << std::endl;
                 tipl::filter::gaussian(I);
                 tipl::filter::gaussian(src.dwi);
-
                 src.rotate(I.shape(),vs,
                            tipl::reg::linear<tipl::out>(tipl::reg::make_list(I),vs,tipl::reg::make_list(src.dwi),src.voxel.vs,
                                   po.has("rotate_to") ? tipl::reg::rigid_body : tipl::reg::affine));
