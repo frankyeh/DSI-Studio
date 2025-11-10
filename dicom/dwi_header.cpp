@@ -80,16 +80,9 @@ bool DwiHeader::open(const char* filename)
     file_name = filename;
     tipl::io::dicom header;
     if (!header.load_from_file(filename))
-    {
-        tipl::io::nifti nii;
-        if (!nii.load_from_file(filename))
-        {
-            error_msg = "unsupported file format";
-            return false;
-        }
-        nii >> std::tie(image,voxel_size);
-        return true;
-    }
+        return tipl::io::gz_nifti(filename,std::ios::in)
+                >> voxel_size >> image
+                >> [&](const std::string& e){tipl::error() << (error_msg = e);};
     header >> std::tie(image,voxel_size);
     slice_location = header.get_slice_location();
 
