@@ -324,8 +324,9 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
     std::vector<tipl::image<3> > dwi_data;
     {
         tipl::io::gz_nifti nii;
+        nii.input_stream.reset(new tipl::io::gz_istream);
         nii.input_stream->buffer_all = true;
-        if(!nii.load_from_file(file_name))
+        if(!nii.open(file_name,std::ios::in))
         {
             error_msg = nii.error_msg;
             return false;
@@ -340,7 +341,7 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
         for(unsigned int index = 0;index < nii.dim(4);++index)
         {
             tipl::image<3> data;
-            if(!nii.toLPS(data))
+            if(!(nii >> data))
                 tipl::warning() << "failed to parse 4D NIFTI file at "
                                 << std::to_string(index+1) << "/"
                                 << std::to_string(nii.dim(4))
@@ -348,7 +349,7 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
             std::replace_if(data.begin(),data.end(),[](float v){return std::isnan(v) || std::isinf(v) || v < 0.0f;},0.0f);
             dwi_data[index].swap(data);
         }
-        nii >> std::tie(vs,trans_to_mni);
+        nii >> vs >> trans_to_mni;
 
         if(dwi_data.size() <= 1 && must_have_bval_bvec)
         {
@@ -387,26 +388,14 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
         }
     }
     tipl::image<4,float> grad_dev;
-    if(QFileInfo(QFileInfo(file_name.c_str()).absolutePath() + "/grad_dev.nii.gz").exists())
-    {
-        tipl::io::gz_nifti grad_header;
-        if(grad_header.load_from_file(QString(QFileInfo(file_name.c_str()).absolutePath() + "/grad_dev.nii.gz").toStdString().c_str()))
-        {
-            grad_header.toLPS(grad_dev);
-            tipl::out() << "grad_dev used" << std::endl;
-        }
-    }
+    if(tipl::io::gz_nifti(QString(QFileInfo(file_name.c_str()).absolutePath() + "/grad_dev.nii.gz").toStdString(),std::ios::in) >> grad_dev)
+        tipl::out() << "grad_dev used" << std::endl;
+
 
     tipl::image<3,unsigned char> mask;
-    if(QFileInfo(QFileInfo(file_name.c_str()).absolutePath() + "/nodif_brain_mask.nii.gz").exists())
-    {
-        tipl::io::gz_nifti mask_header;
-        if(mask_header.load_from_file(QString(QFileInfo(file_name.c_str()).absolutePath() + "/nodif_brain_mask.nii.gz").toStdString().c_str()))
-        {
-            mask_header.toLPS(mask);
-            tipl::out() << "mask used" << std::endl;
-        }
-    }
+    if(tipl::io::gz_nifti(QString(QFileInfo(file_name.c_str()).absolutePath() + "/nodif_brain_mask.nii.gz").toStdString(),std::ios::in) >> mask)
+        tipl::out() << "mask used" << std::endl;
+
 
     std::vector<double> bvals,bvecs;
     QString bval_name,bvec_name;
