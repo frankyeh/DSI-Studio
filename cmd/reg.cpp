@@ -41,11 +41,11 @@ auto read_buffer(const std::vector<image_type>& data)
 }
 bool dual_reg::save_subject(const std::string& file_name)
 {
-    return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(file_name,read_buffer(I),Ivs,IR,Is_is_mni);
+    return tipl::io::gz_nifti(file_name,std::ios::out) << Ivs << IR << Is_is_mni << read_buffer(I);
 }
 bool dual_reg::save_template(const std::string& file_name)
 {
-    return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(file_name,read_buffer(It),Itvs,ItR,It_is_mni);
+    return tipl::io::gz_nifti(file_name,std::ios::out) << Itvs << ItR << It_is_mni << read_buffer(It);
 }
 
 template<typename T>
@@ -66,7 +66,7 @@ bool load_image(size_t id, const std::string& file_name,
 
     tipl::out() << "open " << file_name;
     tipl::io::gz_nifti nifti;
-    if(!nifti.load_from_file(file_name))
+    if(!nifti.open(file_name,std::ios::in))
     {
         error_msg = nifti.error_msg;
         return false;
@@ -86,7 +86,7 @@ bool load_image(size_t id, const std::string& file_name,
 
         if(id == 0)
         {
-            nifti >> std::tie(ref_transform,voxel_size,image_shape);
+            nifti >> voxel_size >> image_shape >> ref_transform;
             is_mni = nifti.is_mni();
         }
         else
@@ -288,9 +288,9 @@ float dual_reg::linear_reg(bool& terminated)
     if(export_intermediate)
         for(size_t i = 0;i < I.size() && !I[i].empty();++i)
         {
-            tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(("I" + std::to_string(i) + ".nii.gz").c_str(),std::tie(I[i],Itvs,ItR));
-            tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(("It" + std::to_string(i) + ".nii.gz").c_str(),std::tie(It[i],Itvs,ItR));
-            tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(("J" + std::to_string(i) + ".nii.gz").c_str(),std::tie(J[i],Itvs,ItR));
+            tipl::io::gz_nifti("I" + std::to_string(i) + ".nii.gz",std::ios::out) << Ivs << IR << I[i];
+            tipl::io::gz_nifti("It" + std::to_string(i) + ".nii.gz",std::ios::out) << Itvs << ItR << It[i];
+            tipl::io::gz_nifti("J" + std::to_string(i) + ".nii.gz",std::ios::out) << Itvs << ItR << J[i];;
         }
     return cost;
 }
@@ -345,7 +345,7 @@ void dual_reg::nonlinear_reg(bool& terminated)
     if(export_intermediate)
     {
         for(size_t i = 0;i < J.size();++i)
-            tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>("JJ" + std::to_string(i) + ".nii.gz",J[i],Itvs,ItR);
+            tipl::io::gz_nifti("JJ" + std::to_string(i) + ".nii.gz",std::ios::out) << Itvs << ItR << J[i];
         tipl::image<dimension+1> buffer(f2t_dis.shape().expand(2*dimension));
         tipl::par_for(2*dimension,[&](unsigned int d)
         {
@@ -363,7 +363,7 @@ void dual_reg::nonlinear_reg(bool& terminated)
                     buffer[i+shift] = t2f_dis[i][d];
             }
         },2*dimension);
-        tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>("dis.nii.gz",buffer,Itvs,ItR);
+        tipl::io::gz_nifti("dis.nii.gz",std::ios::out) << Itvs << ItR << buffer;
     }
 }
 
@@ -423,14 +423,10 @@ bool dual_reg::apply_warping_nii(const char* input, const char* output) const
     auto input_size = (direction ? Is : Its);
     // check dimension
     {
-        tipl::io::gz_nifti nii;
-        if(!nii.load_from_file(input))
-        {
-            error_msg = nii.error_msg;
-            return false;
-        }
         tipl::shape<3> d;
-        nii.get_image_dimension(d);
+        if(!(tipl::io::gz_nifti(input,std::ios::in) >> d >>
+                [&](const std::string& e){tipl::error() << (error_msg = e);}))
+            return false;
         if(d != input_size)
         {
             tipl::warning() << std::filesystem::path(input).filename().string() << " has a size of " << d << " different from the expected size " << input_size;
@@ -438,7 +434,7 @@ bool dual_reg::apply_warping_nii(const char* input, const char* output) const
         }
     }
     tipl::image<dimension> I3(input_size);
-    if(!tipl::io::gz_nifti::load_to_space(input,I3,direction ? IR : ItR))
+    if(!tipl::io::gz_nifti(input,std::ios::in).to_space(I3,direction ? IR : ItR))
     {
         error_msg = "cannot open " + std::string(input);
         return false;
@@ -446,9 +442,9 @@ bool dual_reg::apply_warping_nii(const char* input, const char* output) const
     bool is_label = tipl::is_label_image(I3);
     tipl::out() << (is_label ? "label image interpolated using majority assignment " : "scalar image interpolated using spline") << std::endl;
     auto I = is_label ? apply_warping<direction,tipl::interpolation::majority>(I3) : apply_warping<direction,tipl::interpolation::cubic>(I3);
-    return tipl::io::gz_nifti::save_to_file<tipl::progress,tipl::error>(output,
-            std::tie(I,direction ? Itvs : Ivs,direction ? ItR : IR,direction ? It_is_mni : Is_is_mni),
-            [&](const std::string& e){tipl::error() << (error_msg = e);});
+    return tipl::io::gz_nifti(output,std::ios::out)
+            << (direction ? Itvs : Ivs) << (direction ? ItR : IR) << (direction ? It_is_mni : Is_is_mni) << I
+            << [&](const std::string& e){tipl::error() << (error_msg = e);};
 }
 
 template bool dual_reg::apply_warping_nii<false>(const char* input, const char* output) const;
