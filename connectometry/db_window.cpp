@@ -332,7 +332,7 @@ void db_window::on_actionSelect_Subjects_triggered()
                            "Text files (*.txt);;All files (*)");
     if (filename.isEmpty())
         return;
-    std::ifstream in(filename.toStdString().c_str());
+    std::ifstream in(filename.toStdString());
     std::vector<char> selected;
     std::copy(std::istream_iterator<int>(in),std::istream_iterator<int>(),std::back_inserter(selected));
     selected.resize(vbc->handle->db.subject_names.size());
@@ -370,7 +370,7 @@ void db_window::on_actionAll_Subjects_triggered()
                                 "");
     if(dir.isEmpty())
         return;
-    tipl::progress prog("exporting ",dir.toStdString().c_str());
+    tipl::progress prog("exporting " + dir.toStdString());
     for(size_t i = 0;prog(i,vbc->handle->db.subject_names.size());++i)
     {
         QString file_name = dir + "\\"+
@@ -417,8 +417,7 @@ void db_window::on_actionSave_Demographics_triggered()
                 "Comma- or Tab-Separated Values(*.csv *.tsv);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::ofstream out(filename.toStdString().c_str());
-    out << vbc->handle->db.demo;
+    std::ofstream(filename.toStdString()) << vbc->handle->db.demo;
 }
 
 QString get_matched_demo(QWidget *parent,std::shared_ptr<fib_data> handle)

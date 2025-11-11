@@ -1119,7 +1119,7 @@ void MainWindow::on_parse_network_measures_clicked()
             "Text files (*.txt);;All files (*)" );
     if(filename.isEmpty())
         return;
-    std::ofstream out((filename[0]+".collected.txt").toStdString().c_str());
+    std::ofstream out((filename[0]+".collected.txt").toStdString());
     out << "Field\t";
     for(int i = 0;i < filename.size();++i)
         out << QFileInfo(filename[i]).baseName().toStdString() << "\t";
@@ -1421,7 +1421,7 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
             tipl::io::dicom_volume v;
             std::vector<std::string> file_list;
             for(int index = 0;index < files.size();++index)
-                file_list.push_back(files[index].toStdString().c_str());
+                file_list.push_back(files[index].toStdString());
             if(!v.load_from_files(file_list))
             {
                 tipl::out() << v.error_msg.c_str() << std::endl;

@@ -537,7 +537,7 @@ int img(tipl::program_option<tipl::out>& po)
                 }
 
                 auto model_path = QCoreApplication::applicationDirPath().toStdString()+ "/network/" + po.get("network",param);
-                auto unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(model_path.c_str());
+                auto unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(model_path);
                 if(!unet.get())
                 {
                     tipl::error() << "cannot read network file at" + model_path;

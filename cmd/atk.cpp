@@ -36,7 +36,7 @@ int atk(tipl::program_option<tipl::out>& po)
     {
         if(po.has("report"))
         {
-            std::ofstream out(po.get("report").c_str());
+            std::ofstream out(po.get("report"));
             out << auto_track_report;
         }
         return 0;

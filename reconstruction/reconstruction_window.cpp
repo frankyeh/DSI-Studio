@@ -71,7 +71,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     for(auto each : adv_outputs)
         each->hide();
     if(!load_src(0))
-        throw std::runtime_error(handle->error_msg.c_str());
+        throw std::runtime_error(handle->error_msg);
 
     setWindowTitle(filenames[0]);
     ui->ThreadCount->setMaximum(tipl::max_thread_count);
@@ -772,7 +772,7 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
 
 bool get_src(std::string filename,src_data& src2,std::string& error_msg)
 {
-    tipl::progress prog_("opening ",filename.c_str());
+    tipl::progress prog_("open " + filename);
     tipl::image<3,unsigned short> I;
     if(tipl::ends_with(filename,".dcm"))
     {

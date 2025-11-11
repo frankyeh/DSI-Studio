@@ -178,7 +178,7 @@ void CreateDBDialog::on_save_list1_clicked()
     if(filename.isEmpty())
         return;
 
-    std::ofstream out(filename.toStdString().c_str());
+    std::ofstream out(filename.toStdString());
     for(int index = 0;index < group.size();++index)
         out << group[index].toStdString().c_str() <<  std::endl;
 }

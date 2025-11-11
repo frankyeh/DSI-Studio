@@ -381,19 +381,19 @@ void xnat_dialog::download_status()
         {
             on_download_clicked();
             QMessageBox::information(this,QApplication::applicationName(),"Download Completed");
-            if(QMessageBox::information(this,QApplication::applicationName(),"Rename DICOM files?",QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
+            if(QMessageBox::information(this,QApplication::applicationName(),"rename DICOM files?",QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
             {
                 QStringList subject_dirs;
                 {
-                    tipl::progress prog("Renaming DICOM");
+                    tipl::progress prog("renaming DICOM");
                     for(size_t i = 0;prog(i,output_dirs.size());++i)
                         subject_dirs << rename_dicom_at_dir(output_dirs[i].c_str(),output_dirs[i].c_str());
                     if(prog.aborted())
                         return;
                 }
-                if(QMessageBox::information(this,QApplication::applicationName(),"Convert DICOM to SRC/NII?",QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
+                if(QMessageBox::information(this,QApplication::applicationName(),"convert DICOM to SRC/NII?",QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
                 {
-                    tipl::progress prog("Converting DICOM to SRC/NII?");
+                    tipl::progress prog("converting DICOM to SRC/NII");
                     for(size_t i = 0;prog(i,subject_dirs.size());++i)
                         dicom2src_and_nii(subject_dirs[i].toStdString(),false);
                     if(prog.aborted())

@@ -100,7 +100,7 @@ int db(tipl::program_option<tipl::out>& po)
             return 1;
         }
         tipl::out() << "saving " << (po.get("output",output)+".R2.tsv");
-        std::ofstream out((po.get("output",output)+".R2.tsv").c_str());
+        std::ofstream out(po.get("output",output)+".R2.tsv");
         out << "name\tR2" << std::endl;
         std::vector<float> R2(fib.db.subject_names.size());
         for(size_t i = 0;i < fib.db.subject_names.size();++i)
@@ -183,9 +183,7 @@ int atl(tipl::program_option<tipl::out>& po)
                 tipl::io::gz_nifti(output,std::ios::out) << handle->bind(roi);
         }
         {
-            std::string label_name = base_name;
-            label_name += ".txt";
-            std::ofstream txt_out(label_name.c_str());
+            std::ofstream txt_out(base_name + ".txt");
             for(unsigned int j = 0;j < atlas_list[i]->get_list().size();++j)
                 txt_out << atlas_list[i]->get_num()[j] << " " << atlas_list[i]->get_list()[j] << std::endl;
         }

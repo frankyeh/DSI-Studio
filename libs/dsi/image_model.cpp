@@ -191,7 +191,7 @@ bool src_data::mask_from_unet(void)
     if(std::filesystem::exists(model_file_name))
     {
         tipl::progress p("generating a mask using unet",true);
-        auto unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(model_file_name.c_str());
+        auto unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(model_file_name);
         if(unet.get())
         {
             tipl::filter::gaussian(b0[0]);
@@ -788,7 +788,7 @@ bool src_data::command(std::string cmd,std::string param)
 {
     if(cmd == "[Step T2][Reconstruction]")
         return true;
-    tipl::progress prog_(cmd.c_str());
+    tipl::progress prog_(cmd);
     if(!param.empty())
         tipl::out() << "param: " << param << std::endl;
     if(cmd == "[Step T2][File][Save Src File]" || cmd == "[Step T2][File][Save 4D NIFTI]")
@@ -2846,8 +2846,8 @@ bool src_data::save_to_file(const std::string& filename)
              << [&](const std::string& e){tipl::error() << (error_msg = e);}))
             return false;
         error_msg = "cannot save bval bvec";
-        return save_bval((filename.substr(0,filename.size()-7)+".bval").c_str()) &&
-               save_bvec((filename.substr(0,filename.size()-7)+".bvec").c_str());
+        return save_bval(filename.substr(0,filename.size()-7)+".bval") &&
+               save_bvec(filename.substr(0,filename.size()-7)+".bvec");
     }
     if(tipl::ends_with(filename,"src.gz") ||
        tipl::ends_with(filename,".sz") ||

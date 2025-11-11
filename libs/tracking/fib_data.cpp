@@ -676,7 +676,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
 
     if(tipl::ends_with(file_name,".mat"))
     {
-        tipl::io::mat_write file(file_name.c_str());
+        tipl::io::mat_write file(file_name);
         if(!file)
         {
             error_msg = "cannot save file " + file_name;
@@ -1550,9 +1550,9 @@ std::vector<std::string> fib_data::get_tractography_all_levels(void)
             // get their parent bundle
             auto insert = tractography_name_list[index].substr(0,tractography_name_list[index].find_last_of('_'));
             if(insert != last_insert)
-                list.push_back((last_insert = insert).c_str());
+                list.push_back((last_insert = insert));
         }
-        list.push_back(tractography_name_list[index].c_str());
+        list.push_back(tractography_name_list[index]);
     }
     return list;
 }

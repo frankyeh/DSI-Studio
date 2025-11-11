@@ -85,7 +85,7 @@ void search_dwi_nii(const std::string& dir,std::vector<std::string>& dwi_nii_fil
 std::vector<std::string> search_dwi_nii_bids(const std::string& dir)
 {
     std::vector<std::string> dwi_nii_files;
-    tipl::progress prog("searching BIDS at ",dir.c_str());
+    tipl::progress prog("searching BIDS in " + dir);
     std::vector<std::string> sub_dir;
     tipl::search_dirs(dir,"sub-*",sub_dir);
     auto subject_num = sub_dir.size();
@@ -417,7 +417,7 @@ int src(tipl::program_option<tipl::out>& po)
     if(po.has("b_table"))
     {
         std::string table_file_name = po.get("b_table");
-        std::ifstream in(table_file_name.c_str());
+        std::ifstream in(table_file_name);
         if(!in)
         {
             tipl::error() << "failed to open b-table" <<std::endl;

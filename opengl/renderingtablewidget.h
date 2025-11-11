@@ -107,14 +107,14 @@ public:
     {
         auto iter = name_data_mapping.find(name);
         if(iter == name_data_mapping.end())
-            throw std::runtime_error(("Cannot find the setting value: "+name.toStdString()).c_str());
+            throw std::runtime_error("cannot find the setting value: "+name.toStdString());
         return iter->second->value;
     }
     RenderingItem& operator[](QString name)
     {
         auto iter = name_data_mapping.find(name);
         if(iter == name_data_mapping.end())
-            throw std::runtime_error(("Cannot find the setting value: "+name.toStdString()).c_str());
+            throw std::runtime_error("cannot find the setting value: "+name.toStdString());
         return *(iter->second);
     }
     QStringList get_param_list(QString root_name)
@@ -122,7 +122,7 @@ public:
         QStringList result;
         RenderingItem* parent = root_mapping[root_name];
         if(!parent)
-            throw std::runtime_error("Cannot find the root node");
+            throw std::runtime_error("cannot find the root node");
         for(int index = 0;index < parent->childCount();++index)
             if(!parent->child(index)->type.isNull()) // second layer tree node has type = QVariant() assigned in AddNode
                 result.push_back(parent->child(index)->id);

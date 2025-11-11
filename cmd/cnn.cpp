@@ -76,7 +76,7 @@ int cnn(tipl::program_option<tipl::out>& po)
     std::vector<std::string> network_list;
     {
         std::string network = po.get("network");
-        std::ifstream in(network.c_str());
+        std::ifstream in(network);
         if(!in)
         {
             tipl::out() << "cannot open " << network << std::endl;
@@ -104,7 +104,7 @@ int cnn(tipl::program_option<tipl::out>& po)
         std::string output_name = po.get("network")+"."+std::to_string(thread_id)+".txt";
         int start_count = 0;
         {
-            std::ifstream in2(output_name.c_str());
+            std::ifstream in2(output_name);
             std::string line;
             while(std::getline(in2,line))
                 ++start_count;
@@ -137,7 +137,7 @@ int cnn(tipl::program_option<tipl::out>& po)
     tipl::out() << test_error << "," << train_error << "," << network_list[0] << std::endl;
 
     if(po.has("output_nn"))
-        nn.save_to_file<tipl::io::gz_ostream>(po.get("output_nn").c_str());
+        nn.save_to_file<tipl::io::gz_ostream>(po.get("output_nn"));
 
     return 0;
 }

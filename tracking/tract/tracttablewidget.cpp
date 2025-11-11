@@ -1079,7 +1079,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
                 // cmd[2] : file_name
                 if(!cur_tracking_window.history.get_filename(this,cmd[2],tract_models[cur_row]->name))
                     return run->canceled();
-                std::ifstream in(cmd[2].c_str());
+                std::ifstream in(cmd[2]);
                 if(!in)
                     return run->failed("cannot read tract label " + cmd[2]);
                 std::copy(std::istream_iterator<unsigned int>(in),
