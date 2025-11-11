@@ -247,7 +247,7 @@ void save_warp(RegToolBox* host,
             "Images (*.nii *nii.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
-    if(!reg.apply_warping<direction>(names[y].c_str(),filename.toStdString().c_str()))
+    if(!reg.apply_warping<direction>(names[y].c_str(),filename.toStdString()))
         QMessageBox::critical(host,"ERROR",reg.error_msg.c_str());
     else
         QMessageBox::information(host,QApplication::applicationName(),"Saved");
@@ -578,7 +578,7 @@ void RegToolBox::on_actionSave_Warping_triggered()
             "Images (*.mz);;All files (*)" );
     if(filename.isEmpty())
         return;
-    if(!reg.save_warping(filename.toStdString().c_str()))
+    if(!reg.save_warping(filename.toStdString()))
         QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
 }
 
@@ -589,7 +589,7 @@ void RegToolBox::on_actionOpen_Mapping_triggered()
             "Images (*.mz);;All files (*)" );
     if(filename.isEmpty())
         return;
-    if(!reg.load_warping(filename.toStdString().c_str()))
+    if(!reg.load_warping(filename.toStdString()))
         QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
     show_image();
 }
@@ -687,7 +687,7 @@ void applyWarping(dual_reg& reg)
         QString saveFileName = QFileDialog::getSaveFileName(nullptr, "Save Transformed Image", file_list[0], filter);
         if (saveFileName.isEmpty())
             return;
-        if (!reg.apply_warping<subjectToTemplate>(file_list[0].toStdString().c_str(), saveFileName.toStdString().c_str()))
+        if (!reg.apply_warping<subjectToTemplate>(file_list[0].toStdString(), saveFileName.toStdString()))
             goto error;
     }
     else
@@ -695,7 +695,7 @@ void applyWarping(dual_reg& reg)
         tipl::progress prog("save files");
         for (int i = 0; prog(i, file_list.size()); ++i)
         {
-            if (!reg.apply_warping<subjectToTemplate>(file_list[i].toStdString().c_str(), (file_list[i] + ".wp.nii.gz").toStdString().c_str()))
+            if (!reg.apply_warping<subjectToTemplate>(file_list[i].toStdString(), (file_list[i] + ".wp.nii.gz").toStdString()))
                 goto error;
         }
     }
