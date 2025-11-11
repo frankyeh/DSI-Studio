@@ -77,7 +77,7 @@ class TinyTrack{
                              const std::string& parameter_id,
                              const std::vector<unsigned int>& color)
     {
-        tipl::progress prog0("saving ",std::filesystem::path(file_name).filename().u8string().c_str());
+        tipl::progress prog0("saving " + file_name);
         tipl::io::gz_mat_write out(file_name);
         if (!out)
             return false;
@@ -197,7 +197,7 @@ class TinyTrack{
                                std::string& report,std::string& parameter_id,
                                std::vector<unsigned int>& color)
     {
-        tipl::progress prog("opening ",std::filesystem::path(file_name).filename().string());
+        tipl::progress prog("open " + file_name);
         tipl::io::gz_mat_read in;
         prepare_idx(file_name,in.in);
         if (!in.load_from_file(file_name))
@@ -293,7 +293,7 @@ struct TrackVis
                 tipl::matrix<4,4>& trans_to_mni,
                 std::string& info)
     {
-        tipl::progress prog("opening ",std::filesystem::path(file_name).filename().u8string().c_str());
+        tipl::progress prog("open " + file_name);
         tipl::io::gz_istream in;
         if (!in.open(file_name))
             return false;
@@ -348,7 +348,7 @@ struct TrackVis
                              const std::string& info,
                              unsigned int color)
     {
-        tipl::progress prog("saving ",std::filesystem::path(file_name).filename().u8string().c_str());
+        tipl::progress prog("save " + file_name);
         tipl::io::gz_ostream out;
         if (!out.open(file_name))
             return false;
@@ -1162,7 +1162,7 @@ bool TractModel::save_all(const char* file_name,
 {    
     if(all.empty())
         return false;
-    tipl::progress prog("saving ",std::filesystem::path(file_name).filename().u8string().c_str());
+    tipl::progress prog("save " + file_name);
     for(unsigned int index = 0;index < all.size();++index)
         all[index]->saved = true;
     if (tipl::ends_with(file_name,".tt.gz"))
