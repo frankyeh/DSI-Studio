@@ -816,7 +816,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             return run->canceled();
 
         auto locks = start_reading_checked_tracks();
-        if(!TractModel::save_all(cmd[1].c_str(),get_checked_tracks()))
+        if(!TractModel::save_all(cmd[1],get_checked_tracks()))
             return run->failed("cannot save file to " + cmd[1]);
         return true;
     }
