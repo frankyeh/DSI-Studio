@@ -140,8 +140,8 @@ public:
     CustomSliceModel(std::shared_ptr<fib_data> new_handle,const std::vector<std::string>& file_list);
     CustomSliceModel(std::shared_ptr<fib_data> new_handle,std::shared_ptr<slice_model> new_slice);
     ~CustomSliceModel(void);
-    bool save_mapping(const char* file_name);
-    bool load_mapping(const char* file_name);
+    bool save_mapping(const std::string& file_name);
+    bool load_mapping(const std::string& file_name);
 public:
     bool is_mni = false;
     tipl::image<3> source_images;

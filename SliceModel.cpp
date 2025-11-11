@@ -766,12 +766,12 @@ void CustomSliceModel::argmin(void)
     tipl::out() << "registration completed";
 }
 // ---------------------------------------------------------------------------
-bool CustomSliceModel::save_mapping(const char* file_name)
+bool CustomSliceModel::save_mapping(const std::string& file_name)
 {
     return !!(std::ofstream(file_name) << arg_min);
 }
 // ---------------------------------------------------------------------------
-bool CustomSliceModel::load_mapping(const char* file_name)
+bool CustomSliceModel::load_mapping(const std::string& file_name)
 {
     std::ifstream in(file_name);
     if(!in)

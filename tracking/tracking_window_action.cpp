@@ -845,13 +845,13 @@ bool tracking_window::command(std::vector<std::string> cmd)
         else
         if(cmd[0] == "save_slice_mapping")
         {
-            if(!reg_slice->save_mapping(cmd[1].c_str()))
+            if(!reg_slice->save_mapping(cmd[1]))
                 return run->failed("cannot save mapping to " + cmd[1]);
         }
         else
         {
             reg_slice->terminate();
-            if(!reg_slice->load_mapping(cmd[1].c_str()))
+            if(!reg_slice->load_mapping(cmd[1]))
                 return run->failed("invalid linear registration file " + cmd[1]);
         }
         return run->succeed();
