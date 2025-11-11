@@ -66,11 +66,11 @@ bool find_readme(const std::string& file,std::string& intro_file_name)
     return false;
 }
 
-bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec);
+bool find_bval_bvec(const std::string& file_name, std::string& bval, std::string& bvec);
 bool is_dwi_nii(const std::string& nii_name)
 {
-    QString bval_name,bvec_name;
-    return find_bval_bvec(nii_name.c_str(),bval_name,bvec_name);
+    std::string bval_name,bvec_name;
+    return find_bval_bvec(nii_name,bval_name,bvec_name);
 }
 void search_dwi_nii(const std::string& dir,std::vector<std::string>& dwi_nii_files)
 {
