@@ -1,0 +1,22 @@
+name: test
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag'
+        required: true
+        default: '2025.04.16'  
+        
+  workflow_call:
+
+jobs: 
+
+  download-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install AWS CLI v2
+        uses: simple-elf/install-aws-cli-action@v2
+      - name: Sync data from OpenNeuro S3 bucket
+        run: |
+          aws s3 sync s3://openneuro/ds002685/ ./ --no-sign-request
+        shell: bash
