@@ -357,8 +357,8 @@ bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> h
     }
     tipl::out() << "load " << (region_name.empty() ? std::string("volume"):region_name) << " from " << file_name << std::endl;
 
-    if(QString(file_name.c_str()).endsWith(".nii.gz") ||
-       QString(file_name.c_str()).endsWith(".nii"))
+    if(tipl::ends_with(file_name,".nii.gz") ||
+       tipl::ends_with(file_name,".nii"))
     {
         std::vector<std::shared_ptr<ROIRegion> > regions;
         if(!load_nii(po,handle,file_name,regions))
