@@ -335,7 +335,7 @@ bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vecto
         if(filenames.size() == 1 && filenames[0].contains("2dseq"))
         {
             tipl::io::bruker_2dseq seq;
-            if(!seq.load_from_file(filenames[0].toStdString().c_str()))
+            if(!seq.load_from_file(filenames[0].toStdString()))
             {
                 QMessageBox::information(nullptr,"Error","Not a valid 2dseq file");
                 return false;
@@ -621,7 +621,7 @@ bool view_image::open(QStringList file_names_)
            QString(file_name).endsWith(".dz"))
         {
             tipl::progress prog("open " + file_name.toStdString());
-            if(!mat.load_from_file(file_name.toStdString().c_str()))
+            if(!mat.load_from_file(file_name.toStdString()))
             {
                 error_msg = "invalid format";
                 return false;
@@ -631,7 +631,7 @@ bool view_image::open(QStringList file_names_)
 
         }
         else
-        if(!cur_image->load_from_file(file_name.toStdString().c_str(),info))
+        if(!cur_image->load_from_file(file_name.toStdString(),info))
         {
             QMessageBox::critical(this,"ERROR",(error_msg = cur_image->error_msg).c_str());
             return false;
