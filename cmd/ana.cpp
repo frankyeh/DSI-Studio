@@ -152,8 +152,6 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               std::string& error_msg,
               bool is_mni)
 {
-    tipl::progress prog("opening file ",std::filesystem::path(file_name).stem().u8string().c_str());
-
     if(QFileInfo(file_name.c_str()).baseName().toLower().contains(".mni."))
     {
         tipl::out() << QFileInfo(file_name.c_str()).baseName().toStdString() <<
