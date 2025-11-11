@@ -3651,7 +3651,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,bool use_end_only)
                 count(each);
             cur_metrics.push_back("intersect ratio");
             metrics_data[index].push_back(float(sum)/float(region_points[j].size() + region_points[i].size()));
-            cur_metrics.push_back("intersect volume (mm^3)");
+            cur_metrics.push_back("intersect volume(mm^3)");
             metrics_data[index].push_back(float(sum)/voxel_volume);
 
         }
