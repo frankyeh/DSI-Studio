@@ -774,10 +774,10 @@ bool get_src(std::string filename,src_data& src2,std::string& error_msg)
 {
     tipl::progress prog_("opening ",filename.c_str());
     tipl::image<3,unsigned short> I;
-    if(QString(filename.c_str()).endsWith(".dcm"))
+    if(tipl::ends_with(filename,".dcm"))
     {
         tipl::io::dicom in;
-        if(!in.load_from_file(filename.c_str()))
+        if(!in.load_from_file(filename))
         {
             error_msg = "invalid dicom format";
             return false;
@@ -787,8 +787,8 @@ bool get_src(std::string filename,src_data& src2,std::string& error_msg)
         src2.src_dwi_data.push_back(&I[0]);
     }
     else
-    if(QString(filename.c_str()).endsWith(".nii.gz") ||
-       QString(filename.c_str()).endsWith(".nii"))
+    if(tipl::ends_with(filename,".nii.gz") ||
+       tipl::ends_with(filename,".nii"))
     {
         if(!(tipl::io::gz_nifti(filename,std::ios::in) >> I >> src2.voxel.dim >> [&](const std::string& e){error_msg = e;}))
             return false;
@@ -796,7 +796,7 @@ bool get_src(std::string filename,src_data& src2,std::string& error_msg)
     }
     else
     {
-        if (!src2.load_from_file(filename.c_str()))
+        if (!src2.load_from_file(filename))
         {
             error_msg = "cannot open ";
             error_msg += filename;
