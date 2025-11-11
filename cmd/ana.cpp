@@ -642,7 +642,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         {
             std::string output = po.get("output");
             // accumulate multiple tracts into one probabilistic nifti volume
-            if(QString(output.c_str()).endsWith(".nii.gz"))
+            if(tipl::ends_with(output,".nii.gz"))
             {
                 tipl::out() << "computing tract probability to " << output << std::endl;
                 if(std::filesystem::exists(output))
@@ -673,8 +673,8 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
                         return 1;
                 }
             }
-            if(QString(output.c_str()).endsWith(".trk.gz") ||
-               QString(output.c_str()).endsWith(".tt.gz"))
+            if(tipl::ends_with(output,".trk.gz") ||
+               tipl::ends_with(output,".tt.gz"))
             {
                 tipl::out() << "saving multiple tracts into one file: " << output;
                 if(!TractModel::save_all(output,tracts))
