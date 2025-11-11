@@ -136,9 +136,16 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
         std::shared_ptr<fib_data> fib(new fib_data);
         set_template(fib,po);
         auto list = fib->get_tractography_all_levels();
-        tipl::out() << "current available atlas labels:";
-        for(auto each : list)
-            tipl::out() << each;
+        {
+            std::string labels;
+            for(auto each : list)
+            {
+                if(!labels.empty())
+                    labels += ",";
+                labels += each;
+            }
+            tipl::out() << "available track_ids in current template: " << labels;
+        }
         auto selections = tipl::split(po.get("track_id","Arcuate,Cingulum,Aslant,InferiorFronto,InferiorLongitudinal,SuperiorLongitudinal,Uncinate,Fornix,Corticos,ThalamicR,Optic,Lemniscus,Reticular,Corpus"),',');
         std::vector<bool> selected(list.size());
         std::vector<size_t> backup_subcomponents;
