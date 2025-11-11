@@ -1736,7 +1736,7 @@ bool fib_data::load_track_atlas(bool symmetric)
         // load the tract to the template space
         track_atlas = std::make_shared<TractModel>(template_I.shape(),template_vs,template_to_mni);
         track_atlas->is_mni = true;
-        if(!track_atlas->load_tracts_from_file(tractography_atlas_file_name.c_str(),this,true))
+        if(!track_atlas->load_tracts_from_file(tractography_atlas_file_name,this,true))
         {
             error_msg = "failed to load tractography atlas: ";
             error_msg += tractography_atlas_file_name;
