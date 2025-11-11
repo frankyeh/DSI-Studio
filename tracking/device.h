@@ -22,7 +22,6 @@ public:
     void move(float select_length,const tipl::vector<3>& dis);
     std::string to_str(void);
     bool from_str(const std::string& str);
-    bool load_from_file(const char* file_name);
     void get_rendering(std::vector<float>& seg_length,
                        std::vector<char>& seg_type,
                        float& radius) const;
