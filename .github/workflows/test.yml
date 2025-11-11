@@ -37,13 +37,14 @@ jobs:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
       run: |
         gh release upload ${{ github.event.inputs.tag }} *.zip --clobber --repo frankyeh/DSI-Studio
-  teswt-bids:
+  test-bids:
     needs: linux-build
     runs-on: ubuntu-latest
     steps:
     - name: BIDS to SRC
       run: |
        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_prerelease.zip" | jar x
+       chmod 777 ./dsi-studio/dsi_studio
        aws s3 sync s3://openneuro.org/ds001378/ ./ds001378 --no-sign-request --region eu-west-1 --exclude "*bold*"
        ./dsi-studio/dsi_studio --action=src --source=./ds001378/
        ls ./ds001378/*/*/*/*.sz
