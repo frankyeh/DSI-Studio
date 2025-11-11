@@ -584,7 +584,7 @@ bool view_image::open(QStringList file_names_)
         buf4d.resize(3);
         for(size_t i = 1;i < 3;++i)
             buf4d[i].resize(cur_image->shape.size());
-        tipl::progress prog("open image file ",std::filesystem::path(file_name.toStdString()).filename().u8string().c_str());
+        tipl::progress prog("open " + file_name.toStdString());
         for(size_t file_index = 0;prog(file_index,cur_image->shape[2]);++file_index)
         {
             QImage I = read_qimage(file_names[file_index],error_msg);
@@ -620,7 +620,7 @@ bool view_image::open(QStringList file_names_)
            QString(file_name).endsWith(".sz") ||
            QString(file_name).endsWith(".dz"))
         {
-            tipl::progress prog("open file ",std::filesystem::path(file_name.toStdString()).filename().u8string().c_str());
+            tipl::progress prog("open " + file_name.toStdString());
             if(!mat.load_from_file(file_name.toStdString().c_str()))
             {
                 error_msg = "invalid format";
