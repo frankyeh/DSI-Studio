@@ -62,9 +62,9 @@ void TractTableWidget::update_color_map(void)
     {
         QString filename = QCoreApplication::applicationDirPath()+"/color_map/"+
                 cur_tracking_window.renderWidget->getListValue("tract_color_map")+".txt";
-        color_map.load_from_file(filename.toStdString().c_str());
-        color_map_rgb.load_from_file(filename.toStdString().c_str());
-        cur_tracking_window.glWidget->tract_color_bar.load_from_file(filename.toStdString().c_str());
+        color_map.load_from_file(filename.toStdString());
+        color_map_rgb.load_from_file(filename.toStdString());
+        cur_tracking_window.glWidget->tract_color_bar.load_from_file(filename.toStdString());
     }
     else
     {
@@ -592,7 +592,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             if(is_mni_space && !cur_tracking_window.handle->map_to_mni())
                 return run->failed(cur_tracking_window.handle->error_msg);
 
-            auto models = TractModel::load_from_file(cmd[1].c_str(),cur_tracking_window.handle,is_mni_space);
+            auto models = TractModel::load_from_file(cmd[1],cur_tracking_window.handle,is_mni_space);
             if(models.empty())
                 return run->failed("cannot load tracks from " + cmd[1]);
             for(auto& each : models)
