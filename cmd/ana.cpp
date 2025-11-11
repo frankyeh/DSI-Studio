@@ -678,7 +678,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
                QString(output.c_str()).endsWith(".tt.gz"))
             {
                 tipl::out() << "saving multiple tracts into one file: " << output;
-                if(!TractModel::save_all(output.c_str(),tracts))
+                if(!TractModel::save_all(output,tracts))
                 {
                     tipl::error() << "cannot write to " << output << std::endl;
                     return 1;
