@@ -615,7 +615,7 @@ bool CustomSliceModel::load_slices(void)
     {
         tipl::progress prog("open ",source_file_name);
         tipl::io::bruker_2dseq bruker;
-        if(bruker.load_from_file(source_file_name.c_str()))
+        if(bruker.load_from_file(source_file_name))
         {
             bruker.get_voxel_size(vs);
             source_images = std::move(bruker.get_image());
@@ -625,7 +625,7 @@ bool CustomSliceModel::load_slices(void)
             {
                 QString method_file_name = d.absolutePath()+ "/method";
                 tipl::io::bruker_info method;
-                if(method.load_from_file(method_file_name.toStdString().c_str()))
+                if(method.load_from_file(method_file_name.toStdString()))
                     name = method["Method"];
             }
         }
