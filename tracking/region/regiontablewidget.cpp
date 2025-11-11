@@ -248,8 +248,8 @@ void RegionTableWidget::update_color_map(void)
     {
         QString filename = QCoreApplication::applicationDirPath()+"/color_map/"+
                 cur_tracking_window.renderWidget->getListValue("region_color_map")+".txt";
-        color_map_rgb.load_from_file(filename.toStdString().c_str());
-        cur_tracking_window.glWidget->region_color_bar.load_from_file(filename.toStdString().c_str());
+        color_map_rgb.load_from_file(filename.toStdString());
+        cur_tracking_window.glWidget->region_color_bar.load_from_file(filename.toStdString());
     }
     else
     {
