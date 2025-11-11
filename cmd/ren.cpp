@@ -14,7 +14,7 @@ int ren(tipl::program_option<tipl::out>& po)
     {
         for(auto dir : subject_dir)
         {
-            tipl::progress prog("Converting DICOM to SRC/NII ",dir.toStdString().c_str());
+            tipl::progress prog("DICOM to SRC/NII " + dir.toStdString());
             dicom2src_and_nii(dir.toStdString().c_str(),po.get("overwrite",0));
         }
     }
