@@ -116,13 +116,9 @@ jobs:
         ./dsi-studio/dsi_studio --source=human.fz --action=trk --seed_count=1000000 --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=LR.tt.gz
         ls LR.tt.gz
         echo --------------------------------------------------------------------------------------------------
-        ./dsi-studio/dsi_studio --source=human.fz --action=trk --tract_count=1000000 --output=no_file --connectivity=FreeSurferDKT_Cortical --connectivity_value=count,qa
-        ls human.fz.tt.gz.FreeSurferDKT_Cortical.count.pass.connectivity.mat
-        ls human.fz.tt.gz.FreeSurferDKT_Cortical.count.pass.connectogram.txt
-        ls human.fz.tt.gz.FreeSurferDKT_Cortical.count.pass.network_measures.txt
-        ls human.fz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectivity.mat
-        ls human.fz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectogram.txt
-        ls human.fz.tt.gz.FreeSurferDKT_Cortical.qa.pass.network_measures.txt
+        ./dsi-studio/dsi_studio --source=human.fz --action=trk --tract_count=1000000 --output=no_file --connectivity=FreeSurferDKT_Cortical
+        ls human.fz.tt.gz.FreeSurferDKT_Cortical.qa.connectivity.mat
+        ls human.fz.tt.gz.FreeSurferDKT_Cortical.tract2region.txt
 
   test_human_tracking_gqi:
     needs: linux-build
@@ -151,13 +147,9 @@ jobs:
         ls LR.tt.gz
     - name: Tracking&Connectivity
       run: |
-        ./dsi-studio/dsi_studio --source=gqi.fz --action=trk --output=no_file --connectivity=FreeSurferDKT_Cortical --connectivity_value=count,qa
-        ls gqi.fz.tt.gz.FreeSurferDKT_Cortical.count.pass.connectivity.mat
-        ls gqi.fz.tt.gz.FreeSurferDKT_Cortical.count.pass.connectogram.txt
-        ls gqi.fz.tt.gz.FreeSurferDKT_Cortical.count.pass.network_measures.txt
-        ls gqi.fz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectivity.mat
-        ls gqi.fz.tt.gz.FreeSurferDKT_Cortical.qa.pass.connectogram.txt
-        ls gqi.fz.tt.gz.FreeSurferDKT_Cortical.qa.pass.network_measures.txt
+        ./dsi-studio/dsi_studio --source=gqi.fz --action=trk --output=no_file --connectivity=FreeSurferDKT_Cortical
+        ls gqi.fz.tt.gz.FreeSurferDKT_Cortical.qa.connectivity.mat
+        ls gqi.fz.tt.gz.FreeSurferDKT_Cortical.tract2region.txt
     - name: Tracking&Dt
       run: |
         ./dsi-studio/dsi_studio --source=gqi.fz --action=trk --other_slices=human.QA.nii.gz --dt_metric1=human.QA --dt_metric2=qa --seed_count=1000000 --dt_threshold=0.1 --output=dt.tt.gz
