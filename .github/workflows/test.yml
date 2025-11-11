@@ -6,21 +6,29 @@ on:
         description: 'Tag'
         required: true
         default: '2025.04.16'  
-        
+      build_prerelease:
+        type: boolean
+        description: 'build pre-release'
+        required: false
+        default: 'true'        
   workflow_call:
 jobs:    
   linux-build:
     runs-on: ubuntu-latest
     steps:
     - name: Download Build
+      if: ${{ github.event.inputs.build_prerelease == 'true' }}
       run: |
         git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git  
         mv DSI-Studio-Build/build_packages .
     - name: Set up QEMU
+      if: ${{ github.event.inputs.build_prerelease == 'true' }}
       uses: docker/setup-qemu-action@v3.0.0
     - name: Set up Docker Buildx
+      if: ${{ github.event.inputs.build_prerelease == 'true' }}
       uses: docker/setup-buildx-action@v3.0.0
     - name: Build and push
+      if: ${{ github.event.inputs.build_prerelease == 'true' }}
       uses: docker/build-push-action@v5.1.0
       with:
         context: .
@@ -30,15 +38,16 @@ jobs:
         push: false
         outputs: dsi-studio
     - name: Packaging
+      if: ${{ github.event.inputs.build_prerelease == 'true' }}
       run: |
         zip -r dsi_studio_prerelease.zip dsi-studio
     - name: Create Release
+      if: ${{ github.event.inputs.build_prerelease == 'true' }}
       env:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
       run: |
         gh release upload ${{ github.event.inputs.tag }} *.zip --clobber --repo frankyeh/DSI-Studio
   test-bids:
-    needs: linux-build
     runs-on: ubuntu-latest
     steps:
     - name: BIDS to SRC
