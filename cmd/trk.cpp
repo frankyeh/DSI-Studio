@@ -204,7 +204,7 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
             tipl::out() << "TDI srow: " << trans_to_mni << std::endl;
             tipl::out() << std::endl;
             tipl::out() << "saving " << file_name_stat;
-            if(!TractModel::export_tdi(file_name_stat.c_str(),tract,dim,vs,trans_to_mni,to_t1t2,output_color,output_end))
+            if(!TractModel::export_tdi(file_name_stat,tract,dim,vs,trans_to_mni,to_t1t2,output_color,output_end))
             {
                 tipl::error() << "failed to save file. Please check write permission." << std::endl;
                 return false;
@@ -217,7 +217,7 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
         {
             file_name_stat += ".txt";
             tipl::out() << "saving " << file_name_stat << std::endl;
-            std::ofstream out_stat(file_name_stat.c_str());
+            std::ofstream out_stat(file_name_stat);
             if(!out_stat)
             {
                 tipl::out() << "Output statistics to file_name_stat failed. Please check write permission" << std::endl;
@@ -236,7 +236,7 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
                 file_name_stat += ".txt";
             if(handle->get_name_index(cmd) != handle->slices.size())
             {
-                tract_model->save_data_to_file(handle,file_name_stat.c_str(),cmd);
+                tract_model->save_data_to_file(handle,file_name_stat,cmd);
                 continue;
             }
         }
@@ -506,11 +506,11 @@ int trk_post(tipl::program_option<tipl::out>& po,
                 return false;
             }
             new_slice->wait();
-            if(!tract_model->save_transformed_tract(tract_file_name.c_str(),new_slice->dim,new_slice->vs,new_slice->trans_to_mni,new_slice->to_slice,false))
+            if(!tract_model->save_transformed_tract(tract_file_name,new_slice->dim,new_slice->vs,new_slice->trans_to_mni,new_slice->to_slice,false))
                 failed = true;
         }
         else
-        if (!tract_model->save_tracts_to_file(tract_file_name.c_str()))
+        if (!tract_model->save_tracts_to_file(tract_file_name))
             failed = true;
 
         if(failed)
@@ -527,17 +527,17 @@ int trk_post(tipl::program_option<tipl::out>& po,
     };
 
     if(po.has(("template_track")) &&
-       !tract_model->save_tracts_in_template_space(handle,po.get("template_track",addPrefixToFilename(tract_file_name,"T_")).c_str()))
+       !tract_model->save_tracts_in_template_space(handle,po.get("template_track",addPrefixToFilename(tract_file_name,"T_"))))
     {
         tipl::error() << "failed to save --template_track" << std::endl;
         return 1;
     }
-    if(po.has(("mni_track")) && !tract_model->save_tracts_in_template_space(handle,po.get("mni_track",addPrefixToFilename(tract_file_name,"mni_")).c_str(),true))
+    if(po.has(("mni_track")) && !tract_model->save_tracts_in_template_space(handle,po.get("mni_track",addPrefixToFilename(tract_file_name,"mni_")),true))
     {
         tipl::error() << "failed to save --mni_track" << std::endl;
         return 1;
     }
-    if(po.has(("end_point")) && !tract_model->save_end_points(po.get("end_point",tract_file_name + ".end.txt").c_str()))
+    if(po.has(("end_point")) && !tract_model->save_end_points(po.get("end_point",tract_file_name + ".end.txt")))
     {
         tipl::error() << "failed to save --end_point" << std::endl;
         return 1;
