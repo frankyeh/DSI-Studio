@@ -103,7 +103,7 @@ public:
             tipl::compose_mapping<itype>(input, mapping);
     }
     template<bool direction>
-    bool apply_warping(const char* input,const char* output) const
+    bool apply_warping(const std::string& input,const std::string& output) const
     {
         if(tipl::ends_with(input,".tt.gz"))
             return apply_warping_tt<direction>(input,output);
@@ -116,11 +116,11 @@ public:
         return false;
     }
     template<bool direction>
-    bool apply_warping_tt(const char* input,const char* output) const;
+    bool apply_warping_tt(const std::string& input,const std::string& output) const;
     template<bool direction>
-    bool apply_warping_nii(const char* input,const char* output) const;
+    bool apply_warping_nii(const std::string& input,const std::string& output) const;
     template<bool direction>
-    bool apply_warping_fzsz(const char* input,const char* output) const;
+    bool apply_warping_fzsz(const std::string& input,const std::string& output) const;
     bool load_warping(const std::string& filename);
     bool load_alternative_warping(const std::string& filename);
     bool save_warping(const std::string& filename) const;
