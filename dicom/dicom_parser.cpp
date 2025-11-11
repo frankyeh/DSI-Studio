@@ -255,58 +255,63 @@ bool load_bval(const std::string& file_name,std::vector<double>& bval)
               std::back_inserter(bval));
     return true;
 }
-bool find_bval_bvec(const char* file_name,QString& bval,QString& bvec)
+bool find_bval_bvec(const std::string& file_name, std::string& bval, std::string& bvec)
 {
-    std::vector<QString> bval_name(6),bvec_name(6);
-    QString path = QFileInfo(file_name).absolutePath() + "/";
-    bval_name[0] = path + QFileInfo(file_name).baseName() + ".bvals";
-    bval_name[1] = path + QFileInfo(file_name).baseName() + ".bval";
-    bval_name[2] = path + QFileInfo(file_name).completeBaseName() + ".bvals";
-    bval_name[3] = path + QFileInfo(file_name).completeBaseName() + ".bval";
-    if(QString(file_name).endsWith(".nii.gz"))
-    {
-        bval_name[4] = QString(file_name).replace(".nii.gz",".bvals");
-        bval_name[5] = QString(file_name).replace(".nii.gz",".bval");
+    namespace fs = std::filesystem;
+    fs::path p(file_name);
+    std::string path = p.parent_path().string() + "/";
+    std::string base = p.stem().string();             // e.g., file.nii.gz → file.nii
+    std::string cbase = base;
+    if (tipl::ends_with(base, ".nii"))
+        base = base.substr(0, base.size() - 4);       // remove ".nii"
+    std::string fname = p.filename().string();
+
+    std::vector<std::string> bvals, bvecs;
+    auto add = [](auto& v, const std::string& s){ v.push_back(s); };
+
+    add(bvals, path + base + ".bvals");
+    add(bvals, path + base + ".bval");
+    add(bvals, path + cbase + ".bvals");
+    add(bvals, path + cbase + ".bval");
+
+    add(bvecs, path + base + ".bvecs");
+    add(bvecs, path + base + ".bvec");
+    add(bvecs, path + cbase + ".bvecs");
+    add(bvecs, path + cbase + ".bvec");
+
+    if (tipl::ends_with(fname, ".nii.gz")) {
+        std::string stem = fname.substr(0, fname.size() - 7);
+        add(bvals, path + stem + ".bvals");
+        add(bvals, path + stem + ".bval");
+        add(bvecs, path + stem + ".bvecs");
+        add(bvecs, path + stem + ".bvec");
     }
 
-
-    bvec_name[0] = path + QFileInfo(file_name).baseName() + ".bvecs";
-    bvec_name[1] = path + QFileInfo(file_name).baseName() + ".bvec";
-    bvec_name[2] = path + QFileInfo(file_name).completeBaseName() + ".bvecs";
-    bvec_name[3] = path + QFileInfo(file_name).completeBaseName() + ".bvec";
-    if(QString(file_name).endsWith(".nii.gz"))
-    {
-        bvec_name[4] = QString(file_name).replace(".nii.gz",".bvecs");
-        bvec_name[5] = QString(file_name).replace(".nii.gz",".bvec");
+    auto n = bvals.size();
+    for (size_t i = 0; i < n; ++i) {
+        add(bvals, bvals[i] + ".txt");
+        add(bvecs, bvecs[i] + ".txt");
     }
 
-    for(size_t i = 0;i < 6;++i)
-    {
-        bval_name.push_back(bval_name[i] + ".txt");
-        bvec_name.push_back(bvec_name[i] + ".txt");
+    if (cbase == "data.nii") {
+        add(bvals, path + "bvals");
+        add(bvals, path + "bval");
+        add(bvecs, path + "bvecs");
+        add(bvecs, path + "bvec");
     }
 
-    if(QFileInfo(file_name).completeBaseName() == "data.nii")
-    {
-        bval_name.push_back(path + "bvals");
-        bval_name.push_back(path + "bval");
-        bvec_name.push_back(path + "bvecs");
-        bvec_name.push_back(path + "bvec");
-    }
+    auto pick = [](const std::vector<std::string>& cand, std::string& out){
+        for (auto& s : cand)
+            if (std::filesystem::exists(s)) {
+                out = s;
+                return true;
+            }
+        return false;
+    };
 
-    for(size_t i = 0;i < bval_name.size();++i)
-        if(QFileInfo(bval_name[i]).exists())
-        {
-            bval = bval_name[i];
-            break;
-        }
-    for(size_t i = 0;i < bvec_name.size();++i)
-        if(QFileInfo(bvec_name[i]).exists())
-        {
-            bvec = bvec_name[i];
-            break;
-        }
-    return QFileInfo(bval).exists() && QFileInfo(bvec).exists();
+    bool has_bval = pick(bvals, bval);
+    bool has_bvec = pick(bvecs, bvec);
+    return has_bval && has_bvec;
 }
 bool get_bval_bvec(const std::string& bval_file,const std::string& bvec_file,size_t dwi_count,
                    std::vector<double>& bvals,std::vector<double>& bvecs,
@@ -398,14 +403,14 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
 
 
     std::vector<double> bvals,bvecs;
-    QString bval_name,bvec_name;
+    std::string bval_name,bvec_name;
     std::string bvalbvec_error_msg;
-    if(search_bvalbvec && find_bval_bvec(file_name.c_str(),bval_name,bvec_name))
+    if(search_bvalbvec && find_bval_bvec(file_name,bval_name,bvec_name))
     {
         tipl::out() << "found bval and bvec file for " << file_name;
-        tipl::out() << "bval: " << bval_name.toStdString();
-        tipl::out() << "bvec: " << bvec_name.toStdString();
-        if(!get_bval_bvec(bval_name.toStdString(),bvec_name.toStdString(),dwi_data.size(),
+        tipl::out() << "bval: " << bval_name;
+        tipl::out() << "bvec: " << bvec_name;
+        if(!get_bval_bvec(bval_name,bvec_name,dwi_data.size(),
                           bvals,bvecs,bvalbvec_error_msg))
             tipl::out() << bvalbvec_error_msg;
     }
