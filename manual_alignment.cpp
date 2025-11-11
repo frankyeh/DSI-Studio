@@ -479,7 +479,7 @@ void manual_alignment::on_actionSave_Transformation_triggered()
             "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    if(!(std::ofstream(filename.toStdString().c_str()) << arg))
+    if(!(std::ofstream(filename.toStdString()) << arg))
         QMessageBox::critical(this,"ERROR","Cannot save file.");
 }
 
@@ -495,7 +495,7 @@ void manual_alignment::on_actionLoad_Transformation_triggered()
         thread.terminated = true;
         thread.join();
     }
-    if(!(std::ifstream(filename.toStdString().c_str()) >> arg))
+    if(!(std::ifstream(filename.toStdString()) >> arg))
     {
         QMessageBox::critical(this,"ERROR","Invalid linear registration file.");
         return;
