@@ -53,7 +53,7 @@ void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<s
     }
     result = out.str();
 }
-void load_nii_label(const char* filename,std::map<int,std::string>& label_map)
+void load_nii_label(const std::string& filename,std::map<int,std::string>& label_map)
 {
     std::ifstream in(filename);
     if(in)
@@ -70,7 +70,7 @@ void load_nii_label(const char* filename,std::map<int,std::string>& label_map)
         }
     }
 }
-void load_json_label(const char* filename,std::map<int,std::string>& label_map)
+void load_json_label(const std::string& filename,std::map<int,std::string>& label_map)
 {
     std::ifstream in(filename);
     if(!in)
@@ -422,19 +422,18 @@ bool load_nii(tipl::program_option<tipl::out>& po,
 int trk_post(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::string tract_file_name,bool output_track);
 std::shared_ptr<fib_data> cmd_load_fib(tipl::program_option<tipl::out>& po);
 
-bool load_tracts(const char* file_name,std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::shared_ptr<RoiMgr> roi_mgr)
+bool load_tracts(const std::string& file_name,std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::shared_ptr<RoiMgr> roi_mgr)
 {
     if(!std::filesystem::exists(file_name))
     {
-        tipl::error() << file_name << " does not exist. terminating..." << std::endl;
+        tipl::error() << file_name << " does not exist. terminating...";
         return false;
     }
-    if(QFileInfo(file_name).baseName().contains(".mni."))
-        tipl::out() << QFileInfo(file_name).baseName().toStdString() <<
-                     " has '.mni.' in the file name. It will be treated as mni-space tracts" << std::endl;
-    if(!tract_model->load_tracts_from_file(file_name,handle.get(),QFileInfo(file_name).baseName().contains(".mni.")))
+    if(tipl::contains(std::filesystem::path(file_name).filename().string(),".mni."))
+        tipl::out() << file_name << " has '.mni.' in the file name. It will be treated as mni-space tracts" << std::endl;
+    if(!tract_model->load_tracts_from_file(file_name,handle.get(),tipl::contains(std::filesystem::path(file_name).filename().string(),".mni.")))
     {
-        tipl::error() << "cannot read or parse " << file_name << std::endl;
+        tipl::error() << "cannot read or parse " << file_name;
         return false;
     }
     tipl::out() << "A total of " << tract_model->get_visible_track_count() << " tracks loaded" << std::endl;
@@ -515,7 +514,7 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
             file_name += ".txt";
     }
     tipl::out() << "saving " << file_name << std::endl;
-    std::ofstream out(file_name.c_str());
+    std::ofstream out(file_name);
     out << result <<std::endl;
     return 0;
 }
@@ -690,7 +689,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
             std::string result,file_name_stat("stat.txt");
             get_tract_statistics(handle,tracts,result);
             tipl::out() << "saving " << file_name_stat;
-            std::ofstream out_stat(file_name_stat.c_str());
+            std::ofstream out_stat(file_name_stat);
             if(!out_stat)
             {
                 tipl::out() << "cannot save statistics. please check write permission" << std::endl;
