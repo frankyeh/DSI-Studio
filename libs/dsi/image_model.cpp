@@ -798,7 +798,6 @@ bool src_data::command(std::string cmd,std::string param)
             error_msg = " please assign file name ";
             return false;
         }
-        tipl::progress prog_("saving ",std::filesystem::path(param).filename().u8string().c_str());
         return save_to_file(param.c_str());
     }
     if(cmd == "[Step T2][File][Save B0]")
@@ -808,7 +807,6 @@ bool src_data::command(std::string cmd,std::string param)
             error_msg = " please assign file name ";
             return false;
         }
-        tipl::progress prog_("saving ",std::filesystem::path(param).filename().u8string().c_str());
         return save_b0_to_nii(param.c_str());
     }
     if(cmd == "[Step T2][File][Save DWI Sum]")
@@ -818,7 +816,6 @@ bool src_data::command(std::string cmd,std::string param)
             error_msg = " please assign file name ";
             return false;
         }
-        tipl::progress prog_("saving ",std::filesystem::path(param).filename().u8string().c_str());
         return save_dwi_sum_to_nii(param.c_str());
     }
 
