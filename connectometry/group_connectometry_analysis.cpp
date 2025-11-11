@@ -219,12 +219,12 @@ void group_connectometry_analysis::save_result(void)
     {
         tipl::progress prog("saving correlational tractography");
         if(inc_track->get_visible_track_count())
-            inc_track->save_tracts_to_file((output_file_name+".inc.tt.gz").c_str());
+            inc_track->save_tracts_to_file(output_file_name+".inc.tt.gz");
         else
             std::ofstream((output_file_name+".inc.no_tract.txt").c_str());
 
         if(dec_track->get_visible_track_count())
-            dec_track->save_tracts_to_file((output_file_name+".dec.tt.gz").c_str());
+            dec_track->save_tracts_to_file(output_file_name+".dec.tt.gz");
         else
             std::ofstream((output_file_name+".dec.no_tract.txt").c_str());
     }
