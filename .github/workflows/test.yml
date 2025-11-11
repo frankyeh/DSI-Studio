@@ -48,6 +48,7 @@ jobs:
       run: |
         gh release upload ${{ github.event.inputs.tag }} *.zip --clobber --repo frankyeh/DSI-Studio
   test-bids:
+    needs: linux-build
     runs-on: ubuntu-latest
     steps:
     - name: BIDS to SRC
