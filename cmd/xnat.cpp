@@ -18,7 +18,7 @@ int xnat(tipl::program_option<tipl::out>& po)
     {
         if(output.empty() || QFileInfo(output.c_str()).isDir())
             output = "data.txt";
-        if(!QString(output.c_str()).endsWith(".txt"))
+        if(!tipl::ends_with(output,".txt"))
             output += ".txt";
         tipl::out() << "writing output to " << output << std::endl;
         xnat_connection.get_experiments_info(po.get("source","https://central.xnat.org/"),po.get("auth"));
