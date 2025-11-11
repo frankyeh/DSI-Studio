@@ -420,7 +420,7 @@ fib_data::fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,
     dim(dim_),vs(vs_),trans_to_mni(trans_to_mni_)
 {}
 
-bool load_fib_from_tracks(const char* file_name,
+bool load_fib_from_tracks(const std::string& file_name,
                           tipl::image<3>& I,
                           tipl::vector<3>& vs,
                           tipl::matrix<4,4>& trans_to_mni);
@@ -545,7 +545,7 @@ bool fib_data::load_from_file(const std::string& file_name)
        tipl::ends_with(file_name,"tck") ||
        tipl::ends_with(file_name,"tt.gz"))
     {
-        if(!load_fib_from_tracks(file_name.c_str(),I,vs,trans_to_mni))
+        if(!load_fib_from_tracks(file_name,I,vs,trans_to_mni))
         {
             error_msg = "Invalid track format";
             return false;
