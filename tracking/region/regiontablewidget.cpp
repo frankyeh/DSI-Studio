@@ -1294,7 +1294,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
 
 
     std::vector<int> rows_to_be_updated;
-    tipl::progress prog(action.toStdString().c_str(),true);
+    tipl::progress prog(action.toStdString(),true);
     {
         if(action == "1st_ex_all" || action == "all_ex_1st" || action == "all_inter_1st" || action == "all_to_1st" || action == "all_to_1st_2")
         {
