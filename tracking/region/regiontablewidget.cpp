@@ -499,7 +499,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
            !tipl::ends_with(cmd[1],".nii") &&
            !tipl::ends_with(cmd[1],".nii.gz"))
             cmd[1] += ".nii.gz";
-        if(!regions[cur_row]->save_region_to_file(cmd[1].c_str()))
+        if(!regions[cur_row]->save_region_to_file(cmd[1]))
             return run->failed("cannot save region to "+cmd[1]);
         return run->succeed();
     }
@@ -579,7 +579,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             return run->canceled();
         tipl::progress prog(cmd[0]);
         for(auto each : checked_regions)
-            if(!each->save_region_to_file((cmd[1] + "/" + each->name + output_format().toStdString()).c_str()))
+            if(!each->save_region_to_file((cmd[1] + "/" + each->name + output_format().toStdString())))
                 return run->failed("cannot save " + each->name + " to " + cmd[1]);
         return run->succeed();
     }
@@ -1106,7 +1106,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
             else
             {
                 std::shared_ptr<ROIRegion> region(new ROIRegion(cur_tracking_window.handle));
-                if(!region->load_region_from_file(files[i].toStdString().c_str()))
+                if(!region->load_region_from_file(files[i].toStdString()))
                 {
                     error_msg = "cannot read " + files[i].toStdString();
                     failed = true;

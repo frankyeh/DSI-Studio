@@ -396,7 +396,7 @@ bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> h
             roi.add_points(std::move(points));
         }
         else
-            if(!roi.load_region_from_file(file_name.c_str()))
+            if(!roi.load_region_from_file(file_name))
             {
                 tipl::error() << "cannot open file as a region" << file_name << std::endl;
                 return false;
@@ -549,12 +549,12 @@ int trk_post(tipl::program_option<tipl::out>& po,
         ROIRegion end1(handle),end2(handle);
         end1.add_points(std::move(points1));
         end2.add_points(std::move(points2));
-        if(po.has(("end_point1")) && !end1.save_region_to_file(po.get("end_point1",tract_file_name + ".end1.txt").c_str()))
+        if(po.has(("end_point1")) && !end1.save_region_to_file(po.get("end_point1",tract_file_name + ".end1.txt")))
         {
             tipl::error() << "failed to save --end_point1" << std::endl;
             return 1;
         }
-        if(po.has(("end_point2")) && !end2.save_region_to_file(po.get("end_point2",tract_file_name + ".end2.txt").c_str()))
+        if(po.has(("end_point2")) && !end2.save_region_to_file(po.get("end_point2",tract_file_name + ".end2.txt")))
         {
             tipl::error() << "failed to save --end_point2" << std::endl;
             return 1;

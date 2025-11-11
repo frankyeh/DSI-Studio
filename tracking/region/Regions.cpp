@@ -102,7 +102,7 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >&& points, bool de
 }
 
 // ---------------------------------------------------------------------------
-bool ROIRegion::save_region_to_file(const char* file_name)
+bool ROIRegion::save_region_to_file(const std::string& file_name)
 {
     if (tipl::ends_with(file_name,".txt"))
     {
@@ -145,7 +145,7 @@ bool ROIRegion::save_region_to_file(const char* file_name)
 
 // ---------------------------------------------------------------------------
 
-bool ROIRegion::load_region_from_file(const char* file_name) {
+bool ROIRegion::load_region_from_file(const std::string& file_name) {
     modified = true;
     region.clear();
     is_diffusion_space = false;
