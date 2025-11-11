@@ -257,7 +257,6 @@ void db_window::on_actionSave_DB_as_triggered()
                            "Database files (*.dz);;All files (*)");
     if (filename.isEmpty())
         return;
-    tipl::progress prog_("saving ",std::filesystem::path(filename.toStdString()).filename().u8string().c_str());
     if(!vbc->handle->db.demo.empty() && !vbc->handle->db.parse_demo())
         QMessageBox::information(this,QApplication::applicationName(),
         QString("demographics not saved due to mismatch: ") + vbc->handle->error_msg.c_str());
