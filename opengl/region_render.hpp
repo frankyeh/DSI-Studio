@@ -28,10 +28,8 @@ public:
             std::swap(color,rhs.color);
         }
         const RegionRender& operator = (const RegionRender & rhs) = delete;
-        // bool load_from_file(const char* file_name);
         bool load(const tipl::image<3>& image_, float threshold_);
         bool load(const std::vector<tipl::vector<3,short> >& region, tipl::matrix<4,4>& trans,unsigned char smooth);
-        //bool load(const tipl::image<3,unsigned char>& mask,unsigned char threshold);
         bool load(unsigned int* buffer, tipl::shape<3>geo, unsigned int threshold);
         void move_object(const tipl::vector<3,float>& shift);
         void transform_point_list(const tipl::matrix<4,4>& T);
