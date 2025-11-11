@@ -242,7 +242,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 }
                 std::shared_ptr<TractModel> tract_model(new TractModel(handle));
                 if(!overwrite && std::filesystem::exists(trk_file_name))
-                    tract_model->load_tracts_from_file(trk_file_name.c_str(),handle.get());
+                    tract_model->load_tracts_from_file(trk_file_name,handle.get());
 
                 // each iteration increases tolerance
                 for(size_t tracking_iteration = 0;tracking_iteration < tolerance.size() &&
