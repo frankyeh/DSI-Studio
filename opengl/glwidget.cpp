@@ -2484,7 +2484,7 @@ void GLWidget::record_video(void)
         QMessageBox::information(this,QApplication::applicationName(),"Press Ctrl+Shift+R again to stop recording.");
         QImage I = grabFramebuffer();
         video_handle = std::make_shared<tipl::io::avi>();
-        video_handle->open(file.toStdString().c_str(),I.width(),I.height(), "MJPG", 10/*fps*/);
+        video_handle->open(file.toStdString(),I.width(),I.height(), "MJPG", 10/*fps*/);
         video_frames = 0;
         video_timer = std::make_shared<QTimer>(this);
         video_timer->stop();
