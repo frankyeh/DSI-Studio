@@ -426,7 +426,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 }
             }
             std::string tract_name = tract_name_list[t];
-            std::ofstream out((dir+"/"+tract_name+".stat.txt").c_str());
+            std::ofstream out(dir+"/"+tract_name+".stat.txt");
 
             // output first row: the name of each scan
             for(const auto& each: scan_names)
@@ -454,7 +454,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 }
         }
 
-        std::ofstream all_out2((dir+"/all_results_subject_wise.txt").c_str());
+        std::ofstream all_out2(dir+"/all_results_subject_wise.txt");
         all_out2 << "Subjects\tMetrics";
         for(size_t t = 0;t < tract_name_list.size();++t) // for each track
         {
