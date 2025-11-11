@@ -158,13 +158,13 @@ bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<2,short>& I)
 }
 void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
-bool variant_image::load_from_file(const char* file_name,std::string& info)
+bool variant_image::load_from_file(const std::string& file_name,std::string& info)
 {
     tipl::io::dicom dicom;
     is_mni = false;
     T.identity();
-    tipl::progress prog("open " + std::string(file_name));
-    if(QString(file_name).endsWith(".nhdr") || QString(file_name).endsWith(".nrrd"))
+    tipl::progress prog("open " + file_name);
+    if(tipl::ends_with(file_name,".nhdr") || tipl::ends_with(file_name,".nrrd"))
     {
         tipl::io::gz_nrrd nrrd;
         if(!nrrd.load_from_file(file_name))
@@ -328,7 +328,7 @@ bool variant_image::load_from_file(const char* file_name,std::string& info)
             info = info_.c_str();
         }
         else
-            if(QString(file_name).endsWith("2dseq"))
+            if(tipl::ends_with(file_name,"2dseq"))
             {
                 tipl::io::bruker_2dseq seq;
                 if(!seq.load_from_file(file_name))

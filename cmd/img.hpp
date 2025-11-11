@@ -88,7 +88,7 @@ public:
                         tipl::io::gz_mat_read& mat);
     void change_type(decltype(pixel_type));
     bool command(std::string cmd,std::string param1);
-    bool load_from_file(const char* file_name,std::string& info);
+    bool load_from_file(const std::string& file_name,std::string& info);
     bool empty(void) const{return shape.size() == 0;}
     size_t buf_size(void) const { return shape.size()*pixelbit[pixel_type];}
 };
