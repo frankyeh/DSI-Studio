@@ -67,7 +67,7 @@ class TinyTrack{
     };
 
     public:
-    static bool save_to_file(const char* file_name,
+    static bool save_to_file(const std::string& file_name,
                              tipl::shape<3> geo,
                              tipl::vector<3> vs,
                              const tipl::matrix<4,4>& trans_to_mni,
@@ -189,7 +189,7 @@ class TinyTrack{
         }
         return !prog0.aborted();
     }
-    static bool load_from_file(const char* file_name,
+    static bool load_from_file(const std::string& file_name,
                                std::vector<std::vector<float> >& tract_data,
                                std::vector<uint16_t>& tract_cluster,
                                tipl::shape<3>& geo,tipl::vector<3>& vs,
@@ -285,7 +285,7 @@ struct TrackVis
         std::copy(trans.begin(),trans.end(),&vox_to_ras[0][0]);
         std::copy_n(voxel_order,4,pad2);
     }
-    bool load_from_file(const char* file_name,
+    bool load_from_file(const std::string& file_name,
                 std::vector<std::vector<float> >& loaded_tract_data,
                 std::vector<unsigned int>& loaded_tract_cluster,
                 tipl::shape<3>& geo,
@@ -339,7 +339,7 @@ struct TrackVis
         }
         return !prog.aborted();
     }
-    static bool save_to_file(const char* file_name,
+    static bool save_to_file(const std::string& file_name,
                              tipl::shape<3> geo,
                              tipl::vector<3> vs,
                              const tipl::matrix<4,4>& trans_to_mni,
@@ -392,7 +392,7 @@ struct TrackVis
 
 struct Tck{
     tipl::matrix<4,4> trans;
-    bool load_from_file(const char* file_name,
+    bool load_from_file(const std::string& file_name,
                         std::vector<std::vector<float> >& loaded_tract_data)
     {
         unsigned int offset = 0;
@@ -438,7 +438,7 @@ struct Tck{
 
 
 
-bool tt2trk(const char* tt_file,const char* trk_file)
+bool tt2trk(const std::string& tt_file,const char* trk_file)
 {
     std::vector<std::vector<float> > tract_data;
     std::vector<uint16_t> cluster;
@@ -456,7 +456,7 @@ bool tt2trk(const char* tt_file,const char* trk_file)
     return TrackVis::save_to_file(trk_file,geo,vs,trans_to_mni,tract_data,scalar,report,color.empty() ? 0 : color[0]);
 }
 
-bool trk2tt(const char* trk_file,const char* tt_file)
+bool trk2tt(const std::string& trk_file,const char* tt_file)
 {
     TrackVis vis;
     std::vector<std::vector<float> > loaded_tract_data;
@@ -515,14 +515,14 @@ void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tip
             loaded_tract_data[i][j] -= min_xyz[2];
     });
 }
-bool load_fib_from_tracks(const char* file_name,
+bool load_fib_from_tracks(const std::string& file_name,
                           tipl::image<3>& I,
                           tipl::vector<3>& vs,
                           tipl::matrix<4,4>& trans_to_mni)
 {
     tipl::shape<3> geo;
     std::vector<std::vector<float> > loaded_tract_data;
-    if(QString(file_name).endsWith("tck"))
+    if(tipl::ends_with(file_name,"tck"))
     {
         Tck tck;
         tck.trans = trans_to_mni;
@@ -534,7 +534,7 @@ bool load_fib_from_tracks(const char* file_name,
         shift_track_for_tck(loaded_tract_data,geo);
     }
     else
-    if(QString(file_name).endsWith("trk.gz") || QString(file_name).endsWith("trk"))
+    if(tipl::ends_with(file_name,"trk.gz") || tipl::ends_with(file_name,"trk"))
     {
         TrackVis vis;
         std::vector<unsigned int> loaded_tract_cluster;
@@ -548,7 +548,7 @@ bool load_fib_from_tracks(const char* file_name,
         std::copy_n(vis.dim,3,geo.begin());
     }
     else
-        if(QString(file_name).endsWith("tt.gz"))
+        if(tipl::ends_with(file_name,"tt.gz"))
         {
             std::vector<unsigned short> loaded_tract_cluster;
             std::string report,pid;
@@ -600,9 +600,8 @@ void TractModel::add(const TractModel& rhs)
     is_cut.insert(is_cut.end(),rhs.is_cut.begin(),rhs.is_cut.end());
 }
 
-bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,bool tract_is_mni)
+bool TractModel::load_tracts_from_file(const std::string& file_name,fib_data* handle,bool tract_is_mni)
 {
-    std::string file_name(file_name_);
     std::vector<std::vector<float> > loaded_tract_data;
     std::vector<unsigned int> loaded_tract_cluster;
     std::vector<unsigned int> colors;
@@ -616,11 +615,11 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
 
     name = std::filesystem::path(file_name).stem().string();
 
-    if(QString(file_name_).endsWith("tt.gz"))
+    if(tipl::ends_with(file_name,"tt.gz"))
     {
         unsigned int old_color = color;
         std::vector<uint16_t> cluster;
-        if(!TinyTrack::load_from_file(file_name_,loaded_tract_data,cluster,geo,vs,source_trans_to_mni,report,parameter_id,colors))
+        if(!TinyTrack::load_from_file(file_name,loaded_tract_data,cluster,geo,vs,source_trans_to_mni,report,parameter_id,colors))
             return false;
         if(geo == handle->dim && vs == handle->vs && !tract_is_mni && source_trans_to_mni != handle->trans_to_mni)
         {
@@ -631,10 +630,10 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
         if(!colors.empty())
             color = colors[0];
     }
-    if(QString(file_name_).endsWith("trk.gz") || QString(file_name_).endsWith("trk"))
+    if(tipl::ends_with(file_name,"trk.gz") || tipl::ends_with(file_name,"trk"))
     {
         TrackVis trk;
-        if(!trk.load_from_file(file_name_,loaded_tract_data,loaded_tract_cluster,geo,vs,source_trans_to_mni,parameter_id))
+        if(!trk.load_from_file(file_name,loaded_tract_data,loaded_tract_cluster,geo,vs,source_trans_to_mni,parameter_id))
             return false;
         if(geo == handle->dim && vs == handle->vs && !tract_is_mni && source_trans_to_mni != handle->trans_to_mni)
         {
@@ -653,11 +652,11 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
         }
     }
 
-    if (QString(file_name_).endsWith(".txt"))
+    if (tipl::ends_with(file_name,".txt"))
     {
-        if (!std::filesystem::exists(file_name_))
+        if (!std::filesystem::exists(file_name))
             return false;
-        for(const auto& line: tipl::read_text_file(file_name_))
+        for(const auto& line: tipl::read_text_file(file_name))
         {
             loaded_tract_data.push_back(std::vector<float>());
             std::istringstream in(line);
@@ -669,10 +668,10 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
         }
     }
 
-    if (QString(file_name_).endsWith(".mat"))
+    if (tipl::ends_with(file_name,".mat"))
     {
         tipl::io::gz_mat_read in;
-        if(!in.load_from_file(file_name_))
+        if(!in.load_from_file(file_name))
             return false;
         const float* buf = nullptr;
         const unsigned int* length = nullptr;
@@ -695,11 +694,11 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
         in.read("trans",source_trans_to_mni);
     }
 
-    if (QString(file_name_).endsWith("tck"))
+    if (tipl::ends_with(file_name,"tck"))
     {
         Tck tck;
         tck.trans = handle->trans_to_mni;
-        if(!tck.load_from_file(file_name_,loaded_tract_data))
+        if(!tck.load_from_file(file_name,loaded_tract_data))
             return false;
     }
 
@@ -797,25 +796,21 @@ bool TractModel::load_tracts_from_file(const char* file_name_,fib_data* handle,b
 }
 
 //---------------------------------------------------------------------------
-bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const char* file_name,const std::string& index_name)
+bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const std::string& file_name,const std::string& index_name)
 {
     std::vector<std::vector<float> > data(get_tracts_data(handle,index_name));
     if(data.empty())
         return false;
-
-    std::string file_name_s(file_name);
-    if(tipl::ends_with(file_name_s,"tt.gz"))
+    if(tipl::ends_with(file_name,"tt.gz"))
     {
         bool result = TinyTrack::save_to_file(file_name,geo,vs,trans_to_mni,tract_data,
                                               std::vector<uint16_t>(tract_cluster.begin(),tract_cluster.end()),report,parameter_id,
                                               std::vector<unsigned int>{get_cluster_color(tract_color)});
         return result;
     }
-    if(tipl::ends_with(file_name_s,".trk"))
-        file_name_s += ".gz";
-    if(tipl::ends_with(file_name_s,".trk.gz"))
-        return TrackVis::save_to_file(file_name_s.c_str(),geo,vs,trans_to_mni,tract_data,data,parameter_id,get_cluster_color(tract_color));
-    if(tipl::ends_with(file_name_s,".txt"))
+    if(tipl::ends_with(file_name,".trk.gz") || tipl::ends_with(file_name,".trk"))
+        return TrackVis::save_to_file(file_name,geo,vs,trans_to_mni,tract_data,data,parameter_id,get_cluster_color(tract_color));
+    if(tipl::ends_with(file_name,".txt"))
     {
         std::ofstream out(file_name,std::ios::binary);
         if (!out)
@@ -827,7 +822,7 @@ bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const char* 
         }
         return true;
     }
-    if (tipl::ends_with(file_name_s,".mat"))
+    if (tipl::ends_with(file_name,".mat"))
     {
         tipl::io::mat_write out(file_name);
         if(!out)
@@ -849,7 +844,7 @@ bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const char* 
 }
 //---------------------------------------------------------------------------
 // Native space FIB save tracts to the template space
-bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,const char* file_name,bool output_mni)
+bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,const std::string& file_name,bool output_mni)
 {
     if(!handle->map_to_mni(tipl::show_prog))
         return false;
@@ -878,7 +873,7 @@ bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,
 }
 
 //---------------------------------------------------------------------------
-bool TractModel::save_transformed_tract(const char* file_name,tipl::shape<3> new_dim,
+bool TractModel::save_transformed_tract(const std::string& file_name,tipl::shape<3> new_dim,
                                                  tipl::vector<3> new_vs,
                                                  const tipl::matrix<4,4>& trans_to_mni,
                                                  const tipl::matrix<4,4>& T,bool end_point)
@@ -897,27 +892,26 @@ bool TractModel::save_transformed_tract(const char* file_name,tipl::shape<3> new
 }
 
 //---------------------------------------------------------------------------
-bool TractModel::save_tracts_to_file(const char* file_name_)
+bool TractModel::save_tracts_to_file(const std::string& file_name)
 {
-    std::string file_name(file_name_);
     saved = true;
     tipl::out() << "save " << tract_data.size() << " tracts to " << file_name;
     tipl::out() << "dim:" << geo << " vs:" << vs;
     tipl::out() << "trans:" << trans_to_mni;
     if(tipl::ends_with(file_name,"tt.gz"))
     {
-        return TinyTrack::save_to_file(file_name.c_str(),geo,vs,trans_to_mni,
+        return TinyTrack::save_to_file(file_name,geo,vs,trans_to_mni,
                                        tract_data,std::vector<uint16_t>(tract_cluster.begin(),tract_cluster.end()),report,parameter_id,
                                        std::vector<unsigned int>{get_cluster_color(tract_color)});
     }
     if(tipl::ends_with(file_name,".trk") || tipl::ends_with(file_name,".trk.gz"))
     {
-        return TrackVis::save_to_file(file_name.c_str(),geo,vs,trans_to_mni,
+        return TrackVis::save_to_file(file_name,geo,vs,trans_to_mni,
                 tract_data,std::vector<std::vector<float> >(),parameter_id,get_cluster_color(tract_color));
     }
     if(tipl::ends_with(file_name,".tck"))
     {
-        std::ofstream out(file_name.c_str(), std::ios::binary);
+        std::ofstream out(file_name, std::ios::binary);
         if(!out)
             return false;
         std::array<char, 200> header{};
@@ -948,7 +942,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
 
     if (tipl::ends_with(file_name,".txt"))
     {
-        std::ofstream out(file_name_,std::ios::binary);
+        std::ofstream out(file_name,std::ios::binary);
         if (!out)
             return false;
         for (unsigned int i = 0;i < tract_data.size();++i)
@@ -962,7 +956,7 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
     }
     if (tipl::ends_with(file_name,".mat"))
     {
-        tipl::io::mat_write out(file_name.c_str());
+        tipl::io::mat_write out(file_name);
         if(!out)
             return false;
         std::vector<float> buf;
@@ -982,10 +976,10 @@ bool TractModel::save_tracts_to_file(const char* file_name_)
         get_tract_points(points);
         ROIRegion region(geo,vs,trans_to_mni);
         region.add_points(std::move(points));
-        region.save_region_to_file(file_name_);
+        region.save_region_to_file(file_name);
         return true;
     }
-    return save_tracts_to_file((std::string(file_name_) + ".tt.gz").c_str());
+    return save_tracts_to_file(file_name + ".tt.gz");
 }
 std::string TractModel::get_obj(unsigned int& coordinate_count,
                          unsigned char tract_style,
@@ -1157,7 +1151,7 @@ std::string TractModel::get_obj(unsigned int& coordinate_count,
 }
 
 //---------------------------------------------------------------------------
-bool TractModel::save_all(const char* file_name,
+bool TractModel::save_all(const std::string& file_name,
                           const std::vector<std::shared_ptr<TractModel> >& all)
 {    
     if(all.empty())
@@ -1280,13 +1274,13 @@ bool TractModel::save_all(const char* file_name,
     if(prog.aborted())
         return false;
     // output label file
-    std::ofstream out(std::string(file_name)+".txt");
+    std::ofstream out(file_name+".txt");
     for(const auto& each : all)
         out << each->name << std::endl;
     return true;
 }
 //---------------------------------------------------------------------------
-bool TractModel::load_tracts_color_from_file(const char* file_name)
+bool TractModel::load_tracts_color_from_file(const std::string& file_name)
 {
     std::ifstream in(file_name);
     if (!in)
@@ -1305,7 +1299,7 @@ bool TractModel::load_tracts_color_from_file(const char* file_name)
     return true;
 }
 //---------------------------------------------------------------------------
-bool TractModel::save_tracts_color_to_file(const char* file_name)
+bool TractModel::save_tracts_color_to_file(const std::string& file_name)
 {
     std::ofstream out(file_name);
     if (!out)
@@ -1321,7 +1315,7 @@ bool TractModel::save_tracts_color_to_file(const char* file_name)
 
 //---------------------------------------------------------------------------
 /*
-bool TractModel::save_data_to_mat(const char* file_name,int index,const char* data_name)
+bool TractModel::save_data_to_mat(const std::string& file_name,int index,const char* data_name)
 {
     MatWriter mat_writer(file_name);
     if(!mat_writer.opened())
@@ -1343,7 +1337,7 @@ bool TractModel::save_data_to_mat(const char* file_name,int index,const char* da
 }
 */
 //---------------------------------------------------------------------------
-bool TractModel::save_end_points(const char* file_name_) const
+bool TractModel::save_end_points(const std::string& file_name) const
 {
 
     std::vector<float> buffer;
@@ -1359,17 +1353,16 @@ bool TractModel::save_end_points(const char* file_name_) const
         buffer.push_back(tract_data[index][length-1]);
     }
 
-    std::string file_name(file_name_);
     if (file_name.find(".txt") != std::string::npos)
     {
-        std::ofstream out(file_name_,std::ios::out);
+        std::ofstream out(file_name,std::ios::out);
         if (!out)
             return false;
         std::copy(buffer.begin(),buffer.end(),std::ostream_iterator<float>(out," "));
     }
     if (file_name.find(".mat") != std::string::npos)
     {
-        tipl::io::mat_write out(file_name_);
+        tipl::io::mat_write out(file_name);
         if(!out)
             return false;
         out.write("end_points",buffer,3);
@@ -2104,7 +2097,7 @@ bool TractModel::paint(float select_angle,
 }
 
 //---------------------------------------------------------------------------
-void TractModel::cut_by_mask(const char*)
+void TractModel::cut_by_mask(const std::string&)
 {
     /*
     std::ifstream in(file_name,std::ios::in);
@@ -2549,7 +2542,7 @@ void TractModel::get_density_map(
     });
 }
 
-bool TractModel::export_pdi(const char* file_name,
+bool TractModel::export_pdi(const std::string& file_name,
                             const std::vector<std::shared_ptr<TractModel> >& tract_models)
 {
     if(tract_models.empty())
@@ -2575,7 +2568,7 @@ bool TractModel::export_pdi(const char* file_name,
         tipl::multiply_constant(pdi.begin(),pdi.end(),1.0f/float(tract_models.size()));
     return tipl::io::gz_nifti(file_name,std::ios::out) << vs << trans_to_mni << is_mni << pdi;
 }
-bool TractModel::export_tdi(const char* filename,
+bool TractModel::export_tdi(const std::string& file_name,
                   std::vector<std::shared_ptr<TractModel> > tract_models,
                   tipl::shape<3> dim,
                   tipl::vector<3,float> vs,
@@ -2583,22 +2576,22 @@ bool TractModel::export_tdi(const char* filename,
                   const tipl::matrix<4,4>& to_t1t2,
                   bool color,bool end_point)
 {
-    if(!QFileInfo(filename).fileName().endsWith(".nii") &&
-       !QFileInfo(filename).fileName().endsWith(".nii.gz"))
+    if(!tipl::ends_with(file_name,".nii") &&
+       !tipl::ends_with(file_name,".nii.gz"))
         return false;
     if(color)
     {
         tipl::image<3,tipl::rgb> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
             tract_models[index]->get_density_map(tdi,to_t1t2,end_point);
-        return tipl::io::gz_nifti(filename,std::ios::out) << vs << trans_to_mni << tract_models[0]->is_mni << tdi;
+        return tipl::io::gz_nifti(file_name,std::ios::out) << vs << trans_to_mni << tract_models[0]->is_mni << tdi;
     }
     else
     {
         tipl::image<3,unsigned int> tdi(dim);
         for(unsigned int index = 0;index < tract_models.size();++index)
             tract_models[index]->get_density_map(tdi,to_t1t2,end_point);
-        return tipl::io::gz_nifti(filename,std::ios::out) << vs << trans_to_mni << tract_models[0]->is_mni << tdi;
+        return tipl::io::gz_nifti(file_name,std::ios::out) << vs << trans_to_mni << tract_models[0]->is_mni << tdi;
     }
 }
 void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,const tipl::matrix<4,4>& trans,int id)
