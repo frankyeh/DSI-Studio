@@ -11,7 +11,7 @@ std::vector<float> device_radius;
 
 bool load_device_content(void)
 {
-    std::ifstream in(device_content_file.c_str());
+    std::ifstream in(device_content_file);
     if(!in)
         return false;
     std::string line;

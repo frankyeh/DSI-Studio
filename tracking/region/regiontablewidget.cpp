@@ -593,7 +593,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         if(!cur_tracking_window.history.get_filename(this,cmd[1],regions[cur_row]->name + output_format().toStdString()))
             return run->canceled();
 
-        std::ofstream out(cmd[1].c_str());
+        std::ofstream out(cmd[1]);
         out << "x\ty\tz";
         for(unsigned int index = 0;index < cur_tracking_window.handle->dir.num_fiber;++index)
             out << "\tdx" << index << "\tdy" << index << "\tdz" << index;
@@ -650,7 +650,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         if(!cur_tracking_window.history.get_filename(this,cmd[1]))
             return run->canceled();
 
-        std::ifstream in(cmd[1].c_str());
+        std::ifstream in(cmd[1]);
         if (!in)
             return run->failed("cannot load file "+cmd[1]);
         std::vector<int> colors((std::istream_iterator<float>(in)),
@@ -689,7 +689,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         if(!cur_tracking_window.history.get_filename(this,cmd[1]))
             return run->canceled();
 
-        std::ofstream out(cmd[1].c_str());
+        std::ofstream out(cmd[1]);
         if (!out)
             return run->failed("cannot save region to "+cmd[1]);
         for(size_t index = 0;index < regions.size();++index)
@@ -1203,7 +1203,7 @@ void RegionTableWidget::save_checked_region_label_file(QString filename,int firs
     if(base_name.endsWith(".nii"))
         base_name.chop(4);
     QString label_file = QFileInfo(filename).absolutePath()+"/"+base_name+".txt";
-    std::ofstream out(label_file.toStdString().c_str());
+    std::ofstream out(label_file.toStdString());
     for (auto each : get_checked_regions())
     {
         out << first_index << " " << each->name << std::endl;

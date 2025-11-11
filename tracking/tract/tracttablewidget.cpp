@@ -622,7 +622,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         // cmd[1] : file name
         if(!cur_tracking_window.history.get_filename(this,cmd[1]))
             return run->canceled();
-        std::ifstream in(cmd[1].c_str());
+        std::ifstream in(cmd[1]);
         std::vector<std::string> name((std::istream_iterator<std::string>(in)),(std::istream_iterator<std::string>()));
         for(int i = 0;i < rowCount() && i < name.size();++i)
             item(rowCount()-1-i,0)->setText(name[name.size()-1-i].c_str());

@@ -64,7 +64,7 @@ void match_db::on_load_match_clicked()
     if(FileName.isEmpty())
         return;
     std::vector<size_t> data;
-    std::ifstream in(FileName.toStdString().c_str());
+    std::ifstream in(FileName.toStdString());
     std::copy(std::istream_iterator<int>(in),
               std::istream_iterator<int>(),std::back_inserter(data));
     vbc->handle->db.match.clear();

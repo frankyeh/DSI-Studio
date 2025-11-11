@@ -81,7 +81,7 @@ void xnat_facade::get_data(std::string site,std::string auth,
         output_dir.pop_back();
 
     total = urls.size();
-    tipl::progress prog_("download data from ",site.c_str());
+    tipl::progress prog_("download data from " + site);
     tipl::out() << "a total of " << urls.size() << " files" << std::endl;
     for(prog = 0;prog_(prog,total);++prog)
     {

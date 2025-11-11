@@ -798,7 +798,7 @@ bool src_data::command(std::string cmd,std::string param)
             error_msg = " please assign file name ";
             return false;
         }
-        return save_to_file(param.c_str());
+        return save_to_file(param);
     }
     if(cmd == "[Step T2][File][Save B0]")
     {
@@ -807,7 +807,7 @@ bool src_data::command(std::string cmd,std::string param)
             error_msg = " please assign file name ";
             return false;
         }
-        return save_b0_to_nii(param.c_str());
+        return save_b0_to_nii(param);
     }
     if(cmd == "[Step T2][File][Save DWI Sum]")
     {
@@ -816,7 +816,7 @@ bool src_data::command(std::string cmd,std::string param)
             error_msg = " please assign file name ";
             return false;
         }
-        return save_dwi_sum_to_nii(param.c_str());
+        return save_dwi_sum_to_nii(param);
     }
 
     if(cmd == "[Step T2a][Open]")
@@ -2246,7 +2246,7 @@ bool src_data::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
 
     {
         tipl::out() << "create acq params at " << acqparam_file() << std::endl;
-        std::ofstream out(acqparam_file().c_str());
+        std::ofstream out(acqparam_file());
         if(!out)
         {
             tipl::out() << "cannot write to acq param file " << acqparam_file() << std::endl;

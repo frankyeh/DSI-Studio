@@ -152,10 +152,9 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               std::string& error_msg,
               bool is_mni)
 {
-    if(QFileInfo(file_name.c_str()).baseName().toLower().contains(".mni."))
+    if(tipl::contains(std::filesystem::path(file_name).filename().string(),".mni."))
     {
-        tipl::out() << QFileInfo(file_name.c_str()).baseName().toStdString() <<
-                     " has '.mni.' in the file name. It will be treated as mni space image" << std::endl;
+        tipl::out() << file_name << " has '.mni.' in the file name. It will be treated as mni space image" << std::endl;
         is_mni = true;
     }
 

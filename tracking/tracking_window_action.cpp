@@ -1143,7 +1143,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
     if(filename.endsWith(".txt"))
     {
         std::vector<float> buf;
-        std::ifstream in(filename.toStdString().c_str());
+        std::ifstream in(filename.toStdString());
         while(in)
         {
             std::string v;

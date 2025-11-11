@@ -176,7 +176,7 @@ void db_window::on_actionSave_Subject_Name_as_triggered()
                 "Report file (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::ofstream out(filename.toStdString().c_str());
+    std::ofstream out(filename.toStdString());
     for(const auto& each : vbc->handle->db.subject_names)
         out << each << std::endl;
 }
@@ -190,7 +190,7 @@ void db_window::on_action_Save_R2_values_as_triggered()
                 "Report file (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::ofstream out(filename.toStdString().c_str());
+    std::ofstream out(filename.toStdString());
     std::copy(vbc->handle->db.R2.begin(),vbc->handle->db.R2.end(),std::ostream_iterator<float>(out,"\n"));
 }
 

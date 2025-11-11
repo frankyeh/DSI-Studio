@@ -335,7 +335,7 @@ static const std::unordered_map<std::string, int(*)(tipl::program_option<tipl::o
 int run_action(tipl::program_option<tipl::out>& po)
 {
     std::string action = po.get("action");
-    tipl::progress prog("run ",action.c_str());
+    tipl::progress prog("run "+ action);
     auto it = action_map.find(action);
     if (it != action_map.end())
         return it->second(po);

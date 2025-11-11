@@ -1128,7 +1128,7 @@ void MainWindow::on_parse_network_measures_clicked()
     std::vector<std::string> line_output;
     for(int i = 0;i < filename.size();++i)
     {
-        std::ifstream in(filename[i].toStdString().c_str());
+        std::ifstream in(filename[i].toStdString());
         std::vector<std::string> node_list;
         // global measures
         size_t line_index = 0;

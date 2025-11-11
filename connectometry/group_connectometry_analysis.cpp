@@ -171,7 +171,7 @@ void group_connectometry_analysis::save_result(void)
 
     // output distribution values
     {
-        std::ofstream out((output_file_name+".fdr_dist.values.txt").c_str());
+        std::ofstream out(output_file_name+".fdr_dist.values.txt");
         out << "voxel_dis\tfdr_inc\tfdr_dec\t#track_inc_null\t#track_dec_null\t#track_inc\t#track_dec" << std::endl;
         for(size_t index = length_threshold_voxels;index < fdr_inc.size()-1;++index)
         {
@@ -221,12 +221,12 @@ void group_connectometry_analysis::save_result(void)
         if(inc_track->get_visible_track_count())
             inc_track->save_tracts_to_file(output_file_name+".inc.tt.gz");
         else
-            std::ofstream((output_file_name+".inc.no_tract.txt").c_str());
+            std::ofstream(output_file_name+".inc.no_tract.txt");
 
         if(dec_track->get_visible_track_count())
             dec_track->save_tracts_to_file(output_file_name+".dec.tt.gz");
         else
-            std::ofstream((output_file_name+".dec.no_tract.txt").c_str());
+            std::ofstream(output_file_name+".dec.no_tract.txt");
     }
 
     {
@@ -634,7 +634,7 @@ void group_connectometry_analysis::calculate_FDR(void)
 
 std::string group_connectometry_analysis::generate_report(void)
 {
-    std::ostringstream html_report((output_file_name+".report.html").c_str());
+    std::ostringstream html_report(output_file_name+".report.html");
     html_report << "<!DOCTYPE html>" << std::endl;
     html_report << "<html><head><title>Report</title></head>" << std::endl;
     html_report << "<body>" << std::endl;

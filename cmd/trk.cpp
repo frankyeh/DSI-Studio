@@ -370,7 +370,7 @@ bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> h
             bool found = false;
             for(size_t index = 0;index < regions.size();++index)
                 if(regions[index]->name == region_name ||
-                   regions[index]->name == QFileInfo(file_name.c_str()).baseName().toStdString() + "_" + region_name)
+                   regions[index]->name == std::filesystem::path(file_name).stem().stem().string() + "_" + region_name)
                 {
                     found = true;
                     roi = *(regions[index].get());

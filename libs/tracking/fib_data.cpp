@@ -1069,7 +1069,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
     }
 
 
-    tipl::progress prog(cmd.c_str());
+    tipl::progress prog(cmd);
     size_t p = 0;
     bool failed = false;
     bool first_mat = true;
@@ -1477,10 +1477,10 @@ void apply_inverse_trans(tipl::vector<3>& pos,const tipl::matrix<4,4>& trans)
 }
 bool fib_data::add_atlas(const std::string& file_name)
 {
-    if(!std::filesystem::exists(file_name) || !tipl::ends_with(file_name,"nii.gz"))
+    if(!std::filesystem::exists(file_name) || !tipl::ends_with(file_name,".nii.gz"))
         return false;
     atlas_list.push_back(std::make_shared<atlas>());
-    atlas_list.back()->name = QFileInfo(file_name.c_str()).baseName().toStdString();
+    atlas_list.back()->name = std::filesystem::path(file_name).stem().stem().string();
     atlas_list.back()->filename = file_name;
     atlas_list.back()->template_to_mni = template_I.empty() ? trans_to_mni : template_to_mni;
     return true;

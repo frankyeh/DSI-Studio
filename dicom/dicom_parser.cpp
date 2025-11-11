@@ -743,7 +743,7 @@ void scale_image_buf_to_uint16(std::vector<tipl::image<3> >& image_buf)
 bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                std::string& error_msg)
 {
-    tipl::progress prog("opening ",file_list[0].toStdString().c_str());
+    tipl::progress prog("open " + file_list[0].toStdString());
     if(file_list.size() == 1) // 4D NRRD FILES
     {
         tipl::io::gz_nrrd nrrd;
@@ -869,7 +869,7 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
 bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                  std::string& error_msg)
 {
-    tipl::progress prog("opening ",file_list[0].toStdString().c_str());
+    tipl::progress prog("open " + file_list[0].toStdString());
     std::vector<tipl::image<3> > image_buf;
     bool scan_2d = true;
     for (int index = 0;prog(index,file_list.size());++index)
@@ -1330,7 +1330,7 @@ void dicom_parser::on_actionSave_b_table_triggered()
             QFileInfo(ui->SrcName->text()).absolutePath() + "/b_table.txt",
             "Text files (*.txt);;All files (*)");
 
-    std::ofstream btable(filename.toStdString().c_str());
+    std::ofstream btable(filename.toStdString());
     if(!btable)
         return;
     for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)

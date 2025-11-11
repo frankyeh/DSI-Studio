@@ -134,7 +134,7 @@ public:
 
         if(!voxel.file_name.empty())
         {
-            std::ifstream read(voxel.file_name.c_str());
+            std::ifstream read(voxel.file_name);
             std::vector<float> values;
             std::copy(std::istream_iterator<float>(read),std::istream_iterator<float>(),std::back_inserter(values));
             for(unsigned int i = 0;i < values.size()/4;++i)
