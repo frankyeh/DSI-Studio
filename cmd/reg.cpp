@@ -373,7 +373,7 @@ void dual_reg::nonlinear_reg(bool& terminated)
 
 
 template<bool direction>
-bool dual_reg::apply_warping_tt(const char* input, const char* output) const
+bool dual_reg::apply_warping_tt(const std::string& input, const std::string& output) const
 {
     auto fib = std::make_shared<fib_data>(direction ? Is : Its,direction ? Ivs : Itvs,direction ? IR : ItR);
     fib->is_mni = direction ? Is_is_mni : It_is_mni;
@@ -412,12 +412,12 @@ bool dual_reg::apply_warping_tt(const char* input, const char* output) const
 
 
 }
-template bool dual_reg::apply_warping_tt<false>(const char* input, const char* output) const;
-template bool dual_reg::apply_warping_tt<true>(const char* input, const char* output) const;
+template bool dual_reg::apply_warping_tt<false>(const std::string& input, const std::string& output) const;
+template bool dual_reg::apply_warping_tt<true>(const std::string& input, const std::string& output) const;
 
 
 template<bool direction>
-bool dual_reg::apply_warping_nii(const char* input, const char* output) const
+bool dual_reg::apply_warping_nii(const std::string& input, const std::string& output) const
 {
     tipl::out() << "opening " << input;
     auto input_size = (direction ? Is : Its);
@@ -447,8 +447,8 @@ bool dual_reg::apply_warping_nii(const char* input, const char* output) const
             << [&](const std::string& e){tipl::error() << (error_msg = e);};
 }
 
-template bool dual_reg::apply_warping_nii<false>(const char* input, const char* output) const;
-template bool dual_reg::apply_warping_nii<true>(const char* input, const char* output) const;
+template bool dual_reg::apply_warping_nii<false>(const std::string& input, const std::string& output) const;
+template bool dual_reg::apply_warping_nii<true>(const std::string& input, const std::string& output) const;
 
 
 bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
@@ -459,7 +459,7 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
               const std::vector<std::string>& skip_list,
               const std::vector<std::string>& skip_head_list);
 template<bool direction>
-bool dual_reg::apply_warping_fzsz(const char* input,const char* output) const
+bool dual_reg::apply_warping_fzsz(const std::string& input,const std::string& output) const
 {
     tipl::progress prog("apply warp");
     tipl::io::gz_mat_read mat_reader;
@@ -539,8 +539,8 @@ bool dual_reg::apply_warping_fzsz(const char* input,const char* output) const
     }
     return save_fz(mat_reader,mat_writer,{"odf_faces","odf_vertices","z0","mapping"},{"subject"});
 }
-template bool dual_reg::apply_warping_fzsz<false>(const char* input, const char* output) const;
-template bool dual_reg::apply_warping_fzsz<true>(const char* input, const char* output) const;
+template bool dual_reg::apply_warping_fzsz<false>(const std::string& input, const std::string& output) const;
+template bool dual_reg::apply_warping_fzsz<true>(const std::string& input, const std::string& output) const;
 
 bool dual_reg::load_warping(const std::string& filename)
 {
