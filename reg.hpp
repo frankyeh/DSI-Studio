@@ -123,7 +123,7 @@ public:
     bool apply_warping_fzsz(const char* input,const char* output) const;
     bool load_warping(const std::string& filename);
     bool load_alternative_warping(const std::string& filename);
-    bool save_warping(const char* filename) const;
+    bool save_warping(const std::string& filename) const;
 public:
     void dis_to_space(const tipl::shape<3>& new_s,const tipl::matrix<4,4>& new_R);
     void to_space(const tipl::shape<3>& new_s,const tipl::matrix<4,4>& new_R);

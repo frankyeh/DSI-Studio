@@ -631,7 +631,7 @@ bool dual_reg::load_alternative_warping(const std::string& filename)
     return true;
 }
 
-bool dual_reg::save_warping(const char* filename) const
+bool dual_reg::save_warping(const std::string& filename) const
 {
     tipl::progress prog("saving ",filename);
     if(f2t_dis.empty() || t2f_dis.empty())
