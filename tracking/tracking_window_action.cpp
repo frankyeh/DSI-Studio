@@ -1404,7 +1404,7 @@ bool tracking_window::run_unet(void)
     if(filename.isEmpty())
         return false;
     tipl::progress p("processing",true);
-    unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(filename.toStdString().c_str());
+    unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(filename.toStdString());
     if(!unet.get())
     {
         QMessageBox::critical(this,"ERROR","cannot read the model file");
@@ -1575,7 +1575,7 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
            QMessageBox::Yes|QMessageBox::Cancel) == QMessageBox::Cancel)
                 return;
 
-        std::ofstream out(output_name.toStdString().c_str(),std::ios::binary);
+        std::ofstream out(output_name.toStdString(),std::ios::binary);
         if(!out)
         {
             QMessageBox::critical(this,"ERROR","Cannot output DICOM. Please check disk space or output permission.");
