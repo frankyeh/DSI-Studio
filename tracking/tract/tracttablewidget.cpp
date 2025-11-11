@@ -692,7 +692,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         auto lock = tract_rendering[cur_row]->start_reading();
         if(cmd[0] == "save_slice_tract")
         {
-            if(!tract_models[cur_row]->save_transformed_tract(cmd[1].c_str(),
+            if(!tract_models[cur_row]->save_transformed_tract(cmd[1],
                     cur_tracking_window.current_slice->dim,
                     cur_tracking_window.current_slice->vs,
                     cur_tracking_window.current_slice->trans_to_mni,
@@ -704,11 +704,11 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         {
             if(!cur_tracking_window.handle->map_to_mni())
                 return run->failed(cur_tracking_window.handle->error_msg);
-            if(!tract_models[cur_row]->save_tracts_in_template_space(cur_tracking_window.handle,cmd[1].c_str(),cmd[0] == "save_mni_tract"))
+            if(!tract_models[cur_row]->save_tracts_in_template_space(cur_tracking_window.handle,cmd[1],cmd[0] == "save_mni_tract"))
                 return run->failed("cannot write to file at " + cmd[1]);
         }
         else
-            if(!tract_models[cur_row]->save_tracts_to_file(cmd[1].c_str()))
+            if(!tract_models[cur_row]->save_tracts_to_file(cmd[1]))
                 return run->failed("cannot write to file at " + cmd[1]);
         return true;
     }
@@ -725,7 +725,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
 
         if(cmd[0] == "save_slice_tract_endpoint")
         {
-            if(!tract_models[cur_row]->save_transformed_tract(cmd[1].c_str(),
+            if(!tract_models[cur_row]->save_transformed_tract(cmd[1],
                     cur_tracking_window.current_slice->dim,
                     cur_tracking_window.current_slice->vs,
                     cur_tracking_window.current_slice->trans_to_mni,
@@ -766,7 +766,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
                 out.write("end_points",buffer,3);
             }
         }
-            if(!tract_models[cur_row]->save_end_points(cmd[1].c_str()))
+            if(!tract_models[cur_row]->save_end_points(cmd[1]))
                 return run->failed("cannot write to file at " + cmd[1]);
         return true;
     }
@@ -788,7 +788,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         if(!cur_tracking_window.history.get_filename(this,cmd[1],tract_models[cur_row]->name + "_" + cmd[3]))
             return run->canceled();
         auto lock = tract_rendering[cur_row]->start_reading();
-        if(!tract_models[cur_row]->save_data_to_file(cur_tracking_window.handle,cmd[1].c_str(),cmd[3].c_str()))
+        if(!tract_models[cur_row]->save_data_to_file(cur_tracking_window.handle,cmd[1],cmd[3]))
             return run->failed("fail to save " + cmd[3] + " from " + tract_models[cur_row]->name);
         return true;
     }
@@ -805,7 +805,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         {
             auto filename = cmd[1] + "/" + selected_tracts[index]->name + output_format().toStdString();
             auto lock = selected_tracts_rendering[index]->start_reading();
-            if(!selected_tracts[index]->save_tracts_to_file(filename.c_str()))
+            if(!selected_tracts[index]->save_tracts_to_file(filename))
                 return run->failed("cannot save file due to permission error" + filename);
         }
         return true;
@@ -928,14 +928,14 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         if(cmd[0] == "save_tract_color")
         {
             auto lock = tract_rendering[cur_row]->start_reading();
-            tract_models[cur_row]->save_tracts_color_to_file(cmd[1].c_str());
+            tract_models[cur_row]->save_tracts_color_to_file(cmd[1]);
             return true;
         }
 
         if(cmd[0] == "load_tract_color")
         {
             auto lock = tract_rendering[cur_row]->start_reading();
-            if(!tract_models[cur_row]->load_tracts_color_from_file(cmd[1].c_str()))
+            if(!tract_models[cur_row]->load_tracts_color_from_file(cmd[1]))
                 return run->failed("cannot find or open " + cmd[1]);
             tract_rendering[cur_row]->need_update = true;
             cur_tracking_window.set_data("tract_color_style",1);//manual assigned
@@ -1398,7 +1398,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             tr[0] = tr[5] = tr[10] = ratio;
             inv_tr[0] = inv_tr[5] = inv_tr[10] = 1.0f/ratio;
             trans_to_mni *= inv_tr;
-            if(!TractModel::export_tdi(cmd[1].c_str(),
+            if(!TractModel::export_tdi(cmd[1],
                         {tract_models[cur_row]},
                          cur_tracking_window.handle->dim*ratio,
                          cur_tracking_window.handle->vs/float(ratio),
@@ -1406,7 +1406,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
                 return run->failed("cannot save image to " + cmd[1]);
         }
         else
-            if(!TractModel::export_tdi(cmd[1].c_str(),
+            if(!TractModel::export_tdi(cmd[1],
                     {tract_models[cur_row]},
                      cur_tracking_window.current_slice->dim,
                      cur_tracking_window.current_slice->vs,
