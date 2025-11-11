@@ -341,7 +341,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     std::vector<std::vector<tipl::vector<3,short> > > region_points(value_list.size());
     if(is_4d)
     {
-        tipl::progress prog_("loading");
+        tipl::progress prog("loading");
         for(size_t region_index = 0;prog(region_index,region_points.size());++region_index)
         {
             header >> from;
