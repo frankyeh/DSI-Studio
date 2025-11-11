@@ -444,7 +444,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
         for(int index = 1;prog(index,filenames.size());++index)
         {
             src_data model;
-            if (!model.load_from_file(filenames[index].toStdString().c_str()) ||
+            if (!model.load_from_file(filenames[index].toStdString()) ||
                 !model.run_steps(handle->file_name,previous_steps + cmd + "=" + param + "\n"))
             {
                 if(QMessageBox::critical(this,QApplication::applicationName(),
@@ -596,7 +596,7 @@ void reconstruction_window::on_actionSave_b_table_triggered()
                                 "Text files (*.txt)" );
     if ( filename.isEmpty() )
         return;
-    handle->save_b_table(filename.toStdString().c_str());
+    handle->save_b_table(filename.toStdString());
 }
 
 void reconstruction_window::on_actionSave_bvals_triggered()
@@ -608,7 +608,7 @@ void reconstruction_window::on_actionSave_bvals_triggered()
                                 "Text files (*)" );
     if ( filename.isEmpty() )
         return;
-    handle->save_bval(filename.toStdString().c_str());
+    handle->save_bval(filename.toStdString());
 }
 
 void reconstruction_window::on_actionSave_bvecs_triggered()
@@ -620,7 +620,7 @@ void reconstruction_window::on_actionSave_bvecs_triggered()
                                 "Text files (*)" );
     if ( filename.isEmpty() )
         return;
-    handle->save_bvec(filename.toStdString().c_str());
+    handle->save_bvec(filename.toStdString());
 }
 
 
