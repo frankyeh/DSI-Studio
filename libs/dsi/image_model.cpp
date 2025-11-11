@@ -3039,11 +3039,8 @@ bool src_data::load_from_file(const std::vector<std::string>& nii_names,bool nee
 {
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     for(auto& nii_name : nii_names)
-    {
-        tipl::out() << "opening " << nii_name;
         if(!load_4d_nii(nii_name,dwi_files,true,need_bval_bvec,nii_names.size() == 1,error_msg))
             tipl::warning() << "skipping " << nii_name << ": " << error_msg;
-    }
     return load_from_file(dwi_files,false);
 }
 
