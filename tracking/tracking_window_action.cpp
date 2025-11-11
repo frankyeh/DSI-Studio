@@ -1095,7 +1095,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
     if(filename.endsWith(".mat"))
     {
         tipl::io::mat_read in;
-        if(!in.load_from_file(filename.toStdString().c_str()))
+        if(!in.load_from_file(filename.toStdString()))
         {
             QMessageBox::critical(this,"ERROR",in.error_msg.c_str());
             return;
@@ -1824,7 +1824,7 @@ void tracking_window::on_actionLoad_Color_Map_triggered()
     if(filename.isEmpty())
         return;
     tipl::color_map_rgb new_color_map;
-    if(!new_color_map.load_from_file(filename.toStdString().c_str()))
+    if(!new_color_map.load_from_file(filename.toStdString()))
     {
           QMessageBox::critical(this,"ERROR","Invalid color map format");
           return;
