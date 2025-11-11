@@ -22,7 +22,7 @@ public:
     tipl::vector<3,float> voxel_size;
     tipl::matrix<4,4,float> trans_to_mni = tipl::identity_matrix();
 public:
-    bool open(const char* filename);
+    bool open(const std::string& filename);
 public:
     const unsigned short* begin(void) const
     {

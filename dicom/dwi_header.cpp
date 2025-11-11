@@ -75,7 +75,7 @@ void get_report_from_bruker2(const tipl::io::bruker_info& header,std::string& re
     report += out.str();
 }
 bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<2,short>& I);
-bool DwiHeader::open(const char* filename)
+bool DwiHeader::open(const std::string& filename)
 {
     file_name = filename;
     tipl::io::dicom header;
