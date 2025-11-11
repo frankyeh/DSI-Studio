@@ -142,7 +142,7 @@ void connectivity_matrix_dialog::on_save_matrix_clicked()
         return;
     if(QFileInfo(filename).suffix().toLower() == "mat")
     {
-        data.save_to_file(filename.toStdString().c_str());
+        data.save_to_file(filename.toStdString());
     }
     else
     {
@@ -162,7 +162,7 @@ void connectivity_matrix_dialog::on_save_network_property_clicked()
         return;
     std::string report;
     data.network_property(report);
-    std::ofstream out(filename.toStdString().c_str());
+    std::ofstream out(filename.toStdString());
     out << report;
 }
 
@@ -174,7 +174,7 @@ void connectivity_matrix_dialog::on_save_connectogram_clicked()
                 "Text File (*.txt)");
     if(filename.isEmpty())
         return;
-    data.save_connectogram(filename.toStdString().c_str());
+    data.save_connectogram(filename.toStdString());
 }
 
 void connectivity_matrix_dialog::on_copy_to_clipboard_clicked()
