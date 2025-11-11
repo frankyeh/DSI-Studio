@@ -471,8 +471,6 @@ void manual_alignment::on_files_clicked()
 {
     ui->menu_File->popup(QCursor::pos());
 }
-
-bool save_transform(const char* file_name,const tipl::affine_transform<float>& argmin);
 void manual_alignment::on_actionSave_Transformation_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
