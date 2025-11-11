@@ -639,7 +639,7 @@ bool view_image::open(QStringList file_names_)
 
     if(cur_image->dim4 > 1)
     {
-        prepare_idx(file_name.toStdString().c_str(),nifti.input_stream);
+        prepare_idx(file_name.toStdString(),nifti.input_stream);
         if(!nifti.open(file_name.toStdString(),std::ios::in))
         {
             error_msg = nifti.error_msg;
