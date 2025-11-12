@@ -162,20 +162,11 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
                 method->position = seed_pos;
             }
 
-            if(!method->initialize_direction(fiber_order))
+            auto ptr = method->tracking(param.tracking_method,fiber_order);
+            if(!ptr.first)
                 continue;
-
-            unsigned int point_count;
-            const float *result = method->tracking(param.tracking_method,point_count);
-            if(!result)
-                continue;
-            const float* end = result+point_count+point_count+point_count;
-
             ++tract_count[thread_id];
-            if(buffer_switch)
-                track_buffer_front[thread_id].push_back(std::vector<float>(result,end));
-            else
-                track_buffer_back[thread_id].push_back(std::vector<float>(result,end));
+            (buffer_switch ? track_buffer_front[thread_id] : track_buffer_back[thread_id]).emplace_back(ptr.first,ptr.second);
         }
     }
     catch(...)

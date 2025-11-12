@@ -198,9 +198,7 @@ private:
     unsigned int total_steps3;
     unsigned char init_fib_index;
 public:
-    bool get_dir(const tipl::vector<3,float>& position,
-                 const tipl::vector<3,float>& ref_dir,
-                 tipl::vector<3,float>& result) const
+    bool get_dir(const tipl::vector<3>& position,const tipl::vector<3>& ref_dir,tipl::vector<3>& result) const
     {
         return trk->get_dir_under_termination_criteria(position,ref_dir,result,
                        current_fa_threshold,current_tracking_angle,current_dt_threshold);
@@ -217,14 +215,6 @@ private:
                total_steps3 < current_max_steps3;
     }
 public:
-    bool initialize_direction(unsigned char fib_order = 0)
-    {
-        auto round_pos = position;
-        round_pos.round();
-        if(!trk->dim.is_valid(round_pos))
-            return false;
-        return get_dir(position,trk->get_fib(tipl::pixel_index<3>(round_pos[0],round_pos[1],round_pos[2],trk->dim).index(),fib_order),dir);
-    }
     void init_buffer(void)
     {
         track_buffer.resize(current_max_steps3 << 1);
@@ -290,30 +280,17 @@ public:
             return buffer_front_pos;
         return nullptr;
 	}
-    const float* tracking(unsigned char tracking_method,unsigned int& total_steps)
+    auto tracking(unsigned char m,unsigned char fib_order)
     {
-        const float* track_ptr = nullptr;
-        switch (tracking_method)
-        {
-        case 0:
-            track_ptr = start_tracking(EulerTracking());
-            break;
-        case 1:
-            track_ptr = start_tracking(RungeKutta4());
-            break;
-        default:
-            return nullptr;
-        }
-        if(track_ptr)
-        {
-            total_steps = total_steps3/3;
-            return track_ptr;
-        }
-        total_steps = 0;
-        return nullptr;
+        auto round_pos = position;
+        round_pos.round();
+        const float* p = nullptr;
+        if(!trk->dim.is_valid(round_pos) ||
+           !get_dir(position,trk->get_fib(tipl::pixel_index<3>(round_pos.data(),trk->dim).index(),fib_order),dir))
+            return std::pair{p, p};
+        p = (m == 0) ? start_tracking(EulerTracking()) : start_tracking(RungeKutta4());
+        return p ? std::pair{p, p + total_steps3} : std::pair{p, p};
     }
-
-
 };
 
 
