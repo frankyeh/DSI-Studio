@@ -34,10 +34,13 @@ public:
     float fa_threshold1,fa_threshold2;// use only if fa_threshold=0
     bool ready_to_track = false;
 public:
+    const float step_gen_min = 0.5f; // affect buffer size
+    const float step_gen_max = 1.5f; // affect buffer size
+public:
     ThreadData(std::shared_ptr<fib_data> handle):seed(0),
         rand_gen(0.0f,1.0f),subvoxel_gen(-0.5f,0.5f),
         angle_gen(float(45.0f*M_PI/180.0f),float(90.0f*M_PI/180.0f)),
-        smoothing_gen(0.0f,0.95f),step_gen(0.5f,1.5f),threshold_gen(0.0f,1.0f),
+        smoothing_gen(0.0f,0.95f),step_gen(step_gen_min,step_gen_max),threshold_gen(0.0f,1.0f),
         roi_mgr(new RoiMgr(handle)){}
     ~ThreadData(void)
     {
