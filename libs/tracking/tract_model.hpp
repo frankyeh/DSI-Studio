@@ -220,8 +220,8 @@ public:
 public:
         void get_quantitative_info(std::shared_ptr<fib_data> handle,std::string& result);
         void get_quantitative_info(std::shared_ptr<fib_data> handle,std::vector<std::string>& title,std::vector<float>& results);
-        tipl::vector<3> get_report(std::shared_ptr<fib_data> handle,
-                        unsigned int profile_dir,float band_width,const std::string& index_name,
+        void get_report(std::shared_ptr<fib_data> handle,
+                        unsigned char profile_dir,float band_width,const std::string& index_name,
                         std::vector<float>& values,
                         std::vector<float>& data_profile,
                         std::vector<float>& data_ci1,
