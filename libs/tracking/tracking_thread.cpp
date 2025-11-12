@@ -80,15 +80,30 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
     method->current_dt_threshold = param.dt_threshold;
     method->current_tracking_angle = param.cull_cos_angle;
     method->current_tracking_smoothing = param.smooth_fraction;
-    method->current_step_size_in_voxel[0] = param.step_size/method->trk->vs[0];
-    method->current_step_size_in_voxel[1] = param.step_size/method->trk->vs[1];
-    method->current_step_size_in_voxel[2] = param.step_size/method->trk->vs[2];
 
-    if(param.step_size > 0.0f)
+    if(param.step_size >= 0.0f)
     {
-        method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/param.step_size));
-        method->current_min_steps3 = 3*uint32_t(std::round(param.min_length/param.step_size));
+        if(param.step_size == 0.0f)
+        {
+            method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/method->trk->vs[0]));
+            method->current_min_steps3 = 3*uint32_t(std::round(param.min_length/method->trk->vs[0]));
+        }
+        else
+        {
+            method->current_step_size_in_voxel[0] = param.step_size/method->trk->vs[0];
+            method->current_step_size_in_voxel[1] = param.step_size/method->trk->vs[1];
+            method->current_step_size_in_voxel[2] = param.step_size/method->trk->vs[2];
+            method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/param.step_size));
+            method->current_min_steps3 = 3*uint32_t(std::round(param.min_length/param.step_size));
+        }
     }
+    else
+    {
+        // randomized
+        method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/(step_gen_min*method->trk->vs[0])));
+        method->current_min_steps3 = 3*uint32_t(std::round(param.min_length/(step_gen_max*method->trk->vs[0])));
+    }
+    method->init_buffer();
 
     unsigned int termination_tract_count = (thread_id == 0 ?
         max_tract_count-(max_tract_count/thread_count)*(thread_count-1):
@@ -121,9 +136,9 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
                     method->current_tracking_angle = std::cos(angle_gen(seed));
                 if(param.smooth_fraction == 1.0f)
                     method->current_tracking_smoothing = smoothing_gen(seed);
-                if(param.step_size <= 0.0f) // 0: same as voxel spacing   -1: previous version voxel_size* [0.5 1.5]
+                if(param.step_size < 0.0f) // previous version voxel_size* [0.5 1.5]
                 {
-                    float step_size_in_voxel = (param.step_size == 0 ? 1.0f : step_gen(seed));
+                    float step_size_in_voxel = step_gen(seed);
                     float step_size_in_mm = step_size_in_voxel*method->trk->vs[0];
                     method->current_step_size_in_voxel[0] = step_size_in_voxel;
                     method->current_step_size_in_voxel[1] = step_size_in_voxel;
