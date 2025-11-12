@@ -181,7 +181,7 @@ public:
     float current_tracking_angle;
     float current_tracking_smoothing = 0.0f;
     float current_step_size_in_voxel[3] = {1.0f,1.0f,1.0f};
-    unsigned int current_min_steps3;
+    unsigned int current_min_steps3 = 6;
     unsigned int current_max_steps3;
     void scaling_in_voxel(tipl::vector<3,float>& dir) const
     {
@@ -243,20 +243,15 @@ public:
         end_point1 = position;
         position = seed_pos;
         next_dir = dir = -begin_dir;
-        if(tracking_continue() && track(*this))
+        while(track(*this) && tracking_continue())
         {
-            while(tracking_continue())
-            {
-                if(roi_mgr->within_roa(position) ||
-                  !roi_mgr->within_limiting(position))
-                    return nullptr;
-                *(--buffer_front_pos) = position[2];
-                *(--buffer_front_pos) = position[1];
-                *(--buffer_front_pos) = position[0];
-                total_steps3 += 3;
-                if(!track(*this))
-                    break;
-            }
+            if(roi_mgr->within_roa(position) ||
+              !roi_mgr->within_limiting(position))
+                return nullptr;
+            *(--buffer_front_pos) = position[2];
+            *(--buffer_front_pos) = position[1];
+            *(--buffer_front_pos) = position[0];
+            total_steps3 += 3;
         }
 
         {
