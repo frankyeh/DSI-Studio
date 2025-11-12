@@ -43,13 +43,12 @@ void tract_report::refresh_report()
 
     report_chart->removeAllSeries();
 
-    tipl::vector<3> dir;
     for(unsigned int index = 0;index < cur_tracking_window->tractWidget->tract_models.size();++index)
     {
         if(cur_tracking_window->tractWidget->item(int(index),0)->checkState() != Qt::Checked)
             continue;
         std::vector<float> values,data_profile,data_ci1,data_ci2;
-        dir = cur_tracking_window->tractWidget->tract_models[index]->get_report(
+        cur_tracking_window->tractWidget->tract_models[index]->get_report(
                     cur_tracking_window->handle,
                     uint32_t(ui->profile_dir->currentIndex()),
                     float(ui->report_bandwidth->value()),
@@ -96,11 +95,7 @@ void tract_report::refresh_report()
 
     }
     report_chart->createDefaultAxes();
-    report_chart->axes(Qt::Horizontal).back()->setGridLineVisible(false);
-    if(ui->profile_dir->currentIndex() == 3 &&
-       cur_tracking_window->tractWidget->tract_models.size() == 1)
-        report_chart->axes(Qt::Horizontal).back()->setTitleText(QString("direction (left: %1, posterior:%2, superior: %3)").
-                                                     arg(double(-dir[0])).arg(double(-dir[1])).arg(double(-dir[2])));
+    report_chart->axes(Qt::Horizontal).back()->setGridLineVisible(false);        
     report_chart->axes(Qt::Vertical).back()->setGridLineVisible(false);
 
 }
