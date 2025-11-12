@@ -54,27 +54,47 @@
           </property>
           <item>
            <property name="text">
-            <string>X direction</string>
+            <string>x direction</string>
            </property>
           </item>
           <item>
            <property name="text">
-            <string>Y direction</string>
+            <string>y direction</string>
            </property>
           </item>
           <item>
            <property name="text">
-            <string>Z direction</string>
+            <string>z direction</string>
            </property>
           </item>
           <item>
            <property name="text">
-            <string>fiber orientation</string>
+            <string>fiber orientation (left first)</string>
            </property>
           </item>
           <item>
            <property name="text">
-            <string>mean of each fiber</string>
+            <string>fiber orientation (posterior first)</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>fiber orientation (superior first)</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>fiber orientation (right first)</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>fiber orientation (anterior first)</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>fiber orientation (inferior first)</string>
            </property>
           </item>
          </widget>
