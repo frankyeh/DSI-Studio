@@ -102,21 +102,11 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
                 tipl::out() << "please specify bandwidth value" << std::endl;
                 return false;
             }
-            if(profile_dir > 4)
-            {
-                tipl::out() << "please specify a valid profile type" << std::endl;
-                return false;
-            }
             tipl::out() << "calculating report" << std::endl;
             tipl::out() << "profile_dir: " << profile_dir << std::endl;
             tipl::out() << "bandwidth: " << bandwidth << std::endl;
             tipl::out() << "index_name: " << index_name << std::endl;
-            tract_model->get_report(
-                                handle,
-                                profile_dir,
-                                bandwidth,
-                                index_name,
-                                values,data_profile,data_ci1,data_ci2);
+            tract_model->get_report(handle,profile_dir,bandwidth,index_name,values,data_profile,data_ci1,data_ci2);
 
             std::replace(cmd.begin(),cmd.end(),' ','.');
             std::string file_name_stat = file_name + "." + cmd + ".txt";
