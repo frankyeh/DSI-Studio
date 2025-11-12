@@ -86,7 +86,7 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
         if(param.step_size == 0.0f)
         {
             method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/method->trk->vs[0]));
-            method->current_min_steps3 = 3*uint32_t(std::round(param.min_length/method->trk->vs[0]));
+            method->current_min_steps3 = std::max<uint32_t>(6,3*uint32_t(std::round(param.min_length/method->trk->vs[0])));
         }
         else
         {
@@ -94,14 +94,14 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
             method->current_step_size_in_voxel[1] = param.step_size/method->trk->vs[1];
             method->current_step_size_in_voxel[2] = param.step_size/method->trk->vs[2];
             method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/param.step_size));
-            method->current_min_steps3 = 3*uint32_t(std::round(param.min_length/param.step_size));
+            method->current_min_steps3 = std::max<uint32_t>(6,3*uint32_t(std::round(param.min_length/param.step_size)));
         }
     }
     else
     {
         // randomized
         method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/(step_gen_min*method->trk->vs[0])));
-        method->current_min_steps3 = 3*uint32_t(std::round(param.min_length/(step_gen_max*method->trk->vs[0])));
+        method->current_min_steps3 = std::max<uint32_t>(6,3*uint32_t(std::round(param.min_length/(step_gen_max*method->trk->vs[0]))));
     }
     method->init_buffer();
 
@@ -144,7 +144,7 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
                     method->current_step_size_in_voxel[1] = step_size_in_voxel;
                     method->current_step_size_in_voxel[2] = step_size_in_voxel;
                     method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/step_size_in_mm));
-                    method->current_min_steps3 = 3*uint32_t(std::round(param.min_length/step_size_in_mm));
+                    method->current_min_steps3 = std::max<uint32_t>(6,3*uint32_t(std::round(param.min_length/step_size_in_mm)));
                 }
 
                 seed_index = rand(roi_mgr->seeds.size());
