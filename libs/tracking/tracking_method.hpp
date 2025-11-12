@@ -179,8 +179,8 @@ public:
     float current_fa_threshold;
     float current_dt_threshold = 0;
     float current_tracking_angle;
-    float current_tracking_smoothing;
-    float current_step_size_in_voxel[3];
+    float current_tracking_smoothing = 0.0f;
+    float current_step_size_in_voxel[3] = {1.0f,1.0f,1.0f};
     unsigned int current_min_steps3;
     unsigned int current_max_steps3;
     void scaling_in_voxel(tipl::vector<3,float>& dir) const
@@ -191,10 +191,11 @@ public:
     }
 private:
     std::shared_ptr<RoiMgr> roi_mgr;
-	std::vector<float> track_buffer;
+    std::vector<float> track_buffer;
 	mutable std::vector<float> reverse_buffer;
-    unsigned int buffer_front_pos;
-    unsigned int buffer_back_pos;
+    float* buffer_front_pos;
+    float* buffer_back_pos;
+    unsigned int total_steps3;
     unsigned char init_fib_index;
 public:
     bool get_dir(const tipl::vector<3,float>& position,
@@ -205,16 +206,6 @@ public:
                        current_fa_threshold,current_tracking_angle,current_dt_threshold);
     }
 public:
-    unsigned int get_buffer_size(void) const
-	{
-		return buffer_back_pos-buffer_front_pos;
-	}
-    unsigned int get_point_count(void) const
-	{
-		return (buffer_back_pos-buffer_front_pos)/3;
-	}
-
-public:
     TrackingMethod(std::shared_ptr<tracking_data> trk_,
                    std::shared_ptr<RoiMgr> roi_mgr_):
                    trk(trk_),roi_mgr(roi_mgr_),init_fib_index(0)
@@ -223,7 +214,7 @@ private:
     inline bool tracking_continue(void) const
     {
         return !roi_mgr->within_terminative(position) &&
-               get_buffer_size() < current_max_steps3;
+               total_steps3 < current_max_steps3;
     }
 public:
     bool initialize_direction(unsigned char fib_order = 0)
@@ -234,26 +225,27 @@ public:
             return false;
         return get_dir(position,trk->get_fib(tipl::pixel_index<3>(round_pos[0],round_pos[1],round_pos[2],trk->dim).index(),fib_order),dir);
     }
-    template<typename tracking_algo>
-    bool start_tracking(tracking_algo track)
+    void init_buffer(void)
     {
-        tipl::vector<3,float> seed_pos(position);
-        tipl::vector<3,float> begin_dir(dir);
-        // floatd for full backward or full forward
         track_buffer.resize(current_max_steps3 << 1);
-        buffer_front_pos = uint32_t(current_max_steps3);
-        buffer_back_pos = uint32_t(current_max_steps3);
-        tipl::vector<3,float> end_point1;
+        reverse_buffer.resize(current_max_steps3);
+    }
+    template<typename tracking_algo>
+    const float* start_tracking(tracking_algo&& track)
+    {
+        tipl::vector<3> seed_pos(position),begin_dir(dir),end_point1;
+        buffer_back_pos = buffer_front_pos = track_buffer.data() + current_max_steps3;
+        total_steps3 = 0;
         next_dir = dir;
         while(tracking_continue())
         {
             if(roi_mgr->within_roa(position) ||
               !roi_mgr->within_limiting(position))
-				return false;
-            track_buffer[buffer_back_pos] = position[0];
-            track_buffer[buffer_back_pos+1] = position[1];
-            track_buffer[buffer_back_pos+2] = position[2];
-            buffer_back_pos += 3;
+                return nullptr;
+            *(buffer_back_pos++) = position[0];
+            *(buffer_back_pos++) = position[1];
+            *(buffer_back_pos++) = position[2];
+            total_steps3 += 3;
             if(!track(*this))
                 break;
 		}
@@ -267,94 +259,61 @@ public:
             {
                 if(roi_mgr->within_roa(position) ||
                   !roi_mgr->within_limiting(position))
-                    return false;
-                buffer_front_pos -= 3;
-                track_buffer[buffer_front_pos] = position[0];
-                track_buffer[buffer_front_pos+1] = position[1];
-                track_buffer[buffer_front_pos+2] = position[2];
+                    return nullptr;
+                *(--buffer_front_pos) = position[2];
+                *(--buffer_front_pos) = position[1];
+                *(--buffer_front_pos) = position[0];
+                total_steps3 += 3;
                 if(!track(*this))
                     break;
             }
         }
 
-
-
-        return get_buffer_size() >= current_min_steps3 &&
-               roi_mgr->within_roi(get_result(),get_buffer_size()) &&
-               roi_mgr->fulfill_end_point(position,end_point1);
-
-
-	}
-        const float* tracking(unsigned char tracking_method,unsigned int& point_count)
         {
-            point_count = 0;
-            switch (tracking_method)
-            {
-            case 0:
-                if (!start_tracking(EulerTracking()))
-                    return nullptr;
-                break;
-            case 1:
-                if (!start_tracking(RungeKutta4()))
-                    return nullptr;
-                break;
-            case 2:
-                position.round();
-                if (!start_tracking(VoxelTracking()))
-                    return nullptr;
-
-                // smooth trajectories
+            buffer_back_pos-=3;
+            tipl::vector<3> tail(buffer_back_pos);
+            tail -= tipl::vector<3>(buffer_front_pos);
+            float x_ = std::abs(tail[0]),y_ = std::abs(tail[0]), z_ = std::abs(tail[0]);
+            size_t max_dim = (y_ > x_) ? ((z_ > y_) ? 2 : 1) : ((z_ > x_) ? 2 : 0);
+            if(tail[max_dim] < 0.0f)
+                for(auto dst = buffer_front_pos = reverse_buffer.data(),end_dst = dst + total_steps3;
+                    dst < end_dst;dst += 3,buffer_back_pos -= 3)
                 {
-                    std::vector<float> smoothed(track_buffer.size());
-                    float w[5] = {1.0,2.0,4.0,2.0,1.0};
-                    int dis[5] = {-6, -3, 0, 3, 6};
-                    for(size_t index = buffer_front_pos;index < buffer_back_pos;++index)
-                    {
-                        float sum_w = 0.0;
-                        float sum = 0.0;
-                        for(int i = 0;i < 5;++i)
-                        {
-                            int cur_index = int(index) + dis[i];
-                            if(cur_index < int(buffer_front_pos) || cur_index >= int(buffer_back_pos))
-                                continue;
-                            sum += w[i]*track_buffer[uint32_t(cur_index)];
-                            sum_w += w[i];
-                        }
-                        if(sum_w != 0.0f)
-                            smoothed[index] = sum/sum_w;
-                    }
-                    smoothed.swap(track_buffer);
+                    dst[0] = buffer_back_pos[0];
+                    dst[1] = buffer_back_pos[1];
+                    dst[2] = buffer_back_pos[2];
                 }
-                break;
-            default:
-                return nullptr;
-            }
-            point_count = get_point_count();
-            return get_result();
         }
-
-	const float* get_result(void) const
-	{
-        tipl::vector<3,float> head(&*(track_buffer.begin() + buffer_front_pos));
-        tipl::vector<3,float> tail(&*(track_buffer.begin() + buffer_back_pos-3));
-		tail -= head;
-        tipl::vector<3,float> abs_dis(std::abs(tail[0]),std::abs(tail[1]),std::abs(tail[2]));
-		
-		if((abs_dis[0] > abs_dis[1] && abs_dis[0] > abs_dis[2] && tail[0] < 0) ||
-		   (abs_dis[1] > abs_dis[0] && abs_dis[1] > abs_dis[2] && tail[1] < 0) ||
-		   (abs_dis[2] > abs_dis[1] && abs_dis[2] > abs_dis[0] && tail[2] < 0))
-		{
-            reverse_buffer.resize(track_buffer.size());
-			std::vector<float>::const_iterator src = track_buffer.begin() + buffer_back_pos-3;
-			std::vector<float>::iterator iter = reverse_buffer.begin();
-			std::vector<float>::iterator end = reverse_buffer.begin()+buffer_back_pos-buffer_front_pos;
-			for(;iter < end;iter += 3,src -= 3)
-                std::copy_n(src,3,iter);
-			return &*reverse_buffer.begin();
-		}
-
-		return &*(track_buffer.begin() + buffer_front_pos);
+        if(total_steps3 >= current_min_steps3 &&
+           roi_mgr->within_roi(buffer_front_pos,total_steps3) &&
+           roi_mgr->fulfill_end_point(position,end_point1))
+            return buffer_front_pos;
+        return nullptr;
 	}
+    const float* tracking(unsigned char tracking_method,unsigned int& total_steps)
+    {
+        const float* track_ptr = nullptr;
+        switch (tracking_method)
+        {
+        case 0:
+            track_ptr = start_tracking(EulerTracking());
+            break;
+        case 1:
+            track_ptr = start_tracking(RungeKutta4());
+            break;
+        default:
+            return nullptr;
+        }
+        if(track_ptr)
+        {
+            total_steps = total_steps3/3;
+            return track_ptr;
+        }
+        total_steps = 0;
+        return nullptr;
+    }
+
+
 };
 
 
