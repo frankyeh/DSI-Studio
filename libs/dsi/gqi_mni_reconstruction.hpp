@@ -28,6 +28,7 @@ public:
     {
         tipl::progress prog("QA/ISO normalization");
         dual_reg reg;
+        reg.param = voxel.reg_param;
         reg.modality_names = {"qa","iso"};
         reg.export_intermediate = voxel.needs("debug");
 
