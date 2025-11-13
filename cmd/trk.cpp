@@ -73,7 +73,7 @@ bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_
     }
     return true;
 }
-bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
+bool get_tract_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
                        std::string file_name,
                        std::shared_ptr<TractModel> tract_model)
 {
@@ -84,53 +84,8 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
         // track analysis report
         if(cmd.find("report") == 0)
         {
-            tipl::out() << "export track analysis report..." << std::endl;
-            std::replace(cmd.begin(),cmd.end(),':',' ');
-            std::istringstream in(cmd);
-            std::string report_tag,index_name;
-            uint32_t profile_dir = 0,bandwidth = 0;
-            in >> report_tag >> index_name >> profile_dir >> bandwidth;
-            std::vector<float> values,data_profile,data_ci1,data_ci2;
-            // check index
-            if(handle->get_name_index(index_name) == handle->slices.size())
-            {
-                tipl::out() << "cannot find index name " << index_name << std::endl;
-                return false;
-            }
-            if(bandwidth == 0)
-            {
-                tipl::out() << "please specify bandwidth value" << std::endl;
-                return false;
-            }
-            tipl::out() << "calculating report" << std::endl;
-            tipl::out() << "profile_dir: " << profile_dir << std::endl;
-            tipl::out() << "bandwidth: " << bandwidth << std::endl;
-            tipl::out() << "index_name: " << index_name << std::endl;
-            tract_model->get_report(handle,profile_dir,bandwidth,index_name,values,data_profile,data_ci1,data_ci2);
-
-            std::replace(cmd.begin(),cmd.end(),' ','.');
-            std::string file_name_stat = file_name + "." + cmd + ".txt";
-            tipl::out() << "saving " << file_name_stat << std::endl;
-            std::ofstream report(file_name_stat);
-            report << "position\t";
-            std::copy(values.begin(),values.end(),std::ostream_iterator<float>(report,"\t"));
-            report << std::endl;
-            report << "value\t";
-            std::copy(data_profile.begin(),data_profile.end(),std::ostream_iterator<float>(report,"\t"));
-            if(!data_ci1.empty())
-            {
-                report << std::endl;
-                report << "CI\t";
-                std::copy(data_ci1.begin(),data_ci1.end(),std::ostream_iterator<float>(report,"\t"));
-            }
-            if(!data_ci2.empty())
-            {
-                report << std::endl;
-                report << "CI\t";
-                std::copy(data_ci2.begin(),data_ci2.end(),std::ostream_iterator<float>(report,"\t"));
-            }
-            report << std::endl;
-            continue;
+            tipl::error() << "--export=report function is obsolete. please use --profile ";
+            return false;
         }
 
         std::string file_name_stat = file_name + "." + cmd;
@@ -234,6 +189,53 @@ bool export_track_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
         return false;
     }
     return true;
+}
+
+bool get_tract_profile(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
+                       std::string file_name,
+                       std::shared_ptr<TractModel> tract_model)
+{
+    tipl::progress prog("get track profile");
+    std::string cmd = po.get("profile");
+    std::replace(cmd.begin(),cmd.end(),':',' ');
+    std::string metrics;
+    uint32_t profile_dir = 0,bandwidth = 1.0;
+    std::istringstream(cmd) >> metrics >> profile_dir >> bandwidth;
+    tipl::out() << "metrics: " << metrics;
+    tipl::out() << "type: " << profile_dir;
+    tipl::out() << "bandwidth: " << bandwidth;
+
+    std::vector<float> values,data_profile,data_ci1,data_ci2;
+    // check index
+    if(handle->get_name_index(metrics) == handle->slices.size())
+    {
+        tipl::error() << "cannot find metrocs " << metrics;
+        return false;
+    }
+    tract_model->get_report(handle,profile_dir,bandwidth,metrics,values,data_profile,data_ci1,data_ci2);
+
+    std::replace(cmd.begin(),cmd.end(),' ','.');
+    std::string file_name_stat = file_name + "." + cmd + ".txt";
+    tipl::out() << "save " << file_name_stat;
+    std::ofstream report(file_name_stat);
+    report << "position\t";
+    std::copy(values.begin(),values.end(),std::ostream_iterator<float>(report,"\t"));
+    report << std::endl;
+    report << "value\t";
+    std::copy(data_profile.begin(),data_profile.end(),std::ostream_iterator<float>(report,"\t"));
+    if(!data_ci1.empty())
+    {
+        report << std::endl;
+        report << "CI\t";
+        std::copy(data_ci1.begin(),data_ci1.end(),std::ostream_iterator<float>(report,"\t"));
+    }
+    if(!data_ci2.empty())
+    {
+        report << std::endl;
+        report << "CI\t";
+        std::copy(data_ci2.begin(),data_ci2.end(),std::ostream_iterator<float>(report,"\t"));
+    }
+    report << std::endl;
 }
 
 bool load_nii(tipl::program_option<tipl::out>& po,
@@ -553,7 +555,9 @@ int trk_post(tipl::program_option<tipl::out>& po,
 
     if(po.has("connectivity") && !get_connectivity_matrix(po,handle,tract_file_name,tract_model))
         return 1;
-    if(po.has("export") && !export_track_info(po,handle,tract_file_name,tract_model))
+    if(po.has("export") && !get_tract_info(po,handle,tract_file_name,tract_model))
+        return 1;
+    if(po.has("profile") && !get_tract_profile(po,handle,tract_file_name,tract_model))
         return 1;
     return 0;
 }
