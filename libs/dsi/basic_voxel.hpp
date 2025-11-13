@@ -135,6 +135,7 @@ public:// used in QSDR
     bool qsdr = false;
     float R2 = 0.0f;
     float qsdr_reso = 1.0f;
+    tipl::reg::cdm_param reg_param;
 public:
     tipl::vector<3> partial_min,partial_max;
 public: // for QSDR associated T1WT2W
