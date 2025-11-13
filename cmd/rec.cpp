@@ -36,6 +36,12 @@ int rec(tipl::program_option<tipl::out>& po)
             src.voxel.param[0] = po.get("param",src.voxel.param[0]);
             src.voxel.r2_weighted = po.get("r2_weighted",int(0));
             src.voxel.odf_resolving = po.get("odf_resolving",int(0));
+            if(src.voxel.method_id == 7)
+            {
+                src.voxel.reg_param.resolution = po.get("reg_resolution",src.voxel.reg_param.resolution);
+                src.voxel.reg_param.speed = po.get("reg_speed",src.voxel.reg_param.speed);
+                src.voxel.reg_param.smoothing = po.get("reg_smoothing",src.voxel.reg_param.smoothing);
+            }
         }
         for(size_t id = 0;id < fa_template_list.size();++id)
             tipl::out() << "template " << id << ": " << std::filesystem::path(fa_template_list[id]).stem().stem().stem() << std::endl;
