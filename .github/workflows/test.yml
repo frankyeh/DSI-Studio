@@ -47,6 +47,21 @@ jobs:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
       run: |
         gh release upload ${{ github.event.inputs.tag }} *.zip --clobber --repo frankyeh/DSI-Studio
+  test-dicom:
+    needs: linux-build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download DICOM
+      run: |
+        mkdir -p data && curl -L https://ndownloader.figshare.com/files/36168675 -o data/download.zip && unzip data/download.zip -d data && rm data/download.zip
+
+    - name: DICOM renaming
+      run: |
+       curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_prerelease.zip" | jar x
+       chmod 777 ./dsi-studio/dsi_studio     
+       ./dsi-studio/dsi_studio --action=ren --source=./data/
+       ./dsi-studio/dsi_studio --action=src --source=./data/
+       
   test-bids:
     needs: linux-build
     runs-on: ubuntu-latest
