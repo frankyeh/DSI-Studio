@@ -61,6 +61,13 @@ jobs:
        chmod 777 ./dsi-studio/dsi_studio     
        ./dsi-studio/dsi_studio --action=ren --source=./data/
        ./dsi-studio/dsi_studio --action=src --source=./data/
+       mv ./data/*/*.nii.gz ./data
+       cd data
+       for f in *.nii.gz;
+        do
+          dsi_studio_hou --action=img --source=$f --cmd=change_type:3+normalize_otsu_median+upper_threshold:1+normalize:1+change_type:0 --output=../${f/%.nii/.nii.gz}
+        done
+       
        
   test-bids:
     needs: linux-build
