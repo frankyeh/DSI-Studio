@@ -35,6 +35,7 @@ std::vector<std::string> get_source_list(tipl::program_option<tipl::out>& po)
     }
     else
         po.get_files("source",name_list);
+    std::sort(name_list.begin(),name_list.end());
     return name_list;
 }
 int db(tipl::program_option<tipl::out>& po)
