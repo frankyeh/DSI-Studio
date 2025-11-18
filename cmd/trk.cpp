@@ -236,6 +236,7 @@ bool get_tract_profile(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
         std::copy(data_ci2.begin(),data_ci2.end(),std::ostream_iterator<float>(report,"\t"));
     }
     report << std::endl;
+    return true;
 }
 
 bool load_nii(tipl::program_option<tipl::out>& po,
