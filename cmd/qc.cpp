@@ -22,9 +22,8 @@ std::string quality_check_src_files(const std::vector<std::string>& file_list,
             return;
         std::vector<std::string> output_each;
         std::string file_name = file_list[i];
-
         tipl::out() << "checking " << file_name << std::endl;
-        output_each.push_back(tipl::split(std::filesystem::path(file_name).filename().string(),'.').front());
+        output_each.push_back(file_name);
         src_data handle;
         if (!handle.load_from_file(file_name.c_str()))
         {
@@ -80,6 +79,36 @@ std::string quality_check_src_files(const std::vector<std::string>& file_list,
         output_each.push_back(std::to_string(handle.get_bad_slices().size()));
         output[i] = std::move(output_each);
     });
+
+
+    //trim_common_border
+    if(output.empty() || output[0].empty())
+    {
+        auto trim=[&](bool front){
+            while(true){
+                int freq[256]={0}, total=0;
+                for(auto& row:output){
+                    auto& s=row[0];
+                    if(!s.empty()){
+                        ++freq[(unsigned char)(front?s.front():s.back())];
+                        ++total;
+                    }
+                }
+                if(!total) break;
+                int best=0, best_char=0;
+                for(int i=0;i<256;++i) if(freq[i]>best){ best=freq[i]; best_char=i; }
+                if(best*4 <= total*3) break;
+                for(auto& row:output){
+                    auto& s=row[0];
+                    if(!s.empty() && (unsigned char)(front?s.front():s.back())==best_char){
+                        if(front) s.erase(s.begin()); else s.pop_back();
+                    }
+                }
+            }
+        };
+        trim(true);
+        trim(false);
+    }
 
     float outlier_threshold = tipl::outlier_range(ndc.begin(),ndc.end()).first;
     // 3 "scaled" MAD approach. The scale is -1/(sqrt(2)*erfcinv(3/2)) = 1.482602218505602f
