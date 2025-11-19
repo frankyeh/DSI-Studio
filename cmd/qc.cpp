@@ -81,35 +81,6 @@ std::string quality_check_src_files(const std::vector<std::string>& file_list,
     });
 
 
-    //trim_common_border
-    if(output.empty() || output[0].empty())
-    {
-        auto trim=[&](bool front){
-            while(true){
-                int freq[256]={0}, total=0;
-                for(auto& row:output){
-                    auto& s=row[0];
-                    if(!s.empty()){
-                        ++freq[(unsigned char)(front?s.front():s.back())];
-                        ++total;
-                    }
-                }
-                if(!total) break;
-                int best=0, best_char=0;
-                for(int i=0;i<256;++i) if(freq[i]>best){ best=freq[i]; best_char=i; }
-                if(best*4 <= total*3) break;
-                for(auto& row:output){
-                    auto& s=row[0];
-                    if(!s.empty() && (unsigned char)(front?s.front():s.back())==best_char){
-                        if(front) s.erase(s.begin()); else s.pop_back();
-                    }
-                }
-            }
-        };
-        trim(true);
-        trim(false);
-    }
-
     float outlier_threshold = tipl::outlier_range(ndc.begin(),ndc.end()).first;
     // 3 "scaled" MAD approach. The scale is -1/(sqrt(2)*erfcinv(3/2)) = 1.482602218505602f
     for(size_t i = 0;i < output.size();++i)
