@@ -65,7 +65,7 @@ jobs:
        cd data
        for f in *.nii.gz;
         do
-          ./dsi_studio/dsi_studio --action=img --source=$f --cmd=change_type:3+normalize_otsu_median+upper_threshold:1+normalize:1+change_type:0 --output=../${f/%.nii/.nii.gz}
+          ../dsi_studio/dsi_studio --action=img --source=$f --cmd=change_type:3+normalize_otsu_median+upper_threshold:1+normalize:1+change_type:0 --output=../${f/%.nii/.nii.gz}
         done
        
        
@@ -231,11 +231,11 @@ jobs:
     - name: Setup Environment
       run: |
         curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_prerelease.zip" | jar x
-        curl -sL https://github.com/data-openneuro/disease/releases/download/ds001378/ds001378.dti_fa.db.fz -o ds001378.dti_fa.db.fz
+        curl -sL https://github.com/data-openneuro/disease/releases/download/ds001378/sub-all.dz -o sub-all.dz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Connectometry
       run: |
-        ./dsi-studio/dsi_studio --source=ds001378.dti_fa.db.fz --action=cnt --permutation=200 --variable_list=0,1,2 --voi=0
+        ./dsi-studio/dsi_studio --source=sub-all.dz --action=cnt --permutation=200 --variable_list=0,1,2 --voi=0
         ls *.report.html
         ls * -l
         
