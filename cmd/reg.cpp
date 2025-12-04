@@ -640,6 +640,31 @@ bool dual_reg::save_warping(const std::string& filename) const
         return false;
     }
     std::string output_name(filename);
+    if(tipl::ends_with(output_name,".nii.gz"))
+    {
+        tipl::image<dimension+1> buffer(from2to.shape().expand(dimension)),
+                                 buffer2(to2from.shape().expand(dimension));
+        tipl::par_for(dimension+dimension,[&](unsigned int d)
+        {
+            if(d < 3)
+            {
+                size_t shift = d*from2to.size();
+                for(size_t i = 0;i < from2to.size();++i)
+                    buffer[i+shift] = from2to[i][d];
+            }
+            else
+            {
+                d -= 3;
+                size_t shift = d*to2from.size();
+                for(size_t i = 0;i < to2from.size();++i)
+                    buffer2[i+shift] = to2from[i][d];
+            }
+        },dimension+dimension);
+        tipl::io::gz_nifti(output_name,std::ios::out) << Ivs << IR << buffer;
+        tipl::io::gz_nifti(output_name.substr(0,output_name.length()-7) + ".inv.nii.gz",std::ios::out) << Itvs << ItR << buffer2;
+        return true;
+    }
+
     if(!tipl::ends_with(output_name,".mz"))
         output_name += ".mz";
     std::string output_name_tmp = output_name + ".tmp";
@@ -841,15 +866,20 @@ int reg(tipl::program_option<tipl::out>& po)
     tipl::out() << to_filename.size() << " file(s) specified at --to";
     if(po.has("mapping"))
     {
-        if(from_filename.empty() && to_filename.empty())
-        {
-            tipl::error() << "please specify images to warp/unwwarp at --source/--to, respectively.";
-            return 1;
-        }
         tipl::out() << "loading mapping field";
         if(!r.load_warping(po.get("mapping")))
         {
             tipl::error() << r.error_msg;
+            return 1;
+        }
+        if(po.has("output_mapping") && !r.save_warping(po.get("output_mapping")))
+        {
+            tipl::error() << r.error_msg;
+            return 1;
+        }
+        if(from_filename.empty() && to_filename.empty())
+        {
+            tipl::error() << "please specify images to warp/unwwarp at --source/--to, respectively.";
             return 1;
         }
         tipl::out() << "dim: " << r.Is << " to " << r.Its;
@@ -928,7 +958,7 @@ int reg(tipl::program_option<tipl::out>& po)
         r.param.min_dimension = po.get("min_dimension",r.param.min_dimension);
         r.nonlinear_reg(tipl::prog_aborted);
     }
-    if(po.has("output_mapping") && !r.save_warping(po.get("output_mapping").c_str()))
+    if(po.has("output_mapping") && !r.save_warping(po.get("output_mapping")))
     {
         tipl::error() << r.error_msg;
         return 1;
