@@ -768,7 +768,7 @@ void CustomSliceModel::argmin(void)
 // ---------------------------------------------------------------------------
 bool CustomSliceModel::save_mapping(const std::string& file_name)
 {
-    return !!(std::ofstream(file_name) << arg_min);
+    return !!(std::ofstream(file_name) << arg_min << '\n' << view->T);
 }
 // ---------------------------------------------------------------------------
 bool CustomSliceModel::load_mapping(const std::string& file_name)
