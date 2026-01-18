@@ -75,10 +75,8 @@ HEADERS += mainwindow.h \
     view_image.h \
     manual_alignment.h \
     tracking/tract_report.hpp \
-    tracking/color_bar_dialog.hpp \
     tracking/connectivity_matrix_dialog.h \
     tracking/atlasdialog.h \
-    filebrowser.h \
     qcompletelineedit.h \
     libs/mapping/connectometry_db.hpp \
     connectometry/createdbdialog.h \
@@ -90,7 +88,6 @@ HEADERS += mainwindow.h \
     auto_track.h \
     tracking/device.h \
     tracking/devicetablewidget.h \
-    mac_filesystem.hpp \
     libs/dsi/hist_process.hpp \
     xnat_dialog.h
 
@@ -102,10 +99,8 @@ FORMS += mainwindow.ui \
     view_image.ui \
     manual_alignment.ui \
     tracking/tract_report.ui \
-    tracking/color_bar_dialog.ui \
     tracking/connectivity_matrix_dialog.ui \
     tracking/atlasdialog.ui \
-    filebrowser.ui \
     connectometry/createdbdialog.ui \
     connectometry/match_db.ui \
     connectometry/db_window.ui \
@@ -147,7 +142,6 @@ SOURCES += main.cpp \
     view_image.cpp \
     manual_alignment.cpp \
     tracking/tract_report.cpp \
-    tracking/color_bar_dialog.cpp \
     cmd/exp.cpp \
     tracking/connectivity_matrix_dialog.cpp \
     libs/dsi/tessellated_icosahedron.cpp \
@@ -155,7 +149,6 @@ SOURCES += main.cpp \
     tracking/atlasdialog.cpp \
     cmd/cnt.cpp \
     cmd/vis.cpp \
-    filebrowser.cpp \
     qcompletelineedit.cpp \
     libs/tracking/fib_data.cpp \
     libs/tracking/tracking_thread.cpp \
