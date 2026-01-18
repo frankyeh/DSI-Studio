@@ -1,8 +1,6 @@
 #include <QFileDialog>
 #include <QStringListModel>
 #include <QMessageBox>
-#include <cctype>
-#include <algorithm>
 #include "auto_track.h"
 #include "ui_auto_track.h"
 #include "libs/dsi/image_model.hpp"
@@ -10,22 +8,6 @@
 #include "libs/tracking/tracking_thread.hpp"
 #include <filesystem>
 extern std::vector<std::string> fa_template_list;
-static bool find_string_case_insensitive(const std::string & str1, const std::string & str2)
-{
-  auto it = std::search(
-    str1.begin(), str1.end(),
-    str2.begin(),   str2.end(),
-    [](char ch1, char ch2) { return std::toupper(ch1) == std::toupper(ch2); }
-  );
-  return (it != str1.end() );
-}
-static bool is_selected(std::vector<std::string>& selected_tracts,const std::string& tract_name)
-{
-    for(const auto& each: selected_tracts)
-        if(find_string_case_insensitive(tract_name,each))
-            return true;
-    return false;
-}
 auto_track::auto_track(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::auto_track)
@@ -164,11 +146,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
     {
         std::shared_ptr<fib_data> fib(new fib_data);
         set_template(fib,po);
-        if(chen_mode && !fib->load_track_atlas(false))
-            return fib->error_msg;
-        auto list = chen_mode ? fib->tractography_name_list : fib->get_tractography_all_levels();
-        if(list.empty())
-            return "no tractography atlas available in the selected template";
+        auto list = fib->get_tractography_all_levels();
         {
             std::string labels;
             for(auto each : list)
@@ -180,51 +158,38 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
             tipl::out() << "available track_ids in current template: " << labels;
         }
         auto selections = tipl::split(po.get("track_id","Arcuate,Cingulum,Aslant,InferiorFronto,InferiorLongitudinal,SuperiorLongitudinal,Uncinate,Fornix,Corticos,ThalamicR,Optic,Lemniscus,Reticular,Corpus"),',');
-        if(chen_mode)
+        std::vector<bool> selected(list.size());
+        std::vector<size_t> backup_subcomponents;
+        for(const auto& each : selections)
         {
-            std::vector<std::string> selected;
-            for(const auto& each : selections)
-                selected.push_back(each);
-            if(selected.empty())
-                selected = list;
-            for(const auto& name : list)
-                if(is_selected(selected,name))
-                    tract_name_list.push_back(name);
-        }
-        else
-        {
-            std::vector<bool> selected(list.size());
-            std::vector<size_t> backup_subcomponents;
-            for(const auto& each : selections)
+            auto sep_count = std::count(each.begin(),each.end(),'_');
+            for(size_t i = 0;i < list.size();++i)
             {
-                auto sep_count = std::count(each.begin(),each.end(),'_');
-                for(size_t i = 0;i < list.size();++i)
+                if(selected[i])
+                    continue;
+                if(tipl::equal_case_insensitive(list[i],each))
+                    selected[i] = true;
+                if(tipl::contains_case_insensitive(list[i],each))
                 {
-                    if(selected[i])
-                        continue;
-                    if(tipl::equal_case_insensitive(list[i],each))
+                    if(std::count(list[i].begin(),list[i].end(),'_') < 2)  // not subbundle then contain also work
                         selected[i] = true;
-                    if(tipl::contains_case_insensitive(list[i],each))
-                    {
-                        if(std::count(list[i].begin(),list[i].end(),'_') < 2)  // not subbundle then contain also work
-                            selected[i] = true;
-                        else
-                            backup_subcomponents.push_back(i);
-                    }
+                    else
+                        backup_subcomponents.push_back(i);
                 }
             }
-
-            if(std::all_of(selected.begin(), selected.end(), [](bool s){return !s; }))
-            {
-                tipl::out() << "no primary bundle matches. select subcomponents...";
-                for(auto each : backup_subcomponents)
-                    selected[each] = true;
-            }
-
-            for(size_t i = 0;i < list.size();++i)
-                if(selected[i])
-                    tract_name_list.push_back(list[i]);
         }
+
+        if(std::all_of(selected.begin(), selected.end(), [](bool s){return !s; }))
+        {
+            tipl::out() << "no primary bundle matches. select subcomponents...";
+            for(auto each : backup_subcomponents)
+                selected[each] = true;
+        }
+
+        for(size_t i = 0;i < list.size();++i)
+            if(selected[i])
+                tract_name_list.push_back(list[i]);
+
         if(tract_name_list.empty())
             return "cannot find any tract matching --track_id";
         std::string selected_list;
