@@ -117,6 +117,7 @@ SOURCES += main.cpp \
     mainwindow.cpp \
     dicom/dicom_parser.cpp \
     dicom/dwi_header.cpp \
+    cmd/img.cpp \
     libs/dsi/dsi_interface_imp.cpp \
     libs/dsi/gqi_process.cpp \
     libs/tracking/tract_cluster.cpp \
@@ -150,6 +151,7 @@ SOURCES += main.cpp \
     cmd/cnt.cpp \
     cmd/vis.cpp \
     qcompletelineedit.cpp \
+    libs/tracking/roi.cpp \
     libs/tracking/fib_data.cpp \
     libs/tracking/tracking_thread.cpp \
     cmd/ren.cpp \
