@@ -145,6 +145,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
     std::vector<std::string> tract_name_list;
     {
         std::shared_ptr<fib_data> fib(new fib_data);
+        fib->use_chen_normalization = chen_mode;
         set_template(fib,po);
         auto list = fib->get_tractography_all_levels();
         {
@@ -256,6 +257,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     handle = std::make_shared<fib_data>();
                     if(!handle->load_from_file(fib_file_name.c_str()))
                        return handle->error_msg;
+                    handle->use_chen_normalization = chen_mode;
                     set_template(handle,po);
                 }
                 std::shared_ptr<TractModel> tract_model(new TractModel(handle));
