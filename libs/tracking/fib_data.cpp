@@ -2033,6 +2033,14 @@ bool to_t1wt2w_templates(dual_reg& reg,size_t template_id,bool be)
 }
 std::string fib_data::get_mapping_file_name(void) const
 {
+    if(use_chen_normalization)
+    {
+        std::string output_file_name(fib_file_name);
+        output_file_name += ".";
+        output_file_name += QFileInfo(fa_template_list[template_id].c_str()).baseName().toLower().toStdString();
+        output_file_name += ".map.gz";
+        return output_file_name;
+    }
     std::string output_file_name(fib_file_name + "." +
                                  std::filesystem::path(fa_template_list[template_id]).filename().stem().stem().stem().string());
     if(alternative_mapping_index)
@@ -2040,8 +2048,209 @@ std::string fib_data::get_mapping_file_name(void) const
     output_file_name += ".mz";
     return output_file_name;
 }
+namespace
+{
+void chen_cdm_common(const tipl::image<3>& It,const tipl::image<3>& It2,
+                     const tipl::image<3>& Is,const tipl::image<3>& Is2,
+                     tipl::image<3,tipl::vector<3> >& dis,
+                     tipl::image<3,tipl::vector<3> >& inv_dis,
+                     bool& terminated)
+{
+    tipl::reg::cdm_param param;
+    tipl::reg::cdm_common<tipl::out>(tipl::reg::make_list(It,It2),
+                                     tipl::reg::make_list(Is,Is2),
+                                     dis,terminated,param,has_cuda);
+    if(terminated)
+        return;
+    tipl::reg::cdm_common<tipl::out>(tipl::reg::make_list(Is,Is2),
+                                     tipl::reg::make_list(It,It2),
+                                     inv_dis,terminated,param,has_cuda);
+}
+}
+bool fib_data::map_to_mni_chen(bool background)
+{
+    if(!load_template())
+        return false;
+    if(is_mni && template_id == matched_template_id)
+        return true;
+    if(!s2t.empty() && !t2s.empty())
+        return true;
+    auto output_file_name = get_mapping_file_name();
+
+    tipl::io::gz_mat_read in;
+
+    // check 1. mapping files was created later than the FIB file
+    //       2. the recon steps are the same
+    //       3. has inv_mapping matrix (new format after Sep 2021
+    if(QFileInfo(output_file_name.c_str()).lastModified() > QFileInfo(fib_file_name.c_str()).lastModified() &&
+       in.load_from_file(output_file_name.c_str()) && in.has("from2to") && in.has("to2from")
+       && in.read<std::string>("steps") == steps)
+    {
+        const float* t2s_ptr = nullptr;
+        unsigned int t2s_row,t2s_col,s2t_row,s2t_col;
+        const float* s2t_ptr = nullptr;
+        if(in.read("to2from",t2s_row,t2s_col,t2s_ptr) &&
+           in.read("from2to",s2t_row,s2t_col,s2t_ptr))
+        {
+            if(size_t(t2s_col)*size_t(t2s_row) == template_I.size()*3 &&
+               size_t(s2t_col)*size_t(s2t_row) == dim.size()*3)
+            {
+                tipl::out() << "loading mapping fields from " << output_file_name << std::endl;
+                t2s.clear();
+                t2s.resize(template_I.shape());
+                s2t.clear();
+                s2t.resize(dim);
+                std::copy(t2s_ptr,t2s_ptr+t2s_col*t2s_row,&t2s[0][0]);
+                std::copy(s2t_ptr,s2t_ptr+s2t_col*s2t_row,&s2t[0][0]);
+                prog = 6;
+                return true;
+            }
+        }
+    }
+    tipl::progress prog_("running normalization");
+    prog = 0;
+    bool terminated = false;
+    auto lambda = [this,output_file_name,&terminated]()
+    {
+        tipl::transformation_matrix<float> T;
+
+        auto It = template_I;
+        auto It2 = template_I2;
+
+        if(dir.index_name[0] == "image" && // not FIB file
+           tipl::io::gz_nifti::load_to_space(t1w_template_file_name.c_str(),It,template_to_mni)) // not FIB file, use t1w as template
+        {
+            tipl::out() << "using structure image for normalization" << std::endl;
+            It2.clear();
+        }
+
+        tipl::image<3> Is(dir.fa[0],dim);
+        tipl::image<3> Is2;
+
+        {
+            size_t iso_index = get_name_index("iso");
+            if(slices.size() == iso_index)
+                iso_index = get_name_index("md");
+            if(slices.size() != iso_index)
+                Is2 = slices[iso_index]->get_image();
+        }
+        bool no_iso = Is2.empty() || It2.empty();
+
+        tipl::filter::gaussian(Is);
+        tipl::filter::gaussian(Is);
+        if(!no_iso)
+        {
+            tipl::filter::gaussian(Is2);
+            tipl::filter::gaussian(Is2);
+        }
+
+        prog = 1;
+        if(!has_manual_atlas)
+            linear_with_mi(It,template_vs,Is,vs,T,tipl::reg::affine,terminated);
+        else
+            T = manual_template_T;
+
+        if(terminated)
+            return;
+        prog = 2;
+        tipl::image<3> Iss(It.shape());
+        tipl::resample_mt(Is,Iss,T);
+        tipl::image<3> Iss2(It2.shape());
+        if(!no_iso)
+            tipl::resample_mt(Is2,Iss2,T);
+        prog = 3;
+
+        if(dir.index_name[0] == "image")
+        {
+            tipl::out() << "matching t1w t2w contrast" << std::endl;
+            tipl::image<3> t2w(It.shape());
+            if(tipl::io::gz_nifti::load_to_space(t2w_template_file_name.c_str(),t2w,template_to_mni))
+            {
+                std::vector<float> X(It.size()*3);
+                tipl::par_for(It.size(),[&](size_t pos)
+                {
+                    if(Iss[pos] == 0.0f)
+                        return;
+                    size_t i = pos;
+                    pos = pos+pos+pos;
+                    X[pos] = 1;
+                    X[pos+1] = It[i];
+                    X[pos+2] = t2w[i];
+                });
+                tipl::multiple_regression<float> m;
+                if(m.set_variables(X.begin(),3,It.size()))
+                {
+                    float b[3] = {0.0f,0.0f,0.0f};
+                    m.regress(Iss.begin(),b);
+                    tipl::out() << "image=" << b[0] << " + " << b[1] << " × t1w + " << b[2] << " × t2w ";
+                    tipl::par_for(It.size(),[&](size_t pos)
+                    {
+                        if(Iss[pos] == 0.0f)
+                            return;
+                        It[pos] = b[0] + b[1]*It[pos] + b[2]*t2w[pos];
+                        if(It[pos] < 0.0f)
+                            It[pos] = 0.0f;
+                    });
+                }
+            }
+        }
+        tipl::image<3,tipl::vector<3> > dis,inv_dis;
+        tipl::reg::cdm_pre(It,It2,Iss,Iss2);
+
+        chen_cdm_common(It,It2,Iss,Iss2,dis,inv_dis,terminated);
+
+        tipl::displacement_to_mapping(dis,t2s,T);
+        tipl::compose_mapping(Is,t2s,Iss);
+        tipl::out() << "R2:" << tipl::correlation(Iss.begin(),Iss.end(),It.begin()) << std::endl;
+
+        s2t.resize(dim);
+        tipl::inv_displacement_to_mapping(inv_dis,s2t,T);
+
+        if(terminated)
+            return;
+        tipl::io::gz_mat_write out(output_file_name.c_str());
+        if(out)
+        {
+            out.write("to_dim",dis.shape());
+            out.write("to_vs",template_vs);
+            out.write("from_dim",dim);
+            out.write("from_vs",vs);
+            out.write("steps",steps);
+            prog = 4;
+            tipl::out() << "calculating template to subject warp field";
+            out.write("to2from",&t2s[0][0],3,t2s.size());
+            prog = 5;
+            tipl::out() << "calculating subject to template warp field";
+            out.write("from2to",&s2t[0][0],3,s2t.size());
+        }
+
+        prog = 6;
+    };
+
+    if(background)
+    {
+        std::thread t(lambda);
+        while(prog_(prog,6))
+            std::this_thread::yield();
+        if(prog_.aborted())
+        {
+            error_msg = "aborted.";
+            terminated = true;
+        }
+        t.join();
+        return !prog_.aborted();
+    }
+    else
+    {
+        tipl::out() << "Subject normalization to MNI space." << std::endl;
+        lambda();
+    }
+    return true;
+}
 bool fib_data::map_to_mni(bool background)
 {
+    if(use_chen_normalization)
+        return map_to_mni_chen(background);
     if(!load_template())
         return false;
     if(is_mni && template_id == matched_template_id)

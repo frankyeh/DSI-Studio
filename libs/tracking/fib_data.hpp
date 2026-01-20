@@ -226,6 +226,7 @@ public:
     bool is_histology = true;
     bool is_mni = false;
     bool is_be = false;
+    bool use_chen_normalization = false;
     size_t matched_template_id = 0;
     bool trackable = true;
     float min_length(void) const
@@ -308,6 +309,7 @@ public:
 public:
     std::string get_mapping_file_name(void) const;
     bool map_to_mni(bool background = true);
+    bool map_to_mni_chen(bool background = true);
     void temp2sub(std::vector<std::vector<float> >&tracts) const;
     void temp2sub(tipl::vector<3>& pos) const;
     void sub2temp(tipl::vector<3>& pos);
