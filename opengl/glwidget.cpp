@@ -1635,7 +1635,7 @@ bool GLWidget::select_object(void)
         }
     }
     // select slices to move
-    if(get_param("show_slice"))
+    if(get_param("show_slice") && !device_selected)
     {
         bool show_slice[3];
         show_slice[0] = cur_tracking_window.ui->glSagCheck->checkState();
