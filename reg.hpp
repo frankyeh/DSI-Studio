@@ -37,19 +37,19 @@ inline size_t linear_with_mi(const tipl::image<3,float>& from,
                              tipl::affine_transform<float>& arg,
                              tipl::reg::reg_type reg_type,
                              bool& terminated,
-                             const float* bound = tipl::reg::reg_bound)
+                             const float (*bound)[8] = tipl::reg::reg_bound)
 {
     auto new_to_vs = to_vs;
     if(reg_type == tipl::reg::affine)
         new_to_vs = tipl::reg::adjust_to_vs<tipl::out>(from,from_vs,to,to_vs);
     if(new_to_vs != to_vs)
-        tipl::transformation_matrix<float>(arg,from,from_vs,to,to_vs).to_affine_transform(arg,from,from_vs,to,new_to_vs);
+        arg = tipl::transformation_matrix<float>(arg,from,from_vs,to,to_vs).to_affine_transform(from,from_vs,to,new_to_vs);
     float result = tipl::reg::linear_reg<tipl::out,true>(tipl::reg::make_list(from),from_vs,
                                                          tipl::reg::make_list(to),new_to_vs,
                                                          arg,bound,reg_type,tipl::reg::mutual_info,
                                                          true,has_cuda,terminated);
     if(new_to_vs != to_vs)
-        tipl::transformation_matrix<float>(arg,from,from_vs,to,new_to_vs).to_affine_transform(arg,from,from_vs,to,to_vs);
+        arg = tipl::transformation_matrix<float>(arg,from,from_vs,to,new_to_vs).to_affine_transform(from,from_vs,to,to_vs);
     return result;
 }
 
@@ -60,7 +60,7 @@ inline size_t linear_with_mi(const tipl::image<3,float>& from,
                              tipl::transformation_matrix<float>& T,
                              tipl::reg::reg_type reg_type,
                              bool& terminated,
-                             const float* bound = tipl::reg::reg_bound)
+                             const float (*bound)[8] = tipl::reg::reg_bound)
 {
     tipl::affine_transform<float> arg;
     size_t result = linear_with_mi(from,from_vs,to,to_vs,arg,reg_type,terminated,bound);

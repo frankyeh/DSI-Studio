@@ -119,8 +119,6 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
         po.set("tip_iteration",po.get("tip_iteration",4));
         po.set("use_roi",po.get("use_roi",0));
         po.set("check_ending",po.get("check_ending",1));
-        if(!po.has("tractography_atlas"))
-            po.set("tractography_atlas",0);
     }
     std::vector<float> tolerance;
     {

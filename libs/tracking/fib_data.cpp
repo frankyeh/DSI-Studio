@@ -2118,7 +2118,7 @@ bool fib_data::map_to_mni_chen(bool background)
         auto It2 = template_I2;
 
         if(dir.index_name[0] == "image" && // not FIB file
-           tipl::io::gz_nifti::load_to_space(t1w_template_file_name.c_str(),It,template_to_mni)) // not FIB file, use t1w as template
+           tipl::io::gz_nifti(t1w_template_file_name.c_str(),std::ios::in).to_space(It,template_to_mni)) // not FIB file, use t1w as template
         {
             tipl::out() << "using structure image for normalization" << std::endl;
             It2.clear();
@@ -2148,23 +2148,23 @@ bool fib_data::map_to_mni_chen(bool background)
         if(!has_manual_atlas)
             linear_with_mi(It,template_vs,Is,vs,T,tipl::reg::affine,terminated);
         else
-            T = manual_template_T;
+            T = tipl::transformation_matrix<float>(manual_template_T,It.shape(),template_vs,Is.shape(),vs);
 
         if(terminated)
             return;
         prog = 2;
         tipl::image<3> Iss(It.shape());
-        tipl::resample_mt(Is,Iss,T);
+        tipl::resample(Is,Iss,T);
         tipl::image<3> Iss2(It2.shape());
         if(!no_iso)
-            tipl::resample_mt(Is2,Iss2,T);
+            tipl::resample(Is2,Iss2,T);
         prog = 3;
 
         if(dir.index_name[0] == "image")
         {
             tipl::out() << "matching t1w t2w contrast" << std::endl;
             tipl::image<3> t2w(It.shape());
-            if(tipl::io::gz_nifti::load_to_space(t2w_template_file_name.c_str(),t2w,template_to_mni))
+            if(tipl::io::gz_nifti(t2w_template_file_name.c_str(),std::ios::in).to_space(t2w,template_to_mni))
             {
                 std::vector<float> X(It.size()*3);
                 tipl::par_for(It.size(),[&](size_t pos)
