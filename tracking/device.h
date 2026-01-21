@@ -13,7 +13,7 @@ public:
     tipl::vector<3> dir;
     tipl::rgb color = 0xFFFFFFFF;
 public: // for electrode
-    float length = 30.0f;
+    float length = 100.0f;
 private:
     mutable float rendering_radius = 0.0; // for internal use only to select device
 public:
