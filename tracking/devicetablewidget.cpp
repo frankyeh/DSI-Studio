@@ -286,7 +286,7 @@ void DeviceTableWidget::updateDevices(QTableWidgetItem* cur_item)
                     item(cur_item->row(),3)->setText(QString::number(double(device->length = 1)));
 
                 if(device->type != "Locator" && device->length < 5)
-                    item(cur_item->row(),3)->setText(QString::number(double(device->length = 30)));
+                    item(cur_item->row(),3)->setText(QString::number(double(device->length = 100)));
             }
         }
         break;
