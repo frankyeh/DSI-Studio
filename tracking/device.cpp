@@ -59,9 +59,9 @@ void Device::get_rendering(std::vector<float>& seg_length,
             rendering_radius = radius = device_radius[i]*0.5f;
             break;
         }
-    auto pos = std::find(seg_type.begin(),seg_type.end(),3);
+    auto pos = std::find(seg_type.begin(),seg_type.end(),3); // type 3 is the last device segment
     if(pos != seg_type.end())
-         seg_length[size_t(pos-seg_type.begin())] = length;
+         seg_length[size_t(pos-seg_type.begin())] = std::max<float>(5,length-tipl::sum(seg_length) + seg_length.back());
     if(type == "Locator")
         radius = length;
 
@@ -106,12 +106,12 @@ bool Device::selected(const tipl::vector<3>& p,float vs,float& device_selected_l
     proj *= device_selected_length;
     dis -= proj;
     distance_in_voxel = float(dis.length())-radius;
-    return float(dis.length()) < radius;
+    return distance_in_voxel < radius*2.0f;
 }
 
 void Device::move(float device_selected_length,const tipl::vector<3>& dis)
 {
-    if(device_selected_length < length*0.5f || length <= 3.0f)
+    if(device_selected_length < length*0.2f || length <= 3.0f)
         pos += dis;
     else
     {
