@@ -181,18 +181,6 @@ namespace tipl
 {
 namespace reg
 {
-template<typename image_type>
-inline void cdm_pre(image_type& It,image_type& It2,image_type& Is,image_type& Is2)
-{
-    if(!It.empty())
-        tipl::normalize_upper_lower2(It,It,255.99f);
-    if(!Is.empty())
-        tipl::normalize_upper_lower2(Is,Is,255.99f);
-    if(!It2.empty())
-        tipl::normalize_upper_lower2(It2,It2,255.99f);
-    if(!Is2.empty())
-        tipl::normalize_upper_lower2(Is2,Is2,255.99f);
-}
 }
 }
 

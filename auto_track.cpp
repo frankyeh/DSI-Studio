@@ -114,7 +114,6 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
     uint32_t thread_count = tipl::max_thread_count;
     if(chen_mode)
     {
-        po.set("template",po.get("template",0));
         po.set("track_voxel_ratio",po.get("track_voxel_ratio",2.0f));
         po.set("tip_iteration",po.get("tip_iteration",4));
         po.set("use_roi",po.get("use_roi",0));
@@ -143,7 +142,6 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
     std::vector<std::string> tract_name_list;
     {
         std::shared_ptr<fib_data> fib(new fib_data);
-        fib->use_chen_normalization = chen_mode;
         set_template(fib,po);
         auto list = fib->get_tractography_all_levels();
         {
@@ -214,6 +212,42 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
         scan_names.push_back(cur_file_base_name);
         tipl::out() << "processing " << cur_file_base_name << std::endl;
         std::shared_ptr<fib_data> handle;
+        std::string fib_base = QFileInfo(fib_file_name.c_str()).baseName().toStdString();
+        bool save_atlas_track = po.has("template_tracks_in_native_space");
+        std::string atlas_track_option;
+        if(save_atlas_track)
+            atlas_track_option = po.get("template_tracks_in_native_space",std::string());
+
+        if(save_atlas_track)
+        {
+            if(!handle.get())
+            {
+                handle = std::make_shared<fib_data>();
+                if(!handle->load_from_file(fib_file_name.c_str()))
+                   return handle->error_msg;
+                set_template(handle,po);
+            }
+            if(!handle->load_track_atlas(true/*symmetric*/))
+                return handle->error_msg + " at " + fib_file_name;
+            std::string atlas_track_name = atlas_track_option;
+            if(atlas_track_name.empty())
+                atlas_track_name = dir + "/" + fib_base + ".atlas.tt.gz";
+            else if(std::filesystem::is_directory(atlas_track_name))
+                atlas_track_name = (std::filesystem::path(atlas_track_name) / (fib_base + ".atlas.tt.gz")).string();
+            tipl::out() << "saving template tracks in native space to " << atlas_track_name;
+            if(!handle->track_atlas || !handle->track_atlas->save_tracts_to_file(atlas_track_name))
+                return std::string("failed to save atlas track to ") + atlas_track_name;
+            auto atlas_label_file = handle->tractography_atlas_file_name + ".txt";
+            auto output_label_file = atlas_track_name + ".txt";
+            if(std::filesystem::exists(atlas_label_file))
+            {
+                std::error_code ec;
+                std::filesystem::copy_file(atlas_label_file,output_label_file,
+                                           std::filesystem::copy_options::overwrite_existing,ec);
+                if(ec)
+                    return std::string("failed to copy atlas label file to ") + output_label_file;
+            }
+        }
 
         tipl::progress prog1("tracking pathways");
         for(size_t j = 0;prog1(j,tract_name_list.size());++j)
@@ -228,7 +262,6 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 if (!dir.exists() && !dir.mkpath("."))
                     tipl::out() << std::string("cannot create directory: ") + output_path << std::endl;
             }
-            std::string fib_base = QFileInfo(fib_file_name.c_str()).baseName().toStdString();
             std::string trk_base = output_path + "/" + fib_base+"."+tract_name;
             std::string no_result_file_name = trk_base+".no_result.txt";
             std::string trk_file_name = trk_base + "." + trk_format;
@@ -255,7 +288,6 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     handle = std::make_shared<fib_data>();
                     if(!handle->load_from_file(fib_file_name.c_str()))
                        return handle->error_msg;
-                    handle->use_chen_normalization = chen_mode;
                     set_template(handle,po);
                 }
                 std::shared_ptr<TractModel> tract_model(new TractModel(handle));
@@ -268,7 +300,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 {
                     ThreadData thread(handle);
                     {
-                        if(!handle->load_track_atlas(!chen_mode/*symmetric*/))
+                        if(!handle->load_track_atlas(true/*symmetric*/))
                             return handle->error_msg + " at " + fib_file_name;
 
                         if (po.has("threshold_index") && !handle->dir.set_tracking_index(po.get("threshold_index")))
