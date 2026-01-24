@@ -1266,16 +1266,12 @@ double stat_model::operator()(const std::vector<float>& original_population) con
     // calculate t-statistics
     if(study_feature)
     {
-        auto rank = tipl::rank_avg_tie(population,std::less<float>());
-        double sum_d2 = 0.0;
-        for(size_t i = 0;i < rank.size();++i)
-        {
-            auto d = rank[i]-x_study_feature_rank[i];
-            sum_d2 += d*d;
-        }
-        double r = 1.0-sum_d2*rank_c;
-        double result = r*std::sqrt(double(population.size()-2.0)/(1.0-r*r));
-        return std::isnormal(result) ? result : 0.0;
+        auto ry = tipl::rank_avg_tie(population, std::less<float>());
+        if(ry.size() < 3)
+            return 0.0;
+        double r = tipl::correlation(ry.begin(),ry.end(),x_study_feature_rank.begin()); // Spearman rho (tie-safe)
+        double t = r * std::sqrt((ry.size() - 2.0) / (1.0 - r*r));
+        return std::isnormal(t) ? t : 0.0;
     }
     else
     // if study longitudinal change
