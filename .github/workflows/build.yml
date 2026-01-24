@@ -149,7 +149,7 @@ jobs:
     if: ${{ github.event.inputs.build_mac == 'true' }}
     strategy:
       matrix:
-        os: [macos-14,macos-13,macos-15]
+        os: [macos-14,macos-15]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     env:
