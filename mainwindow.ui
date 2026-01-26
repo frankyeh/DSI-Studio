@@ -738,7 +738,7 @@ Varian (.fdf)</string>
                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 157); color: black; }</string>
                </property>
                <property name="text">
-                <string>Tractography (*.tt.gz)</string>
+                <string>Tractography (*.tt.gz *.trx)</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>

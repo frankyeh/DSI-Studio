@@ -9,8 +9,11 @@
 #include <tuple>
 #include <unordered_set>
 #include <map>
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <memory>
+#include <limits>
 #include "roi.hpp"
 #include "tract_model.hpp"
 #include "fib_data.hpp"
@@ -20,10 +23,60 @@
 #include "tracking_method.hpp"
 #include "reg.hpp"
 #include <filesystem>
+#include <trx/trx.h>
 
 void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 const tipl::rgb default_tract_color(255,160,60);
+namespace
+{
+    tipl::matrix<4,4> lps_to_ras(const tipl::matrix<4,4>& lps)
+    {
+        tipl::matrix<4,4> ras(lps);
+        for(int row = 0; row < 2; ++row)
+            for(int col = 0; col < 4; ++col)
+                ras[row*4+col] = -ras[row*4+col];
+        return ras;
+    }
+
+    tipl::matrix<4,4> ras_to_lps(const tipl::matrix<4,4>& ras)
+    {
+        return lps_to_ras(ras);
+    }
+
+    tipl::vector<3> voxel_size_from_affine(const tipl::matrix<4,4>& affine)
+    {
+        tipl::vector<3> vs;
+        for(int row = 0; row < 3; ++row)
+        {
+            tipl::vector<3> axis;
+            axis[0] = affine[row*4+0];
+            axis[1] = affine[row*4+1];
+            axis[2] = affine[row*4+2];
+            vs[row] = float(axis.length());
+        }
+        return vs;
+    }
+
+    std::vector<std::vector<float> > affine_to_vector(const tipl::matrix<4,4>& affine)
+    {
+        std::vector<std::vector<float> > out(4,std::vector<float>(4,0.0f));
+        for(int i = 0; i < 4; ++i)
+            for(int j = 0; j < 4; ++j)
+                out[i][j] = affine[i*4+j];
+        return out;
+    }
+
+    std::string sanitize_trx_name(std::string name)
+    {
+        if(name.empty())
+            return "group";
+        for(auto& ch : name)
+            if(ch == '/' || ch == '\\' || ch == ' ')
+                ch = '_';
+        return name;
+    }
+}
 inline unsigned int get_cluster_color(const std::vector<unsigned int>& tract_color)
 {
     return tract_color.empty() ? uint32_t(default_tract_color) : tract_color.front();
@@ -701,6 +754,118 @@ bool TractModel::load_tracts_from_file(const std::string& file_name,fib_data* ha
         if(!tck.load_from_file(file_name,loaded_tract_data))
             return false;
     }
+    if (tipl::ends_with(file_name,"trx"))
+    {
+        try
+        {
+            std::unique_ptr<trxmmap::TrxFile<half> > trx(trxmmap::load_from_zip<half>(file_name));
+            if(!trx.get())
+                return false;
+            if(!trx->header.contains("DIMENSIONS") || !trx->header.contains("VOXEL_TO_RASMM"))
+                return false;
+
+            const auto& dims = trx->header["DIMENSIONS"];
+            if(dims.size() < 3)
+                return false;
+            geo[0] = dims[0];
+            geo[1] = dims[1];
+            geo[2] = dims[2];
+
+            tipl::matrix<4,4> ras_affine;
+            for(int i = 0;i < 4;++i)
+                for(int j = 0;j < 4;++j)
+                    ras_affine[i*4+j] = trx->header["VOXEL_TO_RASMM"][i][j];
+            source_trans_to_mni = ras_to_lps(ras_affine);
+            vs = voxel_size_from_affine(source_trans_to_mni);
+
+            const auto& data = trx->streamlines->_data;
+            const auto& offsets = trx->streamlines->_offsets;
+            const auto offset_rows = offsets.rows();
+            if(offset_rows == 0)
+                return false;
+            const size_t nb_streamlines = size_t(offset_rows-1);
+            loaded_tract_data.resize(nb_streamlines);
+            for(size_t s = 0; s < nb_streamlines; ++s)
+            {
+                const size_t start = size_t(offsets(int(s),0));
+                const size_t end = size_t(offsets(int(s)+1,0));
+                if(end < start || end > size_t(data.rows()))
+                    return false;
+                auto& tract = loaded_tract_data[s];
+                tract.resize((end-start)*3);
+                for(size_t i = start, pos = 0; i < end; ++i, pos += 3)
+                {
+                    tract[pos] = float(data(int(i),0));
+                    tract[pos+1] = float(data(int(i),1));
+                    tract[pos+2] = float(data(int(i),2));
+                }
+            }
+
+            if(!trx->groups.empty())
+            {
+                std::vector<unsigned int> group_assignment(nb_streamlines, std::numeric_limits<unsigned int>::max());
+                tract_cluster_names.clear();
+                bool has_overlap = false;
+                for(const auto& kv : trx->groups)
+                {
+                    const unsigned int group_id = tract_cluster_names.size();
+                    tract_cluster_names.push_back(kv.first);
+                    const auto& matrix = kv.second->_matrix;
+                    for(int r = 0; r < matrix.rows(); ++r)
+                        for(int c = 0; c < matrix.cols(); ++c)
+                        {
+                            const uint32_t index = matrix(r,c);
+                            if(index >= nb_streamlines)
+                                continue;
+                            if(group_assignment[index] != std::numeric_limits<unsigned int>::max() &&
+                               group_assignment[index] != group_id)
+                                has_overlap = true;
+                            else
+                                group_assignment[index] = group_id;
+                        }
+                }
+                bool all_assigned = std::all_of(group_assignment.begin(),group_assignment.end(),
+                                                [](unsigned int v){return v != std::numeric_limits<unsigned int>::max();});
+                if(!all_assigned)
+                {
+                    const unsigned int ungrouped_id = tract_cluster_names.size();
+                    tract_cluster_names.push_back("ungrouped");
+                    for(auto& v : group_assignment)
+                        if(v == std::numeric_limits<unsigned int>::max())
+                            v = ungrouped_id;
+                    all_assigned = true;
+                }
+                if(has_overlap)
+                    tipl::out() << "TRX groups overlap; assigning streamlines to the first matching group.";
+                if(all_assigned)
+                {
+                    loaded_tract_cluster.resize(nb_streamlines);
+                    for(size_t i = 0; i < nb_streamlines; ++i)
+                        loaded_tract_cluster[i] = group_assignment[i];
+                }
+            }
+
+            if(!trx->data_per_streamline.empty())
+            {
+                for(const auto& kv : trx->data_per_streamline)
+                {
+                    const auto& matrix = kv.second->_matrix;
+                    if(matrix.rows() == int(nb_streamlines) && matrix.cols() == 1)
+                    {
+                        loaded_values.resize(nb_streamlines);
+                        for(size_t i = 0; i < nb_streamlines; ++i)
+                            loaded_values[i] = float(matrix(int(i),0));
+                        break;
+                    }
+                }
+            }
+        }
+        catch(const std::exception& e)
+        {
+            tipl::out() << "TRX load failed: " << e.what();
+            return false;
+        }
+    }
 
 
     if(loaded_tract_cluster.size() == loaded_tract_data.size())
@@ -709,7 +874,10 @@ bool TractModel::load_tracts_from_file(const std::string& file_name,fib_data* ha
         loaded_tract_cluster.swap(tract_cluster);
     }
     else
+    {
         tract_cluster.clear();
+        tract_cluster_names.clear();
+    }
 
 
     // handle trans_to_mni differences
@@ -898,6 +1066,88 @@ bool TractModel::save_tracts_to_file(const std::string& file_name)
     tipl::out() << "save " << tract_data.size() << " tracts to " << file_name;
     tipl::out() << "dim:" << geo << " vs:" << vs;
     tipl::out() << "trans:" << trans_to_mni;
+    if(tipl::ends_with(file_name,"trx"))
+    {
+        try
+        {
+            const size_t nb_streamlines = tract_data.size();
+            size_t nb_vertices = 0;
+            for(const auto& tract : tract_data)
+                nb_vertices += tract.size()/3;
+            if(nb_vertices > size_t(std::numeric_limits<int>::max()) ||
+               nb_streamlines > size_t(std::numeric_limits<int>::max()))
+            {
+                tipl::out() << "TRX save failed: tract count exceeds TRX int limits.";
+                return false;
+            }
+
+            trxmmap::TrxFile<half> trx_file{int(nb_vertices), int(nb_streamlines)};
+            trx_file.header["DIMENSIONS"] = {geo[0], geo[1], geo[2]};
+            trx_file.header["NB_VERTICES"] = int(nb_vertices);
+            trx_file.header["NB_STREAMLINES"] = int(nb_streamlines);
+            trx_file.header["VOXEL_TO_RASMM"] = affine_to_vector(lps_to_ras(trans_to_mni));
+
+            size_t vertex_index = 0;
+            for(size_t s = 0; s < nb_streamlines; ++s)
+            {
+                const size_t n_points = tract_data[s].size()/3;
+                trx_file.streamlines->_offsets(int(s),0) = uint64_t(vertex_index);
+                trx_file.streamlines->_lengths(int(s)) = uint32_t(n_points);
+                for(size_t p = 0; p < n_points; ++p)
+                {
+                    const size_t src = p*3;
+                    trx_file.streamlines->_data(int(vertex_index+p),0) = half(tract_data[s][src]);
+                    trx_file.streamlines->_data(int(vertex_index+p),1) = half(tract_data[s][src+1]);
+                    trx_file.streamlines->_data(int(vertex_index+p),2) = half(tract_data[s][src+2]);
+                }
+                vertex_index += n_points;
+            }
+            if(nb_streamlines)
+                trx_file.streamlines->_offsets(int(nb_streamlines),0) = uint64_t(vertex_index);
+
+            if(!tract_cluster.empty() && tract_cluster.size() == tract_data.size())
+            {
+                std::map<unsigned int,std::vector<uint32_t> > clusters;
+                for(size_t i = 0; i < tract_cluster.size(); ++i)
+                    clusters[tract_cluster[i]].push_back(uint32_t(i));
+                for(const auto& kv : clusters)
+                {
+                    std::string group_name = (kv.first < tract_cluster_names.size() && !tract_cluster_names[kv.first].empty()) ?
+                                tract_cluster_names[kv.first] : std::string("cluster_") + std::to_string(kv.first);
+                    group_name = sanitize_trx_name(group_name);
+                    const auto& indices = kv.second;
+                    auto group = new trxmmap::MMappedMatrix<uint32_t>();
+                    std::tuple<int,int> shape = std::make_tuple(int(indices.size()),1);
+                    std::string filename = trx_file._uncompressed_folder_handle + "/group_" + group_name + ".uint32";
+                    group->mmap = trxmmap::_create_memmap(filename, shape, "w+", "uint32");
+                    new (&(group->_matrix)) Eigen::Map<Eigen::Matrix<uint32_t, Eigen::Dynamic, Eigen::Dynamic>>(reinterpret_cast<uint32_t*>(group->mmap.data()), std::get<0>(shape), std::get<1>(shape));
+                    for(size_t i = 0; i < indices.size(); ++i)
+                        group->_matrix(int(i),0) = indices[i];
+                    trx_file.groups[group_name] = group;
+                }
+            }
+
+            if(!loaded_values.empty() && loaded_values.size() == tract_data.size())
+            {
+                auto dps = new trxmmap::MMappedMatrix<half>();
+                std::tuple<int,int> shape = std::make_tuple(int(nb_streamlines),1);
+                std::string filename = trx_file._uncompressed_folder_handle + "/dps_dsi_loaded_values.float16";
+                dps->mmap = trxmmap::_create_memmap(filename, shape, "w+", "float16");
+                new (&(dps->_matrix)) Eigen::Map<Eigen::Matrix<half, Eigen::Dynamic, Eigen::Dynamic>>(reinterpret_cast<half*>(dps->mmap.data()), std::get<0>(shape), std::get<1>(shape));
+                for(size_t i = 0; i < loaded_values.size(); ++i)
+                    dps->_matrix(int(i),0) = half(loaded_values[i]);
+                trx_file.data_per_streamline["dsi_loaded_values"] = dps;
+            }
+
+            trxmmap::save(trx_file,file_name,ZIP_CM_STORE);
+            return true;
+        }
+        catch(const std::exception& e)
+        {
+            tipl::out() << "TRX save failed: " << e.what();
+            return false;
+        }
+    }
     if(tipl::ends_with(file_name,"tt.gz"))
     {
         return TinyTrack::save_to_file(file_name,geo,vs,trans_to_mni,
@@ -1153,7 +1403,7 @@ std::string TractModel::get_obj(unsigned int& coordinate_count,
 //---------------------------------------------------------------------------
 bool TractModel::save_all(const std::string& file_name,
                           const std::vector<std::shared_ptr<TractModel> >& all)
-{    
+{
     if(all.empty())
         return false;
     tipl::progress prog("save " + file_name);
@@ -1193,6 +1443,32 @@ bool TractModel::save_all(const std::string& file_name,
                 all_tract[pos].swap(tract[j]);
         }
         if(!result)
+            return false;
+    }
+    if (tipl::ends_with(file_name,".trx"))
+    {
+        std::vector<std::vector<float> > all_tract;
+        std::vector<unsigned int> cluster;
+        std::vector<std::string> cluster_names;
+        cluster_names.reserve(all.size());
+        for(size_t cluster_index = 0; cluster_index < all.size(); ++cluster_index)
+        {
+            cluster_names.push_back(all[cluster_index]->name.empty() ?
+                                    std::string("cluster_") + std::to_string(cluster_index) :
+                                    all[cluster_index]->name);
+            auto& tract = all[cluster_index]->tract_data;
+            for (size_t j = 0;j < tract.size();++j)
+            {
+                all_tract.push_back(tract[j]);
+                cluster.push_back(cluster_index);
+            }
+        }
+        TractModel combined(*all[0]);
+        combined.clear();
+        combined.add_tracts(all_tract);
+        combined.tract_cluster.swap(cluster);
+        combined.tract_cluster_names.swap(cluster_names);
+        if(!combined.save_tracts_to_file(file_name))
             return false;
     }
     if (tipl::ends_with(file_name,".txt"))
@@ -1594,7 +1870,7 @@ bool TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select
 }
 //---------------------------------------------------------------------------
 bool TractModel::delete_repeated(float d)
-{   
+{
     std::vector<std::vector<size_t> > x_reg;
     std::vector<size_t> track_location1,track_location2;
     {

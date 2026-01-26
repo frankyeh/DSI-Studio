@@ -106,7 +106,7 @@ bool command_history::get_filename(QWidget* parent,std::string& filename,const s
                                 (std::filesystem::path(default_parent_path)/
                                     (post_fix[0] == '.' ? default_stem + post_fix : post_fix)).string()));
     if(tipl::ends_with(current_cmd,"_tracts") || tipl::ends_with(current_cmd,"_tract"))
-        filter = "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;MAT files (*.mat)";
+        filter = "Tract files (*.tt.gz *tt.gz *trk.gz *.trk *.trx);;MAT files (*.mat)";
     else
     if(tipl::ends_with(current_cmd,"_regions") || tipl::ends_with(current_cmd,"_region") ||
        tipl::ends_with(current_cmd,"_volume"))
@@ -313,7 +313,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 ui->perform_tracking->hide();
                 ui->stop_tracking->hide();
                 ui->enable_auto_tract->setText("Enable Tractography...");
-            }            
+            }
         }
         {
             tipl::out() << "prepare template and atlases" << std::endl;
@@ -373,7 +373,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 set_data("fa_threshold",0.0f);
                 set_data("step_size",0.0f);
                 set_data("turning_angle",0.0f);
-                set_data("tube_diameter",0.15f);                
+                set_data("tube_diameter",0.15f);
             }
             set_data("min_length",handle->min_length());
             set_data("max_length",handle->max_length());
@@ -587,7 +587,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         connect(ui->actionPaint_Tracts,&QAction::triggered, this,[this](void){glWidget->setCursor(Qt::CrossCursor);glWidget->editing_option = GLWidget::selecting;tractWidget->edit_option = TractTableWidget::paint;});
         connect(ui->actionMove_Objects,&QAction::triggered, this,[this](void){glWidget->setCursor(Qt::CrossCursor);glWidget->editing_option = GLWidget::moving;});
 
-    } 
+    }
     {
         connect(ui->actionRestore_window_layout,&QAction::triggered, this,[this](void){restoreGeometry(default_geo);restoreState(default_state);});
     }
@@ -1080,7 +1080,8 @@ void tracking_window::dropEvent(QDropEvent *event)
     for(auto each : droppedUrls)
     {
         auto file_name = each.toLocalFile();
-        if(file_name.endsWith("tt.gz"))
+        if(file_name.endsWith("tt.gz") || file_name.endsWith("trx") || file_name.endsWith("trk") ||
+           file_name.endsWith("trk.gz") || file_name.endsWith("tck"))
             tracts << file_name;
         if(file_name.endsWith("nii.gz") || file_name.endsWith("nii"))
         {

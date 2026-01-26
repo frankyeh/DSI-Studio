@@ -673,7 +673,8 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
                 }
             }
             if(tipl::ends_with(output,".trk.gz") ||
-               tipl::ends_with(output,".tt.gz"))
+               tipl::ends_with(output,".tt.gz") ||
+               tipl::ends_with(output,".trx"))
             {
                 tipl::out() << "saving multiple tracts into one file: " << output;
                 if(!TractModel::save_all(output,tracts))

@@ -283,7 +283,7 @@ void TractTableWidget::fetch_tracts(void)
     bool has_thread = false;
     for(unsigned int index = 0;index < thread_data.size();++index)
         if(thread_data[index].get())
-        {    
+        {
             {
                 auto lock = tract_rendering[index]->start_writing(false);
                 if(lock.get())
@@ -358,6 +358,8 @@ QString TractTableWidget::output_format(void)
         return ".trk.gz";
     case 2:
         return ".txt";
+    case 3:
+        return ".trx";
     }
     return "";
 }
@@ -604,7 +606,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         // allow for selecting multiple files
         auto file_list = QFileDialog::getOpenFileNames(this,QString::fromStdString(cmd[0]),
                          QString::fromStdString(cur_tracking_window.history.file_stem()) + output_format(),
-                         "Tract files (*tt.gz *.trk *trk.gz *.tck);;Text files (*.txt);;All files (*)");
+                         "Tract files (*tt.gz *.trk *trk.gz *.tck *.trx);;Text files (*.txt);;All files (*)");
         if(file_list.isEmpty())
             return run->canceled();
         // allow sub command to be recorded
