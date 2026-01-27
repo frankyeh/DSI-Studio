@@ -275,35 +275,51 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
     for(auto& each : handle->slices)
         each->get_image();
 
-    for(auto each : tipl::split(po.get("connectivity"),','))
+    for(const auto& each_connectivity : tipl::split(po.get("connectivity"),','))
+    for(const auto& each_connectivity_type : tipl::split(po.get("connectivity_type"),','))
     {
+        tipl::out() << "generating region-to-region connectome using " << each_connectivity << " by " << each_connectivity_type;
+
         ConnectivityMatrix data(handle);
-        if(!get_parcellation(po,data,each))
+        if(!get_parcellation(po,data,each_connectivity))
             return false;
         auto save_file_name = output_name + "." + data.name;
-        if(!data.calculate(*(tract_model.get()),(po.get("connectivity_type","pass") == "end")))
+        if(!data.calculate(*(tract_model.get()),(each_connectivity_type == "end")))
         {
             tipl::error() << data.error_msg << std::endl;
             return false;
         }
 
-        tipl::out() << "saving region-to-region connectome";
+        auto connectivity_value = tipl::split(po.get("connectivity_value","all"),',');
+        auto connectivity_output = po.get("connectivity_output","all");
         for(size_t m_index = 0;m_index < data.metrics.size();++m_index)
         {
             data.set_metrics(m_index);
 
             std::string metrics_name = data.metrics[m_index].substr(0,data.metrics[m_index].find('('));
             std::replace(metrics_name.begin(),metrics_name.end(),' ','_');
-
+            bool included = connectivity_value.size() == 1 && connectivity_value.front() == "all";
+            for(const auto& each_connectivity_value : connectivity_value)
+                if(tipl::contains(metrics_name,each_connectivity_value))
+                {
+                    included = true;
+                    break;
+                }
+            if(!included)
+                continue;
             std::string file_name_stat = save_file_name + "." + metrics_name;
-            data.save_to_file(file_name_stat + ".connectivity.mat");
-            data.save_connectogram(file_name_stat + ".connectogram.txt");
-            data.save_network_property(file_name_stat + ".network_measures.txt");
-
+            if(connectivity_output == "all" || tipl::contains(connectivity_output,"matrix"))
+                data.save_to_file(file_name_stat + ".connectivity.mat");
+            if(connectivity_output == "all" || tipl::contains(connectivity_output,"connectogram"))
+                data.save_connectogram(file_name_stat + ".connectogram.txt");
+            if(connectivity_output == "all" || tipl::contains(connectivity_output,"network"))
+                data.save_network_property(file_name_stat + ".network_measures.txt");
         }
-
-        tipl::out() << "generating tract-to-region connectome";
-        data.save_t2r(save_file_name + ".tract2region.txt");
+        if(connectivity_output == "all" || tipl::contains(connectivity_output,"t2r"))
+        {
+            tipl::out() << "generating tract-to-region connectome";
+            data.save_t2r(save_file_name + ".tract2region.txt",connectivity_output);
+        }
     }
     return true;
 }

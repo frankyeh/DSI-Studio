@@ -902,7 +902,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                 p.calculate(*each.get(),false);
                 if(tracts.size() > 1)
                     result += each->name + "\n";
-                result += p.get_t2r();
+                result += p.get_t2r("all");
             }
             title = "Tract-To-Region Connectome";
             default_file += "_" + tracts.front()->name + "_t2r.txt";

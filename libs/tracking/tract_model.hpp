@@ -259,8 +259,8 @@ public:
     ConnectivityMatrix(std::shared_ptr<fib_data> handle_):handle(handle_){}
     bool load_from_atlas(std::string atlas_name);
     void load_from_regions(const std::vector<std::shared_ptr<ROIRegion> >& regions,std::string name_);
-    std::string get_t2r(void) const;
-    bool save_t2r(const std::string& filename) const;
+    std::string get_t2r(const std::string& metrics) const;
+    bool save_t2r(const std::string& filename,const std::string& metrics) const;
 
 public:
     std::vector<std::string> metrics;

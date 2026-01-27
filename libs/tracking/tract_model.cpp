@@ -3386,15 +3386,25 @@ void ConnectivityMatrix::load_from_regions(const std::vector<std::shared_ptr<ROI
     region_map.clear();
 }
 
-std::string ConnectivityMatrix::get_t2r(void) const
+std::string ConnectivityMatrix::get_t2r(const std::string& m) const
 {
     std::ostringstream out;
     out << "metrics";
     for(auto& each : region_name)
         out << "\t" << each;
     out << std::endl;
+    auto metrics_list = tipl::split(m,',');
     for(size_t i = 0;i < metrics.size();++i)
     {
+        bool included = m == "all";
+        for(const auto& each : metrics_list)
+            if(tipl::contains(metrics[i],each))
+            {
+                included = true;
+                break;
+            }
+        if(!included)
+            continue;
         out << metrics[i];
         for(size_t j = 0;j < region_points.size();++j)
             out << "\t" << metrics_data[j][i];
@@ -3402,7 +3412,7 @@ std::string ConnectivityMatrix::get_t2r(void) const
     }
     return out.str();
 }
-bool ConnectivityMatrix::save_t2r(const std::string& filename) const
+bool ConnectivityMatrix::save_t2r(const std::string& filename,const std::string& metrics) const
 {
     tipl::out() << "saving " << filename;
     std::ofstream out(filename);
@@ -3411,7 +3421,7 @@ bool ConnectivityMatrix::save_t2r(const std::string& filename) const
         error_msg = "cannot write output to " + filename;
         return false;
     }
-    out << get_t2r();
+    out << get_t2r(metrics);
     return !!out;
 }
 
