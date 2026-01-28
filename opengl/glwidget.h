@@ -12,7 +12,11 @@
   #include <windows.h>
   #include <GL/glu.h>
 #elif defined(__APPLE__)
-  #define GL_SILENCE_DEPRECATION
+
+  #ifndef GL_SILENCE_DEPRECATION
+    #define GL_SILENCE_DEPRECATION
+  #endif
+
   #include <OpenGL/glu.h>
 #else
   #include <GL/glu.h>
