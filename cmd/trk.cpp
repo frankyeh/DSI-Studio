@@ -292,6 +292,7 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
 
         auto connectivity_value = tipl::split(po.get("connectivity_value","all"),',');
         auto connectivity_output = po.get("connectivity_output","all");
+        std::string ignoring_list;
         for(size_t m_index = 0;m_index < data.metrics.size();++m_index)
         {
             data.set_metrics(m_index);
@@ -306,7 +307,12 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                     break;
                 }
             if(!included)
+            {
+                if(!ignoring_list.empty())
+                    ignoring_list += ",";
+                ignoring_list += metrics_name;
                 continue;
+            }
             std::string file_name_stat = save_file_name + "." + metrics_name;
             if(connectivity_output == "all" || tipl::contains(connectivity_output,"matrix"))
                 data.save_to_file(file_name_stat + ".connectivity.mat");
@@ -320,7 +326,9 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
             tipl::out() << "generating tract-to-region connectome";
             data.save_t2r(save_file_name + ".tract2region.txt",connectivity_output);
         }
+        tipl::out() << "the metrics ignored: " << ignoring_list;
     }
+
     return true;
 }
 
