@@ -676,7 +676,7 @@ void RegToolBox::on_actionTemplate_Image_triggered()
 template <bool subjectToTemplate>
 void applyWarping(dual_reg& reg)
 {
-    QString filter = "Images (*.nii *nii.gz);;Tracts (*tt.gz);;All files (*)";
+    QString filter = "Images (*.nii *nii.gz);;Tracts (*tt.gz *.trx);;All files (*)";
     QStringList file_list = QFileDialog::getOpenFileNames(nullptr,
                                                           subjectToTemplate ? "Open Subject Image" : "Open Template Image",
                                                           QDir::currentPath(), filter);

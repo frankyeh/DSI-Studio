@@ -323,7 +323,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->canceled();
 
         slice_need_update = false; // turn off simple drawing
-        scene.paint_image(scene.view_image,false);     
+        scene.paint_image(scene.view_image,false);
         if(!scene.view_image.save(cmd[1].c_str()))
             return run->failed("cannot save mapping to " + cmd[1]);
         return run->succeed();
@@ -410,6 +410,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 tractWidget->command({"delete_all_tracts"});;
             for(const auto& each : tipl::search_files(cmd[1]+"/tracts","*tt.gz"))
                 tractWidget->command({"open_tract",each});
+            for(const auto& each : tipl::search_files(cmd[1]+"/tracts","*trx"))
+                tractWidget->command({"open_tract",each});
         }
 
         prog(1,5);
@@ -443,7 +445,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 regionWidget->command({"open_region",each});
         }
 
-        prog(4,5);      
+        prog(4,5);
 
         for(const auto& line : tipl::read_text_file(cmd[1] + "/commands.csv"))
             command(tipl::split(line,','));

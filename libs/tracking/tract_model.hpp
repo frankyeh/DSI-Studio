@@ -32,6 +32,7 @@ public:
         // for loading multiple clusters
         // it can be empty
         std::vector<unsigned int> tract_cluster;
+        std::vector<std::string> tract_cluster_names;
         float loaded_value = 0.0f;
         std::vector<float> loaded_values;
 public:
@@ -93,6 +94,8 @@ public:
                 all_tracts.push_back(tract_model);
                 return all_tracts;
             }
+            if(!tract_model->tract_cluster_names.empty())
+                return separate_tracts(tract_model,tract_model->tract_cluster,tract_model->tract_cluster_names);
             std::ifstream in(std::string(file_name)+".txt");
             return separate_tracts(tract_model,tract_model->tract_cluster,
                 std::vector<std::string>((std::istream_iterator<std::string>(in)),(std::istream_iterator<std::string>())));
@@ -195,7 +198,7 @@ public:
 
         size_t get_deleted_track_count(void) const{return deleted_tract_data.size();}
         size_t get_visible_track_count(void) const{return tract_data.size();}
-        
+
         auto get_tract_point(unsigned int index,unsigned int pos) const{return tipl::vector<3>(&tract_data[index][pos + (pos << 1)]);}
         const std::vector<float>& get_tract(unsigned int index) const{return tract_data[index];}
         const std::vector<std::vector<float> >& get_tracts(void) const{return tract_data;}
