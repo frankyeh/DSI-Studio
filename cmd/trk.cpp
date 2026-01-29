@@ -276,7 +276,7 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
         each->get_image();
 
     for(const auto& each_connectivity : tipl::split(po.get("connectivity"),','))
-    for(const auto& each_connectivity_type : tipl::split(po.get("connectivity_type"),','))
+    for(const auto& each_connectivity_type : tipl::split(po.get("connectivity_type","pass"),','))
     {
         tipl::out() << "generating region-to-region connectome using " << each_connectivity << " by " << each_connectivity_type;
 
