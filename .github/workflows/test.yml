@@ -65,7 +65,7 @@ jobs:
        cd data
        for f in *.nii.gz;
         do
-          ../dsi_studio/dsi_studio --action=img --source=$f --cmd=change_type:3+normalize_otsu_median+upper_threshold:1+normalize:1+change_type:0 --output=../${f/%.nii/.nii.gz}
+          ../dsi-studio/dsi_studio --action=img --source=$f --cmd=change_type:3+normalize_otsu_median+upper_threshold:1+normalize:1+change_type:0 --output=../${f/%.nii/.nii.gz}
         done
        
        
