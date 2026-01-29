@@ -192,7 +192,7 @@ public:
 private:
     std::shared_ptr<RoiMgr> roi_mgr;
     std::vector<float> track_buffer;
-	mutable std::vector<float> reverse_buffer;
+    mutable std::vector<float> reverse_buffer;
     float* buffer_front_pos;
     float* buffer_back_pos;
     unsigned int total_steps3;
@@ -213,6 +213,11 @@ private:
     {
         return !roi_mgr->within_terminative(position) &&
                total_steps3 < current_max_steps3;
+    }
+    inline bool dominant_dim_is_negative(const tipl::vector<3,float>& v) const
+    {
+        float ax = std::abs(v[0]), ay = std::abs(v[1]), az = std::abs(v[2]);
+        return v[(ay > ax) ? ((az > ay) ? 2 : 1) : ((az > ax) ? 2 : 0)] < 0.0f;
     }
 public:
     void init_buffer(void)
@@ -238,7 +243,7 @@ public:
             total_steps3 += 3;
             if(!track(*this))
                 break;
-		}
+        }
 
         end_point1 = position;
         position = seed_pos;
@@ -254,13 +259,12 @@ public:
             total_steps3 += 3;
         }
 
+        if(total_steps3 >= current_min_steps3 &&
+           roi_mgr->within_roi(buffer_front_pos,total_steps3) &&
+           roi_mgr->fulfill_end_point(position,end_point1))
         {
             buffer_back_pos-=3;
-            tipl::vector<3> tail(buffer_back_pos);
-            tail -= tipl::vector<3>(buffer_front_pos);
-            float x_ = std::abs(tail[0]),y_ = std::abs(tail[0]), z_ = std::abs(tail[0]);
-            size_t max_dim = (y_ > x_) ? ((z_ > y_) ? 2 : 1) : ((z_ > x_) ? 2 : 0);
-            if(tail[max_dim] < 0.0f)
+            if(dominant_dim_is_negative(tipl::vector<3>(buffer_back_pos)-tipl::vector<3>(buffer_front_pos)))
                 for(auto dst = buffer_front_pos = reverse_buffer.data(),end_dst = dst + total_steps3;
                     dst < end_dst;dst += 3,buffer_back_pos -= 3)
                 {
@@ -268,13 +272,10 @@ public:
                     dst[1] = buffer_back_pos[1];
                     dst[2] = buffer_back_pos[2];
                 }
-        }
-        if(total_steps3 >= current_min_steps3 &&
-           roi_mgr->within_roi(buffer_front_pos,total_steps3) &&
-           roi_mgr->fulfill_end_point(position,end_point1))
             return buffer_front_pos;
+        }
         return nullptr;
-	}
+    }
     auto tracking(unsigned char m,unsigned char fib_order)
     {
         auto round_pos = position;
@@ -283,6 +284,8 @@ public:
         if(!trk->dim.is_valid(round_pos) ||
            !get_dir(position,trk->get_fib(tipl::pixel_index<3>(round_pos.data(),trk->dim).index(),fib_order),dir))
             return std::pair{p, p};
+        if(dominant_dim_is_negative(dir))
+            dir = -dir;
         p = (m == 0) ? start_tracking(EulerTracking()) : start_tracking(RungeKutta4());
         return p ? std::pair{p, p + total_steps3} : std::pair{p, p};
     }
