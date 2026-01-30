@@ -2035,7 +2035,7 @@ bool src_data::run_plugin(std::string exec_name,
             return false;
         }
         #else
-        std::string fsl_path = "/usr/local/fsl/bin";
+        std::string fsl_path = "/usr/local/fsl/bin/";
         if (!std::filesystem::exists(fsl_path))
         {
             const QString fsl = qEnvironmentVariable("FSLDIR");
