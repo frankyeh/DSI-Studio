@@ -10,6 +10,8 @@
 #include <iomanip>
 #include <limits>
 #include <cmath>
+#include <algorithm>
+#include <cctype>
 extern std::vector<std::string> fa_template_list;
 auto_track::auto_track(QWidget *parent) :
     QMainWindow(parent),
@@ -108,9 +110,58 @@ int trk_post(tipl::program_option<tipl::out>& po,
              std::string tract_file_name,bool output_track);
 std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector<std::string>& file_list,int& prog)
 {
-    const bool chen_mode = po.get("chen_mode",0);
-    const bool debug_shape = po.get("debug_shape",0);
-    const bool debug_streamlines = po.get("debug_streamlines",0) || debug_shape;
+    bool debug_streamlines = false;
+    bool debug_shape = false;
+    bool debug_template_tracks = false;
+    bool debug_template_images = false;
+    auto enable_all_debug = [&]()
+    {
+        debug_streamlines = true;
+        debug_shape = true;
+        debug_template_tracks = true;
+        debug_template_images = true;
+    };
+    if(po.has("debug"))
+    {
+        std::string debug_option = po.get("debug",std::string());
+        auto items = tipl::split(debug_option,',');
+        bool has_item = false;
+        for(auto& raw_item : items)
+        {
+            auto trim_item = [](std::string text)
+            {
+                auto is_space = [](unsigned char c){return std::isspace(c);};
+                text.erase(text.begin(),std::find_if_not(text.begin(),text.end(),is_space));
+                text.erase(std::find_if_not(text.rbegin(),text.rend(),is_space).base(),text.end());
+                std::transform(text.begin(),text.end(),text.begin(),
+                               [](unsigned char c){return std::tolower(c);});
+                return text;
+            };
+            std::string item = trim_item(raw_item);
+            if(item.empty())
+                continue;
+            has_item = true;
+            if(item == "all" || item == "true" || item == "1")
+            {
+                enable_all_debug();
+                break;
+            }
+            if(item == "streamlines")
+                debug_streamlines = true;
+            else if(item == "shape")
+                debug_shape = true;
+            else if(item == "template_images")
+                debug_template_images = true;
+            else if(item == "template_streamlines")
+                debug_template_tracks = true;
+            else
+                tipl::warning() << "unknown debug option: " << item;
+        }
+        if(!has_item)
+            enable_all_debug();
+    }
+    if(debug_shape)
+        debug_streamlines = true;
     const bool delete_repeats = po.has("delete_repeat") || po.get("action") == "atk" || po.has("track_id");
     const float delete_repeat_distance = po.get("delete_repeat",float(0.5f));
     std::string trk_format = po.get("trk_format","tt.gz");
@@ -119,13 +170,6 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
     size_t yield_check_count = 10.0f/yield_rate;
     bool overwrite = po.get("overwrite",0);
     uint32_t thread_count = tipl::max_thread_count;
-    if(chen_mode)
-    {
-        po.set("track_voxel_ratio",po.get("track_voxel_ratio",2.0f));
-        po.set("tip_iteration",po.get("tip_iteration",4));
-        po.set("use_roi",po.get("use_roi",0));
-        po.set("check_ending",po.get("check_ending",1));
-    }
     std::vector<float> tolerance;
     {
         if(!po.has("export"))
@@ -220,14 +264,8 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
         tipl::out() << "processing " << cur_file_base_name << std::endl;
         std::shared_ptr<fib_data> handle;
         std::string fib_base = QFileInfo(fib_file_name.c_str()).baseName().toStdString();
-        bool save_atlas_track = po.has("template_tracks_in_native_space");
-        bool save_template_images = po.has("templates_images_in_native_space");
-        std::string atlas_track_option;
-        if(save_atlas_track)
-            atlas_track_option = po.get("template_tracks_in_native_space",std::string());
-        std::string template_images_option;
-        if(save_template_images)
-            template_images_option = po.get("templates_images_in_native_space",std::string());
+        bool save_atlas_track = debug_template_tracks;
+        bool save_template_images = debug_template_images;
 
         if(save_template_images)
         {
@@ -242,11 +280,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 return handle->error_msg + " at " + fib_file_name;
             if(handle->s2t.empty())
                 return std::string("no subject-to-template mapping at ") + fib_file_name;
-            std::string output_base = template_images_option;
-            if(output_base.empty())
-                output_base = dir + "/" + fib_base + ".template";
-            else if(std::filesystem::is_directory(output_base))
-                output_base = (std::filesystem::path(output_base) / (fib_base + ".template")).string();
+            std::string output_base = dir + "/" + fib_base + ".template";
             tipl::out() << "saving template images in native space to " << output_base;
             {
                 auto warped_qa = tipl::compose_mapping(handle->template_I,handle->s2t);
@@ -272,25 +306,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
             }
             if(!handle->load_track_atlas(true/*symmetric*/))
                 return handle->error_msg + " at " + fib_file_name;
-            std::string atlas_track_name = atlas_track_option;
-            if(atlas_track_name.empty())
-                atlas_track_name = dir + "/" + fib_base + ".atlas.tt.gz";
-            else if(std::filesystem::is_directory(atlas_track_name))
-                atlas_track_name = (std::filesystem::path(atlas_track_name) / (fib_base + ".atlas.tt.gz")).string();
-            if(!tipl::ends_with(atlas_track_name,"tt.gz") &&
-               !tipl::ends_with(atlas_track_name,".trk") &&
-               !tipl::ends_with(atlas_track_name,".trk.gz") &&
-               !tipl::ends_with(atlas_track_name,".tck") &&
-               !tipl::ends_with(atlas_track_name,".txt") &&
-               !tipl::ends_with(atlas_track_name,".mat") &&
-               !tipl::ends_with(atlas_track_name,".nii") &&
-               !tipl::ends_with(atlas_track_name,".nii.gz"))
-            {
-                std::string track_ext = trk_format;
-                if(!track_ext.empty() && track_ext[0] != '.')
-                    track_ext = "." + track_ext;
-                atlas_track_name += track_ext.empty() ? ".tt.gz" : track_ext;
-            }
+            std::string atlas_track_name = dir + "/" + fib_base + ".atlas.tt.gz";
             tipl::out() << "saving template tracks in native space to " << atlas_track_name;
             if(!handle->track_atlas || !handle->track_atlas->save_tracts_to_file(atlas_track_name))
                 return std::string("failed to save atlas track to ") + atlas_track_name;
@@ -503,47 +519,19 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         thread.param.step_size = po.get("step_size",thread.param.step_size);
                         thread.param.smooth_fraction = po.get("smoothing",thread.param.smooth_fraction);
 
-                        if(chen_mode)
-                        {
-                            auto track_ids = handle->get_track_ids(tract_name);
-                            float min_l = 0.0f,max_l = 0.0f;
-                            for(size_t idx = 0;idx < track_ids.size();++idx)
-                            {
-                                auto id = track_ids[idx];
-                                if(idx == 0)
-                                {
-                                    min_l = handle->tract_atlas_min_length[id];
-                                    max_l = handle->tract_atlas_max_length[id];
-                                }
-                                else
-                                {
-                                    min_l = std::min<float>(min_l,handle->tract_atlas_min_length[id]);
-                                    max_l = std::max<float>(max_l,handle->tract_atlas_max_length[id]);
-                                }
-                            }
-                            thread.param.min_length = handle->vs[0]*std::max<float>(tolerance[tracking_iteration],
-                                                                       min_l-2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
-                            thread.param.max_length = handle->vs[0]*(max_l+2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
-                        }
-                        else
-                        {
-                            auto minmax = handle->get_track_minmax_length(tract_name);
-                            thread.param.min_length = handle->vs[0]*std::max<float>(tolerance[tracking_iteration],
-                                                                       minmax.first-2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
-                            thread.param.max_length = handle->vs[0]*(minmax.second+2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
-                        }
+                        auto minmax = handle->get_track_minmax_length(tract_name);
+                        thread.param.min_length = handle->vs[0]*std::max<float>(tolerance[tracking_iteration],
+                                                                   minmax.first-2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
+                        thread.param.max_length = handle->vs[0]*(minmax.second+2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
                         tipl::out() << "min_length(mm): " << thread.param.min_length << std::endl;
                         tipl::out() << "max_length(mm): " << thread.param.max_length << std::endl;
-                        thread.param.tip_iteration = po.get("tip_iteration",chen_mode ? 4 : 32);
-                        if(chen_mode)
-                            thread.param.check_ending = po.get("check_ending",1) && !tipl::contains_case_insensitive(tract_name,"Cingulum");
-                        else
-                            thread.param.check_ending = po.get("check_ending",1);
-                        thread.param.track_voxel_ratio = po.get("track_voxel_ratio",chen_mode ? 2.0f : thread.param.track_voxel_ratio);
+                        thread.param.tip_iteration = po.get("tip_iteration",32);
+                        thread.param.check_ending = po.get("check_ending",1);
+                        thread.param.track_voxel_ratio = po.get("track_voxel_ratio",thread.param.track_voxel_ratio);
                     }
                     {
                         thread.roi_mgr->use_auto_track = true;
-                        thread.roi_mgr->use_roi = po.get("use_roi",chen_mode ? 0 : 1);
+                        thread.roi_mgr->use_roi = po.get("use_roi",1);
                         thread.roi_mgr->tract_name = tract_name;
                         thread.roi_mgr->tolerance_dis_in_icbm152_mm = tolerance[tracking_iteration];
                     }

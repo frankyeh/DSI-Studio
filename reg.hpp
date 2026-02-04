@@ -30,46 +30,6 @@ inline auto template_image_pre(const tipl::image<dim>& I)
     return template_image_pre(tipl::image<dim>(I));
 }
 
-inline size_t linear_with_mi(const tipl::image<3,float>& from,
-                             const tipl::vector<3>& from_vs,
-                             const tipl::image<3,float>& to,
-                             const tipl::vector<3>& to_vs,
-                             tipl::affine_transform<float>& arg,
-                             tipl::reg::reg_type reg_type,
-                             bool& terminated,
-                             const float (*bound)[8] = tipl::reg::reg_bound)
-{
-    auto new_to_vs = to_vs;
-    if(reg_type == tipl::reg::affine)
-        new_to_vs = tipl::reg::adjust_to_vs<tipl::out>(from,from_vs,to,to_vs);
-    if(new_to_vs != to_vs)
-        arg = tipl::transformation_matrix<float>(arg,from,from_vs,to,to_vs).to_affine_transform(from,from_vs,to,new_to_vs);
-    float result = tipl::reg::linear_reg<tipl::out,true>(tipl::reg::make_list(from),from_vs,
-                                                         tipl::reg::make_list(to),new_to_vs,
-                                                         arg,bound,reg_type,tipl::reg::mutual_info,
-                                                         true,has_cuda,terminated);
-    if(new_to_vs != to_vs)
-        arg = tipl::transformation_matrix<float>(arg,from,from_vs,to,new_to_vs).to_affine_transform(from,from_vs,to,to_vs);
-    return result;
-}
-
-inline size_t linear_with_mi(const tipl::image<3,float>& from,
-                             const tipl::vector<3>& from_vs,
-                             const tipl::image<3,float>& to,
-                             const tipl::vector<3>& to_vs,
-                             tipl::transformation_matrix<float>& T,
-                             tipl::reg::reg_type reg_type,
-                             bool& terminated,
-                             const float (*bound)[8] = tipl::reg::reg_bound)
-{
-    tipl::affine_transform<float> arg;
-    size_t result = linear_with_mi(from,from_vs,to,to_vs,arg,reg_type,terminated,bound);
-    tipl::out() << arg << std::endl;
-    T = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
-    tipl::out() << T << std::endl;
-    return result;
-}
-
 extern int map_ver;
 struct dual_reg{
     static constexpr int dimension = 3;
@@ -177,12 +137,5 @@ public:
 };
 
 
-
-namespace tipl
-{
-namespace reg
-{
-}
-}
 
 #endif//REG_HPP
