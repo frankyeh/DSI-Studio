@@ -2,6 +2,7 @@
 #define MNI_RECONSTRUCTION_HPP
 #include <QFileInfo>
 #include <chrono>
+#include <cmath>
 #include "basic_voxel.hpp"
 #include "basic_process.hpp"
 #include "gqi_process.hpp"
@@ -72,6 +73,32 @@ public:
             }
             else
             {
+                auto nonzero_voxels = [](const auto& image)
+                {
+                    size_t count = 0;
+                    for(size_t i = 0;i < image.size();++i)
+                        if(image[i])
+                            ++count;
+                    return count;
+                };
+                if(!reg.I[0].empty() && !reg.It[0].empty())
+                {
+                    auto subject_voxels = nonzero_voxels(reg.I[0]);
+                    auto template_voxels = nonzero_voxels(reg.It[0]);
+                    double subject_volume = double(subject_voxels) * reg.Ivs[0] * reg.Ivs[1] * reg.Ivs[2];
+                    double template_volume = double(template_voxels) * reg.Itvs[0] * reg.Itvs[1] * reg.Itvs[2];
+                    if(template_volume > 0.0)
+                        tipl::out() << "brain volume ratio (subject/template): "
+                                    << (subject_volume / template_volume);
+                }
+                reg.linear_restarts = 6;
+                // Use a wider affine search (especially scaling) for lifespan differences.
+                static const float lifespan_affine_bound[3][8] = {
+                    {1.0f,-1.0f,  0.5f,-0.5f,  3.0f,0.3f,  0.25f,-0.25f},
+                    {1.0f,-1.0f,  0.4f,-0.4f,  3.0f,0.3f,  0.25f,-0.25f},
+                    {1.0f,-1.0f,  0.4f,-0.4f,  3.0f,0.3f,  0.25f,-0.25f}
+                };
+                reg.bound = lifespan_affine_bound;
                 tipl::run("linear registration",[&](void)
                 {
                     reg.linear_reg(tipl::prog_aborted);
@@ -98,6 +125,24 @@ public:
             tipl::out() << "nonlinear R2: " << voxel.R2 << std::endl;
             if(voxel.R2 < 0.3f)
                 tipl::warning() << "poor registration found in nonlinear registration. Please check image quality or image orientation";
+            if(!reg.t2f_dis.empty())
+            {
+                float max_displacement_mm = 0.0f;
+                for(size_t i = 0;i < reg.t2f_dis.size();++i)
+                {
+                    const auto& v = reg.t2f_dis[i];
+                    float dx = v[0]*reg.Itvs[0];
+                    float dy = v[1]*reg.Itvs[1];
+                    float dz = v[2]*reg.Itvs[2];
+                    float dis = std::sqrt(dx*dx + dy*dy + dz*dz);
+                    if(dis > max_displacement_mm)
+                        max_displacement_mm = dis;
+                }
+                if(max_displacement_mm > 10.0f)
+                    tipl::warning() << "large nonlinear displacement detected (max "
+                                    << max_displacement_mm
+                                    << " mm). Please verify template-to-native alignment.";
+            }
 
             auto new_ItR = reg.ItR;
             auto new_Its = reg.Its;

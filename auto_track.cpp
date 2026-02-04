@@ -7,6 +7,9 @@
 #include "fib_data.hpp"
 #include "libs/tracking/tracking_thread.hpp"
 #include <filesystem>
+#include <iomanip>
+#include <limits>
+#include <cmath>
 extern std::vector<std::string> fa_template_list;
 auto_track::auto_track(QWidget *parent) :
     QMainWindow(parent),
@@ -106,6 +109,10 @@ int trk_post(tipl::program_option<tipl::out>& po,
 std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector<std::string>& file_list,int& prog)
 {
     const bool chen_mode = po.get("chen_mode",0);
+    const bool debug_shape = po.get("debug_shape",0);
+    const bool debug_streamlines = po.get("debug_streamlines",0) || debug_shape;
+    const bool delete_repeats = po.has("delete_repeat") || po.get("action") == "atk" || po.has("track_id");
+    const float delete_repeat_distance = po.get("delete_repeat",float(0.5f));
     std::string trk_format = po.get("trk_format","tt.gz");
     std::string tolerance_string = po.get("tolerance","22,26,30");
     float yield_rate = po.get("yield_rate",0.00001f);
@@ -214,9 +221,45 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
         std::shared_ptr<fib_data> handle;
         std::string fib_base = QFileInfo(fib_file_name.c_str()).baseName().toStdString();
         bool save_atlas_track = po.has("template_tracks_in_native_space");
+        bool save_template_images = po.has("templates_images_in_native_space");
         std::string atlas_track_option;
         if(save_atlas_track)
             atlas_track_option = po.get("template_tracks_in_native_space",std::string());
+        std::string template_images_option;
+        if(save_template_images)
+            template_images_option = po.get("templates_images_in_native_space",std::string());
+
+        if(save_template_images)
+        {
+            if(!handle.get())
+            {
+                handle = std::make_shared<fib_data>();
+                if(!handle->load_from_file(fib_file_name.c_str()))
+                   return handle->error_msg;
+                set_template(handle,po);
+            }
+            if(!handle->map_to_mni(tipl::show_prog))
+                return handle->error_msg + " at " + fib_file_name;
+            if(handle->s2t.empty())
+                return std::string("no subject-to-template mapping at ") + fib_file_name;
+            std::string output_base = template_images_option;
+            if(output_base.empty())
+                output_base = dir + "/" + fib_base + ".template";
+            else if(std::filesystem::is_directory(output_base))
+                output_base = (std::filesystem::path(output_base) / (fib_base + ".template")).string();
+            tipl::out() << "saving template images in native space to " << output_base;
+            {
+                auto warped_qa = tipl::compose_mapping(handle->template_I,handle->s2t);
+                if(!(tipl::io::gz_nifti(output_base + ".qa.nii.gz",std::ios::out) << handle->bind(warped_qa)))
+                    return std::string("failed to save warped template qa to ") + output_base + ".qa.nii.gz";
+            }
+            if(!handle->template_I2.empty())
+            {
+                auto warped_iso = tipl::compose_mapping(handle->template_I2,handle->s2t);
+                if(!(tipl::io::gz_nifti(output_base + ".iso.nii.gz",std::ios::out) << handle->bind(warped_iso)))
+                    return std::string("failed to save warped template iso to ") + output_base + ".iso.nii.gz";
+            }
+        }
 
         if(save_atlas_track)
         {
@@ -234,6 +277,20 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 atlas_track_name = dir + "/" + fib_base + ".atlas.tt.gz";
             else if(std::filesystem::is_directory(atlas_track_name))
                 atlas_track_name = (std::filesystem::path(atlas_track_name) / (fib_base + ".atlas.tt.gz")).string();
+            if(!tipl::ends_with(atlas_track_name,"tt.gz") &&
+               !tipl::ends_with(atlas_track_name,".trk") &&
+               !tipl::ends_with(atlas_track_name,".trk.gz") &&
+               !tipl::ends_with(atlas_track_name,".tck") &&
+               !tipl::ends_with(atlas_track_name,".txt") &&
+               !tipl::ends_with(atlas_track_name,".mat") &&
+               !tipl::ends_with(atlas_track_name,".nii") &&
+               !tipl::ends_with(atlas_track_name,".nii.gz"))
+            {
+                std::string track_ext = trk_format;
+                if(!track_ext.empty() && track_ext[0] != '.')
+                    track_ext = "." + track_ext;
+                atlas_track_name += track_ext.empty() ? ".tt.gz" : track_ext;
+            }
             tipl::out() << "saving template tracks in native space to " << atlas_track_name;
             if(!handle->track_atlas || !handle->track_atlas->save_tracts_to_file(atlas_track_name))
                 return std::string("failed to save atlas track to ") + atlas_track_name;
@@ -294,9 +351,143 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 if(!overwrite && std::filesystem::exists(trk_file_name))
                     tract_model->load_tracts_from_file(trk_file_name,handle.get());
 
+                auto format_bids_value = [](float value)
+                {
+                    std::ostringstream out;
+                    out << std::fixed << std::setprecision(3) << value;
+                    std::string text = out.str();
+                    while(text.size() > 1 && text.back() == '0')
+                        text.pop_back();
+                    if(!text.empty() && text.back() == '.')
+                        text.pop_back();
+                    for(char& c : text)
+                        if(c == '.')
+                            c = 'p';
+                    if(!text.empty() && text.front() == '-')
+                        text.front() = 'm';
+                    return text;
+                };
+
+                auto format_numeric_value = [](float value)
+                {
+                    std::ostringstream out;
+                    out << std::fixed << std::setprecision(3) << value;
+                    std::string text = out.str();
+                    while(text.size() > 1 && text.back() == '0')
+                        text.pop_back();
+                    if(!text.empty() && text.back() == '.')
+                        text.pop_back();
+                    return text;
+                };
+
+                auto make_debug_track_name = [&](const std::string& debug_base,const std::string& entity)->std::string
+                {
+                    std::string name = debug_base + "_desc-debug";
+                    if(!entity.empty())
+                        name += "_" + entity;
+                    if(!tipl::ends_with(name,{".tt.gz",".trk.gz",".trk",".tck",".txt",".mat"}))
+                    {
+                        std::string track_ext = trk_format;
+                        if(!track_ext.empty() && track_ext[0] != '.')
+                            track_ext = "." + track_ext;
+                        name += track_ext.empty() ? ".tt.gz" : track_ext;
+                    }
+                    return name;
+                };
+                auto add_prefix_to_filename = [](const std::filesystem::path& path,
+                                                 const std::string& prefix)->std::string
+                {
+                    std::filesystem::path output(path);
+                    output.replace_filename(prefix + output.filename().string());
+                    return output.string();
+                };
+
+                auto save_debug_tracks = [&](TractModel* model,
+                                             const std::string& debug_base,
+                                             const std::string& entity,
+                                             std::shared_ptr<TractModel>& output_model)->std::string
+                {
+                    if(delete_repeats)
+                    {
+                        output_model = std::make_shared<TractModel>(*model);
+                        output_model->delete_repeated(delete_repeat_distance);
+                    }
+                    else
+                    {
+                        output_model = std::shared_ptr<TractModel>(model,[](TractModel*){});
+                    }
+                    std::string output_name = make_debug_track_name(debug_base,entity);
+                    if(!output_model->save_tracts_to_file(output_name))
+                    {
+                        tipl::warning() << "failed to save debug streamlines to " << output_name;
+                        return std::string();
+                    }
+                    if(!output_model->save_tracts_in_template_space(handle,
+                        add_prefix_to_filename(output_name,"T_")))
+                        tipl::warning() << "failed to save debug streamlines in template space for " << output_name;
+                    return output_name;
+                };
+
+                std::ofstream debug_shape_out;
+                std::vector<std::string> debug_shape_titles;
+                bool debug_shape_header_written = false;
+                const std::string debug_shape_table_name = trk_base + "_desc-debugshape.tsv";
+                auto write_debug_shape_row = [&](TractModel* model,
+                                                 const std::string& streamline_file,
+                                                 float tolerance_value,
+                                                 int tip_iteration,
+                                                 float min_length_value,
+                                                 float max_length_value,
+                                                 int official_flag)
+                {
+                    if(!debug_shape || streamline_file.empty())
+                        return;
+                    std::vector<float> debug_shape_data;
+                    std::vector<std::string> current_titles;
+                    model->get_quantitative_info(handle,current_titles,debug_shape_data);
+                    if(!debug_shape_header_written)
+                    {
+                        debug_shape_out.open(debug_shape_table_name);
+                        if(!debug_shape_out)
+                        {
+                            tipl::warning() << "failed to save debug shape stats to " << debug_shape_table_name;
+                            return;
+                        }
+                        debug_shape_out << "streamline_file\ttolerance\ttip_iteration\tmin_length_mm\tmax_length_mm\tofficial";
+                        debug_shape_titles = current_titles;
+                        for(const auto& title : debug_shape_titles)
+                            debug_shape_out << "\t" << title;
+                        debug_shape_out << "\n";
+                        debug_shape_header_written = true;
+                    }
+                    if(!debug_shape_out)
+                        return;
+                    debug_shape_out << streamline_file << "\t"
+                                    << format_numeric_value(tolerance_value) << "\t"
+                                    << tip_iteration << "\t"
+                                    << format_numeric_value(min_length_value) << "\t"
+                                    << format_numeric_value(max_length_value) << "\t"
+                                    << official_flag;
+                    size_t count = std::min(debug_shape_titles.size(),debug_shape_data.size());
+                    for(size_t index = 0;index < count;++index)
+                    {
+                        if(std::isnan(debug_shape_data[index]))
+                            debug_shape_out << "\t";
+                        else
+                            debug_shape_out << "\t" << std::to_string(debug_shape_data[index]);
+                    }
+                    debug_shape_out << "\n";
+                };
+
+                float official_tolerance = std::numeric_limits<float>::quiet_NaN();
+                int official_tip_iteration = 0;
+                float official_min_length = std::numeric_limits<float>::quiet_NaN();
+                float official_max_length = std::numeric_limits<float>::quiet_NaN();
+                bool official_set = false;
+
                 // each iteration increases tolerance
-                for(size_t tracking_iteration = 0;tracking_iteration < tolerance.size() &&
-                                                  !tract_model->get_visible_track_count();++tracking_iteration)
+            for(size_t tracking_iteration = 0;tracking_iteration < tolerance.size() &&
+                                              (debug_streamlines || !tract_model->get_visible_track_count());++tracking_iteration)
                 {
                     ThreadData thread(handle);
                     {
@@ -398,17 +589,82 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
 
                     }
 
-                    if(no_result)
+                    if(no_result && !debug_streamlines)
                         continue;
+
+                    std::shared_ptr<TractModel> iteration_model = tract_model;
+                    if(debug_streamlines)
+                        iteration_model = std::make_shared<TractModel>(handle);
+
                     // fetch both front and back buffer
-                    thread.fetchTracks(tract_model.get());
-                    thread.fetchTracks(tract_model.get());
+                    thread.fetchTracks(iteration_model.get());
+                    thread.fetchTracks(iteration_model.get());
+                    if(debug_streamlines)
+                    {
+                        std::string debug_base = trk_base;
+                        std::string tolerance_entity = "tolerance-" + format_bids_value(tolerance[tracking_iteration]);
+                        std::shared_ptr<TractModel> output_model;
+                        save_debug_tracks(iteration_model.get(),debug_base,tolerance_entity,output_model);
+                    }
+
                     if(thread.param.step_size != 0.0f)
-                        tract_model->resample(1.0f);
-                    tract_model->trim(thread.param.tip_iteration);
+                    {
+                        iteration_model->resample(1.0f);
+                        if(debug_streamlines)
+                        {
+                            std::string debug_base = trk_base;
+                            std::string tolerance_entity = "stage-resample_tolerance-" +
+                                    format_bids_value(tolerance[tracking_iteration]);
+                            std::shared_ptr<TractModel> output_model;
+                            std::string saved_name = save_debug_tracks(iteration_model.get(),debug_base,tolerance_entity,output_model);
+                            write_debug_shape_row(output_model.get(),saved_name,tolerance[tracking_iteration],0,
+                                                  thread.param.min_length,thread.param.max_length,0);
+                        }
+                    }
+                    if(debug_streamlines)
+                    {
+                        std::string debug_base = trk_base;
+                        std::string tolerance_entity = "tip-0_tolerance-" +
+                                format_bids_value(tolerance[tracking_iteration]);
+                        std::shared_ptr<TractModel> output_model;
+                        std::string saved_name = save_debug_tracks(iteration_model.get(),debug_base,tolerance_entity,output_model);
+                        write_debug_shape_row(output_model.get(),saved_name,tolerance[tracking_iteration],0,
+                                              thread.param.min_length,thread.param.max_length,0);
+                    }
+                    iteration_model->trim(thread.param.tip_iteration);
                     // if trim removes too many tract, undo to at least get the smallest possible bundle.
-                    if(thread.param.tip_iteration && tract_model->get_visible_track_count() == 0)
-                        tract_model->undo();
+                    if(thread.param.tip_iteration && iteration_model->get_visible_track_count() == 0)
+                        iteration_model->undo();
+                    if(debug_streamlines)
+                    {
+                        std::string debug_base = trk_base;
+                        std::string tolerance_entity = "tip-" + std::to_string(thread.param.tip_iteration) +
+                                "_tolerance-" + format_bids_value(tolerance[tracking_iteration]);
+                        std::shared_ptr<TractModel> output_model;
+                        std::string saved_name = save_debug_tracks(iteration_model.get(),debug_base,tolerance_entity,output_model);
+                        write_debug_shape_row(output_model.get(),saved_name,tolerance[tracking_iteration],thread.param.tip_iteration,
+                                              thread.param.min_length,thread.param.max_length,0);
+                    }
+
+                    if(debug_streamlines &&
+                       tract_model->get_visible_track_count() == 0 &&
+                       iteration_model->get_visible_track_count() != 0)
+                    {
+                        tract_model = iteration_model;
+                        official_tolerance = tolerance[tracking_iteration];
+                        official_tip_iteration = thread.param.tip_iteration;
+                        official_min_length = thread.param.min_length;
+                        official_max_length = thread.param.max_length;
+                        official_set = true;
+                    }
+                    if(!official_set && iteration_model->get_visible_track_count() != 0)
+                    {
+                        official_tolerance = tolerance[tracking_iteration];
+                        official_tip_iteration = thread.param.tip_iteration;
+                        official_min_length = thread.param.min_length;
+                        official_max_length = thread.param.max_length;
+                        official_set = true;
+                    }
                 }
 
                 if(tract_model->get_visible_track_count() == 0)
@@ -422,6 +678,9 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         po.set("output",trk_file_name);
                     if(trk_post(po,handle,tract_model,trk_file_name,true))
                         return std::string("terminated due to error");
+                    if(debug_shape)
+                        write_debug_shape_row(tract_model.get(),trk_file_name,official_tolerance,official_tip_iteration,
+                                              official_min_length,official_max_length,1);
                 }
             }
         }
