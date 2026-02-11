@@ -337,7 +337,7 @@ bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vecto
             tipl::io::bruker_2dseq seq;
             if(!seq.load_from_file(filenames[0].toStdString()))
             {
-                QMessageBox::information(nullptr,"Error","Not a valid 2dseq file");
+                QMessageBox::information(nullptr,"ERROR","Not a valid 2dseq file");
                 return false;
             }
             seq.get_image().swap(ref);
@@ -346,6 +346,17 @@ bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vecto
         }
     else
     {
+        if(filenames.size() == 1)
+        {
+            tipl::io::dicom dicom;
+            if(!dicom.load_from_file(filenames[0].toStdString()))
+            {
+                QMessageBox::information(nullptr,"ERROR","cannot parse dicom file");
+                return false;
+            }
+            dicom >> std::tie(ref,vs);
+            return true;
+        }
         tipl::io::dicom_volume v;
         std::vector<std::string> file_list;
         for(int i = 0;i < filenames.size();++i)
