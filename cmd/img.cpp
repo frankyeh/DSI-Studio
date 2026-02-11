@@ -271,7 +271,8 @@ bool variant_image::load_from_file(const std::string& file_name,std::string& inf
         {
             std::string info_;
             pixel_type = int16;
-            dicom >> std::tie(shape,vs,info_,I_int16);
+            dicom >> std::tie(vs,info_,I_int16);
+            shape = I_int16.shape();
             if(dicom.is_compressed)
             {
                 tipl::image<2,short> I;
