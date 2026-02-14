@@ -20,6 +20,9 @@
 #include "tracking_method.hpp"
 #include "reg.hpp"
 #include <filesystem>
+#include <chrono>
+#include <thread>
+#include <atomic>
 
 void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
@@ -78,9 +81,18 @@ class TinyTrack{
                              const std::vector<unsigned int>& color)
     {
         tipl::progress prog0("saving " + file_name);
+        tipl::out() << "saving tt: file=" << file_name
+                    << " tracts=" << tract_data.size()
+                    << " cluster=" << cluster.size()
+                    << " color=" << color.size();
+        if(tract_data.empty())
+            tipl::warning() << "no tracts to save for " << file_name;
         tipl::io::gz_mat_write out(file_name);
         if (!out)
+        {
+            tipl::warning() << "failed to open " << file_name << " for writing";
             return false;
+        }
         out.write("dimension",geo);
         out.write("voxel_size",vs);
         out.write("trans_to_mni",trans_to_mni);
@@ -92,16 +104,19 @@ class TinyTrack{
         std::vector<size_t> buf_size(track32.size());
 
         {
-            tipl::progress prog1("compressing trajectories");
-            size_t p = 0;
-            tipl::adaptive_par_for(track32.size(),[&](size_t i)
+            auto compress_track = [&](size_t i)->bool
             {
-                prog1(p++,tract_data.size());
                 auto& t32 = track32[i];
+                if(tract_data[i].size() < 3 || (tract_data[i].size() % 3) != 0)
+                    return false;
                 t32.resize(tract_data[i].size());
                 // all coordinates multiply by 32 and convert to integer
                 for(size_t j = 0;j < t32.size();j++)
+                {
+                    if(!std::isfinite(tract_data[i][j]))
+                        return false;
                     t32[j] = int(std::round(std::ldexp(tract_data[i][j],5)));
+                }
                 // Calculate coordinate displacement, skipping the first coordinate
                 for(size_t j = t32.size()-1;j >= 3;j--)
                     t32[j] -= t32[j-3];
@@ -146,9 +161,60 @@ class TinyTrack{
                     new_t32.swap(t32);
                 }
                 buf_size[i] = sizeof(tract_header)+t32.size()-3;
+                return true;
+            };
+
+            tipl::progress prog1("compressing trajectories");
+            std::atomic<bool> invalid_tract(false);
+            std::atomic<size_t> invalid_index(std::numeric_limits<size_t>::max());
+            std::atomic<size_t> invalid_size(0);
+            size_t p = 0;
+            tipl::adaptive_par_for(track32.size(),[&](size_t i)
+            {
+                if(invalid_tract.load(std::memory_order_relaxed))
+                    return;
+                prog1(p++,tract_data.size());
+                if(!compress_track(i))
+                {
+                    invalid_tract.store(true,std::memory_order_relaxed);
+                    invalid_index.store(i,std::memory_order_relaxed);
+                    invalid_size.store(tract_data[i].size(),std::memory_order_relaxed);
+                }
             });
-            if(prog1.aborted())
+            if(invalid_tract.load(std::memory_order_relaxed))
+            {
+                size_t bad_index = invalid_index.load(std::memory_order_relaxed);
+                size_t bad_size = invalid_size.load(std::memory_order_relaxed);
+                tipl::warning() << "invalid tract data while saving " << file_name
+                                << " at index " << bad_index
+                                << " size " << bad_size
+                                << " (expect >=3 and multiple of 3, finite values)";
                 return false;
+            }
+            if(prog1.aborted())
+            {
+                tipl::warning() << "compression aborted while saving " << file_name
+                                << ", retrying single-threaded";
+                tipl::progress prog1_single("compressing trajectories (single-thread)");
+                for(size_t i = 0;i < track32.size();++i)
+                {
+                    prog1_single(i,track32.size());
+                    if(!compress_track(i))
+                    {
+                        tipl::warning() << "invalid tract data while saving " << file_name
+                                        << " at index " << i
+                                        << " size " << tract_data[i].size()
+                                        << " (expect >=3 and multiple of 3, finite values)";
+                        return false;
+                    }
+                }
+                if(prog1_single.aborted())
+                {
+                    tipl::warning() << "compression aborted while saving " << file_name
+                                    << " (single-thread)";
+                    return false;
+                }
+            }
         }
         {
             for(size_t block = 0,cur_track_block = 0;prog0(cur_track_block,track32.size());++block)
@@ -180,6 +246,9 @@ class TinyTrack{
                         out[j] = char(t32[j]);
                 });
 
+                tipl::out() << "writing track block " << block
+                            << " count=" << pos.size()
+                            << " bytes=" << total_size;
                 if(block == 0)
                     out.write("track",&out_buf[0],total_size,1);
                 else
@@ -187,7 +256,12 @@ class TinyTrack{
                 cur_track_block += pos.size();
             }
         }
-        return !prog0.aborted();
+        if(prog0.aborted())
+        {
+            tipl::warning() << "save aborted while writing " << file_name;
+            return false;
+        }
+        return true;
     }
     static bool load_from_file(const std::string& file_name,
                                std::vector<std::vector<float> >& tract_data,
@@ -900,9 +974,46 @@ bool TractModel::save_tracts_to_file(const std::string& file_name)
     tipl::out() << "trans:" << trans_to_mni;
     if(tipl::ends_with(file_name,"tt.gz"))
     {
-        return TinyTrack::save_to_file(file_name,geo,vs,trans_to_mni,
+        const int save_retries = 3;
+        const int save_timeout_sec = 10;
+        bool saved_ok = false;
+        auto save_start = std::chrono::steady_clock::now();
+        for(int attempt = 1;attempt <= save_retries;++attempt)
+        {
+            if(TinyTrack::save_to_file(file_name,geo,vs,trans_to_mni,
                                        tract_data,std::vector<uint16_t>(tract_cluster.begin(),tract_cluster.end()),report,parameter_id,
-                                       std::vector<unsigned int>{get_cluster_color(tract_color)});
+                                       std::vector<unsigned int>{get_cluster_color(tract_color)}))
+            {
+                saved_ok = true;
+                break;
+            }
+            if(save_timeout_sec > 0)
+            {
+                auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+                                   std::chrono::steady_clock::now()-save_start).count();
+                if(elapsed >= save_timeout_sec)
+                    break;
+            }
+            if(attempt < save_retries)
+            {
+                tipl::warning() << "failed to save " << file_name << ", retrying ("
+                                << (attempt+1) << "/" << save_retries << ")";
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+            }
+        }
+        if(saved_ok)
+            return true;
+        std::filesystem::path fallback_path(file_name);
+        if(fallback_path.extension() == ".gz")
+        {
+            fallback_path.replace_extension(); // drop .gz -> .tt
+            tipl::warning() << "failed to save " << file_name
+                            << ", falling back to uncompressed " << fallback_path.string();
+            return TinyTrack::save_to_file(fallback_path.string(),geo,vs,trans_to_mni,
+                                           tract_data,std::vector<uint16_t>(tract_cluster.begin(),tract_cluster.end()),report,parameter_id,
+                                           std::vector<unsigned int>{get_cluster_color(tract_color)});
+        }
+        return false;
     }
     if(tipl::ends_with(file_name,".trk") || tipl::ends_with(file_name,".trk.gz"))
     {
@@ -1153,7 +1264,7 @@ std::string TractModel::get_obj(unsigned int& coordinate_count,
 //---------------------------------------------------------------------------
 bool TractModel::save_all(const std::string& file_name,
                           const std::vector<std::shared_ptr<TractModel> >& all)
-{    
+{
     if(all.empty())
         return false;
     tipl::progress prog("save " + file_name);
@@ -1594,7 +1705,7 @@ bool TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select
 }
 //---------------------------------------------------------------------------
 bool TractModel::delete_repeated(float d)
-{   
+{
     std::vector<std::vector<size_t> > x_reg;
     std::vector<size_t> track_location1,track_location2;
     {

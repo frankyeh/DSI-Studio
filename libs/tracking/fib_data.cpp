@@ -1,5 +1,7 @@
 #include <filesystem>
 #include <unordered_set>
+#include <limits>
+#include <cmath>
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QDateTime>
@@ -1788,6 +1790,67 @@ bool fib_data::load_track_atlas(bool symmetric)
         cluster.insert(cluster.end(),new_cluster.begin(),new_cluster.end());
 
 
+        auto log_tract_stats = [&](const char* label)
+        {
+            const auto& cur_tracts = track_atlas->get_tracts();
+            size_t empty_count = 0;
+            size_t invalid_count = 0;
+            size_t non_finite_count = 0;
+            double min_len = std::numeric_limits<double>::max();
+            double max_len = 0.0;
+            size_t len_count = 0;
+            size_t sample_count = 0;
+            for(size_t i = 0;i < cur_tracts.size();++i)
+            {
+                const auto& tract = cur_tracts[i];
+                if(tract.empty())
+                    ++empty_count;
+                if(tract.size() < 3 || (tract.size() % 3) != 0)
+                {
+                    ++invalid_count;
+                }
+                else
+                {
+                    bool has_non_finite = false;
+                    for(float v : tract)
+                        if(!std::isfinite(v))
+                        {
+                            has_non_finite = true;
+                            break;
+                        }
+                    if(has_non_finite)
+                        ++non_finite_count;
+                    double length = track_atlas->get_tract_length_in_mm(i);
+                    if(length > 0.0)
+                    {
+                        min_len = std::min(min_len,length);
+                        max_len = std::max(max_len,length);
+                        ++len_count;
+                    }
+                }
+                if((tract.empty() || (tract.size() < 3 || (tract.size() % 3) != 0)) && sample_count < 3)
+                {
+                    auto c = (i < cluster.size() ? cluster[i] : tractography_name_list.size());
+                    std::string name = (c < tractography_name_list.size() ? tractography_name_list[c] : "unknown");
+                    tipl::warning() << label << " invalid tract index=" << i
+                                    << " size=" << tract.size()
+                                    << " name=" << name;
+                    ++sample_count;
+                }
+            }
+            if(min_len == std::numeric_limits<double>::max())
+                min_len = 0.0;
+            tipl::out() << label << " tracts total=" << cur_tracts.size()
+                        << " empty=" << empty_count
+                        << " invalid=" << invalid_count
+                        << " non_finite=" << non_finite_count
+                        << " length_min=" << min_len
+                        << " length_max=" << max_len
+                        << " length_count=" << len_count;
+        };
+
+        log_tract_stats("pre-warp");
+
         // get distance scaling
         auto& s2t = get_sub2temp_mapping();
         if(s2t.empty())
@@ -1795,6 +1858,8 @@ bool fib_data::load_track_atlas(bool symmetric)
         tract_atlas_jacobian = float((s2t[0]-s2t[1]).length());
         // warp tractography atlas to subject space
         temp2sub(track_atlas->get_tracts());
+
+        log_tract_stats("post-warp");
 
         auto& tract_data = track_atlas->get_tracts();
         // get min max length
