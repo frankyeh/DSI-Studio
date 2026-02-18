@@ -582,18 +582,6 @@ void GLWidget::paintGL()
     }
 }
 
-void CylinderGL(GLUquadricObj* ptr,const tipl::vector<3>& p1,const tipl::vector<3>& p2,double r)
-{
-     tipl::vector<3> z(0,0,1),dis(p1-p2);
-     tipl::vector<3> t = z.cross_product(dis);
-     double v = dis.length();
-     float angle = 180.0f / 3.1415926f*float(std::acos(double(dis[2])/v));
-     glPushMatrix();
-     glTranslatef(p2[0],p2[1],p2[2]);
-     glRotatef(angle,t[0],t[1],t[2]);
-     gluCylinder(ptr,r,r,v,10,int(v/10)+1);		// Draw A cylinder
-     glPopMatrix();
-}
 
 void GLWidget::renderLR()
 {
@@ -867,10 +855,15 @@ void GLWidget::renderLR()
                         glPopMatrix();
                         break;
                     case -1: // tip ball
-                        if(j+1 < seg_type.size() && seg_type[j+1] == 0)
-                            glColor4f(r,g,b,a);
-                        else
-                            glColor4f(0.2f,0.2f,0.2f,a);
+                        if(j+1 < seg_type.size())
+                        {
+                            if(seg_type[j+1] == 0)
+                                glColor4f(r,g,b,a);
+                            if(seg_type[j+1] == 1)
+                                glColor4f(0.2f,0.2f,0.2f,a);
+                            if(seg_type[j+1] == 4)
+                                glColor4f(0.95f,0.95f,0.95f,0.95f);
+                        }
                         glTranslatef(0.0f,0.0f,radius*0.5f);
                         if (j + 1 < seg_type.size())
                             seg_length[j+1] -= radius*0.5f;
@@ -881,8 +874,12 @@ void GLWidget::renderLR()
                         glColor4f(r,g,b,a);
                         Cylinder(radius,seg_length[j]);
                         break;
-                    case 1:   //lead
+                    case 1:   // gray lead
                         glColor4f(0.2f,0.2f,0.2f,a);
+                        Cylinder(radius,seg_length[j]);
+                        break;
+                    case 4:   // white segment
+                        glColor4f(0.95f,0.95f,0.95f,0.95f);
                         Cylinder(radius,seg_length[j]);
                         break;
                     case 2:
@@ -954,6 +951,18 @@ void GLWidget::renderLR()
                 float neg_edge_threshold = get_param_float("region_edge_threshold")*neg_max_connectivity;
                 if(!connectivity.empty() && connectivity.width() == int(cur_tracking_window.regionWidget->regions.size()))
                 {
+                    auto CylinderGL = [](GLUquadricObj* ptr,const tipl::vector<3>& p1,const tipl::vector<3>& p2,double r)
+                    {
+                         tipl::vector<3> z(0,0,1),dis(p1-p2);
+                         tipl::vector<3> t = z.cross_product(dis);
+                         double v = dis.length();
+                         float angle = 180.0f / 3.1415926f*float(std::acos(double(dis[2])/v));
+                         glPushMatrix();
+                         glTranslatef(p2[0],p2[1],p2[2]);
+                         glRotatef(angle,t[0],t[1],t[2]);
+                         gluCylinder(ptr,r,r,v,10,int(v/10)+1);		// Draw A cylinder
+                         glPopMatrix();
+                    };
                     for(unsigned int i = 0;i < cur_tracking_window.regionWidget->regions.size();++i)
                         for(unsigned int j = i+1;j < cur_tracking_window.regionWidget->regions.size();++j)
                         if(cur_tracking_window.regionWidget->item(int(i),0)->checkState() == Qt::Checked &&
@@ -976,6 +985,8 @@ void GLWidget::renderLR()
                             glColor4f(((float)color.r)/255.0f,
                                       ((float)color.g)/255.0f,
                                       ((float)color.b)/255.0f,1.0f);
+
+
                             CylinderGL(RegionSpheres->get(),centeri,centerj,
                                        double((get_param("region_constant_edge_size") ? 0.5f:scaled_c)*(get_param("region_edge_size")+1)/5.0f));
                         }
