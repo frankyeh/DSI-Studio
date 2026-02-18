@@ -46,6 +46,18 @@ Probe
 0.0	50	
 -1	3
 1.0
+Laser Probe (1.6mm)
+0.0	4.0	27.2	
+-1	1	3
+1.65
+Laser Probe (2.2mm)
+0.0	6.0	27.2	
+-1	1	3
+2.2
+Laser Probe (3.3mm)
+0.0	6.0	27.2	
+-1	1	3
+3.3
 Obturator:11 mm
 30.0	2.0
 3	-2
