@@ -349,6 +349,11 @@ bool variant_image::load_from_file(const std::string& file_name,std::string& inf
             }
     tipl::out() << "dim: " << shape;
     tipl::out() << "vs: " << vs;
+    apply([this](auto& I)
+    {
+        if(tipl::is_label_image(I))
+            interpolation = false;
+    });
     return true;
 }
 tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& mat_reader);
