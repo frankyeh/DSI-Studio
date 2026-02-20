@@ -137,20 +137,25 @@ bool Voxel::run_hist(void)
 }
 bool Voxel::run(const char* title)
 {
-    tipl::progress prog(title,true);
-    size_t total_size = 0;
-    tipl::par_for(thread_count,[&](size_t thread_id)
+    tipl::progress prog(title, true);
+    std::atomic<size_t> count = 0;
+    size_t total = mask.size();
+    tipl::par_for<tipl::dynamic_with_id>(total, [&](size_t voxel_index, size_t thread_id)
     {
-        for(size_t voxel_index = thread_id;voxel_index < mask.size() && prog(total_size++,mask.size());voxel_index += thread_count)
-        {
-            if(!mask[voxel_index])
-                continue;
-            voxel_data[thread_id].init();
-            voxel_data[thread_id].voxel_index = voxel_index;
-            for (size_t index = 0; index < process_list.size(); ++index)
-                process_list[index]->run(*this,voxel_data[thread_id]);
-        }
-    },thread_count);
+        size_t current = ++count;
+        if (thread_id == 0 && (current & 63) == 0)
+            prog(current, total);
+
+        if (!mask[voxel_index] || prog.aborted())
+            return;
+
+        voxel_data[thread_id].init();
+        voxel_data[thread_id].voxel_index = voxel_index;
+
+        for (size_t index = 0; index < process_list.size(); ++index)
+            process_list[index]->run(*this, voxel_data[thread_id]);
+    }, thread_count);
+
     return !prog.aborted();
 }
 
