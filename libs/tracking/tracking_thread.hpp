@@ -15,10 +15,10 @@
 struct ThreadData
 {
 private:
-    std::mt19937 seed;
+    ;
     std::uniform_real_distribution<float> rand_gen,subvoxel_gen,angle_gen,angle_gen2,smoothing_gen,step_gen,step_gen2,threshold_gen;
     template<typename T>
-    T rand(T size)
+    T rand(T size,std::mt19937& seed)
     {
         return std::min<T>(size-1,T(rand_gen(seed)*float(size)));
     }
@@ -37,7 +37,7 @@ public:
     static constexpr float step_gen_min = 0.5f; // affect buffer size
     static constexpr float step_gen_max = 1.0f; // affect buffer size
 public:
-    ThreadData(std::shared_ptr<fib_data> handle):seed(0),
+    ThreadData(std::shared_ptr<fib_data> handle):
         rand_gen(0.0f,1.0f),subvoxel_gen(-0.5f,0.5f),
         angle_gen(float(45.0f*M_PI/180.0f),float(90.0f*M_PI/180.0f)),
         smoothing_gen(0.0f,0.95f),step_gen(step_gen_min,step_gen_max),threshold_gen(0.0f,1.0f),
@@ -49,17 +49,16 @@ public:
 public:
     bool joining = false;
     std::vector<std::thread> threads;
-    std::vector<size_t> seed_count,tract_count;
     std::vector<unsigned char> running;
-    std::mutex lock_seed_function;
+
     std::chrono::high_resolution_clock::time_point begin_time,end_time;
-    size_t get_total_seed_count(void)const
+    unsigned int get_total_seed_count(void)const
     {
-        return seed_count.empty() ? 0 : std::accumulate(seed_count.begin(),seed_count.end(),size_t(0));
+        return global_seed_count_atom;
     }
-    size_t get_total_tract_count(void)const
+    unsigned int get_total_tract_count(void)const
     {
-        return tract_count.empty() ? 0 : std::accumulate(tract_count.begin(),tract_count.end(),size_t(0));
+        return global_tract_count_atom;
     }
     bool is_ended(void)
     {
@@ -71,6 +70,8 @@ public:
     void end_thread(void);
 
 public:
+    std::atomic<unsigned int> global_seed_count_atom{0};
+    std::atomic<unsigned int> global_tract_count_atom{0};
     void run_thread(unsigned int thread_id,unsigned int thread_count);
     bool fetchTracks(TractModel* handle);
     void run(std::shared_ptr<tracking_data> trk,unsigned int thread_count,bool wait);

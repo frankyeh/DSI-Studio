@@ -31,7 +31,9 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
             continue;
         }
         {
-            seed = std::mt19937(param.random_seed);  // always 0, except in connectometry for changing seed sequence
+            global_seed_count_atom = 0;
+            global_tract_count_atom = 0;
+
             if(roi_mgr->use_auto_track)
             {
                 if(!roi_mgr->setAtlas(joining,fa_threshold1,param.check_ending ? fa_threshold2+fa_threshold2-fa_threshold1 : 0.0f))
@@ -114,44 +116,39 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
 
     if(!roi_mgr->seeds.empty())
     try{
+        unsigned int current_seed_idx;
         while(!joining &&
-              !(tract_count[thread_id] >= termination_tract_count) &&
-              !(seed_count[thread_id] >= termination_seed_count))
+             (current_seed_idx = global_seed_count_atom++) < max_seed_count &&
+              global_tract_count_atom < max_tract_count)
         {
-            ++seed_count[thread_id];
-            tipl::vector<3> sub_voxel_shift;
-            uint32_t seed_index;
+            std::mt19937 local_gen(param.random_seed + current_seed_idx);
+            tipl::vector<3> sub_voxel_shift = tipl::vector<3>(subvoxel_gen(local_gen),subvoxel_gen(local_gen),subvoxel_gen(local_gen));;
+            uint32_t seed_index = rand(roi_mgr->seeds.size(),local_gen);
             unsigned char fiber_order = 0;
 
-            // random generators
+            if(param.threshold == 0.0f)
             {
-                // this ensure consistency
-                std::lock_guard<std::mutex> lock(lock_seed_function);
-                if(param.threshold == 0.0f)
-                {
-                    float w = threshold_gen(seed);
-                    method->current_fa_threshold = w*fa_threshold1 + (1.0f-w)*fa_threshold2;
-                }
-                if(param.cull_cos_angle == 1.0f)
-                    method->current_tracking_angle = std::cos(angle_gen(seed));
-                if(param.smooth_fraction == 1.0f)
-                    method->current_tracking_smoothing = smoothing_gen(seed);
-                if(param.step_size < 0.0f) // previous version voxel_size* [0.5 1.5]
-                {
-                    float step_size_in_voxel = step_gen(seed);
-                    float step_size_in_mm = step_size_in_voxel*method->trk->vs[0];
-                    method->current_step_size_in_voxel[0] = step_size_in_voxel;
-                    method->current_step_size_in_voxel[1] = step_size_in_voxel;
-                    method->current_step_size_in_voxel[2] = step_size_in_voxel;
-                    method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/step_size_in_mm));
-                    method->current_min_steps3 = std::max<uint32_t>(6,3*uint32_t(std::round(param.min_length/step_size_in_mm)));
-                }
-
-                seed_index = rand(roi_mgr->seeds.size());
-                sub_voxel_shift = tipl::vector<3>(subvoxel_gen(seed),subvoxel_gen(seed),subvoxel_gen(seed));
-                if(param.max_length == param.min_length && method->trk->fib_num > 1)
-                    fiber_order = rand(method->trk->fib_num);
+                float w = threshold_gen(local_gen);
+                method->current_fa_threshold = w*fa_threshold1 + (1.0f-w)*fa_threshold2;
             }
+            if(param.cull_cos_angle == 1.0f)
+                method->current_tracking_angle = std::cos(angle_gen(local_gen));
+            if(param.smooth_fraction == 1.0f)
+                method->current_tracking_smoothing = smoothing_gen(local_gen);
+            if(param.step_size < 0.0f) // previous version voxel_size* [0.5 1.5]
+            {
+                float step_size_in_voxel = step_gen(local_gen);
+                float step_size_in_mm = step_size_in_voxel*method->trk->vs[0];
+                method->current_step_size_in_voxel[0] = step_size_in_voxel;
+                method->current_step_size_in_voxel[1] = step_size_in_voxel;
+                method->current_step_size_in_voxel[2] = step_size_in_voxel;
+                method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/step_size_in_mm));
+                method->current_min_steps3 = std::max<uint32_t>(6,3*uint32_t(std::round(param.min_length/step_size_in_mm)));
+            }
+
+
+            if(param.max_length == param.min_length && method->trk->fib_num > 1)
+                fiber_order = rand(method->trk->fib_num,local_gen);
 
             //initialize seeding
             {
@@ -163,10 +160,13 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
             }
 
             auto ptr = method->tracking(param.tracking_method,fiber_order);
-            if(!ptr.first)
-                continue;
-            ++tract_count[thread_id];
-            (buffer_switch ? track_buffer_front[thread_id] : track_buffer_back[thread_id]).emplace_back(ptr.first,ptr.second);
+            if(ptr.first)
+            {
+                if(global_tract_count_atom++ < max_tract_count)
+                    (buffer_switch ? track_buffer_front[thread_id] : track_buffer_back[thread_id]).emplace_back(ptr.first,ptr.second);
+                else
+                    break;
+            }
         }
     }
     catch(...)
@@ -243,11 +243,8 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
     begin_time = std::chrono::high_resolution_clock::now();
 
     //  multi-thread controls
-    {
-        seed_count  = std::move(std::vector<size_t>(thread_count));
-        tract_count = std::move(std::vector<size_t>(thread_count));
-        running     = std::move(std::vector<unsigned char>(thread_count,1));
-    }
+    running     = std::move(std::vector<unsigned char>(thread_count,1));
+
     // setting up output buffers
     {
         track_buffer_back.resize(thread_count);
@@ -255,6 +252,7 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
     }
     for (unsigned int index = 0;index < thread_count-1;++index)
         threads.push_back(std::thread([=](){run_thread(index,thread_count);}));
+
 
     if(wait)
     {
