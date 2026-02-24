@@ -328,7 +328,7 @@ bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vecto
     if(filenames.size() == 1 && filenames[0].toLower().contains("nii"))
     {
         return tipl::io::gz_nifti(filenames[0].toStdString(),std::ios::in)
-               >> vs >> trans >> ref
+               >> std::tie(ref,vs,trans)
                >> [&](const std::string& e){QMessageBox::information(nullptr,"ERROR",e.c_str());};
     }
     else
