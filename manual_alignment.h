@@ -18,7 +18,7 @@ private:
     tipl::image<3,unsigned char> from_original;
     tipl::image<3,unsigned char> from,to;
     tipl::image<3,unsigned char> from2,to2;
-    tipl::vector<3> from_vs,to_vs;
+    tipl::vector<3> from_vs,to_vs,from_vs_original;
     QGraphicsScene scene[3];
     float from_downsample = 1.0f;
     float to_downsample = 1.0f;
