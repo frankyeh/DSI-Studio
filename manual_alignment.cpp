@@ -30,6 +30,7 @@ manual_alignment::manual_alignment(QWidget *parent,
     from2.swap(from2_);
     to2.swap(to2_);
     from_original = from;
+    from_vs_original = from_vs;
 
     initial_LPS_nifti_srow(to_T,to.shape(),to_vs);
     initial_LPS_nifti_srow(from_T,from.shape(),from_vs);
@@ -441,6 +442,8 @@ void manual_alignment::on_switch_view_clicked()
     ui->blend_pos->setValue(ui->blend_pos->value() > ui->blend_pos->maximum()/2 ? 0:ui->blend_pos->maximum());
 }
 
+
+
 void manual_alignment::on_actionSave_Warped_Image_triggered()
 {
     QString filename = QFileDialog::getSaveFileName(
@@ -448,12 +451,16 @@ void manual_alignment::on_actionSave_Warped_Image_triggered()
     if(filename.isEmpty())
         return;
 
+    tipl::transformation_matrix<float> original_T = tipl::transformation_matrix<float>(arg,from_original.shape(),from_vs_original,to.shape(),to_vs);
+    tipl::transformation_matrix<float> original_iT = original_T;
+    original_iT.inverse();
+
     tipl::image<3> I(to.shape());
     if(tipl::is_label_image(from_original))
-        tipl::resample<tipl::interpolation::majority>(from_original,I,iT);
+        tipl::resample<tipl::interpolation::majority>(from_original,I,original_iT);
     else
-        tipl::resample<tipl::interpolation::cubic>(from_original,I,iT);
-    if(tipl::io::gz_nifti(filename.toStdString(),std::ios::out) << to_vs << to_T << I)
+        tipl::resample<tipl::interpolation::cubic>(from_original,I,original_iT);
+    if(tipl::io::gz_nifti(filename.toStdString(),std::ios::out) << std::tie(to_vs,to_T,I))
         QMessageBox::information(this,QApplication::applicationName(),"file saved");
     else
         QMessageBox::critical(this,"ERROR","cannot save file.");
@@ -516,21 +523,25 @@ void manual_alignment::on_actionApply_Transformation_triggered()
     if(to_filename.isEmpty())
         return;
 
-    tipl::image<3> from(from_original.shape());
-    if(!tipl::io::gz_nifti(filename.toStdString(),std::ios::in).to_space(from,from_T))
+    tipl::image<3> new_from_original(from_original.shape());
+    if(!tipl::io::gz_nifti(filename.toStdString(),std::ios::in).to_space(new_from_original,from_T))
     {
         QMessageBox::critical(this,"ERROR","Cannot read the file");
         return;
     }
 
+    tipl::transformation_matrix<float> original_T = tipl::transformation_matrix<float>(arg,from_original.shape(),from_vs_original,to.shape(),to_vs);
+    tipl::transformation_matrix<float> original_iT = original_T;
+    original_iT.inverse();
+
 
     tipl::image<3> I(to.shape());
     if(tipl::is_label_image(from))
-        tipl::resample<tipl::interpolation::majority>(from,I,iT);
+        tipl::resample<tipl::interpolation::majority>(new_from_original,I,original_iT);
     else
-        tipl::resample<tipl::interpolation::cubic>(from,I,iT);
+        tipl::resample<tipl::interpolation::cubic>(new_from_original,I,original_iT);
 
-    if(tipl::io::gz_nifti(to_filename.toStdString(),std::ios::out) << to_vs << to_T << I)
+    if(tipl::io::gz_nifti(to_filename.toStdString(),std::ios::out) << std::tie(to_vs,to_T,I))
         QMessageBox::information(this,QApplication::applicationName(),"file saved");
     else
         QMessageBox::critical(this,"ERROR","cannot save file.");
