@@ -140,7 +140,7 @@ bool Voxel::run(const char* title)
     tipl::progress prog(title, true);
     std::atomic<size_t> count = 0;
     size_t total = mask.size();
-    tipl::par_for<tipl::sequential_with_id>(total, [&](size_t voxel_index, size_t thread_id)
+    tipl::par_for<tipl::dynamic_with_id>(total, [&](size_t voxel_index, size_t thread_id)
     {
         size_t current = ++count;
         if (thread_id == 0 && (current & 63) == 0)
@@ -152,8 +152,8 @@ bool Voxel::run(const char* title)
         voxel_data[thread_id].init();
         voxel_data[thread_id].voxel_index = voxel_index;
 
-        for (size_t index = 0; index < process_list.size(); ++index)
-            process_list[index]->run(*this, voxel_data[thread_id]);
+        for (const auto& each : process_list)
+            each->run(*this, voxel_data[thread_id]);
     }, thread_count);
 
     return !prog.aborted();
