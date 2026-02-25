@@ -165,7 +165,7 @@ class TinyTrack{
                 }
 
                 std::vector<char> out_buf(total_size);
-                tipl::adaptive_par_for(pos.size(),[&](size_t i)
+                tipl::par_for<tipl::sequential>(pos.size(),[&](size_t i)
                 {
                     auto& t32 = track32[cur_track_block+i];
                     auto out = &out_buf[pos[i]];
