@@ -363,7 +363,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         if(cur_slice->is_diffusion_space)
             tipl::threshold(fa_map,mask,threshold);
         else
-            tipl::adaptive_par_for(tipl::begin_index(mask.shape()),
+            tipl::par_for<tipl::sequential>(tipl::begin_index(mask.shape()),
                           tipl::end_index(mask.shape()),
                           [&](const tipl::pixel_index<3>& index)
             {
@@ -1373,7 +1373,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                             edges[pos] += 1;
                 });
 
-                tipl::adaptive_par_for(tipl::begin_index(base_dim),tipl::end_index(base_dim),
+                tipl::par_for(tipl::begin_index(base_dim),tipl::end_index(base_dim),
                                        [&](const tipl::pixel_index<3>& pos)
                 {
                     if(edges[pos.index()] <= 1)
@@ -1666,7 +1666,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
 
                     region->save_region_to_buffer(mask);
 
-                    tipl::adaptive_par_for(tipl::begin_index(mask.shape()),tipl::end_index(mask.shape()),
+                    tipl::par_for<tipl::sequential>(tipl::begin_index(mask.shape()),tipl::end_index(mask.shape()),
                                   [&](const tipl::pixel_index<3>& pos)
                     {
                         if(!mask[pos.index()])

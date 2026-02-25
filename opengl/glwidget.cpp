@@ -1026,7 +1026,7 @@ void GLWidget::renderLR()
                     region_need_update.push_back(index);
 
             unsigned char smoothed = get_param("region_mesh_smoothed");
-            tipl::adaptive_par_for(region_need_update.size(),[&](unsigned int index){
+            tipl::par_for(region_need_update.size(),[&](unsigned int index){
                 regions[region_need_update[index]]->makeMeshes(smoothed);
             });
 
@@ -1374,7 +1374,7 @@ void GLWidget::add_odf(const std::vector<tipl::pixel_index<3> >& odf_pos_)
     tessellated_icosahedron ti;
     shaping.init(ti);
 
-    tipl::adaptive_par_for(odf_pos.size(),[&](size_t i)
+    tipl::par_for(odf_pos.size(),[&](size_t i)
     {
 
         const float* odf_buffer = odf_buffers[i];
@@ -1631,7 +1631,7 @@ bool GLWidget::select_object(void)
             tipl::vector<3,short> voxel(p);
             if(!cur_tracking_window.handle->dim.is_valid(voxel))
                 continue;
-            tipl::adaptive_par_for(cur_tracking_window.regionWidget->regions.size(),[&](size_t index)
+            tipl::par_for(cur_tracking_window.regionWidget->regions.size(),[&](size_t index)
             {
                 if(region_selected ||
                    cur_tracking_window.regionWidget->item(int(index),0)->checkState() != Qt::Checked)

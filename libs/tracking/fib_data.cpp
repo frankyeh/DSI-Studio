@@ -2215,7 +2215,7 @@ bool fib_data::load_mapping(const std::string& file_name)
     s2t.resize(dim);
     t2s.resize(template_I.shape());
     tipl::out() << s2t[0];
-    tipl::adaptive_par_for(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
+    tipl::par_for<tipl::sequential>(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
                   [&](const tipl::pixel_index<3>& index)
     {
         s2t[index.index()] = index;
@@ -2224,7 +2224,6 @@ bool fib_data::load_mapping(const std::string& file_name)
         s2t[index.index()][1] += shifty[index.index()];
         s2t[index.index()][2] += shiftz[index.index()];
         apply_trans(s2t[index.index()],T);
-
     });
     tipl::out() << s2t[0];
     return true;
@@ -2443,7 +2442,7 @@ const tipl::image<3,tipl::vector<3,float> >& fib_data::get_sub2temp_mapping(void
        is_mni && template_id == matched_template_id)
     {
         s2t.resize(dim);
-        tipl::adaptive_par_for(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
+        tipl::par_for<tipl::sequential>(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
                       [&](const tipl::pixel_index<3>& index)
         {
             s2t[index.index()] = index.begin();

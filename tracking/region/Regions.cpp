@@ -8,7 +8,7 @@
 void ROIRegion::new_from_sphere(tipl::vector<3> pos,float radius)
 {
     tipl::image<3,unsigned char> mask(dim);
-    tipl::adaptive_par_for(tipl::begin_index(dim),tipl::end_index(dim),
+    tipl::par_for<tipl::sequential>(tipl::begin_index(dim),tipl::end_index(dim),
                   [&](const tipl::pixel_index<3>& index)
     {
         if(std::abs((float(index[0])-pos[0])) > radius)
