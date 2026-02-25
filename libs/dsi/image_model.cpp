@@ -2475,17 +2475,7 @@ bool src_data::run_eddy(std::string exec)
     {
         std::string cause;
         if(!eddy_check_shell(src_bvalues,cause))
-        {
-            error_msg = "cannot run eddy due to "+cause;
-            if(!has_topup)
-                return false;
-            tipl::warning() << error_msg;
-            error_msg.clear();
-            if(!run_applytopup())
-                return false;
-            correct_motion();
-            return true;
-        }
+            tipl::warning() << "eddy may not work on certain multishell data";
     }
     if(!save_nii_for_applytopup_or_eddy(true))
         return false;
@@ -2539,7 +2529,8 @@ bool src_data::run_eddy(std::string exec)
             std::string("--bvecs=") + std::filesystem::path(bvec_file).filename().u8string(),
             std::string("--bvals=") + std::filesystem::path(bval_file).filename().u8string(),
             std::string("--out=") + std::filesystem::path(corrected_output()).filename().u8string(),
-            "--verbose=1"
+            "--verbose=1",
+            "--data_is_shelled"
             };
     if(has_topup)
         param.push_back(std::string("--topup=") + std::filesystem::path(topup_output()).filename().u8string());
