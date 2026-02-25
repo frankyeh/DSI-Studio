@@ -774,7 +774,7 @@ tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& ma
     {
         if(!mat_reader.read("mask",mask_ptr))
         {
-            auto mask_mat = std::make_shared<tipl::io::mat_matrix>("mask",uint8_t(0),dim.plane_size(),dim.depth());
+            auto mask_mat = std::make_shared<tipl::io::mat_matrix>("mask",uint8_t(0),uint32_t(dim.plane_size()),dim.depth());
             auto& mask_buffer = mask_mat->data_buf;
 
             const float* fa0_ptr = nullptr;
