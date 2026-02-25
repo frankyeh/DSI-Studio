@@ -140,7 +140,7 @@ bool Voxel::run(const char* title)
     tipl::progress prog(title, true);
     std::atomic<size_t> count = 0;
     size_t total = mask.size();
-    tipl::par_for<tipl::dynamic_with_id>(total, [&](size_t voxel_index, size_t thread_id)
+    tipl::par_for<tipl::sequential_with_id>(total, [&](size_t voxel_index, size_t thread_id)
     {
         size_t current = ++count;
         if (thread_id == 0 && (current & 63) == 0)
