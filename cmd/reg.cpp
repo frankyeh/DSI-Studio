@@ -1,5 +1,7 @@
 #include <QString>
 #include <QImage>
+#include <limits>
+#include <random>
 #include "img.hpp"
 #include "reg.hpp"
 #include "tract_model.hpp"
@@ -280,8 +282,68 @@ float dual_reg::linear_reg(bool& terminated)
     tipl::progress prog("linear registration");
     float cost = 0.0f;
     if(!skip_linear)
-        cost = tipl::reg::linear<tipl::out>(tipl::reg::make_list(It),Itvs,tipl::reg::make_list(I),Ivs,
-               arg,reg_type,terminated,bound,cost_type,use_cuda && has_cuda);
+    {
+        auto best_arg = arg;
+        float best_cost = std::numeric_limits<float>::max();
+        auto run_linear = [&](tipl::affine_transform<float,dimension>& start_arg)
+        {
+            auto local_arg = start_arg;
+            float local_cost = tipl::reg::linear<tipl::out>(
+                        tipl::reg::make_list(It),Itvs,
+                        tipl::reg::make_list(I),Ivs,
+                        local_arg,reg_type,terminated,bound,cost_type,use_cuda && has_cuda);
+            if(!terminated && local_cost < best_cost)
+            {
+                best_cost = local_cost;
+                best_arg = local_arg;
+            }
+        };
+
+        tipl::out() << "linear registration restarts planned: " << linear_restarts;
+        run_linear(arg);
+        if(linear_restarts > 1)
+        {
+            std::mt19937 rng(42);
+            std::uniform_real_distribution<float> unit01(0.0f,1.0f);
+            auto image_extent = [&](unsigned int axis)
+            {
+                float from_mm = It[0].shape()[axis]*Itvs[axis];
+                float to_mm = I[0].shape()[axis]*Ivs[axis];
+                return std::max(from_mm,to_mm)*0.5f;
+            };
+            for(size_t restart = 1;restart < linear_restarts;++restart)
+            {
+                if(terminated)
+                {
+                    tipl::out() << "linear registration restarts aborted";
+                    break;
+                }
+                tipl::out() << "linear registration restart " << (restart + 1)
+                            << "/" << linear_restarts;
+                tipl::affine_transform<float,dimension> seed;
+                seed.clear();
+                for(unsigned int axis = 0;axis < dimension;++axis)
+                {
+                    float range = image_extent(axis);
+                    float tmin = range*bound[axis][1];
+                    float tmax = range*bound[axis][0];
+                    seed.translocation[axis] = tmin + (tmax-tmin)*unit01(rng);
+                    float smin = bound[axis][5];
+                    float smax = bound[axis][4];
+                    seed.scaling[axis] = smin + (smax-smin)*unit01(rng);
+                    float rmin = bound[axis][3]*3.14159265358979323846f;
+                    float rmax = bound[axis][2]*3.14159265358979323846f;
+                    seed.rotation[axis] = rmin + (rmax-rmin)*unit01(rng);
+                    float amin = bound[axis][7];
+                    float amax = bound[axis][6];
+                    seed.affine[axis] = amin + (amax-amin)*unit01(rng);
+                }
+                run_linear(seed);
+            }
+        }
+        arg = best_arg;
+        cost = best_cost;
+    }
 
     calculate_linear_r();
 
