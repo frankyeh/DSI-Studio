@@ -54,6 +54,8 @@ jobs:
       uses: docker/build-push-action@v5.1.0
       with:
         context: .
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
         build-args: |
           DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}        
         file: build_packages/${{ matrix.os }}/Dockerfile
@@ -121,6 +123,8 @@ jobs:
       uses: docker/build-push-action@v5.1.0
       with:
         context: .
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
         build-args: |
           DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}        
         file: build_packages/${{ matrix.os }}/Dockerfile
@@ -205,6 +209,8 @@ jobs:
       uses: docker/build-push-action@v5.1.0
       with:
         context: .
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
         build-args: |
           DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}               
         file: build_packages/docker/Dockerfile
