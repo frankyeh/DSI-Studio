@@ -110,7 +110,7 @@ void SliceModel::get_slice(tipl::color_image& show_image,unsigned char cur_dim,i
                           colormap_buf.end(),0);
             else
             {
-                tipl::adaptive_par_for(tipl::begin_index(dim),tipl::end_index(dim),[&](const tipl::pixel_index<3>& index)
+                tipl::par_for<tipl::sequential>(tipl::begin_index(dim),tipl::end_index(dim),[&](const tipl::pixel_index<3>& index)
                 {
                     tipl::vector<3> pos(index);
                     pos.to(to_dif);

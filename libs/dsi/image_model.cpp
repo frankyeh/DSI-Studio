@@ -1574,7 +1574,7 @@ void correct_bias_field(tipl::image<3> I,
         tipl::mat::ll_solve(ATA.begin(), piv.begin(), rhs.begin(), cc_img.begin(), dim);
         // d) update correction & RMS
         std::vector<double> each_sumsq(tipl::max_thread_count),each_count(tipl::max_thread_count);
-        tipl::par_for<tipl::sequential_with_id>(correction.size(),[&](size_t i,size_t id)
+        tipl::par_for<tipl::dynamic_with_id>(correction.size(),[&](size_t i,size_t id)
         {
             double d = 0.0;
             for(const auto& each : basis[i])

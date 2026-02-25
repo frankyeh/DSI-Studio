@@ -1476,7 +1476,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                 std::vector<size_t> need_fill_up;
                 {
                     std::vector<std::vector<size_t> > need_fill_ups(tipl::max_thread_count);
-                    tipl::par_for<tipl::sequential_with_id>(A.size(),[&](size_t index,int id)
+                    tipl::par_for<tipl::dynamic_with_id>(A.size(),[&](size_t index,int id)
                     {
                         if(A[index] && !A_labels[index])
                             need_fill_ups[id].push_back(index);

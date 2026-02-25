@@ -2462,7 +2462,7 @@ void TractModel::get_density_map(tipl::image<3,unsigned int>& mapping,
     tipl::shape<3> s(mapping.shape());
     std::vector<tipl::image<3,unsigned int> > maps(tipl::max_thread_count);
     bool is_identity = (to_t1t2 == tipl::matrix<4,4>(tipl::identity_matrix()));
-    tipl::par_for<tipl::sequential_with_id>(tract_data.size(),[&](unsigned int i,unsigned int id)
+    tipl::par_for<tipl::dynamic_with_id>(tract_data.size(),[&](unsigned int i,unsigned int id)
     {
         auto& m = maps[id];
         if(m.empty())
@@ -2608,7 +2608,7 @@ void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,const tipl
     }
 
     std::vector<std::set<tipl::vector<3,short> > > pass_map(tipl::max_thread_count);
-    tipl::par_for<tipl::sequential_with_id>(tract_data.size(),[&](size_t i,size_t thread)
+    tipl::par_for<tipl::dynamic_with_id>(tract_data.size(),[&](size_t i,size_t thread)
     {
         if(tract_data[i].size() < 6)
             return;

@@ -651,7 +651,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
                     auto dim = handle->dim;
                     tipl::image<3,uint32_t> accumulate_map(dim);
                     std::mutex add_lock;
-                    tipl::adaptive_par_for(tract_files.size(),[&](size_t i)
+                    tipl::par_for(tract_files.size(),[&](size_t i)
                     {
                         tipl::out() << "accumulating " << tract_files[i] << "..." <<std::endl;
                         std::vector<tipl::vector<3,short> > points;

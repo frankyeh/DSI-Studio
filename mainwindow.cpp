@@ -1242,7 +1242,7 @@ void MainWindow::batch_create_src(const std::vector<std::string>& dwi_nii_files,
     size_t nii_count = 0;
     std::mutex access_list;
     bool ended = false;
-    tipl::par_for<tipl::sequential_with_id>(8,[&](unsigned int index,unsigned int id)
+    tipl::par_for<tipl::dynamic_with_id>(8,[&](unsigned int index,unsigned int id)
     {
         if(id == 0) // main thread
         {
