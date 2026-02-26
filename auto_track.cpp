@@ -338,7 +338,10 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     // if trim removes too many tract, undo to at least get the smallest possible bundle.
                     if(thread.param.tip_iteration && tract_model->get_visible_track_count() == 0)
                         tract_model->undo();
+                    if(prog2.aborted())
+                        return std::string("aborted.");
                 }
+
 
                 if(tract_model->get_visible_track_count() == 0)
                 {
@@ -517,7 +520,7 @@ void auto_track::on_run_clicked()
     tipl::progress prog_("");
 
     tipl::program_option<tipl::out> po;
-    po["action"] = std::String("atk");
+    po["action"] = std::string("atk");
     po["tolerance"] = ui->tolerance->text().toStdString();
     po["track_voxel_ratio"] = float(ui->track_voxel_ratio->value());
     po["tip_iteration"] = ui->pruning->value();
