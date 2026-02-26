@@ -271,9 +271,6 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                              std::string output_name,
                              std::shared_ptr<TractModel> tract_model)
 {
-    tipl::progress prog("load all image volume");
-    for(auto& each : handle->slices)
-        each->get_image();
 
     for(const auto& each_connectivity : tipl::split(po.get("connectivity"),','))
     for(const auto& each_connectivity_type : tipl::split(po.get("connectivity_type","pass"),','))
@@ -577,7 +574,19 @@ int trk_post(tipl::program_option<tipl::out>& po,
             return 1;
         }
     }
-
+    if(prog.aborted())
+        return 1;
+    if(po.has("connectivity") || po.has("export"))
+    {
+        tipl::out() << "reading image metrics";
+        for(size_t i = 0;prog(i,handle->slices.size());++i)
+        {
+            if(!handle->slices[i]->optional())
+                handle->slices[i]->get_image();
+        }
+    }
+    if(prog.aborted())
+        return 1;
     if(po.has("connectivity") && !get_connectivity_matrix(po,handle,tract_file_name,tract_model))
         return 1;
     if(po.has("export") && !get_tract_info(po,handle,tract_file_name,tract_model))
