@@ -644,7 +644,7 @@ bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         else
             roi_mgr->tract_name = name;
         roi_mgr->use_auto_track = true;
-        roi_mgr->tolerance_dis_in_icbm152_mm = po.get("tolerance",16.0f);
+        roi_mgr->tolerance_dis_in_icbm152_mm = po.get("tolerance",handle->default_tolerance());
     }
     return true;
 }
@@ -678,10 +678,10 @@ void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_threa
     tracking_thread.param.cull_cos_angle = float(std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0));
     tracking_thread.param.step_size = po.get("step_size",tracking_thread.param.step_size);
     tracking_thread.param.smooth_fraction = po.get("smoothing",tracking_thread.param.smooth_fraction);
-    tracking_thread.param.min_length = po.get("min_length",handle->min_length());
-    tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,po.get("max_length",handle->max_length()));
+    tracking_thread.param.min_length = po.get("min_length",handle->default_min_length());
+    tracking_thread.param.max_length = std::max<float>(tracking_thread.param.min_length,po.get("max_length",handle->default_max_length()));
 
-    tracking_thread.param.track_voxel_ratio = po.get("track_voxel_ratio",tracking_thread.param.track_voxel_ratio);
+    tracking_thread.param.track_voxel_ratio = po.get("track_voxel_ratio",handle->default_track_voxel_ratio());
     tracking_thread.param.random_seed = uint8_t(po.get("random_seed",int(tracking_thread.param.random_seed)));
     tracking_thread.param.tracking_method = uint8_t(po.get("method",int(tracking_thread.param.tracking_method)));
     tracking_thread.param.check_ending = uint8_t(po.get("check_ending",po.has("track_id") ? 1 : 0)) && !(po.has("dt_metric1"));
