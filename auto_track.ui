@@ -280,7 +280,7 @@
                <item>
                 <widget class="QDoubleSpinBox" name="track_voxel_ratio">
                  <property name="decimals">
-                  <number>1</number>
+                  <number>2</number>
                  </property>
                  <property name="minimum">
                   <double>0.500000000000000</double>
@@ -386,7 +386,7 @@
                   <number>100</number>
                  </property>
                  <property name="value">
-                  <number>32</number>
+                  <number>16</number>
                  </property>
                 </widget>
                </item>
@@ -536,7 +536,7 @@
      <x>0</x>
      <y>0</y>
      <width>750</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
