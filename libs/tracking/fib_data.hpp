@@ -228,22 +228,37 @@ public:
     bool is_be = false;
     size_t matched_template_id = 0;
     bool trackable = true;
-    float min_length(void) const
+    float default_template_vs(void) const
     {
-        if(template_id == 0) // human
-            return 30.0f;
-        float min_length = dim[0]*vs[0]/4;
-        float min_length_digit = float(std::pow(10.0f,std::floor(std::log10(double(min_length)))));
-        return int(min_length/min_length_digit)*min_length_digit;
-
+        const float template_default_vs[] = {
+        2.0f,   //  human
+        1.25f,  //  neonate
+        1.25f,  //  chimpanzee
+        1.00f,  //  rhesus
+        0.25f,  //  marmoset
+        0.25f,  //  rat
+        0.1f,   //  mouse
+        1.0f,
+        1.0f
+        };
+        return template_default_vs[template_id];
     }
-    float max_length(void) const
+    float default_track_voxel_ratio(void) const
     {
-        if(template_id == 0) // human
-            return 200.0f;
-        float max_length = dim[1]*vs[1]*1.5;
-        float max_length_digit = float(std::pow(10.0f,std::floor(std::log10(double(max_length)))));
-        return int(max_length/max_length_digit)*max_length_digit;
+        float ratio = vs[0] / default_template_vs();
+        return ratio*ratio;
+    }
+    float default_min_length(void) const
+    {
+        return 15.0f*default_template_vs();
+    }
+    float default_tolerance(void) const
+    {
+        return 11.0f*default_template_vs();
+    }
+    float default_max_length(void) const
+    {
+        return 100.0f*default_template_vs();
     }
 public:
     tipl::const_pointer_image<3,unsigned char> mask;
