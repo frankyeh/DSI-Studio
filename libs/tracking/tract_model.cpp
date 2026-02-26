@@ -2327,7 +2327,8 @@ void TractModel::trim(unsigned int tip_iteration)
     if(!tip_iteration)
         return;
     auto last = get_deleted_track_count();
-    for(size_t i = 0;i < tip_iteration && get_visible_track_count() && trim();++i)
+    tipl::progress prog("trimming");
+    for(size_t i = 0;prog(i,tip_iteration) && get_visible_track_count() && trim();++i)
                 ;
     tipl::out() << get_deleted_track_count()-last << " tracts removed by trimming.";
     tipl::out() << "tract count after trimming: " << get_visible_track_count();
