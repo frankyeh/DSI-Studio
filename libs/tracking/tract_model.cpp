@@ -2890,7 +2890,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
                                       max_value[2] - min_value[2]);
 
                 volume.resize(geo);
-                tipl::adaptive_par_for(points.size(),[&](unsigned int index)
+                tipl::par_for<tipl::sequential>(points.size(),[&](unsigned int index)
                 {
                     tipl::vector<3,short> point(points[index]);
                     point -= min_value;
@@ -3251,6 +3251,7 @@ float TractModel::get_tracts_mean(std::shared_ptr<fib_data> handle,unsigned int 
     if(handle->slices[data_index]->optional() || tract_data.empty())
         return 0.0f;
     std::vector<double> m(tract_data.size());
+    handle->slices[data_index]->get_image();
     tipl::par_for(tract_data.size(),[&](unsigned int i)
     {
         auto data(get_tract_data(handle,i,data_index));
