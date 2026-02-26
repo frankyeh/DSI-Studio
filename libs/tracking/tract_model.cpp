@@ -1595,6 +1595,7 @@ bool TractModel::select_tracts(const std::vector<unsigned int>& tracts_to_select
 //---------------------------------------------------------------------------
 bool TractModel::delete_repeated(float d)
 {   
+    tipl::progress prog("delete repeated tracts");
     std::vector<std::vector<size_t> > x_reg;
     std::vector<size_t> track_location1,track_location2;
     {
@@ -1652,8 +1653,12 @@ bool TractModel::delete_repeated(float d)
     };
     std::vector<char> repeated(tract_data.size());
     std::mutex m;
+    std::atomic<size_t> count = 0;
+    size_t total = tract_data.size() + 1;
     tipl::par_for(tract_data.size(),[&](size_t i)
     {
+        if(!prog(count++,total))
+            return;
         std::vector<size_t> check_set;
         if(x_reg.empty())
         {
