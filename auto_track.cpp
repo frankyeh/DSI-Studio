@@ -62,6 +62,12 @@ void auto_track::update_list()
     QStringList filenames;
     for(int index = 0;index < file_list.size();++index)
         filenames << QFileInfo(file_list[index]).fileName();
+    if(!ui->file_list_view->count() && !file_list.empty())
+    {
+        auto handle = std::make_shared<fib_data>();
+        if(handle->load_from_file(file_list.front().toStdString()) && handle->load_template())
+            ui->track_voxel_ratio->setValue(handle->vs[0]/handle->template_vs[0]);
+    }
     ui->file_list_view->clear();
     ui->file_list_view->addItems(filenames);
     raise(); // for Mac
@@ -275,7 +281,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         thread.param.max_length = handle->vs[0]*(minmax.second+2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
                         tipl::out() << "min_length(mm): " << thread.param.min_length << std::endl;
                         tipl::out() << "max_length(mm): " << thread.param.max_length << std::endl;
-                        thread.param.tip_iteration = po.get("tip_iteration",32);
+                        thread.param.tip_iteration = po.get("tip_iteration",16);
                         thread.param.check_ending = po.get("check_ending",1);
                         thread.param.track_voxel_ratio = po.get("track_voxel_ratio",thread.param.track_voxel_ratio);
                     }
