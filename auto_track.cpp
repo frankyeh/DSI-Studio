@@ -517,6 +517,7 @@ void auto_track::on_run_clicked()
     tipl::progress prog_("");
 
     tipl::program_option<tipl::out> po;
+    po["action"] = std::String("atk");
     po["tolerance"] = ui->tolerance->text().toStdString();
     po["track_voxel_ratio"] = float(ui->track_voxel_ratio->value());
     po["tip_iteration"] = ui->pruning->value();
