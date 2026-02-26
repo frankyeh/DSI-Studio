@@ -65,8 +65,8 @@ void auto_track::update_list()
     if(!ui->file_list_view->count() && !file_list.empty())
     {
         auto handle = std::make_shared<fib_data>();
-        if(handle->load_from_file(file_list.front().toStdString()) && handle->load_template())
-            ui->track_voxel_ratio->setValue(handle->vs[0]/handle->template_vs[0]);
+        if(handle->load_from_file(file_list.front().toStdString()))
+            ui->track_voxel_ratio->setValue(handle->default_track_voxel_ratio());
     }
     ui->file_list_view->clear();
     ui->file_list_view->addItems(filenames);
@@ -283,7 +283,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         tipl::out() << "max_length(mm): " << thread.param.max_length << std::endl;
                         thread.param.tip_iteration = po.get("tip_iteration",16);
                         thread.param.check_ending = po.get("check_ending",1);
-                        thread.param.track_voxel_ratio = po.get("track_voxel_ratio",thread.param.track_voxel_ratio);
+                        thread.param.track_voxel_ratio = po.get("track_voxel_ratio",handle->default_track_voxel_ratio());
                     }
                     {
                         thread.roi_mgr->use_auto_track = true;
