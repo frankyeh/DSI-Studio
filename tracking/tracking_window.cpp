@@ -375,9 +375,10 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 set_data("turning_angle",0.0f);
                 set_data("tube_diameter",0.15f);                
             }
-            set_data("min_length",handle->min_length());
-            set_data("max_length",handle->max_length());
-            set_data("tolerance",float(handle->min_length())*0.8f);
+            set_data("min_length",handle->default_min_length());
+            set_data("max_length",handle->default_max_length());
+            set_data("track_voxel_ratio",handle->default_track_voxel_ratio());
+            set_data("tolerance",handle->default_tolerance());
 
         }
 
