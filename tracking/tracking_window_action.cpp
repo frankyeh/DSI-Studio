@@ -570,6 +570,10 @@ bool tracking_window::command(std::vector<std::string> cmd)
         renderWidget->setDefault("Tracking_dT");
         renderWidget->setDefault("Tracking_adv");
         on_tracking_index_currentIndexChanged((*this)["tracking_index"].toInt());
+        set_data("min_length",handle->default_min_length());
+        set_data("max_length",handle->default_max_length());
+        set_data("track_voxel_ratio",handle->default_track_voxel_ratio());
+        set_data("tolerance",handle->default_tolerance());
         return run->succeed();
     }
     if(cmd[0] == "enable_auto_tract")
@@ -1023,7 +1027,7 @@ std::string tracking_window::get_parameter_id(void)
     param.check_ending = renderWidget->getData("check_ending").toInt() && (renderWidget->getData("dt_index1").toInt() == 0);
     param.max_seed_count = renderWidget->getData("max_seed_count").toInt();
     param.max_tract_count = renderWidget->getData("max_tract_count").toInt();
-    param.track_voxel_ratio = renderWidget->getData("track_voxel_ratio").toInt();
+    param.track_voxel_ratio = renderWidget->getData("track_voxel_ratio").toFloat();
     param.default_otsu = renderWidget->getData("otsu_threshold").toFloat();
     param.tip_iteration =
             // only used in automatic fiber tracking
