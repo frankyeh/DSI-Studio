@@ -2475,6 +2475,8 @@ void TractModel::get_density_map(tipl::image<3,unsigned int>& mapping,
             m.resize(s);
         std::unordered_set<size_t> point_set;
         const auto& tract = tract_data[i];
+        if(tract.size() < 3)
+            return;
         for (unsigned int j = 0;j < tract.size();j+=3)
         {
             if(j && endpoint)
