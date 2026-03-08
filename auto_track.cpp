@@ -152,34 +152,20 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
             }
             tipl::out() << "available track_ids in current template: " << labels;
         }
-        auto selections = tipl::split(po.get("track_id","Arcuate,Cingulum,Aslant,InferiorFronto,InferiorLongitudinal,SuperiorLongitudinal,Uncinate,Fornix,Corticos,ThalamicR,Optic,Lemniscus,Reticular,Corpus"),',');
         std::vector<bool> selected(list.size());
-        std::vector<size_t> backup_subcomponents;
-        for(const auto& each : selections)
+        for(const auto& each : tipl::split(po.get("track_id","Fasciculus,Cingulum,Tract,Hippo,Fornix,Radiation,Lemniscus,Bundle,Corpus"),','))
         {
-            auto sep_count = std::count(each.begin(),each.end(),'_');
             for(size_t i = 0;i < list.size();++i)
             {
                 if(selected[i])
                     continue;
-                if(tipl::equal_case_insensitive(list[i],each))
-                    selected[i] = true;
                 if(tipl::contains_case_insensitive(list[i],each))
-                {
-                    if(std::count(list[i].begin(),list[i].end(),'_') < 2)  // not subbundle then contain also work
-                        selected[i] = true;
-                    else
-                        backup_subcomponents.push_back(i);
-                }
+                    selected[i] = true;
             }
         }
 
         if(std::all_of(selected.begin(), selected.end(), [](bool s){return !s; }))
-        {
-            tipl::out() << "no primary bundle matches. select subcomponents...";
-            for(auto each : backup_subcomponents)
-                selected[each] = true;
-        }
+            return "no bundle matches";
 
         std::string selected_list;
         for(size_t i = 0;i < list.size();++i)
