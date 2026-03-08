@@ -541,19 +541,23 @@ int trk_post(tipl::program_option<tipl::out>& po,
     };
 
     if(po.has(("template_track")) &&
-       !tract_model->save_tracts_in_template_space(handle,po.get("template_track",addPrefixToFilename(tract_file_name,"T_"))))
+       !tract_model->save_tracts_in_template_space(handle,
+        po.get("template_track").empty() ? addPrefixToFilename(tract_file_name,"T_") :po.get("template_track")))
     {
-        tipl::error() << "failed to save --template_track" << std::endl;
+        tipl::error() << "failed to save --template_track";
         return 1;
     }
-    if(po.has(("mni_track")) && !tract_model->save_tracts_in_template_space(handle,po.get("mni_track",addPrefixToFilename(tract_file_name,"mni_")),true))
+    if(po.has(("mni_track")) &&
+       !tract_model->save_tracts_in_template_space(handle,
+        po.get("mni_track").empty() ? addPrefixToFilename(tract_file_name,"mni_") : po.get("mni_track"),true))
     {
-        tipl::error() << "failed to save --mni_track" << std::endl;
+        tipl::error() << "failed to save --mni_track";
         return 1;
     }
-    if(po.has(("end_point")) && !tract_model->save_end_points(po.get("end_point",tract_file_name + ".end.txt")))
+    if(po.has(("end_point")) &&
+        !tract_model->save_end_points(po.get("end_point").empty() ? tract_file_name + ".end.txt" : po.get("end_point")))
     {
-        tipl::error() << "failed to save --end_point" << std::endl;
+        tipl::error() << "failed to save --end_point";
         return 1;
     }
     if(po.has(("end_point1")) || po.has(("end_point2")))
@@ -563,14 +567,14 @@ int trk_post(tipl::program_option<tipl::out>& po,
         ROIRegion end1(handle),end2(handle);
         end1.add_points(std::move(points1));
         end2.add_points(std::move(points2));
-        if(po.has(("end_point1")) && !end1.save_region_to_file(po.get("end_point1",tract_file_name + ".end1.txt")))
+        if(po.has(("end_point1")) && !end1.save_region_to_file(po.get("end_point1").empty() ? tract_file_name + ".end1.txt" : po.get("end_point1")))
         {
-            tipl::error() << "failed to save --end_point1" << std::endl;
+            tipl::error() << "failed to save --end_point1";
             return 1;
         }
-        if(po.has(("end_point2")) && !end2.save_region_to_file(po.get("end_point2",tract_file_name + ".end2.txt")))
+        if(po.has(("end_point2")) && !end2.save_region_to_file(po.get("end_point2").empty() ? tract_file_name + ".end2.txt" : po.get("end_point2")))
         {
-            tipl::error() << "failed to save --end_point2" << std::endl;
+            tipl::error() << "failed to save --end_point2";
             return 1;
         }
     }
