@@ -2489,15 +2489,16 @@ void TractModel::get_density_map(tipl::image<3,unsigned int>& mapping,
         }
         for(auto pos : point_set)
             ++m[pos];
-    },tipl::max_thread_count);
+    });
 
     while(maps.back().empty() && !maps.empty())
         maps.pop_back();
 
-    tipl::adaptive_par_for(s.size(),[&](unsigned int i)
+    tipl::par_for(s.size(),[&](unsigned int i)
     {
         for(const auto& each : maps)
-            mapping[i] += each[i];
+            if(!each.empty())
+                mapping[i] += each[i];
     });
 
 }
@@ -3594,7 +3595,6 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,bool use_end_only)
     tipl::image<3,unsigned int> tract_map(handle->dim);
     tract_model.get_density_map(tract_map,tipl::matrix<4,4>(tipl::identity_matrix()),false);
     unsigned int t = tipl::max_value(tract_map)*0.005f;
-    tipl::out() << "tract count threshold:" << t;
 
     std::vector<std::pair<size_t,size_t> > ij_pair;
     std::vector<size_t> ij_pair_index;
