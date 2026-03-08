@@ -3566,6 +3566,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,bool use_end_only)
         end_list2 = end_list1;
     }
 
+
     std::vector<std::vector<std::vector<unsigned int> > > region_passing_list(region_count);
     for(size_t i = 0;i < region_count;++i)
         region_passing_list[i].resize(region_count);
@@ -3589,10 +3590,11 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,bool use_end_only)
             region_passing_list[pair.first][pair.second].push_back(index);
     }
 
+
     tipl::image<3,unsigned int> tract_map(handle->dim);
     tract_model.get_density_map(tract_map,tipl::matrix<4,4>(tipl::identity_matrix()),false);
     unsigned int t = tipl::max_value(tract_map)*0.005f;
-
+    tipl::out() << "tract count threshold:" << t;
 
     std::vector<std::pair<size_t,size_t> > ij_pair;
     std::vector<size_t> ij_pair_index;
