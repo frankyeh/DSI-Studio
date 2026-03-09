@@ -342,7 +342,6 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 }
                 else
                 {
-                    po.set("output",trk_file_name);
                     if(trk_post(po,handle,tract_model,trk_file_name,true))
                         return std::string("terminated due to error");
                 }
