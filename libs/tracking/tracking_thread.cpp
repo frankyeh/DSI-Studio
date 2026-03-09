@@ -250,13 +250,13 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
         track_buffer_back.resize(thread_count);
         track_buffer_front.resize(thread_count);
     }
-    for (unsigned int index = 0;index < thread_count-1;++index)
+    for (unsigned int index = 1;index < thread_count;++index)
         threads.push_back(std::thread([=](){run_thread(index,thread_count);}));
 
 
     if(wait)
     {
-        run_thread(thread_count-1,thread_count);
+        run_thread(0,thread_count);
         for(auto& thread : threads)
             if(thread.joinable())
                 thread.join();
@@ -266,6 +266,6 @@ void ThreadData::run(std::shared_ptr<tracking_data> trk_,unsigned int thread_cou
     else
     {
         tipl::out() << "tracking in threads";
-        threads.push_back(std::thread([=](){run_thread(thread_count-1,thread_count);}));
+        threads.push_back(std::thread([=](){run_thread(0,thread_count);}));
     }
 }
