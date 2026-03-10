@@ -3455,7 +3455,12 @@ void ConnectivityMatrix::save_to_file(const std::string& file_name)
         return;
     tipl::out() << "saving " << file_name;
     tipl::io::mat_write mat_header(file_name);
-    mat_header.write("connectivity",matrix_value,matrix_value.width());
+    for(size_t i = 0;i < metrics.size();++i)
+    {
+        set_metrics(i);
+        mat_header.write(metrics[i] + " r2r",t2r_value,region_points.size());
+        mat_header.write(metrics[i] + " t2r",matrix_value,region_points.size());
+    }
     std::ostringstream out;
     std::copy(region_name.begin(),region_name.end(),std::ostream_iterator<std::string>(out,"\n"));
     std::string result(out.str());
