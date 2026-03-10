@@ -288,12 +288,11 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
         }
 
         auto connectivity_value = tipl::split(po.get("connectivity_value","all"),',');
-        auto connectivity_output = po.get("connectivity_output","all");
+        auto connectivity_output = po.get("connectivity_output","matrix");
         std::string ignoring_list;
         for(size_t m_index = 0;m_index < data.metrics.size();++m_index)
         {
             data.set_metrics(m_index);
-
             std::string metrics_name = data.metrics[m_index].substr(0,data.metrics[m_index].find('('));
             std::replace(metrics_name.begin(),metrics_name.end(),' ','_');
             bool included = connectivity_value.size() == 1 && connectivity_value.front() == "all";
@@ -311,19 +310,16 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                 continue;
             }
             std::string file_name_stat = save_file_name + "." + metrics_name;
-            if(connectivity_output == "all" || tipl::contains(connectivity_output,"matrix"))
-                data.save_to_file(file_name_stat + ".connectivity.mat");
-            if(connectivity_output == "all" || tipl::contains(connectivity_output,"connectogram"))
+            if(tipl::contains(connectivity_output,"connectogram"))
                 data.save_connectogram(file_name_stat + ".connectogram.txt");
-            if(connectivity_output == "all" || tipl::contains(connectivity_output,"network"))
+            if(tipl::contains(connectivity_output,"network"))
                 data.save_network_property(file_name_stat + ".network_measures.txt");
         }
-        if(connectivity_output == "all" || tipl::contains(connectivity_output,"t2r"))
+        if(tipl::contains(connectivity_output,"matrix"))
         {
-            tipl::out() << "generating tract-to-region connectome";
-            data.save_t2r(save_file_name + ".tract2region.txt",connectivity_output);
+            tipl::out() << "generating r2r and t2r matrices to " + save_file_name + ".connectivity.mat";
+            data.save_to_file(save_file_name + ".connectivity.mat");
         }
-        tipl::out() << "the metrics ignored: " << ignoring_list;
     }
 
     return true;
