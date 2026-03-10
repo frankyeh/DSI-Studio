@@ -94,7 +94,7 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
                 limiting_points[thread_id].push_back(point);
                 if(fa0[pos.index()] >= seed_threshold)
                     seed_points[thread_id].push_back(point);
-                if(not_end_threshold != 0.0f && fa0[pos.index()] >= not_end_threshold)
+                if(not_end_threshold != 0.0f && fa0[pos.index()] > not_end_threshold)
                     not_end_points[thread_id].push_back(point);
             });
 
