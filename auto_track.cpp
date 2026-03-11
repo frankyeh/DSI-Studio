@@ -153,7 +153,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
             tipl::out() << "available track_ids in current template: " << labels;
         }
         std::vector<bool> selected(list.size());
-        for(const auto& each : tipl::split(po.get("track_id","Fasciculus,Cingulum,Tract,Hippo,Fornix,Radiation,Lemniscus,Bundle,Corpus"),','))
+        for(const auto& each : tipl::split(po.get("track_id","Fasciculus,Cingulum,Tract,Hippo,Fornix,Optic,Thalamic,Lemniscus,Bundle,Corpus"),','))
         {
             for(size_t i = 0;i < list.size();++i)
             {
