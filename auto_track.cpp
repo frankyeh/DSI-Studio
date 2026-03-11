@@ -183,9 +183,13 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
         tipl::out() << "selected tracts: " << selected_list;
     }
 
-    std::vector<std::vector<std::string> > stat_files(tract_name_list.size());
-    std::string dir = po.get("output",QFileInfo(file_list.front().c_str()).absolutePath().toStdString());
 
+    if(po.has("output") && !std::filesystem::is_directory(po.get("output")))
+        return "expecting a directory at --output";
+
+    std::string work_dir = po.get("output",QFileInfo(file_list.front().c_str()).absolutePath().toStdString());
+
+    std::vector<std::vector<std::string> > stat_files(tract_name_list.size());
     std::vector<std::string> scan_names;
     tipl::progress prog0("automatic fiber tracking");
     for(size_t i = 0;prog0(i,file_list.size());++i)
@@ -194,22 +198,20 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
         std::string fib_file_name = file_list[i];
         std::string cur_file_base_name = std::filesystem::path(fib_file_name).filename().u8string();
         scan_names.push_back(cur_file_base_name);
-        tipl::out() << "processing " << cur_file_base_name << std::endl;
+        tipl::out() << "processing " << cur_file_base_name;
         std::shared_ptr<fib_data> handle;
 
         tipl::progress prog1("tracking pathways");
         for(size_t j = 0;prog1(j,tract_name_list.size());++j)
         {
             std::string tract_name = tract_name_list[j];
-            std::string output_path = dir + "/" + tract_name;
+            std::string output_path = po.has("output") ? work_dir : work_dir + "/" + tract_name;
             tipl::out() << "tracking " << tract_name;
 
             // create storing directory
-            {
-                QDir dir(output_path.c_str());
-                if (!dir.exists() && !dir.mkpath("."))
-                    tipl::out() << std::string("cannot create directory: ") + output_path << std::endl;
-            }
+            if (!QDir(output_path.c_str()).exists() && !QDir(output_path.c_str()).mkpath("."))
+                tipl::warning() << std::string("cannot create directory: ") + output_path << std::endl;
+
             std::string fib_base = QFileInfo(fib_file_name.c_str()).baseName().toStdString();
             std::string trk_base = output_path + "/" + fib_base+"."+tract_name;
             std::string no_result_file_name = trk_base+".no_result.txt";
@@ -426,7 +428,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 }
             }
             std::string tract_name = tract_name_list[t];
-            std::ofstream out(dir+"/"+tract_name+".stat.txt");
+            std::ofstream out(work_dir+"/"+tract_name+".stat.txt");
 
             // output first row: the name of each scan
             for(const auto& each: scan_names)
@@ -454,7 +456,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 }
         }
 
-        std::ofstream all_out2(dir+"/all_results_subject_wise.txt");
+        std::ofstream all_out2(work_dir+"/all_results_subject_wise.txt");
         all_out2 << "Subjects\tMetrics";
         for(size_t t = 0;t < tract_name_list.size();++t) // for each track
         {
