@@ -460,7 +460,7 @@ bool src_data::check_b_table(bool use_template)
             result[i] = float(sum_cos/double(ncount));
         }
         else
-        // for animal studies, use fiber coherence index
+            // for animal studies, use fiber coherence index
             result[i] = evaluate_fib(subject_geo,otsu,fib_fa,[&](uint32_t pos,uint8_t fib){return new_dir[fib][pos];});
     }
     long best = long(std::max_element(result,result+24)-result);
@@ -470,7 +470,7 @@ bool src_data::check_b_table(bool use_template)
         if(i == best)
             sp << (txt[i]+1) << "=BEST";
         else
-            sp << (txt[i]+1) << "=-" << int(100.0f*(result[best]-result[i])/(result[best]+1.0f)) << "%";
+            sp << (txt[i]+1) << "=-" << std::fixed << std::setprecision(1) << (100.0f * (result[best] - result[i]) / (result[best] + 1.0f)) << "%";
         if(i % 8 == 7)
             sp << std::endl;
         else
