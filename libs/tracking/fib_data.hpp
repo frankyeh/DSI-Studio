@@ -420,101 +420,65 @@ public:
 
 
 
-template<typename fib_fa_type,typename fun1,typename fun2>
-void evaluate_connection(
-        const tipl::shape<3>& dim,
-        float otsu,
-        const fib_fa_type& fib_fa,
-        fun1 dir,
-        fun2 f,
-        bool check_trajectory = true)
-{
-    unsigned char num_fib = fib_fa.size();
-    int dx[13] = {1,0,0,1,1,0, 1, 1, 0, 1,-1, 1, 1};
-    int dy[13] = {0,1,0,1,0,1,-1, 0, 1, 1, 1,-1, 1};
-    int dz[13] = {0,0,1,0,1,1, 0,-1,-1, 1, 1, 1,-1};
-    std::vector<tipl::vector<3> > dis(13);
-    const double angular_threshold = 0.984;
-    for(unsigned int i = 0;i < 13;++i)
-    {
-        dis[i] = tipl::vector<3>(dx[i],dy[i],dz[i]);
-        dis[i].normalize();
-    }
-    tipl::par_for(tipl::begin_index(dim),tipl::end_index(dim),
-                [&](const tipl::pixel_index<3>& index)
-    {
-        if(fib_fa[0][index.index()] <= otsu)
-            return;
-        for(unsigned char fib1 = 0;fib1 < num_fib;++fib1)
-        {
-            if(fib_fa[fib1][index.index()] <= otsu)
-                break;
-            for(unsigned int j = 0;j < 2;++j)
-            for(unsigned int i = 0;i < 13;++i)
-            {
-                tipl::vector<3,int> pos;
-                pos = j ? tipl::vector<3,int>(index[0] + dx[i],index[1] + dy[i],index[2] + dz[i])
-                          :tipl::vector<3,int>(index[0] - dx[i],index[1] - dy[i],index[2] - dz[i]);
-                if(!dim.is_valid(pos))
-                    continue;
-                tipl::pixel_index<3> other_index(pos[0],pos[1],pos[2],dim);
-                if(check_trajectory)
-                {
-                    if(std::abs(dir(index.index(),fib1)*dis[i]) <= angular_threshold)
-                        continue;
-                    for(unsigned char fib2 = 0;fib2 < num_fib;++fib2)
-                        if(fib_fa[fib2][other_index.index()] > otsu &&
-                                std::abs(dir(other_index.index(),fib2)*dis[i]) > angular_threshold)
-                            f(index.index(),fib1,other_index.index(),fib2);
-                }
-                else
-                {
-                    for(unsigned char fib2 = 0;fib2 < num_fib;++fib2)
-                        if(fib_fa[fib2][other_index.index()] > otsu &&
-                                std::abs(dir(other_index.index(),fib2)*dir(index.index(),fib1)) > angular_threshold)
-                            f(index.index(),fib1,other_index.index(),fib2);
-                }
 
-            }
-        }
-    });
-}
-
-
-template<typename fib_fa_type,typename fun>
+template<typename fib_fa_type, typename fun>
 float evaluate_fib(
         const tipl::shape<3>& dim,
         float otsu,
         const fib_fa_type& fib_fa,
-        fun dir,
-        bool check_trajectory = true)
+        fun dir)
 {
-    double connection_count = 0.0;
-    std::vector<std::vector<unsigned char> > connected(fib_fa.size());
-        for(unsigned int index = 0;index < connected.size();++index)
-            connected[index].resize(dim.size());
+    if(fib_fa.empty())
+        return 0.0;
 
-    std::mutex add_mutex;
-    evaluate_connection(dim,otsu,fib_fa,dir,[&](unsigned int pos1,unsigned char fib1,unsigned int pos2,unsigned char fib2)
+    std::atomic<double> connection_count{0.0};
+    std::atomic<double> total_fa{0.0};
+    const double angular_threshold = 0.9659;
+
+    auto add_atomic = [](std::atomic<double>& target, double val)
     {
-        if(fib_fa[fib2][pos2] == 0.0f)
-            return;
-        connected[fib1][pos1] = 1;
-        connected[fib2][pos2] = 1;
-        auto v = fib_fa[fib2][pos2];
-        std::lock_guard<std::mutex> lock(add_mutex);
-        connection_count += double(v);
-        // no need to add fib1 because it will be counted if fib2 becomes fib1
-    },check_trajectory);
+        double current = target.load();
+        while(!target.compare_exchange_weak(current, current + val))
+            continue;
+    };
 
-    unsigned char num_fib = fib_fa.size();
-    double total_fa = 0.0;
-    for(tipl::pixel_index<3> index(dim);index < dim.size();++index)
-        for(unsigned int i = 0;i < num_fib;++i)
-            total_fa += fib_fa[i][index.index()];
-    if(total_fa != 0.0)
-        connection_count /= total_fa;
-    return connection_count;
+    tipl::par_for(tipl::begin_index(dim), tipl::end_index(dim), [&](const tipl::pixel_index<3>& index)
+    {
+        auto v1 = fib_fa[0][index.index()];
+        if(v1 <= otsu)
+            return;
+
+        auto fib_num = fib_fa.size();
+        auto d = dir(index.index(), 0);
+        tipl::vector<3,int> oxyz(std::round(d[0]),std::round(d[1]),std::round(d[2]));
+        tipl::vector<3,int> pos[2];
+        pos[0] = tipl::vector<3,int>(index[0] + oxyz[0], index[1] + oxyz[1], index[2] + oxyz[2]);
+        pos[1] = tipl::vector<3,int>(index[0] - oxyz[0], index[1] - oxyz[1], index[2] - oxyz[2]);
+
+        bool connected = false;
+        for(int j = 0; j < 2; ++j)
+        {
+            if(!dim.is_valid(pos[j]))
+                continue;
+            tipl::pixel_index<3> other_index(pos[j].begin(), dim);
+            for(unsigned char fib2 = 0; fib2 < fib_num && fib_fa[fib2][other_index.index()] > otsu; ++fib2)
+                if(std::abs(dir(other_index.index(), fib2) * d) >= angular_threshold)
+                {
+                    connected = true;
+                    goto end;
+                }
+        }
+    end:
+        add_atomic(total_fa, double(v1));
+        if(connected)
+            add_atomic(connection_count, double(v1));
+    });
+
+    double final_total = total_fa.load();
+    if(final_total != 0.0)
+        return connection_count.load() / final_total;
+
+    return 0.0;
 }
 
 #endif//FIB_DATA_HPP
