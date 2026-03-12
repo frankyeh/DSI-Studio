@@ -639,12 +639,9 @@ bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
                 tipl::error() << "invalid track_id";
                 return false;
             }
-            roi_mgr->tract_name = handle->tractography_name_list[track_id];
+            name = handle->tractography_name_list[track_id];
         }
-        else
-            roi_mgr->tract_name = name;
-        roi_mgr->use_auto_track = true;
-        roi_mgr->tolerance_dis_in_icbm152_mm = po.get("tolerance",handle->default_tolerance());
+        roi_mgr->set_auto_track(name,po.get("tolerance",handle->default_tolerance()),po.get("use_roi",1));
     }
     return true;
 }
