@@ -302,7 +302,7 @@ public:
     std::vector<std::string> get_tractography_level2(const std::string& group1,const std::string& group2);
 
     std::shared_ptr<TractModel> track_atlas;
-    std::vector<float> tract_atlas_min_length,tract_atlas_max_length;
+    std::vector<float> tract_atlas_min_length,tract_atlas_median_length,tract_atlas_max_length;
     float tract_atlas_jacobian = 0.0f;
     bool recognize(std::shared_ptr<TractModel>& trk,
                    std::vector<unsigned int>& labels,
@@ -320,6 +320,7 @@ public:
     bool load_track_atlas(bool symmetric);
     std::vector<size_t> get_track_ids(const std::string& tract_name);
     std::pair<float,float> get_track_minmax_length(const std::string& tract_name);
+    float get_track_median_length(const std::string& tract_name);
 public:
     std::string get_mapping_file_name(void) const;
     bool map_to_mni(bool background = true);
