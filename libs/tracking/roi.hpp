@@ -178,6 +178,16 @@ public:
     float tolerance_dis_in_subject_voxels = 0.0f;
     std::vector<size_t> track_ids;
     std::string tract_name;
+    void set_auto_track(std::string tract_name_,float tol,bool use_roi_ = true)
+    {
+        use_auto_track = true;
+        use_roi = use_roi_;
+        tract_name = tract_name_;
+        auto median05 = handle->get_track_median_length(tract_name)*0.5f;
+        if(tol > median05)
+            tipl::out() << "mapping short pathway, adjust tolerance using median length: " << (tol = median05);
+        tolerance_dis_in_icbm152_mm = tol;
+    }
 public:
     RoiMgr(std::shared_ptr<fib_data> handle_):handle(handle_){}
 public:
