@@ -562,11 +562,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         if(!new_thread->param.set_code(param_id))
             return run->failed("invalid parameter id");
         if(cmd.size() >= 4) // has auto track
-        {
-            new_thread->roi_mgr->use_auto_track = true;
-            new_thread->roi_mgr->tract_name = tract_name;
-            new_thread->roi_mgr->tolerance_dis_in_icbm152_mm = QString(cmd[3].c_str()).toFloat();
-        }
+            new_thread->roi_mgr->set_auto_track(tract_name,QString(cmd[3].c_str()).toFloat());
         addNewTracts(tract_name.c_str(),false);
         thread_data.back() = new_thread;
         if(!cur_tracking_window.regionWidget->set_roi(roi_settings,new_thread->roi_mgr))
