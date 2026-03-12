@@ -254,7 +254,7 @@ public:
     }
     float default_tolerance(void) const
     {
-        return 11.0f*default_template_vs();
+        return 12.0f*default_template_vs();
     }
     float default_max_length(void) const
     {
