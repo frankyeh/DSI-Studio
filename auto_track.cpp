@@ -153,7 +153,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
             tipl::out() << "available track_ids in current template: " << labels;
         }
         std::vector<bool> selected(list.size());
-        for(const auto& each : tipl::split(po.get("track_id","Fasciculus,Cingulum,Tract,Hippo,Fornix,Optic,Thalamic,Lemniscus,Bundle,Corpus"),','))
+        for(const auto& each : tipl::split(po.get("track_id","Association,Tract,Thalamic,Optic,Fornix,Medial,Corpus"),','))
         {
             for(size_t i = 0;i < list.size();++i)
             {
@@ -262,24 +262,21 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         thread.param.cull_cos_angle = float(std::cos(po.get("turning_angle",0.0)*3.14159265358979323846/180.0));
                         thread.param.step_size = po.get("step_size",thread.param.step_size);
                         thread.param.smooth_fraction = po.get("smoothing",thread.param.smooth_fraction);
-
-                        auto minmax = handle->get_track_minmax_length(tract_name);
-                        thread.param.min_length = handle->vs[0]*std::max<float>(tolerance[tracking_iteration],
-                                                                   minmax.first-2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
-                        thread.param.max_length = handle->vs[0]*(minmax.second+2.0f*tolerance[tracking_iteration])/handle->tract_atlas_jacobian;
-                        tipl::out() << "min_length(mm): " << thread.param.min_length << std::endl;
-                        tipl::out() << "max_length(mm): " << thread.param.max_length << std::endl;
                         thread.param.tip_iteration = po.get("tip_iteration",16);
                         thread.param.check_ending = po.get("check_ending",1);
                         thread.param.track_voxel_ratio = po.get("track_voxel_ratio",handle->default_track_voxel_ratio());
-                    }
-                    {
-                        thread.roi_mgr->use_auto_track = true;
-                        thread.roi_mgr->use_roi = po.get("use_roi",1);
-                        thread.roi_mgr->tract_name = tract_name;
-                        thread.roi_mgr->tolerance_dis_in_icbm152_mm = tolerance[tracking_iteration];
-                    }
 
+
+                        thread.roi_mgr->set_auto_track(tract_name,tolerance[tracking_iteration],po.get("use_roi",1));
+                        if(thread.roi_mgr->tolerance_dis_in_icbm152_mm != tolerance[tracking_iteration])
+                            thread.roi_mgr->tolerance_dis_in_icbm152_mm += tolerance[tracking_iteration]-tolerance.front();
+                        auto cur_tol = thread.roi_mgr->tolerance_dis_in_icbm152_mm;
+                        auto minmax = handle->get_track_minmax_length(tract_name);
+                        thread.param.min_length = handle->vs[0]*std::max<float>(cur_tol,minmax.first-2.0f*cur_tol)/handle->tract_atlas_jacobian;
+                        thread.param.max_length = handle->vs[0]*(minmax.second+2.0f*cur_tol)/handle->tract_atlas_jacobian;
+                        tipl::out() << "min_length(mm): " << thread.param.min_length << std::endl;
+                        tipl::out() << "max_length(mm): " << thread.param.max_length << std::endl;
+                    }
                     tipl::progress prog2("tracking ",tract_name.c_str(),true);
                     thread.run(thread_count,false);
                     tract_model->report = auto_track_report = handle->report + thread.report.str();
