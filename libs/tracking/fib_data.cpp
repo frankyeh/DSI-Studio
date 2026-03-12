@@ -1798,23 +1798,41 @@ bool fib_data::load_track_atlas(bool symmetric)
 
         auto& tract_data = track_atlas->get_tracts();
         // get min max length
-        std::vector<float> min_length(tractography_name_list.size()),max_length(tractography_name_list.size());
-        tipl::adaptive_par_for(tract_data.size(),[&](size_t i)
         {
-            if(tract_data.size() <= 6)
-                return;
-            auto c = cluster[i];
-            if(c < tractography_name_list.size())
+            std::vector<float> all_lengths(tract_data.size(), 0.0f);
+
+            tipl::par_for(tract_data.size(),[&](size_t i)
             {
-                double length = track_atlas->get_tract_length_in_mm(i);
-                if(min_length[c] == 0)
-                    min_length[c] = float(length);
-                min_length[c] = std::min(min_length[c],float(length));
-                max_length[c] = std::max(max_length[c],float(length));
-            }
-        });
-        tract_atlas_min_length.swap(min_length);
-        tract_atlas_max_length.swap(max_length);
+                if(tract_data.size() <= 6)
+                    return;
+                if(cluster[i] < tractography_name_list.size())
+                    all_lengths[i] = float(track_atlas->get_tract_length_in_mm(i));
+            });
+
+            std::vector<std::vector<float>> cluster_lengths(tractography_name_list.size());
+
+            for(size_t i = 0; i < tract_data.size(); ++i)
+                if(cluster[i] < tractography_name_list.size() && all_lengths[i] > 0.0f)
+                    cluster_lengths[cluster[i]].push_back(all_lengths[i]);
+
+            std::vector<float> min_length(tractography_name_list.size());
+            std::vector<float> max_length(tractography_name_list.size());
+            std::vector<float> median_length(tractography_name_list.size());
+
+            tipl::par_for(tractography_name_list.size(),[&](size_t c)
+            {
+                if(cluster_lengths[c].empty())
+                    return;
+                auto [min_it, max_it] = std::minmax_element(cluster_lengths[c].begin(), cluster_lengths[c].end());
+                min_length[c] = *min_it;
+                max_length[c] = *max_it;
+                median_length[c] = tipl::median(cluster_lengths[c].begin(),cluster_lengths[c].end());
+            });
+
+            tract_atlas_min_length.swap(min_length);
+            tract_atlas_max_length.swap(max_length);
+            tract_atlas_median_length.swap(median_length);
+        }
     }
     return true;
 }
@@ -1849,7 +1867,17 @@ std::pair<float,float> fib_data::get_track_minmax_length(const std::string& trac
     }
     return minmax;
 }
-
+//---------------------------------------------------------------------------
+float fib_data::get_track_median_length(const std::string& tract_name)
+{
+    auto track_ids = get_track_ids(tract_name);
+    if(track_ids.empty())
+        return 0.0f;
+    std::vector<float> m;
+    for(size_t i = 0;i < track_ids.size();++i)
+        m.push_back(tract_atlas_median_length[track_ids[i]]);
+    return tipl::median(m.begin(),m.end());
+}
 //---------------------------------------------------------------------------
 template<typename T,typename U>
 unsigned int find_nearest_contain(const float* trk,unsigned int length,
