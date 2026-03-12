@@ -296,14 +296,8 @@ bool fiber_directions::add_data(fib_data& fib)
         return false;
     }
 
-    // adding the primary fiber index
-    index_name.insert(index_name.begin(),fa.size() == 1 ? "fa":"qa");
-    index_data.insert(index_data.begin(),fa);
-    fa_otsu = tipl::segmentation::otsu_threshold(tipl::make_image(fa[0],dim));
-
-    for(size_t index = 1;index < index_data.size();++index)
-    {
-        // check index_data integrity
+    // check index_data integrity
+    for(size_t index = 0;index < index_data.size();++index)
         for(size_t j = 0;j < index_data[index].size();++j)
             if(!index_data[index][j] || index_data[index].size() != num_fiber)
             {
@@ -312,7 +306,18 @@ bool fiber_directions::add_data(fib_data& fib)
                 --index;
                 break;
             }
-    }
+
+    // adding the primary fiber index
+    index_name.insert(index_name.begin(),fa.size() == 1 ? "fa":"qa");
+    index_data.insert(index_data.begin(),fa);
+    fa_otsu = tipl::segmentation::otsu_threshold(tipl::make_image(fa[0],dim));
+
+    for(unsigned int index = 0;index < index_name.size();++index)
+        if(index == 0)
+            fib.slices.push_back(std::make_shared<slice_model>(fa.size() == 1 ? "fa":"qa",fa[0],dim));
+        else
+            fib.slices.push_back(std::make_shared<slice_model>(index_name[index],index_data[index][0],dim));
+
     return num_fiber;
 
     mat_reader_error:
@@ -825,9 +830,7 @@ bool fib_data::load_from_mat(void)
         error_msg = dir.error_msg;
         return false;
     }
-    slices.push_back(std::make_shared<slice_model>(dir.fa.size() == 1 ? "fa":"qa",dir.fa[0],dim));
-    for(unsigned int index = 1;index < dir.index_name.size();++index)
-        slices.push_back(std::make_shared<slice_model>(dir.index_name[index],dir.index_data[index][0],dim));
+
 
     for (unsigned int index = 0;index < mat_reader.size();++index)
     {
@@ -855,10 +858,6 @@ bool fib_data::load_from_mat(void)
 
     is_human_data = is_human_size(dim,vs); // 1 percentile head size in mm
     is_histology = (dim[2] == 2 && dim[0] > 400 && dim[1] > 400);
-
-
-
-
 
     if(!db.load_db_from_fib(this))
         return false;
