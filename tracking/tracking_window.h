@@ -107,7 +107,7 @@ public:
                                       std::vector<std::string>& cmd);
     void add_record(const std::string& output);
     std::string file_stem(bool extended = true) const;
-    bool get_dir(QWidget* parent,std::string& cmd);
+    bool get_directory(QWidget* parent,std::string& cmd);
     bool get_filename(QWidget* parent,std::string& cmd,const std::string& post_fix = "");
     void overwrite(const std::string& cmd)
     {

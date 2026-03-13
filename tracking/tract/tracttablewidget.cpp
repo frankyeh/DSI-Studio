@@ -792,7 +792,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     if(cmd[0] == "save_all_tracts_to_folder")
     {
         // cmd[1] : directory output
-        if(tract_models.empty() || !cur_tracking_window.history.get_dir(this,cmd[1]))
+        if(tract_models.empty() || !cur_tracking_window.history.get_directory(this,cmd[1]))
             return run->canceled();
         tipl::progress prog_("saving files");
         auto selected_tracts = get_checked_tracks();

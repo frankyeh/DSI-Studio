@@ -351,7 +351,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "save_workspace")
     {
-        if(!history.get_dir(this,cmd[1]))
+        if(!history.get_directory(this,cmd[1]))
             return run->canceled();
 
         std::filesystem::create_directory(cmd[1]);
@@ -397,7 +397,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "load_workspace")
     {
-        if(!history.get_dir(this,cmd[1]))
+        if(!history.get_directory(this,cmd[1]))
             return run->canceled();
 
         if(!std::filesystem::exists(cmd[1]))

@@ -90,7 +90,7 @@ std::string command_history::file_stem(bool extended) const
         result += "_" + default_stem2;
     return result;
 }
-bool command_history::get_dir(QWidget* parent,std::string& cmd)
+bool command_history::get_directory(QWidget* parent,std::string& cmd)
 {
     return !cmd.empty() || !(cmd = QFileDialog::getExistingDirectory(parent,QString::fromStdString(current_cmd),
                                             QString::fromStdString(default_parent_path)).toStdString()).empty();
