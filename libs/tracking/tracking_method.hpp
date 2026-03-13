@@ -131,13 +131,16 @@ struct TrackingParam
 
         if(step_size > 0.0f)
             report << " The step size was " << std::fixed << std::setprecision(2) << step_size << " mm.";
-        else
+        if(step_size == 0.0f)
+            report << " The step size was set to voxel spacing.";
+        if(step_size < 0.0f) // older versions before june 2023
         {
-            if(step_size < 0.0f) // older versions before june 2023
-                report << " The step size was randomly selected from 0.5 voxel to 1.5 voxels.";
+            if(step_size == -1.0f)
+                report << " The step size was set to half of voxel spacing.";
             else
-                report << " The step size was set to voxel spacing.";
+                report << " The step size was randomly selected from 0.5 voxel to 1.5 voxels.";
         }
+
 
         if(smooth_fraction != 0.0f)
         {
