@@ -2073,6 +2073,7 @@ bool fib_data::map_to_mni(bool background)
     {
         prog = 1;
         dual_reg reg;
+        reg.linear_param.search_count = search_count;
 
         reg.modality_names = {"qa","iso"};
 
