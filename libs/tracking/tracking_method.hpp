@@ -180,7 +180,7 @@ public:
     float current_dt_threshold = 0;
     float current_tracking_angle;
     float current_tracking_smoothing = 0.0f;
-    float current_step_size_in_voxel[3] = {1.0f,1.0f,1.0f};
+    float current_step_size_in_voxel[3] = {0.5f,0.5f,0.5f};
     unsigned int current_min_steps3 = 6;
     unsigned int current_max_steps3;
     void scaling_in_voxel(tipl::vector<3,float>& dir) const

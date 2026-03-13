@@ -85,10 +85,10 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
 
     if(param.step_size >= 0.0f)
     {
-        if(param.step_size == 0.0f)
+        if(param.step_size == 0.0f) // before 3/12/2026 default step size = 1 voxel spacing; after 0.5 voxel spacing
         {
-            method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/method->trk->vs[0]));
-            method->current_min_steps3 = std::max<uint32_t>(6,3*uint32_t(std::round(param.min_length/method->trk->vs[0])));
+            method->current_max_steps3 = 3*uint32_t(std::round(2.0f*param.max_length/method->trk->vs[0]));
+            method->current_min_steps3 = std::max<uint32_t>(6,3*uint32_t(std::round(2.0f*param.min_length/method->trk->vs[0])));
         }
         else
         {
