@@ -310,14 +310,21 @@ bool can_be_normalized_by_iso(const std::string& name)
 {
     return name == "qa" || name == "rdi" || tipl::begins_with(name,"nrdi");
 }
-void normalize_data_by_iso(const float* iso_ptr,float* out_data_ptr,size_t n)
+std::vector<float> get_outlier_limited_iso(const float* iso_ptr, size_t n)
 {
-    std::vector<float> iso(iso_ptr,iso_ptr+n),inv_iso;
-    for(auto& each : iso)
-        if(each != 0.0f)
-            inv_iso.push_back(each = 1.0f/each);
-    tipl::upper_threshold(iso.begin(),iso.end(),tipl::outlier_range(inv_iso.begin(),inv_iso.end()).second);
-    tipl::multiply(out_data_ptr,out_data_ptr+n,iso.begin());
+    std::vector<float> iso(iso_ptr, iso_ptr + n), inv_values;// only the non-zeros iso is considered
+    inv_values.reserve(n);
+    for (auto& v : iso)
+        if (v != 0.0f)
+            inv_values.push_back(v = 1.0f / v);
+    if (inv_values.empty()) return iso;
+    tipl::upper_threshold(iso.begin(), iso.end(), tipl::outlier_range(inv_values.begin(), inv_values.end()).second);
+    return iso;
+}
+
+void normalize_data_by_iso(const float* iso_ptr, float* out_data_ptr, size_t n)
+{
+    tipl::multiply(out_data_ptr, out_data_ptr + n, get_outlier_limited_iso(iso_ptr, n).data());
 }
 
 void group_connectometry_analysis::calculate_adjusted_qa(stat_model& info)
