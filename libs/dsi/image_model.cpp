@@ -2840,13 +2840,10 @@ bool src_data::save_to_file(const std::string& filename)
         return save_bval(filename.substr(0,filename.size()-7)+".bval") &&
                save_bvec(filename.substr(0,filename.size()-7)+".bvec");
     }
-    if(tipl::ends_with(filename,"src.gz") ||
-       tipl::ends_with(filename,".sz") ||
-       tipl::ends_with(filename,".rz"))
+    if(tipl::ends_with(filename,{"src.gz",".sz",".rz"}))
     {
         std::string temp_file = filename + ".tmp";
         {
-
             tipl::io::gz_mat_write mat_writer(temp_file);
             if(!mat_writer)
             {
