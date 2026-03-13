@@ -1715,18 +1715,19 @@ bool TractModel::delete_branch(void)
 //---------------------------------------------------------------------------
 bool TractModel::delete_by_length(float length)
 {
-    std::vector<unsigned int> track_to_delete;
-    for(unsigned int i = 0;i < tract_data.size();++i)
+    std::vector<uint8_t> is_deleted(tract_data.size(), 0);
+    tipl::par_for(tract_data.size(), [&](unsigned int i)
     {
-        if(tract_data[i].size() <= 6)
-        {
+        if(tract_data[i].size() <= 6 || get_tract_length(i) < length)
+            is_deleted[i] = 1;
+    });
+    std::vector<unsigned int> track_to_delete;
+    for(unsigned int i = 0; i < is_deleted.size(); ++i)
+        if(is_deleted[i])
             track_to_delete.push_back(i);
-            continue;
-        }
-        if((((tract_data[i].size()/3)-1)*(get_tract_point(i,0)-get_tract_point(i,1)).length()) < length)
-            track_to_delete.push_back(i);
-    }
+
     return delete_tracts(track_to_delete);
+
 }
 //---------------------------------------------------------------------------
 bool TractModel::cut(const std::vector<unsigned int>& tract_to_delete,
@@ -2611,45 +2612,57 @@ void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,const tipl
     if(need_trans)
     {
         tipl::transformation_matrix<float> m(tipl::matrix<4,4>(tipl::inverse(trans)));
-        tipl::vector<3> L(0.5f,0.0f,0.0f); // in the point space.
+        tipl::vector<3> L(0.5f, 0.0f, 0.0f);
         L.rotate(m.sr);
         voxel_length_2 = float(L.length());
     }
 
-    std::vector<std::set<tipl::vector<3,short> > > pass_map(tipl::max_thread_count);
-    tipl::par_for<tipl::dynamic_with_id>(tract_data.size(),[&](size_t i,size_t thread)
+    std::vector<std::vector<tipl::vector<3,short>>> pass_map(tipl::max_thread_count);
+
+    tipl::par_for<tipl::dynamic_with_id>(tract_data.size(), [&](size_t i, size_t thread)
     {
         if(tract_data[i].size() < 6)
             return;
         if(id != -1 && int(tract_cluster[i]) != id)
             return;
-        float step_size = float((tipl::vector<3>(&tract_data[i][0])-tipl::vector<3>(&tract_data[i][3])).length());
-        for (size_t j = 3;j < tract_data[i].size();j += 3)
+
+        for(size_t j = 3; j < tract_data[i].size(); j += 3)
         {
-            tipl::vector<3> dir(&tract_data[i][j]);
-            dir -= tipl::vector<3>(&tract_data[i][j-3]);
-            for(float d = 0.0;d < step_size;d += voxel_length_2)
+            tipl::vector<3> p0(&tract_data[i][j-3]);
+            tipl::vector<3> p1(&tract_data[i][j]);
+            tipl::vector<3> dir = p1 - p0;
+
+            int steps = std::max(1, int(std::ceil(float(dir.length()) / voxel_length_2)));
+
+            for(int k = 0; k < steps; ++k)
             {
-                tipl::vector<3> cur(dir);
-                cur *= d/step_size;
-                cur += tipl::vector<3>(&tract_data[i][j-3]);
+                tipl::vector<3> cur = p0 + dir * (float(k) / float(steps));
                 if(need_trans)
                     cur.to(trans);
                 cur.round();
-                pass_map[thread].insert(tipl::vector<3,short>(cur));
+                pass_map[thread].push_back(tipl::vector<3,short>(cur));
             }
-
         }
+
+        tipl::vector<3> last_p(&tract_data[i][tract_data[i].size()-3]);
+        if(need_trans)
+            last_p.to(trans);
+        last_p.round();
+        pass_map[thread].push_back(tipl::vector<3,short>(last_p));
     });
-    for(size_t i = 1;i < pass_map.size();++i)
-    {
-        std::set<tipl::vector<3,short> > new_set;
-        std::merge(pass_map[0].begin(),pass_map[0].end(),
-                   pass_map[i].begin(),pass_map[i].end(),
-                    std::inserter(new_set,std::begin(new_set)));
-        new_set.swap(pass_map[0]);
-    }
-    points = std::vector<tipl::vector<3,short> >(pass_map[0].begin(),pass_map[0].end());
+
+    size_t total_size = 0;
+    for(const auto& v : pass_map)
+        total_size += v.size();
+
+    points.clear();
+    points.reserve(total_size);
+
+    for(auto& v : pass_map)
+        points.insert(points.end(), v.begin(), v.end());
+
+    std::sort(points.begin(), points.end());
+    points.erase(std::unique(points.begin(), points.end()), points.end());
 }
 
 tipl::vector<3> get_tract_dir(const std::vector<std::vector<float> >& tract_data,
@@ -2824,19 +2837,6 @@ bool TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points
     return swapped;
 }
 
-float TractModel::get_tract_length_in_mm(unsigned int index) const
-{
-    double length = 0.0;
-    for (unsigned int j = 3;j < tract_data[index].size();j += 3)
-    {
-        length += tipl::vector<3,float>(
-            vs[0]*(tract_data[index][j]-tract_data[index][j-3]),
-            vs[1]*(tract_data[index][j+1]-tract_data[index][j-2]),
-            vs[2]*(tract_data[index][j+2]-tract_data[index][j-1])).length();
-
-    }
-    return float(length);
-}
 void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vector<std::string>& titles,std::vector<float>& data)
 {
     {
@@ -2856,7 +2856,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
         {
             std::vector<float> length_each(tract_data.size(),0.0f);
             std::vector<float> end_dis_each(tract_data.size(),0.0f);
-            tipl::adaptive_par_for(tract_data.size(),[&](unsigned int i)
+            tipl::par_for(tract_data.size(),[&](unsigned int i)
             {
                 if(tract_data[i].size() < 6)
                     return;
