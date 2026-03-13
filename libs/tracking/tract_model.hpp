@@ -12,23 +12,31 @@ float compute_tract_length(const tract_type& tract, const vs_type& vs = 1)
 {
     if(tract.size() < 6)
         return 0.0f;
-    double length = 0.0;
-    const auto* ptr = tract.data();
-    const auto* end = ptr + tract.size() - 3;
-    for(; ptr < end; ptr += 3)
+
+    auto dist = [&](size_t i)
     {
-        float dx = ptr[3] - ptr[0];
-        float dy = ptr[4] - ptr[1];
-        float dz = ptr[5] - ptr[2];
+        float dx = tract[i+3] - tract[i];
+        float dy = tract[i+4] - tract[i+1];
+        float dz = tract[i+5] - tract[i+2];
+
         if constexpr (!std::is_same_v<vs_type, int>)
         {
             dx *= vs[0];
             dy *= vs[1];
             dz *= vs[2];
         }
-        length += std::sqrt(dx * dx + dy * dy + dz * dz);
-    }
-    return float(length);
+
+        return std::sqrt(dx * dx + dy * dy + dz * dz);
+    };
+
+    size_t pts = tract.size() / 3;
+
+    if(pts == 2)
+        return dist(0);
+    if(pts == 3)
+        return dist(0) + dist(3);
+
+    return dist(0) + dist(3) * float(pts - 3) + dist((pts - 2) * 3);
 }
 
 class TractModel{
