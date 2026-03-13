@@ -2621,10 +2621,18 @@ void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,const tipl
 
     tipl::par_for<tipl::dynamic_with_id>(tract_data.size(), [&](size_t i, size_t thread)
     {
-        if(tract_data[i].size() < 6)
+        if(tract_data[i].size() < 6 || (id != -1 && int(tract_cluster[i]) != id))
             return;
-        if(id != -1 && int(tract_cluster[i]) != id)
-            return;
+
+        auto add_pt = [&](tipl::vector<3> cur)
+        {
+            if(need_trans)
+                cur.to(trans);
+            cur.round();
+            tipl::vector<3,short> pt(cur);
+            if(pass_map[thread].empty() || pass_map[thread].back() != pt)
+                pass_map[thread].push_back(pt);
+        };
 
         for(size_t j = 3; j < tract_data[i].size(); j += 3)
         {
@@ -2633,22 +2641,13 @@ void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,const tipl
             tipl::vector<3> dir = p1 - p0;
 
             int steps = std::max(1, int(std::ceil(float(dir.length()) / voxel_length_2)));
+            add_pt(p0);
 
-            for(int k = 0; k < steps; ++k)
-            {
-                tipl::vector<3> cur = p0 + dir * (float(k) / float(steps));
-                if(need_trans)
-                    cur.to(trans);
-                cur.round();
-                pass_map[thread].push_back(tipl::vector<3,short>(cur));
-            }
+            float step_ratio = 1.0f / float(steps);
+            for(int k = 1; k < steps; ++k)
+                add_pt(p0 + dir * (float(k) * step_ratio));
         }
-
-        tipl::vector<3> last_p(&tract_data[i][tract_data[i].size()-3]);
-        if(need_trans)
-            last_p.to(trans);
-        last_p.round();
-        pass_map[thread].push_back(tipl::vector<3,short>(last_p));
+        add_pt(tipl::vector<3>(&tract_data[i][tract_data[i].size() - 3]));
     });
 
     size_t total_size = 0;
@@ -2657,7 +2656,6 @@ void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,const tipl
 
     points.clear();
     points.reserve(total_size);
-
     for(auto& v : pass_map)
         points.insert(points.end(), v.begin(), v.end());
 
