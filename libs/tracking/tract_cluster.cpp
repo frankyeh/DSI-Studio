@@ -1,4 +1,5 @@
 #include <set>
+#include "tract_model.hpp"
 #include "tract_cluster.hpp"
 
 struct compare_cluster
@@ -122,11 +123,9 @@ void TractCluster::add_tracts(const std::vector<std::vector<float> >& tracks)
     tract_mid_voxels.resize(tracks.size());
     tract_end1.resize(tracks.size());
     tract_end2.resize(tracks.size());
-    tipl::adaptive_par_for(tracks.size(),[&](unsigned int tract_index)
+    tipl::par_for(tracks.size(),[&](unsigned int tract_index)
     {
-        if(tracks[tract_index].size() >= 6)
-            tract_length[tract_index] = float(tracks[tract_index].size())*
-                    float((tipl::vector<3>(&tracks[tract_index][0])-tipl::vector<3>(&tracks[tract_index][3])).length());
+        tract_length[tract_index] = compute_tract_length(tracks[tract_index]);
     });
 
     // build passing points and ranged points
