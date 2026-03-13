@@ -147,8 +147,8 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
             }
 
 
-            if(param.max_length == param.min_length && method->trk->fib_num > 1)
-                fiber_order = rand(method->trk->fib_num,local_gen);
+            if(param.max_length == param.min_length && method->trk->num_fiber > 1)
+                fiber_order = rand(method->trk->num_fiber,local_gen);
 
             //initialize seeding
             {

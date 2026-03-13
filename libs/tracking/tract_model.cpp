@@ -3011,21 +3011,21 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
     if(handle->db.has_db()) // connectometry database
     {
         tipl::progress p("for each subject");
-        std::vector<const float*> old_index_data(handle->dir.index_data[0]);
+        std::vector<const float*> old_index_data(handle->dir.index_name_data[0].second);
         for(unsigned int i = 0;p(i,handle->db.subject_names.size());++i)
         {
             titles.push_back(handle->db.subject_names[i] + " mean_");
             if(!tract_data.empty())
             {
                 auto I = handle->db.get_index_image(i);
-                for(auto& each : handle->dir.index_data[0])
+                for(auto& each : handle->dir.index_name_data[0].second)
                     each = I.data();
                 data.push_back(get_tracts_mean(handle,0));
             }
             else
                 data.push_back(0.0f);
         }
-        handle->dir.index_data[0] = old_index_data;
+        handle->dir.index_name_data[0].second = old_index_data;
     }
 }
 void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::string& result)
@@ -3185,9 +3185,9 @@ std::vector<float> TractModel::get_tract_data(std::shared_ptr<fib_data> handle,s
     auto count =  tract_data[fiber_index].size()/3;
     std::vector<float> data(count);
     // track specific index
-    if(index_num < handle->dir.index_data.size())
+    if(index_num < handle->dir.index_name_data.size())
     {
-        auto base_image = tipl::make_image(handle->dir.index_data[index_num][0],handle->dim);
+        auto base_image = tipl::make_image(handle->dir.index_name_data[index_num].second[0],handle->dim);
         std::vector<tipl::vector<3,float> > gradient(count);
         auto tract_ptr = reinterpret_cast<const float (*)[3]>(&(tract_data[fiber_index][0]));
         ::gradient(tract_ptr,tract_ptr+count,gradient.begin());
@@ -3203,7 +3203,7 @@ std::vector<float> TractModel::get_tract_data(std::shared_ptr<fib_data> handle,s
                 for (unsigned int index = 0;index < 8;++index)
                 {
                     if ((value = handle->dir.get_track_specific_metrics(tri_interpo.dindex[index],
-                                                               handle->dir.index_data[index_num],gradient[point_index])) == 0.0f)
+                                                               handle->dir.index_name_data[index_num].second,gradient[point_index])) == 0.0f)
                         continue;
                     average_value += value*tri_interpo.ratio[index];
                     sum_value += tri_interpo.ratio[index];
@@ -3458,8 +3458,8 @@ void ConnectivityMatrix::save_to_file(const std::string& file_name)
     for(size_t i = 0;i < metrics.size();++i)
     {
         set_metrics(i);
-        mat_header.write(metrics[i] + " r2r",t2r_value,region_points.size());
-        mat_header.write(metrics[i] + " t2r",matrix_value,region_points.size());
+        mat_header.write(metrics[i] + " t2r",t2r_value,region_points.size());
+        mat_header.write(metrics[i] + " r2r",matrix_value,region_points.size());
     }
     std::ostringstream out;
     std::copy(region_name.begin(),region_name.end(),std::ostream_iterator<std::string>(out,"\n"));

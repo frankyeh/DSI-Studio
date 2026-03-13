@@ -26,8 +26,7 @@ public:
     std::vector<const float*> dir;
     std::vector<const short*> findex;
 public:
-    std::vector<std::string> index_name;
-    std::vector<std::vector<const float*> > index_data;
+    std::vector<std::pair<std::string,std::vector<const float*> > > index_name_data;
     int cur_index = 0;
 public:
     tipl::shape<3> dim;
@@ -35,7 +34,7 @@ public:
     float fa_otsu;
     std::vector<tipl::vector<3,float> > odf_table;
     std::vector<tipl::vector<3,unsigned short> > odf_faces;
-    unsigned int num_fiber;
+    unsigned int num_fiber = 1;
     unsigned int half_odf_size;
     std::string error_msg;
 public: // for differential tractography
@@ -43,11 +42,10 @@ public: // for differential tractography
     std::vector<const float*> dt_fa;
     std::string dt_metrics;
 public:
-    void check_index(unsigned int index);
     bool add_data(fib_data& fib);
     bool set_tracking_index(int new_index);
     bool set_tracking_index(const std::string& name);
-    std::string get_threshold_name(void) const{return index_name[uint32_t(cur_index)];}
+    std::string get_threshold_name(void) const{return index_name_data[uint32_t(cur_index)].first;}
     tipl::vector<3> get_fib(size_t space_index,unsigned int order) const;
     float cos_angle(const tipl::vector<3>& cur_dir,size_t space_index,unsigned char fib_order) const;
     float get_track_specific_metrics(size_t space_index,const std::vector<const float*>& index,
@@ -58,7 +56,7 @@ class tracking_data{
 public:
     tipl::shape<3> dim;
     tipl::vector<3> vs;
-    unsigned char fib_num;
+    unsigned char num_fiber = 1;
     float fa_otsu;
     std::string threshold_name,dt_metrics;
     std::vector<const float*> dir;
@@ -89,7 +87,7 @@ public:
             float max_value = cull_cos_angle;
             unsigned char fib_order = 0;
             unsigned char reverse = 0;
-            for (unsigned char index = 0;index < fib_num && fa[index][space_index] > threshold;++index)
+            for (unsigned char index = 0;index < num_fiber && fa[index][space_index] > threshold;++index)
             {
                 if (!dt_fa.empty() && dt_fa[index][space_index] <= dt_threshold) // for differential tractography
                     continue;
@@ -449,7 +447,7 @@ float evaluate_fib(
         if(v1 <= otsu)
             return;
 
-        auto fib_num = fib_fa.size();
+        auto num_fiber = fib_fa.size();
         auto d = dir(index.index(), 0);
         tipl::vector<3,int> oxyz(std::round(d[0]),std::round(d[1]),std::round(d[2]));
         tipl::vector<3,int> pos[2];
@@ -462,7 +460,7 @@ float evaluate_fib(
             if(!dim.is_valid(pos[j]))
                 continue;
             tipl::pixel_index<3> other_index(pos[j].begin(), dim);
-            for(unsigned char fib2 = 0; fib2 < fib_num && fib_fa[fib2][other_index.index()] > otsu; ++fib2)
+            for(unsigned char fib2 = 0; fib2 < num_fiber && fib_fa[fib2][other_index.index()] > otsu; ++fib2)
                 if(std::abs(dir(other_index.index(), fib2) * d) >= angular_threshold)
                 {
                     connected = true;

@@ -152,21 +152,10 @@ void slice_model::get_image_in_dwi(tipl::image<3>& I)
         I = get_image();
 }
 
-void fiber_directions::check_index(unsigned int index)
-{
-    if (fa.size() <= index)
-    {
-        ++index;
-        fa.resize(index);
-        findex.resize(index);
-        num_fiber = index;
-    }
-}
-
 extern float odf8_vec[642][3];
 extern unsigned short odf8_face[1280][3];
 
-
+std::vector<float> get_outlier_limited_iso(const float* iso_ptr, size_t n);
 bool fiber_directions::add_data(fib_data& fib)
 {
     tipl::progress prog("loading image volumes");
@@ -226,117 +215,134 @@ bool fiber_directions::add_data(fib_data& fib)
         }
     }
 
-    for (unsigned int index = 0;prog(index,mat_reader.size());++index)
-    {
-        auto& mat_data = mat_reader[index];
-        std::string matrix_name = mat_data.name;
-        size_t total_size = mat_reader.cols(index)*mat_reader.rows(index);
-        if(total_size != dim.size() && total_size != dim.size()*3)
-            continue;
-        if(tipl::begins_with(matrix_name,"subjects")) // database
-            continue;
-        if (matrix_name == "image")
+    // initiate num fiber
+    for (unsigned int i = 0; i < 9; ++i)
+        if (!mat_reader.has("fa" + std::to_string(i)))
         {
-            check_index(0);
-            mat_reader.read(index,fa[0]);
-            findex_buf.resize(1);
-            findex_buf[0].resize(total_size);
-            findex[0] = &*(findex_buf[0].begin());
-            continue;
-        }
-        // read fiber wise index (e.g. my_fa0,my_fa1,my_fa2)
-        std::string prefix_name(matrix_name.begin(),matrix_name.end()-1); // the "my_fa" part
-        auto last_ch = matrix_name[matrix_name.length()-1]; // the index value part
-        if (last_ch < '0' || last_ch > '9')
-            continue;
-
-        uint32_t store_index = uint32_t(last_ch-'0');
-        if (prefix_name == "index")
-        {
-            check_index(store_index);
-            if(!mat_reader.read(index,findex[store_index]))
-                goto mat_reader_error;
-            continue;
-        }
-        if (prefix_name == "fa")
-        {
-            check_index(store_index);
-            if(!mat_reader.read(index,fa[store_index]))
-                goto mat_reader_error;
-            continue;
-        }
-        if (prefix_name == "dir")
-        {
-            const float* dir_ptr;
-            if(!mat_reader.read(index,dir_ptr))
-                goto mat_reader_error;
-            check_index(store_index);
-            dir.resize(findex.size());
-            dir[store_index] = dir_ptr;
-            continue;
-        }
-
-        auto prefix_name_index = size_t(std::find(index_name.begin(),index_name.end(),prefix_name)-index_name.begin());
-        if(prefix_name_index == index_name.size())
-        {
-            index_name.push_back(prefix_name);
-            index_data.push_back(std::vector<const float*>());
-        }
-
-        if(index_data[prefix_name_index].size() <= size_t(store_index))
-            index_data[prefix_name_index].resize(store_index+1);
-        if(!mat_reader.read(index,index_data[prefix_name_index][store_index]))
-            goto mat_reader_error;
-    }
-    if(prog.aborted())
-        return false;
-    if(num_fiber == 0)
-    {
-        error_msg = "Invalid FIB format";
-        return false;
-    }
-
-    // check index_data integrity
-    for(size_t index = 0;index < index_data.size();++index)
-        for(size_t j = 0;j < index_data[index].size();++j)
-            if(!index_data[index][j] || index_data[index].size() != num_fiber)
+            if (i == 0)
             {
-                index_data.erase(index_data.begin()+int64_t(index));
-                index_name.erase(index_name.begin()+int64_t(index));
-                --index;
-                break;
+                error_msg = "Invalid FIB format: cannot find fa0 matrix";
+                return false;
             }
+            fa.resize(i);
+            findex.resize(i);
+            num_fiber = i;
+            break;
+        }
 
-    // adding the primary fiber index
-    index_name.insert(index_name.begin(),fa.size() == 1 ? "fa":"qa");
-    index_data.insert(index_data.begin(),fa);
-    fa_otsu = tipl::segmentation::otsu_threshold(tipl::make_image(fa[0],dim));
+    // The first entry must be "fa", and we read the pointers from mat_reader
+    {
+        index_name_data.push_back({num_fiber == 1 ? "fa" : "qa", fa});
+        for (unsigned int j = 0; j < num_fiber; ++j)
+            if (!mat_reader.read("fa" + std::to_string(j), index_name_data.back().second[j]))
+                return (error_msg = mat_reader.error_msg, false);
+    }
 
-    for(unsigned int index = 0;index < index_name.size();++index)
-        if(index == 0)
-            fib.slices.push_back(std::make_shared<slice_model>(fa.size() == 1 ? "fa":"qa",fa[0],dim));
+
+    if(num_fiber > 1 && mat_reader.has("iso")) // create qir
+    {
+        size_t s = dim.size();
+        const float* iso_ptr = nullptr;
+        if (!mat_reader.read("iso", iso_ptr))
+            return (error_msg = mat_reader.error_msg, false);
+        std::vector<float> inv_iso = get_outlier_limited_iso(iso_ptr, s);
+        fa_buf.resize(num_fiber);
+        index_name_data.push_back({"qir", std::vector<const float*>(num_fiber)});
+        tipl::par_for(num_fiber, [&](unsigned int j)
+        {
+            fa_buf[j].resize(s);
+            std::copy_n(index_name_data[0].second[j], s, fa_buf[j].data());
+            tipl::multiply(fa_buf[j].data(), fa_buf[j].data() + s, inv_iso.data());
+            index_name_data.back().second[j] = fa_buf[j].data();
+        });
+    }
+
+
+    std::unordered_set<std::string> handled;
+    handled.insert("fa");
+    std::vector<std::string> other_indices;
+    for (unsigned int i = 0; prog(i,mat_reader.size()); ++i)
+    {
+        std::string name = mat_reader[i].name;
+        size_t sz = mat_reader.cols(i) * mat_reader.rows(i);
+        if ((sz != dim.size() && sz != dim.size() * 3) || name == "mask" || tipl::begins_with(name, "subjects"))
+            continue;
+
+        char last_ch = name.back();
+        if (last_ch < '0' || last_ch > '9')
+        {
+            other_indices.push_back(name);
+            continue;
+        }
+
+        std::string prefix = name.substr(0, name.length() - 1);
+        if (handled.count(prefix))
+            continue;
+
+        bool complete = true;
+        for (unsigned int j = 0; j < num_fiber; ++j)
+            if (!mat_reader.has(prefix + std::to_string(j)))
+                complete = false;
+
+        if (!complete)
+        {
+            other_indices.push_back(name);
+            continue;
+        }
+
+        handled.insert(prefix);
+        if (prefix == "index")
+        {
+            for (unsigned int j = 0; j < num_fiber; ++j)
+                if (!mat_reader.read(prefix + std::to_string(j), findex[j]))
+                    return (error_msg = mat_reader.error_msg, false);
+        }
+        else if (prefix == "dir")
+        {
+            dir.resize(num_fiber);
+            for (unsigned int j = 0; j < num_fiber; ++j)
+                if (!mat_reader.read(prefix + std::to_string(j), dir[j]))
+                    return (error_msg = mat_reader.error_msg, false);
+        }
         else
-            fib.slices.push_back(std::make_shared<slice_model>(index_name[index],index_data[index][0],dim));
+        {
+            index_name_data.push_back({prefix, std::vector<const float*>(num_fiber)});
+            for (unsigned int j = 0; j < num_fiber; ++j)
+                if (!mat_reader.read(prefix + std::to_string(j), index_name_data.back().second[j]))
+                    return (error_msg = mat_reader.error_msg, false);
+        }
+    }
+    if (!fib.is_mni)
+        other_indices.push_back("vol");
 
+    std::vector<std::string> fiber_metrics;
+    for(const auto& each : index_name_data)
+    {
+        fib.slices.push_back(std::make_shared<slice_model>(each.first, each.second[0],dim));
+        fiber_metrics.push_back(each.first);
+    }
+    for(const auto& each : other_indices)
+        fib.slices.push_back(std::make_shared<slice_model>(each,&fib));
+    tipl::out() << "fiber metrics: " << tipl::merge(fiber_metrics,',');
+    tipl::out() << "voxel metrics: " << tipl::merge(other_indices,',');
+    set_tracking_index(0);
     return num_fiber;
-
-    mat_reader_error:
-    error_msg = mat_reader.error_msg;
-    return false;
 }
 
 bool fiber_directions::set_tracking_index(int new_index)
 {
-    if(new_index >= index_data.size() || new_index < 0)
+    if(new_index >= index_name_data.size() || new_index < 0)
         return false;
-    fa = index_data[new_index];
+    fa = index_name_data[new_index].second;
     fa_otsu = tipl::segmentation::otsu_threshold(tipl::make_image(fa[0],dim));
     cur_index = new_index;
     return true;
 }
 bool fiber_directions::set_tracking_index(const std::string& name)
 {
-    return set_tracking_index(std::find(index_name.begin(),index_name.end(),name)-index_name.begin());
+    return set_tracking_index(
+                std::distance(index_name_data.begin(),
+                    std::find_if(index_name_data.begin(),index_name_data.end(),[&](const auto& ptr){return ptr.first == name;})));
 }
 
 
@@ -393,13 +399,13 @@ void tracking_data::read(std::shared_ptr<fib_data> fib)
     dim = fib->dim;
     vs = fib->vs;
     odf_table = fib->dir.odf_table;
-    fib_num = uint8_t(fib->dir.num_fiber);
+    num_fiber = uint8_t(fib->dir.num_fiber);
     fa = fib->dir.fa;
     fa_otsu = fib->dir.fa_otsu;
     dt_fa = fib->dir.dt_fa;
     findex = fib->dir.findex;
     dir = fib->dir.dir;
-    if(!fib->dir.index_name.empty())
+    if(!fib->dir.index_name_data.empty())
         threshold_name = fib->dir.get_threshold_name();
     if(!dt_fa.empty())
         dt_metrics= fib->dir.dt_metrics;
@@ -433,6 +439,12 @@ void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istre
 void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 bool fib_data::load_from_file(const std::string& file_name)
 {
+    if(!std::filesystem::exists(file_name))
+    {
+        error_msg = "file not exist: " + file_name;
+        return false;
+    }
+
     tipl::progress prog("opening ",file_name);
     tipl::image<3> I;
     tipl::io::gz_nifti header;
@@ -446,17 +458,14 @@ bool fib_data::load_from_file(const std::string& file_name)
             tipl::image<3> x,y,z;
             header >> vs >> trans_to_mni >> x >> y >> z;
             dim = x.shape();
-            dir.check_index(0);
-            dir.num_fiber = 1;
             dir.findex_buf.resize(1);
             dir.findex_buf[0].resize(x.size());
-            dir.findex[0] = &*(dir.findex_buf[0].begin());
             dir.fa_buf.resize(1);
             dir.fa_buf[0].resize(x.size());
-            dir.fa[0] = &*(dir.fa_buf[0].begin());
+            dir.findex = {dir.findex_buf[0].data()};
+            dir.fa = {dir.fa_buf[0].data()};
 
-            dir.index_name.push_back("fiber");
-            dir.index_data.push_back(dir.fa);
+            dir.index_name_data.push_back({"fiber",dir.fa});
             tessellated_icosahedron ti;
             dir.odf_faces = ti.faces;
             dir.odf_table = ti.vertices;
@@ -480,25 +489,27 @@ bool fib_data::load_from_file(const std::string& file_name)
         else
         if(header.dim(4) && header.dim(4) % 3 == 0)
         {
-            uint32_t fib_num = header.dim(4)/3;
-            for(uint32_t i = 0;i < fib_num;++i)
+            uint32_t num_fiber = header.dim(4)/3;
+            for(uint32_t i = 0;i < num_fiber;++i)
             {
                 tipl::image<3> x,y,z;
                 header >> x >> y >> z >> vs >> trans_to_mni;
                 if(i == 0)
                 {
                     dim = x.shape();
-                    dir.check_index(fib_num-1);
-                    dir.num_fiber = fib_num;
-                    dir.findex_buf.resize(fib_num);
-                    dir.fa_buf.resize(fib_num);
+                    dir.num_fiber = num_fiber;
+                    dir.findex_buf.resize(num_fiber);
+                    dir.fa_buf.resize(num_fiber);
+                    dir.findex.resize(num_fiber);
+                    dir.fa.resize(num_fiber);
+                    for(size_t j = 0;j < num_fiber;++j)
+                    {
+                        dir.findex_buf[j].resize(x.size());
+                        dir.findex[j] = dir.findex_buf[i].data();
+                        dir.fa_buf[j].resize(x.size());
+                        dir.fa[j] = dir.fa_buf[i].data();
+                    }
                 }
-
-                dir.findex_buf[i].resize(x.size());
-                dir.findex[i] = &*(dir.findex_buf[i].begin());
-                dir.fa_buf[i].resize(x.size());
-                dir.fa[i] = &*(dir.fa_buf[i].begin());
-
                 tessellated_icosahedron ti;
                 dir.odf_faces = ti.faces;
                 dir.odf_table = ti.vertices;
@@ -515,8 +526,7 @@ bool fib_data::load_from_file(const std::string& file_name)
                 });
 
             }
-            dir.index_name.push_back("fiber");
-            dir.index_data.push_back(dir.fa);
+            dir.index_name_data.push_back({"fiber",dir.fa});
             slices.push_back(std::make_shared<slice_model>("fiber",dir.fa[0],dim));
             match_template();
             tipl::out() << "NIFTI file loaded" << std::endl;
@@ -525,7 +535,6 @@ bool fib_data::load_from_file(const std::string& file_name)
         else
         {
             header >> vs >> trans_to_mni >> is_mni >> I;
-            tipl::out() << (is_mni ? "image treated as MNI-space image." : "image treated used as subject-space image");
         }
     }
     else
@@ -545,37 +554,33 @@ bool fib_data::load_from_file(const std::string& file_name)
         report = out.str();
     }
     else
-    if(tipl::ends_with(file_name,"trk.gz") ||
-       tipl::ends_with(file_name,"trk") ||
-       tipl::ends_with(file_name,"tck") ||
-       tipl::ends_with(file_name,"tt.gz"))
-    {
-        if(!load_fib_from_tracks(file_name,I,vs,trans_to_mni))
+        if(tipl::ends_with(file_name,{"trk.gz","trk","tck","tt.gz"}) && !load_fib_from_tracks(file_name,I,vs,trans_to_mni))
         {
             error_msg = "Invalid track format";
             return false;
         }
-    }
+
     if(!I.empty())
     {
-        mat_reader.push_back(std::make_shared<tipl::io::mat_matrix>("dimension",I.shape().data(),1,3));
-        mat_reader.push_back(std::make_shared<tipl::io::mat_matrix>("voxel_size",vs.data(),1,3));
-        mat_reader.push_back(std::make_shared<tipl::io::mat_matrix>("trans",trans_to_mni.data(),4,4));
-        mat_reader.push_back(std::make_shared<tipl::io::mat_matrix>("image",I.data(),uint32_t(I.plane_size()),I.depth()));
-        load_from_mat();
-        dir.index_name[0] = "image";
-        slices[0]->name = "image";
+        dim = I.shape();
+        dir.fa_buf.resize(1);
+        dir.fa_buf[0].swap(I.buf());
+
+        dir.findex_buf.resize(1);
+        dir.findex_buf[0].resize(dir.fa_buf[0].size());
+        dir.findex = {dir.findex_buf[0].data()};
+        dir.fa = {dir.fa_buf[0].data()};
+        dir.index_name_data.push_back({"image",{dir.fa_buf[0].data()}});
+        slices.push_back(std::make_shared<slice_model>("image", dir.fa_buf[0].data(), dim));
         slices[0]->max_value = 0.0;// this allows calculating the min and max contrast
         trackable = false;
-        tipl::out() << "image file loaded: " << I.shape() << std::endl;
+        tipl::out() << "dim: " << dim << " vs: " << vs;
+        tipl::out() << "trans: " << trans_to_mni;
+        tipl::out() << (is_mni ? "image treated as MNI-space image." : "image treated used as subject-space image");
+        match_template();
         return true;
     }
-    if(!std::filesystem::exists(file_name))
-    {
-        error_msg = "file does not exist: ";
-        error_msg += file_name;
-        return false;
-    }
+
 
     prepare_idx(file_name,mat_reader.in);
     if(mat_reader.in->has_access_points())
@@ -832,40 +837,13 @@ bool fib_data::load_from_mat(void)
     }
 
 
-    for (unsigned int index = 0;index < mat_reader.size();++index)
-    {
-        std::string matrix_name = mat_reader[index].name;
-        if (matrix_name == "image" || matrix_name == "mask" ||
-            matrix_name.find("subjects") == 0)
-            continue;
-        char post_fix = matrix_name.back();
-        if(post_fix >= '0' && post_fix <= '9')
-        {
-            matrix_name.pop_back();
-            if (matrix_name == "index" ||
-                matrix_name == "fa" ||
-                matrix_name == "dir" ||
-                    std::find_if(slices.begin(),
-                             slices.end(),
-                             [=](const auto& view)
-                             {return view->name == matrix_name;}) != slices.end())
-                continue;
-        }
-        if (mat_reader.rows(index)*mat_reader.cols(index) != dim.size())
-            continue;
-        slices.push_back(std::make_shared<slice_model>(mat_reader[index].name,this));
-    }
-
     is_human_data = is_human_size(dim,vs); // 1 percentile head size in mm
-    is_histology = (dim[2] == 2 && dim[0] > 400 && dim[1] > 400);
+    is_histology = (dim[2] == 2 && dim[0] > 512 && dim[1] > 512);
 
     if(!db.load_db_from_fib(this))
         return false;
 
-    if(!db.has_db() && mat_reader.has("iso"))
-        slices.push_back(std::make_shared<slice_model>("qir",this));
-    if(!is_mni)
-        slices.push_back(std::make_shared<slice_model>("vol",this));
+
     if(is_mni)
     {
         // matching templates
@@ -2119,7 +2097,7 @@ bool fib_data::map_to_mni(bool background)
 
 
         // not FIB file, use t1w/t1w or others as template
-        if(dir.index_name[0] == "image")
+        if(dir.index_name_data[0].first == "image")
         {
             if(!to_t1wt2w_templates(reg,template_id,is_be))
             {

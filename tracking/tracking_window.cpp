@@ -344,10 +344,10 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             // update options: fa threshold
             {
                 QStringList tracking_index_list;
-                for(size_t index = 0;index < handle->dir.index_name.size();++index)
-                    if(handle->dir.index_name[index].find("dec_") != 0 &&
-                       handle->dir.index_name[index].find("inc_") != 0)
-                        tracking_index_list.push_back(handle->dir.index_name[index].c_str());
+                for(size_t index = 0;index < handle->dir.index_name_data.size();++index)
+                    if(handle->dir.index_name_data[index].first.find("dec_") != 0 &&
+                       handle->dir.index_name_data[index].first.find("inc_") != 0)
+                        tracking_index_list.push_back(handle->dir.index_name_data[index].first.c_str());
                 renderWidget->setList("tracking_index",tracking_index_list);
             }
             // update options: color map
@@ -366,7 +366,6 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 set_data("step_size",handle->vs[0]*2.0f);
                 set_data("turning_angle",15);
                 set_data("tube_diameter",1.0f);
-                set_data("track_count",50000);
             }
             else
             {

@@ -42,7 +42,7 @@ public:
         float max_angle_cos = 0;
         for(unsigned int i = 0;i < next_voxels_index.size();++i)
         {
-            for (unsigned int j = 0;j < info.trk->fib_num;++j)
+            for (unsigned int j = 0;j < info.trk->num_fiber;++j)
             {
                 float fa_value = info.trk->fa[j][next_voxels_index[i]];
                 if (fa_value <= info.current_fa_threshold)
