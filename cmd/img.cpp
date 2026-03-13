@@ -523,7 +523,7 @@ int img(tipl::program_option<tipl::out>& po)
                     }
                     reg.modality_names = {"t1w","t2w"};
                     tipl::out() << "using t1w/t2w for registration..." << std::endl;
-                    reg.cost_type = tipl::reg::mutual_info;
+                    reg.linear_param.cost_type = tipl::reg::mutual_info;
                     reg.linear_reg(tipl::prog_aborted);
                     if(reg.r[1] > reg.r[0])
                     {

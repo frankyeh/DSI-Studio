@@ -759,7 +759,7 @@ void CustomSliceModel::argmin(void)
 
     tipl::out() << "registration started using " << (picture.empty() ? "rigid body with regular bound" : "affine transform with narrow bound");
     tipl::reg::linear<tipl::out>(tipl::reg::make_list(to,to),to_vs,tipl::reg::make_list(from1,from2),from_vs,
-           arg_min,picture.empty() ? tipl::reg::rigid_body : tipl::reg::affine,terminated);
+           arg_min,{picture.empty() ? tipl::reg::rigid_body : tipl::reg::affine},terminated);
     update_transform();
     view->registering = false;
     running = false;

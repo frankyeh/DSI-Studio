@@ -388,7 +388,7 @@ void manual_alignment::on_rerun_clicked()
     {
         tipl::reg::linear<tipl::out>(tipl::reg::make_list(from,from2),from_vs,
                                      tipl::reg::make_list(to,to2),to_vs,arg,
-                                     tipl::reg::reg_type(reg_type),thread.terminated,tipl::reg::reg_bound,cost);
+                                     {tipl::reg::reg_type(reg_type),cost},thread.terminated);
         auto trans = tipl::transformation_matrix<float>(arg,from.shape(),from_vs,to.shape(),to_vs);
         trans.inverse();
     });
@@ -426,7 +426,7 @@ void manual_alignment::on_refine_clicked()
     {
         tipl::reg::linear_refine<tipl::out>(tipl::reg::make_list(from,from2),from_vs,
                                             tipl::reg::make_list(to,to2),to_vs,
-                                            arg,tipl::reg::reg_type(reg_type),thread.terminated,cost);
+                                            arg,{tipl::reg::reg_type(reg_type),cost},thread.terminated);
 
         thread.running = false;
     });

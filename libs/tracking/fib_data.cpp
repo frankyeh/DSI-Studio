@@ -2021,7 +2021,7 @@ bool to_t1wt2w_templates(dual_reg& reg,size_t template_id,bool be)
         tipl::out() << "using t1w/t2w/qa/iso for registration..." << std::endl;
     }
 
-    reg.cost_type = tipl::reg::mutual_info;
+    reg.linear_param.cost_type = tipl::reg::mutual_info;
     reg.linear_reg(tipl::prog_aborted);
     if(tipl::prog_aborted)
         return true;
@@ -2031,7 +2031,7 @@ bool to_t1wt2w_templates(dual_reg& reg,size_t template_id,bool be)
 
     reg.It[0] = reg.It[best_index];
     reg.It[1].clear();
-    reg.cost_type = tipl::reg::corr;
+    reg.linear_param.cost_type = tipl::reg::corr;
     reg.modality_names = {best_m};
     tipl::out() << "using " << best_m << " for registration";
     return true;

@@ -37,9 +37,7 @@ struct dual_reg{
     using image_type = tipl::image<dimension,unsigned char>;
     using mapping_type = tipl::image<dimension,tipl::vector<dimension> >;
     tipl::affine_transform<float,dimension> arg;
-    const float (*bound)[8] = tipl::reg::reg_bound;
-    tipl::reg::cost_type cost_type = tipl::reg::corr;
-    tipl::reg::reg_type reg_type = tipl::reg::affine;
+    tipl::reg::linear_reg_param linear_param = {tipl::reg::affine,tipl::reg::corr};
     tipl::reg::cdm_param param;
 public:
     bool It_is_mni = true;

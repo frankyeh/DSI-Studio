@@ -134,7 +134,7 @@ bool src_data::warp_b0_to_image(dual_reg& r)
     std::thread thread([&](void)
     {
         r.linear_reg(tipl::prog_aborted);
-        if(r.reg_type == tipl::reg::rigid_body)
+        if(r.linear_param.reg_type == tipl::reg::rigid_body)
         {
             tipl::image<3> mask(r.J[2]);
             tipl::filter::mean(mask);
@@ -243,7 +243,7 @@ bool src_data::correct_distortion_by_t2w(const std::string& t2w_filename)
 
     tipl::progress p("distortion correction using t2w image",true);
     tipl::filter::gaussian(r.It[0]);
-    r.reg_type = tipl::reg::rigid_body;
+    r.linear_param.reg_type = tipl::reg::rigid_body;
     if(!warp_b0_to_image(r))
         return false;
     voxel.R2 = r.r[0];
@@ -347,7 +347,7 @@ std::shared_ptr<fib_data> src_data::get_template_fib(tipl::affine_transform<floa
         auto iso = template_fib->get_iso();
         auto arg = tipl::reg::linear<tipl::out>(
                tipl::reg::make_list(template_image_pre(tipl::image<3>(iso))),template_fib->vs,
-               tipl::reg::make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,tipl::reg::affine);
+               tipl::reg::make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,{tipl::reg::affine});
         if(prog.aborted())
         {
             template_fib.reset();
@@ -1345,7 +1345,7 @@ bool src_data::add_other_image(const std::string& name,const std::string& filena
         tipl::out() << " and register image with DWI." << std::endl;
         trans = tipl::reg::linear<tipl::out>(
                         tipl::reg::make_list(subject_image_pre(tipl::image<3>(ref))),vs,
-                        tipl::reg::make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,tipl::reg::rigid_body);
+                        tipl::reg::make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,{tipl::reg::rigid_body});
     }
     else {
         if(has_registered)
@@ -1416,7 +1416,7 @@ bool src_data::align_acpc(float reso)
         tipl::progress prog("linear registration");
         auto arg = tipl::reg::linear<tipl::out>(
                     tipl::reg::make_list(template_image_pre(tipl::image<3>(I))),Ivs,
-                    tipl::reg::make_list(subject_image_pre(tipl::image<3>(J))),Jvs,tipl::reg::rigid_scaling);
+                    tipl::reg::make_list(subject_image_pre(tipl::image<3>(J))),Jvs,{tipl::reg::rigid_scaling});
         if(prog.aborted())
             return false;
     }
@@ -1670,7 +1670,7 @@ bool src_data::correct_motion(void)
             tipl::filter::gaussian(Ii);
             tipl::reg::linear_refine<tipl::out>(
                         tipl::reg::make_list(subject_image_pre(tipl::image<3>(I0))),voxel.vs,
-                        tipl::reg::make_list(subject_image_pre(std::move(Ii))),voxel.vs,args[i],tipl::reg::rigid_body,tipl::prog_aborted);
+                        tipl::reg::make_list(subject_image_pre(std::move(Ii))),voxel.vs,args[i],{tipl::reg::rigid_body},tipl::prog_aborted);
             tipl::out() << "dwi (" << i+1 << "/" << src_bvalues.size() << ")" <<
                          " shift=" << tipl::vector<3>(args[i].translocation) <<
                          " rotation=" << tipl::vector<3>(args[i].rotation) << std::endl;
@@ -1732,7 +1732,7 @@ bool src_data::correct_motion(void)
 
             tipl::reg::linear_refine<tipl::out>(
                         tipl::reg::make_list(subject_image_pre(std::move(from))),voxel.vs,
-                        tipl::reg::make_list(subject_image_pre(std::move(Ii))),voxel.vs,new_args[i],tipl::reg::rigid_body,tipl::prog_aborted,tipl::reg::corr);
+                        tipl::reg::make_list(subject_image_pre(std::move(Ii))),voxel.vs,new_args[i],{tipl::reg::rigid_body,tipl::reg::corr},tipl::prog_aborted);
             tipl::out() << "dwi (" << i+1 << "/" << src_bvalues.size() << ") = "
                       << " shift=" << tipl::vector<3>(new_args[i].translocation)
                       << " rotation=" << tipl::vector<3>(new_args[i].rotation) << std::endl;

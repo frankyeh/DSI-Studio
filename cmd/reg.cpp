@@ -279,9 +279,9 @@ float dual_reg::linear_reg(bool& terminated)
         return 0.0f;
     tipl::progress prog("linear registration");
     float cost = 0.0f;
+    linear_param.cuda = use_cuda && has_cuda;
     if(!skip_linear)
-        cost = tipl::reg::linear<tipl::out>(tipl::reg::make_list(It),Itvs,tipl::reg::make_list(I),Ivs,
-               arg,reg_type,terminated,bound,cost_type,use_cuda && has_cuda);
+        cost = tipl::reg::linear<tipl::out>(tipl::reg::make_list(It),Itvs,tipl::reg::make_list(I),Ivs,arg,linear_param,terminated);
 
     calculate_linear_r();
 
@@ -942,15 +942,15 @@ int reg(tipl::program_option<tipl::out>& po)
     tipl::out() << "running linear registration." << std::endl;
 
     if(po.get("large_deform",0))
-        r.bound = tipl::reg::large_bound;
-    r.reg_type = po.get("reg_type",1) == 0 ? tipl::reg::rigid_body : tipl::reg::affine;
-    r.cost_type = po.get("cost_function",r.reg_type==tipl::reg::rigid_body ? "mi" : "corr") == std::string("mi") ? tipl::reg::mutual_info : tipl::reg::corr;
+        r.linear_param.bound = tipl::reg::large_bound;
+    r.linear_param.reg_type = po.get("reg_type",1) == 0 ? tipl::reg::rigid_body : tipl::reg::affine;
+    r.linear_param.cost_type = po.get("cost_function",r.linear_param.reg_type==tipl::reg::rigid_body ? "mi" : "corr") == std::string("mi") ? tipl::reg::mutual_info : tipl::reg::corr;
     r.skip_linear = po.get("skip_linear",r.skip_linear);
     r.skip_nonlinear = po.get("skip_nonlinear",r.skip_nonlinear);
 
     r.linear_reg(tipl::prog_aborted);
 
-    if(r.reg_type != tipl::reg::rigid_body)
+    if(r.linear_param.reg_type != tipl::reg::rigid_body)
     {
         r.param.resolution = po.get("resolution",r.param.resolution);
         r.param.speed = po.get("speed",r.param.speed);

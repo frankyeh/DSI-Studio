@@ -519,8 +519,8 @@ void RegToolBox::on_run_reg_clicked()
     reg.param.speed = float(ui->speed->value());
     reg.param.resolution = ui->resolution->value();
     reg.param.gradient_type = ui->gradient->text().toStdString();
-    reg.bound = ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound;
-    reg.cost_type = ui->cost_fun->currentIndex() == 0 ? tipl::reg::corr : tipl::reg::mutual_info;
+    reg.linear_param.bound = ui->large_deform->isChecked() ? tipl::reg::large_bound : tipl::reg::reg_bound;
+    reg.linear_param.cost_type = ui->cost_fun->currentIndex() == 0 ? tipl::reg::corr : tipl::reg::mutual_info;
     reg.use_cuda = ui->use_cuda->isChecked();
     reg.skip_linear = ui->skip_linear->isChecked();
     reg.skip_nonlinear = ui->skip_nonlinear->isChecked();
