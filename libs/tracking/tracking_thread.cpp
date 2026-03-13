@@ -87,14 +87,14 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
     {
         if(param.step_size == 0.0f) // before 3/12/2026 default step size = 1 voxel spacing; after 0.5 voxel spacing
         {
-            method->current_max_steps3 = 3*uint32_t(std::round(2.0f*param.max_length/method->trk->vs[0]));
-            method->current_min_steps3 = std::max<uint32_t>(6,3*uint32_t(std::round(2.0f*param.min_length/method->trk->vs[0])));
+            method->current_step_size_in_voxel = {1.0f,1.0f,1.0f};
+            method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/method->trk->vs[0]));
+            method->current_min_steps3 = std::max<uint32_t>(6,3*uint32_t(std::round(param.min_length/method->trk->vs[0])));
         }
         else
         {
-            method->current_step_size_in_voxel[0] = param.step_size/method->trk->vs[0];
-            method->current_step_size_in_voxel[1] = param.step_size/method->trk->vs[1];
-            method->current_step_size_in_voxel[2] = param.step_size/method->trk->vs[2];
+            method->current_step_size_in_voxel =
+                    {param.step_size/method->trk->vs[0],param.step_size/method->trk->vs[1],param.step_size/method->trk->vs[2]};
             method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/param.step_size));
             method->current_min_steps3 = std::max<uint32_t>(6,3*uint32_t(std::round(param.min_length/param.step_size)));
         }
@@ -139,9 +139,7 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
             {
                 float step_size_in_voxel = step_gen(local_gen);
                 float step_size_in_mm = step_size_in_voxel*method->trk->vs[0];
-                method->current_step_size_in_voxel[0] = step_size_in_voxel;
-                method->current_step_size_in_voxel[1] = step_size_in_voxel;
-                method->current_step_size_in_voxel[2] = step_size_in_voxel;
+                method->current_step_size_in_voxel = {step_size_in_voxel,step_size_in_voxel,step_size_in_voxel};
                 method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/step_size_in_mm));
                 method->current_min_steps3 = std::max<uint32_t>(6,3*uint32_t(std::round(param.min_length/step_size_in_mm)));
             }
