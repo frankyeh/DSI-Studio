@@ -6,6 +6,31 @@
 
 class RoiMgr;
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
+
+template<typename tract_type, typename vs_type = int>
+float compute_tract_length(const tract_type& tract, const vs_type& vs = 1)
+{
+    if(tract.size() < 6)
+        return 0.0f;
+    double length = 0.0;
+    const auto* ptr = tract.data();
+    const auto* end = ptr + tract.size() - 3;
+    for(; ptr < end; ptr += 3)
+    {
+        float dx = ptr[3] - ptr[0];
+        float dy = ptr[4] - ptr[1];
+        float dz = ptr[5] - ptr[2];
+        if constexpr (!std::is_same_v<vs_type, int>)
+        {
+            dx *= vs[0];
+            dy *= vs[1];
+            dz *= vs[2];
+        }
+        length += std::sqrt(dx * dx + dy * dy + dz * dz);
+    }
+    return float(length);
+}
+
 class TractModel{
 public:
         std::string report,name,parameter_id;
@@ -202,7 +227,8 @@ public:
         std::vector<std::vector<float> >& get_deleted_tracts(void) {return deleted_tract_data;}
         std::vector<std::vector<float> >& get_tracts(void) {return tract_data;}
         unsigned int get_tract_color(unsigned int index) const{return tract_color[index];}
-        float get_tract_length_in_mm(unsigned int index) const;
+        float get_tract_length_in_mm(unsigned int index) const{return compute_tract_length(tract_data[index],vs);}
+        float get_tract_length(unsigned int index) const{return compute_tract_length(tract_data[index]);}
 public:
         void get_density_map(tipl::image<3,unsigned int>& mapping,
              const tipl::matrix<4,4>& to_t1t2,bool endpoint);
