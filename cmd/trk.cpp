@@ -706,6 +706,8 @@ void set_template(std::shared_ptr<fib_data> handle,tipl::program_option<tipl::ou
     }
     if(po.has("tractography_atlas"))
         handle->set_tractography_atlas(po.get("tractography_atlas"));
+    if(po.has("search_count"))
+        handle->search_count = po.get("search_count",handle->search_count);
 }
 int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 {
