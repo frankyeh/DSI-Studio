@@ -85,7 +85,7 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
 
     if(param.step_size >= 0.0f)
     {
-        if(param.step_size == 0.0f) // before 3/12/2026 default step size = 1 voxel spacing; after 0.5 voxel spacing
+        if(param.step_size == 0.0f)
         {
             method->current_step_size_in_voxel = {1.0f,1.0f,1.0f};
             method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/method->trk->vs[0]));
@@ -101,9 +101,18 @@ void ThreadData::run_thread(unsigned int thread_id,unsigned int thread_count)
     }
     else
     {
-        // randomized
-        method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/(step_gen_min*method->trk->vs[0])));
-        method->current_min_steps3 = std::max<uint32_t>(6,3*uint32_t(std::round(param.min_length/(step_gen_max*method->trk->vs[0]))));
+        if(param.step_size == -1.0f) // half of voxel spacing
+        {
+            method->current_step_size_in_voxel = {0.5f,0.5f,0.5f};
+            method->current_max_steps3 = 3*uint32_t(std::round(2.0f*param.max_length/method->trk->vs[0]));
+            method->current_min_steps3 = std::max<uint32_t>(6,3*uint32_t(std::round(2.0f*param.min_length/method->trk->vs[0])));
+        }
+        else
+        {
+            // randomized
+            method->current_max_steps3 = 3*uint32_t(std::round(param.max_length/(step_gen_min*method->trk->vs[0])));
+            method->current_min_steps3 = std::max<uint32_t>(6,3*uint32_t(std::round(param.min_length/(step_gen_max*method->trk->vs[0]))));
+        }
     }
     method->init_buffer();
 
