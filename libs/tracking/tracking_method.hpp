@@ -180,15 +180,10 @@ public:
     float current_dt_threshold = 0;
     float current_tracking_angle;
     float current_tracking_smoothing = 0.0f;
-    float current_step_size_in_voxel[3] = {0.5f,0.5f,0.5f};
+    tipl::vector<3> current_step_size_in_voxel = {1.0f,1.0f,1.0f};
     unsigned int current_min_steps3 = 6;
     unsigned int current_max_steps3;
-    void scaling_in_voxel(tipl::vector<3,float>& dir) const
-    {
-        dir[0] *= current_step_size_in_voxel[0];
-        dir[1] *= current_step_size_in_voxel[1];
-        dir[2] *= current_step_size_in_voxel[2];
-    }
+    void scaling_in_voxel(tipl::vector<3,float>& dir) const{dir.elem_mul(current_step_size_in_voxel);}
 private:
     std::shared_ptr<RoiMgr> roi_mgr;
     std::vector<float> track_buffer;
