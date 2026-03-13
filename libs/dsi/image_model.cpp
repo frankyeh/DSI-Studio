@@ -425,7 +425,7 @@ bool src_data::check_b_table(bool use_template)
     }
 
     float result[24] = {0};
-    float otsu = tipl::segmentation::otsu_threshold(fib_fa[0])*0.6f;
+    float otsu = tipl::segmentation::otsu_threshold(fib_fa[0]);
     auto subject_geo = fib_fa[0].shape();
     for(int i = 0;i < 24;++i)// 0 is the current score
     {
@@ -435,8 +435,7 @@ bool src_data::check_b_table(bool use_template)
 
         if(template_fib.get()) // comparing with hcp 2mm template
         {
-            double sum_cos = 0.0;
-            size_t ncount = 0;
+            double sum_cos = 0.0,ncount = 0.0;
             auto template_geo = template_fib->dim;
             tipl::matrix<3,3,float> jacobian;
             tipl::rotation_matrix(arg.rotation,jacobian.begin(),tipl::vdim<3>());
@@ -444,7 +443,8 @@ bool src_data::check_b_table(bool use_template)
             auto T = tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs);
             for(tipl::pixel_index<3> index(template_geo);index < template_geo.size();++index)
             {
-                if(template_fib->dir.fa[0][index.index()] < 0.2f)
+                float fa = template_fib->dir.fa[0][index.index()];
+                if(fa < otsu)
                     continue;
                 tipl::vector<3> pos(index);
                 T(pos);
@@ -453,11 +453,11 @@ bool src_data::check_b_table(bool use_template)
                 {
                     auto sub_dir = new_dir[0][tipl::pixel_index<3>(pos.begin(),subject_geo).index()];
                     sub_dir.rotate(jacobian);
-                    sum_cos += std::abs(double(sub_dir*template_fib->dir.get_fib(index.index(),0)));
-                    ++ncount;
+                    sum_cos += fa*std::abs(double(sub_dir*template_fib->dir.get_fib(index.index(),0)));
+                    ncount += fa;
                 }
             }
-            result[i] = float(sum_cos/double(ncount));
+            result[i] = sum_cos/ncount;
         }
         else
             // for animal studies, use fiber coherence index
