@@ -157,22 +157,26 @@ bool src_data::warp_b0_to_image(dual_reg& r)
     thread.join();
     return !prog.aborted();
 }
-bool src_data::mask_from_template(void)
+bool src_data::warp_to_template(dual_reg& r)
 {
-    tipl::progress prog("generate mask from template");
-    dual_reg r;
     if(!r.load_template(0,std::filesystem::exists(t2w_template_list[voxel.template_id]) ?
                           t2w_template_list[voxel.template_id] : iso_template_list[voxel.template_id]) ||
        !r.load_template(1,iso_template_list[voxel.template_id]))
     {
-        error_msg = "no template for generating mask";
+        error_msg = "cannot load iso or t2w template images";
         return false;
     }
     // remove skull from t2w
     tipl::preserve(r.It[0].begin(),r.It[0].end(),r.It[1].begin());
-    if(!warp_b0_to_image(r))
+    return warp_b0_to_image(r);
+}
+bool src_data::mask_from_template(void)
+{
+    tipl::progress prog("generate mask from template");
+    dual_reg r;
+    if(!warp_to_template(r))
         return false;
-    // use iso to generate mask
+
     tipl::threshold(r.apply_warping<false,tipl::interpolation::linear>(r.It[1]),voxel.mask,50.0f);
     for(size_t i = 0;i < 4;++i)
     {
@@ -337,30 +341,6 @@ void src_data::flip_b_table(const unsigned char* order)
 
 
 extern std::vector<std::string> fib_template_list;
-std::shared_ptr<fib_data> src_data::get_template_fib(tipl::affine_transform<float>& arg)
-{
-    std::shared_ptr<fib_data> template_fib(new fib_data);
-    if(!template_fib->load_template_fib(voxel.template_id,voxel.vs[0]))
-        return template_fib;
-    {
-        tipl::progress prog("registering to template");
-        auto iso = template_fib->get_iso();
-        auto arg = tipl::reg::linear<tipl::out>(
-               tipl::reg::make_list(template_image_pre(tipl::image<3>(iso))),template_fib->vs,
-               tipl::reg::make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,{tipl::reg::affine});
-        if(prog.aborted())
-        {
-            template_fib.reset();
-            return template_fib;
-        }
-        float r = tipl::correlation(iso,tipl::resample<tipl::interpolation::linear>(dwi,iso.shape(),
-                    tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs)));
-        tipl::out() << "linear r: " << r << std::endl;
-        if(r < 0.6f)
-            template_fib.reset();
-    }
-    return template_fib;
-}
 bool src_data::check_b_table(bool use_template)
 {
     if(!new_dwi.empty())
@@ -373,10 +353,6 @@ bool src_data::check_b_table(bool use_template)
 
     // reconstruct DTI using original data and b-table
     {
-        tipl::image<3,unsigned char> mask(voxel.mask.shape());
-        mask = 1;
-        mask.swap(voxel.mask);
-
         auto other_output = voxel.other_output;
         voxel.other_output = std::string();
 
@@ -386,7 +362,6 @@ bool src_data::check_b_table(bool use_template)
 
         voxel.other_output = other_output;
 
-        mask.swap(voxel.mask);
 
     }
 
@@ -409,10 +384,29 @@ bool src_data::check_b_table(bool use_template)
                              ".210",".210fx",".210fy",".210fz",
                              ".201",".201fx",".201fy",".201fz"};
 
-    tipl::affine_transform<float> arg;
-    std::shared_ptr<fib_data> template_fib;
-    if(use_template)
-        template_fib = get_template_fib(arg);
+    tipl::transformation_matrix<float> T;
+    std::shared_ptr<fib_data> template_fib(new fib_data);
+    if(use_template && template_fib->load_template_fib(voxel.template_id,voxel.vs[0]))
+    {
+        tipl::progress prog("registering to template");
+        auto iso = template_fib->get_iso();
+        T = tipl::reg::linear<tipl::out>(
+               tipl::reg::make_list(template_image_pre(tipl::image<3>(iso))),template_fib->vs,
+               tipl::reg::make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,{tipl::reg::affine});
+        if(prog.aborted())
+        {
+            template_fib.reset();
+            return false;
+        }
+        float r = tipl::correlation(iso,tipl::resample<tipl::interpolation::linear>(dwi,iso.shape(),T));
+        tipl::out() << "linear r: " << r;
+        if(r < 0.3f)
+            tipl::warning() << "poor registration found. check b-table may not be reliable using template";
+    }
+    else
+        template_fib.reset();
+
+
     if(template_fib.get())
     {
         voxel.recon_report <<
@@ -426,7 +420,6 @@ bool src_data::check_b_table(bool use_template)
 
     float result[24] = {0};
     float otsu = tipl::segmentation::otsu_threshold(fib_fa[0]);
-    auto subject_geo = fib_fa[0].shape();
     for(int i = 0;i < 24;++i)// 0 is the current score
     {
         auto new_dir(fib_dir);
@@ -437,23 +430,22 @@ bool src_data::check_b_table(bool use_template)
         {
             double sum_cos = 0.0,ncount = 0.0;
             auto template_geo = template_fib->dim;
-            tipl::matrix<3,3,float> jacobian;
-            tipl::rotation_matrix(arg.rotation,jacobian.begin(),tipl::vdim<3>());
-            jacobian.inv();
-            auto T = tipl::transformation_matrix<float>(arg,template_fib->dim,template_fib->vs,voxel.dim,voxel.vs);
             for(tipl::pixel_index<3> index(template_geo);index < template_geo.size();++index)
             {
                 float fa = template_fib->dir.fa[0][index.index()];
-                if(fa < otsu)
+                if(fa < template_fib->dir.fa_otsu)
                     continue;
-                tipl::vector<3> pos(index);
+                tipl::vector<3> pos(index),dir(template_fib->dir.get_fib(index.index(),0));
+                (dir*=0.1f)+=pos;
                 T(pos);
+                T(dir);
+                dir -= pos;
+                dir.normalize();
                 pos.round();
-                if(subject_geo.is_valid(pos))
+                if(voxel.dim.is_valid(pos))
                 {
-                    auto sub_dir = new_dir[0][tipl::pixel_index<3>(pos.begin(),subject_geo).index()];
-                    sub_dir.rotate(jacobian);
-                    sum_cos += fa*std::abs(double(sub_dir*template_fib->dir.get_fib(index.index(),0)));
+                    auto sub_dir = new_dir[0][tipl::pixel_index<3>(pos.begin(),voxel.dim).index()];
+                    sum_cos += fa*std::abs(double(sub_dir*dir));
                     ncount += fa;
                 }
             }
@@ -461,7 +453,7 @@ bool src_data::check_b_table(bool use_template)
         }
         else
             // for animal studies, use fiber coherence index
-            result[i] = evaluate_fib(subject_geo,otsu,fib_fa,[&](uint32_t pos,uint8_t fib){return new_dir[fib][pos];});
+            result[i] = evaluate_fib(voxel.dim,otsu,fib_fa,[&](uint32_t pos,uint8_t fib){return new_dir[fib][pos];});
     }
     long best = long(std::max_element(result,result+24)-result);
     tipl::out sp;

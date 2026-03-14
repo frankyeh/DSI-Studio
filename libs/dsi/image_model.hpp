@@ -265,10 +265,10 @@ public:
     void update_dwi_sum(void);
     void update_mask(void);
     bool warp_b0_to_image(dual_reg& r);
+    bool warp_to_template(dual_reg& r);
     bool mask_from_unet(void);
     bool mask_from_template(void);
     void remove(unsigned int index);
-    std::shared_ptr<fib_data> get_template_fib(tipl::affine_transform<float>& arg);
     bool check_b_table(bool use_template = true);
     bool load_intro(const std::string& file_name);
 public:
