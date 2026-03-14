@@ -215,7 +215,10 @@ bool variant_image::load_from_file(const std::string& file_name,std::string& inf
             error_msg = nifti.error_msg;
             return false;
         }
-        nifti >> vs >> T >> shape >> is_mni;
+        nifti.read(vs);
+        nifti.read(T);
+        nifti.read(shape);
+        nifti.read(is_mni);
         dim4 = nifti.dim(4);
         switch (nifti.nif_header.datatype)
         {
