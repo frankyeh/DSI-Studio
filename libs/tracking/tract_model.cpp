@@ -1372,35 +1372,43 @@ bool TractModel::save_end_points(const std::string& file_name) const
 //---------------------------------------------------------------------------
 void TractModel::resample(float new_step)
 {
-    tipl::adaptive_par_for(tract_data.size(),[&](size_t i)
+    tipl::par_for(tract_data.size(), [&](size_t i)
     {
         if(tract_data[i].size() <= 6)
             return;
+
+        auto& tract = tract_data[i];
         std::vector<float> new_tracts;
-        float d = 0.0;
-        new_tracts.push_back(tract_data[i][0]);
-        new_tracts.push_back(tract_data[i][1]);
-        new_tracts.push_back(tract_data[i][2]);
-        for (unsigned int j = 3;j < tract_data[i].size();j += 3)
+        new_tracts.reserve(tract.size());
+
+        new_tracts.push_back(tract[0]);
+        new_tracts.push_back(tract[1]);
+        new_tracts.push_back(tract[2]);
+
+        float d = 0.0f;
+        for(size_t j = 3; j < tract.size(); j += 3)
         {
-            tipl::vector<3> p(&tract_data[i][j-3]),dis(&tract_data[i][j]);
-            dis -= p;
-            float step = float(dis.length());
-            dis *= new_step/step;
-            while(d+new_step < step)
+            float dx = tract[j] - tract[j-3];
+            float dy = tract[j+1] - tract[j-2];
+            float dz = tract[j+2] - tract[j-1];
+            float step = std::sqrt(dx * dx + dy * dy + dz * dz);
+
+            while(d + new_step < step)
             {
-                p += dis;
                 d += new_step;
-                new_tracts.push_back(p[0]);
-                new_tracts.push_back(p[1]);
-                new_tracts.push_back(p[2]);
+                float r = d / step;
+                new_tracts.push_back(tract[j-3] + dx * r);
+                new_tracts.push_back(tract[j-2] + dy * r);
+                new_tracts.push_back(tract[j-1] + dz * r);
             }
             d -= step;
         }
-        new_tracts.push_back(tract_data[i][tract_data[i].size()-3]);
-        new_tracts.push_back(tract_data[i][tract_data[i].size()-2]);
-        new_tracts.push_back(tract_data[i][tract_data[i].size()-1]);
-        new_tracts.swap(tract_data[i]);
+
+        new_tracts.push_back(tract[tract.size()-3]);
+        new_tracts.push_back(tract[tract.size()-2]);
+        new_tracts.push_back(tract[tract.size()-1]);
+
+        tract.swap(new_tracts);
     });
 }
 //---------------------------------------------------------------------------
