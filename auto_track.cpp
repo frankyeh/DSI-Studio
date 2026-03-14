@@ -317,7 +317,25 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         }
 
                     }
+                    if(po.has("debug"))
+                    {
+                        auto save_region = [&](std::string name,auto& points)
+                        {
+                            if(points.empty())
+                                return;
+                            auto file_name = trk_base + "." + name + ".nii.gz";
+                            ROIRegion region(thread.roi_mgr->handle);
+                            region.add_points(std::move(points));
+                            tipl::out() << "saving " << name << " region to " << file_name;
+                            region.save_region_to_file(file_name);
+                        };
 
+                        save_region("seed",thread.roi_mgr->atlas_seed);
+                        save_region("limiting",thread.roi_mgr->atlas_limiting);
+                        save_region("not_end",thread.roi_mgr->atlas_not_end);
+                        save_region("roi",thread.roi_mgr->atlas_roi);
+                        save_region("roa",thread.roi_mgr->atlas_roa);
+                    }
                     if(no_result)
                         continue;
                     // fetch both front and back buffer
