@@ -231,8 +231,8 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
             src.rev_pe_src = std::make_shared<src_data>();
             if(!src.rev_pe_src->load_from_file(rev_pe_list,rev_pe_list.size() > 1 /*if more than one file, need bval bvec*/))
             {
-                error_msg = src.error_msg;
-                return false;
+                tipl::warning() << src.error_msg;
+                src.rev_pe_src.reset();
             }
         }
 
