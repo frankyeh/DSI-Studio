@@ -112,29 +112,13 @@ int trk_post(tipl::program_option<tipl::out>& po,
 std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector<std::string>& file_list,int& prog)
 {
     std::string trk_format = po.get("trk_format","tt.gz");
-    std::string tolerance_string = po.get("tolerance","24,26,28");
     float yield_rate = po.get("yield_rate",0.00001f);
     size_t yield_check_count = 10.0f/yield_rate;
     bool overwrite = po.get("overwrite",0);
     uint32_t thread_count = tipl::max_thread_count;
-    std::vector<float> tolerance;
     {
         if(!po.has("export"))
             po.set("export","stat");
-    }
-    {
-        std::istringstream in(tolerance_string);
-        std::string num;
-        while(std::getline(in,num,','))
-        {
-            std::istringstream in2(num);
-            float t;
-            if(!(in2 >> t))
-                return std::string("Cannot parse tolerance number: ")+num;
-            tolerance.push_back(t);
-        }
-        if(tolerance.empty())
-            return "please specify tolerance distance";
     }
 
     std::vector<std::string> tract_name_list;
@@ -244,6 +228,13 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 std::shared_ptr<TractModel> tract_model(new TractModel(handle));
                 if(!overwrite && std::filesystem::exists(trk_file_name))
                     tract_model->load_tracts_from_file(trk_file_name,handle.get());
+
+
+                auto tolerance = po.get("tolerance",std::vector<float>({handle->default_tolerance(),
+                                                                        handle->default_tolerance()+handle->vs[0],
+                                                                        handle->default_tolerance()+handle->vs[0]*2.0f}));
+                if(tolerance.empty())
+                    return "invalid value in --tolerance";
 
                 // each iteration increases tolerance
                 for(size_t tracking_iteration = 0;tracking_iteration < tolerance.size() &&
