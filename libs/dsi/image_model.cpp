@@ -2169,8 +2169,7 @@ bool src_data::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
         return false;
     }
     bool is_appa = c[0] < c[1];
-    if(!is_appa && tipl::contains(std::filesystem::path(file_name).filename().string(),
-                      {"_ap","_pa","_AP","_PA","ap_","pa_","AP_","PA_"}))
+    if(!is_appa && tipl::contains(std::filesystem::path(file_name).filename().string(),{"_ap","_pa","_AP","_PA","ap_","pa_","AP_","PA_"}))
     {
         tipl::warning() << "found AP or PA in the file name, enforcing AP-PA phase encoding direction";
         is_appa = true;
