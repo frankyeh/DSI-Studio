@@ -2162,18 +2162,51 @@ bool src_data::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
 
     // DSI Studio uses LPS orientation whereas and FSL uses LAS
     // The y direction is flipped
-    auto c = phase_direction_at_AP_PA(b0[0],rev_b0[0]);
-    if(c[0] == c[1])
+    auto c = phase_direction_at_AP_PA(b0[0], rev_b0[0]);
+    if (c[0] == c[1])
     {
         error_msg = "Invalid phase encoding. Please select correct reversed phase encoding b0 file";
         return false;
     }
+
     bool is_appa = c[0] < c[1];
-    if(!is_appa && tipl::contains(std::filesystem::path(file_name).filename().string(),{"_ap","_pa","_AP","_PA","ap_","pa_","AP_","PA_"}))
+    if (is_appa)
+        goto finish_check;
+
+    // 1. Check filename for explicit AP/PA indicators
     {
-        tipl::warning() << "found AP or PA in the file name, enforcing AP-PA phase encoding direction";
-        is_appa = true;
+        std::string fn = std::filesystem::path(file_name).filename().string();
+        if (tipl::contains(fn, {"_ap", "_pa", "_AP", "_PA", "ap_", "pa_", "AP_", "PA_"}))
+        {
+            tipl::warning() << "found AP or PA in file name, enforcing AP-PA direction";
+            is_appa = true;
+            goto finish_check;
+        }
     }
+
+    // 2. Check sidecar JSON for PhaseEncodingDirection
+    {
+        std::filesystem::path json_path(file_name);
+        json_path.replace_extension(".json");
+        QFile input_file(json_path.string().c_str());
+        if (input_file.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
+            tipl::out() << "read json: " << json_path.string();
+            auto json_doc = QJsonDocument::fromJson(input_file.readAll());
+            if (json_doc.isObject() && json_doc.object().contains("PhaseEncodingDirection"))
+            {
+                std::string phase_str = json_doc.object()["PhaseEncodingDirection"].toString().toStdString();
+                tipl::out() << "PhaseEncodingDirection: " << phase_str;
+                if (tipl::contains(phase_str, "j")) // "j" or "j-" indicates AP/PA in BIDS
+                    is_appa = true;
+            }
+            else
+                tipl::out() << "json file missing PhaseEncodingDirection";
+        }
+    }
+
+    finish_check:
+
 
     unsigned int phase_dim = (is_appa ? 1 : 0);
     tipl::vector<3> c1,c2;
