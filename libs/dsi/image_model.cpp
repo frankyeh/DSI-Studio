@@ -2169,6 +2169,13 @@ bool src_data::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
         return false;
     }
     bool is_appa = c[0] < c[1];
+    if(!is_appa && tipl::contains(std::filesystem::path(file_name).filename().string(),
+                      {"_ap","_pa","_AP","_PA","ap_","pa_","AP_","PA_"}))
+    {
+        tipl::warning() << "found AP or PA in the file name, enforcing AP-PA phase encoding direction";
+        is_appa = true;
+    }
+
     unsigned int phase_dim = (is_appa ? 1 : 0);
     tipl::vector<3> c1,c2;
     {
@@ -2642,15 +2649,13 @@ bool src_data::get_rev_pe(std::string other_src)
     }
     if(!std::filesystem::exists(other_src))
     {
-        error_msg = "find not exist: ";
-        error_msg += other_src;
+        error_msg = "find not exist: " + other_src;
         return false;
     }
     std::shared_ptr<src_data> src2(new src_data);
     if(!src2->load_from_file(other_src))
     {
-        error_msg = "cannot read ";
-        error_msg += other_src;
+        error_msg = "cannot read " + other_src;
         return false;
     }
     if(src2->voxel.dim != voxel.dim)
