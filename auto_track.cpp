@@ -267,6 +267,12 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         thread.param.max_length = handle->vs[0]*(minmax.second+2.0f*cur_tol)/handle->tract_atlas_jacobian;
                         tipl::out() << "min_length(mm): " << thread.param.min_length << std::endl;
                         tipl::out() << "max_length(mm): " << thread.param.max_length << std::endl;
+
+                        if(po.has("parameter_id"))
+                        {
+                            tipl::out() << "overwriting prior setting using parameter id";
+                            thread.param.set_code(po.get("parameter_id"));
+                        }
                     }
                     tipl::progress prog2("tracking ",tract_name.c_str(),true);
                     thread.run(thread_count,false);
