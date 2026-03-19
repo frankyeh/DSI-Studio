@@ -1633,7 +1633,7 @@ bool fib_data::load_template(void)
 }
 void fib_data::temp2sub(std::vector<std::vector<float> >&tracts) const
 {
-    tipl::adaptive_par_for(tracts.size(),[&](size_t i)
+    tipl::par_for(tracts.size(),[&](size_t i)
     {
         auto& each = tracts[i];
         if(each.size() < 6)
@@ -1771,7 +1771,14 @@ bool fib_data::load_track_atlas(bool symmetric)
             return false;
         tract_atlas_jacobian = float((s2t[0]-s2t[1]).length());
         // warp tractography atlas to subject space
-        temp2sub(track_atlas->get_tracts());
+        {
+            tipl::progress prog("warping template tracts to subject space");
+            temp2sub(track_atlas->get_tracts());
+            track_atlas->geo = dim;
+            track_atlas->vs = vs;
+            track_atlas->trans_to_mni = trans_to_mni;
+            track_atlas->is_mni = is_mni;
+        }
 
         auto& tract_data = track_atlas->get_tracts();
         // get min max length
