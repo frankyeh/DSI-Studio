@@ -424,9 +424,10 @@ void manual_alignment::on_refine_clicked()
 
     thread.run([this,cost,reg_type]()
     {
-        tipl::reg::linear_refine<tipl::out>(tipl::reg::make_list(from,from2),from_vs,
+        tipl::reg::linear<tipl::out>(tipl::reg::make_list(from,from2),from_vs,
                                             tipl::reg::make_list(to,to2),to_vs,
-                                            arg,{tipl::reg::reg_type(reg_type),cost},thread.terminated);
+                                            arg,{tipl::reg::reg_type(reg_type),cost,
+                                                 tipl::reg::narrow_bound},thread.terminated);
 
         thread.running = false;
     });
