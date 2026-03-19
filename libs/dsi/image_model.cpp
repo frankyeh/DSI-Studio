@@ -1660,9 +1660,10 @@ bool src_data::correct_motion(void)
             auto Ii = tipl::image<3>(dwi_at(i));
             tipl::filter::gaussian(Ii);
             tipl::filter::gaussian(Ii);
-            tipl::reg::linear_refine<tipl::out>(
+            tipl::reg::linear<tipl::out>(
                         tipl::reg::make_list(subject_image_pre(tipl::image<3>(I0))),voxel.vs,
-                        tipl::reg::make_list(subject_image_pre(std::move(Ii))),voxel.vs,args[i],{tipl::reg::rigid_body},tipl::prog_aborted);
+                        tipl::reg::make_list(subject_image_pre(std::move(Ii))),voxel.vs,args[i],
+                        {tipl::reg::rigid_body,tipl::reg::mutual_info,tipl::reg::narrow_bound},tipl::prog_aborted);
             tipl::out() << "dwi (" << i+1 << "/" << src_bvalues.size() << ")" <<
                          " shift=" << tipl::vector<3>(args[i].translocation) <<
                          " rotation=" << tipl::vector<3>(args[i].rotation) << std::endl;
@@ -1722,9 +1723,10 @@ bool src_data::correct_motion(void)
             tipl::filter::gaussian(Ii);
             tipl::filter::gaussian(Ii);
 
-            tipl::reg::linear_refine<tipl::out>(
+            tipl::reg::linear<tipl::out>(
                         tipl::reg::make_list(subject_image_pre(std::move(from))),voxel.vs,
-                        tipl::reg::make_list(subject_image_pre(std::move(Ii))),voxel.vs,new_args[i],{tipl::reg::rigid_body,tipl::reg::corr},tipl::prog_aborted);
+                        tipl::reg::make_list(subject_image_pre(std::move(Ii))),voxel.vs,new_args[i],
+                        {tipl::reg::rigid_body,tipl::reg::corr,tipl::reg::narrow_bound},tipl::prog_aborted);
             tipl::out() << "dwi (" << i+1 << "/" << src_bvalues.size() << ") = "
                       << " shift=" << tipl::vector<3>(new_args[i].translocation)
                       << " rotation=" << tipl::vector<3>(new_args[i].rotation) << std::endl;
