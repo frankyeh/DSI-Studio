@@ -742,8 +742,7 @@ bool TractModel::load_tracts_from_file(const std::string& file_name,fib_data* ha
                 tipl::out() << "cannot run normalization" << std::endl;;
                 return false;
             }
-            tipl::out() << "template space: " << std::endl;
-            tipl::out() << handle->template_to_mni << std::endl;
+            tipl::out() << "template space: " << handle->template_to_mni << std::endl;
 
             // first transform to template space
             if(handle->template_to_mni != source_trans_to_mni)
@@ -757,9 +756,13 @@ bool TractModel::load_tracts_from_file(const std::string& file_name,fib_data* ha
             if(trans_to_mni != source_trans_to_mni)
             {
                 tipl::out() << "applying linear transform, condition: loading tract to a different srow";
+                tipl::out() << "from space: " << source_trans_to_mni;
+                tipl::out() << "to space: " << trans_to_mni;
+
                 apply_transform(tipl::from_space(source_trans_to_mni).to(trans_to_mni));
                 geo = handle->dim;
                 vs = handle->vs;
+                is_mni = handle->is_mni;
             }
     }
     loaded_tract_data.swap(tract_data);
