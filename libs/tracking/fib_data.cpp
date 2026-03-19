@@ -1502,11 +1502,8 @@ void fib_data::set_template_id(size_t new_id)
         t1w_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T1W.nii.gz").toStdString();
         t2w_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T2W.nii.gz").toStdString();
         wm_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".WM.nii.gz").toStdString();
+        set_tractography_atlas(QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".tt.gz").toStdString());
 
-        // handle tractography atlas
-        tipl::search_files(std::filesystem::path(fa_template_list[template_id]).parent_path().string(),"*.tt.gz",tractography_atlas_list);
-        set_tractography_atlas(tractography_atlas_list.size() ? tractography_atlas_list.front() :
-            QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".tt.gz").toStdString());
 
         alternative_mapping_index = 0;
         alternative_mapping = { "" };
