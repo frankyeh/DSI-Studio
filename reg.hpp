@@ -36,7 +36,7 @@ struct dual_reg{
     static constexpr int max_modality = 16;
     using image_type = tipl::image<dimension,unsigned char>;
     using mapping_type = tipl::image<dimension,tipl::vector<dimension> >;
-    tipl::affine_transform<float,dimension> arg;
+    tipl::affine_param<float,dimension> arg;
     tipl::reg::linear_reg_param linear_param = {tipl::reg::affine,tipl::reg::corr};
     tipl::reg::cdm_param param;
 public:

@@ -127,7 +127,7 @@ public:
     std::vector<std::string> source_files;
 public:
     std::shared_ptr<std::thread> thread;
-    tipl::affine_transform<float> arg_min;
+    tipl::affine_param<float> arg_min;
     bool terminated = true;
     bool running = false;
     void terminate(void);

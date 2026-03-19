@@ -612,7 +612,7 @@ bool dual_reg::load_alternative_warping(const std::string& filename)
     if(!alt_reg.load_warping(filename) ||
         alt_reg.Is != alt_reg.Its ||
         alt_reg.IR != alt_reg.ItR ||
-        alt_reg.arg != tipl::affine_transform<float,3>())
+        alt_reg.arg != tipl::affine_param<float,3>())
     {
         error_msg = "invalid alternative mapping";
         return false;
@@ -726,11 +726,11 @@ void dual_reg::to_space(const tipl::shape<3>& new_s,const tipl::matrix<4,4>& new
         return;
 
     tipl::vector<3> new_vs(tipl::to_vs(new_R));
-    if(ItR != IR || arg != tipl::affine_transform<float,3>())
+    if(ItR != IR || arg != tipl::affine_param<float,3>())
         arg = tipl::transformation_matrix<float,dimension>(tipl::from_space(new_R).to(ItR))
             .accumulate(T())
             .accumulate(tipl::transformation_matrix<float,dimension>(tipl::from_space(IR).to(new_R)))
-            .to_affine_transform(new_s,new_vs,new_s,new_vs);
+            .to_affine_param(new_s,new_vs,new_s,new_vs);
 
     if(new_s != Is || new_R != IR)
     {
@@ -768,7 +768,7 @@ void dual_reg::to_I_space(const tipl::shape<3>& new_Is,const tipl::matrix<4,4>& 
         if(!each.empty())
             each = tipl::resample(each,new_Is,trans);
     tipl::out() << "arg: " << arg;
-    arg = T().accumulate(tipl::from_space(IR).to(new_IR)).to_affine_transform(Its,Itvs,new_Is,new_Ivs);
+    arg = T().accumulate(tipl::from_space(IR).to(new_IR)).to_affine_param(Its,Itvs,new_Is,new_Ivs);
     tipl::out() << "new arg: " << arg;
     Is = new_Is;
     IR = new_IR;
@@ -792,7 +792,7 @@ void dual_reg::to_It_space(const tipl::shape<3>& new_Its,const tipl::matrix<4,4>
             each = tipl::resample(each,new_Its,trans);
     dis_to_space(new_Its,new_ItR);
     tipl::out() << "arg: " << arg;
-    arg = trans.accumulate(T()).to_affine_transform(new_Its,new_Itvs,Is,Ivs);
+    arg = trans.accumulate(T()).to_affine_param(new_Its,new_Itvs,Is,Ivs);
     tipl::out() << "new arg: " << arg;
     Its = new_Its;
     ItR = new_ItR;

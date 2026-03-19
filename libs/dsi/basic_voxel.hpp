@@ -128,7 +128,7 @@ public://used in GQI
     bool need_resample_shells = false,need_resample_dsi = false;
 public:// manual alignment used in QSDR
     bool manual_alignment = false;
-    tipl::affine_transform<float> qsdr_arg;
+    tipl::affine_param<float> qsdr_arg;
 public:// used in QSDR
     tipl::matrix<4,4> trans_to_mni = tipl::identity_matrix();
     size_t template_id = 0;

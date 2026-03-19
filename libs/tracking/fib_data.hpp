@@ -282,7 +282,7 @@ public:
 public:
     tipl::matrix<4,4> template_to_mni;
     bool has_manual_atlas = false;
-    tipl::affine_transform<float> manual_template_T;
+    tipl::affine_param<float> manual_template_T;
     std::vector<std::shared_ptr<std::thread> > reg_threads;
 public:
     std::vector<std::string> alternative_mapping;

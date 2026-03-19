@@ -786,7 +786,7 @@ bool CustomSliceModel::load_mapping(const std::string& file_name)
         tipl::transformation_matrix<float> T;
         if(!(in >> T))
             return false;
-        arg_min = T.to_affine_transform(dim,vs,handle->dim,handle->vs);
+        arg_min = T.to_affine_param(dim,vs,handle->dim,handle->vs);
     }
     update_transform();
     is_diffusion_space = false;

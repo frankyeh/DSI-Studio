@@ -26,7 +26,7 @@ private:
     tipl::transformation_matrix<float> T,iT;
     void load_param(void);
 public:
-    tipl::affine_transform<float> arg;
+    tipl::affine_param<float> arg;
     std::vector<tipl::image<3> > other_images;
     std::vector<std::string> other_images_name;
     tipl::matrix<4,4> to_T = tipl::identity_matrix();

@@ -1211,7 +1211,7 @@ tipl::matrix<3,3,float> get_inv_rotation(const Voxel& voxel,const tipl::transfor
 {
     auto iT = T;
     iT.inverse();
-    tipl::affine_transform<double> arg(iT.to_affine_transform(voxel.dim,voxel.vs,voxel.dim,voxel.vs));
+    tipl::affine_param<double> arg(iT.to_affine_param(voxel.dim,voxel.vs,voxel.dim,voxel.vs));
     tipl::matrix<3,3,float> r;
     tipl::rotation_matrix(arg.rotation,r.begin(),tipl::vdim<3>());
     return r;
@@ -1403,7 +1403,7 @@ bool src_data::align_acpc(float reso)
     match_template_resolution(I,Ivs,J,Jvs);
 
     prog(0,3);
-    tipl::affine_transform<float> arg;
+    tipl::affine_param<float> arg;
     {
         tipl::progress prog("linear registration");
         auto arg = tipl::reg::linear<tipl::out>(
@@ -1643,7 +1643,7 @@ bool src_data::correct_motion(void)
     std::string msg = " Motion correction and eddy current correction was conducted with b-table rotated.";
     if(voxel.report.find(msg) != std::string::npos)
         return true;
-    std::vector<tipl::affine_transform<float> > args(src_bvalues.size());
+    std::vector<tipl::affine_param<float> > args(src_bvalues.size());
     {
         tipl::progress prog("apply motion correction...");
         unsigned int p = 0;
@@ -1677,7 +1677,7 @@ bool src_data::correct_motion(void)
 
 
     // get ndc list
-    std::vector<tipl::affine_transform<float> > new_args(args);
+    std::vector<tipl::affine_param<float> > new_args(args);
 
     {
         tipl::progress prog("estimate and registering...");
