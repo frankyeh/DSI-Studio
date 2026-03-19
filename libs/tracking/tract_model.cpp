@@ -611,7 +611,7 @@ bool TractModel::load_tracts_from_file(const std::string& file_name,fib_data* ha
     if(file_name.find(".inc") != std::string::npos)
         color = 0x00F04040;
 
-    tipl::matrix<4,4> source_trans_to_mni(trans_to_mni);
+    tipl::matrix<4,4> source_trans_to_mni{0};
 
     name = std::filesystem::path(file_name).stem().string();
 
@@ -621,11 +621,6 @@ bool TractModel::load_tracts_from_file(const std::string& file_name,fib_data* ha
         std::vector<uint16_t> cluster;
         if(!TinyTrack::load_from_file(file_name,loaded_tract_data,cluster,geo,vs,source_trans_to_mni,report,parameter_id,colors))
             return false;
-        if(geo == handle->dim && vs == handle->vs && !tract_is_mni && source_trans_to_mni != handle->trans_to_mni)
-        {
-            tipl::out() << "identical dimension: overwriting tractography transformation matrix." << std::endl;
-            source_trans_to_mni = handle->trans_to_mni;
-        }
         std::copy(cluster.begin(),cluster.end(),std::back_inserter(loaded_tract_cluster));
         if(!colors.empty())
             color = colors[0];
@@ -635,11 +630,6 @@ bool TractModel::load_tracts_from_file(const std::string& file_name,fib_data* ha
         TrackVis trk;
         if(!trk.load_from_file(file_name,loaded_tract_data,loaded_tract_cluster,geo,vs,source_trans_to_mni,parameter_id))
             return false;
-        if(geo == handle->dim && vs == handle->vs && !tract_is_mni && source_trans_to_mni != handle->trans_to_mni)
-        {
-            tipl::out() << "identical dimension: overwriting tractography transformation matrix." << std::endl;
-            source_trans_to_mni = handle->trans_to_mni;
-        }
         unsigned int new_color = *(uint32_t*)(trk.reserved+440);
         if(new_color)
             color = new_color;
@@ -712,6 +702,27 @@ bool TractModel::load_tracts_from_file(const std::string& file_name,fib_data* ha
         tract_cluster.clear();
 
 
+    if(source_trans_to_mni[0] == 0)
+    {
+        tipl::out() << "older version of tract file does not have srow matrices, try matching...";
+        if(geo == handle->dim && vs == handle->vs)
+        {
+            tipl::out() << "matching tract srow to FIB srow";
+            source_trans_to_mni = handle->trans_to_mni;
+        }
+        else
+        if(geo == handle->template_I.shape() && vs == handle->template_vs)
+        {
+            tipl::out() << "matching tract srow to template srow";
+            source_trans_to_mni = handle->template_to_mni;
+        }
+        else
+        {
+            tipl::warning() << "cannot match srow, assign default one and likely will not work out";
+            source_trans_to_mni = trans_to_mni;
+        }
+    }
+
     // handle trans_to_mni differences
     {
         tipl::out() << "host space " << ((is_mni) ? "(mni): " : "(native): ") << trans_to_mni;
@@ -720,8 +731,9 @@ bool TractModel::load_tracts_from_file(const std::string& file_name,fib_data* ha
 
         auto apply_transform = [&](const tipl::matrix<4,4>& T)
         {
-            tipl::out() << "apply transform to tracts: " << T << std::endl;
-            tipl::adaptive_par_for(loaded_tract_data.size(),[&](size_t index)
+            tipl::progress prog("apply transform to tracts");
+            tipl::out() << T;
+            tipl::par_for(loaded_tract_data.size(),[&](size_t index)
             {
                 auto& tract = loaded_tract_data[index];
                 for(size_t i = 0;i < tract.size();i += 3)
