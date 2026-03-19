@@ -704,7 +704,7 @@ bool TractModel::load_tracts_from_file(const std::string& file_name,fib_data* ha
 
     if(source_trans_to_mni[0] == 0)
     {
-        tipl::out() << "older version of tract file does not have srow matrices, try matching...";
+        tipl::out() << "older versions of tract file do not have srow matrices, try matching...";
         if(geo == handle->dim && vs == handle->vs)
         {
             tipl::out() << "matching tract srow to FIB srow";
