@@ -758,6 +758,27 @@ void CustomSliceModel::argmin(void)
     }
 
     tipl::out() << "registration started using " << (picture.empty() ? "rigid body with regular bound" : "affine transform with narrow bound");
+    {
+        tipl::affine_param<float> arg;
+        arg.translocation[2] = (to.depth()*to_vs[2] - from.first.depth()*from_vs[2])*0.5f;
+        bool arg_ended = false;
+        auto update_arg = std::make_shared<std::thread>([&](void)
+        {
+            while (!arg_ended)
+            {
+                tipl::inverse(arg_min = arg,handle->dim,handle->vs,dim,vs);
+                std::this_thread::yield();
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            }
+            tipl::inverse(arg_min = arg,handle->dim,handle->vs,dim,vs);
+        });
+
+        tipl::reg::linear<tipl::out>(tipl::reg::make_list(from1,from2),from_vs,tipl::reg::make_list(to,to),to_vs,
+               arg,{picture.empty() ? tipl::reg::rigid_body : tipl::reg::affine},terminated);
+        arg_ended = true;
+        update_arg->join();
+    }
+
     tipl::reg::linear<tipl::out>(tipl::reg::make_list(to,to),to_vs,tipl::reg::make_list(from1,from2),from_vs,
            arg_min,{picture.empty() ? tipl::reg::rigid_body : tipl::reg::affine},terminated);
     update_transform();
