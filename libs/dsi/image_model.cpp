@@ -370,7 +370,7 @@ bool src_data::check_b_table(bool use_template)
 
     tipl::transformation_matrix<float> T;
     std::shared_ptr<fib_data> template_fib(new fib_data);
-    if(use_template && template_fib->load_template_fib(voxel.template_id,voxel.vs[0]))
+    if(use_template && template_fib->load_template_fib(voxel.template_id,voxel.vs[2]))
     {
         tipl::progress prog("registering to template");
         auto iso = template_fib->get_iso();
