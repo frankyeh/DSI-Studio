@@ -408,7 +408,6 @@ int src(tipl::program_option<tipl::out>& po)
 
     src_data src;
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-    std::sort(file_list.begin(),file_list.end());
     if(!parse_dwi(file_list,dwi_files,src.error_msg))
     {
         tipl::error() << src.error_msg;
