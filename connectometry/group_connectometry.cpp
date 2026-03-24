@@ -284,8 +284,8 @@ void group_connectometry::load_demographics(void)
     // fill up regression values
     {
         QStringList t;
-        for(size_t i = 0; i < db.feature_titles.size();++i)
-            t << db.feature_titles[i].c_str();
+        for(size_t i = 0; i < db.feature.size();++i)
+            t << QString::fromStdString(db.feature[i].title);
         ui->variable_list->clear();
         ui->variable_list->addItems(t);
         for(int i = 0;i < ui->variable_list->count();++i)
@@ -574,7 +574,7 @@ void group_connectometry::on_variable_list_clicked(const QModelIndex &)
     auto foi_str = ui->foi->currentText();
     ui->foi->clear();
     for(int i =0;i < ui->variable_list->count();++i)
-        if((db.feature_selected[uint32_t(i)] = (ui->variable_list->item(i)->checkState() == Qt::Checked)))
+        if((db.feature[uint32_t(i)].selected = (ui->variable_list->item(i)->checkState() == Qt::Checked)))
             ui->foi->addItem(ui->variable_list->item(i)->text());
     if(db.is_longitudinal && db.longitudinal_filter_type == 0)
         ui->foi->addItem(QString("longitudinal change"));

@@ -274,12 +274,11 @@ bool connectometry_db::parse_demo(void)
     pout << std::endl;
 
     // find which column can be used as features
-    feature_location.clear();
-    feature_titles.clear();
-    feature_is_float.clear();
+    feature.clear();
 
     {
-        std::vector<char> not_number(titles.size()),not_categorical(titles.size());
+        std::vector<char> not_number(titles.size());
+        std::vector<feature_info> column(titles.size());
         for(size_t i = 0;i < items.size();++i)
         {
             if(not_number[i%titles.size()])
@@ -291,7 +290,7 @@ bool connectometry_db::parse_demo(void)
             try{
                 float value = std::stof(items[i]);
                 if(std::floor(value) != value)
-                    not_categorical[i%titles.size()] = 1;
+                    column[i%titles.size()].is_float = 1;
             }
             catch (...)
             {
@@ -299,40 +298,37 @@ bool connectometry_db::parse_demo(void)
             }
         }
         for(size_t i = 0;i < titles.size();++i)
+        {
             if(not_number[i])
             {
-                std::string group1(items[i]),group2;
+                std::string cat_name0(items[i]),cat_name1;
                 for(size_t j = i;j < items.size();j += titles.size())
                 {
-                    if(items[j] == group1)
+                    if(items[j] == cat_name0)
                         continue;
-                    if(group2.empty())
-                        group2 = items[j];
-                    if(items[j] != group2)
+                    if(cat_name1.empty())
+                        cat_name1 = items[j];
+                    if(items[j] != cat_name1)
                     {
-                        group1.clear();
+                        cat_name0.clear();
                         break;
                     }
                 }
-                if(group1.empty())
+                if(cat_name0.empty())
                     continue;
-                tipl::out() << "'" << titles[i] << "' treated as a group label, assign numbers 0:" << group1 << " 1:" << group2;
-                titles[i] += "(0=" + group1 + " 1=" + group2 + ")";
+                tipl::out() << "'" << titles[i] << "' treated as a group label, assign numbers 0:" << cat_name0 << " 1:" << cat_name1;
+                titles[i] += "(0=" + cat_name0 + " 1=" + cat_name1 + ")";
                 for(size_t j = i;j < items.size();j += titles.size())
-                    items[j] = (items[j] == group1 ? "0":"1");
-                not_number[i] = 0;
-                not_categorical[i] = 0;
+                    items[j] = (items[j] == cat_name0 ? "0":"1");
+                column[i].is_float = 0;
+                column[i].cat_name0 = cat_name0;
+                column[i].cat_name1 = cat_name1;
             }
-
-        for(size_t i = 0;i < titles.size();++i)
-            if(!not_number[i])
-            {
-                feature_location.push_back(i);
-                feature_titles.push_back(titles[i]);
-                feature_selected.push_back(true);
-                feature_is_float.push_back(not_categorical[i]); // 0: categorical 1: floating
-
-            }
+            column[i].location = i;
+            column[i].title = titles[i];
+            column[i].selected = true;
+            feature.push_back(column[i]);
+        }
     }
 
     //  get feature matrix
@@ -340,9 +336,9 @@ bool connectometry_db::parse_demo(void)
     for(unsigned int i = 0;i < subject_names.size();++i)
     {
         X.push_back(1); // for the intercep
-        for(unsigned int j = 0;j < feature_location.size();++j)
+        for(unsigned int j = 0;j < feature.size();++j)
         {
-            size_t item_pos = i*titles.size() + feature_location[j];
+            size_t item_pos = i*titles.size() + feature[j].location;
             if(item_pos >= items.size())
             {
                 X.push_back(NAN);
@@ -359,7 +355,7 @@ bool connectometry_db::parse_demo(void)
             catch(...)
             {
                 std::ostringstream out;
-                out << "cannot parse '" << items[item_pos] << "' at " << subject_names[i] << "'s " << titles[feature_location[j]] << ".";
+                out << "cannot parse '" << items[item_pos] << "' at " << subject_names[i] << "'s " << feature[j].title << ".";
                 handle->error_msg = out.str();
                 X.clear();
                 return false;
@@ -620,18 +616,18 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
             }
             catch (...){}
         }
-        if(v.size() != feature_location.size())
+        if(v.size() != feature.size())
         {
             handle->error_msg = "invalid demographic input: " + matched_demo;
             return false;
         }
         tipl::out out;
         out << "creating subject-matching image by regressing against ";
-        for(size_t i = 0;i < feature_titles.size();++i)
-            out << feature_titles[i] << ": " << v[i] << " ";
+        for(size_t i = 0;i < feature.size();++i)
+            out << feature[i].title<< ": " << v[i] << " ";
         out << std::endl;
     }
-    size_t feature_size = 1+feature_location.size(); // +1 for intercept
+    size_t feature_size = 1+feature.size(); // +1 for intercept
     tipl::multiple_regression<double> mr;
     mr.set_variables(X.begin(),uint32_t(feature_size),uint32_t(subject_indices.size()));
 
@@ -857,7 +853,7 @@ void stat_model::read_demo(const connectometry_db& db)
     selected_subject.resize(db.subject_names.size());
     std::iota(selected_subject.begin(),selected_subject.end(),0);
     X = db.X;
-    x_col_count = db.feature_location.size()+1; // additional one for longitudinal change
+    x_col_count = db.feature.size()+1; // additional one for longitudinal change
 }
 
 void stat_model::select_variables(const std::vector<char>& sel)
@@ -930,8 +926,8 @@ bool stat_model::select_cohort(connectometry_db& db,
     std::ostringstream out;
     for(size_t i = 0,pos = 0;pos < X.size();++i,pos += x_col_count)
     {
-        for(size_t k = 0;k < db.feature_titles.size();++k)
-            if(db.feature_selected[k] && std::isnan(X[pos+size_t(k)+1]))
+        for(size_t k = 0;k < db.feature.size();++k)
+            if(db.feature[k].selected && std::isnan(X[pos+size_t(k)+1]))
             {
                 out << i << " ";
                 remove_list[i] = 1;
@@ -998,8 +994,8 @@ bool stat_model::select_cohort(connectometry_db& db,
                     }
                     if(fov_name == "value")
                     {
-                        for(size_t k = 0;k < db.feature_titles.size();++k)
-                            if(db.feature_selected[k])
+                        for(size_t k = 0;k < db.feature.size();++k)
+                            if(db.feature[k].selected)
                             {
                                 for(size_t i = 0,pos = 0;pos < X.size();++i,pos += x_col_count)
                                     if(!select(text[j],float(X[pos+size_t(k)+1]),threshold))
@@ -1011,8 +1007,8 @@ bool stat_model::select_cohort(connectometry_db& db,
 
                     size_t fov_index = 0;
                     okay = false;
-                    for(size_t k = 0;k < db.feature_titles.size();++k)
-                        if(db.feature_titles[k] == fov_name)
+                    for(size_t k = 0;k < db.feature.size();++k)
+                        if(db.feature[k].title == fov_name)
                         {
                             fov_index = k;
                             okay = true;
@@ -1065,23 +1061,16 @@ bool stat_model::select_feature(connectometry_db& db,std::string foi_text)
 {
     error_msg.clear();
 
-    std::vector<char> sel(uint32_t(db.feature_titles.size()+1));
+    std::vector<char> sel(uint32_t(db.feature.size()+1));
     sel[0] = 1; // intercept is always selected
 
     variables.clear();
-    variables.push_back("longitudinal change");
-    variables_is_categorical.clear();
-    variables_is_categorical.push_back(0);
-    variables_max.clear();
-    variables_max.push_back(0);
-    variables_min.clear();
-    variables_min.push_back(0);
-
+    variables.push_back({"longitudinal change",false,"",""});
 
     bool has_variable = false;
     std::ostringstream out;
     for(size_t i = 1;i < sel.size();++i)
-        if(db.feature_selected[i-1])
+        if(db.feature[i-1].selected)
         {
             std::set<double> unique_values;
             for(size_t j = 0,pos = 0;pos < X.size();++j,pos += x_col_count)
@@ -1093,8 +1082,7 @@ bool stat_model::select_feature(connectometry_db& db,std::string foi_text)
             if(unique_values.size() > 1)
             {
                 sel[i] = 1;
-                variables.push_back(db.feature_titles[i-1]);
-                out << variables.back();
+                out << db.feature[i-1].title;
                 has_variable = true;
 
                 bool is_categorical = (unique_values.size() <= 2);
@@ -1108,11 +1096,20 @@ bool stat_model::select_feature(connectometry_db& db,std::string foi_text)
                         }
                 }
 
-                variables_min.push_back(int(*(unique_values.begin())));
-                variables_max.push_back(int(*(++unique_values.begin())));
-                variables_is_categorical.push_back(is_categorical);
+                variables.push_back({db.feature[i-1].title,is_categorical,"",""});
+
                 if(is_categorical)
+                {
                     out << "(categorical)";
+                    variables.back().cat_name0 = db.feature[i-1].cat_name0;
+                    variables.back().cat_name1 = db.feature[i-1].cat_name1;
+                    if(variables.back().cat_name0.empty())
+                        variables.back().cat_name0 = "cohort with " + db.feature[i-1].title + "=" +
+                                std::to_string(int(*(unique_values.begin())));
+                    if(variables.back().cat_name0.empty())
+                        variables.back().cat_name1 = "cohort with " + db.feature[i-1].title + "=" +
+                                std::to_string(int(*(++unique_values.begin())));
+                }
                 out << " ";
             }
         }
@@ -1129,7 +1126,7 @@ bool stat_model::select_feature(connectometry_db& db,std::string foi_text)
         bool find_study_feature = false;
         // variables[0] = "longitudinal change"
         for(unsigned int i = 0;i < variables.size();++i)
-            if(variables[i] == foi_text)
+            if(variables[i].name == foi_text)
             {
                 study_feature = i;
                 find_study_feature = true;

@@ -36,8 +36,8 @@ int cnt(tipl::program_option<tipl::out>& po)
 
     {
         std::string sout("selectable variables include ");
-        for(size_t i = 0;i < db.feature_titles.size();++i)
-             sout += "\t(" + std::to_string(i) + ")" +db.feature_titles[i];
+        for(size_t i = 0;i < db.feature.size();++i)
+             sout += "\t(" + std::to_string(i) + ")" +db.feature[i].title;
         tipl::out() << sout;
     }
 
@@ -55,7 +55,7 @@ int cnt(tipl::program_option<tipl::out>& po)
         std::istringstream var_in(var_text);
         variable_list.assign((std::istream_iterator<int>(var_in)),(std::istream_iterator<int>()));
         for(auto v : variable_list)
-            if(v >= db.feature_titles.size())
+            if(v >= db.feature.size())
             {
                 tipl::error() << "invalid variable value: " << v << std::endl;
                 return 1;
@@ -74,14 +74,14 @@ int cnt(tipl::program_option<tipl::out>& po)
         else
         {
             unsigned int voi_index = po.get("voi",variable_list.front());
-            if(voi_index >= db.feature_titles.size())
+            if(voi_index >= db.feature.size())
             {
                 tipl::error() << "invalid variable of interest: " << voi_index << std::endl;
                 return 1;
             }
             // the variable to study needs to be included in the model
             variable_list.push_back(voi_index);
-            foi_str = db.feature_titles[voi_index];
+            foi_str = db.feature[voi_index].title;
         }
 
         {
@@ -90,9 +90,11 @@ int cnt(tipl::program_option<tipl::out>& po)
             variable_list.assign(s.begin(),s.end());
         }
 
-        std::fill(db.feature_selected.begin(),db.feature_selected.end(),false);
+        for(auto& each : db.feature)
+            each.selected = false;
+
         for(auto index : variable_list)
-            db.feature_selected[index] = true;
+            db.feature[index].selected = true;
     }
 
     {

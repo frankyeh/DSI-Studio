@@ -262,23 +262,6 @@ void group_connectometry_analysis::clear(void)
     }
 }
 
-std::string iterate_items(const std::vector<std::string>& item)
-{
-    std::string result;
-    for(unsigned int index = 0;index < item.size();++index)
-    {
-        if(index)
-        {
-            if(item.size() > 2)
-                result += ",";
-            result += " ";
-        }
-        if(item.size() >= 2 && index+1 == item.size())
-            result += "and ";
-        result += item[index];
-    }
-    return result;
-}
 std::string group_connectometry_analysis::get_file_post_fix(void)
 {
     std::string postfix = handle->db.index_name + ".";
@@ -337,7 +320,7 @@ void group_connectometry_analysis::calculate_adjusted_qa(stat_model& info)
             if(i != info.study_feature)
             {
                 has_partial_correlation = true;
-                out << info.variables[i] << " ";
+                out << info.variables[i].name << " ";
             }
         if(has_partial_correlation)
             tipl::out() << "adjusting " << handle->db.index_name << " using partial correlation of " << out.str();
@@ -439,10 +422,10 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         {
             hypothesis_inc = index_name;
             hypothesis_dec = index_name;
-            if(model->variables_is_categorical[model->study_feature])
+            if(model->variables[model->study_feature].is_categorical)
             {
-                hypothesis_inc += std::string(" in ")+foi_str+" "+std::to_string(model->variables_max[model->study_feature]);
-                hypothesis_dec += std::string(" in ")+foi_str+" "+std::to_string(model->variables_min[model->study_feature]);
+                hypothesis_dec += " in " + model->variables[model->study_feature].cat_name0;
+                hypothesis_inc += " in " + model->variables[model->study_feature].cat_name1;
             }
             else
             {
@@ -495,6 +478,23 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
         {
             auto items = model->variables;
             items.erase(items.begin()); // remove longitudinal change
+
+
+            std::string variables_names;
+            for(unsigned int index = 0;index < items.size();++index)
+            {
+                if(index)
+                {
+                    if(items.size() > 2)
+                        variables_names += ",";
+                    variables_names += " ";
+                }
+                if(variables_names.size() >= 2 && index+1 == items.size())
+                    variables_names += "and ";
+                variables_names += items[index].name;
+            }
+
+
             {
                 if(model->study_feature)
                     items.erase(items.begin() + model->study_feature-1);
@@ -502,7 +502,7 @@ void group_connectometry_analysis::run_permutation(unsigned int thread_count,uns
                 if(items.empty())
                     out << ".";
                 else
-                    out << ", and the effect of " << iterate_items(items) << " was removed using a multiple regression model.";
+                    out << ", and the effect of " << variables_names << " was removed using a multiple regression model.";
             }
         }
         out << " The statistical significance of the correlation was examined using a permutation test (Yeh et al. NeuroImage 125 (2016): 162-171).";

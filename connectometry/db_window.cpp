@@ -423,14 +423,14 @@ void db_window::on_actionSave_Demographics_triggered()
 QString get_matched_demo(QWidget *parent,std::shared_ptr<fib_data> handle)
 {
     std::string demo_cap, demo_sample;
-    for(auto str: handle->db.feature_titles)
+    for(const auto& each: handle->db.feature)
     {
-        demo_cap += str;
+        demo_cap += each.title;
         demo_cap += " ";
     }
     std::ostringstream out;
     // X +1 to skip intercept
-    for(size_t i = 0;i < handle->db.feature_location.size() && i+1 < handle->db.X.size();++i)
+    for(size_t i = 0;i < handle->db.feature.size() && i+1 < handle->db.X.size();++i)
         out << handle->db.X[i+1] << " ";
     demo_sample = out.str();
     demo_sample.pop_back();

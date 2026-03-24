@@ -5,6 +5,8 @@
 #include "zlib.h"
 #include "TIPL/tipl.hpp"
 class fib_data;
+
+
 class connectometry_db
 {
 public:
@@ -15,9 +17,21 @@ public:
 public: // demographic information
     std::vector<std::string> titles;
     std::vector<std::string> items;
-    std::vector<size_t> feature_location;
-    std::vector<std::string> feature_titles;
-    std::vector<bool> feature_selected,feature_is_float;
+public:
+
+    struct feature_info
+    {
+        std::string title;
+        size_t location;
+        std::string cat_name0;
+        std::string cat_name1;
+        bool selected;
+        bool is_float;
+    };
+
+    std::vector<feature_info> feature;
+public:
+
     std::vector<double> X;
     std::string demo;
     bool parse_demo(const std::string& filename);
@@ -73,9 +87,13 @@ public: // multiple regression
     unsigned int x_col_count = 0;
     unsigned int study_feature = 0;
 public:
-    std::vector<std::string> variables;
-    std::vector<bool> variables_is_categorical;
-    std::vector<int> variables_min,variables_max;
+    struct variable_info{
+        std::string name;
+        bool is_categorical;
+        std::string cat_name0;
+        std::string cat_name1;
+    };
+    std::vector<variable_info> variables;
 public:
     tipl::multiple_regression<double> mr;
     // for nonlinear correlation
