@@ -435,7 +435,7 @@ int main(int ac, char *av[])
                 return 1;
             }
             std::string action = po.get("action");
-            if(action != "vis" && !(action == "cnt" && po.get("no_tractogram") == "1"))
+            if(action != "vis" && action != "cnt")
             {
                 std::shared_ptr<QCoreApplication> cmd;
                 cmd.reset(new QCoreApplication(ac, av));
