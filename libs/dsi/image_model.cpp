@@ -155,6 +155,7 @@ bool src_data::warp_b0_to_image(dual_reg& r)
     while(!ended)
         prog(0,1);
     thread.join();
+    r.to_I_space(dwi.shape(),voxel.trans_to_mni);
     return !prog.aborted();
 }
 bool src_data::warp_to_template(dual_reg& r)
@@ -292,19 +293,7 @@ void src_data::remove(unsigned int index)
         voxel.report += remove_text;
 }
 
-void flip_fib_dir(std::vector<tipl::vector<3> >& fib_dir,const unsigned char* order)
-{
-    for(size_t j = 0;j < fib_dir.size();++j)
-    {
-        fib_dir[j] = tipl::vector<3>(fib_dir[j][order[0]],fib_dir[j][order[1]],fib_dir[j][order[2]]);
-        if(order[3])
-            fib_dir[j][0] = -fib_dir[j][0];
-        if(order[4])
-            fib_dir[j][1] = -fib_dir[j][1];
-        if(order[5])
-            fib_dir[j][2] = -fib_dir[j][2];
-    }
-}
+
 
 std::vector<size_t> src_data::get_sorted_dwi_index(void)
 {
@@ -365,11 +354,6 @@ bool src_data::check_b_table(bool use_template)
 
     }
 
-    std::vector<tipl::image<3> > fib_fa(1);
-    std::vector<std::vector<tipl::vector<3> > > fib_dir(1);
-    fib_fa[0].swap(voxel.fib_fa);
-    fib_dir[0].swap(voxel.fib_dir);
-
     const unsigned char order[24][6] = {
                             {0,1,2,0,0,0},{0,1,2,1,0,0},{0,1,2,0,1,0},{0,1,2,0,0,1},
                             {0,2,1,0,0,0},{0,2,1,1,0,0},{0,2,1,0,1,0},{0,2,1,0,0,1},
@@ -418,13 +402,30 @@ bool src_data::check_b_table(bool use_template)
         " The b-table was checked by an automatic quality control routine to ensure its accuracy (Schilling et al. MRI, 2019).";
     }
 
+
+
+    auto flip_fib_dir = [](auto& dir,const auto* order)
+    {
+        for(size_t j = 0;j < dir.size();++j)
+        {
+            dir[j] = tipl::vector<3>(dir[j][order[0]],dir[j][order[1]],dir[j][order[2]]);
+            if(order[3])
+                dir[j][0] = -dir[j][0];
+            if(order[4])
+                dir[j][1] = -dir[j][1];
+            if(order[5])
+                dir[j][2] = -dir[j][2];
+        }
+    };
+
     float result[24] = {0};
-    float otsu = tipl::segmentation::otsu_threshold(fib_fa[0]);
+    const float* fib_fa = voxel.fib_fa.data();
+    float otsu = tipl::segmentation::otsu_threshold(voxel.fib_fa);
     for(int i = 0;i < 24;++i)// 0 is the current score
     {
-        auto new_dir(fib_dir);
+        std::vector<tipl::vector<3> > new_dir(voxel.fib_dir);
         if(i)
-            flip_fib_dir(new_dir[0],order[i]);
+            flip_fib_dir(new_dir,order[i]);
 
         if(template_fib.get()) // comparing with hcp 2mm template
         {
@@ -444,16 +445,17 @@ bool src_data::check_b_table(bool use_template)
                 pos.round();
                 if(voxel.dim.is_valid(pos))
                 {
-                    auto sub_dir = new_dir[0][tipl::pixel_index<3>(pos.begin(),voxel.dim).index()];
-                    sum_cos += fa*std::abs(double(sub_dir*dir));
-                    ncount += fa;
+                    size_t sub_index = tipl::pixel_index<3>(pos.begin(),voxel.dim).index();
+                    float w = fa*fib_fa[sub_index];
+                    sum_cos += w*std::abs(double(new_dir[sub_index]*dir));
+                    ncount += w;
                 }
             }
             result[i] = sum_cos/ncount;
         }
         else
             // for animal studies, use fiber coherence index
-            result[i] = evaluate_fib(voxel.dim,otsu,fib_fa,[&](uint32_t pos,uint8_t fib){return new_dir[fib][pos];});
+            result[i] = evaluate_fib(voxel.dim,otsu,fib_fa,[&](uint32_t pos){return new_dir[pos];});
     }
     long best = long(std::max_element(result,result+24)-result);
     tipl::out sp;
@@ -479,11 +481,7 @@ bool src_data::check_b_table(bool use_template)
         voxel.recon_report << " " << error_msg << ".";
     }
     else
-    {
         error_msg = "The b-table orientation is correct.";
-        fib_fa[0].swap(voxel.fib_fa);
-        fib_dir[0].swap(voxel.fib_dir);
-    }
     return true;
 }
 

@@ -428,9 +428,6 @@ float evaluate_fib(
         const fib_fa_type& fib_fa,
         fun dir)
 {
-    if(fib_fa.empty())
-        return 0.0;
-
     std::atomic<double> connection_count{0.0};
     std::atomic<double> total_fa{0.0};
     const double angular_threshold = 0.9659;
@@ -444,12 +441,11 @@ float evaluate_fib(
 
     tipl::par_for(tipl::begin_index(dim), tipl::end_index(dim), [&](const tipl::pixel_index<3>& index)
     {
-        auto v1 = fib_fa[0][index.index()];
+        auto v1 = fib_fa[index.index()];
         if(v1 <= otsu)
             return;
 
-        auto num_fiber = fib_fa.size();
-        auto d = dir(index.index(), 0);
+        auto d = dir(index.index());
         tipl::vector<3,int> oxyz(std::round(d[0]),std::round(d[1]),std::round(d[2]));
         tipl::vector<3,int> pos[2];
         pos[0] = tipl::vector<3,int>(index[0] + oxyz[0], index[1] + oxyz[1], index[2] + oxyz[2]);
@@ -461,12 +457,11 @@ float evaluate_fib(
             if(!dim.is_valid(pos[j]))
                 continue;
             tipl::pixel_index<3> other_index(pos[j].begin(), dim);
-            for(unsigned char fib2 = 0; fib2 < num_fiber && fib_fa[fib2][other_index.index()] > otsu; ++fib2)
-                if(std::abs(dir(other_index.index(), fib2) * d) >= angular_threshold)
-                {
-                    connected = true;
-                    goto end;
-                }
+            if(std::abs(dir(other_index.index()) * d) >= angular_threshold)
+            {
+                connected = true;
+                goto end;
+            }
         }
     end:
         add_atomic(total_fa, double(v1));
