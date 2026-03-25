@@ -1055,13 +1055,13 @@
   </action>
   <action name="actionBias_Field">
    <property name="text">
-    <string>Bias Field Correction...</string>
+    <string>Bias Field Correction</string>
    </property>
    <property name="toolTip">
     <string>Apply the bias field correction given spline spacing</string>
    </property>
    <property name="statusTip">
-    <string>1.0</string>
+    <string/>
    </property>
   </action>
  </widget>
