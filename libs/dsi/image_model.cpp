@@ -1591,6 +1591,7 @@ void correct_bias_field(tipl::image<3> I,
     while(!old_size.empty())
     {
         tipl::upsample_with_padding(log_bias_field,old_size.back());
+        tipl::filter::gaussian(log_bias_field);
         old_size.pop_back();
     }
 }
