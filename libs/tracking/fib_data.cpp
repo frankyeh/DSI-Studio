@@ -601,7 +601,7 @@ bool fib_data::load_from_file(const std::string& file_name)
     return true;
 }
 void correct_bias_field(tipl::image<3> I,
-                        const tipl::image<3,unsigned char>& mask,
+                        tipl::image<3,unsigned char> mask,
                         tipl::image<3>& log_bias_field,
                         const tipl::vector<3>& spacing);
 bool fib_data::correct_bias_field(void)

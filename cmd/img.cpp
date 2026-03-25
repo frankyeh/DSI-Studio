@@ -20,13 +20,23 @@ bool variant_image::command(std::string cmd,std::string param1)
     {
         if(cmd == "bias_field_correction")
         {
+            float prev_max = tipl::max_value(I);
             tipl::image<3,unsigned char> mask;
             tipl::threshold(I,mask,0);
-            tipl::image<3> bias_field;
-            correct_bias_field(I,mask,bias_field,tipl::vector<3>(1.0f,vs[0]/vs[1],vs[0]/vs[2]));
-            for(auto& each : bias_field)
-                each = std::exp(-each);
-            I *= bias_field;
+            for(size_t i = 0;i < 10;++i)
+            {
+                tipl::image<3> bias_field;
+                correct_bias_field(I,mask,bias_field,tipl::vector<3>(1.0f,vs[0]/vs[1],vs[0]/vs[2]));
+                for(auto& each : bias_field)
+                    each = std::exp(-each);
+                auto J = I;
+                J *= bias_field;
+                float cur_max = tipl::max_value(J);
+                if(cur_max > prev_max)
+                    return;
+                prev_max = cur_max;
+                I.swap(J);
+            }
         }
         else
             result = tipl::command<void,tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,interpolation,error_msg);
