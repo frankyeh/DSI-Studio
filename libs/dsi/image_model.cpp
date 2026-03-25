@@ -1453,10 +1453,18 @@ inline T B3_sym(T u)
     return T(0);
 }
 void correct_bias_field(tipl::image<3> I,
-                        const tipl::image<3,unsigned char>& mask,
+                        tipl::image<3,unsigned char> mask,
                         tipl::image<3>& log_bias_field,
                         const tipl::vector<3>& spacing)
 {
+    std::vector<tipl::shape<3> > old_size;
+    while(I.size() > 96*96*96)
+    {
+        old_size.push_back(I.shape());
+        tipl::downsample_with_padding(I);
+        tipl::downsample_with_padding(mask);
+    }
+
     constexpr int spline_range = 3;
     constexpr int max_iters = 50;
     constexpr float tol = 1e-4f;
@@ -1580,6 +1588,11 @@ void correct_bias_field(tipl::image<3> I,
     for(size_t i = 0;i < position.size();++i)
         log_bias_field[position[i]] += correction[i];
 
+    while(!old_size.empty())
+    {
+        tipl::upsample_with_padding(log_bias_field,old_size.back());
+        old_size.pop_back();
+    }
 }
 bool src_data::has_bias_field_correction(void) const
 {
