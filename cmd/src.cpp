@@ -16,39 +16,7 @@ bool parse_dwi(const std::vector<std::string>& file_list,
                     std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg);
 void dicom2src_and_nii(std::string dir_,bool overwrite);
 
-bool get_bval_bvec(const std::string& bval_file,const std::string& bvec_file,size_t dwi_count,
-                   std::vector<double>& bvals_out,std::vector<double>& bvecs_out,
-                   std::string& error_msg)
-{
-    std::vector<double> bvals,bvecs;
-    if(!load_bval(bval_file,bvals))
-    {
-        error_msg = "cannot load bval at ";
-        error_msg += bval_file;
-        return false;
-    }
-    if(!load_bvec(bvec_file,bvecs))
-    {
-        error_msg = "cannot load bvec at ";
-        error_msg += bvec_file;
-        return false;
-    }
-    if(!bvals.empty() && dwi_count != bvals.size())
-    {
-        std::ostringstream out;
-        out << "bval number does not match NIFTI file: " << dwi_count << " DWI in nifti file and " << bvals.size() << " in bvals " << std::endl;
-        error_msg = out.str();
-        return false;
-    }
-    if(bvals.size()*3 != bvecs.size())
-    {
-        error_msg = "bval and bvec does not match";
-        return false;
-    }
-    bvals_out.swap(bvals);
-    bvecs_out.swap(bvecs);
-    return true;
-}
+
 
 bool find_readme(const std::string& file,std::string& intro_file_name)
 {
