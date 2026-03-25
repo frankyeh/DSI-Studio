@@ -445,23 +445,33 @@ int src(tipl::program_option<tipl::out>& po)
 
     if(po.has("bval") && po.has("bvec"))
     {
-        std::vector<double> bval,bvec;
-        if(!get_bval_bvec(po.get("bval"),po.get("bvec"),dwi_files.size(),bval,bvec,src.error_msg))
+        std::vector<double> all_bval,all_bvec;
+        auto bval_files = po.get_files("bval");
+        auto bvec_files = po.get_files("bvec");
+        for(size_t i = 0;i < bval_files.size() && i < bvec_files.size();++i)
         {
-            tipl::error() << src.error_msg;
-            return 1;
+            std::vector<double> bval,bvec;
+            if(!get_bval_bvec(bval_files[i],bvec_files[i],dwi_files.size(),bval,bvec,src.error_msg))
+                return tipl::error() << src.error_msg,1;
+            all_bval.insert(all_bval.end(),bval.begin(),bval.end());
+            all_bvec.insert(all_bvec.end(),bvec.begin(),bvec.end());
         }
-        for(unsigned int index = 0;index < dwi_files.size();++index)
+        if(all_bval.size() != dwi_files.size())
+            return tipl::error() << "bval number does not match dwi: "
+                                 << all_bval.size() << " bval/bvec "
+                                 << dwi_files.size() << " dwi",1;
+        if(all_bval.size() != all_bvec.size()*3)
+            return tipl::error() << "bvec number does not match bval: "
+                                 << all_bval.size() << " bval "
+                                 << all_bvec.size() << " bvec",1;
+        for(size_t i = 0;i < dwi_files.size();++i)
         {
-            dwi_files[index]->bvalue = float(bval[index]);
-            dwi_files[index]->bvec = tipl::vector<3>(bvec[index*3],bvec[index*3+1],bvec[index*3+2]);
+            dwi_files[i]->bvalue = float(all_bval[i]);
+            dwi_files[i]->bvec = tipl::vector<3>(all_bvec[i*3],all_bvec[i*3+1],all_bvec[i*3+2]);
         }
     }
     if(dwi_files.empty())
-    {
-        tipl::error() << "no DWI data. abort." << std::endl;
-        return 1;
-    }
+        return tipl::error() << "no DWI data. abort.",1;
 
     {
         for(unsigned int index = 0;index < dwi_files.size();++index)
@@ -472,12 +482,8 @@ int src(tipl::program_option<tipl::out>& po)
     if(!src.load_from_file(dwi_files,po.get<int>("sort_b_table",0)) ||
        (po.has("intro") && !src.load_intro(po.get("intro"))) ||
        !src.save_to_file(output))
-    {
-        tipl::error() << src.error_msg;
-        return 1;
-    }
+        return tipl::error() << src.error_msg,1;
 
     return 0;
-
 
 }
