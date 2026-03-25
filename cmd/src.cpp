@@ -427,7 +427,7 @@ int src(tipl::program_option<tipl::out>& po)
             return tipl::error() << "bval number does not match dwi: "
                                  << all_bval.size() << " bval/bvec "
                                  << dwi_files.size() << " dwi",1;
-        if(all_bval.size() != all_bvec.size()*3)
+        if(all_bval.size()*3 != all_bvec.size())
             return tipl::error() << "bvec number does not match bval: "
                                  << all_bval.size() << " bval "
                                  << all_bvec.size() << " bvec",1;
