@@ -259,63 +259,42 @@ bool find_bval_bvec(const std::string& file_name, std::string& bval, std::string
 {
     namespace fs = std::filesystem;
     fs::path p(file_name);
-    std::string path = p.parent_path().string() + "/";
-    std::string base = p.stem().string();             // e.g., file.nii.gz → file.nii
-    std::string cbase = base;
-    if (tipl::ends_with(base, ".nii"))
-        base = base.substr(0, base.size() - 4);
-    std::string fname = p.filename().string();
+    fs::path dir = p.parent_path();
+    std::string stem = p.stem().string();
+
+    // Handle double extensions like .nii.gz
+    if (p.extension() == ".gz" && fs::path(stem).extension() == ".nii")
+        stem = fs::path(stem).stem().string();
+    else if (p.extension() == ".nii")
+        stem = p.stem().string();
 
     std::vector<std::string> bvals, bvecs;
-    auto add = [](auto& v, const std::string& s){ v.push_back(s); };
+    auto add_pair = [&](const fs::path& base)
+    {
+        for (const char* ext : {".bval", ".bvals", ".bval.txt", ".bvals.txt"})
+            bvals.push_back(fs::path(base).replace_extension(ext).string());
+        for (const char* ext : {".bvec", ".bvecs", ".bvec.txt", ".bvecs.txt"})
+            bvecs.push_back(fs::path(base).replace_extension(ext).string());
+    };
 
-    add(bvals, path + base + ".bvals");
-    add(bvals, path + base + ".bval");
-    add(bvals, path + cbase + ".bvals");
-    add(bvals, path + cbase + ".bval");
+    add_pair(dir / stem);
+    if (stem == "data")
+        add_pair(dir / "bval"); // Logic for generic "bval/bvec" names
 
-    add(bvecs, path + base + ".bvecs");
-    add(bvecs, path + base + ".bvec");
-    add(bvecs, path + cbase + ".bvecs");
-    add(bvecs, path + cbase + ".bvec");
-
-    if (tipl::ends_with(fname, ".nii.gz")) {
-        std::string stem = fname.substr(0, fname.size() - 7);
-        add(bvals, path + stem + ".bvals");
-        add(bvals, path + stem + ".bval");
-        add(bvecs, path + stem + ".bvecs");
-        add(bvecs, path + stem + ".bvec");
-    }
-
-    auto n = bvals.size();
-    for (size_t i = 0; i < n; ++i) {
-        add(bvals, bvals[i] + ".txt");
-        add(bvecs, bvecs[i] + ".txt");
-    }
-
-    if (cbase == "data.nii") {
-        add(bvals, path + "bvals");
-        add(bvals, path + "bval");
-        add(bvecs, path + "bvecs");
-        add(bvecs, path + "bvec");
-    }
-
-    auto pick = [](const std::vector<std::string>& cand, std::string& out){
-        for (auto& s : cand)
-            if (std::filesystem::exists(s)) {
+    auto pick = [](const std::vector<std::string>& cands, std::string& out)
+    {
+        for (const auto& s : cands)
+            if (fs::exists(s))
+            {
                 out = s;
                 return true;
             }
         return false;
     };
 
-    bool has_bval = pick(bvals, bval);
-    bool has_bvec = pick(bvecs, bvec);
-    return has_bval && has_bvec;
+    return pick(bvals, bval) && pick(bvecs, bvec);
 }
-bool get_bval_bvec(const std::string& bval_file,const std::string& bvec_file,size_t dwi_count,
-                   std::vector<double>& bvals,std::vector<double>& bvecs,
-                   std::string& error_msg);
+
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                  bool search_bvalbvec,
@@ -414,9 +393,10 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
             tipl::out() << "found bval and bvec file for " << file_name;
             tipl::out() << "bval: " << bval_name;
             tipl::out() << "bvec: " << bvec_name;
-            if(!get_bval_bvec(bval_name,bvec_name,dwi_data.size(),
-                              bvals,bvecs,bvalbvec_error_msg))
-                tipl::warning() << bvalbvec_error_msg;
+            if(!load_bval(bval_name,bvals))
+                tipl::warning() << (bvalbvec_error_msg = "cannot load bval from " + bval_name);
+            if(!load_bvec(bvec_name,bvecs))
+                tipl::warning() << (bvalbvec_error_msg = "cannot load bvec from " + bvec_name);
         }
         else
             tipl::warning() << "cannot find bval and bvec file for " << file_name;
