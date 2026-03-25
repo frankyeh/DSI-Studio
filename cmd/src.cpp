@@ -450,11 +450,10 @@ int src(tipl::program_option<tipl::out>& po)
         auto bvec_files = po.get_files("bvec");
         for(size_t i = 0;i < bval_files.size() && i < bvec_files.size();++i)
         {
-            std::vector<double> bval,bvec;
-            if(!get_bval_bvec(bval_files[i],bvec_files[i],dwi_files.size(),bval,bvec,src.error_msg))
-                return tipl::error() << src.error_msg,1;
-            all_bval.insert(all_bval.end(),bval.begin(),bval.end());
-            all_bvec.insert(all_bvec.end(),bvec.begin(),bvec.end());
+            if(!load_bval(bval_files[i],all_bval))
+                return tipl::error() << "cannot load bval from " << bval_files[i],1;
+            if(!load_bvec(bvec_files[i],all_bvec))
+                return tipl::error() << "cannot load bvec from " << bvec_files[i],1;
         }
         if(all_bval.size() != dwi_files.size())
             return tipl::error() << "bval number does not match dwi: "
