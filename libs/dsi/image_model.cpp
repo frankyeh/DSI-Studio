@@ -180,10 +180,7 @@ bool src_data::mask_from_template(void)
 
     tipl::threshold(r.apply_warping<false,tipl::interpolation::linear>(r.It[1]),voxel.mask,0.0f);
     for(size_t i = 0;i < 4;++i)
-    {
         tipl::morphology::smoothing(voxel.mask);
-        tipl::morphology::fit(voxel.mask,dwi);
-    }
     apply_mask = true;
     return true;
 }
