@@ -324,7 +324,7 @@ bool nii2src(const std::vector<std::string>& dwi_nii_files,
 int src(tipl::program_option<tipl::out>& po)
 {      
     std::string source = po.get("source");
-    std::vector<std::string> file_list;
+    std::vector<std::string> file_list,other_file_list;
     if(std::filesystem::is_directory(source))
     {
 
@@ -372,26 +372,24 @@ int src(tipl::program_option<tipl::out>& po)
         return 0;
     }
     else
-        po.get_files("source",file_list);
+        file_list = po.get_files("source");
 
     if(po.has("other_source"))
     {
         if(std::filesystem::is_directory(source))
         {
             tipl::out() << "try searching NIFTI files in " << source;
-            if(!tipl::search_filesystem<tipl::out>((std::filesystem::path(source)/"*.nii.gz").string(),file_list) &&
-               !tipl::search_filesystem<tipl::out>((std::filesystem::path(source)/"*.nii").string(),file_list))
+            if(!tipl::search_filesystem<tipl::out>((std::filesystem::path(source)/"*.nii.gz").string(),other_file_list) &&
+               !tipl::search_filesystem<tipl::out>((std::filesystem::path(source)/"*.nii").string(),other_file_list))
                 tipl::warning() << "cannot find NIFTI files in " << source;
         }
         else
-            po.get_files("other_source",file_list);
+            other_file_list = po.get_files("other_source");
     }
+    file_list.insert(file_list.end(),other_file_list.begin(),other_file_list.end());
 
     if(file_list.empty())
-    {
-        tipl::error() << "no file found for creating src" << std::endl;
-        return 1;
-    }
+        return tipl::error() << "no file found for creating src",1;
 
 
     auto output = po.get("output",std::filesystem::path(file_list[0]).stem().stem().u8string() + ".sz");

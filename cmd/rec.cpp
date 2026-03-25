@@ -262,9 +262,7 @@ int rec(tipl::program_option<tipl::out>& po)
     }
     if(po.has("other_image"))
     {
-        std::vector<std::string> others;
-        po.get_files("other_image",others);
-        for(const auto& each : others)
+        for(const auto& each : po.get_files("other_image"))
         {
             tipl::out() << "add image: " << each;
             auto seps = tipl::split(each,':');

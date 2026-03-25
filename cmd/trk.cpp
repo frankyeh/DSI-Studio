@@ -53,21 +53,12 @@ bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_
             handle->db.demo = subject_demo;
     }
 
-    std::vector<std::string> filenames;
-    if(!po.get_files("other_slices",filenames))
+    for(const auto& each : po.get_files("other_slices"))
     {
-        tipl::error() << po.error_msg << std::endl;
-        return false;
-    }
-    for(const auto& each : filenames)
-    {
-        tipl::out() << "add slice: " << each << std::endl;
+        tipl::out() << "add slice: " << each;
         auto new_slice = std::make_shared<CustomSliceModel>(handle,each);
         if(!new_slice->load_slices())
-        {
-            tipl::error() << new_slice->error_msg << std::endl;
-            return false;
-        }
+            return tipl::error() << new_slice->error_msg,false;
         new_slice->wait();
         other_slices.push_back(new_slice);
     }

@@ -195,16 +195,9 @@ int qc(tipl::program_option<tipl::out>& po)
         tipl::search_files(source,is_fib ? "*.fz" : "*.sz",file_list);
     }
     else
-        if(!po.get_files("source",file_list))
-        {
-            tipl::error() << po.error_msg;
-            return 1;
-        }
+        file_list = po.get_files("source");
     if(file_list.empty())
-    {
-        tipl::error() << "no file to run quality control";
-        return 1;
-    }
+        return tipl::error() << "no file to run quality control",1;
     std::string report_file_name = po.get("output","qc.tsv");
     tipl::out() << "saving " << report_file_name << std::endl;
 

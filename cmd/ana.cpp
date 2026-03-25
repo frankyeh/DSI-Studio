@@ -569,14 +569,8 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         return 1;
 
 
-    std::vector<std::string> tract_files;
-    if(!po.get_files("tract",tract_files))
-    {
-        tipl::error() << po.error_msg << std::endl;
-        return 1;
-    }
-
-    if(tract_files.size() == 0)
+    std::vector<std::string> tract_files(po.get_files("tract"));
+    if(tract_files.empty())
     {
         tipl::error() << "no tract file found at --tract" << std::endl;
         return 1;

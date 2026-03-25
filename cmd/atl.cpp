@@ -34,7 +34,7 @@ std::vector<std::string> get_source_list(tipl::program_option<tipl::out>& po)
         tipl::search_filesystem<tipl::out>(source + "/*.fib.gz",name_list);
     }
     else
-        po.get_files("source",name_list);
+        name_list = po.get_files("source");
     std::sort(name_list.begin(),name_list.end());
     return name_list;
 }

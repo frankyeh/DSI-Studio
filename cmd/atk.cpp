@@ -16,20 +16,9 @@ std::string run_auto_track(
 extern std::string auto_track_report;
 int atk(tipl::program_option<tipl::out>& po)
 {
-    std::vector<std::string> file_list;
-    if(!po.get_files("source",file_list))
-    {
-        tipl::error() << po.error_msg << std::endl;
-        return 1;
-    }
-
-
+    std::vector<std::string> file_list(po.get_files("source"));
     if(file_list.empty())
-    {
-        tipl::error() << "no file listed in --source" << std::endl;
-        return 1;
-    }
-
+        return tipl::error() << "no file listed in --source",1;
     int progress;
     std::string error = run_auto_track(po,file_list,progress);
     if(error.empty())
