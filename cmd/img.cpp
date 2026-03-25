@@ -6,7 +6,7 @@
 #include "reg.hpp"
 std::map<std::string,std::string> dicom_dictionary;
 void correct_bias_field(tipl::image<3> I,
-                        const tipl::image<3,unsigned char>& mask,
+                        tipl::image<3,unsigned char> mask,
                         tipl::image<3>& log_bias_field,
                         const tipl::vector<3>& spacing);
 bool variant_image::command(std::string cmd,std::string param1)
