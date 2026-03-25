@@ -263,7 +263,7 @@ bool find_bval_bvec(const std::string& file_name, std::string& bval, std::string
     std::string base = p.stem().string();             // e.g., file.nii.gz → file.nii
     std::string cbase = base;
     if (tipl::ends_with(base, ".nii"))
-        base = base.substr(0, base.size() - 4);       // remove ".nii"
+        base = base.substr(0, base.size() - 4);
     std::string fname = p.filename().string();
 
     std::vector<std::string> bvals, bvecs;
@@ -407,14 +407,19 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
     std::vector<double> bvals,bvecs;
     std::string bval_name,bvec_name;
     std::string bvalbvec_error_msg;
-    if(search_bvalbvec && find_bval_bvec(file_name,bval_name,bvec_name))
+    if(search_bvalbvec)
     {
-        tipl::out() << "found bval and bvec file for " << file_name;
-        tipl::out() << "bval: " << bval_name;
-        tipl::out() << "bvec: " << bvec_name;
-        if(!get_bval_bvec(bval_name,bvec_name,dwi_data.size(),
-                          bvals,bvecs,bvalbvec_error_msg))
-            tipl::out() << bvalbvec_error_msg;
+        if(find_bval_bvec(file_name,bval_name,bvec_name))
+        {
+            tipl::out() << "found bval and bvec file for " << file_name;
+            tipl::out() << "bval: " << bval_name;
+            tipl::out() << "bvec: " << bvec_name;
+            if(!get_bval_bvec(bval_name,bvec_name,dwi_data.size(),
+                              bvals,bvecs,bvalbvec_error_msg))
+                tipl::warning() << bvalbvec_error_msg;
+        }
+        else
+            tipl::warning() << "cannot find bval and bvec file for " << file_name;
     }
     if(must_have_bval_bvec && bvals.empty())
     {
