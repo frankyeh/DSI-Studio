@@ -98,14 +98,11 @@ void load_json_label(const std::string& filename,std::map<int,std::string>& labe
     }
 }
 
-std::string get_label_file_name(const std::string& file_name);
+
 void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::map<int,tipl::rgb>& label_color)
 {
     label_map.clear();
     label_color.clear();
-    QString base_name = QFileInfo(file_name).completeBaseName();
-    if(base_name.endsWith(".nii"))
-        base_name.chop(4);
     QString label_file = QString::fromStdString(tipl::remove_all_suffix(file_name.toStdString()) + ".txt");
     tipl::out() <<"looking for region label file " << label_file.toStdString() << std::endl;
     if(QFileInfo(label_file).exists())
