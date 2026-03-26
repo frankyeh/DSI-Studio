@@ -390,8 +390,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
     }
     if(tipl::contains_case_insensitive(cmd,"topup") && !std::filesystem::exists(handle->file_name+".corrected.nii.gz"))
     {
-        tipl::remove_suffix(param = handle->file_name,".sz");
-        param += ".rz";
+        param = tipl::remove_all_suffix(param) + ".rz";
         if(!std::filesystem::exists(param))
         {
             QMessageBox::information(this,QApplication::applicationName(),"Please specify another nii.gz or sz file with reversed phase encoding data");
