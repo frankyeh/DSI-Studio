@@ -7,16 +7,9 @@
 
 void apply_trans(tipl::vector<3>& pos,const tipl::matrix<4,4>& trans);
 
-std::string get_label_file_name(const std::string& file_name)
-{
-    std::string label_name(file_name);
-    tipl::remove_suffix(label_name,".nii.gz");
-    tipl::remove_suffix(label_name,".nii");
-    return label_name + ".txt";
-}
 void atlas::load_label(void)
 {
-    std::string text_file_name = get_label_file_name(filename);
+    std::string text_file_name(tipl::remove_all_suffix(filename) + ".txt");
     if(!std::filesystem::exists(text_file_name))
     {
         error_msg = "cannot find label file at ";
