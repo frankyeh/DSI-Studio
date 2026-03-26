@@ -172,7 +172,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     {
         tipl::image<3> tmp;
         header >> tmp;
-        if(std::filesystem::exists(get_label_file_name(file_name)) || tipl::is_label_image(tmp))
+        if(std::filesystem::exists(tipl::remove_all_suffix(file_name) + ".txt") || tipl::is_label_image(tmp))
             from = tmp;
         else
         {
