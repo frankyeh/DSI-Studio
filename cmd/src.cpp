@@ -94,13 +94,10 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
             tipl::out() << "ignore file with '.sz.':" << each;
             continue;
         }
-        auto file_name = std::filesystem::path(each).filename().string();
-        auto stem = std::filesystem::path(file_name).stem().string();
-        tipl::out() << "opening " << file_name;
-
+        auto stem = std::filesystem::path(each).stem().string();
         std::string phase_str;
         {
-            auto json_path = tipl::remove_all_suffix(file_name)+".json";
+            auto json_path = tipl::remove_all_suffix(each)+".json";
             QFile input_file(json_path.c_str());
             if (input_file.open(QIODevice::ReadOnly | QIODevice::Text))
             {
