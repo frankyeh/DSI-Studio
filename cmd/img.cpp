@@ -424,17 +424,12 @@ int img(tipl::program_option<tipl::out>& po)
     }
 
     std::string source(po.get("source")),info;
-    if(tipl::ends_with(source,"fib.gz") || tipl::ends_with(source,".fz") ||
-       tipl::ends_with(source,"src.gz") || tipl::ends_with(source,".sz") ||
-       tipl::ends_with(source,".mz"))
+    tipl::progress prog("open ",source);
+    if(tipl::ends_with(source,{"fib.gz",".fz","src.gz",".sz",".mz"}))
     {
         tipl::io::gz_mat_read mat_reader;
-        tipl::out() << "open " << source;
         if(!mat_reader.load_from_file(source))
-        {
-            tipl::error() << mat_reader.error_msg;
-            return 1;
-        }
+            return tipl::error() << mat_reader.error_msg,1;
 
         show_slice<float>(mat_reader,"fa0");
         show_slice<unsigned short>(mat_reader,"image0");
@@ -453,30 +448,20 @@ int img(tipl::program_option<tipl::out>& po)
                 cmd = cmd.substr(0,sep_pos);
             }
             if(!modify_fib(mat_reader,cmd,param))
-            {
-                tipl::error() << mat_reader.error_msg;
-                return 1;
-            }
+                return tipl::error() << mat_reader.error_msg,1;
         }
         if(po.has("output"))
         {
             tipl::out() << "saving output";
             if(!modify_fib(mat_reader,"save",po.get("output")))
-            {
-                tipl::error() << mat_reader.error_msg;
-                return 1;
-            }
+                return tipl::error() << mat_reader.error_msg,1;
         }
         return 0;
     }
 
     variant_image var_image;
-    tipl::out() << "open " << source;
     if(!var_image.load_from_file(source.c_str(),info))
-    {
-        tipl::error() << var_image.error_msg;
-        return 1;
-    }
+        return tipl::error() << var_image.error_msg,1;
     tipl::shape<4> dim4;
     if(var_image.dim4 > 1)
     {
@@ -484,22 +469,17 @@ int img(tipl::program_option<tipl::out>& po)
         tipl::io::gz_nifti nifti;
         prepare_idx(source.c_str(),nifti.input_stream);
         if(!nifti.open(source,std::ios::in))
-        {
-            tipl::error() << var_image.error_msg;
-            return 1;
-        }
+            return tipl::error() << var_image.error_msg,1;
+
         if(!var_image.apply([&](auto& I)
         {
             tipl::out() << "dimension: " << (dim4 = tipl::shape<4>(I.width(),I.height(),I.depth(),var_image.dim4));
             I.resize(var_image.shape = tipl::shape<3>(I.width(),I.height(),I.depth()*var_image.dim4));
             if(!nifti.save_to_buffer(I.data(),dim4.size()))
-            {
-                tipl::error() << nifti.error_msg;
-                return false;
-            }
+                return tipl::error() << nifti.error_msg,false;
             return true;
         }))
-            return 1;
+        return 0;
     }
 
     {
@@ -558,10 +538,7 @@ int img(tipl::program_option<tipl::out>& po)
                 auto model_path = QCoreApplication::applicationDirPath().toStdString()+ "/network/" + po.get("network",param);
                 auto unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(model_path);
                 if(!unet.get())
-                {
-                    tipl::error() << "cannot read network file at" + model_path;
-                    return 1;
-                }
+                    return tipl::error() << "cannot read network file at" + model_path,1;
                 var_image.apply([&](auto& I)
                 {
                     unet->forward(I,var_image.vs,prog);
@@ -591,12 +568,9 @@ int img(tipl::program_option<tipl::out>& po)
             }
             tipl::out() << std::string(param.empty() ? cmd : cmd+":"+param);
             if(!var_image.command(cmd,param))
-            {
-                tipl::error() << var_image.error_msg;
-                return 1;
-            }
+                return tipl::error() << var_image.error_msg,1;
         }
-        }
+    }
 
     if(po.has("output"))
     {
@@ -607,15 +581,12 @@ int img(tipl::program_option<tipl::out>& po)
             {
                 return tipl::io::gz_nifti(output,std::ios::out) << var_image.bind(tipl::make_image(I.data(),dim4));
             }))
-                return 1;
+            return 0;
         }
         else
         {
             if(!var_image.command("save",output))
-            {
-                tipl::error() << var_image.error_msg;
-                return 1;
-            }
+                return tipl::error() << var_image.error_msg,1;
         }
     }
     return 0;
