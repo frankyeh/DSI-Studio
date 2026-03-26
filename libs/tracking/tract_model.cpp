@@ -1883,7 +1883,7 @@ bool TractModel::cut_end_portion(float from,float to)
     std::vector<unsigned int> new_tract_color(tract_color);
     std::vector<unsigned int> tract_to_delete(tract_data.size());
 
-    tipl::adaptive_par_for(tract_data.size(),[&](size_t i)
+    tipl::par_for(tract_data.size(),[&](size_t i)
     {
         tract_to_delete[i] = i;
         auto from = tract_data[i].data()+find_location(tract_data[i],dir[i] ? from_point16 : to_point16);
@@ -2706,7 +2706,7 @@ tipl::vector<3> get_tract_dir(const std::vector<std::vector<float> >& tract_data
     // categorize endpoints using the mid point direction
     total_dis.normalize();
     dir.resize(tract_data.size());
-    tipl::adaptive_par_for(tract_data.size(),[&](size_t i)
+    tipl::par_for(tract_data.size(),[&](size_t i)
     {
         if(tract_data[i].size() < 6)
             return;
@@ -2733,12 +2733,10 @@ bool check_order(tipl::shape<3> geo,
 {
     // use end surface central point to determine
     // end surface 1 is located at larger axis value
-    tipl::vector<3,float> sum_s1 = std::accumulate(s1.begin(),s1.end(),tipl::vector<3,float>(0,0,0));
-    tipl::vector<3,float> sum_s2 = std::accumulate(s2.begin(),s2.end(),tipl::vector<3,float>(0,0,0));
+    tipl::vector<3,double> sum_s1 = std::accumulate(s1.begin(),s1.end(),tipl::vector<3,double>(0,0,0));
+    tipl::vector<3,double> sum_s2 = std::accumulate(s2.begin(),s2.end(),tipl::vector<3,double>(0,0,0));
     sum_s1 -= sum_s2;
-    sum_s1[0] *= geo[0];
-    sum_s1[1] *= geo[1];
-    sum_s1[2] *= geo[2];
+    sum_s1.elem_mul(tipl::vector<3>(geo.begin()));
     auto dir = sum_s1;
     dir.abs();
     auto max_sum_dim = std::max_element(dir.begin(),dir.end())-dir.begin();
