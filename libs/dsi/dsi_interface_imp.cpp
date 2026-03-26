@@ -16,9 +16,7 @@ void src_data::check_output_file_name(void)
         output_file_name = file_name;
     if(tipl::ends_with(output_file_name,".fz") || tipl::ends_with(output_file_name,".fib.gz"))
         return;
-    tipl::remove_suffix(output_file_name,".sz");
-    tipl::remove_suffix(output_file_name,".src.gz");
-    tipl::remove_suffix(output_file_name,".nii.gz");
+    output_file_name = tipl::remove_all_suffix(output_file_name);
     std::ostringstream out;
     if(voxel.is_histology)
     {
