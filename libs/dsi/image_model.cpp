@@ -3210,10 +3210,8 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
             src_bvectors[index].normalize();
             table += 4;
         }
-        tipl::out() << "src ver: " << this_src_ver;
-        tipl::out() << "dim: " << voxel.dim << " vs: " << voxel.vs;
-        tipl::out() << "trans: " << voxel.trans_to_mni;
-        tipl::out() << "dwi count: " << src_bvalues.size();
+        tipl::out() << "src ver: " << this_src_ver << " dim: " << voxel.dim << " vs: " << voxel.vs;
+        tipl::out() << "trans: " << voxel.trans_to_mni << " dwi count: " << src_bvalues.size();
 
         mat_reader.read("report",voxel.report);
         if(!tipl::contains(voxel.report,"b-value"))
@@ -3229,10 +3227,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
             src_dwi_data.resize(src_bvalues.size());
             for (size_t index = 0;p2(index,src_dwi_data.size());++index)
                 if(!mat_reader.read("image"+std::to_string(index),src_dwi_data[index]))
-                {
-                    error_msg = "cannot read image. incomplete file ?";
-                    return false;
-                }
+                    return error_msg = "cannot read image matrix: " + std::to_string(index),false;
             if(p2.aborted())
                 return false;
         }
