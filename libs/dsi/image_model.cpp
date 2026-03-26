@@ -2603,10 +2603,7 @@ std::string src_data::find_topup_reverse_pe(void)
 {
     tipl::progress prog("searching for opposite direction scans..");
     // locate rsrc.gz file
-    std::string rev_file_name(file_name);
-    tipl::remove_suffix(rev_file_name,".sz");
-    tipl::remove_suffix(rev_file_name,".src.gz");
-    tipl::remove_suffix(rev_file_name,".nii.gz");
+    std::string rev_file_name(tipl::remove_all_suffix(file_name));
     if(std::filesystem::exists(rev_file_name+".rz"))
     {
         tipl::out() << "reversed pe SRC file found: " << rev_file_name+".rz" << std::endl;
