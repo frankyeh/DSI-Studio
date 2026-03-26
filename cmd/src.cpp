@@ -94,14 +94,14 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
             tipl::out() << "ignore file with '.sz.':" << each;
             continue;
         }
-        auto file_name = std::filesystem::path(each).filename().u8string();
+        auto file_name = std::filesystem::path(each).filename().string();
+        auto stem = std::filesystem::path(file_name).stem().string();
         tipl::out() << "opening " << file_name;
 
         std::string phase_str;
         {
-            std::filesystem::path json_path(file_name);
-            json_path.replace_extension(".json");
-            QFile input_file(json_path.string().c_str());
+            auto json_path = tipl::remove_all_suffix(file_name)+".json";
+            QFile input_file(json_path.c_str());
             if (input_file.open(QIODevice::ReadOnly | QIODevice::Text))
             {
                 tipl::out () << "read json : " << json_path;
@@ -111,16 +111,6 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
                 else
                     tipl::out() << "json file does not include PhaseEncodingDirection information";
             }
-        }
-
-        if(phase_str.empty())
-        {
-            for(auto dir : {"_ap","ap_","_pa","pa_","_lr","lr_","_rl","rl_"})
-                if(tipl::contains_case_insensitive(file_name,dir))
-                {
-                    tipl::out() << file_name << " filename suggests phase direction is " << (phase_str = dir);
-                    break;
-                }
         }
 
         tipl::io::gz_nifti nii;
@@ -138,6 +128,35 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
     // sort based on dwi count
     std::sort(dwi_info.begin(),dwi_info.end(),
               [&](const auto& lhs,const auto& rhs){return std::get<size_t>(lhs) > std::get<size_t>(rhs);});
+
+
+    if(dwi_info.size() > 2 &&
+        std::count_if(dwi_info.begin(),dwi_info.end(),[](auto& each){return std::get<std::string>(each).empty();}) == dwi_info.size())
+    {
+        tipl::out() << "no phase encoding information found in json files, try using file name to determine";
+        for(auto& each : dwi_info)
+        {
+            const auto& file_name = std::get<std::filesystem::path>(each);
+            auto& phase_str = std::get<std::string>(each);
+            auto stem = file_name.stem().string();
+            for(auto dir : {"_ap","ap_","_pa","pa_","_lr","lr_","_rl","rl_"})
+                if(tipl::contains_case_insensitive(stem,dir))
+                {
+                    tipl::out() << file_name << " suggests phase direction is " << (phase_str = dir);
+                    break;
+                }
+            if(phase_str.empty())
+            {
+                if(tipl::contains_case_insensitive(stem,"rev"))
+                    phase_str = "pa";
+                else
+                    phase_str = "ap";
+                tipl::out() << file_name << " assume phase encoding of " << phase_str;
+            }
+        }
+    }
+
+
 
     // for each image size, generate an SRC
     for(size_t i = 0;i < dwi_info.size();++i)
