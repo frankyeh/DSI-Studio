@@ -1201,13 +1201,9 @@ bool get_pe_dir(const std::string& nii_name,size_t& pe_dir,bool& is_neg)
     const char pe_coding[3][2][5] = { { "\"i\"","\"i-\"" },
                                        { "\"j\"","\"j-\"" },
                                        { "\"k\"","\"k-\"" }};
-    std::string json_name(nii_name);
-    tipl::remove_suffix(json_name,".nii.gz");
-    tipl::remove_suffix(json_name,".nii");
-    json_name += ".json";
+    std::string json_name(tipl::remove_all_suffix(nii_name) + ".json");
     if(!std::filesystem::exists(json_name))
         return false;
-
     std::stringstream buffer;
     buffer << std::ifstream(json_name).rdbuf();
     std::string json_content(buffer.str());
@@ -2289,7 +2285,7 @@ void MainWindow::on_github_open_file_clicked()
 
 
     qint64 bytesTotal = ui->github_release_files->item(row, 1)->data(Qt::UserRole).toLongLong();
-    if (QFile::exists(filePath))
+    if (QFile::exists(filePath) && !ui->download_overwrite->isChecked())
     {
         git_open();
         return;
