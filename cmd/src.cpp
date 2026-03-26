@@ -83,18 +83,11 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
                            size_t/*dwi count*/> > dwi_info;
     for(const auto& each : dwi_nii_files)
     {
-        if (!tipl::ends_with(each,".nii.gz") &&
-            !tipl::ends_with(each,".nii"))
+        if (!tipl::ends_with(each,{".nii.gz",".nii"}) || tipl::contains(each,".sz."))
         {
-            tipl::out() << "ignore " << each << " : not a nifti file";
+            tipl::out() << "ignore " << each;
             continue;
         }
-        if (tipl::contains(each,".sz."))
-        {
-            tipl::out() << "ignore file with '.sz.':" << each;
-            continue;
-        }
-        auto stem = std::filesystem::path(each).stem().string();
         std::string phase_str;
         {
             auto json_path = tipl::remove_all_suffix(each)+".json";
@@ -112,10 +105,7 @@ bool handle_bids_folder(const std::vector<std::string>& dwi_nii_files,
 
         tipl::io::gz_nifti nii;
         if(!nii.open(each,std::ios::in))
-        {
-            error_msg = nii.error_msg;
-            return false;
-        }
+            return error_msg = nii.error_msg,false;
         tipl::shape<3> s;
         nii >> s;
         dwi_info.emplace_back(std::filesystem::path(each),phase_str,s,nii.dim(4));
