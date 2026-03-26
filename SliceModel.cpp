@@ -545,8 +545,7 @@ bool CustomSliceModel::load_slices(void)
 
 
     // load nifti file
-    if(source_images.empty() &&
-       (tipl::ends_with(source_file_name,"nii.gz") || tipl::ends_with(source_file_name,"nii")))
+    if(source_images.empty() && tipl::ends_with(source_file_name,{".nii.gz",".nii"}))
     {
         tipl::io::gz_nifti nifti;
         prepare_idx(source_file_name.c_str(),nifti.input_stream);

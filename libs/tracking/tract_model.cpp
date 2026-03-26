@@ -534,7 +534,7 @@ bool load_fib_from_tracks(const std::string& file_name,
         shift_track_for_tck(loaded_tract_data,geo);
     }
     else
-    if(tipl::ends_with(file_name,"trk.gz") || tipl::ends_with(file_name,"trk"))
+    if(tipl::ends_with(file_name,{".trk.gz",".trk"}))
     {
         TrackVis vis;
         std::vector<unsigned int> loaded_tract_cluster;
@@ -625,7 +625,7 @@ bool TractModel::load_tracts_from_file(const std::string& file_name,fib_data* ha
         if(!colors.empty())
             color = colors[0];
     }
-    if(tipl::ends_with(file_name,"trk.gz") || tipl::ends_with(file_name,"trk"))
+    if(tipl::ends_with(file_name,{".trk.gz",".trk"}))
     {
         TrackVis trk;
         if(!trk.load_from_file(file_name,loaded_tract_data,loaded_tract_cluster,geo,vs,source_trans_to_mni,parameter_id))
@@ -823,7 +823,7 @@ bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const std::s
                                               std::vector<unsigned int>{get_cluster_color(tract_color)});
         return result;
     }
-    if(tipl::ends_with(file_name,".trk.gz") || tipl::ends_with(file_name,".trk"))
+    if(tipl::ends_with(file_name,{".trk.gz",".trk"}))
         return TrackVis::save_to_file(file_name,geo,vs,trans_to_mni,tract_data,data,parameter_id,get_cluster_color(tract_color));
     if(tipl::ends_with(file_name,".txt"))
     {
@@ -913,13 +913,13 @@ bool TractModel::save_tracts_to_file(const std::string& file_name)
     tipl::out() << "save " << tract_data.size() << " tracts to " << file_name;
     tipl::out() << "dim:" << geo << " vs:" << vs;
     tipl::out() << "trans:" << trans_to_mni;
-    if(tipl::ends_with(file_name,"tt.gz"))
+    if(tipl::ends_with(file_name,".tt.gz"))
     {
         return TinyTrack::save_to_file(file_name,geo,vs,trans_to_mni,
                                        tract_data,std::vector<uint16_t>(tract_cluster.begin(),tract_cluster.end()),report,parameter_id,
                                        std::vector<unsigned int>{get_cluster_color(tract_color)});
     }
-    if(tipl::ends_with(file_name,".trk") || tipl::ends_with(file_name,".trk.gz"))
+    if(tipl::ends_with(file_name,{".trk.gz",".trk"}))
     {
         return TrackVis::save_to_file(file_name,geo,vs,trans_to_mni,
                 tract_data,std::vector<std::vector<float> >(),parameter_id,get_cluster_color(tract_color));
@@ -985,7 +985,7 @@ bool TractModel::save_tracts_to_file(const std::string& file_name)
         out.write("length",length);
         return true;
     }
-    if (tipl::ends_with(file_name,".nii") || tipl::ends_with(file_name,".nii.gz"))
+    if (tipl::ends_with(file_name,{".nii",".nii.gz"}))
     {
         std::vector<tipl::vector<3,float> >points;
         get_tract_points(points);
@@ -1226,7 +1226,7 @@ bool TractModel::save_all(const std::string& file_name,
         }
         return true;
     }
-    if (tipl::ends_with(file_name,".trk") || tipl::ends_with(file_name,".trk.gz"))
+    if (tipl::ends_with(file_name,{".trk.gz",".trk"}))
     {
         tipl::io::gz_ostream out;
         if (!out.open(file_name))

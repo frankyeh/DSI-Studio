@@ -14,7 +14,7 @@ void src_data::check_output_file_name(void)
 {
     if(output_file_name.empty())
         output_file_name = file_name;
-    if(tipl::ends_with(output_file_name,".fz") || tipl::ends_with(output_file_name,".fib.gz"))
+    if(tipl::ends_with(output_file_name,{".fz",".fib.gz"}))
         return;
     output_file_name = tipl::remove_all_suffix(output_file_name);
     std::ostringstream out;

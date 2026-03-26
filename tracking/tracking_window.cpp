@@ -105,11 +105,10 @@ bool command_history::get_filename(QWidget* parent,std::string& filename,const s
                                 post_fix.empty() ? file_stem() :
                                 (std::filesystem::path(default_parent_path)/
                                     (post_fix[0] == '.' ? default_stem + post_fix : post_fix)).string()));
-    if(tipl::ends_with(current_cmd,"_tracts") || tipl::ends_with(current_cmd,"_tract"))
+    if(tipl::ends_with(current_cmd,{"_tracts","_tract"}))
         filter = "Tract files (*.tt.gz *tt.gz *trk.gz *.trk);;MAT files (*.mat)";
     else
-    if(tipl::ends_with(current_cmd,"_regions") || tipl::ends_with(current_cmd,"_region") ||
-       tipl::ends_with(current_cmd,"_volume"))
+    if(tipl::ends_with(current_cmd,{"_regions","_region","_volume"}))
             filter = "NIFTI file(*nii.gz *.nii);;MAT file (*.mat)";
     else
         default_file_name += "_" + QString::fromStdString(current_cmd).split('_').back() + ".txt";
@@ -127,7 +126,7 @@ bool command_history::get_filename(QWidget* parent,std::string& filename,const s
 bool command_history::is_loading(const std::string& cmd)
 {
     return cmd.find(',') < cmd.find('.') && cmd.find('.') != std::string::npos &&
-               (tipl::begins_with(cmd,"load_") || tipl::begins_with(cmd,"open_"));
+               (tipl::begins_with(cmd,{"load_","open_"}));
 }
 bool command_history::is_saving(const std::string& cmd)
 {

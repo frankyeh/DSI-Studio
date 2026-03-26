@@ -274,12 +274,7 @@ void CreateDBDialog::update_output_file_name(void)
         if(create_db)
             ui->output_file_name->setText(base_name + ".dz");
         else
-        {
-            if(tipl::ends_with(front,".nii.gz") || tipl::ends_with(front,".nii"))
-                ui->output_file_name->setText(base_name + ".nii.gz");
-            else
-                ui->output_file_name->setText(base_name + ".avg.fz");
-        }
+            ui->output_file_name->setText(base_name + (tipl::ends_with(front,{".nii.gz",".nii"}) ? ".nii.gz" : ".avg.fz"));
     }
 }
 

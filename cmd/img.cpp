@@ -174,7 +174,7 @@ bool variant_image::load_from_file(const std::string& file_name,std::string& inf
     is_mni = false;
     T.identity();
     tipl::progress prog("open " + file_name);
-    if(tipl::ends_with(file_name,".nhdr") || tipl::ends_with(file_name,".nrrd"))
+    if(tipl::ends_with(file_name,{".nhdr",".nrrd"}))
     {
         tipl::io::gz_nrrd nrrd;
         if(!nrrd.load_from_file(file_name))
@@ -215,8 +215,7 @@ bool variant_image::load_from_file(const std::string& file_name,std::string& inf
         }
     }
     else
-    if(tipl::ends_with(file_name,".nii.gz") || tipl::ends_with(file_name,".nii") ||
-       tipl::ends_with(file_name,".hdr"))
+    if(tipl::ends_with(file_name,{".nii.gz",".nii",".hdr"}))
     {
         tipl::io::gz_nifti nifti;
         prepare_idx(file_name,nifti.input_stream);

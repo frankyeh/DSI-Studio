@@ -746,7 +746,7 @@ bool src_data::run_steps(const std::string& reg_file_name,const std::string& ref
             cmd = step.substr(0,pos);
             param = step.substr(pos+1,step.size()-pos-1);
         }
-        if((tipl::ends_with(param,".sz") || tipl::ends_with(param,".gz")) &&
+        if((tipl::ends_with(param,{".sz",".gz"})) &&
            !tipl::match_files(reg_file_name,param,file_name,param))
         {
             error_msg = step;

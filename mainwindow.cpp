@@ -591,10 +591,10 @@ void MainWindow::loadFib(QString filename)
     }
     tracking_windows.back()->showNormal();
     tracking_windows.back()->resize(1200,700);
-    if(filename.endsWith("trk.gz") || filename.endsWith("trk") || filename.endsWith("tck") || filename.endsWith("tt.gz"))
+    if(tipl::ends_with(filename.toStdString(),{".trk.gz",".trk",".tck",".tt.gz"}))
     {
         tracking_windows.back()->command({"open_tract",filename.toStdString()});
-        if(filename.endsWith("tck"))
+        if(filename.endsWith(".tck"))
         {
             tipl::shape<3> geo;
             shift_track_for_tck(tracking_windows.back()->tractWidget->tract_models.back()->get_tracts(),geo);
@@ -1792,7 +1792,7 @@ void MainWindow::on_github_repo_currentIndexChanged(int index)
         {
             assets[tag].append(each);
             auto fn = each.toObject().value("name").toString().toStdString();
-            if (fn.empty() || fn.back()!='z' || tipl::ends_with(fn,".db.fz") || tipl::ends_with(fn,".dz"))
+            if (fn.empty() || fn.back()!='z' || tipl::ends_with(fn,{".db.fz",".dz"}))
                 continue;
             names.insert(fn.substr(0, std::min(fn.find('_'), fn.find('.'))));
         }

@@ -105,10 +105,9 @@ public:
     {
         if(tipl::ends_with(input,".tt.gz"))
             return apply_warping_tt<direction>(input,output);
-        if(tipl::ends_with(input,".nii.gz") || tipl::ends_with(input,".nii"))
+        if(tipl::ends_with(input,{".nii.gz",".nii"}))
             return apply_warping_nii<direction>(input,output);
-        if(tipl::ends_with(input,".sz") || tipl::ends_with(input,".src.gz") ||
-           tipl::ends_with(input,".fz") || tipl::ends_with(input,".fib.gz"))
+        if(tipl::ends_with(input,{".sz",".src.gz",".fz",".fib.gz"}))
             return apply_warping_fzsz<direction>(input,output);
         error_msg = "unsupported file format";
         return false;

@@ -510,7 +510,7 @@ bool dual_reg::apply_warping_fzsz(const std::string& input,const std::string& ou
             new_image.shape = dim;
             if(!new_image.read_mat_image(i,mat_reader))
                 return;
-            if(tipl::begins_with(mat.name,"index") || tipl::begins_with(mat.name,"mask"))
+            if(tipl::begins_with(mat.name,{"index","mask"}))
                 new_image.interpolation = false;
             new_image.apply([&](auto& I)
             {

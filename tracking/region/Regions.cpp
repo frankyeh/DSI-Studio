@@ -128,7 +128,7 @@ bool ROIRegion::save_region_to_file(const std::string& file_name)
         header << mask;
         return true;
     }
-    if (tipl::ends_with(file_name,".nii.gz") || tipl::ends_with(file_name,".nii"))
+    if (tipl::ends_with(file_name,{".nii.gz",".nii"}))
     {
         unsigned int color = region_render->color.color & 0x00FFFFFF;
         tipl::image<3,unsigned char> mask;
@@ -189,7 +189,7 @@ bool ROIRegion::load_region_from_file(const std::string& file_name) {
         add_points(std::move(points));
         return true;
     }
-    if (tipl::ends_with(file_name,".nii") || tipl::ends_with(file_name,".nii.gz"))
+    if (tipl::ends_with(file_name,{".nii",".nii.gz"}))
     {
         tipl::image<3> I;
         if(!(tipl::io::gz_nifti(file_name,std::ios::in)
