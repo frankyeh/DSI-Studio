@@ -16,6 +16,7 @@ bool get_src(std::string filename,src_data& src2,std::string& error_msg);
 /**
  perform reconstruction
  */
+size_t get_template_id(tipl::program_option<tipl::out>& po,size_t default_sel);
 int rec(tipl::program_option<tipl::out>& po)
 {
     std::string file_name = po.get("source");
@@ -43,10 +44,7 @@ int rec(tipl::program_option<tipl::out>& po)
                 src.voxel.reg_param.smoothing = po.get("reg_smoothing",src.voxel.reg_param.smoothing);
             }
         }
-        for(size_t id = 0;id < fa_template_list.size();++id)
-            tipl::out() << "template " << id << ": " << std::filesystem::path(fa_template_list[id]).stem().stem().stem() << std::endl;
-        src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
-
+        src.voxel.template_id = get_template_id(po,src.voxel.template_id);
         if(src.voxel.method_id == 7) // is qsdr
             src.voxel.qsdr_reso = po.get("qsdr_reso",src.is_human_data ?
                     std::min<float>(2.0f,std::max<float>(src.voxel.vs[0],src.voxel.vs[2])) : src.voxel.vs[2]);
