@@ -1038,8 +1038,8 @@
     <addaction name="separator"/>
     <addaction name="actionCut_Tracts"/>
     <addaction name="actionCut_end_portion"/>
-    <addaction name="actionCut_1st_End"/>
-    <addaction name="actionCut_2nd_End"/>
+    <addaction name="actionCut_LPS_End"/>
+    <addaction name="actionCut_RAI_End"/>
     <addaction name="menuCut_by_slice"/>
    </widget>
    <widget class="QMenu" name="menuScreen">
@@ -5053,20 +5053,20 @@ Tracking</string>
     <string>Ctrl+-</string>
    </property>
   </action>
-  <action name="actionCut_1st_End">
+  <action name="actionCut_LPS_End">
    <property name="text">
-    <string>Cut 1st End</string>
+    <string>Cut L/P/S End Portion</string>
    </property>
    <property name="toolTip">
-    <string>run cut_tract_1st_end</string>
+    <string>run cut_tract_lps_end</string>
    </property>
   </action>
-  <action name="actionCut_2nd_End">
+  <action name="actionCut_RAI_End">
    <property name="text">
-    <string>Cut 2nd End</string>
+    <string>Cut R/A/I End Portion</string>
    </property>
    <property name="toolTip">
-    <string>run cut_tract_2nd_end</string>
+    <string>run cut_tract_RAI_end</string>
    </property>
   </action>
  </widget>
