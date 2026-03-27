@@ -1833,67 +1833,61 @@ void get_cut_points(const std::vector<std::vector<float> >& tract_data,
 }
 tipl::vector<3> get_tract_dir(const std::vector<std::vector<float> >& tract_data,
                    std::vector<char>& dir);
+
 bool TractModel::cut_end_portion(float from,float to)
 {
     tipl::vector<3,double> from_point,to_point;
     std::vector<char> dir;
     get_tract_dir(tract_data,dir);
-    for(unsigned int i = 0;i < tract_data.size();++i)
+    size_t valid_tracts = 0;
+    for(size_t i = 0;i < tract_data.size();++i)
     {
         if(tract_data[i].size() <= 6)
             continue;
-        size_t from_length = size_t(from*size_t((tract_data[i].size()-3)/3))*3;
-        size_t to_length = size_t(to*size_t((tract_data[i].size()-3)/3))*3;
-        if(!dir[i])
-            std::swap(from_length,to_length);
-        from_point += tipl::vector<3>(tract_data[i].data()+from_length);
-        to_point += tipl::vector<3>(tract_data[i].data()+to_length);
+        float f = dir[i] ? from : 1.0f-from;
+        float t = dir[i] ? to : 1.0f-to;
+        size_t len = (tract_data[i].size()-3)/3;
+        from_point += tipl::vector<3,double>(&tract_data[i][size_t(f*len)*3]);
+        to_point += tipl::vector<3,double>(&tract_data[i][size_t(t*len)*3]);
+        ++valid_tracts;
     }
-    from_point /= tract_data.size();
-    to_point /= tract_data.size();
-
-    auto find_location = [&](const std::vector<float>& tract,const tipl::vector<3>& point)
+    if(valid_tracts)
     {
-        float best_dis2 = (tipl::vector<3>(tract.data())-point).length2();
-        float best_dis = std::sqrt(best_dis2);
+        from_point /= float(valid_tracts);
+        to_point /= float(valid_tracts);
+    }
+    auto find_location = [](const std::vector<float>& tract,const tipl::vector<3>& pt)
+    {
+        float min_d2 = (tipl::vector<3>(&tract[0])-pt).length2();
         size_t best_pos = 0;
-        for(size_t pos = 3;pos < tract.size();pos += 3)
+        for(size_t p = 3;p < tract.size();p += 3)
         {
-            float dx = std::fabs(tract[pos]-point[0]);
-            if(dx > best_dis)
-                continue;
-            float dy = std::fabs(tract[pos+1]-point[1]);
-            if(dy > best_dis)
-                continue;
-            float dz = std::fabs(tract[pos+2]-point[2]);
-            if(dz > best_dis)
-                continue;
-            auto dis2 = dx*dx + dy*dy + dz*dz;
-            if(dis2 > best_dis2)
-                continue;
-            best_dis2 = dis2;
-            best_dis = std::sqrt(best_dis2);
-            best_pos = pos;
+            float d2 = (tipl::vector<3>(&tract[p])-pt).length2();
+            if(d2 < min_d2)
+            {
+                min_d2 = d2;
+                best_pos = p;
+            }
         }
         return best_pos;
     };
-
-    tipl::vector<3> from_point16(from_point),to_point16(to_point);
-    std::vector<std::vector<float> > new_tract(tract_data);
-    std::vector<unsigned int> new_tract_color(tract_color);
-    std::vector<unsigned int> tract_to_delete(tract_data.size());
-
+    tipl::vector<3> fp(from_point),tp(to_point);
+    std::vector<std::vector<float>> new_tract(tract_data);
+    std::vector<unsigned int> new_tract_color(tract_color),tract_to_delete(tract_data.size());
     tipl::par_for(tract_data.size(),[&](size_t i)
     {
         tract_to_delete[i] = i;
-        auto from = tract_data[i].data()+find_location(tract_data[i],dir[i] ? from_point16 : to_point16);
-        auto to = tract_data[i].data()+find_location(tract_data[i],dir[i] ? to_point16 : from_point16);
-        if(from > to)
-            std::swap(from,to);
-        new_tract[i] = std::vector<float>(from,to+3);
+        if(tract_data[i].size() <= 6)
+            return;
+        size_t p1 = find_location(tract_data[i],dir[i] ? fp : tp);
+        size_t p2 = find_location(tract_data[i],dir[i] ? tp : fp);
+        if(p1 > p2)
+            std::swap(p1,p2);
+        new_tract[i] = std::vector<float>(&tract_data[i][p1],&tract_data[i][p2]+3);
     });
     return cut(tract_to_delete,new_tract,new_tract_color);
 }
+
 bool TractModel::cut_by_slice(unsigned int dim, unsigned int pos,bool greater,const tipl::matrix<4,4>* T)
 {
     std::vector<std::vector<bool> > has_cut;
@@ -2873,34 +2867,21 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
             end_area2 = float(endpoint2.size())*vs[0]*vs[1]/resolution_ratio/resolution_ratio;
 
             // radius
-            auto c1 = std::accumulate(endpoint1.begin(),endpoint1.end(),tipl::vector<3,float>(0.0f,0.0f,0.0f));
-            if(!endpoint1.empty())
-                c1 /= float(endpoint1.size());
-            float mean_dis1 = 0.0f;
-            for(size_t i = 0;i < endpoint1.size();++i)
+            auto calc_radius = [resolution_ratio](const auto& pts)
             {
-                auto dis(c1);
-                dis -= endpoint1[i];
-                mean_dis1 += float(dis.length());
-            }
-            auto c2 = std::accumulate(endpoint2.begin(),endpoint2.end(),tipl::vector<3,float>(0.0f,0.0f,0.0f));
-            if(!endpoint2.empty())
-                c2 /= float(endpoint2.size());
+                if (pts.empty()) return 0.0f;
 
-            float mean_dis2 = 0.0f;
-            for(size_t i = 0;i < endpoint2.size();++i)
-            {
-                auto dis(c2);
-                dis -= endpoint2[i];
-                mean_dis2 += float(dis.length());
-            }
-            if(!endpoint1.empty())
-                mean_dis1 /= float(endpoint1.size());
-            if(!endpoint2.empty())
-                mean_dis2 /= float(endpoint2.size());
-            // the average distance of a point in a circle to the center is 2R/3, where R is the radius
-            radius1 = 1.5f*mean_dis1/resolution_ratio;
-            radius2 = 1.5f*mean_dis2/resolution_ratio;
+                auto c = std::accumulate(pts.begin(), pts.end(), tipl::vector<3, float>(0, 0, 0)) / float(pts.size());
+
+                float mean_dis = 0.0f;
+                for (const auto& p : pts)
+                    mean_dis += (c - p).length();
+
+                return (1.5f * (mean_dis / float(pts.size()))) / resolution_ratio;
+            };
+
+            radius1 = calc_radius(endpoint1);
+            radius2 = calc_radius(endpoint2);
 
 
             // mid_portion as the trunk
