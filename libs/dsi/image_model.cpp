@@ -644,11 +644,7 @@ float src_data::dwi_contrast(void)
     return tipl::mean(ndc)/tipl::mean(odc);
 
 }
-bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs);
-bool src_data::is_human_data(void) const
-{
-    return is_human_size(voxel.dim,voxel.vs);
-}
+
 
 int64_t src_data::bottom_top_difference(void)
 {
@@ -3292,10 +3288,8 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
     update_dwi_sum();
     if(voxel.mask.empty())
         update_mask();
-    if(is_human_size(voxel.dim,voxel.vs))
-        voxel.template_id = 0;
-    else
-        voxel.template_id = match_volume(tipl::make_image(voxel.mask.data(),voxel.mask.shape()),voxel.vs);
+    voxel.template_id = match_volume(tipl::make_image(voxel.mask.data(),voxel.mask.shape()),voxel.vs);
+    is_human_data = (voxel.template_id == 0);
     return true;
 }
 extern int fib_ver;
