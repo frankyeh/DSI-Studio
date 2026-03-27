@@ -43,10 +43,6 @@ void src_data::check_output_file_name(void)
 }
 
 
-
-
-
-bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs);
 extern int fib_ver;
 bool src_data::reconstruction_hist(void)
 {
