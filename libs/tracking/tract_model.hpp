@@ -195,6 +195,7 @@ public:
                  const std::vector<unsigned int>& new_tract_color);
         bool cut(float select_angle,const std::vector<tipl::vector<3,float> > & dirs,
                   const tipl::vector<3,float>& from_pos);
+        std::vector<char> get_tract_dir(void) const;
         bool cut_end_portion(float from,float to);
         bool cut_by_slice(unsigned int dim, unsigned int pos,bool greater,const tipl::matrix<4,4>* T = nullptr);
         void cut_by_mask(const std::string& file_name);
@@ -221,7 +222,7 @@ public:
                                  int track_color_style,
                                  bool& terminated);
         void to_voxel(std::vector<tipl::vector<3,short> >& points,const tipl::matrix<4,4>& trans = tipl::identity_matrix(),int id = -1);
-        bool to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
+        void to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
                                 std::vector<tipl::vector<3,short> >& points2,const tipl::matrix<4,4>& trans = tipl::identity_matrix());
 
         size_t get_deleted_track_count(void) const{return deleted_tract_data.size();}
