@@ -70,7 +70,7 @@ bool apply_warping_nii(const reg_type& reg,const std::string& input, const std::
     }
     bool is_label = tipl::is_label_image(I3);
     tipl::out() << (is_label ? "label image interpolated using majority assignment " : "scalar image interpolated using spline") << std::endl;
-    auto I = is_label ? reg.apply_warping<direction,tipl::interpolation::majority>(I3) : reg.apply_warping<direction,tipl::interpolation::cubic>(I3);
+    auto I = is_label ? reg.template apply_warping<direction,tipl::interpolation::majority>(I3) : reg.template apply_warping<direction,tipl::interpolation::cubic>(I3);
     return tipl::io::gz_nifti(output,std::ios::out)
             << (direction ? reg.Itvs : reg.Ivs) << (direction ? reg.ItR : reg.IR) << (direction ? reg.It_is_mni : reg.Is_is_mni) << I
             << [&](const std::string& e){tipl::error() << (reg.error_msg = e);};
@@ -105,21 +105,12 @@ bool apply_warping_fzsz(const reg_type& reg,const std::string& input,const std::
     tipl::matrix<4,4,float> trans((tipl::identity_matrix()));
     bool is_mni;
     if(!check_fib_dim_vs(mat_reader,dim,vs,trans,is_mni))
-    {
-        reg.error_msg = mat_reader.error_msg;
-        return false;
-    }
+        return reg.error_msg = mat_reader.error_msg,false;
     handle_mask(mat_reader);
     if(dim != (direction ? reg.Is : reg.Its))
-    {
-        reg.error_msg = "dimension does not match";
-        return false;
-    }
+        return reg.error_msg = "dimension does not match",false;
     if(trans != (direction ? reg.IR : reg.ItR))
-    {
-        reg.error_msg = "transformation matrix does not match";
-        return false;
-    }
+        return reg.error_msg = "transformation matrix does not match",false;
 
     size_t p = 0;
     bool failed = false;
@@ -207,10 +198,7 @@ bool load_warping(dual_reg<tipl::out>& reg,const std::string& filename)
         !in.read("f2t_dis",row,col,f2t_dis_ptr) ||
         !in.read("t2f_dis",row,col,t2f_dis_ptr) ||
         !in.read("arg",reg.arg))
-    {
-        reg.error_msg = "invalid warp file format";
-        return false;
-    }
+        return reg.error_msg = "invalid warp file format",false;
 
     tipl::shape<3> sub_shape;
     sub_shape = tipl::shape<3>((reg.Its[0]+1)/2,(reg.Its[1]+1)/2,(reg.Its[2]+1)/2);
@@ -218,10 +206,8 @@ bool load_warping(dual_reg<tipl::out>& reg,const std::string& filename)
     reg.t2f_dis.resize(sub_shape);
     reg.f2t_dis.resize(sub_shape);
     if(row*col != sub_shape.size()*3)
-    {
-        reg.error_msg = "invalid displacement field";
-        return false;
-    }
+        return reg.error_msg = "invalid displacement field",false;
+
     std::copy_n(f2t_dis_ptr,reg.f2t_dis.size()*3,&reg.f2t_dis[0][0]);
     std::copy_n(t2f_dis_ptr,reg.t2f_dis.size()*3,&reg.t2f_dis[0][0]);
     tipl::upsample_with_padding(reg.t2f_dis,reg.Its);
@@ -245,10 +231,7 @@ bool save_warping(const dual_reg<tipl::out>& reg,const std::string& filename)
 {
     tipl::progress prog("saving ",filename);
     if(reg.f2t_dis.empty() || reg.t2f_dis.empty())
-    {
-        reg.error_msg = "no mapping matrix to save";
-        return false;
-    }
+        return reg.error_msg = "no mapping matrix to save",false;
     std::string output_name(filename);
     if(tipl::ends_with(output_name,".nii.gz"))
     {
@@ -280,10 +263,7 @@ bool save_warping(const dual_reg<tipl::out>& reg,const std::string& filename)
     std::string output_name_tmp = output_name + ".tmp";
     tipl::io::gz_mat_write out(output_name_tmp);
     if(!out)
-    {
-        reg.error_msg = "cannot write to a temporary file " + output_name_tmp;
-        return false;
-    }
+        return reg.error_msg = "cannot write to a temporary file " + output_name_tmp,false;
     out.apply_slope = true;
     tipl::image<3,tipl::vector<3> > f2t_dis_sub2,t2f_dis_sub2;
     tipl::downsample_with_padding(reg.f2t_dis,f2t_dis_sub2);
@@ -348,10 +328,7 @@ bool save_warping(dual_reg<tipl::out>& r,
 
         tipl::out() << (direction ? "warping " : "unwarping") << each_file << " into " << output_file;
         if(!apply_warping<direction>(r,each_file.c_str(),output_file.c_str()))
-        {
-            tipl::error() << r.error_msg;
-            return false;
-        }
+            return tipl::error() << r.error_msg,false;
     }
     return true;
 }
@@ -366,20 +343,11 @@ int reg(tipl::program_option<tipl::out>& po)
     {
         tipl::out() << "loading mapping field";
         if(!load_warping(r,po.get("mapping")))
-        {
-            tipl::error() << r.error_msg;
-            return 1;
-        }
+            return tipl::error() << r.error_msg,1;
         if(po.has("output_mapping") && !save_warping(r,po.get("output_mapping")))
-        {
-            tipl::error() << r.error_msg;
-            return 1;
-        }
+            return tipl::error() << r.error_msg,1;
         if(from_filename.empty() && to_filename.empty())
-        {
-            tipl::error() << "please specify images to warp/unwwarp at --source/--to, respectively.";
-            return 1;
-        }
+            return tipl::error() << "please specify images to warp/unwwarp at --source/--to, respectively.",1;
         tipl::out() << "dim: " << r.Is << " to " << r.Its;
         tipl::out() << "vs: " << r.Ivs << " to " << r.Itvs;
         bool good = true;
@@ -391,11 +359,7 @@ int reg(tipl::program_option<tipl::out>& po)
 
 
     if(from_filename.empty() || to_filename.empty())
-    {
-        tipl::error() << "please specify the images to warp using --source and --to";
-        return 1;
-    }
-
+        return tipl::error() << "please specify the images to warp using --source and --to",1;
     if(!po.get("overwrite",0))
     {
         bool skip = true;
@@ -409,33 +373,20 @@ int reg(tipl::program_option<tipl::out>& po)
             }
         }
         if(skip)
-        {
-            tipl::out() << "output file exists, skipping";
-            return 0;
-        }
+            return tipl::out() << "output file exists, skipping",0;
     }
 
 
     for(size_t i = 0;i < from_filename.size() && i < to_filename.size();++i)
     {
-        if(!r.load_subject<tipl::io::gz_nifti>(i,from_filename[i]))
-        {
-            tipl::error() << r.error_msg;
-            return 1;
-        }
-
-        if(!r.load_template<tipl::io::gz_nifti>(i,to_filename[i]))
-        {
-            tipl::error() << r.error_msg;
-            return 1;
-        }
-
+        if(!r.load_subject<tipl::io::gz_nifti>(i,from_filename[i]) ||
+           !r.load_template<tipl::io::gz_nifti>(i,to_filename[i]))
+            return tipl::error() << r.error_msg,1;
         r.modality_names[i] = std::filesystem::path(from_filename[i]).stem().stem().string() + "->" +
                               std::filesystem::path(to_filename[i]).stem().stem().string();
     }
 
-    tipl::out() << "source dim: " << r.Is;
-    tipl::out() << "to dim: " << r.Its;
+    tipl::out() << "source dim: " << r.Is << " to dim: " << r.Its;
     r.match_resolution(po.get("match_vs",1));
     tipl::out() << "running linear registration." << std::endl;
 
@@ -457,10 +408,7 @@ int reg(tipl::program_option<tipl::out>& po)
         r.nonlinear_reg(tipl::prog_aborted);
     }
     if(po.has("output_mapping") && !save_warping(r,po.get("output_mapping")))
-    {
-        tipl::error() << r.error_msg;
-        return 1;
-    }
+        return tipl::error() << r.error_msg,1;
     if(!save_warping<true>(r,tipl::split(po.get("s2t",po.get("source")),','),po.get("output")) ||
        !save_warping<false>(r,tipl::split(po.get("t2s"),','),po.get("output")))
         return 1;

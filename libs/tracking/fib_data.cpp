@@ -2041,9 +2041,10 @@ std::string fib_data::get_mapping_file_name(void) const
 
 bool save_warping(const dual_reg<tipl::out>& reg,const std::string& filename);
 bool load_warping(dual_reg<tipl::out>& reg,const std::string& filename);
-bool load_alternative_warping(dual_reg<tipl::out>& reg,const std::string& filename)
+template<typename reg_type>
+bool load_alternative_warping(reg_type& reg,const std::string& filename)
 {
-    dual_reg<tipl::out> alt_reg;
+    reg_type alt_reg;
     tipl::out() << "opening alternative warping " << filename;
     if(!load_warping(alt_reg,filename) ||
         alt_reg.Is != alt_reg.Its ||
@@ -2061,7 +2062,7 @@ bool load_alternative_warping(dual_reg<tipl::out>& reg,const std::string& filena
     reg.previous_It.resize(reg.It.size());
     for(size_t i = 0;i < reg.It.size() && !reg.It[i].empty();++i)
     {
-        reg.previous_It[i] = alt_reg.apply_warping<true,tipl::interpolation::cubic>(reg.It[i]);
+        reg.previous_It[i] = alt_reg.template apply_warping<true,tipl::interpolation::cubic>(reg.It[i]);
         reg.previous_It[i].swap(reg.It[i]);
     }
     return true;

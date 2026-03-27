@@ -1,9 +1,7 @@
 #ifndef REG_HPP
 #define REG_HPP
 #include <iostream>
-#include "zlib.h"
 #include "TIPL/tipl.hpp"
-extern bool has_cuda;
 
 template<int dim>
 inline auto subject_image_pre(tipl::image<dim>&& I)
@@ -61,9 +59,9 @@ bool load_image(size_t id, const std::string& file_name,
         else
         {
             if(preprocess)
-                images[id] = subject_image_pre(in.toImage<tipl::image<T::dimension> >());
+                images[id] = subject_image_pre(in.template toImage<tipl::image<T::dimension> >());
             else
-                images[id] = template_image_pre(in.toImage<tipl::image<T::dimension> >());
+                images[id] = template_image_pre(in.template toImage<tipl::image<T::dimension> >());
         }
 
         if(id == 0)
@@ -327,7 +325,7 @@ public:
         if(!data_ready())
             return 0.0f;
         float cost = 0.0f;
-        linear_param.cuda = use_cuda && has_cuda;
+        linear_param.cuda = use_cuda;
         if(!skip_linear)
             cost = tipl::reg::linear<out_type>(tipl::reg::make_list(It),Itvs,tipl::reg::make_list(I),Ivs,arg,linear_param,terminated);
 
@@ -378,9 +376,9 @@ public:
             */
             std::thread t([&](void)
             {
-                tipl::reg::cdm_common<out_type>(tipl::reg::make_list(It),tipl::reg::make_list(J),t2f_dis,terminated,param0,use_cuda && has_cuda);
+                tipl::reg::cdm_common<out_type>(tipl::reg::make_list(It),tipl::reg::make_list(J),t2f_dis,terminated,param0,use_cuda);
             });
-            tipl::reg::cdm_common<out_type>(tipl::reg::make_list(J),tipl::reg::make_list(It),f2t_dis,terminated,param1,use_cuda && has_cuda);
+            tipl::reg::cdm_common<out_type>(tipl::reg::make_list(J),tipl::reg::make_list(It),f2t_dis,terminated,param1,use_cuda);
             t.join();
             if(!previous_f2t.empty() && !previous_t2f.empty())
             {
