@@ -2691,61 +2691,55 @@ tipl::vector<3> get_tract_dir(const std::vector<std::vector<float> >& tract_data
 {
     // estimate the average mid-point direction
     tipl::vector<3> total_dis;
-    for(size_t i = 0;i < tract_data.size();++i)
+    for (const auto& tract : tract_data)
     {
-        if(tract_data[i].size() < 6)
-            continue;
-        uint32_t mid_pos = uint32_t(tract_data[i].size()/6)*3;
-        tipl::vector<3> dis(&tract_data[i][mid_pos]);
-        dis -= tipl::vector<3>(&tract_data[i][mid_pos+3]);
-        if(dis*total_dis < 0.0f)
+        if (tract.size() < 6) continue;
+
+        size_t mid_pos = std::min((tract.size() / 6) * 3, tract.size() - 6);
+        tipl::vector<3> dis = tipl::vector<3>(&tract[mid_pos]) - tipl::vector<3>(&tract[mid_pos + 3]);
+        if (dis * total_dis < 0.0f)
             total_dis -= dis;
         else
             total_dis += dis;
     }
+
     // categorize endpoints using the mid point direction
     total_dis.normalize();
-    dir.resize(tract_data.size());
+    dir.assign(tract_data.size(), 0);
+
     tipl::par_for(tract_data.size(),[&](size_t i)
     {
-        if(tract_data[i].size() < 6)
-            return;
-        uint32_t mid_pos = uint32_t(tract_data[i].size()/6)*3;
-        uint32_t q1_pos = uint32_t(tract_data[i].size()/12)*3;
-        uint32_t q3_pos = uint32_t(tract_data[i].size()/4)*3;
-        tipl::vector<3> mid_dis(&tract_data[i][mid_pos]);
-        mid_dis -= tipl::vector<3>(&tract_data[i][mid_pos+3]);
-        tipl::vector<3> q1_dis(&tract_data[i][q1_pos]);
-        q1_dis -= tipl::vector<3>(&tract_data[i][q1_pos+3]);
-        tipl::vector<3> q3_dis(&tract_data[i][q3_pos]);
-        q3_dis -= tipl::vector<3>(&tract_data[i][q3_pos+3]);
-        mid_dis += q1_dis;
-        mid_dis += q3_dis;
-        if(total_dis*mid_dis > 0.0f)
+        const auto& tract = tract_data[i];
+        if (tract.size() < 6) return;
+        auto get_dis = [&](size_t div) -> tipl::vector<3>
+        {
+            size_t pos = std::min((tract.size() / div) * 3, tract.size() - 6);
+            return tipl::vector<3>(&tract[pos]) - tipl::vector<3>(&tract[pos + 3]);
+        };
+
+        if (total_dis * (get_dis(6) + get_dis(12) + get_dis(4)) > 0.0f)
             dir[i] = 1;
     });
     return total_dis;
 }
 
-bool check_order(tipl::shape<3> geo,
-                 std::vector<tipl::vector<3,short> >& s1,
-                 std::vector<tipl::vector<3,short> >& s2)
+bool check_order(const tipl::shape<3>& geo,
+                 std::vector<tipl::vector<3, short>>& s1,
+                 std::vector<tipl::vector<3, short>>& s2)
 {
-    // use end surface central point to determine
-    // end surface 1 is located at larger axis value
-    tipl::vector<3,double> sum_s1 = std::accumulate(s1.begin(),s1.end(),tipl::vector<3,double>(0,0,0));
-    tipl::vector<3,double> sum_s2 = std::accumulate(s2.begin(),s2.end(),tipl::vector<3,double>(0,0,0));
-    sum_s1 -= sum_s2;
-    sum_s1.elem_mul(tipl::vector<3>(geo.begin()));
-    auto dir = sum_s1;
-    dir.abs();
-    auto max_sum_dim = std::max_element(dir.begin(),dir.end())-dir.begin();
-    if(sum_s1[uint32_t(max_sum_dim)] < 0.0f)
-    {
-        s1.swap(s2);
-        return true;
-    }
-    return false;
+    auto diff = (std::accumulate(s1.begin(), s1.end(), tipl::vector<3, double>(0, 0, 0))
+               - std::accumulate(s2.begin(), s2.end(), tipl::vector<3, double>(0, 0, 0))).
+                        elem_mul(tipl::vector<3, double>(geo.begin()));
+
+    int d = 0;
+    if (std::abs(diff[1]) > std::abs(diff[d])) d = 1;
+    if (std::abs(diff[2]) > std::abs(diff[d])) d = 2;
+
+    if (diff[d] >= 0.0)
+        return false;
+
+    s1.swap(s2);
+    return true;
 }
 inline tipl::vector<3> get_rounded_voxel(const float* ptr,bool need_trans,const tipl::matrix<4,4>& trans)
 {
@@ -2755,40 +2749,40 @@ inline tipl::vector<3> get_rounded_voxel(const float* ptr,bool need_trans,const 
     p.round();
     return p;
 }
-bool TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
-                               std::vector<tipl::vector<3,short> >& points2,const tipl::matrix<4,4>& trans)
+bool TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short>>& points1,
+                                     std::vector<tipl::vector<3,short>>& points2,
+                                     const tipl::matrix<4,4>& trans)
 {
     bool need_trans = (trans != tipl::identity_matrix());
     std::vector<char> dir;
-    get_tract_dir(tract_data,dir);
+    get_tract_dir(tract_data, dir);
 
-    // categorize endpoints using the mid point direction
-    std::vector<tipl::vector<3,short> > s1,s2;
-    for(size_t i = 0;i < tract_data.size();++i)
+    points1.clear();
+    points2.clear();
+    points1.reserve(tract_data.size());
+    points2.reserve(tract_data.size());
+
+    for (size_t i = 0; i < tract_data.size(); ++i)
     {
-        if(tract_data[i].size() < 6)
-            continue;
-        tipl::vector<3,short> p1(get_rounded_voxel(&tract_data[i][0],need_trans,trans));
-        tipl::vector<3,short> p2(get_rounded_voxel(&tract_data[i][tract_data[i].size()-3],need_trans,trans));
-        if(dir[i])
-        {
-            s1.push_back(p1);
-            s2.push_back(p2);
-        }
-        else
-        {
-            s2.push_back(p1);
-            s1.push_back(p2);
-        }
+        if (tract_data[i].size() < 6) continue;
+
+        auto p1 = get_rounded_voxel(&tract_data[i].front(), need_trans, trans);
+        auto p2 = get_rounded_voxel(&tract_data[i][tract_data[i].size() - 3], need_trans, trans);
+
+        points1.push_back(dir[i] ? p1 : p2);
+        points2.push_back(dir[i] ? p2 : p1);
     }
 
-    bool swapped = check_order(geo,s1,s2);
+    auto make_unique = [](auto& vec)
+    {
+        std::sort(vec.begin(), vec.end());
+        vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
+    };
 
-    std::sort(s1.begin(),s1.end());
-    std::sort(s2.begin(),s2.end());
-    std::unique_copy(s1.begin(),s1.end(),std::back_inserter(points1));
-    std::unique_copy(s2.begin(),s2.end(),std::back_inserter(points2));
-    return swapped;
+    make_unique(points1);
+    make_unique(points2);
+
+    return check_order(geo, points1, points2);
 }
 
 void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vector<std::string>& titles,std::vector<float>& data)
