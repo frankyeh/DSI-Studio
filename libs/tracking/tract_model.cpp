@@ -1885,41 +1885,7 @@ std::vector<char> TractModel::get_tract_dir(void) const
 
 bool TractModel::cut_end_portion(float from,float to)
 {
-    tipl::vector<3,double> from_point,to_point;
     std::vector<char> dir = get_tract_dir();
-    size_t valid_tracts = 0;
-    for(size_t i = 0;i < tract_data.size();++i)
-    {
-        if(tract_data[i].size() <= 6)
-            continue;
-        float f = dir[i] ? from : 1.0f-from;
-        float t = dir[i] ? to : 1.0f-to;
-        size_t len = (tract_data[i].size()-3)/3;
-        from_point += tipl::vector<3,double>(&tract_data[i][size_t(f*len)*3]);
-        to_point += tipl::vector<3,double>(&tract_data[i][size_t(t*len)*3]);
-        ++valid_tracts;
-    }
-    if(valid_tracts)
-    {
-        from_point /= float(valid_tracts);
-        to_point /= float(valid_tracts);
-    }
-    auto find_location = [](const std::vector<float>& tract,const tipl::vector<3>& pt)
-    {
-        float min_d2 = (tipl::vector<3>(&tract[0])-pt).length2();
-        size_t best_pos = 0;
-        for(size_t p = 3;p < tract.size();p += 3)
-        {
-            float d2 = (tipl::vector<3>(&tract[p])-pt).length2();
-            if(d2 < min_d2)
-            {
-                min_d2 = d2;
-                best_pos = p;
-            }
-        }
-        return best_pos;
-    };
-    tipl::vector<3> fp(from_point),tp(to_point);
     std::vector<std::vector<float>> new_tract(tract_data);
     std::vector<unsigned int> new_tract_color(tract_color),tract_to_delete(tract_data.size());
     tipl::par_for(tract_data.size(),[&](size_t i)
@@ -1927,8 +1893,11 @@ bool TractModel::cut_end_portion(float from,float to)
         tract_to_delete[i] = i;
         if(tract_data[i].size() <= 6)
             return;
-        size_t p1 = find_location(tract_data[i],dir[i] ? fp : tp);
-        size_t p2 = find_location(tract_data[i],dir[i] ? tp : fp);
+        float f = dir[i] ? from : 1.0f-from;
+        float t = dir[i] ? to : 1.0f-to;
+        size_t len = (tract_data[i].size()-3)/3;
+        size_t p1 = size_t(f*len)*3;
+        size_t p2 = size_t(t*len)*3;
         if(p1 > p2)
             std::swap(p1,p2);
         new_tract[i] = std::vector<float>(&tract_data[i][p1],&tract_data[i][p2]+3);
@@ -2773,7 +2742,11 @@ void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short>>& points1
 
 void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vector<std::string>& titles,std::vector<float>& data)
 {
+    std::vector<std::string> backup_titles;
+    std::vector<float> backup_data;
+
     {
+
         const float resolution_ratio = 2.0f;
         tipl::matrix<4,4> resolution_trans((tipl::identity_matrix()));
         resolution_trans[0] = resolution_trans[5] = resolution_trans[10] = 2.0f;
@@ -2880,11 +2853,25 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
             std::vector<tipl::vector<3,short> > branch1,branch2;
             if(cut_end_portion(0.0f,0.25f))
             {
+                for(size_t data_index = 0;data_index < handle->slices.size();++data_index)
+                {
+                    if(handle->slices[data_index]->optional())
+                        continue;
+                    backup_data.push_back(tract_data.empty() ? 0.0f : get_tracts_mean(handle,data_index));
+                    backup_titles.push_back(handle->slices[data_index]->name + " of LPS quarter");
+                }
                 to_voxel(branch1,resolution_trans);
                 undo();
             }
             if(cut_end_portion(0.75f,1.0f))
             {
+                for(size_t data_index = 0;data_index < handle->slices.size();++data_index)
+                {
+                    if(handle->slices[data_index]->optional())
+                        continue;
+                    backup_data.push_back(tract_data.empty() ? 0.0f : get_tracts_mean(handle,data_index));
+                    backup_titles.push_back(handle->slices[data_index]->name + " of RAI quarter");
+                }
                 to_voxel(branch2,resolution_trans);
                 undo();
             }
@@ -2899,22 +2886,22 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
         data.push_back(bundle_diameter == 0.0f ? 0.0f: tract_length/bundle_diameter);titles.push_back("elongation");
 
         data.push_back(tract_volume);   titles.push_back("total volume(mm^3)");
-        data.push_back(branch_volume1);   titles.push_back("1st quarter volume(mm^3)");
+        data.push_back(branch_volume1);   titles.push_back("LPS quarter volume(mm^3)");
         data.push_back(tract_volume-branch_volume1-branch_volume2);   titles.push_back("2nd and 3rd quarter volume(mm^3)");
-        data.push_back(branch_volume2);   titles.push_back("4th quarter volume(mm^3)");
+        data.push_back(branch_volume2);   titles.push_back("RAI quarter volume(mm^3)");
 
         data.push_back(tract_area);     titles.push_back("total surface area(mm^2)");
         data.push_back(radius1+radius2);titles.push_back("total radius of end regions(mm)");
         data.push_back(end_area1+end_area2);      titles.push_back("total area of end regions(mm^2)");
         data.push_back(tract_length == 0.0f ? 0.0f : float(tract_area/PI/bundle_diameter/tract_length));  titles.push_back("irregularity");
 
-        data.push_back(end_area1);      titles.push_back("area of end region 1(mm^2)");
-        data.push_back(radius1);        titles.push_back("radius of end region 1(mm)");
-        data.push_back(branch_volume1);        titles.push_back("volume of end branches 1");
+        data.push_back(end_area1);      titles.push_back("area of LPS end region (mm^2)");
+        data.push_back(radius1);        titles.push_back("radius of LPS end region (mm)");
+        data.push_back(branch_volume1);        titles.push_back("volume of LPS end branches");
 
-        data.push_back(end_area2);      titles.push_back("area of end region 2(mm^2)");
-        data.push_back(radius2);        titles.push_back("radius of end region 2(mm)");
-        data.push_back(branch_volume2);        titles.push_back("volume of end branches 2");
+        data.push_back(end_area2);      titles.push_back("area of RAI end region(mm^2)");
+        data.push_back(radius2);        titles.push_back("radius of RAI end region(mm)");
+        data.push_back(branch_volume2);        titles.push_back("volume of RAI end branches");
     }
 
     for(size_t data_index = 0;data_index < handle->slices.size();++data_index)
@@ -2924,6 +2911,8 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
         data.push_back(tract_data.empty() ? 0.0f : get_tracts_mean(handle,data_index));
         titles.push_back(handle->slices[data_index]->name);
     }
+    data.insert(data.end(),backup_data.begin(),backup_data.end());
+    titles.insert(titles.end(),backup_titles.begin(),backup_titles.end());
 
     if(handle->db.has_db()) // connectometry database
     {
