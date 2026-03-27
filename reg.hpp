@@ -330,20 +330,18 @@ public:
             cost = tipl::reg::linear<out_type>(tipl::reg::make_list(It),Itvs,tipl::reg::make_list(I),Ivs,arg,linear_param,terminated);
 
         calculate_linear_r();
-
-        /*
-        if(export_intermediate)
-            for(size_t i = 0;i < I.size() && !I[i].empty();++i)
-            {
-                tipl::io::gz_nifti("I" + std::to_string(i) + ".nii.gz",std::ios::out) << Ivs << IR << I[i];
-                tipl::io::gz_nifti("It" + std::to_string(i) + ".nii.gz",std::ios::out) << Itvs << ItR << It[i];
-                tipl::io::gz_nifti("J" + std::to_string(i) + ".nii.gz",std::ios::out) << Itvs << ItR << J[i];;
-            }
-        */
         return cost;
     }
-
-
+    template<typename io_writer>
+    void export_linear(void)
+    {
+        for(size_t i = 0;i < I.size() && !I[i].empty();++i)
+        {
+            io_writer("I" + std::to_string(i) + ".nii.gz",std::ios::out) << Ivs << IR << I[i];
+            io_writer("It" + std::to_string(i) + ".nii.gz",std::ios::out) << Itvs << ItR << It[i];
+            io_writer("J" + std::to_string(i) + ".nii.gz",std::ios::out) << Itvs << ItR << J[i];
+        }
+    }
 
     void nonlinear_reg(bool& terminated)
     {
@@ -361,19 +359,6 @@ public:
         {
             auto param0 = param;
             auto param1 = param;
-            /*
-            auto s2t = invT();
-            for(size_t i = 0;i < anchor[0].size() && i < anchor[1].size();++i)
-            {
-                auto spos = anchor[0][i];
-                auto tpos = anchor[1][i];
-                s2t(spos);
-                param0.anchor.push_back(std::make_pair(tpos,spos));
-                param1.anchor.push_back(std::make_pair(spos,tpos));
-                out_type() << "anchor: " << spos << "->" << tpos;
-            }
-            out_type() << "a total of " << param0.anchor.size() << " anchor points";
-            */
             std::thread t([&](void)
             {
                 tipl::reg::cdm_common<out_type>(tipl::reg::make_list(It),tipl::reg::make_list(J),t2f_dis,terminated,param0,use_cuda);
@@ -388,33 +373,32 @@ public:
         }
         compute_mapping_from_displacement();
         calculate_nonlinear_r();
-
-        /*
-        if(export_intermediate)
-        {
-            for(size_t i = 0;i < J.size();++i)
-                tipl::io::gz_nifti("JJ" + std::to_string(i) + ".nii.gz",std::ios::out) << Itvs << ItR << J[i];
-            tipl::image<dimension+1> buffer(f2t_dis.shape().expand(2*dimension));
-            tipl::par_for(2*dimension,[&](unsigned int d)
-            {
-                if(d < dimension)
-                {
-                    size_t shift = d*f2t_dis.size();
-                    for(size_t i = 0;i < f2t_dis.size();++i)
-                        buffer[i+shift] = f2t_dis[i][d];
-                }
-                else
-                {
-                    size_t shift = d*t2f_dis.size();
-                    d -= 3;
-                    for(size_t i = 0;i < t2f_dis.size();++i)
-                        buffer[i+shift] = t2f_dis[i][d];
-                }
-            },2*dimension);
-            tipl::io::gz_nifti("dis.nii.gz",std::ios::out) << Itvs << ItR << buffer;
-        }
-        */
     }
+    template<typename io_writer>
+    void export_nonlinear(void)
+    {
+        for(size_t i = 0;i < J.size();++i)
+            io_writer("JJ" + std::to_string(i) + ".nii.gz",std::ios::out) << Itvs << ItR << J[i];
+        tipl::image<dimension+1> buffer(f2t_dis.shape().expand(2*dimension));
+        tipl::par_for(2*dimension,[&](unsigned int d)
+        {
+            if(d < dimension)
+            {
+                size_t shift = d*f2t_dis.size();
+                for(size_t i = 0;i < f2t_dis.size();++i)
+                    buffer[i+shift] = f2t_dis[i][d];
+            }
+            else
+            {
+                size_t shift = d*t2f_dis.size();
+                d -= 3;
+                for(size_t i = 0;i < t2f_dis.size();++i)
+                    buffer[i+shift] = t2f_dis[i][d];
+            }
+        },2*dimension);
+        io_writer("dis.nii.gz",std::ios::out) << Itvs << ItR << buffer;
+    }
+
 
 public:
 
