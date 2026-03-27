@@ -38,6 +38,7 @@ std::vector<std::string> get_source_list(tipl::program_option<tipl::out>& po)
     std::sort(name_list.begin(),name_list.end());
     return name_list;
 }
+size_t get_template_id(tipl::program_option<tipl::out>& po,size_t default_sel);
 int db(tipl::program_option<tipl::out>& po)
 {
     std::vector<std::string> name_list = get_source_list(po);
@@ -75,7 +76,7 @@ int db(tipl::program_option<tipl::out>& po)
 
     {
         fib_data fib;
-        if(!fib.load_template_fib(po.get("template",0),template_reso) ||
+        if(!fib.load_template_fib(get_template_id(po,0),template_reso) ||
            !fib.db.create_db(name_list,tipl::split(po.get("index_name","dti_fa,qa,rdi,iso"),',')) ||
            (po.has("demo") && !fib.db.parse_demo(po.get("demo"))))
         {
