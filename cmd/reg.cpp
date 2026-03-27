@@ -290,34 +290,33 @@ bool save_warping(const tipl::reg::mm_reg<tipl::out>& reg,const std::string& fil
 
 template<bool direction,typename reg_type>
 bool save_warping(reg_type& r,
-                  const std::vector<std::string>& apply_warp_filename,
-                  const std::string& output_dir)
+                  const std::vector<std::string>& files,
+                  const std::string& out_dir)
 {
-    for(const auto& each_file: apply_warp_filename)
+    for(const auto& file : files)
     {
-        std::string post_fix;
-        for (const auto* ext : {".nii.gz", ".tt.gz", ".sz", ".fz"})
-            if (tipl::ends_with(each_file, ext))
-                post_fix = ext;
-        if(post_fix.empty())
-            return tipl::error() << "unsupported file format: " << each_file,false;
+        std::string ext;
+        for(const auto* e : {".nii.gz", ".tt.gz", ".sz", ".fz"})
+            if (tipl::ends_with(file, e))
+                ext = e;
 
-        if constexpr(direction)
-            post_fix = ".wp" + post_fix;
-        else
-            post_fix = ".uwp" + post_fix;
-        std::string output_file;
-        if (!output_dir.empty())
+        if(ext.empty())
+            return tipl::error() << "unsupported format: " << file, false;
+
+        ext = (direction ? ".wp" : ".uwp") + ext;
+        std::string out_file = file + ext;
+
+        if (!out_dir.empty())
         {
-            std::filesystem::create_directories(output_dir);
-            output_file = (std::filesystem::path(output_dir) / (std::filesystem::path(each_file).filename().string() + post_fix)).string();
+            std::filesystem::create_directories(out_dir);
+            auto fname = std::filesystem::path(file).filename().string();
+            out_file = (std::filesystem::path(out_dir) / (fname + ext)).string();
         }
-        else
-            output_file = each_file + post_fix;
 
-        tipl::out() << (direction ? "warping " : "unwarping") << each_file << " into " << output_file;
-        if(!apply_warping<direction>(r,each_file,output_file))
-            return tipl::error() << r.error_msg,false;
+        tipl::out() << (direction ? "warping " : "unwarping") << file << " into " << out_file;
+
+        if (!apply_warping<direction>(r,file,out_file))
+            return tipl::error() << r.error_msg, false;
     }
     return true;
 }
