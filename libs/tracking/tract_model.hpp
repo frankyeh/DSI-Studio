@@ -223,8 +223,6 @@ public:
         void to_voxel(std::vector<tipl::vector<3,short> >& points,const tipl::matrix<4,4>& trans = tipl::identity_matrix(),int id = -1);
         bool to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
                                 std::vector<tipl::vector<3,short> >& points2,const tipl::matrix<4,4>& trans = tipl::identity_matrix());
-        bool to_end_point_voxels(std::vector<tipl::vector<3,short> >& points1,
-                                std::vector<tipl::vector<3,short> >& points2,const tipl::matrix<4,4>& trans,float end_dis);
 
         size_t get_deleted_track_count(void) const{return deleted_tract_data.size();}
         size_t get_visible_track_count(void) const{return tract_data.size();}
