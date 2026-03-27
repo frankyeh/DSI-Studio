@@ -302,7 +302,6 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
                  bool scale_signal,
                  std::string& error_msg)
 {
-    tipl::progress prog("opening ",file_name);
     tipl::vector<3,float> vs;
     tipl::matrix<4,4,float> trans_to_mni;
     std::vector<tipl::image<3> > dwi_data;

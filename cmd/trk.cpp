@@ -247,7 +247,7 @@ bool get_parcellation(tipl::program_option<tipl::out>& po,ConnectivityMatrix& p,
     else
     {
         std::vector<std::shared_ptr<ROIRegion> > regions;
-        tipl::out() << "opening " << roi_file_name << std::endl;
+        tipl::out() << "open " << roi_file_name;
         if(!load_nii(po,p.handle,roi_file_name,regions)) // specify atlas file (e.g. --connectivity=subject_file.nii.gz)
             return false;
         p.load_from_regions(regions,std::filesystem::path(roi_file_name).stem().stem().string());

@@ -419,7 +419,7 @@ template bool dual_reg::apply_warping_tt<true>(const std::string& input, const s
 template<bool direction>
 bool dual_reg::apply_warping_nii(const std::string& input, const std::string& output) const
 {
-    tipl::out() << "opening " << input;
+    tipl::out() << "open " << input;
     auto input_size = (direction ? Is : Its);
     // check dimension
     {

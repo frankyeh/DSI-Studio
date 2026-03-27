@@ -822,7 +822,7 @@ QString RenameDICOMToDir(QString FileName, QString ToDir)
     }
     if(FileName != NewName)
     {
-        tipl::out() << FileName.toStdString() << "->" << NewName.toStdString() << std::endl;
+        tipl::out() << FileName.toStdString() << "->" << NewName.toStdString();
         if(!QFile::rename(FileName,NewName))
             tipl::error() << "cannot rename the file." << std::endl;
     }

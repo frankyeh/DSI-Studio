@@ -445,7 +445,7 @@ bool fib_data::load_from_file(const std::string& file_name)
         return false;
     }
 
-    tipl::progress prog("opening ",file_name);
+    tipl::progress prog("open ",file_name);
     tipl::image<3> I;
     tipl::io::gz_nifti header;
     fib_file_name = file_name;
@@ -767,10 +767,8 @@ bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
                 is_mni = true;
         }
     }
-    tipl::out() << "fib_ver: " << this_fib_ver;
-    tipl::out() << "dim: " << dim << " vs: " << vs;
+    tipl::out() << "fib_ver: " << this_fib_ver << " dim: " << dim << " vs: " << vs <<  " qsdr: " << (is_mni ? "yes" : "no");
     tipl::out() << "trans: " << trans;
-    tipl::out() << "is qsdr: " << (is_mni ? "yes" : "no");
     return true;
 }
 tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& mat_reader)

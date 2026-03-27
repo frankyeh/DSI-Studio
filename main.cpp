@@ -87,7 +87,7 @@ QImage read_qimage(QString filename,std::string& error)
         tipl::out() << error;
         return QImage();
     }
-    tipl::out() << "opening " << filename.toStdString();
+    tipl::out() << "open " << filename.toStdString();
     tipl::out() << "size:" << im.size().width() << " " << im.size().height();
 #ifdef QT6_PATCH
     im.setAllocationLimit(0);
@@ -390,6 +390,8 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
             // apply '*' to other arguments
             for(const auto& wildcard : wildcard_list)
             {
+                if(wildcard.first == "loop")
+                    continue;
                 std::istringstream in2(wildcard.second);
                 std::string apply_wildcard;
                 std::string each;
@@ -409,7 +411,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
                         apply_wildcard += ",";
                     apply_wildcard += apply_wildcard_each;
                 }
-                tipl::out() << wildcard.second << "->" << apply_wildcard << std::endl;
+                tipl::out() << wildcard.first << "=" << wildcard.second << "->" << apply_wildcard;
                 po.set(wildcard.first.c_str(),apply_wildcard);
             }
             if(run_action(po) == 1 && !po.has("continue_on_error"))
