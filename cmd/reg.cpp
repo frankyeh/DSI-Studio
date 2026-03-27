@@ -132,12 +132,12 @@ bool apply_warping_fzsz(const reg_type& reg,const std::string& input,const std::
             {
                 if(new_image.interpolation)
                 {
-                    auto new_I = reg.apply_warping<direction,tipl::interpolation::cubic>(tipl::image<3>(I));
+                    auto new_I = reg.template apply_warping<direction,tipl::interpolation::cubic>(tipl::image<3>(I));
                     tipl::lower_threshold(new_I,0.0f);
                     I = new_I;
                 }
                 else
-                    I = reg.apply_warping<direction,tipl::interpolation::majority>(I);
+                    I = reg.template apply_warping<direction,tipl::interpolation::majority>(I);
             });
             new_image.shape = (direction ? reg.Its : reg.Is);
             new_image.write_mat_image(i,mat_reader);
@@ -174,19 +174,14 @@ bool load_warping(tipl::reg::mm_reg<tipl::out>& reg,const std::string& filename)
 {
     tipl::io::gz_mat_read in;
     if(!in.load_from_file(filename))
-    {
-        reg.error_msg = "cannot read file " + filename;
-        return false;
-    }
+        return reg.error_msg = "cannot read file " + filename,false;
 
     if(in.read_as_value<int>("version") > map_ver)
-    {
-        reg.error_msg = "incompatible map file format: the version "
+        return reg.error_msg = "incompatible map file format: the version "
                 + std::to_string(in.read_as_value<int>("version"))
                 + " is not supported within current rage "
-                + std::to_string(map_ver);
-        return false;
-    }
+                + std::to_string(map_ver),false;
+
     const float* f2t_dis_ptr = nullptr;
     const float* t2f_dis_ptr = nullptr;
     unsigned int row,col;
@@ -293,27 +288,20 @@ bool save_warping(const tipl::reg::mm_reg<tipl::out>& reg,const std::string& fil
     return true;
 }
 
-template<bool direction>
-bool save_warping(tipl::reg::mm_reg<tipl::out>& r,
+template<bool direction,typename reg_type>
+bool save_warping(reg_type& r,
                   const std::vector<std::string>& apply_warp_filename,
                   const std::string& output_dir)
 {
     for(const auto& each_file: apply_warp_filename)
     {
         std::string post_fix;
-        if(tipl::ends_with(each_file,".nii.gz"))
-            post_fix = ".nii.gz";
-        if(tipl::ends_with(each_file,".tt.gz"))
-            post_fix = ".tt.gz";
-        if(tipl::ends_with(each_file,".sz"))
-            post_fix = ".sz";
-        if(tipl::ends_with(each_file,".fz"))
-            post_fix = ".fz";
+        for (const auto* ext : {".nii.gz", ".tt.gz", ".sz", ".fz"})
+            if (tipl::ends_with(each_file, ext))
+                post_fix = ext;
         if(post_fix.empty())
-        {
-            tipl::error() << "unsupported file format: " << each_file;
-            return false;
-        }
+            return tipl::error() << "unsupported file format: " << each_file,false;
+
         if constexpr(direction)
             post_fix = ".wp" + post_fix;
         else
@@ -328,7 +316,7 @@ bool save_warping(tipl::reg::mm_reg<tipl::out>& r,
             output_file = each_file + post_fix;
 
         tipl::out() << (direction ? "warping " : "unwarping") << each_file << " into " << output_file;
-        if(!apply_warping<direction>(r,each_file.c_str(),output_file.c_str()))
+        if(!apply_warping<direction>(r,each_file,output_file))
             return tipl::error() << r.error_msg,false;
     }
     return true;
