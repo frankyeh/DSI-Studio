@@ -721,10 +721,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
         return tipl::io::gz_nifti(file_name,std::ios::out) << bind(buf);
     }
 }
-bool is_human_size(tipl::shape<3> dim,tipl::vector<3> vs)
-{
-    return dim[2] > 5 && dim[0]*vs[0] > 100 && dim[1]*vs[1] > 130;
-}
+
 extern int fib_ver,src_ver;
 bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
                       tipl::shape<3>& dim,tipl::vector<3>& vs,tipl::matrix<4,4>& trans,bool& is_mni)
@@ -837,7 +834,6 @@ bool fib_data::load_from_mat(void)
     }
 
 
-    is_human_data = is_human_size(dim,vs); // 1 percentile head size in mm
     is_histology = (dim[2] == 2 && dim[0] > 512 && dim[1] > 512);
 
     if(!db.load_db_from_fib(this))
@@ -1200,13 +1196,8 @@ void fib_data::remove_slice(size_t index)
 size_t match_volume(tipl::const_pointer_image<3,unsigned char> mask,tipl::vector<3> vs);
 void fib_data::match_template(void)
 {
-    if(is_human_size(dim,vs))
-        set_template_id(0);
-    else
-    {
-        tipl::out() << "image volume smaller than human young adult. try matching a template...";
-        set_template_id(match_volume(handle_mask(mat_reader),vs));
-    }
+    set_template_id(match_volume(handle_mask(mat_reader),vs));
+    is_human_data = (template_id == 0);
     tipl::out() << "matched template: " << std::filesystem::path(fa_template_list[template_id]).stem().stem().stem();
 }
 

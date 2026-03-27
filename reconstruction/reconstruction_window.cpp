@@ -118,12 +118,12 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->odf_resolving->setChecked(settings.value("odf_resolving",0).toInt());
 
     ui->report->setText(check_citation(handle->voxel.report.c_str()));
-    ui->dti_ignore_high_b->setChecked(handle->is_human_data());
+    ui->dti_ignore_high_b->setChecked(handle->is_human_data);
 
     ui->method_group->setVisible(!handle->voxel.is_histology);
     ui->hist_param_group->setVisible(handle->voxel.is_histology);
 
-    if(handle->is_human_data())
+    if(handle->is_human_data)
     {
         auto reso = std::max<float>(handle->voxel.vs[0],handle->voxel.vs[2]);
         if(reso > 1.75f)
@@ -457,7 +457,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
 }
 void reconstruction_window::on_doDTI_clicked()
 {
-    if(handle->voxel.vs[2] > handle->voxel.vs[0]*1.2f && handle->is_human_data() && !ui->QSDR->isChecked()) // non isotropic resolution
+    if(handle->voxel.vs[2] > handle->voxel.vs[0]*1.2f && handle->is_human_data && !ui->QSDR->isChecked()) // non isotropic resolution
     {
         auto result = QMessageBox::information(this,QApplication::applicationName(),
             QString("The slice thickness is much larger than slice resolution. This is not ideal for fiber tracking. Resample slice thickness to 2mm isotropic resolution?"),
@@ -467,7 +467,7 @@ void reconstruction_window::on_doDTI_clicked()
         if(result == QMessageBox::Yes)
             handle->command("[Step T2][Edit][Resample]","2");
     }
-    if(!handle->is_human_data() && (handle->long_axis_direction() != 1))
+    if(!handle->is_human_data && (handle->long_axis_direction() != 1))
     {
         auto result = QMessageBox::information(this,QApplication::applicationName(),
             QString("This seems to be an animal scan in non-axial orientation. Correct image orientation?"),

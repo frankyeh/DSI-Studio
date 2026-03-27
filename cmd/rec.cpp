@@ -28,7 +28,7 @@ int rec(tipl::program_option<tipl::out>& po)
     {
         tipl::progress prog("reconstruction parameters");
         src.voxel.method_id = uint8_t(po.get("method",4));
-        src.voxel.dti_ignore_high_b = po.get("dti_ignore_high_b",src.is_human_data());
+        src.voxel.dti_ignore_high_b = po.get("dti_ignore_high_b",src.is_human_data);
         src.voxel.other_output = po.get("other_output","fa,rd,rdi");
         src.voxel.thread_count = tipl::max_thread_count;
         if(src.voxel.method_id == 4 or src.voxel.method_id == 7)
@@ -48,7 +48,7 @@ int rec(tipl::program_option<tipl::out>& po)
         src.voxel.template_id = size_t(po.get("template",src.voxel.template_id));
 
         if(src.voxel.method_id == 7) // is qsdr
-            src.voxel.qsdr_reso = po.get("qsdr_reso",src.is_human_data() ?
+            src.voxel.qsdr_reso = po.get("qsdr_reso",src.is_human_data ?
                     std::min<float>(2.0f,std::max<float>(src.voxel.vs[0],src.voxel.vs[2])) : src.voxel.vs[2]);
 
     }
@@ -172,7 +172,7 @@ int rec(tipl::program_option<tipl::out>& po)
         else
         if(!po.has("save_src") &&
            src.voxel.method_id != 7 &&
-           src.voxel.vs[2] > src.voxel.vs[0]*1.1f && src.is_human_data())
+           src.voxel.vs[2] > src.voxel.vs[0]*1.1f && src.is_human_data)
             src.command("[Step T2][Edit][Resample]", src.voxel.vs[0] >= 1.5f ? "2" : (src.voxel.vs[0] >= 1.0f ? "1.5" : "1.0"));
 
 

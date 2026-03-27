@@ -232,6 +232,7 @@ public:
     tipl::io::gz_mat_read mat_reader;
     std::string topup_eddy_report;
     bool apply_mask = false;
+    bool is_human_data = true;
 private:
     auto working_path(void) const
     {
@@ -278,7 +279,7 @@ public:
     std::pair<float,float> quality_control_neighboring_dwi_corr(void);
     float dwi_contrast(void);
 public:
-    bool is_human_data(void) const;
+
     int long_axis_direction(void) const
     {
         return tipl::long_axis(voxel.mask,voxel.vs);

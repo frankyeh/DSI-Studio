@@ -39,6 +39,11 @@ size_t match_volume(tipl::const_pointer_image<3,unsigned char> mask,tipl::vector
     if(mask.empty())
         return 0;
 
+    // quick check for human young adult scan
+    if(mask.depth() > 5 && vs[0] >= 1.0f &&
+       mask.width()*vs[0] > 100 && mask.height()*vs[1] > 130)
+        return 0;
+
     auto get_max_axisl_count = [](const auto& mask)->size_t
     {
         size_t max_axial_volume = 0;
