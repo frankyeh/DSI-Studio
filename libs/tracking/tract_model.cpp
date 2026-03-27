@@ -1819,7 +1819,7 @@ void get_cut_points(const std::vector<std::vector<float> >& tract_data,
     has_cut.resize(tract_data.size());
     tipl::vector<3> sr(T.begin()+dim*4);
     float shift = T[3+dim*4];
-    tipl::adaptive_par_for(tract_data.size(),[&](unsigned int i)
+    tipl::par_for(tract_data.size(),[&](unsigned int i)
     {
         has_cut[i].resize(tract_data[i].size()/3);
         for(unsigned int j = 0,t = 0;j < tract_data[i].size();j += 3,++t)
@@ -1831,14 +1831,62 @@ void get_cut_points(const std::vector<std::vector<float> >& tract_data,
         }
     });
 }
-tipl::vector<3> get_tract_dir(const std::vector<std::vector<float> >& tract_data,
-                   std::vector<char>& dir);
+std::vector<char> TractModel::get_tract_dir(void) const
+{
+    std::vector<char> dir;
+    auto get_dis = [](const std::vector<float>& tract,size_t div) -> tipl::vector<3>
+    {
+        size_t pos = std::min((tract.size()/div)*3,tract.size()-6);
+        return tipl::vector<3>(&tract[pos])-tipl::vector<3>(&tract[pos+3]);
+    };
+    tipl::vector<3> total_dis;
+    for(const auto& tract : tract_data)
+    {
+        if(tract.size() < 6)
+            continue;
+        tipl::vector<3> dis = get_dis(tract,6);
+        if(dis*total_dis < 0.0f)
+            total_dis -= dis;
+        else
+            total_dis += dis;
+    }
+    total_dis.normalize();
+    tipl::vector<3,double> diff(0,0,0);
+    for(const auto& tract : tract_data)
+    {
+        if(tract.size() < 6)
+            continue;
+        tipl::vector<3> dis = get_dis(tract,6);
+        tipl::vector<3,double> end_diff = tipl::vector<3,double>(&tract[0])-tipl::vector<3,double>(&tract[tract.size()-3]);
+        if(dis*total_dis < 0.0f)
+            diff -= end_diff;
+        else
+            diff += end_diff;
+    }
+    diff.elem_mul(tipl::vector<3,double>(geo.begin()));
+    int d = 0;
+    if(std::abs(diff[1]) > std::abs(diff[d]))
+        d = 1;
+    if(std::abs(diff[2]) > std::abs(diff[d]))
+        d = 2;
+    if(diff[d] < 0.0)
+        total_dis = -total_dis;
+    dir.assign(tract_data.size(),0);
+    tipl::par_for(tract_data.size(),[&](size_t i)
+    {
+        const auto& tract = tract_data[i];
+        if(tract.size() < 6)
+            return;
+        if(total_dis*(get_dis(tract,6)+get_dis(tract,12)+get_dis(tract,4)) > 0.0f)
+            dir[i] = 1;
+    });
+    return dir;
+}
 
 bool TractModel::cut_end_portion(float from,float to)
 {
     tipl::vector<3,double> from_point,to_point;
-    std::vector<char> dir;
-    get_tract_dir(tract_data,dir);
+    std::vector<char> dir = get_tract_dir();
     size_t valid_tracts = 0;
     for(size_t i = 0;i < tract_data.size();++i)
     {
@@ -2680,61 +2728,8 @@ void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,const tipl
     points.erase(std::unique(points.begin(), points.end()), points.end());
 }
 
-tipl::vector<3> get_tract_dir(const std::vector<std::vector<float> >& tract_data,
-                   std::vector<char>& dir)
-{
-    // estimate the average mid-point direction
-    tipl::vector<3> total_dis;
-    for (const auto& tract : tract_data)
-    {
-        if (tract.size() < 6) continue;
 
-        size_t mid_pos = std::min((tract.size() / 6) * 3, tract.size() - 6);
-        tipl::vector<3> dis = tipl::vector<3>(&tract[mid_pos]) - tipl::vector<3>(&tract[mid_pos + 3]);
-        if (dis * total_dis < 0.0f)
-            total_dis -= dis;
-        else
-            total_dis += dis;
-    }
 
-    // categorize endpoints using the mid point direction
-    total_dis.normalize();
-    dir.assign(tract_data.size(), 0);
-
-    tipl::par_for(tract_data.size(),[&](size_t i)
-    {
-        const auto& tract = tract_data[i];
-        if (tract.size() < 6) return;
-        auto get_dis = [&](size_t div) -> tipl::vector<3>
-        {
-            size_t pos = std::min((tract.size() / div) * 3, tract.size() - 6);
-            return tipl::vector<3>(&tract[pos]) - tipl::vector<3>(&tract[pos + 3]);
-        };
-
-        if (total_dis * (get_dis(6) + get_dis(12) + get_dis(4)) > 0.0f)
-            dir[i] = 1;
-    });
-    return total_dis;
-}
-
-bool check_order(const tipl::shape<3>& geo,
-                 std::vector<tipl::vector<3, short>>& s1,
-                 std::vector<tipl::vector<3, short>>& s2)
-{
-    auto diff = (std::accumulate(s1.begin(), s1.end(), tipl::vector<3, double>(0, 0, 0))
-               - std::accumulate(s2.begin(), s2.end(), tipl::vector<3, double>(0, 0, 0))).
-                        elem_mul(tipl::vector<3, double>(geo.begin()));
-
-    int d = 0;
-    if (std::abs(diff[1]) > std::abs(diff[d])) d = 1;
-    if (std::abs(diff[2]) > std::abs(diff[d])) d = 2;
-
-    if (diff[d] >= 0.0)
-        return false;
-
-    s1.swap(s2);
-    return true;
-}
 inline tipl::vector<3> get_rounded_voxel(const float* ptr,bool need_trans,const tipl::matrix<4,4>& trans)
 {
     tipl::vector<3> p(ptr);
@@ -2743,13 +2738,12 @@ inline tipl::vector<3> get_rounded_voxel(const float* ptr,bool need_trans,const 
     p.round();
     return p;
 }
-bool TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short>>& points1,
+void TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short>>& points1,
                                      std::vector<tipl::vector<3,short>>& points2,
                                      const tipl::matrix<4,4>& trans)
 {
     bool need_trans = (trans != tipl::identity_matrix());
-    std::vector<char> dir;
-    get_tract_dir(tract_data, dir);
+    std::vector<char> dir = get_tract_dir();
 
     points1.clear();
     points2.clear();
@@ -2775,8 +2769,6 @@ bool TractModel::to_end_point_voxels(std::vector<tipl::vector<3,short>>& points1
 
     make_unique(points1);
     make_unique(points2);
-
-    return check_order(geo, points1, points2);
 }
 
 void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vector<std::string>& titles,std::vector<float>& data)
@@ -2861,8 +2853,7 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
         float end_area1,end_area2,radius1,radius2;
         {
             std::vector<tipl::vector<3,short> > endpoint1,endpoint2;
-            bool swapped = to_end_point_voxels(endpoint1,endpoint2,resolution_trans);
-            // end point surface 1 and 2
+            to_end_point_voxels(endpoint1,endpoint2,resolution_trans);
             end_area1 = float(endpoint1.size())*vs[0]*vs[1]/resolution_ratio/resolution_ratio;
             end_area2 = float(endpoint2.size())*vs[0]*vs[1]/resolution_ratio/resolution_ratio;
 
@@ -2898,9 +2889,6 @@ void TractModel::get_quantitative_info(std::shared_ptr<fib_data> handle,std::vec
                 undo();
             }
 
-            // BUG FIX 11/6/2025 the cut_end_portion function does not use check_order information
-            if(swapped)
-                std::swap(branch1,branch2);
             branch_volume1 = branch1.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
             branch_volume2 = branch2.size()*voxel_volume/resolution_ratio/resolution_ratio/resolution_ratio;
         }
