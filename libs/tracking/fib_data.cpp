@@ -1989,15 +1989,15 @@ void fib_data::recognize_report(std::shared_ptr<TractModel>& trk,std::string& re
     report += out.str();
 }
 
-bool to_t1wt2w_templates(dual_reg& reg,size_t template_id,bool be)
+bool to_t1wt2w_templates(dual_reg<tipl::out>& reg,size_t template_id,bool be)
 {
     tipl::out() << "reloading all t1w/t2w/iso";
-    if(!reg.load_template(0,QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T1W.nii.gz").toStdString()))
+    if(!reg.load_template<tipl::io::gz_nifti>(0,QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T1W.nii.gz").toStdString()))
         return false;
     reg.match_resolution(true,0.5f,std::numeric_limits<float>::max() /* won't downsize I[0]*/);
 
-    if(!reg.load_template(1,QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T2W.nii.gz").toStdString()) ||
-       !reg.load_template(2,iso_template_list[template_id]))
+    if(!reg.load_template<tipl::io::gz_nifti>(1,QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T2W.nii.gz").toStdString()) ||
+       !reg.load_template<tipl::io::gz_nifti>(2,iso_template_list[template_id]))
         return false;
 
     if(be)
@@ -2038,6 +2038,35 @@ std::string fib_data::get_mapping_file_name(void) const
     output_file_name += ".mz";
     return output_file_name;
 }
+
+bool save_warping(const dual_reg<tipl::out>& reg,const std::string& filename);
+bool load_warping(dual_reg<tipl::out>& reg,const std::string& filename);
+bool load_alternative_warping(dual_reg<tipl::out>& reg,const std::string& filename)
+{
+    dual_reg<tipl::out> alt_reg;
+    tipl::out() << "opening alternative warping " << filename;
+    if(!load_warping(alt_reg,filename) ||
+        alt_reg.Is != alt_reg.Its ||
+        alt_reg.IR != alt_reg.ItR ||
+        alt_reg.arg != tipl::affine_param<float,3>())
+    {
+        reg.error_msg = "invalid alternative mapping";
+        return false;
+    }
+    alt_reg.to_space(reg.Its,reg.ItR);
+    for(auto& each : reg.modality_names)
+        each = "alt-"+each;
+    reg.previous_f2t.swap(alt_reg.t2f_dis);
+    reg.previous_t2f.swap(alt_reg.f2t_dis);
+    reg.previous_It.resize(reg.It.size());
+    for(size_t i = 0;i < reg.It.size() && !reg.It[i].empty();++i)
+    {
+        reg.previous_It[i] = alt_reg.apply_warping<true,tipl::interpolation::cubic>(reg.It[i]);
+        reg.previous_It[i].swap(reg.It[i]);
+    }
+    return true;
+}
+
 bool fib_data::map_to_mni(bool background)
 {
     if(!load_template())
@@ -2065,7 +2094,7 @@ bool fib_data::map_to_mni(bool background)
     auto lambda = [this,output_file_name]()
     {
         prog = 1;
-        dual_reg reg;
+        dual_reg<tipl::out> reg;
         reg.linear_param.search_count = search_count;
 
         reg.modality_names = {"qa","iso"};
@@ -2113,7 +2142,7 @@ bool fib_data::map_to_mni(bool background)
         else
         {
             if(alternative_mapping_index && alternative_mapping_index < alternative_mapping.size() &&
-              !reg.load_alternative_warping(alternative_mapping[alternative_mapping_index]))
+              !load_alternative_warping(reg,alternative_mapping[alternative_mapping_index]))
             {
                 error_msg = reg.error_msg;
                 tipl::prog_aborted = true;
@@ -2141,7 +2170,7 @@ bool fib_data::map_to_mni(bool background)
         t2s.swap(reg.to2from);
 
         prog = 4;
-        if(!reg.save_warping(output_file_name.c_str()))
+        if(!save_warping(reg,output_file_name.c_str()))
             tipl::error() << reg.error_msg;
     };
 
@@ -2171,8 +2200,8 @@ bool fib_data::load_mapping(const std::string& file_name)
             error_msg = "The mapping file was created before the fib file.";
             return false;
         }
-        dual_reg map;
-        if(!map.load_warping(file_name))
+        dual_reg<tipl::out> map;
+        if(!load_warping(map,file_name))
         {
             error_msg = map.error_msg;
             return false;

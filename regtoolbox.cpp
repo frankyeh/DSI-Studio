@@ -93,7 +93,7 @@ void RegToolBox::on_ClearTemplate_clicked()
 void RegToolBox::load_template(const std::string& file_name)
 {
     clear_thread();
-    if(!reg.load_template(file_names[1].size(),file_name.c_str()))
+    if(!reg.load_template<tipl::io::gz_nifti>(file_names[1].size(),file_name.c_str()))
     {
         QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
         return;
@@ -153,7 +153,7 @@ void RegToolBox::on_ClearSubject_clicked()
 void RegToolBox::load_subject(const std::string& file_name)
 {
     clear_thread();
-    if(!reg.load_subject(file_names[0].size(),file_name.c_str()))
+    if(!reg.load_subject<tipl::io::gz_nifti>(file_names[0].size(),file_name.c_str()))
     {
         QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
         return;
@@ -235,10 +235,11 @@ void add_anchor(RegToolBox* host,
         }
     }
 }
-
+template<bool direction, typename reg_type>
+bool apply_warping(const reg_type& reg, const std::string& input, const std::string& output);
 template<bool direction>
 void save_warp(RegToolBox* host,
-               dual_reg& reg,
+               dual_reg<tipl::out>& reg,
                int y,
                const std::vector<std::string>& names)
 {
@@ -247,7 +248,7 @@ void save_warp(RegToolBox* host,
             "Images (*.nii *nii.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
-    if(!reg.apply_warping<direction>(names[y].c_str(),filename.toStdString()))
+    if(!apply_warping<direction>(reg,names[y].c_str(),filename.toStdString()))
         QMessageBox::critical(host,"ERROR",reg.error_msg.c_str());
     else
         QMessageBox::information(host,QApplication::applicationName(),"Saved");
@@ -568,7 +569,7 @@ void RegToolBox::on_stop_clicked()
     thread.clear();
     show_image();
 }
-
+bool save_warping(const dual_reg<tipl::out>& reg,const std::string& filename);
 void RegToolBox::on_actionSave_Warping_triggered()
 {
     if(reg.to2from.empty())
@@ -578,10 +579,10 @@ void RegToolBox::on_actionSave_Warping_triggered()
             "Images (*.mz);;All files (*)" );
     if(filename.isEmpty())
         return;
-    if(!reg.save_warping(filename.toStdString()))
+    if(!save_warping(reg,filename.toStdString()))
         QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
 }
-
+bool load_warping(dual_reg<tipl::out>& reg,const std::string& filename);
 void RegToolBox::on_actionOpen_Mapping_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(
@@ -589,7 +590,7 @@ void RegToolBox::on_actionOpen_Mapping_triggered()
             "Images (*.mz);;All files (*)" );
     if(filename.isEmpty())
         return;
-    if(!reg.load_warping(filename.toStdString()))
+    if(!load_warping(reg,filename.toStdString()))
         QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
     show_image();
 }
@@ -670,11 +671,8 @@ void RegToolBox::on_actionTemplate_Image_triggered()
 }
 
 
-
-
-
-template <bool subjectToTemplate>
-void applyWarping(dual_reg& reg)
+template <bool subjectToTemplate,typename reg_type>
+void applyWarping(reg_type& reg)
 {
     QString filter = "Images (*.nii *nii.gz);;Tracts (*tt.gz);;All files (*)";
     QStringList file_list = QFileDialog::getOpenFileNames(nullptr,
@@ -687,7 +685,7 @@ void applyWarping(dual_reg& reg)
         QString saveFileName = QFileDialog::getSaveFileName(nullptr, "Save Transformed Image", file_list[0], filter);
         if (saveFileName.isEmpty())
             return;
-        if (!reg.apply_warping<subjectToTemplate>(file_list[0].toStdString(), saveFileName.toStdString()))
+        if (!apply_warping<subjectToTemplate>(reg,file_list[0].toStdString(), saveFileName.toStdString()))
             goto error;
     }
     else
@@ -695,7 +693,7 @@ void applyWarping(dual_reg& reg)
         tipl::progress prog("save files");
         for (int i = 0; prog(i, file_list.size()); ++i)
         {
-            if (!reg.apply_warping<subjectToTemplate>(file_list[i].toStdString(), (file_list[i] + ".wp.nii.gz").toStdString()))
+            if (!apply_warping<subjectToTemplate>(reg,file_list[i].toStdString(), (file_list[i] + ".wp.nii.gz").toStdString()))
                 goto error;
         }
     }
@@ -747,6 +745,19 @@ void RegToolBox::on_actionSet_Subject_Dimension_triggered()
 
 }
 
+template<typename image_type>
+auto read_buffer(const std::vector<image_type>& data)
+{
+    size_t image_count = std::distance(data.begin(),
+                                           std::find_if(data.begin(), data.end(),
+                                           [](const auto& img) { return img.empty(); }));
+    if(!image_count)
+        return tipl::image<4,unsigned char>();
+    tipl::image<4,unsigned char> buffer(data[0].shape().expand(image_count));
+    for(size_t i;i < image_count;++i)
+        std::copy(data[i].begin(),data[i].end(),buffer.begin() + i*data[0].size());
+    return buffer;
+}
 
 void RegToolBox::on_actionSave_Subject_Images_triggered()
 {
@@ -757,7 +768,7 @@ void RegToolBox::on_actionSave_Subject_Images_triggered()
             "Images (*.nii *nii.gz);;All files (*)" );
     if(from.isEmpty())
         return;
-    reg.save_subject(from.toStdString());
+    tipl::io::gz_nifti(from.toStdString(),std::ios::out) << reg.Ivs << reg.IR << reg.Is_is_mni << read_buffer(reg.I);
 }
 
 
@@ -770,7 +781,7 @@ void RegToolBox::on_actionSave_Template_Images_triggered()
             "Images (*.nii *nii.gz);;All files (*)" );
     if(from.isEmpty())
         return;
-    reg.save_template(from.toStdString());
+    tipl::io::gz_nifti(from.toStdString(),std::ios::out) << reg.Itvs << reg.ItR << reg.It_is_mni << read_buffer(reg.It);
 }
 void RegToolBox::on_anchor_toggled(bool checked)
 {

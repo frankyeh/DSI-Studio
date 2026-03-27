@@ -115,7 +115,7 @@ void src_data::update_mask(void)
     tipl::morphology::defragment(voxel.mask);
 }
 extern std::vector<std::string> t2w_template_list,iso_template_list;
-bool src_data::warp_b0_to_image(dual_reg& r)
+bool src_data::warp_b0_to_image(dual_reg<tipl::out>& r)
 {
     tipl::progress prog("registering images");
     std::vector<tipl::image<3> > b0;
@@ -158,11 +158,11 @@ bool src_data::warp_b0_to_image(dual_reg& r)
     r.to_I_space(dwi.shape(),voxel.trans_to_mni);
     return !prog.aborted();
 }
-bool src_data::warp_to_template(dual_reg& r)
+bool src_data::warp_to_template(dual_reg<tipl::out>& r)
 {
-    if(!r.load_template(0,std::filesystem::exists(t2w_template_list[voxel.template_id]) ?
+    if(!r.load_template<tipl::io::gz_nifti>(0,std::filesystem::exists(t2w_template_list[voxel.template_id]) ?
                           t2w_template_list[voxel.template_id] : iso_template_list[voxel.template_id]) ||
-       !r.load_template(1,iso_template_list[voxel.template_id]))
+       !r.load_template<tipl::io::gz_nifti>(1,iso_template_list[voxel.template_id]))
     {
         error_msg = "cannot load iso or t2w template images";
         return false;
@@ -174,7 +174,7 @@ bool src_data::warp_to_template(dual_reg& r)
 bool src_data::mask_from_template(void)
 {
     tipl::progress prog("generate mask from template");
-    dual_reg r;
+    dual_reg<tipl::out>r;
     if(!warp_to_template(r))
         return false;
 
@@ -228,8 +228,8 @@ bool src_data::correct_distortion_by_t2w(const std::string& t2w_filename)
     }
 
 
-    dual_reg r;
-    if(!r.load_template(0,t2w_filename))
+    dual_reg<tipl::out>r;
+    if(!r.load_template<tipl::io::gz_nifti>(0,t2w_filename))
     {
         error_msg = r.error_msg;
         return false;

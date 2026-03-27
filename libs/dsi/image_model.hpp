@@ -215,6 +215,7 @@ void distortion_estimate(const image_type& v1,const image_type& v2,
 
 class DwiHeader;
 class fib_data;
+template<typename out_type>
 struct dual_reg;
 struct src_data
 {
@@ -265,8 +266,8 @@ public:
     void draw_mask(tipl::color_image& buffer,int position);
     void update_dwi_sum(void);
     void update_mask(void);
-    bool warp_b0_to_image(dual_reg& r);
-    bool warp_to_template(dual_reg& r);
+    bool warp_b0_to_image(dual_reg<tipl::out>& r);
+    bool warp_to_template(dual_reg<tipl::out>& r);
     bool mask_from_unet(void);
     bool mask_from_template(void);
     void remove(unsigned int index);

@@ -27,13 +27,13 @@ public:
     virtual void init(Voxel& voxel)
     {
         tipl::progress prog("QA/ISO normalization");
-        dual_reg reg;
+        dual_reg<tipl::out> reg;
         reg.param = voxel.reg_param;
         reg.modality_names = {"qa","iso"};
         reg.export_intermediate = voxel.needs("debug");
 
-        if(!reg.load_template(0,fa_template_list[voxel.template_id]) ||
-           !reg.load_template(1,iso_template_list[voxel.template_id]))
+        if(!reg.load_template<tipl::io::gz_nifti>(0,fa_template_list[voxel.template_id]) ||
+           !reg.load_template<tipl::io::gz_nifti>(1,iso_template_list[voxel.template_id]))
             throw std::runtime_error("cannot load anisotropy/isotropy template");
 
         reg.I[0] = subject_image_pre(std::move(voxel.qa_map));
@@ -48,7 +48,7 @@ public:
         if(!voxel.other_modality_template.empty())
         {
             tipl::out() << "adding " << voxel.other_modality_template << " as template for registration";
-            if(!reg.load_template(2,voxel.other_modality_template))
+            if(!reg.load_template<tipl::io::gz_nifti>(2,voxel.other_modality_template))
                 throw std::runtime_error(std::string("cannot load template: ") + voxel.other_modality_template);
             reg.modality_names[2] = "other";
             tipl::out() << "moving QA/ISO to the registration modality space";

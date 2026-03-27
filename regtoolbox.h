@@ -19,7 +19,7 @@ class RegToolBox : public QMainWindow
 
 public:
     uint8_t cur_view = 2;
-    dual_reg reg;
+    dual_reg<tipl::out> reg;
     std::vector<tipl::image<3,unsigned char> > J[2];
 
 public:

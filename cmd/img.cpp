@@ -498,7 +498,7 @@ int img(tipl::program_option<tipl::out>& po)
                 if(cmd == "brain_extraction" && param.length() < 2)
                 {
                     size_t template_id = param.empty() ? 0 : param[0]-'0';
-                    dual_reg reg;
+                    dual_reg<tipl::out> reg;
                     var_image.apply([&](auto& I){
                         reg.I[0] = subject_image_pre(tipl::image<3>(I.alias()));
                         reg.Is = I.shape();
@@ -506,9 +506,9 @@ int img(tipl::program_option<tipl::out>& po)
                     reg.Ivs = var_image.vs;
                     reg.IR = var_image.T;
 
-                    if(!reg.load_template(0,QString(iso_template_list[template_id].c_str()).replace(".ISO.nii.gz",".T1W.nii.gz").toStdString()) ||
-                       !reg.load_template(1,QString(iso_template_list[template_id].c_str()).replace(".ISO.nii.gz",".T2W.nii.gz").toStdString()) ||
-                       !reg.load_template(2,iso_template_list[template_id]))
+                    if(!reg.load_template<tipl::io::gz_nifti>(0,QString(iso_template_list[template_id].c_str()).replace(".ISO.nii.gz",".T1W.nii.gz").toStdString()) ||
+                       !reg.load_template<tipl::io::gz_nifti>(1,QString(iso_template_list[template_id].c_str()).replace(".ISO.nii.gz",".T2W.nii.gz").toStdString()) ||
+                       !reg.load_template<tipl::io::gz_nifti>(2,iso_template_list[template_id]))
                     {
                         tipl::error() << reg.error_msg;
                         return 1;
