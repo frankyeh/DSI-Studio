@@ -12,7 +12,6 @@
 #include "dwi_header.hpp"
 #include "tracking/region/Regions.h"
 #include <filesystem>
-#include "reg.hpp"
 
 bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                  bool search_bvalbvec,bool must_have_bval_bvec,bool scale_signal,std::string& error_msg);
@@ -72,7 +71,7 @@ void src_data::update_dwi_sum(void)
             dwi_sum[i] += src_dwi_data[j][i];
         }
     });
-    dwi = subject_image_pre(dwi_sum);
+    dwi = tipl::reg::subject_image_pre(dwi_sum);
 }
 void src_data::update_mask(void)
 {
@@ -115,14 +114,14 @@ void src_data::update_mask(void)
     tipl::morphology::defragment(voxel.mask);
 }
 extern std::vector<std::string> t2w_template_list,iso_template_list;
-bool src_data::warp_b0_to_image(dual_reg<tipl::out>& r)
+bool src_data::warp_b0_to_image(tipl::reg::mm_reg<tipl::out>& r)
 {
     tipl::progress prog("registering images");
     std::vector<tipl::image<3> > b0;
     if(!read_b0(b0))
         return false;
-    r.I[1] = subject_image_pre(tipl::image<3>(dwi));
-    r.I[0] = std::filesystem::exists(t2w_template_list[voxel.template_id]) ? subject_image_pre(std::move(b0[0])) : r.I[1];
+    r.I[1] = tipl::reg::subject_image_pre(tipl::image<3>(dwi));
+    r.I[0] = std::filesystem::exists(t2w_template_list[voxel.template_id]) ? tipl::reg::subject_image_pre(std::move(b0[0])) : r.I[1];
     r.I[2] = voxel.mask;
     tipl::morphology::dilation(r.I[2]);
     r.modality_names = {"b0/dwi","dwi sum","mask"};
@@ -158,7 +157,7 @@ bool src_data::warp_b0_to_image(dual_reg<tipl::out>& r)
     r.to_I_space(dwi.shape(),voxel.trans_to_mni);
     return !prog.aborted();
 }
-bool src_data::warp_to_template(dual_reg<tipl::out>& r)
+bool src_data::warp_to_template(tipl::reg::mm_reg<tipl::out>& r)
 {
     if(!r.load_template<tipl::io::gz_nifti>(0,std::filesystem::exists(t2w_template_list[voxel.template_id]) ?
                           t2w_template_list[voxel.template_id] : iso_template_list[voxel.template_id]) ||
@@ -174,7 +173,7 @@ bool src_data::warp_to_template(dual_reg<tipl::out>& r)
 bool src_data::mask_from_template(void)
 {
     tipl::progress prog("generate mask from template");
-    dual_reg<tipl::out>r;
+    tipl::reg::mm_reg<tipl::out>r;
     if(!warp_to_template(r))
         return false;
 
@@ -228,7 +227,7 @@ bool src_data::correct_distortion_by_t2w(const std::string& t2w_filename)
     }
 
 
-    dual_reg<tipl::out>r;
+    tipl::reg::mm_reg<tipl::out>r;
     if(!r.load_template<tipl::io::gz_nifti>(0,t2w_filename))
     {
         error_msg = r.error_msg;
@@ -372,8 +371,8 @@ bool src_data::check_b_table(bool use_template)
         tipl::progress prog("registering to template");
         auto iso = template_fib->get_iso();
         T = tipl::reg::linear<tipl::out>(
-               tipl::reg::make_list(template_image_pre(tipl::image<3>(iso))),template_fib->vs,
-               tipl::reg::make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,{tipl::reg::affine});
+               tipl::reg::make_list(tipl::reg::template_image_pre(tipl::image<3>(iso))),template_fib->vs,
+               tipl::reg::make_list(tipl::reg::subject_image_pre(tipl::image<3>(dwi))),voxel.vs,{tipl::reg::affine});
         if(prog.aborted())
         {
             template_fib.reset();
@@ -1327,8 +1326,8 @@ bool src_data::add_other_image(const std::string& name,const std::string& filena
     {
         tipl::out() << " and register image with DWI." << std::endl;
         trans = tipl::reg::linear<tipl::out>(
-                        tipl::reg::make_list(subject_image_pre(tipl::image<3>(ref))),vs,
-                        tipl::reg::make_list(subject_image_pre(tipl::image<3>(dwi))),voxel.vs,{tipl::reg::rigid_body});
+                        tipl::reg::make_list(tipl::reg::subject_image_pre(tipl::image<3>(ref))),vs,
+                        tipl::reg::make_list(tipl::reg::subject_image_pre(tipl::image<3>(dwi))),voxel.vs,{tipl::reg::rigid_body});
     }
     else {
         if(has_registered)
@@ -1398,8 +1397,8 @@ bool src_data::align_acpc(float reso)
     {
         tipl::progress prog("linear registration");
         auto arg = tipl::reg::linear<tipl::out>(
-                    tipl::reg::make_list(template_image_pre(tipl::image<3>(I))),Ivs,
-                    tipl::reg::make_list(subject_image_pre(tipl::image<3>(J))),Jvs,{tipl::reg::rigid_scaling});
+                    tipl::reg::make_list(tipl::reg::template_image_pre(tipl::image<3>(I))),Ivs,
+                    tipl::reg::make_list(tipl::reg::subject_image_pre(tipl::image<3>(J))),Jvs,{tipl::reg::rigid_scaling});
         if(prog.aborted())
             return false;
     }
@@ -1614,7 +1613,7 @@ tipl::image<3> src_data::get_bias_field(void)
         }
     });
     tipl::image<3,unsigned char> mask;
-    tipl::threshold(subject_image_pre(dwi_sum),mask,25,1,0);
+    tipl::threshold(tipl::reg::subject_image_pre(dwi_sum),mask,25,1,0);
     for(size_t i = 0;prog(i,1);++i)
         ::correct_bias_field(dwi,mask,bias_field,tipl::vector<3>(1.0f,voxel.vs[0]/voxel.vs[1],voxel.vs[0]/voxel.vs[2]));
     if(prog.aborted())
@@ -1666,8 +1665,8 @@ bool src_data::correct_motion(void)
             tipl::filter::gaussian(Ii);
             tipl::filter::gaussian(Ii);
             tipl::reg::linear<tipl::out>(
-                        tipl::reg::make_list(subject_image_pre(tipl::image<3>(I0))),voxel.vs,
-                        tipl::reg::make_list(subject_image_pre(std::move(Ii))),voxel.vs,args[i],
+                        tipl::reg::make_list(tipl::reg::subject_image_pre(tipl::image<3>(I0))),voxel.vs,
+                        tipl::reg::make_list(tipl::reg::subject_image_pre(std::move(Ii))),voxel.vs,args[i],
                         {tipl::reg::rigid_body,tipl::reg::mutual_info,tipl::reg::narrow_bound},tipl::prog_aborted);
             tipl::out() << "dwi (" << i+1 << "/" << src_bvalues.size() << ")" <<
                          " shift=" << tipl::vector<3>(args[i].translocation) <<
@@ -1729,8 +1728,8 @@ bool src_data::correct_motion(void)
             tipl::filter::gaussian(Ii);
 
             tipl::reg::linear<tipl::out>(
-                        tipl::reg::make_list(subject_image_pre(std::move(from))),voxel.vs,
-                        tipl::reg::make_list(subject_image_pre(std::move(Ii))),voxel.vs,new_args[i],
+                        tipl::reg::make_list(tipl::reg::subject_image_pre(std::move(from))),voxel.vs,
+                        tipl::reg::make_list(tipl::reg::subject_image_pre(std::move(Ii))),voxel.vs,new_args[i],
                         {tipl::reg::rigid_body,tipl::reg::corr,tipl::reg::narrow_bound},tipl::prog_aborted);
             tipl::out() << "dwi (" << i+1 << "/" << src_bvalues.size() << ") = "
                       << " shift=" << tipl::vector<3>(new_args[i].translocation)

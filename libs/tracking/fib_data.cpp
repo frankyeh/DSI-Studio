@@ -3,7 +3,7 @@
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QDateTime>
-#include "reg.hpp"
+
 #include "fib_data.hpp"
 #include "tessellated_icosahedron.hpp"
 #include "tract_model.hpp"
@@ -1989,7 +1989,7 @@ void fib_data::recognize_report(std::shared_ptr<TractModel>& trk,std::string& re
     report += out.str();
 }
 
-bool to_t1wt2w_templates(dual_reg<tipl::out>& reg,size_t template_id,bool be)
+bool to_t1wt2w_templates(tipl::reg::mm_reg<tipl::out>& reg,size_t template_id,bool be)
 {
     tipl::out() << "reloading all t1w/t2w/iso";
     if(!reg.load_template<tipl::io::gz_nifti>(0,QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T1W.nii.gz").toStdString()))
@@ -2039,8 +2039,8 @@ std::string fib_data::get_mapping_file_name(void) const
     return output_file_name;
 }
 
-bool save_warping(const dual_reg<tipl::out>& reg,const std::string& filename);
-bool load_warping(dual_reg<tipl::out>& reg,const std::string& filename);
+bool save_warping(const tipl::reg::mm_reg<tipl::out>& reg,const std::string& filename);
+bool load_warping(tipl::reg::mm_reg<tipl::out>& reg,const std::string& filename);
 template<typename reg_type>
 bool load_alternative_warping(reg_type& reg,const std::string& filename)
 {
@@ -2095,7 +2095,7 @@ bool fib_data::map_to_mni(bool background)
     auto lambda = [this,output_file_name]()
     {
         prog = 1;
-        dual_reg<tipl::out> reg;
+        tipl::reg::mm_reg<tipl::out> reg;
         reg.linear_param.search_count = search_count;
 
         reg.modality_names = {"qa","iso"};
@@ -2104,16 +2104,16 @@ bool fib_data::map_to_mni(bool background)
         if(slices.size() == iso_index)
             iso_index = get_name_index("rd");
 
-        reg.I[0] = subject_image_pre(tipl::image<3>(dir.fa[0],dim));
+        reg.I[0] = tipl::reg::subject_image_pre(tipl::image<3>(dir.fa[0],dim));
         if(iso_index < slices.size())
-            reg.I[1] = subject_image_pre(tipl::image<3>(slices[iso_index]->get_image()));
+            reg.I[1] = tipl::reg::subject_image_pre(tipl::image<3>(slices[iso_index]->get_image()));
 
         reg.Is = dim;
         reg.Ivs = vs;
         reg.IR = trans_to_mni;
 
-        reg.It[0] = template_image_pre(template_I);
-        reg.It[1] = template_image_pre(template_I2);
+        reg.It[0] = tipl::reg::template_image_pre(template_I);
+        reg.It[1] = tipl::reg::template_image_pre(template_I2);
 
         reg.Its = template_I.shape();
         reg.Itvs = template_vs;
@@ -2201,7 +2201,7 @@ bool fib_data::load_mapping(const std::string& file_name)
             error_msg = "The mapping file was created before the fib file.";
             return false;
         }
-        dual_reg<tipl::out> map;
+        tipl::reg::mm_reg<tipl::out> map;
         if(!load_warping(map,file_name))
         {
             error_msg = map.error_msg;

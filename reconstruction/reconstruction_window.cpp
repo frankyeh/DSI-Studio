@@ -8,7 +8,7 @@
 #include <QSettings>
 #include "reconstruction_window.h"
 #include "ui_reconstruction_window.h"
-#include "reg.hpp"
+
 #include "mainwindow.h"
 #include "tracking/region/Regions.h"
 #include "libs/dsi/image_model.hpp"
@@ -638,8 +638,8 @@ void reconstruction_window::on_actionRotate_triggered()
     if(!load_image_from_files(filenames,ref,vs,t))
         return;
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-                                                                subject_image_pre(tipl::image<3>(handle->dwi)),tipl::image<3,unsigned char>(),handle->voxel.vs,
-                                                                template_image_pre(tipl::image<3>(ref)),tipl::image<3,unsigned char>(),vs,
+                                                                tipl::reg::subject_image_pre(tipl::image<3>(handle->dwi)),tipl::image<3,unsigned char>(),handle->voxel.vs,
+                                                                tipl::reg::template_image_pre(tipl::image<3>(ref)),tipl::image<3,unsigned char>(),vs,
                                                                 tipl::reg::rigid_body,
                                                                 tipl::reg::cost_type::mutual_info));
     manual->from_T = handle->voxel.trans_to_mni;
@@ -754,8 +754,8 @@ void reconstruction_window::on_actionPartial_FOV_triggered()
 void reconstruction_window::on_actionManual_Rotation_triggered()
 {
     std::shared_ptr<manual_alignment> manual(
-                new manual_alignment(this,subject_image_pre(tipl::image<3>(handle->dwi)),tipl::image<3,unsigned char>(),handle->voxel.vs,
-                                          subject_image_pre(tipl::image<3>(handle->dwi)),tipl::image<3,unsigned char>(),handle->voxel.vs,tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
+                new manual_alignment(this,tipl::reg::subject_image_pre(tipl::image<3>(handle->dwi)),tipl::image<3,unsigned char>(),handle->voxel.vs,
+                                          tipl::reg::subject_image_pre(tipl::image<3>(handle->dwi)),tipl::image<3,unsigned char>(),handle->voxel.vs,tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
     manual->from_T = handle->voxel.trans_to_mni;
     manual->to_T = handle->voxel.trans_to_mni;
     if(manual->exec() != QDialog::Accepted)
@@ -873,8 +873,8 @@ void reconstruction_window::on_align_slices_clicked()
     tipl::normalize(from);
     tipl::normalize(to);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-                                                                subject_image_pre(std::move(from)),tipl::image<3,unsigned char>(),handle->voxel.vs,
-                                                                subject_image_pre(std::move(to)),tipl::image<3,unsigned char>(),handle->voxel.vs,
+                                                                tipl::reg::subject_image_pre(std::move(from)),tipl::image<3,unsigned char>(),handle->voxel.vs,
+                                                                tipl::reg::subject_image_pre(std::move(to)),tipl::image<3,unsigned char>(),handle->voxel.vs,
                                                                 tipl::reg::rigid_body,
                                                                 tipl::reg::cost_type::mutual_info));
     manual->from_T = handle->voxel.trans_to_mni;
@@ -951,8 +951,8 @@ void reconstruction_window::on_actionManual_Align_triggered()
 
     match_template_resolution(VG,VGvs,VF,VFvs);
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-                                                                template_image_pre(VG),template_image_pre(VG2),VGvs,
-                                                                subject_image_pre(VF),subject_image_pre(VF),VFvs,
+                                                                tipl::reg::template_image_pre(VG),tipl::reg::template_image_pre(VG2),VGvs,
+                                                                tipl::reg::subject_image_pre(VF),tipl::reg::subject_image_pre(VF),VFvs,
                                                                 tipl::reg::affine,
                                                                 tipl::reg::cost_type::mutual_info));
     manual->from_T = VG_T;

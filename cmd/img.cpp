@@ -3,7 +3,6 @@
 #include <QFile>
 #include <QTextStream>
 #include "img.hpp"
-#include "reg.hpp"
 std::map<std::string,std::string> dicom_dictionary;
 void correct_bias_field(tipl::image<3> I,
                         tipl::image<3,unsigned char> mask,
@@ -498,9 +497,9 @@ int img(tipl::program_option<tipl::out>& po)
                 if(cmd == "brain_extraction" && param.length() < 2)
                 {
                     size_t template_id = param.empty() ? 0 : param[0]-'0';
-                    dual_reg<tipl::out> reg;
+                    tipl::reg::mm_reg<tipl::out> reg;
                     var_image.apply([&](auto& I){
-                        reg.I[0] = subject_image_pre(tipl::image<3>(I.alias()));
+                        reg.I[0] = tipl::reg::subject_image_pre(tipl::image<3>(I.alias()));
                         reg.Is = I.shape();
                     });
                     reg.Ivs = var_image.vs;

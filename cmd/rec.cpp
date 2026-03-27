@@ -9,7 +9,7 @@
 #include "tracking/region/Regions.h"
 #include "libs/dsi/image_model.hpp"
 #include "reconstruction/reconstruction_window.h"
-#include "reg.hpp"
+
 
 extern std::vector<std::string> fa_template_list;
 bool get_src(std::string filename,src_data& src2,std::string& error_msg);

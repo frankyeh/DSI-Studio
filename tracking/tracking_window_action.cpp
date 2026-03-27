@@ -16,7 +16,7 @@
 #include "manual_alignment.h"
 #include "devicetablewidget.h"
 #include "libs/tracking/tracking_thread.hpp"
-#include "reg.hpp"
+
 
 extern std::vector<std::string> fa_template_list;
 std::string show_info_dialog(const std::string& title,
@@ -1378,8 +1378,8 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
     reg_slice->terminate();
     auto iso_fa = handle->get_iso_fa();
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-        subject_image_pre(tipl::image<3>(reg_slice->get_source())),subject_image_pre(tipl::image<3>(reg_slice->get_source())),reg_slice->vs,
-        subject_image_pre(tipl::image<3>(iso_fa.first)),subject_image_pre(tipl::image<3>(iso_fa.second)),handle->vs,
+        tipl::reg::subject_image_pre(tipl::image<3>(reg_slice->get_source())),tipl::reg::subject_image_pre(tipl::image<3>(reg_slice->get_source())),reg_slice->vs,
+        tipl::reg::subject_image_pre(tipl::image<3>(iso_fa.first)),tipl::reg::subject_image_pre(tipl::image<3>(iso_fa.second)),handle->vs,
         tipl::reg::rigid_body,tipl::reg::cost_type::mutual_info));
     manual->from_T = reg_slice->trans_to_mni;
     manual->to_T = handle->trans_to_mni;
@@ -1651,8 +1651,8 @@ void tracking_window::on_actionManual_Atlas_Alignment_triggered()
     }
     auto iso_fa = handle->get_iso_fa();
     std::shared_ptr<manual_alignment> manual(new manual_alignment(this,
-        template_image_pre(tipl::image<3>(handle->template_I)),template_image_pre(tipl::image<3>(handle->template_I2)),handle->template_vs,
-        subject_image_pre(tipl::image<3>(iso_fa.first)),subject_image_pre(tipl::image<3>(iso_fa.second)),handle->vs,
+        tipl::reg::template_image_pre(tipl::image<3>(handle->template_I)),tipl::reg::template_image_pre(tipl::image<3>(handle->template_I2)),handle->template_vs,
+        tipl::reg::subject_image_pre(tipl::image<3>(iso_fa.first)),tipl::reg::subject_image_pre(tipl::image<3>(iso_fa.second)),handle->vs,
         tipl::reg::affine,tipl::reg::cost_type::mutual_info));
     manual->from_T = manual->to_T = handle->trans_to_mni;
     if(manual->exec() != QDialog::Accepted)

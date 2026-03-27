@@ -15,7 +15,7 @@
 #include <QJsonArray>
 #include "SliceModel.h"
 #include "fib_data.hpp"
-#include "reg.hpp"
+
 SliceModel::SliceModel(std::shared_ptr<fib_data> new_handle,std::shared_ptr<slice_model> new_view):
     handle(new_handle),view(new_view)
 {
@@ -740,12 +740,12 @@ void CustomSliceModel::argmin(void)
     terminated = false;
     view->registering = true;
 
-    auto to = subject_image_pre(tipl::image<3>(source_images));
+    auto to = tipl::reg::subject_image_pre(tipl::image<3>(source_images));
     auto to_vs = vs;
     auto from = handle->get_iso_fa();
     auto from_vs = handle->vs;
-    auto from1 = subject_image_pre(tipl::image<3>(from.first));
-    auto from2 = subject_image_pre(tipl::image<3>(from.second));
+    auto from1 = tipl::reg::subject_image_pre(tipl::image<3>(from.first));
+    auto from2 = tipl::reg::subject_image_pre(tipl::image<3>(from.second));
 
     if(picture.empty())
     {

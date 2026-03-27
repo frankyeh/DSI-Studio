@@ -6,7 +6,7 @@
 #include <QMimeData>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsSceneMouseEvent>
-#include "reg.hpp"
+
 #include "regtoolbox.h"
 #include "ui_regtoolbox.h"
 #include "basic_voxel.hpp"
@@ -239,7 +239,7 @@ template<bool direction, typename reg_type>
 bool apply_warping(const reg_type& reg, const std::string& input, const std::string& output);
 template<bool direction>
 void save_warp(RegToolBox* host,
-               dual_reg<tipl::out>& reg,
+               tipl::reg::mm_reg<tipl::out>& reg,
                int y,
                const std::vector<std::string>& names)
 {
@@ -569,7 +569,7 @@ void RegToolBox::on_stop_clicked()
     thread.clear();
     show_image();
 }
-bool save_warping(const dual_reg<tipl::out>& reg,const std::string& filename);
+bool save_warping(const tipl::reg::mm_reg<tipl::out>& reg,const std::string& filename);
 void RegToolBox::on_actionSave_Warping_triggered()
 {
     if(reg.to2from.empty())
@@ -582,7 +582,7 @@ void RegToolBox::on_actionSave_Warping_triggered()
     if(!save_warping(reg,filename.toStdString()))
         QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
 }
-bool load_warping(dual_reg<tipl::out>& reg,const std::string& filename);
+bool load_warping(tipl::reg::mm_reg<tipl::out>& reg,const std::string& filename);
 void RegToolBox::on_actionOpen_Mapping_triggered()
 {
     QString filename = QFileDialog::getOpenFileName(

@@ -1,7 +1,7 @@
 #include <QString>
 #include <QImage>
 #include "img.hpp"
-#include "reg.hpp"
+
 #include "tract_model.hpp"
 
 template<bool direction,typename reg_type>
@@ -169,7 +169,8 @@ bool apply_warping(const reg_type& reg,const std::string& input,const std::strin
     return false;
 }
 
-bool load_warping(dual_reg<tipl::out>& reg,const std::string& filename)
+extern int map_ver;
+bool load_warping(tipl::reg::mm_reg<tipl::out>& reg,const std::string& filename)
 {
     tipl::io::gz_mat_read in;
     if(!in.load_from_file(filename))
@@ -227,7 +228,7 @@ bool load_warping(dual_reg<tipl::out>& reg,const std::string& filename)
 }
 
 
-bool save_warping(const dual_reg<tipl::out>& reg,const std::string& filename)
+bool save_warping(const tipl::reg::mm_reg<tipl::out>& reg,const std::string& filename)
 {
     tipl::progress prog("saving ",filename);
     if(reg.f2t_dis.empty() || reg.t2f_dis.empty())
@@ -293,7 +294,7 @@ bool save_warping(const dual_reg<tipl::out>& reg,const std::string& filename)
 }
 
 template<bool direction>
-bool save_warping(dual_reg<tipl::out>& r,
+bool save_warping(tipl::reg::mm_reg<tipl::out>& r,
                   const std::vector<std::string>& apply_warp_filename,
                   const std::string& output_dir)
 {
@@ -335,7 +336,7 @@ bool save_warping(dual_reg<tipl::out>& r,
 
 int reg(tipl::program_option<tipl::out>& po)
 {
-    dual_reg<tipl::out> r;
+    tipl::reg::mm_reg<tipl::out> r;
     std::vector<std::string> from_filename(tipl::split(po.get("source"),',')),to_filename(tipl::split(po.get("to"),','));
     tipl::out() << from_filename.size() << " file(s) specified at --source";
     tipl::out() << to_filename.size() << " file(s) specified at --to";

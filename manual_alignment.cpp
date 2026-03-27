@@ -1,6 +1,6 @@
 #include <QFileDialog>
 #include <QMessageBox>
-#include "reg.hpp"
+#include "TIPL/tipl.hpp"
 #include "manual_alignment.h"
 #include "ui_manual_alignment.h"
 #include "tracking/tracking_window.h"

@@ -18,7 +18,7 @@
 #include "tract_cluster.hpp"
 #include "../../tracking/region/Regions.h"
 #include "tracking_method.hpp"
-#include "reg.hpp"
+
 #include <filesystem>
 
 void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);

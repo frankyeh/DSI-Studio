@@ -5,7 +5,7 @@
 #include "basic_voxel.hpp"
 #include "basic_process.hpp"
 #include "gqi_process.hpp"
-#include "reg.hpp"
+
 extern std::vector<std::string> fa_template_list,iso_template_list,t1w_template_list;
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 class DWINormalization  : public BaseProcess
@@ -27,7 +27,7 @@ public:
     virtual void init(Voxel& voxel)
     {
         tipl::progress prog("QA/ISO normalization");
-        dual_reg<tipl::out> reg;
+        tipl::reg::mm_reg<tipl::out> reg;
         reg.param = voxel.reg_param;
         reg.modality_names = {"qa","iso"};
         reg.export_intermediate = voxel.needs("debug");
@@ -36,8 +36,8 @@ public:
            !reg.load_template<tipl::io::gz_nifti>(1,iso_template_list[voxel.template_id]))
             throw std::runtime_error("cannot load anisotropy/isotropy template");
 
-        reg.I[0] = subject_image_pre(std::move(voxel.qa_map));
-        reg.I[1] = subject_image_pre(std::move(voxel.iso_map));
+        reg.I[0] = tipl::reg::subject_image_pre(std::move(voxel.qa_map));
+        reg.I[1] = tipl::reg::subject_image_pre(std::move(voxel.iso_map));
         reg.Is = native_geo = voxel.dim;
         reg.Ivs = native_vs = voxel.vs;
         initial_LPS_nifti_srow(reg.IR,native_geo,native_vs);
@@ -52,7 +52,7 @@ public:
                 throw std::runtime_error(std::string("cannot load template: ") + voxel.other_modality_template);
             reg.modality_names[2] = "other";
             tipl::out() << "moving QA/ISO to the registration modality space";
-            reg.I[2] = subject_image_pre(tipl::image<3>(voxel.other_modality_subject));
+            reg.I[2] = tipl::reg::subject_image_pre(tipl::image<3>(voxel.other_modality_subject));
             reg.Is = voxel.other_modality_subject.shape();
             reg.Ivs = voxel.vs = voxel.other_modality_vs;
             for(size_t i = 0;i < 2;++i)
