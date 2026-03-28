@@ -172,7 +172,6 @@ bool variant_image::load_from_file(const std::string& file_name,std::string& inf
     tipl::io::dicom dicom;
     is_mni = false;
     T.identity();
-    tipl::progress prog("open " + file_name);
     if(tipl::ends_with(file_name,{".nhdr",".nrrd"}))
     {
         tipl::io::gz_nrrd nrrd;
@@ -422,7 +421,6 @@ int img(tipl::program_option<tipl::out>& po)
     }
 
     std::string source(po.get("source")),info;
-    tipl::progress prog("open ",source);
     if(tipl::ends_with(source,{"fib.gz",".fz","src.gz",".sz",".mz"}))
     {
         tipl::io::gz_mat_read mat_reader;
