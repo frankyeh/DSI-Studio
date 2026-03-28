@@ -215,8 +215,6 @@ void distortion_estimate(const image_type& v1,const image_type& v2,
 
 class DwiHeader;
 class fib_data;
-template<typename out_type>
-struct tipl::reg::mm_reg;
 struct src_data
 {
     src_data(void){}
