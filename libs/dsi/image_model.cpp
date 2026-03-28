@@ -173,7 +173,7 @@ bool src_data::warp_to_template(tipl::reg::mm_reg<tipl::out>& r)
 bool src_data::mask_from_template(void)
 {
     tipl::progress prog("generate mask from template");
-    tipl::reg::mm_reg<tipl::out>r;
+    tipl::reg::mm_reg<tipl::out> r;
     if(!warp_to_template(r))
         return false;
 
@@ -227,7 +227,7 @@ bool src_data::correct_distortion_by_t2w(const std::string& t2w_filename)
     }
 
 
-    tipl::reg::mm_reg<tipl::out>r;
+    tipl::reg::mm_reg<tipl::out> r;
     if(!r.load_template<tipl::io::gz_nifti>(0,t2w_filename))
     {
         error_msg = r.error_msg;
