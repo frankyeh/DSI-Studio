@@ -441,7 +441,7 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
 
 bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg)
 {
-    tipl::progress prog("opening ",file_name);
+    tipl::progress prog("open ",file_name);
     tipl::io::bruker_2dseq bruker_header;
     if(!bruker_header.load_from_file(file_name))
     {
