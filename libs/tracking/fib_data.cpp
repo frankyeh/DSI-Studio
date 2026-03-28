@@ -2045,7 +2045,7 @@ template<typename reg_type>
 bool load_alternative_warping(reg_type& reg,const std::string& filename)
 {
     reg_type alt_reg;
-    tipl::out() << "opening alternative warping " << filename;
+    tipl::out() << "open alternative warping " << filename;
     if(!load_warping(alt_reg,filename) ||
         alt_reg.Is != alt_reg.Its ||
         alt_reg.IR != alt_reg.ItR ||
