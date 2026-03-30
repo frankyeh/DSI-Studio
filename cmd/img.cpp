@@ -357,8 +357,7 @@ bool variant_image::load_from_file(const std::string& file_name,std::string& inf
                 error_msg = "unsupported file format";
                 return false;
             }
-    tipl::out() << "dim: " << shape;
-    tipl::out() << "vs: " << vs;
+    tipl::out() << "dim: " << shape << " " << dim4 << " vs: " << vs;
     apply([this](auto& I)
     {
         if(tipl::is_label_image(I))
@@ -469,11 +468,8 @@ int img(tipl::program_option<tipl::out>& po)
 
         if(!var_image.apply([&](auto& I)
         {
-            tipl::out() << "dimension: " << (dim4 = tipl::shape<4>(I.width(),I.height(),I.depth(),var_image.dim4));
             I.resize(var_image.shape = tipl::shape<3>(I.width(),I.height(),I.depth()*var_image.dim4));
-            if(!nifti.save_to_buffer(I.data(),dim4.size()))
-                return tipl::error() << nifti.error_msg,false;
-            return true;
+            return nifti.save_to_buffer(I.data(),dim4.size()) ? true : (tipl::error() << nifti.error_msg,false);
         }))
         return 0;
     }
