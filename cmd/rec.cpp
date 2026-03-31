@@ -157,13 +157,11 @@ int rec(tipl::program_option<tipl::out>& po)
             tipl::out() << "current DWI b values: " << bvalue_list.str() << std::endl;
         }
 
-        if((po.get("check_btable",0) && !src.command("[Step T2][B-table][Check B-table]")) ||
-           (po.has("rev_pe") && !src.command("[Step T2][Corrections][TOPUP EDDY]",po.get("rev_pe"))))
-        {
-            tipl::error() << src.error_msg << std::endl;
-            return 1;
-        }
-
+        if((po.get("check_btable",0) && !src.command(po.get("check_btable",0) == 1 ?
+                    "[Step T2][B-table][Check B-table]" : "[Step T2][B-table][Check B-table2]")))
+            return tipl::error() << src.error_msg,1;
+        if((po.has("rev_pe") && !src.command("[Step T2][Corrections][TOPUP EDDY]",po.get("rev_pe"))))
+            return tipl::error() << src.error_msg,1;
 
         if(po.has("make_isotropic"))
             src.command("[Step T2][Edit][Resample]",po.get("make_isotropic"));
