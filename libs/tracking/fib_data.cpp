@@ -1148,14 +1148,12 @@ bool fib_data::load_template_fib(size_t id,float reso)
 }
 bool fib_data::save_to_file(const std::string& file_name)
 {
-    tipl::progress prog("save file");
+    tipl::progress prog("save " + file_name);
     fib_file_name = file_name;
     tipl::io::gz_mat_write matfile(file_name);
     if(!matfile)
-    {
-        error_msg = "cannot save file " + file_name;
-        return false;
-    }
+        return error_msg = "cannot save file " + file_name,false;
+
     std::vector<std::string> skip_list({"odf_faces","odf_vertices","z0","mapping",
                                         "report","intro","R2","template","index_name","demo","steps"});
     skip_list.insert(skip_list.end(),db.index_list.begin(),db.index_list.end());
