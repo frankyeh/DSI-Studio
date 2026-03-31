@@ -754,7 +754,7 @@ auto read_buffer(const std::vector<image_type>& data)
     if(!image_count)
         return tipl::image<4,unsigned char>();
     tipl::image<4,unsigned char> buffer(data[0].shape().expand(image_count));
-    for(size_t i;i < image_count;++i)
+    for(size_t i = 0;i < image_count;++i)
         std::copy(data[i].begin(),data[i].end(),buffer.begin() + i*data[0].size());
     return buffer;
 }
