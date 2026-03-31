@@ -1307,12 +1307,9 @@ bool src_data::add_other_image(const std::string& name,const std::string& filena
     tipl::image<3> ref;
     tipl::vector<3> vs;
     tipl::transformation_matrix<float> trans;
-    if(!(tipl::io::gz_nifti(filename,std::ios::in) >> ref >> vs))
-    {
-        error_msg = "not a valid nifti file ";
-        error_msg += filename;
-        return false;
-    }
+    if(!(tipl::io::gz_nifti(filename,std::ios::in) >> ref >> vs
+         >> [](const std::string& e){tipl::error() << e;}))
+        return error_msg = "not a valid nifti file "+filename,false;
     tipl::out() << "add " << filename << " as " << name;
 
     bool has_registered = false;
@@ -1373,17 +1370,11 @@ bool src_data::align_acpc(float reso)
     tipl::vector<3> Ivs,Jvs(reso,reso,reso);
 
     // prepare template images
-    if(!(tipl::io::gz_nifti(iso_template_list[voxel.template_id],std::ios::in) >> Ivs >> I) &&
+    if(!(tipl::io::gz_nifti(iso_template_list[voxel.template_id],std::ios::in) >> Ivs >> I) ||
        !(tipl::io::gz_nifti(fa_template_list[voxel.template_id],std::ios::in) >> Ivs >> I))
-    {
-        error_msg = "Failed to load/find MNI template.";
-        return false;
-    }
+        return error_msg = "Failed to load/find MNI template.",false;
     if(reso < Ivs[0])
-    {
-        tipl::out() << (error_msg = "invalid resolution");
-        return false;
-    }
+        return tipl::error() << (error_msg = "invalid resolution"),false;
 
     // create an isotropic subject image for alignment
     tipl::scale(dwi,J,tipl::v(voxel.vs[0]/reso,voxel.vs[1]/reso,voxel.vs[2]/reso));
@@ -2532,11 +2523,7 @@ bool src_data::run_eddy(std::string exec)
     {
         std::ofstream index_out(index_file),bval_out(bval_file),bvec_out(bvec_file);
         if(!index_out || !bval_out || !bvec_out)
-        {
-            error_msg = "cannot write temporary files to ";
-            error_msg += QFileInfo(file_name.c_str()).absolutePath().toStdString();
-            return false;
-        }
+            return error_msg = "cannot write temporary files to "+ file_name,false;
         for(size_t i = 0;i < src_bvalues.size();++i)
         {
             index_out << " 1";

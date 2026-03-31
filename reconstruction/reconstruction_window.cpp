@@ -789,20 +789,14 @@ bool get_src(std::string filename,src_data& src2,std::string& error_msg)
     if(tipl::ends_with(filename,".nii.gz") ||
        tipl::ends_with(filename,".nii"))
     {
-        if(!(tipl::io::gz_nifti(filename,std::ios::in) >> I >> src2.voxel.dim >> [&](const std::string& e){error_msg = e;}))
+        if(!(tipl::io::gz_nifti(filename,std::ios::in) >> I >> src2.voxel.dim >> [&](const std::string& e){tipl::error()<< (error_msg = e);}))
             return false;
         src2.src_dwi_data.push_back(&I[0]);
     }
     else
     {
         if (!src2.load_from_file(filename))
-        {
-            error_msg = "cannot open ";
-            error_msg += filename;
-            error_msg += " : ";
-            error_msg += src2.error_msg;
-            return false;
-        }
+            return error_msg = "cannot open " + filename + " : " + src2.error_msg,false;
     }
     return true;
 }

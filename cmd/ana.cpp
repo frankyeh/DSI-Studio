@@ -659,7 +659,8 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
                     });
                     tipl::image<3> pdi(accumulate_map);
                     pdi *= 1.0f/float(tract_files.size());
-                    if(!(tipl::io::gz_nifti(output,std::ios::out) << handle->bind(pdi)))
+                    if(!(tipl::io::gz_nifti(output,std::ios::out) << handle->bind(pdi)
+                         << [](const std::string& e){tipl::error() << e;}))
                         return 1;
                 }
             }

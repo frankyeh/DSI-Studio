@@ -11,10 +11,7 @@ bool apply_warping_tt(const reg_type& reg,const std::string& input, const std::s
     fib->is_mni = direction ? reg.Is_is_mni : reg.It_is_mni;
     TractModel tract_model(fib);
     if (!tract_model.load_tracts_from_file(input,fib.get(), false))
-    {
-        reg.error_msg = "cannot read tract file";
-        return false;
-    }
+        return reg.error_msg = "cannot read tract file",false;
 
     std::vector<std::vector<float>>& tracts = tract_model.get_tracts();
     const auto& mapping = direction ? reg.from2to : reg.to2from;
@@ -34,21 +31,14 @@ bool apply_warping_tt(const reg_type& reg,const std::string& input, const std::s
     tract_model.vs = direction ? reg.Itvs : reg.Ivs;
     tract_model.trans_to_mni = direction ? reg.ItR : reg.IR;
 
-    tipl::out() << "saving " << output;
     if (!tract_model.save_tracts_to_file(output))
-    {
-        reg.error_msg = "failed to save file";
-        return false;
-    }
+        return reg.error_msg = "failed to save file",false;
     return true;
-
-
 }
 
 template<bool direction,typename reg_type>
 bool apply_warping_nii(const reg_type& reg,const std::string& input, const std::string& output)
 {
-    tipl::out() << "open " << input;
     auto input_size = (direction ? reg.Is : reg.Its);
     // check dimension
     {
@@ -64,10 +54,8 @@ bool apply_warping_nii(const reg_type& reg,const std::string& input, const std::
     }
     tipl::image<3> I3(input_size);
     if(!tipl::io::gz_nifti(input,std::ios::in).to_space(I3,direction ? reg.IR : reg.ItR))
-    {
-        reg.error_msg = "cannot open " + std::string(input);
-        return false;
-    }
+        return reg.error_msg = "cannot open " + std::string(input),false;
+
     bool is_label = tipl::is_label_image(I3);
     tipl::out() << (is_label ? "label image interpolated using majority assignment " : "scalar image interpolated using spline") << std::endl;
     auto I = is_label ? reg.template apply_warping<direction,tipl::interpolation::majority>(I3) : reg.template apply_warping<direction,tipl::interpolation::cubic>(I3);
@@ -90,16 +78,10 @@ bool apply_warping_fzsz(const reg_type& reg,const std::string& input,const std::
     tipl::io::gz_mat_read mat_reader;
     mat_reader.delay_read = false;
     if(!mat_reader.load_from_file(input))
-    {
-        reg.error_msg = mat_reader.error_msg;
-        return false;
-    }
+        return reg.error_msg = mat_reader.error_msg,false;
     tipl::io::gz_mat_write mat_writer(output);
     if(!mat_writer)
-    {
-        reg.error_msg = std::string("cannot save file to ") + output;
-        return false;
-    }
+        return reg.error_msg = std::string("cannot save file to ") + output,false;
     tipl::shape<3> dim;
     tipl::vector<3> vs;
     tipl::matrix<4,4,float> trans((tipl::identity_matrix()));

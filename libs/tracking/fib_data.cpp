@@ -1573,17 +1573,14 @@ bool fib_data::load_template(void)
         return true;
     }
     if(!(tipl::io::gz_nifti(fa_template_list[template_id],std::ios::in) >>
-         template_I >> template_vs >> template_to_mni))
-    {
-        error_msg = "cannot load " + fa_template_list[template_id];
+         template_I >> template_vs >> template_to_mni
+         >> [&](const std::string& e){tipl::error() << e;error_msg = "cannot load " + fa_template_list[template_id];}))
         return false;
-    }
+
     float ratio = float(template_I.width()*template_vs[0])/float(dim[0]*vs[0]);
     if(ratio < 0.25f || ratio > 8.0f)
-    {
-        error_msg = "image resolution mismatch: ratio=" + std::to_string(ratio);
-        return false;
-    }
+        return error_msg = "image resolution mismatch: ratio=" + std::to_string(ratio),false;
+
     unsigned int downsampling = 0;
     while((!is_human_data && template_I.width()/3 > int(dim[0])) ||
           (is_human_data && template_vs[0]*2.0f <= int(vs[0])))
@@ -2230,15 +2227,14 @@ bool fib_data::load_mapping(const std::string& file_name)
 
     tipl::image<3> shiftx,shifty,shiftz;
     tipl::matrix<4,4,float> trans;
-    if(!(tipl::io::gz_nifti(file_name,std::ios::in) >> shiftx >> shifty >> shiftz >> trans >> [&](const std::string& e){error_msg = e;}))
+    if(!(tipl::io::gz_nifti(file_name,std::ios::in) >> shiftx >> shifty >> shiftz >> trans
+         >> [&](const std::string& e){tipl::error() << (error_msg = e);}))
         return false;
     tipl::out() << "dimension: " << shiftx.shape();
     tipl::out() << "trans_to_mni: " << trans;
     if(shiftx.shape() != dim || shifty.shape() != dim || shiftz.shape() != dim)
-    {
-        error_msg = "image size does not match";
-        return false;
-    }
+        return error_msg = "image size does not match",false;
+
     auto T = template_to_mni;
     T.inv();
     s2t.resize(dim);
