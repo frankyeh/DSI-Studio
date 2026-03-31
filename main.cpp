@@ -434,7 +434,7 @@ int main(int ac, char *av[])
         return 0;
 
     tipl::program_option<tipl::out> po;
-    if(ac > 2)
+    if(ac > 2 || (ac == 2 && std::string(av[1]) == "--interact"))
     {
         try
         {
