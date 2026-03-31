@@ -338,7 +338,7 @@ std::shared_ptr<fib_data> cmd_load_fib(std::string file_name)
 }
 std::shared_ptr<fib_data> cmd_load_fib(tipl::program_option<tipl::out>& po)
 {
-    auto handle = cmd_load_fib(po.get("source"));
+    auto handle = cmd_load_fib(po.get_file("source",".fz"));
     if(!handle.get() || !check_other_slices(po,handle))
         return std::shared_ptr<fib_data>();
     return handle;
