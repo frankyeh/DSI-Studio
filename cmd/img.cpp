@@ -413,10 +413,20 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
 extern std::vector<std::string> iso_template_list;
 int img(tipl::program_option<tipl::out>& po)
 {
-    if(!po.get("overwrite",0) && po.has("output") && std::filesystem::exists(po.get("output")))
+    if((!po.has("overwrite") || !po.get("overwrite",0)) && po.has("output") && std::filesystem::exists(po.get("output")))
+        return tipl::out() << "output exist, skipping",0;
+
+    if(po.interact && !po.has("source"))
     {
-        tipl::out() << "output exist, skipping";
-        return 0;
+        std::vector<std::string> local_files;
+        for(const auto& entry : std::filesystem::directory_iterator(std::filesystem::current_path()))
+        {
+            std::string fname = entry.path().filename().string();
+            if(tipl::ends_with(fname,".nii.gz"))
+                local_files.push_back(fname);
+        }
+        std::sort(local_files.begin(), local_files.end());
+        po.get("source",local_files);
     }
 
     std::string source(po.get("source")),info;
