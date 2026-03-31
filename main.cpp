@@ -354,7 +354,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
 {
     tipl::progress prog("command line");
     std::string action = po.get("action");
-    tipl::max_thread_count = po.get("thread_count",tipl::max_thread_count);
+    tipl::max_thread_count = po.has("thread_count") ? po.get("thread_count",tipl::max_thread_count) : tipl::max_thread_count;
 
     std::string loop;
     if(po.has("loop"))
