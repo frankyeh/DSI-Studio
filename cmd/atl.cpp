@@ -66,7 +66,7 @@ int db(tipl::program_option<tipl::out>& po)
         if(!fib.load_template_fib(get_template_id(po,0),template_reso) ||
            !fib.db.create_db(name_list,tipl::split(po.get("index_name","dti_fa,qa,rdi,iso"),',')) ||
            (!default_demo.empty() && !fib.db.parse_demo(po.get("demo",default_demo))))
-            return tipl::error() <<  fib.error_msg,1;
+            return tipl::error() << fib.error_msg,1;
 
         if(po.has("intro"))
         {
@@ -74,27 +74,12 @@ int db(tipl::program_option<tipl::out>& po)
             fib.intro = std::string(std::istreambuf_iterator<char>(file),std::istreambuf_iterator<char>());
         }
 
+        if(!fib.save_to_file(po.get("output","sub-all.dz")))
+            return tipl::error() << "cannot save db file " << fib.error_msg,1;
 
-        std::string output = std::string(name_list.front().begin(),
-                                         std::mismatch(name_list.front().begin(),name_list.front().begin()+
-                                         int64_t(std::min(name_list.front().length(),name_list.back().length())),
-                                           name_list.back().begin()).first) + ".dz";
-        tipl::out() << "saving " << po.get("output",output);
-        if(!fib.save_to_file(po.get("output",output)))
-        {
-            tipl::error() << "cannot save db file " << fib.error_msg << std::endl;
-            return 1;
-        }
-        tipl::out() << "saving " << (po.get("output",output)+".R2.tsv");
-        std::ofstream out(po.get("output",output)+".R2.tsv");
-        out << "name\tR2" << std::endl;
-        std::vector<float> R2(fib.db.subject_names.size());
+        float outlier_threshold = tipl::outlier_range(fib.db.R2.begin(),fib.db.R2.end()).first;
         for(size_t i = 0;i < fib.db.subject_names.size();++i)
-            out << fib.db.subject_names[i] << "\t" << (R2[i] = fib.db.R2[i]) << std::endl;
-
-        float outlier_threshold = tipl::outlier_range(R2.begin(),R2.end()).first;
-        for(size_t i = 0;i < fib.db.subject_names.size();++i)
-            if(R2[i] < outlier_threshold)
+            if(fib.db.R2[i] < outlier_threshold)
                 tipl::warning() << "low R2: " << fib.db.subject_names[i];
     }
     return 0;
