@@ -185,24 +185,25 @@ std::string quality_check_nii_files(const std::vector<std::string>& file_list)
 size_t get_template_id(tipl::program_option<tipl::out>& po,size_t default_sel);
 int qc(tipl::program_option<tipl::out>& po)
 {
-    std::string source = po.get("source");
-
-    bool is_fib = po.get("is_fib",tipl::ends_with(source,{".fib.gz",".fz"}) ? 1:0);
+    std::string source = po.get("source","*.sz");
+    bool is_fib = tipl::ends_with(source,{".fib.gz",".fz"});
+    if(po.has("is_fib"))
+        is_fib = po.get("is_fib",is_fib);
     tipl::max_thread_count = std::min<int>(12,tipl::max_thread_count);
     std::vector<std::string> file_list;
-    if(QFileInfo(source.c_str()).isDir())
+    if(std::filesystem::is_directory(source))
     {
         tipl::search_files(source,is_fib ? "*.fib.gz" : "*.src.gz",file_list);
         tipl::search_files(source,is_fib ? "*.fz" : "*.sz",file_list);
     }
     else
-        file_list = po.get_files("source");
+        file_list = po.get_files("source","*.sz");
     if(file_list.empty())
-        return tipl::error() << "no file to run quality control",1;
+        return tipl::error() << "no file found at --source to run quality control",1;
     std::string report_file_name = po.get("output","qc.tsv");
     tipl::out() << "saving " << report_file_name << std::endl;
 
-    if(tipl::ends_with(source,"nii.gz"))
+    if(tipl::ends_with(source,".nii.gz"))
         return (std::ofstream(report_file_name) << quality_check_nii_files(file_list)) ? 0:1;
     if(is_fib)
         return (std::ofstream(report_file_name) << quality_check_fib_files(file_list)) ? 0:1;

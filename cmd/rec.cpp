@@ -277,10 +277,7 @@ int rec(tipl::program_option<tipl::out>& po)
                 path = seps[1];
             }
             if(!src.add_other_image(name,path))
-            {
-                tipl::error() << src.error_msg;
-                return 1;
-            }
+                return tipl::error() << src.error_msg,1;
         }
     }
     if (!src.reconstruction())

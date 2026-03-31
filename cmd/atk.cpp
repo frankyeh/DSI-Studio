@@ -18,7 +18,7 @@ int atk(tipl::program_option<tipl::out>& po)
 {
     std::vector<std::string> file_list(po.get_files("source"));
     if(file_list.empty())
-        return tipl::error() << "no file listed in --source",1;
+        return tipl::error() << po.error_msg,1;
     int progress;
     std::string error = run_auto_track(po,file_list,progress);
     if(error.empty())

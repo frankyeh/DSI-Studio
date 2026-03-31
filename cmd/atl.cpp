@@ -24,36 +24,25 @@ bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std:
     return true;
 }
 
-std::vector<std::string> get_source_list(tipl::program_option<tipl::out>& po)
-{
-    std::string source = po.get("source");
-    std::vector<std::string> name_list;
-    if(QFileInfo(source.c_str()).isDir())
-    {
-        tipl::out() << "Searching all fib files in directory " << source << std::endl;
-        tipl::search_filesystem<tipl::out>(source + "/*.fib.gz",name_list);
-    }
-    else
-        name_list = po.get_files("source");
-    std::sort(name_list.begin(),name_list.end());
-    return name_list;
-}
 size_t get_template_id(tipl::program_option<tipl::out>& po,size_t default_sel);
 int db(tipl::program_option<tipl::out>& po)
 {
-    std::vector<std::string> name_list = get_source_list(po);
+    std::vector<std::string> name_list = po.get_files("source","*.qsdr.fz");
     if(name_list.empty())
-    {
-        tipl::error() << "no file found in " << po.get("source") << std::endl;
-        return 1;
-    }
+        return tipl::error() << po.error_msg,1;
 
-    if(po.has("demo") && !std::filesystem::exists(po.get("demo")))
+    std::string default_demo;
+    if(po.has("demo"))
+        default_demo = po.get("demo");
+    else
     {
-        tipl::error() << "cannot find demo file " << po.get("demo") <<std::endl;
-        return 1;
+        if(std::filesystem::exists("../participants.tsv"))
+            default_demo = "../participants.tsv";
+        if(std::filesystem::exists("participants.tsv"))
+            default_demo = "participants.tsv";
     }
-
+    if(!default_demo.empty() && !std::filesystem::exists(default_demo))
+        return tipl::error() << "cannot find file specified at --demo",1;
 
     std::vector<std::string> index_name;
 
@@ -63,10 +52,8 @@ int db(tipl::program_option<tipl::out>& po)
     {
         fib_data fib;
         if(!fib.load_from_file(name_list[0].c_str()))
-        {
-            tipl::error() << "cannot load subject fib " << name_list[0] << std::endl;
-            return 1;
-        }
+            return tipl::error() << "cannot load subject fib " << name_list[0],1;
+
         std::ostringstream out;
         for(const auto& each: fib.get_index_list())
             out << each << " ";
@@ -78,11 +65,8 @@ int db(tipl::program_option<tipl::out>& po)
         fib_data fib;
         if(!fib.load_template_fib(get_template_id(po,0),template_reso) ||
            !fib.db.create_db(name_list,tipl::split(po.get("index_name","dti_fa,qa,rdi,iso"),',')) ||
-           (po.has("demo") && !fib.db.parse_demo(po.get("demo"))))
-        {
-            tipl::error() <<  fib.error_msg << std::endl;
-            return 1;
-        }
+           (!default_demo.empty() && !fib.db.parse_demo(po.get("demo",default_demo))))
+            return tipl::error() <<  fib.error_msg,1;
 
         if(po.has("intro"))
         {
@@ -118,12 +102,9 @@ int db(tipl::program_option<tipl::out>& po)
 bool odf_average(const char* out_name,std::vector<std::string>& file_names,std::string& error_msg);
 int tmp(tipl::program_option<tipl::out>& po)
 {
-    std::vector<std::string> name_list = get_source_list(po);
+    std::vector<std::string> name_list = po.get_files("source","*.fz");
     if(name_list.empty())
-    {
-        tipl::error() << "no file found in " << po.get("source") << std::endl;
-        return 1;
-    }
+        return tipl::error() << po.error_msg,1;
     std::string error_msg;
     tipl::out() << "constructing a group average template" << std::endl;
     if(tipl::ends_with(name_list[0],".fib.gz") ||

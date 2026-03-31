@@ -130,77 +130,80 @@ QStringList search_files(QString dir,QString filter)
     return src_list;
 }
 
-std::string find_full_path(QString name)
+std::string find_full_path(const std::string& name)
 {
-    QString filename = QCoreApplication::applicationDirPath() + "/" + name;
-    if(QFileInfo(filename).exists())
-        return filename.toStdString();
-    filename = QDir::currentPath() + "/" + name;
-    if(QFileInfo(filename).exists())
-        return filename.toStdString();
-    return name.toStdString();
+    std::filesystem::path file_path(name);
+
+    std::filesystem::path app_dir_file = std::filesystem::path(QCoreApplication::applicationDirPath().toStdString())/file_path;
+    if(std::filesystem::exists(app_dir_file))
+        return app_dir_file.string();
+
+    std::filesystem::path cwd_file = std::filesystem::current_path()/file_path;
+    if(std::filesystem::exists(cwd_file))
+        return cwd_file.string();
+
+    return name;
 }
 
 bool load_file_name(void)
 {
+    namespace fs = std::filesystem;
     device_content_file = find_full_path("device.txt");
     topup_param_file = find_full_path("topup_param.txt");
 
+    fs::path dir = fs::path(QCoreApplication::applicationDirPath().toStdString())/"atlas";
+    if(!fs::exists(dir) && !fs::exists(dir = fs::current_path()/"atlas"))
+        return false;
+
+    std::vector<std::string> name_list(tipl::get_directories(dir));
+
+    auto get_rank = [](const std::string& d)
     {
-        QDir dir = QCoreApplication::applicationDirPath()+ "/atlas";
-        if(!dir.exists())
-            dir = QDir::currentPath()+ "/atlas";
-
-        QStringList dir_list = dir.entryList(QStringList("*"),QDir::Dirs|QDir::NoSymLinks);
-        dir_list.sort();
-        QStringList name_list;
-        for(auto each : {"human","chimpanzee","rhesus","marmoset","rat","mouse"})
+        int rank = 0;
+        for(const auto& k : {"human","chimpanzee","rhesus","marmoset","rat","mouse"})
         {
-            for(size_t i = 0;i < dir_list.size();++i)
-                if(dir_list[i].contains(each))
-                {
-                    name_list << dir_list[i];
-                    dir_list[i].clear();
-                }
+            if(d.find(k) != std::string::npos)
+                return rank;
+            ++rank;
         }
-        for(size_t i = 0;i < dir_list.size();++i)
-            if(!dir_list[i].isEmpty())
-                name_list << dir_list[i];
+        return rank;
+    };
 
-        for(int i = 0;i < name_list.size();++i)
-        {
-            QDir template_dir = dir.absolutePath() + "/" + name_list[i];
-            QString qa_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".QA.nii.gz";
-            QString iso_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".ISO.nii.gz";
-            QString t1w_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".T1W.nii.gz";
-            QString t2w_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".T2W.nii.gz";
-            QString tt_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".tt.gz";
-            QString fib_file_path = template_dir.absolutePath() + "/" + name_list[i] + ".fz";
-            if(!QFileInfo(qa_file_path).exists())
-                continue;
-            // setup QA and ISO template        
-            fa_template_list.push_back(qa_file_path.toStdString());
-            iso_template_list.push_back(iso_file_path.toStdString());
-            t1w_template_list.push_back(t1w_file_path.toStdString());
-            t2w_template_list.push_back(t2w_file_path.toStdString());
-            fib_template_list.push_back(fib_file_path.toStdString());
+    std::stable_sort(name_list.begin(),name_list.end(),[&](const std::string& a,const std::string& b)
+    {
+        return get_rank(a) < get_rank(b);
+    });
 
-            // find related atlases
-            {
-                QStringList atlas_list = template_dir.entryList(QStringList("*.nii"),QDir::Files|QDir::NoSymLinks);
-                atlas_list << template_dir.entryList(QStringList("*.nii.gz"),QDir::Files|QDir::NoSymLinks);
-                atlas_list.sort();
-                std::vector<std::string> file_list;
-                for(auto each : atlas_list)
-                    if(QFileInfo(each).baseName() != name_list[i])
-                        file_list.push_back((template_dir.absolutePath() + "/" + each).toStdString());
-                atlas_file_name_list.push_back(std::move(file_list));
-            }
-        }
-        if(fa_template_list.empty())
-            return false;
+    for(const auto& name : name_list)
+    {
+        fs::path t_dir = dir/name;
+        fs::path qa_file = t_dir/(name+".QA.nii.gz");
+
+        if(!fs::exists(qa_file))
+            continue;
+
+        fa_template_list.push_back(qa_file.string());
+        iso_template_list.push_back((t_dir/(name+".ISO.nii.gz")).string());
+        t1w_template_list.push_back((t_dir/(name+".T1W.nii.gz")).string());
+        t2w_template_list.push_back((t_dir/(name+".T2W.nii.gz")).string());
+        fib_template_list.push_back((t_dir/(name+".fz")).string());
+
+        std::vector<std::string> atlas_list,file_list;
+        for(const auto& entry : fs::directory_iterator(t_dir))
+            if(entry.is_regular_file() && tipl::ends_with(entry.path().filename().string(),{".nii",".nii.gz"}))
+                atlas_list.push_back(entry.path().filename().string());
+
+        std::sort(atlas_list.begin(),atlas_list.end());
+
+        for(const auto& each : atlas_list)
+            if(each.substr(0,each.find('.')) != name)
+                file_list.push_back((t_dir/each).string());
+
+        atlas_file_name_list.push_back(std::move(file_list));
     }
-    return true;
+
+    return !fa_template_list.empty();
+
 }
 
 const char* version_string = "Hou \"\xe4\xbe\xaf\"";
@@ -344,8 +347,7 @@ int run_action(tipl::program_option<tipl::out>& po)
     auto it = action_map.find(action);
     if (it != action_map.end())
         return it->second(po);
-    tipl::error() << "unknown action: " << action;
-    return 1;
+    return tipl::error() << "unknown action: " << action,1;
 }
 
 int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
@@ -436,12 +438,13 @@ int main(int ac, char *av[])
     {
         try
         {
-            if(!po.parse(ac,av) || !po.check("action"))
-            {
-                tipl::error() << po.error_msg << std::endl;
-                return 1;
-            }
-            std::string action = po.get("action");
+            if(!po.parse(ac,av) || (!po.has("interact") && !po.check("action")))
+                return tipl::error() << po.error_msg,1;
+
+            std::vector<std::string> action_list;
+            for(const auto& each : action_map)
+                action_list.push_back(each.first);
+            std::string action = po.get("action",action_list,"qc");
             if(action != "vis" && action != "cnt")
             {
                 std::shared_ptr<QCoreApplication> cmd;
