@@ -138,30 +138,29 @@ void variant_image::change_type(decltype(pixel_type) new_type)
 
 bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<2,short>& I)
 {
-    QByteArray array((char*)&*dicom.compressed_buf.begin(),dicom.buf_size);
+    QByteArray array = QByteArray::fromRawData(dicom.compressed_buf.data(),dicom.buf_size);
     QBuffer qbuff(&array);
     QImageReader qimg;
     qimg.setDecideFormatFromContent(true);
     qimg.setDevice(&qbuff);
     QImage img;
+
     if(!qimg.read(&img))
     {
         dicom >> I;
         if(dicom.is_compressed)
-        {
-            tipl::error() << "unsupported transfer syntax " << dicom.encoding;
-            return false;
-        }
-        else
-            return true;
+            return tipl::error() << "unsupported transfer syntax " << dicom.encoding,false;
+        return true;
     }
-    else
+
+    QImage buf = img.convertToFormat(QImage::Format_Grayscale16);
+    I.resize(tipl::shape<2>(buf.width(),buf.height()));
+    for(int y = 0;y < buf.height();++y)
     {
-        QImage buf = img.convertToFormat(QImage::Format_RGB32);
-        I.resize(tipl::shape<2>(buf.width(),buf.height()));
-        const uchar* ptr = buf.bits();
-        for(int j = 0;j < I.size();++j,ptr += 4)
-            I[j] = *ptr;
+        const ushort* line = (const ushort*)buf.scanLine(y);
+        int offset = y*buf.width();
+        for(int x = 0;x < buf.width();++x)
+            I[offset+x] = line[x];
     }
     return true;
 }
