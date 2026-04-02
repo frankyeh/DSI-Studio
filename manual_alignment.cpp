@@ -518,29 +518,34 @@ void manual_alignment::on_actionApply_Transformation_triggered()
     if(filename.isEmpty())
         return;
 
-
     QString to_filename = QFileDialog::getSaveFileName(
-            this,"Save Warping Image",filename+".wp.nii.gz","Images (*.nii *nii.gz);;All files (*)" );
+            this,"Save Warping Image",filename+".wp.nii.gz","Images (*.nii *nii.gz);;All files (*)");
     if(to_filename.isEmpty())
         return;
 
+    bool is_label = tipl::is_label_image(from_original);
     tipl::image<3> new_from_original(from_original.shape());
-    if(!tipl::io::gz_nifti(filename.toStdString(),std::ios::in).to_space(new_from_original,from_T))
+    tipl::io::gz_nifti nii(filename.toStdString(),std::ios::in);
+
+    if(is_label)
+        nii.to_space<tipl::interpolation::majority>(new_from_original,from_T);
+    else
+        nii.to_space<tipl::interpolation::linear>(new_from_original,from_T);
+
+    if(!nii)
     {
         QMessageBox::critical(this,"ERROR","Cannot read the file");
         return;
     }
 
-    tipl::transformation_matrix<float> original_T = tipl::transformation_matrix<float>(arg,from_original.shape(),from_vs_original,to.shape(),to_vs);
-    tipl::transformation_matrix<float> original_iT = original_T;
+    auto original_iT = tipl::transformation_matrix<float>(arg,from_original.shape(),from_vs_original,to.shape(),to_vs);
     original_iT.inverse();
 
-
     tipl::image<3> I(to.shape());
-    if(tipl::is_label_image(from))
+    if(is_label)
         tipl::resample<tipl::interpolation::majority>(new_from_original,I,original_iT);
     else
-        tipl::resample<tipl::interpolation::cubic>(new_from_original,I,original_iT);
+        tipl::resample<tipl::interpolation::linear>(new_from_original,I,original_iT);
 
     if(tipl::io::gz_nifti(to_filename.toStdString(),std::ios::out) << std::tie(to_vs,to_T,I))
         QMessageBox::information(this,QApplication::applicationName(),"file saved");
