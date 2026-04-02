@@ -525,6 +525,7 @@ void RegToolBox::on_run_reg_clicked()
     reg.use_cuda = ui->use_cuda->isChecked();
     reg.skip_linear = ui->skip_linear->isChecked();
     reg.skip_nonlinear = ui->skip_nonlinear->isChecked();
+    reg.mm_linear = ui->mm_linear->isChecked();
 
     {
         reg.match_resolution(false);
