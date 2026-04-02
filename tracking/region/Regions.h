@@ -136,7 +136,7 @@ public:
         void flip_region(unsigned int dimension);
         bool shift(tipl::vector<3,float> dx);
 
-        void load_region_from_buffer(tipl::image<3,unsigned char>& mask);
+        void load_region_from_buffer(const tipl::image<3,unsigned char>& mask);
         void save_region_to_buffer(tipl::image<3,unsigned char>& mask) const;
         void save_region_to_buffer(tipl::image<3,unsigned char>& mask,const tipl::shape<3>& dim_to,const tipl::matrix<4,4>& trans_to) const;
         void perform(const std::string& action);

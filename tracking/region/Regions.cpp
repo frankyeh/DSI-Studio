@@ -214,7 +214,7 @@ void ROIRegion::makeMeshes(unsigned char smooth)
     region_render->load(region,to_diffusion_space,smooth);
 }
 // ---------------------------------------------------------------------------
-void ROIRegion::load_region_from_buffer(tipl::image<3,unsigned char>& mask)
+void ROIRegion::load_region_from_buffer(const tipl::image<3,unsigned char>& mask)
 {
     modified = true;
     if(!region.empty())
