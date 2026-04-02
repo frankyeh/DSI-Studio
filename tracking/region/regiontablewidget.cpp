@@ -1313,18 +1313,15 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
 
             {
                 tipl::progress prog2("processing regions");
-                size_t prog_count = 0;
-                tipl::adaptive_par_for(checked_regions.size(),[&](size_t r)
+                for(size_t r = 1;r < checked_regions.size();++r)
                 {
-                    prog2(prog_count++,checked_regions.size());
-                    if(r == 0)
-                        return;
+                    prog2(r,checked_regions.size());
                     tipl::image<3,unsigned char> B;
                     checked_regions[r]->save_region_to_buffer(B,base_dim,base_to_dif);
                     if(action == "1st_ex_all")
                     {
                         tipl::masking(A,B);
-                        return; // don't update B
+                        continue; // don't update B
                     }
                     if(action == "all_ex_1st")
                         tipl::masking(B,A);
@@ -1347,7 +1344,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                     checked_regions[r]->redo_backup.clear();
                     checked_regions[r]->load_region_from_buffer(B);
                     rows_to_be_updated.push_back(checked_row[r]);
-                });
+                }
             }
             if(action == "1st_ex_all")
                 checked_regions[0]->load_region_from_buffer(A);
@@ -1374,7 +1371,6 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
 
         if(action.contains("sort_"))
         {
-            // reverse when repeated
             bool negate = false;
             {
                 static QString last_action;
@@ -1488,14 +1484,25 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                 threshold = -threshold;
             }
 
+            tipl::image<3,unsigned char> global_mask;
+            if(action == "threshold")
+            {
+                global_mask.resize(I.shape());
+                tipl::adaptive_par_for(global_mask.size(),[&](size_t i)
+                {
+                    global_mask[i]  = ((I[i] > threshold) ^ flip) ? 1:0;
+                });
+            }
+
             size_t p = 0;
             for(auto& region : region_to_be_processed)
             {
                 if(!prog(p++,region_to_be_processed.size()))
                     break;
-                tipl::image<3,unsigned char> mask(I.shape());
+
                 if(action == "threshold_current")
                 {
+                    tipl::image<3,unsigned char> mask(I.shape());
                     bool need_trans = false;
                     tipl::matrix<4,4> trans = tipl::identity_matrix();
                     if(cur_tracking_window.current_slice->dim != region->dim ||
@@ -1525,33 +1532,31 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                             value = I[i];
                         mask[i]  = ((value > threshold) ^ flip) ? 1:0;
                     });
+                    region->load_region_from_buffer(mask);
                 }
                 else
-                {
-                    tipl::adaptive_par_for(mask.size(),[&](size_t i)
-                    {
-                        mask[i]  = ((I[i] > threshold) ^ flip) ? 1:0;
-                    });
-                }
-                region->load_region_from_buffer(mask);
+                    region->load_region_from_buffer(global_mask);
             }
         }
         if(action == "separate")
         {
             ROIRegion& cur_region = *regions[size_t(roi_index)];
-            tipl::image<3,unsigned char>mask;
+            tipl::image<3,unsigned char> mask;
             cur_region.save_region_to_buffer(mask);
             QString name = item(roi_index,0)->text();
             tipl::image<3,unsigned int> labels;
             std::vector<std::vector<size_t>> r;
             tipl::morphology::connected_component_labeling(mask,labels,r);
+
             begin_update();
+            mask = 0;
             for(unsigned int j = 0,total_count = 0;j < r.size() && total_count < 256;++j)
+            {
                 if(!r[j].empty())
                 {
-                    mask = 0;
                     for(unsigned int i = 0;i < r[j].size();++i)
                         mask[r[j][i]] = 1;
+
                     regions.push_back(std::make_shared<ROIRegion>(cur_tracking_window.handle));
                     regions.back()->dim = cur_region.dim;
                     regions.back()->vs = cur_region.vs;
@@ -1560,8 +1565,13 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                     regions.back()->is_mni = cur_region.is_mni;
                     regions.back()->load_region_from_buffer(mask);
                     add_row(int(regions.size()-1),(name + "_"+QString::number(total_count+1)));
+
+                    for(unsigned int i = 0;i < r[j].size();++i)
+                        mask[r[j][i]] = 0; // Revert ONLY changed voxels
+
                     ++total_count;
                 }
+            }
             end_update();
         }
     }
