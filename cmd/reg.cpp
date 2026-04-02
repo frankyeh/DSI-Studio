@@ -53,7 +53,7 @@ bool apply_warping_nii(const reg_type& reg,const std::string& input, const std::
         }
     }
     tipl::image<3> I3(input_size);
-    if(!tipl::io::gz_nifti(input,std::ios::in).to_space(I3,direction ? reg.IR : reg.ItR))
+    if(!tipl::io::gz_nifti(input,std::ios::in).to_space<tipl::interpolation::check>(I3,direction ? reg.IR : reg.ItR))
         return reg.error_msg = "cannot open " + std::string(input),false;
 
     bool is_label = tipl::is_label_image(I3);
