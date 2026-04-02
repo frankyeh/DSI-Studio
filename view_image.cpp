@@ -545,11 +545,19 @@ void view_image::on_actionLoad_Image_to_4D_triggered()
     if(filename.isEmpty())
         return;
     tipl::image<3> new_image(cur_image->shape);
-    if(!tipl::io::gz_nifti(filename.toStdString(),std::ios::in).to_space(new_image,cur_image->T))
+    tipl::io::gz_nifti nii(filename.toStdString(),std::ios::in);
+
+    if(cur_image->interpolation)
+        nii.to_space<tipl::linear>(new_image,cur_image->T);
+    else
+        nii.to_space<tipl::majority>(new_image,cur_image->T);
+
+    if(!nii)
     {
         QMessageBox::critical(this,"ERROR","Invalid NIFTI file");
         return;
     }
+
     if(buf4d.empty())
         buf4d.push_back(std::vector<unsigned char>());
     buf4d.push_back(std::vector<unsigned char>());
