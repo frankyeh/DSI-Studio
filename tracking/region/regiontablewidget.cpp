@@ -1279,10 +1279,9 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
     // cmd[2] : additional parameters
     auto checked_regions = get_checked_regions();
 
-
     QString action = cmd[0].substr(14).c_str();
     int roi_index = 0;
-    std::vector<std::shared_ptr<ROIRegion> > region_to_be_processed;
+    std::vector<std::shared_ptr<ROIRegion>> region_to_be_processed;
     for(auto each : QString::fromStdString(cmd[1]).split('&'))
     {
         auto index = each.toInt();
@@ -1291,7 +1290,6 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
         if(index < regions.size())
             region_to_be_processed.push_back(regions[each.toInt()]);
     }
-
 
     std::vector<int> rows_to_be_updated;
     tipl::progress prog(action.toStdString(),true);
@@ -1303,8 +1301,8 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             auto base_dim = checked_regions[0]->dim;
             auto base_to_dif = checked_regions[0]->to_diffusion_space;
             std::vector<unsigned int> checked_row;
-            for (unsigned int r = 0;r < regions.size();++r)
-                if (item(r,0)->checkState() == Qt::Checked)
+            for(unsigned int r = 0;r < regions.size();++r)
+                if(item(r,0)->checkState() == Qt::Checked)
                     checked_row.push_back(r);
 
             tipl::image<3,unsigned char> A;
@@ -1354,105 +1352,15 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             if(action == "1st_ex_all")
                 checked_regions[0]->load_region_from_buffer(A);
 
-
             if(action == "all_to_1st")
             {
-                // usde region growing to assign labels
-                {
-                    tipl::image<3,unsigned char> fillup_map(A);
-                    for(size_t i = 0;i < fillup_map.size();++i)
-                        if(fillup_map[i] && A_labels[i])
-                            fillup_map[i] = 0;
-                    size_t total_fillups = std::accumulate(fillup_map.begin(),fillup_map.end(),size_t(0));
-                    std::vector<std::vector<tipl::pixel_index<3> > > region_front(checked_regions.size());
-                    for(tipl::pixel_index<3> index(base_dim);index < base_dim.size();++index)
-                        if(A_labels[index.index()])
-                        {
-                            bool is_front = false;
-                            tipl::for_each_connected_neighbors(index,base_dim,[&](const auto& index2)
-                            {
-                                if(fillup_map[index2.index()])
-                                    is_front = true;
-                            });
-                            if(is_front)
-                                region_front[A_labels[index.index()]].push_back(index);
-                        }
-                    tipl::progress prog2("region growing",true);
-                    for(size_t cur_fillups = 0;prog2(cur_fillups,total_fillups);)
-                    {
-                        size_t sum_front = 0;
-                        for(size_t r = 1;r < region_front.size();++r)
-                        {
-                            std::vector<tipl::pixel_index<3> > new_front;
-                            for(const auto& each : region_front[r])
-                            {
-                                tipl::for_each_connected_neighbors(each,base_dim,[&](const auto& index2)
-                                {
-                                    if(fillup_map[index2.index()])
-                                    {
-                                        new_front.push_back(index2);
-                                        fillup_map[index2.index()] = 0;
-                                        A_labels[index2.index()] = r;
-                                    }
-                                });
-                            }
-                            sum_front += new_front.capacity();
-                            region_front[r].swap(new_front);
-                        }
-                        if(!sum_front)
-                            break;
-                    }
-                    if(prog.aborted())
-                        return false;
-                }
+                tipl::morphology::fill_and_smooth_labels<void>(A,A_labels);
 
-                std::vector<size_t> need_fill_up;
-                {
-                    std::vector<std::vector<size_t> > need_fill_ups(tipl::max_thread_count);
-                    tipl::par_for<tipl::dynamic_with_id>(A.size(),[&](size_t index,int id)
-                    {
-                        if(A[index] && !A_labels[index])
-                            need_fill_ups[id].push_back(index);
-                    });
-                    tipl::aggregate_results(std::move(need_fill_ups),need_fill_up);
-                }
-                {
-                    size_t prog_count = 0;
-                    tipl::progress prog2("assign labels",true);
-                    tipl::par_for(need_fill_up.size(),[&](size_t i)
-                    {
-                        prog2(prog_count++, need_fill_up.size());
-                        tipl::vector<3> pos(tipl::pixel_index<3>(need_fill_up[i], A.shape()));
-                        size_t nearest_label = 0;
-                        size_t max_distance = A_labels.size();
-                        for(tipl::pixel_index<3> index2(A_labels.shape());index2 < A_labels.size();++index2)
-                        {
-                            if(!A_labels[index2.index()])
-                                continue;
-                            tipl::vector<3> pos2(index2);
-                            if (std::abs(pos2[0] - pos[0]) < max_distance &&
-                                std::abs(pos2[1] - pos[1]) < max_distance &&
-                                std::abs(pos2[2] - pos[2]) < max_distance)
-                            {
-                                size_t length2 = (pos2 - pos).length2();
-                                if(length2 < max_distance)
-                                {
-                                    max_distance = length2;
-                                    nearest_label = A_labels[index2.index()];
-                                }
-                            }
-                        }
-                        A_labels[need_fill_up[i]] = nearest_label;
-                    },tipl::max_thread_count);
-                    if(prog2.aborted())
-                        return false;
-                }
-
-                tipl::progress prog("loading regions",true);
+                tipl::progress prog_load("loading regions",true);
                 size_t prog_count = 0;
                 tipl::adaptive_par_for(checked_regions.size(),[&](size_t r)
                 {
-                    prog(prog_count++,checked_regions.size());
+                    prog_load(prog_count++,checked_regions.size());
                     if(r == 0)
                         return;
                     tipl::image<3,unsigned char> B(base_dim);
@@ -1475,14 +1383,13 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                     last_action  = "";
                     negate = true;
                 }
-            else
-                last_action = action;
+                else
+                    last_action = action;
             }
             std::vector<unsigned int> arg;
             if(action == "sort_name")
             {
-                arg = tipl::arg_sort(regions.size(),[&]
-                (int lhs,int rhs)
+                arg = tipl::arg_sort(regions.size(),[&](int lhs,int rhs)
                 {
                     auto lstr = regions[lhs]->name;
                     auto rstr = regions[rhs]->name;
@@ -1492,7 +1399,8 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             else
             {
                 std::vector<float> data(regions.size());
-                tipl::adaptive_par_for(regions.size(),[&](unsigned int index){
+                tipl::adaptive_par_for(regions.size(),[&](unsigned int index)
+                {
                     if(action == "sort_x")
                         data[index] = regions[index]->get_pos()[0];
                     if(action == "sort_y")
@@ -1507,7 +1415,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             }
 
             std::vector<QTableWidgetItem*> items;
-            std::vector<std::shared_ptr<ROIRegion> > new_region(arg.size());
+            std::vector<std::shared_ptr<ROIRegion>> new_region(arg.size());
             begin_update();
             size_t col_count = columnCount();
             for(size_t i = 0;i < arg.size();++i)
@@ -1528,7 +1436,6 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             region_to_be_processed[i]->perform(action.toStdString());
         });
 
-
         if(action == "dilation_by_voxel")
         {
             int threshold = 10;
@@ -1542,6 +1449,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             }
             else
                 threshold = QString::fromStdString(cmd[2]).toInt();
+
             size_t p = 0;
             for(auto& region : region_to_be_processed)
             {
@@ -1552,6 +1460,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                 region->load_region_from_buffer(mask);
             }
         }
+
         if(action == "threshold" || action == "threshold_current")
         {
             tipl::const_pointer_image<3,float> I = cur_tracking_window.current_slice->get_source();
@@ -1565,18 +1474,20 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                 bool ok;
                 threshold = float(QInputDialog::getDouble(this,
                                   QApplication::applicationName(),"Threshold (assign negative value to get low pass):",
-                                  double(tipl::segmentation::otsu_threshold(I)),-m,m,4, &ok));
+                                  double(tipl::segmentation::otsu_threshold(I)),-m,m,4,&ok));
                 if(!ok)
                     return false;
                 cmd[2] = std::to_string(threshold);
             }
             else
                 threshold = QString::fromStdString(cmd[2]).toFloat();
+
             if(threshold < 0)
             {
                 flip = true;
                 threshold = -threshold;
             }
+
             size_t p = 0;
             for(auto& region : region_to_be_processed)
             {
@@ -1624,7 +1535,6 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                 }
                 region->load_region_from_buffer(mask);
             }
-
         }
         if(action == "separate")
         {
@@ -1633,7 +1543,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             cur_region.save_region_to_buffer(mask);
             QString name = item(roi_index,0)->text();
             tipl::image<3,unsigned int> labels;
-            std::vector<std::vector<size_t> > r;
+            std::vector<std::vector<size_t>> r;
             tipl::morphology::connected_component_labeling(mask,labels,r);
             begin_update();
             for(unsigned int j = 0,total_count = 0;j < r.size() && total_count < 256;++j)
