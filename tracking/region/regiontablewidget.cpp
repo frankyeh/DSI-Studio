@@ -1296,7 +1296,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
     std::vector<int> rows_to_be_updated;
     tipl::progress prog(action.toStdString(),true);
     {
-        if(action == "1st_ex_all" || action == "all_ex_1st" || action == "all_inter_1st" || action == "all_to_1st" || action == "all_to_1st_2")
+        if(action == "1st_ex_all" || action == "all_ex_1st" || action == "all_inter_1st" || action == "all_to_1st")
         {
             if(checked_regions.size() < 2)
                 return false;
@@ -1310,7 +1310,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             tipl::image<3,unsigned char> A;
             tipl::image<3,uint16_t> A_labels;
             checked_regions[0]->save_region_to_buffer(A);
-            if(action == "all_to_1st" || action == "all_to_1st_2")
+            if(action == "all_to_1st")
                 A_labels.resize(base_dim);
 
             {
@@ -1333,7 +1333,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                     if(action == "all_inter_1st")
                         for(size_t i = 0;i < B.size();++i)
                             B[i] = (A[i] & B[i]);
-                    if(action == "all_to_1st" || action == "all_to_1st_2")
+                    if(action == "all_to_1st")
                         for(size_t i = 0;i < A.size();++i)
                             if(A[i] && B[i] && A_labels[i] < r)
                                 A_labels[i] = uint16_t(r);
@@ -1355,70 +1355,6 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                 checked_regions[0]->load_region_from_buffer(A);
 
 
-            if(action == "all_to_1st_2")
-            {
-                auto I = tipl::resample(cur_tracking_window.current_slice->get_source(),base_dim,
-                                        tipl::from_space(cur_tracking_window.current_slice->to_dif).
-                                        to(base_to_dif));
-                tipl::image<3,unsigned char> edges(base_dim);
-                tipl::adaptive_par_for(checked_regions.size(),[&](size_t r)
-                {
-                    if(r == 0)
-                        return;
-                    tipl::image<3,unsigned char> B;
-                    checked_regions[r]->save_region_to_buffer(B);
-                    tipl::morphology::edge(B);
-                    for(size_t pos = 0;pos < B.size();++pos)
-                        if(A[pos] && B[pos])
-                            edges[pos] += 1;
-                });
-
-                tipl::par_for(tipl::begin_index(base_dim),tipl::end_index(base_dim),
-                                       [&](const tipl::pixel_index<3>& pos)
-                {
-                    if(edges[pos.index()] <= 1)
-                        return;
-                    std::vector<float> votes(checked_regions.size());
-                    votes[A_labels[pos.index()]] += 4.0f;
-
-
-                    // spatial voting, total vote: 32 x 0.5 = 16
-                    tipl::for_each_connected_neighbors(pos,base_dim,[&](const tipl::pixel_index<3>& rhs_pos)
-                    {
-                        votes[A_labels[rhs_pos.index()]] += 0.5f;
-                    });
-                    tipl::for_each_neighbors(pos,base_dim,[&](const tipl::pixel_index<3>& rhs_pos)
-                    {
-                        votes[A_labels[rhs_pos.index()]] += 0.5f;
-                    });
-
-                    // value voting, total vote: 16
-                    {
-                        float pos_value = I[pos.index()];
-                        std::vector<float> dif_values(16,std::numeric_limits<float>::max());
-                        std::vector<size_t> regions(16);
-                        tipl::for_each_neighbors(pos,base_dim,4,[&](const auto& rhs_pos)
-                        {
-                            float dif_value = std::fabs(pos_value-I[rhs_pos.index()]);
-                            if(dif_value > dif_values.back())
-                                return;
-                            size_t ins_pos = dif_values.size()-1;
-                            for(;ins_pos;--ins_pos)
-                                if(dif_value > dif_values[ins_pos-1])
-                                    break;
-                            dif_values.insert(dif_values.begin()+ins_pos,dif_value);
-                            regions.insert(regions.begin()+ins_pos,A_labels[rhs_pos.index()]);
-                            dif_values.pop_back();
-                            regions.pop_back();
-                        });
-
-                        for(auto r : regions)
-                            if(r)
-                                votes[r] += 1.0f;
-                    }
-                    A_labels[pos.index()] = std::max_element(votes.begin(),votes.end())-votes.begin();
-                });
-            }
             if(action == "all_to_1st")
             {
                 // usde region growing to assign labels
@@ -1470,9 +1406,6 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                         return false;
                 }
 
-
-
-
                 std::vector<size_t> need_fill_up;
                 {
                     std::vector<std::vector<size_t> > need_fill_ups(tipl::max_thread_count);
@@ -1514,10 +1447,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                     if(prog2.aborted())
                         return false;
                 }
-            }
 
-            if(action == "all_to_1st_2" || action == "all_to_1st")
-            {
                 tipl::progress prog("loading regions",true);
                 size_t prog_count = 0;
                 tipl::adaptive_par_for(checked_regions.size(),[&](size_t r)
