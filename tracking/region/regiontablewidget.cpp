@@ -1306,33 +1306,36 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                     checked_row.push_back(r);
 
             tipl::image<3,unsigned char> A;
-            tipl::image<3,uint16_t> A_labels;
             checked_regions[0]->save_region_to_buffer(A);
-            if(action == "all_to_1st")
-                A_labels.resize(base_dim);
 
+            std::vector<tipl::image<3,unsigned char>> B_buffers(checked_regions.size());
+            std::vector<uint8_t> same_space_flags(checked_regions.size(),0);
+
+            // --- Phase 1: Multithreaded Transformation ---
             {
-                tipl::progress prog2("processing regions");
-                for(size_t r = 1;r < checked_regions.size();++r)
+                tipl::progress prog_trans("transforming regions",true);
+                size_t prog_count = 0;
+                tipl::par_for(checked_regions.size(),[&](size_t r)
                 {
-                    prog2(r,checked_regions.size());
-                    tipl::image<3,unsigned char> B;
-                    checked_regions[r]->save_region_to_buffer(B,base_dim,base_to_dif);
-                    if(action == "1st_ex_all")
-                    {
-                        tipl::masking(A,B);
-                        continue; // don't update B
-                    }
-                    if(action == "all_ex_1st")
-                        tipl::masking(B,A);
-                    if(action == "all_inter_1st")
-                        for(size_t i = 0;i < B.size();++i)
-                            B[i] = (A[i] & B[i]);
-                    if(action == "all_to_1st")
-                        for(size_t i = 0;i < A.size();++i)
-                            if(A[i] && B[i] && A_labels[i] < r)
-                                A_labels[i] = uint16_t(r);
+                    prog_trans(prog_count++,checked_regions.size());
+                    if(r == 0)
+                        return;
 
+                    same_space_flags[r] = (checked_regions[r]->dim == base_dim && checked_regions[r]->to_diffusion_space == base_to_dif) ? 1 : 0;
+
+                    if(same_space_flags[r])
+                        checked_regions[r]->save_region_to_buffer(B_buffers[r]);
+                    else
+                        checked_regions[r]->save_region_to_buffer(B_buffers[r],base_dim,base_to_dif);
+                });
+            }
+
+            // --- Lambda: Unified Region Committer ---
+            std::mutex mtx;
+            auto update_and_load_region = [&](size_t r,const tipl::image<3,unsigned char>& buffer)
+            {
+                if(r > 0 && !same_space_flags[r])
+                {
                     checked_regions[r]->vs = checked_regions[0]->vs;
                     checked_regions[r]->dim = base_dim;
                     checked_regions[r]->is_diffusion_space = checked_regions[0]->is_diffusion_space;
@@ -1342,29 +1345,72 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                     checked_regions[r]->region.clear();
                     checked_regions[r]->undo_backup.clear();
                     checked_regions[r]->redo_backup.clear();
-                    checked_regions[r]->load_region_from_buffer(B);
-                    rows_to_be_updated.push_back(checked_row[r]);
+                }
+                checked_regions[r]->load_region_from_buffer(buffer);
+                std::lock_guard<std::mutex> lock(mtx);
+                rows_to_be_updated.push_back(checked_row[r]);
+            };
+
+            // --- Phase 2: Handle Each Action Separately ---
+            if(action == "1st_ex_all")
+            {
+                tipl::progress prog_action("processing 1st_ex_all");
+                for(size_t r = 1;r < checked_regions.size();++r)
+                {
+                    prog_action(r,checked_regions.size());
+                    tipl::masking(A,B_buffers[r]);
+                }
+                update_and_load_region(0,A);
+            }
+            else if(action == "all_ex_1st")
+            {
+                tipl::progress prog_action("processing all_ex_1st");
+                for(size_t r = 1;r < checked_regions.size();++r)
+                {
+                    prog_action(r,checked_regions.size());
+                    tipl::masking(B_buffers[r],A);
+                    update_and_load_region(r,B_buffers[r]);
                 }
             }
-            if(action == "1st_ex_all")
-                checked_regions[0]->load_region_from_buffer(A);
-
-            if(action == "all_to_1st")
+            else if(action == "all_inter_1st")
             {
+                tipl::progress prog_action("processing all_inter_1st");
+                for(size_t r = 1;r < checked_regions.size();++r)
+                {
+                    prog_action(r,checked_regions.size());
+                    for(size_t i = 0;i < B_buffers[r].size();++i)
+                        B_buffers[r][i] = (A[i] & B_buffers[r][i]);
+                    update_and_load_region(r,B_buffers[r]);
+                }
+            }
+            else if(action == "all_to_1st")
+            {
+                tipl::image<3,uint16_t> A_labels(base_dim);
+                tipl::progress prog_action("processing all_to_1st");
+                for(size_t r = 1;r < checked_regions.size();++r)
+                {
+                    prog_action(r,checked_regions.size());
+                    for(size_t i = 0;i < A.size();++i)
+                        if(A[i] && B_buffers[r][i] && A_labels[i] < r)
+                            A_labels[i] = uint16_t(r);
+                }
+
                 tipl::morphology::fill_and_smooth_labels<void>(A,A_labels);
 
                 tipl::progress prog_load("loading regions",true);
                 size_t prog_count = 0;
-                tipl::adaptive_par_for(checked_regions.size(),[&](size_t r)
+                tipl::par_for(checked_regions.size(),[&](size_t r)
                 {
                     prog_load(prog_count++,checked_regions.size());
                     if(r == 0)
                         return;
+
                     tipl::image<3,unsigned char> B(base_dim);
                     for(size_t i = 0;i < A_labels.size();++i)
                         if(A_labels[i] == r)
                             B[i] = 1;
-                    checked_regions[r]->load_region_from_buffer(B);
+
+                    update_and_load_region(r,B);
                 });
             }
         }
