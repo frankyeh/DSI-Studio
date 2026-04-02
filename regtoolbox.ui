@@ -402,7 +402,28 @@
          <property name="bottomMargin">
           <number>0</number>
          </property>
-         <item row="0" column="5">
+         <item row="1" column="6">
+          <widget class="QComboBox" name="cost_fun">
+           <item>
+            <property name="text">
+             <string>Correlation</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Mutual Information</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QCheckBox" name="skip_linear">
+           <property name="text">
+            <string>Skip Linear</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="6">
           <widget class="QWidget" name="nonlinear_widget" native="true">
            <layout class="QHBoxLayout" name="horizontalLayout_8">
             <property name="spacing">
@@ -528,42 +549,7 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="0">
-          <widget class="QCheckBox" name="skip_nonlinear">
-           <property name="text">
-            <string>Skip Nonlinear</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="5">
-          <widget class="QComboBox" name="cost_fun">
-           <item>
-            <property name="text">
-             <string>Correlation</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Mutual Information</string>
-            </property>
-           </item>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QCheckBox" name="skip_linear">
-           <property name="text">
-            <string>Skip Linear</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QCheckBox" name="large_deform">
-           <property name="text">
-            <string>Large Deform</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="2">
+         <item row="1" column="3">
           <layout class="QHBoxLayout" name="horizontalLayout_2">
            <property name="leftMargin">
             <number>0</number>
@@ -584,7 +570,7 @@
            </item>
           </layout>
          </item>
-         <item row="0" column="2">
+         <item row="0" column="3">
           <layout class="QHBoxLayout" name="horizontalLayout_4">
            <item>
             <widget class="QLabel" name="label_3">
@@ -624,6 +610,27 @@
             </widget>
            </item>
           </layout>
+         </item>
+         <item row="1" column="1">
+          <widget class="QCheckBox" name="mm_linear">
+           <property name="text">
+            <string>MultiModal Linear </string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QCheckBox" name="large_deform">
+           <property name="text">
+            <string>Large Deform</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="QCheckBox" name="skip_nonlinear">
+           <property name="text">
+            <string>Skip Nonlinear</string>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
