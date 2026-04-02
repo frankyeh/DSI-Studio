@@ -4722,17 +4722,6 @@ Tracking</string>
     <string>run flip_tract_z</string>
    </property>
   </action>
-  <action name="actionAll_To_First2">
-   <property name="text">
-    <string>All To First2</string>
-   </property>
-   <property name="toolTip">
-    <string>run region_action_all_to_1st_2</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+5</string>
-   </property>
-  </action>
   <action name="actionOpen_MNI_space_Tracts">
    <property name="icon">
     <iconset resource="../icons.qrc">
