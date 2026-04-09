@@ -239,10 +239,7 @@ bool get_parcellation(tipl::program_option<tipl::out>& po,ConnectivityMatrix& p,
     if(!tipl::contains(roi_file_name,".")) // specify atlas name (e.g. --connectivity=AAL2)
     {
         if(!p.load_from_atlas(roi_file_name))
-        {
-            tipl::error() << p.error_msg << std::endl;
-            return false;
-        }
+            return tipl::error() << p.error_msg,false;
     }
     else
     {
@@ -273,10 +270,7 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
             return false;
         auto save_file_name = output_name + "." + data.name;
         if(!data.calculate(*(tract_model.get()),(each_connectivity_type == "end")))
-        {
-            tipl::error() << data.error_msg << std::endl;
-            return false;
-        }
+            return tipl::error() << data.error_msg,false;
 
         auto connectivity_value = tipl::split(po.get("connectivity_value","all"),',');
         auto connectivity_output = po.get("connectivity_output","matrix");
@@ -530,23 +524,15 @@ int trk_post(tipl::program_option<tipl::out>& po,
     if(po.has(("template_track")) &&
        !tract_model->save_tracts_in_template_space(handle,
         po.get("template_track").empty() ? addPrefixToFilename(tract_file_name,"T_") :po.get("template_track")))
-    {
-        tipl::error() << "failed to save --template_track";
-        return 1;
-    }
+        return tipl::error() << "failed to save --template_track",1;
     if(po.has(("mni_track")) &&
        !tract_model->save_tracts_in_template_space(handle,
         po.get("mni_track").empty() ? addPrefixToFilename(tract_file_name,"mni_") : po.get("mni_track"),true))
-    {
-        tipl::error() << "failed to save --mni_track";
-        return 1;
-    }
+        return tipl::error() << "failed to save --mni_track",1;
     if(po.has(("end_point")) &&
         !tract_model->save_end_points(po.get("end_point").empty() ? tract_file_name + ".end.txt" : po.get("end_point")))
-    {
-        tipl::error() << "failed to save --end_point";
-        return 1;
-    }
+        return tipl::error() << "failed to save --end_point",1;
+
     if(po.has(("end_point1")) || po.has(("end_point2")))
     {
         std::vector<tipl::vector<3,short> > points1,points2;
@@ -555,15 +541,9 @@ int trk_post(tipl::program_option<tipl::out>& po,
         end1.add_points(std::move(points1));
         end2.add_points(std::move(points2));
         if(po.has(("end_point1")) && !end1.save_region_to_file(po.get("end_point1").empty() ? tract_file_name + ".end1.txt" : po.get("end_point1")))
-        {
-            tipl::error() << "failed to save --end_point1";
-            return 1;
-        }
+            return tipl::error() << "failed to save --end_point1",1;
         if(po.has(("end_point2")) && !end2.save_region_to_file(po.get("end_point2").empty() ? tract_file_name + ".end2.txt" : po.get("end_point2")))
-        {
-            tipl::error() << "failed to save --end_point2";
-            return 1;
-        }
+            return tipl::error() << "failed to save --end_point2",1;
     }
     if(prog.aborted())
         return 1;
