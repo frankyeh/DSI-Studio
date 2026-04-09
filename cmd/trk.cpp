@@ -372,10 +372,7 @@ bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> h
                     break;
                 }
             if(!found)
-            {
-                tipl::error() << "cannot find " << region_name << " in the NIFTI file." << std::endl;
-                return false;
-            }
+                return tipl::error() << "cannot find " << region_name << " in the NIFTI file.",false;
         }
     }
     else
@@ -384,18 +381,12 @@ bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> h
         {
             std::vector<tipl::vector<3,short> > points;
             if(!handle->get_atlas_roi(file_name,region_name,points))
-            {
-                tipl::error() << handle->error_msg << std::endl;
-                return false;
-            }
+                return tipl::error() << handle->error_msg,false;
             roi.add_points(std::move(points));
         }
         else
             if(!roi.load_region_from_file(file_name))
-            {
-                tipl::error() << "cannot open file as a region" << file_name << std::endl;
-                return false;
-            }
+                return tipl::error() << "cannot open file as a region" << file_name,false;
     }
 
     if(roi.region.empty())
@@ -411,10 +402,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
 {
     tipl::progress prog("post-tracking analysis");
     if(tract_model->get_visible_track_count() == 0)
-    {
-        tipl::out() << "no tract for post-track analysis" << std::endl;
-        return 0;
-    }
+        return tipl::out() << "no tract for post-track analysis",0;
 
     if (po.has("delete_repeat") || po.get("action") == "atk" || po.has("track_id"))
     {
@@ -496,10 +484,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
         {
             auto new_slice = std::make_shared<CustomSliceModel>(handle,po.get("ref"));
             if(!new_slice->load_slices())
-            {
-                tipl::error() << new_slice->error_msg << std::endl;
-                return false;
-            }
+                return tipl::error() << new_slice->error_msg,false;
             new_slice->wait();
             if(!tract_model->save_transformed_tract(tract_file_name,new_slice->dim,new_slice->vs,new_slice->trans_to_mni,new_slice->to_slice,false))
                 failed = true;
@@ -509,10 +494,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
             failed = true;
 
         if(failed)
-        {
-            tipl::error() << "cannot save tracks as " << tract_file_name << ". Please check write permission, directory, and disk space." << std::endl;
-            return 1;
-        }
+            return tipl::error() << "cannot save tracks as " << tract_file_name << ". Please check write permission, directory, and disk space.",1;
     }
 
     auto addPrefixToFilename = [](std::filesystem::path p,std::string prefix) -> std::string
@@ -597,19 +579,13 @@ bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
     {
         tipl::out() << "Consider using action atk for automatic fiber tracking" << std::endl;
         if(!handle->load_track_atlas(true/*symmetric*/))
-        {
-            tipl::error() << handle->error_msg << std::endl;
-            return false;
-        }
+            return tipl::error() << handle->error_msg,false;
         std::string name = po.get("track_id");
         if(name[0] >= '0' && name[0] <= '9')
         {
             size_t track_id = std::stoi(name);
             if(track_id >= handle->tractography_name_list.size())
-            {
-                tipl::error() << "invalid track_id";
-                return false;
-            }
+                return tipl::error() << "invalid track_id",false;
             name = handle->tractography_name_list[track_id];
         }
         roi_mgr->set_auto_track(name,po.get("tolerance",handle->default_tolerance()),po.get("use_roi",1));
@@ -695,10 +671,7 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
     if (po.has("threshold_index"))
     {
         if(!handle->dir.set_tracking_index(po.get("threshold_index")))
-        {
-            tipl::error() << "cannot find the index" << std::endl;
-            return 1;
-        }
+            return tipl::error() << "cannot find the index",1;
     }
     if (po.has("dt_metric1") && po.has("dt_metric2"))
     {
@@ -708,10 +681,7 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
             prompt += " " + each;
         tipl::out() << "enable differential tracking. " << prompt;
         if(!handle->set_dt_index(std::make_pair(po.get("dt_metric1"),po.get("dt_metric2")),po.get("dt_threshold_type",0)))
-        {
-            tipl::error() << handle->error_msg;
-            return 1;
-        }
+            return tipl::error() << handle->error_msg,1;
     }
 
     set_template(handle,po);
@@ -757,10 +727,7 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
         tracking_thread.fetchTracks(tract_model.get());
         tipl::out() << "finished tracking." << std::endl;
         if(tract_model->get_visible_track_count() == 0)
-        {
-            tipl::out() << "no tract produced. terminating..." << std::endl;
-            return 0;
-        }
+            return tipl::out() << "no tract produced. terminating...",0;
     }
 
     tract_model->trim(tracking_thread.param.tip_iteration);
