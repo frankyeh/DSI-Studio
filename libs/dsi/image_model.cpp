@@ -1628,7 +1628,6 @@ bool src_data::correct_bias_field(void)
         dwi_at(index) *= bias_field;
     });
     update_dwi_sum();
-    update_mask();
     return true;
 }
 extern bool has_cuda;
@@ -1926,83 +1925,6 @@ tipl::vector<3> phase_direction_at_AP_PA(const tipl::image<3>& v1,const tipl::im
     tipl::out() << "projected correction: " << c << std::endl;
     return c;
 }
-
-/*
-bool src_data::distortion_correction(const std::string& filename)
-{
-    tipl::image<3> v1,v2;
-    if(!read_b0(v1) || !read_rev_b0(filename,v2))
-        return false;
-
-    auto c = phase_direction_at_AP_PA(v1,v2);
-    bool swap_xy = c[0] < c[1];
-    if(swap_xy)
-    {
-        tipl::swap_xy(v1);
-        tipl::swap_xy(v2);
-    }
-
-    tipl::image<3> dis_map(v1.shape()),df,gx(v1.shape()),v1_gx(v1.shape()),v2_gx(v2.shape());
-
-
-    tipl::filter::gaussian(v1);
-    tipl::filter::gaussian(v2);
-
-    tipl::gradient(v1,v1_gx,1,0);
-    tipl::gradient(v2,v2_gx,1,0);
-
-    get_distortion_map(v2,v1,dis_map);
-    tipl::filter::gaussian(dis_map);
-    tipl::filter::gaussian(dis_map);
-
-    tipl::image<3> vv1,vv2;
-    apply_distortion_map2(v1,dis_map,vv1,true);
-    apply_distortion_map2(v2,dis_map,vv2,false);
-
-    //
-    tipl::image<3> vv1,vv2;
-    for(int iter = 0;iter < 120;++iter)
-    {
-        apply_distortion_map2(v1,dis_map,vv1,true);
-        apply_distortion_map2(v2,dis_map,vv2,false);
-        df = vv1;
-        df -= vv2;
-        vv1 += vv2;
-        df *= vv1;
-        tipl::gradient(df,gx,1,0);
-        gx += v1_gx;
-        gx -= v2_gx;
-        tipl::normalize_abs(gx,0.5f);
-        tipl::filter::gaussian(gx);
-        tipl::filter::gaussian(gx);
-        tipl::filter::gaussian(gx);
-        dis_map += gx;
-    // }
-
-    std::vector<tipl::image<3,unsigned short> > dwi(src_dwi_data.size());
-    for(size_t i = 0;i < src_dwi_data.size();++i)
-    {
-        v1 = dwi_at(i);
-        if(swap_xy)
-        {
-            tipl::swap_xy(v1);
-        }
-        apply_distortion_map2(v1,dis_map,vv1,true);
-        dwi[i] = vv1;
-        if(swap_xy)
-            tipl::swap_xy(dwi[i]);
-    }
-
-    new_dwi.swap(dwi);
-    for(size_t i = 0;i < new_dwi.size();++i)
-        src_dwi_data[i] = &(new_dwi[i][0]);
-
-    update_dwi_sum();
-    update_mask();
-    voxel.report += " The phase distortion was correlated using data from an opposite phase encoding direction.";
-    return true;
-}
-*/
 
 #include <QCoreApplication>
 #include <QRegularExpression>
@@ -2362,7 +2284,8 @@ bool src_data::load_topup_eddy_result(void)
     if(!has_bias_field_correction())
         correct_bias_field();
     update_dwi_sum();
-    update_mask();
+    if(voxel.mask.empty())
+        update_mask();
     apply_mask = true;
     return true;
 }
@@ -3038,7 +2961,10 @@ bool src_data::load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_file
 
     voxel.report = dwi_files.front()->report + get_report(!dwi_files.front()->report.empty());
     update_dwi_sum();
-    update_mask();
+    if(dwi_files.front()->mask.empty())
+        update_mask();
+    else
+        voxel.mask = dwi_files.front()->mask;
     dwi_files.clear();
     return true;
 }
