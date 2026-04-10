@@ -436,21 +436,22 @@ int src(tipl::program_option<tipl::out>& po)
         if(all_bval.size()*3 != all_bvec.size())
             return tipl::error() << "bvec number does not match bval: "
                                  << all_bval.size() << " bval "
-                                 << all_bvec.size() << " bvec",1;
+                                 << all_bvec.size() << " bvec",1;                
         for(size_t i = 0;i < dwi_files.size();++i)
         {
+            if(all_bval[i] < 100.0)
+            {
+                all_bval[i] = 0.0;
+                all_bvec[i*3] = 0.0;
+                all_bvec[i*3+1] = 0.0;
+                all_bvec[i*3+2] = 0.0;
+            }
             dwi_files[i]->bvalue = float(all_bval[i]);
             dwi_files[i]->bvec = tipl::vector<3>(all_bvec[i*3],all_bvec[i*3+1],all_bvec[i*3+2]);
         }
     }
     if(dwi_files.empty())
         return tipl::error() << "no DWI data. abort.",1;
-
-    {
-        for(unsigned int index = 0;index < dwi_files.size();++index)
-            if(dwi_files[index]->bvalue < 100.0f)
-                dwi_files[index]->bvalue = 0.0f;
-    }
 
     if(!src.load_from_file(dwi_files,po.get<int>("sort_b_table",0)) ||
        (po.has("intro") && !src.load_intro(po.get("intro"))) ||
