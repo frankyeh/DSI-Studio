@@ -257,6 +257,11 @@ bool save_warping(const tipl::reg::mm_reg<tipl::out>& reg,const std::string& fil
     out.write("trans_from",reg.IR);
 
     out.write("arg",reg.arg);
+
+    tipl::matrix<4,4> mat;
+    reg.T().to(mat);
+    out.write("T",mat.data(),4,4);
+
     out.write("version",map_ver);
     out.close();
     std::error_code error;
