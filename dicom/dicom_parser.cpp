@@ -449,6 +449,8 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
             {
                 if(!prog2(++progress,dim.size()))
                     return;
+                if(!mask.empty() && !mask[voxel_index])
+                    return;
                 tipl::matrix<3,3,float> G;
                 for(unsigned int i = 0;i < 9;++i)
                     G[i] = grad_dev[i][voxel_index];
