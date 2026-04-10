@@ -2224,8 +2224,10 @@ bool src_data::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
 }
 
 
-bool load_bval(const std::string& file_name,std::vector<double>& bval);
-bool load_bvec(const std::string& file_name,std::vector<double>& b_table,bool flip_by = true);
+bool load_bval_bvec(size_t dwi_size,
+                    const std::string& bval_file_name,std::vector<double>& bval_,
+                    const std::string& bvec_file_name,std::vector<double>& bvec_,bool flip_by = true);
+
 bool src_data::load_topup_eddy_result(void)
 {
     if(!std::filesystem::exists(corrected_file()))
@@ -2244,11 +2246,8 @@ bool src_data::load_topup_eddy_result(void)
     {
         tipl::out() << "update b-table from eddy output" << std::endl;
         std::vector<double> bval,bvec;
-        if(!load_bval(bval_file,bval) || !load_bvec(bvec_file,bvec))
-        {
-            error_msg = "cannot find bval and bvec. please run topup/eddy again";
-            return false;
-        }
+        if(!load_bval_bvec(0,bval_file,bval,bvec_file,bvec))
+            return error_msg = "cannot find bval and bvec. please run topup/eddy again",false;
         src_bvalues.resize(bval.size());
         src_bvectors.resize(bval.size());
         std::copy(bval.begin(),bval.end(),src_bvalues.begin());
