@@ -220,41 +220,65 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
     return true;
 }
 
-
-bool load_bvec(const std::string& file_name,std::vector<double>& b_table_,bool flip_by = true)
+bool load_bval_bvec(size_t dwi_size,
+                    const std::string& bval_file_name,std::vector<double>& bval_,
+                    const std::string& bvec_file_name,std::vector<double>& bvec_,bool flip_by = true)
 {
-    unsigned int total_line = 0;
-    std::vector<double> b_table;
-    for(const auto& line: tipl::read_text_file(file_name))
-    {
-        std::istringstream read_line(line);
-        std::copy(std::istream_iterator<double>(read_line),
-                  std::istream_iterator<double>(),
-                  std::back_inserter(b_table));
-        ++total_line;
-    }
-    if(total_line == 0)
-        return false;
-    if(total_line == 3)
-        tipl::mat::transpose(b_table.begin(),tipl::shape<2>(3,b_table.size()/3));
-    if(flip_by)
-    {
-        for(size_t index = 1;index < b_table.size();index += 3)
-                b_table[index] = -b_table[index];
-    }
-    b_table_.insert(b_table_.end(),b_table.begin(),b_table.end());
-    return true;
-}
-bool load_bval(const std::string& file_name,std::vector<double>& bval)
-{
-    std::ifstream in(file_name);
+    std::vector<double> local_bval;
+    std::ifstream in(bval_file_name);
     if(!in)
-        return false;
+        return tipl::error() << "cannot open bval file: " << bval_file_name,false;
     std::copy(std::istream_iterator<double>(in),
               std::istream_iterator<double>(),
-              std::back_inserter(bval));
+              std::back_inserter(local_bval));
+
+    unsigned int total_line = 0;
+    std::vector<double> local_bvec;
+    for(const auto& line: tipl::read_text_file(bvec_file_name))
+    {
+        std::istringstream read_line(line);
+        size_t pre_size = local_bvec.size();
+        std::copy(std::istream_iterator<double>(read_line),
+                  std::istream_iterator<double>(),
+                  std::back_inserter(local_bvec));
+        if(local_bvec.size() > pre_size)
+            ++total_line;
+    }
+    if(total_line == 0)
+        return tipl::error() << "invalid bvec file format: " << bvec_file_name,false;
+
+    if(dwi_size && local_bval.size() != dwi_size)
+        return tipl::error() << "bval number does not match dwi: "
+                             << local_bval.size() << " bval/bvec "
+                             << dwi_size << " dwi",false;
+
+    if(local_bval.size()*3 != local_bvec.size())
+        return tipl::error() << "bvec number does not match bval: "
+                             << local_bval.size() << " bval "
+                             << local_bvec.size() << " bvec",false;
+
+    if(total_line == 3)
+        tipl::mat::transpose(local_bvec.begin(),tipl::shape<2>(3,local_bvec.size()/3));
+    if(flip_by)
+        for(size_t index = 1;index < local_bvec.size();index += 3)
+            local_bvec[index] = -local_bvec[index];
+
+    for(size_t i = 0;i < local_bval.size();++i)
+    {
+        if(local_bval[i] < 100.0)
+        {
+            local_bval[i] = 0.0;
+            local_bvec[i*3] = 0.0;
+            local_bvec[i*3+1] = 0.0;
+            local_bvec[i*3+2] = 0.0;
+        }
+    }
+    bval_.insert(bval_.end(),local_bval.begin(),local_bval.end());
+    bvec_.insert(bvec_.end(),local_bvec.begin(),local_bvec.end());
     return true;
 }
+
+
 bool find_bval_bvec(const std::string& file_name, std::string& bval, std::string& bvec)
 {
     namespace fs = std::filesystem;
@@ -380,33 +404,19 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
 
     std::vector<double> bvals,bvecs;
     std::string bval_name,bvec_name;
-    std::string bvalbvec_error_msg;
     if(search_bvalbvec)
     {
         if(find_bval_bvec(file_name,bval_name,bvec_name))
         {
-            tipl::out() << "found bval and bvec file for " << file_name;
-            tipl::out() << "bval: " << bval_name;
-            tipl::out() << "bvec: " << bvec_name;
-            if(!load_bval(bval_name,bvals))
-                tipl::warning() << (bvalbvec_error_msg = "cannot load bval from "+bval_name);
-            if(!load_bvec(bvec_name,bvecs))
-                tipl::warning() << (bvalbvec_error_msg = "cannot load bvec from "+bvec_name);
-            if(!bvals.empty() && bvecs.size() >= bvals.size()*3)
-                for(size_t i = 0;i < bvals.size();++i)
-                    if(bvals[i] < 100.0)
-                    {
-                        bvals[i] = 0.0;
-                        bvecs[i*3] = 0.0;
-                        bvecs[i*3+1] = 0.0;
-                        bvecs[i*3+2] = 0.0;
-                    }
+            if(!load_bval_bvec(dwi_data.size(),bval_name,bvals,
+                               bvec_name,bvecs))
+                return error_msg = "invalid bval or bvec",false;
         }
         else
             tipl::warning() << "cannot find bval and bvec file for " << file_name;
     }
     if(must_have_bval_bvec && bvals.empty())
-        return error_msg = bvalbvec_error_msg,false;
+        return error_msg = "cannot find bval and bvec.",false;
 
     std::string grad_dev_file = (std::filesystem::path(file_name).parent_path()/"grad_dev.nii.gz").string();
     if(std::filesystem::exists(grad_dev_file))
@@ -1333,7 +1343,10 @@ void dicom_parser::on_actionOpen_bval_triggered()
     if(filename.isEmpty())
         return;
     std::vector<double> bval;
-    load_bval(filename.toStdString(),bval);
+    std::ifstream in(filename.toStdString());
+    std::copy(std::istream_iterator<double>(in),
+              std::istream_iterator<double>(),
+              std::back_inserter(bval));
     if(bval.empty())
         return;
     for (int index = ui->tableWidget->rowCount()-1,
@@ -1350,15 +1363,27 @@ void dicom_parser::on_actionOpen_bvec_triggered()
             "All files (*)" );
     if(filename.isEmpty())
         return;
-    std::vector<double> b_table;
-    load_bvec(filename.toStdString().c_str(),b_table);
-    if(b_table.empty())
+    std::vector<double> bvec;
+    unsigned int total_line = 0;
+    for(const auto& line: tipl::read_text_file(filename.toStdString()))
+    {
+        std::istringstream read_line(line);
+        size_t pre_size = bvec.size();
+        std::copy(std::istream_iterator<double>(read_line),
+                  std::istream_iterator<double>(),
+                  std::back_inserter(bvec));
+        if(bvec.size() > pre_size)
+            ++total_line;
+    }
+    if(total_line == 3)
+        tipl::mat::transpose(bvec.begin(),tipl::shape<2>(3,bvec.size()/3));
+    if(bvec.empty())
         return;
     for (int index = ui->tableWidget->rowCount()-1,
-             b_index = b_table.size()-1;index >=0 && b_index >=0 ;--index)
+             b_index = bvec.size()-1;index >=0 && b_index >=0 ;--index)
     {
         for(int j = 2;j >= 0 && b_index >=0;--j,--b_index)
-            ui->tableWidget->item(index,j+2)->setText(QString::number(b_table[b_index]));
+            ui->tableWidget->item(index,j+2)->setText(QString::number(bvec[b_index]));
     }
 }
 
