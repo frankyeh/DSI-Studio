@@ -2963,7 +2963,10 @@ bool src_data::load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_file
     if(dwi_files.front()->mask.empty())
         update_mask();
     else
+    {
         voxel.mask = dwi_files.front()->mask;
+        apply_mask = true;
+    }
     dwi_files.clear();
     return true;
 }
