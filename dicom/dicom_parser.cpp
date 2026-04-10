@@ -425,7 +425,7 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
 
             // correct signals
             tipl::progress prog2("apply gradient deviation correction");
-            std::atomic<size_t> progress = 0; // FIXED: Make thread-safe
+            std::atomic<size_t> progress = 0;
             tipl::par_for(dim.size(),[&](size_t voxel_index)
             {
                 if(!prog2(++progress,dim.size()))
