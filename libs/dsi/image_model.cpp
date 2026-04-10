@@ -3140,55 +3140,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
                 return false;
         }
 
-        {
-            const float* grad_dev_ptr = nullptr;
-            std::vector<tipl::pointer_image<3,float> > grad_dev;
-            size_t b0_pos = size_t(std::min_element(src_bvalues.begin(),src_bvalues.end())-src_bvalues.begin());
-            if(src_bvalues[b0_pos] == 0.0f &&
-               mat_reader.read("grad_dev",row,col,grad_dev_ptr) &&
-               size_t(row)*size_t(col) == voxel.dim.size()*9)
-            {
-                tipl::progress prog2("gradient deviation correction");
 
-                for(unsigned int index = 0;index < 9;index++)
-                    grad_dev.push_back(tipl::make_image(const_cast<float*>(grad_dev_ptr+index*voxel.dim.size()),voxel.dim));
-                if(std::fabs(grad_dev[0][0])+std::fabs(grad_dev[4][0])+std::fabs(grad_dev[8][0]) < 1.0f)
-                {
-                    tipl::add_constant(grad_dev[0].begin(),grad_dev[0].end(),1.0);
-                    tipl::add_constant(grad_dev[4].begin(),grad_dev[4].end(),1.0);
-                    tipl::add_constant(grad_dev[8].begin(),grad_dev[8].end(),1.0);
-                }
-                // correct signals
-                size_t progress = 0;
-                tipl::adaptive_par_for(voxel.dim.size(),[&](size_t voxel_index)
-                {
-                    if(!prog2(++progress,voxel.dim.size()))
-                        return;
-                    tipl::matrix<3,3,float> G;
-                    for(unsigned int i = 0;i < 9;++i)
-                        G[i] = grad_dev[i][voxel_index];
-
-                    double b0_signal = double(src_dwi_data[b0_pos][voxel_index]);
-                    if(b0_signal == 0.0)
-                        return;
-                    for(unsigned int index = 0;index < src_bvalues.size();++index)
-                        if(src_bvalues[index] > 0.0f)
-                        {
-                            auto bvec = src_bvectors[index];
-                            bvec.rotate(G);
-                            double inv_l2 = 1.0/double(bvec.length2());
-                            const_cast<unsigned short*>(src_dwi_data[index])[voxel_index] =
-                                    uint16_t(std::pow(b0_signal,1.0-inv_l2)*
-                                    std::pow(double(src_dwi_data[index][voxel_index]),inv_l2));
-                        }
-                });
-                if(prog2.aborted())
-                {
-                    error_msg = "aborted";
-                    return false;
-                }
-            }
-        }
     }
 
     if(prog.aborted())

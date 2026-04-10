@@ -303,6 +303,7 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
                  std::string& error_msg)
 {
     tipl::vector<3,float> vs;
+    tipl::shape<3> dim;
     tipl::matrix<4,4,float> trans_to_mni;
     std::vector<tipl::image<3> > dwi_data;
     {
@@ -332,7 +333,7 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
             std::replace_if(data.begin(),data.end(),[](float v){return std::isnan(v) || std::isinf(v) || v < 0.0f;},0.0f);
             dwi_data[index].swap(data);
         }
-        nii >> vs >> trans_to_mni;
+        nii >> vs >> trans_to_mni >> dim;
 
         if(dwi_data.size() <= 1 && must_have_bval_bvec)
         {
@@ -370,11 +371,6 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
             }
         }
     }
-    tipl::image<4,float> grad_dev;
-    if(std::filesystem::exists(std::filesystem::path(file_name).parent_path()/"grad_dev.nii.gz") &&
-       tipl::io::gz_nifti((std::filesystem::path(file_name).parent_path()/"grad_dev.nii.gz").string(),std::ios::in) >> grad_dev)
-        tipl::out() << "grad_dev loaded" << std::endl;
-
 
     tipl::image<3,unsigned char> mask;
     if(std::filesystem::exists(std::filesystem::path(file_name).parent_path()/"nodif_brain_mask.nii.gz") &&
@@ -393,18 +389,69 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
             tipl::out() << "bval: " << bval_name;
             tipl::out() << "bvec: " << bvec_name;
             if(!load_bval(bval_name,bvals))
-                tipl::warning() << (bvalbvec_error_msg = "cannot load bval from " + bval_name);
+                tipl::warning() << (bvalbvec_error_msg = "cannot load bval from "+bval_name);
             if(!load_bvec(bvec_name,bvecs))
-                tipl::warning() << (bvalbvec_error_msg = "cannot load bvec from " + bvec_name);
+                tipl::warning() << (bvalbvec_error_msg = "cannot load bvec from "+bvec_name);
         }
         else
             tipl::warning() << "cannot find bval and bvec file for " << file_name;
     }
     if(must_have_bval_bvec && bvals.empty())
+        return error_msg = bvalbvec_error_msg,false;
+
+    std::string grad_dev_file = (std::filesystem::path(file_name).parent_path()/"grad_dev.nii.gz").string();
+    if(std::filesystem::exists(grad_dev_file))
     {
-        error_msg = bvalbvec_error_msg;
-        return false;
+        tipl::image<4,float> raw_grad_dev;
+        if(tipl::io::gz_nifti(grad_dev_file,std::ios::in) >> raw_grad_dev)
+        {
+            if(raw_grad_dev.size() != dim.size()*9)
+                return error_msg = "invalid grad_dev.nii.gz dimension",false;
+
+            size_t b0_pos = size_t(std::min_element(bvals.begin(),bvals.end())-bvals.begin());
+            if(bvals[b0_pos] != 0.0f)
+                return error_msg = "b0 needed for gradient deviation correction",false;
+
+            std::vector<tipl::pointer_image<3,float>> grad_dev;
+            for(unsigned int index = 0;index < 9;++index)
+                grad_dev.push_back(tipl::make_image(raw_grad_dev.data()+index*dim.size(),dim));
+
+            if(std::fabs(grad_dev[0][0])+std::fabs(grad_dev[4][0])+std::fabs(grad_dev[8][0]) < 1.0f)
+            {
+                tipl::add_constant(grad_dev[0].begin(),grad_dev[0].end(),1.0);
+                tipl::add_constant(grad_dev[4].begin(),grad_dev[4].end(),1.0);
+                tipl::add_constant(grad_dev[8].begin(),grad_dev[8].end(),1.0);
+            }
+
+            // correct signals
+            tipl::progress prog2("apply gradient deviation correction");
+            std::atomic<size_t> progress = 0; // FIXED: Make thread-safe
+            tipl::par_for(dim.size(),[&](size_t voxel_index)
+            {
+                if(!prog2(++progress,dim.size()))
+                    return;
+                tipl::matrix<3,3,float> G;
+                for(unsigned int i = 0;i < 9;++i)
+                    G[i] = grad_dev[i][voxel_index];
+
+                double b0_signal = double(dwi_data[b0_pos][voxel_index]);
+                if(b0_signal == 0.0)
+                    return;
+
+                for(unsigned int index = 0;index < bvals.size();++index)
+                    if(bvals[index] > 0.0f)
+                    {
+                        tipl::vector<3> bvec(bvecs.data()+index*3);
+                        bvec.rotate(G);
+                        double inv_l2 = 1.0/double(bvec.length2());
+                        dwi_data[index][voxel_index] = float(std::pow(b0_signal,1.0-inv_l2)*std::pow(double(dwi_data[index][voxel_index]),inv_l2));
+                    }
+            });
+            if(prog2.aborted())
+                return error_msg = "aborted",false;
+        }
     }
+
 
     for(unsigned int index = 0;index < dwi_data.size();++index)
     {
@@ -434,8 +481,6 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
                 new_file->bvec = tipl::vector<3>(0,0,0);
             }
         }
-        if(index == 0 && !grad_dev.empty())
-            new_file->grad_dev.swap(grad_dev);
         dwi_files.push_back(new_file);
     }
     return true;

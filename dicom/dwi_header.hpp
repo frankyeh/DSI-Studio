@@ -13,8 +13,6 @@ public:
     std::string file_name,report,error_msg;
     tipl::image<3,unsigned short> image;
     tipl::image<3,unsigned char> mask;
-public:// for HCP dataset
-    tipl::image<4> grad_dev;
 public:
     tipl::vector<3,float> bvec;
     float bvalue = 0.0f;
