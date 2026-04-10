@@ -371,14 +371,14 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
         }
     }
     tipl::image<4,float> grad_dev;
-    if(std::filesystem::exists(std::filesystem::path().parent_path()/"grad_dev.nii.gz") &&
-       tipl::io::gz_nifti((std::filesystem::path().parent_path()/"grad_dev.nii.gz").string(),std::ios::in) >> grad_dev)
+    if(std::filesystem::exists(std::filesystem::path(file_name).parent_path()/"grad_dev.nii.gz") &&
+       tipl::io::gz_nifti((std::filesystem::path(file_name).parent_path()/"grad_dev.nii.gz").string(),std::ios::in) >> grad_dev)
         tipl::out() << "grad_dev loaded" << std::endl;
 
 
     tipl::image<3,unsigned char> mask;
-    if(std::filesystem::exists(std::filesystem::path().parent_path()/"nodif_brain_mask.nii.gz") &&
-        tipl::io::gz_nifti((std::filesystem::path().parent_path()/"nodif_brain_mask.nii.gz").string(),std::ios::in) >> mask)
+    if(std::filesystem::exists(std::filesystem::path(file_name).parent_path()/"nodif_brain_mask.nii.gz") &&
+        tipl::io::gz_nifti((std::filesystem::path(file_name).parent_path()/"nodif_brain_mask.nii.gz").string(),std::ios::in) >> mask)
         tipl::out() << "mask loaded" << std::endl;
 
 
