@@ -412,9 +412,11 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
         tipl::image<3> data;
         data.swap(dwi_data[index]);
         if(mask.size() == data.size())
-            for(size_t i = 0;i < mask.size();++i)
-                if(!mask[i])
-                    data[i] = 0;
+        {
+            tipl::preserve(data.begin(),data.end(),mask.begin());
+            if(dwi_files.empty())
+                new_file->mask = mask;
+        }
         new_file->image = data;
         new_file->file_name = file_name;
         new_file->voxel_size = vs;
