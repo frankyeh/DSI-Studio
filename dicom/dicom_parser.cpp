@@ -392,6 +392,15 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
                 tipl::warning() << (bvalbvec_error_msg = "cannot load bval from "+bval_name);
             if(!load_bvec(bvec_name,bvecs))
                 tipl::warning() << (bvalbvec_error_msg = "cannot load bvec from "+bvec_name);
+            if(!bvals.empty() && bvecs.size() >= bvals.size()*3)
+                for(size_t i = 0;i < bvals.size();++i)
+                    if(bvals[i] < 100.0)
+                    {
+                        bvals[i] = 0.0;
+                        bvecs[i*3] = 0.0;
+                        bvecs[i*3+1] = 0.0;
+                        bvecs[i*3+2] = 0.0;
+                    }
         }
         else
             tipl::warning() << "cannot find bval and bvec file for " << file_name;
@@ -475,11 +484,6 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
             new_file->bvec[1] = float(bvecs[index*3+1]);
             new_file->bvec[2] = float(bvecs[index*3+2]);
             new_file->bvec.normalize();
-            if(new_file->bvalue < 100)
-            {
-                new_file->bvalue = 0;
-                new_file->bvec = tipl::vector<3>(0,0,0);
-            }
         }
         dwi_files.push_back(new_file);
     }
@@ -1144,7 +1148,10 @@ void dicom_parser::load_table(void)
     for(size_t index = size_t(last_index);index < dwi_files.size();++index)
     {
         if(dwi_files[index]->bvalue < 100.0f)
+        {
             dwi_files[index]->bvalue = 0.0f;
+            dwi_files[index]->bvec = {0.0f,0.0f,0.0f};
+        }
         ui->tableWidget->setItem(index, 0, new QTableWidgetItem(QFileInfo(dwi_files[index]->file_name.data()).fileName()));
         ui->tableWidget->setItem(index, 1, new QTableWidgetItem(QString::number(dwi_files[index]->bvalue)));
         ui->tableWidget->setItem(index, 2, new QTableWidgetItem(QString::number(dwi_files[index]->bvec[0])));
