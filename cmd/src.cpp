@@ -10,8 +10,9 @@
 #include "dicom/dwi_header.hpp"
 #include "image_model.hpp"
 QStringList search_files(QString dir,QString filter);
-bool load_bval(const std::string& file_name,std::vector<double>& bval);
-bool load_bvec(const std::string& file_name,std::vector<double>& b_table,bool flip_by = true);
+bool load_bval_bvec(size_t dwi_size,
+                    const std::string& bval_file_name,std::vector<double>& bval_,
+                    const std::string& bvec_file_name,std::vector<double>& bvec_,bool flip_by = true);
 bool parse_dwi(const std::vector<std::string>& file_list,
                     std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg);
 void dicom2src_and_nii(std::string dir_,bool overwrite);
@@ -423,29 +424,11 @@ int src(tipl::program_option<tipl::out>& po)
         auto bval_files = po.get_files("bval");
         auto bvec_files = po.get_files("bvec");
         for(size_t i = 0;i < bval_files.size() && i < bvec_files.size();++i)
-        {
-            if(!load_bval(bval_files[i],all_bval))
-                return tipl::error() << "cannot load bval from " << bval_files[i],1;
-            if(!load_bvec(bvec_files[i],all_bvec))
-                return tipl::error() << "cannot load bvec from " << bvec_files[i],1;
-        }
-        if(all_bval.size() != dwi_files.size())
-            return tipl::error() << "bval number does not match dwi: "
-                                 << all_bval.size() << " bval/bvec "
-                                 << dwi_files.size() << " dwi",1;
-        if(all_bval.size()*3 != all_bvec.size())
-            return tipl::error() << "bvec number does not match bval: "
-                                 << all_bval.size() << " bval "
-                                 << all_bvec.size() << " bvec",1;                
+            if(!load_bval_bvec(i+1 < bval_files.size() ? 0 : dwi_files.size(),
+                               bval_files[i],all_bval,bvec_files[i],all_bvec,true))
+                return 1;
         for(size_t i = 0;i < dwi_files.size();++i)
         {
-            if(all_bval[i] < 100.0)
-            {
-                all_bval[i] = 0.0;
-                all_bvec[i*3] = 0.0;
-                all_bvec[i*3+1] = 0.0;
-                all_bvec[i*3+2] = 0.0;
-            }
             dwi_files[i]->bvalue = float(all_bval[i]);
             dwi_files[i]->bvec = tipl::vector<3>(all_bvec[i*3],all_bvec[i*3+1],all_bvec[i*3+2]);
         }
