@@ -188,17 +188,18 @@ bool src_data::mask_from_unet(void)
     std::vector<tipl::image<3> > b0;
     if(!read_b0(b0))
         return false;
+    tipl::filter::gaussian(b0[0]);
     std::string model_file_name = QCoreApplication::applicationDirPath().toStdString() + "/network/brain.t2w.seg5.net.gz";
     if(std::filesystem::exists(model_file_name))
     {
         tipl::progress p("generating a mask using unet",true);
-        auto unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(model_file_name);
+        auto unet = tipl::ml3d::tissue_seg::load_model<tipl::io::gz_mat_read>(model_file_name);
         if(unet.get())
         {
-            tipl::filter::gaussian(b0[0]);
-            if(unet->forward(b0[0],voxel.vs,p))
+            tipl::image<3,unsigned char> label;
+            if(unet->forward(b0[0],voxel.vs,label,p))
             {
-                tipl::threshold(unet->get_mask(),voxel.mask,0.5f,1,0);
+                tipl::threshold(label,voxel.mask,0,1,0);
                 tipl::morphology::defragment(voxel.mask);
                 return true;
             }

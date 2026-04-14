@@ -525,18 +525,23 @@ int img(tipl::program_option<tipl::out>& po)
                 }
 
                 auto model_path = QCoreApplication::applicationDirPath().toStdString()+ "/network/" + po.get("network",param);
-                auto unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(model_path);
+                auto unet = tipl::ml3d::tissue_seg::load_model<tipl::io::gz_mat_read>(model_path);
                 if(!unet.get())
                     return tipl::error() << "cannot read network file at" + model_path,1;
                 var_image.apply([&](auto& I)
                 {
-                    unet->forward(I,var_image.vs,prog);
+                    tipl::image<3,unsigned char> label;
+                    if(!unet->forward(I,var_image.vs,label,prog))
+                    {
+                        tipl::error() << "failed to run network";
+                        return;
+                    }
                     if(cmd == "brain_extraction")
-                        I *= unet->get_mask();
+                        I *= tipl::ml3d::soft_mask(label);
                     if(cmd == "segmentation")
                     {
                         I.clear();
-                        var_image.I_int8 = unet->get_label();
+                        var_image.I_int8 = label;
                         var_image.pixel_type = variant_image::int8;
                     }
                 });

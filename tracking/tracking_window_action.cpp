@@ -1408,13 +1408,14 @@ bool tracking_window::run_unet(void)
     if(filename.isEmpty())
         return false;
     tipl::progress p("processing",true);
-    unet = tipl::ml3d::unet3d::load_model<tipl::io::gz_mat_read>(filename.toStdString());
+    unet = tipl::ml3d::tissue_seg::load_model<tipl::io::gz_mat_read>(filename.toStdString());
     if(!unet.get())
     {
         QMessageBox::critical(this,"ERROR","cannot read the model file");
         return false;
     }
-    if(!unet->forward(current_slice->get_source(),current_slice->vs,p))
+
+    if(!unet->forward(current_slice->get_source(),current_slice->vs,unet_label,p))
         return false;
     filename.chop(6);
     filename += "txt";
@@ -1434,7 +1435,7 @@ void tracking_window::on_actionStrip_Skull_triggered()
     }
     if(!run_unet())
         return;
-    reg_slice->source_images *= unet->get_mask();
+    reg_slice->source_images *= tipl::ml3d::soft_mask(unet_label);
     slice_need_update = true;
     glWidget->update_slice();
 }
@@ -1446,9 +1447,9 @@ void tracking_window::on_actionSegment_Tissue_triggered()
 
     {
         // to 3d label
-        tipl::image<3> I = unet->get_label();
-        std::vector<std::vector<tipl::vector<3,short> > > regions(unet->out_channels_);
-        tipl::adaptive_par_for(unet->out_channels_,[&](size_t label)
+        const auto& I = unet_label;
+        std::vector<std::vector<tipl::vector<3,short> > > regions(unet->unet->out_channels_);
+        tipl::par_for(unet->unet->out_channels_,[&](size_t label)
         {
             for(tipl::pixel_index<3> p(current_slice->dim);p < current_slice->dim.size();++p)
             {
@@ -1457,7 +1458,7 @@ void tracking_window::on_actionSegment_Tissue_triggered()
             }
         });
         regionWidget->begin_update();
-        for(size_t i = 0;i < unet->out_channels_;++i)
+        for(size_t i = 0;i < unet->unet->out_channels_;++i)
         {
             tipl::rgb color = tipl::rgb(255,255,255);
             std::string name = i < unet_label_name.size() ? unet_label_name[i].c_str() : (std::string("tissue")+std::to_string(i+1)).c_str();
