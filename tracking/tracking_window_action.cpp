@@ -1417,7 +1417,6 @@ bool tracking_window::run_unet(void)
     unet_out_channel = unet.unet->out_channels_;
     if(!unet.forward(current_slice->get_source(),current_slice->vs,unet_label,p))
         return false;
-    return false;
     filename.chop(6);
     filename += "txt";
     if(std::filesystem::exists(filename.toStdString()))
