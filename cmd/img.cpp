@@ -525,13 +525,13 @@ int img(tipl::program_option<tipl::out>& po)
                 }
 
                 auto model_path = QCoreApplication::applicationDirPath().toStdString()+ "/network/" + po.get("network",param);
-                auto unet = tipl::ml3d::tissue_seg::load_model<tipl::io::gz_mat_read>(model_path);
-                if(!unet.get())
-                    return tipl::error() << "cannot read network file at" + model_path,1;
+                tipl::ml3d::tissue_seg unet;
+                if(!unet.load_model<tipl::io::gz_mat_read>(model_path))
+                    return tipl::error() << unet.error_msg,1;
                 var_image.apply([&](auto& I)
                 {
                     tipl::image<3,unsigned char> label;
-                    if(!unet->forward(I,var_image.vs,label,prog))
+                    if(!unet.forward(I,var_image.vs,label,prog))
                     {
                         tipl::error() << "failed to run network";
                         return;

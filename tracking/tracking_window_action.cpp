@@ -1408,14 +1408,14 @@ bool tracking_window::run_unet(void)
     if(filename.isEmpty())
         return false;
     tipl::progress p("processing",true);
-    unet = tipl::ml3d::tissue_seg::load_model<tipl::io::gz_mat_read>(filename.toStdString());
-    if(!unet.get())
+    tipl::ml3d::tissue_seg unet;
+    if(!unet.load_model<tipl::io::gz_mat_read>(filename.toStdString()))
     {
-        QMessageBox::critical(this,"ERROR","cannot read the model file");
+        QMessageBox::critical(this,"ERROR",unet.error_msg.c_str());
         return false;
     }
 
-    if(!unet->forward(current_slice->get_source(),current_slice->vs,unet_label,p))
+    if(!unet.forward(current_slice->get_source(),current_slice->vs,unet_label,p))
         return false;
     filename.chop(6);
     filename += "txt";
