@@ -173,9 +173,9 @@ public:
 public:
     QStringList dt_list; // for dt_index1 dt_index2
 public:
-    std::shared_ptr<tipl::ml3d::tissue_seg> unet;
     std::vector<std::string> unet_label_name;
     tipl::image<3,unsigned char> unet_label;
+    int unet_out_channel;
     bool run_unet(void);
 public:
     connectometry_result cnt_result;
