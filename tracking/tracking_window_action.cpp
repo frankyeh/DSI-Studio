@@ -1414,9 +1414,10 @@ bool tracking_window::run_unet(void)
         QMessageBox::critical(this,"ERROR",unet.error_msg.c_str());
         return false;
     }
-
+    unet_out_channel = unet.unet->out_channels_;
     if(!unet.forward(current_slice->get_source(),current_slice->vs,unet_label,p))
         return false;
+    return false;
     filename.chop(6);
     filename += "txt";
     if(std::filesystem::exists(filename.toStdString()))
@@ -1448,8 +1449,8 @@ void tracking_window::on_actionSegment_Tissue_triggered()
     {
         // to 3d label
         const auto& I = unet_label;
-        std::vector<std::vector<tipl::vector<3,short> > > regions(unet->unet->out_channels_);
-        tipl::par_for(unet->unet->out_channels_,[&](size_t label)
+        std::vector<std::vector<tipl::vector<3,short> > > regions(unet_out_channel);
+        tipl::par_for(unet_out_channel,[&](size_t label)
         {
             for(tipl::pixel_index<3> p(current_slice->dim);p < current_slice->dim.size();++p)
             {
@@ -1458,7 +1459,7 @@ void tracking_window::on_actionSegment_Tissue_triggered()
             }
         });
         regionWidget->begin_update();
-        for(size_t i = 0;i < unet->unet->out_channels_;++i)
+        for(size_t i = 0;i < unet_out_channel;++i)
         {
             tipl::rgb color = tipl::rgb(255,255,255);
             std::string name = i < unet_label_name.size() ? unet_label_name[i].c_str() : (std::string("tissue")+std::to_string(i+1)).c_str();
