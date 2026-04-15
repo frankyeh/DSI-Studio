@@ -6,7 +6,7 @@
 #include "basic_process.hpp"
 #include "gqi_process.hpp"
 
-extern std::vector<std::string> fa_template_list,iso_template_list,t1w_template_list;
+extern std::vector<std::string> qa_template_list,iso_template_list,t1w_template_list;
 void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 class DWINormalization  : public BaseProcess
 {
@@ -32,7 +32,7 @@ public:
         reg.modality_names = {"qa","iso"};
         reg.export_intermediate = voxel.needs("debug");
 
-        if(!reg.load_template<tipl::io::gz_nifti>(0,fa_template_list[voxel.template_id]) ||
+        if(!reg.load_template<tipl::io::gz_nifti>(0,qa_template_list[voxel.template_id]) ||
            !reg.load_template<tipl::io::gz_nifti>(1,iso_template_list[voxel.template_id]))
             throw std::runtime_error("cannot load anisotropy/isotropy template");
 
