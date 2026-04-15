@@ -18,7 +18,7 @@
 #include "libs/tracking/tracking_thread.hpp"
 
 
-extern std::vector<std::string> fa_template_list;
+extern std::vector<std::string> template_name_list;
 std::string show_info_dialog(const std::string& title,
                              const std::string& result,
                              const std::string& file_name_hint)
@@ -1661,10 +1661,7 @@ void tracking_window::on_actionManual_Atlas_Alignment_triggered()
 
 
     std::string output_file_name(handle->fib_file_name);
-    output_file_name += ".";
-    output_file_name += QFileInfo(fa_template_list[handle->template_id].c_str()).
-                        baseName().toLower().toStdString();
-    output_file_name += ".mz";
+    output_file_name += "." + template_name_list[handle->template_id] + ".mz";
     if(handle->s2t.empty() && std::filesystem::exists(output_file_name))
     {
         handle->s2t.clear();
@@ -1687,7 +1684,7 @@ void tracking_window::on_actionManual_Atlas_Alignment_triggered()
 
 void tracking_window::on_template_box_currentIndexChanged(int index)
 {
-    if(index < 0 || index >= int(fa_template_list.size()))
+    if(index < 0 || index >= int(template_name_list.size()))
         return;
     handle->set_template_id(size_t(index));
     ui->alt_mapping->clear();
