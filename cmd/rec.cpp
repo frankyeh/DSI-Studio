@@ -10,8 +10,6 @@
 #include "libs/dsi/image_model.hpp"
 #include "reconstruction/reconstruction_window.h"
 
-
-extern std::vector<std::string> fa_template_list;
 bool get_src(std::string filename,src_data& src2,std::string& error_msg);
 /**
  perform reconstruction
@@ -268,7 +266,7 @@ int rec(tipl::program_option<tipl::out>& po)
             std::string name,path;
             if(tipl::begins_with(each,"http") || seps.size() == 1)
             {
-                name = std::filesystem::path(each).stem().stem().string();
+                name = tipl::remove_all_suffix(std::filesystem::path(each).filename().string());
                 path = each;
             }
             else
