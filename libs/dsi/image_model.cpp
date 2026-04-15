@@ -1350,7 +1350,7 @@ bool src_data::add_other_image(const std::string& name,const std::string& filena
     }
     return true;
 }
-extern std::vector<std::string> fa_template_list,iso_template_list;
+extern std::vector<std::string> qa_template_list,iso_template_list,template_name_list;
 void match_template_resolution(tipl::image<3>& VG,
                                tipl::vector<3>& VGvs,
                                tipl::image<3>& VF,
@@ -1373,7 +1373,7 @@ bool src_data::align_acpc(float reso)
 
     // prepare template images
     if(!(tipl::io::gz_nifti(iso_template_list[voxel.template_id],std::ios::in) >> Ivs >> I) ||
-       !(tipl::io::gz_nifti(fa_template_list[voxel.template_id],std::ios::in) >> Ivs >> I))
+       !(tipl::io::gz_nifti(qa_template_list[voxel.template_id],std::ios::in) >> Ivs >> I))
         return error_msg = "Failed to load/find MNI template.",false;
     if(reso < Ivs[0])
         return tipl::error() << (error_msg = "invalid resolution"),false;
@@ -3188,7 +3188,7 @@ bool src_data::save_fib(void)
     mat_writer.write("mask",voxel.mask,voxel.dim.plane_size());
     if(voxel.qsdr)
     {
-        mat_writer.write("template",std::filesystem::path(fa_template_list[voxel.template_id]).stem().stem().stem().string());
+        mat_writer.write("template",template_name_list[voxel.template_id]);
         mat_writer.write("R2",std::vector<float>({voxel.R2}));
     }
 
