@@ -22,11 +22,8 @@
 #endif
 
 std::string device_content_file,topup_param_file;
-std::vector<std::string> fa_template_list,
-                         iso_template_list,
-                         t1w_template_list,
-                         t2w_template_list,
-                         fib_template_list;
+std::vector<std::string> template_name_list,qa_template_list,iso_template_list,t1w_template_list,t2w_template_list,wm_template_list,fib_template_list,tract_template_list;
+std::vector<std::vector<std::string> > unet_list;
 std::vector<std::vector<std::string> > atlas_file_name_list;
 
 
@@ -58,7 +55,7 @@ size_t match_volume(tipl::const_pointer_image<3,unsigned char> mask,tipl::vector
     };
     float cur_volume = get_max_axisl_count(mask)*vs[0]*vs[1];
     std::vector<std::pair<std::string,float> > template_volume = {
-        {"human",22086.2f},{"human_neonate",8047.0f},{"rhesus",3556},{"marmoset",646.72},{"rat",367.44},{"mouse",111.75}};
+        {"human",22086.2f},{"human-neonate",8047.0f},{"rhesus",3556},{"marmoset",646.72},{"rat",367.44},{"mouse",111.75}};
 
     std::string best_template_name = template_volume[0].first;
     float best_dif = std::fabs(template_volume[0].second-cur_volume);
@@ -72,8 +69,8 @@ size_t match_volume(tipl::const_pointer_image<3,unsigned char> mask,tipl::vector
         }
     }
     tipl::out() << "match slice volume: " << cur_volume << " → " << best_template_name;
-    for(size_t i = 0;i < fa_template_list.size();++i)
-        if(tipl::contains(tipl::split(std::filesystem::path(fa_template_list[i]).stem().string(),'.').front(),best_template_name))
+    for(size_t i = 0;i < template_name_list.size();++i)
+        if(template_name_list[i] == best_template_name)
             return i;
     return 0;
 }
@@ -151,11 +148,14 @@ bool load_file_name(void)
     device_content_file = find_full_path("device.txt");
     topup_param_file = find_full_path("topup_param.txt");
 
-    fs::path dir = fs::path(QCoreApplication::applicationDirPath().toStdString())/"atlas";
-    if(!fs::exists(dir) && !fs::exists(dir = fs::current_path()/"atlas"))
+    fs::path atlas_dir = fs::path(QCoreApplication::applicationDirPath().toStdString())/"atlas";
+    fs::path tract_dir = fs::path(QCoreApplication::applicationDirPath().toStdString())/"tract";
+    if(!fs::exists(atlas_dir) && !fs::exists(atlas_dir = fs::current_path()/"atlas"))
+        return false;
+    if(!fs::exists(tract_dir) && !fs::exists(atlas_dir = fs::current_path()/"tract"))
         return false;
 
-    std::vector<std::string> name_list(tipl::get_directories(dir));
+    std::vector<std::string> name_list(tipl::get_directories(atlas_dir));
 
     auto get_rank = [](const std::string& d)
     {
@@ -174,35 +174,50 @@ bool load_file_name(void)
         return get_rank(a) < get_rank(b);
     });
 
-    for(const auto& name : name_list)
+    for(const auto& species : name_list)
     {
-        fs::path t_dir = dir/name;
-        fs::path qa_file = t_dir/(name+".QA.nii.gz");
-
-        if(!fs::exists(qa_file))
+        if(!fs::exists((tract_dir/(species+".fz")).string()))
             continue;
+        template_name_list.push_back(species);
+        // under tract/
+        fib_template_list.push_back((tract_dir/(species+".fz")).string());
+        tract_template_list.push_back((tract_dir/(species+".tt.gz")).string());
 
-        fa_template_list.push_back(qa_file.string());
-        iso_template_list.push_back((t_dir/(name+".ISO.nii.gz")).string());
-        t1w_template_list.push_back((t_dir/(name+".T1W.nii.gz")).string());
-        t2w_template_list.push_back((t_dir/(name+".T2W.nii.gz")).string());
-        fib_template_list.push_back((t_dir/(name+".fz")).string());
+        // under atlas/[species]
+        qa_template_list.push_back((atlas_dir/species/(species+"_QA.nii.gz")).string());
+        iso_template_list.push_back((atlas_dir/species/(species+"_ISO.nii.gz")).string());
+        t1w_template_list.push_back((atlas_dir/species/(species+"_T1w.nii.gz")).string());
+        t2w_template_list.push_back((atlas_dir/species/(species+"_T2w.nii.gz")).string());
+        wm_template_list.push_back((atlas_dir/species/(species+"_WM.nii.gz")).string());
 
-        std::vector<std::string> atlas_list,file_list;
-        for(const auto& entry : fs::directory_iterator(t_dir))
-            if(entry.is_regular_file() && tipl::ends_with(entry.path().filename().string(),{".nii",".nii.gz"}))
-                atlas_list.push_back(entry.path().filename().string());
 
-        std::sort(atlas_list.begin(),atlas_list.end());
+        // find all atlases under atlas/[species]
+        {
+            std::vector<std::string> atlas_list;
+            for(const auto& entry : fs::directory_iterator(atlas_dir/species))
+                if(entry.is_regular_file() && tipl::ends_with(entry.path().filename().string(),{".nii",".nii.gz"}) &&
+                   !tipl::begins_with(entry.path().filename().string(),species + "_")) // exclude those start with [species]_
+                    atlas_list.push_back(entry.path().string());
 
-        for(const auto& each : atlas_list)
-            if(each.substr(0,each.find('.')) != name)
-                file_list.push_back((t_dir/each).string());
+            std::sort(atlas_list.begin(),atlas_list.end());
+            atlas_file_name_list.push_back(std::move(atlas_list));
+        }
 
-        atlas_file_name_list.push_back(std::move(file_list));
+        // find all unet models under unet/
+
+        {
+            std::vector<std::string> model_list;
+            for(const auto& entry : fs::directory_iterator(atlas_dir/species))
+                if(entry.is_regular_file() && tipl::ends_with(entry.path().filename().string(),{".nz"}) &&
+                   tipl::begins_with(entry.path().filename().string(),species + "_")) // exclude those start with [species]_
+                    model_list.push_back(entry.path().string());
+
+            std::sort(model_list.begin(),model_list.end());
+            unet_list.push_back(std::move(model_list));
+        }
     }
 
-    return !fa_template_list.empty();
+    return !template_name_list.empty();
 
 }
 
