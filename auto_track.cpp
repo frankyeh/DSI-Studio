@@ -7,7 +7,7 @@
 #include "fib_data.hpp"
 #include "libs/tracking/tracking_thread.hpp"
 #include <filesystem>
-extern std::vector<std::string> fa_template_list;
+extern std::vector<std::string> template_name_list;
 auto_track::auto_track(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::auto_track)
@@ -21,8 +21,8 @@ auto_track::auto_track(QWidget *parent) :
 
     // populate tractography atlas list
     ui->template_list->clear();
-    for(const auto& each : fa_template_list)
-        ui->template_list->addItem(tipl::split(std::filesystem::path(each).filename().u8string(),'.').front().c_str());
+    for(const auto& each : template_name_list)
+        ui->template_list->addItem(each.c_str());
     ui->template_list->setCurrentIndex(0);
     timer = std::make_shared<QTimer>(this);
     timer->setInterval(1000);
