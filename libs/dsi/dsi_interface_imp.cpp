@@ -9,7 +9,7 @@
 #include "fib_data.hpp"
 #include "hist_process.hpp"
 
-extern std::vector<std::string> fa_template_list;
+extern std::vector<std::string> template_name_list;
 void src_data::check_output_file_name(void)
 {
     if(output_file_name.empty())
@@ -132,7 +132,7 @@ bool src_data::reconstruction(void)
         case 7:
             voxel.step_report << "[Step T2b]=QSDR" << std::endl;
             voxel.step_report << "[Step T2b][QSDR resolution]=" << voxel.qsdr_reso << std::endl;
-            voxel.step_report << "[Step T2b][Template]=" << QFileInfo(fa_template_list[voxel.template_id].c_str()).baseName().toLower().toStdString() << std::endl;
+            voxel.step_report << "[Step T2b][Template]=" << template_name_list[voxel.template_id] << std::endl;
             voxel.step_report << "[Step T2b][Diffusion sampling length ratio]=" << voxel.param[0] << std::endl;
             voxel.recon_report
             << " The diffusion data were reconstructed in the MNI space using q-space diffeomorphic reconstruction (Yeh et al., Neuroimage, 58(1):91-9, 2011) to obtain the spin distribution function (Yeh et al., IEEE TMI, ;29(9):1626-35, 2010). "
