@@ -1403,8 +1403,8 @@ bool tracking_window::run_unet(void)
 {
     QMessageBox::information(this,QApplication::applicationName(),"Specify the UNet model");
     QString filename = QFileDialog::getOpenFileName(this,
-                "Select model",QCoreApplication::applicationDirPath()+"/network/",
-                "Text files (*.net.gz);;All files|(*)");
+                "Select model",QCoreApplication::applicationDirPath()+"/unet/",
+                "model files (*.nz);;All files|(*)");
     if(filename.isEmpty())
         return false;
     tipl::progress p("processing",true);
@@ -1417,10 +1417,8 @@ bool tracking_window::run_unet(void)
     if(!unet.forward(current_slice->get_source(),current_slice->vs,unet_label,p))
         return false;
     unet_out_channel = unet.num_tissue_channels;
-    filename.chop(6);
-    filename += "txt";
-    if(std::filesystem::exists(filename.toStdString()))
-        unet_label_name = tipl::read_text_file(filename.toStdString());
+    if(std::filesystem::exists(tipl::remove_all_suffix(filename.toStdString()) + ".txt"))
+        unet_label_name = tipl::read_text_file(tipl::remove_all_suffix(filename.toStdString()) + ".txt");
     return true;
 }
 
