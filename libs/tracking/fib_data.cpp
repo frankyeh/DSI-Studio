@@ -10,7 +10,8 @@
 #include "roi.hpp"
 #include "cmd/img.hpp"
 
-extern std::vector<std::string> fa_template_list;
+extern std::vector<std::string> template_name_list,qa_template_list,iso_template_list,t1w_template_list,t2w_template_list,wm_template_list,fib_template_list,tract_template_list;
+extern std::vector<std::vector<std::string> > atlas_file_name_list;
 bool odf_data::read(fib_data& fib)
 {
     if(!odf_map.empty())
@@ -847,10 +848,9 @@ bool fib_data::load_from_mat(void)
         if(mat_reader.read("template",template_name))
         {
             tipl::out() << "template: " << template_name;
-            for(size_t index = 0;index < fa_template_list.size();++index)
+            for(size_t index = 0;index < template_name_list.size();++index)
             {
-                auto name = std::filesystem::path(fa_template_list[index]).stem().stem().stem().string();
-                if(template_name == name)
+                if(template_name == template_name_list[index])
                 {
                     matched_template_id = index;
                     set_template_id(matched_template_id);
@@ -859,33 +859,29 @@ bool fib_data::load_from_mat(void)
             }
         }
 
-        for(int index = fa_template_list.size()-1;index >= 0;--index)
-            if(tipl::contains(std::filesystem::path(fib_file_name).filename().string(),
-                              std::filesystem::path(fa_template_list[index]).filename().string()))
+        for(int index = template_name_list.size()-1;index >= 0;--index)
+            if(tipl::contains(std::filesystem::path(fib_file_name).filename().string(),template_name_list[index]))
             {
                 matched_template_id = index;
-                tipl::out() << "matched template (by file name): " <<
-                                   std::filesystem::path(fa_template_list[index]).filename().string() << std::endl;
+                tipl::out() << "matched template (by file name): " << template_name_list[index];
                 set_template_id(matched_template_id);
                 return true;
             }
 
-        for(size_t index = 0;index < fa_template_list.size();++index)
+        for(size_t index = 0;index < template_name_list.size();++index)
         {
             tipl::vector<3> Itvs;
             tipl::shape<3> Itdim;
-            if((tipl::io::gz_nifti(fa_template_list[index],std::ios::in) >> Itdim >> Itvs) &&
+            if((tipl::io::gz_nifti(qa_template_list[index],std::ios::in) >> Itdim >> Itvs) &&
                 std::abs(dim[0]-Itdim[0]*Itvs[0]/vs[0]) < 4.0f)
             {
                 matched_template_id = index;
-                tipl::out() << "matched template (by image size): " <<
-                                   QFileInfo(fa_template_list[index].c_str()).baseName().toStdString() << std::endl;
+                tipl::out() << "matched template (by image size): " << template_name_list[index];
                 set_template_id(matched_template_id);
                 return true;
             }
         }
-        tipl::out() << "no matched template, use default: " <<
-            std::filesystem::path(fa_template_list[matched_template_id]).stem().stem().stem() << std::endl;
+        tipl::out() << "no matched template, use default: " << template_name_list[matched_template_id];
         set_template_id(matched_template_id);
         return true;
     }
@@ -1177,7 +1173,7 @@ bool fib_data::save_to_file(const std::string& file_name)
     else
     if(is_mni)
         matfile.write("R2",R2);
-    matfile.write("template",std::filesystem::path(fa_template_list[template_id]).stem().stem().stem().string());
+    matfile.write("template",template_name_list[template_id]);
     matfile.write("report",report);
     matfile.write("intro",intro);
     db.modified = false;
@@ -1194,7 +1190,7 @@ void fib_data::match_template(void)
 {
     set_template_id(match_volume(handle_mask(mat_reader),vs));
     is_human_data = (template_id == 0);
-    tipl::out() << "matched template: " << std::filesystem::path(fa_template_list[template_id]).stem().stem().stem();
+    tipl::out() << "matched template: " << template_name_list[template_id];
 }
 
 size_t fib_data::get_name_index(const std::string& index_name) const
@@ -1407,13 +1403,6 @@ void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) 
         }
 }
 
-
-
-
-extern std::vector<std::string> fa_template_list,iso_template_list;
-extern std::vector<std::vector<std::string> > atlas_file_name_list;
-
-
 void apply_trans(tipl::vector<3>& pos,const tipl::matrix<4,4>& trans)
 {
     if(trans[0] != 1.0f)
@@ -1444,7 +1433,7 @@ bool fib_data::add_atlas(const std::string& file_name)
     if(!std::filesystem::exists(file_name) || !tipl::ends_with(file_name,".nii.gz"))
         return false;
     atlas_list.push_back(std::make_shared<atlas>());
-    atlas_list.back()->name = std::filesystem::path(file_name).stem().stem().string();
+    atlas_list.back()->name = tipl::remove_all_suffix(std::filesystem::path(file_name).filename().string());
     atlas_list.back()->filename = file_name;
     atlas_list.back()->template_to_mni = template_I.empty() ? trans_to_mni : template_to_mni;
     return true;
@@ -1453,13 +1442,13 @@ bool fib_data::load_tractography_name_list(void)
 {
     if(!tractography_name_list.empty())
         return true;
-    std::ifstream in(tractography_atlas_file_name+".txt");
+    std::ifstream in(tipl::remove_all_suffix(tractography_atlas_file_name)+".txt");
     if(!in)
     {
-        error_msg = "cannot find tractography atlas label text file at " + tractography_atlas_file_name+".txt";
+        error_msg = "cannot find tractography atlas label text file at " + tipl::remove_all_suffix(tractography_atlas_file_name)+".txt";
         return false;
     }
-    tipl::out() << "loading tractography atlas label from " << tractography_atlas_file_name << ".txt";
+    tipl::out() << "loading tractography atlas label from " << tipl::remove_all_suffix(tractography_atlas_file_name) << ".txt";
     std::copy(std::istream_iterator<std::string>(in),std::istream_iterator<std::string>(),std::back_inserter(tractography_name_list));
     return true;
 }
@@ -1486,16 +1475,16 @@ void fib_data::set_template_id(size_t new_id)
         for(size_t i = 0;i < atlas_file_name_list[template_id].size();++i)
             add_atlas(atlas_file_name_list[template_id][i]);
         // populate other modality name
-        t1w_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T1W.nii.gz").toStdString();
-        t2w_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T2W.nii.gz").toStdString();
-        wm_template_file_name = QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".WM.nii.gz").toStdString();
-        set_tractography_atlas(QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".tt.gz").toStdString());
+        t1w_template_file_name = t1w_template_list[template_id];
+        t2w_template_file_name = t2w_template_list[template_id];
+        wm_template_file_name = wm_template_list[template_id];
+        set_tractography_atlas(tract_template_list[template_id]);
 
 
         alternative_mapping_index = 0;
         alternative_mapping = { "" };
-        auto files = tipl::search_files(std::filesystem::path(fa_template_list[template_id]).parent_path().string(),"*.mz");
-        alternative_mapping.insert(alternative_mapping.end(),files.begin(),files.end());
+        //auto files = tipl::search_files(std::filesystem::path(qa_template_list[template_id]).parent_path().string(),"*.mz");
+        //alternative_mapping.insert(alternative_mapping.end(),files.begin(),files.end());
     }
 }
 std::vector<std::string> fib_data::get_tractography_all_levels(void)
@@ -1570,9 +1559,9 @@ bool fib_data::load_template(void)
         template_to_mni = trans_to_mni;
         return true;
     }
-    if(!(tipl::io::gz_nifti(fa_template_list[template_id],std::ios::in) >>
+    if(!(tipl::io::gz_nifti(qa_template_list[template_id],std::ios::in) >>
          template_I >> template_vs >> template_to_mni
-         >> [&](const std::string& e){tipl::error() << e;error_msg = "cannot load " + fa_template_list[template_id];}))
+         >> [&](const std::string& e){tipl::error() << e;error_msg = "cannot load " + qa_template_list[template_id];}))
         return false;
 
     float ratio = float(template_I.width()*template_vs[0])/float(dim[0]*vs[0]);
@@ -1659,7 +1648,7 @@ bool fib_data::load_track_atlas(bool symmetric)
     if(!std::filesystem::exists(tractography_atlas_file_name))
     {
         if(tractography_atlas_file_name.empty())
-            error_msg = "no tractography atlas in " + QFileInfo(fa_template_list[template_id].c_str()).baseName().toStdString() + " template";
+            error_msg = "no tractography atlas for " + template_name_list[template_id] + " template";
         else
             error_msg = "cannot find atlas file at " + tractography_atlas_file_name;
         return false;
@@ -1667,8 +1656,8 @@ bool fib_data::load_track_atlas(bool symmetric)
     if(!load_tractography_name_list())
         return false;
 
-    auto tractography_atlas_roi_file_name = QString(tractography_atlas_file_name.c_str()).replace(".tt.gz",".roi.nii.gz").toStdString();
-    auto tractography_atlas_roa_file_name = QString(tractography_atlas_file_name.c_str()).replace(".tt.gz",".roa.nii.gz").toStdString();
+    auto tractography_atlas_roi_file_name = tipl::remove_all_suffix(tractography_atlas_file_name) + "_roi.nii.gz";
+    auto tractography_atlas_roa_file_name = tipl::remove_all_suffix(tractography_atlas_file_name) + "_roa.nii.gz";
 
 
     if(!tractography_atlas_roi.get() && std::filesystem::exists(tractography_atlas_roi_file_name))
@@ -1987,11 +1976,11 @@ void fib_data::recognize_report(std::shared_ptr<TractModel>& trk,std::string& re
 bool to_t1wt2w_templates(tipl::reg::mm_reg<tipl::out>& reg,size_t template_id,bool be)
 {
     tipl::out() << "reloading all t1w/t2w/iso";
-    if(!reg.load_template<tipl::io::gz_nifti>(0,QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T1W.nii.gz").toStdString()))
+    if(!reg.load_template<tipl::io::gz_nifti>(0,t1w_template_list[template_id]))
         return false;
     reg.match_resolution(true,0.5f,std::numeric_limits<float>::max() /* won't downsize I[0]*/);
 
-    if(!reg.load_template<tipl::io::gz_nifti>(1,QString(fa_template_list[template_id].c_str()).replace(".QA.nii.gz",".T2W.nii.gz").toStdString()) ||
+    if(!reg.load_template<tipl::io::gz_nifti>(1,t2w_template_list[template_id]) ||
        !reg.load_template<tipl::io::gz_nifti>(2,iso_template_list[template_id]))
         return false;
 
@@ -2026,8 +2015,7 @@ bool to_t1wt2w_templates(tipl::reg::mm_reg<tipl::out>& reg,size_t template_id,bo
 }
 std::string fib_data::get_mapping_file_name(void) const
 {
-    std::string output_file_name(fib_file_name + "." +
-                                 std::filesystem::path(fa_template_list[template_id]).filename().stem().stem().stem().string());
+    std::string output_file_name(fib_file_name + "." + template_name_list[template_id]);
     if(alternative_mapping_index)
         output_file_name += std::to_string(alternative_mapping_index);
     output_file_name += ".mz";
