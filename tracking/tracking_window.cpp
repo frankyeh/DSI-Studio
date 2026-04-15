@@ -75,7 +75,7 @@ void command_history::add_record(const std::string& output)
     {
         auto p = std::filesystem::path(tipl::split(output,',')[1]);
         default_parent_path = p.parent_path().string();
-        default_stem2 = p.stem().stem().string();
+        default_stem2 = tipl::remove_all_suffix(p.filename().string());
         std::replace(default_stem2.begin(),default_stem2.end(),'.','_');
         if(default_stem.empty())
             default_stem = default_stem2;
@@ -334,7 +334,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
             if(!handle->other_images.empty())
                 for(const auto& each : tipl::split(handle->other_images,','))
-                    addSlices(std::filesystem::path(each).stem().stem().string(),each);
+                    addSlices(tipl::remove_all_suffix(std::filesystem::path(each).filename().string()),each);
 
             current_slice = slices[0];
             glWidget->slice_texture.resize(slices.size());
