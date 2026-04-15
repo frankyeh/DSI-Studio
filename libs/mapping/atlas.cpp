@@ -33,7 +33,7 @@ void atlas::load_label(void)
         labels.push_back(txt);
     }
 }
-extern std::vector<std::string> fa_template_list;
+
 bool atlas::load_from_file(void)
 {
     if(!I.empty())
