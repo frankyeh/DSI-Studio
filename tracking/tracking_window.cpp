@@ -28,7 +28,7 @@
 #include "regtoolbox.h"
 #include "connectivity_matrix_dialog.h"
 
-extern std::vector<std::string> fa_template_list;
+extern std::vector<std::string> fib_template_list;
 extern std::vector<tracking_window*> tracking_windows;
 extern size_t auto_track_pos[7];
 extern unsigned char auto_track_rgb[6][3];               // projection
@@ -39,10 +39,10 @@ QByteArray default_geo,default_state;
 void populate_templates(QComboBox* combo,size_t index)
 {
     combo->clear();
-    if(!fa_template_list.empty())
+    if(!fib_template_list.empty())
     {
-        for(size_t i = 0;i < fa_template_list.size();++i)
-            combo->addItem(QFileInfo(fa_template_list[i].c_str()).baseName());
+        for(size_t i = 0;i < fib_template_list.size();++i)
+            combo->addItem(QFileInfo(fib_template_list[i].c_str()).baseName());
         combo->setCurrentIndex(int(index));
     }
 }
