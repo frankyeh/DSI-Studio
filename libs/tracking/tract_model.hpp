@@ -122,7 +122,7 @@ public:
                 return all_tracts;
             if(tract_model->tract_cluster.empty())
             {
-                tract_model->name = std::filesystem::path(std::string(file_name)).stem().stem().u8string();
+                tract_model->name = tipl::remove_all_suffix(std::filesystem::path(std::string(file_name)).filename().string());
                 all_tracts.push_back(tract_model);
                 return all_tracts;
             }
