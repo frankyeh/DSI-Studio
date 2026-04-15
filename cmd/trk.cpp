@@ -247,7 +247,7 @@ bool get_parcellation(tipl::program_option<tipl::out>& po,ConnectivityMatrix& p,
         tipl::out() << "open " << roi_file_name;
         if(!load_nii(po,p.handle,roi_file_name,regions)) // specify atlas file (e.g. --connectivity=subject_file.nii.gz)
             return false;
-        p.load_from_regions(regions,std::filesystem::path(roi_file_name).stem().stem().string());
+        p.load_from_regions(regions,tipl::remove_all_suffix(std::filesystem::path(roi_file_name).filename().string()));
     }
     if(p.name.empty())
         p.name = (std::filesystem::exists(roi_file_name)) ?
@@ -365,7 +365,7 @@ bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> h
             bool found = false;
             for(size_t index = 0;index < regions.size();++index)
                 if(regions[index]->name == region_name ||
-                   regions[index]->name == std::filesystem::path(file_name).stem().stem().string() + "_" + region_name)
+                   regions[index]->name == tipl::remove_all_suffix(std::filesystem::path(file_name).filename().string()) + "_" + region_name)
                 {
                     found = true;
                     roi = *(regions[index].get());
@@ -463,7 +463,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
             if(std::filesystem::is_directory(out))
             {
                 if(tract_file_name.empty())
-                    tract_file_name = (out/std::filesystem::path(po.get("source")).stem().stem()).string();
+                    tract_file_name = (out/tipl::remove_all_suffix(std::filesystem::path(po.get("source")).filename().string())).string();
                 else
                     tract_file_name = (out/std::filesystem::path(tract_file_name).filename()).string();
             }
@@ -642,20 +642,16 @@ void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_threa
         tracking_thread.param.set_code(po.get("parameter_id"));
 
 }
-extern std::vector<std::string> fa_template_list;
+extern std::vector<std::string> template_name_list;
 size_t get_template_id(tipl::program_option<tipl::out>& po,size_t default_sel)
 {
     if(!po.has("template"))
         return default_sel;
-    std::vector<std::string> selections;
     std::string tempate_prompt;
-    for(size_t id = 0;id < fa_template_list.size();++id)
-    {
-        selections.push_back(tipl::remove_all_suffix(std::filesystem::path(fa_template_list[id]).filename().string()));
-        tempate_prompt += std::to_string(id) + ":" + selections.back() + " ";
-    }
+    for(size_t id = 0;id < template_name_list.size();++id)
+        tempate_prompt += std::to_string(id) + ":" + template_name_list[id] + " ";
     tipl::out() << "template " << tempate_prompt;
-    return po.get("template",selections,default_sel);
+    return po.get("template",template_name_list,default_sel);
 }
 void set_template(std::shared_ptr<fib_data> handle,tipl::program_option<tipl::out>& po)
 {
