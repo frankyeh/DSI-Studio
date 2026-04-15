@@ -1414,9 +1414,9 @@ bool tracking_window::run_unet(void)
         QMessageBox::critical(this,"ERROR",unet.error_msg.c_str());
         return false;
     }
-    unet_out_channel = unet.unet->out_channels_;
     if(!unet.forward(current_slice->get_source(),current_slice->vs,unet_label,p))
         return false;
+    unet_out_channel = unet.num_tissue_channels;
     filename.chop(6);
     filename += "txt";
     if(std::filesystem::exists(filename.toStdString()))
