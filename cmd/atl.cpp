@@ -7,7 +7,6 @@
 
 #include <filesystem>
 
-extern std::vector<std::string> fa_template_list;
 bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list)
 {
     QStringList name_list = QString(atlas_name.c_str()).split(",");
