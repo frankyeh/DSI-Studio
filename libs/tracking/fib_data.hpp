@@ -166,7 +166,7 @@ public:
     {
     }
     slice_model(const std::string& path_):
-        name(std::filesystem::path(path_).stem().stem().string()),path(path_)
+        name(tipl::remove_all_suffix(std::filesystem::path(path_).filename().string())),path(path_)
     {
     }
     slice_model(const std::string& name_,const std::string& path_):
