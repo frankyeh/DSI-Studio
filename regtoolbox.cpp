@@ -108,7 +108,7 @@ void RegToolBox::load_template(const std::string& file_name)
     auto_fill();
 }
 
-extern std::vector<std::string> fa_template_list,iso_template_list;
+extern std::vector<std::string> qa_template_list,iso_template_list;
 void RegToolBox::on_OpenSubject_clicked()
 {
     if(file_names[0].size() >= reg.max_modality)
@@ -133,7 +133,7 @@ void RegToolBox::on_OpenSubject_clicked()
                QMessageBox::question(this,QApplication::applicationName(),"load QA/ISO templates?",
                QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
                 {
-                    load_template(fa_template_list[0]);
+                    load_template(qa_template_list[0]);
                     load_template(iso_template_list[0]);
                 }
         }
