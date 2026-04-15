@@ -409,7 +409,7 @@ void show_slice(tipl::io::gz_mat_read& mat_reader,const char* name)
 bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 const std::string& cmd,
                 const std::string& param);
-extern std::vector<std::string> iso_template_list;
+extern std::vector<std::string> iso_template_list,t1w_template_list,t2w_template_list;
 int img(tipl::program_option<tipl::out>& po)
 {
     if((!po.has("overwrite") || !po.get("overwrite",0)) && po.has("output") && std::filesystem::exists(po.get("output")))
@@ -496,8 +496,8 @@ int img(tipl::program_option<tipl::out>& po)
                     reg.Ivs = var_image.vs;
                     reg.IR = var_image.T;
 
-                    if(!reg.load_template<tipl::io::gz_nifti>(0,QString(iso_template_list[template_id].c_str()).replace(".ISO.nii.gz",".T1W.nii.gz").toStdString()) ||
-                       !reg.load_template<tipl::io::gz_nifti>(1,QString(iso_template_list[template_id].c_str()).replace(".ISO.nii.gz",".T2W.nii.gz").toStdString()) ||
+                    if(!reg.load_template<tipl::io::gz_nifti>(0,t1w_template_list[template_id]) ||
+                       !reg.load_template<tipl::io::gz_nifti>(0,t2w_template_list[template_id]) ||
                        !reg.load_template<tipl::io::gz_nifti>(2,iso_template_list[template_id]))
                     {
                         tipl::error() << reg.error_msg;
@@ -524,7 +524,7 @@ int img(tipl::program_option<tipl::out>& po)
                     continue;
                 }
 
-                auto model_path = QCoreApplication::applicationDirPath().toStdString()+ "/network/" + po.get("network",param);
+                auto model_path = QCoreApplication::applicationDirPath().toStdString()+ "/unet/" + po.get("network",param);
                 tipl::ml3d::tissue_seg unet;
                 if(!unet.load_model<tipl::io::gz_mat_read>(model_path))
                     return tipl::error() << unet.error_msg,1;
