@@ -278,7 +278,7 @@ bool nii2src(const std::vector<std::string>& dwi_nii_files,
         {
             auto src_name = dwi_nii_files[i] + ".sz";
             if(!output_dir.empty())
-                src_name = output_dir + "/" + std::filesystem::path(dwi_nii_files[i]).stem().stem().u8string() + ".sz";
+                src_name = output_dir + "/" + tipl::remove_all_suffix(std::filesystem::path(dwi_nii_files[i]).filename().string()) + ".sz";
             if(!overwrite && std::filesystem::exists(src_name))
                 tipl::out() << "skipping " << src_name << " already exists";
             else
@@ -367,9 +367,9 @@ int src(tipl::program_option<tipl::out>& po)
         return tipl::error() << "no file found for creating src",1;
 
 
-    auto output = po.get("output",std::filesystem::path(file_list[0]).stem().stem().u8string() + ".sz");
+    auto output = po.get("output",tipl::remove_all_suffix(std::filesystem::path(file_list[0]).filename().string()) + ".sz");
     if(std::filesystem::is_directory(output))
-        output += std::string("/") + std::filesystem::path(file_list[0]).stem().stem().u8string() + ".sz";
+        output += std::string("/") + tipl::remove_all_suffix(std::filesystem::path(file_list[0]).filename().string()) + ".sz";
     if(!tipl::ends_with(output,".sz") && !tipl::ends_with(output,".rz"))
         output += ".sz";
     if(!po.get("overwrite",0) && std::filesystem::exists(output))
