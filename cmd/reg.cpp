@@ -357,8 +357,8 @@ int reg(tipl::program_option<tipl::out>& po)
         if(!r.load_subject<tipl::io::gz_nifti>(i,from_filename[i]) ||
            !r.load_template<tipl::io::gz_nifti>(i,to_filename[i]))
             return tipl::error() << r.error_msg,1;
-        r.modality_names[i] = std::filesystem::path(from_filename[i]).stem().stem().string() + "->" +
-                              std::filesystem::path(to_filename[i]).stem().stem().string();
+        r.modality_names[i] = tipl::remove_all_suffix(std::filesystem::path(from_filename[i]).filename().string()) + "->" +
+                              tipl::remove_all_suffix(std::filesystem::path(to_filename[i]).filename().string());
     }
 
     tipl::out() << "source dim: " << r.Is << " to dim: " << r.Its;
