@@ -43,7 +43,7 @@ bool reconstruction_window::load_src(int index)
 }
 
 QString check_citation(QString str);
-extern std::vector<std::string> fa_template_list,iso_template_list;
+extern std::vector<std::string> qa_template_list,iso_template_list;
 reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *parent) :
     QMainWindow(parent),filenames(filenames_),ui(new Ui::reconstruction_window)
 {
@@ -294,7 +294,7 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
 
     if(method_id == 7)
     {
-        if(fa_template_list.empty())
+        if(qa_template_list.empty())
         {
             QMessageBox::critical(this,"ERROR","Cannot find template files");
             return;
@@ -937,7 +937,7 @@ void reconstruction_window::on_actionManual_Align_triggered()
     tipl::matrix<4,4> VG_T;
     handle->voxel.template_id = ui->primary_template->currentIndex();
     {
-        if(!(tipl::io::gz_nifti(fa_template_list[handle->voxel.template_id],std::ios::in) >> VG >> VGvs >> VG_T
+        if(!(tipl::io::gz_nifti(qa_template_list[handle->voxel.template_id],std::ios::in) >> VG >> VGvs >> VG_T
              >> [&](const std::string& e){QMessageBox::critical(this,"ERROR",e.c_str());}))
             return;
         tipl::io::gz_nifti(iso_template_list[handle->voxel.template_id],std::ios::in) >> VG2;
