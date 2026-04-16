@@ -56,7 +56,8 @@ bool connectometry_db::load_db_from_fib(fib_data* handle_)
             return false;
         }
         // allocate memory in the mat reader
-        auto mat = std::make_shared<tipl::io::mat_matrix>(index_name,float(0),subject_names.size(),mask_size);
+        auto mat = std::make_shared<tipl::io::mat_matrix>(index_name,float(0),
+                            uint32_t(subject_names.size()),uint32_t(mask_size));
         handle->mat_reader.push_back(mat);
         auto index_ptr = mat->get_data<float>();
 
@@ -497,7 +498,9 @@ bool connectometry_db::add_subjects(const std::vector<std::string>& file_names)
     std::vector<float> extracted_R2(file_names.size());
     for(const auto& each : index_list)
     {
-        extracted_matrix.push_back(std::make_shared<tipl::io::mat_matrix>(each,float(0),file_names.size() + subject_names.size(),mask_size));
+        extracted_matrix.push_back(std::make_shared<tipl::io::mat_matrix>(each,float(0),
+                uint32_t(file_names.size() + subject_names.size()),uint32_t(mask_size)));
+
         if(!subject_names.empty())
             std::copy_n(handle->mat_reader[each].get_data<float>(),subject_names.size()*mask_size,extracted_matrix.back()->get_data<float>());
     }
