@@ -123,7 +123,7 @@ void SliceModel::get_slice(tipl::color_image& show_image,unsigned char cur_dim,i
         }
         tipl::image<2,unsigned int> buf;
         tipl::volume2slice(view->color_map_buf, buf, cur_dim, pos);
-        for (unsigned int index = 0;index < buf.size();++index)
+        for (size_t index = 0,sz = buf.size();index < sz;++index)
         {
             auto d = handle->dir.get_fib(buf[index],0);
             show_image[index].r = std::abs(float(show_image[index].r)*d[0]);
@@ -451,8 +451,8 @@ bool CustomSliceModel::load_slices(void)
                         tipl::downsampling(picture);
                 }
                 source_images.resize(tipl::shape<3>(uint32_t(picture.width()),uint32_t(picture.height()),slices_count));
-                for(size_t j = 0;j < source_images.plane_size();++j)
-                    for(size_t k = 0,pos = j;k < slices_count;++k,pos += source_images.plane_size())
+                for(size_t j = 0,ps = source_images.plane_size();j < ps;++j)
+                    for(size_t k = 0,pos = j;k < slices_count;++k,pos += ps)
                         source_images[pos] = float(picture[j][0]);
             }
 
