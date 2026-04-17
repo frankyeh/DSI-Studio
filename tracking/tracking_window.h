@@ -173,11 +173,6 @@ public:
 public:
     QStringList dt_list; // for dt_index1 dt_index2
 public:
-    std::vector<std::string> unet_label_name;
-    tipl::image<3,unsigned char> unet_label;
-    int unet_out_channel;
-    bool run_unet(void);
-public:
     connectometry_result cnt_result;
 public:
     std::shared_ptr<QTimer> timer2;
@@ -193,6 +188,7 @@ public:
     std::shared_ptr<SliceModel> current_slice;
     bool addSlices(const std::string& name,const std::string& path);
     bool addSlices(std::shared_ptr<SliceModel> new_slice);
+    QAction* addSubMenuItem(const std::string& each,const std::string& title,const char* action);
     void updateSlicesMenu(void);
     float get_fa_threshold(void);
     bool no_update = true;
@@ -247,8 +243,6 @@ private slots:
     void on_template_box_currentIndexChanged(int index);
     void on_actionManual_Atlas_Alignment_triggered();
 
-    void on_actionStrip_Skull_triggered();
-    void on_actionSegment_Tissue_triggered();
     void on_tract_target_0_currentIndexChanged(int index);
     void on_tract_target_1_currentIndexChanged(int index);
 
@@ -261,6 +255,7 @@ private slots:
     void run_command(const std::string& cmd);
     void on_actionOpen_FIB_Directory_triggered();
     void on_device_coordinate_currentIndexChanged(int index);
+    void on_segmentButton_clicked();
 };
 
 #endif // TRACKING_WINDOW_H
