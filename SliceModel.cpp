@@ -493,7 +493,7 @@ bool CustomSliceModel::load_slices(void)
                 QImage buf = in.convertToFormat(QImage::Format_RGB32).mirrored();
                 tipl::image<2,short> I(tipl::shape<2>(in.width(),in.height()));
                 const uchar* ptr = buf.bits();
-                for(size_t j = 0;j < I.size();++j,ptr += 4)
+                for(size_t j = 0,sz = I.size();j < sz;++j,ptr += 4)
                     I[j] = *ptr;
 
                 std::copy(I.begin(),I.end(),source_images.begin() +

@@ -611,7 +611,7 @@ void GLWidget::renderLR()
                      cur_tracking_window.current_slice:
                      cur_tracking_window.slices[0]);
 
-        auto& geo = cur_tracking_window.handle->dim;
+        auto& dim = cur_tracking_window.handle->dim;
         if(odf_points.empty())
         {
             std::vector<tipl::pixel_index<3> > odf_pos;
@@ -620,16 +620,16 @@ void GLWidget::renderLR()
 
             case 0:
                 {
-                    tipl::shape<2> geo2(slice->dim[odf_dim==0?1:0],
+                    tipl::shape<2> dim2(slice->dim[odf_dim==0?1:0],
                                            slice->dim[odf_dim==2?1:2]);
-                    for(tipl::pixel_index<2> index(geo2);index < geo2.size();++index)
+                    for(tipl::pixel_index<2> index(dim2);index < dim2.size();++index)
                     {
                         if((index[0] & mask) | (index[1] & mask))
                             continue;
                         auto xyz = slice->to3DSpace<tipl::vector<3,int> >(cur_tracking_window.cur_dim,index[0],index[1]);
                         if (!slice->dim.is_valid(xyz))
                             continue;
-                        tipl::pixel_index<3> pos(xyz.begin(),geo);
+                        tipl::pixel_index<3> pos(xyz.begin(),dim);
                         if (handle->dir.fa[0][pos.index()] <= fa_threshold)
                             continue;
                         odf_pos.push_back(pos);
@@ -637,16 +637,18 @@ void GLWidget::renderLR()
                 }
                 break;
             case 1: // intersection
-                odf_pos.push_back(tipl::pixel_index<3>(slice->slice_pos[0],slice->slice_pos[1],slice->slice_pos[2],
-                                              geo));
+                odf_pos.push_back(tipl::pixel_index<3>(slice->slice_pos[0],slice->slice_pos[1],slice->slice_pos[2],dim));
                 break;
             case 2: //all
-                for(tipl::pixel_index<3> index(geo);index < geo.size();++index)
                 {
-                    if(((index[0] & mask) | (index[1] & mask) | (index[2] & mask)) ||
-                       handle->dir.fa[0][index.index()] <= fa_threshold)
-                        continue;
-                    odf_pos.push_back(index);
+                    size_t sz = dim.size();
+                    for(tipl::pixel_index<3> index(dim);index < sz;++index)
+                    {
+                        if(((index[0] & mask) | (index[1] & mask) | (index[2] & mask)) ||
+                           handle->dir.fa[0][index.index()] <= fa_threshold)
+                            continue;
+                        odf_pos.push_back(index);
+                    }
                 }
                 break;
             }

@@ -2009,7 +2009,7 @@ bool TractModel::reconnect_tract(float distance,float angular_threshold)
     // 2: track2 beg
     // 3: track2 end
     const int compare_pair[4][2] = {{0,2},{0,3},{1,2},{1,3}}; // for checking which end to connect
-    for (size_t pos = 0;pos < geo.size();++pos)
+    for (size_t pos = 0,sz = geo.size();pos < sz;++pos)
         if(endpoint_map[pos].size() >= 2)
         {
             std::vector<uint32_t>& track_list = endpoint_map[pos];

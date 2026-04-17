@@ -634,7 +634,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
         tipl::image<4,float> buf(dim.expand(3*uint32_t(dir.num_fiber)));
         for(unsigned int j = 0,index = 0;j < dir.num_fiber;++j)
         for(int k = 0;k < 3;++k)
-        for(size_t i = 0;i < dim.size();++i,++index)
+        for(size_t i = 0,sz = dim.size();i < sz;++i,++index)
             buf[index] = dir.get_fib(i,j)[k];
         return tipl::io::gz_nifti(file_name,std::ios::out) << bind(buf);
     }
@@ -643,7 +643,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
         tipl::image<4,float> buf(dim.expand(3));
         unsigned char dir_index = uint8_t(index_name[3]-'0');
         for(unsigned int j = 0,ptr = 0;j < 3;++j)
-        for(size_t index = 0;index < dim.size();++index,++ptr)
+        for(size_t index = 0,sz = dim.size();index < sz;++index,++ptr)
             if(dir.fa[dir_index][index] > 0.0f)
                 buf[ptr] = dir.get_fib(index,dir_index)[j];
         return tipl::io::gz_nifti(file_name,std::ios::out) << bind(buf);
@@ -657,7 +657,7 @@ bool fib_data::save_slice(const std::string& index_name,const std::string& file_
             return false;
         }
         tipl::image<4,float> buf(dim.expand(dir.half_odf_size));
-        for(size_t pos = 0;pos < dim.size();++pos)
+        for(size_t pos = 0,sz = dim.size();pos < sz;++pos)
         {
             auto* ptr = odf.get_odf_data(pos);
             if(ptr!= nullptr)
@@ -788,7 +788,7 @@ tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& ma
                mat_reader.read("image0",fa0_ptr) || // create mask from src's b0
                mat_reader.read("image",fa0_ptr))    // create mask from t1w/t2w images
             {
-                for(size_t i = 0;i < dim.size();++i)
+                for(size_t i = 0,sz = dim.size();i < sz;++i)
                     if(fa0_ptr[i] > 0.0f)
                         mask_buffer[i] = 1;
             }
@@ -1055,7 +1055,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 tipl::image<3> new_image(dim);
                 mat.convert_to<float>();
                 auto ptr = mat.get_data<float>()+d;
-                for(size_t j = 0;j < dim.size();++j,ptr += 3)
+                for(size_t j = 0,sz = dim.size();j < sz;++j,ptr += 3)
                     new_image[j] = *ptr;
                 if(!tipl::command<tipl::out,tipl::io::gz_nifti>(new_image,new_vs,new_trans,is_mni,cmd,param,true,mat_reader.error_msg))
                 {
@@ -1069,7 +1069,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 for(size_t d = 0;d < 3;++d)
                 {
                     auto ptr = mat.get_data<float>()+d;
-                    for(size_t j = 0;j < dim.size();++j,ptr += 3)
+                    for(size_t j = 0,sz = dim.size();j < sz;++j,ptr += 3)
                         *ptr = new_image[j];
                 }
             }

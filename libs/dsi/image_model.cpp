@@ -428,8 +428,9 @@ bool src_data::check_b_table(bool use_template)
         if(template_fib.get()) // comparing with hcp 2mm template
         {
             double sum_cos = 0.0,ncount = 0.0;
-            auto template_geo = template_fib->dim;
-            for(tipl::pixel_index<3> index(template_geo);index < template_geo.size();++index)
+            auto template_dim = template_fib->dim;
+            size_t sz = template_dim.size();
+            for(tipl::pixel_index<3> index(template_dim);index < sz;++index)
             {
                 float fa = template_fib->dir.fa[0][index.index()];
                 if(fa < template_fib->dir.fa_otsu)
@@ -660,7 +661,8 @@ int64_t src_data::anterior_posterior_difference(void)
     tipl::crop(I,range_min,range_max);
     size_t anterior_sum = 0;
     size_t posterior_sum = 0;
-    for(tipl::pixel_index<3> pos(I.shape());pos < I.size();++pos)
+    size_t sz = I.size();
+    for(tipl::pixel_index<3> pos(I.shape());pos < sz;++pos)
     {
         if(!I[pos.index()])
             continue;
@@ -1545,7 +1547,7 @@ void correct_bias_field(tipl::image<3> I,
     {
         // a) residuals
         std::vector<double> rhs(c_shape.size());
-        for(size_t i = 0;i < logI.size();++i)
+        for(size_t i = 0,sz = I.size();i < sz;++i)
         {
             if(logI[i] == std::numeric_limits<double>::max())
                 continue;

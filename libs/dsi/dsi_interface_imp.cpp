@@ -348,7 +348,7 @@ bool odf_average(const char* out_name,std::vector<std::string>& file_names,std::
             {
                 if(!fib.dir.findex.empty())
                 {
-                    for(size_t pos = 0;pos < dim.size();++pos)
+                    for(size_t pos = 0,sz = dim.size();pos < sz;++pos)
                         for(size_t f_index = 0;f_index < fib.dir.num_fiber;++f_index)
                             if(fib.dir.fa[f_index][pos] > 0.0f)
                             {

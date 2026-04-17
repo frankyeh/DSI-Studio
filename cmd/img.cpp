@@ -259,7 +259,7 @@ bool variant_image::load_from_file(const std::string& file_name,std::string& inf
             bool succeed = nifti.get_untouched_image(data);
             if constexpr(!std::is_integral<typename std::remove_reference<decltype(*data.begin())>::type>::value)
             {
-                for(size_t pos = 0;pos < data.size();++pos)
+                for(size_t pos = 0,sz = data.size();pos < sz;++pos)
                    if(std::isnan(data[pos]))
                        data[pos] = 0;
             }

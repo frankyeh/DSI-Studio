@@ -1449,7 +1449,8 @@ void tracking_window::on_actionSegment_Tissue_triggered()
         std::vector<std::vector<tipl::vector<3,short> > > regions(unet_out_channel);
         tipl::par_for(unet_out_channel,[&](size_t label)
         {
-            for(tipl::pixel_index<3> p(current_slice->dim);p < current_slice->dim.size();++p)
+            size_t sz = current_slice->dim.size();
+            for(tipl::pixel_index<3> p(current_slice->dim);p < sz;++p)
             {
                 if(I[p.index()] == label+1)
                     regions[label].push_back(p);
