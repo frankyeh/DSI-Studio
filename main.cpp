@@ -150,6 +150,7 @@ bool load_file_name(void)
 
     fs::path atlas_dir = fs::path(QCoreApplication::applicationDirPath().toStdString())/"atlas";
     fs::path tract_dir = fs::path(QCoreApplication::applicationDirPath().toStdString())/"tract";
+    fs::path unet_dir = fs::path(QCoreApplication::applicationDirPath().toStdString())/"unet";
     if(!fs::exists(atlas_dir) && !fs::exists(atlas_dir = fs::current_path()/"atlas"))
         return false;
     if(!fs::exists(tract_dir) && !fs::exists(atlas_dir = fs::current_path()/"tract"))
@@ -207,10 +208,12 @@ bool load_file_name(void)
 
         {
             std::vector<std::string> model_list;
-            for(const auto& entry : fs::directory_iterator(atlas_dir/species))
+            for(const auto& entry : fs::directory_iterator(unet_dir))
+            {
                 if(entry.is_regular_file() && tipl::ends_with(entry.path().filename().string(),{".nz"}) &&
-                   tipl::begins_with(entry.path().filename().string(),species + "_")) // exclude those start with [species]_
+                   tipl::begins_with(entry.path().filename().string(),species + "_"))
                     model_list.push_back(entry.path().string());
+            }
 
             std::sort(model_list.begin(),model_list.end());
             unet_list.push_back(std::move(model_list));
