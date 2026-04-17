@@ -1547,7 +1547,7 @@ void correct_bias_field(tipl::image<3> I,
     {
         // a) residuals
         std::vector<double> rhs(c_shape.size());
-        for(size_t i = 0,sz = I.size();i < sz;++i)
+        for(size_t i = 0,sz = logI.size();i < sz;++i)
         {
             if(logI[i] == std::numeric_limits<double>::max())
                 continue;
