@@ -72,7 +72,7 @@ class CalculateStructuralTensor : public BaseProcess{
             tipl::filter::gaussian(dxy);
         }
         // apply mask here
-        for(size_t i = 0;i < hist.I_mask.size();++i)
+        for(size_t i = 0,sz = hist.I_mask.size();i < sz;++i)
             if(!hist.I_mask[i])
             {
                 dxx[i] = 0.0f;
