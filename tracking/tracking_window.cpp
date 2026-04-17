@@ -921,46 +921,45 @@ void tracking_window::on_rendering_efficiency_currentIndexChanged(int index)
     glWidget->update();
 }
 
-
-
+QAction* tracking_window::addSubMenuItem(const std::string& each,const std::string& title,const char* action)
+{
+    QAction* Item = new QAction(this);
+    Item->setText(QString("%1...").arg(title.c_str()));
+    Item->setData(QString(each.c_str()));
+    Item->setToolTip(action);
+    Item->setVisible(true);
+    connect(Item,&QAction::triggered,this,[this,Item](){run_command(Item->toolTip().toStdString().substr(4));});
+    return Item;
+}
 
 void tracking_window::updateSlicesMenu(void)
 {
-    auto new_item = [&](const std::string& each,const std::string& title,const char* action)
-    {
-        QAction* Item = new QAction(this);
-        Item->setText(QString("%1...").arg(title.c_str()));
-        Item->setData(QString(each.c_str()));
-        Item->setToolTip(action);
-        Item->setVisible(true);
-        connect(Item,&QAction::triggered,this,[this,Item](){run_command(Item->toolTip().toStdString().substr(4));});
-        return Item;
-    };
     ui->menuSave->clear();
     ui->menuE_xport->clear();
+
     // save along tract indices
     auto metrics_list = handle->get_index_list();
     for (const auto& each : metrics_list)
-        ui->menuSave->addAction(new_item(each,each,"run save_tract_values"));
+        ui->menuSave->addAction(addSubMenuItem(each,each,"run save_tract_values"));
 
     // export slices
     for (const auto& each : metrics_list)
-        ui->menuE_xport->addAction(new_item(each,each,"run save_slice_image"));
-    ui->menuE_xport->addAction(new_item("fiber","fiber","run save_slice_image"));
+        ui->menuE_xport->addAction(addSubMenuItem(each,each,"run save_slice_image"));
+    ui->menuE_xport->addAction(addSubMenuItem("fiber","fiber","run save_slice_image"));
     if(handle->has_odfs())
-        ui->menuE_xport->addAction(new_item("odfs","odfs","run save_slice_image"));
+        ui->menuE_xport->addAction(addSubMenuItem("odfs","odfs","run save_slice_image"));
 
     if(!handle->is_mni)
     {
         ui->menuE_xport->addSeparator();
         for (const auto& each : metrics_list)
-            ui->menuE_xport->addAction(new_item(each,each + " in mni","run save_slice_mni_image"));
+            ui->menuE_xport->addAction(addSubMenuItem(each,each + " in mni","run save_slice_mni_image"));
     }
 
     if(tipl::contains(metrics_list,std::string("iso")))
     {
         ui->menuE_xport->addSeparator();
-        ui->menuE_xport->addAction(new_item("Correct Bias Field","Correct Bias Field","run correct_bias_field"));
+        ui->menuE_xport->addAction(addSubMenuItem("Correct Bias Field","Correct Bias Field","run correct_bias_field"));
     }
 
     // update options: color map
@@ -1249,5 +1248,11 @@ void tracking_window::on_actionOpen_FIB_Directory_triggered()
 void tracking_window::on_device_coordinate_currentIndexChanged(int index)
 {
     deviceWidget->set_coordinate(index == 1);
+}
+
+
+void tracking_window::on_segmentButton_clicked()
+{
+    ui->menuSegment->popup(ui->segmentButton->mapToGlobal(QPoint(0, ui->segmentButton->height())));
 }
 
