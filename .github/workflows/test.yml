@@ -148,23 +148,34 @@ jobs:
     - name: Setup Environment
       run: |
         curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_prerelease.zip" | jar x
-        curl -sL https://github.com/frankyeh/data-atlas/blob/main/human/human.fz?raw=true -o human.fz
+        curl -sL https://github.com/data-others/tract/blob/main/human.fz?raw=true -o human.fz
+        curl -sL https://github.com/data-hcp/lifespan/releases/download/hcp-ya/100206.gqi.fz -o 100206.gqi.fz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Tracking
       run: |
         ./dsi-studio/dsi_studio --source=human.fz --action=trk --output=icbm152.tt.gz --export=stat,tdi
+        ./dsi-studio/dsi_studio --source=100206.gqi.fz --action=trk --output=100206.tt.gz --export=stat,tdi
         ls icbm152.tt.gz
         ls icbm152.tt.gz.tdi.nii.gz
         ls icbm152.tt.gz.stat.txt
+        ls 100206.tt.gz
+        ls 100206.tt.gz.tdi.nii.gz
+        ls 100206.tt.gz.stat.txt
         echo --------------------------------------------------------------------------------------------------
         ./dsi-studio/dsi_studio --source=human.fz --action=trk --track_id=ArcuateFasciculusL --tip_iteration=0 --output=AF_L.tt.gz
+        ./dsi-studio/dsi_studio --source=100206.gqi.fz --action=trk --track_id=ArcuateFasciculusL --tip_iteration=0 --output=100206.AF_L.tt.gz
         ls AF_L.tt.gz
+        ls 100206.AF_L.tt.gz
         echo --------------------------------------------------------------------------------------------------
         ./dsi-studio/dsi_studio --source=human.fz --action=trk --seed_count=1000000 --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=LR.tt.gz
+        ./dsi-studio/dsi_studio --source=100206.gqi.fz --action=trk --seed_count=1000000 --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=100206.LR.tt.gz
         ls LR.tt.gz
+        ls 100206.LR.tt.gz
         echo --------------------------------------------------------------------------------------------------
         ./dsi-studio/dsi_studio --source=human.fz --action=trk --tract_count=1000000 --output=no_file --connectivity=FreeSurferDKT_Cortical
+        ./dsi-studio/dsi_studio --source=100206.gqi.fz --action=trk --tract_count=1000000 --output=no_file --connectivity=FreeSurferDKT_Cortical
         ls human.fz.tt.gz.FreeSurferDKT_Cortical.connectivity.mat
+        ls 100206.gqi.fz.tt.gz.FreeSurferDKT_Cortical.connectivity.mat
 
   test_human_tracking_gqi:
     needs: linux-build
@@ -174,7 +185,7 @@ jobs:
       run: |
         curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_prerelease.zip" | jar x
         curl -sL https://github.com/data-openneuro/brain/releases/download/ds001771/sub-03_dwi.gqi.fz -o gqi.fz
-        curl -sL https://github.com/frankyeh/data-atlas/blob/main/human/human.QA.nii.gz?raw=true -o human.QA.nii.gz
+        curl -sL https://github.com/frankyeh/data-atlas/blob/main/human/human_QA.nii.gz?raw=true -o human_QA.nii.gz
         chmod 777 ./dsi-studio/dsi_studio
     - name: Tracking&Export
       run: |
@@ -197,7 +208,7 @@ jobs:
         ls gqi.fz.tt.gz.FreeSurferDKT_Cortical.connectivity.mat
     - name: Tracking&Dt
       run: |
-        ./dsi-studio/dsi_studio --source=gqi.fz --action=trk --other_slices=human.QA.nii.gz --dt_metric1=human.QA --dt_metric2=qa --seed_count=1000000 --dt_threshold=0.1 --output=dt.tt.gz
+        ./dsi-studio/dsi_studio --source=gqi.fz --action=trk --other_slices=human_QA.nii.gz --dt_metric1=human_QA --dt_metric2=qa --seed_count=1000000 --dt_threshold=0.1 --output=dt.tt.gz
         ls dt.tt.gz
   test_export_registration:
     needs: linux-build
@@ -217,9 +228,9 @@ jobs:
         ls 100206.gqi.fz.iso.nii.gz
     - name: Registration
       run: |
-        ./dsi-studio/dsi_studio --action=reg --source=100206.gqi.fz.qa.nii.gz --to=./atlas/human/human.QA.nii.gz
+        ./dsi-studio/dsi_studio --action=reg --source=100206.gqi.fz.qa.nii.gz --to=./atlas/human/human_QA.nii.gz
         ls 100206.gqi.fz.qa.nii.gz.wp.nii.gz
-        ./dsi-studio/dsi_studio --action=reg --source=100206.gqi.fz.qa.nii.gz,100206.gqi.fz.iso.nii.gz --to=./atlas/human/human.QA.nii.gz,./atlas/human/human.ISO.nii.gz
+        ./dsi-studio/dsi_studio --action=reg --source=100206.gqi.fz.qa.nii.gz,100206.gqi.fz.iso.nii.gz --to=./atlas/human/human_QA.nii.gz,./atlas/human/human_ISO.nii.gz
         ls 100206.gqi.fz.qa.nii.gz.wp.nii.gz
 
   test_connectometry:
