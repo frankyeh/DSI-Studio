@@ -17,7 +17,8 @@ class ReadImages : public BaseProcess{
         float rx = float(voxel.mask.width()-1)/float(voxel.hist_image.width()-1);
         float ry = float(voxel.mask.height()-1)/float(voxel.hist_image.height()-1);
 
-        for(tipl::pixel_index<2> p(mask.shape());p < mask.size();++p)
+        size_t sz = mask.size();
+        for(tipl::pixel_index<2> p(mask.shape());p < sz;++p)
         {
             tipl::vector<2> pos(p);
             pos += hist.from;
