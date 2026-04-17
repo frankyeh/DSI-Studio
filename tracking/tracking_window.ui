@@ -558,7 +558,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>397</width>
+     <width>467</width>
      <height>50</height>
     </size>
    </property>
@@ -786,6 +786,23 @@
          <property name="icon">
           <iconset resource="../icons.qrc">
            <normaloff>:/icons/icons/atlas.xpm</normaloff>:/icons/icons/atlas.xpm</iconset>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="segmentButton">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Segment...</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../icons.qrc">
+           <normaloff>:/icons/icons/add_surface.xpm</normaloff>:/icons/icons/add_surface.xpm</iconset>
          </property>
         </widget>
        </item>
@@ -1123,20 +1140,12 @@
      <addaction name="actionInsert_Coronal_Pictures"/>
      <addaction name="actionInsert_Axial_Pictures"/>
     </widget>
-    <widget class="QMenu" name="menuProcessing">
-     <property name="title">
-      <string>U-Net Processing</string>
-     </property>
-     <addaction name="actionStrip_Skull"/>
-     <addaction name="actionSegment_Tissue"/>
-    </widget>
     <addaction name="actionInsert_T1_T2"/>
     <addaction name="actionInsert_MNI_images"/>
-    <addaction name="menuInsert_Picture"/>
     <addaction name="separator"/>
     <addaction name="menuAdd_Isosurface"/>
-    <addaction name="menuProcessing"/>
     <addaction name="actionSkullStrip"/>
+    <addaction name="separator"/>
     <addaction name="separator"/>
     <addaction name="actionSave_T1W_T2W_images"/>
     <addaction name="actionSave_Slices_to_DICOM"/>
@@ -1149,9 +1158,9 @@
     <addaction name="actionAdjust_Mapping"/>
     <addaction name="separator"/>
     <addaction name="actionEdit_Slices"/>
+    <addaction name="menuInsert_Picture"/>
     <addaction name="actionLoad_Color_Map"/>
     <addaction name="separator"/>
-    <addaction name="actionMove_Slices_To_Current_Region"/>
     <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuTools">
@@ -1396,6 +1405,11 @@
     <addaction name="menuStore_Camera_Position_3"/>
     <addaction name="menuRecall_Camera_Position_2"/>
    </widget>
+   <widget class="QMenu" name="menuSegment">
+    <property name="title">
+     <string>Segment</string>
+    </property>
+   </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Edit"/>
    <addaction name="menuRegions"/>
@@ -1404,6 +1418,7 @@
    <addaction name="menuTracts_Cluster"/>
    <addaction name="menuTracts_Misc"/>
    <addaction name="menu_Slices"/>
+   <addaction name="menuSegment"/>
    <addaction name="menuDevices"/>
    <addaction name="menuScreen"/>
    <addaction name="menuView"/>
@@ -4744,16 +4759,6 @@ Tracking</string>
    </property>
    <property name="toolTip">
     <string>run load_tract_atlas</string>
-   </property>
-  </action>
-  <action name="actionStrip_Skull">
-   <property name="text">
-    <string>Strip Skull</string>
-   </property>
-  </action>
-  <action name="actionSegment_Tissue">
-   <property name="text">
-    <string>Segment Tissue </string>
    </property>
   </action>
   <action name="actionNew_Region_From_MNI_Coordinate">
