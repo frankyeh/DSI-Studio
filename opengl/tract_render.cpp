@@ -334,7 +334,7 @@ TractRenderShader::TractRenderShader(tracking_window& cur_tracking_window):
 
     skip_rate = cur_tracking_window["tract_visible_tract"].toFloat()/float(total_visible_tract);
 
-    tipl::adaptive_par_for(models.size(),[&](size_t i)
+    tipl::par_for(models.size(),[&](size_t i)
     {
         auto tracks_count = models[i]->get_visible_track_count();
         tipl::uniform_dist<float> uniform_gen(0.0f,1.0f);

@@ -129,7 +129,7 @@ void TractCluster::add_tracts(const std::vector<std::vector<float> >& tracks)
     });
 
     // build passing points and ranged points
-    tipl::adaptive_par_for(tracks.size(),[&](unsigned int tract_index)
+    tipl::par_for(tracks.size(),[&](unsigned int tract_index)
     {
         if(tracks[tract_index].empty())
             return;
@@ -160,12 +160,12 @@ void TractCluster::add_tracts(const std::vector<std::vector<float> >& tracks)
                 voxel_connection[pos.index()].push_back(tract_index);
             });
     }
-    tipl::adaptive_par_for(voxel_connection.size(),[&](unsigned int pos)
+    tipl::par_for(voxel_connection.size(),[&](unsigned int pos)
     {
         std::set<unsigned int> tmp(voxel_connection[pos].begin(),voxel_connection[pos].end());
         voxel_connection[pos] = std::vector<unsigned int>(tmp.begin(),tmp.end());
     });
-    tipl::adaptive_par_for(tracks.size(),[&](unsigned int tract_index)
+    tipl::par_for(tracks.size(),[&](unsigned int tract_index)
     {
         if(tracks[tract_index].empty())
             return;

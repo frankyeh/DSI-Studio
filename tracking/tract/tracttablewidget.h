@@ -70,7 +70,7 @@ public:
             }
 
         {
-            tipl::adaptive_par_for(checked_index.size(),[&](unsigned int i)
+            tipl::par_for(checked_index.size(),[&](unsigned int i)
             {
                 auto lock = tract_rendering[checked_index[i]]->start_writing();
                 if(fun(checked_index[i]))

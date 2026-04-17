@@ -173,7 +173,7 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
         auto tolerance_dis_in_subject_voxels2 = tolerance_dis_in_subject_voxels*2;
 
         std::vector<bool> is_target(atlas_tract.size());
-        tipl::adaptive_par_for(atlas_tract.size(),[&](unsigned int i)
+        tipl::par_for(atlas_tract.size(),[&](unsigned int i)
         {
             is_target[i] = (std::find(track_ids.begin(),track_ids.end(),atlas_cluster[i]) != track_ids.end());
         });

@@ -165,7 +165,7 @@ public:
                     if(voxel.other_image[i].empty())
                         continue;
                     tipl::image<3> new_other_image(voxel.dim);
-                    tipl::adaptive_par_for(voxel.dim.size(),[&](size_t index)
+                    tipl::par_for(voxel.dim.size(),[&](size_t index)
                     {
                         tipl::vector<3,float> Jpos(mapping[index]);
                         if(voxel.other_image[i].shape() != native_geo)

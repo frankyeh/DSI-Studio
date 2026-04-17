@@ -637,7 +637,7 @@ bool connectometry_db::get_demo_matched_volume(const std::string& matched_demo,t
 
     tipl::image<3> I(handle->dim);
     const auto& si2vi = handle->mat_reader.si2vi;
-    tipl::adaptive_par_for(si2vi.size(),[&](size_t index)
+    tipl::par_for(si2vi.size(),[&](size_t index)
     {
         std::vector<double> y(subject_indices.size());
         for(size_t s = 0;s < subject_indices.size();++s)
@@ -656,7 +656,7 @@ void connectometry_db::get_avg_volume(tipl::image<3>& volume) const
 {
     tipl::image<3> I(handle->dim);
     const auto& si2vi = handle->mat_reader.si2vi;
-    tipl::adaptive_par_for(si2vi.size(),[&](size_t index)
+    tipl::par_for(si2vi.size(),[&](size_t index)
     {
         std::vector<float> data(subject_indices.size());
         for(size_t s = 0;s < subject_indices.size();++s)

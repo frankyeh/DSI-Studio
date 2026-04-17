@@ -330,7 +330,7 @@ bool odf_average(const char* out_name,std::vector<std::string>& file_names,std::
                 odf_data odf;
                 if(!odf.read(fib))
                     throw std::runtime_error(odf.error_msg);
-                tipl::adaptive_par_for(dim.size(),[&](size_t i)
+                tipl::par_for(dim.size(),[&](size_t i)
                 {
                     if(fib.dir.fa[0][i] == 0.0f)
                         return;
@@ -467,7 +467,7 @@ bool odf_average(const char* out_name,std::vector<std::string>& file_names,std::
 
     tipl::progress prog("output odf");
     std::vector<std::vector<float> > odfs_float(odfs.size());
-    tipl::adaptive_par_for(odfs.size(),[&](size_t i)
+    tipl::par_for(odfs.size(),[&](size_t i)
     {
         odfs_float[i].resize(odfs[i].size());
         std::transform(odfs[i].begin(), odfs[i].end(), odfs_float[i].begin(),

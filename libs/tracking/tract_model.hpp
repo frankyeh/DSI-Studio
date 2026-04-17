@@ -91,7 +91,7 @@ public:
             std::vector<unsigned int> all_tract_color(std::move(tract_model->tract_color));
             tract_model->release_tracts(all_tract);
             all.resize(tipl::max_value(labels) + 1);
-            tipl::adaptive_par_for(all.size(),[&](size_t cluster_index)
+            tipl::par_for(all.size(),[&](size_t cluster_index)
             {
                 auto fiber_num = std::count(labels.begin(),labels.end(),cluster_index);
                 if(!fiber_num)

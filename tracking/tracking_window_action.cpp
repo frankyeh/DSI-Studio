@@ -1728,7 +1728,7 @@ void tracking_window::stripSkull()
 void paint_track_on_volume(tipl::image<3,unsigned char>& track_map,const std::vector<std::vector<float> >& all_tracts,
                            std::shared_ptr<SliceModel> slice)
 {
-    tipl::adaptive_par_for(all_tracts.size(),[&](unsigned int i)
+    tipl::par_for(all_tracts.size(),[&](unsigned int i)
     {
         auto tracks = all_tracts[i];
         for(size_t k = 0;k < tracks.size();k +=3)

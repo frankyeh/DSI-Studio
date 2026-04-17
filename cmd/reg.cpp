@@ -16,7 +16,7 @@ bool apply_warping_tt(const reg_type& reg,const std::string& input, const std::s
     std::vector<std::vector<float>>& tracts = tract_model.get_tracts();
     const auto& mapping = direction ? reg.from2to : reg.to2from;
     const auto transform = direction ? reg.invT() : reg.T();
-    tipl::adaptive_par_for(tracts.size(), [&](size_t i)
+    tipl::par_for(tracts.size(), [&](size_t i)
     {
         for (size_t j = 0; j < tracts[i].size(); j += 3)
         {

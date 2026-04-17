@@ -703,7 +703,7 @@ void DeviceTableWidget::lead_to_roi(void)
             for (short x = -radius,yy_zz = y*y+zz; x <= radius; ++x)
                 if (x*x + yy_zz <= distance2)
                     voxels.push_back(tipl::vector<3,short>(x,y,z));
-    tipl::adaptive_par_for(lead_pos.size(),[&](unsigned int i)
+    tipl::par_for(lead_pos.size(),[&](unsigned int i)
     {
         auto points = voxels;
         tipl::add_constant(points.begin(),points.end(),tipl::vector<3,short>(lead_pos[i]*resolution+0.5f));

@@ -471,7 +471,7 @@ bool fib_data::load_from_file(const std::string& file_name)
             dir.odf_faces = ti.faces;
             dir.odf_table = ti.vertices;
             dir.half_odf_size = ti.half_vertices_count;
-            tipl::adaptive_par_for(x.size(),[&](int i)
+            tipl::par_for(x.size(),[&](int i)
             {
                 tipl::vector<3> v(-x[i],y[i],z[i]);
                 float length = v.length();
@@ -515,7 +515,7 @@ bool fib_data::load_from_file(const std::string& file_name)
                 dir.odf_faces = ti.faces;
                 dir.odf_table = ti.vertices;
                 dir.half_odf_size = ti.half_vertices_count;
-                tipl::adaptive_par_for(x.size(),[&](uint32_t j)
+                tipl::par_for(x.size(),[&](uint32_t j)
                 {
                     tipl::vector<3> v(x[j],y[j],-z[j]);
                     float length = float(v.length());
@@ -1040,7 +1040,7 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
     size_t p = 0;
     bool failed = false;
     bool first_mat = true;
-    tipl::adaptive_par_for(mat_reader.size(),[&](unsigned int i)
+    tipl::par_for(mat_reader.size(),[&](unsigned int i)
     {
         if(!prog(p++,mat_reader.size()) || failed)
             return;
@@ -2341,7 +2341,7 @@ bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,
     }
     if(new_geo == dim && to_diffusion_space == tipl::identity_matrix())
     {
-        tipl::adaptive_par_for<tipl::dynamic_with_id>(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
+        tipl::par_for<tipl::dynamic_with_id>(tipl::begin_index(s2t.shape()),tipl::end_index(s2t.shape()),
             [&](const tipl::pixel_index<3>& index,size_t id)
         {
             if (at->is_labeled_as(s2t[index.index()], roi_index))
@@ -2350,7 +2350,7 @@ bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,
     }
     else
     {
-        tipl::adaptive_par_for<tipl::dynamic_with_id>(tipl::begin_index(new_geo),tipl::end_index(new_geo),
+        tipl::par_for<tipl::dynamic_with_id>(tipl::begin_index(new_geo),tipl::end_index(new_geo),
             [&](const tipl::pixel_index<3>& index,size_t id)
         {
             tipl::vector<3> p(index),p2;

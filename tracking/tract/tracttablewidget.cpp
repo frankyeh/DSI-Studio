@@ -143,7 +143,7 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
         });
     };
 
-    tipl::adaptive_par_for(lines.size(),[&](unsigned int i)
+    tipl::par_for(lines.size(),[&](unsigned int i)
     {
         auto& line = lines[i];
         auto& color = colors[i];

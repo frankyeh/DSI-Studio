@@ -813,7 +813,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         tipl::image<3,unsigned char> mask(regions[merge_list[0]]->dim);
         tipl::progress prog("merging regions",true);
         size_t p = 0;
-        tipl::adaptive_par_for(merge_list.size(),[&](size_t index)
+        tipl::par_for(merge_list.size(),[&](size_t index)
         {
             if(prog.aborted())
                 return;
@@ -997,7 +997,7 @@ void RegionTableWidget::draw_region(const tipl::matrix<4,4>& current_slice_T,uns
         std::vector<uint32_t> yw((size_t(h)));
         for(uint32_t y = 0;y < uint32_t(h);++y)
             yw[y] = y*uint32_t(w);
-        tipl::adaptive_par_for(region_masks.size(),[&](uint32_t roi_index)
+        tipl::par_for(region_masks.size(),[&](uint32_t roi_index)
         {
             tipl::image<2,uint8_t> region_mask(slice_image_shape);
             if(current_slice_T != checked_regions[roi_index]->to_diffusion_space)
@@ -1086,7 +1086,7 @@ bool RegionTableWidget::load_multiple_roi_nii(QString file_name,bool is_mni)
         tipl::progress prog("reading region files");
         size_t p = 0;
         bool failed = false;
-        tipl::adaptive_par_for(files.size(),[&](unsigned int i)
+        tipl::par_for(files.size(),[&](unsigned int i)
         {
             if(prog.aborted() || failed)
                 return;
@@ -1441,7 +1441,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             else
             {
                 std::vector<float> data(regions.size());
-                tipl::adaptive_par_for(regions.size(),[&](unsigned int index)
+                tipl::par_for(regions.size(),[&](unsigned int index)
                 {
                     if(action == "sort_x")
                         data[index] = regions[index]->get_pos()[0];
@@ -1473,7 +1473,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             end_update();
         }
 
-        tipl::adaptive_par_for(region_to_be_processed.size(),[&](unsigned int i)
+        tipl::par_for(region_to_be_processed.size(),[&](unsigned int i)
         {
             region_to_be_processed[i]->perform(action.toStdString());
         });
@@ -1534,7 +1534,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             if(action == "threshold")
             {
                 global_mask.resize(I.shape());
-                tipl::adaptive_par_for(global_mask.size(),[&](size_t i)
+                tipl::par_for(global_mask.size(),[&](size_t i)
                 {
                     global_mask[i]  = ((I[i] > threshold) ^ flip) ? 1:0;
                 });
