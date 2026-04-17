@@ -798,7 +798,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         tipl::matrix<4,4> mask_to_mni;
         if(!(tipl::io::gz_nifti(iso_template_list[handle->template_id],std::ios::in) >> mask_to_mni >> mask))
             return run->failed("current template does not have a built-in mask");
-        for(size_t i = 0;i < mask.size();++i)
+        for(size_t i = 0,sz = mask.size();i < sz;++i)
             if(mask[i] > 0.0f)
                 mask[i] = 1.0f;
         tipl::filter::mean(mask);
@@ -1784,7 +1784,7 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
         mask.swap(new_mask);
     }
 
-    for(size_t i = 0;i < mask.size();++i)
+    for(size_t i = 0,sz = mask.size();i < sz;++i)
         if(mask[i])
             slice->source_images[i] = mark_value;
     slice_need_update = true;
@@ -1806,7 +1806,7 @@ void tracking_window::on_actionMark_Tracts_on_T1W_T2W_triggered()
     for(auto checked_tracks : tractWidget->get_checked_tracks())
         paint_track_on_volume(t_mask,checked_tracks->get_tracts(),slice);
     float mark_value = slice->get_value_range().second*float(ratio);
-    for(size_t i = 0;i < t_mask.size();++i)
+    for(size_t i = 0,sz = t_mask.size();i < sz;++i)
         if(t_mask[i])
             slice->source_images[i] = mark_value;
     slice_need_update = true;
