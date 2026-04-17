@@ -18,18 +18,23 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
 
 void sort_dwi(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
-    std::sort(dwi_files.begin(),dwi_files.end(),[&]
-              (const std::shared_ptr<DwiHeader>& lhs,const std::shared_ptr<DwiHeader>& rhs){return *lhs < *rhs;});
-    for (int i = dwi_files.size()-1;i >= 1;--i)
+    std::sort(dwi_files.begin(), dwi_files.end(), [&](const std::shared_ptr<DwiHeader>& lhs, const std::shared_ptr<DwiHeader>& rhs) {
+        return *lhs < *rhs;
+    });
+
+    const int sz = static_cast<int>(dwi_files.size());
+    for (int i = sz - 1; i >= 1; --i)
+    {
         if (dwi_files[i]->bvalue == dwi_files[i-1]->bvalue &&
-                dwi_files[i]->bvec == dwi_files[i-1]->bvec)
+            dwi_files[i]->bvec == dwi_files[i-1]->bvec)
         {
             tipl::image<3> I = dwi_files[i]->image;
             I += dwi_files[i-1]->image;
             I *= 0.5f;
             dwi_files[i-1]->image = I;
-            dwi_files.erase(dwi_files.begin()+i);
+            dwi_files.erase(dwi_files.begin() + i);
         }
+    }
 }
 
 
@@ -37,15 +42,21 @@ void sort_dwi(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 
 void src_data::draw_mask(tipl::color_image& buffer,int position)
 {
-    if (!dwi.size())
+    const size_t dwi_sz = dwi.size();
+    if (!dwi_sz)
         return;
+
     auto slice = dwi.slice_at(uint32_t(position));
     auto mask_slice = voxel.mask.slice_at(uint32_t(position));
 
-    tipl::color_image buffer2(tipl::shape<2>(uint32_t(dwi.width())*2,uint32_t(dwi.height())));
-    tipl::draw(slice,buffer2,tipl::vector<2,int>());
+    const int dwi_w = dwi.width();
+    const int dwi_h = dwi.height();
+
+    tipl::color_image buffer2(tipl::shape<2>(uint32_t(dwi_w) * 2, uint32_t(dwi_h)));
+    tipl::draw(slice, buffer2, tipl::vector<2,int>());
     buffer.resize(slice.shape());
-    for (size_t index = 0; index < buffer.size(); ++index)
+
+    for (size_t index = 0,sz = buffer.size(); index < sz; ++index)
     {
         unsigned char value = slice[index];
         if (mask_slice[index])
@@ -53,24 +64,31 @@ void src_data::draw_mask(tipl::color_image& buffer,int position)
         else
             buffer[index] = tipl::rgb(value, value, value);
     }
-    tipl::draw(buffer,buffer2,tipl::vector<2,int>(dwi.width(),0));
+
+    tipl::draw(buffer, buffer2, tipl::vector<2,int>(dwi_w, 0));
     buffer2.swap(buffer);
 }
 void src_data::update_dwi_sum(void)
 {
     if(src_dwi_data.empty())
         return;
+
     tipl::image<3> dwi_sum(voxel.dim);
     bool skip_b0 = tipl::max_value(src_bvalues) >= 100.0;
-    tipl::par_for(dwi_sum.size(),[&](size_t i)
+
+    const size_t sum_sz = dwi_sum.size();
+    const size_t data_sz = src_dwi_data.size();
+
+    tipl::par_for(sum_sz, [&](size_t i)
     {
-        for(size_t j = 0;j < src_dwi_data.size();++j)
+        for(size_t j = 0; j < data_sz; ++j)
         {
             if(skip_b0 && src_bvalues[j] < 100.0f)
                 continue;
             dwi_sum[i] += src_dwi_data[j][i];
         }
     });
+
     dwi = tipl::reg::subject_image_pre(dwi_sum);
 }
 void src_data::update_mask(void)
@@ -512,23 +530,30 @@ std::vector<std::pair<size_t,size_t> > src_data::get_bad_slices(void)
 {
     std::vector<std::pair<size_t,size_t> > result;
     std::mutex result_mutex;
-    tipl::par_for(src_dwi_data.size(),[&](size_t index)
-    {        
-        for(size_t z = 1,pos = voxel.dim.plane_size();z + 1 < size_t(voxel.dim.depth());++z,pos += voxel.dim.plane_size())
+
+    const size_t data_sz = src_dwi_data.size();
+    const size_t plane_size = voxel.dim.plane_size();
+    const size_t depth = voxel.dim.depth();
+
+    tipl::par_for(data_sz, [&](size_t index)
+    {
+        for(size_t z = 1, pos = plane_size; z + 1 < depth; ++z, pos += plane_size)
         {
-            auto dif_lower = sum_dif(src_dwi_data[index] + pos-voxel.dim.plane_size(),
-                                     src_dwi_data[index] + pos,voxel.dim.plane_size());
-            auto dif_upper = sum_dif(src_dwi_data[index] + pos+voxel.dim.plane_size(),
-                                     src_dwi_data[index] + pos,voxel.dim.plane_size());
-            auto dif_upper_lower = sum_dif(src_dwi_data[index] + pos+voxel.dim.plane_size(),
-                                      src_dwi_data[index] + pos-voxel.dim.plane_size(),voxel.dim.plane_size());
-            if(dif_lower + dif_upper > dif_upper_lower*2)
+            auto dif_lower = sum_dif(src_dwi_data[index] + pos - plane_size,
+                                     src_dwi_data[index] + pos, plane_size);
+            auto dif_upper = sum_dif(src_dwi_data[index] + pos + plane_size,
+                                     src_dwi_data[index] + pos, plane_size);
+            auto dif_upper_lower = sum_dif(src_dwi_data[index] + pos + plane_size,
+                                      src_dwi_data[index] + pos - plane_size, plane_size);
+
+            if(dif_lower + dif_upper > dif_upper_lower * 2)
             {
                 std::lock_guard<std::mutex> lock(result_mutex);
-                result.push_back(std::make_pair(index,z));
+                result.push_back(std::make_pair(index, z));
             }
         }
     });
+
     return result;
 }
 
