@@ -536,7 +536,7 @@ float masked_correlation(const unsigned short* I1_ptr,const unsigned short* I2_p
     std::vector<float> I1,I2;
     I1.reserve(mask.size());
     I2.reserve(mask.size());
-    for(size_t i = 0;i < mask.size();++i)
+    for(size_t i = 0,sz = mask.size();i < sz;++i)
         if(mask[i])
         {
             I1.push_back(I1_ptr[i]);
@@ -949,7 +949,7 @@ bool src_data::command(std::string cmd,std::string param)
         for(size_t index = 0;index < src_dwi_data.size();++index)
         {
             unsigned short* buf = const_cast<unsigned short*>(src_dwi_data[index]);
-            for(size_t i = 0;i < voxel.mask.size();++i)
+            for(size_t i = 0,sz = voxel.mask.size();i < sz;++i)
                 if(voxel.mask[i] == 0)
                     buf[i] = 0;
         }
@@ -1461,7 +1461,7 @@ void correct_bias_field(tipl::image<3> I,
     std::vector<double> logI;
 
     if(!log_bias_field.empty())
-        for(size_t i = 0;i < mask.size();++i)
+        for(size_t i = 0,sz = mask.size();i < sz;++i)
             if(mask[i])
                 I[i] *= std::exp(-log_bias_field[i]);
 
@@ -1469,7 +1469,7 @@ void correct_bias_field(tipl::image<3> I,
         auto otsu = tipl::segmentation::otsu_threshold_sharpening(I);
         double sum_signal = 0.0;
         size_t sum_signal_count = 0;
-        for(size_t i = 0;i < mask.size();++i)
+        for(size_t i = 0,sz = mask.size();i < sz;++i)
             if(mask[i])
             {
                 position.push_back(i);
