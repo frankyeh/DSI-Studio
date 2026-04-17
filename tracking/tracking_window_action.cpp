@@ -18,6 +18,7 @@
 #include "libs/tracking/tracking_thread.hpp"
 
 
+extern std::vector<std::vector<std::string> > unet_list;
 extern std::vector<std::string> template_name_list;
 std::string show_info_dialog(const std::string& title,
                              const std::string& result,
@@ -275,9 +276,100 @@ bool tracking_window::command(std::vector<std::string> cmd)
             move_slice_to(slice_position);
         }
 
+        ui->menuSegment->clear();
+        ui->segmentButton->setVisible(false);
+        if(new_custom_slice.get())
+        {
+            bool is_t1 = tipl::contains_case_insensitive(new_custom_slice->get_name(),"t1");
+            bool is_t2 = tipl::contains_case_insensitive(new_custom_slice->get_name(),"t2");
+            if(is_t1 || is_t2)
+            {
+                for(const auto& each : unet_list[handle->template_id])
+                {
+                    auto file_name = tipl::remove_all_suffix(std::filesystem::path(each).filename().string());
+                    if((tipl::contains_case_insensitive(file_name,"t1") && is_t1) ||
+                       (tipl::contains_case_insensitive(file_name,"t2") && is_t2))
+                        ui->menuSegment->addAction(addSubMenuItem(each,file_name,"run segment_brain"));
+                }
+                ui->segmentButton->setVisible(true);
+            }
+        }
+
+
         no_update = false;
         command({"set_slice_contrast"});
         return run->succeed();
+    }
+    if(cmd[0] == "segment_brain")
+    {
+        if(cmd[1].empty() && (cmd[1] = get_action_data().toStdString()).empty())
+            return run->canceled();
+
+        tipl::progress p("processing",true);
+        tipl::ml3d::tissue_seg unet;
+        tipl::image<3,unsigned char> unet_label;
+        if(!unet.load_model<tipl::io::gz_mat_read>(cmd[1]) ||
+           !unet.forward(current_slice->get_source(),current_slice->vs,unet_label,p))
+            return run->failed(unet.error_msg);
+
+        /**
+        {
+            auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
+            if(!reg_slice.get())
+                return run->failed("invalid slice modality");
+            reg_slice->source_images *= tipl::ml3d::soft_mask(unet_label);
+            slice_need_update = true;
+            glWidget->update_slice();
+        }
+        */
+        {
+            std::vector<std::vector<tipl::vector<3,short> > > regions(unet.num_tissue_channels);
+            tipl::par_for(unet.num_tissue_channels,[&](size_t label)
+            {
+                size_t sz = current_slice->dim.size();
+                for(tipl::pixel_index<3> p(current_slice->dim);p < sz;++p)
+                {
+                    if(unet_label[p.index()] == label+1)
+                        regions[label].push_back(p);
+                }
+            });
+
+            std::vector<std::string> unet_label_name;
+            if(std::filesystem::exists(tipl::remove_all_suffix(cmd[1]) + ".txt"))
+                unet_label_name = tipl::read_text_file(tipl::remove_all_suffix(cmd[1]) + ".txt");
+
+            regionWidget->begin_update();
+            for(size_t i = 0;i < unet.num_tissue_channels;++i)
+            {
+                tipl::rgb color = tipl::rgb(255,255,255);
+                std::string name = i < unet_label_name.size() ? unet_label_name[i].c_str() : (std::string("tissue")+std::to_string(i+1)).c_str();
+                if(name.find("White") != std::string::npos)
+                    color = tipl::rgb(255,255,255,18);
+                if(name.find("Gray") != std::string::npos)
+                    color = tipl::rgb(190,190,190,36);
+                if(name.find("Cortex") != std::string::npos)
+                    color = tipl::rgb(150,150,150,36);
+                if(name.find("Basal") != std::string::npos)
+                    color = tipl::rgb(110,110,110,128);
+                if(name.find("Others") != std::string::npos)
+                    color = tipl::rgb(205,233,255,6);
+                if(name.find("Edema") != std::string::npos)
+                    color = tipl::rgb(155,162,255,100);
+                if(name.find("Tumor") != std::string::npos)
+                    color = tipl::rgb(255,170,127,128);
+                if(name.find("Necrosis") != std::string::npos)
+                    color = tipl::rgb(75,75,75,200);
+                regionWidget->add_region(name.c_str(),default_id,color);
+                if(!regions[i].empty())
+                    regionWidget->regions.back()->add_points(std::move(regions[i]));
+            }
+            regionWidget->end_update();
+
+            slice_need_update = true;
+            glWidget->update_slice();
+        }
+        return true;
+
     }
     if(cmd[0] == "enable_slice")
     {
@@ -1397,95 +1489,6 @@ void tracking_window::on_actionAdjust_Mapping_triggered()
     reg_slice->update_transform();
     reg_slice->is_diffusion_space = false;
     glWidget->update();
-}
-
-bool tracking_window::run_unet(void)
-{
-    QMessageBox::information(this,QApplication::applicationName(),"Specify the UNet model");
-    QString filename = QFileDialog::getOpenFileName(this,
-                "Select model",QCoreApplication::applicationDirPath()+"/unet/",
-                "model files (*.nz);;All files|(*)");
-    if(filename.isEmpty())
-        return false;
-    tipl::progress p("processing",true);
-    tipl::ml3d::tissue_seg unet;
-    if(!unet.load_model<tipl::io::gz_mat_read>(filename.toStdString()))
-    {
-        QMessageBox::critical(this,"ERROR",unet.error_msg.c_str());
-        return false;
-    }
-    if(!unet.forward(current_slice->get_source(),current_slice->vs,unet_label,p))
-        return false;
-    unet_out_channel = unet.num_tissue_channels;
-    if(std::filesystem::exists(tipl::remove_all_suffix(filename.toStdString()) + ".txt"))
-        unet_label_name = tipl::read_text_file(tipl::remove_all_suffix(filename.toStdString()) + ".txt");
-    return true;
-}
-
-
-void tracking_window::on_actionStrip_Skull_triggered()
-{
-    auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
-    if(!reg_slice.get())
-    {
-        QMessageBox::critical(this,"ERROR","This funciton only applied to inserted images.");
-        return;
-    }
-    if(!run_unet())
-        return;
-    reg_slice->source_images *= tipl::ml3d::soft_mask(unet_label);
-    slice_need_update = true;
-    glWidget->update_slice();
-}
-
-void tracking_window::on_actionSegment_Tissue_triggered()
-{
-    if(!run_unet())
-        return;
-
-    {
-        // to 3d label
-        const auto& I = unet_label;
-        std::vector<std::vector<tipl::vector<3,short> > > regions(unet_out_channel);
-        tipl::par_for(unet_out_channel,[&](size_t label)
-        {
-            size_t sz = current_slice->dim.size();
-            for(tipl::pixel_index<3> p(current_slice->dim);p < sz;++p)
-            {
-                if(I[p.index()] == label+1)
-                    regions[label].push_back(p);
-            }
-        });
-        regionWidget->begin_update();
-        for(size_t i = 0;i < unet_out_channel;++i)
-        {
-            tipl::rgb color = tipl::rgb(255,255,255);
-            std::string name = i < unet_label_name.size() ? unet_label_name[i].c_str() : (std::string("tissue")+std::to_string(i+1)).c_str();
-            if(name.find("White") != std::string::npos)
-                color = tipl::rgb(255,255,255,18);
-            if(name.find("Gray") != std::string::npos)
-                color = tipl::rgb(190,190,190,36);
-            if(name.find("Cortex") != std::string::npos)
-                color = tipl::rgb(150,150,150,36);
-            if(name.find("Basal") != std::string::npos)
-                color = tipl::rgb(110,110,110,128);
-            if(name.find("Others") != std::string::npos)
-                color = tipl::rgb(205,233,255,6);
-            if(name.find("Edema") != std::string::npos)
-                color = tipl::rgb(155,162,255,100);
-            if(name.find("Tumor") != std::string::npos)
-                color = tipl::rgb(255,170,127,128);
-            if(name.find("Necrosis") != std::string::npos)
-                color = tipl::rgb(75,75,75,200);
-            regionWidget->add_region(name.c_str(),default_id,color);
-            if(!regions[i].empty())
-                regionWidget->regions.back()->add_points(std::move(regions[i]));
-        }
-        regionWidget->end_update();
-    }
-
-    slice_need_update = true;
-    glWidget->update_slice();
 }
 
 
