@@ -943,7 +943,7 @@ bool src_data::command(std::string cmd,std::string param)
     }
     if(cmd == "[Step T2a][Remove Background]")
     {
-        for(size_t index = 0;index < voxel.mask.size();++index)
+        for(size_t index = 0,sz = voxel.mask.size();index < sz;++index)
             if(voxel.mask[index] == 0)
                 dwi[index] = 0;
         for(size_t index = 0;index < src_dwi_data.size();++index)
