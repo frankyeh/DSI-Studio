@@ -356,8 +356,7 @@ public:
 
         // from template space to mni image's space
         auto T = tipl::from_space(template_to_mni).to(trans);
-        tipl::par_for<tipl::sequential>(tipl::begin_index(J.shape()),tipl::end_index(J.shape()),
-        [&](const tipl::pixel_index<3>& index)
+        tipl::par_for<tipl::sequential>(J.shape(),[&](const tipl::pixel_index<3>& index)
         {
             tipl::vector<3> pos;
             if(ratio == 1.0f)
@@ -439,7 +438,7 @@ float evaluate_fib(
             continue;
     };
 
-    tipl::par_for(tipl::begin_index(dim), tipl::end_index(dim), [&](const tipl::pixel_index<3>& index)
+    tipl::par_for(dim,[&](const tipl::pixel_index<3>& index)
     {
         auto v1 = fib_fa[index.index()];
         if(v1 <= otsu)
