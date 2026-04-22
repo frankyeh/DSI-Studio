@@ -363,9 +363,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         if(cur_slice->is_diffusion_space)
             tipl::threshold(fa_map,mask,threshold);
         else
-            tipl::par_for<tipl::sequential>(tipl::begin_index(mask.shape()),
-                          tipl::end_index(mask.shape()),
-                          [&](const tipl::pixel_index<3>& index)
+            tipl::par_for<tipl::sequential>(mask.shape(),[&](const tipl::pixel_index<3>& index)
             {
                 tipl::vector<3> pos(index);
                 pos.to(cur_slice->to_dif);
@@ -1560,8 +1558,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
 
                     region->save_region_to_buffer(mask);
 
-                    tipl::par_for<tipl::sequential>(tipl::begin_index(mask.shape()),tipl::end_index(mask.shape()),
-                                  [&](const tipl::pixel_index<3>& pos)
+                    tipl::par_for<tipl::sequential>(mask.shape(),[&](const tipl::pixel_index<3>& pos)
                     {
                         if(!mask[pos.index()])
                             return;
