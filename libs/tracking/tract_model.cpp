@@ -943,7 +943,9 @@ bool TractModel::save_tracts_to_file(const std::string& file_name)
         tipl::transformation_matrix<float,3> trans(trans_to_mni);
         for (const auto& t : tract_data) {
             std::vector<float> buf(t);
-            trans(buf);
+            size_t s = buf.size();
+            for(size_t i = 0;i < s;i += 3)
+                trans(buf.data() + i);
             out.write(reinterpret_cast<const char*>(buf.data()), buf.size() * sizeof(float));
             out.write(reinterpret_cast<const char*>(&nan),sizeof(nan));
             out.write(reinterpret_cast<const char*>(&nan),sizeof(nan));
