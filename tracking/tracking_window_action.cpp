@@ -904,8 +904,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         tipl::image<3> maskJ(reg_slice->source_images.shape()); // subject space image
 
         auto to_mask = tipl::from_space(handle->template_to_mni).to(mask_to_mni);
-        tipl::par_for<tipl::sequential>(tipl::begin_index(maskJ.shape()),tipl::end_index(maskJ.shape()),
-        [&](const auto& pos)
+        tipl::par_for<tipl::sequential>(maskJ.shape(),[&](const auto& pos)
         {
             tipl::vector<3> p1(pos),p2;
             p1.to(reg_slice->to_dif);
