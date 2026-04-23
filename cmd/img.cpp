@@ -485,6 +485,7 @@ int img(tipl::program_option<tipl::out>& po)
 
             if(cmd == "brain_extraction" || cmd == "segmentation")
             {
+                /*
                 if(cmd == "brain_extraction" && param.length() < 2)
                 {
                     size_t template_id = param.empty() ? 0 : param[0]-'0';
@@ -497,7 +498,7 @@ int img(tipl::program_option<tipl::out>& po)
                     reg.IR = var_image.T;
 
                     if(!reg.load_template<tipl::io::gz_nifti>(0,t1w_template_list[template_id]) ||
-                       !reg.load_template<tipl::io::gz_nifti>(0,t2w_template_list[template_id]) ||
+                       !reg.load_template<tipl::io::gz_nifti>(1,t2w_template_list[template_id]) ||
                        !reg.load_template<tipl::io::gz_nifti>(2,iso_template_list[template_id]))
                     {
                         tipl::error() << reg.error_msg;
@@ -523,6 +524,7 @@ int img(tipl::program_option<tipl::out>& po)
                         std::ofstream(source + ".r" + std::to_string(int(reg.r[0]*100))) << std::endl;
                     continue;
                 }
+                */
 
                 auto model_path = QCoreApplication::applicationDirPath().toStdString()+ "/unet/" + po.get("network",param);
                 tipl::ml3d::tissue_seg unet;
