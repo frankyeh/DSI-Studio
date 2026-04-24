@@ -305,11 +305,27 @@ bool tracking_window::command(std::vector<std::string> cmd)
         if(cmd[1].empty() && (cmd[1] = get_action_data().toStdString()).empty())
             return run->canceled();
 
+        tipl::image<3,unsigned char> mask;
+
+        auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
+        if(reg_slice.get())
+        {
+            if(!handle->get_template_mask(reg_slice->source_images.shape(),reg_slice->to_dif,mask))
+                return run->failed(handle->error_msg);
+        }
+        else
+            mask = handle->mask;
+
         tipl::progress p("processing",true);
         tipl::ml3d::tissue_seg unet;
-        tipl::image<3,unsigned char> unet_label;
+
+        tipl::image<3> maskJ(mask),source_images(current_slice->get_source());
+        unet.eval.mask = std::move(mask);
+        tipl::filter::gaussian(maskJ);
+        tipl::filter::gaussian(maskJ);
+        source_images *= maskJ;
         if(!unet.load_model<tipl::io::gz_mat_read>(cmd[1]) ||
-           !unet.forward(current_slice->get_source(),current_slice->vs,unet_label,p))
+           !unet.forward(std::move(source_images),current_slice->vs,p))
             return run->failed(unet.error_msg);
 
         /**
@@ -323,8 +339,9 @@ bool tracking_window::command(std::vector<std::string> cmd)
         }
         */
         {
-            std::vector<std::vector<tipl::vector<3,short> > > regions(unet.num_tissue_channels);
-            tipl::par_for(unet.num_tissue_channels,[&](size_t label)
+            const auto& unet_label = unet.eval.label;
+            std::vector<std::vector<tipl::vector<3,short> > > regions(unet.eval.out_count);
+            tipl::par_for(unet.eval.out_count,[&](size_t label)
             {
                 size_t sz = current_slice->dim.size();
                 for(tipl::pixel_index<3> p(current_slice->dim);p < sz;++p)
@@ -339,7 +356,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 unet_label_name = tipl::read_text_file(tipl::remove_all_suffix(cmd[1]) + ".txt");
 
             regionWidget->begin_update();
-            for(size_t i = 0;i < unet.num_tissue_channels;++i)
+            for(size_t i = 0;i < unet.eval.out_count;++i)
             {
                 tipl::rgb color = tipl::rgb(255,255,255);
                 std::string name = i < unet_label_name.size() ? unet_label_name[i].c_str() : (std::string("tissue")+std::to_string(i+1)).c_str();
@@ -879,41 +896,18 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "skull_strip_slice")
     {
-        if(!handle->map_to_mni())
-            return run->failed(handle->error_msg);
         auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(
                     slices[run->from_cmd(1,ui->SliceModality->currentIndex())]);
         if(!reg_slice.get())
             return run->canceled();
+        tipl::image<3,unsigned char> mask;
+        if(!handle->get_template_mask(reg_slice->source_images.shape(),
+                                      reg_slice->to_dif,mask))
+            return run->failed(handle->error_msg);
 
-        tipl::image<3> mask;
-        tipl::matrix<4,4> mask_to_mni;
-        if(!(tipl::io::gz_nifti(iso_template_list[handle->template_id],std::ios::in) >> mask_to_mni >> mask))
-            return run->failed("current template does not have a built-in mask");
-        for(size_t i = 0,sz = mask.size();i < sz;++i)
-            if(mask[i] > 0.0f)
-                mask[i] = 1.0f;
-        tipl::filter::mean(mask);
-        tipl::filter::mean(mask);
-        tipl::out() << "warping template-space slices to the subject space." << std::endl;
-
-        const auto& s2t = handle->get_sub2temp_mapping();
-        if(s2t.empty())
-            return run->failed("No spatial mapping found for warping MNI images");
-
-        tipl::image<3> maskJ(reg_slice->source_images.shape()); // subject space image
-
-        auto to_mask = tipl::from_space(handle->template_to_mni).to(mask_to_mni);
-        tipl::par_for<tipl::sequential>(maskJ.shape(),[&](const auto& pos)
-        {
-            tipl::vector<3> p1(pos),p2;
-            p1.to(reg_slice->to_dif);
-            if(!tipl::estimate(s2t,p1,p2))
-                return;
-            p2.to(to_mask);
-            tipl::estimate(mask,p2,maskJ[pos.index()]);
-        });
-
+        tipl::image<3> maskJ(mask);
+        tipl::filter::gaussian(maskJ);
+        tipl::filter::gaussian(maskJ);
         reg_slice->source_images *= maskJ;
         slice_need_update = true;
         glWidget->update_slice();
