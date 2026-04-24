@@ -222,14 +222,10 @@ bool src_data::mask_from_unet(void)
         return error_msg = "no applicable unet model for generating a mask",false;
     tipl::progress p("generating a mask using unet",true);
     tipl::ml3d::tissue_seg unet;
-    if(!unet.load_model<tipl::io::gz_mat_read>(model_file_name))
+    if(!unet.load_model<tipl::io::gz_mat_read>(model_file_name) ||
+       !unet.forward(std::move(b0[0]),voxel.vs,p))
         return error_msg = unet.error_msg,false;
-
-    tipl::image<3,unsigned char> label;
-    if(!unet.forward(b0[0],voxel.vs,label,p))
-        return false;
-    tipl::threshold(label,voxel.mask,0,1,0);
-    tipl::morphology::defragment(voxel.mask);
+    tipl::threshold(unet.eval.fg_prob,voxel.mask,0.5f,1,0);
     return true;
 }
 
