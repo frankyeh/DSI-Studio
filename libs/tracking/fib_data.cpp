@@ -1586,6 +1586,33 @@ bool fib_data::load_template(void)
 
     return true;
 }
+bool fib_data::get_template_mask(const tipl::shape<3>& target_dim,
+                                 const tipl::matrix<4,4>& to_dif,tipl::image<3,unsigned char>& mask_)
+{
+    if(!map_to_mni())
+        return false;
+    const auto& s2t = get_sub2temp_mapping();
+    if(s2t.empty())
+        return error_msg = "no spatial mapping found for warping MNI images",false;
+
+    tipl::image<3> maskT;
+    tipl::matrix<4,4> mask_to_mni;
+    if(!(tipl::io::gz_nifti(iso_template_list[template_id],std::ios::in) >> mask_to_mni >> maskT))
+        return error_msg = "current template does not have a built-in mask",false;
+
+    mask_.resize(target_dim);
+    auto to_mask = tipl::from_space(template_to_mni).to(mask_to_mni);
+    tipl::out() << "warping template-space slices to the subject space.";
+    tipl::par_for(target_dim,[&](const auto& pos)
+    {
+        tipl::vector<3> p2;
+        if(!tipl::estimate(s2t,tipl::vector<3>(pos).to(to_dif),p2))
+            return;
+        mask_[pos.index()] = (tipl::estimate(maskT,p2.to(to_mask)) > 0.0f) ? 1:0;
+    });
+    tipl::morphology::defragment(mask_);
+    return true;
+}
 void fib_data::temp2sub(std::vector<std::vector<float> >&tracts) const
 {
     tipl::par_for(tracts.size(),[&](size_t i)
