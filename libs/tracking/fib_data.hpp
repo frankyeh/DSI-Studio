@@ -316,6 +316,10 @@ public:
     void set_tractography_atlas(const std::string& atlas_file_name);
     void set_template_id(size_t new_id);
     bool load_template(void);
+    bool get_template_mask(const tipl::shape<3>& target_dim,
+                           const tipl::matrix<4,4>& to_dif,
+                           tipl::image<3,unsigned char>& maskT);
+public:
     bool load_track_atlas(bool symmetric);
     std::vector<size_t> get_track_ids(const std::string& tract_name);
     std::pair<float,float> get_track_minmax_length(const std::string& tract_name);
