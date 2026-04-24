@@ -5,8 +5,6 @@
 #include "fib_data.hpp"
 
 class RoiMgr;
-void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
-
 template<typename tract_type, typename vs_type = int>
 float compute_tract_length(const tract_type& tract, const vs_type& vs = 1)
 {
@@ -135,7 +133,7 @@ public:
         TractModel(std::shared_ptr<fib_data> handle):geo(handle->dim),vs(handle->vs),trans_to_mni(handle->trans_to_mni),is_mni(handle->is_mni){}
         TractModel(tipl::shape<3> dim_,tipl::vector<3> vs_):geo(dim_),vs(vs_)
         {
-            initial_LPS_nifti_srow(trans_to_mni,geo,vs);
+            tipl::io::initial_nifti_srow(trans_to_mni,geo,vs);
         }
         TractModel(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4>& trans_to_mni_)
             :geo(dim_),vs(vs_),trans_to_mni(trans_to_mni_)

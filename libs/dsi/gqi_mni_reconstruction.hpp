@@ -7,7 +7,6 @@
 #include "gqi_process.hpp"
 
 extern std::vector<std::string> qa_template_list,iso_template_list,t1w_template_list;
-void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 class DWINormalization  : public BaseProcess
 {
 protected:
@@ -40,7 +39,7 @@ public:
         reg.I[1] = tipl::reg::subject_image_pre(std::move(voxel.iso_map));
         reg.Is = native_geo = voxel.dim;
         reg.Ivs = native_vs = voxel.vs;
-        initial_LPS_nifti_srow(reg.IR,native_geo,native_vs);
+        tipl::io::initial_nifti_srow(reg.IR,native_geo,native_vs);
         auto native_trans = reg.IR;
 
 

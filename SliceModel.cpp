@@ -342,7 +342,6 @@ bool download_private_github_asset(QString conceptualUrlString, QString accessTo
     return true;
 }
 
-void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 QImage read_qimage(QString filename,std::string& error);
@@ -460,7 +459,7 @@ bool CustomSliceModel::load_slices(void)
 
             tipl::transformation_matrix<float>(arg_min,handle->dim,handle->vs,source_images.shape(),vs).to(to_slice);
             to_dif = tipl::inverse(to_slice);
-            initial_LPS_nifti_srow(trans_to_mni,source_images.shape(),vs);
+            tipl::io::initial_nifti_srow(trans_to_mni,source_images.shape(),vs);
             has_transform = true;
         }
         else
@@ -618,7 +617,7 @@ bool CustomSliceModel::load_slices(void)
         {
             bruker.get_voxel_size(vs);
             source_images = std::move(bruker.get_image());
-            initial_LPS_nifti_srow(trans_to_mni,source_images.shape(),vs);
+            tipl::io::initial_nifti_srow(trans_to_mni,source_images.shape(),vs);
             QDir d = QFileInfo(source_file_name.c_str()).dir();
             if(d.cdUp() && d.cdUp())
             {
@@ -647,7 +646,7 @@ bool CustomSliceModel::load_slices(void)
             error_msg = "failed to load image volume.";
             return false;
         }
-        initial_LPS_nifti_srow(trans_to_mni,source_images.shape(),vs);
+        tipl::io::initial_nifti_srow(trans_to_mni,source_images.shape(),vs);
     }
 
     // add image to the view item lists

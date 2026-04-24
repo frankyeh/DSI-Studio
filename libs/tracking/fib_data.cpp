@@ -412,20 +412,9 @@ void tracking_data::read(std::shared_ptr<fib_data> fib)
         dt_metrics= fib->dir.dt_metrics;
 }
 
-void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs)
-{
-    std::fill(T.begin(),T.end(),0.0f);
-    T[0] = -vs[0];
-    T[5] = -vs[1];
-    T[10] = vs[2];
-    T[3] = vs[0]*(geo[0]-1);
-    T[7] = vs[1]*(geo[1]-1);
-    T[15] = 1.0f;
-}
-
 fib_data::fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_):dim(dim_),vs(vs_)
 {
-    initial_LPS_nifti_srow(trans_to_mni,dim,vs);
+    tipl::io::initial_nifti_srow(trans_to_mni,dim,vs);
 }
 
 fib_data::fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4>& trans_to_mni_):
@@ -549,7 +538,7 @@ bool fib_data::load_from_file(const std::string& file_name)
         }
         bruker_header.get_image().swap(I);
         bruker_header.get_voxel_size(vs);
-        initial_LPS_nifti_srow(trans_to_mni,I.shape(),vs);
+        tipl::io::initial_nifti_srow(trans_to_mni,I.shape(),vs);
         std::ostringstream out;
         out << "Image resolution is (" << vs[0] << "," << vs[1] << "," << vs[2] << ")." << std::endl;
         report = out.str();
@@ -747,7 +736,7 @@ bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
     }
     // older version of gqi.fz does not have trans matrix
     if(!mat_reader.read("trans",trans))
-        initial_LPS_nifti_srow(trans,dim,vs);
+        tipl::io::initial_nifti_srow(trans,dim,vs);
     if(!is_mni)
     {
         // now decide whether the fib is qsdr

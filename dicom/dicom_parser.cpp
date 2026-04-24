@@ -319,7 +319,6 @@ bool find_bval_bvec(const std::string& file_name, std::string& bval, std::string
     return pick(bvals, bval) && pick(bvecs, bvec);
 }
 
-void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                  bool search_bvalbvec,
                  bool must_have_bval_bvec,

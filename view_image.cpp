@@ -503,7 +503,6 @@ void view_image::DeleteRowPressed(int row)
     if(!command("remove",ui->info->item(ui->info->currentRow(),0)->text().toStdString()))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
-void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& mat_reader);
 bool view_image::read_mat(void)
 {
@@ -518,7 +517,7 @@ bool view_image::read_mat(void)
     if(mat.has("trans"))
         mat.read("trans",cur_image->T);
     else
-        initial_LPS_nifti_srow(cur_image->T,cur_image->shape,cur_image->vs);
+        tipl::io::initial_nifti_srow(cur_image->T,cur_image->shape,cur_image->vs);
 
 
     bool has_data = true;

@@ -1437,7 +1437,7 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
             return false;
         }
         tipl::matrix<4,4,float> trans;
-        initial_LPS_nifti_srow(trans,source_images.shape(),vs);
+        tipl::io::initial_nifti_srow(trans,source_images.shape(),vs);
         return tipl::io::gz_nifti(nii_file_name,std::ios::out) << vs << trans << source_images;
     }
 
@@ -1451,7 +1451,7 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
         tipl::out() << "The images do not have b-table. Save as 4D NIFTI" << std::endl;
         auto dicom = dicom_files[0];
         tipl::matrix<4,4> trans;
-        initial_LPS_nifti_srow(trans,dicom->image.shape(),dicom->voxel_size);
+        tipl::io::initial_nifti_srow(trans,dicom->image.shape(),dicom->voxel_size);
 
         tipl::shape<4> nifti_dim;
         std::copy(dicom->image.shape().begin(),

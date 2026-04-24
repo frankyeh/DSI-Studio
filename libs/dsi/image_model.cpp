@@ -2939,7 +2939,6 @@ void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream>
         in->save_index(idx_name);
     }
 }
-void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 bool src_data::load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool sort_btable)
 {
     if(dwi_files.empty())
@@ -2973,7 +2972,7 @@ bool src_data::load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_file
     voxel.vs = dwi_files.front()->voxel_size;
     voxel.trans_to_mni = dwi_files.front()->trans_to_mni;
     if(voxel.trans_to_mni == tipl::identity_matrix())
-        initial_LPS_nifti_srow(voxel.trans_to_mni,voxel.dim,voxel.vs);
+        tipl::io::initial_nifti_srow(voxel.trans_to_mni,voxel.dim,voxel.vs);
 
     nifti_dwi.resize(dwi_files.size());
     src_bvalues.resize(dwi_files.size());
@@ -3067,7 +3066,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         voxel.is_histology = true;
         voxel.dim = dwi.shape();
         voxel.vs = {0.05f,0.05f,0.05f};
-        initial_LPS_nifti_srow(voxel.trans_to_mni,voxel.dim,voxel.vs);
+        tipl::io::initial_nifti_srow(voxel.trans_to_mni,voxel.dim,voxel.vs);
         voxel.hist_image.swap(raw);
         voxel.report = "Histology image was loaded at a size of "
                      + std::to_string(voxel.hist_image.width()) + " by "
@@ -3115,7 +3114,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
             return false;
         }
         if(!mat_reader.read("trans",voxel.trans_to_mni))
-            initial_LPS_nifti_srow(voxel.trans_to_mni,voxel.dim,voxel.vs);
+            tipl::io::initial_nifti_srow(voxel.trans_to_mni,voxel.dim,voxel.vs);
         int this_src_ver(0);
         if(mat_reader.has("version") && (this_src_ver = mat_reader.read_as_value<int>("version")) > src_ver)
         {

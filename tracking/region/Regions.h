@@ -16,7 +16,6 @@ const unsigned char term_id = 4;
 const unsigned char not_end_id = 5;
 const unsigned char limiting_id = 6;
 const unsigned char default_id = 7;
-void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 class ROIRegion {
 public:
         std::string name = "region";
@@ -45,7 +44,7 @@ public: // rendering options
             dim(handle->dim),vs(handle->vs),trans_to_mni(handle->trans_to_mni),is_mni(handle->is_mni),region_render(new RegionRender){}
         ROIRegion(tipl::shape<3> dim_,tipl::vector<3> vs_):dim(dim_),vs(vs_),region_render(new RegionRender)
         {
-            initial_LPS_nifti_srow(trans_to_mni,dim,vs);
+            tipl::io::initial_nifti_srow(trans_to_mni,dim,vs);
         }
         ROIRegion(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4>& trans_to_mni_)
             :dim(dim_),vs(vs_),trans_to_mni(trans_to_mni_),region_render(new RegionRender){}

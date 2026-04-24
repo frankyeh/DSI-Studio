@@ -5,9 +5,6 @@
 #include "ui_manual_alignment.h"
 #include "tracking/tracking_window.h"
 
-
-
-void initial_LPS_nifti_srow(tipl::matrix<4,4>& T,const tipl::shape<3>& geo,const tipl::vector<3>& vs);
 manual_alignment::manual_alignment(QWidget *parent,
                                    tipl::image<3,unsigned char>&& from_,
                                    tipl::image<3,unsigned char>&& from2_,
@@ -32,8 +29,8 @@ manual_alignment::manual_alignment(QWidget *parent,
     from_original = from;
     from_vs_original = from_vs;
 
-    initial_LPS_nifti_srow(to_T,to.shape(),to_vs);
-    initial_LPS_nifti_srow(from_T,from.shape(),from_vs);
+    tipl::io::initial_nifti_srow(to_T,to.shape(),to_vs);
+    tipl::io::initial_nifti_srow(from_T,from.shape(),from_vs);
     while(from.size() < to.size()/8)
     {
         tipl::downsample_with_padding(to);
