@@ -363,11 +363,9 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         if(cur_slice->is_diffusion_space)
             tipl::threshold(fa_map,mask,threshold);
         else
-            tipl::par_for<tipl::sequential>(mask.shape(),[&](const tipl::pixel_index<3>& index)
+            tipl::par_for(mask.shape(),[&](const tipl::pixel_index<3>& index)
             {
-                tipl::vector<3> pos(index);
-                pos.to(cur_slice->to_dif);
-                if(tipl::estimate(fa_map,pos) > threshold)
+                if(fa_map[tipl::vector<3>(index).to(cur_slice->to_dif)] > threshold)
                     mask[index.index()] = 1;
             });
         add_region("whole brain",seed_id);
