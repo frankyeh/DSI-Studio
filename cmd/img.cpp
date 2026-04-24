@@ -532,18 +532,17 @@ int img(tipl::program_option<tipl::out>& po)
                     return tipl::error() << unet.error_msg,1;
                 var_image.apply([&](auto& I)
                 {
-                    tipl::image<3,unsigned char> label;
-                    if(!unet.forward(I,var_image.vs,label,prog))
+                    if(!unet.forward(std::move(I),var_image.vs,prog))
                     {
                         tipl::error() << "failed to run network";
                         return;
                     }
                     if(cmd == "brain_extraction")
-                        I *= tipl::ml3d::soft_mask(label);
+                        I *= tipl::ml3d::soft_mask(unet.eval.label);
                     if(cmd == "segmentation")
                     {
                         I.clear();
-                        var_image.I_int8 = label;
+                        var_image.I_int8 = std::move(unet.eval.label);
                         var_image.pixel_type = variant_image::int8;
                     }
                 });
