@@ -1375,16 +1375,7 @@ void fib_data::get_voxel_information(int x,int y,int z,std::vector<float>& buf) 
             if(I.empty())
                 buf.push_back(0.0f);
             else
-            {
-                if(I.shape() != dim)
-                {
-                    tipl::vector<3> pos(x,y,z);
-                    pos.to(each->iT);
-                    buf.push_back(tipl::estimate(I,pos));
-                }
-                else
-                    buf.push_back(I[space_index]);
-            }
+                buf.push_back(I.shape() != dim ? I[tipl::vector<3>(x,y,z).to(each->iT)] : I[space_index]);
         }
 }
 
@@ -1605,10 +1596,7 @@ bool fib_data::get_template_mask(const tipl::shape<3>& target_dim,
     tipl::out() << "warping template-space slices to the subject space.";
     tipl::par_for(target_dim,[&](const auto& pos)
     {
-        tipl::vector<3> p2;
-        if(!tipl::estimate(s2t,tipl::vector<3>(pos).to(to_dif),p2))
-            return;
-        mask_[pos.index()] = (tipl::estimate(maskT,p2.to(to_mask)) > 0.0f) ? 1:0;
+        mask_[pos.index()] = maskT[s2t[tipl::vector<3>(pos).to(to_dif)].to(to_mask)] > 0.0f ? 1:0;
     });
     tipl::morphology::defragment(mask_);
     return true;
@@ -2253,30 +2241,20 @@ bool fib_data::load_mapping(const std::string& file_name)
 
 void fib_data::temp2sub(tipl::vector<3>& pos) const
 {
-    if(is_mni && template_id == matched_template_id)
+    if((is_mni && template_id == matched_template_id) || t2s.empty())
         return;
-    if(!t2s.empty())
-    {
-        tipl::vector<3> p;
-        if(pos[2] < 0.0f)
-            pos[2] = 0.0f;
-        tipl::estimate(t2s,pos,p);
-        pos = p;
-    }
+    if(pos[2] < 0.0f)
+        pos[2] = 0.0f;
+    pos = t2s[pos];
 }
 
 void fib_data::sub2temp(tipl::vector<3>& pos)
 {
-    if(is_mni && template_id == matched_template_id)
+    if(is_mni && template_id == matched_template_id || s2t.empty())
         return;
-    if(!s2t.empty())
-    {
-        tipl::vector<3> p;
-        if(pos[2] < 0.0f)
-            pos[2] = 0.0f;
-        tipl::estimate(s2t,pos,p);
-        pos = p;
-    }
+    if(pos[2] < 0.0f)
+        pos[2] = 0.0f;
+    pos = s2t[pos];
 }
 void fib_data::sub2mni(tipl::vector<3>& pos)
 {
