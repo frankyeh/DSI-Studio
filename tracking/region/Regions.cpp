@@ -347,7 +347,7 @@ void calculate_region_stat(const Image& I, const Points& p,float& mean,float& ma
         tipl::vector<3> pos(p[index]);
         if(T)
             pos.to(T);
-        value = tipl::estimate(I,pos);
+        value = I[pos];
         if(value == 0.0f || std::isnan(value) || std::isinf(value))
             continue;
         if(index)
