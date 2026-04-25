@@ -470,8 +470,8 @@ bool CustomSliceModel::load_slices(void)
                 error_msg = "cannot read picture";
                 return false;
             }
-            dim = {in.width(),in.height(),uint32_t(source_files.size())};
-            vs = {1.0f,1.0f,1.0f};
+            dim = tipl::s(in.width(),in.height(),uint32_t(source_files.size()));
+            vs = tipl::v(1.0f,1.0f,1.0f);
 
             try{
                 source_images.resize(dim);
