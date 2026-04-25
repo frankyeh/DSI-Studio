@@ -271,7 +271,7 @@ public:
     int prog = 0;
     tipl::image<3,tipl::vector<3,float> > s2t,t2s;
     float R2 = 1.0f;
-    unsigned int search_count = 32;
+    unsigned int search_count = 16;
 public:
     size_t template_id = 0;
     tipl::vector<3> template_vs;
