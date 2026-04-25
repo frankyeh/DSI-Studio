@@ -298,8 +298,8 @@ struct TrackVis
         if (!in.open(file_name))
             return false;
         in.read((char*)this,1000);
-        std::copy_n(dim,3,geo.begin());
-        std::copy_n(voxel_size,3,vs.begin());
+        geo = dim;
+        vs = voxel_size;
         std::copy_n(&vox_to_ras[0][0],16,trans_to_mni.begin());
         unsigned int track_number = n_count;
         info = reserved;
@@ -544,8 +544,8 @@ bool load_fib_from_tracks(const std::string& file_name,
             std::cout << "cannot read " << file_name << std::endl;
             return false;
         }
-        std::copy_n(vis.voxel_size,3,vs.begin());
-        std::copy_n(vis.dim,3,geo.begin());
+        vs = vis.voxel_size;
+        geo = vis.dim;
     }
     else
         if(tipl::ends_with(file_name,"tt.gz"))
