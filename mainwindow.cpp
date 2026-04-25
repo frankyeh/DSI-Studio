@@ -1456,7 +1456,7 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
         tipl::shape<4> nifti_dim;
         std::copy(dicom->image.shape().begin(),
                   dicom->image.shape().end(),nifti_dim.begin());
-        nifti_dim[3] = uint32_t(dicom_files.size());
+        nifti_dim.set_dim(3,uint32_t(dicom_files.size()));
 
         tipl::image<4,unsigned short> buffer(nifti_dim);
         for(unsigned int index = 0;index < dicom_files.size();++index)
