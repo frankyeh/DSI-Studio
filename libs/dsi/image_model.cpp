@@ -3071,8 +3071,8 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         save_idx(dwi_file_name,mat_reader.in);
         mat_reader.in->close();
 
-        if (!mat_reader.read("dimension",voxel.dim) ||
-            !mat_reader.read("voxel_size",voxel.vs))
+        if (!mat_reader.get_dimension(voxel.dim) ||
+            !mat_reader.get_voxel_size(voxel.vs))
         {
             error_msg = "incompatible SRC format";
             return false;

@@ -507,7 +507,7 @@ tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& ma
 bool view_image::read_mat(void)
 {
     read_mat_info();
-    if(!mat.read("dimension",cur_image->shape))
+    if(!mat.get_dimension(cur_image->shape))
     {
         error_msg = "cannot find dimension matrix";
         return false;

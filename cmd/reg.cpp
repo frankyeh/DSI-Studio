@@ -167,8 +167,8 @@ bool load_warping(tipl::reg::mm_reg<tipl::out>& reg,const std::string& filename)
     const float* f2t_dis_ptr = nullptr;
     const float* t2f_dis_ptr = nullptr;
     unsigned int row,col;
-    if (!in.read("dimension",reg.Its) ||
-        !in.read("voxel_size",reg.Itvs) ||
+    if (!in.get_dimension(reg.Its) ||
+        !in.get_voxel_size(reg.Itvs) ||
         !in.read("trans",reg.ItR) ||
         !in.read("dimension_from",reg.Is) ||
         !in.read("voxel_size_from",reg.Ivs) ||

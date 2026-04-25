@@ -202,8 +202,8 @@ class TinyTrack{
         prepare_idx(file_name,in.in);
         if (!in.load_from_file(file_name))
             return false;
-        in.read("dimension",geo);
-        in.read("voxel_size",vs);
+        in.get_dimension(geo);
+        in.get_voxel_size(vs);
         in.read("trans_to_mni",trans_to_mni);
         in.read("report",report);
         in.read("parameter_id",parameter_id);

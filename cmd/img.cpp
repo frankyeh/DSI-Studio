@@ -397,7 +397,7 @@ void show_slice(tipl::io::gz_mat_read& mat_reader,const char* name)
     if(!mat_reader.has(name))
         return;
     tipl::shape<3> dim;
-    if(!mat_reader.read("dimension",dim))
+    if(!mat_reader.get_dimension(dim))
         return;
     if(mat_reader.has("mask"))
         handle_mask(mat_reader);

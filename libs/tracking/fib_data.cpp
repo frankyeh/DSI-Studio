@@ -719,7 +719,7 @@ bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
         mat_reader.error_msg = "Incompatible format. please update DSI Studio to open this new format file.";
         return false;
     }
-    if (!mat_reader.read("dimension",dim))
+    if (!mat_reader.get_dimension(dim))
     {
         mat_reader.error_msg = "cannot find dimension matrix";
         return false;
@@ -729,7 +729,7 @@ bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
         mat_reader.error_msg = "invalid dimension";
         return false;
     }
-    if (!mat_reader.read("voxel_size",vs))
+    if (!mat_reader.get_voxel_size(vs))
     {
         mat_reader.error_msg = "cannot find voxel size matrix";
         return false;
@@ -761,7 +761,7 @@ tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& ma
 {
     const unsigned char* mask_ptr = nullptr;
     tipl::shape<3> dim;
-    if(mat_reader.read("dimension",dim))
+    if(mat_reader.get_dimension(dim))
     {
         if(!mat_reader.read("mask",mask_ptr))
         {
