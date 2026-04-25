@@ -3071,13 +3071,13 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         save_idx(dwi_file_name,mat_reader.in);
         mat_reader.in->close();
 
-        if (!mat_reader.get_dimension(voxel.dim) ||
-            !mat_reader.get_voxel_size(voxel.vs))
+        if (!mat_reader.read_pointer("dimension",voxel.dim) ||
+            !mat_reader.read_pointer("voxel_size",voxel.vs))
         {
             error_msg = "incompatible SRC format";
             return false;
         }
-        if(!mat_reader.read("trans",voxel.trans_to_mni))
+        if(!mat_reader.read_pointer("trans",voxel.trans_to_mni))
             tipl::io::initial_nifti_srow(voxel.trans_to_mni,voxel.dim,voxel.vs);
         int this_src_ver(0);
         if(mat_reader.has("version") && (this_src_ver = mat_reader.read_as_value<int>("version")) > src_ver)
