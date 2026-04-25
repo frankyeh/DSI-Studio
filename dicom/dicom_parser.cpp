@@ -584,7 +584,7 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
 
 
     tipl::shape<3> dim(bruker_header.get_image().shape());
-    dim[2] /= bvalues.size();
+    dim.divide(tipl::shape<3>::z,bvalues.size());
 
     if(dwi_files.size() && dwi_files.back()->image.shape() != dim)
     {
@@ -694,7 +694,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             for (;slice_num < file_list.size();++slice_num)
                 if(dwis[0]->bvec != dwis[slice_num]->bvec || dwis[0]->bvalue != dwis[slice_num]->bvalue)
                     break;
-            geo[slice_axis] = slice_num;
+            geo.set_dim(slice_axis,slice_num);
             iterate_slice_first = true;
         }
         else
@@ -703,7 +703,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             for (;b_num < file_list.size();++b_num)
                 if(dwis[0]->bvec == dwis[slice_num]->bvec && dwis[0]->bvalue == dwis[slice_num]->bvalue)
                     break;
-            geo[slice_axis] = file_list.size()/b_num;
+            geo.set_dim(slice_axis,file_list.size()/b_num);
             iterate_slice_first = false;
         }
     }
@@ -714,7 +714,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             for (;b_num < file_list.size();++b_num)    
                 if(dwis[b_num]->slice_location != dwis[0]->slice_location)
                     break;
-            geo[slice_axis] = std::ceil(float(file_list.size())/float(b_num));
+            geo.set_dim(slice_axis,std::ceil(float(file_list.size())/float(b_num)));
             iterate_slice_first = false;
         }
         else
@@ -723,7 +723,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
             for (;slice_num < file_list.size();++slice_num)
                 if(dwis[slice_num]->slice_location == dwis[0]->slice_location)
                     break;
-            geo[slice_axis] = slice_num;
+            geo.set_dim(slice_axis,slice_num);
             iterate_slice_first = true;
         }
     }
