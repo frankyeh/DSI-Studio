@@ -470,10 +470,8 @@ bool CustomSliceModel::load_slices(void)
                 error_msg = "cannot read picture";
                 return false;
             }
-            dim[0] = in.width();
-            dim[1] = in.height();
-            dim[2] = uint32_t(source_files.size());
-            vs[0] = vs[1] = vs[2] = 1.0f;
+            dim = {in.width(),in.height(),uint32_t(source_files.size())};
+            vs = {1.0f,1.0f,1.0f};
 
             try{
                 source_images.resize(dim);
