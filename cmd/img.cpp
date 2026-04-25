@@ -257,7 +257,7 @@ bool variant_image::load_from_file(const std::string& file_name,std::string& inf
         if(!apply([&](auto& data)
         {
             bool succeed = nifti.get_untouched_image(data);
-            if constexpr(!std::is_integral<typename std::remove_reference<decltype(*data.begin())>::type>::value)
+            if constexpr(!std::is_integral<typename std::decay<decltype(*data.begin())>::type>::value)
             {
                 for(size_t pos = 0,sz = data.size();pos < sz;++pos)
                    if(std::isnan(data[pos]))
@@ -397,7 +397,7 @@ void show_slice(tipl::io::gz_mat_read& mat_reader,const char* name)
     if(!mat_reader.has(name))
         return;
     tipl::shape<3> dim;
-    if(!mat_reader.get_dimension(dim))
+    if(!mat_reader.read_pointer("dimension",dim))
         return;
     if(mat_reader.has("mask"))
         handle_mask(mat_reader);
