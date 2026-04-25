@@ -12,7 +12,7 @@ void ROIRegion::new_from_sphere(tipl::vector<3> pos,float radius)
     {
         if(std::abs((float(index[0])-pos[0])) > radius)
             return;
-        if((tipl::vector<3>(index)-pos).length() <= radius)
+        if((tipl::v(index)-pos).length() <= radius)
             mask[index.index()] = 1;
     });
     load_region_from_buffer(mask);
