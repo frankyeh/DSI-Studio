@@ -161,18 +161,18 @@ public:
             {
                 for(unsigned int i = 0;i < voxel.other_image.size();++i)
                 {
-                    if(voxel.other_image[i].empty())
+                    auto& I = voxel.other_image[i];
+                    if(I.empty())
                         continue;
                     tipl::image<3> new_other_image(voxel.dim);
+                    bool need_transform = (I.shape() != native_geo);
+                    const auto& trans = voxel.other_image_trans[i];
                     tipl::par_for(voxel.dim.size(),[&](size_t index)
                     {
-                        tipl::vector<3,float> Jpos(mapping[index]);
-                        if(voxel.other_image[i].shape() != native_geo)
-                            voxel.other_image_trans[i](Jpos);
-                        tipl::estimate<tipl::interpolation::cubic>(voxel.other_image[i],Jpos,new_other_image[index]);
+                        new_other_image[index] = I[need_transform ? trans((const tipl::vector<3>&)mapping[index]) : mapping[index]];
                     });
                     tipl::lower_threshold(new_other_image,0);
-                    voxel.other_image[i].swap(new_other_image);
+                    I.swap(new_other_image);
                     voxel.other_image_voxel_size[i] = voxel.vs;
                     voxel.other_image_trans[i].identity();
                 }
