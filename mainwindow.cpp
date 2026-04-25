@@ -1453,12 +1453,7 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
         tipl::matrix<4,4> trans;
         tipl::io::initial_nifti_srow(trans,dicom->image.shape(),dicom->voxel_size);
 
-        tipl::shape<4> nifti_dim;
-        std::copy(dicom->image.shape().begin(),
-                  dicom->image.shape().end(),nifti_dim.begin());
-        nifti_dim.set_dim(3,uint32_t(dicom_files.size()));
-
-        tipl::image<4,unsigned short> buffer(nifti_dim);
+        tipl::image<4,unsigned short> buffer(dicom->image.shape().expand(dicom_files.size()));
         for(unsigned int index = 0;index < dicom_files.size();++index)
         {
             std::copy(dicom_files[index]->image.begin(),
