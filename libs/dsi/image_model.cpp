@@ -1898,31 +1898,6 @@ void get_distortion_map(const image_type& v1,
     );
 }
 
-template<typename image_type>
-void apply_distortion_map2(const image_type& v1,
-                          const tipl::image<3>& dis_map,
-                          image_type& v1_out,bool positive)
-{
-    int w = v1.width();
-    v1_out.resize(v1.shape());
-    tipl::par_for(v1.depth()*v1.height(),[&](int z)
-    {
-        std::vector<float> cdf_x1,cdf;
-        cdf_x1.resize(size_t(w));
-        cdf.resize(size_t(w));
-        int base_pos = z*w;
-        {
-            tipl::pdf2cdf(v1.begin()+base_pos,v1.begin()+base_pos+w,&cdf_x1[0]);
-            auto I1 = tipl::make_image(&cdf_x1[0],tipl::shape<1>(w));
-            for(int x = 0,pos = base_pos;x < w;++x,++pos)
-                cdf[size_t(x)] = tipl::estimate(I1,positive ? x+dis_map[pos] : x-dis_map[pos]);
-            for(int x = 0,pos = base_pos;x < w;++x,++pos)
-                v1_out[pos] = (x? std::max<float>(0.0f,cdf[size_t(x)] - cdf[size_t(x-1)]):0);
-        }
-    }
-    );
-}
-
 bool src_data::read_b0(std::vector<tipl::image<3> >& b0) const
 {
     for(size_t index = 0;index < src_bvalues.size();++index)
