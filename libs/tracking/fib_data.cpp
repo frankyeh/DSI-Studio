@@ -1596,7 +1596,7 @@ bool fib_data::get_template_mask(const tipl::shape<3>& target_dim,
     tipl::out() << "warping template-space slices to the subject space.";
     tipl::par_for(target_dim,[&](const auto& pos)
     {
-        mask_[pos.index()] = maskT[s2t[tipl::vector<3>(pos).to(to_dif)].to(to_mask)] > 0.0f ? 1:0;
+        mask_[pos.index()] = maskT[s2t[tipl::v(pos).to(to_dif)].to(to_mask)] > 0.0f ? 1:0;
     });
     tipl::morphology::defragment(mask_);
     return true;
