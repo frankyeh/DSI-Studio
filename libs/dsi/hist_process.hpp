@@ -114,12 +114,11 @@ public:
         for(unsigned int i = 0;i < voxel.hist_downsampling;++i)
         {
             new_vs *= 2.0f;
-            new_dim[0] = (new_dim[0]+1) >> 1;
-            new_dim[1] = (new_dim[1]+1) >> 1;
+            new_dim = tipl::s((new_dim[0]+1) >> 1,(new_dim[1]+1) >> 1,new_dim[2]);
         }
         hist_fa.resize(new_dim);
         hist_dir.resize(new_dim);
-        new_dim[2] = 2;
+        new_dim.set_dim(2,2);
         voxel.dim = new_dim;
         voxel.vs = new_vs;
         tipl::io::initial_nifti_srow(voxel.trans_to_mni,voxel.dim,voxel.vs);
