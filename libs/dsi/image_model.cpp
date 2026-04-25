@@ -676,7 +676,7 @@ int64_t src_data::bottom_top_difference(void)
 }
 int64_t src_data::anterior_posterior_difference(void)
 {
-    tipl::shape<3> range_min,range_max;
+    tipl::vector<3,int> range_min,range_max;
     tipl::bounding_box(voxel.mask,range_min,range_max);
     auto I = voxel.mask;
     tipl::crop(I,range_min,range_max);
@@ -2060,7 +2060,7 @@ void src_data::setup_topup_eddy_volume(void)
     // ensure even number in the dimension for topup
     for(int d = 0;d < 3;++d)
         if(topup_size[d] & 1)
-            topup_size[d]++;
+            topup_size.set_dim(d,topup_size[d]+1);
     if(rev_pe_src.get())
         rev_pe_src->topup_size = topup_size;
 }
@@ -2760,11 +2760,7 @@ bool src_data::save_to_file(const std::string& filename)
     tipl::progress prog("saving ",filename);
     if(tipl::ends_with(filename,"nii.gz"))
     {
-        tipl::shape<4> nifti_dim;
-        std::copy(voxel.dim.begin(),voxel.dim.end(),nifti_dim.begin());
-        nifti_dim[3] = uint32_t(src_bvalues.size());
-
-        tipl::image<4,unsigned short> buffer(nifti_dim);
+        tipl::image<4,unsigned short> buffer(voxel.dim.expand(src_bvalues.size()));
         tipl::par_for(src_bvalues.size(),[&](size_t index)
         {
             std::copy_n(src_dwi_data[index],voxel.dim.size(),
