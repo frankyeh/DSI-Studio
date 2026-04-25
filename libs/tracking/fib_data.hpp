@@ -366,7 +366,7 @@ public:
             if(ratio == 1.0f)
                 pos = s2t[index.index()];
             else
-                tipl::estimate<Type>(s2t,tipl::vector<3>(index)/ratio,pos);
+                tipl::estimate<Type>(s2t,tipl::v(index)/ratio,pos);
             pos.to(T);
             tipl::estimate<Type>(mni_image,pos,J[index.index()]);
         });
