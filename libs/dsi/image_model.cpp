@@ -1434,10 +1434,7 @@ bool src_data::align_acpc(float reso)
     arg.scaling[1] = 1.0f;
     arg.scaling[2] = 1.0f;
 
-    tipl::shape<3> new_geo;
-    new_geo[0] = I.width()*Ivs[0]/reso;
-    new_geo[1] = I.height()*Ivs[1]/reso;
-    new_geo[2] = I.depth()*Ivs[2]/reso;
+    tipl::shape<3> new_geo(I.width()*Ivs[0]/reso,I.height()*Ivs[1]/reso,I.depth()*Ivs[2]/reso);
     auto T = tipl::transformation_matrix<float>(arg,new_geo,tipl::v(reso,reso,reso),J.shape(),Jvs);
 
     // handle non isotropic resolution
