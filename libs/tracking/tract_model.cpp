@@ -503,7 +503,7 @@ void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tip
     });
     for(unsigned int k = 0;k < 3;++k)
     {
-        geo[k] = uint32_t(max_xyz[k]-min_xyz[k]+2);
+        geo.set_dim(k,uint32_t(max_xyz[k]-min_xyz[k]+2));
         min_xyz[k] -= 1;
     }
     tipl::par_for(loaded_tract_data.size(),[&](size_t i)
