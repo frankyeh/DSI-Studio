@@ -105,7 +105,7 @@ bool view_image::command(std::string cmd,std::string param1)
         std::istringstream in(param1);
         tipl::shape<3> new_shape;
         int dim4 = 1;
-        in >> new_shape[0] >> new_shape[1] >> new_shape[2] >> dim4;
+        in >> new_shape >> dim4;
         if(!buf4d.empty() || dim4 != 1)
         {
             std::vector<unsigned char> buf;
@@ -593,9 +593,7 @@ bool view_image::open(QStringList file_names_)
         if(in.isNull())
             return false;
         cur_image->pixel_type = variant_image::int8;
-        cur_image->shape[0] = in.width();
-        cur_image->shape[1] = in.height();
-        cur_image->shape[2] = uint32_t(file_names.size());
+        cur_image->shape = tipl::s(in.width(),in.height(),uint32_t(file_names.size()));
         cur_image->T.identity();
         cur_image->vs[0] = cur_image->vs[1] = cur_image->vs[2] = 1.0f;
         cur_image->I_int8.resize(cur_image->shape);
