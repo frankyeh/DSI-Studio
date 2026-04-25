@@ -719,7 +719,7 @@ bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
         mat_reader.error_msg = "Incompatible format. please update DSI Studio to open this new format file.";
         return false;
     }
-    if (!mat_reader.get_dimension(dim))
+    if (!mat_reader.read_pointer("dimension",dim))
     {
         mat_reader.error_msg = "cannot find dimension matrix";
         return false;
@@ -729,13 +729,13 @@ bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
         mat_reader.error_msg = "invalid dimension";
         return false;
     }
-    if (!mat_reader.get_voxel_size(vs))
+    if (!mat_reader.read_pointer("voxel_size",vs))
     {
         mat_reader.error_msg = "cannot find voxel size matrix";
         return false;
     }
     // older version of gqi.fz does not have trans matrix
-    if(!mat_reader.read("trans",trans))
+    if(!mat_reader.read_pointer("trans",trans))
         tipl::io::initial_nifti_srow(trans,dim,vs);
     if(!is_mni)
     {
@@ -761,7 +761,7 @@ tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& ma
 {
     const unsigned char* mask_ptr = nullptr;
     tipl::shape<3> dim;
-    if(mat_reader.get_dimension(dim))
+    if(mat_reader.read_pointer("dimension",dim))
     {
         if(!mat_reader.read("mask",mask_ptr))
         {
