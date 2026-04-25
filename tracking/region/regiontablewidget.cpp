@@ -365,7 +365,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         else
             tipl::par_for(mask.shape(),[&](const tipl::pixel_index<3>& index)
             {
-                if(fa_map[tipl::vector<3>(index).to(cur_slice->to_dif)] > threshold)
+                if(fa_map[tipl::v(index).to(cur_slice->to_dif)] > threshold)
                     mask[index.index()] = 1;
             });
         add_region("whole brain",seed_id);
@@ -1556,22 +1556,12 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
 
                     region->save_region_to_buffer(mask);
 
-                    tipl::par_for<tipl::sequential>(mask.shape(),[&](const tipl::pixel_index<3>& pos)
+                    tipl::par_for(mask.shape(),[&](const tipl::pixel_index<3>& pos)
                     {
                         if(!mask[pos.index()])
                             return;
-                        float value = 0.0f;
-                        size_t i = pos.index();
-                        if(need_trans)
-                        {
-                            tipl::vector<3> p(pos);
-                            p.to(trans);
-                            if(!tipl::estimate(I,p,value))
-                                return;
-                        }
-                        else
-                            value = I[i];
-                        mask[i]  = ((value > threshold) ^ flip) ? 1:0;
+                        mask[pos.index()] = (((need_trans ?
+                            I[tipl::v(pos).to(trans)]:I[pos.index()]) > threshold) ^ flip) ? 1:0;
                     });
                     region->load_region_from_buffer(mask);
                 }
