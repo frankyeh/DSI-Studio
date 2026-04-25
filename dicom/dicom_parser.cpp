@@ -866,7 +866,7 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
         if(i == 0)
         {
             float d;
-            if(!(std::istringstream(value_list["sizes"]) >> dim[0] >> dim[1] >> dim[2])||
+            if(!(std::istringstream(value_list["sizes"]) >> dim)||
                !(std::istringstream(value_list["space directions"]) >> vs[0] >> d >> d >> d >> vs[1] >> d >> d >> d >> vs[2]))
             {
                 error_msg = "failed to parse file";
