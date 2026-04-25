@@ -171,7 +171,7 @@ bool view_image::command(std::string cmd,std::string param1)
         {
             cur_image->apply([&](auto& I)
             {
-                typename std::remove_reference<decltype(I)>::type
+                typename std::decay<decltype(I)>::type
                         J(tipl::shape<3>(cur_image->shape[0],cur_image->shape[1],cur_image->shape[2]*buf4d.size()));
                 get_4d_buf(J.buf().buf());
                 result = tipl::command<void,tipl::io::gz_nifti>(J,
@@ -186,7 +186,7 @@ bool view_image::command(std::string cmd,std::string param1)
         {
             cur_image->apply([&](auto& I)
             {
-                typename std::remove_reference<decltype(I)>::type new_I(I.shape());
+                typename std::decay<decltype(I)>::type new_I(I.shape());
                 result = tipl::command<void,tipl::io::gz_nifti>(new_I,cur_image->vs,cur_image->T,cur_image->is_mni,
                                 "load_image",param1,cur_image->interpolation,cur_image->error_msg);
                 if(result)
@@ -507,16 +507,13 @@ tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& ma
 bool view_image::read_mat(void)
 {
     read_mat_info();
-    if(!mat.get_dimension(cur_image->shape))
-    {
-        error_msg = "cannot find dimension matrix";
-        return false;
-    }
+    if(!mat.read_pointer("dimension",cur_image->shape) ||
+       !mat.read_pointer("voxel_size",cur_image->vs))
+        return error_msg = "cannot find dimension or voxel_size information",false;
+
     handle_mask(mat);
-    mat.get_voxel_size(cur_image->vs);
-    if(mat.has("trans"))
-        mat.read("trans",cur_image->T);
-    else
+
+    if(!mat.read_pointer("trans",cur_image->T))
         tipl::io::initial_nifti_srow(cur_image->T,cur_image->shape,cur_image->vs);
 
 
