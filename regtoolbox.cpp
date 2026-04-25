@@ -414,7 +414,7 @@ void RegToolBox::show_image(void)
                     if(view_image[st].empty())
                     {
                         view_size[st] = I.shape();
-                        view_size[st][0] /= 2;
+                        view_size[st].set_dim(0,view_size[st][0]/2);
                         view_image[st].resize(tipl::shape<2>(I.width(),I.height()*row_count));
                     }
                 }
