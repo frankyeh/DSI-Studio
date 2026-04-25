@@ -167,15 +167,15 @@ bool load_warping(tipl::reg::mm_reg<tipl::out>& reg,const std::string& filename)
     const float* f2t_dis_ptr = nullptr;
     const float* t2f_dis_ptr = nullptr;
     unsigned int row,col;
-    if (!in.get_dimension(reg.Its) ||
-        !in.get_voxel_size(reg.Itvs) ||
-        !in.read("trans",reg.ItR) ||
-        !in.read("dimension_from",reg.Is) ||
-        !in.read("voxel_size_from",reg.Ivs) ||
-        !in.read("trans_from",reg.IR) ||
+    if (!in.read_pointer("dimension",reg.Its) ||
+        !in.read_pointer("voxel_size",reg.Itvs) ||
+        !in.read_pointer("trans",reg.ItR) ||
+        !in.read_pointer("dimension_from",reg.Is) ||
+        !in.read_pointer("voxel_size_from",reg.Ivs) ||
+        !in.read_pointer("trans_from",reg.IR) ||
+        !in.read_pointer("arg",reg.arg) ||
         !in.read("f2t_dis",row,col,f2t_dis_ptr) ||
-        !in.read("t2f_dis",row,col,t2f_dis_ptr) ||
-        !in.read("arg",reg.arg))
+        !in.read("t2f_dis",row,col,t2f_dis_ptr))
         return reg.error_msg = "invalid warp file format",false;
 
     tipl::shape<3> sub_shape;
