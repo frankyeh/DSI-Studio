@@ -954,19 +954,21 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
             tipl::shape<3> shape;
             tipl::vector<3> fov;
             // 2D acquisition
-            if(std::istringstream(value_list["slices"]) >> shape[2])
+            unsigned int s0,s1,s2;
+            if(std::istringstream(value_list["slices"]) >> s2)
             {
-                if(!(std::istringstream(value_list["matrix[]"]) >> shape[0] >> shape[1]))
+                if(!(std::istringstream(value_list["matrix[]"]) >> s0 >> s1))
                 {
                     error_msg = "cannot read matrix information";
                     return false;
                 }
+                shape = tipl::s(s0,s1,s2);
             }
             else
             // 3D acquisition
             {
                 scan_2d = false;
-                if(!(std::istringstream(value_list["matrix[]"]) >> shape[0] >> shape[1] >> shape[2]))
+                if(!(std::istringstream(value_list["matrix[]"]) >> shape))
                 {
                     error_msg = "cannot read matrix information";
                     return false;
