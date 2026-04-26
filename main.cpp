@@ -297,13 +297,16 @@ bool init_application(void)
         check_cuda(cuda_msg);
         if(!has_cuda)
         {
+            tipl::has_gpu = false;
             if(tipl::show_prog)
                 QMessageBox::critical(nullptr,"ERROR",cuda_msg.c_str());
             return 1;
         }
         else
-            tipl::out() << "CPU/GPU computation enabled "<< std::endl;
+            tipl::out() << "Enable multi-thread CPU/GPU computation";
     }
+    else
+        tipl::out() << "Enable multi-thread CPU computation ";
     return true;
 }
 
