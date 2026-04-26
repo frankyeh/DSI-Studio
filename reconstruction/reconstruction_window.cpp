@@ -113,7 +113,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     ui->odf_resolving->setVisible(false);
 
-    ui->ThreadCount->setValue(settings.value("rec_thread_count",tipl::max_thread_count).toInt());
+    ui->ThreadCount->setValue(tipl::max_thread_count);
 
     ui->odf_resolving->setChecked(settings.value("odf_resolving",0).toInt());
 
@@ -265,8 +265,6 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
     }
 
     settings.setValue("rec_method_id",method_id);
-    settings.setValue("rec_thread_count",ui->ThreadCount->value());
-
     settings.setValue("odf_resolving",ui->odf_resolving->isChecked() ? 1 : 0);
 
     handle->voxel.method_id = method_id;
