@@ -83,9 +83,9 @@ void checkForVersionSpecificBugs_Minimal(const QString& bugListText)
 
     if (!matchingBugs.isEmpty())
         QMessageBox::critical(nullptr, "Program Update Recommended",
-                              "Your program version is affected by the following known issues:\n\n- " +
+                              "This DSI Studio version is affected by the following issues:\n\n- " +
                               matchingBugs.join("\n- ") +
-                              "\n\nIt is highly recommended to update your program to the latest version to avoid these bugs.");
+                              "\n\nIt is highly recommended to update DSI Studio to the latest version to avoid these issues.");
 }
 
 extern std::vector<std::string> fib_template_list;
