@@ -23,7 +23,7 @@
 
 std::string device_content_file,topup_param_file;
 std::vector<std::string> template_name_list,qa_template_list,iso_template_list,t1w_template_list,t2w_template_list,wm_template_list,fib_template_list,tract_template_list;
-std::vector<std::vector<std::string> > unet_list;
+std::vector<std::vector<std::string> > unet_list,unet_version_list;
 std::vector<std::vector<std::string> > atlas_file_name_list;
 
 
@@ -213,10 +213,20 @@ bool load_file_name(void)
                 if(entry.is_regular_file() && tipl::ends_with(entry.path().filename().string(),{".nz"}) &&
                    tipl::begins_with(entry.path().filename().string(),species + "_"))
                     model_list.push_back(entry.path().string());
+
             }
 
             std::sort(model_list.begin(),model_list.end());
+            std::vector<std::string> version_list;
+            for(const auto& entry : model_list)
+            {
+                version_list.push_back("UNet-Studio");
+                if(std::filesystem::exists(tipl::remove_all_suffix(entry)+".license.txt"))
+                    (std::ifstream(tipl::remove_all_suffix(entry)+".license.txt")) >> version_list.back();
+            }
+
             unet_list.push_back(std::move(model_list));
+            unet_version_list.push_back(std::move(version_list));
         }
     }
 
