@@ -305,25 +305,32 @@ bool tracking_window::command(std::vector<std::string> cmd)
         if(cmd[1].empty() && (cmd[1] = get_action_data().toStdString()).empty())
             return run->canceled();
 
-        tipl::image<3,unsigned char> mask;
-
-        auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
-        if(reg_slice.get())
-        {
-            if(!handle->get_template_mask(reg_slice->source_images.shape(),reg_slice->to_dif,mask))
-                return run->failed(handle->error_msg);
-        }
-        else
-            mask = handle->mask;
-
-        tipl::progress p("processing",true);
+        tipl::image<3> source_images(current_slice->get_source());
         tipl::ml3d::tissue_seg unet;
 
-        tipl::image<3> maskJ(mask),source_images(current_slice->get_source());
-        unet.eval.mask = std::move(mask);
-        tipl::filter::gaussian(maskJ);
-        tipl::filter::gaussian(maskJ);
-        source_images *= maskJ;
+        if(std::count_if(source_images.begin(),source_images.end(),[](unsigned char v){return v == 0;}) > source_images.size()*0.5f)
+            tipl::out() << "the slice image is masked already, skipping the brain extraction step";
+        else
+        {
+            tipl::progress p("brain extraction",true);
+            tipl::image<3,unsigned char> mask;
+            auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
+            if(reg_slice.get())
+            {
+                if(!handle->get_template_mask(reg_slice->source_images.shape(),reg_slice->to_dif,mask))
+                    return run->failed(handle->error_msg);
+            }
+            else
+                mask = handle->mask;
+
+            tipl::image<3> maskJ(mask),source_images(current_slice->get_source());
+            unet.eval.mask = std::move(mask);
+            tipl::filter::gaussian(maskJ);
+            tipl::filter::gaussian(maskJ);
+            source_images *= maskJ;
+        }
+
+        tipl::progress p("unet segmentation",true);
         if(!unet.load_model<tipl::io::gz_mat_read>(cmd[1]) ||
            !unet.forward(std::move(source_images),current_slice->vs,p))
             return run->failed(unet.error_msg);
