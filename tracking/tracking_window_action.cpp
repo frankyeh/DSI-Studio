@@ -18,7 +18,7 @@
 #include "libs/tracking/tracking_thread.hpp"
 
 
-extern std::vector<std::vector<std::string> > unet_list;
+extern std::vector<std::vector<std::string> > unet_list,unet_version_list;
 extern std::vector<std::string> template_name_list;
 std::string show_info_dialog(const std::string& title,
                              const std::string& result,
@@ -284,12 +284,13 @@ bool tracking_window::command(std::vector<std::string> cmd)
             bool is_t2 = tipl::contains_case_insensitive(new_custom_slice->get_name(),"t2");
             if(is_t1 || is_t2)
             {
-                for(const auto& each : unet_list[handle->template_id])
+                for(size_t i = 0;i < unet_list[handle->template_id].size();++i)
                 {
+                    const auto& each = unet_list[handle->template_id][i];
                     auto file_name = tipl::remove_all_suffix(std::filesystem::path(each).filename().string());
                     if((tipl::contains_case_insensitive(file_name,"t1") && is_t1) ||
                        (tipl::contains_case_insensitive(file_name,"t2") && is_t2))
-                        ui->menuSegment->addAction(addSubMenuItem(each,file_name,"run segment_brain"));
+                        ui->menuSegment->addAction(addSubMenuItem(each,file_name + "(" + unet_version_list[handle->template_id][i] + ")","run segment_brain"));
                 }
                 ui->segmentButton->setVisible(true);
             }
@@ -308,26 +309,29 @@ bool tracking_window::command(std::vector<std::string> cmd)
         tipl::image<3> source_images(current_slice->get_source());
         tipl::ml3d::tissue_seg unet;
 
-        if(std::count_if(source_images.begin(),source_images.end(),[](unsigned char v){return v == 0;}) > source_images.size()*0.5f)
-            tipl::out() << "the slice image is masked already, skipping the brain extraction step";
-        else
+        if(tipl::contains(unet.preproc,"bet"))
         {
-            tipl::progress p("brain extraction",true);
-            tipl::image<3,unsigned char> mask;
-            auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
-            if(reg_slice.get())
-            {
-                if(!handle->get_template_mask(reg_slice->source_images.shape(),reg_slice->to_dif,mask))
-                    return run->failed(handle->error_msg);
-            }
+            if(std::count_if(source_images.begin(),source_images.end(),[](unsigned char v){return v == 0;}) > source_images.size()*0.5f)
+                tipl::out() << "the slice image is masked already, skipping the brain extraction step";
             else
-                mask = handle->mask;
+            {
+                tipl::progress p("brain extraction",true);
+                tipl::image<3,unsigned char> mask;
+                auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
+                if(reg_slice.get())
+                {
+                    if(!handle->get_template_mask(reg_slice->source_images.shape(),reg_slice->to_dif,mask))
+                        return run->failed(handle->error_msg);
+                }
+                else
+                    mask = handle->mask;
 
-            tipl::image<3> maskJ(mask),source_images(current_slice->get_source());
-            unet.eval.mask = std::move(mask);
-            tipl::filter::gaussian(maskJ);
-            tipl::filter::gaussian(maskJ);
-            source_images *= maskJ;
+                tipl::image<3> maskJ(mask),source_images(current_slice->get_source());
+                unet.eval.mask = std::move(mask);
+                tipl::filter::gaussian(maskJ);
+                tipl::filter::gaussian(maskJ);
+                source_images *= maskJ;
+            }
         }
 
         tipl::progress p("unet segmentation",true);
