@@ -280,17 +280,23 @@ bool tracking_window::command(std::vector<std::string> cmd)
         ui->segmentButton->setVisible(false);
         if(new_custom_slice.get())
         {
-            bool is_t1 = tipl::contains_case_insensitive(new_custom_slice->get_name(),"t1");
-            bool is_t2 = tipl::contains_case_insensitive(new_custom_slice->get_name(),"t2");
-            if(is_t1 || is_t2)
+            bool is_t1 = tipl::contains_case_insensitive(new_custom_slice->get_name(),{"t1","mpr"});
+            bool is_t2 = tipl::contains_case_insensitive(new_custom_slice->get_name(),{"t2","tse"});
+            bool is_flair = tipl::contains_case_insensitive(new_custom_slice->get_name(),{"flair","t2f"});
             {
                 for(size_t i = 0;i < unet_list[handle->template_id].size();++i)
                 {
                     const auto& each = unet_list[handle->template_id][i];
                     auto file_name = tipl::remove_all_suffix(std::filesystem::path(each).filename().string());
-                    if((tipl::contains_case_insensitive(file_name,"t1") && is_t1) ||
-                       (tipl::contains_case_insensitive(file_name,"t2") && is_t2))
-                        ui->menuSegment->addAction(addSubMenuItem(each,file_name + "(" + unet_version_list[handle->template_id][i] + ")","run segment_brain"));
+                    if(tipl::contains_case_insensitive(file_name,"t1") && !is_t1)
+                        continue;
+                    if(tipl::contains_case_insensitive(file_name,"t2") && !is_t2)
+                        continue;
+                    if(tipl::contains_case_insensitive(file_name,"flair") && !is_flair)
+                        continue;
+                    if(!unet_version_list[handle->template_id][i].empty())
+                        file_name += "(" + unet_version_list[handle->template_id][i] + ")";
+                    ui->menuSegment->addAction(addSubMenuItem(each,file_name,"run segment_brain"));
                 }
                 ui->segmentButton->setVisible(true);
             }
