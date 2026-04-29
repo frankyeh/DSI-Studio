@@ -223,7 +223,7 @@ bool src_data::mask_from_unet(void)
     tipl::progress p("generating a mask using unet",true);
     tipl::ml3d::tissue_seg unet;
     if(!unet.load_model<tipl::io::gz_mat_read>(model_file_name) ||
-       !unet.forward(std::move(b0[0]),voxel.vs,p))
+       !unet.forward(std::move(b0[0]),voxel.vs))
         return error_msg = unet.error_msg,false;
     tipl::threshold(unet.eval.fg_prob,voxel.mask,0.5f,1,0);
     return true;
