@@ -532,7 +532,7 @@ int img(tipl::program_option<tipl::out>& po)
                     return tipl::error() << unet.error_msg,1;
                 var_image.apply([&](auto& I)
                 {
-                    if(!unet.forward(std::move(I),var_image.vs,prog))
+                    if(!unet.forward(std::move(I),var_image.vs))
                     {
                         tipl::error() << "failed to run network";
                         return;
