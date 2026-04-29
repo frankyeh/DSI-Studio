@@ -340,9 +340,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
             }
         }
 
-        tipl::progress p("unet segmentation",true);
         if(!unet.load_model<tipl::io::gz_mat_read>(cmd[1]) ||
-           !unet.forward(std::move(source_images),current_slice->vs,p))
+           !unet.forward(std::move(source_images),current_slice->vs))
             return run->failed(unet.error_msg);
 
         /**
@@ -375,25 +374,43 @@ bool tracking_window::command(std::vector<std::string> cmd)
             regionWidget->begin_update();
             for(size_t i = 0;i < unet.eval.out_count;++i)
             {
-                std::string name = i < unet_label_name.size() ? unet_label_name[i] : "tissue"+std::to_string(i+1);
+                std::string name = i < unet_label_name.size() ? unet_label_name[i] : "tissue" + std::to_string(i + 1);
 
-                auto get_color = [](const std::string& n)
+                auto get_color = [](const std::string& n,size_t index)
                 {
-                    if(tipl::contains_case_insensitive(n,{"white","stem"}))             return tipl::rgb(240,240,240,20);
-                    if(tipl::contains_case_insensitive(n,{"gray","cortex"}))            return tipl::rgb(180,175,175,40);
-                    if(tipl::contains_case_insensitive(n,{"thalamus"}))                 return tipl::rgb(110,125,140,128);
-                    if(tipl::contains_case_insensitive(n,{"hipp","amyg"}))              return tipl::rgb(105,130,115,128);
-                    if(tipl::contains_case_insensitive(n,{"putamen","accu","caudate"})) return tipl::rgb(135,140,110,128);
-                    if(tipl::contains_case_insensitive(n,{"basal","pallidum","sub"}))   return tipl::rgb(150,135,105,128);
-                    if(tipl::contains_case_insensitive(n,{"edema","vent"}))             return tipl::rgb(110,145,155,180);
-                    if(tipl::contains_case_insensitive(n,{"tumor"}))                    return tipl::rgb(185,115,105,150);
-                    if(tipl::contains_case_insensitive(n,{"necro"}))                    return tipl::rgb(85,75,70,200);
-                    if(tipl::contains_case_insensitive(n,{"other"}))                    return tipl::rgb(200,210,215,15);
+                    auto clamp = [](int v){return std::max(0,std::min(255,v));};
 
-                    return tipl::rgb(255,255,255);
+                    auto color = [&](int r,int g,int b,int a)
+                    {
+                        size_t h = std::hash<std::string>{}(n) + index * 131;
+                        int dr = int(h % 17) - 8;
+                        int dg = int((h >> 4) % 17) - 8;
+                        int db = int((h >> 8) % 17) - 8;
+                        return tipl::rgb(clamp(r + dr),clamp(g + dg),clamp(b + db),a);
+                    };
+
+                    if(tipl::contains_case_insensitive(n,{"white"}))                     return color(238,238,232,35);
+                    if(tipl::contains_case_insensitive(n,{"stem"}))                      return color(220,220,210,80);
+                    if(tipl::contains_case_insensitive(n,{"gray","cortex"}))             return color(180,175,175,55);
+                    if(tipl::contains_case_insensitive(n,{"thalamus"}))                  return color(110,125,140,128);
+                    if(tipl::contains_case_insensitive(n,{"hipp"}))                      return color(95,135,115,128);
+                    if(tipl::contains_case_insensitive(n,{"amyg"}))                      return color(125,105,130,128);
+                    if(tipl::contains_case_insensitive(n,{"caudate"}))                   return color(130,145,105,128);
+                    if(tipl::contains_case_insensitive(n,{"putamen"}))                   return color(145,135,100,128);
+                    if(tipl::contains_case_insensitive(n,{"accu"}))                      return color(120,150,120,128);
+                    if(tipl::contains_case_insensitive(n,{"pallidum"}))                  return color(155,130,100,128);
+                    if(tipl::contains_case_insensitive(n,{"basal","sub"}))               return color(150,135,105,128);
+                    if(tipl::contains_case_insensitive(n,{"vent"}))                      return color(95,135,165,180);
+                    if(tipl::contains_case_insensitive(n,{"csf"}))                       return color(120,160,180,170);
+                    if(tipl::contains_case_insensitive(n,{"edema"}))                     return color(125,175,160,150);
+                    if(tipl::contains_case_insensitive(n,{"tumor"}))                     return color(185,115,105,150);
+                    if(tipl::contains_case_insensitive(n,{"necro"}))                     return color(85,75,70,200);
+                    if(tipl::contains_case_insensitive(n,{"other"}))                     return color(200,210,215,15);
+
+                    return color(255,255,255,255);
                 };
 
-                tipl::rgb color = get_color(name);
+                tipl::rgb color = get_color(name,i);
 
                 regionWidget->add_region(name.c_str(),default_id,color);
                 if(!regions[i].empty())
