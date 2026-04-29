@@ -314,6 +314,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         tipl::image<3> source_images(current_slice->get_source());
         tipl::ml3d::tissue_seg unet;
+        tipl::progress prog(cmd[0],true);
+
 
         if(tipl::contains(unet.preproc,"bet"))
         {
@@ -372,7 +374,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 unet_label_name = tipl::read_text_file(tipl::remove_all_suffix(cmd[1]) + ".txt");
 
             regionWidget->begin_update();
-            for(size_t i = 0;i < unet.eval.out_count;++i)
+            for(size_t i = 0;prog(i,unet.eval.out_count);++i)
             {
                 std::string name = i < unet_label_name.size() ? unet_label_name[i] : "tissue" + std::to_string(i + 1);
 
