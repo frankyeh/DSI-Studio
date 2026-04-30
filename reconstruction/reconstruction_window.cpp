@@ -305,16 +305,18 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
     auto vs = handle->voxel.vs; // for QSDR
     auto trans = handle->voxel.trans_to_mni; // for QSDR
     auto mask = handle->voxel.mask;
-    if (!handle->reconstruction())
-    {
-        tipl::error() << handle->error_msg << std::endl;
-        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
-        return;
-    }
+    bool result = handle->reconstruction();
     handle->voxel.mask = mask;
     handle->voxel.dim = dim_backup;
     handle->voxel.vs = vs;
     handle->voxel.trans_to_mni = trans;
+
+    if(!result)
+    {
+        tipl::error() << handle->error_msg;
+        QMessageBox::critical(this,"ERROR",handle->error_msg.c_str());
+        return;
+    }
 
     if(!prompt)
         return;
