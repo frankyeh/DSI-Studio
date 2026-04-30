@@ -27,6 +27,7 @@ public:
     {
         tipl::progress prog("QA/ISO normalization");
         tipl::reg::mm_reg<tipl::out> reg;
+        reg.skip_reverse = true;
         reg.param = voxel.reg_param;
         reg.modality_names = {"qa","iso"};
         reg.export_intermediate = voxel.needs("debug");
