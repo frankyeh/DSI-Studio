@@ -400,8 +400,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
                     if(tipl::contains_case_insensitive(n,{"pallidum"}))                  return color(155,130,100,128);
                     if(tipl::contains_case_insensitive(n,{"basal","sub"}))               return color(150,135,105,128);
                     if(tipl::contains_case_insensitive(n,{"vent"}))                      return color(95,135,165,180);
-                    if(tipl::contains_case_insensitive(n,{"csf"}))                       return color(120,160,180,170);
-                    if(tipl::contains_case_insensitive(n,{"edema"}))                     return color(125,175,160,150);
+                    if(tipl::contains_case_insensitive(n,{"csf"}))                       return color(120,160,180,70);
+                    if(tipl::contains_case_insensitive(n,{"edema"}))                     return color(125,175,160,128);
                     if(tipl::contains_case_insensitive(n,{"tumor"}))                     return color(185,115,105,150);
                     if(tipl::contains_case_insensitive(n,{"necro"}))                     return color(85,75,70,200);
                     if(tipl::contains_case_insensitive(n,{"other"}))                     return color(200,210,215,15);
