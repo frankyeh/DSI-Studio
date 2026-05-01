@@ -4,6 +4,7 @@
 #include <QTextStream>
 #include "img.hpp"
 std::map<std::string,std::string> dicom_dictionary;
+extern std::vector<std::vector<std::string> > unet_list;
 void correct_bias_field(tipl::image<3> I,
                         tipl::image<3,unsigned char> mask,
                         tipl::image<3>& log_bias_field,
@@ -36,9 +37,31 @@ bool variant_image::command(std::string cmd,std::string param1)
                 prev_max = cur_max;
                 I.swap(J);
             }
+            return;
         }
-        else
-            result = tipl::command<void,tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,interpolation,error_msg);
+
+
+        if(cmd == "brain_extraction" || cmd == "segmentation")
+        {
+            if(!std::filesystem::exists(param1))
+                return tipl::error() << "model does not exist: " << param1,result = false,void();
+
+            tipl::ml3d::tissue_seg unet;
+            if(!unet.load_model<tipl::io::gz_mat_read>(param1) ||
+               !unet.forward(std::move(I),vs))
+                return tipl::error() << unet.error_msg,result = false,void();
+            if(cmd == "brain_extraction")
+                I *= tipl::ml3d::soft_mask(unet.eval.label);
+            else
+            {
+                I.clear();
+                I_int8 = std::move(unet.eval.label);
+                pixel_type = variant_image::int8;
+            }
+            return;
+        }
+
+        result = tipl::command<void,tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,interpolation,error_msg);
         shape = I.shape();
     });
     return result;
@@ -476,77 +499,32 @@ int img(tipl::program_option<tipl::out>& po)
         for(auto& cmd : tipl::split(po.get("cmd","info"),'+'))
         {
             std::string param;
-            auto sep_pos = cmd.find(':');
+            auto sep_pos = cmd.find(',');
             if(sep_pos != std::string::npos)
             {
                 param = cmd.substr(sep_pos+1);
                 cmd = cmd.substr(0,sep_pos);
             }
-
+            else
+            {
+                auto sep_pos = cmd.find(':');
+                if(sep_pos != std::string::npos)
+                {
+                    param = cmd.substr(sep_pos+1);
+                    cmd = cmd.substr(0,sep_pos);
+                }
+            }
             if(cmd == "brain_extraction" || cmd == "segmentation")
             {
-                /*
-                if(cmd == "brain_extraction" && param.length() < 2)
+                if(!po.has("model"))
                 {
-                    size_t template_id = param.empty() ? 0 : param[0]-'0';
-                    tipl::reg::mm_reg<tipl::out> reg;
-                    var_image.apply([&](auto& I){
-                        reg.I[0] = tipl::reg::subject_image_pre(tipl::image<3>(I.alias()));
-                        reg.Is = I.shape();
-                    });
-                    reg.Ivs = var_image.vs;
-                    reg.IR = var_image.T;
-
-                    if(!reg.load_template<tipl::io::gz_nifti>(0,t1w_template_list[template_id]) ||
-                       !reg.load_template<tipl::io::gz_nifti>(1,t2w_template_list[template_id]) ||
-                       !reg.load_template<tipl::io::gz_nifti>(2,iso_template_list[template_id]))
-                    {
-                        tipl::error() << reg.error_msg;
-                        return 1;
-                    }
-                    reg.modality_names = {"t1w","t2w"};
-                    tipl::out() << "using t1w/t2w for registration..." << std::endl;
-                    reg.linear_param.cost_type = tipl::reg::mutual_info;
-                    reg.linear_reg(tipl::prog_aborted);
-                    if(reg.r[1] > reg.r[0])
-                    {
-                        reg.It[0].swap(reg.It[1]);
-                        reg.modality_names[0].swap(reg.modality_names[1]);
-                    }
-                    reg.modality_names = {reg.modality_names[0]};
-                    tipl::out() << "using " << reg.modality_names[0] << " for registration..." << std::endl;
-                    reg.nonlinear_reg(tipl::prog_aborted);
-                    auto iso = reg.apply_warping<false,tipl::interpolation::linear>(reg.It[2]);
-                    var_image.apply([&](auto& I){
-                        tipl::preserve(I.begin(),I.end(),iso.begin());
-                    });
-                    if(po.get("export_r",0))
-                        std::ofstream(source + ".r" + std::to_string(int(reg.r[0]*100))) << std::endl;
-                    continue;
+                    tipl::out() << "please specify model name using --model=[model name]:";
+                    for(auto each : unet_list)
+                        for(auto each2 : each)
+                            tipl::out() << std::filesystem::path(each2).filename().string();
+                    return 0;
                 }
-                */
-
-                auto model_path = QCoreApplication::applicationDirPath().toStdString()+ "/unet/" + po.get("network",param);
-                tipl::ml3d::tissue_seg unet;
-                if(!unet.load_model<tipl::io::gz_mat_read>(model_path))
-                    return tipl::error() << unet.error_msg,1;
-                var_image.apply([&](auto& I)
-                {
-                    if(!unet.forward(std::move(I),var_image.vs))
-                    {
-                        tipl::error() << "failed to run network";
-                        return;
-                    }
-                    if(cmd == "brain_extraction")
-                        I *= tipl::ml3d::soft_mask(unet.eval.label);
-                    if(cmd == "segmentation")
-                    {
-                        I.clear();
-                        var_image.I_int8 = std::move(unet.eval.label);
-                        var_image.pixel_type = variant_image::int8;
-                    }
-                });
-                continue;
+                param = po.get("model");
             }
             if(cmd == "info")
             {
@@ -561,7 +539,7 @@ int img(tipl::program_option<tipl::out>& po)
                 tipl::out() << info;
                 continue;
             }
-            tipl::out() << std::string(param.empty() ? cmd : cmd+":"+param);
+            tipl::out() << std::string(param.empty() ? cmd : cmd+","+param);
             if(!var_image.command(cmd,param))
                 return tipl::error() << var_image.error_msg,1;
         }
