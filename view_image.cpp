@@ -383,7 +383,7 @@ bool TableKeyEventWatcher::eventFilter(QObject * receiver, QEvent * event)
     return false;
 }
 
-
+extern std::vector<std::vector<std::string> > unet_list;
 view_image::view_image(QWidget *parent) :
     QMainWindow(parent),
     cur_image(new variant_image),
@@ -421,6 +421,23 @@ view_image::view_image(QWidget *parent) :
     connect(ui->overlay_style,SIGNAL(currentIndexChanged(int)),this,SLOT(change_contrast()));
     connect(ui->menuOverlay, SIGNAL(aboutToShow()),this, SLOT(update_overlay_menu()));
 
+
+    auto addSubMenuItem = [this](const std::string& cmd,const std::string& model_name)
+    {
+        QAction* Item = new QAction(this);
+        Item->setText(model_name.c_str());
+        Item->setStatusTip(cmd.c_str());
+        Item->setVisible(true);
+        connect(Item, SIGNAL(triggered()),this, SLOT(run_action()));
+        return Item;
+    };
+
+    for(auto each : unet_list)
+        for(auto each2 : each)
+    {
+        ui->menuBrain_Extraction->addAction(addSubMenuItem("brain_extraction",std::filesystem::path(each2).filename().string()));
+        ui->menuSegmentation->addAction(addSubMenuItem("segmentation",std::filesystem::path(each2).filename().string()));
+    }
 
     ui->tabWidget->setCurrentIndex(0);
     ui->overlay_style->setVisible(false);
@@ -1056,8 +1073,27 @@ void view_image::run_action()
     QAction *action = qobject_cast<QAction *>(sender());
     if(!action)
         return;
-    if(!command(action->text().toLower().replace(' ','_').toStdString()))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
+    if(action->statusTip().isEmpty())
+    {
+        if(!command(action->text().toLower().replace(' ','_').toStdString()))
+            QMessageBox::critical(this,"ERROR",error_msg.c_str());
+    }
+    else
+    // run u-net
+    {
+        std::string model_path;
+        for(auto each : unet_list)
+            for(auto each2 : each)
+                if(tipl::contains(each2,action->text().toStdString()))
+                {
+                    model_path = each2;
+                    goto run;
+                }
+        return;
+        run:
+        if(!command(action->statusTip().toStdString(),model_path))
+            QMessageBox::critical(this,"ERROR",error_msg.c_str());
+    }
 }
 
 
