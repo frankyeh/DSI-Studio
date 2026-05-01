@@ -313,6 +313,9 @@ bool tracking_window::command(std::vector<std::string> cmd)
         tipl::ml3d::tissue_seg unet;
         tipl::progress prog(cmd[0],true);
 
+        if(!unet.load_model<tipl::io::gz_mat_read>(cmd[1]))
+            return run->failed(unet.error_msg);
+
 
         if(tipl::contains(unet.preproc,"bet"))
         {
@@ -339,8 +342,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             }
         }
 
-        if(!unet.load_model<tipl::io::gz_mat_read>(cmd[1]) ||
-           !unet.forward(std::move(source_images),current_slice->vs))
+        if(!unet.forward(std::move(source_images),current_slice->vs))
             return run->failed(unet.error_msg);
 
         /**
