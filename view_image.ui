@@ -527,11 +527,31 @@
     <addaction name="actionUndo"/>
     <addaction name="actionRedo"/>
    </widget>
+   <widget class="QMenu" name="menuUNet">
+    <property name="title">
+     <string>UNet</string>
+    </property>
+    <widget class="QMenu" name="menuBrain_Extraction">
+     <property name="title">
+      <string>Brain Extraction</string>
+     </property>
+     <addaction name="separator"/>
+    </widget>
+    <widget class="QMenu" name="menuSegmentation">
+     <property name="title">
+      <string>Segmentation</string>
+     </property>
+     <addaction name="separator"/>
+    </widget>
+    <addaction name="menuBrain_Extraction"/>
+    <addaction name="menuSegmentation"/>
+   </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Edit"/>
    <addaction name="menuResize"/>
    <addaction name="menu_Intensity"/>
    <addaction name="menuMorphology"/>
+   <addaction name="menuUNet"/>
    <addaction name="menu_Header"/>
    <addaction name="menuOverlay"/>
   </widget>
