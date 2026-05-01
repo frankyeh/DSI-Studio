@@ -516,15 +516,17 @@ int img(tipl::program_option<tipl::out>& po)
             }
             if(cmd == "brain_extraction" || cmd == "segmentation")
             {
-                if(!po.has("model"))
+                if(po.has("model"))
+                    param = po.get("model");
+                if(param.empty())
                 {
-                    tipl::out() << "please specify model name using --model=[model name]:";
+                    tipl::out() << "please specify model name using --model=[model file path], available models:";
                     for(auto each : unet_list)
                         for(auto each2 : each)
                             tipl::out() << std::filesystem::path(each2).filename().string();
                     return 0;
                 }
-                param = po.get("model");
+
             }
             if(cmd == "info")
             {
