@@ -424,7 +424,8 @@ view_image::view_image(QWidget *parent) :
     connect(ui->info,&QTableWidget::customContextMenuRequested,
             this,[this](const QPoint& pos)
     {
-        if(!mat.size())
+        int row = ui->info->currentRow();
+        if(!mat.size() || row >= mat.size())
             return;
         auto* item = ui->info->itemAt(pos);
         if(!item)
@@ -445,7 +446,7 @@ view_image::view_image(QWidget *parent) :
         auto name = QInputDialog::getText(this,QApplication::applicationName(),"Input Name",QLineEdit::Normal,"",&okay).toStdString();
         if(!okay || name.empty())
             return;
-        auto param = item->text().toStdString() + " " + name;
+        auto param = mat[row].name + " " + name;
         if(action == new_string)
             command("mat_add_string",param);
         if(action == new_float)
