@@ -949,35 +949,6 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 const std::string& cmd,
                 const std::string& param)
 {
-    tipl::out() << "fib command: " << cmd << " " << param;
-    if(cmd == "remove")
-    {
-        if(!mat_reader.remove(param[0] >= '0' && param[0] <= '9' ? std::stoi(param) : int(mat_reader.index_of(param))))
-        {
-            mat_reader.error_msg = "invalid index";
-            return false;
-        }
-        return true;
-    }
-    if(cmd == "rename")
-    {
-        auto data = tipl::split(param,' ');
-        if(data.size() != 2)
-        {
-            mat_reader.error_msg = "invalid renaming command";
-            return false;
-        }
-
-        auto row = std::stoi(data[0]);
-        if(row >= mat_reader.size())
-        {
-            mat_reader.error_msg = "invalid row to rename";
-            return false;
-        }
-        mat_reader[row].set_name(data[1]);
-        return true;
-    }
-
     {
         // get all data in delayed read condition
         tipl::progress prog("reading data");
@@ -991,7 +962,23 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             return false;
         return true;
     }
-
+    tipl::out() << "run " << cmd << "," << param;
+    if(tipl::begins_with(cmd,"mat_"))
+    {
+        size_t pos = param.find(' ');
+        int row = 0;
+        try{row = std::stoi(param.substr(0,pos));}
+        catch(...){return mat_reader.error_msg = "invalid mat index",false;}
+        if(row >= mat_reader.size())
+            return mat_reader.error_msg = "mat index out of limit",false;
+        if(cmd == "mat_remove")
+            return mat_reader.remove(row) ? true:(mat_reader.error_msg = "invalid index",false);
+        if(cmd == "mat_set_name")
+            return mat_reader[row].set_name(param.substr(pos)),true;
+        if(cmd == "mat_set_text")
+            return mat_reader[row].set_text(param.substr(pos)),true;
+        return mat_reader.error_msg = "invalid mat command:" + cmd,false;
+    }
     tipl::shape<3> dim;
     tipl::vector<3> vs;
     tipl::matrix<4,4,float> trans((tipl::identity_matrix()));
