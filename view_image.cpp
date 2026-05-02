@@ -517,7 +517,7 @@ void view_image::DeleteRowPressed(int row)
 {
     if(ui->info->currentRow() == -1)
         return;
-    if(!command("remove",ui->info->item(ui->info->currentRow(),0)->text().toStdString()))
+    if(!command("mat_remove",std::to_string(row)))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& mat_reader);
@@ -541,10 +541,7 @@ bool view_image::read_mat(void)
             ui->mat_images->addItem(mat[i].name.c_str());
 
     if(!ui->mat_images->count())
-    {
-        error_msg = "cannot find images";
-        return false;
-    }
+        cur_image->I_int8.resize(cur_image->shape);
     ui->mat_images->setCurrentIndex(0);
     ui->mat_images->show();
     return true;
@@ -648,6 +645,7 @@ bool view_image::open(QStringList file_names_)
            QString(file_name).endsWith("src.gz") ||
            QString(file_name).endsWith(".fz") ||
            QString(file_name).endsWith(".sz") ||
+           QString(file_name).endsWith(".nz") ||
            QString(file_name).endsWith(".dz"))
         {
             tipl::progress prog("open " + file_name.toStdString());
@@ -1146,17 +1144,21 @@ void view_image::on_info_cellDoubleClicked(int row, int column)
         if(!okay)
             return;
         mat[row].set_text(text.toStdString());
-        read_mat_info();
-        ui->info->selectRow(row);
+        command("mat_set_text",std::to_string(row)+" "+text.toStdString());
     }
+    else
     if(column == 0)
     {
         bool okay = false;
         auto text = QInputDialog::getMultiLineText(this,QApplication::applicationName(),"Input New Name",ui->info->item(row,0)->text(),&okay);
         if(!okay)
             return;
-        command("rename",std::to_string(row)+" "+text.toStdString());
+        command("mat_set_name",std::to_string(row)+" "+text.toStdString());
     }
+    else
+        return;
+    read_mat_info();
+    ui->info->selectRow(row);
 }
 
 
