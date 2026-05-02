@@ -440,7 +440,7 @@ int img(tipl::program_option<tipl::out>& po)
 
 
     std::string source(po.get_file("source",".nii.gz")),info;
-    if(tipl::ends_with(source,{"fib.gz",".fz","src.gz",".sz",".mz"}))
+    if(tipl::ends_with(source,{".fib.gz",".fz",".src.gz",".sz",".mz",".dz",".nz"}))
     {
         tipl::io::gz_mat_read mat_reader;
         if(!mat_reader.load_from_file(source))
