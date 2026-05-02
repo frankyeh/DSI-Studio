@@ -953,7 +953,7 @@ void MainWindow::on_view_image_clicked()
                                 this,
                                 "Open Image",
                                 ui->workDir->currentText(),
-                                "image files (*.nii *nii.gz *.dcm *.nhdr *.nrrd 2dseq *.fz *.dz *fib.gz *.sz *src.gz)" );
+                                "image files (*.nii *nii.gz *.dcm *.nhdr *.nrrd 2dseq *.fz *.dz *fib.gz *.sz *src.gz *.nz)" );
     if(filename.isEmpty())
         return;
     add_work_dir(QFileInfo(filename[0]).absolutePath());
