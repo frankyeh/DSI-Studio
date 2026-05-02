@@ -440,7 +440,9 @@ void MainWindow::openFile(QStringList file_names)
            QString(file_name).endsWith(".nrrd") ||
            QString(file_name).endsWith(".nii") ||
            QString(file_name).endsWith(".nii.gz") ||
-                QString(file_name).endsWith(".dcm"))
+                QString(file_name).endsWith(".dcm") ||
+                QString(file_name).endsWith(".nz") ||
+                QString(file_name).endsWith(".mz"))
         {
             loadNii(file_names);
         }
