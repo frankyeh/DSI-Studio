@@ -876,7 +876,7 @@ bool fib_data::load_from_mat(void)
     return true;
 }
 
-extern int fib_ver,src_ver;
+extern int fib_ver,src_ver,map_ver;
 bool save_fz(tipl::io::gz_mat_read& mat_reader,
               tipl::io::gz_mat_write& matfile,
               const std::vector<std::string>& skip_list,
@@ -893,19 +893,19 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
         matfile.mask_cols = mat_reader.mask_cols;
         matfile.si2vi = mat_reader.si2vi;
     }
-    else
-        tipl::out() << "no mask information. saving unmasked format";
 
-    matfile.write("version",mat_reader.has("b_table") ? src_ver : fib_ver);
+    if(mat_reader.has("b_table"))
+        matfile.write("version",src_ver);
+    if(mat_reader.has("fa0"))
+        matfile.write("version",fib_ver);
+    if(mat_reader.has("arg"))
+        matfile.write("version",map_ver);
 
     const std::unordered_set<std::string> skip_set(skip_list.begin(), skip_list.end());
     for(unsigned int index = 0;prog(index,mat_reader.size());++index)
     {
         if(!matfile)
-        {
-            mat_reader.error_msg = "cannot write to file. please check write permission.";
-            return false;
-        }
+            return mat_reader.error_msg = "cannot write to file. please check write permission.",false;
         const auto& name = mat_reader[index].name;
         if(name == "version" || skip_set.count(name) > 0 ||
            std::find_if(skip_head_list.begin(), skip_head_list.end(),[&name](const auto& each) { return name.find(each) == 0; }) != skip_head_list.end())
@@ -949,8 +949,8 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 const std::string& cmd,
                 const std::string& param)
 {
+    // get all data in delayed read condition
     {
-        // get all data in delayed read condition
         tipl::progress prog("reading data");
         for(size_t i = 0;prog(i,mat_reader.size());++i)
         {
@@ -960,53 +960,79 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         }
         if(prog.aborted())
             return false;
-        return true;
     }
     tipl::out() << "run " << cmd << "," << param;
     if(tipl::begins_with(cmd,"mat_"))
     {
         size_t pos = param.find(' ');
-        int row = 0;
-        try{row = std::stoi(param.substr(0,pos));}
-        catch(...){return mat_reader.error_msg = "invalid mat index",false;}
+        int row = mat_reader.index_of(param.substr(0,pos));
         if(row >= mat_reader.size())
-            return mat_reader.error_msg = "mat index out of limit",false;
+            return mat_reader.error_msg = "cannot find data field: " + param.substr(0,pos),false;
         if(cmd == "mat_remove")
-            return mat_reader.remove(row) ? true:(mat_reader.error_msg = "invalid index",false);
+            return mat_reader.remove(row),true;
+
+        auto value = (pos == std::string::npos ? std::string() : param.substr(pos+1));
+        if(value.empty())
+            return mat_reader.error_msg = "please assign value",false;
+
         if(cmd == "mat_set_name")
-            return mat_reader[row].set_name(param.substr(pos)),true;
-        if(cmd == "mat_set_text")
-            return mat_reader[row].set_text(param.substr(pos)),true;
+            return mat_reader[row].set_name(value),true;
+
+        if(cmd == "mat_add_string")
+            return mat_reader.insert<char>(row,value),true;
+        if(cmd == "mat_add_float")
+            return mat_reader.insert<float>(row,value),true;
+        if(cmd == "mat_add_int")
+            return mat_reader.insert<unsigned int>(row,value),true;
+        if(cmd == "mat_add_short")
+            return mat_reader.insert<unsigned short>(row,value),true;
+        if(cmd == "mat_set_value")
+        {
+            auto set_value = [&](auto array)
+            {
+                std::istringstream in(value);
+                std::copy(std::istream_iterator<std::remove_reference_t<decltype(array[0])>>(in),
+                          std::istream_iterator<std::remove_reference_t<decltype(array[0])>>(),std::back_inserter(array));
+                return mat_reader.write(row,array.data(),1,array.size()),true;
+            };
+            if(mat_reader[row].is_type<float>())
+                return set_value(std::vector<float>());
+            if(mat_reader[row].is_type<size_t>())
+                return set_value(std::vector<size_t>());
+            if(mat_reader[row].is_type<unsigned int>())
+                return set_value(std::vector<unsigned int>());
+            if(mat_reader[row].is_type<unsigned short>())
+                return set_value(std::vector<unsigned short>());
+            if(mat_reader[row].is_type<unsigned char>())
+                return mat_reader[row].set_text(value),true;
+        }
         return mat_reader.error_msg = "invalid mat command:" + cmd,false;
     }
+
+    if(cmd == "save" || cmd == "save_mini")
+    {        
+        tipl::io::gz_mat_write matfile(param);
+        if(!matfile)
+            return mat_reader.error_msg = "cannot save file to " + param,false;
+        if(tipl::ends_with(param,{".fib.gz",".src.gz"}))
+            return mat_reader.error_msg = "cannot save file to fib.gz format",false;
+
+        if(mat_reader.has("dimension") && (mat_reader.has("fa0") || mat_reader.has("image0")))
+            handle_mask(mat_reader);
+
+        if(cmd == "save_mini")
+            return save_fz(mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping","dti_fa","md","ad","rd","fa3","fa4","rdi","index3","index4"},{"nrdi","subject"});
+        if(tipl::ends_with(param,".fz"))
+            return save_fz(mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping"},{"subject"});
+        return save_fz(mat_reader,matfile,{},{});
+    }
+
     tipl::shape<3> dim;
     tipl::vector<3> vs;
     tipl::matrix<4,4,float> trans((tipl::identity_matrix()));
     bool is_mni;
     if(!check_fib_dim_vs(mat_reader,dim,vs,trans,is_mni))
         return false;
-
-    handle_mask(mat_reader);
-
-    if(cmd == "save" || cmd == "save_mini")
-    {
-        tipl::io::gz_mat_write matfile(param);
-        if(!matfile)
-        {
-            mat_reader.error_msg = "cannot save file to ";
-            mat_reader.error_msg += param;
-            return false;
-        }
-        if(tipl::ends_with(param,".fib.gz"))
-        {
-            mat_reader.error_msg = "cannot save file to fib.gz format";
-            return false;
-        }
-        if(cmd == "save_mini")
-            return save_fz(mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping","dti_fa","md","ad","rd","fa3","fa4","rdi","index3","index4"},{"nrdi","subject"});
-        return save_fz(mat_reader,matfile,{"odf_faces","odf_vertices","z0","mapping"},{"subject"});
-    }
-
 
     tipl::progress prog(cmd);
     size_t p = 0;
