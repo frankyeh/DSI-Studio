@@ -1034,7 +1034,7 @@ void GLWidget::renderLR()
 
             std::vector<size_t> mesh_count(regions.size());
             for(size_t index = 0;index < regions.size();++index)
-                mesh_count[index] = regions[index]->region_render->object->tri_list.size();
+                mesh_count[index] = regions[index]->region.empty() ? 0 : regions[index]->region_render->object->tri_list.size();
 
             for(size_t index : tipl::arg_sort(mesh_count,std::less<size_t>()))
                 if(regionWidget->item(int(index),0)->checkState() == Qt::Checked &&
