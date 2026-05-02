@@ -377,7 +377,7 @@ bool TableKeyEventWatcher::eventFilter(QObject * receiver, QEvent * event)
     if (table && event->type() == QEvent::KeyPress)
     {
         auto keyEvent = static_cast<QKeyEvent*>(event);
-        if (keyEvent->key() == Qt::Key_Delete && keyEvent->modifiers() & Qt::ControlModifier)
+        if (keyEvent->key() == Qt::Key_Delete)
             emit DeleteRowPressed(table->currentRow());
     }
     return false;
@@ -420,7 +420,41 @@ view_image::view_image(QWidget *parent) :
     connect(ui->axis_grid,SIGNAL(currentIndexChanged(int)),this,SLOT(change_contrast()));
     connect(ui->overlay_style,SIGNAL(currentIndexChanged(int)),this,SLOT(change_contrast()));
     connect(ui->menuOverlay, SIGNAL(aboutToShow()),this, SLOT(update_overlay_menu()));
+    ui->info->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->info,&QTableWidget::customContextMenuRequested,
+            this,[this](const QPoint& pos)
+    {
+        if(!mat.size())
+            return;
+        auto* item = ui->info->itemAt(pos);
+        if(!item)
+            return;
+        ui->info->setCurrentItem(item);
 
+        QMenu menu(this);
+        QAction* new_string = menu.addAction("New String");
+        QAction* new_float = menu.addAction("New Float");
+        QAction* new_int = menu.addAction("New Int");
+        QAction* new_short = menu.addAction("New Short");
+
+        QAction* action = menu.exec(ui->info->viewport()->mapToGlobal(pos));
+        if(!action)
+            return;
+
+        bool okay = false;
+        auto name = QInputDialog::getText(this,QApplication::applicationName(),"Input Name",QLineEdit::Normal,"",&okay).toStdString();
+        if(!okay || name.empty())
+            return;
+        auto param = item->text().toStdString() + " " + name;
+        if(action == new_string)
+            command("mat_add_string",param);
+        if(action == new_float)
+            command("mat_add_float",param);
+        if(action == new_int)
+            command("mat_add_int",param);
+        if(action == new_short)
+            command("mat_add_short",param);
+    });
 
     auto addSubMenuItem = [this](const std::string& cmd,const std::string& model_name)
     {
@@ -440,6 +474,11 @@ view_image::view_image(QWidget *parent) :
     }
 
     ui->tabWidget->setCurrentIndex(0);
+
+
+
+
+
     ui->overlay_style->setVisible(false);
 
     qApp->installEventFilter(this);
@@ -510,16 +549,9 @@ void view_image::read_mat_info(void)
         info += mat[index].get_info().c_str();
         info += "\n";
     }
-    tipl::out() << info.toStdString();
     show_info(info);
 }
-void view_image::DeleteRowPressed(int row)
-{
-    if(ui->info->currentRow() == -1)
-        return;
-    if(!command("mat_remove",std::to_string(row)))
-        QMessageBox::critical(this,"ERROR",error_msg.c_str());
-}
+
 tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& mat_reader);
 bool view_image::read_mat(void)
 {
@@ -1131,29 +1163,39 @@ void view_image::on_zoom_valueChanged(double arg1)
 {
     show_image(false);
 }
-
+void view_image::DeleteRowPressed(int row)
+{
+    if(ui->info->currentRow() == -1)
+        return;
+    if(!command("mat_remove",std::to_string(row)))
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
+}
 void view_image::on_info_cellDoubleClicked(int row, int column)
 {
     if(!mat.size() || row >= mat.size())
         return;
-    if(column == 1 && mat[row].is_type<char>() && mat[row].sub_data.empty())
+    if(column == 1 && mat[row].size() <= 1024 && mat[row].sub_data.empty())
     {
         bool okay = false;
+        int max_count = std::min<int>(64,mat[row].size());
+
         auto text = QInputDialog::getMultiLineText(this,QApplication::applicationName(),"Input Content",
-                                                   mat[row].get_data<char>(),&okay);
+                                                   mat[row].is_type<char>()  ? mat[row].get_data<char>() :
+                                                                               mat[row].to_text(max_count).c_str(),&okay);
+
         if(!okay)
             return;
-        mat[row].set_text(text.toStdString());
-        command("mat_set_text",std::to_string(row)+" "+text.toStdString());
+        command("mat_set_value",mat[row].name+" "+text.toStdString());
     }
     else
     if(column == 0)
     {
         bool okay = false;
-        auto text = QInputDialog::getMultiLineText(this,QApplication::applicationName(),"Input New Name",ui->info->item(row,0)->text(),&okay);
+        auto text = QInputDialog::getText(this,QApplication::applicationName(),
+                        "Input New Name",QLineEdit::Normal,mat[row].name.c_str(),&okay);
         if(!okay)
             return;
-        command("mat_set_name",std::to_string(row)+" "+text.toStdString());
+        command("mat_set_name",mat[row].name+" "+text.toStdString());
     }
     else
         return;
