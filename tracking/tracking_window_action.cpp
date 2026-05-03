@@ -357,8 +357,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
         */
         {
             const auto& unet_label = unet.eval.label;
-            std::vector<std::vector<tipl::vector<3,short> > > regions(unet.eval.out_count);
-            tipl::par_for(unet.eval.out_count,[&](size_t label)
+            std::vector<std::vector<tipl::vector<3,short> > > regions(unet.eval.cur_channel_count());
+            tipl::par_for(regions.size(),[&](size_t label)
             {
                 size_t sz = current_slice->dim.size();
                 for(tipl::pixel_index<3> p(current_slice->dim);p < sz;++p)
@@ -373,7 +373,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 unet_label_name = tipl::read_text_file(tipl::remove_all_suffix(cmd[1]) + ".txt");
 
             regionWidget->begin_update();
-            for(size_t i = 0;prog(i,unet.eval.out_count);++i)
+            for(size_t i = 0;prog(i,regions.size());++i)
             {
                 std::string name = i < unet_label_name.size() ? unet_label_name[i] : "tissue" + std::to_string(i + 1);
 
