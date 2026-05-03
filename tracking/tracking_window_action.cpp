@@ -349,7 +349,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         */
         {
             const auto& unet_label = unet.eval.label;
-            std::vector<std::vector<tipl::vector<3,short> > > regions(unet.eval.cur_channel_count());
+            std::vector<std::vector<tipl::vector<3,short> > > regions(unet.eval.cur_count);
             tipl::par_for(regions.size(),[&](size_t label)
             {
                 size_t sz = current_slice->dim.size();
