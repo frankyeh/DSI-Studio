@@ -317,24 +317,21 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->failed(unet.error_msg);
 
 
-        if(tipl::contains(unet.preproc,"bet"))
+        if(tipl::contains(unet.preproc,"bet") && !current_slice->is_diffusion_space)
         {
-            tipl::progress p("brain extraction",true);
-            tipl::image<3,unsigned char> mask;
             auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
             if(reg_slice.get())
             {
+                tipl::progress p("brain extraction",true);
+                tipl::image<3,unsigned char> mask;
                 if(!handle->get_template_mask(reg_slice->source_images.shape(),reg_slice->to_dif,mask))
                     return run->failed(handle->error_msg);
+                tipl::image<3> maskJ(mask),source_images(current_slice->get_source());
+                unet.eval.mask = std::move(mask);
+                tipl::filter::gaussian(maskJ);
+                tipl::filter::gaussian(maskJ);
+                source_images *= maskJ;
             }
-            else
-                mask = handle->mask;
-
-            tipl::image<3> maskJ(mask),source_images(current_slice->get_source());
-            unet.eval.mask = std::move(mask);
-            tipl::filter::gaussian(maskJ);
-            tipl::filter::gaussian(maskJ);
-            source_images *= maskJ;
         }
 
         if(!unet.forward(std::move(source_images),current_slice->vs))
