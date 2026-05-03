@@ -986,6 +986,8 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             return mat_reader.insert<unsigned int>(row,value),true;
         if(cmd == "mat_add_short")
             return mat_reader.insert<unsigned short>(row,value),true;
+        if(cmd == "mat_add_int64")
+            return mat_reader.insert<uint64_t>(row,value),true;
         if(cmd == "mat_set_value")
         {
             auto set_value = [&](auto array)
@@ -997,8 +999,8 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
             };
             if(mat_reader[row].is_type<float>())
                 return set_value(std::vector<float>());
-            if(mat_reader[row].is_type<size_t>())
-                return set_value(std::vector<size_t>());
+            if(mat_reader[row].is_type<uint64_t>())
+                return set_value(std::vector<uint64_t>());
             if(mat_reader[row].is_type<unsigned int>())
                 return set_value(std::vector<unsigned int>());
             if(mat_reader[row].is_type<unsigned short>())
