@@ -17,6 +17,7 @@ public:
     bool interpolation = true;
     tipl::vector<3,float> vs;
     tipl::matrix<4,4> T;
+    std::vector<char> flip_swap_seq;
     std::string error_msg;
     template<typename U>
     auto bind(const U& I) const
