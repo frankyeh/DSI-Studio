@@ -349,7 +349,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         */
         {
             const auto& unet_label = unet.eval.label;
-            std::vector<std::vector<tipl::vector<3,short> > > regions(unet.eval.cur_count);
+            std::vector<std::vector<tipl::vector<3,short> > > regions(unet.eval.cur_count-1);
             tipl::par_for(regions.size(),[&](size_t label)
             {
                 size_t sz = current_slice->dim.size();
@@ -360,14 +360,10 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 }
             });
 
-            std::vector<std::string> unet_label_name;
-            if(std::filesystem::exists(tipl::remove_all_suffix(cmd[1]) + ".txt"))
-                unet_label_name = tipl::read_text_file(tipl::remove_all_suffix(cmd[1]) + ".txt");
-
             regionWidget->begin_update();
             for(size_t i = 0;prog(i,regions.size());++i)
             {
-                std::string name = i < unet_label_name.size() ? unet_label_name[i] : "tissue" + std::to_string(i + 1);
+                std::string name = i < unet.labels.size() ? unet.labels[i] : "tissue" + std::to_string(i + 1);
 
                 auto get_color = [](const std::string& n,size_t index)
                 {
