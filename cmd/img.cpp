@@ -48,30 +48,34 @@ bool variant_image::command(std::string cmd,std::string param1)
 
             tipl::io::gz_nifti nii;
             nii.flip_swap_seq = flip_swap_seq;
-            nii.apply_flip_swap_seq(I);
+            auto J = I;
+            nii.apply_flip_swap_seq(J);
             tipl::ml3d::tissue_seg unet;
             if(!unet.load_model<tipl::io::gz_mat_read>(param1) ||
-               !unet.forward(std::move(I),vs))
+                !unet.forward(std::move(J),vs))
                 return tipl::error() << unet.error_msg,result = false,void();
 
-            nii.apply_flip_swap_seq(I,true);
-            nii.apply_flip_swap_seq(unet.eval.label,true);
 
             if(cmd == "brain_extraction")
-                I *= tipl::ml3d::soft_mask(unet.eval.label);
+            {
+                nii.apply_flip_swap_seq(unet.eval.fg_prob,true);
+                I *= unet.eval.fg_prob;
+            }
             else
             {
                 I.clear();
+                nii.apply_flip_swap_seq(unet.eval.label,true);
                 I_int8 = std::move(unet.eval.label);
-                pixel_type = variant_image::int8;
             }
-
             return;
         }
 
         result = tipl::command<void,tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,interpolation,error_msg);
         shape = I.shape();
     });
+
+    if(cmd == "segmentation")
+        pixel_type = variant_image::int8;
     return result;
 }
 void variant_image::write_mat_image(size_t index,
