@@ -561,7 +561,8 @@ bool view_image::read_mat(void)
        !mat.read_pointer("voxel_size",cur_image->vs))
         return error_msg = "cannot find dimension or voxel_size information",false;
 
-    handle_mask(mat);
+    if(mat.has("mask"))
+        handle_mask(mat);
 
     if(!mat.read_pointer("trans",cur_image->T))
         tipl::io::initial_nifti_srow(cur_image->T,cur_image->shape,cur_image->vs);
@@ -1168,7 +1169,7 @@ void view_image::DeleteRowPressed(int row)
 {
     if(ui->info->currentRow() == -1)
         return;
-    if(!command("mat_remove",std::to_string(row)))
+    if(!command("mat_remove",mat[row].name))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 void view_image::on_info_cellDoubleClicked(int row, int column)
