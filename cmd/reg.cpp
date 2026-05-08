@@ -88,7 +88,8 @@ bool apply_warping_fzsz(const reg_type& reg,const std::string& input,const std::
     bool is_mni;
     if(!check_fib_dim_vs(mat_reader,dim,vs,trans,is_mni))
         return reg.error_msg = mat_reader.error_msg,false;
-    handle_mask(mat_reader);
+    if(mat_reader.has("mask"))
+        handle_mask(mat_reader);
     if(dim != (direction ? reg.Is : reg.Its))
         return reg.error_msg = "dimension does not match",false;
     if(trans != (direction ? reg.IR : reg.ItR))
