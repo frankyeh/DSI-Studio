@@ -46,10 +46,17 @@ bool variant_image::command(std::string cmd,std::string param1)
             if(!std::filesystem::exists(param1))
                 return tipl::error() << "model does not exist: " << param1,result = false,void();
 
+            tipl::io::gz_nifti nii;
+            nii.flip_swap_seq = flip_swap_seq;
+            nii.apply_flip_swap_seq(I);
             tipl::ml3d::tissue_seg unet;
             if(!unet.load_model<tipl::io::gz_mat_read>(param1) ||
                !unet.forward(std::move(I),vs))
                 return tipl::error() << unet.error_msg,result = false,void();
+
+            nii.apply_flip_swap_seq(I,true);
+            nii.apply_flip_swap_seq(unet.eval.label,true);
+
             if(cmd == "brain_extraction")
                 I *= tipl::ml3d::soft_mask(unet.eval.label);
             else
@@ -58,6 +65,7 @@ bool variant_image::command(std::string cmd,std::string param1)
                 I_int8 = std::move(unet.eval.label);
                 pixel_type = variant_image::int8;
             }
+
             return;
         }
 
@@ -296,6 +304,8 @@ bool variant_image::load_from_file(const std::string& file_name,std::string& inf
             save_idx(file_name,nifti.input_stream);
         std::ostringstream out;
         out << nifti;
+        nifti.toLPS();
+        flip_swap_seq = nifti.flip_swap_seq;
         info = out.str();
     }
     else
