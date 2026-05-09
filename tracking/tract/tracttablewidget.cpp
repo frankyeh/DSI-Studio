@@ -1383,8 +1383,8 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         int cur_row = currentRow();
         if(!get_cur_row(cmd[2],cur_row))
             return false;
-        if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(
-                    this,QString::fromStdString(cmd[0]),item(currentRow(),0)->text()+"_tdi.nii.gz",
+        if(cmd[1].empty() && (cmd[1] = tipl::qt::save_image_file(
+                    this,item(currentRow(),0)->text()+"_tdi.nii.gz",
                     "NIFTI files (*nii.gz *.nii);;All Files (*)").toStdString()).empty())
             return run->canceled();
         if(cmd[0] == "save_tdi2")
