@@ -250,11 +250,7 @@ void db_window::on_actionSave_DB_as_triggered()
             default_ext = ".neg_dif.dz";
 
     }
-    QString filename = QFileDialog::getSaveFileName(
-                           this,
-                           "Save Database",
-                           windowTitle()+default_ext,
-                           "Database files (*.dz);;All files (*)");
+    QString filename = tipl::qt::save_image_file(this,windowTitle()+default_ext,"Database files (*.dz);;All files (*)");
     if (filename.isEmpty())
         return;
     if(!vbc->handle->db.demo.empty() && !vbc->handle->db.parse_demo())
@@ -290,14 +286,9 @@ void db_window::on_move_up_clicked()
     ui->subject_list->selectRow(ui->subject_list->currentRow()-1);
 
 }
-
 void db_window::on_actionAdd_DB_triggered()
 {
-    QStringList filenames = QFileDialog::getOpenFileNames(
-                           this,
-                           "Select file to add",
-                           windowTitle(),
-                           "Database files (*.fz *fib.gz);;All files (*)");
+    QStringList filenames = tipl::qt::open_image_files(this,windowTitle(),"Database files (*.fz *fib.gz);;All files (*)");
     if (filenames.isEmpty())
         return;
     std::vector<std::string> file_names;
@@ -307,14 +298,9 @@ void db_window::on_actionAdd_DB_triggered()
         QMessageBox::critical(this,"ERROR",vbc->handle->error_msg.c_str());
     update_db();
 }
-
 void db_window::on_actionAdd_Database_triggered()
 {
-    QString filename = QFileDialog::getOpenFileName(
-                           this,
-                           "Select file to add",
-                           windowTitle(),
-                           "Database files (*.dz *.db.fib.gz *.db.fz);;All files (*)");
+    QString filename = tipl::qt::open_image_file(this,windowTitle(),"Database files (*.dz *.db.fib.gz *.db.fz);;All files (*)");
     if (filename.isEmpty())
         return;
     if(!vbc->handle->db.add_db(filename.toStdString()) && !vbc->handle->error_msg.empty())
@@ -343,12 +329,9 @@ void db_window::on_actionSelect_Subjects_triggered()
             ui->subject_list->removeRow(i);
         }
 }
-
 void db_window::on_actionCurrent_Subject_triggered()
 {
-    QString filename = QFileDialog::getSaveFileName(
-                           this,
-                           "Open Selection Text files",
+    QString filename = tipl::qt::save_image_file(this,
                            QFileInfo(windowTitle()).absoluteDir().absolutePath()+"\\"+
                             vbc->handle->db.subject_names[uint32_t(ui->subject_list->currentRow())].c_str()+"."+
                             vbc->handle->db.index_name.c_str()+".nii.gz",
@@ -452,9 +435,8 @@ void db_window::on_actionSave_DemoMatched_Image_as_triggered()
     if (param.isEmpty())
                 return;
 
-    QString filename = QFileDialog::getSaveFileName(
+    QString filename = tipl::qt::save_image_file(
                            this,
-                           "Open Selection Text files",
                            QFileInfo(windowTitle()).absoluteDir().absolutePath()+"\\"+
                            vbc->handle->fib_file_name.c_str()+"."+QString(param).replace(' ','_').replace(',','_')+"."+
                            vbc->handle->db.index_name.c_str()+".nii.gz",
