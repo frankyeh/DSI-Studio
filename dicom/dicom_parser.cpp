@@ -1233,10 +1233,8 @@ void dicom_parser::on_buttonBox_rejected()
 
 void dicom_parser::on_pushButton_clicked()
 {
-    QString filename = QFileDialog::getSaveFileName(
-            this,"Save file",
-            ui->SrcName->text(),
-            "Src files (*.sz *src.gz);;All files (*)" );
+    QString filename = tipl::qt::save_image_file(
+                        this,ui->SrcName->text(),"Src files (*.sz *src.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
     ui->SrcName->setText(filename);
@@ -1262,9 +1260,7 @@ void dicom_parser::update_b_table(void)
 
 void dicom_parser::on_actionOpen_Images_triggered()
 {
-    QStringList filenames = QFileDialog::getOpenFileNames(
-            this,"Open Images files",cur_path,
-            "Images (*.dcm *.hdr *.nii *nii.gz 2dseq);;All files (*)" );
+    QStringList filenames = tipl::qt::open_image_files(this,cur_path,"Images (*.dcm *.hdr *.nii *nii.gz 2dseq);;All files (*)" );
     if( filenames.isEmpty() )
         return;
     load_files(filenames);
