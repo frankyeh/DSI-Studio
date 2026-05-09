@@ -4,7 +4,6 @@
 #include "manual_alignment.h"
 #include "ui_manual_alignment.h"
 #include "tracking/tracking_window.h"
-
 manual_alignment::manual_alignment(QWidget *parent,
                                    tipl::image<3,unsigned char>&& from_,
                                    tipl::image<3,unsigned char>&& from2_,
@@ -440,12 +439,9 @@ void manual_alignment::on_switch_view_clicked()
     ui->blend_pos->setValue(ui->blend_pos->value() > ui->blend_pos->maximum()/2 ? 0:ui->blend_pos->maximum());
 }
 
-
-
 void manual_alignment::on_actionSave_Warped_Image_triggered()
 {
-    QString filename = QFileDialog::getSaveFileName(
-            this,"Save Warping Image",QDir::currentPath(),"Images (*.nii *nii.gz);;All files (*)" );
+    QString filename = tipl::qt::save_image_file(this,QDir::currentPath(),"Images (*.nii *nii.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
 
@@ -510,13 +506,11 @@ void manual_alignment::on_actionLoad_Transformation_triggered()
 
 void manual_alignment::on_actionApply_Transformation_triggered()
 {
-    QString filename = QFileDialog::getOpenFileName(
-            this,"Open NIFTI image",QDir::currentPath(),"Images (*.nii *nii.gz);;All files (*)");
+    QString filename = tipl::qt::open_image_file(this,QDir::currentPath(),"Images (*.nii *nii.gz);;All files (*)");
     if(filename.isEmpty())
         return;
 
-    QString to_filename = QFileDialog::getSaveFileName(
-            this,"Save Warping Image",filename+".wp.nii.gz","Images (*.nii *nii.gz);;All files (*)");
+    QString to_filename = tipl::qt::save_image_file(this,filename+".wp.nii.gz","Images (*.nii *nii.gz);;All files (*)");
     if(to_filename.isEmpty())
         return;
 
