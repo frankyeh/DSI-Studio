@@ -17,7 +17,6 @@
 #include "devicetablewidget.h"
 #include "libs/tracking/tracking_thread.hpp"
 
-
 extern std::vector<std::vector<std::string> > unet_list,unet_version_list;
 extern std::vector<std::string> template_name_list;
 std::string show_info_dialog(const std::string& title,
@@ -167,7 +166,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "save_fib_as")
     {
-        if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(this,"Save FIB file",
+        if(cmd[1].empty() && (cmd[1] = tipl::qt::save_image_file(this,
            windowTitle().replace(".fib.gz",".fz"),"FIB files (*.fz);;All files (*)").toStdString()).empty())
             return run->canceled();
         if(!handle->save_to_file(cmd[1]))
@@ -466,9 +465,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
     {
         if(cmd[2].empty() && (cmd[2] = get_action_data().toStdString()).empty())
             return run->canceled();
-        if(cmd[1].empty() && (cmd[1] = QFileDialog::getSaveFileName(
-                    this,"Save as",
-                    QFileInfo(windowTitle()).baseName()+"_"+ QString::fromStdString(cmd[2])+".nii.gz",
+        if(cmd[1].empty() && (cmd[1] = tipl::qt::save_image_file(
+                    this,QFileInfo(windowTitle()).baseName()+"_"+ QString::fromStdString(cmd[2])+".nii.gz",
                     "NIFTI files (*nii.gz *.nii);;MAT files (*.mat);;All files (*)").toStdString()).empty())
             return run->canceled();
 
@@ -881,8 +879,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->succeed();
         }
 
-        auto filenames = QFileDialog::getOpenFileNames(
-            this,"Open Images files",QFileInfo(work_path).absolutePath(),
+        auto filenames = tipl::qt::open_image_files(
+            this,QFileInfo(work_path).absolutePath(),
                     "Image files (*.dcm *.hdr *.nii *nii.gz *db.fz *db.fib.gz *.dz 2dseq);;Histology (*.jpg *.tif);;All files (*)" );
         if(filenames.isEmpty())
             return run->canceled();
