@@ -905,7 +905,7 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
             dwi_files.push_back(std::make_shared<DwiHeader>());
             dwi_files.back()->voxel_size = vs;
             dwi_files.back()->file_name = file_list[i].toStdString();
-            dwi_files.back()->report = " The diffusion images were acquired on an Agilent scanner.";
+            dwi_files.back()->report = "The diffusion images were acquired on an Agilent scanner.";
             dwi_files.back()->image = image_buf[i];
             image_buf[i] = tipl::image<3>();
         }
@@ -1001,7 +1001,7 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
                 dwi_files.back()->voxel_size = fov;
                 dwi_files.back()->file_name = value_list["*studyid"];
             }
-            dwi_files.back()->report = " The diffusion images were acquired on a Varian scanner.";
+            dwi_files.back()->report = "The diffusion images were acquired on a Varian scanner.";
         }
         // get DWI location
         size_t dwi_id;

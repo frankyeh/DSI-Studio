@@ -12,7 +12,7 @@ void get_report_from_dicom(const tipl::io::dicom& header,std::string& report)
     std::replace(manu.begin(),manu.end(),' ',(char)0);
     make.erase(std::remove(make.begin(),make.end(),' '),make.end());
     std::ostringstream out;
-    out << " The diffusion images were acquired on a " << manu.c_str() << " " << make.c_str()
+    out << "The diffusion images were acquired on a " << manu.c_str() << " " << make.c_str()
         << " scanner using a ";
     if(seq.find("ep2d") != std::string::npos)
         out << "2D EPI ";
@@ -58,7 +58,7 @@ void get_report_from_dicom(const tipl::io::dicom& header,std::string& report)
 void get_report_from_bruker(const tipl::io::bruker_info& header,std::string& report)
 {
     std::ostringstream out;
-    out << " The diffusion images were acquired on a " << header["ORIGIN"] << " scanner using a "
+    out << "The diffusion images were acquired on a " << header["ORIGIN"] << " scanner using a "
         << header["Method"] << " " << header["PVM_DiffPrepMode"]
         <<  " sequence. TE=" << header["PVM_EchoTime"] << " ms, and TR=" << header["PVM_RepetitionTime"] << " ms."
         << " The diffusion time was " << header["PVM_DwGradSep"] << " ms. The diffusion encoding duration was " << header["PVM_DwGradDur"] << " ms.";
@@ -67,7 +67,7 @@ void get_report_from_bruker(const tipl::io::bruker_info& header,std::string& rep
 void get_report_from_bruker2(const tipl::io::bruker_info& header,std::string& report)
 {
     std::ostringstream out;
-    out << " The diffusion images were acquired on a " << header["ORIGIN"]
+    out << "The diffusion images were acquired on a " << header["ORIGIN"]
         << " scanner using a " << header["IMND_method"]
         <<  " sequence. TE=" << header["IMND_EffEchoTime1"] << " ms, and TR=" << header["IMND_rep_time"] << " ms."
         << " The diffusion time was " << header["IMND_big_delta"] << " ms. The diffusion encoding duration was "

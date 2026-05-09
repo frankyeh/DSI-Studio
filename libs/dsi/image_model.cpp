@@ -2707,14 +2707,14 @@ std::string src_data::get_report(bool dwi_part_only)
     calculate_shell(src_bvalues,shell);
     if(shell.size() > 4 && shell[1] - shell[0] <= 6)
     {
-        out << " A diffusion spectrum imaging scheme was used, and a total of " << num_dir
+        out << "A diffusion spectrum imaging scheme was used, and a total of " << num_dir
             << " diffusion sampling were acquired."
             << " The maximum b-value was " << int(std::round(sorted_bvalues.back())) << " s/mm².";
     }
     else
     if(shell.size() > 1)
     {
-        out << " A multishell diffusion scheme was used, and the b-values were ";
+        out << "A multishell diffusion scheme was used, and the b-values were ";
         for(unsigned int index = 0;index < shell.size();++index)
         {
             if(index > 0)
@@ -2737,9 +2737,9 @@ std::string src_data::get_report(bool dwi_part_only)
     else
         {
             if(num_dir < 100)
-                out << " A DTI diffusion scheme was used, and a total of ";
+                out << "A DTI diffusion scheme was used, and a total of ";
             else
-                out << " A HARDI scheme was used, and a total of ";
+                out << "A HARDI scheme was used, and a total of ";
             out << num_dir
                 << " diffusion sampling directions were acquired."
                 << " The b-value was " << sorted_bvalues.back() << " s/mm².";
