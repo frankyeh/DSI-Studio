@@ -198,7 +198,6 @@ public:
     void set_data(QString name, QVariant value);
     void set_memorize_parameters(bool memorize);
     void on_tracking_index_currentIndexChanged(int index);
-    QString get_save_file_name(QString title,QString file_name,QString file_type);
     void report(QString string);
     void move_slice_to(tipl::vector<3,float> pos);
     void set_roi_zoom(float zoom);
