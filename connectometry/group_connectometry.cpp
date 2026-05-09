@@ -536,11 +536,7 @@ void group_connectometry::on_clear_all_roi_clicked()
 
 void group_connectometry::on_load_roi_from_file_clicked()
 {
-    QString file = QFileDialog::getOpenFileName(
-                                this,
-                                "Load ROI from file",
-                                work_dir + "/roi.nii.gz",
-                                "Report file (*.nii *nii.gz);;Text files (*.txt);;All files (*)");
+    QString file = tipl::qt::open_image_file(this,work_dir + "/roi.nii.gz","Report file (*.nii *nii.gz);;Text files (*.txt);;All files (*)");
     if(file.isEmpty())
         return;
     tipl::image<3> I;
