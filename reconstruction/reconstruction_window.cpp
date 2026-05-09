@@ -332,13 +332,9 @@ void reconstruction_window::on_from_template_clicked()
     command("[Step T2a][Template]");
 }
 
-
 void reconstruction_window::on_save_mask_clicked()
 {
-    QString filename = QFileDialog::getSaveFileName(
-            this,
-            "Save region",
-            absolute_path+"/mask.nii.gz",
+    QString filename = tipl::qt::save_image_file(this,absolute_path+"/mask.nii.gz",
             "Nifti file(*nii.gz *.nii);;Text files (*.txt);;All files (*)" );
     if(filename.isEmpty())
         return;
@@ -363,8 +359,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
     if(cmd == "[Step T2][File][Save 4D NIFTI]" || cmd == "[Step T2][File][Save B0]" ||
        cmd == "[Step T2][File][Save DWI Sum]")
     {
-        QString filename = QFileDialog::getSaveFileName(
-                    this,cmd.c_str(),QFileInfo(filenames[0]).baseName() + ".nii.gz",
+        QString filename = tipl::qt::save_image_file(this,QFileInfo(filenames[0]).baseName() + ".nii.gz",
                                 "NIFTI files (*nii.gz);;All files (*)" );
         if(filename.isEmpty())
             return false;
@@ -372,8 +367,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
     }
     if(cmd == "[Step T2][Edit][Probablistic Masking]" || cmd == "[Step T2][Corrections][By T2w]")
     {
-        QString filename = QFileDialog::getOpenFileName(
-                    this,cmd.c_str(),QFileInfo(filenames[0]).baseName() + ".nii.gz",
+        QString filename = tipl::qt::open_image_file(this,QFileInfo(filenames[0]).baseName() + ".nii.gz",
                                 "NIFTI files (*nii.gz);;All files (*)" );
         if(filename.isEmpty())
             return false;
@@ -381,8 +375,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
     }
     if(cmd == "[Step T2][File][Save Src File]")
     {
-        QString filename = QFileDialog::getSaveFileName(
-                this,"Save SRC file",QFileInfo(filenames[0]).baseName()+".sz",
+        QString filename = tipl::qt::save_image_file(this,QFileInfo(filenames[0]).baseName()+".sz",
                         "SRC files (*.sz *src.gz);;All files (*)" );
         if(filename.isEmpty())
             return false;
@@ -394,9 +387,8 @@ bool reconstruction_window::command(std::string cmd,std::string param)
         if(!std::filesystem::exists(param))
         {
             QMessageBox::information(this,QApplication::applicationName(),"Please specify another nii.gz or sz file with reversed phase encoding data");
-            auto other_src = QFileDialog::getOpenFileName(
-                    this,"Open SRC file",absolute_path,
-                    "Images (*.sz *.rz *src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
+            auto other_src = tipl::qt::open_image_file(
+                    this,absolute_path,"Images (*.sz *.rz *src.gz *.nii *nii.gz);;DICOM image (*.dcm);;All files (*)" );
             if(other_src.isEmpty())
                 return false;
             param = other_src.toStdString();
@@ -405,11 +397,8 @@ bool reconstruction_window::command(std::string cmd,std::string param)
 
     if(tipl::contains_case_insensitive(cmd,"open"))
     {
-        QString filename = QFileDialog::getOpenFileName(
-            this,
-            "Open region",
-            absolute_path,
-            "Mask files (*.nii *nii.gz *.hdr);;Text files (*.txt);;All files (*)" );
+        QString filename = tipl::qt::open_image_file(
+            this,absolute_path,"Mask files (*.nii *nii.gz *.hdr);;Text files (*.txt);;All files (*)" );
         if(filename.isEmpty())
             return false;
         param = filename.toStdString();
@@ -626,9 +615,7 @@ void reconstruction_window::on_actionSave_bvecs_triggered()
 bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4>&);
 void reconstruction_window::on_actionRotate_triggered()
 {
-    QStringList filenames = QFileDialog::getOpenFileNames(
-            this,"Open Images files",absolute_path,
-            "Images (*.nii *nii.gz *.dcm);;All files (*)" );
+    QStringList filenames = tipl::qt::open_image_files(this,absolute_path,"Images (*.nii *nii.gz *.dcm);;All files (*)" );
     if( filenames.isEmpty())
         return;
 
@@ -708,9 +695,7 @@ void reconstruction_window::on_SlicePos_valueChanged(int position)
 
 void reconstruction_window::on_actionAttach_Images_triggered()
 {
-    QString filename = QFileDialog::getOpenFileName(
-            this,"Open Images files",absolute_path,
-            "Images (*.nii *nii.gz);;All files (*)" );
+    QString filename = tipl::qt::open_image_file(this,absolute_path,"Images (*.nii *nii.gz);;All files (*)" );
     if( filename.isEmpty())
         return;
     if(handle->add_other_image(QFileInfo(filename).baseName().toStdString(),filename.toStdString()))
@@ -722,13 +707,13 @@ void reconstruction_window::on_actionAttach_Images_triggered()
 
 void reconstruction_window::on_actionT1W_based_QSDR_triggered()
 {
-    QString subject_image = QFileDialog::getOpenFileName(
-            this,"Open Subject Image",absolute_path,
+    QString subject_image = tipl::qt::open_image_file(
+            this,absolute_path,
             "Images (*.nii *nii.gz);;All files (*)" );
     if(subject_image.isEmpty())
         return;
-    QString template_image = QFileDialog::getOpenFileName(
-            this,"Open Template Image",absolute_path,
+    QString template_image = tipl::qt::open_image_file(
+            this,absolute_path,
             "Images (*.nii *nii.gz);;All files (*)" );
     if(template_image.isEmpty())
         return;
@@ -961,7 +946,7 @@ void reconstruction_window::on_actionManual_Align_triggered()
 
 void reconstruction_window::on_change_fib_output_clicked()
 {
-    QString filename = QFileDialog::getSaveFileName(this,"Save FIB file",
+    QString filename = tipl::qt::save_image_file(this,
                         windowTitle(),"FIB files (*.fz *fib.gz);;All files (*)");
     if (filename.isEmpty())
         return;
