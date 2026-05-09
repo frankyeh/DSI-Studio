@@ -88,6 +88,8 @@ void checkForVersionSpecificBugs_Minimal(const QString& bugListText)
                               "\n\nIt is highly recommended to update DSI Studio to the latest version to avoid these issues.");
 }
 
+
+
 extern std::vector<std::string> fib_template_list;
 std::vector<tracking_window*> tracking_windows;
 MainWindow::MainWindow(QWidget *parent) :
@@ -113,10 +115,21 @@ MainWindow::MainWindow(QWidget *parent) :
     QObject::connect(ui->recentSrc,SIGNAL(cellDoubleClicked(int,int)),this,SLOT(open_src_at(int,int)));
     updateRecentList();
 
-    if (settings.contains("WORK_PATH"))
-        ui->workDir->addItems(settings.value("WORK_PATH").toStringList());
-    else
+    auto workdir_list = settings.value("WORK_PATH").toStringList();
+    if (!settings.contains("WORK_PATH"))
         ui->workDir->addItem(QDir::currentPath());
+
+    tipl::qt::working_dirs << QUrl::fromLocalFile(QStandardPaths::writableLocation(QStandardPaths::DesktopLocation));
+    tipl::qt::working_dirs << QUrl::fromLocalFile(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
+    tipl::qt::working_dirs << QUrl::fromLocalFile(QStandardPaths::writableLocation(QStandardPaths::DownloadLocation));
+
+    for(auto each : workdir_list)
+        if(QFileInfo(each).exists())
+        {
+            ui->workDir->addItem(each);
+            tipl::qt::working_dirs << QUrl::fromLocalFile(each);
+        }
+
     ui->download_dir->setText(ui->workDir->currentText());
 
     for(auto& each : fib_template_list)
@@ -738,11 +751,8 @@ void MainWindow::open_DWI(QStringList filenames)
 
 void MainWindow::on_Reconstruction_clicked()
 {
-    QStringList filenames = QFileDialog::getOpenFileNames(
-                           this,
-                           "Open Src files",
-                           ui->workDir->currentText(),
-                           "Src files (*.sz *src.gz);;Histology images (*.jpg *.tif);;All files (*)" );
+    QStringList filenames = tipl::qt::open_image_files(this,ui->workDir->currentText(),
+                                            "Src files (*.sz *src.gz);;Histology images (*.jpg *.tif);;All files (*)" );
     if (filenames.isEmpty())
         return;
     add_work_dir(QFileInfo(filenames[0]).absolutePath());
@@ -751,12 +761,7 @@ void MainWindow::on_Reconstruction_clicked()
 
 void MainWindow::on_FiberTracking_clicked()
 {
-
-    QString filename = QFileDialog::getOpenFileName(
-                           this,
-                           "Open Fib files",
-                           ui->workDir->currentText(),
-                           "Fib files (*.fz *fib.gz *.dz);;All files (*)");
+    QString filename = tipl::qt::open_image_file(this,ui->workDir->currentText(),"Fib files (*.fz *fib.gz *.dz);;All files (*)");
     if (filename.isEmpty())
         return;
     add_work_dir(QFileInfo(filename).absolutePath());
@@ -765,11 +770,7 @@ void MainWindow::on_FiberTracking_clicked()
 
 void MainWindow::on_T1WFiberTracking_clicked()
 {
-    QString filename = QFileDialog::getOpenFileName(
-                           this,
-                           "Open T1W files",
-                           ui->workDir->currentText(),
-                           "Image files (*nii.gz *.nii 2dseq);;All files (*)");
+    QString filename = tipl::qt::open_image_file(this,ui->workDir->currentText(),"Image files (*nii.gz *.nii 2dseq);;All files (*)");
     if (filename.isEmpty())
         return;
     add_work_dir(QFileInfo(filename).absolutePath());
@@ -853,6 +854,11 @@ void MainWindow::add_work_dir(QString dir)
         ui->workDir->removeItem(ui->workDir->findText(dir));
     ui->workDir->insertItem(0,dir);
     ui->workDir->setCurrentIndex(0);
+
+    if(tipl::qt::working_dirs.indexOf(dir) != -1)
+        tipl::qt::working_dirs.remove(tipl::qt::working_dirs.indexOf(dir));
+    tipl::qt::working_dirs << dir;
+
 }
 
 
@@ -949,13 +955,12 @@ void MainWindow::on_batch_reconstruction_clicked()
     loadSrc(search_files(dir,"*src.gz") << search_files(dir,"*.sz"));
 }
 
+
+
 void MainWindow::on_view_image_clicked()
 {
-    QStringList filename = QFileDialog::getOpenFileNames(
-                                this,
-                                "Open Image",
-                                ui->workDir->currentText(),
-                                "image files (*.nii *nii.gz *.dcm *.nhdr *.nrrd 2dseq *.fz *.dz *fib.gz *.sz *src.gz *.nz)" );
+    QStringList filename = tipl::qt::open_image_files(this,ui->workDir->currentText(),
+                                           "image files (*.nii *nii.gz *.dcm *.nhdr *.nrrd 2dseq *.fz *.dz *fib.gz *.sz *src.gz *.nz)");
     if(filename.isEmpty())
         return;
     add_work_dir(QFileInfo(filename[0]).absolutePath());
@@ -978,11 +983,7 @@ void MainWindow::on_workDir_currentTextChanged(const QString &arg1)
 
 bool MainWindow::load_db(std::shared_ptr<group_connectometry_analysis>& database,QString& filename)
 {
-    filename = QFileDialog::getOpenFileName(
-                           this,
-                           "Open Database files",
-                           ui->workDir->currentText(),
-                           "Database (*.dz *db.fz *db?fib.gz);;All files (*)");
+    filename = tipl::qt::open_image_file(this,ui->workDir->currentText(),"Database (*.dz *db.fz *db?fib.gz);;All files (*)");
     if (filename.isEmpty())
         return false;
     add_work_dir(QFileInfo(filename).absolutePath());
@@ -1024,16 +1025,14 @@ bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vecto
 
 void MainWindow::on_linear_reg_clicked()
 {
-    QStringList filename1 = QFileDialog::getOpenFileNames(
-            this,"Open Subject Image",ui->workDir->currentText(),
-            "Images (*.nii *nii.gz *.dcm);;All files (*)" );
+    QStringList filename1 = tipl::qt::open_image_files(this,ui->workDir->currentText(),
+                                            "Images (*.nii *nii.gz *.dcm);;All files (*)" );
     if(filename1.isEmpty())
         return;
 
 
-    QStringList filename2 = QFileDialog::getOpenFileNames(
-            this,"Open Template Image",QFileInfo(filename1[0]).absolutePath(),
-            "Images (*.nii *nii.gz *.dcm);;All files (*)" );
+    QStringList filename2 = tipl::qt::open_image_files(this,QFileInfo(filename1[0]).absolutePath(),
+                                            "Images (*.nii *nii.gz *.dcm);;All files (*)" );
     if(filename2.isEmpty())
         return;
 
@@ -1067,14 +1066,11 @@ std::string quality_check_nii_files(const std::vector<std::string>& file_list);
 
 void MainWindow::on_SRC_qc_clicked()
 {
-    QStringList filenames = QFileDialog::getOpenFileNames(
-                           this,"Open SRC files",
-                           ui->workDir->currentText(),
-                           "Src files (*.sz *src.gz);;All files (*)" );
+    QStringList filenames = tipl::qt::open_image_files(this,ui->workDir->currentText(),"Src files (*.sz *src.gz);;All files (*)" );
     if (filenames.isEmpty())
         return;
     std::vector<std::string> files;
-    for(auto each : filenames)
+    for(const auto& each : filenames)
         files.push_back(each.toStdString());
     tipl::progress prog("checking SRC files");
     show_info_dialog("SRC report",quality_check_src_files(files,false,false,0));
@@ -1083,14 +1079,11 @@ void MainWindow::on_SRC_qc_clicked()
 
 void MainWindow::on_NII_qc_clicked()
 {
-    auto filenames = QFileDialog::getOpenFileNames(
-                           this,"Open NIFTI files",
-                           ui->workDir->currentText(),
-                           "NIFTI files (*.nii *nii.gz);;All files (*)");
+    auto filenames = tipl::qt::open_image_files(this,ui->workDir->currentText(),"NIFTI files (*.nii *nii.gz);;All files (*)");
     if (filenames.isEmpty())
         return;
     std::vector<std::string> files;
-    for(auto each : filenames)
+    for(const auto& each : filenames)
         files.push_back(each.toStdString());
     tipl::progress prog("checking NIFTI files");
     show_info_dialog("NIFTI report",quality_check_nii_files(files));
@@ -1100,10 +1093,7 @@ void MainWindow::on_NII_qc_clicked()
 
 void MainWindow::on_FIB_qc_clicked()
 {
-    auto filenames = QFileDialog::getOpenFileNames(
-                           this,"Open FIB files",
-                           ui->workDir->currentText(),
-                           "Fib files (*.fz *fib.gz);;All files (*)");
+    auto filenames = tipl::qt::open_image_files(this,ui->workDir->currentText(),"Fib files (*.fz *fib.gz);;All files (*)");
 
     if (filenames.isEmpty())
         return;
@@ -1623,31 +1613,19 @@ void MainWindow::on_TemplateFiberTracking_clicked()
 
 void MainWindow::on_OpenDWI_NIFTI_clicked()
 {
-    open_DWI(QStringList() << QFileDialog::getOpenFileName(
-                         this,
-                         "Open NIFTI file",
-                         ui->workDir->currentText(),
-                         "NIFTI files (*.nii *.nii.gz);;All files (*)" ));
+    open_DWI(QStringList() << tipl::qt::open_image_file(this,ui->workDir->currentText(),"NIFTI files (*.nii *.nii.gz);;All files (*)" ));
 }
 
 
 void MainWindow::on_OpenDWI_DICOM_clicked()
 {
-    open_DWI(QFileDialog::getOpenFileNames(
-                         this,
-                         "Open DICOM files",
-                         ui->workDir->currentText(),
-                         "DICOM files (*.dcm);;All files (*)" ));
+    open_DWI(tipl::qt::open_image_files(this,ui->workDir->currentText(),"DICOM files (*.dcm);;All files (*)" ));
 }
 
 
 void MainWindow::on_OpenDWI_2dseq_clicked()
 {
-    open_DWI(QFileDialog::getOpenFileNames(
-                         this,
-                         "Open 2dseq or Variant files",
-                         ui->workDir->currentText(),
-                         "2dseq files (2dseq);;FDF files (*.fdf);;NRRD Files (*.nrrd);;All files (*)" ));
+    open_DWI(tipl::qt::open_image_files(this,ui->workDir->currentText(),"2dseq files (2dseq);;FDF files (*.fdf);;NRRD Files (*.nrrd);;All files (*)" ));
 }
 void MainWindow::on_tabWidget_currentChanged(int index)
 {
