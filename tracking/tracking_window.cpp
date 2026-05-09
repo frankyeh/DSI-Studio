@@ -96,7 +96,6 @@ bool command_history::get_directory(QWidget* parent,std::string& cmd)
                                             QString::fromStdString(default_parent_path)).toStdString()).empty();
 }
 
-
 bool command_history::get_filename(QWidget* parent,std::string& filename,const std::string& post_fix)
 {
     if(!filename.empty())
@@ -116,11 +115,9 @@ bool command_history::get_filename(QWidget* parent,std::string& filename,const s
         filter += ";;";
     filter += "Text files (*.txt);;All files (*)";
     if(tipl::begins_with(current_cmd,"save_"))
-        return !(filename = QFileDialog::getSaveFileName(
-                    parent,QString::fromStdString(current_cmd),default_file_name,filter).toStdString()).empty();
+        return !(filename = tipl::qt::save_image_file(parent,default_file_name,filter).toStdString()).empty();
     else
-        return !(filename = QFileDialog::getOpenFileName(
-                    parent,QString::fromStdString(current_cmd),default_file_name,filter).toStdString()).empty();
+        return !(filename = tipl::qt::open_image_file(parent,default_file_name,filter).toStdString()).empty();
 }
 
 bool command_history::is_loading(const std::string& cmd)
@@ -879,11 +876,6 @@ void tracking_window::on_actionAuto_Rotate_triggered(bool checked)
         }
     else
         glWidget->rotate_timer->stop();
-}
-
-QString tracking_window::get_save_file_name(QString title,QString file_name,QString file_type)
-{
-    return QFileDialog::getSaveFileName(this,title,file_name,file_type);
 }
 
 void tracking_window::on_rendering_efficiency_currentIndexChanged(int index)
