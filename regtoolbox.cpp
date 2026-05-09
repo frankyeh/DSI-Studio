@@ -73,9 +73,7 @@ void RegToolBox::on_OpenTemplate_clicked()
 {
     if(file_names[1].size() >= reg.max_modality)
         return;
-    QStringList filenames = QFileDialog::getOpenFileNames(
-            this,"Open Template Image",QDir::currentPath(),
-            "Images (*.nii *nii.gz);;All files (*)" );
+    QStringList filenames = tipl::qt::open_image_files(this,QDir::currentPath(),"Images (*.nii *nii.gz);;All files (*)" );
     if(filenames.isEmpty())
         return;
     for(auto filename : filenames)
@@ -113,9 +111,7 @@ void RegToolBox::on_OpenSubject_clicked()
 {
     if(file_names[0].size() >= reg.max_modality)
         return;
-    QStringList filenames = QFileDialog::getOpenFileNames(
-            this,"Open Subject Image",QDir::currentPath(),
-            "Images (*.nii *nii.gz);;All files (*)" );
+    QStringList filenames = tipl::qt::open_image_files(this,QDir::currentPath(),"Images (*.nii *nii.gz);;All files (*)" );
     if(filenames.isEmpty())
         return;
     for(auto filename : filenames)
@@ -243,9 +239,7 @@ void save_warp(RegToolBox* host,
                int y,
                const std::vector<std::string>& names)
 {
-    QString filename = QFileDialog::getSaveFileName(
-            host,("Save warped " + QFileInfo(names[y].c_str()).fileName()),names[y].c_str(),
-            "Images (*.nii *nii.gz);;All files (*)" );
+    QString filename = tipl::qt::save_image_file(host,names[y].c_str(),"Images (*.nii *nii.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
     if(!apply_warping<direction>(reg,names[y].c_str(),filename.toStdString()))
@@ -575,9 +569,7 @@ void RegToolBox::on_actionSave_Warping_triggered()
 {
     if(reg.to2from.empty())
         return;
-    QString filename = QFileDialog::getSaveFileName(
-            this,"Save Mapping",QDir::currentPath(),
-            "Images (*.mz);;All files (*)" );
+    QString filename = tipl::qt::save_image_file(this,QDir::currentPath(),"Images (*.mz);;All files (*)" );
     if(filename.isEmpty())
         return;
     if(!save_warping(reg,filename.toStdString()))
@@ -586,9 +578,7 @@ void RegToolBox::on_actionSave_Warping_triggered()
 bool load_warping(tipl::reg::mm_reg<tipl::out>& reg,const std::string& filename);
 void RegToolBox::on_actionOpen_Mapping_triggered()
 {
-    QString filename = QFileDialog::getOpenFileName(
-            this,"Open Mapping",QDir::currentPath(),
-            "Images (*.mz);;All files (*)" );
+    QString filename = tipl::qt::open_image_file(this,QDir::currentPath(),"Images (*.mz);;All files (*)" );
     if(filename.isEmpty())
         return;
     if(!load_warping(reg,filename.toStdString()))
@@ -673,17 +663,15 @@ void RegToolBox::on_actionTemplate_Image_triggered()
 
 
 template <bool subjectToTemplate,typename reg_type>
-void applyWarping(reg_type& reg)
+void applyWarping(QWidget* parent,reg_type& reg)
 {
     QString filter = "Images (*.nii *nii.gz);;Tracts (*tt.gz);;All files (*)";
-    QStringList file_list = QFileDialog::getOpenFileNames(nullptr,
-                                                          subjectToTemplate ? "Open Subject Image" : "Open Template Image",
-                                                          QDir::currentPath(), filter);
+    QStringList file_list = tipl::qt::open_image_files(parent,QDir::currentPath(), filter);
     if (file_list.isEmpty())
         return;
     if (file_list.size() == 1)
     {
-        QString saveFileName = QFileDialog::getSaveFileName(nullptr, "Save Transformed Image", file_list[0], filter);
+        QString saveFileName = tipl::qt::save_image_file(parent, file_list[0], filter);
         if (saveFileName.isEmpty())
             return;
         if (!apply_warping<subjectToTemplate>(reg,file_list[0].toStdString(), saveFileName.toStdString()))
@@ -706,12 +694,12 @@ void applyWarping(reg_type& reg)
 
 void RegToolBox::on_actionApply_Subject_To_Template_Warping_triggered()
 {
-    applyWarping<true>(reg);
+    applyWarping<true>(this,reg);
 }
 
 void RegToolBox::on_actionApply_Template_To_Subject_Warping_triggered()
 {
-    applyWarping<false>(reg);
+    applyWarping<false>(this,reg);
 }
 
 
@@ -764,9 +752,7 @@ void RegToolBox::on_actionSave_Subject_Images_triggered()
 {
     if(file_names[0].empty())
         return;
-    QString from = QFileDialog::getSaveFileName(
-            this,"Save Subject Images",file_names[0].front().c_str(),
-            "Images (*.nii *nii.gz);;All files (*)" );
+    QString from = tipl::qt::save_image_file(this,file_names[0].front().c_str(),"Images (*.nii *nii.gz);;All files (*)" );
     if(from.isEmpty())
         return;
     tipl::io::gz_nifti(from.toStdString(),std::ios::out) << reg.Ivs << reg.IR << reg.Is_is_mni << read_buffer(reg.I);
@@ -777,9 +763,7 @@ void RegToolBox::on_actionSave_Template_Images_triggered()
 {
     if(file_names[1].empty())
         return;
-    QString from = QFileDialog::getSaveFileName(
-            this,"Save Template Images",file_names[1].front().c_str(),
-            "Images (*.nii *nii.gz);;All files (*)" );
+    QString from = tipl::qt::save_image_file(this,file_names[1].front().c_str(),"Images (*.nii *nii.gz);;All files (*)" );
     if(from.isEmpty())
         return;
     tipl::io::gz_nifti(from.toStdString(),std::ios::out) << reg.Itvs << reg.ItR << reg.It_is_mni << read_buffer(reg.It);
