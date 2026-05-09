@@ -1,7 +1,6 @@
 #include <map>
 #include <QTextStream>
 #include <QInputDialog>
-#include <QFileDialog>
 #include "view_image.h"
 #include "ui_view_image.h"
 #include <QPlainTextEdit>
@@ -580,12 +579,9 @@ bool view_image::read_mat(void)
     ui->mat_images->show();
     return true;
 }
-
 void view_image::on_actionLoad_Image_to_4D_triggered()
 {
-    QString filename = QFileDialog::getOpenFileName(
-                           this,
-                           "Open image",original_file_name,"NIFTI files (*.nii *nii.gz);;All files (*)");
+    QString filename = tipl::qt::open_image_file(this,original_file_name,"NIFTI files (*.nii *nii.gz);;All files (*)");
     if(filename.isEmpty())
         return;
     tipl::image<3> new_image(cur_image->shape);
@@ -1018,8 +1014,8 @@ void view_image::on_actionSave_triggered()
 
 void view_image::on_action_Save_as_triggered()
 {
-    QString filename = QFileDialog::getSaveFileName(
-                           this,"Save",file_name,
+    QString filename = tipl::qt::save_image_file(
+                           this,file_name,
                             mat.size() ?
                             "FIB/SRC file(*.fz *.sz *fib.gz *src.gz);;All Files (*)":
                             "NIFTI file(*nii.gz *.nii)" );
@@ -1136,8 +1132,7 @@ void view_image::run_action2()
         return;
     QString value;
     if(action->text().toLower().contains(" image..."))
-        value = QFileDialog::getOpenFileName(
-                               this,"Open other another image to apply",QFileInfo(file_name).absolutePath(),"NIFTI file(*nii.gz *.nii)" );
+        value = tipl::qt::open_image_file(this,QFileInfo(file_name).absolutePath(),"NIFTI file(*nii.gz *.nii)");
     else
     {
         bool ok;
