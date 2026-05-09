@@ -46,11 +46,8 @@ void auto_track::on_template_list_currentIndexChanged(int index)
 }
 void auto_track::on_open_clicked()
 {
-    QStringList filenames = QFileDialog::getOpenFileNames(
-                                     this,
-                                     "Open FIB files",
-                                     "",
-                                     "FIB files (*.fz *fib.gz);;All files (*)" );
+    QStringList filenames = tipl::qt::open_image_files(
+                                     this,"","FIB files (*.fz *fib.gz);;All files (*)" );
     if (filenames.isEmpty())
         return;
     file_list << filenames;
