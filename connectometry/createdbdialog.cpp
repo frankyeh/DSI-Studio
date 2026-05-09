@@ -89,11 +89,9 @@ void CreateDBDialog::update_list(void)
 
     raise(); // for Mac
 }
-
 void CreateDBDialog::on_group1open_clicked()
 {
-    QStringList filenames = QFileDialog::getOpenFileNames(
-                                     this,"Open Files","",
+    QStringList filenames = tipl::qt::open_image_files(this,"",
                                      create_db ?
                                      "Fib Files (*.fz *fib.gz);;All Files (*)" :
                                      "Fib Files (*.fz *fib.gz);;NIFTI Files (*nii *nii.gz);;All Files (*)");
@@ -198,10 +196,7 @@ void CreateDBDialog::on_open_dir1_clicked()
 
 void CreateDBDialog::on_select_output_file_clicked()
 {
-    QString filename = QFileDialog::getSaveFileName(
-                                 this,
-                                 "Save file",
-                                 "","FIB files (*.fz *fib.gz);;NIFTI Files(*nii.gz);;All files (*)");
+    QString filename = tipl::qt::save_image_file(this,"","FIB files (*.fz *fib.gz);;NIFTI Files(*nii.gz);;All files (*)");
     if(filename.isEmpty())
         return;
 #ifdef __APPLE__
