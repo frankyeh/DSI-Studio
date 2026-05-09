@@ -2,7 +2,6 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QPainter>
 #include <QSettings>
-#include <QFileDialog>
 #include <QClipboard>
 #include <QMessageBox>
 #include <QMouseEvent>
