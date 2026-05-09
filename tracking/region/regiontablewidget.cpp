@@ -1,6 +1,5 @@
 #include <regex>
 #include <cmath>
-#include <QFileDialog>
 #include <QInputDialog>
 #include <QContextMenuEvent>
 #include <QMessageBox>
@@ -624,7 +623,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             return run->succeed();
         }
         // allow for selecting multiple files
-        auto file_list = QFileDialog::getOpenFileNames(this,QString::fromStdString(cmd[0]),
+        auto file_list = tipl::qt::open_image_files(this,
             QString::fromStdString(cur_tracking_window.history.file_stem()) + ".nii.gz",
             "Region files (*.nii *.hdr *nii.gz *.mat);;Text files (*.txt);;All files (*)");
         if(file_list.isEmpty())
