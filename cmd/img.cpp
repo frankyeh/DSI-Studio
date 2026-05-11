@@ -41,7 +41,7 @@ bool variant_image::command(std::string cmd,std::string param1)
         }
 
 
-        if(cmd == "brain_extraction" || cmd == "segmentation")
+        if(cmd == "brain_extraction" || cmd == "segmentation" || cmd == "deface")
         {
             if(!std::filesystem::exists(param1))
                 return tipl::error() << "model does not exist: " << param1,result = false,void();
@@ -61,7 +61,27 @@ bool variant_image::command(std::string cmd,std::string param1)
                 nii.apply_flip_swap_seq(unet.eval.fg_prob,true);
                 I *= unet.eval.fg_prob;
             }
-            else
+            if(cmd == "deface")
+            {
+                nii.apply_flip_swap_seq(unet.eval.mask,true);
+                auto mask = unet.eval.mask;
+                // expand the mask to include tissue nearby the brain tissue
+                tipl::morphology::dilation_by_radius(mask,40/vs[0]);
+                // but excluding the background
+                auto threshold = tipl::max_value(I)*0.02f;
+                for(size_t pos = 0;pos < mask.size();++pos)
+                    if(unet.eval.mask[pos] == 0 && mask[pos] && I[pos] < threshold)
+                        mask[pos] = 0;
+
+                // remove outside surface features
+                tipl::morphology::erosion_by_radius(mask,15/vs[0]);
+                tipl::morphology::dilation_by_radius(mask,15/vs[0]);
+                unet.eval.fg_prob = mask;
+                tipl::filter::gaussian(unet.eval.fg_prob);
+                tipl::filter::gaussian(unet.eval.fg_prob);
+                I *= unet.eval.fg_prob;
+            }
+            if(cmd == "segmentation")
             {
                 I.clear();
                 nii.apply_flip_swap_seq(unet.eval.label,true);
@@ -528,7 +548,7 @@ int img(tipl::program_option<tipl::out>& po)
                     cmd = cmd.substr(0,sep_pos);
                 }
             }
-            if(cmd == "brain_extraction" || cmd == "segmentation")
+            if(cmd == "brain_extraction" || cmd == "segmentation" || cmd == "deface")
             {
                 if(po.has("model"))
                     param = po.get("model");
