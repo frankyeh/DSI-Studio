@@ -46,11 +46,21 @@ bool variant_image::command(std::string cmd,std::string param1)
             if(!std::filesystem::exists(param1))
                 return tipl::error() << "model does not exist: " << param1,result = false,void();
 
+
+            tipl::image<3,unsigned char> brain_outter_mask;
+            tipl::threshold(I,brain_outter_mask,0);
+            tipl::morphology::defragment(brain_outter_mask);
+            tipl::morphology::negate(brain_outter_mask);
+            tipl::morphology::defragment(brain_outter_mask);
+            tipl::morphology::negate(brain_outter_mask);
+
             tipl::io::gz_nifti nii;
             nii.flip_swap_seq = flip_swap_seq;
             auto J = I;
-            nii.apply_flip_swap_seq(J);
             tipl::ml3d::tissue_seg unet;
+            unet.eval.mask = brain_outter_mask;
+            nii.apply_flip_swap_seq(unet.eval.mask);
+            nii.apply_flip_swap_seq(J);
             if(!unet.load_model<tipl::io::gz_mat_read>(param1) ||
                 !unet.forward(std::move(J),vs))
                 return tipl::error() << unet.error_msg,result = false,void();
@@ -63,22 +73,27 @@ bool variant_image::command(std::string cmd,std::string param1)
             }
             if(cmd == "deface")
             {
-                nii.apply_flip_swap_seq(unet.eval.mask,true);
-                auto mask = unet.eval.mask;
+                auto& mask = unet.eval.mask;
+                nii.apply_flip_swap_seq(mask,true);
+
+                tipl::downsampling(mask);
+                tipl::downsampling(brain_outter_mask);
                 // expand the mask to include tissue nearby the brain tissue
-                tipl::morphology::dilation_by_radius(mask,30/vs[0]);
-                // but excluding the background
-                auto threshold = tipl::max_value(I)*0.02f;
-                for(size_t pos = 0;pos < mask.size();++pos)
-                    if(unet.eval.mask[pos] == 0 && mask[pos] && I[pos] < threshold)
-                        mask[pos] = 0;
-                tipl::morphology::erosion_by_radius(mask,4/vs[0]);
-                tipl::morphology::defragment(mask);
                 tipl::morphology::smoothing(mask);
                 tipl::morphology::smoothing(mask);
-                tipl::morphology::defragment(mask);
+                tipl::morphology::dilation_by_radius(mask,15/vs[0]);
+
+                tipl::morphology::dilation(brain_outter_mask);
+                tipl::morphology::dilation(brain_outter_mask);
+                tipl::morphology::smoothing(brain_outter_mask);
+                tipl::morphology::smoothing(brain_outter_mask);
+                tipl::morphology::erosion(brain_outter_mask);
+                tipl::morphology::erosion(brain_outter_mask);
+
+                brain_outter_mask *= mask;
+                mask.resize(unet.eval.fg_prob.shape());
+                tipl::upsample_with_padding(brain_outter_mask,mask);
                 unet.eval.fg_prob = mask;
-                tipl::filter::gaussian(unet.eval.fg_prob);
                 tipl::filter::gaussian(unet.eval.fg_prob);
                 tipl::filter::gaussian(unet.eval.fg_prob);
                 I *= unet.eval.fg_prob;
