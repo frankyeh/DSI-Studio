@@ -1493,7 +1493,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                 prog(p++,region_to_be_processed.size());
                 tipl::image<3,unsigned char> mask;
                 region->save_region_to_buffer(mask);
-                tipl::morphology::dilation2(mask,threshold);
+                tipl::morphology::dilation_by_radius(mask,threshold);
                 region->load_region_from_buffer(mask);
             }
         }
