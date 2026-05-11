@@ -543,8 +543,15 @@
      </property>
      <addaction name="separator"/>
     </widget>
+    <widget class="QMenu" name="menuDeface">
+     <property name="title">
+      <string>Deface</string>
+     </property>
+     <addaction name="separator"/>
+    </widget>
     <addaction name="menuBrain_Extraction"/>
     <addaction name="menuSegmentation"/>
+    <addaction name="menuDeface"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Edit"/>
