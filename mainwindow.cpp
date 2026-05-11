@@ -960,7 +960,7 @@ void MainWindow::on_batch_reconstruction_clicked()
 void MainWindow::on_view_image_clicked()
 {
     QStringList filename = tipl::qt::open_image_files(this,ui->workDir->currentText(),
-                                           "image files (*.nii *nii.gz *.dcm *.nhdr *.nrrd 2dseq *.fz *.dz *fib.gz *.sz *src.gz *.nz)");
+                                           "image files (*.nii *nii.gz *.dcm *.nhdr *.nrrd 2dseq);;All files (*)");
     if(filename.isEmpty())
         return;
     add_work_dir(QFileInfo(filename[0]).absolutePath());
