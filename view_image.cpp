@@ -471,6 +471,7 @@ view_image::view_image(QWidget *parent) :
     {
         ui->menuBrain_Extraction->addAction(addSubMenuItem("brain_extraction",std::filesystem::path(each2).filename().string()));
         ui->menuSegmentation->addAction(addSubMenuItem("segmentation",std::filesystem::path(each2).filename().string()));
+        ui->menuDeface->addAction(addSubMenuItem("deface",std::filesystem::path(each2).filename().string()));
     }
 
     ui->tabWidget->setCurrentIndex(0);
