@@ -436,24 +436,40 @@ view_image::view_image(QWidget *parent) :
         QAction* new_float = menu.addAction("New Float");
         QAction* new_int = menu.addAction("New Int");
         QAction* new_short = menu.addAction("New Short");
-
+        menu.addSeparator();
+        QAction* resize = menu.addAction("Resize");
         QAction* action = menu.exec(ui->info->viewport()->mapToGlobal(pos));
         if(!action)
             return;
-
+        bool result = true;
         bool okay = false;
-        auto name = QInputDialog::getText(this,QApplication::applicationName(),"Input Name",QLineEdit::Normal,"",&okay).toStdString();
-        if(!okay || name.empty())
-            return;
-        auto param = mat[row].name + " " + name;
-        if(action == new_string)
-            command("mat_add_string",param);
-        if(action == new_float)
-            command("mat_add_float",param);
-        if(action == new_int)
-            command("mat_add_int",param);
-        if(action == new_short)
-            command("mat_add_short",param);
+        if(action == resize)
+        {
+            auto values = QInputDialog::getText(this,QApplication::applicationName(),"Input Size",QLineEdit::Normal,
+                                            QString("%1 %2").arg(mat[row].rows).arg(mat[row].cols),&okay).toStdString();
+            if(!okay || values.empty())
+                return;
+            std::istringstream in(values);
+            result = command("mat_resize",mat[row].name + " " + values);
+
+        }
+        else
+        {
+            auto name = QInputDialog::getText(this,QApplication::applicationName(),"Input Name",QLineEdit::Normal,"",&okay).toStdString();
+            if(!okay || name.empty())
+                return;
+            auto param = mat[row].name + " " + name;
+            if(action == new_string)
+                result = command("mat_add_string",param);
+            if(action == new_float)
+                result = command("mat_add_float",param);
+            if(action == new_int)
+                result = command("mat_add_int",param);
+            if(action == new_short)
+                result = command("mat_add_short",param);
+        }
+        if(!result && !mat.error_msg.empty())
+            QMessageBox::critical(this,"ERROR",mat.error_msg.c_str());
     });
 
     auto addSubMenuItem = [this](const std::string& cmd,const std::string& model_name)
