@@ -102,9 +102,10 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
 
     // CHECK R2
     std::string check_quality;
+    float outlier_threshold = tipl::outlier_range(db.R2.begin(),db.R2.end()).first;
     for(unsigned int index = 0;index < db.subject_names.size();++index)
     {
-        if(db.R2[index] < 0.5)
+        if(db.R2[index] < outlier_threshold)
         {
             if(check_quality.empty())
                 check_quality = "Poor image quality found found in subject(s): ";
@@ -113,6 +114,7 @@ group_connectometry::group_connectometry(QWidget *parent,std::shared_ptr<group_c
             check_quality += out.str();
         }
     }
+
     selected_count = db.subject_names.size();
     for(const auto& each : db.index_list)
         ui->index_name->addItem(QString::fromStdString(each));
