@@ -975,6 +975,15 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         if(value.empty())
             return mat_reader.error_msg = "please assign value",false;
 
+        if(cmd == "mat_resize")
+        {
+            unsigned int r(0),c(0);
+            std::istringstream(value) >> r >> c;
+            if(r && c)
+                return mat_reader[row].set_row_col(r,c),true;
+            return mat_reader.error_msg = "invalid size: " + value,false;
+        }
+
         if(cmd == "mat_set_name")
             return mat_reader[row].set_name(value),true;
 
