@@ -1188,14 +1188,12 @@ void view_image::on_info_cellDoubleClicked(int row, int column)
 {
     if(!mat.size() || row >= mat.size())
         return;
-    if(column == 1 && mat[row].size() <= 1024 && mat[row].sub_data.empty())
+    if(column == 1 && mat[row].size() <= 16384 && mat[row].sub_data.empty())
     {
         bool okay = false;
-        int max_count = std::min<int>(64,mat[row].size());
-
         auto text = QInputDialog::getMultiLineText(this,QApplication::applicationName(),"Input Content",
                                                    mat[row].is_type<char>()  ? mat[row].get_data<char>() :
-                                                                               mat[row].to_text(max_count).c_str(),&okay);
+                                                                               mat[row].to_text(mat[row].size()).c_str(),&okay);
 
         if(!okay)
             return;
