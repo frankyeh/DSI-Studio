@@ -382,7 +382,7 @@ bool TableKeyEventWatcher::eventFilter(QObject * receiver, QEvent * event)
     return false;
 }
 
-extern std::vector<std::vector<std::string> > unet_list;
+extern std::vector<std::vector<std::string> > unet_path;
 view_image::view_image(QWidget *parent) :
     QMainWindow(parent),
     cur_image(new variant_image),
@@ -482,12 +482,12 @@ view_image::view_image(QWidget *parent) :
         return Item;
     };
 
-    for(auto each : unet_list)
+    for(auto each : unet_path)
         for(auto each2 : each)
     {
-        ui->menuBrain_Extraction->addAction(addSubMenuItem("brain_extraction",std::filesystem::path(each2).filename().string()));
-        ui->menuSegmentation->addAction(addSubMenuItem("segmentation",std::filesystem::path(each2).filename().string()));
-        ui->menuDeface->addAction(addSubMenuItem("deface",std::filesystem::path(each2).filename().string()));
+            ui->menuBrain_Extraction->addAction(addSubMenuItem("brain_extraction",tipl::remove_all_suffix(std::filesystem::path(each2).filename().string())));
+        ui->menuSegmentation->addAction(addSubMenuItem("segmentation",tipl::remove_all_suffix(std::filesystem::path(each2).filename().string())));
+            ui->menuDeface->addAction(addSubMenuItem("deface",tipl::remove_all_suffix(std::filesystem::path(each2).filename().string())));
     }
 
     ui->tabWidget->setCurrentIndex(0);
@@ -1127,7 +1127,7 @@ void view_image::run_action()
     // run u-net
     {
         std::string model_path;
-        for(auto each : unet_list)
+        for(auto each : unet_path)
             for(auto each2 : each)
                 if(tipl::contains(each2,action->text().toStdString()))
                 {
