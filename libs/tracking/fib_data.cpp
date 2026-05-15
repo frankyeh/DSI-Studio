@@ -11,7 +11,6 @@
 #include "cmd/img.hpp"
 
 extern std::vector<std::string> template_name_list,qa_template_list,iso_template_list,t1w_template_list,t2w_template_list,wm_template_list,fib_template_list,tract_template_list;
-extern std::vector<std::vector<std::string> > atlas_file_name_list;
 bool odf_data::read(fib_data& fib)
 {
     if(!odf_map.empty())
@@ -1472,8 +1471,18 @@ void fib_data::set_template_id(size_t new_id)
         atlas_list.clear();
         track_atlas.reset();
         // populate atlas list
-        for(size_t i = 0;i < atlas_file_name_list[template_id].size();++i)
-            add_atlas(atlas_file_name_list[template_id][i]);
+        {
+            std::string species = tipl::split(std::filesystem::path(t1w_template_list[template_id]).filename().stem().string(),'_')[0];
+            std::vector<std::string> atlases;
+            for(const auto& entry : std::filesystem::directory_iterator(
+                     std::filesystem::path(t1w_template_list[template_id]).parent_path()))
+                if(entry.is_regular_file() && tipl::ends_with(entry.path().filename().string(),{".nii",".nii.gz"}) &&
+                    !tipl::begins_with(entry.path().filename().string(),species + "_")) // exclude those start with [species]_
+                    atlases.push_back(entry.path().string());
+            std::sort(atlases.begin(),atlases.end());
+            for(auto& each : atlases)
+                add_atlas(each);
+        }
         // populate other modality name
         t1w_template_file_name = t1w_template_list[template_id];
         t2w_template_file_name = t2w_template_list[template_id];
