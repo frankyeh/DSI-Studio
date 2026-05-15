@@ -201,7 +201,8 @@ bool src_data::mask_from_template(void)
     apply_mask = true;
     return true;
 }
-extern std::vector<std::vector<std::string> > unet_list;
+extern std::vector<std::vector<std::string> > unet_path;
+bool download_unet_model(const std::string& name,std::string& path);
 bool src_data::mask_from_unet(void)
 {
     std::vector<tipl::image<3> > b0;
@@ -209,17 +210,16 @@ bool src_data::mask_from_unet(void)
         return false;
     tipl::filter::gaussian(b0[0]);
     std::string model_file_name;
-    if(voxel.template_id < unet_list.size())
-        for(const auto& each : unet_list[voxel.template_id])
+    if(voxel.template_id < unet_path.size())
+        for(const auto& each : unet_path[voxel.template_id])
         {
             if(tipl::ends_with(each,"tissue_T2w.nz"))
             {
-                model_file_name = each;
+                if(!download_unet_model(tipl::remove_all_suffix(std::filesystem::path(each).filename().string()),model_file_name))
+                    return  error_msg = model_file_name,false;
                 break;
             }
         }
-    if(!std::filesystem::exists(model_file_name))
-        return error_msg = "no applicable unet model for generating a mask",false;
     tipl::progress p("generating a mask using unet",true);
     tipl::ml3d::tissue_seg unet;
     if(!unet.load_model<tipl::io::gz_mat_read>(model_file_name) ||
