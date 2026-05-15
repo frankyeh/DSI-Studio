@@ -319,7 +319,6 @@ void get_devices_statistics(std::shared_ptr<fib_data> handle,const std::vector<s
 void get_tract_statistics(std::shared_ptr<fib_data> handle,
                           const std::vector<std::shared_ptr<TractModel> >& tract_models,
                           std::string& result);
-extern std::vector<std::vector<std::string> > atlas_file_name_list;
 bool RegionTableWidget::command(std::vector<std::string> cmd)
 {
     auto run = cur_tracking_window.history.record(error_msg,cmd);
@@ -728,11 +727,11 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         size_t template_id,atlas_id;
         std::string region_label;
         std::istringstream(cmd[1]) >> template_id >> atlas_id >> region_label;
-        if(template_id >= atlas_file_name_list.size() || atlas_id >= atlas_file_name_list[template_id].size())
-            return run->failed("invalid index " + cmd[1]);
 
-        if(template_id != cur_tracking_window.handle->template_id)
-            cur_tracking_window.handle->set_template_id(template_id);
+        cur_tracking_window.handle->set_template_id(template_id);
+
+        if(atlas_id >= cur_tracking_window.handle->atlas_list.size())
+            return run->failed("invalid atlas index " + cmd[1]);
 
         auto at = cur_tracking_window.handle->atlas_list[atlas_id];
 
