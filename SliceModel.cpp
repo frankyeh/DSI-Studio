@@ -17,13 +17,13 @@
 #include "fib_data.hpp"
 
 
-bool download_unet_model(const std::string& url,
+bool download_file(const std::string& url,
                          const std::string& local_path,
                          std::string& error_msg)
 {
     if(!tipl::begins_with(url,"http") || std::filesystem::exists(local_path))
         return true;
-    tipl::progress p("downloading model from " + url,true);
+    tipl::progress p("downloading " + std::filesystem::path(url).filename().string(),true);
     namespace fs = std::filesystem;
     fs::create_directories(fs::path(local_path).parent_path());
 
@@ -60,6 +60,23 @@ bool download_unet_model(const std::string& url,
 
     fs::rename(tmp,local_path);
     return true;
+}
+
+extern std::vector<std::vector<std::string> > unet_path,unet_http;
+bool download_unet_model(const std::string& name,std::string& path)
+{
+    for(size_t id = 0;id < unet_path.size();++id)
+        for(size_t i = 0;i < unet_path[id].size();++i)
+            if(name == tipl::remove_all_suffix(std::filesystem::path(unet_path[id][i]).filename().string()))
+            {
+                std::string error_msg;
+                if(!download_file(unet_http[id][i],unet_path[id][i],path))
+                    return false;
+                path = unet_path[id][i];
+                return true;
+            }
+    path = "cannot download model";
+    return false;
 }
 
 
