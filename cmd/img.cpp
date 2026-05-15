@@ -4,7 +4,8 @@
 #include <QTextStream>
 #include "img.hpp"
 std::map<std::string,std::string> dicom_dictionary;
-extern std::vector<std::vector<std::string> > unet_list;
+extern std::vector<std::vector<std::string> > unet_path;
+bool download_unet_model(const std::string& name,std::string& path);
 void correct_bias_field(tipl::image<3> I,
                         tipl::image<3,unsigned char> mask,
                         tipl::image<3>& log_bias_field,
@@ -61,8 +62,10 @@ bool variant_image::command(std::string cmd,std::string param1)
             unet.eval.mask = brain_outter_mask;
             nii.apply_flip_swap_seq(unet.eval.mask);
             nii.apply_flip_swap_seq(J);
-            if(!unet.load_model<tipl::io::gz_mat_read>(param1) ||
-                !unet.forward(std::move(J),vs))
+
+            if(!download_unet_model(tipl::remove_all_suffix(std::filesystem::path(param1).filename().string()),unet.error_msg) ||
+               !unet.load_model<tipl::io::gz_mat_read>(unet.error_msg) ||
+               !unet.forward(std::move(J),vs))
                 return tipl::error() << unet.error_msg,result = false,void();
 
 
@@ -572,7 +575,7 @@ int img(tipl::program_option<tipl::out>& po)
                 if(param.empty())
                 {
                     tipl::out() << "please specify model name using --model=[model file path], available models:";
-                    for(auto each : unet_list)
+                    for(auto each : unet_path)
                         for(auto each2 : each)
                             tipl::out() << std::filesystem::path(each2).filename().string();
                     return 0;
