@@ -43,7 +43,7 @@ bool download_file(const std::string& url,
     QObject::connect(reply,&QNetworkReply::downloadProgress,
                      [&](qint64 r,qint64 t){received = r; total = t > 0 ? t : r+1;});
 
-    while(!reply->isFinished() && p(received,total))
+    while(!reply->isFinished() && p(received >> 10,(total >> 10) + 1))
         QApplication::processEvents();
 
     out.write(reply->readAll());
@@ -439,40 +439,9 @@ bool CustomSliceModel::load_slices(void)
                     return false;
             }
             else
-            {
-                QNetworkAccessManager manager;
-                QNetworkRequest request;
-                auto url = QString::fromStdString(source_file_name);
-                request.setUrl(url);
-                request.setRawHeader("Accept", "application/json");
-                if(!access_token.isEmpty() && url.contains("restricted"))
-                    request.setRawHeader("Authorization",QString("token %1").arg(access_token).toUtf8());
-                auto reply = QSharedPointer<QNetworkReply>(manager.get(request),
-                        [](QNetworkReply* r)
-                        {
-                            if(r->isRunning())
-                                r->abort();
-                            r->deleteLater();
-                        });
-                while (!reply->isFinished() && p(reply->bytesAvailable(),
-                                                 reply->bytesAvailable()+1))
-                    QApplication::processEvents();
-                if(p.aborted())
-                {
-                    error_msg = "download aborted";
+                if(!download_file(source_file_name,path.string(),error_msg))
                     return false;
-                }
-                if (reply->error() == QNetworkReply::NoError)
-                {
-                    auto file = std::make_shared<QFile>(path.string().c_str());
-                    if (!file->open(QFile::WriteOnly))
-                    {
-                        error_msg = "failed to save file with the fib file";
-                        return false;
-                    }
-                    file->write(reply->readAll());
-                }
-            }
+
         }
         if(!std::filesystem::exists(path.string()))
         {
