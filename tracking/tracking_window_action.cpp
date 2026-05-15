@@ -17,7 +17,9 @@
 #include "devicetablewidget.h"
 #include "libs/tracking/tracking_thread.hpp"
 
-extern std::vector<std::vector<std::string> > unet_list,unet_version_list;
+
+extern std::vector<std::vector<std::string> > unet_path,unet_names;
+bool download_unet_model(const std::string& name,std::string& path);
 extern std::vector<std::string> template_name_list;
 std::string show_info_dialog(const std::string& title,
                              const std::string& result,
@@ -282,19 +284,17 @@ bool tracking_window::command(std::vector<std::string> cmd)
             bool is_t1 = tipl::contains_case_insensitive(new_slice->get_name(),{"t1","mpr"});
             bool is_t2 = tipl::contains_case_insensitive(new_slice->get_name(),{"t2","tse"});
             bool is_flair = tipl::contains_case_insensitive(new_slice->get_name(),{"flair","t2f"});
-            for(size_t i = 0;i < unet_list[handle->template_id].size();++i)
+            for(size_t i = 0;i < unet_path[handle->template_id].size();++i)
             {
-                const auto& each = unet_list[handle->template_id][i];
-                auto file_name = tipl::remove_all_suffix(std::filesystem::path(each).filename().string());
+                auto file_name = tipl::remove_all_suffix(std::filesystem::path(unet_path[handle->template_id][i]).filename().string());
                 if(tipl::contains_case_insensitive(file_name,"t1") && !is_t1)
                     continue;
                 if(tipl::contains_case_insensitive(file_name,"t2") && !is_t2)
                     continue;
                 if(tipl::contains_case_insensitive(file_name,"flair") && !is_flair)
                     continue;
-                if(!unet_version_list[handle->template_id][i].empty())
-                    file_name += "(" + unet_version_list[handle->template_id][i] + ")";
-                ui->menuSegment->addAction(addSubMenuItem(each,file_name,"run segment_brain"));
+                ui->menuSegment->addAction(addSubMenuItem(file_name,unet_names[handle->template_id][i],"run segment_brain"));
+
             }
         }
 
@@ -312,7 +312,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
         tipl::ml3d::tissue_seg unet;
         tipl::progress prog(cmd[0],true);
 
-        if(!unet.load_model<tipl::io::gz_mat_read>(cmd[1]))
+        std::string path;
+        if(!download_unet_model(cmd[1],path) || !unet.load_model<tipl::io::gz_mat_read>(path))
             return run->failed(unet.error_msg);
 
 
