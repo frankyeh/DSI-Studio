@@ -25,7 +25,6 @@
 std::string device_content_file,topup_param_file;
 std::vector<std::string> template_name_list,qa_template_list,iso_template_list,t1w_template_list,t2w_template_list,wm_template_list,fib_template_list,tract_template_list;
 std::vector<std::vector<std::string> > unet_http,unet_path,unet_names;
-std::vector<std::vector<std::string> > atlas_file_name_list;
 
 
 class CustomSliceModel;
@@ -192,18 +191,6 @@ bool load_file_name(void)
         t2w_template_list.push_back((atlas_dir/species/(species+"_T2w.nii.gz")).string());
         wm_template_list.push_back((atlas_dir/species/(species+"_WM.nii.gz")).string());
 
-
-        // find all atlases under atlas/[species]
-        {
-            std::vector<std::string> atlas_list;
-            for(const auto& entry : fs::directory_iterator(atlas_dir/species))
-                if(entry.is_regular_file() && tipl::ends_with(entry.path().filename().string(),{".nii",".nii.gz"}) &&
-                   !tipl::begins_with(entry.path().filename().string(),species + "_")) // exclude those start with [species]_
-                    atlas_list.push_back(entry.path().string());
-
-            std::sort(atlas_list.begin(),atlas_list.end());
-            atlas_file_name_list.push_back(std::move(atlas_list));
-        }
 
         // find all unet models under unet/
 
