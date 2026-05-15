@@ -8,6 +8,7 @@
 #include <QLocalSocket>
 #include <QMessageBox>
 #include <QStyleFactory>
+#include <QStandardPaths>
 #include <QFileInfo>
 #include <QDir>
 #include <QImageReader>
@@ -23,7 +24,7 @@
 
 std::string device_content_file,topup_param_file;
 std::vector<std::string> template_name_list,qa_template_list,iso_template_list,t1w_template_list,t2w_template_list,wm_template_list,fib_template_list,tract_template_list;
-std::vector<std::vector<std::string> > unet_list,unet_version_list;
+std::vector<std::vector<std::string> > unet_http,unet_path,unet_names;
 std::vector<std::vector<std::string> > atlas_file_name_list;
 
 
@@ -207,26 +208,53 @@ bool load_file_name(void)
         // find all unet models under unet/
 
         {
-            std::vector<std::string> model_list;
-            for(const auto& entry : fs::directory_iterator(unet_dir))
-            {
-                if(entry.is_regular_file() && tipl::ends_with(entry.path().filename().string(),{".nz"}) &&
-                   tipl::begins_with(entry.path().filename().string(),species + "_"))
-                    model_list.push_back(entry.path().string());
+            std::vector<std::string> http_list,path_list,name_list;
 
+            fs::path readme = fs::path(unet_dir)/"README.md";
+            fs::path local_dir = QStandardPaths::writableLocation(
+                                     QStandardPaths::AppLocalDataLocation).toStdString();
+            local_dir /= "unet";
+            fs::create_directories(local_dir);
+
+            auto time = [](const fs::path& p)
+            {
+                std::error_code ec;
+                auto t = fs::last_write_time(p,ec);
+                return ec ? fs::file_time_type::min() : t;
+            };
+
+            auto readme_time = time(readme);
+            auto species_prefix = tipl::to_lower(species) + "_";
+
+            for(auto line : tipl::read_text_file(readme.string()))
+            {
+                if(std::count(line.begin(),line.end(),'|') != 4 ||
+                    !tipl::contains(line,".nz") || !tipl::contains(line,"https"))
+                    continue;
+
+                auto col = tipl::split(line,'|');
+                auto name = tipl::trim_space(col[1]);
+                auto link = tipl::trim_space(col[3]);
+                auto b = link.find("https");
+                auto e = link.find(')',b);
+                auto url = link.substr(b,e-b);
+                auto nz = fs::path(url).filename().string();
+
+                if(!tipl::begins_with(tipl::to_lower(nz),species_prefix))
+                    continue;
+
+                fs::path local_nz = local_dir/nz;
+                if(fs::exists(local_nz) && time(local_nz) <= readme_time)
+                    fs::remove(local_nz);
+
+                http_list.push_back(url);
+                path_list.push_back(local_nz.string());
+                name_list.push_back(name);
             }
 
-            std::sort(model_list.begin(),model_list.end());
-            std::vector<std::string> version_list;
-            for(const auto& entry : model_list)
-            {
-                version_list.push_back("UNet-Studio");
-                if(std::filesystem::exists(tipl::remove_all_suffix(entry)+".license.txt"))
-                    (std::ifstream(tipl::remove_all_suffix(entry)+".license.txt")) >> version_list.back();
-            }
-
-            unet_list.push_back(std::move(model_list));
-            unet_version_list.push_back(std::move(version_list));
+            unet_http.push_back(std::move(http_list));
+            unet_path.push_back(std::move(path_list));
+            unet_names.push_back(std::move(name_list));
         }
     }
 
@@ -245,7 +273,7 @@ void check_cuda(std::string& error_msg);
 bool init_application(void)
 {
     QCoreApplication::setOrganizationName("LabSolver");
-    QCoreApplication::setApplicationName(QString("DSI Studio ") + version_string);
+    QCoreApplication::setApplicationName("DSI Studio");
 
     if(tipl::show_prog)
     {
