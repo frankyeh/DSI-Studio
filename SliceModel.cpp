@@ -16,6 +16,53 @@
 #include "SliceModel.h"
 #include "fib_data.hpp"
 
+
+bool download_unet_model(const std::string& url,
+                         const std::string& local_path,
+                         std::string& error_msg)
+{
+    if(!tipl::begins_with(url,"http") || std::filesystem::exists(local_path))
+        return true;
+    tipl::progress p("downloading model from " + url,true);
+    namespace fs = std::filesystem;
+    fs::create_directories(fs::path(local_path).parent_path());
+
+    auto tmp = local_path + ".download";
+    fs::remove(tmp);
+
+    QFile out(QString::fromStdString(tmp));
+    if(!out.open(QFile::WriteOnly))
+        return error_msg = "failed to save " + tmp,false;
+
+    QNetworkAccessManager manager;
+    QNetworkRequest req{QUrl(QString::fromStdString(url))};
+    auto* reply = manager.get(req);
+
+    qint64 received = 0,total = 1;
+    QObject::connect(reply,&QNetworkReply::readyRead,[&]{out.write(reply->readAll());});
+    QObject::connect(reply,&QNetworkReply::downloadProgress,
+                     [&](qint64 r,qint64 t){received = r; total = t > 0 ? t : r+1;});
+
+    while(!reply->isFinished() && p(received,total))
+        QApplication::processEvents();
+
+    out.write(reply->readAll());
+    out.close();
+
+    bool ok = !p.aborted() && reply->error() == QNetworkReply::NoError;
+    if(!ok)
+        error_msg = p.aborted() ? "download aborted" : reply->errorString().toStdString();
+
+    reply->deleteLater();
+
+    if(!ok)
+        return fs::remove(tmp),false;
+
+    fs::rename(tmp,local_path);
+    return true;
+}
+
+
 SliceModel::SliceModel(std::shared_ptr<fib_data> new_handle,std::shared_ptr<slice_model> new_view):
     handle(new_handle),view(new_view)
 {
