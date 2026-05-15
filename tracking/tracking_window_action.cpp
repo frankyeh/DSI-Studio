@@ -378,23 +378,24 @@ bool tracking_window::command(std::vector<std::string> cmd)
                         return tipl::rgb(clamp(r + dr),clamp(g + dg),clamp(b + db),a);
                     };
 
-                    if(tipl::contains_case_insensitive(n,{"white"}))                     return color(238,238,232,35);
+                    if(tipl::contains_case_insensitive(n,{"white","wm"}))                return color(238,238,232,35);
                     if(tipl::contains_case_insensitive(n,{"stem"}))                      return color(220,220,210,80);
-                    if(tipl::contains_case_insensitive(n,{"gray","cortex"}))             return color(180,175,175,55);
-                    if(tipl::contains_case_insensitive(n,{"thalamus"}))                  return color(110,125,140,128);
-                    if(tipl::contains_case_insensitive(n,{"hipp"}))                      return color(95,135,115,128);
-                    if(tipl::contains_case_insensitive(n,{"amyg"}))                      return color(125,105,130,128);
-                    if(tipl::contains_case_insensitive(n,{"caudate"}))                   return color(130,145,105,128);
-                    if(tipl::contains_case_insensitive(n,{"putamen"}))                   return color(145,135,100,128);
-                    if(tipl::contains_case_insensitive(n,{"accu"}))                      return color(120,150,120,128);
-                    if(tipl::contains_case_insensitive(n,{"pallidum"}))                  return color(155,130,100,128);
-                    if(tipl::contains_case_insensitive(n,{"basal","sub"}))               return color(150,135,105,128);
-                    if(tipl::contains_case_insensitive(n,{"vent"}))                      return color(95,135,165,180);
+                    if(tipl::contains_case_insensitive(n,{"gray","gm","cortex"}))        return color(180,175,175,55);
+                    if(tipl::contains_case_insensitive(n,{"thal"}))                      return color(110,125,140,228);
+                    if(tipl::contains_case_insensitive(n,{"hipp"}))                      return color(95,135,115,228);
+                    if(tipl::contains_case_insensitive(n,{"amyg"}))                      return color(125,105,130,228);
+                    if(tipl::contains_case_insensitive(n,{"caud"}))                      return color(130,145,105,228);
+                    if(tipl::contains_case_insensitive(n,{"put"}))                       return color(145,135,100,228);
+                    if(tipl::contains_case_insensitive(n,{"accu"}))                      return color(120,150,120,228);
+                    if(tipl::contains_case_insensitive(n,{"pal"}))                       return color(155,130,100,228);
+                    if(tipl::contains_case_insensitive(n,{"basal","sub"}))               return color(150,135,105,228);
+                    if(tipl::contains_case_insensitive(n,{"vent"}))                      return color(95,135,165,70);
                     if(tipl::contains_case_insensitive(n,{"csf"}))                       return color(120,160,180,70);
                     if(tipl::contains_case_insensitive(n,{"edema"}))                     return color(125,175,160,128);
-                    if(tipl::contains_case_insensitive(n,{"tumor"}))                     return color(185,115,105,150);
+                    if(tipl::contains_case_insensitive(n,{"tumor","nor"}))               return color(185,115,105,200);
+                    if(tipl::contains_case_insensitive(n,{"vas"}))                       return color(185,50,50,128);
                     if(tipl::contains_case_insensitive(n,{"necro"}))                     return color(85,75,70,200);
-                    if(tipl::contains_case_insensitive(n,{"other"}))                     return color(200,210,215,15);
+                    if(tipl::contains_case_insensitive(n,{"other","head","skull","dura"}))      return color(200,210,215,15);
 
                     return color(255,255,255,255);
                 };
