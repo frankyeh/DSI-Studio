@@ -18,7 +18,7 @@
 #include "libs/tracking/tracking_thread.hpp"
 
 
-extern std::vector<std::vector<std::string> > unet_path,unet_names;
+extern std::vector<std::vector<std::string> > unet_path,unet_names,unet_desc;
 bool download_unet_model(const std::string& name,std::string& path);
 extern std::vector<std::string> template_name_list;
 std::string show_info_dialog(const std::string& title,
@@ -295,7 +295,21 @@ bool tracking_window::command(std::vector<std::string> cmd)
                     continue;
                 ui->menuSegment->addAction(addSubMenuItem(file_name,unet_names[handle->template_id][i],"run segment_brain"));
 
+                connect(ui->menuSegment, &QMenu::hovered, this, [&](QAction *action)
+                {
+                    if(!action)
+                        return;
+                    auto name = action->data().toString().toStdString();
+                    for(size_t id = 0;id < unet_path.size();++id)
+                        for(size_t i = 0;i < unet_path[id].size();++i)
+                            if(name == tipl::remove_all_suffix(std::filesystem::path(unet_path[id][i]).filename().string()))
+                            {
+                                QToolTip::showText(QCursor::pos(),unet_desc[id][i].c_str(),ui->menuSegment,ui->menuSegment->actionGeometry(action));
+                                return;
+                            }
+                });
             }
+
         }
 
 
