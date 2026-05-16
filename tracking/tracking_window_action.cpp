@@ -287,13 +287,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
             for(size_t i = 0;i < unet_path[handle->template_id].size();++i)
             {
                 auto file_name = tipl::remove_all_suffix(std::filesystem::path(unet_path[handle->template_id][i]).filename().string());
-                if(tipl::contains_case_insensitive(file_name,"t1") && !is_t1)
-                    continue;
-                if(tipl::contains_case_insensitive(file_name,"t2") && !is_t2)
-                    continue;
-                if(tipl::contains_case_insensitive(file_name,"flair") && !is_flair)
-                    continue;
-                ui->menuSegment->addAction(addSubMenuItem(file_name,unet_names[handle->template_id][i],"run segment_brain"));
+                QAction* added_action;
+                ui->menuSegment->addAction(added_action = addSubMenuItem(file_name,unet_names[handle->template_id][i],"run segment_brain"));
 
                 connect(ui->menuSegment, &QMenu::hovered, this, [&](QAction *action)
                 {
@@ -304,10 +299,26 @@ bool tracking_window::command(std::vector<std::string> cmd)
                         for(size_t i = 0;i < unet_path[id].size();++i)
                             if(name == tipl::remove_all_suffix(std::filesystem::path(unet_path[id][i]).filename().string()))
                             {
-                                QToolTip::showText(QCursor::pos(),unet_desc[id][i].c_str(),ui->menuSegment,ui->menuSegment->actionGeometry(action));
+                                QToolTip::showText(QCursor::pos(),("<p>"+unet_desc[id][i]+"</p>").c_str(),ui->menuSegment,ui->menuSegment->actionGeometry(action));
                                 return;
                             }
                 });
+
+                if(tipl::contains_case_insensitive(file_name,"t1") && !is_t1)
+                {
+                    added_action->setText("(need T1w)" + added_action->text());
+                    added_action->setEnabled(false);
+                }
+                if(tipl::contains_case_insensitive(file_name,"t2") && !is_t2)
+                {
+                    added_action->setText("(need T2w)" + added_action->text());
+                    added_action->setEnabled(false);
+                }
+                if(tipl::contains_case_insensitive(file_name,"flair") && !is_flair)
+                {
+                    added_action->setText("(need FLAIR)" + added_action->text());
+                    added_action->setEnabled(false);
+                }
             }
 
         }
