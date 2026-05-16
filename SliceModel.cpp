@@ -75,7 +75,7 @@ bool download_unet_model(const std::string& name,std::string& path)
                 path = unet_path[id][i];
                 return true;
             }
-    path = "cannot download model";
+    path = "cannot find model: " + name;
     return false;
 }
 
