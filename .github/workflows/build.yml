@@ -153,38 +153,40 @@ jobs:
     if: ${{ github.event.inputs.build_mac == 'true' }}
     strategy:
       matrix:
-        os: [macos-14,macos-15]
+        os: [macos-14, macos-15]
       fail-fast: false
     runs-on: ${{ matrix.os }}
-    env:
-      CFLAGS: -Werror
     steps:
-    - uses: actions/checkout@v4.1.1
-    - name: Download Build
-      run: |
-        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git  
-        mv DSI-Studio-Build/*.txt .
-        mv DSI-Studio-Build/build_packages/build_mac.sh .
-    - name: brew update
-      run: |
-        brew update
-        brew uninstall cmake
-        brew install cmake
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v4.1.1
-      with:
-        version: 6.8    
-        modules: qtcharts
-        cache: true
-    - name: Build DSI Studio
-      run: |
-        sh build_mac.sh ${{ matrix.os }}
-        zip -r dsi_studio_${{ matrix.os }}_qt6.zip dsi_studio.app
-    - name: Create Release
-      env:
-        GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
-      run: |
-        gh release upload ${{ github.event.inputs.tag }} *.zip --clobber 
+      - uses: actions/checkout@v4
+  
+      - name: Download Build
+        run: |
+          git clone --depth 1 https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
+          mv DSI-Studio-Build/*.txt .
+          mv DSI-Studio-Build/build_packages/build_mac.sh .
+  
+      - name: Check tools
+        run: |
+          cmake --version
+          ninja --version || brew install ninja
+  
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: 6.8
+          modules: qtcharts
+          cache: true
+  
+      - name: Build DSI Studio
+        run: |
+          sh build_mac.sh ${{ matrix.os }}
+          ditto -c -k --sequesterRsrc --keepParent dsi_studio.app dsi_studio_${{ matrix.os }}_qt6.zip
+  
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
+        run: |
+          gh release upload ${{ github.event.inputs.tag }} *.zip --clobber
 
 
   docker_build:
