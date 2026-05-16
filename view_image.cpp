@@ -1191,10 +1191,12 @@ void view_image::on_info_cellDoubleClicked(int row, int column)
     if(column == 1 && mat[row].size() <= 16384 && mat[row].sub_data.empty())
     {
         bool okay = false;
-        auto text = QInputDialog::getMultiLineText(this,QApplication::applicationName(),"Input Content",
-                                                   mat[row].is_type<char>()  ? mat[row].get_data<char>() :
-                                                                               mat[row].to_text(mat[row].size()).c_str(),&okay);
-
+        std::string value;
+        if(mat[row].is_type<char>())
+            mat.read(mat[row].name,value);
+        else
+            value = mat[row].to_text(mat[row].size());
+        auto text = QInputDialog::getMultiLineText(this,QApplication::applicationName(),"Input Content",value.c_str(),&okay);
         if(!okay)
             return;
         command("mat_set_value",mat[row].name+" "+text.toStdString());
