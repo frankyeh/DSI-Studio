@@ -67,7 +67,24 @@ jobs:
         do
           ../dsi-studio/dsi_studio --action=img --source=$f --cmd=change_type:3+normalize_otsu_median+upper_threshold:1+normalize:1+change_type:0 --output=../${f/%.nii/.nii.gz}
         done
-       
+        
+  test-image-processing:
+    needs: linux-build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup Environment
+      run: |
+       curl -sL https://github.com/data-openneuro/brain/releases/download/ds000113/sub-01_ses-forrestgump_T1w.nii.gz -o sub-01_ses-forrestgump_T1w.nii.gz
+       curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_prerelease.zip" | jar x
+       chmod 777 ./dsi-studio/dsi_studio       
+    - name: Image Processing
+      run: |
+       ./dsi-studio/dsi_studio --action=img --source=sub-01_ses-forrestgump_T1w.nii.gz --cmd=change_type:3+bias_field_correction+normalize_otsu_median+change_type:0 --output=sub-01_ses-forrestgump_T1w_norm.nii.gz      
+       ls sub-01_ses-forrestgump_T1w_norm.nii.gz
+    - name: Image Segmentation
+      run: |
+       ./dsi-studio/dsi_studio --action=img --source=sub-01_ses-forrestgump_T1w.nii.gz --cmd=segmentation --output=sub-01_ses-forrestgump_T1w_seg.nii.gz --model=human_synthseg      
+       ls sub-01_ses-forrestgump_T1w_seg.nii.gz
        
   test-bids:
     needs: linux-build
