@@ -156,6 +156,7 @@ jobs:
         os: [macos-14, macos-15]
       fail-fast: false
     runs-on: ${{ matrix.os }}
+    
     steps:
       - uses: actions/checkout@v4
   
@@ -164,6 +165,9 @@ jobs:
           git clone --depth 1 https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
           mv DSI-Studio-Build/*.txt .
           mv DSI-Studio-Build/build_packages/build_mac.sh .
+          
+      - name: Install ccache
+        run: brew install ccache
   
       - name: Check tools
         run: |
