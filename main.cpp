@@ -24,7 +24,7 @@
 
 std::string device_content_file,topup_param_file;
 std::vector<std::string> template_name_list,qa_template_list,iso_template_list,t1w_template_list,t2w_template_list,wm_template_list,fib_template_list,tract_template_list;
-std::vector<std::vector<std::string> > unet_http,unet_path,unet_names;
+std::vector<std::vector<std::string> > unet_http,unet_path,unet_desc,unet_names;
 
 
 class CustomSliceModel;
@@ -195,7 +195,7 @@ bool load_file_name(void)
         // find all unet models under unet/
 
         {
-            std::vector<std::string> http_list,path_list,name_list;
+            std::vector<std::string> http_list,path_list,desc_list,name_list;
 
             fs::path readme = fs::path(unet_dir)/"README.md";
             fs::path local_dir = QStandardPaths::writableLocation(
@@ -237,11 +237,13 @@ bool load_file_name(void)
                 http_list.push_back(url);
                 path_list.push_back(local_nz.string());
                 name_list.push_back(name);
+                desc_list.push_back(col[2]);
             }
 
             unet_http.push_back(std::move(http_list));
             unet_path.push_back(std::move(path_list));
             unet_names.push_back(std::move(name_list));
+            unet_desc.push_back(std::move(desc_list));
         }
     }
 
