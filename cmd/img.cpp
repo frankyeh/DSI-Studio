@@ -44,10 +44,6 @@ bool variant_image::command(std::string cmd,std::string param1)
 
         if(cmd == "brain_extraction" || cmd == "segmentation" || cmd == "deface")
         {
-            if(!std::filesystem::exists(param1))
-                return tipl::error() << "model does not exist: " << param1,result = false,void();
-
-
             tipl::image<3,unsigned char> brain_outter_mask;
             tipl::threshold(I,brain_outter_mask,0);
             tipl::morphology::defragment(brain_outter_mask);
