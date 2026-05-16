@@ -573,7 +573,7 @@ int img(tipl::program_option<tipl::out>& po)
                     tipl::out() << "please specify model name using --model=[model file path], available models:";
                     for(auto each : unet_path)
                         for(auto each2 : each)
-                            tipl::out() << std::filesystem::path(each2).filename().string();
+                            tipl::out() << tipl::remove_all_suffix(std::filesystem::path(each2).filename().string());
                     return 0;
                 }
 
