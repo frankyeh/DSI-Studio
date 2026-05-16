@@ -177,6 +177,17 @@ jobs:
           version: 6.8
           modules: qtcharts
           cache: true
+
+      - name: Install ccache
+        run: brew install ccache
+  
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: macos-ccache-${{ matrix.os }}-${{ github.ref_name }}
+          restore-keys: |
+            macos-ccache-${{ matrix.os }}-
   
       - name: Build DSI Studio
         run: |
