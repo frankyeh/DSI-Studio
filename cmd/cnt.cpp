@@ -99,11 +99,11 @@ int cnt(tipl::program_option<tipl::out>& po)
 
     {
         tipl::progress prog("connectometry parameters");
-        vbc->no_tractogram = (po.get("no_tractogram",1) == 1);
-        if(!tipl::show_prog && vbc->no_tractogram)
+        vbc->no_tractogram = po.get("no_tractogram",1);
+        if(!tipl::show_prog && vbc->no_tractogram == 0)
         {
             tipl::warning() << "cannot generate tractogram at command line mode. no_tractogram is disabled" ;
-            vbc->no_tractogram = 0;
+            vbc->no_tractogram = 1;
         }
         vbc->region_pruning = (po.get("region_pruning",1) == 1);
         if(!db.is_longitudinal)
