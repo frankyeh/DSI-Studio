@@ -153,10 +153,20 @@ jobs:
     if: ${{ github.event.inputs.build_mac == 'true' }}
     strategy:
       matrix:
-        os: [macos-14, macos-15]
+        include:
+          - runner: macos-14
+            name: macos-14-arm64
+            tiny_fsl: macos-15
+            jobs: 3
+  
+          - runner: macos-15-intel
+            name: macos-15-intel
+            tiny_fsl: macos-13
+            jobs: 4
       fail-fast: false
-    runs-on: ${{ matrix.os }}
-    
+  
+    runs-on: ${{ matrix.runner }}
+  
     steps:
       - uses: actions/checkout@v4
   
@@ -170,6 +180,7 @@ jobs:
         run: |
           cmake --version
           ninja --version || brew install ninja
+          ccache --version || brew install ccache
   
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
@@ -177,22 +188,20 @@ jobs:
           version: 6.8
           modules: qtcharts
           cache: true
-
-      - name: Install ccache
-        run: brew install ccache
   
       - name: Cache ccache
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: macos-ccache-${{ matrix.os }}-${{ github.ref_name }}
+          key: macos-ccache-${{ matrix.name }}-${{ github.ref_name }}
           restore-keys: |
-            macos-ccache-${{ matrix.os }}-
+            macos-ccache-${{ matrix.name }}-
   
       - name: Build DSI Studio
         run: |
-          sh build_mac.sh ${{ matrix.os }}
-          ditto -c -k --sequesterRsrc --keepParent dsi_studio.app dsi_studio_${{ matrix.os }}_qt6.zip
+          sh build_mac.sh "${{ matrix.tiny_fsl }}" "${{ matrix.jobs }}"
+          file dsi_studio.app/Contents/MacOS/dsi_studio
+          ditto -c -k --sequesterRsrc --keepParent dsi_studio.app dsi_studio_${{ matrix.name }}_qt6.zip
   
       - name: Create Release
         env:
