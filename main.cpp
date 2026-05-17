@@ -380,7 +380,6 @@ static const std::unordered_map<std::string, int(*)(tipl::program_option<tipl::o
     {"cnt_cl", cnt},
     {"vis", vis},
     {"ren", ren},
-    {"cnn", cnn},
     {"qc", qc},
     {"reg", reg},
     {"atk", atk},
