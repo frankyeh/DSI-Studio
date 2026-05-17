@@ -153,71 +153,102 @@ jobs:
     if: ${{ github.event.inputs.build_mac == 'true' }}
     strategy:
       matrix:
-        os: [macos-14,macos-15]
+        include:
+          - runner: macos-14
+            name: macos-14-arm64
+            tiny_fsl: macos-15
+            jobs: 3
+  
+          - runner: macos-15-intel
+            name: macos-15-intel
+            tiny_fsl: macos-13
+            jobs: 4
       fail-fast: false
-    runs-on: ${{ matrix.os }}
-    env:
-      CFLAGS: -Werror
+  
+    runs-on: ${{ matrix.runner }}
+  
     steps:
-    - uses: actions/checkout@v4.1.1
-    - name: Download Build
-      run: |
-        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git  
-        mv DSI-Studio-Build/*.txt .
-        mv DSI-Studio-Build/build_packages/build_mac.sh .
-    - name: brew update
-      run: |
-        brew update
-        brew uninstall cmake
-        brew install cmake
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v4.1.1
-      with:
-        version: 6.8    
-        modules: qtcharts
-        cache: true
-    - name: Build DSI Studio
-      run: |
-        sh build_mac.sh ${{ matrix.os }}
-        zip -r dsi_studio_${{ matrix.os }}_qt6.zip dsi_studio.app
-    - name: Create Release
-      env:
-        GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
-      run: |
-        gh release upload ${{ github.event.inputs.tag }} *.zip --clobber 
+      - uses: actions/checkout@v4
+  
+      - name: Download Build
+        run: |
+          git clone --depth 1 https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
+          mv DSI-Studio-Build/*.txt .
+          mv DSI-Studio-Build/build_packages/build_mac.sh .
+  
+      - name: Check tools
+        run: |
+          cmake --version
+          ninja --version || brew install ninja
+          ccache --version || brew install ccache
+  
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: 6.8
+          modules: qtcharts
+          cache: true
+  
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: macos-ccache-${{ matrix.name }}-${{ github.ref_name }}
+          restore-keys: |
+            macos-ccache-${{ matrix.name }}-
+  
+      - name: Build DSI Studio
+        run: |
+          sh build_mac.sh "${{ matrix.tiny_fsl }}" "${{ matrix.jobs }}"
+          file dsi_studio.app/Contents/MacOS/dsi_studio
+          ditto -c -k --sequesterRsrc --keepParent dsi_studio.app dsi_studio_${{ matrix.name }}_qt6.zip
+  
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
+        run: |
+          gh release upload ${{ github.event.inputs.tag }} *.zip --clobber
+
 
   docker_build:
     if: ${{ github.event.inputs.build_docker == 'true' }}
     runs-on: ubuntu-latest
     steps:
-    - name: Download Build
-      run: |
-        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git  
-        mv DSI-Studio-Build/build_packages .
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3.0.0
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3.0.0
-    - name: Login to DockerHub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-    - name: Current Time
-      run: echo "DATE_TAG=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
-    - name: Build and push
-      uses: docker/build-push-action@v5.1.0
-      with:
-        context: .
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        build-args: |
-          DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}               
-        file: build_packages/docker/Dockerfile
-        push: true
-        tags: |
-          "dsistudio/dsistudio:hou-${{ env.DATE_TAG }}"
-          dsistudio/dsistudio:latest
+  
+      - name: Download Build
+        run: |
+          git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
+          mv DSI-Studio-Build/build_packages .
+  
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+  
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+  
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+  
+      - name: Current Time
+        run: echo "DATE_TAG=$(date '+%Y-%m-%d')" >> $GITHUB_ENV
+  
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: build_packages/docker/Dockerfile
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            DSISTUDIO_TOKEN=${{ secrets.DSISTUDIO_TOKEN }}
+            CACHE_BUST=${{ github.run_id }}-${{ github.run_attempt }}
+          tags: |
+            dsistudio/dsistudio:hou-${{ env.DATE_TAG }}
+            dsistudio/dsistudio:latest
 
   windows_build_cpu:
     if: ${{ github.event.inputs.build_windows == 'true' }}
