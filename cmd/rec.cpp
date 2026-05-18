@@ -28,7 +28,7 @@ int rec(tipl::program_option<tipl::out>& po)
         tipl::progress prog("reconstruction parameters");
         src.voxel.method_id = uint8_t(po.get("method",4));
         src.voxel.dti_ignore_high_b = po.get("dti_ignore_high_b",src.is_human_data);
-        src.voxel.other_output = po.get("other_output","fa,rd,rdi");
+        src.voxel.other_output = po.get("other_output","fa,md,rd,rdi");
         src.voxel.thread_count = tipl::max_thread_count;
         if(src.voxel.method_id == 4 or src.voxel.method_id == 7)
         {
