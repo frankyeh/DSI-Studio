@@ -79,7 +79,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>Working Directory</string>
+         <string>Work Dir</string>
         </property>
        </widget>
       </item>
@@ -2786,7 +2786,7 @@ Tractography</string>
               <item>
                <widget class="QLabel" name="tag_date">
                 <property name="text">
-                 <string> </string>
+                 <string/>
                 </property>
                </widget>
               </item>
@@ -3017,6 +3017,9 @@ p, li { white-space: pre-wrap; }
                    </widget>
                   </item>
                   <item>
+                   <widget class="QComboBox" name="github_open_file_mode"/>
+                  </item>
+                  <item>
                    <widget class="QPushButton" name="github_open_file">
                     <property name="styleSheet">
                      <string notr="true">QPushButton {
@@ -3033,9 +3036,6 @@ p, li { white-space: pre-wrap; }
                       <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
                     </property>
                    </widget>
-                  </item>
-                  <item>
-                   <widget class="QComboBox" name="github_open_file_mode"/>
                   </item>
                  </layout>
                 </item>
