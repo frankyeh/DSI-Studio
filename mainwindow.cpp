@@ -9,6 +9,7 @@
 #include <QStyleFactory>
 #include <QNetworkInterface>
 #include <QSysInfo>
+#include <QStandardPaths>
 
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -1629,88 +1630,101 @@ void MainWindow::on_OpenDWI_2dseq_clicked()
 }
 void MainWindow::on_tabWidget_currentChanged(int index)
 {
-    if(index == 4 && !ui->github_tags->rowCount() && !fetch_github)
+    if(index != 4 || ui->github_tags->rowCount() || fetch_github)
+        return;
+    fetch_github = true;
+
+    tipl::progress prog("loading hub content");
+
+    tipl::out() << "loading file list of fiber data hub";
+
+    QFile f(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/fiber_data_hub.json");
+    if(f.open(QFile::ReadOnly))
     {
-        tipl::progress prog("loading hub content",true);
+        auto root = QJsonDocument::fromJson(f.readAll()).object();
 
-        prog(0,3);
-        tipl::out() << "loading file list of fiber data hub";
+        auto d = root["dates"].toObject();
+        for(auto it = d.begin();it != d.end();++it)
+            dates[it.key()] = it.value().toString();
 
-        QFile file_list(QDir::tempPath() + "/fiber_data_hub.json");
-        if(file_list.open(QFile::ReadOnly))
+        auto t = root["tags"].toObject();
+        for(auto it = t.begin();it != t.end();++it)
+            tags[it.key()] = it.value().toArray();
+    }
+
+    tipl::out() << "loading existing hub content";
+
+    QString content = settings.value("hub_content").toString();
+
+    if(info.size() >= 5)
+    {
+        auto reply = get(info[4]);
+
+        if(content.isEmpty())
         {
-            auto root = QJsonDocument::fromJson(file_list.readAll()).object();
-            auto d = root.value("dates").toObject();
-            for(auto it=d.begin(); it!=d.end(); ++it)
-                dates[it.key()] = it.value().toString();
+            tipl::out() << "downloading hub content";
+            QEventLoop loop;
+            connect(reply.get(),&QNetworkReply::finished,&loop,&QEventLoop::quit);
+            loop.exec();
 
-            auto t = root.value("tags").toObject();
-            for(auto it=t.begin(); it!=t.end(); ++it)
-                tags[it.key()] = it.value().toArray();
-        }
-
-        prog(1,3);
-        tipl::out() << "loading existing hub content";
-
-        QString content;
-        if(settings.contains("hub_content"))
-        {
-            content = settings.value("hub_content").toString();
-            if(info.size() >= 5)
-            {
-                tipl::out() << "updating hub content";
-                auto reply = get(info[4]);
-                connect(reply.get(), &QNetworkReply::finished, this, [=]()
-                {
-                    if (reply->error() == QNetworkReply::NoError)
-                    {
-                        settings.setValue("hub_content",QString(reply->readAll()));
-                        settings.sync();
-                    }
-                    reply->deleteLater();
-                });
-            }
+            if(reply->error() == QNetworkReply::NoError)
+                settings.setValue("hub_content",content = QString::fromUtf8(reply->readAll()));
         }
         else
-        if(info.size() >= 5)
-            {
-                tipl::out() << "downloading hub content";
-                auto reply = get(info[4]);
-                while (!reply->isFinished())
-                    qApp->processEvents();
-                settings.setValue("hub_content",content = reply->readAll());
-                settings.sync();
-
-            }
-
-        prog(2,3);
-
-        QStringList lines = content.split('\n');
-        lines.removeFirst();
-        QStringList filteredLines;
-        for (const QString &line : lines) {
-            if (!line.trimmed().startsWith("<img src"))
-                filteredLines.append(line);
-            if(line.startsWith("- "))
-            {
-                QRegularExpression re("\\[([^\\]]+)\\]\\(https://github\\.com/([^/]+/[^/]+)/");
-                QRegularExpressionMatch match = re.match(line);
-                if (match.hasMatch())
-                {
-                    QString label = match.captured(1);     // "HCP lifespan studies"
-                    QString userRepo = match.captured(2);  // "data-hcp/lifespan"
-                    ui->github_repo->addItem(label,userRepo);
-                }
-            }
+        {
+            tipl::out() << "updating hub content";
+            connect(reply.get(),&QNetworkReply::finished,this,[this,reply]()
+                    {
+                        if(reply->error() == QNetworkReply::NoError)
+                            settings.setValue("hub_content",QString::fromUtf8(reply->readAll()));
+                    });
         }
-
-        ui->github_note->setMarkdown(filteredLines.join("\n"));
-        ui->github_note->setReadOnly(true);
-        ui->github_note->setOpenExternalLinks(true);
-        fetch_github = true;
-        on_github_repo_currentIndexChanged(0);
-        prog(3,3);
     }
+
+    QString md,line;
+    md.reserve(content.size());
+
+    QSignalBlocker block(ui->github_repo);
+    QTextStream in(&content);
+    const QString mark = "](https://github.com/";
+
+    for(bool first = true;in.readLineInto(&line);first = false)
+    {
+        if(first)
+            continue;
+
+        int p = 0;
+        while(p < line.size() && line[p].isSpace())
+            ++p;
+        if(line.mid(p).startsWith("<img src"))
+            continue;
+
+        md += line + "\n";
+
+        if(!line.startsWith("- "))
+            continue;
+
+        int m = line.indexOf(mark);
+        if(m < 0)
+            continue;
+
+        int b = line.lastIndexOf('[',m);
+        int r = m + mark.size();
+        int s = line.indexOf('/',r);
+        int e = s < 0 ? -1 : line.indexOf('/',s + 1);
+        if(e < 0 && s >= 0)
+            e = line.indexOf(')',s + 1);
+
+        if(b >= 0 && e > s)
+            ui->github_repo->addItem(line.mid(b + 1,m - b - 1),line.mid(r,e - r));
+    }
+
+    ui->github_note->setMarkdown(md);
+    ui->github_note->setReadOnly(true);
+    ui->github_note->setOpenExternalLinks(true);
+
+    prog(3,3);
+    on_github_repo_currentIndexChanged(0);
 }
 
 QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
@@ -1906,7 +1920,7 @@ void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array,int per_page)
                 for (const auto& pair : tags) tagsObj[pair.first] = pair.second;
                 root["dates"] = datesObj;
                 root["tags"] = tagsObj;
-                QFile file_list(QDir::tempPath() + "/fiber_data_hub.json");
+                QFile file_list(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/fiber_data_hub.json");
                 if (file_list.open(QFile::WriteOnly))
                     file_list.write(QJsonDocument(root).toJson(QJsonDocument::Compact));
             }
@@ -2064,7 +2078,7 @@ void MainWindow::on_github_release_files_itemSelectionChanged()
     if(selectedRows == 1 && ui->github_release_files->currentRow() >= 0)
     {
         auto file_name = ui->github_release_files->item(ui->github_release_files->currentRow(),0)->text();
-        ui->github_open_file->setText(QString("Open %1 at").arg(file_name));
+        ui->github_open_file->setText(QString("Open %1").arg(file_name));
         ui->github_open_file->setVisible(true);
         ui->github_open_file_mode->setVisible(true);
         ui->github_open_file_mode->clear();
@@ -2202,15 +2216,9 @@ void MainWindow::on_github_open_file_clicked()
     auto row = ui->github_release_files->currentRow();
     if(row < 0)
         return;
-    QDir dir(QDir::tempPath() + "/" + cur_tag);
-    if (!dir.exists())
-    {
-        if(!dir.mkpath("."))
-        {
-            QMessageBox::critical(this,"ERROR","cannot create a temporary directory to store file");
-            return;
-        }
-    }
+    QDir dir(QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/" + cur_tag);
+    if (!dir.exists() && !dir.mkpath("."))
+        return QMessageBox::critical(this,"ERROR","cannot create a temporary directory to store file"),void();
 
     QString filePath = dir.path()+ "/" + ui->github_release_files->item(row, 0)->text();
     auto git_open = [this,filePath](void)
