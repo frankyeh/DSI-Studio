@@ -1634,25 +1634,23 @@ void MainWindow::on_tabWidget_currentChanged(int index)
         return;
     fetch_github = true;
 
-    tipl::progress prog("loading hub content");
-
-    tipl::out() << "loading file list of fiber data hub";
-
-    QFile f(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/fiber_data_hub.json");
-    if(f.open(QFile::ReadOnly))
     {
-        auto root = QJsonDocument::fromJson(f.readAll()).object();
+        tipl::progress prog("loading file list of fiber data hub");
+        QFile f(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/fiber_data_hub.json");
+        if(f.open(QFile::ReadOnly))
+        {
+            auto root = QJsonDocument::fromJson(f.readAll()).object();
 
-        auto d = root["dates"].toObject();
-        for(auto it = d.begin();it != d.end();++it)
-            dates[it.key()] = it.value().toString();
+            auto d = root["dates"].toObject();
+            for(auto it = d.begin();it != d.end();++it)
+                dates[it.key()] = it.value().toString();
 
-        auto t = root["tags"].toObject();
-        for(auto it = t.begin();it != t.end();++it)
-            tags[it.key()] = it.value().toArray();
+            auto t = root["tags"].toObject();
+            for(auto it = t.begin();it != t.end();++it)
+                tags[it.key()] = it.value().toArray();
+
+        }
     }
-
-    tipl::out() << "loading existing hub content";
 
     QString content = settings.value("hub_content").toString();
 
@@ -1662,7 +1660,6 @@ void MainWindow::on_tabWidget_currentChanged(int index)
 
         if(content.isEmpty())
         {
-            tipl::out() << "downloading hub content";
             QEventLoop loop;
             connect(reply.get(),&QNetworkReply::finished,&loop,&QEventLoop::quit);
             loop.exec();
@@ -1672,7 +1669,6 @@ void MainWindow::on_tabWidget_currentChanged(int index)
         }
         else
         {
-            tipl::out() << "updating hub content";
             connect(reply.get(),&QNetworkReply::finished,this,[this,reply]()
                     {
                         if(reply->error() == QNetworkReply::NoError)
@@ -1722,8 +1718,6 @@ void MainWindow::on_tabWidget_currentChanged(int index)
     ui->github_note->setMarkdown(md);
     ui->github_note->setReadOnly(true);
     ui->github_note->setOpenExternalLinks(true);
-
-    prog(3,3);
     on_github_repo_currentIndexChanged(0);
 }
 
