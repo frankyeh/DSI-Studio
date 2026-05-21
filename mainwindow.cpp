@@ -1634,24 +1634,6 @@ void MainWindow::on_tabWidget_currentChanged(int index)
         return;
     fetch_github = true;
 
-    {
-        tipl::progress prog("loading file list of fiber data hub");
-        QFile f(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/fiber_data_hub.json");
-        if(f.open(QFile::ReadOnly))
-        {
-            auto root = QJsonDocument::fromJson(f.readAll()).object();
-
-            auto d = root["dates"].toObject();
-            for(auto it = d.begin();it != d.end();++it)
-                dates[it.key()] = it.value().toString();
-
-            auto t = root["tags"].toObject();
-            for(auto it = t.begin();it != t.end();++it)
-                tags[it.key()] = it.value().toArray();
-
-        }
-    }
-
     QString content = settings.value("hub_content").toString();
 
     if(info.size() >= 5)
@@ -1748,10 +1730,23 @@ void MainWindow::on_github_repo_currentIndexChanged(int index)
     QString repo = ui->github_repo->currentData().toString();
     if(tags.find(repo) == tags.end())
     {
-        tags[repo] = QJsonArray();
-        dates[repo] = QString();
-        on_load_tags_clicked();
-        return;
+        QDir().mkpath(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/fiber_data_hub");
+        QFile f(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) +
+                "/fiber_data_hub/" + QString(repo).replace('/','_') + ".json");
+
+        if(f.open(QFile::ReadOnly))
+        {
+            auto root = QJsonDocument::fromJson(f.readAll()).object();
+            dates[repo] = root["date"].toString();
+            tags[repo] = root["tags"].toArray();
+        }
+        else
+        {
+            tags[repo] = QJsonArray();
+            dates[repo] = QString();
+            on_load_tags_clicked();
+            return;
+        }
     }
 
     notes.clear();
@@ -1908,15 +1903,17 @@ void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array,int per_page)
             dates[repo] = QDate::currentDate().toString("yyyy/MM/dd");
 
             {
-                tipl::out() << "saving file list of fiber data hub";
-                QJsonObject root, datesObj, tagsObj;
-                for (const auto& pair : dates) datesObj[pair.first] = pair.second;
-                for (const auto& pair : tags) tagsObj[pair.first] = pair.second;
-                root["dates"] = datesObj;
-                root["tags"] = tagsObj;
-                QFile file_list(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/fiber_data_hub.json");
-                if (file_list.open(QFile::WriteOnly))
-                    file_list.write(QJsonDocument(root).toJson(QJsonDocument::Compact));
+                tipl::out() << "saving file list of " << repo.toStdString();
+                QDir().mkpath(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/fiber_data_hub");
+
+                QJsonObject root;
+                root["date"] = dates[repo];
+                root["tags"] = tags[repo];
+
+                QFile f(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) +
+                        "/fiber_data_hub/" + QString(repo).replace('/','_') + ".json");
+                if(f.open(QFile::WriteOnly))
+                    f.write(QJsonDocument(root).toJson(QJsonDocument::Compact));
             }
 
             if (!array.isEmpty() && repo == ui->github_repo->currentData().toString())
