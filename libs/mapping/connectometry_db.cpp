@@ -457,33 +457,18 @@ bool connectometry_db::create_db(const std::vector<std::string>& file_names,
         return false;
     tipl::progress prog("create database",true);
     if(has_db())
-    {
-        handle->error_msg = "cannot create database from a database file " + handle->fib_file_name;
-        return false;
-    }
+        return handle->error_msg = "cannot create database from a database file " + handle->fib_file_name,false;
     if(!handle->is_mni)
-    {
-        handle->error_msg = "invalid template. not a QSDR FIB file: " + handle->fib_file_name;
-        return false;
-    }
+        return handle->error_msg = "invalid template. not a QSDR FIB file: " + handle->fib_file_name,false;
     if(handle->mat_reader.si2vi.empty())
-    {
-        handle->error_msg = "invalid mask";
-        return false;
-    }
+        return handle->error_msg = "invalid mask",false;
     init_db();
     fib_data fib;
     if(!fib.load_from_file(file_names[0]))
-    {
-        handle->error_msg = fib.error_msg + " at " + file_names[0];
-        return false;
-    }
+        return handle->error_msg = fib.error_msg + " at " + file_names[0],false;
     index_list = (!included_index.empty() ? included_index:fib.get_index_list());
     if(!add_subjects(file_names))
-    {
-        index_list.clear();
-        return false;
-    }
+        return index_list.clear(),false;
     handle->report = subject_report = fib.report;
     handle->intro = fib.intro;
     return true;
