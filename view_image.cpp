@@ -382,7 +382,7 @@ bool TableKeyEventWatcher::eventFilter(QObject * receiver, QEvent * event)
     return false;
 }
 
-extern std::vector<std::vector<std::string> > unet_path;
+extern std::vector<std::vector<std::string> > unet_path,unet_names;
 view_image::view_image(QWidget *parent) :
     QMainWindow(parent),
     cur_image(new variant_image),
@@ -472,23 +472,24 @@ view_image::view_image(QWidget *parent) :
             QMessageBox::critical(this,"ERROR",mat.error_msg.c_str());
     });
 
-    auto addSubMenuItem = [this](const std::string& cmd,const std::string& model_name)
+    auto addSubMenuItem = [this](const std::string& cmd,const std::string& model_name,const std::string& path)
     {
         QAction* Item = new QAction(this);
         Item->setText(model_name.c_str());
         Item->setStatusTip(cmd.c_str());
+        Item->setData(path.c_str());
         Item->setVisible(true);
         connect(Item, SIGNAL(triggered()),this, SLOT(run_action()));
         return Item;
     };
 
-    for(auto each : unet_path)
-        for(auto each2 : each)
-    {
-            ui->menuBrain_Extraction->addAction(addSubMenuItem("brain_extraction",tipl::remove_all_suffix(std::filesystem::path(each2).filename().string())));
-        ui->menuSegmentation->addAction(addSubMenuItem("segmentation",tipl::remove_all_suffix(std::filesystem::path(each2).filename().string())));
-            ui->menuDeface->addAction(addSubMenuItem("deface",tipl::remove_all_suffix(std::filesystem::path(each2).filename().string())));
-    }
+    for(size_t i = 0;i < unet_names.size();++i)
+        for(size_t j = 0;j < unet_names[i].size();++j)
+        {
+            ui->menuBrain_Extraction->addAction(addSubMenuItem("brain_extraction",unet_names[i][j],unet_path[i][j]));
+            ui->menuSegmentation->addAction(addSubMenuItem("segmentation",unet_names[i][j],unet_path[i][j]));
+            ui->menuDeface->addAction(addSubMenuItem("deface",unet_names[i][j],unet_path[i][j]));
+        }
 
     ui->tabWidget->setCurrentIndex(0);
 
@@ -1126,17 +1127,7 @@ void view_image::run_action()
     else
     // run u-net
     {
-        std::string model_path;
-        for(auto each : unet_path)
-            for(auto each2 : each)
-                if(tipl::contains(each2,action->text().toStdString()))
-                {
-                    model_path = each2;
-                    goto run;
-                }
-        return;
-        run:
-        if(!command(action->statusTip().toStdString(),model_path))
+        if(!command(action->statusTip().toStdString(),action->data().toString().toStdString()))
             QMessageBox::critical(this,"ERROR",error_msg.c_str());
     }
 }
