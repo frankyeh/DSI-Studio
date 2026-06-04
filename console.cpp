@@ -201,7 +201,15 @@ bool Console::eventFilter(QObject *obj, QEvent *event)
             }
             if (!po.has("action"))
                 po.set("action","vis");
-            run_action_with_wildcard(po);
+
+            try{
+                run_action_with_wildcard(po);
+            }
+            catch(std::runtime_error& e)
+            {
+                QMessageBox::critical(this,"ERROR",e.what());
+                return true;
+            }
             ui->cmd_line->insertItem(0,ui->cmd_line->currentText());
             ui->cmd_line->setCurrentText(QString());
             return true; // Consume the event
