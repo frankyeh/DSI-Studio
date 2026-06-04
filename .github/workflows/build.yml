@@ -11,6 +11,11 @@ on:
         description: 'Build Windows'
         required: false
         default: 'true'
+      build_windows_debug:
+        type: boolean
+        description: 'Build Windows CPU Debug'
+        required: false
+        default: 'false'
       build_linux:
         type: boolean
         description: 'Build Linux'
@@ -252,7 +257,7 @@ jobs:
 
   windows_build_cpu:
     if: ${{ github.event.inputs.build_windows == 'true' }}
-    runs-on:  windows-latest
+    runs-on:  windows-2022
     steps:
     - uses: actions/checkout@v4.1.1
     - name: Download Build
@@ -282,9 +287,63 @@ jobs:
       run: |
         gh release upload ${{ github.event.inputs.tag }} dsi_studio_win_cpu.zip --clobber
 
+  windows_build_cpu_debug:
+    if: ${{ github.event.inputs.build_windows_debug == 'true' }}
+    runs-on: windows-2022
+    steps:
+    - uses: actions/checkout@v4.1.1
+    - name: Download Build
+      run: |
+        git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
+        move DSI-Studio-Build/*.txt .
+        move DSI-Studio-Build/build_packages .
+    - name: Install Qt
+      uses: Kidev/install-qt-action@v4.6.0
+      with:
+        modules: qtcharts
+        cache: true
+    - name: Build debug CPU package
+      run: |
+        git clone --depth 1 https://github.com/frankyeh/TIPL.git
+        choco install ninja cmake
+        call .\build_packages\install_zlib.bat
+        del "C:/Program Files/zlib/lib/zlib.lib"
+        del "C:/Program Files/zlib/bin/zlib.dll"
+        for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
+        mkdir build_debug
+        cmake -S . -B build_debug -GNinja "-DZLIB_LIBRARY=C:/Program Files/zlib/lib/zlibstatic.lib" "-DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo" "-DCMAKE_C_COMPILER:STRING=cl" "-DCMAKE_CXX_COMPILER:STRING=cl" -DTIPL_DIR=.
+        cmake --build ./build_debug --parallel --config RelWithDebInfo
+        mkdir dsi_studio_win_cpu_debug
+        move other\color_map dsi_studio_win_cpu_debug
+        move other\* dsi_studio_win_cpu_debug
+        copy build_debug\dsi_studio.exe dsi_studio_win_cpu_debug\dsi_studio.exe
+        copy build_debug\dsi_studio.pdb dsi_studio_win_cpu_debug\dsi_studio.pdb
+        windeployqt --no-translations --no-system-d3d-compiler --compiler-runtime dsi_studio_win_cpu_debug\dsi_studio.exe
+        git clone --depth 1 https://github.com/data-others/atlas.git
+        git clone --depth 1 https://github.com/data-others/unet.git
+        git clone --depth 1 https://github.com/data-others/tract.git
+        rd /s /q atlas\.git
+        rd /s /q unet\.git
+        rd /s /q tract\.git
+        move atlas dsi_studio_win_cpu_debug
+        move unet dsi_studio_win_cpu_debug
+        move tract dsi_studio_win_cpu_debug
+        curl -sSLO "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_win.zip"
+        7z e tiny_fsl_win.zip -odsi_studio_win_cpu_debug\plugin
+        rm dsi_studio_win_cpu_debug\plugin\cublas*
+        rd dsi_studio_win_cpu_debug\plugin\tiny_fsl
+        del *.zip
+        7z a -tzip dsi_studio_win_cpu_debug.zip dsi_studio_win_cpu_debug
+      shell: cmd
+    - name: Create Release
+      env:
+        GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
+      run: |
+        gh release upload ${{ github.event.inputs.tag }} dsi_studio_win_cpu_debug.zip --clobber
+
   windows_build:
     if: ${{ github.event.inputs.build_windows == 'true' }}
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
     - uses: actions/checkout@v4.1.1
     - name: Download Build
