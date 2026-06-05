@@ -575,22 +575,13 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
             get_report_from_bruker2(imnd_file,report);
         }
         else
-        {
-            error_msg = "cannot find imnd file at ";
-            error_msg += system_path.toStdString();
-            return false;
-        }
+            return error_msg = "cannot find imnd file at " + system_path.toStdString(),false;
     }
 
 
-    tipl::shape<3> dim(bruker_header.get_image().shape());
-    dim.divide(tipl::shape<3>::z,bvalues.size());
-
+    tipl::shape<3> dim(bruker_header.get_image().shape().divide(tipl::shape<3>::z,bvalues.size()));
     if(dwi_files.size() && dwi_files.back()->image.shape() != dim)
-    {
-        error_msg = "inconsistent dimension found";
-        return false;
-    }
+        return error_msg = "inconsistent dimension found",false;
     tipl::lower_threshold(bruker_header.get_image(),0.0);
     tipl::normalize(bruker_header.get_image(),32767.0);
 
@@ -599,8 +590,7 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
         new_file->report = report;
         new_file->image.resize(dim);
-        std::copy_n(bruker_header.get_image().begin()+index*new_file->image.size(),new_file->image.size(),
-                    new_file->image.begin());
+        std::copy_n(bruker_header.get_image().data()+index*new_file->image.size(),dim.size(),new_file->image.data());
         new_file->file_name = file_name;
         std::ostringstream out;
         out << index;
