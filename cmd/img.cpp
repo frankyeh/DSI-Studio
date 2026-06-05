@@ -415,20 +415,15 @@ bool variant_image::load_from_file(const std::string& file_name,std::string& inf
             {
                 tipl::io::bruker_2dseq seq;
                 if(!seq.load_from_file(file_name))
-                {
-                    error_msg = "cannot parse file";
-                    return false;
-                }
+                    return error_msg = seq.error_msg,false;
                 pixel_type = float32;
                 shape = seq.get_image().shape();
                 I_float32 = seq.get_image();
                 seq.get_voxel_size(vs);
             }
             else
-            {
-                error_msg = "unsupported file format";
-                return false;
-            }
+                return error_msg = "unsupported file format",false;
+
     tipl::out() << "dim: " << shape << " " << dim4 << " vs: " << vs;
     apply([this](auto& I)
     {
