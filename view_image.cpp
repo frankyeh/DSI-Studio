@@ -284,8 +284,12 @@ bool view_image::command(std::string cmd,std::string param1)
                     }
                     else
                     {
-                        QMessageBox::critical(this,"ERROR","cannot match a saving filename for "+file_name2);
-                        goto end;
+                        if(command_list[i] == "save")
+                        {
+                            QMessageBox::critical(this,"ERROR","cannot match a saving filename for "+file_name2);
+                            goto end;
+                        }
+                        param2 = param_list[i];
                     }
                 }
                 if(!dialog->command(command_list[i],param2))
