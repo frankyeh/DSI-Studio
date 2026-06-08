@@ -89,7 +89,7 @@ public:
 
     bool command(std::string cmd,std::string param1);
 
-    bool load_from_file(const std::string& file_name,std::string& info);
+    bool load_from_file(const std::filesystem::path& file_name,std::string& info);
 
     bool empty(void) const
     {
