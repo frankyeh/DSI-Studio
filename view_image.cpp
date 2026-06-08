@@ -361,9 +361,9 @@ bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vecto
             return true;
         }
         tipl::io::dicom_volume v;
-        std::vector<std::string> file_list;
+        std::vector<std::filesystem::path> file_list;
         for(int i = 0;i < filenames.size();++i)
-            file_list.push_back(filenames[i].toStdString());
+            file_list.push_back(tipl::qt::to_path(filenames[i]));
         v.load_from_files(file_list);
         v >> ref;
         v.get_voxel_size(vs);
@@ -607,7 +607,7 @@ void view_image::on_actionLoad_Image_to_4D_triggered()
     if(filename.isEmpty())
         return;
     tipl::image<3> new_image(cur_image->shape);
-    tipl::io::gz_nifti nii(filename.toStdString(),std::ios::in);
+    tipl::io::gz_nifti nii(tipl::qt::to_path(filename),std::ios::in);
 
     if(cur_image->interpolation)
         nii.to_space<tipl::linear>(new_image,cur_image->T);
@@ -630,7 +630,7 @@ void view_image::on_actionLoad_Image_to_4D_triggered()
     });
     init_image();
 }
-void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
+void prepare_idx(const std::filesystem::path& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 QImage read_qimage(QString filename,std::string& error);
 bool view_image::open(QStringList file_names_)
 {
@@ -701,7 +701,7 @@ bool view_image::open(QStringList file_names_)
            QString(file_name).endsWith(".dz"))
         {
             tipl::progress prog("open " + file_name.toStdString());
-            if(!mat.load_from_file(file_name.toStdString()))
+            if(!mat.load_from_file(tipl::qt::to_path(file_name)))
             {
                 error_msg = "invalid format";
                 return false;
@@ -711,7 +711,7 @@ bool view_image::open(QStringList file_names_)
 
         }
         else
-        if(!cur_image->load_from_file(file_name.toStdString(),info))
+        if(!cur_image->load_from_file(tipl::qt::to_path(file_name),info))
         {
             QMessageBox::critical(this,"ERROR",(error_msg = cur_image->error_msg).c_str());
             return false;
@@ -719,12 +719,9 @@ bool view_image::open(QStringList file_names_)
 
     if(cur_image->dim4 > 1)
     {
-        prepare_idx(file_name.toStdString(),nifti.input_stream);
-        if(!nifti.open(file_name.toStdString(),std::ios::in))
-        {
-            error_msg = nifti.error_msg;
-            return false;
-        }
+        prepare_idx(tipl::qt::to_path(file_name),nifti.input_stream);
+        if(!nifti.open(tipl::qt::to_path(file_name),std::ios::in))
+            return error_msg = nifti.error_msg,false;
         buf4d.resize(nifti.dim(4));
         nifti.input_stream->sample_access_point = true;
         ui->dwi_volume->setValue(0);
