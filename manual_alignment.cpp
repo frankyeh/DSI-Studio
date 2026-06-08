@@ -454,7 +454,7 @@ void manual_alignment::on_actionSave_Warped_Image_triggered()
         tipl::resample<tipl::interpolation::majority>(from_original,I,original_iT);
     else
         tipl::resample<tipl::interpolation::cubic>(from_original,I,original_iT);
-    if(tipl::io::gz_nifti(filename.toStdString(),std::ios::out) << std::tie(to_vs,to_T,I))
+    if(tipl::io::gz_nifti(tipl::qt::to_path(filename),std::ios::out) << std::tie(to_vs,to_T,I))
         QMessageBox::information(this,QApplication::applicationName(),"file saved");
     else
         QMessageBox::critical(this,"ERROR","cannot save file.");
@@ -480,7 +480,7 @@ void manual_alignment::on_actionSave_Transformation_triggered()
             "Text files (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    if(!(std::ofstream(filename.toStdString()) << arg))
+    if(!(std::ofstream(tipl::qt::to_path(filename)) << arg))
         QMessageBox::critical(this,"ERROR","Cannot save file.");
 }
 
@@ -496,7 +496,7 @@ void manual_alignment::on_actionLoad_Transformation_triggered()
         thread.terminated = true;
         thread.join();
     }
-    if(!(std::ifstream(filename.toStdString()) >> arg))
+    if(!(std::ifstream(tipl::qt::to_path(filename)) >> arg))
     {
         QMessageBox::critical(this,"ERROR","Invalid linear registration file.");
         return;
@@ -516,7 +516,7 @@ void manual_alignment::on_actionApply_Transformation_triggered()
 
     bool is_label = tipl::is_label_image(from_original);
     tipl::image<3> new_from_original(from_original.shape());
-    tipl::io::gz_nifti nii(filename.toStdString(),std::ios::in);
+    tipl::io::gz_nifti nii(tipl::qt::to_path(filename),std::ios::in);
 
     if(is_label)
         nii.to_space<tipl::interpolation::majority>(new_from_original,from_T);
@@ -538,7 +538,7 @@ void manual_alignment::on_actionApply_Transformation_triggered()
     else
         tipl::resample<tipl::interpolation::linear>(new_from_original,I,original_iT);
 
-    if(tipl::io::gz_nifti(to_filename.toStdString(),std::ios::out) << std::tie(to_vs,to_T,I))
+    if(tipl::io::gz_nifti(tipl::qt::to_path(to_filename),std::ios::out) << std::tie(to_vs,to_T,I))
         QMessageBox::information(this,QApplication::applicationName(),"file saved");
     else
         QMessageBox::critical(this,"ERROR","cannot save file.");
