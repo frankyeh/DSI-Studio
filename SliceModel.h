@@ -123,8 +123,9 @@ public:
 
 class CustomSliceModel : public SliceModel {
 public:
-    std::string source_file_name,error_msg = "unknown error";
-    std::vector<std::string> source_files;
+    std::filesystem::path source_file_name;
+    std::string error_msg = "unknown error";
+    std::vector<std::filesystem::path> source_files;
 public:
     std::shared_ptr<std::thread> thread;
     tipl::affine_param<float> arg_min;
@@ -136,12 +137,12 @@ public:
     void run_registration(void);
     void update_transform(void);
 public:
-    CustomSliceModel(std::shared_ptr<fib_data> new_handle,const std::string& source_file_name_);
-    CustomSliceModel(std::shared_ptr<fib_data> new_handle,const std::vector<std::string>& file_list);
+    CustomSliceModel(std::shared_ptr<fib_data> new_handle,const std::filesystem::path& source_file_name_);
+    CustomSliceModel(std::shared_ptr<fib_data> new_handle,const std::vector<std::filesystem::path>& file_list);
     CustomSliceModel(std::shared_ptr<fib_data> new_handle,std::shared_ptr<slice_model> new_slice);
     ~CustomSliceModel(void);
-    bool save_mapping(const std::string& file_name);
-    bool load_mapping(const std::string& file_name);
+    bool save_mapping(const std::filesystem::path& file_name);
+    bool load_mapping(const std::filesystem::path& file_name);
 public:
     bool is_mni = false;
     tipl::image<3> source_images;
