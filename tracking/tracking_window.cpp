@@ -28,7 +28,7 @@
 #include "regtoolbox.h"
 #include "connectivity_matrix_dialog.h"
 
-extern std::vector<std::string> fib_template_list;
+extern std::vector<std::filesystem::path> fib_template_list;
 extern std::vector<tracking_window*> tracking_windows;
 extern size_t auto_track_pos[7];
 extern unsigned char auto_track_rgb[6][3];               // projection
@@ -42,7 +42,7 @@ void populate_templates(QComboBox* combo,size_t index)
     if(!fib_template_list.empty())
     {
         for(size_t i = 0;i < fib_template_list.size();++i)
-            combo->addItem(QFileInfo(fib_template_list[i].c_str()).baseName());
+            combo->addItem(fib_template_list[i].stem().stem().u8string().c_str());
         combo->setCurrentIndex(int(index));
     }
 }
@@ -259,7 +259,7 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
 }
 
 tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_handle) :
-        QMainWindow(parent),ui(new Ui::tracking_window),scene(*this),handle(new_handle),work_path(QFileInfo(new_handle->fib_file_name.c_str()).absolutePath()+"/")
+    QMainWindow(parent),ui(new Ui::tracking_window),scene(*this),handle(new_handle),work_path(tipl::qt::to_qstring(new_handle->fib_file_name.parent_path()))
 {
 
     setAcceptDrops(true);
@@ -653,7 +653,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
 
     history.commands.clear();
-    std::vector<std::string> cmd({"open_fib",handle->fib_file_name.c_str()});
+    std::vector<std::string> cmd({"open_fib",handle->fib_file_name.u8string().c_str()});
     history.record(error_msg,cmd);
 }
 
@@ -1075,7 +1075,7 @@ void tracking_window::dropEvent(QDropEvent *event)
         if(file_name.endsWith("nii.gz") || file_name.endsWith("nii"))
         {
             tipl::image<3> I;
-            if(tipl::io::gz_nifti(file_name.toStdString(),std::ios::in) >> I)
+            if(tipl::io::gz_nifti(tipl::qt::to_path(file_name),std::ios::in) >> I)
             {
                 if(tipl::is_label_image(I))
                     regions << file_name;
