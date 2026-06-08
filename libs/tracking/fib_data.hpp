@@ -165,11 +165,11 @@ public:
         handle(handle_),name(name_)
     {
     }
-    slice_model(const std::string& path_):
+    slice_model(const std::filesystem::path& path_):
         name(tipl::remove_all_suffix(std::filesystem::path(path_).filename().string())),path(path_)
     {
     }
-    slice_model(const std::string& name_,const std::string& path_):
+    slice_model(const std::string& name_,const std::filesystem::path& path_):
         name(name_),path(path_)
     {
     }
@@ -185,7 +185,8 @@ public:
         get_minmax();
     }
 public:
-    std::string name,path;
+    std::string name;
+    std::filesystem::path path;
     bool registering = false;
     tipl::matrix<4,4> T = tipl::identity_matrix(),iT = tipl::identity_matrix();// T: image->diffusion iT: diffusion->image
 
@@ -209,7 +210,8 @@ class fib_data
 {
 public:
     mutable std::string error_msg;
-    std::string report,steps,intro,other_images,fib_file_name;
+    std::string report,steps,intro,other_images;
+    std::filesystem::path fib_file_name;
     tipl::io::gz_mat_read mat_reader;
 public:
     tipl::shape<3> dim;
@@ -278,7 +280,7 @@ public:
     tipl::image<3> template_I,template_I2;
 public:
     std::vector<std::shared_ptr<atlas> > atlas_list;
-    bool add_atlas(const std::string& file_name);
+    bool add_atlas(const std::filesystem::path& file_name);
 public:
     tipl::matrix<4,4> template_to_mni;
     bool has_manual_atlas = false;
@@ -288,9 +290,8 @@ public:
     std::vector<std::string> alternative_mapping;
     size_t alternative_mapping_index = 0;
 public:
-    std::string t1w_template_file_name,t2w_template_file_name,wm_template_file_name;
+    std::filesystem::path t1w_template_file_name,t2w_template_file_name,wm_template_file_name,tractography_atlas_file_name;
     std::vector<std::string> tractography_atlas_list;
-    std::string tractography_atlas_file_name;
     std::shared_ptr<atlas> tractography_atlas_roi,tractography_atlas_roa;
 public:
     std::vector<std::string> tractography_name_list;
@@ -313,7 +314,7 @@ public:
     void recognize_report(std::shared_ptr<TractModel>& trk,std::string& report);
 public:
     void match_template(void);
-    void set_tractography_atlas(const std::string& atlas_file_name);
+    void set_tractography_atlas(const std::filesystem::path& atlas_file_name);
     void set_template_id(size_t new_id);
     bool load_template(void);
     bool get_template_mask(const tipl::shape<3>& target_dim,
@@ -325,7 +326,7 @@ public:
     std::pair<float,float> get_track_minmax_length(const std::string& tract_name);
     float get_track_median_length(const std::string& tract_name);
 public:
-    std::string get_mapping_file_name(void) const;
+    std::filesystem::path get_mapping_file_name(void) const;
     bool map_to_mni(bool background = true);
     void temp2sub(std::vector<std::vector<float> >&tracts) const;
     void temp2sub(tipl::vector<3>& pos) const;
@@ -374,7 +375,7 @@ public:
         return true;
     }
     const tipl::image<3,tipl::vector<3,float> >& get_sub2temp_mapping(void);
-    bool load_mapping(const std::string& file_name);
+    bool load_mapping(const std::filesystem::path& file_name);
 public:
     fib_data(void)
     {
@@ -389,8 +390,8 @@ public:
     fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_);
     fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,4>& trans_to_mni_);
 public:
-    bool load_from_file(const std::string& file_name);
-    bool save_to_file(const std::string& file_name);
+    bool load_from_file(const std::filesystem::path& file_name);
+    bool save_to_file(const std::filesystem::path& file_name);
     bool load_from_mat(void);
     bool save_slice(const std::string& index_name,const std::string& file_name,bool in_mni = false);
     bool load_template_fib(size_t template_id,float vs);
