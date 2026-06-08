@@ -312,22 +312,13 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
 
 // test example
 // --action=trk --source=./test/20100129_F026Y_WANFANGYUN.src.gz.odf8.f3rec.de0.dti.fib.gz --method=0 --fiber_count=5000
-extern std::vector<std::string> fib_template_list;
+extern std::vector<std::filesystem::path> fib_template_list;
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name)
 {
     std::shared_ptr<fib_data> handle(new fib_data);
-    if(file_name.length() == 1 && file_name[0] >= '0' && file_name[0] <= '5')
-        file_name = fib_template_list[file_name[0]-'0'];
-    if(!std::filesystem::exists(file_name))
-    {
-        tipl::error() << file_name << " does not exist. terminating..." << std::endl;
-        return std::shared_ptr<fib_data>();
-    }
-    if (!handle->load_from_file(file_name.c_str()))
-    {
-        tipl::error() << handle->error_msg << std::endl;
-        return std::shared_ptr<fib_data>();
-    }
+    if (!handle->load_from_file(file_name.length() == 1 && file_name[0]-'0' < fib_template_list.size() ?
+                                    fib_template_list[file_name[0]-'0']:std::filesystem::path(file_name)))
+        return tipl::error() << handle->error_msg,std::shared_ptr<fib_data>();
     return handle;
 }
 std::shared_ptr<fib_data> cmd_load_fib(tipl::program_option<tipl::out>& po)
