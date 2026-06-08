@@ -176,7 +176,7 @@ void db_window::on_actionSave_Subject_Name_as_triggered()
                 "Report file (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::ofstream out(filename.toStdString());
+    std::ofstream out(tipl::qt::to_path(filename));
     for(const auto& each : vbc->handle->db.subject_names)
         out << each << std::endl;
 }
@@ -190,7 +190,7 @@ void db_window::on_action_Save_R2_values_as_triggered()
                 "Report file (*.txt);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::ofstream out(filename.toStdString());
+    std::ofstream out(tipl::qt::to_path(filename));
     std::copy(vbc->handle->db.R2.begin(),vbc->handle->db.R2.end(),std::ostream_iterator<float>(out,"\n"));
 }
 
@@ -257,7 +257,7 @@ void db_window::on_actionSave_DB_as_triggered()
         QMessageBox::information(this,QApplication::applicationName(),
         QString("demographics not saved due to mismatch: ") + vbc->handle->error_msg.c_str());
 
-    if(vbc->handle->save_to_file(filename.toStdString()))
+    if(vbc->handle->save_to_file(tipl::qt::to_path(filename)))
         QMessageBox::information(this,QApplication::applicationName(),"File saved");
     else
         QMessageBox::critical(this,"ERROR",vbc->handle->error_msg.c_str());
@@ -318,7 +318,7 @@ void db_window::on_actionSelect_Subjects_triggered()
                            "Text files (*.txt);;All files (*)");
     if (filename.isEmpty())
         return;
-    std::ifstream in(filename.toStdString());
+    std::ifstream in(tipl::qt::to_path(filename));
     std::vector<char> selected;
     std::copy(std::istream_iterator<int>(in),std::istream_iterator<int>(),std::back_inserter(selected));
     selected.resize(vbc->handle->db.subject_names.size());
@@ -338,7 +338,7 @@ void db_window::on_actionCurrent_Subject_triggered()
                            "NIFTI files (*.nii *nii.gz);;All files (*)");
     if (filename.isEmpty())
         return;
-    if(tipl::io::gz_nifti(filename.toStdString(),std::ios::out)
+    if(tipl::io::gz_nifti(tipl::qt::to_path(filename),std::ios::out)
             << vbc->handle->bind(vbc->handle->db.get_index_image(uint32_t(ui->subject_list->currentRow()))))
         QMessageBox::information(this,QApplication::applicationName(),"file saved");
     else
@@ -359,7 +359,7 @@ void db_window::on_actionAll_Subjects_triggered()
         QString file_name = dir + "\\"+
                 vbc->handle->db.subject_names[i].c_str()+"."+
                 vbc->handle->db.index_name.c_str()+".nii.gz";
-        if(!(tipl::io::gz_nifti(file_name.toStdString(),std::ios::out)
+        if(!(tipl::io::gz_nifti(tipl::qt::to_path(file_name),std::ios::out)
                     << vbc->handle->bind(vbc->handle->db.get_index_image(uint32_t(i)))
                     << [this](const std::string& e){QMessageBox::critical(this,"ERROR",e.c_str());}))
             return;
@@ -372,7 +372,7 @@ void db_window::on_actionOpen_Demographics_triggered()
     QString filename = QFileDialog::getOpenFileName(
                 this,
                 "Open demographics",
-                QFileInfo(vbc->handle->fib_file_name.c_str()).absoluteDir().absolutePath(),
+                vbc->handle->fib_file_name.parent_path().u8string().c_str(),
                 "Comma- or Tab-Separated Values(*.csv *.tsv);;All files (*)");
     if(filename.isEmpty())
         return;
@@ -396,11 +396,11 @@ void db_window::on_actionSave_Demographics_triggered()
     QString filename = QFileDialog::getSaveFileName(
                 this,
                 "Save demographics",
-                QFileInfo(vbc->handle->fib_file_name.c_str()).absoluteDir().absolutePath(),
+                vbc->handle->fib_file_name.parent_path().u8string().c_str(),
                 "Comma- or Tab-Separated Values(*.csv *.tsv);;All files (*)");
     if(filename.isEmpty())
         return;
-    std::ofstream(filename.toStdString()) << vbc->handle->db.demo;
+    std::ofstream(tipl::qt::to_path(filename)) << vbc->handle->db.demo;
 }
 
 QString get_matched_demo(QWidget *parent,std::shared_ptr<fib_data> handle)
@@ -438,7 +438,7 @@ void db_window::on_actionSave_DemoMatched_Image_as_triggered()
     QString filename = tipl::qt::save_image_file(
                            this,
                            QFileInfo(windowTitle()).absoluteDir().absolutePath()+"\\"+
-                           vbc->handle->fib_file_name.c_str()+"."+QString(param).replace(' ','_').replace(',','_')+"."+
+                           vbc->handle->fib_file_name.u8string().c_str()+"."+QString(param).replace(' ','_').replace(',','_')+"."+
                            vbc->handle->db.index_name.c_str()+".nii.gz",
                            "NIFTI files (*.nii *nii.gz);;All files (*)");
     if (filename.isEmpty())
