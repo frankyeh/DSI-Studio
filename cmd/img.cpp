@@ -235,14 +235,14 @@ bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<2,short>& I)
     }
     return true;
 }
-void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
-void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
-bool variant_image::load_from_file(const std::string& file_name,std::string& info)
+void prepare_idx(const std::filesystem::path& file_name,std::shared_ptr<tipl::io::gz_istream> in);
+void save_idx(const std::filesystem::path& file_name,std::shared_ptr<tipl::io::gz_istream> in);
+bool variant_image::load_from_file(const std::filesystem::path& file_name,std::string& info)
 {
     tipl::io::dicom dicom;
     is_mni = false;
     T.identity();
-    if(tipl::ends_with(file_name,{".nhdr",".nrrd"}))
+    if(tipl::ends_with(file_name.u8string(),{".nhdr",".nrrd"}))
     {
         tipl::io::gz_nrrd nrrd;
         if(!nrrd.load_from_file(file_name))
@@ -283,7 +283,7 @@ bool variant_image::load_from_file(const std::string& file_name,std::string& inf
         }
     }
     else
-    if(tipl::ends_with(file_name,{".nii.gz",".nii",".hdr"}))
+    if(tipl::ends_with(file_name.u8string(),{".nii.gz",".nii",".hdr"}))
     {
         tipl::io::gz_nifti nifti;
         prepare_idx(file_name,nifti.input_stream);
@@ -411,7 +411,7 @@ bool variant_image::load_from_file(const std::string& file_name,std::string& inf
             info = info_.c_str();
         }
         else
-            if(tipl::ends_with(file_name,"2dseq"))
+            if(tipl::ends_with(file_name.u8string(),"2dseq"))
             {
                 tipl::io::bruker_2dseq seq;
                 if(!seq.load_from_file(file_name))
@@ -477,7 +477,7 @@ void show_slice(tipl::io::gz_mat_read& mat_reader,const char* name)
 bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 const std::string& cmd,
                 const std::string& param);
-extern std::vector<std::string> iso_template_list,t1w_template_list,t2w_template_list;
+extern std::vector<std::filesystem::path> iso_template_list,t1w_template_list,t2w_template_list;
 int img(tipl::program_option<tipl::out>& po)
 {
     if((!po.has("overwrite") || !po.get("overwrite",0)) && po.has("output") && std::filesystem::exists(po.get("output")))
@@ -520,14 +520,14 @@ int img(tipl::program_option<tipl::out>& po)
     }
 
     variant_image var_image;
-    if(!var_image.load_from_file(source.c_str(),info))
+    if(!var_image.load_from_file(source,info))
         return tipl::error() << var_image.error_msg,1;
     tipl::shape<4> dim4;
     if(var_image.dim4 > 1)
     {
         tipl::progress prog("loading 4d nifti");
         tipl::io::gz_nifti nifti;
-        prepare_idx(source.c_str(),nifti.input_stream);
+        prepare_idx(source,nifti.input_stream);
         if(!nifti.open(source,std::ios::in))
             return tipl::error() << var_image.error_msg,1;
 
