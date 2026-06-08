@@ -6,7 +6,7 @@
 #include "basic_process.hpp"
 #include "gqi_process.hpp"
 
-extern std::vector<std::string> qa_template_list,iso_template_list,t1w_template_list;
+extern std::vector<std::filesystem::path> qa_template_list,iso_template_list,t1w_template_list;
 class DWINormalization  : public BaseProcess
 {
 protected:
