@@ -131,7 +131,7 @@ void src_data::update_mask(void)
     tipl::morphology::defragment_slice(voxel.mask);
     tipl::morphology::defragment(voxel.mask);
 }
-extern std::vector<std::string> t2w_template_list,iso_template_list;
+extern std::vector<std::filesystem::path> t2w_template_list,iso_template_list;
 bool src_data::warp_b0_to_image(tipl::reg::mm_reg<tipl::out>& r)
 {
     tipl::progress prog("registering images");
@@ -341,7 +341,7 @@ void src_data::flip_b_table(const unsigned char* order)
 
 
 
-extern std::vector<std::string> fib_template_list;
+extern std::vector<std::filesystem::path> fib_template_list;
 bool src_data::check_b_table(bool use_template)
 {
     if(!new_dwi.empty())
@@ -1373,7 +1373,8 @@ bool src_data::add_other_image(const std::string& name,const std::string& filena
     }
     return true;
 }
-extern std::vector<std::string> qa_template_list,iso_template_list,template_name_list;
+extern std::vector<std::string> template_name_list;
+extern std::vector<std::filesystem::path> qa_template_list,iso_template_list;
 void match_template_resolution(tipl::image<3>& VG,
                                tipl::vector<3>& VGvs,
                                tipl::image<3>& VF,
@@ -2864,11 +2865,11 @@ bool src_data::save_to_file(const std::string& filename)
     return false;
 }
 
-void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in)
+void prepare_idx(const std::filesystem::path& file_name,std::shared_ptr<tipl::io::gz_istream> in)
 {
-    if(file_name.back() != 'z' || !std::filesystem::exists(file_name))
+    if(file_name.extension() != ".gz" || !std::filesystem::exists(file_name))
         return;
-    std::string idx_name = file_name;
+    auto idx_name = file_name;
     idx_name += ".idx";
     {
         if(!in.get())
@@ -2878,28 +2879,28 @@ void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istre
            std::filesystem::last_write_time(idx_name) >
            std::filesystem::last_write_time(file_name))
         {
-            tipl::out() << "using index file for accelerated loading: " << idx_name << std::endl;
+            tipl::out() << "using index file for accelerated loading: " << idx_name;
             in->load_index(idx_name);
         }
         else
         {
             if(std::filesystem::file_size(file_name) > 134217728) // 128mb
             {
-                tipl::out() << "prepare index file for future accelerated loading" << std::endl;
+                tipl::out() << "prepare index file for future accelerated loading";
                 in->sample_access_point = true;
             }
         }
     }
 }
-void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in)
+void save_idx(const std::filesystem::path& file_name,std::shared_ptr<tipl::io::gz_istream> in)
 {
-    if(!tipl::ends_with(file_name,".gz"))
+    if(file_name.extension() != ".gz")
         return;
-    std::string idx_name = file_name;
+    auto idx_name = file_name;
     idx_name += ".idx";
     if(in->has_access_points() && in->sample_access_point && !std::filesystem::exists(idx_name))
     {
-        tipl::out() << "saving index file for accelerated loading: " << std::filesystem::path(idx_name).filename().u8string() << std::endl;
+        tipl::out() << "saving index file for accelerated loading: " << idx_name.filename();
         in->save_index(idx_name);
     }
 }
