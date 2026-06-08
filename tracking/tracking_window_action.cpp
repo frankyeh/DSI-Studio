@@ -114,7 +114,7 @@ void tracking_window::run_command(const std::string& cmd)
 }
 
 extern std::vector<tracking_window*> tracking_windows;
-extern std::vector<std::string> iso_template_list;
+extern std::vector<std::filesystem::path> iso_template_list;
 bool tracking_window::command(std::vector<std::string> cmd)
 {
     if(glWidget->command(cmd))
@@ -907,7 +907,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         {
             if(cmd[0] == "add_mni_slice" && !handle->map_to_mni())
                 return run->failed(handle->error_msg);
-            auto slice = std::make_shared<CustomSliceModel>(handle,tipl::split(cmd[1],','));
+            auto slice = std::make_shared<CustomSliceModel>(handle,tipl::to_path(tipl::split(cmd[1],',')));
             slice->is_mni = (cmd[0] == "add_mni_slice");
             if(!slice->load_slices())
                 return run->failed(error_msg = slice->error_msg);
@@ -1298,7 +1298,7 @@ void tracking_window::on_actionOpen_Connectivity_Matrix_triggered()
     if(filename.endsWith(".txt"))
     {
         std::vector<float> buf;
-        std::ifstream in(filename.toStdString());
+        std::ifstream in(tipl::qt::to_path(filename));
         while(in)
         {
             std::string v;
@@ -1405,9 +1405,9 @@ bool tracking_window::addSlices(std::shared_ptr<SliceModel> new_slice)
     ui->SliceModality->addItem(new_slice->view->name.c_str());
     return true;
 }
-bool tracking_window::addSlices(const std::string& name,const std::string& path)
+bool tracking_window::addSlices(const std::string& name,const std::filesystem::path& path)
 {
-    if(!tipl::begins_with(path,"http") && !std::filesystem::exists(path))
+    if(!tipl::begins_with(path.u8string(),"http") && !std::filesystem::exists(path))
         return false;
     return addSlices(std::dynamic_pointer_cast<SliceModel>(
                 std::make_shared<CustomSliceModel>(handle,std::make_shared<slice_model>(name,path))));
@@ -1562,9 +1562,7 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
     }
 
     QMessageBox::information(this,QApplication::applicationName(),"Please assign the output directory");
-    QString dir = QFileDialog::getExistingDirectory(
-                                this,
-                                "Assign output directory",slice->source_files[0].c_str());
+    QString dir = QFileDialog::getExistingDirectory(this,"Assign output directory",tipl::qt::to_qstring(slice->source_files[0].parent_path()));
     if(dir.isEmpty())
         return;
     tipl::io::dicom_volume volume;
@@ -1616,7 +1614,7 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
             std::ifstream in(slice->source_files[i],std::ios::binary | std::ios::ate);
             if(!in)
             {
-                QMessageBox::critical(this,"ERROR",QString("Failed to load the original DICOM files: ") + slice->source_files[i].c_str());
+                QMessageBox::critical(this,"ERROR",QString("Failed to load the original DICOM files: ") + tipl::qt::to_qstring(slice->source_files[i]));
                 return;
             }
             buf.resize(size_t(in.tellg()));
@@ -1634,14 +1632,14 @@ void tracking_window::on_actionSave_Slices_to_DICOM_triggered()
         }
         std::copy_n(out.begin()+pos,read_size,reinterpret_cast<short*>(&*(buf.end()-int(read_size*sizeof(short)))));
 
-        QString output_name = dir + "/mod_" + QFileInfo(slice->source_files[i].c_str()).completeBaseName() + ".dcm";
+        QString output_name = dir + "/mod_" + tipl::qt::to_qstring(slice->source_files[i].stem()) + ".dcm";
 
         if(i == 0 && QFileInfo(output_name).exists() &&
            QMessageBox::information(this,QApplication::applicationName(),"Previous modifications found. Overwrite?",
            QMessageBox::Yes|QMessageBox::Cancel) == QMessageBox::Cancel)
                 return;
 
-        std::ofstream out(output_name.toStdString(),std::ios::binary);
+        std::ofstream out(tipl::qt::to_path(output_name),std::ios::binary);
         if(!out)
         {
             QMessageBox::critical(this,"ERROR","Cannot output DICOM. Please check disk space or output permission.");
@@ -1723,7 +1721,7 @@ void tracking_window::on_actionManual_Atlas_Alignment_triggered()
     handle->has_manual_atlas = true;
 
 
-    std::string output_file_name(handle->fib_file_name);
+    auto output_file_name = handle->fib_file_name;
     output_file_name += "." + template_name_list[handle->template_id] + ".mz";
     if(handle->s2t.empty() && std::filesystem::exists(output_file_name))
     {
@@ -1923,7 +1921,7 @@ void tracking_window::on_actionSave_3D_Model_triggered()
     tipl::progress prog("exporting models",true);
     size_t total_prog = 3 + tracts.size() + regions.size()+1;
     size_t cur_prog = 0;
-    std::ofstream out(filename.toStdString()),mtl(filename.toStdString()+".mtl");
+    std::ofstream out(tipl::qt::to_path(filename)),mtl(tipl::qt::to_path(filename+".mtl"));
     out << "mtllib " << QFileInfo(filename).fileName().toStdString() << ".mtl" << std::endl;
     out << "g" << std::endl;
     unsigned int coordinate_count = 0;
