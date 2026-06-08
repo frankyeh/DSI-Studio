@@ -153,11 +153,11 @@ bool apply_warping(const reg_type& reg,const std::string& input,const std::strin
 }
 
 extern int map_ver;
-bool load_warping(tipl::reg::mm_reg<tipl::out>& reg,const std::string& filename)
+bool load_warping(tipl::reg::mm_reg<tipl::out>& reg,const std::filesystem::path& filename)
 {
     tipl::io::gz_mat_read in;
     if(!in.load_from_file(filename))
-        return reg.error_msg = "cannot read file " + filename,false;
+        return reg.error_msg = "cannot read file " + filename.u8string(),false;
 
     if(in.read_as_value<int>("version") > map_ver)
         return reg.error_msg = "incompatible map file format: the version "
@@ -206,12 +206,12 @@ bool load_warping(tipl::reg::mm_reg<tipl::out>& reg,const std::string& filename)
 }
 
 
-bool save_warping(const tipl::reg::mm_reg<tipl::out>& reg,const std::string& filename)
+bool save_warping(const tipl::reg::mm_reg<tipl::out>& reg,const std::filesystem::path& filename)
 {
-    tipl::progress prog("saving ",filename);
+    std::string output_name = filename.u8string();
+    tipl::progress prog("saving ",output_name);
     if(reg.f2t_dis.empty() || reg.t2f_dis.empty())
         return reg.error_msg = "no mapping matrix to save",false;
-    std::string output_name(filename);
     if(tipl::ends_with(output_name,".nii.gz"))
     {
         tipl::image<4> buffer(reg.from2to.shape().expand(3)),
@@ -232,8 +232,8 @@ bool save_warping(const tipl::reg::mm_reg<tipl::out>& reg,const std::string& fil
                     buffer2[i+shift] = reg.to2from[i][d];
             }
         },6);
-        tipl::io::gz_nifti(output_name,std::ios::out) << reg.Ivs << reg.IR << buffer;
-        tipl::io::gz_nifti(output_name.substr(0,output_name.length()-7) + ".inv.nii.gz",std::ios::out) << reg.Itvs << reg.ItR << buffer2;
+        tipl::io::gz_nifti(filename,std::ios::out) << reg.Ivs << reg.IR << buffer;
+        tipl::io::gz_nifti(tipl::remove_all_suffix(output_name) + ".inv.nii.gz",std::ios::out) << reg.Itvs << reg.ItR << buffer2;
         return true;
     }
 
