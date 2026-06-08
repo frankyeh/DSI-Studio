@@ -186,7 +186,7 @@ public:
     std::shared_ptr<fib_data> handle;
     std::vector<std::shared_ptr<SliceModel> > slices;
     std::shared_ptr<SliceModel> current_slice;
-    bool addSlices(const std::string& name,const std::string& path);
+    bool addSlices(const std::string& name,const std::filesystem::path& path);
     bool addSlices(std::shared_ptr<SliceModel> new_slice);
     QAction* addSubMenuItem(const std::string& each,const std::string& title,const char* action);
     void updateSlicesMenu(void);
