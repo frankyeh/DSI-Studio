@@ -77,7 +77,7 @@ void RegToolBox::on_OpenTemplate_clicked()
     if(filenames.isEmpty())
         return;
     for(auto filename : filenames)
-        load_template(filename.toStdString());
+        load_template(tipl::qt::to_path(filename));
     show_image();
 }
 void RegToolBox::on_ClearTemplate_clicked()
@@ -88,10 +88,10 @@ void RegToolBox::on_ClearTemplate_clicked()
     reg.It.resize(reg.max_modality);
     scene[1].clear();
 }
-void RegToolBox::load_template(const std::string& file_name)
+void RegToolBox::load_template(const std::filesystem::path& file_name)
 {
     clear_thread();
-    if(!reg.load_template<tipl::io::gz_nifti>(file_names[1].size(),file_name.c_str()))
+    if(!reg.load_template<tipl::io::gz_nifti>(file_names[1].size(),file_name))
     {
         QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
         return;
@@ -102,11 +102,11 @@ void RegToolBox::load_template(const std::string& file_name)
         setup_slice_pos();
     }
     while(!reg.It[file_names[1].size()].empty())
-        file_names[1].push_back(file_name);
+        file_names[1].push_back(file_name.u8string());
     auto_fill();
 }
 
-extern std::vector<std::string> qa_template_list,iso_template_list;
+extern std::vector<std::filesystem::path> qa_template_list,iso_template_list;
 void RegToolBox::on_OpenSubject_clicked()
 {
     if(file_names[0].size() >= reg.max_modality)
@@ -116,14 +116,14 @@ void RegToolBox::on_OpenSubject_clicked()
         return;
     for(auto filename : filenames)
     {
-        load_subject(filename.toStdString());
+        load_subject(tipl::qt::to_path(filename));
         if(filename.contains("qa"))
         {
             auto iso_file_name = QString(filename).replace("qa","iso");
             if(iso_file_name != filename && QFileInfo(iso_file_name).exists() &&
                QMessageBox::question(this,QApplication::applicationName(),QString("load iso from ") + iso_file_name + "?",
                QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::Yes)
-                    load_subject(iso_file_name.toStdString());
+                    load_subject(tipl::qt::to_path(iso_file_name));
 
             if(reg.It[0].empty() &&
                QMessageBox::question(this,QApplication::applicationName(),"load QA/ISO templates?",
@@ -146,10 +146,10 @@ void RegToolBox::on_ClearSubject_clicked()
     scene[0].clear();
 }
 
-void RegToolBox::load_subject(const std::string& file_name)
+void RegToolBox::load_subject(const std::filesystem::path& file_name)
 {
     clear_thread();
-    if(!reg.load_subject<tipl::io::gz_nifti>(file_names[0].size(),file_name.c_str()))
+    if(!reg.load_subject<tipl::io::gz_nifti>(file_names[0].size(),file_name))
     {
         QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
         return;
@@ -160,7 +160,7 @@ void RegToolBox::load_subject(const std::string& file_name)
         setup_slice_pos();
     }
     while(!reg.I[file_names[0].size()].empty())
-        file_names[0].push_back(file_name);
+        file_names[0].push_back(file_name.u8string());
     auto_fill();
 }
 
@@ -242,7 +242,7 @@ void save_warp(RegToolBox* host,
     QString filename = tipl::qt::save_image_file(host,names[y].c_str(),"Images (*.nii *nii.gz);;All files (*)" );
     if(filename.isEmpty())
         return;
-    if(!apply_warping<direction>(reg,names[y].c_str(),filename.toStdString()))
+    if(!apply_warping<direction>(reg,names[y],filename.toStdString()))
         QMessageBox::critical(host,"ERROR",reg.error_msg.c_str());
     else
         QMessageBox::information(host,QApplication::applicationName(),"Saved");
@@ -564,7 +564,7 @@ void RegToolBox::on_stop_clicked()
     thread.clear();
     show_image();
 }
-bool save_warping(const tipl::reg::mm_reg<tipl::out>& reg,const std::string& filename);
+bool save_warping(const tipl::reg::mm_reg<tipl::out>& reg,const std::filesystem::path& filename);
 void RegToolBox::on_actionSave_Warping_triggered()
 {
     if(reg.to2from.empty())
@@ -572,16 +572,16 @@ void RegToolBox::on_actionSave_Warping_triggered()
     QString filename = tipl::qt::save_image_file(this,QDir::currentPath(),"Images (*.mz);;All files (*)" );
     if(filename.isEmpty())
         return;
-    if(!save_warping(reg,filename.toStdString()))
+    if(!save_warping(reg,tipl::qt::to_path(filename)))
         QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
 }
-bool load_warping(tipl::reg::mm_reg<tipl::out>& reg,const std::string& filename);
+bool load_warping(tipl::reg::mm_reg<tipl::out>& reg,const std::filesystem::path& filename);
 void RegToolBox::on_actionOpen_Mapping_triggered()
 {
     QString filename = tipl::qt::open_image_file(this,QDir::currentPath(),"Images (*.mz);;All files (*)" );
     if(filename.isEmpty())
         return;
-    if(!load_warping(reg,filename.toStdString()))
+    if(!load_warping(reg,tipl::qt::to_path(filename)))
         QMessageBox::critical(this,"ERROR",reg.error_msg.c_str());
     show_image();
 }
@@ -674,7 +674,7 @@ void applyWarping(QWidget* parent,reg_type& reg)
         QString saveFileName = tipl::qt::save_image_file(parent, file_list[0], filter);
         if (saveFileName.isEmpty())
             return;
-        if (!apply_warping<subjectToTemplate>(reg,file_list[0].toStdString(), saveFileName.toStdString()))
+        if (!apply_warping<subjectToTemplate>(reg,file_list[0].toStdString(),saveFileName.toStdString()))
             goto error;
     }
     else
@@ -682,7 +682,7 @@ void applyWarping(QWidget* parent,reg_type& reg)
         tipl::progress prog("save files");
         for (int i = 0; prog(i, file_list.size()); ++i)
         {
-            if (!apply_warping<subjectToTemplate>(reg,file_list[i].toStdString(), (file_list[i] + ".wp.nii.gz").toStdString()))
+            if (!apply_warping<subjectToTemplate>(reg,file_list[i].toStdString(),(file_list[i] + ".wp.nii.gz").toStdString()))
                 goto error;
         }
     }

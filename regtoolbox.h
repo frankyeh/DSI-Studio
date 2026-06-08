@@ -37,8 +37,8 @@ private:
 private:
     std::vector<std::string> file_names[2];
     void auto_fill(void);
-    void load_subject(const std::string& file_name);
-    void load_template(const std::string& file_name);
+    void load_subject(const std::filesystem::path& file_name);
+    void load_template(const std::filesystem::path& file_name);
 public:
     explicit RegToolBox(QWidget *parent = nullptr);
     ~RegToolBox();
