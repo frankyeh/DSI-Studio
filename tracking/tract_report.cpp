@@ -108,7 +108,7 @@ void tract_report::on_save_report_clicked()
     if(filename.isEmpty())
         return;
 
-    std::ofstream out(filename.toStdString());
+    std::ofstream out(tipl::qt::to_path(filename));
     if(!out)
     {
         QMessageBox::critical(this,"ERROR","Cannot write to file");
