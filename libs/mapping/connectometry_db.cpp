@@ -418,10 +418,7 @@ bool connectometry_db::extract_indices(const std::string& file_name,const std::v
     {
         auto index = fib.get_name_index(index_list_to_extract[i]);
         if(index == fib.slices.size())
-        {
-            handle->error_msg = "cannot find " + index_name + " in " + fib.fib_file_name;
-            return false;
-        }
+            return handle->error_msg = "cannot find " + index_name + " in " + fib.fib_file_name.u8string(),false;
         if(fib.is_mni)
             sample(fib.slices[index]->get_image(),fib.trans_to_mni,data[i]);
         else
@@ -457,9 +454,9 @@ bool connectometry_db::create_db(const std::vector<std::string>& file_names,
         return false;
     tipl::progress prog("create database",true);
     if(has_db())
-        return handle->error_msg = "cannot create database from a database file " + handle->fib_file_name,false;
+        return handle->error_msg = "cannot create database from a database file " + handle->fib_file_name.u8string(),false;
     if(!handle->is_mni)
-        return handle->error_msg = "invalid template. not a QSDR FIB file: " + handle->fib_file_name,false;
+        return handle->error_msg = "invalid template. not a QSDR FIB file: " + handle->fib_file_name.u8string(),false;
     if(handle->mat_reader.si2vi.empty())
         return handle->error_msg = "invalid mask",false;
     init_db();
@@ -738,7 +735,7 @@ void connectometry_db::calculate_change(unsigned char dif_type,unsigned char fil
         }
 
         auto ptr = handle->mat_reader[index_list[m]].get_data<float>();
-        auto dif_mat = std::make_shared<tipl::io::mat_matrix>(index_list[m],float(0),match.size(),mask_size);
+        auto dif_mat = std::make_shared<tipl::io::mat_matrix>(index_list[m],float(0),uint32_t(match.size()),uint32_t(mask_size));
         auto change = dif_mat->get_data<float>();
 
         for(const auto& each : match)
