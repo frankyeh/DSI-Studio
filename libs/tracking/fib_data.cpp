@@ -10,7 +10,8 @@
 #include "roi.hpp"
 #include "cmd/img.hpp"
 
-extern std::vector<std::string> template_name_list,qa_template_list,iso_template_list,t1w_template_list,t2w_template_list,wm_template_list,fib_template_list,tract_template_list;
+extern std::vector<std::string> template_name_list;
+extern std::vector<std::filesystem::path> qa_template_list,iso_template_list,t1w_template_list,t2w_template_list,wm_template_list,fib_template_list,tract_template_list;
 bool odf_data::read(fib_data& fib)
 {
     if(!odf_map.empty())
@@ -424,23 +425,19 @@ bool load_fib_from_tracks(const std::string& file_name,
                           tipl::image<3>& I,
                           tipl::vector<3>& vs,
                           tipl::matrix<4,4>& trans_to_mni);
-void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
-void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
-bool fib_data::load_from_file(const std::string& file_name)
+void prepare_idx(const std::filesystem::path& file_name,std::shared_ptr<tipl::io::gz_istream> in);
+void save_idx(const std::filesystem::path& file_name,std::shared_ptr<tipl::io::gz_istream> in);
+bool fib_data::load_from_file(const std::filesystem::path& file_name)
 {
+    auto file_name_str = file_name.u8string();
     if(!std::filesystem::exists(file_name))
-    {
-        error_msg = "file not exist: " + file_name;
-        return false;
-    }
+        return error_msg = "file not exist: " + file_name_str,false;
 
-    tipl::progress prog("open ",file_name);
+    tipl::progress prog("open ",file_name_str);
     tipl::image<3> I;
     tipl::io::gz_nifti header;
     fib_file_name = file_name;
-    if((tipl::ends_with(file_name,".nii") ||
-        tipl::ends_with(file_name,".nii.gz")) &&
-        header.open(file_name,std::ios::in))
+    if(tipl::ends_with(file_name_str,{".nii",".nii.gz"}) && header.open(file_name,std::ios::in))
     {
         if(header.dim(4) == 3)
         {
@@ -527,7 +524,7 @@ bool fib_data::load_from_file(const std::string& file_name)
         }
     }
     else
-    if(std::filesystem::path(file_name).filename().string() == "2dseq")
+    if(file_name.filename().string() == "2dseq")
     {
         tipl::io::bruker_2dseq bruker_header;
         if(!bruker_header.load_from_file(file_name))
@@ -543,7 +540,7 @@ bool fib_data::load_from_file(const std::string& file_name)
         report = out.str();
     }
     else
-        if(tipl::ends_with(file_name,{".trk.gz",".trk",".tck",".tt.gz"}) && !load_fib_from_tracks(file_name,I,vs,trans_to_mni))
+        if(tipl::ends_with(file_name_str,{".trk.gz",".trk",".tck",".tt.gz"}) && !load_fib_from_tracks(file_name_str,I,vs,trans_to_mni))
         {
             error_msg = "Invalid track format";
             return false;
@@ -1123,40 +1120,31 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
     return !prog.aborted();
 }
 
-extern std::vector<std::string> fib_template_list;
+extern std::vector<std::filesystem::path> fib_template_list;
 bool fib_data::load_template_fib(size_t id,float reso)
 {
     if(id >= fib_template_list.size())
-    {
-        error_msg = "invalid template id " + std::to_string(id);
-        return false;
-    }
+        return error_msg = "invalid template id " + std::to_string(id),false;
     if(fib_template_list[id].empty())
-    {
-        error_msg = "cannot find template files";
-        return false;
-    }
+        return error_msg = "cannot find template files",false;
     tipl::progress prog("opening");
     tipl::out() << "load template " << fib_template_list[id] << " at resolution " << reso;
     fib_file_name = fib_template_list[id];
     if (!mat_reader.load_from_file(fib_template_list[id],prog) ||
         !modify_fib(mat_reader,"regrid",std::to_string(reso)))
-    {
-        error_msg = mat_reader.error_msg;
-        return false;
-    }
+        return error_msg = mat_reader.error_msg,false;
     if(!load_from_mat())
         return false;
     set_template_id(id);
     return true;
 }
-bool fib_data::save_to_file(const std::string& file_name)
+bool fib_data::save_to_file(const std::filesystem::path& file_name)
 {
-    tipl::progress prog("save " + file_name);
+    tipl::progress prog("save " + file_name.u8string());
     fib_file_name = file_name;
     tipl::io::gz_mat_write matfile(file_name);
     if(!matfile)
-        return error_msg = "cannot save file " + file_name,false;
+        return error_msg = "cannot save file " + file_name.u8string(),false;
 
     std::vector<std::string> skip_list({"odf_faces","odf_vertices","z0","mapping",
                                         "report","intro","R2","template","index_name","demo","steps"});
@@ -1427,12 +1415,12 @@ void apply_inverse_trans(tipl::vector<3>& pos,const tipl::matrix<4,4>& trans)
     if(trans[10] != 1.0f)
         pos[2] /= trans[10];
 }
-bool fib_data::add_atlas(const std::string& file_name)
+bool fib_data::add_atlas(const std::filesystem::path& file_name)
 {
-    if(!std::filesystem::exists(file_name) || !tipl::ends_with(file_name,".nii.gz"))
+    if(!std::filesystem::exists(file_name) || !tipl::ends_with(file_name.u8string(),".nii.gz"))
         return false;
     atlas_list.push_back(std::make_shared<atlas>());
-    atlas_list.back()->name = tipl::remove_all_suffix(std::filesystem::path(file_name).filename().string());
+    atlas_list.back()->name = file_name.stem().stem().u8string();
     atlas_list.back()->filename = file_name;
     atlas_list.back()->template_to_mni = template_I.empty() ? trans_to_mni : template_to_mni;
     return true;
@@ -1441,18 +1429,16 @@ bool fib_data::load_tractography_name_list(void)
 {
     if(!tractography_name_list.empty())
         return true;
-    std::ifstream in(tipl::remove_all_suffix(tractography_atlas_file_name)+".txt");
+    auto label_file = tipl::remove_all_suffix(tractography_atlas_file_name) += ".txt";
+    std::ifstream in(label_file);
     if(!in)
-    {
-        error_msg = "cannot find tractography atlas label text file at " + tipl::remove_all_suffix(tractography_atlas_file_name)+".txt";
-        return false;
-    }
-    tipl::out() << "loading tractography atlas label from " << tipl::remove_all_suffix(tractography_atlas_file_name) << ".txt";
+        return error_msg = "cannot find tractography atlas label text file at " + label_file.u8string(),false;
+    tipl::out() << "loading tractography atlas label from " << label_file.u8string();
     std::copy(std::istream_iterator<std::string>(in),std::istream_iterator<std::string>(),std::back_inserter(tractography_name_list));
     return true;
 }
 
-void fib_data::set_tractography_atlas(const std::string& atlas_file_name)
+void fib_data::set_tractography_atlas(const std::filesystem::path& atlas_file_name)
 {
     tractography_atlas_file_name = atlas_file_name;
     tractography_name_list.clear();
@@ -1570,7 +1556,7 @@ bool fib_data::load_template(void)
     }
     if(!(tipl::io::gz_nifti(qa_template_list[template_id],std::ios::in) >>
          template_I >> template_vs >> template_to_mni
-         >> [&](const std::string& e){tipl::error() << e;error_msg = "cannot load " + qa_template_list[template_id];}))
+          >> [&](const std::string& e){tipl::error() << e;error_msg = "cannot load " + qa_template_list[template_id].u8string();}))
         return false;
 
     float ratio = float(template_I.width()*template_vs[0])/float(dim[0]*vs[0]);
@@ -1683,14 +1669,14 @@ bool fib_data::load_track_atlas(bool symmetric)
         if(tractography_atlas_file_name.empty())
             error_msg = "no tractography atlas for " + template_name_list[template_id] + " template";
         else
-            error_msg = "cannot find atlas file at " + tractography_atlas_file_name;
+            error_msg = "cannot find atlas file at " + tractography_atlas_file_name.u8string();
         return false;
     }
     if(!load_tractography_name_list())
         return false;
 
-    auto tractography_atlas_roi_file_name = tipl::remove_all_suffix(tractography_atlas_file_name) + "_roi.nii.gz";
-    auto tractography_atlas_roa_file_name = tipl::remove_all_suffix(tractography_atlas_file_name) + "_roa.nii.gz";
+    auto tractography_atlas_roi_file_name = (tipl::remove_all_suffix(tractography_atlas_file_name) += "_roi.nii.gz");
+    auto tractography_atlas_roa_file_name = (tipl::remove_all_suffix(tractography_atlas_file_name) += "_roa.nii.gz");
 
 
     if(!tractography_atlas_roi.get() && std::filesystem::exists(tractography_atlas_roi_file_name))
@@ -1716,10 +1702,9 @@ bool fib_data::load_track_atlas(bool symmetric)
         // load the tract to the template space
         track_atlas = std::make_shared<TractModel>(template_I.shape(),template_vs,template_to_mni);
         track_atlas->is_mni = true;
-        if(!track_atlas->load_tracts_from_file(tractography_atlas_file_name,this,true))
+        if(!track_atlas->load_tracts_from_file(tractography_atlas_file_name.u8string(),this,true))
         {
-            error_msg = "failed to load tractography atlas: ";
-            error_msg += tractography_atlas_file_name;
+            error_msg = "failed to load tractography atlas: " + tractography_atlas_file_name.u8string();
             return false;
         }
 
@@ -2046,19 +2031,20 @@ bool to_t1wt2w_templates(tipl::reg::mm_reg<tipl::out>& reg,size_t template_id,bo
     tipl::out() << "using " << best_m << " for registration";
     return true;
 }
-std::string fib_data::get_mapping_file_name(void) const
+std::filesystem::path fib_data::get_mapping_file_name(void) const
 {
-    std::string output_file_name(fib_file_name + "." + template_name_list[template_id]);
+    std::filesystem::path output_file_name = fib_file_name;
+    output_file_name += "." + template_name_list[template_id];
     if(alternative_mapping_index)
         output_file_name += std::to_string(alternative_mapping_index);
     output_file_name += ".mz";
     return output_file_name;
 }
 
-bool save_warping(const tipl::reg::mm_reg<tipl::out>& reg,const std::string& filename);
-bool load_warping(tipl::reg::mm_reg<tipl::out>& reg,const std::string& filename);
+bool save_warping(const tipl::reg::mm_reg<tipl::out>& reg,const std::filesystem::path& filename);
+bool load_warping(tipl::reg::mm_reg<tipl::out>& reg,const std::filesystem::path& filename);
 template<typename reg_type>
-bool load_alternative_warping(reg_type& reg,const std::string& filename)
+bool load_alternative_warping(reg_type& reg,const std::filesystem::path& filename)
 {
     reg_type alt_reg;
     tipl::out() << "open alternative warping " << filename;
@@ -2096,7 +2082,7 @@ bool fib_data::map_to_mni(bool background)
     if(std::filesystem::exists(output_file_name))
     {
         tipl::out() << "use existing mapping";
-        tipl::progress p("open ",output_file_name);
+        tipl::progress p("open ",output_file_name.u8string());
         if(load_mapping(output_file_name))
             return true;
         if(!error_msg.empty())
@@ -2187,7 +2173,7 @@ bool fib_data::map_to_mni(bool background)
         t2s.swap(reg.to2from);
 
         prog = 4;
-        if(!save_warping(reg,output_file_name.c_str()))
+        if(!save_warping(reg,output_file_name))
             tipl::error() << reg.error_msg;
     };
 
@@ -2208,9 +2194,9 @@ bool fib_data::map_to_mni(bool background)
     lambda();
     return !p.aborted();
 }
-bool fib_data::load_mapping(const std::string& file_name)
+bool fib_data::load_mapping(const std::filesystem::path& file_name)
 {
-    if(tipl::ends_with(file_name,".mz"))
+    if(tipl::ends_with(file_name.u8string(),".mz"))
     {
         if(std::filesystem::last_write_time(file_name) < std::filesystem::last_write_time(fib_file_name))
         {
@@ -2356,11 +2342,7 @@ bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,
 
     // trigger atlas loading to avoid crash in multi thread
     if(!at->load_from_file())
-    {
-        error_msg = "cannot read atlas file ";
-        error_msg += at->filename;
-        return false;
-    }
+        return error_msg = "cannot read atlas file " + at->filename.u8string(),false;
     if(new_geo == dim && to_diffusion_space == tipl::identity_matrix())
     {
         tipl::par_for<tipl::dynamic_with_id>(s2t.shape(),[&](const tipl::pixel_index<3>& index,size_t id)
@@ -2391,22 +2373,12 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,
                                  std::vector<std::string>& names)
 {
     if(get_sub2temp_mapping().empty())
-    {
-        error_msg = "cannot warp subject image to the template space";
-        return false;
-    }
+        return error_msg = "cannot warp subject image to the template space",false;
     // trigger atlas loading to avoid crash in multi thread
     if(!at.get())
-    {
-        error_msg = "cannot load atlas";
-        return false;
-    }
+        return error_msg = "cannot load atlas",false;
     if(!at->load_from_file())
-    {
-        error_msg = "cannot read atlas file ";
-        error_msg += at->filename;
-        return false;
-    }
+        return error_msg = "cannot read atlas file " + at->filename.u8string(),false;
     std::vector<std::vector<std::vector<tipl::vector<3,short> > > > region_voxels(tipl::max_thread_count);
     for(auto& region : region_voxels)
     {
