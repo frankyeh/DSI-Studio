@@ -43,7 +43,7 @@ bool reconstruction_window::load_src(int index)
 }
 
 QString check_citation(QString str);
-extern std::vector<std::string> qa_template_list,iso_template_list;
+extern std::vector<std::filesystem::path> qa_template_list,iso_template_list;
 reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *parent) :
     QMainWindow(parent),filenames(filenames_),ui(new Ui::reconstruction_window)
 {
