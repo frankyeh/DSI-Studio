@@ -18,21 +18,22 @@
 
 
 bool download_file(const std::string& url,
-                         const std::string& local_path,
+                   const std::filesystem::path& local_path,
                          std::string& error_msg)
 {
     if(!tipl::begins_with(url,"http") || std::filesystem::exists(local_path))
         return true;
     tipl::progress p("downloading " + std::filesystem::path(url).filename().string(),true);
     namespace fs = std::filesystem;
-    fs::create_directories(fs::path(local_path).parent_path());
+    fs::create_directories(local_path.parent_path());
 
-    auto tmp = local_path + ".download";
+    auto tmp = local_path;
+    tmp += ".download";
     fs::remove(tmp);
 
-    QFile out(QString::fromStdString(tmp));
+    QFile out(tipl::qt::to_qstring(tmp));
     if(!out.open(QFile::WriteOnly))
-        return error_msg = "failed to save " + tmp,false;
+        return error_msg = "failed to save " + tmp.u8string(),false;
 
     QNetworkAccessManager manager;
     QNetworkRequest req{QUrl(QString::fromStdString(url))};
@@ -227,15 +228,14 @@ std::string SliceModel::get_name(void) const
     return view->name;
 }
 // ---------------------------------------------------------------------------
-CustomSliceModel::CustomSliceModel(std::shared_ptr<fib_data> new_handle,
-                                   const std::string& source_file_name_):
+CustomSliceModel::CustomSliceModel(std::shared_ptr<fib_data> new_handle,const std::filesystem::path& source_file_name_):
     SliceModel(new_handle,std::make_shared<slice_model>(source_file_name_)),
     source_file_name(source_file_name_)
 {
     handle->slices.push_back(view);
     is_diffusion_space = false;
 }
-CustomSliceModel::CustomSliceModel(std::shared_ptr<fib_data> new_handle,const std::vector<std::string>& file_list):
+CustomSliceModel::CustomSliceModel(std::shared_ptr<fib_data> new_handle,const std::vector<std::filesystem::path>& file_list):
     SliceModel(new_handle,std::make_shared<slice_model>(file_list[0])),
     source_file_name(file_list[0])
 {
@@ -406,8 +406,8 @@ bool download_private_github_asset(QString conceptualUrlString, QString accessTo
     return true;
 }
 
-void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
-void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
+void prepare_idx(const std::filesystem::path& file_name,std::shared_ptr<tipl::io::gz_istream> in);
+void save_idx(const std::filesystem::path& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 QImage read_qimage(QString filename,std::string& error);
 extern QString access_token;
 bool CustomSliceModel::load_slices(void)
@@ -419,52 +419,51 @@ bool CustomSliceModel::load_slices(void)
     }
     // QSDR loaded, use MNI transformation instead
     bool has_transform = false;
-    auto suffix = QFileInfo(source_file_name.c_str()).suffix();
     auto name = view->name;
     to_dif.identity();
     to_slice.identity();
 
-
-    if(tipl::begins_with(source_file_name,"http"))
+    auto source = source_file_name.u8string();
+    if(tipl::begins_with(source,"http"))
     {
-        auto path = std::filesystem::path(handle->fib_file_name).parent_path() / std::filesystem::path(source_file_name).filename();
-        if(!std::filesystem::exists(path.string()))
+        auto store_path = std::filesystem::path(handle->fib_file_name).parent_path() /
+                          std::filesystem::path(source_file_name).filename();
+        if(!std::filesystem::exists(store_path))
         {   
-            tipl::progress p("downloading data from ",source_file_name);
-            if(tipl::contains(source_file_name,"github.com") &&
-               tipl::contains(source_file_name,"restricted") && !access_token.isEmpty())
+            tipl::progress p("downloading data from ",source);
+            if(tipl::contains(source,"github.com") &&
+               tipl::contains(source,"restricted") && !access_token.isEmpty())
             {
-                if(!download_private_github_asset(QString::fromStdString(source_file_name),access_token,
-                                                  QString::fromStdString(path.string()),error_msg))
+                if(!download_private_github_asset(QString::fromStdString(source),access_token,
+                                                  QString::fromStdString(store_path.u8string()),error_msg))
                     return false;
             }
             else
-                if(!download_file(source_file_name,path.string(),error_msg))
+                if(!download_file(source,store_path,error_msg))
                     return false;
 
         }
-        if(!std::filesystem::exists(path.string()))
+        if(!std::filesystem::exists(store_path))
         {
-            if(tipl::contains(source_file_name,"restricted"))
-                error_msg = "need access privilege to download " + source_file_name;
+            if(tipl::contains(source,"restricted"))
+                error_msg = "need access privilege to download " + source;
             else
-                error_msg = "cannot download "+source_file_name;
+                error_msg = "cannot download "+source;
             return false;
         }
-        source_file_name = path.string();
+        source_file_name = store_path;
     }
 
     // picture as slice
-    if(suffix == "bmp" || suffix == "jpg" || suffix == "png" || suffix == "tif" || suffix == "tiff")
+    if(tipl::ends_with(source,{".bmp",".jpg",".png",".tif",".tiff"}))
     {
-        tipl::progress prog("open ",source_file_name);
-        QString info_file = QString(source_file_name.c_str()) + ".info.txt";
+        tipl::progress prog("open ",source);
         if(source_files.size() <= 1) // single slice
         {
             uint32_t slices_count = 10;
             {
                 size_t max_width = tipl::max_value(handle->dim.begin(),handle->dim.end())*2;
-                QImage in = read_qimage(source_file_name.c_str(),error_msg);
+                QImage in = read_qimage(tipl::qt::to_qstring(source_file_name),error_msg);
                 if(in.isNull())
                 {
                     error_msg = "cannot read picture";
@@ -497,7 +496,7 @@ bool CustomSliceModel::load_slices(void)
         }
         else
         {
-            QImage in = read_qimage(source_file_name.c_str(),error_msg);
+            QImage in = read_qimage(tipl::qt::to_qstring(source_file_name),error_msg);
             if(in.isNull())
             {
                 error_msg = "cannot read picture";
@@ -517,7 +516,7 @@ bool CustomSliceModel::load_slices(void)
 
             for(size_t file_index = 0;prog(file_index,dim[2]);++file_index)
             {
-                QImage in = read_qimage(source_files[file_index].c_str(),error_msg);
+                QImage in = read_qimage(tipl::qt::to_qstring(source_files[file_index]),error_msg);
                 if(in.isNull())
                     return false;
                 QImage buf = in.convertToFormat(QImage::Format_RGB32).mirrored();
@@ -535,12 +534,9 @@ bool CustomSliceModel::load_slices(void)
         }
     }
     // load and match demographics DB file
-    if(source_images.empty() &&
-       (tipl::ends_with(source_file_name,".db.fib.gz") ||
-        tipl::ends_with(source_file_name,".db.fz")) ||
-        tipl::ends_with(source_file_name,".dz"))
+    if(source_images.empty() && tipl::ends_with(source,{".db.fib.gz",".db.fz",".dz"}))
     {
-        tipl::progress prog("open ",source_file_name);
+        tipl::progress prog("open ",source);
         std::shared_ptr<fib_data> db_handle(new fib_data);
         if(!db_handle->load_from_file(source_file_name) || !db_handle->db.has_db())
         {
@@ -575,19 +571,17 @@ bool CustomSliceModel::load_slices(void)
 
 
     // load nifti file
-    if(source_images.empty() && tipl::ends_with(source_file_name,{".nii.gz",".nii"}))
+    if(tipl::ends_with(source,{".nii.gz",".nii"}))
     {
         tipl::io::gz_nifti nifti;
-        prepare_idx(source_file_name.c_str(),nifti.input_stream);
+        prepare_idx(source_file_name,nifti.input_stream);
         if(!nifti.open(source_file_name,std::ios::in) || !(nifti >> binded_image()))
-        {
-            error_msg = nifti.error_msg;
-            return false;
-        }
+            return error_msg = nifti.error_msg,false;
+
         tipl::out() << "slice dim: " << source_images.shape() << " vs: " << vs << " trans: " << trans_to_mni;
 
-        save_idx(source_file_name.c_str(),nifti.input_stream);
-        if(QFileInfo(source_file_name.c_str()).fileName().toLower().contains(".mni."))
+        save_idx(source_file_name,nifti.input_stream);
+        if(tipl::contains(source_file_name.filename().u8string(),".mni."))
         {
             tipl::out() << source_file_name << " has '.mni.' in the file name. It will be treated as mni space image.";
             is_mni = true;
@@ -625,7 +619,7 @@ bool CustomSliceModel::load_slices(void)
             else
             // slice and DWI have the same image size
             {
-                if(QFileInfo(source_file_name.c_str()).fileName().contains("reg"))
+                if(tipl::contains(source_file_name.filename().u8string(),"reg"))
                 {
                     tipl::out() << "The slices have the same dimension, and there is 'reg' in the file name." << std::endl;
                     tipl::out() << "no registration needed." << std::endl;
@@ -642,19 +636,18 @@ bool CustomSliceModel::load_slices(void)
     // bruker images
     if(source_images.empty())
     {
-        tipl::progress prog("open ",source_file_name);
+        tipl::progress prog("open ",source);
         tipl::io::bruker_2dseq bruker;
         if(bruker.load_from_file(source_file_name))
         {
             bruker.get_voxel_size(vs);
             source_images = std::move(bruker.get_image());
             tipl::io::initial_nifti_srow(trans_to_mni,source_images.shape(),vs);
-            QDir d = QFileInfo(source_file_name.c_str()).dir();
-            if(d.cdUp() && d.cdUp())
+            auto method_file_name = source_file_name.parent_path().parent_path().parent_path()/"method";
+            if(std::filesystem::exists(method_file_name))
             {
-                QString method_file_name = d.absolutePath()+ "/method";
                 tipl::io::bruker_info method;
-                if(method.load_from_file(method_file_name.toStdString()))
+                if(method.load_from_file(method_file_name))
                     name = method["Method"];
             }
         }
@@ -663,20 +656,14 @@ bool CustomSliceModel::load_slices(void)
     // dicom images
     if(source_images.empty() && !source_files.empty())
     {
-        tipl::progress prog("open ",source_file_name);
+        tipl::progress prog("open ",source);
         tipl::io::dicom_volume volume;
         if(!volume.load_from_files(source_files))
-        {
-            error_msg = volume.error_msg;
-            return false;
-        }
+            return error_msg = volume.error_msg,false;
         volume.get_voxel_size(vs);
         volume.save_to_image(source_images);
         if(source_images.empty())
-        {
-            error_msg = "failed to load image volume.";
-            return false;
-        }
+            return error_msg = "failed to load image volume.",false;
         tipl::io::initial_nifti_srow(trans_to_mni,source_images.shape(),vs);
     }
 
@@ -695,20 +682,17 @@ bool CustomSliceModel::load_slices(void)
     if(has_transform)
         return true;
 
-    if(std::filesystem::exists(source_file_name+".linear_reg.txt"))
+    if(std::filesystem::exists(std::filesystem::path(source_file_name)+=".linear_reg.txt"))
     {
-        tipl::out() << "loading existing linear registration." << std::endl;
-        if(!(load_mapping((source_file_name+".linear_reg.txt").c_str())))
-        {
-            tipl::error() << "invalid slice mapping file format" << std::endl;
-            return false;
-        }
+        tipl::out() << "loading existing linear registration.";
+        if(!load_mapping(std::filesystem::path(source_file_name)+=".linear_reg.txt"))
+            return tipl::error() << "invalid slice mapping file format",false;
         return true;
     }
 
-    if(QFileInfo(source_file_name.c_str()).fileName().toLower().contains("reg"))
+    if(tipl::contains(source_file_name.filename().u8string(),"reg"))
     {
-        tipl::out() << "'reg' found in the file name. no registration applied." << std::endl;
+        tipl::out() << "'reg' found in the file name. no registration applied.";
         is_diffusion_space = true;
         trans_to_mni = handle->trans_to_mni;
         return true;
@@ -816,12 +800,12 @@ void CustomSliceModel::argmin(void)
     tipl::out() << "registration completed";
 }
 // ---------------------------------------------------------------------------
-bool CustomSliceModel::save_mapping(const std::string& file_name)
+bool CustomSliceModel::save_mapping(const std::filesystem::path& file_name)
 {
     return !!(std::ofstream(file_name) << arg_min << '\n' << view->T);
 }
 // ---------------------------------------------------------------------------
-bool CustomSliceModel::load_mapping(const std::string& file_name)
+bool CustomSliceModel::load_mapping(const std::filesystem::path& file_name)
 {
     std::ifstream in(file_name);
     if(!in)
