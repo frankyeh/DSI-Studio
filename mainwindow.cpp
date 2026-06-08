@@ -91,7 +91,7 @@ void checkForVersionSpecificBugs_Minimal(const QString& bugListText)
 
 
 
-extern std::vector<std::string> fib_template_list;
+extern std::vector<std::filesystem::path> fib_template_list;
 std::vector<tracking_window*> tracking_windows;
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
@@ -388,7 +388,7 @@ void MainWindow::openFile(QStringList file_names)
     {
         if(QString(file_name).endsWith(".csv"))
         {
-            auto lines = tipl::read_text_file(file_name.toStdString());
+            auto lines = tipl::read_text_file(tipl::qt::to_path(file_name));
             if(lines.empty() || !tipl::begins_with(lines[0],"open_fib,"))
             {
                 QMessageBox::critical(this,"ERROR","invalid command csv file");
@@ -693,7 +693,7 @@ void MainWindow::open_DWI(QStringList filenames)
             {
                 tipl::io::bruker_info method_file;
                 QString method_name = dir + "/" +QString::number(i)+"/method";
-                if(method_file.load_from_file(method_name.toStdString().c_str()) &&
+                if(method_file.load_from_file(tipl::qt::to_path(method_name)) &&
                    method_file["PVM_DwEffBval"].length())
                     is_dwi = true;
             }
@@ -701,7 +701,7 @@ void MainWindow::open_DWI(QStringList filenames)
             {
                 tipl::io::bruker_info imnd_file;
                 QString imnd_name = dir + "/" +QString::number(i)+"/imnd";
-                if(imnd_file.load_from_file(imnd_name.toStdString().c_str()) &&
+                if(imnd_file.load_from_file(tipl::qt::to_path(imnd_name)) &&
                    imnd_file["IMND_diff_b_value"].length())
                     is_dwi = true;
             }
@@ -797,7 +797,7 @@ QString RenameDICOMToDir(QString FileName, QString ToDir)
         std::string person, sequence, imagename;
         {
             tipl::io::dicom header;
-            if (!header.load_from_file(FileName.toStdString().c_str()))
+            if (!header.load_from_file(tipl::qt::to_path(FileName)))
             {
                 tipl::out() << "not a DICOM file. Skipping" << std::endl;
                 return QString();
@@ -1408,14 +1408,11 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
             tipl::out() << "parsing " << files.size() << " dicom files";
             std::sort(files.begin(),files.end(),compare_qstring());
             tipl::io::dicom_volume v;
-            std::vector<std::string> file_list;
-            for(int index = 0;index < files.size();++index)
-                file_list.push_back(files[index].toStdString());
+            std::vector<std::filesystem::path> file_list;
+            for(const auto& each : files)
+                file_list.push_back(tipl::qt::to_path(each));
             if(!v.load_from_files(file_list))
-            {
-                tipl::out() << v.error_msg.c_str() << std::endl;
-                return false;
-            }
+                return tipl::out() << v.error_msg.c_str(),false;
             tipl::out() << "dim: " << v.dim;
             tipl::out() << "vs: " << v.vs;
             tipl::out() << "trans: " << tipl::matrix<3,3,float>(v.orientation_matrix);
@@ -1425,10 +1422,7 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
             v.get_voxel_size(vs);
         }
         if(source_images.empty())
-        {
-            tipl::error() << "cannot parse as image volume";
-            return false;
-        }
+            return tipl::error() << "cannot parse as image volume",false;
         tipl::matrix<4,4,float> trans;
         tipl::io::initial_nifti_srow(trans,source_images.shape(),vs);
         return tipl::io::gz_nifti(nii_file_name,std::ios::out) << vs << trans << source_images;
@@ -1437,10 +1431,7 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
     if(!DwiHeader::has_b_table(dicom_files))
     {
         if(!overwrite && std::filesystem::exists(nii_file_name))
-        {
-            tipl::out() << nii_file_name << " exists. skipping";
-            return true;
-        }
+            return tipl::out() << nii_file_name << " exists. skipping",true;
         tipl::out() << "The images do not have b-table. Save as 4D NIFTI" << std::endl;
         auto dicom = dicom_files[0];
         tipl::matrix<4,4> trans;
@@ -1459,17 +1450,11 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
 
     auto src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".sz").c_str(),true).toStdString();
     if(!overwrite && std::filesystem::exists(src_name))
-    {
-        tipl::out() << src_name << " exists. skipping";
-        return true;
-    }
+        return tipl::out() << src_name << " exists. skipping",true;
     src_data src;
     if(!src.load_from_file(dicom_files,false) ||
        !src.save_to_file(src_name))
-    {
-        tipl::error() << src.error_msg;
-        return false;
-    }
+        return tipl::error() << src.error_msg,false;
     return true;
 }
 
@@ -1595,9 +1580,9 @@ void MainWindow::on_template_list_itemDoubleClicked(QListWidgetItem *item)
 void MainWindow::open_template(QString name)
 {
     for(auto& each : fib_template_list)
-        if(std::filesystem::path(each).stem().string() == name.toStdString())
+        if(std::filesystem::path(each).stem().u8string() == name.toStdString())
         {
-            loadFib(each.c_str());
+            loadFib(each.u8string().c_str());
             tracking_windows.back()->work_path.clear();
             return;
         }
