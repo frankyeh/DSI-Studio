@@ -21,8 +21,8 @@
 
 #include <filesystem>
 
-void prepare_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
-void save_idx(const std::string& file_name,std::shared_ptr<tipl::io::gz_istream> in);
+void prepare_idx(const std::filesystem::path& file_name,std::shared_ptr<tipl::io::gz_istream> in);
+void save_idx(const std::filesystem::path& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 const tipl::rgb default_tract_color(255,160,60);
 inline unsigned int get_cluster_color(const std::vector<unsigned int>& tract_color)
 {
