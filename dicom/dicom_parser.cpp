@@ -15,7 +15,7 @@ void get_report_from_bruker2(const tipl::io::bruker_info& header,std::string& re
 QString get_dicom_output_name(QString file_name,QString file_extension, bool add_path)
 {
     tipl::io::dicom header;
-    if (header.load_from_file(file_name.toStdString().c_str()))
+    if(header.load_from_file(tipl::qt::to_path(file_name)))
     {
         std::string Person;
         header.get_patient(Person);
@@ -521,7 +521,7 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
     {
         tipl::io::bruker_info method_file;
         QString method_name = system_path+"/method";
-        if(!method_file.load_from_file(method_name.toStdString().c_str()))
+        if(!method_file.load_from_file(tipl::qt::to_path(method_name)))
         {
             error_msg = "cannot find method file at ";
             error_msg += method_name.toStdString();
@@ -561,7 +561,7 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
             tipl::io::bruker_info imnd_file;
             QString imnd_name = QFileInfo(QFileInfo(QFileInfo(file_name).
                     absolutePath()).absolutePath()).absolutePath()+"/imnd";
-            if(!imnd_file.load_from_file(imnd_name.toStdString().c_str()))
+            if(!imnd_file.load_from_file(tipl::qt::to_path(imnd_name)))
             {
                 error_msg = "cannot find method or imnd file at ";
                 error_msg += imnd_name.toStdString();
@@ -1266,7 +1266,7 @@ void dicom_parser::on_actionOpen_b_table_triggered()
     if(filename.isEmpty())
         return;
     std::vector<double> b_table;
-    for(auto& line: tipl::read_text_file(filename.toStdString()))
+    for(auto& line: tipl::read_text_file(tipl::qt::to_path(filename)))
     {
         std::replace(line.begin(),line.end(),',',' ');
         std::istringstream read_line(line);
@@ -1332,7 +1332,7 @@ void dicom_parser::on_actionOpen_bval_triggered()
     if(filename.isEmpty())
         return;
     std::vector<double> bval;
-    std::ifstream in(filename.toStdString());
+    std::ifstream in(tipl::qt::to_path(filename));
     std::copy(std::istream_iterator<double>(in),
               std::istream_iterator<double>(),
               std::back_inserter(bval));
@@ -1354,7 +1354,7 @@ void dicom_parser::on_actionOpen_bvec_triggered()
         return;
     std::vector<double> bvec;
     unsigned int total_line = 0;
-    for(const auto& line: tipl::read_text_file(filename.toStdString()))
+    for(const auto& line: tipl::read_text_file(tipl::qt::to_path(filename)))
     {
         std::istringstream read_line(line);
         size_t pre_size = bvec.size();
@@ -1384,7 +1384,7 @@ void dicom_parser::on_actionSave_b_table_triggered()
             QFileInfo(ui->SrcName->text()).absolutePath() + "/b_table.txt",
             "Text files (*.txt);;All files (*)");
 
-    std::ofstream btable(filename.toStdString());
+    std::ofstream btable(tipl::qt::to_path(filename));
     if(!btable)
         return;
     for (unsigned int index = 0;index < ui->tableWidget->rowCount();++index)
