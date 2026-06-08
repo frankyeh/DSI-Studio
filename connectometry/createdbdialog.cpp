@@ -161,7 +161,7 @@ void CreateDBDialog::on_open_list1_clicked()
     if(filename.isEmpty())
         return;
     group.clear();
-    for(const auto& line: tipl::read_text_file(filename.toStdString()))
+    for(const auto& line: tipl::read_text_file(tipl::qt::to_path(filename)))
         group << line.c_str();
     update_list();
 }
@@ -176,9 +176,9 @@ void CreateDBDialog::on_save_list1_clicked()
     if(filename.isEmpty())
         return;
 
-    std::ofstream out(filename.toStdString());
+    std::ofstream out(tipl::qt::to_path(filename));
     for(int index = 0;index < group.size();++index)
-        out << group[index].toStdString().c_str() <<  std::endl;
+        out << group[index].toStdString().c_str() << std::endl;
 }
 
 QStringList search_files(QString dir,QString filter);
