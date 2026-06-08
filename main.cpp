@@ -23,7 +23,8 @@
 #endif
 
 std::string device_content_file,topup_param_file;
-std::vector<std::string> template_name_list,qa_template_list,iso_template_list,t1w_template_list,t2w_template_list,wm_template_list,fib_template_list,tract_template_list;
+std::vector<std::string> template_name_list;
+std::vector<std::filesystem::path> qa_template_list,iso_template_list,t1w_template_list,t2w_template_list,wm_template_list,fib_template_list,tract_template_list;
 std::vector<std::vector<std::string> > unet_http,unet_path,unet_desc,unet_names;
 
 
@@ -127,57 +128,73 @@ QStringList search_files(QString dir,QString filter)
     return src_list;
 }
 
-std::string find_full_path(const std::string& name)
-{
-    std::filesystem::path file_path(name);
 
-    std::filesystem::path app_dir_file = std::filesystem::path(QCoreApplication::applicationDirPath().toStdString())/file_path;
-    if(std::filesystem::exists(app_dir_file))
-        return app_dir_file.string();
-
-    std::filesystem::path cwd_file = std::filesystem::current_path()/file_path;
-    if(std::filesystem::exists(cwd_file))
-        return cwd_file.string();
-
-    return name;
-}
 
 bool load_file_name(void)
 {
-    namespace fs = std::filesystem;
+    auto app_path = tipl::qt::to_path(QCoreApplication::applicationDirPath());
+    auto atlas_dir = app_path/"atlas";
+    auto tract_dir = app_path/"tract";
+    auto unet_dir = app_path/"unet";
+
+    auto find_full_path = [app_path](const std::string& name)
+    {
+        std::filesystem::path file_path(name);
+
+        std::filesystem::path app_dir_file = app_path/file_path;
+        if(std::filesystem::exists(app_dir_file))
+            return app_dir_file.u8string();
+
+        std::filesystem::path cwd_file = std::filesystem::current_path()/file_path;
+        if(std::filesystem::exists(cwd_file))
+            return cwd_file.u8string();
+
+        return name;
+    };
+
+
     device_content_file = find_full_path("device.txt");
     topup_param_file = find_full_path("topup_param.txt");
 
-    fs::path atlas_dir = fs::path(QCoreApplication::applicationDirPath().toStdString())/"atlas";
-    fs::path tract_dir = fs::path(QCoreApplication::applicationDirPath().toStdString())/"tract";
-    fs::path unet_dir = fs::path(QCoreApplication::applicationDirPath().toStdString())/"unet";
-    if(!fs::exists(atlas_dir) && !fs::exists(atlas_dir = fs::current_path()/"atlas"))
-        return false;
-    if(!fs::exists(tract_dir) && !fs::exists(atlas_dir = fs::current_path()/"tract"))
-        return false;
-
-    std::vector<std::string> name_list(tipl::get_directories(atlas_dir));
-
-    auto get_rank = [](const std::string& d)
+    if(!std::filesystem::exists(atlas_dir))
     {
-        int rank = 0;
-        for(const auto& k : {"human","chimpanzee","rhesus","marmoset","rat","mouse"})
+        if(tipl::show_prog)
+            QMessageBox::critical(nullptr,"ERROR",QString::fromStdString("Cannot find atlas folder at " + atlas_dir.u8string()));
+        tipl::error() << "Cannot find atlas folder at " + atlas_dir.u8string();
+        return false;
+    }
+    if(!std::filesystem::exists(tract_dir))
+    {
+        if(tipl::show_prog)
+            QMessageBox::critical(nullptr,"ERROR",QString::fromStdString("Cannot find tract folder at " + tract_dir.u8string()));
+        tipl::error() << "Cannot find tract folder at " + tract_dir.u8string();
+        return false;
+    }
+
+    std::vector<std::string> species_list(tipl::get_directories(atlas_dir));
+    {
+        auto get_rank = [](const std::string& d)
         {
-            if(d.find(k) != std::string::npos)
-                return rank;
-            ++rank;
-        }
-        return rank;
-    };
+            int rank = 0;
+            for(const auto& k : {"human","chimpanzee","rhesus","marmoset","rat","mouse"})
+            {
+                if(d.find(k) != std::string::npos)
+                    return rank;
+                ++rank;
+            }
+            return rank;
+        };
 
-    std::stable_sort(name_list.begin(),name_list.end(),[&](const std::string& a,const std::string& b)
-    {
-        return get_rank(a) < get_rank(b);
-    });
+        std::stable_sort(species_list.begin(),species_list.end(),[&](const std::string& a,const std::string& b)
+        {
+            return get_rank(a) < get_rank(b);
+        });
+    }
 
-    for(const auto& species : name_list)
+
+    for(const auto& species : species_list)
     {
-        if(!fs::exists((tract_dir/(species+".fz")).string()))
+        if(!std::filesystem::exists((tract_dir/(species+".fz")).string()))
             continue;
         template_name_list.push_back(species);
         // under tract/
@@ -197,23 +214,21 @@ bool load_file_name(void)
         {
             std::vector<std::string> http_list,path_list,desc_list,name_list;
 
-            fs::path readme = fs::path(unet_dir)/"README.md";
-            fs::path local_dir = QStandardPaths::writableLocation(
-                                     QStandardPaths::AppLocalDataLocation).toStdString();
-            local_dir /= "unet";
-            fs::create_directories(local_dir);
+            auto readme = unet_dir/"README.md";
+            auto local_unet_dir = tipl::qt::to_path(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))/"unet";
+            std::filesystem::create_directories(local_unet_dir);
 
-            auto time = [](const fs::path& p)
+            auto time = [](const std::filesystem::path& p)
             {
                 std::error_code ec;
-                auto t = fs::last_write_time(p,ec);
-                return ec ? fs::file_time_type::min() : t;
+                auto t = std::filesystem::last_write_time(p,ec);
+                return ec ? std::filesystem::file_time_type::min() : t;
             };
 
             auto readme_time = time(readme);
             auto species_prefix = tipl::to_lower(species) + "_";
 
-            for(auto line : tipl::read_text_file(readme.string()))
+            for(auto line : tipl::read_text_file(readme))
             {
                 if(std::count(line.begin(),line.end(),'|') != 4 ||
                     !tipl::contains(line,".nz") || !tipl::contains(line,"https"))
@@ -225,17 +240,17 @@ bool load_file_name(void)
                 auto b = link.find("https");
                 auto e = link.find(')',b);
                 auto url = link.substr(b,e-b);
-                auto nz = fs::path(url).filename().string();
+                auto nz = std::filesystem::path(url).filename().u8string();
 
                 if(!tipl::begins_with(tipl::to_lower(nz),species_prefix))
                     continue;
 
-                fs::path local_nz = local_dir/nz;
-                if(fs::exists(local_nz) && time(local_nz) <= readme_time)
-                    fs::remove(local_nz);
+                std::filesystem::path local_nz = local_unet_dir/nz;
+                if(std::filesystem::exists(local_nz) && time(local_nz) <= readme_time)
+                    std::filesystem::remove(local_nz);
 
                 http_list.push_back(url);
-                path_list.push_back(local_nz.string());
+                path_list.push_back(local_nz.u8string());
                 name_list.push_back(name);
                 desc_list.push_back(col[2]);
             }
@@ -246,9 +261,14 @@ bool load_file_name(void)
             unet_desc.push_back(std::move(desc_list));
         }
     }
-
-    return !template_name_list.empty();
-
+    if(template_name_list.empty())
+    {
+        if(tipl::show_prog)
+            QMessageBox::critical(nullptr,"ERROR",QString::fromStdString("Cannot find template images at " + atlas_dir.u8string()));
+        tipl::error() << "Cannot find template images at " + atlas_dir.u8string();
+        return false;
+    }
+    return true;
 }
 
 const char* version_string = "Hou \"\xe4\xbe\xaf\"";
@@ -302,21 +322,18 @@ bool init_application(void)
             }
         }
 
-        if(!load_file_name())
-        {
-            QMessageBox::critical(nullptr,"ERROR","Cannot find template data.");
-            return false;
-        }
+
 
     }
-    else
+
+    if(!load_file_name())
     {
-        if(!load_file_name())
-        {
-            tipl::error() << "cannot find template data." << std::endl;
-            return false;
-        }
+        if(tipl::show_prog)
+            QMessageBox::critical(nullptr,"ERROR","Cannot find template data.");
+        tipl::error() << "cannot find template data.";
+        return false;
     }
+
 
     if constexpr(tipl::use_cuda)
     {
