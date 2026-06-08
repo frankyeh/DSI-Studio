@@ -20,7 +20,8 @@ private:// for multiple roi atlas only
     tipl::image<4,char> multiple_I;
     std::vector<tipl::const_pointer_image<3,char> > multiple_I_3d;
 public:
-    std::string name,filename,error_msg;
+    std::filesystem::path filename;
+    std::string name,error_msg;
     bool is_multiple_roi;
     tipl::matrix<4,4> template_to_mni;
 public:

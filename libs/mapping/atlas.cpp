@@ -9,13 +9,9 @@ void apply_trans(tipl::vector<3>& pos,const tipl::matrix<4,4>& trans);
 
 void atlas::load_label(void)
 {
-    std::string text_file_name(tipl::remove_all_suffix(filename) + ".txt");
+    auto text_file_name = (tipl::remove_all_suffix(filename) += ".txt");
     if(!std::filesystem::exists(text_file_name))
-    {
-        error_msg = "cannot find label file at ";
-        error_msg += text_file_name;
         return;
-    }
     for(const auto& line: tipl::read_text_file(text_file_name))
     {
         if(line.empty() || line[0] == '#')
@@ -45,7 +41,7 @@ bool atlas::load_from_file(void)
         return false;
     }
     if(name.empty())
-        name = QFileInfo(filename.c_str()).baseName().toStdString();
+        name = filename.stem().stem().u8string();
     is_multiple_roi = (nii.dim(4) > 1); // 4d nifti as multiple roi
     if(is_multiple_roi)
     {
