@@ -51,13 +51,11 @@ bool variant_image::command(std::string cmd,std::string param1)
             tipl::morphology::defragment(brain_outter_mask);
             tipl::morphology::negate(brain_outter_mask);
 
-            tipl::io::gz_nifti nii;
-            nii.flip_swap_seq = flip_swap_seq;
             auto J = I;
             tipl::ml3d::tissue_seg unet;
             unet.eval.mask = brain_outter_mask;
-            nii.apply_flip_swap_seq(unet.eval.mask);
-            nii.apply_flip_swap_seq(J);
+            tipl::io::apply_flip_swap_seq(unet.eval.mask,flip_swap_seq);
+            tipl::io::apply_flip_swap_seq(J,flip_swap_seq);
 
             if(!download_unet_model(tipl::remove_all_suffix(std::filesystem::path(param1).filename().string()),unet.error_msg) ||
                !unet.load_model<tipl::io::gz_mat_read>(unet.error_msg) ||
@@ -67,20 +65,20 @@ bool variant_image::command(std::string cmd,std::string param1)
 
             if(cmd == "brain_extraction")
             {
-                nii.apply_flip_swap_seq(unet.eval.fg_prob,true);
+                tipl::io::apply_flip_swap_seq(unet.eval.fg_prob,flip_swap_seq,true);
                 I *= unet.eval.fg_prob;
             }
             if(cmd == "deface")
             {
                 auto& mask = unet.eval.mask;
-                nii.apply_flip_swap_seq(mask,true);
+                tipl::io::apply_flip_swap_seq(mask,flip_swap_seq,true);
 
                 tipl::downsampling(mask);
                 tipl::downsampling(brain_outter_mask);
                 // expand the mask to include tissue nearby the brain tissue
                 tipl::morphology::smoothing(mask);
                 tipl::morphology::smoothing(mask);
-                tipl::morphology::dilation_by_radius(mask,15/vs[0]);
+                tipl::morphology::dilation_by_radius(mask,12/vs[0]);
 
                 tipl::morphology::dilation(brain_outter_mask);
                 tipl::morphology::dilation(brain_outter_mask);
@@ -100,12 +98,74 @@ bool variant_image::command(std::string cmd,std::string param1)
             if(cmd == "segmentation")
             {
                 I.clear();
-                nii.apply_flip_swap_seq(unet.eval.label,true);
+                tipl::io::apply_flip_swap_seq(unet.eval.label,flip_swap_seq,true);
                 I_int8 = std::move(unet.eval.label);
             }
             return;
         }
 
+        if(cmd == "rotate_to_image" || cmd == "warp_to_image" || cmd == "apply_to_image")
+        {
+            tipl::io::gz_nifti nii(param1,std::ios::in);
+            if(!nii)
+                return error_msg = nii.error_msg,result = false,void();
+
+            if(cmd == "apply_to_image")
+            {
+                if(r.r.front() == 0.0f)
+                    return error_msg = "run registration first to get the mapping field",void();
+                I.resize(r.Is);
+                bool result = interpolation ? nii.to_space<tipl::interpolation::linear>(I,r.IR):
+                                  nii.to_space<tipl::interpolation::majority>(I,r.IR);
+                if(!result)
+                    return error_msg = "failed to read file data",result = false,void();
+            }
+            else
+            {
+                const bool warp = cmd[0] == 'w';
+                r.clear();
+                r.Ivs = vs; r.IR = T; r.Is_is_mni = is_mni;
+
+                nii.get_image_transformation(T); // target native T before toLPS
+
+                tipl::image<3> It;
+                if(!(nii >> It >> r.Itvs >> r.ItR >> r.Its >> r.It_is_mni >> [&](const std::string& e){error_msg = e;}))
+                    return;
+
+                tipl::io::apply_flip_swap_seq(I,tipl::io::toLPS(tipl::vector<3,int>(I.shape()).begin(),r.Ivs.begin(),r.IR.begin()));
+                r.Is = I.shape();
+
+                for(size_t i = 0;i < 3;++i)
+                {
+                    float w1 = r.Is[i]*r.Ivs[i], w2 = r.Its[i]*r.Itvs[i];
+                    if(w1 > w2*2.0f || w2 > w1*2.0f)
+                        return error_msg = std::string("Large dimension differences in the ") + "xyz"[i] +
+                                           " axis : image=" + std::to_string(w1) + " mm, target=" + std::to_string(w2) +
+                                           " mm. Please resize current image to facilitate alignment.",result = false,void();
+                }
+
+                r.I[0] = tipl::reg::subject_image_pre(tipl::image<3>(I));
+                r.It[0] = tipl::reg::template_image_pre(std::move(It));
+                r.linear_param.reg_type = warp ? tipl::reg::affine : tipl::reg::rigid_body;
+                bool terminated = false;
+                r.linear_reg(terminated);
+                if(!terminated && warp)
+                    r.nonlinear_reg(terminated);
+                if(terminated)
+                    return error_msg = "aborted",void();
+
+                flip_swap_seq = nii.flip_swap_seq;
+                vs = tipl::to_vs(T);
+                is_mni = r.It_is_mni;
+            }
+
+            I = interpolation ?
+                       r.template apply_warping<true,tipl::interpolation::linear>(I) :
+                       r.template apply_warping<true,tipl::interpolation::majority>(I);
+            tipl::io::apply_flip_swap_seq(I,flip_swap_seq,true);
+            shape = I.shape();
+            return;
+        }
         result = tipl::command<void,tipl::io::gz_nifti>(I,vs,T,is_mni,cmd,param1,interpolation,error_msg);
         shape = I.shape();
     });
