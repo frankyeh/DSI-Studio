@@ -628,7 +628,7 @@
     <string>Reduce image size by cropping the image</string>
    </property>
    <property name="statusTip">
-    <string>10 10 0</string>
+    <string>0 0 0</string>
    </property>
   </action>
   <action name="actionSet_Translocation">
