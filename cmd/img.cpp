@@ -54,6 +54,8 @@ bool variant_image::command(std::string cmd,std::string param1)
             auto J = I;
             tipl::ml3d::tissue_seg unet;
             unet.eval.mask = brain_outter_mask;
+
+            auto flip_swap_seq = tipl::io::get_flip_swap_seq(T);
             tipl::io::apply_flip_swap_seq(unet.eval.mask,flip_swap_seq);
             tipl::io::apply_flip_swap_seq(J,flip_swap_seq);
 
@@ -154,7 +156,6 @@ bool variant_image::command(std::string cmd,std::string param1)
                 if(terminated)
                     return error_msg = "aborted",void();
 
-                flip_swap_seq = nii.flip_swap_seq;
                 vs = tipl::to_vs(T);
                 is_mni = r.It_is_mni;
             }
@@ -162,7 +163,7 @@ bool variant_image::command(std::string cmd,std::string param1)
             I = interpolation ?
                        r.template apply_warping<true,tipl::interpolation::linear>(I) :
                        r.template apply_warping<true,tipl::interpolation::majority>(I);
-            tipl::io::apply_flip_swap_seq(I,flip_swap_seq,true);
+            tipl::io::apply_flip_swap_seq(I,tipl::io::get_flip_swap_seq(T),true);
             shape = I.shape();
             return;
         }
@@ -404,8 +405,6 @@ bool variant_image::load_from_file(const std::filesystem::path& file_name,std::s
             save_idx(file_name,nifti.input_stream);
         std::ostringstream out;
         out << nifti;
-        nifti.toLPS();
-        flip_swap_seq = nifti.flip_swap_seq;
         info = out.str();
     }
     else
@@ -626,8 +625,8 @@ int img(tipl::program_option<tipl::out>& po)
                 if(param.empty())
                 {
                     tipl::out() << "please specify model name using --model=[model file path], available models:";
-                    for(auto each : unet_path)
-                        for(auto each2 : each)
+                    for(const auto& each : unet_path)
+                        for(const auto& each2 : each)
                             tipl::out() << tipl::remove_all_suffix(std::filesystem::path(each2).filename().string());
                     return 0;
                 }
