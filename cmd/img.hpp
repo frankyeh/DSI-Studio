@@ -23,7 +23,8 @@ public:
     tipl::matrix<4,4> T;
     std::vector<char> flip_swap_seq;
     std::string error_msg;
-
+private:
+    tipl::reg::mm_reg<tipl::out> r;
 public:
     variant_image(void) = default;
     variant_image(const variant_image&) = default;
