@@ -25,9 +25,10 @@ class view_image : public QMainWindow
     Q_OBJECT
     std::shared_ptr<TableKeyEventWatcher> table_event;
 public:
-    QString file_name,original_file_name;
+    std::filesystem::path file_name,original_file_name;
     QStringList file_names;
     tipl::io::gz_nifti nifti;
+    char dim_order[3] = {1,2,3};
     explicit view_image(QWidget *parent = nullptr);
     ~view_image();
     bool open(QStringList file_name);
@@ -39,8 +40,6 @@ public:
     void init_image(void);
 private:
     void update_other_images(void);
-    bool has_flip_x(void);
-    bool has_flip_y(void);
 private slots:
     void DeleteRowPressed(int row);
     void show_info(QString info);
@@ -103,9 +102,7 @@ private:
     std::vector<std::string> redo_command_list;
     std::vector<std::string> redo_param_list;
 private:
-private:
     tipl::io::gz_mat_read mat;
-    std::vector<size_t> mat_si2vi;
     void read_mat_info(void);
     bool read_mat(void);
 private: //overlay

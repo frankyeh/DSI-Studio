@@ -216,7 +216,7 @@ bool view_image::command(std::string cmd,std::string param1)
             }
             read_4d_at(old_4d_index);
             goto end_command;
-        }        
+        }
     }
 
     undo_list.push_back(std::make_shared<variant_image>(*cur_image.get()));
@@ -276,7 +276,7 @@ bool view_image::command(std::string cmd,std::string param1)
                 if(command_list[i] == "save" ||
                    command_list[i].find("_image") != std::string::npos)
                 {
-                    if(tipl::match_files(original_file_name.toStdString(),param_list[i],
+                    if(tipl::match_files(original_file_name.u8string(),param_list[i],
                                 file_name2.toStdString(),param2))
                     {
                         tipl::out() << "matched path: " << std::filesystem::path(param2).parent_path().u8string() << std::endl;
@@ -306,7 +306,7 @@ bool view_image::command(std::string cmd,std::string param1)
         end:
         if(file_index < file_names.size() && // The processed is aborted, or there is an error happened
            file_index && // Some files were processed without a problem. file_index=0 is current image, file_index = 1 is the first to-be processed image.
-           original_file_name.toStdString() == param1) // those files were overwritten to original file
+           original_file_name.u8string() == param1) // those files were overwritten to original file
         {
             QMessageBox::critical(this,"ERROR","Some files were processed and overwritten. They will be ignored in the next analyses");
             #ifdef QT6_PATCH
@@ -419,7 +419,7 @@ view_image::view_image(QWidget *parent) :
 
     connect(ui->max_color,SIGNAL(clicked()),this,SLOT(change_contrast()));
     connect(ui->min_color,SIGNAL(clicked()),this,SLOT(change_contrast()));
-    connect(ui->orientation,SIGNAL(currentIndexChanged(int)),this,SLOT(change_contrast()));
+    connect(ui->orientation,qOverload<int>(&QComboBox::currentIndexChanged),this,[this]{init_image();});
     connect(ui->axis_grid,SIGNAL(currentIndexChanged(int)),this,SLOT(change_contrast()));
     connect(ui->overlay_style,SIGNAL(currentIndexChanged(int)),this,SLOT(change_contrast()));
     connect(ui->menuOverlay, SIGNAL(aboutToShow()),this, SLOT(update_overlay_menu()));
@@ -538,14 +538,23 @@ bool view_image::eventFilter(QObject *obj, QEvent *event)
     QPointF point = ui->view->mapToScene(mouseEvent->pos().x(),mouseEvent->pos().y());
     auto x = point.x();
     auto y = point.y();
-    if(has_flip_x())
-        x = source.width() - x;
-    if(has_flip_y())
-        y = source.height() - y;
 
-    auto pos = tipl::slice2space<tipl::vector<3,float> > (cur_dim,
-                      std::round(float(x) / ui->zoom->value()),
-                      std::round(float(y) / ui->zoom->value()),ui->slice_pos->value());
+
+    const int p[3][2] = {{1,2},{0,2},{0,1}};
+    int d = std::abs(dim_order[cur_dim])-1;
+    auto z = dim_order[cur_dim] < 0 ? ui->slice_pos->maximum()-ui->slice_pos->value() : ui->slice_pos->value();
+    bool swap_xy = std::abs(dim_order[p[cur_dim][0]])-1 == p[d][1];
+
+    if(dim_order[p[cur_dim][0]] < 0)
+        x = source.width()-x;
+    if((dim_order[p[cur_dim][1]] < 0) ^ (cur_dim != 2))
+        y = source.height()-y;
+    if(swap_xy)
+        std::swap(x,y);
+
+    auto pos = tipl::slice2space<tipl::vector<3,float> >(d,std::round(float(x)/ui->zoom->value()),
+                                                         std::round(float(y)/ui->zoom->value()),z);
+
     if(!cur_image->shape.is_valid(pos))
         return true;
     auto mni = pos;
@@ -603,7 +612,8 @@ bool view_image::read_mat(void)
 }
 void view_image::on_actionLoad_Image_to_4D_triggered()
 {
-    QString filename = tipl::qt::open_image_file(this,original_file_name,"NIFTI files (*.nii *nii.gz);;All files (*)");
+    QString filename = tipl::qt::open_image_file(this,
+            tipl::qt::to_qstring(original_file_name),"NIFTI files (*.nii *nii.gz);;All files (*)");
     if(filename.isEmpty())
         return;
     tipl::image<3> new_image(cur_image->shape);
@@ -640,19 +650,16 @@ bool view_image::open(QStringList file_names_)
 
 
     file_names = file_names_;
-    original_file_name = file_name = file_names[0];
+    original_file_name = file_name = tipl::qt::to_path(file_names[0]);
     file_names.removeFirst();
-    setWindowTitle(QFileInfo(file_name).fileName());
+    setWindowTitle(file_name.u8string().c_str());
 
 
     std::string info;
     if(file_names.size() > 1 &&
-       (QString(file_name).endsWith(".bmp") ||
-        QString(file_name).endsWith(".png") ||
-        QString(file_name).endsWith(".tif") ||
-        QString(file_name).endsWith(".tiff")))
+       tipl::ends_with(file_name.u8string(),{".bmp",".png",".tif",".tiff"}))
     {
-        QImage in = read_qimage(file_name,error_msg);
+        QImage in = read_qimage(tipl::qt::to_qstring(file_name),error_msg);
         if(in.isNull())
             return false;
         cur_image->pixel_type = variant_image::int8;
@@ -663,7 +670,7 @@ bool view_image::open(QStringList file_names_)
         buf4d.resize(3);
         for(size_t i = 1;i < 3;++i)
             buf4d[i].resize(cur_image->shape.size());
-        tipl::progress prog("open " + file_name.toStdString());
+        tipl::progress prog("open " + file_name.u8string());
         for(size_t file_index = 0;prog(file_index,cur_image->shape[2]);++file_index)
         {
             QImage I = read_qimage(file_names[file_index],error_msg);
@@ -692,35 +699,23 @@ bool view_image::open(QStringList file_names_)
         cur_4d_index = 0;
     }
     else
-        if(QString(file_name).endsWith(".mat") ||
-           QString(file_name).endsWith("fib.gz") ||
-           QString(file_name).endsWith("src.gz") ||
-           QString(file_name).endsWith(".fz") ||
-           QString(file_name).endsWith(".sz") ||
-           QString(file_name).endsWith(".nz") ||
-           QString(file_name).endsWith(".dz"))
+        if(tipl::ends_with(file_name.u8string(),
+                            {".mat","fib.gz","src.gz",".fz",".sz",".nz",".dz"}))
         {
-            tipl::progress prog("open " + file_name.toStdString());
-            if(!mat.load_from_file(tipl::qt::to_path(file_name)))
-            {
-                error_msg = "invalid format";
-                return false;
-            }
+            tipl::progress prog("open " + file_name.u8string());
+            if(!mat.load_from_file(file_name))
+                return error_msg = "invalid format",false;
             if(!read_mat())
                 return false;
-
         }
         else
-        if(!cur_image->load_from_file(tipl::qt::to_path(file_name),info))
-        {
-            QMessageBox::critical(this,"ERROR",(error_msg = cur_image->error_msg).c_str());
-            return false;
-        }
+        if(!cur_image->load_from_file(file_name,info))
+            return QMessageBox::critical(this,"ERROR",(error_msg = cur_image->error_msg).c_str()),false;
 
     if(cur_image->dim4 > 1)
     {
-        prepare_idx(tipl::qt::to_path(file_name),nifti.input_stream);
-        if(!nifti.open(tipl::qt::to_path(file_name),std::ios::in))
+        prepare_idx(file_name,nifti.input_stream);
+        if(!nifti.open(file_name,std::ios::in))
             return error_msg = nifti.error_msg,false;
         buf4d.resize(nifti.dim(4));
         nifti.input_stream->sample_access_point = true;
@@ -766,14 +761,22 @@ void view_image::init_image(void)
         ui->min->setValue(double(min_value));
         ui->max->setValue(double(max_value));
     }
-    if(ui->slice_pos->maximum() != int(cur_image->shape[cur_dim]-1))
-    {
-        ui->slice_pos->setRange(0,cur_image->shape[cur_dim]-1);
-        slice_pos[0] = cur_image->shape.width()/2;
-        slice_pos[1] = cur_image->shape.height()/2;
-        slice_pos[2] = cur_image->shape.depth()/2;
-        ui->slice_pos->setValue(slice_pos[cur_dim]);
-    }
+
+    std::iota(dim_order,dim_order+3,1);
+    if(ui->orientation->currentIndex())
+        tipl::io::apply_flip_swap_seq(dim_order,tipl::io::get_flip_swap_seq(cur_image->T));
+
+    auto vd = [&](int d){return std::abs(dim_order[d])-1;};
+
+    if(ui->slice_pos->maximum() != int(cur_image->shape[vd(cur_dim)]-1))
+        for(int i = 0;i < 3;++i)
+            slice_pos[i] = cur_image->shape[vd(i)]/2;
+
+    ui->slice_pos->setRange(0,int(cur_image->shape[vd(cur_dim)])-1);
+    slice_pos[cur_dim] = std::min<int>(slice_pos[cur_dim],ui->slice_pos->maximum());
+    ui->slice_pos->setValue(slice_pos[cur_dim]);
+
+
 
     ui->actionSet_MNI->setStatusTip(cur_image->is_mni ? "1":"0");
     ui->actionRegrid->setStatusTip(QString("%1 %2 %3").arg(cur_image->vs[0]).arg(cur_image->vs[1]).arg(cur_image->vs[2]));
@@ -852,42 +855,7 @@ void view_image::update_overlay_menu(void)
     }
     ui->overlay_style->setVisible(!overlay_images.empty());
 }
-bool view_image::has_flip_x(void)
-{
-    bool flip_x = false;
-    if(ui->orientation->currentIndex())
-    {
-        flip_x = cur_dim;
-        // this handles the "to LPS"
-        if(cur_image->T[0] > 0)
-        {
-            if(cur_dim == 2)
-                flip_x = !flip_x;
-            if(cur_dim == 1)
-                flip_x = !flip_x;
-        }
-        if(cur_image->T[5] > 0)
-        {
-            if(cur_dim == 0)
-                flip_x = !flip_x;
-        }
-    }
-    return flip_x;
-}
-bool view_image::has_flip_y(void)
-{
-    bool flip_y = false;
-    if(ui->orientation->currentIndex())
-    {
-        flip_y = (cur_dim != 2);
-        if(cur_image->T[5] > 0)
-        {
-            if(cur_dim == 2)
-                flip_y = !flip_y;
-        }
-    }
-    return flip_y;
-}
+
 void view_image::show_info(QString info)
 {
     QStringList list = info.split("\n");
@@ -913,6 +881,17 @@ void view_image::show_image(bool update_others)
         return;
 
     tipl::color_image buffer;
+    const int p[3][2] = {{1,2},{0,2},{0,1}};
+    int d = std::abs(dim_order[cur_dim])-1;
+    int z = dim_order[cur_dim] < 0 ? int(cur_image->shape[d])-1-slice_pos[cur_dim] : slice_pos[cur_dim];
+    bool swap_xy = std::abs(dim_order[p[cur_dim][0]])-1 == p[d][1];
+    bool flip_x = dim_order[p[cur_dim][0]] < 0;
+    bool flip_y = (dim_order[p[cur_dim][1]] < 0) ^ (cur_dim != 2);
+
+    auto get_slice = [&](auto& data)
+    {
+        return tipl::volume2slice_scaled(data,d,size_t(z),ui->zoom->value());
+    };
 
     switch(ui->overlay_style->currentIndex())
     {
@@ -920,7 +899,7 @@ void view_image::show_image(bool update_others)
     case 2: // image only
         cur_image->apply([&](auto& data)
         {
-            v2c.convert(tipl::volume2slice_scaled(data,cur_dim, size_t(slice_pos[cur_dim]),ui->zoom->value()),buffer);
+            v2c.convert(get_slice(data),buffer);
         });
         if(ui->overlay_style->currentIndex() == 2)
             break;
@@ -929,7 +908,7 @@ void view_image::show_image(bool update_others)
             opened_images[overlay_images[i]]->cur_image->apply([&](auto& data)
             {
                 tipl::color_image buffer2(
-                    opened_images[overlay_images[i]]->v2c[tipl::volume2slice_scaled(data,cur_dim, size_t(slice_pos[cur_dim]),ui->zoom->value())]);
+                    opened_images[overlay_images[i]]->v2c[get_slice(data)]);
                 for(size_t j = 0;j < buffer.size();++j)
                 {
                     buffer[j][0] = (buffer2[j][0]>>1) + (buffer[j][0]>>1);
@@ -945,7 +924,7 @@ void view_image::show_image(bool update_others)
             {
                 opened_images[overlay_images[i]]->cur_image->apply([&](auto& data)
                 {
-                    buffer = tipl::color_image(opened_images[overlay_images[i]]->v2c[tipl::volume2slice_scaled(data,cur_dim, size_t(slice_pos[cur_dim]),ui->zoom->value())]);
+                    buffer = tipl::color_image(opened_images[overlay_images[i]]->v2c[get_slice(data)]);
                 });
                 break;
             }
@@ -955,9 +934,10 @@ void view_image::show_image(bool update_others)
 
 
 
-
+    if(swap_xy)
+        tipl::swap_xy(buffer);
     source_image << buffer;
-    source_image = source_image.mirrored(has_flip_x(),has_flip_y());
+    source_image = source_image.mirrored(flip_x,flip_y);
     {
         QPainter paint(&source_image);
 
@@ -966,8 +946,9 @@ void view_image::show_image(bool update_others)
         paint.setPen(pen);
         paint.setFont(font());
 
-        tipl::qt::draw_ruler(paint,cur_image->shape,(ui->orientation->currentIndex()) ? cur_image->T : tipl::matrix<4,4>(tipl::identity_matrix()),cur_dim,
-                        has_flip_x(),has_flip_y(),ui->zoom->value(),ui->axis_grid->currentIndex());
+        tipl::qt::draw_ruler(paint,cur_image->shape,
+                             ui->orientation->currentIndex() ? cur_image->T : tipl::matrix<4,4>(tipl::identity_matrix()),
+                             d,flip_x,flip_y,ui->zoom->value(),ui->axis_grid->currentIndex());
     }
     source << source_image;
     if(update_others)
@@ -1025,7 +1006,7 @@ void view_image::on_actionSave_triggered()
         QMessageBox::information(this,QApplication::applicationName(),"Image Updated");
         return;
     }
-    if(command("save",file_name.toStdString()))
+    if(command("save",file_name.u8string()))
         QMessageBox::information(this,QApplication::applicationName(),"Saved");
     else
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
@@ -1034,14 +1015,14 @@ void view_image::on_actionSave_triggered()
 void view_image::on_action_Save_as_triggered()
 {
     QString filename = tipl::qt::save_image_file(
-                           this,file_name,
+                            this,tipl::qt::to_qstring(file_name),
                             mat.size() ?
                             "FIB/SRC file(*.fz *.sz *fib.gz *src.gz);;All Files (*)":
                             "NIFTI file(*nii.gz *.nii)" );
     if (filename.isEmpty())
         return;
-    file_name = filename;
-    setWindowTitle(QFileInfo(file_name).fileName());
+    file_name = tipl::qt::to_path(filename);
+    setWindowTitle(filename);
     on_actionSave_triggered();
 }
 
@@ -1071,32 +1052,9 @@ void view_image::on_max_valueChanged(double)
     change_contrast();
 }
 
-void view_image::on_AxiView_clicked()
-{
-    no_update = true;
-    cur_dim = 2;
-    ui->slice_pos->setRange(0,cur_image->shape.depth()-1);
-    no_update = false;
-    ui->slice_pos->setValue(slice_pos[cur_dim]);
-}
-
-void view_image::on_CorView_clicked()
-{
-    no_update = true;
-    cur_dim = 1;
-    ui->slice_pos->setRange(0,cur_image->shape.height()-1);
-    no_update = false;
-    ui->slice_pos->setValue(slice_pos[cur_dim]);
-}
-
-void view_image::on_SagView_clicked()
-{
-    no_update = true;
-    cur_dim = 0;
-    ui->slice_pos->setRange(0,cur_image->shape.width()-1);
-    no_update = false;
-    ui->slice_pos->setValue(slice_pos[cur_dim]);
-}
+void view_image::on_AxiView_clicked(){cur_dim = 2; init_image();}
+void view_image::on_CorView_clicked(){cur_dim = 1; init_image();}
+void view_image::on_SagView_clicked(){cur_dim = 0; init_image();}
 
 void view_image::on_slice_pos_valueChanged(int value)
 {
@@ -1141,7 +1099,8 @@ void view_image::run_action2()
         return;
     QString value;
     if(action->text().toLower().contains(" image..."))
-        value = tipl::qt::open_image_file(this,QFileInfo(file_name).absolutePath(),"NIFTI file(*nii.gz *.nii)");
+        value = tipl::qt::open_image_file(this,
+                                          tipl::qt::to_qstring(file_name.parent_path()),"NIFTI file(*nii.gz *.nii)");
     else
     {
         bool ok;
