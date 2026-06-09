@@ -446,8 +446,10 @@
     <addaction name="actionSwap_YZ"/>
     <addaction name="separator"/>
     <addaction name="actionConcatenate_Image"/>
+    <addaction name="separator"/>
     <addaction name="actionRotate_To_Image"/>
     <addaction name="actionWarp_To_Image"/>
+    <addaction name="actionApply_To_Image"/>
    </widget>
    <widget class="QMenu" name="menu_Header">
     <property name="title">
@@ -1121,6 +1123,15 @@
    </property>
    <property name="statusTip">
     <string>file</string>
+   </property>
+  </action>
+  <action name="actionApply_To_Image">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
+   <property name="text">
+    <string>Apply To Image...</string>
    </property>
   </action>
  </widget>
