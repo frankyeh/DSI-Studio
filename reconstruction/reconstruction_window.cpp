@@ -138,7 +138,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         ui->qsdr_reso->setValue(reso);
     }
     else
-        handle->voxel.vs[2];
+        ui->qsdr_reso->setValue(handle->voxel.vs[2]);
 
     if(handle->voxel.is_histology)
     {
