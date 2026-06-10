@@ -583,9 +583,8 @@ void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tip
 extern QByteArray default_geo,default_state;
 void MainWindow::loadFib(QString filename)
 {
-    std::string file_name = filename.toStdString();
     std::shared_ptr<fib_data> new_handle(new fib_data);
-    if (!new_handle->load_from_file(&*file_name.begin()))
+    if (!new_handle->load_from_file(tipl::qt::to_path(filename)))
     {
         if(!new_handle->error_msg.empty())
             QMessageBox::critical(this,"ERROR",new_handle->error_msg.c_str());
