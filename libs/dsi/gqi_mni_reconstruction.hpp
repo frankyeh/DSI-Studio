@@ -80,6 +80,7 @@ public:
 
                 reg.nonlinear_reg(tipl::prog_aborted);
                 ++p;
+                return true;
             }))
                 throw std::runtime_error("reconstruction canceled");
 
