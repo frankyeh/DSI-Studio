@@ -99,7 +99,7 @@ void src_data::update_mask(void)
         if(dwi.depth() >= 300)
         {
             tipl::segmentation::otsu(dwi,voxel.mask,1,0);
-            return;
+            return true;
         }
         if(has_bias_field_correction())
             tipl::segmentation::otsu(dwi,voxel.mask,1,0);
@@ -132,6 +132,7 @@ void src_data::update_mask(void)
         tipl::morphology::defragment_slice(voxel.mask);
         tipl::morphology::defragment(voxel.mask);
         ++p;
+        return true;
     });
 }
 extern std::vector<std::filesystem::path> t2w_template_list,iso_template_list;
@@ -2784,10 +2785,7 @@ bool src_data::save_to_file(const std::string& filename)
         {
             tipl::io::gz_mat_write mat_writer(temp_file);
             if(!mat_writer)
-            {
-                error_msg = "cannot write to a temporary file " + temp_file;
-                return false;
-            }
+                return error_msg = "cannot write to a temporary file " + temp_file,false;
             mat_writer.write("dimension",voxel.dim);
             mat_writer.write("voxel_size",voxel.vs);
             mat_writer.write("trans",voxel.trans_to_mni);
