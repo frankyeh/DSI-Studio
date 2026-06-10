@@ -63,36 +63,25 @@ public:
         reg.match_resolution(false);
 
 
-        // linear registration
         {
-            if(voxel.manual_alignment)
+            tipl::progress prog("registration");
+            if(!prog.run(3,[&](auto& p)
             {
-                tipl::out() << "manual alignment:" << (reg.arg = voxel.qsdr_arg);
-                reg.calculate_linear_r();
-            }
-            else
-            {
-                tipl::run("linear registration",[&](void)
+                if(voxel.manual_alignment)
                 {
+                    tipl::out() << "manual alignment:" << (reg.arg = voxel.qsdr_arg);
+                    reg.calculate_linear_r();
+                }
+                else
                     reg.linear_reg(tipl::prog_aborted);
-                });
-                if(tipl::prog_aborted)
-                    throw std::runtime_error("reconstruction canceled");
+                ++p;
+                if((voxel.R2 = tipl::max_value(reg.r)) < 0.4f)
+                    tipl::warning() << "poor registration found in linear registration. Please check image quality or orientation. consider using manual alignment.";
 
-            }
-            if((voxel.R2 = tipl::max_value(reg.r)) < 0.4f)
-                tipl::warning() << "poor registration found in linear registration. Please check image quality or orientation. consider using manual alignment.";
-
-        }
-
-        {
-            tipl::run("nonlinear registration",[&](void)
-            {
                 reg.nonlinear_reg(tipl::prog_aborted);
-            });
-            if(tipl::prog_aborted)
+                ++p;
+            }))
                 throw std::runtime_error("reconstruction canceled");
-
 
             voxel.R2 = reg.r[1]*reg.r[1];
             tipl::out() << "nonlinear R2: " << voxel.R2 << std::endl;
