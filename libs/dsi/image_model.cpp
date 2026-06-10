@@ -94,42 +94,45 @@ void src_data::update_dwi_sum(void)
 void src_data::update_mask(void)
 {
     tipl::progress prog("create mask from dwi sum");
-    if(dwi.depth() >= 300)
+    prog.run(3,[&](auto& p)
     {
-        tipl::segmentation::otsu(dwi,voxel.mask,1,0);
-        return;
-    }
-
-    if(has_bias_field_correction())
-        tipl::segmentation::otsu(dwi,voxel.mask,1,0);
-    else
-    {
-        tipl::image<3> dwi_corrected(dwi);
-        dwi_corrected *= get_bias_field();
-        tipl::segmentation::otsu(dwi_corrected,voxel.mask,1,0);
-    }
-
-    tipl::morphology::smoothing(voxel.mask);
-    tipl::morphology::smoothing(voxel.mask);
-    tipl::morphology::smoothing(voxel.mask);
-    tipl::morphology::erosion(voxel.mask);
-    tipl::morphology::erosion(voxel.mask);
-    tipl::morphology::defragment(voxel.mask);
-    tipl::morphology::smoothing(voxel.mask);
-    tipl::morphology::defragment(voxel.mask);
-    tipl::morphology::fit(voxel.mask,dwi);
-    tipl::morphology::dilation(voxel.mask);
-    tipl::morphology::smoothing(voxel.mask);
-    tipl::morphology::fit(voxel.mask,dwi);
-    tipl::morphology::dilation(voxel.mask);
-    tipl::morphology::smoothing(voxel.mask);
-    tipl::morphology::fit(voxel.mask,dwi);
-    tipl::morphology::dilation(voxel.mask);
-    tipl::morphology::fit(voxel.mask,dwi);
-    tipl::morphology::fit(voxel.mask,dwi);
-    tipl::morphology::fit(voxel.mask,dwi);
-    tipl::morphology::defragment_slice(voxel.mask);
-    tipl::morphology::defragment(voxel.mask);
+        if(dwi.depth() >= 300)
+        {
+            tipl::segmentation::otsu(dwi,voxel.mask,1,0);
+            return;
+        }
+        if(has_bias_field_correction())
+            tipl::segmentation::otsu(dwi,voxel.mask,1,0);
+        else
+        {
+            tipl::image<3> dwi_corrected(dwi);
+            dwi_corrected *= get_bias_field();
+            tipl::segmentation::otsu(dwi_corrected,voxel.mask,1,0);
+        }
+        ++p;
+        tipl::morphology::smoothing(voxel.mask);
+        tipl::morphology::smoothing(voxel.mask);
+        tipl::morphology::smoothing(voxel.mask);
+        tipl::morphology::erosion(voxel.mask);
+        tipl::morphology::erosion(voxel.mask);
+        tipl::morphology::defragment(voxel.mask);
+        tipl::morphology::smoothing(voxel.mask);
+        tipl::morphology::defragment(voxel.mask);
+        tipl::morphology::fit(voxel.mask,dwi);
+        tipl::morphology::dilation(voxel.mask);
+        tipl::morphology::smoothing(voxel.mask);
+        tipl::morphology::fit(voxel.mask,dwi);
+        tipl::morphology::dilation(voxel.mask);
+        tipl::morphology::smoothing(voxel.mask);
+        tipl::morphology::fit(voxel.mask,dwi);
+        tipl::morphology::dilation(voxel.mask);
+        tipl::morphology::fit(voxel.mask,dwi);
+        tipl::morphology::fit(voxel.mask,dwi);
+        tipl::morphology::fit(voxel.mask,dwi);
+        tipl::morphology::defragment_slice(voxel.mask);
+        tipl::morphology::defragment(voxel.mask);
+        ++p;
+    });
 }
 extern std::vector<std::filesystem::path> t2w_template_list,iso_template_list;
 bool src_data::warp_b0_to_image(tipl::reg::mm_reg<tipl::out>& r)
@@ -3064,28 +3067,21 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
     {
         prepare_idx(dwi_file_name,mat_reader.in);
         if(!mat_reader.load_from_file(dwi_file_name,prog))
-        {
-            if(!prog.aborted())
-                error_msg = "cannot open file: " + mat_reader.error_msg;
+            return error_msg = "cannot open file: " + mat_reader.error_msg,false;
+        if(prog.aborted())
             return false;
-        }
         save_idx(dwi_file_name,mat_reader.in);
         mat_reader.in->close();
 
         if (!mat_reader.read_pointer("dimension",voxel.dim) ||
             !mat_reader.read_pointer("voxel_size",voxel.vs))
-        {
-            error_msg = "incompatible SRC format";
-            return false;
-        }
+            return error_msg = "incompatible SRC format",false;
+
         if(!mat_reader.read_pointer("trans",voxel.trans_to_mni))
             tipl::io::initial_nifti_srow(voxel.trans_to_mni,voxel.dim,voxel.vs);
         int this_src_ver(0);
         if(mat_reader.has("version") && (this_src_ver = mat_reader.read_as_value<int>("version")) > src_ver)
-        {
-            error_msg = "incompatible SRC format. please update DSI Studio to open this file.";
-            return false;
-        }
+            return error_msg = "incompatible SRC format. please update DSI Studio to open this file.",false;
         if(!mat_reader.has("mask"))
             voxel.mask.clear();
         else
@@ -3098,10 +3094,7 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
         unsigned int row,col;
         const float* table;
         if (!mat_reader.read("b_table",row,col,table))
-        {
-            error_msg = "Cannot find b_table matrix";
-            return false;
-        }
+            return error_msg = "cannot find b_table matrix",false;
         src_bvalues.resize(col);
         src_bvectors.resize(col);
         for (unsigned int index = 0;index < col;++index)
@@ -3125,24 +3118,15 @@ bool src_data::load_from_file(const std::string& dwi_file_name)
 
         mat_reader.read("intro",voxel.intro);
 
-        {
-            tipl::progress p2("reading data");
-            src_dwi_data.resize(src_bvalues.size());
-            for (size_t index = 0;p2(index,src_dwi_data.size());++index)
-                if(!mat_reader.read("image"+std::to_string(index),src_dwi_data[index]))
-                    return error_msg = "cannot read image matrix: " + std::to_string(index),false;
-            if(p2.aborted())
-                return false;
-        }
-
-
+        tipl::progress p2("reading data");
+        src_dwi_data.resize(src_bvalues.size());
+        for (size_t index = 0;p2(index,src_dwi_data.size());++index)
+            if(!mat_reader.read("image"+std::to_string(index),src_dwi_data[index]))
+                return error_msg = "cannot read image matrix: " + std::to_string(index),false;
     }
 
     if(prog.aborted())
-    {
-        error_msg = "aborted";
-        return false;
-    }
+        return error_msg = "aborted",false;
 
     update_dwi_sum();
     if(voxel.mask.empty())
