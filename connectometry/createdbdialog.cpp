@@ -206,7 +206,7 @@ void CreateDBDialog::on_select_output_file_clicked()
 #endif
     ui->output_file_name->setText(filename);
 }
-bool odf_average(const char* out_name,std::vector<std::string>& file_names,std::string& error_msg);
+bool odf_average(const std::filesystem::path& out_name,std::vector<std::filesystem::path>& file_names,std::string& error_msg);
 void CreateDBDialog::on_create_data_base_clicked()
 {
     if(ui->output_file_name->text().isEmpty())
@@ -222,14 +222,14 @@ void CreateDBDialog::on_create_data_base_clicked()
 
     if(create_db)
     {
-        std::vector<std::string> name_list;
+        std::vector<std::filesystem::path> name_list;
         for(auto each : group)
-            name_list.push_back(each.toStdString());
+            name_list.push_back(tipl::qt::to_path(each));
 
         fib_data fib;
         if(!fib.load_template_fib(template_id,template_reso) ||
            !fib.db.create_db(name_list) ||
-           !fib.save_to_file(ui->output_file_name->text().toStdString()))
+           !fib.save_to_file(tipl::qt::to_path(ui->output_file_name->text())))
         {
             if(!fib.error_msg.empty())
                 QMessageBox::critical(this,"ERROR",fib.error_msg.c_str());
@@ -239,12 +239,12 @@ void CreateDBDialog::on_create_data_base_clicked()
     }
     else
     {
-        std::vector<std::string> name_list(group.count());
+        std::vector<std::filesystem::path> name_list(group.count());
         for (unsigned int index = 0;index < group.count();++index)
-            name_list[index] = group[index].toStdString().c_str();
+            name_list[index] = tipl::qt::to_path(group[index]);
 
         std::string error_msg;
-        if(!odf_average(ui->output_file_name->text().toStdString().c_str(),name_list,error_msg))
+        if(!odf_average(tipl::qt::to_path(ui->output_file_name->text()),name_list,error_msg))
         {
             if(!error_msg.empty())
                 QMessageBox::critical(this,"ERROR",error_msg.c_str());
