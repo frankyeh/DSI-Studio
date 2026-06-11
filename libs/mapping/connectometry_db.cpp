@@ -376,7 +376,7 @@ void connectometry_db::init_db(void)
             vi2si[index] = (ms++);
 }
 
-bool connectometry_db::extract_indices(const std::string& file_name,const std::vector<std::string>& index_list_to_extract,
+bool connectometry_db::extract_indices(const std::filesystem::path& file_name,const std::vector<std::string>& index_list_to_extract,
                                        float& R2,const std::vector<float*>& data)
 {
     fib_data fib;
@@ -384,7 +384,7 @@ bool connectometry_db::extract_indices(const std::string& file_name,const std::v
        fib.db.has_db() ||
        (fib.is_mni && !fib.mat_reader.read("R2",R2)))
     {
-        handle->error_msg = "cannot use " + file_name + " as a subject file..." + fib.error_msg;
+        handle->error_msg = "cannot use " + file_name.u8string() + " as a subject file..." + fib.error_msg;
         return false;
     }
     if(!fib.is_mni)
@@ -392,7 +392,7 @@ bool connectometry_db::extract_indices(const std::string& file_name,const std::v
         fib.set_template_id(handle->template_id);
         if(!fib.map_to_mni(tipl::show_prog))
         {
-            handle->error_msg = fib.error_msg + " at " + file_name;
+            handle->error_msg = fib.error_msg + " at " + file_name.u8string();
             return false;
         }
         R2 = fib.R2;
@@ -447,7 +447,7 @@ bool connectometry_db::set_current_index(const std::string& name)
         }
     return false;
 }
-bool connectometry_db::create_db(const std::vector<std::string>& file_names,
+bool connectometry_db::create_db(const std::vector<std::filesystem::path>& file_names,
                                  const std::vector<std::string>& included_index)
 {        
     if(file_names.empty())
@@ -462,7 +462,7 @@ bool connectometry_db::create_db(const std::vector<std::string>& file_names,
     init_db();
     fib_data fib;
     if(!fib.load_from_file(file_names[0]))
-        return handle->error_msg = fib.error_msg + " at " + file_names[0],false;
+        return handle->error_msg = fib.error_msg + " at " + file_names[0].u8string(),false;
     index_list = (!included_index.empty() ? included_index:fib.get_index_list());
     if(!add_subjects(file_names))
         return index_list.clear(),false;
@@ -471,7 +471,7 @@ bool connectometry_db::create_db(const std::vector<std::string>& file_names,
     return true;
 }
 
-bool connectometry_db::add_subjects(const std::vector<std::string>& file_names)
+bool connectometry_db::add_subjects(const std::vector<std::filesystem::path>& file_names)
 {
     tipl::progress prog("extract data",true);
     bool failed = false;
@@ -499,7 +499,7 @@ bool connectometry_db::add_subjects(const std::vector<std::string>& file_names)
             failed = true;
             return;
         }
-        extracted_subject_name[subject_index] = tipl::split(std::filesystem::path(file_names[subject_index]).filename().string(),'.')[0];
+        extracted_subject_name[subject_index] = tipl::split(file_names[subject_index].filename().u8string(),'.')[0];
     });
     if(prog.aborted() || failed)
         return false;
