@@ -440,10 +440,10 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
     else
     // loop
     {
-        std::vector<std::string> loop_files;
-        if(!tipl::search_filesystem<tipl::out>(loop,loop_files))
+        std::vector<std::filesystem::path> loop_files;
+        if(!tipl::search_filesystem(loop,loop_files))
         {
-            tipl::error() << "no file found: " << loop << std::endl;;
+            tipl::error() << "no file found: " << loop;
             return 1;
         }
         tipl::out() << "a total of " << loop_files.size() << " files found" << std::endl;
@@ -468,7 +468,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
                     if(each.find('*') == std::string::npos)
                         apply_wildcard_each = each;
                     else
-                    if(!tipl::match_files(loop,loop_files[i],each,apply_wildcard_each))
+                    if(!tipl::match_files(loop,loop_files[i].u8string(),each,apply_wildcard_each))
                     {
                         tipl::error() << "cannot translate " << wildcard.second <<
                                      " at --" << wildcard.first << std::endl;
