@@ -46,7 +46,6 @@ public:
     void openFile(QStringList file_name);
 public:
     void open_DWI(QStringList files);
-    void batch_create_src(const std::vector<std::string>& dwi_nii_files,const std::string& output_dir);
     void loadFib(QString Filename);
     void loadNii(QStringList Filename);
     void loadSrc(QStringList filenames);
