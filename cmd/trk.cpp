@@ -499,7 +499,8 @@ int trk_post(tipl::program_option<tipl::out>& po,
         po.get("mni_track").empty() ? addPrefixToFilename(tract_file_name,"mni_") : po.get("mni_track"),true))
         return tipl::error() << "failed to save --mni_track",1;
     if(po.has(("end_point")) &&
-        !tract_model->save_end_points(po.get("end_point").empty() ? std::filesystem::path(tract_file_name) += ".end.txt" : po.get("end_point")))
+        !tract_model->save_end_points(po.get("end_point").empty() ?
+            std::filesystem::path(tract_file_name) += ".end.txt" : std::filesystem::path(po.get("end_point"))))
         return tipl::error() << "failed to save --end_point",1;
 
     if(po.has(("end_point1")) || po.has(("end_point2")))
