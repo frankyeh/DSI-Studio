@@ -149,9 +149,9 @@ bool load_nii(std::shared_ptr<fib_data> handle,
               std::string& error_msg,
               bool is_mni)
 {
-    if(tipl::contains(std::filesystem::path(file_name).filename().string(),".mni."))
+    if(tipl::contains(std::filesystem::path(file_name).filename().string(),"mni"))
     {
-        tipl::out() << file_name << " has '.mni.' in the file name. It will be treated as mni space image" << std::endl;
+        tipl::out() << file_name << " has 'mni' in the file name. It will be treated as mni space image" << std::endl;
         is_mni = true;
     }
 
@@ -237,7 +237,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     tipl::matrix<4,4> to_diffusion_space = tipl::identity_matrix();
 
     tipl::out() << "FIB file size: " << handle->dim << " vs: " << handle->vs << (handle->is_mni ? " mni space": " not mni space") << std::endl;
-    tipl::out() << nifti_name << " size: " << from.shape() << " vs: " << vs << (is_mni ? " mni space": " not mni space (if mni space, add '.mni.' in file name)") << std::endl;
+    tipl::out() << nifti_name << " size: " << from.shape() << " vs: " << vs << (is_mni ? " mni space": " not mni space (if mni space, add 'mni' in file name)") << std::endl;
 
     if(from.shape() != handle->dim)
     {
@@ -293,7 +293,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     else
     {
         if(is_mni && !handle->is_mni)
-            tipl::out() << "The '.mni.' in the filename is ignored, and " << nifti_name << " is treated as DWI regions because of identical image dimension. " << std::endl;
+            tipl::out() << "The 'mni' in the filename is ignored, and " << nifti_name << " is treated as DWI regions because of identical image dimension. " << std::endl;
     }
 
 
@@ -415,29 +415,25 @@ bool load_nii(tipl::program_option<tipl::out>& po,
 }
 
 
-int trk_post(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::string tract_file_name,bool output_track);
+int trk_post(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
+             std::shared_ptr<TractModel> tract_model,std::filesystem::path tract_file_name,bool output_track);
 std::shared_ptr<fib_data> cmd_load_fib(tipl::program_option<tipl::out>& po);
 
-bool load_tracts(const std::string& file_name,std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::shared_ptr<RoiMgr> roi_mgr)
+bool load_tracts(const std::filesystem::path& file_name,std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::shared_ptr<RoiMgr> roi_mgr)
 {
     if(!std::filesystem::exists(file_name))
-    {
-        tipl::error() << file_name << " does not exist. terminating...";
-        return false;
-    }
-    if(tipl::contains(std::filesystem::path(file_name).filename().string(),".mni."))
-        tipl::out() << file_name << " has '.mni.' in the file name. It will be treated as mni-space tracts" << std::endl;
-    if(!tract_model->load_tracts_from_file(file_name,handle.get(),tipl::contains(std::filesystem::path(file_name).filename().string(),".mni.")))
-    {
-        tipl::error() << "cannot read or parse " << file_name;
-        return false;
-    }
-    tipl::out() << "A total of " << tract_model->get_visible_track_count() << " tracks loaded" << std::endl;
+        return tipl::error() << file_name << " does not exist. terminating...",false;
+    auto is_mni = tipl::contains(file_name.filename().u8string(),"mni");
+    if(is_mni)
+        tipl::out() << file_name << " has 'mni' in the file name. It will be treated as mni-space tracts" << std::endl;
+    if(!tract_model->load_tracts_from_file(file_name,handle.get(),is_mni))
+        return tipl::error() << "cannot read or parse " << file_name,false;
+    tipl::out() << "A total of " << tract_model->get_visible_track_count() << " tracks loaded";
     if(!roi_mgr->report.empty())
     {
-        tipl::out() << "filtering tracts using roi/roa/end regions." << std::endl;
+        tipl::out() << "filtering tracts using roi/roa/end regions.";
         tract_model->filter_by_roi(roi_mgr);
-        tipl::out() << "remaining tract count: " << tract_model->get_visible_track_count() << std::endl;
+        tipl::out() << "remaining tract count: " << tract_model->get_visible_track_count();
     }
     return true;
 }
@@ -566,7 +562,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         return 1;
 
 
-    std::vector<std::string> tract_files(po.get_files("tract"));
+    auto tract_files = po.get_files("tract");
     if(tract_files.empty())
         return tipl::error() << po.error_msg,1;
 
@@ -575,25 +571,24 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
     for(const auto& each : tract_files)
     {
         tracts.push_back(std::make_shared<TractModel>(handle));
-        if(!load_tracts(each.c_str(),handle,tracts.back(),roi_mgr))
+        if(!load_tracts(each,handle,tracts.back(),roi_mgr))
             return 1;
     }
     tipl::out() << "a total of " << tract_files.size() << " tract file(s) loaded" << std::endl;
-
-
-    auto tract_cluster = tracts[0]->tract_cluster;
     if(tracts.size() == 1 && !tracts[0]->tract_cluster.empty())
     {
         tipl::out() << "loading cluster information";
+        auto cluster_file_path = tract_files[0];
+        cluster_file_path += ".txt";
         std::vector<std::string> tract_name;
-        if(std::filesystem::exists(tract_files[0]+".txt"))
+        if(std::filesystem::exists(cluster_file_path))
         {
-            std::ifstream in(tract_files[0]+".txt");
+            std::ifstream in(cluster_file_path);
             tract_name = std::vector<std::string>((std::istream_iterator<std::string>(in)),(std::istream_iterator<std::string>()));
         }
         tracts = TractModel::separate_tracts(tracts[0],tracts[0]->tract_cluster,tract_name);
-        if(tracts.size() > 1 && !std::filesystem::exists(tract_files[0]+".txt"))
-            tipl::warning() << "cannot find label file: " << tract_files[0] << ".txt";
+        if(tracts.size() > 1 && !std::filesystem::exists(cluster_file_path))
+            tipl::warning() << "cannot find label file: " << cluster_file_path;
         tipl::out() << "cluster count: " << tracts.size();
 
     }
@@ -639,9 +634,9 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
                     auto dim = handle->dim;
                     tipl::image<3,uint32_t> accumulate_map(dim);
                     std::mutex add_lock;
-                    tipl::par_for(tract_files.size(),[&](size_t i)
+                    tipl::par_for(tracts.size(),[&](size_t i)
                     {
-                        tipl::out() << "accumulating " << tract_files[i] << "..." <<std::endl;
+                        tipl::out() << "accumulating " << tracts[i] << "..." <<std::endl;
                         std::vector<tipl::vector<3,short> > points;
                         tracts[i]->to_voxel(points);
                         tipl::image<3,char> tract_mask(dim);
@@ -655,7 +650,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
                         accumulate_map += tract_mask;
                     });
                     tipl::image<3> pdi(accumulate_map);
-                    pdi *= 1.0f/float(tract_files.size());
+                    pdi *= 1.0f/float(tracts.size());
                     if(!(tipl::io::gz_nifti(output,std::ios::out) << handle->bind(pdi)
                          << [](const std::string& e){tipl::error() << e;}))
                         return 1;
