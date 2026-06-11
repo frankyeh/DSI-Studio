@@ -60,13 +60,14 @@ jobs:
        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_prerelease.zip" | jar x
        chmod 777 ./dsi-studio/dsi_studio     
        ./dsi-studio/dsi_studio --action=ren --source=./data/
-       ./dsi-studio/dsi_studio --action=src --source=./data/
+    - name: DICOM to SRC/NIFTI 
+      run: ./dsi-studio/dsi_studio --action=src --source=./data/
+    - name: Image reduction 
+      run: |
        mv ./data/*/*.nii.gz ./data
        cd data
-       for f in *.nii.gz;
-        do
-          ../dsi-studio/dsi_studio --action=img --source=$f --cmd=change_type:3+normalize_otsu_median+upper_threshold:1+normalize:1+change_type:0 --output=../${f/%.nii/.nii.gz}
-        done
+       ../dsi-studio/dsi_studio --action=img --source=*.nii.gz --cmd=change_type:3+normalize_otsu_median+upper_threshold:1+normalize:1+change_type:0 --output=../
+
         
   test-image-processing:
     needs: linux-build
@@ -113,17 +114,17 @@ jobs:
         chmod 777 ./dsi-studio/dsi_studio
     - name: Test DTI Recon
       run: |  
-        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=1 |& tee -a log.txt
+        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=1
         ls rhesus.dti.fz
         
     - name: Test GQI Recon
       run: |  
-        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec |& tee -a log.txt
+        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec
         ls rhesus.gqi.fz
 
     - name: Test QSDR Recon
       run: |  
-        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=7 |& tee -a log.txt
+        ./dsi-studio/dsi_studio --source=*.src.gz --action=rec --method=7
         ls rhesus.qsdr.fz
     
   test_human_recon:
