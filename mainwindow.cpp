@@ -815,7 +815,10 @@ std::filesystem::path rename_dicom(const std::filesystem::path& file_name,
         tipl::out() << file_name << "->" << output;
         std::error_code ec;
         if (!std::filesystem::exists(output.parent_path()) && !std::filesystem::create_directories(output.parent_path()))
-            tipl::error() << "cannot create dir " << output;
+        {
+            if(!std::filesystem::exists(output.parent_path()))
+                tipl::error() << "cannot create dir " << output;
+        }
         std::filesystem::rename(file_name,output,ec);
         if(ec)
         {
