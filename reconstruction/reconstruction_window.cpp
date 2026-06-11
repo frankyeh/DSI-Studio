@@ -19,7 +19,7 @@ void move_current_dir_to(const std::string& file_name);
 bool reconstruction_window::load_src(int index)
 {
     handle = std::make_shared<src_data>();
-    if (!handle->load_from_file(filenames[index].toStdString()))
+    if (!handle->load_from_file(tipl::qt::to_path(filenames[index])))
         return false;
     move_current_dir_to(filenames[index].toStdString());
     tipl::progress prog("initiate interface");
@@ -322,7 +322,7 @@ void reconstruction_window::Reconstruction(unsigned char method_id,bool prompt)
         return;
     QMessageBox::information(this,QApplication::applicationName(),"FIB file created");
     raise(); // for Mac
-    ((MainWindow*)parent())->addFib(handle->output_file_name.c_str());
+    ((MainWindow*)parent())->addFib(tipl::qt::to_qstring(handle->output_file_name));
 }
 
 
@@ -381,7 +381,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
             return false;
         param = filename.toStdString();
     }
-    if(tipl::contains_case_insensitive(cmd,"topup") && !std::filesystem::exists(handle->file_name+".corrected.nii.gz"))
+    if(tipl::contains_case_insensitive(cmd,"topup") && !std::filesystem::exists(handle->corrected_file()))
     {
         param = tipl::remove_all_suffix(param) + ".rz";
         if(!std::filesystem::exists(param))
@@ -433,7 +433,7 @@ bool reconstruction_window::command(std::string cmd,std::string param)
         {
             src_data model;
             if (!model.load_from_file(filenames[index].toStdString()) ||
-                !model.run_steps(handle->file_name,previous_steps + cmd + "=" + param + "\n"))
+                !model.run_steps(handle->file_name.u8string(),previous_steps + cmd + "=" + param + "\n"))
             {
                 if(QMessageBox::critical(this,QApplication::applicationName(),
                     QFileInfo(filenames[index]).fileName() + " : " + model.error_msg.c_str() + " Continue?",
@@ -466,7 +466,7 @@ void reconstruction_window::on_doDTI_clicked()
         if(result == QMessageBox::Yes)
             handle->command("[Step T2][Corrections][Volume Orientation Correction]");
     }
-    std::string ref_file_name = handle->file_name;
+    std::string ref_file_name = handle->file_name.u8string();
     std::string ref_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
     std::shared_ptr<src_data> ref_handle = handle;
     tipl::progress prog("process SRC files");
@@ -516,7 +516,7 @@ void reconstruction_window::on_DTI_toggled(bool checked)
         handle->voxel.method_id = 1;
         handle->output_file_name = handle->file_name;
         handle->check_output_file_name();
-        ui->fib_output->setText(handle->output_file_name.c_str());
+        ui->fib_output->setText(tipl::qt::to_qstring(handle->output_file_name));
     }
 }
 
@@ -536,7 +536,7 @@ void reconstruction_window::on_GQI_toggled(bool checked)
         handle->voxel.method_id = 4;
         handle->output_file_name = handle->file_name;
         handle->check_output_file_name();
-        ui->fib_output->setText(handle->output_file_name.c_str());
+        ui->fib_output->setText(tipl::qt::to_qstring(handle->output_file_name));
     }
 
 }
@@ -558,7 +558,7 @@ void reconstruction_window::on_QSDR_toggled(bool checked)
         handle->voxel.method_id = 7;
         handle->output_file_name = handle->file_name;
         handle->check_output_file_name();
-        ui->fib_output->setText(handle->output_file_name.c_str());
+        ui->fib_output->setText(tipl::qt::to_qstring(handle->output_file_name));
     }
 }
 
@@ -752,41 +752,6 @@ void reconstruction_window::on_actionManual_Rotation_triggered()
     update_dimension();
     on_SlicePos_valueChanged(ui->SlicePos->value());
 }
-
-
-bool get_src(std::string filename,src_data& src2,std::string& error_msg)
-{
-    tipl::progress prog_("open " + filename);
-    tipl::image<3,unsigned short> I;
-    if(tipl::ends_with(filename,".dcm"))
-    {
-        tipl::io::dicom in;
-        if(!in.load_from_file(filename))
-        {
-            error_msg = "invalid dicom format";
-            return false;
-        }
-        in >> I;
-        src2.voxel.dim = I.shape();
-        src2.src_dwi_data.push_back(&I[0]);
-    }
-    else
-    if(tipl::ends_with(filename,".nii.gz") ||
-       tipl::ends_with(filename,".nii"))
-    {
-        if(!(tipl::io::gz_nifti(filename,std::ios::in) >> I >> src2.voxel.dim >> [&](const std::string& e){tipl::error()<< (error_msg = e);}))
-            return false;
-        src2.src_dwi_data.push_back(&I[0]);
-    }
-    else
-    {
-        if (!src2.load_from_file(filename))
-            return error_msg = "cannot open " + filename + " : " + src2.error_msg,false;
-    }
-    return true;
-}
-
-
 
 void reconstruction_window::on_actionEnable_TEST_features_triggered()
 {
