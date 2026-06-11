@@ -1379,6 +1379,8 @@ bool dicom2src_and_nii(std::vector<std::filesystem::path> files,bool overwrite)
             if(!v.load_from_file(files[0]))
                 return tipl::error() << "cannot parse dicom file",false;
             v >> std::tie(source_images,vs);
+            if(source_images.empty())
+                return tipl::warning() << "cannot read " << files[0] << " as image, skipping",false;
         }
         else
         {
@@ -1392,9 +1394,10 @@ bool dicom2src_and_nii(std::vector<std::filesystem::path> files,bool overwrite)
             tipl::out() << "flipping: " << tipl::vector<3,int>(v.flip);
             v >> source_images;
             v.get_voxel_size(vs);
+            if(source_images.empty())
+                return tipl::warning() << "cannot read as image volume, skipping",false;
         }
-        if(source_images.empty())
-            return tipl::error() << "cannot parse as image volume",false;
+
         tipl::matrix<4,4,float> trans;
         tipl::io::initial_nifti_srow(trans,source_images.shape(),vs);
         return tipl::io::gz_nifti(nii_file_name,std::ios::out) << vs << trans << source_images;
