@@ -3,14 +3,15 @@
 #include <vector>
 #include <string>
 #include "zlib.h"
-#include "TIPL/tipl.hpp"
+#include "tipl/tipl.hpp"
 
 
 class DwiHeader
 {
 	typedef std::vector<short>::iterator image_iterator;
 public:
-    std::string file_name,report,error_msg;
+    std::string report,error_msg;
+    std::filesystem::path file_name;
     tipl::image<3,unsigned short> image;
     tipl::image<3,unsigned char> mask;
 public:
@@ -21,7 +22,7 @@ public:
     tipl::vector<3,float> voxel_size;
     tipl::matrix<4,4,float> trans_to_mni = tipl::identity_matrix();
 public:
-    bool open(const std::string& filename);
+    bool open(const std::filesystem::path& filename);
 public:
     const unsigned short* begin(void) const
     {
