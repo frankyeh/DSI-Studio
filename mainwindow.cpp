@@ -1435,26 +1435,28 @@ bool dicom2src_and_nii(std::vector<std::filesystem::path> files,bool overwrite)
 
 void dicom2src_and_nii(const std::filesystem::path& dir,bool overwrite)
 {
-    auto dir_list = tipl::search_dirs(dir,std::string());
-    bool has_dicom = false;
-    for(int i = 0;prog(i,dir_list.size());++i)
+    tipl::progress prog("convert DICOM to SRC or nifti files");
+    std::vector<std::filesystem::path> pending{dir};
+    for(size_t p = 0,done = 0,total = 0;p < pending.size();++p)
     {
-        dicom2src_and_nii(dir_list[i],overwrite);
-        auto dicom_file_list = tipl::search_files(dir_list[i],"*.dcm");
-        if(dicom_file_list.empty())
-            continue;
-        has_dicom = true;
-        // aggregate DWI with identical names from consecutive folders
-        while(i+1 < dir_list.size() && std::filesystem::exists(dir_list[i+1]/dicom_file_list.front().filename()))
+        auto dir_list = tipl::search_dirs(pending[p],std::string());
+        total += dir_list.size();
+        bool has_dicom = false;
+        for(size_t i = 0;i < dir_list.size();++i,++done)
         {
-            tipl::search_files(dir_list[i+1],"*.dcm",dicom_file_list);
-            ++i;
+            if(!prog(done,total))
+                return;
+            auto dicom_file_list = tipl::search_files(dir_list[i],"*.dcm");
+            if(dicom_file_list.empty())
+                continue;
+            has_dicom = true;
+            while(i+1 < dir_list.size() && std::filesystem::exists(dir_list[i+1]/dicom_file_list.front().filename()))
+                tipl::search_files(dir_list[++i],"*.dcm",dicom_file_list),++done;
+            dicom2src_and_nii(dicom_file_list,overwrite);
         }
-        dicom2src_and_nii(dicom_file_list,overwrite);
+        if(!has_dicom)
+            pending.insert(pending.end(),dir_list.begin(),dir_list.end());
     }
-    if(!has_dicom)
-        for(auto d : dir_list)
-            dicom2src_and_nii(d,overwrite);
 }
 
 
