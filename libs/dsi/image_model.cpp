@@ -1442,11 +1442,9 @@ void correct_bias_field(tipl::image<3> I,
                         tipl::image<3>& log_bias_field,
                         const tipl::vector<3>& spacing)
 {
-    if(I.shape() != mask.shape())
-    {
-        log_bias_field.clear();
+    if(I.shape() != mask.shape() || I.width() < 2 || I.height() < 2 || I.depth() < 2 ||
+        spacing[0] <= 0.0f || spacing[1] <= 0.0f || spacing[2] <= 0.0f)
         return;
-    }
     std::vector<tipl::shape<3> > old_size;
     while(I.size() > 96*96*96)
     {
@@ -1504,22 +1502,25 @@ void correct_bias_field(tipl::image<3> I,
         int cx = int(std::floor(fx)),cy = int(std::floor(fy)),cz = int(std::floor(fz));
         auto& b = basis[i];
         double sumw = 0.0;
-        for (int iz = cz - spline_range; iz < cz + spline_range; ++iz)
+        for(int iz = cz - spline_range;iz < cz + spline_range;++iz)
         {
+            if(iz < 0 || iz >= c_shape[2])
+                continue;
             float wz = B3_sym(fz - iz);
-            for (int iy = cy - spline_range; iy < cy + spline_range; ++iy)
+            for(int iy = cy - spline_range;iy < cy + spline_range;++iy)
             {
+                if(iy < 0 || iy >= c_shape[1])
+                    continue;
                 float wyz = B3_sym(fy - iy)*wz;
-                for (int ix = cx - spline_range; ix < cx + spline_range; ++ix)
+                for(int ix = cx - spline_range;ix < cx + spline_range;++ix)
                 {
-                    float wxyz = B3_sym(fx - ix) * wyz;
+                    if(ix < 0 || ix >= c_shape[0])
+                        continue;
+                    float wxyz = B3_sym(fx - ix)*wyz;
                     if(wxyz == 0.0f)
                         continue;
                     sumw += wxyz;
-                    if(ix < 0 || iy < 0 || iz < 0 ||
-                        ix >= c_shape[0] || iy >= c_shape[1] || iz >= c_shape[2])
-                        continue;
-                    b.emplace_back(tipl::voxel2index(ix,iy,iz,c_shape), wxyz);
+                    b.emplace_back(tipl::voxel2index(ix,iy,iz,c_shape),wxyz);
                 }
             }
         }
