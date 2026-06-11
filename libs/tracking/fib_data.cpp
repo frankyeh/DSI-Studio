@@ -421,7 +421,7 @@ fib_data::fib_data(tipl::shape<3> dim_,tipl::vector<3> vs_,const tipl::matrix<4,
     dim(dim_),vs(vs_),trans_to_mni(trans_to_mni_)
 {}
 
-bool load_fib_from_tracks(const std::string& file_name,
+bool load_fib_from_tracks(const std::filesystem::path& file_name,
                           tipl::image<3>& I,
                           tipl::vector<3>& vs,
                           tipl::matrix<4,4>& trans_to_mni);
@@ -433,7 +433,7 @@ bool fib_data::load_from_file(const std::filesystem::path& file_name)
     if(!std::filesystem::exists(file_name))
         return error_msg = "file not exist: " + file_name_str,false;
 
-    tipl::progress prog("open ",file_name_str);
+    tipl::progress prog("open",file_name_str);
     tipl::image<3> I;
     tipl::io::gz_nifti header;
     fib_file_name = file_name;
@@ -1140,7 +1140,7 @@ bool fib_data::load_template_fib(size_t id,float reso)
 }
 bool fib_data::save_to_file(const std::filesystem::path& file_name)
 {
-    tipl::progress prog("save " + file_name.u8string());
+    tipl::progress prog("save",file_name.u8string());
     fib_file_name = file_name;
     tipl::io::gz_mat_write matfile(file_name);
     if(!matfile)
