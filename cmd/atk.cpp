@@ -11,12 +11,12 @@
 
 std::string run_auto_track(
                     tipl::program_option<tipl::out>& po,
-                    const std::vector<std::string>& file_list,int& progress);
+                    const std::vector<std::filesystem::path>& file_list,int& progress);
 
 extern std::string auto_track_report;
 int atk(tipl::program_option<tipl::out>& po)
 {
-    std::vector<std::string> file_list(po.get_files("source"));
+    auto file_list = po.get_files("source");
     if(file_list.empty())
         return tipl::error() << po.error_msg,1;
     int progress;
