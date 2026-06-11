@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 #include "zlib.h"
-#include "tipl/tipl.hpp"
+#include "TIPL/tipl.hpp"
 
 
 class DwiHeader
