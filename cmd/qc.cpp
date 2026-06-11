@@ -6,7 +6,7 @@
 
 QStringList search_files(QString dir,QString filter);
 
-std::string quality_check_src_files(const std::vector<std::string>& file_list,
+std::string quality_check_src_files(const std::vector<std::filesystem::path>& file_list,
                                     bool check_btable,bool use_template,unsigned int template_id)
 {
     std::ostringstream out;
@@ -21,13 +21,12 @@ std::string quality_check_src_files(const std::vector<std::string>& file_list,
         if(prog.aborted())
             return;
         std::vector<std::string> output_each;
-        std::string file_name = file_list[i];
-        tipl::out() << "checking " << file_name << std::endl;
-        output_each.push_back(file_name);
+        tipl::out() << "checking " << file_list[i];
+        output_each.push_back(file_list[i].filename().u8string());
         src_data handle;
-        if (!handle.load_from_file(file_name.c_str()))
+        if (!handle.load_from_file(file_list[i]))
         {
-            out << "cannot load SRC file " << file_list[i] << std::endl;
+            out << "cannot load SRC file " << file_list[i] ;
             return;
         }
         // output image dimension
@@ -92,7 +91,7 @@ std::string quality_check_src_files(const std::vector<std::string>& file_list,
     return out.str();
 }
 std::shared_ptr<fib_data> cmd_load_fib(std::string file_name);
-std::string quality_check_fib_files(const std::vector<std::string>& file_list)
+std::string quality_check_fib_files(const std::vector<std::filesystem::path>& file_list)
 {
     std::ostringstream out;
     out << "FileName\tImage dimension\tResolution\tCoherence Index\tR2 (QSDR)" << std::endl;
@@ -101,12 +100,12 @@ std::string quality_check_fib_files(const std::vector<std::string>& file_list)
     tipl::progress prog("checking FIB files");
     for(int i = 0;prog(i,file_list.size());++i)
     {
-        std::shared_ptr<fib_data> handle = cmd_load_fib(file_list[i]);
+        std::shared_ptr<fib_data> handle = cmd_load_fib(file_list[i].u8string());
         if(!handle.get())
-            return QString("Failed to open ").toStdString() + file_list[i];
+            return "cannot open " + file_list[i].u8string();
         auto result = evaluate_fib(handle->dim,handle->dir.fa_otsu,handle->dir.fa[0],
                 [&](int pos){return handle->dir.get_fib(size_t(pos),0);});
-        out << std::filesystem::path(file_list[i]).filename().string() << "\t";
+        out << file_list[i].filename().string() << "\t";
         out << handle->dim << "\t";
         out << handle->vs << "\t";
         out << result << "\t";
@@ -120,7 +119,7 @@ std::string quality_check_fib_files(const std::vector<std::string>& file_list)
     return out.str();
 }
 
-std::string quality_check_nii_files(const std::vector<std::string>& file_list)
+std::string quality_check_nii_files(const std::vector<std::filesystem::path>& file_list)
 {
     std::map<int,std::string> data_type = {
                 {2,"DT_SIGNED_CHAR"},
@@ -151,7 +150,7 @@ std::string quality_check_nii_files(const std::vector<std::string>& file_list)
         tipl::io::gz_nifti nii;
         if(nii.open(file_list[i],std::ios::in))
         {
-            out << std::filesystem::path(file_list[i]).filename().string() << "\t";
+            out << file_list[i].filename().string() << "\t";
             if(nii.dim(4) == 1)
                 out << nii.get_image_dimension<3>() << "\t";
             else
@@ -190,7 +189,7 @@ int qc(tipl::program_option<tipl::out>& po)
     if(po.has("is_fib"))
         is_fib = po.get("is_fib",is_fib);
     tipl::max_thread_count = std::min<int>(12,tipl::max_thread_count);
-    std::vector<std::string> file_list;
+    std::vector<std::filesystem::path> file_list;
     if(std::filesystem::is_directory(source))
     {
         tipl::search_files(source,is_fib ? "*.fib.gz" : "*.src.gz",file_list);
