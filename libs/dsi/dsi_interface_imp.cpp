@@ -14,10 +14,9 @@ void src_data::check_output_file_name(void)
 {
     if(output_file_name.empty())
         output_file_name = file_name;
-    if(tipl::ends_with(output_file_name,{".fz",".fib.gz"}))
+    if(tipl::ends_with(output_file_name.u8string(),{".fz",".fib.gz"}))
         return;
     output_file_name = tipl::remove_all_suffix(output_file_name);
-    std::ostringstream out;
     if(voxel.is_histology)
     {
         output_file_name += ".hist.fz";
@@ -191,7 +190,7 @@ bool src_data::reconstruction(void)
 
 
 bool output_odfs(const tipl::image<3,unsigned char>& mni_mask,
-                 const char* out_name,
+                 const std::filesystem::path& out_name,
                  const char* ext,
                  std::vector<std::vector<float> >& odfs,
                  std::vector<tipl::image<3> >& template_metrics,
@@ -231,16 +230,16 @@ bool output_odfs(const tipl::image<3,unsigned char>& mni_mask,
         swap_data();
         return false;
     }
-    image_model.output_file_name = std::string(out_name)+ext;
+    image_model.output_file_name = std::filesystem::path(out_name)+=ext;
     image_model.save_fib();
     swap_data();
     return true;
 }
 
 
-bool odf_average(const char* out_name,std::vector<std::string>& file_names,std::string& error_msg)
+bool odf_average(const std::filesystem::path& out_name,std::vector<std::filesystem::path>& file_names,std::string& error_msg)
 {
-    if(tipl::ends_with(file_names[0],".nii.gz"))
+    if(tipl::ends_with(file_names[0].u8string(),".nii.gz"))
     {
         tipl::image<3,double> sum;
         tipl::image<3> each;
@@ -273,7 +272,7 @@ bool odf_average(const char* out_name,std::vector<std::string>& file_names,std::
     std::vector<std::vector<double> > odfs;
     tipl::image<3,unsigned int> odf_count;
     tipl::matrix<4,4> mni;
-    std::string file_name;
+    std::filesystem::path file_name;
 
     std::vector<std::string> other_metrics_name;
     std::vector<tipl::image<3> > other_metrics_images;
@@ -285,7 +284,7 @@ bool odf_average(const char* out_name,std::vector<std::string>& file_names,std::
             file_name = file_names[index];
             fib_data fib;
             tipl::out() << "reading file";
-            if(!fib.load_from_file(file_name.c_str()))
+            if(!fib.load_from_file(file_name))
                 throw std::runtime_error(fib.error_msg);
             if(!fib.is_mni)
                 throw std::runtime_error("not QSDR fib file");
@@ -407,7 +406,7 @@ bool odf_average(const char* out_name,std::vector<std::string>& file_names,std::
     } catch (const std::exception& e) {
         error_msg = e.what();
         error_msg += " at ";
-        error_msg += file_name;
+        error_msg += file_name.u8string();
         return false;
     }
     {
