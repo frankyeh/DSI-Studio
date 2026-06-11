@@ -12,32 +12,27 @@ void get_report_from_dicom(const tipl::io::dicom& header,std::string& report_);
 void get_report_from_bruker(const tipl::io::bruker_info& header,std::string& report_);
 void get_report_from_bruker2(const tipl::io::bruker_info& header,std::string& report_);
 
-QString get_dicom_output_name(QString file_name,QString file_extension, bool add_path)
+std::filesystem::path get_dicom_output_name(const std::filesystem::path& file_name,
+                                            const std::string& file_extension, bool add_path)
 {
     tipl::io::dicom header;
-    if(header.load_from_file(tipl::qt::to_path(file_name)))
+    if(header.load_from_file(file_name))
     {
-        std::string Person;
-        header.get_patient(Person);
+        std::string person;
+        header.get_patient(person);
         std::string seq_num;
         header.get_sequence_num(seq_num);
+        seq_num = "_s" + seq_num + file_extension;
         if(add_path)
-        {
-            QDir dir = QFileInfo(file_name).absoluteDir();
-            dir.cdUp();
-            return dir.absolutePath() + "/" + Person.c_str() + "_s" + seq_num.c_str() + file_extension;
-        }
-        else
-        {
-            return QString(Person.c_str()) + "_s" + seq_num.c_str() + file_extension;
-        }
+            return file_name.parent_path().parent_path() / (person + seq_num);
+        return person + seq_num;
     }
     else
     {
-        if(tipl::ends_with(file_name.toStdString(),".nii.gz"))
-            return file_name.remove(".nii.gz")+file_extension;
+        if(tipl::ends_with(file_name.u8string(),".nii.gz"))
+            return tipl::remove_all_suffix(file_name) += file_extension;
         else
-            return file_name+file_extension;
+            return std::filesystem::path(file_name)+=file_extension;
     }
 }
 
@@ -53,7 +48,7 @@ dicom_parser::dicom_parser(QStringList file_list,QWidget *parent) :
 
     if (!dwi_files.empty())
     {
-        ui->SrcName->setText(get_dicom_output_name(file_list[0],".sz",true));
+        ui->SrcName->setText(tipl::qt::to_qstring(get_dicom_output_name(tipl::qt::to_path(file_list[0]),".sz",true)));
         tipl::io::dicom header;
         if (header.load_from_file(file_list[0].toStdString().c_str()))
         {
@@ -72,7 +67,7 @@ dicom_parser::~dicom_parser()
     delete ui;
 }
 
-bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
+bool load_dicom_multi_frame(const std::filesystem::path& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
     tipl::io::dicom dicom_header;// multiple frame image
     if(!dicom_header.load_from_file(file_name))
@@ -221,8 +216,8 @@ bool load_dicom_multi_frame(const char* file_name,std::vector<std::shared_ptr<Dw
 }
 
 bool load_bval_bvec(size_t dwi_size,
-                    const std::string& bval_file_name,std::vector<double>& bval_,
-                    const std::string& bvec_file_name,std::vector<double>& bvec_,bool flip_by = true)
+                    const std::filesystem::path& bval_file_name,std::vector<double>& bval_,
+                    const std::filesystem::path& bvec_file_name,std::vector<double>& bvec_,bool flip_by = true)
 {
     std::vector<double> local_bval;
     std::ifstream in(bval_file_name);
@@ -279,47 +274,28 @@ bool load_bval_bvec(size_t dwi_size,
 }
 
 
-bool find_bval_bvec(const std::string& file_name, std::string& bval, std::string& bvec)
+bool find_bval_bvec(const std::filesystem::path& file_name, std::filesystem::path& bval, std::filesystem::path& bvec)
 {
-    namespace fs = std::filesystem;
-    fs::path p(file_name);
-    fs::path dir = p.parent_path();
-    std::string stem = p.stem().string();
-
-    // Handle double extensions like .nii.gz
-    if (p.extension() == ".gz" && fs::path(stem).extension() == ".nii")
-        stem = fs::path(stem).stem().string();
-    else if (p.extension() == ".nii")
-        stem = p.stem().string();
-
-    std::vector<std::string> bvals, bvecs;
-    auto add_pair = [&](const fs::path& base)
+    std::vector<std::filesystem::path> bvals, bvecs;
+    auto add_pair = [&](const std::filesystem::path& base)
     {
         for (const char* ext : {".bval", ".bvals", ".bval.txt", ".bvals.txt"})
-            bvals.push_back(fs::path(base).replace_extension(ext).string());
+            bvals.push_back(std::filesystem::path(base) += ext);
         for (const char* ext : {".bvec", ".bvecs", ".bvec.txt", ".bvecs.txt"})
-            bvecs.push_back(fs::path(base).replace_extension(ext).string());
+            bvecs.push_back(std::filesystem::path(base) += ext);
     };
-
-    add_pair(dir / stem);
-    if (stem == "data")
-        add_pair(dir / "bval"); // Logic for generic "bval/bvec" names
-
-    auto pick = [](const std::vector<std::string>& cands, std::string& out)
+    add_pair(tipl::remove_all_suffix(file_name));
+    auto pick = [](const std::vector<std::filesystem::path>& cands, std::filesystem::path& out)
     {
         for (const auto& s : cands)
-            if (fs::exists(s))
-            {
-                out = s;
-                return true;
-            }
+            if (std::filesystem::exists(s))
+                return out = s,true;
         return false;
     };
-
     return pick(bvals, bval) && pick(bvecs, bvec);
 }
 
-bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
+bool load_4d_nii(const std::filesystem::path& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                  bool search_bvalbvec,
                  bool must_have_bval_bvec,
                  bool scale_signal,
@@ -381,7 +357,7 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
         }
         if(max_value < 256.0f && max_value != 0.0f)
         {
-            tipl::out() << "The maximum singal is only " << max_value << std::endl;
+            tipl::out() << "The maximum signal is only " << max_value;
             float scale = 1.0f;
             while(max_value*scale*32.0f < std::numeric_limits<unsigned short>::max())
                 scale *= 32.0f;
@@ -396,13 +372,13 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
     }
 
     tipl::image<3,unsigned char> mask;
-    if(std::filesystem::exists(std::filesystem::path(file_name).parent_path()/"nodif_brain_mask.nii.gz") &&
-        tipl::io::gz_nifti((std::filesystem::path(file_name).parent_path()/"nodif_brain_mask.nii.gz").string(),std::ios::in) >> mask)
+    if(std::filesystem::exists(file_name.parent_path()/"nodif_brain_mask.nii.gz") &&
+        tipl::io::gz_nifti(file_name.parent_path()/"nodif_brain_mask.nii.gz",std::ios::in) >> mask)
         tipl::out() << "mask loaded" << std::endl;
 
 
     std::vector<double> bvals,bvecs;
-    std::string bval_name,bvec_name;
+    std::filesystem::path bval_name,bvec_name;
     if(search_bvalbvec)
     {
         if(find_bval_bvec(file_name,bval_name,bvec_name))
@@ -420,6 +396,8 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
     std::string grad_dev_file = (std::filesystem::path(file_name).parent_path()/"grad_dev.nii.gz").string();
     if(std::filesystem::exists(grad_dev_file))
     {
+        if(bvals.empty())
+            return error_msg = "grad_dev.nii.gz requires bval/bvec",false;
         tipl::image<4,float> raw_grad_dev;
         if(tipl::io::gz_nifti(grad_dev_file,std::ios::in) >> raw_grad_dev)
         {
@@ -501,9 +479,9 @@ bool load_4d_nii(const std::string& file_name,std::vector<std::shared_ptr<DwiHea
     return true;
 }
 
-bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg)
+bool load_4d_2dseq(const std::filesystem::path& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg)
 {
-    tipl::progress prog("open ",file_name);
+    tipl::progress prog("open",file_name.u8string());
     tipl::io::bruker_2dseq bruker_header;
     if(!bruker_header.load_from_file(file_name))
     {
@@ -516,30 +494,18 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
     std::string report;
     bruker_header.get_voxel_size(vs);
 
-    QString system_path =QFileInfo(QFileInfo(QFileInfo(file_name).absolutePath()).absolutePath()).absolutePath();
-    if(QFileInfo(system_path+"/method").exists())
+    auto system_path = file_name.parent_path().parent_path().parent_path();
+    if(std::filesystem::exists(system_path/"method"))
     {
         tipl::io::bruker_info method_file;
-        QString method_name = system_path+"/method";
-        if(!method_file.load_from_file(tipl::qt::to_path(method_name)))
-        {
-            error_msg = "cannot find method file at ";
-            error_msg += method_name.toStdString();
-            return false;
-        }        
-        if(!method_file.read("PVM_DwEffBval",bvalues))
-        {
-            error_msg = "cannot find PVM_DwEffBval in method file at ";
-            error_msg += method_name.toStdString();
-            return false;
-        }
         std::vector<float> bvec_temp;
+        auto method_name = system_path/"method";
+        if(!method_file.load_from_file(method_name))
+            return error_msg = "cannot find method file at " + method_name.u8string(),false;
+        if(!method_file.read("PVM_DwEffBval",bvalues))
+            return error_msg = "cannot find PVM_DwEffBval in method file at " + method_name.u8string(),false;
         if(!method_file.read("PVM_DwGradVec",bvec_temp))
-        {
-            error_msg = "cannot find PVM_DwGradVec in method file at ";
-            error_msg += method_name.toStdString();
-            return false;
-        }
+            return error_msg = "cannot find PVM_DwGradVec in method file at " + method_name.u8string(),false;
 
         bvecs.resize(bvalues.size());
         for (unsigned int index = 0,pos = 0;index < bvalues.size();++index,pos += 3)
@@ -553,20 +519,15 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
     }
     else
     {
-        if(QFileInfo(system_path+"/imnd").exists())
+        if(std::filesystem::exists(system_path/"imnd"))
         {
             bvalues.push_back(0);
             bvecs.push_back(tipl::vector<3>());
 
             tipl::io::bruker_info imnd_file;
-            QString imnd_name = QFileInfo(QFileInfo(QFileInfo(file_name).
-                    absolutePath()).absolutePath()).absolutePath()+"/imnd";
-            if(!imnd_file.load_from_file(tipl::qt::to_path(imnd_name)))
-            {
-                error_msg = "cannot find method or imnd file at ";
-                error_msg += imnd_name.toStdString();
-                return false;
-            }
+            auto imnd_name = system_path/"imnd";
+            if(!imnd_file.load_from_file(imnd_name))
+                return error_msg = "cannot find method or imnd file at " + imnd_name.u8string(),false;
             std::istringstream(imnd_file["IMND_diff_b_value"]) >> bvalues[0];
             std::istringstream(imnd_file["IMND_diff_grad_x"]) >> bvecs[0][0];
             std::istringstream(imnd_file["IMND_diff_grad_y"]) >> bvecs[0][1];
@@ -575,7 +536,7 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
             get_report_from_bruker2(imnd_file,report);
         }
         else
-            return error_msg = "cannot find imnd file at " + system_path.toStdString(),false;
+            return error_msg = "cannot find imnd file at " + system_path.u8string(),false;
     }
 
 
@@ -603,11 +564,12 @@ bool load_4d_2dseq(const char* file_name,std::vector<std::shared_ptr<DwiHeader> 
     return true;
 }
 
-bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
+bool load_multiple_slice_dicom(const std::vector<std::filesystem::path>& file_list,
+                               std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                                std::string& error_msg)
 {
     tipl::io::dicom dicom_header;
-    if(!dicom_header.load_from_file(file_list[0].toStdString().c_str()) || !dicom_header.is_dwi())
+    if(!dicom_header.load_from_file(file_list[0]) || !dicom_header.is_dwi())
         return false;
     tipl::shape<3> geo;
     dicom_header.get_image_dimension(geo);
@@ -622,7 +584,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
         tipl::progress prog("parsing multiframe");
         for(int index = 0;prog(index,file_list.size());++index)
         {
-            if(!load_dicom_multi_frame(file_list[index].toStdString().c_str(),dwi_files))
+            if(!load_dicom_multi_frame(file_list[index],dwi_files))
                 return false;
         }
         return !prog.aborted() && !dwi_files.empty();
@@ -635,29 +597,18 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
     for(size_t i = 0;p(i, file_list.size());++i)
     {
         dwis[i] = std::make_shared<DwiHeader>();
-        if(!dwis[i]->open(file_list[i].toStdString().c_str()))
-        {
-            error_msg = dwis[i]->error_msg;
-            error_msg += " at ";
-            error_msg += file_list[i].toStdString();
-            return false;
-        }
-        tipl::out() << QFileInfo(file_list[i]).fileName().toStdString() << " shape: " << dwis[i]->image.shape() << " b:" << dwis[i]->bvalue << " " << dwis[i]->bvec;
+        if(!dwis[i]->open(file_list[i]))
+            return error_msg = dwis[i]->error_msg + " : " + file_list[i].u8string(),false;
+        tipl::out() << file_list[i].filename() << " shape: " << dwis[i]->image.shape() << " b:" << dwis[i]->bvalue << " " << dwis[i]->bvec;
         if(dwis[i]->bvalue > 0.0f)
             has_dwi = true;
         if(!i)
             geo = dwis[i]->image.shape();
         if(dwis[i]->image.shape() != geo)
-        {
-            error_msg = "inconsistent image size found at ";
-            error_msg += file_list[i].toStdString();
-            error_msg += " please parse DICOM into folders before further processing.";
-            return false;
-        }
+            return error_msg = "inconsistent image size at " + file_list[i].filename().u8string() +
+                               ". please parse DICOM into folders before further processing.",false;
     }
-    if(p.aborted())
-        return false;
-    if(!has_dwi)
+    if(p.aborted() || !has_dwi)
         return false;
     if(dicom_header.is_mosaic)
     {
@@ -691,7 +642,7 @@ bool load_multiple_slice_dicom(QStringList file_list,std::vector<std::shared_ptr
         // iterate b first
         {
             for (;b_num < file_list.size();++b_num)
-                if(dwis[0]->bvec == dwis[slice_num]->bvec && dwis[0]->bvalue == dwis[slice_num]->bvalue)
+                if(dwis[0]->bvec == dwis[b_num]->bvec && dwis[0]->bvalue == dwis[b_num]->bvalue)
                     break;
             geo.set_dim(slice_axis,file_list.size()/b_num);
             iterate_slice_first = false;
@@ -778,39 +729,30 @@ void scale_image_buf_to_uint16(std::vector<tipl::image<3> >& image_buf)
         tipl::lower_threshold(image_buf[i],0);
     });
 }
-bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
+bool load_nhdr(const std::vector<std::filesystem::path>& file_list,
+               std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                std::string& error_msg)
 {
-    tipl::progress prog("open " + file_list[0].toStdString());
+    if(file_list.empty())
+        return false;
+    tipl::progress prog("open",file_list.front().u8string());
     if(file_list.size() == 1) // 4D NRRD FILES
     {
         tipl::io::gz_nrrd nrrd;
-        if(!nrrd.load_from_file(file_list[0].toStdString()))
-        {
-            error_msg = nrrd.error_msg;
-            return false;
-        }
+        if(!nrrd.load_from_file(file_list[0]))
+            return error_msg = nrrd.error_msg,false;
         if(nrrd.values["dimension"] != "4" || nrrd.dim4 <= 1)
-        {
-            error_msg = "invalid dimension: expect DWI to be 4D Volumes";
-            return false;
-        }
+            return error_msg = "invalid dimension: expect DWI to be 4D Volumes",false;
         if(!nrrd.values["modality"].empty() && nrrd.values["modality"] != "DWMRI")
-        {
-            error_msg = "invalid modality: " + nrrd.values["modality"];
-            return false;
-        }
+            return error_msg = "invalid modality: " + nrrd.values["modality"],false;
         tipl::image<4,float> image_buffer;
         if(!(nrrd >> image_buffer))
-        {
-            error_msg = nrrd.error_msg;
-            return false;
-        }
+            return error_msg = nrrd.error_msg,false;
         for(int i = 0;prog(i,nrrd.dim4);++i)
         {
             dwi_files.push_back(std::make_shared<DwiHeader>());
             dwi_files.back()->voxel_size = nrrd.vs;
-            dwi_files.back()->file_name = file_list[0].toStdString();
+            dwi_files.back()->file_name = file_list[0];
             dwi_files.back()->image = image_buffer.slice_at(i);
             dwi_files.back()->bvec = {0,0,0};
             char gradient_name[32];
@@ -832,7 +774,7 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
     {
         std::unordered_map<std::string,std::string> value_list;
         {
-            for(const auto& line: tipl::read_text_file(file_list[i].toStdString()))
+            for(const auto& line: tipl::read_text_file(file_list[i]))
             {
                 std::string::size_type pos = 0;
                 if(line.empty() || line[0] == '#' || (pos = line.find(':')) == std::string::npos)
@@ -872,16 +814,9 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
             error_msg = "insufficient memory";
             return false;
         }
-        std::string raw_file_name = file_list[i].toStdString();
-        raw_file_name = raw_file_name.substr(0,raw_file_name.length()-4);
-        raw_file_name += "raw";
-        std::ifstream in(raw_file_name,std::ifstream::binary);
-        tipl::out() << "reading" << raw_file_name << std::endl;
+        std::ifstream in(tipl::remove_all_suffix(file_list[i])+=".raw",std::ifstream::binary);
         if(!in.read((char*)&image_buf[i][0],image_buf[i].size()*sizeof(float)))
-        {
-            error_msg = "failed to read image file";
-            return false;
-        }
+            return error_msg = "failed to read image file",false;
     }
     if(prog.aborted())
         return false;
@@ -894,7 +829,7 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
         {
             dwi_files.push_back(std::make_shared<DwiHeader>());
             dwi_files.back()->voxel_size = vs;
-            dwi_files.back()->file_name = file_list[i].toStdString();
+            dwi_files.back()->file_name = file_list[i];
             dwi_files.back()->report = "The diffusion images were acquired on an Agilent scanner.";
             dwi_files.back()->image = image_buf[i];
             image_buf[i] = tipl::image<3>();
@@ -904,17 +839,20 @@ bool load_nhdr(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& d
     }
     return true;
 }
-bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
+bool load_4d_fdf(const std::vector<std::filesystem::path>& file_list,
+                 std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                  std::string& error_msg)
 {
-    tipl::progress prog("open " + file_list[0].toStdString());
+    if(file_list.empty())
+        return false;
+    tipl::progress prog("open",file_list.front().u8string());
     std::vector<tipl::image<3> > image_buf;
     bool scan_2d = true;
     for (int index = 0;prog(index,file_list.size());++index)
     {
         std::unordered_map<std::string,std::string> value_list;
         {
-            for(const auto& line: tipl::read_text_file(file_list[index].toStdString()))
+            for(const auto& line: tipl::read_text_file(file_list[index]))
             {
                 std::string::size_type pos = 0;
                 if(line.empty() || line[0] == '#' || (pos = line.find('=')) == std::string::npos)
@@ -1014,7 +952,7 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
             dwi_files[uint32_t(dwi_id)]->bvec.normalize();
         }
 
-        std::ifstream in(file_list[index].toStdString().c_str(),std::ifstream::binary);
+        std::ifstream in(file_list[index],std::ifstream::binary);
         if(scan_2d)
         {
             // get DWI and slice location
@@ -1052,96 +990,70 @@ bool load_4d_fdf(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >&
     return true;
 }
 
-std::vector<QStringList> split_by_path(const QStringList &files)
+inline auto split_by_path(const std::vector<std::filesystem::path>& files)
 {
-    std::vector<QStringList> result;
-    QString currentPath;
-    QStringList currentList;
+    std::map<std::filesystem::path,std::vector<std::filesystem::path>> groups;
+    for(const auto& f : files)
+        groups[f.parent_path()].push_back(f);
 
-    for (const auto &file : files)
-    {
-        auto path = QFileInfo(file).absolutePath();
-        if (path != currentPath)
-        {
-            if (!currentList.isEmpty())
-            {
-                result.push_back(currentList);
-                currentList.clear();
-            }
-            currentPath = path;
-        }
-        currentList << file;
-    }
-
-    if (!currentList.isEmpty())
-        result.push_back(currentList);
+    std::vector<std::vector<std::filesystem::path>> result;
+    for(auto& [path,group] : groups)
+        result.push_back(std::move(group));
     return result;
 }
 
-bool parse_dwi(QStringList file_list,
-                    std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg)
+bool parse_dwi(const std::vector<std::filesystem::path>& file_list,
+               std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg)
 {
-    if(file_list.isEmpty())
+    if(file_list.empty())
         return false;
-    if(QFileInfo(file_list[0]).isDir())
+    if(std::filesystem::is_directory(file_list[0]))
     {
-        if(QFileInfo(file_list[0]+"/pdata/1/2dseq").exists())
+        if(std::filesystem::exists(file_list[0]/"pdata"/"1"/"2dseq"))
         {
             for(int index = 0;index < file_list.size();++index)
-                parse_dwi(QStringList() << (file_list[index]+"/pdata/1/2dseq"),dwi_files,error_msg);
+                parse_dwi({file_list[0]/"pdata"/"1"/"2dseq"},dwi_files,error_msg);
             return !dwi_files.empty();
         }
-
         tipl::out()  << "processing a single folder with DICOM files";
-        QDir cur_dir = file_list[0];
-        QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
+        auto cur_dir = file_list[0];
+        auto dicom_file_list = tipl::search_files(file_list[0],"*.dcm");
         if(dicom_file_list.empty())
             return false;
-        for (int index = 0;index < dicom_file_list.size();++index)
-            dicom_file_list[index] = file_list[0] + "/" + dicom_file_list[index];
         return parse_dwi(dicom_file_list,dwi_files,error_msg);
     }
 
     error_msg.clear();
-    if(QFileInfo(file_list.front()).absolutePath() != QFileInfo(file_list.back()).absolutePath())
+    if(file_list.front().parent_path() != file_list.back().parent_path())
     {
         auto dwi_groups = split_by_path(file_list);
         for(const auto& sub_file_list : dwi_groups)
-        {
             if(!parse_dwi(sub_file_list,dwi_files,error_msg))
                 return false;
-        }
         return true;
     }
 
-    if(QFileInfo(file_list[0]).fileName() == "2dseq")
+    if(file_list.front().filename().u8string() == "2dseq")
     {
-        for(int index = 0;index < file_list.size();++index)
-            load_4d_2dseq(file_list[index].toStdString().c_str(),dwi_files,error_msg);
-        return !dwi_files.empty();
-    }
-    if(QFileInfo(file_list[0]).suffix() == "fdf")
-        return load_4d_fdf(file_list,dwi_files,error_msg);
-    if(QFileInfo(file_list[0]).suffix() == "nhdr" || QFileInfo(file_list[0]).suffix() == "nrrd")
-        return load_nhdr(file_list,dwi_files,error_msg);
-    if(QFileInfo(file_list[0]).fileName().endsWith(".nii") ||
-            QFileInfo(file_list[0]).fileName().endsWith(".nii.gz"))
-    {
-        for(int i = 0;i < file_list.size();++i)
-            if(!load_4d_nii(file_list[i].toStdString(),dwi_files,true,false,file_list.size() == 1,error_msg))
+        for(const auto& each : file_list)
+            if(!load_4d_2dseq(each,dwi_files,error_msg))
                 return false;
         return !dwi_files.empty();
     }
-    std::sort(file_list.begin(),file_list.end(),compare_qstring());
-    return load_multiple_slice_dicom(file_list,dwi_files,error_msg);
-}
-bool parse_dwi(const std::vector<std::string>& file_list,
-                    std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg)
-{
-    QStringList qlist;
-    for(const auto& each : file_list)
-        qlist << each.c_str();
-    return parse_dwi(qlist,dwi_files,error_msg);
+    if(file_list.front().extension() == ".fdf")
+        return load_4d_fdf(file_list,dwi_files,error_msg);
+    if(file_list.front().extension() == ".nhdr" || file_list.front().extension() == ".nrrd")
+        return load_nhdr(file_list,dwi_files,error_msg);
+    if(tipl::ends_with(file_list.front().u8string(),{".nii",".nii.gz"}))
+    {
+        for(int i = 0;i < file_list.size();++i)
+            if(!load_4d_nii(file_list[i],dwi_files,true,false,file_list.size() == 1,error_msg))
+                return false;
+        return !dwi_files.empty();
+    }
+    auto sorted_file_list = file_list;
+    std::sort(sorted_file_list.begin(),sorted_file_list.end());
+    return load_multiple_slice_dicom(sorted_file_list,dwi_files,error_msg);
 }
 void dicom_parser::load_table(void)
 {
@@ -1155,7 +1067,7 @@ void dicom_parser::load_table(void)
             dwi_files[index]->bvalue = 0.0f;
             dwi_files[index]->bvec = {0.0f,0.0f,0.0f};
         }
-        ui->tableWidget->setItem(index, 0, new QTableWidgetItem(QFileInfo(dwi_files[index]->file_name.data()).fileName()));
+        ui->tableWidget->setItem(index, 0, new QTableWidgetItem(dwi_files[index]->file_name.filename().u8string().c_str()));
         ui->tableWidget->setItem(index, 1, new QTableWidgetItem(QString::number(dwi_files[index]->bvalue)));
         ui->tableWidget->setItem(index, 2, new QTableWidgetItem(QString::number(dwi_files[index]->bvec[0])));
         ui->tableWidget->setItem(index, 3, new QTableWidgetItem(QString::number(dwi_files[index]->bvec[1])));
@@ -1168,7 +1080,10 @@ void dicom_parser::load_table(void)
 void dicom_parser::load_files(QStringList file_list)
 {
     std::string error_msg;
-    if(!parse_dwi(file_list,dwi_files,error_msg))
+    std::vector<std::filesystem::path> files;
+    for(const auto& f : file_list)
+        files.emplace_back(tipl::qt::to_path(f));
+    if(!parse_dwi(files,dwi_files,error_msg))
     {
         if(!error_msg.empty())
             QMessageBox::critical(this,"ERROR",error_msg.c_str());
