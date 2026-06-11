@@ -153,32 +153,24 @@ public:
     std::vector<tipl::image<3,unsigned short> > nifti_dwi; // if load directly from nifti
 public:
     Voxel voxel;
-    std::string file_name,output_file_name;
+    std::filesystem::path file_name,output_file_name;
     mutable std::string error_msg;
     tipl::io::gz_mat_read mat_reader;
     std::string topup_eddy_report;
     bool apply_mask = false;
     bool is_human_data = true;
+    auto corrected_file(void) const{return std::filesystem::path(file_name) += ".corrected.nii.gz";}
 private:
-    auto working_path(void) const
-    {
-        auto parent_path = std::filesystem::path(file_name).parent_path().string();
-        if(parent_path.empty())
-            return std::string();
-        else
-            return parent_path + "/";
-    }
-    auto acqparam_file(void) const{return file_name + ".topup.acqparams.txt";}
-    auto temp_nifti(void)  const{return file_name + ".nii.gz";}
-    auto corrected_output(void) const{return file_name + ".corrected";}
-    auto corrected_file(void) const{return file_name + ".corrected.nii.gz";}
+    auto acqparam_file(void) const{return std::filesystem::path(file_name) += ".topup.acqparams.txt";}
+    auto temp_nifti(void)  const{return std::filesystem::path(file_name) += ".nii.gz";}
+    auto corrected_output(void) const{return std::filesystem::path(file_name) += ".corrected";}
     auto topup_output(void) const
     {
-        auto stem = std::filesystem::path(file_name).stem().string();
+        auto stem = file_name.stem().u8string();
         std::replace(stem.begin(),stem.end(),'.','_');
-        return working_path() + stem;
+        return file_name.parent_path()/stem;
     }
-    auto topup_result(void) const {return topup_output() + "_fieldcoef.nii.gz";}
+    auto topup_result(void) const {return std::filesystem::path(topup_output()) += "_fieldcoef.nii.gz";}
 public:
     std::vector<tipl::vector<3,float> > src_bvectors;
 public:
@@ -197,7 +189,7 @@ public:
     bool mask_from_template(void);
     void remove(unsigned int index);
     bool check_b_table(bool use_template = true);
-    bool load_intro(const std::string& file_name);
+    bool load_intro(const std::filesystem::path& file_name);
 public:
     std::string get_report(bool dwi_part_only = false);
 public:
@@ -238,25 +230,28 @@ public:
     bool correct_motion(void);
     tipl::image<3> get_bias_field(void);
     bool correct_bias_field(void);
-    bool add_other_image(const std::string& name,const std::string& filename);
+    bool add_other_image(const std::string& name,const std::filesystem::path& filename);
 public:
     std::shared_ptr<src_data> rev_pe_src;
     tipl::shape<3> topup_size;
     void setup_topup_eddy_volume(void);
     //bool distortion_correction(const std::string& file_name);
-    std::string find_topup_reverse_pe(void);
-    bool get_rev_pe(std::string other_src);
+    std::filesystem::path find_topup_reverse_pe(void);
+    bool get_rev_pe(std::filesystem::path other_src);
     bool run_topup(void);
     bool run_applytopup(std::string exec = std::string());
     bool run_eddy(std::string exec = std::string());
     bool load_existing_corrections(void);
 private:
     bool read_b0(std::vector<tipl::image<3> >& b0) const;
-    bool run_plugin(std::string program_name,std::string key_word,
-                    size_t total_keyword_count,std::vector<std::string> param,std::string working_dir,std::string exec = std::string());
+    bool run_plugin(std::string exec_name,
+                    std::string keyword,
+                    size_t total_keyword_count,std::vector<std::string> param,
+                    const std::filesystem::path& working_dir,
+                    std::filesystem::path exec);
     bool generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
                                      std::vector<tipl::image<3> >& rev_b0,
-                                     std::string& b0_appa_file,
+                                     std::filesystem::path& b0_appa_file,
                                      std::string& report);
     bool load_topup_eddy_result(void);
 public:
@@ -264,16 +259,16 @@ public:
     bool run_steps(const std::string& reg_file_name,const std::string& steps);
 public:
     bool load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_files,bool sort_btable);
-    bool load_from_file(const std::vector<std::string>& nii_names,bool need_bval_bvec);
-    bool load_from_file(const std::string& dwi_file_name);
-    bool save_to_file(const std::string& dwi_file_name);
+    bool load_from_file(const std::vector<std::filesystem::path>& nii_names,bool need_bval_bvec);
+    bool load_from_file(const std::filesystem::path& dwi_file_name);
+    bool save_to_file(const std::filesystem::path& dwi_file_name);
     bool save_nii_for_applytopup_or_eddy(bool include_rev) const;
-    bool save_mask_nii(const std::string& nifti_file_name) const;
-    bool save_b0_to_nii(const std::string& nifti_file_name) const;
-    bool save_dwi_sum_to_nii(const std::string& nifti_file_name) const;
-    bool save_b_table(const std::string& file_name) const;
-    bool save_bval(const std::string& file_name) const;
-    bool save_bvec(const std::string& file_name) const;
+    bool save_mask_nii(const std::filesystem::path& nifti_file_name) const;
+    bool save_b0_to_nii(const std::filesystem::path& nifti_file_name) const;
+    bool save_dwi_sum_to_nii(const std::filesystem::path& nifti_file_name) const;
+    bool save_b_table(const std::filesystem::path& file_name) const;
+    bool save_bval(const std::filesystem::path& file_name) const;
+    bool save_bvec(const std::filesystem::path& file_name) const;
 public:
     template<typename ...ProcessList>
     bool reconstruct2(const char* prog_title)
