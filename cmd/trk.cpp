@@ -44,10 +44,7 @@ bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_
                 }
             }
             if(!found)
-            {
-                tipl::error() << "cannot find subject in " << subject_demo << ". Please make sure that the FIB or NIFTI file name includes subject's id." << std::endl;
-                return 1;
-            }
+                tipl::error() << "cannot find subject in " << subject_demo << ". Please make sure that the FIB or NIFTI file name includes subject's id.",false;
         }
         else
             handle->db.demo = subject_demo;
@@ -65,7 +62,7 @@ bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_
     return true;
 }
 bool get_tract_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
-                       std::string file_name,
+                       std::filesystem::path file_name,
                        std::shared_ptr<TractModel> tract_model)
 {
     std::istringstream in(po.get("export"));
@@ -79,7 +76,8 @@ bool get_tract_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data
             return false;
         }
 
-        std::string file_name_stat = file_name + "." + cmd;
+        auto file_name_stat = file_name;
+        file_name_stat += "." + cmd;
         // export statistics
         if(QString(cmd.c_str()).startsWith("tdi"))
         {
@@ -152,7 +150,7 @@ bool get_tract_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data
         if(cmd == "stat")
         {
             file_name_stat += ".txt";
-            tipl::out() << "saving " << file_name_stat << std::endl;
+            tipl::out() << "saving " << file_name_stat;
             std::ofstream out_stat(file_name_stat);
             if(!out_stat)
             {
@@ -183,14 +181,15 @@ bool get_tract_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data
 }
 
 bool get_tract_profile(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
-                       std::string file_name,
+                       std::filesystem::path file_name,
                        std::shared_ptr<TractModel> tract_model)
 {
     tipl::progress prog("get track profile");
     std::string cmd = po.get("profile");
     std::replace(cmd.begin(),cmd.end(),':',' ');
     std::string metrics;
-    uint32_t profile_dir = 0,bandwidth = 1.0;
+    uint32_t profile_dir = 0;
+    float bandwidth = 1.0;
     std::istringstream(cmd) >> metrics >> profile_dir >> bandwidth;
     tipl::out() << "metrics: " << metrics;
     tipl::out() << "type: " << profile_dir;
@@ -199,16 +198,13 @@ bool get_tract_profile(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
     std::vector<float> values,data_profile,data_ci1,data_ci2;
     // check index
     if(handle->get_name_index(metrics) == handle->slices.size())
-    {
-        tipl::error() << "cannot find metrocs " << metrics;
-        return false;
-    }
+        return tipl::error() << "cannot find metrics " << metrics,false;
     tract_model->get_report(handle,profile_dir,bandwidth,metrics,values,data_profile,data_ci1,data_ci2);
 
     std::replace(cmd.begin(),cmd.end(),' ','.');
-    std::string file_name_stat = file_name + "." + cmd + ".txt";
-    tipl::out() << "save " << file_name_stat;
-    std::ofstream report(file_name_stat);
+    file_name += "." + cmd + ".txt";
+    tipl::out() << "save " << file_name;
+    std::ofstream report(file_name);
     report << "position\t";
     std::copy(values.begin(),values.end(),std::ostream_iterator<float>(report,"\t"));
     report << std::endl;
@@ -256,7 +252,7 @@ bool get_parcellation(tipl::program_option<tipl::out>& po,ConnectivityMatrix& p,
 }
 bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                              std::shared_ptr<fib_data> handle,
-                             std::string output_name,
+                             std::filesystem::path output_name,
                              std::shared_ptr<TractModel> tract_model)
 {
 
@@ -268,7 +264,8 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
         ConnectivityMatrix data(handle);
         if(!get_parcellation(po,data,each_connectivity))
             return false;
-        auto save_file_name = output_name + "." + data.name;
+        auto save_file_name = output_name;
+        save_file_name += ("." + data.name);
         if(!data.calculate(*(tract_model.get()),(each_connectivity_type == "end")))
             return tipl::error() << data.error_msg,false;
 
@@ -294,16 +291,15 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                 ignoring_list += metrics_name;
                 continue;
             }
-            std::string file_name_stat = save_file_name + "." + metrics_name;
             if(tipl::contains(connectivity_output,"connectogram"))
-                data.save_connectogram(file_name_stat + ".connectogram.txt");
+                data.save_connectogram(std::filesystem::path(save_file_name) += ("." + metrics_name + ".connectogram.txt"));
             if(tipl::contains(connectivity_output,"network"))
-                data.save_network_property(file_name_stat + ".network_measures.txt");
+                data.save_network_property(std::filesystem::path(save_file_name) += ("." + metrics_name + ".network_measures.txt"));
         }
         if(tipl::contains(connectivity_output,"matrix"))
         {
-            tipl::out() << "generating r2r and t2r matrices to " + save_file_name + ".connectivity.mat";
-            data.save_to_file(save_file_name + ".connectivity.mat");
+            tipl::out() << "generating r2r and t2r matrices to " << save_file_name << ".connectivity.mat";
+            data.save_to_file(std::filesystem::path(save_file_name) += ".connectivity.mat");
         }
     }
 
@@ -389,7 +385,7 @@ bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> h
 int trk_post(tipl::program_option<tipl::out>& po,
              std::shared_ptr<fib_data> handle,
              std::shared_ptr<TractModel> tract_model,
-             std::string tract_file_name,bool output_track)
+             std::filesystem::path tract_file_name,bool output_track)
 {
     tipl::progress prog("post-tracking analysis");
     if(tract_model->get_visible_track_count() == 0)
@@ -405,9 +401,9 @@ int trk_post(tipl::program_option<tipl::out>& po,
     if (po.has("delete_by_length"))
     {
         tipl::out() << "deleting short tracks..." << std::endl;
-        float length = po.get("delete_repeat",float(1));
+        float length = po.get("delete_by_length",float(1));
         tract_model->delete_by_length(length);
-        tipl::out() << "tracks with voxel distance shorter than " << length << " are deleted" << std::endl;
+        tipl::out() << "tracks with voxel distance shorter than " << length << " are deleted";
     }
     if(po.has("cluster"))
     {
@@ -415,7 +411,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
         std::replace(cmd.begin(),cmd.end(),',',' ');
         std::istringstream in(cmd);
         int method = 0,count = 0,detail = 0;
-        std::string output;
+        std::filesystem::path output;
         in >> method >> count >> detail >> output;
         tipl::out() << "cluster method: " << method << std::endl;
         tipl::out() << "cluster count: " << count << std::endl;
@@ -423,7 +419,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
         tipl::out() << "run clustering." << std::endl;
         tract_model->run_clustering(uint8_t(method),uint32_t(count),detail);
         if(output.empty())
-            output = tract_file_name + "_cluster.txt";
+            (output = tract_file_name) += "_cluster.txt";
         tipl::out() << "saving " << output << std::endl;
         std::ofstream out(output);
         std::copy(tract_model->tract_cluster.begin(),tract_model->tract_cluster.end(),std::ostream_iterator<int>(out," "));
@@ -454,9 +450,9 @@ int trk_post(tipl::program_option<tipl::out>& po,
             if(std::filesystem::is_directory(out))
             {
                 if(tract_file_name.empty())
-                    tract_file_name = (out/tipl::remove_all_suffix(std::filesystem::path(po.get("source")).filename().string())).string();
+                    tract_file_name = out/tipl::remove_all_suffix(std::filesystem::path(po.get("source")).filename());
                 else
-                    tract_file_name = (out/std::filesystem::path(tract_file_name).filename()).string();
+                    tract_file_name = out/std::filesystem::path(tract_file_name).filename();
             }
             else
             {
@@ -468,7 +464,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
 
     if(output_track)
     {
-        if(!tipl::ends_with(tract_file_name,{".tt.gz",".trk.gz",".trk",".tck",".txt",".nii.gz",".nii",".mat"}))
+        if(!tipl::ends_with(tract_file_name.u8string(),{".tt.gz",".trk.gz",".trk",".tck",".txt",".nii.gz",".nii",".mat"}))
             tract_file_name += "." + po.get("trk_format","tt.gz");
         bool failed = false;
         if(po.has("ref")) // save track in T1W/T2W space
@@ -503,7 +499,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
         po.get("mni_track").empty() ? addPrefixToFilename(tract_file_name,"mni_") : po.get("mni_track"),true))
         return tipl::error() << "failed to save --mni_track",1;
     if(po.has(("end_point")) &&
-        !tract_model->save_end_points(po.get("end_point").empty() ? tract_file_name + ".end.txt" : po.get("end_point")))
+        !tract_model->save_end_points(po.get("end_point").empty() ? std::filesystem::path(tract_file_name) += ".end.txt" : po.get("end_point")))
         return tipl::error() << "failed to save --end_point",1;
 
     if(po.has(("end_point1")) || po.has(("end_point2")))
@@ -513,9 +509,9 @@ int trk_post(tipl::program_option<tipl::out>& po,
         ROIRegion end1(handle),end2(handle);
         end1.add_points(std::move(points1));
         end2.add_points(std::move(points2));
-        if(po.has(("end_point1")) && !end1.save_region_to_file(po.get("end_point1").empty() ? tract_file_name + ".end1.txt" : po.get("end_point1")))
+        if(po.has(("end_point1")) && !end1.save_region_to_file(po.get("end_point1").empty() ? std::filesystem::path(tract_file_name) += ".end1.txt" : po.get("end_point1")))
             return tipl::error() << "failed to save --end_point1",1;
-        if(po.has(("end_point2")) && !end2.save_region_to_file(po.get("end_point2").empty() ? tract_file_name + ".end2.txt" : po.get("end_point2")))
+        if(po.has(("end_point2")) && !end2.save_region_to_file(po.get("end_point2").empty() ? std::filesystem::path(tract_file_name) += ".end2.txt" : po.get("end_point2")))
             return tipl::error() << "failed to save --end_point2",1;
     }
     if(prog.aborted())
@@ -552,7 +548,7 @@ bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         ROIRegion roi(handle);
         for(const auto& each : tipl::split(po.get(roi_names[index]),','))
         {
-            if(std::all_of(each.begin(),each.end(),[](char c){return c >= 'a' && c <= 'z';}))
+            if(!each.empty() && std::all_of(each.begin(),each.end(),[](char c){return c >= 'a' && c <= 'z';}))
             {
                 tipl::out() << "apply region operation: " << each;
                 roi.perform(each);
@@ -572,6 +568,8 @@ bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         if(!handle->load_track_atlas(true/*symmetric*/))
             return tipl::error() << handle->error_msg,false;
         std::string name = po.get("track_id");
+        if(name.empty())
+            return tipl::error() << "empty track_id",false;
         if(name[0] >= '0' && name[0] <= '9')
         {
             size_t track_id = std::stoi(name);
@@ -601,7 +599,7 @@ int trk(tipl::program_option<tipl::out>& po)
     {
         tipl::error() << "program terminated due to unknown exception" << std::endl;
     }
-    return 0;
+    return 1;
 }
 
 void setup_trk_param(std::shared_ptr<fib_data> handle,ThreadData& tracking_thread,tipl::program_option<tipl::out>& po)
