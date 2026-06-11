@@ -58,10 +58,10 @@ public:
     bool has_db(void)const{return !subject_names.empty();}
     bool load_db_from_fib(fib_data* handle);
     void init_db(void);
-    bool extract_indices(const std::string& file_name,const std::vector<std::string>& index_list_to_extract,
+    bool extract_indices(const std::filesystem::path& file_name,const std::vector<std::string>& index_list_to_extract,
               float& R2,const std::vector<float*>& data);
-    bool create_db(const std::vector<std::string>& file_names,const std::vector<std::string>& included_index = {"dti_fa","qa","rdi","iso"});
-    bool add_subjects(const std::vector<std::string>& file_names);
+    bool create_db(const std::vector<std::filesystem::path>& file_names,const std::vector<std::string>& included_index = {"dti_fa","qa","rdi","iso"});
+    bool add_subjects(const std::vector<std::filesystem::path>& file_names);
     bool add_db(const std::string& file_name);
     void get_subject_slice(unsigned int subject_index,unsigned char dim,unsigned int pos,
                             tipl::image<2,float>& slice) const;
