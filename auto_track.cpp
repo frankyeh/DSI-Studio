@@ -105,8 +105,8 @@ void set_template(std::shared_ptr<fib_data> handle,tipl::program_option<tipl::ou
 int trk_post(tipl::program_option<tipl::out>& po,
              std::shared_ptr<fib_data> handle,
              std::shared_ptr<TractModel> tract_model,
-             std::string tract_file_name,bool output_track);
-std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector<std::string>& file_list,int& prog)
+             std::filesystem::path tract_file_name,bool output_track);
+std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector<std::filesystem::path>& file_list,int& prog)
 {
     std::string trk_format = po.get("trk_format","tt.gz");
     float yield_rate = po.get("yield_rate",0.00001f);
@@ -168,36 +168,37 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
     if(po.has("output") && !std::filesystem::is_directory(po.get("output")))
         return "expecting a directory at --output";
 
-    std::string work_dir = po.get("output",QFileInfo(file_list.front().c_str()).absolutePath().toStdString());
+    auto work_dir = file_list.front().parent_path();
+    if(po.has("output"))
+        work_dir = po.get("output");
 
-    std::vector<std::vector<std::string> > stat_files(tract_name_list.size());
+    std::vector<std::vector<std::filesystem::path> > stat_files(tract_name_list.size());
     std::vector<std::string> scan_names;
     tipl::progress prog0("automatic fiber tracking");
     for(size_t i = 0;prog0(i,file_list.size());++i)
     {
         prog = int(i);
-        std::string fib_file_name = file_list[i];
-        std::string cur_file_base_name = std::filesystem::path(fib_file_name).filename().u8string();
-        scan_names.push_back(cur_file_base_name);
-        tipl::out() << "processing " << cur_file_base_name;
+        auto fib_file_name = file_list[i];
+        scan_names.push_back(fib_file_name.filename().u8string());
+        tipl::out() << "processing " << fib_file_name.filename().u8string();
         std::shared_ptr<fib_data> handle;
 
         tipl::progress prog1("tracking pathways");
         for(size_t j = 0;prog1(j,tract_name_list.size());++j)
         {
             std::string tract_name = tract_name_list[j];
-            std::string output_path = po.has("output") ? work_dir : work_dir + "/" + tract_name;
+            auto output_path = po.has("output") ? work_dir : work_dir/tract_name;
             tipl::out() << "tracking " << tract_name;
 
             // create storing directory
-            if (!QDir(output_path.c_str()).exists() && !QDir(output_path.c_str()).mkpath("."))
-                tipl::warning() << std::string("cannot create directory: ") + output_path << std::endl;
+            if (!std::filesystem::is_directory(output_path) && !std::filesystem::create_directories(output_path))
+                tipl::warning() << "cannot create directory: " << output_path;
 
-            std::string fib_base = QFileInfo(fib_file_name.c_str()).baseName().toStdString();
-            std::string trk_base = output_path + "/" + fib_base+"."+tract_name;
-            std::string no_result_file_name = trk_base+".no_result.txt";
-            std::string trk_file_name = trk_base + "." + trk_format;
-            std::string stat_file_name = trk_file_name +".stat.txt";
+            auto fib_base = tipl::remove_all_suffix(fib_file_name.filename());
+            auto trk_base = std::filesystem::path(output_path/fib_base) += ("."+tract_name);
+            auto no_result_file_name = std::filesystem::path(trk_base) += ".no_result.txt";
+            auto trk_file_name = std::filesystem::path(trk_base) += ("." + trk_format);
+            auto stat_file_name = std::filesystem::path(trk_file_name) += ".stat.txt";
             stat_files[j].push_back(stat_file_name);
 
             if(!overwrite)
@@ -240,7 +241,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     ThreadData thread(handle);
                     {
                         if(!handle->load_track_atlas(true/*symmetric*/))
-                            return handle->error_msg + " at " + fib_file_name;
+                            return handle->error_msg + " at " + fib_file_name.u8string();
 
                         if (po.has("threshold_index") && !handle->dir.set_tracking_index(po.get("threshold_index")))
                             return std::string("invalid threshold index");
@@ -317,11 +318,12 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                         {
                             if(points.empty())
                                 return;
-                            auto file_name = trk_base + "." + name + ".nii.gz";
+                            auto f = trk_base;
+                            f += "." + name + ".nii.gz";
                             ROIRegion region(thread.roi_mgr->handle);
                             region.add_points(std::move(points));
-                            tipl::out() << "saving " << name << " region to " << file_name;
-                            region.save_region_to_file(file_name);
+                            tipl::out() << "saving " << name << " region to " << f;
+                            region.save_region_to_file(f);
                         };
 
                         save_region("seed",thread.roi_mgr->atlas_seed);
@@ -437,7 +439,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 }
             }
             std::string tract_name = tract_name_list[t];
-            std::ofstream out(work_dir+"/"+tract_name+".stat.txt");
+            std::ofstream out(std::filesystem::path(work_dir/tract_name) += ".stat.txt");
 
             // output first row: the name of each scan
             for(const auto& each: scan_names)
@@ -465,7 +467,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                 }
         }
 
-        std::ofstream all_out2(work_dir+"/all_results_subject_wise.txt");
+        std::ofstream all_out2(work_dir/"all_results_subject_wise.txt");
         all_out2 << "Subjects\tMetrics";
         for(size_t t = 0;t < tract_name_list.size();++t) // for each track
         {
@@ -489,9 +491,9 @@ void auto_track::check_status()
 }
 void auto_track::on_run_clicked()
 {
-    std::vector<std::string> file_list2;
+    std::vector<std::filesystem::path> file_list2;
     for(int i = 0;i < file_list.size();++i)
-        file_list2.push_back(file_list[i].toStdString());
+        file_list2.push_back(tipl::qt::to_path(file_list[i]));
 
     std::string tract_names;
     QModelIndexList indexes = ui->candidate_list_view->selectionModel()->selectedRows();
