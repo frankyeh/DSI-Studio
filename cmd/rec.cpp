@@ -207,10 +207,7 @@ int rec(tipl::program_option<tipl::out>& po)
         else
         if((mask_file == "unet" && !src.command("[Step T2a][Unet]")) ||
            (mask_file == "template" && !src.command("[Step T2a][Template]")))
-            {
-                tipl::error() << src.error_msg;
-                return 1;
-            }
+                return tipl::error() << src.error_msg,1;
     }
 
     if(po.has("apply_mask"))
