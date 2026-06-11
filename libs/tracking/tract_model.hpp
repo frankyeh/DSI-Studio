@@ -66,7 +66,7 @@ public:
         float loaded_value = 0.0f;
         std::vector<float> loaded_values;
 public:
-        static bool save_all(const std::string& file_name,
+        static bool save_all(const std::filesystem::path& file_name,
                              const std::vector<std::shared_ptr<TractModel> >& all);
         void select(float select_angle,
                     const std::vector<tipl::vector<3,float> >& dirs,
@@ -111,20 +111,20 @@ public:
             });
             return all;
         }
-        static auto load_from_file(const std::string& file_name,std::shared_ptr<fib_data> handle,bool tract_is_mni = false)
+        static auto load_from_file(const std::filesystem::path& file_name,std::shared_ptr<fib_data> handle,bool tract_is_mni = false)
         {
-            tipl::progress prog("open ",file_name);
+            tipl::progress prog("open",file_name.u8string());
             std::vector<std::shared_ptr<TractModel> > all_tracts;
             auto tract_model = std::make_shared<TractModel>(handle);
             if(!tract_model->load_tracts_from_file(file_name,handle.get(),tract_is_mni))
                 return all_tracts;
             if(tract_model->tract_cluster.empty())
             {
-                tract_model->name = tipl::remove_all_suffix(std::filesystem::path(std::string(file_name)).filename().string());
+                tract_model->name = tipl::remove_all_suffix(file_name).filename().string();
                 all_tracts.push_back(tract_model);
                 return all_tracts;
             }
-            std::ifstream in(std::string(file_name)+".txt");
+            std::ifstream in(std::filesystem::path(file_name)+=".txt");
             return separate_tracts(tract_model,tract_model->tract_cluster,
                 std::vector<std::string>((std::istream_iterator<std::string>(in)),(std::istream_iterator<std::string>())));
         }
@@ -159,22 +159,22 @@ public:
             return *this;
         }
         void add(const TractModel& rhs);
-        bool load_tracts_from_file(const std::string& file_name,fib_data* handle,bool tract_is_mni = false);
+        bool load_tracts_from_file(const std::filesystem::path& file_name,fib_data* handle,bool tract_is_mni = false);
 
-        bool save_tracts_to_file(const std::string& file_name);
-        bool save_tracts_in_template_space(std::shared_ptr<fib_data> handle,const std::string& file_name,bool output_mni = false);
-        bool save_transformed_tract(const std::string& file_name,tipl::shape<3> new_dim,
+        bool save_tracts_to_file(const std::filesystem::path& file_name);
+        bool save_tracts_in_template_space(std::shared_ptr<fib_data> handle,const std::filesystem::path& file_name,bool output_mni = false);
+        bool save_transformed_tract(const std::filesystem::path& file_name,tipl::shape<3> new_dim,
                                              tipl::vector<3> new_vs,const tipl::matrix<4,4>& trans_to_mni,const tipl::matrix<4,4>& T,bool end_point);
 
         std::string get_obj(unsigned int& coordinate_count,
                        unsigned char tract_style,
                        float tube_diameter,
                        unsigned char tract_tube_detail);
-        bool save_data_to_file(std::shared_ptr<fib_data> handle,const std::string& file_name,const std::string& index_name);
-        bool save_end_points(const std::string& file_name) const;
+        bool save_data_to_file(std::shared_ptr<fib_data> handle,const std::filesystem::path& file_name,const std::string& index_name);
+        bool save_end_points(const std::filesystem::path& file_name) const;
 
-        bool load_tracts_color_from_file(const std::string& file_name);
-        bool save_tracts_color_to_file(const std::string& file_name);
+        bool load_tracts_color_from_file(const std::filesystem::path& file_name);
+        bool save_tracts_color_to_file(const std::filesystem::path& file_name);
 
 
         void release_tracts(std::vector<std::vector<float> >& released_tracks);
@@ -196,7 +196,6 @@ public:
         std::vector<char> get_tract_dir(void) const;
         bool cut_end_portion(float from,float to);
         bool cut_by_slice(unsigned int dim, unsigned int pos,bool greater,const tipl::matrix<4,4>* T = nullptr);
-        void cut_by_mask(const std::string& file_name);
         bool paint(float select_angle,const std::vector<tipl::vector<3,float> > & dirs,
                   const tipl::vector<3,float>& from_pos,
                   unsigned int color);
@@ -239,14 +238,14 @@ public:
              const tipl::matrix<4,4>& to_t1t2,bool endpoint);
         void get_density_map(tipl::image<3,tipl::rgb>& mapping,
              const tipl::matrix<4,4>& to_t1t2,bool endpoint);
-        static bool export_tdi(const std::string& file_name,
+        static bool export_tdi(const std::filesystem::path& file_name,
                           std::vector<std::shared_ptr<TractModel> > tract_models,
                           tipl::shape<3> dim,
                           tipl::vector<3,float> vs,
                           const tipl::matrix<4,4>& trans_to_mni,
                           const tipl::matrix<4,4>& to_t1t2,
                                bool color,bool end_point);
-        static bool export_pdi(const std::string& file_name,
+        static bool export_pdi(const std::filesystem::path& file_name,
                                const std::vector<std::shared_ptr<TractModel> >& tract_models);
 public:
         void get_quantitative_info(std::shared_ptr<fib_data> handle,std::string& result);
@@ -306,9 +305,9 @@ public:
     std::vector<std::string> region_name;
 public:
     void save_to_image(tipl::color_image& cm);
-    void save_to_file(const std::string& file_name);
-    void save_connectogram(const std::string& file_name);
-    void save_network_property(const std::string& file_name);
+    void save_to_file(const std::filesystem::path& file_name);
+    void save_connectogram(const std::filesystem::path& file_name);
+    void save_network_property(const std::filesystem::path& file_name);
     void save_to_text(std::string& text);
     bool calculate(TractModel& tract_model,bool use_end_only);
     void network_property(std::string& report);
