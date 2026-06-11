@@ -584,6 +584,9 @@ bool fib_data::load_from_file(const std::filesystem::path& file_name)
 
     if(!load_from_mat())
         return false;
+
+    if(!tipl::contains(report,"bias field"))
+        correct_bias_field();
     return true;
 }
 void correct_bias_field(tipl::image<3> I,
@@ -592,22 +595,31 @@ void correct_bias_field(tipl::image<3> I,
                         const tipl::vector<3>& spacing);
 bool fib_data::correct_bias_field(void)
 {
-    size_t iso_index = get_name_index("iso");
-    if(slices.size() == iso_index)
+    if(!mat_reader.has("iso"))
         return false;
     tipl::progress prog("correct bias field",true);
-    tipl::image<3>  bias_field;
-    ::correct_bias_field(slices[iso_index]->get_image(),mask,bias_field,tipl::vector<3>(1.0f,vs[0]/vs[1],vs[0]/vs[2]));
+    // collecting bias field affected data
+    std::vector<float*> image_data;
+    image_data.push_back(const_cast<float*>(mat_reader.read_as_type<float>("iso")));
+    for(auto each : dir.fa)
+        image_data.push_back(const_cast<float*>(each));
+    for(const auto& each : slices)
+    {
+        if(tipl::contains(each->name,{"rdi"}))
+            image_data.push_back(const_cast<float*>(mat_reader.read_as_type<float>(each->name)));
+        if(prog.aborted())
+            return false;
+    }
+    tipl::image<3> bias_field;
+    ::correct_bias_field(tipl::make_image(image_data.front(),dim),mask,bias_field,tipl::vector<3>(1.0f,vs[0]/vs[1],vs[0]/vs[2]));
     if(prog.aborted())
         return false;
     for(auto& each : bias_field)
         each = std::exp(-each);
-    tipl::make_image(const_cast<float*>(mat_reader.read_as_type<float>("iso")),dim) *= bias_field;
-    for(auto each : dir.fa)
+    tipl::par_for(image_data.size(),[&](size_t i)
     {
-        tipl::make_image(const_cast<float*>(each),dim) *= bias_field;
-        //std::copy(bias_field.begin(),bias_field.end(),const_cast<float*>(each));
-    }
+        tipl::make_image(image_data[i],dim) *= bias_field;
+    });
     return true;
 }
 
