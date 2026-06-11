@@ -291,9 +291,9 @@ void db_window::on_actionAdd_DB_triggered()
     QStringList filenames = tipl::qt::open_image_files(this,windowTitle(),"Database files (*.fz *fib.gz);;All files (*)");
     if (filenames.isEmpty())
         return;
-    std::vector<std::string> file_names;
+    std::vector<std::filesystem::path> file_names;
     for(auto each: filenames)
-        file_names.push_back(each.toStdString());
+        file_names.push_back(tipl::qt::to_path(each));
     if(!vbc->handle->db.add_subjects(file_names) && !vbc->handle->error_msg.empty())
         QMessageBox::critical(this,"ERROR",vbc->handle->error_msg.c_str());
     update_db();
