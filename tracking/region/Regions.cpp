@@ -101,9 +101,9 @@ void ROIRegion::add_points(std::vector<tipl::vector<3,short> >&& points, bool de
 }
 
 // ---------------------------------------------------------------------------
-bool ROIRegion::save_region_to_file(const std::string& file_name)
+bool ROIRegion::save_region_to_file(const std::filesystem::path& file_name)
 {
-    if (tipl::ends_with(file_name,".txt"))
+    if (tipl::ends_with(file_name.u8string(),".txt"))
     {
         std::ofstream out(file_name);
         if(!out)
@@ -111,7 +111,7 @@ bool ROIRegion::save_region_to_file(const std::string& file_name)
         std::copy(region.begin(), region.end(),std::ostream_iterator<tipl::vector<3,short> >(out, "\n"));
         return true;
     }
-    if (tipl::ends_with(file_name,".mat"))
+    if (tipl::ends_with(file_name.u8string(),".mat"))
     {
         tipl::image<3,unsigned char> mask(dim);
         for (unsigned int index = 0; index < region.size(); ++index)
@@ -127,7 +127,7 @@ bool ROIRegion::save_region_to_file(const std::string& file_name)
         header << mask;
         return true;
     }
-    if (tipl::ends_with(file_name,{".nii.gz",".nii"}))
+    if (tipl::ends_with(file_name.u8string(),{".nii.gz",".nii"}))
     {
         unsigned int color = region_render->color.color & 0x00FFFFFF;
         tipl::image<3,unsigned char> mask;
@@ -144,12 +144,12 @@ bool ROIRegion::save_region_to_file(const std::string& file_name)
 
 // ---------------------------------------------------------------------------
 
-bool ROIRegion::load_region_from_file(const std::string& file_name) {
+bool ROIRegion::load_region_from_file(const std::filesystem::path& file_name) {
     modified = true;
     region.clear();
     is_diffusion_space = false;
     to_diffusion_space.identity();
-    if (tipl::ends_with(file_name,".txt"))
+    if (tipl::ends_with(file_name.u8string(),".txt"))
     {
 
         std::vector<tipl::vector<3,short> > points;
@@ -174,7 +174,7 @@ bool ROIRegion::load_region_from_file(const std::string& file_name) {
         region.swap(points);
         return true;
     }
-    if (tipl::ends_with(file_name,".mat"))
+    if (tipl::ends_with(file_name.u8string(),".mat"))
     {
         tipl::io::mat_read header;
         if(!header.load_from_file(file_name))
@@ -188,7 +188,7 @@ bool ROIRegion::load_region_from_file(const std::string& file_name) {
         add_points(std::move(points));
         return true;
     }
-    if (tipl::ends_with(file_name,{".nii",".nii.gz"}))
+    if (tipl::ends_with(file_name.u8string(),{".nii",".nii.gz"}))
     {
         tipl::image<3> I;
         if(!(tipl::io::gz_nifti(file_name,std::ios::in)
