@@ -220,7 +220,7 @@ MainWindow::MainWindow(QWidget *parent) :
             }
 
             {
-                auto note = new QLabel("By clicking 'Accept & Sign in', you agree to the licensing terms and sign in using the registration registery and information.");
+                auto note = new QLabel("By clicking 'Accept & Sign in', you agree to the licensing terms and sign in using the registration registry and information.");
                 note->setWordWrap(true);
                 note->setStyleSheet("font-weight: bold;");
                 right_layout->addWidget(note);
@@ -789,47 +789,41 @@ void check_name(std::string& name)
             name[index] = '_';
 }
 
-QString RenameDICOMToDir(QString FileName, QString ToDir)
+std::filesystem::path rename_dicom(const std::filesystem::path& file_name,
+                  std::filesystem::path output)
 {
-    QString NewName;
+    std::string person, sequence, imagename;
     {
-        std::string person, sequence, imagename;
+        tipl::io::dicom header;
+        if (!header.load_from_file(file_name))
         {
-            tipl::io::dicom header;
-            if (!header.load_from_file(tipl::qt::to_path(FileName)))
-            {
-                tipl::out() << "not a DICOM file. Skipping" << std::endl;
-                return QString();
-            }
-            header.get_patient(person);
-            header.get_sequence(sequence);
-            header.get_image_name(imagename);
+            tipl::out() << "not a DICOM file. Skipping";
+            return std::string();
         }
-        check_name(person);
-        check_name(sequence);
-        check_name(imagename);
-
-        QString Person(person.c_str()), Sequence(sequence.c_str()),
-        ImageName(imagename.c_str());
-        ToDir += "/";
-        ToDir += Person;
-        if (!QDir(ToDir).exists() && !std::filesystem::create_directory(std::filesystem::path(ToDir.toStdString())))
-            tipl::error() << "cannot create dir " << ToDir.toStdString() << std::endl;
-        ToDir += "/";
-        ToDir += Sequence;
-        if (!QDir(ToDir).exists() && !std::filesystem::create_directory(std::filesystem::path(ToDir.toStdString())))
-            tipl::error() << "cannot create dir " << ToDir.toStdString() << std::endl;
-        ToDir += "/";
-        ToDir += ImageName;
-        NewName = ToDir;
+        header.get_patient(person);
+        header.get_sequence(sequence);
+        header.get_image_name(imagename);
     }
-    if(FileName != NewName)
+    check_name(person);
+    check_name(sequence);
+    check_name(imagename);
+    output = output/person;
+    output = output/sequence;
+    output = output/imagename;
+    if(file_name != output)
     {
-        tipl::out() << FileName.toStdString() << "->" << NewName.toStdString();
-        if(!QFile::rename(FileName,NewName))
-            tipl::error() << "cannot rename the file." << std::endl;
+        tipl::out() << file_name << "->" << output;
+        std::error_code ec;
+        if (!std::filesystem::exists(output.parent_path()) && !std::filesystem::create_directories(output.parent_path()))
+            tipl::error() << "cannot create dir " << output;
+        std::filesystem::rename(file_name,output,ec);
+        if(ec)
+        {
+            tipl::error() << "cannot rename " << file_name << " to " << output << ": " << ec.message();
+            return {};
+        }
     }
-    return NewName;
+    return output;
 }
 
 void MainWindow::on_RenameDICOM_clicked()
@@ -844,7 +838,7 @@ void MainWindow::on_RenameDICOM_clicked()
     add_work_dir(QFileInfo(filenames[0]).absolutePath());
     tipl::progress prog("Rename DICOM Files");
     for (unsigned int index = 0;prog(index,filenames.size());++index)
-        RenameDICOMToDir(filenames[index],QFileInfo(filenames[index]).absolutePath());
+        rename_dicom(tipl::qt::to_path(filenames[index]),tipl::qt::to_path(filenames[index]).parent_path());
 }
 
 
@@ -892,27 +886,25 @@ QStringList GetSubDir(QString Dir,bool recursive = true)
     return sub_dirs;
 }
 
-QStringList rename_dicom_at_dir(QString path,QString output)
+std::vector<std::filesystem::path> rename_dicom_at_dir(std::filesystem::path path,
+                                                       std::filesystem::path output)
 {
     tipl::progress prog("Renaming DICOM",true);
-    tipl::out() << "current directory is " << std::filesystem::current_path() << std::endl
-                    << "source directory is " << path.toStdString() << std::endl
-                    << "output directory is " << output.toStdString() << std::endl;
-    QStringList dirs = GetSubDir(path);
-    QStringList subject_dirs;
-    subject_dirs.resize(dirs.size());
-    tipl::par_for(dirs.size(),[&](size_t index)
+    tipl::out() << "current directory is " << std::filesystem::current_path();
+    tipl::out() << "source directory is " << path;
+    tipl::out() << "output directory is " << output;
+
+    auto files = tipl::search_files(path,"",true);
+    tipl::par_for(files.size(),[&](size_t i)
     {
-        QStringList files = QDir(dirs[index]).entryList(QStringList("*"),QDir::Files | QDir::NoSymLinks);
-        for(int j = 0;j < files.size() && index < dirs.size();++j)
-        {
-            auto dir = QFileInfo(RenameDICOMToDir(dirs[index] + "/" + files[j],output)).absoluteDir();
-            dir.cdUp();
-            subject_dirs[index] = dir.absolutePath();
-        }
+        auto renamed = rename_dicom(files[i],output);
+        files[i] = renamed.empty() ? std::filesystem::path() : renamed.parent_path().parent_path();
     });
-    subject_dirs.removeDuplicates();
-    return subject_dirs;
+    files.erase(std::remove_if(files.begin(),files.end(),
+                                      [](const auto& p){return p.empty();}),files.end());
+    std::sort(files.begin(),files.end());
+    files.erase(std::unique(files.begin(),files.end()),files.end());
+    return files;
 }
 void MainWindow::on_RenameDICOMDir_clicked()
 {
@@ -922,7 +914,7 @@ void MainWindow::on_RenameDICOMDir_clicked()
     if ( path.isEmpty() )
         return;
     add_work_dir(path);
-    rename_dicom_at_dir(path,path);
+    rename_dicom_at_dir(tipl::qt::to_path(path),tipl::qt::to_path(path));
     QMessageBox::information(this,QApplication::applicationName(),"renaming complete");
 }
 
@@ -940,8 +932,10 @@ void MainWindow::on_averagefib_clicked()
     new_mdi->show();
 }
 
-bool parse_dwi(QStringList file_list,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg);
-QString get_dicom_output_name(QString file_name,QString file_extension,bool add_path);
+bool parse_dwi(const std::vector<std::filesystem::path>& file_list,
+               std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg);
+std::filesystem::path get_dicom_output_name(const std::filesystem::path& file_name,
+                                            const std::string& file_extension, bool add_path);
 QStringList search_files(QString dir,QString filter);
 void MainWindow::on_batch_reconstruction_clicked()
 {
@@ -1059,19 +1053,19 @@ void MainWindow::on_nonlinear_reg_clicked()
     rt->showNormal();
 }
 
-std::string quality_check_src_files(const std::vector<std::string>& file_list,
+std::string quality_check_src_files(const std::vector<std::filesystem::path>& file_list,
                                     bool check_btable,bool use_template,unsigned int template_id);
-std::string quality_check_fib_files(const std::vector<std::string>& file_list);
-std::string quality_check_nii_files(const std::vector<std::string>& file_list);
+std::string quality_check_fib_files(const std::vector<std::filesystem::path>& file_list);
+std::string quality_check_nii_files(const std::vector<std::filesystem::path>& file_list);
 
 void MainWindow::on_SRC_qc_clicked()
 {
     QStringList filenames = tipl::qt::open_image_files(this,ui->workDir->currentText(),"Src files (*.sz *src.gz);;All files (*)" );
     if (filenames.isEmpty())
         return;
-    std::vector<std::string> files;
+    std::vector<std::filesystem::path> files;
     for(const auto& each : filenames)
-        files.push_back(each.toStdString());
+        files.push_back(tipl::qt::to_path(each));
     tipl::progress prog("checking SRC files");
     show_info_dialog("SRC report",quality_check_src_files(files,false,false,0));
 }
@@ -1082,9 +1076,9 @@ void MainWindow::on_NII_qc_clicked()
     auto filenames = tipl::qt::open_image_files(this,ui->workDir->currentText(),"NIFTI files (*.nii *nii.gz);;All files (*)");
     if (filenames.isEmpty())
         return;
-    std::vector<std::string> files;
+    std::vector<std::filesystem::path> files;
     for(const auto& each : filenames)
-        files.push_back(each.toStdString());
+        files.push_back(tipl::qt::to_path(each));
     tipl::progress prog("checking NIFTI files");
     show_info_dialog("NIFTI report",quality_check_nii_files(files));
 }
@@ -1097,9 +1091,9 @@ void MainWindow::on_FIB_qc_clicked()
 
     if (filenames.isEmpty())
         return;
-    std::vector<std::string> files;
-    for(auto each : filenames)
-        files.push_back(each.toStdString());
+    std::vector<std::filesystem::path> files;
+    for(const auto& each : filenames)
+        files.push_back(tipl::qt::to_path(each));
     tipl::progress prog("checking FIB files");
     show_info_dialog("FIB report",quality_check_fib_files(files));
 }
@@ -1214,85 +1208,9 @@ bool get_pe_dir(const std::string& nii_name,size_t& pe_dir,bool& is_neg)
     }
     return false;
 }
-std::vector<std::string> search_dwi_nii_bids(const std::string& dir);
-void search_dwi_nii(const std::string& dir,std::vector<std::string>& dwi_nii_files);
-void MainWindow::batch_create_src(const std::vector<std::string>& dwi_nii_files,const std::string& output_dir)
-{
-    if(dwi_nii_files.empty())
-    {
-        QMessageBox::critical(this,"ERROR","no dwi nifti files found");
-        return;
-    }
-    bool no_to_all = false;
-    bool yes_to_all = false;
-    tipl::progress prog("batch creating src");
-    std::deque<std::string> nii_list,src_list;
-    size_t nii_count = 0;
-    std::mutex access_list;
-    bool ended = false;
-    tipl::par_for<tipl::dynamic_with_id>(8,[&](unsigned int index,unsigned int id)
-    {
-        if(id == 0) // main thread
-        {
-            for(int j = 0;j < dwi_nii_files.size();++j)
-            {
-                std::string nii_name = dwi_nii_files[j];
-                std::string src_name = output_dir + "/" + tipl::remove_all_suffix(std::filesystem::path(nii_name).filename().string()) + ".sz";
-                std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-
-                if(std::filesystem::exists(src_name) && !yes_to_all)
-                {
-                    if(no_to_all)
-                        continue;
-                    int result = QMessageBox::information(this,QApplication::applicationName(),
-                                    QString("%1 exists, overwrite?").arg(std::filesystem::path(src_name).filename().c_str()),
-                                    QMessageBox::Yes|QMessageBox::YesToAll|QMessageBox::No|QMessageBox::NoToAll|QMessageBox::Cancel);
-                    if(result == QMessageBox::Cancel)
-                        return;
-                    if(result == QMessageBox::YesToAll)
-                        yes_to_all = true;
-                    if(result == QMessageBox::NoToAll)
-                    {
-                        no_to_all = true;
-                        continue;
-                    }
-                    if(result == QMessageBox::No)
-                        continue;
-                }
-                std::lock_guard<std::mutex> lock(access_list);
-                nii_list.push_back(nii_name);
-                src_list.push_back(src_name);
-                ++nii_count;
-            }
-            ended = true;
-        }
-        while(!prog.aborted() && !(ended && nii_count == 0))
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            if(id == 0)
-                prog(dwi_nii_files.size()-nii_list.size(),dwi_nii_files.size());
-
-            std::string nii_name,src_name;
-            {
-                std::lock_guard<std::mutex> lock(access_list);
-                if(!nii_count)
-                    continue;
-                nii_name = nii_list.front();
-                src_name = src_list.front();
-                nii_list.pop_front();
-                src_list.pop_front();
-                --nii_count;
-            }
-            tipl::out() << "processing " << nii_name << std::endl;
-            src_data src;
-            if(!src.load_from_file(std::vector<std::string>({nii_name}),true) ||
-               !src.save_to_file(src_name))
-                tipl::warning() << src.error_msg;
-        }
-    },8);
-}
-bool nii2src(const std::vector<std::string>& dwi_nii_files,
-             const std::string& output_dir,
+std::vector<std::filesystem::path> search_dwi_nii_bids(const std::filesystem::path& dir);
+bool nii2src(const std::vector<std::filesystem::path>& dwi_nii_files,
+             const std::filesystem::path& output_dir,
              bool is_bids,
              bool overwrite,
              bool topup_eddy);
@@ -1311,15 +1229,16 @@ void MainWindow::on_nii2src_bids_clicked()
     if(output_dir.isEmpty())
         return;
     add_work_dir(dir);
-    auto dwi_nii_files = search_dwi_nii_bids(dir.toStdString());
+    auto dwi_nii_files = search_dwi_nii_bids(tipl::qt::to_path(dir));
     if(dwi_nii_files.empty())
     {
         QMessageBox::critical(this,"ERROR","cannot find bids nifti data");
         return;
     }
     std::sort(dwi_nii_files.begin(),dwi_nii_files.end());
-    nii2src(dwi_nii_files,output_dir.toStdString(),true,true,false);
+    nii2src(dwi_nii_files,tipl::qt::to_path(output_dir),true,true,false);
 }
+void search_dwi_nii(const std::filesystem::path& dir,std::vector<std::filesystem::path>& dwi_nii_files);
 void MainWindow::on_nii2src_sf_clicked()
 {
     QString dir = QFileDialog::getExistingDirectory(
@@ -1329,31 +1248,96 @@ void MainWindow::on_nii2src_sf_clicked()
     if(dir.isEmpty())
         return;
     add_work_dir(dir);
-    std::vector<std::string> dwi_nii_files;
-    search_dwi_nii(dir.toStdString(),dwi_nii_files);
+    std::vector<std::filesystem::path> dwi_nii_files;
+    search_dwi_nii(tipl::qt::to_path(dir),dwi_nii_files);
     if(dwi_nii_files.empty())
     {
         QMessageBox::critical(this,"ERROR","cannot find nifti data");
         return;
     }
-    batch_create_src(dwi_nii_files,dir.toStdString());
+    auto output_dir = tipl::qt::to_path(dir);
+
+
+    bool no_to_all = false;
+    bool yes_to_all = false;
+    tipl::progress prog("batch creating src");
+    std::deque<std::filesystem::path> nii_list,src_list;
+    size_t nii_count = 0;
+    std::mutex access_list;
+    bool ended = false;
+    tipl::par_for<tipl::dynamic_with_id>(8,[&](unsigned int index,unsigned int id)
+        {
+            if(id == 0) // main thread
+            {
+                for(int j = 0;j < dwi_nii_files.size();++j)
+                {
+                    auto nii_name = dwi_nii_files[j];
+                    auto src_name = output_dir/tipl::remove_all_suffix(nii_name.filename());
+                    src_name += ".sz";
+                    std::vector<std::shared_ptr<DwiHeader> > dwi_files;
+
+                    if(std::filesystem::exists(src_name) && !yes_to_all)
+                    {
+                        if(no_to_all)
+                            continue;
+                        int result = QMessageBox::information(this,QApplication::applicationName(),
+                                                              QString("%1 exists, overwrite?").arg(std::filesystem::path(src_name).filename().c_str()),
+                                                              QMessageBox::Yes|QMessageBox::YesToAll|QMessageBox::No|QMessageBox::NoToAll|QMessageBox::Cancel);
+                        if(result == QMessageBox::Cancel)
+                            return;
+                        if(result == QMessageBox::YesToAll)
+                            yes_to_all = true;
+                        if(result == QMessageBox::NoToAll)
+                        {
+                            no_to_all = true;
+                            continue;
+                        }
+                        if(result == QMessageBox::No)
+                            continue;
+                    }
+                    std::lock_guard<std::mutex> lock(access_list);
+                    nii_list.push_back(nii_name);
+                    src_list.push_back(src_name);
+                    ++nii_count;
+                }
+                ended = true;
+            }
+            while(!prog.aborted() && !(ended && nii_count == 0))
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                if(id == 0)
+                    prog(dwi_nii_files.size()-nii_list.size(),dwi_nii_files.size());
+
+                std::filesystem::path nii_name,src_name;
+                {
+                    std::lock_guard<std::mutex> lock(access_list);
+                    if(!nii_count)
+                        continue;
+                    nii_name = nii_list.front();
+                    src_name = src_list.front();
+                    nii_list.pop_front();
+                    src_list.pop_front();
+                    --nii_count;
+                }
+                tipl::out() << "processing " << nii_name;
+                src_data src;
+                if(!src.load_from_file({nii_name},true) || !src.save_to_file(src_name))
+                    tipl::warning() << src.error_msg;
+            }
+        },8);
 }
 
-bool dcm2src_and_nii(QStringList files,bool overwrite)
+bool dicom2src_and_nii(std::vector<std::filesystem::path> files,bool overwrite)
 {
     if(files.empty())
         return false;
-    files.sort();
-    tipl::progress p("processing DICOM at "+std::filesystem::path(files[0].toStdString()).parent_path().string());
-    // extract information
+    std::sort(files.begin(),files.end());
+    tipl::progress p("processing DICOM at "+files.front().parent_path().u8string());
     std::string manu,make,report,sequence;
     {
         tipl::io::dicom header;
-        if(!header.load_from_file(files[0].toStdString().c_str()))
-        {
-            tipl::error() << "cannot read image volume. skip" << std::endl;
-            return false;
-        }
+        if(!header.load_from_file(files[0]))
+            return tipl::error() << "cannot read image volume. skip",false;
         header.get_sequence_id(sequence);
         header.get_text(0x0008,0x0070,manu);//Manufacturer
         header.get_text(0x0008,0x1090,make);
@@ -1370,23 +1354,17 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
 
     std::vector<std::shared_ptr<DwiHeader> > dicom_files;
     std::string error_msg;
-    auto nii_file_name = get_dicom_output_name(files[0],("_" + sequence + ".nii.gz").c_str(),true).toStdString();
+    auto nii_file_name = get_dicom_output_name(files[0],"_" + sequence + ".nii.gz",true);
 
     if(!parse_dwi(files,dicom_files,error_msg) || dicom_files.size() == 1)
     {
         if(tipl::prog_aborted)
             return false;
         if(!error_msg.empty())
-        {
-            tipl::error() << error_msg;
-            return false;
-        }
+            return tipl::error() << error_msg,false;
 
         if(!overwrite && std::filesystem::exists(nii_file_name))
-        {
-            tipl::out() << nii_file_name << " exists. skipping";
-            return true;
-        }
+            return tipl::out() << nii_file_name << " exists. skipping",true;
 
         tipl::out() << "handled as structure images";
         tipl::image<3> source_images;
@@ -1395,25 +1373,17 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
         if(files.size()==1)
         {
             tipl::io::dicom v;
-            if(!v.load_from_file(files[0].toStdString()))
-            {
-                tipl::error() << "cannot parse dicom file" << std::endl;
-                return false;
-            }
+            if(!v.load_from_file(files[0]))
+                return tipl::error() << "cannot parse dicom file",false;
             v >> std::tie(source_images,vs);
         }
         else
         {
             tipl::out() << "parsing " << files.size() << " dicom files";
-            std::sort(files.begin(),files.end(),compare_qstring());
             tipl::io::dicom_volume v;
-            std::vector<std::filesystem::path> file_list;
-            for(const auto& each : files)
-                file_list.push_back(tipl::qt::to_path(each));
-            if(!v.load_from_files(file_list))
-                return tipl::out() << v.error_msg.c_str(),false;
-            tipl::out() << "dim: " << v.dim;
-            tipl::out() << "vs: " << v.vs;
+            if(!v.load_from_files(files))
+                return tipl::out() << v.error_msg,false;
+            tipl::out() << "dim: " << v.dim << " vs: " << v.vs;
             tipl::out() << "trans: " << tipl::matrix<3,3,float>(v.orientation_matrix);
             tipl::out() << "dim order: " << tipl::vector<3,int>(v.dim_order);
             tipl::out() << "flipping: " << tipl::vector<3,int>(v.flip);
@@ -1447,7 +1417,7 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
         return tipl::io::gz_nifti(nii_file_name,std::ios::out) << dicom->voxel_size << trans << report << buffer;
     }
 
-    auto src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".sz").c_str(),true).toStdString();
+    auto src_name = get_dicom_output_name(files[0],(std::string("_")+sequence+".sz"),true);
     if(!overwrite && std::filesystem::exists(src_name))
         return tipl::out() << src_name << " exists. skipping",true;
     src_data src;
@@ -1457,33 +1427,32 @@ bool dcm2src_and_nii(QStringList files,bool overwrite)
     return true;
 }
 
-void dicom2src_and_nii(std::string dir_,bool overwrite)
+void dicom2src_and_nii(const std::filesystem::path& dir,bool overwrite)
 {
     tipl::progress prog("convert DICOM to NIFTI/SRC");
-    QStringList dir_list = GetSubDir(dir_.c_str(),false);
+    auto dir_list = tipl::search_dirs(dir,std::string());
     bool has_dicom = false;
     for(int i = 0;prog(i,dir_list.size());++i)
     {
-        QDir cur_dir = dir_list[i];
-        QStringList dicom_file_list = cur_dir.entryList(QStringList("*.dcm"),QDir::Files|QDir::NoSymLinks);
+        dicom2src_and_nii(dir_list[i],overwrite);
+        auto dicom_file_list = tipl::search_files(dir_list[i],"*.dcm");
         if(dicom_file_list.empty())
             continue;
         has_dicom = true;
         // aggregate DWI with identical names from consecutive folders
-        QStringList aggregated_file_list;
-        for(;prog(i,dir_list.size());++i)
+        while(i+1 < dir_list.size() && std::filesystem::exists(dir_list[i+1]/dicom_file_list.front().filename()))
         {
-            for (int index = 0;index < dicom_file_list.size();++index)
-                aggregated_file_list << dir_list[i] + "/" + dicom_file_list[index];
-            if(i+1 < dir_list.size() && !QFileInfo(dir_list[i+1] + "/" + dicom_file_list[0]).exists())
-                break;
+            tipl::search_files(dir_list[i+1],"*.dcm",dicom_file_list);
+            ++i;
         }
-        dcm2src_and_nii(aggregated_file_list,overwrite);
+        dicom2src_and_nii(dicom_file_list,overwrite);
     }
     if(!has_dicom)
-        for(auto dir : dir_list)
-            dicom2src_and_nii(dir.toStdString(),overwrite);
+        for(auto d : dir_list)
+            dicom2src_and_nii(d,overwrite);
 }
+
+
 
 void MainWindow::on_dicom2nii_clicked()
 {
@@ -1494,7 +1463,7 @@ void MainWindow::on_dicom2nii_clicked()
     if(dir.isEmpty())
         return;
     add_work_dir(dir);
-    dicom2src_and_nii(dir.toStdString(),false);
+    dicom2src_and_nii(tipl::qt::to_path(dir),false);
 }
 
 
@@ -1550,7 +1519,7 @@ void MainWindow::on_clear_src_history_clicked()
 {
     ui->recentSrc->setRowCount(0);
     ui->open_selected_src->setEnabled(false);
-    settings.setValue("recentSRCFileList", QStringList());
+    settings.setValue("recentSrcFileList", QStringList());
 }
 
 void MainWindow::on_open_selected_src_clicked()
