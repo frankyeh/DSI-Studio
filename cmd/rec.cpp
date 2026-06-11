@@ -161,12 +161,8 @@ int rec(tipl::program_option<tipl::out>& po)
 
         if((po.get("volume_correction",0) && !src.command("[Step T2][Corrections][Volume Orientation Correction]")) ||
            (po.has("correct_by_t2") && !src.command("[Step T2][Corrections][By T2w]",po.get("correct_by_t2"))) ||
-           (po.get("motion_correction",0) && !src.command("[Step T2][Corrections][Motion Correction]")))
-        {
-            tipl::error() << src.error_msg << std::endl;
-            return 1;
-        }
-
+            (po.get("motion_correction",0) && !src.command("[Step T2][Corrections][Motion Correction]")))
+                return tipl::error() << src.error_msg,1;
 
         if(po.has("align_acpc"))
             src.command("[Step T2][Edit][Align ACPC]",
@@ -197,6 +193,8 @@ int rec(tipl::program_option<tipl::out>& po)
         }
     }
 
+    if(!src.has_bias_field_correction() && po.get("bias_field_correction",1))
+        src.correct_bias_field();
 
     if(po.has("mask"))
     {
@@ -217,33 +215,20 @@ int rec(tipl::program_option<tipl::out>& po)
 
     if(po.has("apply_mask"))
         src.apply_mask = true;
-
-
-
     if(po.has("save_src") || po.has("save_nii"))
     {
         std::string new_src_file = po.has("save_src") ? po.get("save_src") : po.get("save_nii");
         if(!src.save_to_file(new_src_file.c_str()))
-        {
-            tipl::error() << src.error_msg << std::endl;
-            return -1;
-        }
+            return tipl::error() << src.error_msg,1;
         return 0;
     }
-
     if(po.has("reg"))
     {
         auto file_list = tipl::split(po.get("reg"),',');
         if(file_list.size() != 2)
-        {
-            tipl::error() << "invalid reg setting ";
-            return 1;
-        }
+            return tipl::error() << "invalid reg setting",1;
         if(!src.add_other_image("reg",file_list[0]))
-        {
-            tipl::error() << src.error_msg;
-            return 1;
-        }
+            return tipl::error() << src.error_msg,1;
         tipl::out() << "other modality template: " << (src.voxel.other_modality_template = file_list[1]);
     }
     if(po.has("other_image"))
@@ -269,10 +254,7 @@ int rec(tipl::program_option<tipl::out>& po)
         }
     }
     if (!src.reconstruction())
-    {
-        tipl::error() << src.error_msg << std::endl;
-        return 1;
-    }
+        return tipl::error() << src.error_msg,1;
     if(po.get("export_r",0) && src.voxel.R2 != 0.0f)
         std::ofstream(file_name + ".r" + std::to_string(int(src.voxel.R2*100))) << std::endl;
     return 0;
