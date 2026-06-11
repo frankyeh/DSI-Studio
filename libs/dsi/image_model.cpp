@@ -1402,17 +1402,18 @@ bool src_data::align_acpc(float reso)
     tipl::affine_param<float> arg;
     {
         tipl::progress prog("linear registration");
-        auto arg = tipl::reg::linear<tipl::out>(
+        arg = tipl::reg::linear<tipl::out>(
                     tipl::reg::make_list(tipl::reg::template_image_pre(tipl::image<3>(I))),Ivs,
-                    tipl::reg::make_list(tipl::reg::subject_image_pre(tipl::image<3>(J))),Jvs,{tipl::reg::rigid_scaling});
+                    tipl::reg::make_list(tipl::reg::subject_image_pre(tipl::image<3>(J))),Jvs,{tipl::reg::rigid_body})
+                        .to_affine_param(I.shape(),Ivs,J.shape(),Jvs);
         if(prog.aborted())
             return false;
     }
 
-    tipl::out() << arg << std::endl;
+    tipl::out() << arg;
     prog(1,3);
     float r = tipl::correlation(I,tipl::resample<tipl::interpolation::cubic>(J,I.shape(),
-                                  tipl::transformation_matrix<float>(arg,I.shape(),Ivs,J.shape(),Jvs)));
+                    tipl::transformation_matrix<float>(arg,I.shape(),Ivs,J.shape(),Jvs)));
     tipl::out() << "R2 for ac-pc alignment: " << r*r << std::endl;
     prog(2,3);
     if(r*r < 0.3f)
@@ -1420,10 +1421,6 @@ bool src_data::align_acpc(float reso)
         error_msg = "Failed to align subject data to template.";
         return false;
     }
-    arg.scaling[0] = 1.0f;
-    arg.scaling[1] = 1.0f;
-    arg.scaling[2] = 1.0f;
-
     tipl::shape<3> new_geo(I.width()*Ivs[0]/reso,I.height()*Ivs[1]/reso,I.depth()*Ivs[2]/reso);
     auto T = tipl::transformation_matrix<float>(arg,new_geo,tipl::v(reso,reso,reso),J.shape(),Jvs);
 
