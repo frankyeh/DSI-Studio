@@ -26,7 +26,7 @@ bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std:
 size_t get_template_id(tipl::program_option<tipl::out>& po,size_t default_sel);
 int db(tipl::program_option<tipl::out>& po)
 {
-    std::vector<std::string> name_list = po.get_files("source","*.qsdr.fz");
+    auto name_list = po.get_files("source","*.qsdr.fz");
     if(name_list.empty())
         return tipl::error() << po.error_msg,1;
 
@@ -50,7 +50,7 @@ int db(tipl::program_option<tipl::out>& po)
     float template_reso = 1.0f;
     {
         fib_data fib;
-        if(!fib.load_from_file(name_list[0].c_str()))
+        if(!fib.load_from_file(name_list[0]))
             return tipl::error() << "cannot load subject fib " << name_list[0],1;
 
         std::ostringstream out;
@@ -83,27 +83,26 @@ int db(tipl::program_option<tipl::out>& po)
     }
     return 0;
 }
-bool odf_average(const char* out_name,std::vector<std::string>& file_names,std::string& error_msg);
+bool odf_average(const std::filesystem::path& out_name,std::vector<std::filesystem::path>& file_names,std::string& error_msg);
 int tmp(tipl::program_option<tipl::out>& po)
 {
-    std::vector<std::string> name_list = po.get_files("source","*.fz");
+    auto name_list = po.get_files("source","*.fz");
     if(name_list.empty())
         return tipl::error() << po.error_msg,1;
     std::string error_msg;
     tipl::out() << "constructing a group average template" << std::endl;
-    if(tipl::ends_with(name_list[0],".fib.gz") ||
-       tipl::ends_with(name_list[0],".fz"))
+    if(tipl::ends_with(name_list[0].u8string(),{".fib.gz",".fz"}))
     {
-        if(!odf_average(po.get("output",(QFileInfo(name_list[0].c_str()).absolutePath()+"/template").toStdString()).c_str(),name_list,error_msg))
+        if(!odf_average(po.get("output",(name_list[0].parent_path()/"template").u8string()),name_list,error_msg))
         {
             tipl::error() << error_msg;
             return 1;
         }
         return 0;
     }
-    if(tipl::ends_with(name_list[0],".nii.gz"))
+    if(tipl::ends_with(name_list[0].u8string(),".nii.gz"))
     {
-        if(!odf_average(po.get("output",name_list[0] + ".avg.nii.gz").c_str(),name_list,error_msg))
+        if(!odf_average(po.get("output",name_list[0].u8string() + ".avg.nii.gz"),name_list,error_msg))
         {
             tipl::error() << error_msg;
             return 1;
