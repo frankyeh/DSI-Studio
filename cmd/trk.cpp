@@ -509,9 +509,13 @@ int trk_post(tipl::program_option<tipl::out>& po,
         ROIRegion end1(handle),end2(handle);
         end1.add_points(std::move(points1));
         end2.add_points(std::move(points2));
-        if(po.has(("end_point1")) && !end1.save_region_to_file(po.get("end_point1").empty() ? std::filesystem::path(tract_file_name) += ".end1.txt" : po.get("end_point1")))
+        if(po.has(("end_point1")) &&
+            !end1.save_region_to_file(po.get("end_point1").empty() ?
+                std::filesystem::path(tract_file_name) += ".end1.txt" : std::filesystem::path(po.get("end_point1"))))
             return tipl::error() << "failed to save --end_point1",1;
-        if(po.has(("end_point2")) && !end2.save_region_to_file(po.get("end_point2").empty() ? std::filesystem::path(tract_file_name) += ".end2.txt" : po.get("end_point2")))
+        if(po.has(("end_point2")) &&
+            !end2.save_region_to_file(po.get("end_point2").empty() ?
+                std::filesystem::path(tract_file_name) += ".end2.txt" : std::filesystem::path(po.get("end_point2"))))
             return tipl::error() << "failed to save --end_point2",1;
     }
     if(prog.aborted())
