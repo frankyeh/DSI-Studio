@@ -200,12 +200,12 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
                             auto name_cannot_find = std::filesystem::path(new_file_name).filename().string();
                             for (const auto& each : files)
                             {
-                                auto name = QFileInfo(each.c_str()).fileName().toStdString();
+                                auto name = each.filename().string();
                                 if(tipl::contains(name_cannot_find,name) ||
                                    tipl::contains(name,name_cannot_find))
                                 {
                                     tipl::warning() << "found and will use (need to check!): " << each;
-                                    new_file_name = each;
+                                    new_file_name = each.u8string();
                                     break;
                                 }
                             }
