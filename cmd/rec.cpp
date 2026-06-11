@@ -10,7 +10,6 @@
 #include "libs/dsi/image_model.hpp"
 #include "reconstruction/reconstruction_window.h"
 
-bool get_src(std::string filename,src_data& src2,std::string& error_msg);
 /**
  perform reconstruction
  */
@@ -50,7 +49,7 @@ int rec(tipl::program_option<tipl::out>& po)
     }
 
     {
-        std::string check_exist_file;
+        std::filesystem::path check_exist_file;
         if(po.has("save_src") || po.has("save_nii"))
             check_exist_file = po.has("save_src") ? po.get("save_src") : po.get("save_nii");
         else
@@ -68,17 +67,11 @@ int rec(tipl::program_option<tipl::out>& po)
         }
 
         if(po.get("overwrite",0) == 0 && std::filesystem::exists(check_exist_file))
-        {
-            tipl::out() << "output file exist at " << check_exist_file;
-            return 0;
-        }
+            return tipl::out() << "output file exist at " << check_exist_file,0;
     }
 
     if(po.has("intro") && !src.load_intro(po.get("intro")))
-    {
-        tipl::error() << src.error_msg;
-        return 1;
-    }
+        return tipl::error() << src.error_msg,1;
 
 
     if(po.has("mask") && std::filesystem::exists(po.get("mask")))
@@ -112,26 +105,22 @@ int rec(tipl::program_option<tipl::out>& po)
         if(po.has("remove"))
         {
             std::vector<int> remove_index;
-            QStringList remove_list = QString(po.get("remove").c_str()).split(",");
-            for(auto str : remove_list)
+            for(const auto& str : tipl::split(po.get("remove"),','))
             {
-                if(str.contains(":"))
+                if(tipl::contains(str,":"))
                 {
-                    QStringList range = str.split(":");
+                    auto range = tipl::split(str,':');
                     if(range.size() != 2)
-                    {
-                        tipl::error() << "invalid index specified at --remove: " << str.toStdString() << std::endl;
-                        return 1;
-                    }
-                    int from = range[0].toInt();
+                        return tipl::error() << "invalid index specified at --remove: " << str,1;
+                    int from = std::stoi(range[0]);
                     int to = src.src_bvalues.size()-1;
                     if(range[1] != "end")
-                        to = range[1].toInt();
+                        to = std::stoi(range[1]);
                     for(int i = from;i <= to;++i)
                         remove_index.push_back(i);
                 }
                 else
-                    remove_index.push_back(str.toInt());
+                    remove_index.push_back(std::stoi(str));
             }
 
             if(remove_index.empty())
@@ -262,11 +251,12 @@ int rec(tipl::program_option<tipl::out>& po)
         for(const auto& each : po.get_files("other_image"))
         {
             tipl::out() << "add image: " << each;
-            auto seps = tipl::split(each,':');
-            std::string name,path;
-            if(tipl::begins_with(each,"http") || seps.size() == 1)
+            auto seps = tipl::split(each.u8string(),':');
+            std::string name;
+            std::filesystem::path path;
+            if(tipl::begins_with(each.u8string(),"http") || seps.size() == 1)
             {
-                name = tipl::remove_all_suffix(std::filesystem::path(each).filename().string());
+                name = tipl::remove_all_suffix(each.filename().u8string());
                 path = each;
             }
             else
