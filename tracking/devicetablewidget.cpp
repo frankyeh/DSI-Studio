@@ -387,7 +387,7 @@ void DeviceTableWidget::uncheck_all(void)
         item(row,0)->setCheckState(Qt::Unchecked);
     emit need_update();
 }
-bool DeviceTableWidget::load_device(const std::string& filename)
+bool DeviceTableWidget::load_device(const std::filesystem::path& filename)
 {
     bool result = false;
     for(const auto& line : tipl::read_text_file(filename))
