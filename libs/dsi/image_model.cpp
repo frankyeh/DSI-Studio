@@ -1589,10 +1589,6 @@ void correct_bias_field(tipl::image<3> I,
         old_size.pop_back();
     }
 }
-bool src_data::has_bias_field_correction(void) const
-{
-    return tipl::contains(voxel.report,"bias field");
-}
 tipl::image<3> src_data::get_bias_field(void)
 {
     tipl::progress prog("compute bias field");
@@ -1623,12 +1619,9 @@ tipl::image<3> src_data::get_bias_field(void)
 }
 bool src_data::correct_bias_field(void)
 {
-    if(has_bias_field_correction())
-    {
-        tipl::warning() << "bias field correction has been previously applied";
-        return true;
-    }
-    tipl::progress prog("correct bias field correction");
+    if(tipl::contains(voxel.report,"bias field"))
+        return tipl::warning() << "bias field correction has been previously applied",false;
+    tipl::progress prog("correct bias field");
     voxel.report += " The bias field was corrected using b0 image.";
     auto bias_field = get_bias_field();
     tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
