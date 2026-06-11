@@ -96,19 +96,9 @@ void src_data::update_mask(void)
     tipl::progress prog("create mask from dwi sum");
     prog.run(3,[&](auto& p)
     {
+        tipl::segmentation::otsu(dwi,voxel.mask,1,0);
         if(dwi.depth() >= 300)
-        {
-            tipl::segmentation::otsu(dwi,voxel.mask,1,0);
             return true;
-        }
-        if(has_bias_field_correction())
-            tipl::segmentation::otsu(dwi,voxel.mask,1,0);
-        else
-        {
-            tipl::image<3> dwi_corrected(dwi);
-            dwi_corrected *= get_bias_field();
-            tipl::segmentation::otsu(dwi_corrected,voxel.mask,1,0);
-        }
         ++p;
         tipl::morphology::smoothing(voxel.mask);
         tipl::morphology::smoothing(voxel.mask);
@@ -1452,6 +1442,11 @@ void correct_bias_field(tipl::image<3> I,
                         tipl::image<3>& log_bias_field,
                         const tipl::vector<3>& spacing)
 {
+    if(I.shape() != mask.shape())
+    {
+        log_bias_field.clear();
+        return;
+    }
     std::vector<tipl::shape<3> > old_size;
     while(I.size() > 96*96*96)
     {
@@ -1521,6 +1516,9 @@ void correct_bias_field(tipl::image<3> I,
                     if(wxyz == 0.0f)
                         continue;
                     sumw += wxyz;
+                    if(ix < 0 || iy < 0 || iz < 0 ||
+                        ix >= c_shape[0] || iy >= c_shape[1] || iz >= c_shape[2])
+                        continue;
                     b.emplace_back(tipl::voxel2index(ix,iy,iz,c_shape), wxyz);
                 }
             }
@@ -1615,7 +1613,7 @@ tipl::image<3> src_data::get_bias_field(void)
     tipl::image<3,unsigned char> mask;
     tipl::threshold(tipl::reg::subject_image_pre(dwi_sum),mask,25,1,0);
     for(size_t i = 0;prog(i,1);++i)
-        ::correct_bias_field(dwi,mask,bias_field,tipl::vector<3>(1.0f,voxel.vs[0]/voxel.vs[1],voxel.vs[0]/voxel.vs[2]));
+        ::correct_bias_field(dwi_sum,mask,bias_field,tipl::vector<3>(1.0f,voxel.vs[0]/voxel.vs[1],voxel.vs[0]/voxel.vs[2]));
     if(prog.aborted())
         return bias_field;
     for(auto& each : bias_field)
@@ -1637,6 +1635,7 @@ bool src_data::correct_bias_field(void)
         dwi_at(index) *= bias_field;
     });
     update_dwi_sum();
+    update_mask();
     return true;
 }
 extern bool has_cuda;
@@ -2169,8 +2168,6 @@ bool src_data::load_topup_eddy_result(void)
         topup_eddy_report = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     }
     voxel.report += topup_eddy_report;
-    if(!has_bias_field_correction())
-        correct_bias_field();
     update_dwi_sum();
     if(voxel.mask.empty())
         update_mask();
