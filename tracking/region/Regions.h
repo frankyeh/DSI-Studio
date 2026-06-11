@@ -130,8 +130,8 @@ public:
             modified = true;
             return true;
         }
-        bool save_region_to_file(const std::string&);
-        bool load_region_from_file(const std::string&);
+        bool save_region_to_file(const std::filesystem::path&);
+        bool load_region_from_file(const std::filesystem::path&);
         void flip_region(unsigned int dimension);
         bool shift(tipl::vector<3,float> dx);
 
