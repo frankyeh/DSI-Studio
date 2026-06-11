@@ -1435,7 +1435,6 @@ bool dicom2src_and_nii(std::vector<std::filesystem::path> files,bool overwrite)
 
 void dicom2src_and_nii(const std::filesystem::path& dir,bool overwrite)
 {
-    tipl::progress prog("convert DICOM to NIFTI/SRC");
     auto dir_list = tipl::search_dirs(dir,std::string());
     bool has_dicom = false;
     for(int i = 0;prog(i,dir_list.size());++i)
