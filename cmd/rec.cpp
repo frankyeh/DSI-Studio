@@ -193,7 +193,7 @@ int rec(tipl::program_option<tipl::out>& po)
         }
     }
 
-    if(!src.has_bias_field_correction() && po.get("bias_field_correction",1))
+    if(!tipl::contains(src.voxel.report,"bias field") && po.get("bias_field_correction",1))
         src.correct_bias_field();
 
     if(po.has("mask"))
