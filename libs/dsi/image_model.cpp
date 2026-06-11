@@ -734,7 +734,7 @@ void src_data::correction_axis(void)
         ++op_count;
     }
     int64_t anterior_posterior_dif = anterior_posterior_difference();
-    tipl::out() << "anterior and postieror mask difference: " << anterior_posterior_dif;
+    tipl::out() << "anterior and posterior mask difference: " << anterior_posterior_dif;
     if(anterior_posterior_dif < 0)
     {
         command("[Step T2][Edit][Image flip y]");
@@ -1745,7 +1745,7 @@ bool src_data::correct_motion(void)
 
     {
         tipl::progress prog("estimate and registering...");
-        size_t total = 0;
+        std::atomic<size_t> total = 0;
         tipl::par_for(src_bvalues.size(),[&](size_t i)
         {
             prog(total++,src_bvalues.size());
@@ -2715,10 +2715,7 @@ bool src_data::save_to_file(const std::filesystem::path& filename)
             mat_writer.write("intro",voxel.intro);
         }
         if(prog.aborted())
-        {
-            std::filesystem::remove(temp_file);
-            return true;
-        }
+            return std::filesystem::remove(temp_file),false;
         if(std::filesystem::exists(filename))
             std::filesystem::remove(filename);
         std::error_code error;
