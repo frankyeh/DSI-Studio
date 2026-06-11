@@ -10,7 +10,7 @@ int ren(tipl::program_option<tipl::out>& po)
     if(po.get("to_src_nii",0))
         for(auto dir : subject_dir)
         {
-            tipl::progress prog("DICOM to SRC/NII ",dir.u8string());
+            tipl::progress prog("DICOM to SRC/NII",dir.u8string());
             dicom2src_and_nii(dir,po.get("overwrite",0));
         }
     return 0;
