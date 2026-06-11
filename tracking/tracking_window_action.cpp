@@ -584,7 +584,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             if(tractWidget->rowCount())
                 tractWidget->command({"delete_all_tracts"});;
             for(const auto& each : tipl::search_files(cmd[1]+"/tracts","*tt.gz"))
-                tractWidget->command({"open_tract",each});
+                tractWidget->command({"open_tract",each.u8string()});
         }
 
         prog(1,5);
@@ -592,7 +592,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         if(std::filesystem::exists(cmd[1]+"/slices"))
         {
             for(const auto& each : tipl::search_files(cmd[1]+"/slices","*nii.gz"))
-                if(command({"add_slice",each}))
+                if(command({"add_slice",each.u8string()}))
                 {
                     auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
                     if(reg_slice.get())
@@ -606,7 +606,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             if(deviceWidget->rowCount())
                 deviceWidget->command({"delete_all_devices"});
             for(const auto& each : tipl::search_files(cmd[1]+"/devices","*dv.csv"))
-                deviceWidget->load_device(each.c_str());
+                deviceWidget->load_device(each);
         }
 
         prog(3,5);
@@ -615,7 +615,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
             if(regionWidget->rowCount())
                 regionWidget->command({"delete_all_regions"});
             for(const auto& each : tipl::search_files(cmd[1]+"/regions","*.nii.gz"))
-                regionWidget->command({"open_region",each});
+                regionWidget->command({"open_region",each.u8string()});
         }
 
         prog(4,5);      
