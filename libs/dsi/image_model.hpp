@@ -223,8 +223,6 @@ public:
     void crop(tipl::vector<3,int> range_min,tipl::vector<3,int> range_max);
     void trim(size_t border = 0);
 public:
-    bool has_bias_field_correction(void) const;
-public:
     bool correct_distortion_by_t2w(const std::string& t2w_filename);
     void correction_axis(void);
     bool correct_motion(void);
