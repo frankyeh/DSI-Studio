@@ -774,9 +774,9 @@ bool src_data::command(std::string cmd,std::string param)
 {
     if(cmd == "[Step T2][Reconstruction]")
         return true;
-    tipl::progress prog_(cmd);
+    tipl::progress prog(cmd,true);
     if(!param.empty())
-        tipl::out() << "param: " << param << std::endl;
+        tipl::out() << "param: " << param;
     if(cmd == "[Step T2][File][Save Src File]" || cmd == "[Step T2][File][Save 4D NIFTI]")
     {
         if(param.empty())
