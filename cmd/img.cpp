@@ -539,11 +539,15 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
 extern std::vector<std::filesystem::path> iso_template_list,t1w_template_list,t2w_template_list;
 int img(tipl::program_option<tipl::out>& po)
 {
-    if((!po.has("overwrite") || !po.get("overwrite",0)) && po.has("output") && std::filesystem::exists(po.get("output")))
+    std::string source(po.get_file("source",".nii.gz")),info;
+    std::filesystem::path output = po.get("output");
+    if(std::filesystem::is_directory(output))
+        output = output/std::filesystem::path(source).filename();
+
+    if((!po.has("overwrite") || !po.get("overwrite",0)) && po.has("output") && std::filesystem::exists(output))
         return tipl::out() << "output exist, skipping",0;
 
 
-    std::string source(po.get_file("source",".nii.gz")),info;
     if(tipl::ends_with(source,{".fib.gz",".fz",".src.gz",".sz",".mz",".dz",".nz"}))
     {
         tipl::io::gz_mat_read mat_reader;
@@ -571,8 +575,7 @@ int img(tipl::program_option<tipl::out>& po)
         }
         if(po.has("output"))
         {
-            tipl::out() << "saving output";
-            if(!modify_fib(mat_reader,"save",po.get("output")))
+            if(!modify_fib(mat_reader,"save",output.u8string()))
                 return tipl::error() << mat_reader.error_msg,1;
         }
         return 0;
@@ -653,7 +656,6 @@ int img(tipl::program_option<tipl::out>& po)
 
     if(po.has("output"))
     {
-        auto output = po.get("output");
         if(var_image.dim4 > 1)
         {
             if(!var_image.apply([&](auto& I)->bool
@@ -664,7 +666,7 @@ int img(tipl::program_option<tipl::out>& po)
         }
         else
         {
-            if(!var_image.command("save",output))
+            if(!var_image.command("save",output.u8string()))
                 return tipl::error() << var_image.error_msg,1;
         }
     }
