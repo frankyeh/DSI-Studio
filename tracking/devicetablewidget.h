@@ -39,7 +39,7 @@ public:
     tracking_window& cur_tracking_window;
     unsigned int device_num = 1;
     std::vector<std::shared_ptr<Device> > devices;
-    bool load_device(const std::string& filename);
+    bool load_device(const std::filesystem::path& filename);
     void shift_device(size_t index,float sel_length,const tipl::vector<3>& dis);
     size_t get_device(const std::string& name);
     void set_coordinate(bool is_acpc);
