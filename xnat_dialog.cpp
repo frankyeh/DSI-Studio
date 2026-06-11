@@ -364,8 +364,6 @@ void xnat_dialog::on_download_clicked()
     }
 
 }
-QStringList rename_dicom_at_dir(QString path,QString output);
-void dicom2src_and_nii(std::string dir_,bool overwrite);
 void xnat_dialog::download_status()
 {
     if(xnat_connection.has_error())
@@ -381,25 +379,6 @@ void xnat_dialog::download_status()
         {
             on_download_clicked();
             QMessageBox::information(this,QApplication::applicationName(),"Download Completed");
-            if(QMessageBox::information(this,QApplication::applicationName(),"rename DICOM files?",QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
-            {
-                QStringList subject_dirs;
-                {
-                    tipl::progress prog("renaming DICOM");
-                    for(size_t i = 0;prog(i,output_dirs.size());++i)
-                        subject_dirs << rename_dicom_at_dir(output_dirs[i].c_str(),output_dirs[i].c_str());
-                    if(prog.aborted())
-                        return;
-                }
-                if(QMessageBox::information(this,QApplication::applicationName(),"convert DICOM to SRC/NII?",QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
-                {
-                    tipl::progress prog("converting DICOM to SRC/NII");
-                    for(size_t i = 0;prog(i,subject_dirs.size());++i)
-                        dicom2src_and_nii(subject_dirs[i].toStdString(),false);
-                    if(prog.aborted())
-                        return;
-                }
-            }
             return;
         }
         QString output_dir = ui->save_dir->text();
