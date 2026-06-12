@@ -2350,11 +2350,12 @@ bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,
     }
     tipl::out() << "loading " << at->get_list()[roi_index] << " from " << at->name << std::endl;
 
-    std::vector<std::vector<tipl::vector<3,short> > > buf(tipl::max_thread_count);
 
     // trigger atlas loading to avoid crash in multi thread
     if(!at->load_from_file())
         return error_msg = "cannot read atlas file " + at->filename.u8string(),false;
+
+    std::vector<std::vector<tipl::vector<3,short> > > buf(tipl::max_thread_count);
     if(new_geo == dim && to_diffusion_space == tipl::identity_matrix())
     {
         tipl::par_for<tipl::dynamic_with_id>(s2t.shape(),[&](const tipl::pixel_index<3>& index,size_t id)
