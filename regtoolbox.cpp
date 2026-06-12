@@ -261,7 +261,8 @@ bool RegToolBox::eventFilter(QObject *obj, QEvent *event)
         {
             auto x = float(pos.x()-view_border[st])/view_size[st][0];
             auto y = float(pos.y()-view_border[st])/view_size[st][1];
-            if(!reg.to2from.empty() && event->type() == QEvent::GraphicsSceneMousePress && x > 1.0f && int(y) < file_names[1-st].size()) // click on the right half
+            if(!reg.to2from.empty() && event->type() == QEvent::GraphicsSceneMousePress && x > 1.0f &&
+               y >= 0.0f && int(y) < file_names[1-st].size()) // click on the right half
             {
                 if(st)
                     save_warp<true>(this,reg,y,file_names[1-st]);

@@ -1124,7 +1124,8 @@ void MainWindow::on_parse_network_measures_clicked()
         while(in)
         {
             std::string t1,t2;
-            in >> t1;
+            if(!(in >> t1))
+                break;
             if(t1 == "network_measures")
             {
                 std::string nodes;
@@ -1134,7 +1135,8 @@ void MainWindow::on_parse_network_measures_clicked()
                           std::istream_iterator<std::string>(),std::back_inserter(node_list));
                 break;
             }
-            in >> t2;
+            if(!(in >> t2))
+                break;
             if(i == 0)
             {
                 line_output.push_back(t1);
@@ -1151,7 +1153,7 @@ void MainWindow::on_parse_network_measures_clicked()
             std::istringstream in2(line);
             std::string t1;
             in2 >> t1;
-            if(t1[0] == '#' || t1[0] == ' ')
+            if(t1.empty() || t1[0] == '#' || t1[0] == ' ')
                 continue;
             for(size_t k = 0;k < node_list.size();++k,++line_index)
             {
