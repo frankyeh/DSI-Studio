@@ -1012,7 +1012,7 @@ bool parse_dwi(const std::vector<std::filesystem::path>& file_list,
         if(std::filesystem::exists(file_list[0]/"pdata"/"1"/"2dseq"))
         {
             for(int index = 0;index < file_list.size();++index)
-                parse_dwi({file_list[0]/"pdata"/"1"/"2dseq"},dwi_files,error_msg);
+                parse_dwi({file_list[index]/"pdata"/"1"/"2dseq"},dwi_files,error_msg);
             return !dwi_files.empty();
         }
         tipl::out()  << "processing a single folder with DICOM files";
