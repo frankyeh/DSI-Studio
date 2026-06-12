@@ -213,11 +213,11 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             value_map[from[index.index()]] = 1;
             max_value = std::max<unsigned short>(uint16_t(from[index.index()]),max_value);
         }
-        for(unsigned short value = 1;value <= max_value;++value)
+        for(unsigned int value = 1;value <= max_value;++value)
             if(value_map[value])
             {
                 value_map[value] = uint16_t(value_list.size());
-                value_list.push_back(value);
+                value_list.push_back(uint16_t(value));
             }
     }
 
