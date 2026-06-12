@@ -748,9 +748,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             {
                 int label = 0;
                 std::istringstream label_in(each);
-                if(!(label_in >> label) || !label_in.eof())
-                    return run->failed("invalid label id: " + each);
-                if(label < 0 || label >= at->get_list().size())
+                if(!(label_in >> label) || label < 0 || label >= at->get_list().size())
                     return run->failed("invalid label id: " + each);
                 std::vector<tipl::vector<3,short> > point0;
                 if(!cur_tracking_window.handle->get_atlas_roi(at,label,
