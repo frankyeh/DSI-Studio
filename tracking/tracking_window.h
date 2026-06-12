@@ -220,7 +220,6 @@ private slots:
     void on_actionAuto_Rotate_triggered(bool checked);
     void on_rendering_efficiency_currentIndexChanged(int index);
 
-    void stripSkull();
     void on_actionAdjust_Mapping_triggered();
     void on_actionLoad_Color_Map_triggered();
     void on_track_style_currentIndexChanged(int index);
@@ -239,6 +238,7 @@ private slots:
 
     void insertPicture();
 
+    void update_unet_models(void);
     void on_template_box_currentIndexChanged(int index);
     void on_actionManual_Atlas_Alignment_triggered();
 
