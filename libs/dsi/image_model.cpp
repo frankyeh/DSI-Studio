@@ -1631,16 +1631,18 @@ bool src_data::correct_bias_field(void)
         for(auto& each : bias_field)
             each = std::exp(-each);
     }
-    tipl::progress prog("correct bias field");
-    std::atomic<size_t> p = 0;
-    tipl::par_for(src_dwi_data.size(),[&](size_t index)
     {
-        if(!prog(p++,src_dwi_data.size()))
-            return;
-        dwi_at(index) *= bias_field;
-    });
-    if(prog.aborted())
-        return false;
+        tipl::progress prog("correct bias field");
+        std::atomic<size_t> p = 0;
+        tipl::par_for(src_dwi_data.size(),[&](size_t index)
+        {
+            if(!prog(p++,src_dwi_data.size()))
+                return;
+            dwi_at(index) *= bias_field;
+        });
+        if(prog.aborted())
+            return false;
+    }
     voxel.report += " The bias field was corrected using b0 image.";
     update_dwi_sum();
     update_mask();
