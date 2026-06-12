@@ -6,7 +6,7 @@
 std::map<std::string,std::string> dicom_dictionary;
 extern std::vector<std::vector<std::string> > unet_path;
 bool download_unet_model(const std::string& name,std::string& path);
-void correct_bias_field(tipl::image<3> I,
+bool estimate_bias_field(tipl::image<3> I,
                         tipl::image<3,unsigned char> mask,
                         tipl::image<3>& log_bias_field,
                         const tipl::vector<3>& spacing);
@@ -27,7 +27,8 @@ bool variant_image::command(std::string cmd,std::string param1)
             for(size_t i = 0;i < 10;++i)
             {
                 tipl::image<3> bias_field;
-                correct_bias_field(I,mask,bias_field,tipl::vector<3>(1.0f,vs[0]/vs[1],vs[0]/vs[2]));
+                if(!estimate_bias_field(I,mask,bias_field,tipl::vector<3>(1.0f,vs[0]/vs[1],vs[0]/vs[2])))
+                    return result = false,void();
                 for(auto& each : bias_field)
                     each = std::exp(-each);
                 auto J = I;

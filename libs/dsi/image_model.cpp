@@ -76,12 +76,9 @@ void src_data::update_dwi_sum(void)
     tipl::image<3> dwi_sum(voxel.dim);
     bool skip_b0 = tipl::max_value(src_bvalues) >= 100.0;
 
-    const size_t sum_sz = dwi_sum.size();
-    const size_t data_sz = src_dwi_data.size();
-
-    tipl::par_for(sum_sz, [&](size_t i)
+    tipl::par_for(dwi_sum.size(), [&](size_t i)
     {
-        for(size_t j = 0; j < data_sz; ++j)
+        for(size_t j = 0,data_sz = src_dwi_data.size(); j < data_sz; ++j)
         {
             if(skip_b0 && src_bvalues[j] < 100.0f)
                 continue;
@@ -1437,14 +1434,15 @@ inline T B3_sym(T u)
     if (u < T(2)) {T v = T(2) - u;return (v*v*v) / T(6);}
     return T(0);
 }
-void correct_bias_field(tipl::image<3> I,
+bool estimate_bias_field(tipl::image<3> I,
                         tipl::image<3,unsigned char> mask,
                         tipl::image<3>& log_bias_field,
                         const tipl::vector<3>& spacing)
 {
     if(I.shape() != mask.shape() || I.width() < 2 || I.height() < 2 || I.depth() < 2 ||
         spacing[0] <= 0.0f || spacing[1] <= 0.0f || spacing[2] <= 0.0f)
-        return;
+        return false;
+    tipl::progress prog("estimate bias field");
     std::vector<tipl::shape<3> > old_size;
     while(I.size() > 96*96*96)
     {
@@ -1482,6 +1480,8 @@ void correct_bias_field(tipl::image<3> I,
                     ++sum_signal_count;
                 }
             }
+        if(!sum_signal_count)
+            return false;
         tipl::minus_constant(logI.begin(),logI.end(),sum_signal/sum_signal_count);
     }
 
@@ -1542,7 +1542,7 @@ void correct_bias_field(tipl::image<3> I,
     std::vector<double> piv(c_shape.size());
     std::initializer_list<size_t> dim{c_shape.size(), c_shape.size()};
     if (!tipl::mat::ll_decomposition(ATA.begin(), piv.begin(), dim))
-        return;
+        return false;
 
     tipl::image<3,double> cc_img(c_shape);   // control‐point coefficients
     std::vector<float> correction(position.size());
@@ -1562,17 +1562,23 @@ void correct_bias_field(tipl::image<3> I,
         // c) solve via LL
         tipl::mat::ll_solve(ATA.begin(), piv.begin(), rhs.begin(), cc_img.begin(), dim);
         // d) update correction & RMS
-        std::vector<double> each_sumsq(tipl::max_thread_count),each_count(tipl::max_thread_count);
-        tipl::par_for<tipl::dynamic_with_id>(correction.size(),[&](size_t i,size_t id)
+        double sumsq(0.0);
+        std::mutex m;
+        tipl::par_for<tipl::ranged>(correction.size(),[&](size_t from,size_t to)
         {
-            double d = 0.0;
-            for(const auto& each : basis[i])
-                d += double(cc_img[each.first])*each.second;
-            correction[i] += float(d);
-            each_sumsq[id] += d*d;
-            ++each_count[id];
+            double each_sumsq(0.0);
+            for(size_t i = from;i < to;++i)
+            {
+                double d = 0.0;
+                for(const auto& each : basis[i])
+                    d += double(cc_img[each.first])*each.second;
+                correction[i] += float(d);
+                each_sumsq += d*d;
+            }
+            std::lock_guard<std::mutex> lock(m);
+            sumsq += each_sumsq;
         });
-        double rms = std::sqrt(tipl::sum(each_sumsq.begin(),each_sumsq.end()) / double(tipl::sum(each_count.begin(),each_count.end())));
+        double rms = std::sqrt(sumsq/ double(correction.size()));
         if (std::abs(prev_rms - rms) < tol)
             break;
         prev_rms = rms;
@@ -1588,46 +1594,32 @@ void correct_bias_field(tipl::image<3> I,
         tipl::filter::gaussian(log_bias_field);
         old_size.pop_back();
     }
+    return true;
 }
-tipl::image<3> src_data::get_bias_field(void)
-{
-    tipl::progress prog("compute bias field");
-    tipl::image<3>  bias_field;
-    if(src_dwi_data.empty())
-        return bias_field;
 
-    tipl::image<3> dwi_sum(voxel.dim);
-    bool skip_b0 = tipl::max_value(src_bvalues) >= 100.0;
-    tipl::par_for(dwi_sum.size(),[&](size_t i)
-    {
-        for(size_t j = 0;j < src_dwi_data.size();++j)
-        {
-            if(skip_b0 && src_bvalues[j] < 100.0f)
-                continue;
-            dwi_sum[i] += src_dwi_data[j][i];
-        }
-    });
-    tipl::image<3,unsigned char> mask;
-    tipl::threshold(tipl::reg::subject_image_pre(dwi_sum),mask,25,1,0);
-    for(size_t i = 0;prog(i,1);++i)
-        ::correct_bias_field(dwi_sum,mask,bias_field,tipl::vector<3>(1.0f,voxel.vs[0]/voxel.vs[1],voxel.vs[0]/voxel.vs[2]));
-    if(prog.aborted())
-        return bias_field;
-    for(auto& each : bias_field)
-        each = std::exp(-each);
-    return bias_field;
-}
 bool src_data::correct_bias_field(void)
 {
     if(tipl::contains(voxel.report,"bias field"))
         return tipl::warning() << "bias field correction has been previously applied",false;
+    if(src_dwi_data.empty() || dwi.empty())
+        return error_msg = "no dwi data",false;
+
     tipl::progress prog("correct bias field");
-    voxel.report += " The bias field was corrected using b0 image.";
-    auto bias_field = get_bias_field();
-    tipl::par_for(src_dwi_data.size(),[&](unsigned int index)
+    tipl::image<3>  bias_field;
+    {
+        tipl::image<3,unsigned char> mask;
+        tipl::threshold(dwi,mask,25,1,0);
+        if(!estimate_bias_field(dwi,mask,bias_field,
+                tipl::vector<3>(1.0f,voxel.vs[0]/voxel.vs[1],voxel.vs[0]/voxel.vs[2])))
+            return error_msg = "cannot correct bias field",false;
+        for(auto& each : bias_field)
+            each = std::exp(-each);
+    }
+    tipl::par_for(src_dwi_data.size(),[&](size_t index)
     {
         dwi_at(index) *= bias_field;
     });
+    voxel.report += " The bias field was corrected using b0 image.";
     update_dwi_sum();
     update_mask();
     return true;

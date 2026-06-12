@@ -226,7 +226,6 @@ public:
     bool correct_distortion_by_t2w(const std::string& t2w_filename);
     void correction_axis(void);
     bool correct_motion(void);
-    tipl::image<3> get_bias_field(void);
     bool correct_bias_field(void);
     bool add_other_image(const std::string& name,const std::filesystem::path& filename);
 public:

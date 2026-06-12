@@ -589,7 +589,7 @@ bool fib_data::load_from_file(const std::filesystem::path& file_name)
         correct_bias_field();
     return true;
 }
-void correct_bias_field(tipl::image<3> I,
+bool estimate_bias_field(tipl::image<3> I,
                         tipl::image<3,unsigned char> mask,
                         tipl::image<3>& log_bias_field,
                         const tipl::vector<3>& spacing);
@@ -611,8 +611,8 @@ bool fib_data::correct_bias_field(void)
             return false;
     }
     tipl::image<3> bias_field;
-    ::correct_bias_field(tipl::make_image(image_data.front(),dim),mask,bias_field,tipl::vector<3>(1.0f,vs[0]/vs[1],vs[0]/vs[2]));
-    if(prog.aborted())
+    if(!estimate_bias_field(tipl::make_image(image_data.front(),dim),mask,bias_field,
+                             tipl::vector<3>(1.0f,vs[0]/vs[1],vs[0]/vs[2])))
         return false;
     for(auto& each : bias_field)
         each = std::exp(-each);
