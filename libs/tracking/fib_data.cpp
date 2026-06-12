@@ -597,10 +597,10 @@ bool fib_data::correct_bias_field(void)
 {
     if(!mat_reader.has("iso"))
         return false;
+    tipl::progress prog("correct bias field");
     // collecting bias field affected data
     std::vector<float*> image_data;
     {
-        tipl::progress prog("loading image data for bias correction");
         image_data.push_back(const_cast<float*>(mat_reader.read_as_type<float>("iso")));
         for(auto each : dir.fa)
             image_data.push_back(const_cast<float*>(each));
@@ -616,7 +616,6 @@ bool fib_data::correct_bias_field(void)
     if(!estimate_bias_field(tipl::make_image(image_data.front(),dim),mask,bias_field,
                              tipl::vector<3>(1.0f,vs[0]/vs[1],vs[0]/vs[2])))
         return false;
-    tipl::progress prog("correct bias field");
     for(auto& each : bias_field)
         each = std::exp(-each);
     tipl::par_for(image_data.size(),[&](size_t i)
