@@ -155,11 +155,12 @@ std::string quality_check_nii_files(const std::vector<std::filesystem::path>& fi
                 out << nii.get_image_dimension<3>() << "\t";
             else
                 out << nii.get_image_dimension<4>() << "\t";
+            auto sform = uint16_t(nii.nif_header.sform_code);
             out << nii.get_voxel_size<3>() << "\t"
                 << data_type[nii.nif_header.datatype] << "\t"
                 << nii.nif_header.scl_slope << "\t"
                 << nii.nif_header.scl_inter << "\t"
-                << sform_code[nii.nif_header.sform_code] << "\t"
+                << (sform < sform_code.size() ? sform_code[sform] : "NIFTI_XFORM_UNKNOWN") << "\t"
                 << nii.get_transformation()[0] << " "
                 << nii.get_transformation()[1] << " "
                 << nii.get_transformation()[2] << " "
