@@ -411,6 +411,10 @@ void TractRender::prepare_update(tracking_window& param,
 
     auto tract_color_style = param["tract_color_style"].toInt();
     auto index_num = param["tract_color_metrics"].toInt();
+    bool use_metrics = tract_color_style == 2 || tract_color_style == 3 || tract_color_style == 4;
+    bool voxel_based_metric = index_num >= param.handle->dir.index_name_data.size();
+    if(use_metrics && voxel_based_metric && index_num >= param.handle->slices.size())
+        return;
 
     std::vector<tipl::vector<3> > assigned_colors;
     // 0:Directional 1:Assigned 2:Local Index 3:Averaged Index 4:Max Index 5:Loaded
@@ -455,7 +459,8 @@ void TractRender::prepare_update(tracking_window& param,
 
 
     std::vector<TractRenderData> new_data(data_block_count);
-    param.handle->slices[index_num]->get_image();
+    if(tract_color_style == 2 && voxel_based_metric)
+        param.handle->slices[index_num]->get_image();
     tipl::par_for(data_block_count,[&](unsigned int thread)
     {
         for(unsigned int i = thread;i < visible.size();i += data_block_count)
