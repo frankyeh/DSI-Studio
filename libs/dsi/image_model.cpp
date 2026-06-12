@@ -1458,22 +1458,20 @@ bool estimate_bias_field(tipl::image<3> I,
     constexpr int max_iters = 50;
     constexpr float tol = 1e-4f;
 
-    std::vector<size_t> position;     // nearest control‐point grid index
+    std::vector<tipl::pixel_index<3>> position;     // nearest control‐point grid index
     std::vector<double> logI;
-
-    if(!log_bias_field.empty())
-        for(size_t i = 0,sz = mask.size();i < sz;++i)
-            if(mask[i])
-                I[i] *= std::exp(-log_bias_field[i]);
 
     {
         auto otsu = tipl::segmentation::otsu_threshold_sharpening(I);
         double sum_signal = 0.0;
         size_t sum_signal_count = 0;
-        for(size_t i = 0,sz = mask.size();i < sz;++i)
+        size_t sz = mask.size();
+        for(tipl::pixel_index<3> index(mask.shape());index < sz;++index)
+        {
+            size_t i = index.index();
             if(mask[i])
             {
-                position.push_back(i);
+                position.push_back(index);
                 if(I[i] <= otsu)
                     logI.push_back(std::numeric_limits<double>::max());
                 else
@@ -1483,6 +1481,7 @@ bool estimate_bias_field(tipl::image<3> I,
                     ++sum_signal_count;
                 }
             }
+        }
         if(!sum_signal_count)
             return false;
         tipl::minus_constant(logI.begin(),logI.end(),sum_signal/sum_signal_count);
@@ -1497,15 +1496,20 @@ bool estimate_bias_field(tipl::image<3> I,
                            int(std::ceil(1.0f/spacing[2])) + spline_range + spline_range);
     // 2) Precompute B3‐weights per sample
     std::vector<std::vector<std::pair<size_t,float>>> basis(position.size());
-    tipl::vector<3> scale(1.0f/spacing[0]/float(I.width()-1),1.0f/spacing[1]/float(I.height()-1),1.0f/spacing[2]/float(I.depth()-1));
+    tipl::vector<3> scale(1.0f/spacing[0]/float(I.width()-1),
+                          1.0f/spacing[1]/float(I.height()-1),
+                          1.0f/spacing[2]/float(I.depth()-1));
+    const size_t pre_calc_size = (spline_range * 2) * (spline_range * 2) * (spline_range * 2);
     tipl::par_for(position.size(), [&](size_t i)
     {
-        tipl::pixel_index<3> pos(position[i],mask.shape());
         // normalized continuous coords
-        float fx = pos[0]*scale[0] + spline_range,fy = pos[1]*scale[1] + spline_range,fz = pos[2]*scale[2] + spline_range;
+        float fx = position[i][0]*scale[0] + spline_range,
+              fy = position[i][1]*scale[1] + spline_range,
+              fz = position[i][2]*scale[2] + spline_range;
         // nearest control‐point grid index
         int cx = int(std::floor(fx)),cy = int(std::floor(fy)),cz = int(std::floor(fz));
         auto& b = basis[i];
+        b.reserve(pre_calc_size);
         double sumw = 0.0;
         for(int iz = cz - spline_range;iz < cz + spline_range;++iz)
         {
@@ -1530,8 +1534,11 @@ bool estimate_bias_field(tipl::image<3> I,
             }
         }
         if (sumw > 0.0)
-            for (auto& each : b)
-                each.second /= sumw;
+        {
+            double inv_sumw = 1.0 / sumw;
+            for(auto& each : b)
+                each.second *= inv_sumw;
+        }
     });
 
 
@@ -1596,16 +1603,17 @@ bool estimate_bias_field(tipl::image<3> I,
     }
     if(!prog(4,5))
         return false;
-    log_bias_field.resize(mask.shape());
+    tipl::image<3> result(mask.shape());
     for(size_t i = 0;i < position.size();++i)
-        log_bias_field[position[i]] += correction[i];
+        result[position[i].index()] += correction[i];
 
     while(!old_size.empty())
     {
-        tipl::upsample_with_padding(log_bias_field,old_size.back());
-        tipl::filter::gaussian(log_bias_field);
+        tipl::upsample_with_padding(result,old_size.back());
+        tipl::filter::gaussian(result);
         old_size.pop_back();
     }
+    log_bias_field = result;
     return true;
 }
 
