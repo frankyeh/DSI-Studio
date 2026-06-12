@@ -78,8 +78,8 @@ void load_json_label(const char* filename,std::map<int,std::string>& label_map)
     std::string line,label;
     while(std::getline(in,line))
     {
-        std::replace(line.begin(),line.end(),'\"',' ');
-        std::replace(line.begin(),line.end(),'\t',' ');
+        std::replace(line.begin(),line.end(),'"',' ');
+        std::replace(line.begin(),line.end(),'	',' ');
         std::replace(line.begin(),line.end(),',',' ');
         line.erase(std::remove(line.begin(),line.end(),' '),line.end());
         if(line.find("arealabel") != std::string::npos)
