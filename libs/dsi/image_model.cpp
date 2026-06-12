@@ -1443,6 +1443,9 @@ bool estimate_bias_field(tipl::image<3> I,
         spacing[0] <= 0.0f || spacing[1] <= 0.0f || spacing[2] <= 0.0f)
         return false;
     tipl::progress prog("estimate bias field");
+
+    prog(1,5);
+
     std::vector<tipl::shape<3> > old_size;
     while(I.size() > 96*96*96)
     {
@@ -1487,6 +1490,8 @@ bool estimate_bias_field(tipl::image<3> I,
 
 
     // 1) Compute control‐point grid size exactly as before
+    if(!prog(2,5))
+        return false;
     tipl::shape<3> c_shape(int(std::ceil(1.0f/spacing[0])) + spline_range + spline_range,
                            int(std::ceil(1.0f/spacing[1])) + spline_range + spline_range,
                            int(std::ceil(1.0f/spacing[2])) + spline_range + spline_range);
@@ -1528,6 +1533,11 @@ bool estimate_bias_field(tipl::image<3> I,
             for (auto& each : b)
                 each.second /= sumw;
     });
+
+
+    if(!prog(3,5))
+        return false;
+
     std::vector<double> ATA(c_shape.size()*c_shape.size());
     for (auto& each : basis)
         for (size_t i = 0,n = each.size(); i < n; ++i)
@@ -1584,6 +1594,8 @@ bool estimate_bias_field(tipl::image<3> I,
         prev_rms = rms;
 
     }
+    if(!prog(4,5))
+        return false;
     log_bias_field.resize(mask.shape());
     for(size_t i = 0;i < position.size();++i)
         log_bias_field[position[i]] += correction[i];
@@ -1604,21 +1616,31 @@ bool src_data::correct_bias_field(void)
     if(src_dwi_data.empty() || dwi.empty())
         return error_msg = "no dwi data",false;
 
-    tipl::progress prog("correct bias field");
     tipl::image<3>  bias_field;
     {
         tipl::image<3,unsigned char> mask;
         tipl::threshold(dwi,mask,25,1,0);
         if(!estimate_bias_field(dwi,mask,bias_field,
                 tipl::vector<3>(1.0f,voxel.vs[0]/voxel.vs[1],voxel.vs[0]/voxel.vs[2])))
-            return error_msg = "cannot correct bias field",false;
+        {
+            if(tipl::prog_aborted)
+                return false;
+            tipl::warning() << "bias field correction cannot be applied to the image";
+            return true;
+        }
         for(auto& each : bias_field)
             each = std::exp(-each);
     }
+    tipl::progress prog("correct bias field");
+    std::atomic<size_t> p = 0;
     tipl::par_for(src_dwi_data.size(),[&](size_t index)
     {
+        if(!prog(p++,src_dwi_data.size()))
+            return;
         dwi_at(index) *= bias_field;
     });
+    if(prog.aborted())
+        return false;
     voxel.report += " The bias field was corrected using b0 image.";
     update_dwi_sum();
     update_mask();
@@ -2978,8 +3000,7 @@ extern int fib_ver;
 bool src_data::save_fib(void)
 {
     check_output_file_name();
-
-    tipl::out() << "saving " << output_file_name;
+    tipl::progress prog("saving",output_file_name.u8string());
     auto tmp_file = std::filesystem::path(output_file_name) += ".tmp";
     tipl::io::gz_mat_write mat_writer(tmp_file);
     if(!mat_writer)
