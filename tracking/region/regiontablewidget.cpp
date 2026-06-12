@@ -724,9 +724,12 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         //          atlas id     (e.g. 0 for the first atlas of human template) [space]
         //          region label , if not supply add all
 
-        size_t template_id,atlas_id;
+        size_t template_id = 0,atlas_id = 0;
         std::string region_label;
-        std::istringstream(cmd[1]) >> template_id >> atlas_id >> region_label;
+        std::istringstream in(cmd[1]);
+        if(!(in >> template_id >> atlas_id))
+            return run->failed("invalid atlas command: " + cmd[1]);
+        in >> region_label;
 
         cur_tracking_window.handle->set_template_id(template_id);
 
@@ -744,7 +747,9 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             for(auto each : tipl::split(region_label,'&'))
             {
                 int label = 0;
-                std::istringstream(each) >> label;
+                std::istringstream label_in(each);
+                if(!(label_in >> label) || !label_in.eof())
+                    return run->failed("invalid label id: " + each);
                 if(label < 0 || label >= at->get_list().size())
                     return run->failed("invalid label id: " + each);
                 std::vector<tipl::vector<3,short> > point0;
