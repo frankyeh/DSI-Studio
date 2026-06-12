@@ -631,7 +631,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     {
         foreach (QAction* action, findChildren<QAction*>())
-            if(action->toolTip().startsWith("run "))
+            if(action->toolTip().startsWith("run ") && !action->data().isValid())
                 connect(action,&QAction::triggered,this,[this,action](){run_command(action->toolTip().toStdString().substr(4));});
         foreach (QCheckBox* cb, findChildren<QCheckBox*>())
             if(cb->toolTip().startsWith("run "))
