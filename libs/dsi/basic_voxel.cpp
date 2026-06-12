@@ -162,8 +162,8 @@ bool Voxel::run(const char* title)
 
 bool Voxel::end(tipl::io::gz_mat_write& writer)
 {
-    tipl::progress prog("post-reconstruction",true);
-    for (size_t index = 0;prog(uint32_t(index),uint32_t(process_list.size())); ++index)
+    tipl::progress prog("post-reconstruction");
+    for (size_t index = 0;prog(index,process_list.size());++index)
     {
         tipl::out() << process_name[index];
         process_list[index]->end(*this,writer);
