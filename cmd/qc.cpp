@@ -115,7 +115,7 @@ std::string quality_check_fib_files(const std::vector<std::filesystem::path>& fi
         else
             out << std::endl;
     }
-    out << "total scans: " << output.size() << std::endl;
+    out << "total scans: " << file_list.size() << std::endl;
     return out.str();
 }
 
