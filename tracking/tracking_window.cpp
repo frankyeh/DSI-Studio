@@ -13,6 +13,7 @@
 #include <QMouseEvent>
 #include <QMessageBox>
 #include <QListWidget>
+#include <QToolTip>
 
 #include "tracking_window.h"
 #include "ui_tracking_window.h"
@@ -586,6 +587,14 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     } 
     {
         connect(ui->actionRestore_window_layout,&QAction::triggered, this,[this](void){restoreGeometry(default_geo);restoreState(default_state);});
+    }
+    {
+        connect(ui->menuSegment, &QMenu::hovered, this, [&](QAction *action)
+                {
+                    if(!action)
+                        return;
+                    QToolTip::showText(QCursor::pos(),"<p>"+action->whatsThis()+"</p>",ui->menuSegment,ui->menuSegment->actionGeometry(action));
+                });
     }
     // Option
     {
