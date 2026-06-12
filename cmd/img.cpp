@@ -587,6 +587,7 @@ int img(tipl::program_option<tipl::out>& po)
     tipl::shape<4> dim4;
     if(var_image.dim4 > 1)
     {
+        dim4 = tipl::shape<4>(var_image.shape[0],var_image.shape[1],var_image.shape[2],var_image.dim4);
         tipl::progress prog("loading 4d nifti");
         tipl::io::gz_nifti nifti;
         prepare_idx(source,nifti.input_stream);
