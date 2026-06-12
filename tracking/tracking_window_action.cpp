@@ -276,53 +276,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 slice_position.to(new_slice->to_slice);
             move_slice_to(slice_position);
         }
-
-
-
-        {
-            ui->menuSegment->clear();
-            bool is_t1 = tipl::contains_case_insensitive(new_slice->get_name(),{"t1","mpr"});
-            bool is_t2 = tipl::contains_case_insensitive(new_slice->get_name(),{"t2","tse"});
-            bool is_flair = tipl::contains_case_insensitive(new_slice->get_name(),{"flair","t2f"});
-            for(size_t i = 0;i < unet_path[handle->template_id].size();++i)
-            {
-                auto file_name = tipl::remove_all_suffix(std::filesystem::path(unet_path[handle->template_id][i]).filename().string());
-                QAction* added_action;
-                ui->menuSegment->addAction(added_action = addSubMenuItem(file_name,unet_names[handle->template_id][i],"run segment_brain"));
-
-                connect(ui->menuSegment, &QMenu::hovered, this, [&](QAction *action)
-                {
-                    if(!action)
-                        return;
-                    auto name = action->data().toString().toStdString();
-                    for(size_t id = 0;id < unet_path.size();++id)
-                        for(size_t i = 0;i < unet_path[id].size();++i)
-                            if(name == tipl::remove_all_suffix(std::filesystem::path(unet_path[id][i]).filename().string()))
-                            {
-                                QToolTip::showText(QCursor::pos(),("<p>"+unet_desc[id][i]+"</p>").c_str(),ui->menuSegment,ui->menuSegment->actionGeometry(action));
-                                return;
-                            }
-                });
-
-                if(tipl::contains_case_insensitive(file_name,"t1") && !is_t1)
-                {
-                    added_action->setText("(need T1w)" + added_action->text());
-                    added_action->setEnabled(false);
-                }
-                if(tipl::contains_case_insensitive(file_name,"t2") && !is_t2)
-                {
-                    added_action->setText("(need T2w)" + added_action->text());
-                    added_action->setEnabled(false);
-                }
-                if(tipl::contains_case_insensitive(file_name,"flair") && !is_flair)
-                {
-                    added_action->setText("(need FLAIR)" + added_action->text());
-                    added_action->setEnabled(false);
-                }
-            }
-
-        }
-
+        update_unet_models();
 
         no_update = false;
         command({"set_slice_contrast"});
@@ -1741,13 +1695,46 @@ void tracking_window::on_actionManual_Atlas_Alignment_triggered()
 }
 
 
-
-
-void tracking_window::on_template_box_currentIndexChanged(int index)
+void tracking_window::update_unet_models(void)
 {
-    if(index < 0 || index >= int(template_name_list.size()))
+    if(!current_slice)
         return;
-    handle->set_template_id(size_t(index));
+    bool is_t1 = tipl::contains_case_insensitive(current_slice->get_name(),{"t1","mpr"});
+    bool is_t2 = tipl::contains_case_insensitive(current_slice->get_name(),{"t2","tse"});
+    bool is_flair = tipl::contains_case_insensitive(current_slice->get_name(),{"flair","t2f"});
+    for(auto& each : ui->menuSegment->actions())
+    {
+        if(each->data().toString().toLower().contains("t1") && !is_t1)
+        {
+            each->setText("(need T1w)" + each->statusTip());
+            each->setEnabled(false);
+        }
+        else
+            if(each->data().toString().toLower().contains("t2") && !is_t2)
+            {
+                each->setText("(need T2w)" + each->statusTip());
+                each->setEnabled(false);
+            }
+            else
+                if(each->data().toString().toLower().contains("flair") && !is_flair)
+                {
+                    each->setText("(need FLAIR)" + each->statusTip());
+                    each->setEnabled(false);
+                }
+                else
+                {
+                    each->setText(each->statusTip());
+                    each->setEnabled(true);
+                }
+
+    }
+}
+
+void tracking_window::on_template_box_currentIndexChanged(int set_template_id)
+{
+    if(set_template_id < 0 || set_template_id >= int(template_name_list.size()))
+        return;
+    handle->set_template_id(size_t(set_template_id));
     ui->alt_mapping->clear();
     ui->alt_mapping->addItem("regular");
     ui->alt_mapping->setCurrentIndex(0);
@@ -1765,6 +1752,18 @@ void tracking_window::on_template_box_currentIndexChanged(int index)
     ui->enable_auto_tract->setVisible(true);
     ui->addRegionFromAtlas->setVisible(!handle->atlas_list.empty());
 
+    ui->menuSegment->clear();
+    for(size_t i = 0;i < unet_path[set_template_id].size();++i)
+    {
+        QAction* added_action;
+        ui->menuSegment->addAction(added_action = addSubMenuItem(
+                    tipl::remove_all_suffix(std::filesystem::path(unet_path[set_template_id][i]).filename().string()),
+                    unet_names[set_template_id][i],"run segment_brain"));
+        added_action->setStatusTip(QString::fromStdString(unet_names[set_template_id][i]));
+        added_action->setWhatsThis(QString::fromStdString(unet_desc[set_template_id][i]));
+    }
+    update_unet_models();
+
 }
 
 void tracking_window::on_alt_mapping_currentIndexChanged(int index)
@@ -1775,13 +1774,6 @@ void tracking_window::on_alt_mapping_currentIndexChanged(int index)
         handle->s2t.clear();
         handle->t2s.clear();
     }
-
-}
-
-
-
-void tracking_window::stripSkull()
-{
 
 }
 
