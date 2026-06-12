@@ -348,14 +348,9 @@ inline auto show_slice_at(const T& source1,const U& source2,
             if(!I1.empty())
             for(tipl::pixel_index<2> index(shape);index < shape.size();++index)
             {
-                if(index[0] >= I1.width() || index[1] >= I1.height() ||
-                   index[0] >= I2.width() || index[1] >= I2.height())
-                    continue;
                 int x = index[0] >> 6;
                 int y = index[1] >> 6;
-                auto i1 = tipl::pixel_index<2>(index[0],index[1],I1.shape()).index();
-                auto i2 = tipl::pixel_index<2>(index[0],index[1],I2.shape()).index();
-                I2[i2] = ((x&1) ^ (y&1)) ? I1[i1] : I2[i2];
+                I2[index.index()] = ((x&1) ^ (y&1)) ? I1[index.index()] : I2[index.index()];
             }
         }
         break;
