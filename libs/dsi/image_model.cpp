@@ -1496,10 +1496,14 @@ bool estimate_bias_field(tipl::image<3> I,
                            int(std::ceil(1.0f/spacing[2])) + spline_range + spline_range);
     // 2) Precompute B3‐weights per sample
     std::vector<std::vector<std::pair<size_t,float>>> basis(position.size());
+    {
+        const size_t pre_calc_size = (spline_range * 2) * (spline_range * 2) * (spline_range * 2);
+        for(auto& each : basis)
+            each.reserve(pre_calc_size);
+    }
     tipl::vector<3> scale(1.0f/spacing[0]/float(I.width()-1),
                           1.0f/spacing[1]/float(I.height()-1),
                           1.0f/spacing[2]/float(I.depth()-1));
-    const size_t pre_calc_size = (spline_range * 2) * (spline_range * 2) * (spline_range * 2);
     tipl::par_for(position.size(), [&](size_t i)
     {
         // normalized continuous coords
@@ -1509,7 +1513,6 @@ bool estimate_bias_field(tipl::image<3> I,
         // nearest control‐point grid index
         int cx = int(std::floor(fx)),cy = int(std::floor(fy)),cz = int(std::floor(fz));
         auto& b = basis[i];
-        b.reserve(pre_calc_size);
         double sumw = 0.0;
         for(int iz = cz - spline_range;iz < cz + spline_range;++iz)
         {
