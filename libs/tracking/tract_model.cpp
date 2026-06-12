@@ -2482,7 +2482,7 @@ void TractModel::get_density_map(tipl::image<3,unsigned int>& mapping,
             ++m[pos];
     });
 
-    while(maps.back().empty() && !maps.empty())
+    while(!maps.empty() && maps.back().empty())
         maps.pop_back();
 
     tipl::par_for(s.size(),[&](unsigned int i)
