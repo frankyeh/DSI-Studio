@@ -265,11 +265,11 @@ bool save_warping(const tipl::reg::mm_reg<tipl::out>& reg,const std::filesystem:
 
     out.write("version",map_ver);
     out.close();
-    std::error_code error;
-    std::filesystem::rename(output_name_tmp,output_name,error);
-    if(error)
+    std::error_code ec;
+    std::filesystem::rename(output_name_tmp,output_name,ec);
+    if(ec)
     {
-        reg.error_msg = error.message();
+        reg.error_msg = ec.message();
         std::filesystem::remove(output_name_tmp);
         return false;
     }

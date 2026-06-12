@@ -54,6 +54,11 @@ int cnt(tipl::program_option<tipl::out>& po)
         std::replace(var_text.begin(),var_text.end(),',',' ');
         std::istringstream var_in(var_text);
         variable_list.assign((std::istream_iterator<int>(var_in)),(std::istream_iterator<int>()));
+        if(variable_list.empty())
+        {
+            tipl::error() << "empty variable list" << std::endl;
+            return 1;
+        }
         for(auto v : variable_list)
             if(v >= db.feature.size())
             {
@@ -143,7 +148,7 @@ int cnt(tipl::program_option<tipl::out>& po)
         else
         {
             auto rho = vbc->rho_threshold = po.get("effect_size",0.3f);
-            vbc->t_threshold = rho*std::sqrt(double(n)-2)/(1-rho*rho);
+            vbc->t_threshold = rho*std::sqrt(double(n)-2)/std::sqrt(1-rho*rho);
         }
 
         // setup roi
