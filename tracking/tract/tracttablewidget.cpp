@@ -108,7 +108,7 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
             return;
         selected_tracts[index]->get_in_slice_tracts(dim,pos,pt,lines_threaded[thread],colors_threaded[thread],max_count,tract_color_style,
                             selected_tracts_rendering[index]->about_to_write);
-    });
+    },tipl::max_thread_count);
     if(cur_tracking_window.slice_need_update)
         return;
     std::vector<std::vector<tipl::vector<2,float> > > lines;

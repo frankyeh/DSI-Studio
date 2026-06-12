@@ -85,7 +85,7 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
                                                               seed_points(tipl::max_thread_count),
                                                               not_end_points(tipl::max_thread_count);
             auto fa0 = handle->dir.fa[0];
-            tipl::par_for<tipl::dynamic_with_id>(limiting_mask.shape(),[&](const auto& pos,unsigned int thread_id)
+            tipl::par_for<tipl::dynamic_with_id>(limiting_mask.shape(),[&](const auto& pos,size_t thread_id)
             {
                 if(!limiting_mask[pos.index()])
                     return;
@@ -95,7 +95,7 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
                     seed_points[thread_id].push_back(point);
                 if(not_end_threshold != 0.0f && fa0[pos.index()] > not_end_threshold)
                     not_end_points[thread_id].push_back(point);
-            });
+            },tipl::max_thread_count);
 
             tipl::aggregate_results(std::move(limiting_points),atlas_limiting);
             tipl::aggregate_results(std::move(seed_points),atlas_seed);
@@ -200,7 +200,7 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
             selected_atlas_tracts_threads[id].push_back(atlas_tract[i]);
             selected_atlas_cluster_threads[id].push_back(atlas_cluster[i]);
 
-        });
+        },tipl::max_thread_count);
         tipl::aggregate_results(std::move(selected_atlas_tracts_threads),selected_atlas_tracts);
         tipl::aggregate_results(std::move(selected_atlas_cluster_threads),selected_atlas_cluster);
     }

@@ -2480,7 +2480,7 @@ void TractModel::get_density_map(tipl::image<3,unsigned int>& mapping,
         }
         for(auto pos : point_set)
             ++m[pos];
-    });
+    },tipl::max_thread_count);
 
     while(!maps.empty() && maps.back().empty())
         maps.pop_back();
@@ -2635,7 +2635,7 @@ void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,const tipl
                 add_pt(p0 + dir * (float(k) * step_ratio));
         }
         add_pt(tipl::vector<3>(&tract_data[i][tract_data[i].size() - 3]));
-    });
+    },tipl::max_thread_count);
 
     size_t total_size = 0;
     for(const auto& v : pass_map)

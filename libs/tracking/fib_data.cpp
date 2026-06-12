@@ -2362,7 +2362,7 @@ bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,
         {
             if (at->is_labeled_as(s2t[index.index()], roi_index))
                 buf[id].push_back(tipl::vector<3,short>(index.begin()));
-        });
+        },tipl::max_thread_count);
     }
     else
     {
@@ -2374,7 +2374,7 @@ bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,
                 return;
             if (at->is_labeled_as(p2, roi_index))
                 buf[id].push_back(tipl::vector<3,short>(index.begin()));
-        });
+        },tipl::max_thread_count);
     }
     tipl::aggregate_results(std::move(buf),points);
     return true;

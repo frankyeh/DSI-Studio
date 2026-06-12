@@ -1270,9 +1270,9 @@ void MainWindow::on_nii2src_sf_clicked()
     size_t nii_count = 0;
     std::mutex access_list;
     bool ended = false;
-    tipl::par_for<tipl::dynamic_with_id>(8,[&](unsigned int index,unsigned int id)
+    tipl::par_for(8,[&](size_t index)
         {
-            if(id == 0) // main thread
+            if(tipl::is_main_thread())
             {
                 for(int j = 0;j < dwi_nii_files.size();++j)
                 {
@@ -1310,8 +1310,7 @@ void MainWindow::on_nii2src_sf_clicked()
             while(!prog.aborted() && !(ended && nii_count == 0))
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                if(id == 0)
-                    prog(dwi_nii_files.size()-nii_list.size(),dwi_nii_files.size());
+                prog(dwi_nii_files.size()-nii_list.size(),dwi_nii_files.size());
 
                 std::filesystem::path nii_name,src_name;
                 {
