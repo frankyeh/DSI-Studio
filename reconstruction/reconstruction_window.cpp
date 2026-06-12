@@ -469,7 +469,7 @@ void reconstruction_window::on_doDTI_clicked()
     std::string ref_file_name = handle->file_name.u8string();
     std::string ref_steps(handle->voxel.steps.begin()+existing_steps.length(),handle->voxel.steps.end());
     std::shared_ptr<src_data> ref_handle = handle;
-    tipl::progress prog("process SRC files");
+    tipl::progress prog("process SRC files",true);
     for(int index = 0;prog(index,filenames.size());++index)
     {
         tipl::out() << "processing " << filenames[index].toStdString() << std::endl;
