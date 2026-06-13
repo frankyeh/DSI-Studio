@@ -1626,35 +1626,37 @@ bool src_data::correct_bias_field(void)
         return tipl::warning() << "bias field correction has been previously applied",false;
     if(src_dwi_data.empty() || dwi.empty())
         return error_msg = "no dwi data",false;
-
-    tipl::image<3>  bias_field;
-    {
-        tipl::image<3,unsigned char> mask;
-        tipl::threshold(dwi,mask,25,1,0);
-        if(!estimate_bias_field(dwi,mask,bias_field,
-                tipl::vector<3>(1.0f,voxel.vs[0]/voxel.vs[1],voxel.vs[0]/voxel.vs[2])))
-        {
-            if(tipl::prog_aborted)
-                return false;
-            tipl::warning() << "bias field correction cannot be applied to the image";
-            return true;
-        }
-        for(auto& each : bias_field)
-            each = std::exp(-each);
-    }
     {
         tipl::progress prog("correct bias field");
-        std::atomic<size_t> p = 0;
-        tipl::par_for(src_dwi_data.size(),[&](size_t index)
+        tipl::image<3>  bias_field;
         {
-            if(!prog(p++,src_dwi_data.size()))
-                return;
-            dwi_at(index) *= bias_field;
-        });
-        if(prog.aborted())
-            return false;
+            tipl::image<3,unsigned char> mask;
+            tipl::threshold(dwi,mask,25,1,0);
+            if(!estimate_bias_field(dwi,mask,bias_field,
+                    tipl::vector<3>(1.0f,voxel.vs[0]/voxel.vs[1],voxel.vs[0]/voxel.vs[2])))
+            {
+                if(tipl::prog_aborted)
+                    return false;
+                tipl::warning() << "bias field correction cannot be applied to the image";
+                return true;
+            }
+            for(auto& each : bias_field)
+                each = std::exp(-each);
+        }
+        {
+            tipl::out() << "correcting image signals";
+            std::atomic<size_t> p = 0;
+            tipl::par_for(src_dwi_data.size(),[&](size_t index)
+            {
+                if(!prog(p++,src_dwi_data.size()))
+                    return;
+                dwi_at(index) *= bias_field;
+            });
+            if(prog.aborted())
+                return false;
+        }
+        voxel.report += " The bias field was corrected using b0 image.";
     }
-    voxel.report += " The bias field was corrected using b0 image.";
     update_dwi_sum();
     update_mask();
     return true;
