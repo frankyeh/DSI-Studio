@@ -137,19 +137,10 @@ bool variant_image::command(std::string cmd,std::string param1)
 
                 tipl::io::apply_flip_swap_seq(I,tipl::io::toLPS(tipl::vector<3,int>(I.shape()).begin(),r.Ivs.begin(),r.IR.begin()));
                 r.Is = I.shape();
-
-                for(size_t i = 0;i < 3;++i)
-                {
-                    float w1 = r.Is[i]*r.Ivs[i], w2 = r.Its[i]*r.Itvs[i];
-                    if(w1 > w2*2.0f || w2 > w1*2.0f)
-                        return error_msg = std::string("Large dimension differences in the ") + "xyz"[i] +
-                                           " axis : image=" + std::to_string(w1) + " mm, target=" + std::to_string(w2) +
-                                           " mm. Please resize current image to facilitate alignment.",result = false,void();
-                }
-
                 r.I[0] = tipl::reg::subject_image_pre(tipl::image<3>(I));
                 r.It[0] = tipl::reg::template_image_pre(std::move(It));
                 r.linear_param.reg_type = warp ? tipl::reg::affine : tipl::reg::rigid_body;
+                r.linear_param.cost_type = warp ? tipl::reg::corr : tipl::reg::mutual_info;
                 bool terminated = false;
                 r.linear_reg(terminated);
                 if(!terminated && warp)
