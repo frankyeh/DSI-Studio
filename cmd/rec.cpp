@@ -150,14 +150,16 @@ int rec(tipl::program_option<tipl::out>& po)
         if((po.has("rev_pe") && !src.command("[Step T2][Corrections][TOPUP EDDY]",po.get("rev_pe"))))
             return tipl::error() << src.error_msg,1;
 
-        if(po.has("make_isotropic"))
-            src.command("[Step T2][Edit][Resample]",po.get("make_isotropic"));
-        else
-        if(!po.has("save_src") &&
-           src.voxel.method_id != 7 &&
-           src.voxel.vs[2] > src.voxel.vs[0]*1.1f && src.is_human_data)
-            src.command("[Step T2][Edit][Resample]", src.voxel.vs[0] >= 1.5f ? "2" : (src.voxel.vs[0] >= 1.0f ? "1.5" : "1.0"));
 
+        {
+            float default_iso = std::max<float>(src.voxel.vs[0],src.voxel.vs[2]);
+            if(src.voxel.method_id != 7 && src.voxel.vs[2] > src.voxel.vs[0]*1.25f && src.is_human_data)
+                default_iso = (src.voxel.vs[0] >= 1.5f ? 2.0f : (src.voxel.vs[0] >= 1.0f ? 1.5f : 1.0f));
+            if(po.has("save_src"))
+                default_iso = 0.0f;
+            if((default_iso = po.get("make_isotropic",default_iso)) > 0.0f)
+                src.command("[Step T2][Edit][Resample]",std::to_string(default_iso));
+        }
 
         if((po.get("volume_correction",0) && !src.command("[Step T2][Corrections][Volume Orientation Correction]")) ||
            (po.has("correct_by_t2") && !src.command("[Step T2][Corrections][By T2w]",po.get("correct_by_t2"))) ||
