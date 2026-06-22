@@ -218,6 +218,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         ui->is_overlay->setChecked(new_slice->is_overlay);
         ui->stay->setChecked(new_slice->stay);
         ui->directional_color->setChecked(new_slice->directional_color);
+        ui->segmentButton->setText(QString("Segment ") + ui->SliceModality->currentText() + "...");
 
         if(!glWidget->slice_texture[index].empty())
         {
