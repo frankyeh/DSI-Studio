@@ -290,19 +290,17 @@ bool get_compressed_image(tipl::io::dicom& dicom,tipl::image<2,short>& I)
 }
 void prepare_idx(const std::filesystem::path& file_name,std::shared_ptr<tipl::io::gz_istream> in);
 void save_idx(const std::filesystem::path& file_name,std::shared_ptr<tipl::io::gz_istream> in);
-bool variant_image::load_from_file(const std::filesystem::path& file_name,std::string& info)
+bool variant_image::load_from_file(const std::filesystem::path& file_name)
 {
     tipl::io::dicom dicom;
     is_mni = false;
     T.identity();
+    info.clear();
     if(tipl::ends_with(file_name.u8string(),{".nhdr",".nrrd"}))
     {
         tipl::io::gz_nrrd nrrd;
         if(!nrrd.load_from_file(file_name))
-        {
-            error_msg = nrrd.error_msg;
-            return false;
-        }
+            return error_msg = nrrd.error_msg,false;
 
         shape = nrrd.size;
         pixel_type = float32;
@@ -319,10 +317,7 @@ bool variant_image::load_from_file(const std::filesystem::path& file_name,std::s
         });
 
         if(!nrrd.error_msg.empty())
-        {
-            error_msg = nrrd.error_msg;
-            return false;
-        }
+            return error_msg = nrrd.error_msg,false;
         nrrd.get_voxel_size(vs);
         nrrd.get_image_transformation(T);
 
@@ -341,10 +336,7 @@ bool variant_image::load_from_file(const std::filesystem::path& file_name,std::s
         tipl::io::gz_nifti nifti;
         prepare_idx(file_name,nifti.input_stream);
         if(!nifti.open(file_name,std::ios::in))
-        {
-            error_msg = nifti.error_msg;
-            return false;
-        }
+            return error_msg = nifti.error_msg,false;
         nifti.read(vs);
         nifti.read(T);
         nifti.read(shape);
@@ -371,8 +363,7 @@ bool variant_image::load_from_file(const std::filesystem::path& file_name,std::s
             pixel_type = float32;
             break;
         default:
-            error_msg = "Unsupported pixel format";
-            return false;
+            return error_msg = "Unsupported pixel format",false;
         }
         if(std::floor(nifti.nif_header.scl_inter) != nifti.nif_header.scl_inter || nifti.nif_header.scl_inter < 0.0f ||
            std::floor(nifti.nif_header.scl_slope) != nifti.nif_header.scl_slope)
@@ -389,10 +380,7 @@ bool variant_image::load_from_file(const std::filesystem::path& file_name,std::s
             }
             return succeed;
         }))
-        {
-            error_msg = nifti.error_msg;
-            return false;
-        }
+            return error_msg = nifti.error_msg,false;
         if(dim4 == 1)
             save_idx(file_name,nifti.input_stream);
         std::ostringstream out;
@@ -410,11 +398,7 @@ bool variant_image::load_from_file(const std::filesystem::path& file_name,std::s
             {
                 tipl::image<2,short> I;
                 if(!get_compressed_image(dicom,I))
-                {
-                    error_msg = "Unsupported transfer syntax ";
-                    error_msg += dicom.encoding;
-                    return false;
-                }
+                    return error_msg = "Unsupported transfer syntax " + dicom.encoding,false;
                 I_int16.resize(shape);
                 std::copy_n(I.begin(),std::min<size_t>(I.size(),shape.size()),I_int16.begin());
             }
@@ -574,7 +558,7 @@ int img(tipl::program_option<tipl::out>& po)
     }
 
     variant_image var_image;
-    if(!var_image.load_from_file(source,info))
+    if(!var_image.load_from_file(source))
         return tipl::error() << var_image.error_msg,1;
     tipl::shape<4> dim4;
     if(var_image.dim4 > 1)
@@ -638,7 +622,7 @@ int img(tipl::program_option<tipl::out>& po)
                     show_slice(tipl::image<2,float>(var_image.I_int32.slice_at(var_image.shape.depth()/2)));
                 if(var_image.pixel_type == variant_image::float32)
                     show_slice(tipl::image<2,float>(var_image.I_float32.slice_at(var_image.shape.depth()/2)));
-                tipl::out() << info;
+                tipl::out() << var_image.info;
                 continue;
             }
             tipl::out() << std::string(param.empty() ? cmd : cmd+","+param);
