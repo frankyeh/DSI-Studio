@@ -227,7 +227,7 @@ bool view_image::command(std::string cmd,std::string param1)
     if(!result)
     {
         error_msg += cur_image->error_msg;
-        tipl::error() << error_msg << std::endl;
+        tipl::error() << error_msg;
         if(!undo_list.empty())
         {
             swap(cur_image,undo_list.back());
@@ -247,7 +247,7 @@ bool view_image::command(std::string cmd,std::string param1)
     redo_command_list.clear();
     redo_param_list.clear();
 
-    if(cmd == "save" && !file_names.empty())
+    if(cmd == "save" && buf4d.empty() && !file_names.empty())
     {
         if(QMessageBox::question(nullptr,QApplication::applicationName(),"Applying processing to other images and save them?",
                                  QMessageBox::No | QMessageBox::Yes,QMessageBox::Yes) == QMessageBox::No)
@@ -262,12 +262,10 @@ bool view_image::command(std::string cmd,std::string param1)
         {
             auto file_name2 = file_names[file_index];
             tipl::out() << "processing " << file_name2.toStdString();
-
-            std::shared_ptr<view_image> dialog(new view_image(parentWidget()));
-            dialog->setAttribute(Qt::WA_DeleteOnClose);
-            if(!dialog->open(QStringList() << file_name2))
+            variant_image next_image;
+            if(!next_image.load_from_file(tipl::qt::to_path(file_name2)))
             {
-                QMessageBox::critical(this,"ERROR",QString("Cannot open ")+file_name2);
+                QMessageBox::critical(this,"ERROR","Cannot open "+file_name2);
                 break;
             }
             for(size_t i = 0;i < param_list.size();++i)
@@ -292,13 +290,11 @@ bool view_image::command(std::string cmd,std::string param1)
                         param2 = param_list[i];
                     }
                 }
-                if(!dialog->command(command_list[i],param2))
-                {
-                    QMessageBox::critical(this,"ERROR",QString(dialog->error_msg.c_str()) + "\n"
-                                          + command_list[i].c_str() + " at\n"
-                                          + file_name2);
+                if(!next_image.command(command_list[i],param2) &&
+                    QMessageBox::question(this,"ERROR",
+                        QString(next_image.error_msg.c_str()) + "\n" + command_list[i].c_str() + " at\n" + file_name2 + "\n\nContinue?",
+                            QMessageBox::Yes | QMessageBox::Abort) == QMessageBox::Abort)
                     goto end;
-                }
             }
         }
         if(prog.aborted())
@@ -654,8 +650,6 @@ bool view_image::open(QStringList file_names_)
     file_names.removeFirst();
     setWindowTitle(file_name.u8string().c_str());
 
-
-    std::string info;
     if(file_names.size() > 1 &&
        tipl::ends_with(file_name.u8string(),{".bmp",".png",".tif",".tiff"}))
     {
@@ -678,11 +672,7 @@ bool view_image::open(QStringList file_names_)
                 return false;
 
             if(I.width() != cur_image->shape[0] || I.height() != cur_image->shape[1])
-            {
-                error_msg = "inconsistent image size : ";
-                error_msg += file_names[file_index].toStdString();
-                return false;
-            }
+                return error_msg = "inconsistent image size : " + file_names[file_index].toStdString(),false;
             I = I.convertToFormat(QImage::Format_RGB32);
             auto ptr = reinterpret_cast<uint32_t*>(I.bits());
             for(size_t i = 0,pos = file_index*cur_image->shape.plane_size();i < cur_image->shape.plane_size();++i,++pos)
@@ -709,7 +699,7 @@ bool view_image::open(QStringList file_names_)
                 return false;
         }
         else
-        if(!cur_image->load_from_file(file_name,info))
+        if(!cur_image->load_from_file(file_name))
             return QMessageBox::critical(this,"ERROR",(error_msg = cur_image->error_msg).c_str()),false;
 
     if(cur_image->dim4 > 1)
@@ -722,11 +712,11 @@ bool view_image::open(QStringList file_names_)
         ui->dwi_volume->setValue(0);
     }
     ui->zoom->setValue(0.9f*width()/cur_image->shape.width());
-    if(!info.empty())
-        show_info(info.c_str());
+    if(!cur_image->info.empty())
+        show_info(cur_image->info.c_str());
     if(cur_image->shape.size())
         init_image();
-    return cur_image->shape.size() || !!info.empty();
+    return cur_image->shape.size();
 }
 
 void view_image::init_image(void)
