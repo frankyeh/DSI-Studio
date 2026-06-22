@@ -21,7 +21,7 @@ public:
     bool interpolation = true;
     tipl::vector<3,float> vs;
     tipl::matrix<4,4> T;
-    std::string error_msg;
+    std::string error_msg,info;
 private:
     tipl::reg::mm_reg<tipl::out> r;
 public:
@@ -89,7 +89,7 @@ public:
 
     bool command(std::string cmd,std::string param1);
 
-    bool load_from_file(const std::filesystem::path& file_name,std::string& info);
+    bool load_from_file(const std::filesystem::path& file_name);
 
     bool empty(void) const
     {
