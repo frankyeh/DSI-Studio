@@ -201,17 +201,38 @@ jobs:
     - name: Setup Environment
       run: |
         curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_prerelease.zip" | jar x
-        curl -sL https://github.com/data-hcp/lifespan/releases/download/hcp-ya/100206.gqi.fz -o 100206.gqi.fz
-        curl -sL https://github.com/data-hcp/lifespan/releases/download/hcp-ya/100307.gqi.fz -o 100307.gqi.fz
-        curl -sL https://github.com/data-hcp/lifespan/releases/download/hcp-ya/100206.qsdr.fz -o 100206.qsdr.fz
-        curl -sL https://github.com/data-hcp/lifespan/releases/download/hcp-ya/100307.qsdr.fz -o 100307.qsdr.fz
         chmod 777 ./dsi-studio/dsi_studio
+    - name: Download SCA2 data
+      run: |
+        curl -s https://api.github.com/repos/data-openneuro/disease/releases/tags/ds001378 | jq -r '.assets[] | select(.name | endswith(".qsdr.fz")) | .browser_download_url' | xargs -r -n1 curl -LO
+        curl -s https://api.github.com/repos/data-openneuro/disease/releases/tags/ds001378 | jq -r '.assets[] | select(.name == "participants.tsv") | .browser_download_url' | xargs -r -n1 curl -LO
+
     - name: Create DB from FZ
       run: |
-        ./dsi-studio/dsi_studio --source=*.qsdr.fz --action=db --output=qsdr.dz
-        ls qsdr.dz
-        ./dsi-studio/dsi_studio --source=*.gqi.fz --action=db --output=gqi.dz
-        ls gqi.dz
+        ./dsi-studio/dsi_studio --source=*.qsdr.fz --action=db --output=sca2.dz
+        ls sca2.dz
+    - name: run CNT
+      run: |
+        ./dsi-studio/dsi_studio --source=sca2.dz --action=cnt --voi=0  --variable_list=0,1,2 --index_name=dti_fa
+        cat *.html
+        ls *.dec.no_tract.txt
+        ls *.inc.tt.gz
+        
+  test_connectometry:
+    needs: linux-build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup Environment
+      run: |
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_prerelease.zip" | jar x
+        curl -sL https://github.com/data-openneuro/disease/releases/download/ds001378/sub-all.dz -o sub-all.dz
+        chmod 777 ./dsi-studio/dsi_studio
+    - name: Connectometry
+      run: |
+        ./dsi-studio/dsi_studio --source=sub-all.dz --action=cnt_cl  --variable_list=0,1,2 --voi=0 --index_name=qa
+        cat *.html
+        ls *.dec.no_tract.txt
+        ls *.inc.tt.gz
 
   test_human_tracking_gqi:
     needs: linux-build
@@ -268,21 +289,6 @@ jobs:
         ls 100206.gqi.fz.qa.nii.gz.wp.nii.gz
         ./dsi-studio/dsi_studio --action=reg --source=100206.gqi.fz.qa.nii.gz,100206.gqi.fz.iso.nii.gz --to=./atlas/human/human_QA.nii.gz,./atlas/human/human_ISO.nii.gz
         ls 100206.gqi.fz.qa.nii.gz.wp.nii.gz
-
-  test_connectometry:
-    needs: linux-build
-    runs-on: ubuntu-latest
-    steps:
-    - name: Setup Environment
-      run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_prerelease.zip" | jar x
-        curl -sL https://github.com/data-openneuro/disease/releases/download/ds001378/sub-all.dz -o sub-all.dz
-        chmod 777 ./dsi-studio/dsi_studio
-    - name: Connectometry
-      run: |
-        ./dsi-studio/dsi_studio --source=sub-all.dz --action=cnt_cl --permutation=200 --variable_list=0,1,2 --voi=0
-        ls *.report.html
-        ls * -l
         
   test_automatic_tracking:
     needs: linux-build
