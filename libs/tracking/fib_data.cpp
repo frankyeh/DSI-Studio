@@ -822,10 +822,7 @@ bool fib_data::load_from_mat(void)
 
 
     if(!dir.add_data(*this))
-    {
-        error_msg = dir.error_msg;
-        return false;
-    }
+        return error_msg = dir.error_msg,false;
 
 
     is_histology = (dim[2] == 2 && dim[0] > 512 && dim[1] > 512);
@@ -970,6 +967,8 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         }
         if(prog.aborted())
             return false;
+        if(mat_reader.has("mask"))
+            handle_mask(mat_reader);
     }
     tipl::out() << "run " << cmd << "," << param;
     if(tipl::begins_with(cmd,"mat_"))
@@ -1048,9 +1047,9 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         return save_fz(mat_reader,matfile,{},{});
     }
 
-    tipl::shape<3> dim;
-    tipl::vector<3> vs;
-    tipl::matrix<4,4,float> trans((tipl::identity_matrix()));
+    tipl::shape<3> dim,new_dim;
+    tipl::vector<3> vs,new_vs;
+    tipl::matrix<4,4,float> trans((tipl::identity_matrix())),new_trans;
     bool is_mni;
     if(!check_fib_dim_vs(mat_reader,dim,vs,trans,is_mni))
         return false;
@@ -1058,15 +1057,14 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
     tipl::progress prog(cmd);
     size_t p = 0;
     bool failed = false;
-    bool first_mat = true;
+
+
     tipl::par_for(mat_reader.size(),[&](unsigned int i)
     {
         if(!prog(p++,mat_reader.size()) || failed)
             return;
         auto& mat = mat_reader[i];
         size_t mat_size = mat_reader.cols(i)*mat_reader.rows(i);
-        auto new_vs = vs;
-        auto new_trans = trans;
         if(mat_size == 3*dim.size())
         {
             for(size_t d = 0;d < 3;++d)
@@ -1076,13 +1074,9 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 auto ptr = mat.get_data<float>()+d;
                 for(size_t j = 0,sz = dim.size();j < sz;++j,ptr += 3)
                     new_image[j] = *ptr;
-                if(!tipl::command<tipl::out,tipl::io::gz_nifti>(new_image,new_vs,new_trans,is_mni,cmd,param,true,mat_reader.error_msg))
-                {
-                    mat_reader.error_msg = "cannot perform ";
-                    mat_reader.error_msg += cmd;
-                    failed = true;
-                    return;
-                }
+                if(!tipl::command<tipl::out,tipl::io::gz_nifti>(new_image,new_vs = vs,new_trans = trans,is_mni,cmd,param,true,mat_reader.error_msg))
+                    return mat_reader.error_msg = "cannot perform " + cmd,failed = true,void();
+                new_dim = new_image.shape();
                 if(d == 0)
                     mat.set_row_col(3*new_image.width()*new_image.height(),new_image.depth());
                 for(size_t d = 0;d < 3;++d)
@@ -1095,42 +1089,36 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
         }
         if(mat_size == dim.size()) // image volumes, including fa, and fiber index
         {
-            if(mat.is_type<short>() && (cmd == "normalize" || cmd.find("filter") != std::string::npos || cmd.find("_value") != std::string::npos))
-                return;
             variant_image new_image;
             new_image.vs = vs;
             new_image.T = trans;
             new_image.shape = dim;
-            if(!new_image.read_mat_image(i,mat_reader))
+            new_image.interpolation = !tipl::begins_with(mat.name,"index") && mat.name != "mask";
+            if(!new_image.interpolation && tipl::contains(cmd,{"normalize","filter","_value"}))
                 return;
-            if(tipl::begins_with(mat.name,"index"))
-                new_image.interpolation = false;
+            if(!new_image.read_mat_image(i,mat_reader))
+                return mat_reader.error_msg = "size mismatch at matrix " + mat.name,failed = true,void();
             tipl::out() << mat_reader[i].name;
             if(!new_image.command(cmd,param))
-            {
-                mat_reader.error_msg = "cannot perform ";
-                mat_reader.error_msg += cmd;
-                failed = true;
-                return;
-            }
+                return mat_reader.error_msg = "cannot perform " + cmd + " : " + new_image.error_msg,failed = true,void();
 
+            new_vs = new_image.vs;
+            new_trans = new_image.T;
+            new_dim = new_image.shape;
             new_image.write_mat_image(i,mat_reader);
-
-            if(first_mat)
-            {
-                if(new_image.shape != dim)
-                    mat_reader.write("dimension",new_image.shape.begin(),1,3);
-                if(new_image.vs != vs)
-                    mat_reader.write("voxel_size",new_image.vs.begin(),1,3);
-                if(mat_reader.has("trans") && new_image.T != trans)
-                    mat_reader.write("trans",new_image.T.begin(),4,4);
-                first_mat = false;
-            }
         }
 
-    });
+    },1);
     if(failed)
         return false;
+
+    if(new_dim != dim)
+        mat_reader.write("dimension",new_dim.data(),1,3);
+    if(new_vs != vs)
+        mat_reader.write("voxel_size",new_vs.data(),1,3);
+    if(mat_reader.has("trans") && new_trans != trans)
+        mat_reader.write("trans",new_trans.data(),4,4);
+
     return !prog.aborted();
 }
 
@@ -1142,11 +1130,18 @@ bool fib_data::load_template_fib(size_t id,float reso)
     if(fib_template_list[id].empty())
         return error_msg = "cannot find template files",false;
     tipl::progress prog("opening");
-    tipl::out() << "load template " << fib_template_list[id] << " at resolution " << reso;
+
     fib_file_name = fib_template_list[id];
-    if (!mat_reader.load_from_file(fib_template_list[id],prog) ||
-        !modify_fib(mat_reader,"regrid",std::to_string(reso)))
+    if (!mat_reader.load_from_file(fib_template_list[id],prog))
         return error_msg = mat_reader.error_msg,false;
+
+    if(reso != vs[0])
+    {
+        tipl::out() << "load template " << fib_template_list[id] << " at resolution " << reso;
+        if(!modify_fib(mat_reader,"regrid",std::to_string(reso)))
+            return error_msg = mat_reader.error_msg,false;
+    }
+
     if(!load_from_mat())
         return false;
     set_template_id(id);
