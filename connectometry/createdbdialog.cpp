@@ -75,7 +75,6 @@ void CreateDBDialog::update_list(void)
                 raise(); // for Mac
                 return;
             }
-            index_list = fib.get_index_list();
             template_reso = fib.vs[0];
             template_id = fib.template_id;
         }
@@ -229,7 +228,7 @@ void CreateDBDialog::on_create_data_base_clicked()
 
         fib_data fib;
         if(!fib.load_template_fib(template_id,template_reso) ||
-           !fib.db.create_db(name_list,index_list) ||
+           !fib.db.create_db(name_list,{}) ||
            !fib.save_to_file(tipl::qt::to_path(ui->output_file_name->text())))
         {
             if(!fib.error_msg.empty())
