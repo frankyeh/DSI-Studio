@@ -218,6 +218,22 @@ jobs:
         ls *.dec.no_tract.txt
         ls *.inc.tt.gz
         
+  test_connectometry:
+    needs: linux-build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup Environment
+      run: |
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_prerelease.zip" | jar x
+        curl -sL https://github.com/data-openneuro/disease/releases/download/ds001378/sub-all.dz -o sub-all.dz
+        chmod 777 ./dsi-studio/dsi_studio
+    - name: Connectometry
+      run: |
+        ./dsi-studio/dsi_studio --source=sub-all.dz --action=cnt_cl  --variable_list=0,1,2 --voi=0 --index_name=qa
+        cat *.html
+        ls *.dec.no_tract.txt
+        ls *.inc.tt.gz
+
   test_human_tracking_gqi:
     needs: linux-build
     runs-on: ubuntu-latest
@@ -273,21 +289,6 @@ jobs:
         ls 100206.gqi.fz.qa.nii.gz.wp.nii.gz
         ./dsi-studio/dsi_studio --action=reg --source=100206.gqi.fz.qa.nii.gz,100206.gqi.fz.iso.nii.gz --to=./atlas/human/human_QA.nii.gz,./atlas/human/human_ISO.nii.gz
         ls 100206.gqi.fz.qa.nii.gz.wp.nii.gz
-
-  test_connectometry:
-    needs: linux-build
-    runs-on: ubuntu-latest
-    steps:
-    - name: Setup Environment
-      run: |
-        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_prerelease.zip" | jar x
-        curl -sL https://github.com/data-openneuro/disease/releases/download/ds001378/sub-all.dz -o sub-all.dz
-        chmod 777 ./dsi-studio/dsi_studio
-    - name: Connectometry
-      run: |
-        ./dsi-studio/dsi_studio --source=sub-all.dz --action=cnt_cl --permutation=200 --variable_list=0,1,2 --voi=0
-        ls *.report.html
-        ls * -l
         
   test_automatic_tracking:
     needs: linux-build
