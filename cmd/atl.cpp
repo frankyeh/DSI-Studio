@@ -43,27 +43,23 @@ int db(tipl::program_option<tipl::out>& po)
     if(!default_demo.empty() && !std::filesystem::exists(default_demo))
         return tipl::error() << "cannot find file specified at --demo",1;
 
-    std::vector<std::string> index_name;
 
-    // get the name of all metrics from the first file
-    std::vector<std::string> item_list;
+    std::vector<std::string> index_list;
     float template_reso = 1.0f;
     {
         fib_data fib;
         if(!fib.load_from_file(name_list[0]))
             return tipl::error() << "cannot load subject fib " << name_list[0],1;
-
-        std::ostringstream out;
-        for(const auto& each: fib.get_index_list())
-            out << each << " ";
-        tipl::out() << "available metrics: " << out.str() << std::endl;
+        if(po.has("index_name"))
+            index_list = tipl::split(po.get("index_name"),',');
+        if(index_list.empty())
+            index_list = fib.get_index_list();
         template_reso = fib.vs[0];
     }
-
     {
         fib_data fib;
         if(!fib.load_template_fib(get_template_id(po,0),template_reso) ||
-           !fib.db.create_db(name_list,tipl::split(po.get("index_name","dti_fa,qa,rdi,iso"),',')) ||
+           !fib.db.create_db(name_list,index_list) ||
            (!default_demo.empty() && !fib.db.parse_demo(po.get("demo",default_demo))))
             return tipl::error() << fib.error_msg,1;
 
