@@ -401,7 +401,7 @@ bool connectometry_db::extract_indices(const std::filesystem::path& file_name,co
     auto sample = [this](tipl::const_pointer_image<3,float> I,const tipl::matrix<4,4>& trans,float* data)
     {
         tipl::image<3> J(handle->dim);
-        if(I.shape() != J.shape() && trans != handle->trans_to_mni)
+        if(I.shape() != J.shape() || trans != handle->trans_to_mni)
         {
             tipl::resample<tipl::interpolation::cubic>(I,J,
                 tipl::transformation_matrix<float>(tipl::from_space(handle->trans_to_mni).to(trans)));
@@ -410,8 +410,9 @@ bool connectometry_db::extract_indices(const std::filesystem::path& file_name,co
             J = I;
         tipl::lower_threshold(J,0.0f);
         const auto& si2vi = handle->mat_reader.si2vi;
-        for(size_t i = 0;i < si2vi.size();++i)
-            data[i] = J[si2vi[i]];
+        for(size_t i = 0,sz = J.size();i < si2vi.size();++i)
+            if(si2vi[i] < sz)
+                data[i] = J[si2vi[i]];
     };
 
     for(size_t i = 0;i < index_list_to_extract.size();++i)
@@ -463,8 +464,10 @@ bool connectometry_db::create_db(const std::vector<std::filesystem::path>& file_
     fib_data fib;
     if(!fib.load_from_file(file_names[0]))
         return handle->error_msg = fib.error_msg + " at " + file_names[0].u8string(),false;
-
-    tipl::out() << "extracting indices: " << tipl::merge(index_list = included_index,',');
+    index_list = included_index;
+    if(index_list.empty())
+        index_list = fib.get_index_list();
+    tipl::out() << "extracting indices: " << tipl::merge(index_list,',');
     if(!add_subjects(file_names))
         return index_list.clear(),false;
     handle->report = subject_report = fib.report;
