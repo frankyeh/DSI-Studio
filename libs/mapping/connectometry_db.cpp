@@ -418,7 +418,7 @@ bool connectometry_db::extract_indices(const std::filesystem::path& file_name,co
     {
         auto index = fib.get_name_index(index_list_to_extract[i]);
         if(index == fib.slices.size())
-            return handle->error_msg = "cannot find " + index_name + " in " + fib.fib_file_name.u8string(),false;
+            return handle->error_msg = "cannot find " + index_list_to_extract[i] + " in " + fib.fib_file_name.u8string(),false;
         if(fib.is_mni)
             sample(fib.slices[index]->get_image(),fib.trans_to_mni,data[i]);
         else
@@ -463,7 +463,8 @@ bool connectometry_db::create_db(const std::vector<std::filesystem::path>& file_
     fib_data fib;
     if(!fib.load_from_file(file_names[0]))
         return handle->error_msg = fib.error_msg + " at " + file_names[0].u8string(),false;
-    index_list = (!included_index.empty() ? included_index:fib.get_index_list());
+
+    tipl::out() << "extracting indices: " << tipl::merge(index_list = included_index,',');
     if(!add_subjects(file_names))
         return index_list.clear(),false;
     handle->report = subject_report = fib.report;
@@ -478,6 +479,8 @@ bool connectometry_db::add_subjects(const std::vector<std::filesystem::path>& fi
     std::vector<std::shared_ptr<tipl::io::mat_matrix> > extracted_matrix;
     std::vector<std::string> extracted_subject_name(file_names.size());
     std::vector<float> extracted_R2(file_names.size());
+    if(index_list.empty())
+        return handle->error_msg = "empty index list",false;
     for(const auto& each : index_list)
     {
         extracted_matrix.push_back(std::make_shared<tipl::io::mat_matrix>(each,float(0),
