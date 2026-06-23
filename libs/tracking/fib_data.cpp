@@ -240,22 +240,26 @@ bool fiber_directions::add_data(fib_data& fib)
     }
 
 
-    if(num_fiber > 1 && mat_reader.has("iso")) // create qir
+    if(num_fiber > 1 && !fib.db.has_db() && mat_reader.has("iso")) // create qir
     {
         size_t s = dim.size();
         const float* iso_ptr = nullptr;
-        if (!mat_reader.read("iso", iso_ptr))
+        unsigned int r,c;
+        if (!mat_reader.read("iso", r, c, iso_ptr))
             return (error_msg = mat_reader.error_msg, false);
-        std::vector<float> inv_iso = get_outlier_limited_iso(iso_ptr, s);
-        fa_buf.resize(num_fiber);
-        index_name_data.push_back({"qir", std::vector<const float*>(num_fiber)});
-        tipl::par_for(num_fiber, [&](unsigned int j)
+        if(r*c == s)
         {
-            fa_buf[j].resize(s);
-            std::copy_n(index_name_data[0].second[j], s, fa_buf[j].data());
-            tipl::multiply(fa_buf[j].data(), fa_buf[j].data() + s, inv_iso.data());
-            index_name_data.back().second[j] = fa_buf[j].data();
-        });
+            std::vector<float> inv_iso = get_outlier_limited_iso(iso_ptr, s);
+            fa_buf.resize(num_fiber);
+            index_name_data.push_back({"qir", std::vector<const float*>(num_fiber)});
+            tipl::par_for(num_fiber, [&](unsigned int j)
+            {
+                fa_buf[j].resize(s);
+                std::copy_n(index_name_data[0].second[j], s, fa_buf[j].data());
+                tipl::multiply(fa_buf[j].data(), fa_buf[j].data() + s, inv_iso.data());
+                index_name_data.back().second[j] = fa_buf[j].data();
+            });
+        }
     }
 
 
