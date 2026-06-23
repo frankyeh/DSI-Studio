@@ -419,7 +419,10 @@ bool connectometry_db::extract_indices(const std::filesystem::path& file_name,co
     {
         auto index = fib.get_name_index(index_list_to_extract[i]);
         if(index == fib.slices.size())
-            return handle->error_msg = "cannot find " + index_list_to_extract[i] + " in " + fib.fib_file_name.u8string(),false;
+        {
+            std::fill(data[i],data[i] + handle->mat_reader.si2vi.size(),0.0f);
+            continue;
+        }
         if(fib.is_mni)
             sample(fib.slices[index]->get_image(),fib.trans_to_mni,data[i]);
         else
