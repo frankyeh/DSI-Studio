@@ -19,7 +19,6 @@ public:
     unsigned int dir_length;
     float template_reso = 1.0f;
     unsigned int template_id = 0;
-    std::vector<std::string> index_list;
     explicit CreateDBDialog(QWidget *parent,bool create_db_);
     ~CreateDBDialog();
 private:
