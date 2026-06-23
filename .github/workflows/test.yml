@@ -194,6 +194,24 @@ jobs:
         ./dsi-studio/dsi_studio --source=100206.gqi.fz --action=trk --tract_count=1000000 --output=no_file --connectivity=FreeSurferDKT_Cortical
         ls human.fz.tt.gz.FreeSurferDKT_Cortical.connectivity.mat
         ls 100206.gqi.fz.tt.gz.FreeSurferDKT_Cortical.connectivity.mat
+  test_db:
+    needs: linux-build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup Environment
+      run: |
+        curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ github.event.inputs.tag }}/dsi_studio_prerelease.zip" | jar x
+        curl -sL https://github.com/data-hcp/lifespan/releases/download/hcp-ya/100206.gqi.fz -o 100206.gqi.fz
+        curl -sL https://github.com/data-hcp/lifespan/releases/download/hcp-ya/100307.gqi.fz -o 100307.gqi.fz
+        curl -sL https://github.com/data-hcp/lifespan/releases/download/hcp-ya/100206.qsdr.fz -o 100206.qsdr.fz
+        curl -sL https://github.com/data-hcp/lifespan/releases/download/hcp-ya/100307.qsdr.fz -o 100307.qsdr.fz
+        chmod 777 ./dsi-studio/dsi_studio
+    - name: Create DB from FZ
+      run: |
+        ./dsi-studio/dsi_studio --source=*.qsdr.fz --action=db --output=qsdr.dz
+        ls qsdr.dz
+        ./dsi-studio/dsi_studio --source=*.gqi.fz --action=db --output=gqi.dz
+        ls gqi.dz
 
   test_human_tracking_gqi:
     needs: linux-build
