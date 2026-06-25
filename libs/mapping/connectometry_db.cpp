@@ -390,7 +390,7 @@ bool connectometry_db::extract_indices(const std::filesystem::path& file_name,co
     if(!fib.is_mni)
     {
         fib.set_template_id(handle->template_id);
-        if(!fib.map_to_mni(tipl::show_prog()))
+        if(!fib.map_to_mni(tipl::show_prog))
         {
             handle->error_msg = fib.error_msg + " at " + file_name.u8string();
             return false;

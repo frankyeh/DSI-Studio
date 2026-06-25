@@ -284,7 +284,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         error_msg += " with FIB. If ";
         error_msg += nifti_name;
         error_msg += " is in the MNI space, ";
-        if(tipl::show_prog())
+        if(tipl::show_prog)
             error_msg += "open it using [Region][Open MNI Region]. If not, insert its reference T1W/T2W using [Slices][Insert Other Images] to guide the registration.";
         else
             error_msg += "specify mni in the file name (e.g. region_mni.nii.gz). If not, use --other_slices to load the reference T1W/T2W to guide the registration.";

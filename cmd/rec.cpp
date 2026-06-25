@@ -28,7 +28,7 @@ int rec(tipl::program_option<tipl::out>& po)
         src.voxel.method_id = uint8_t(po.get("method",4));
         src.voxel.dti_ignore_high_b = po.get("dti_ignore_high_b",src.is_human_data);
         src.voxel.other_output = po.get("other_output","fa,md,rd,rdi");
-        src.voxel.thread_count = tipl::max_thread_count();
+        src.voxel.thread_count = tipl::max_thread_count;
         if(src.voxel.method_id == 4 or src.voxel.method_id == 7)
         {
             src.voxel.param[0] = po.get("param",src.voxel.param[0]);

@@ -189,7 +189,7 @@ int qc(tipl::program_option<tipl::out>& po)
     bool is_fib = tipl::ends_with(source,{".fib.gz",".fz"});
     if(po.has("is_fib"))
         is_fib = po.get("is_fib",is_fib);
-    tipl::max_thread_count() = std::min<int>(12,tipl::max_thread_count());
+    tipl::max_thread_count = std::min<int>(12,tipl::max_thread_count);
     std::vector<std::filesystem::path> file_list;
     if(std::filesystem::is_directory(source))
     {

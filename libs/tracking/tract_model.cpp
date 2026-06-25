@@ -742,7 +742,7 @@ bool TractModel::load_tracts_from_file(const std::filesystem::path& file_name,fi
         if(!is_mni && tract_is_mni)
         {
             tipl::out() << "applying nonlinear transform, condition: loading template-space tract to subject space";
-            if(!handle->map_to_mni(tipl::show_prog()))
+            if(!handle->map_to_mni(tipl::show_prog))
             {
                 tipl::out() << "cannot run normalization" << std::endl;;
                 return false;
@@ -854,7 +854,7 @@ bool TractModel::save_data_to_file(std::shared_ptr<fib_data> handle,const std::f
 // Native space FIB save tracts to the template space
 bool TractModel::save_tracts_in_template_space(std::shared_ptr<fib_data> handle,const std::filesystem::path& file_name,bool output_mni)
 {
-    if(!handle->map_to_mni(tipl::show_prog()))
+    if(!handle->map_to_mni(tipl::show_prog))
         return false;
     std::shared_ptr<TractModel> tract_in_template(
                 new TractModel(handle->template_I.shape(),handle->template_vs,handle->template_to_mni));
@@ -2455,7 +2455,7 @@ void TractModel::get_density_map(tipl::image<3,unsigned int>& mapping,
                                  const tipl::matrix<4,4>& to_t1t2,bool endpoint)
 {
     tipl::shape<3> s(mapping.shape());
-    std::vector<tipl::image<3,unsigned int> > maps(tipl::max_thread_count());
+    std::vector<tipl::image<3,unsigned int> > maps(tipl::max_thread_count);
     bool is_identity = (to_t1t2 == tipl::matrix<4,4>(tipl::identity_matrix()));
     tipl::par_for<tipl::dynamic_with_id>(tract_data.size(),[&](unsigned int i,unsigned int id)
     {
@@ -2480,7 +2480,7 @@ void TractModel::get_density_map(tipl::image<3,unsigned int>& mapping,
         }
         for(auto pos : point_set)
             ++m[pos];
-    },tipl::max_thread_count());
+    },tipl::max_thread_count);
 
     while(!maps.empty() && maps.back().empty())
         maps.pop_back();
@@ -2604,7 +2604,7 @@ void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,const tipl
         voxel_length_2 = float(L.length());
     }
 
-    std::vector<std::vector<tipl::vector<3,short>>> pass_map(tipl::max_thread_count());
+    std::vector<std::vector<tipl::vector<3,short>>> pass_map(tipl::max_thread_count);
 
     tipl::par_for<tipl::dynamic_with_id>(tract_data.size(), [&](size_t i, size_t thread)
     {
@@ -2635,7 +2635,7 @@ void TractModel::to_voxel(std::vector<tipl::vector<3,short> >& points,const tipl
                 add_pt(p0 + dir * (float(k) * step_ratio));
         }
         add_pt(tipl::vector<3>(&tract_data[i][tract_data[i].size() - 3]));
-    },tipl::max_thread_count());
+    },tipl::max_thread_count);
 
     size_t total_size = 0;
     for(const auto& v : pass_map)
@@ -3490,7 +3490,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,bool use_end_only)
         prog(prog_++,ij_pair_index.size());
         auto i = ij_pair[index].first;
         auto j = ij_pair[index].second;
-        if(tipl::prog_aborted())
+        if(tipl::prog_aborted)
             return;
         TractModel tm(tract_model.geo,tract_model.vs);
         tm.report = tract_model.report;
@@ -3532,7 +3532,7 @@ bool ConnectivityMatrix::calculate(TractModel& tract_model,bool use_end_only)
             cur_metrics.swap(metrics);
     });
 
-    if(tipl::prog_aborted())
+    if(tipl::prog_aborted)
     {
         metrics.clear();
         metrics_data.clear();

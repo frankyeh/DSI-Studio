@@ -33,10 +33,10 @@ void view_image::read_4d_at(size_t new_index)
         if(buf4d[new_index].empty())
         {
             I.resize(cur_image->shape);
-            tipl::show_prog() = false;
+            tipl::show_prog = false;
             nifti.select_volume(new_index);
             nifti.get_untouched_image(I);
-            tipl::show_prog() = true;
+            tipl::show_prog = true;
         }
         else
             I.buf().swap(buf4d[new_index]);

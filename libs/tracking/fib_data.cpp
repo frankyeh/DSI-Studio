@@ -90,14 +90,14 @@ tipl::const_pointer_image<3,float> slice_model::get_image(void)
         if(handle->mat_reader.has(name))
         {
             bool restore_show_prog = false;
-            if(tipl::is_main_thread() && tipl::show_prog())
+            if(tipl::is_main_thread() && tipl::show_prog)
             {
-                tipl::show_prog() = false;
+                tipl::show_prog = false;
                 restore_show_prog = true;
             }
             image_data = tipl::make_image(handle->mat_reader.read_as_type<float>(name),handle->dim);
             if(restore_show_prog)
-                tipl::show_prog() = true;
+                tipl::show_prog = true;
         }
         else
         {
@@ -1710,7 +1710,7 @@ bool fib_data::load_track_atlas(bool symmetric)
     if(!track_atlas.get())
     {
         tipl::progress prog(symmetric ?  "loading symmetric tractography atlas" : "loading asymmetric tractography atlas");
-        if(!map_to_mni(tipl::show_prog()))
+        if(!map_to_mni(tipl::show_prog))
             return false;
         // load the tract to the template space
         track_atlas = std::make_shared<TractModel>(template_I.shape(),template_vs,template_to_mni);
@@ -1934,7 +1934,7 @@ bool fib_data::recognize(std::shared_ptr<TractModel>& trk,
             return;
         prog(total++,trk->get_tracts().size());
         labels[i] = find_nearest_contain(&(trk->get_tracts()[i][0]),uint32_t(trk->get_tracts()[i].size()),track_atlas->get_tracts(),track_atlas->tract_cluster);
-    },tipl::max_thread_count());
+    },tipl::max_thread_count);
     if(prog.aborted())
         return false;
     std::vector<unsigned int> count(tractography_name_list.size());
@@ -2030,8 +2030,8 @@ bool to_t1wt2w_templates(tipl::reg::mm_reg<tipl::out>& reg,size_t template_id,bo
     }
 
     reg.linear_param.cost_type = tipl::reg::mutual_info;
-    reg.linear_reg(tipl::prog_aborted());
-    if(tipl::prog_aborted())
+    reg.linear_reg(tipl::prog_aborted);
+    if(tipl::prog_aborted)
         return true;
     auto best_index = std::max_element(reg.r.begin(),reg.r.end())-reg.r.begin();
     auto best_m = reg.modality_names[best_index];
@@ -2141,7 +2141,7 @@ bool fib_data::map_to_mni(bool background)
             if(!to_t1wt2w_templates(reg,template_id,is_be))
             {
                 error_msg = "cannot perform normalization";
-                tipl::prog_aborted() = true;
+                tipl::prog_aborted = true;
                 return;
             }
         }
@@ -2161,22 +2161,22 @@ bool fib_data::map_to_mni(bool background)
               !load_alternative_warping(reg,alternative_mapping[alternative_mapping_index]))
             {
                 error_msg = reg.error_msg;
-                tipl::prog_aborted() = true;
+                tipl::prog_aborted = true;
                 return;
             }
-            reg.linear_reg(tipl::prog_aborted());
+            reg.linear_reg(tipl::prog_aborted);
         }
-        if(tipl::prog_aborted())
+        if(tipl::prog_aborted)
             return;
         prog = 3;
 
-        reg.nonlinear_reg(tipl::prog_aborted());
+        reg.nonlinear_reg(tipl::prog_aborted);
         if((R2 = tipl::max_value(reg.r)) < 0.3f)
         {
             error_msg = "poor registration result.";
-            tipl::prog_aborted() = true;
+            tipl::prog_aborted = true;
         }
-        if(tipl::prog_aborted())
+        if(tipl::prog_aborted)
             return;
 
         reg.to_It_space(template_I.shape(),template_to_mni);
@@ -2356,14 +2356,14 @@ bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,
     if(!at->load_from_file())
         return error_msg = "cannot read atlas file " + at->filename.u8string(),false;
 
-    std::vector<std::vector<tipl::vector<3,short> > > buf(tipl::max_thread_count());
+    std::vector<std::vector<tipl::vector<3,short> > > buf(tipl::max_thread_count);
     if(new_geo == dim && to_diffusion_space == tipl::identity_matrix())
     {
         tipl::par_for<tipl::dynamic_with_id>(s2t.shape(),[&](const tipl::pixel_index<3>& index,size_t id)
         {
             if (at->is_labeled_as(s2t[index.index()], roi_index))
                 buf[id].push_back(tipl::vector<3,short>(index.begin()));
-        },tipl::max_thread_count());
+        },tipl::max_thread_count);
     }
     else
     {
@@ -2375,7 +2375,7 @@ bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,unsigned int roi_index,
                 return;
             if (at->is_labeled_as(p2, roi_index))
                 buf[id].push_back(tipl::vector<3,short>(index.begin()));
-        },tipl::max_thread_count());
+        },tipl::max_thread_count);
     }
     tipl::aggregate_results(std::move(buf),points);
     return true;
@@ -2393,7 +2393,7 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,
         return error_msg = "cannot load atlas",false;
     if(!at->load_from_file())
         return error_msg = "cannot read atlas file " + at->filename.u8string(),false;
-    std::vector<std::vector<std::vector<tipl::vector<3,short> > > > region_voxels(tipl::max_thread_count());
+    std::vector<std::vector<std::vector<tipl::vector<3,short> > > > region_voxels(tipl::max_thread_count);
     for(auto& region : region_voxels)
     {
         region.clear();
@@ -2435,7 +2435,7 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,
                 return;
             region_voxels[id][uint32_t(region_index)].push_back(tipl::vector<3,short>(index.begin()));
         }
-    },tipl::max_thread_count());
+    },tipl::max_thread_count);
 
     for(size_t i = 0;i < at->get_list().size();++i)
     {
@@ -2454,7 +2454,7 @@ bool fib_data::get_atlas_all_roi(std::shared_ptr<atlas> at,
 const tipl::image<3,tipl::vector<3,float> >& fib_data::get_sub2temp_mapping(void)
 {
     if(s2t.empty() &&
-       map_to_mni(tipl::show_prog()) &&
+       map_to_mni(tipl::show_prog) &&
        is_mni && template_id == matched_template_id)
     {
         s2t.resize(dim);

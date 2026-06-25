@@ -126,7 +126,7 @@ bool apply_warping_fzsz(const reg_type& reg,const std::string& input,const std::
             new_image.write_mat_image(i,mat_reader);
         }
 
-    },tipl::max_thread_count());
+    },tipl::max_thread_count);
 
     {
         if((direction ? reg.Its : reg.Is) != dim)
@@ -373,7 +373,7 @@ int reg(tipl::program_option<tipl::out>& po)
     r.skip_linear = po.get("skip_linear",r.skip_linear);
     r.skip_nonlinear = po.get("skip_nonlinear",r.skip_nonlinear);
 
-    r.linear_reg(tipl::prog_aborted());
+    r.linear_reg(tipl::prog_aborted);
 
     if(r.linear_param.reg_type != tipl::reg::rigid_body)
     {
@@ -381,7 +381,7 @@ int reg(tipl::program_option<tipl::out>& po)
         r.param.speed = po.get("speed",r.param.speed);
         r.param.smoothing = po.get("smoothing",r.param.smoothing);
         r.param.min_dimension = po.get("min_dimension",r.param.min_dimension);
-        r.nonlinear_reg(tipl::prog_aborted());
+        r.nonlinear_reg(tipl::prog_aborted);
     }
     if(po.has("output_mapping") && !save_warping(r,po.get("output_mapping")))
         return tipl::error() << r.error_msg,1;
