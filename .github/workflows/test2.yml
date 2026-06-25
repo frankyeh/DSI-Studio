@@ -64,106 +64,43 @@ jobs:
           GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
         run: |
           gh release upload ${{ inputs.tag }} *.zip --clobber --repo frankyeh/DSI-Studio
-
+          
   windows-cpu-build:
     runs-on: windows-2022
     steps:
       - name: Checkout DSI Studio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.1
 
-      - name: Download Build Scripts
+      - name: Download Build
         shell: cmd
         run: |
           git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
+          move DSI-Studio-Build\*.txt .
           move DSI-Studio-Build\build_packages .
-
-      - name: Clone TIPL
-        shell: cmd
-        run: |
-          git clone --depth 1 https://github.com/frankyeh/TIPL.git
-          git -C TIPL rev-parse HEAD
 
       - name: Install Qt
         uses: Kidev/install-qt-action@v4.6.0
         with:
-          version: '6.2.4'
-          arch: 'win64_msvc2019_64'
           modules: qtcharts
           cache: true
-
-      - name: Install Build Tools and ZLIB
-        shell: cmd
-        run: |
-          choco install ninja cmake -y --no-progress
-          call build_packages\install_zlib.bat
-          del "C:\Program Files\zlib\lib\zlib.lib" 2>nul
-          del "C:\Program Files\zlib\bin\zlib.dll" 2>nul
-
-      - name: Print Toolchain
-        shell: cmd
-        run: |
-          for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64 && cl /Bv
-          cmake --version
-          ninja --version
-          echo Qt6_DIR=%Qt6_DIR%
-          echo QT_ROOT_DIR=%QT_ROOT_DIR%
-          git rev-parse HEAD
-          git -C TIPL rev-parse HEAD
 
       - name: Build Windows CPU DSI Studio
         shell: cmd
         run: |
-          for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do call "%%a\Common7\Tools\VsDevCmd.bat" -arch=x64
-
-          cmake -S . -B build_win_cpu -GNinja ^
-            "-DZLIB_LIBRARY=C:/Program Files/zlib/lib/zlibstatic.lib" ^
-            "-DCMAKE_BUILD_TYPE=Release" ^
-            "-DCMAKE_C_COMPILER=cl" ^
-            "-DCMAKE_CXX_COMPILER=cl" ^
-            "-DCMAKE_DISABLE_FIND_PACKAGE_CUDAToolkit=TRUE" ^
-            "-DCMAKE_EXE_LINKER_FLAGS=/OPT:NOICF" ^
-            -DTIPL_DIR=.
-
-          cmake --build build_win_cpu --parallel --config Release
-
-      - name: Package Windows CPU DSI Studio
-        shell: cmd
-        run: |
-          mkdir dsi_studio_win
-          copy build_win_cpu\dsi_studio.exe dsi_studio_win\
-          robocopy other dsi_studio_win /E
-          if errorlevel 8 exit /b 1
-
-          windeployqt --no-translations --no-system-d3d-compiler --compiler-runtime --no-opengl-sw dsi_studio_win\dsi_studio.exe
-
-          git clone --depth 1 https://github.com/data-others/atlas.git dsi_studio_win\atlas
-          git clone --depth 1 https://github.com/data-others/unet.git dsi_studio_win\unet
-          git clone --depth 1 https://github.com/data-others/tract.git dsi_studio_win\tract
-          rd /s /q dsi_studio_win\atlas\.git
-          rd /s /q dsi_studio_win\unet\.git
-          rd /s /q dsi_studio_win\tract\.git
-
-          curl -L --retry 3 -o tiny_fsl_win.zip "https://github.com/frankyeh/TinyFSL/releases/download/2022.08.03/tiny_fsl_win.zip"
-          powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath 'tiny_fsl_win.zip' -DestinationPath 'tiny_fsl_tmp' -Force"
-
-          if exist tiny_fsl_tmp\tiny_fsl (
-            robocopy tiny_fsl_tmp\tiny_fsl dsi_studio_win\plugin /E
+          call .\build_packages\build_win.bat
+          if exist "dsi_studio_win\dsi_studio.exe" (
+            echo "dsi_studio.exe exists!"
           ) else (
-            robocopy tiny_fsl_tmp dsi_studio_win\plugin /E
+            echo "Error: dsi_studio.exe not found!" >&2
+            exit /b 1
           )
-          if errorlevel 8 exit /b 1
-
-          del dsi_studio_win\plugin\cublas* 2>nul
-          rd /s /q dsi_studio_win\plugin\tiny_fsl 2>nul
-          rd /s /q tiny_fsl_tmp 2>nul
-          del tiny_fsl_win.zip 2>nul
 
       - name: Upload Windows CPU Build
         uses: actions/upload-artifact@v4
         with:
           name: dsi_studio_win_cpu
           path: dsi_studio_win
-
+  
   test-routines:
     needs: [linux-build, windows-cpu-build]
     runs-on: ${{ matrix.os }}
