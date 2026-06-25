@@ -73,12 +73,12 @@ public:
                     reg.calculate_linear_r();
                 }
                 else
-                    reg.linear_reg(tipl::prog_aborted);
+                    reg.linear_reg(tipl::prog_aborted());
                 ++p;
                 if((voxel.R2 = tipl::max_value(reg.r)) < 0.4f)
                     tipl::warning() << "poor registration found in linear registration. Please check image quality or orientation. consider using manual alignment.";
 
-                reg.nonlinear_reg(tipl::prog_aborted);
+                reg.nonlinear_reg(tipl::prog_aborted());
                 ++p;
                 return true;
             }))

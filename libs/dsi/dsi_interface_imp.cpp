@@ -379,7 +379,7 @@ bool odf_average(const std::filesystem::path& out_name,std::vector<std::filesyst
                                 odfs[pos].resize(ti.half_vertices_count);
                             odfs[pos][best_dir] += fib.dir.fa[0][pos];
                         }
-                    },tipl::max_thread_count);
+                    },tipl::max_thread_count());
 
                 }
                 else
@@ -437,7 +437,7 @@ bool odf_average(const std::filesystem::path& out_name,std::vector<std::filesyst
             }
             else
                 tipl::divide_constant(odfs[pos].begin(),odfs[pos].end(),float(file_names.size()));
-        },tipl::max_thread_count);
+        },tipl::max_thread_count());
         if (prog.aborted())
             return false;
     }

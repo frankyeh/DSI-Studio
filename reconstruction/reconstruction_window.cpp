@@ -74,7 +74,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
         throw std::runtime_error(handle->error_msg);
 
     setWindowTitle(filenames[0]);
-    ui->ThreadCount->setMaximum(tipl::max_thread_count);
+    ui->ThreadCount->setMaximum(tipl::max_thread_count());
     ui->toolBox->setCurrentIndex(1);
     ui->graphicsView->setScene(&scene);
     ui->view_source->setScene(&source);
@@ -113,7 +113,7 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
 
     ui->odf_resolving->setVisible(false);
 
-    ui->ThreadCount->setValue(tipl::max_thread_count);
+    ui->ThreadCount->setValue(tipl::max_thread_count());
 
     ui->odf_resolving->setChecked(settings.value("odf_resolving",0).toInt());
 

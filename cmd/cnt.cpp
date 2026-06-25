@@ -105,7 +105,7 @@ int cnt(tipl::program_option<tipl::out>& po)
     {
         tipl::progress prog("connectometry parameters");
         vbc->no_tractogram = po.get("no_tractogram",1);
-        if(!tipl::show_prog && vbc->no_tractogram == 0)
+        if(!tipl::show_prog() && vbc->no_tractogram == 0)
         {
             tipl::warning() << "cannot generate tractogram at command line mode. no_tractogram is disabled" ;
             vbc->no_tractogram = 1;
@@ -169,7 +169,7 @@ int cnt(tipl::program_option<tipl::out>& po)
         tipl::progress prog("running connectometry");
         if(po.has("output"))
             vbc->output_file_name = po.get("output",std::string());
-        vbc->run_permutation(tipl::max_thread_count,po.get("permutation",uint32_t(2000)));
+        vbc->run_permutation(tipl::max_thread_count(),po.get("permutation",uint32_t(2000)));
         vbc->wait(0);
         vbc->generate_report();
     }

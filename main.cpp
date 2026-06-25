@@ -158,14 +158,14 @@ bool load_file_name(void)
 
     if(!std::filesystem::exists(atlas_dir))
     {
-        if(tipl::show_prog)
+        if(tipl::show_prog())
             QMessageBox::critical(nullptr,"ERROR",QString::fromStdString("Cannot find atlas folder at " + atlas_dir.u8string()));
         tipl::error() << "Cannot find atlas folder at " + atlas_dir.u8string();
         return false;
     }
     if(!std::filesystem::exists(tract_dir))
     {
-        if(tipl::show_prog)
+        if(tipl::show_prog())
             QMessageBox::critical(nullptr,"ERROR",QString::fromStdString("Cannot find tract folder at " + tract_dir.u8string()));
         tipl::error() << "Cannot find tract folder at " + tract_dir.u8string();
         return false;
@@ -263,7 +263,7 @@ bool load_file_name(void)
     }
     if(template_name_list.empty())
     {
-        if(tipl::show_prog)
+        if(tipl::show_prog())
             QMessageBox::critical(nullptr,"ERROR",QString::fromStdString("Cannot find template images at " + atlas_dir.u8string()));
         tipl::error() << "Cannot find template images at " + atlas_dir.u8string();
         return false;
@@ -284,7 +284,7 @@ bool init_application(void)
     QCoreApplication::setOrganizationName("LabSolver");
     QCoreApplication::setApplicationName("DSI Studio");
 
-    if(tipl::show_prog)
+    if(tipl::show_prog())
     {
         #ifdef __APPLE__
         QFont font;
@@ -328,7 +328,7 @@ bool init_application(void)
 
     if(!load_file_name())
     {
-        if(tipl::show_prog)
+        if(tipl::show_prog())
             QMessageBox::critical(nullptr,"ERROR","Cannot find template data.");
         tipl::error() << "cannot find template data.";
         return false;
@@ -341,8 +341,8 @@ bool init_application(void)
         check_cuda(cuda_msg);
         if(!has_cuda)
         {
-            tipl::has_gpu = false;
-            if(tipl::show_prog)
+            tipl::has_gpu() = false;
+            if(tipl::show_prog())
                 QMessageBox::critical(nullptr,"ERROR",cuda_msg.c_str());
             return 1;
         }
@@ -419,7 +419,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
 {
     tipl::progress prog("command line");
     std::string action = po.get("action");
-    tipl::max_thread_count = po.has("thread_count") ? po.get("thread_count",tipl::max_thread_count) : tipl::max_thread_count;
+    tipl::max_thread_count() = po.has("thread_count") ? po.get("thread_count",tipl::max_thread_count()) : tipl::max_thread_count();
 
     std::string loop;
     if(po.has("loop"))
@@ -563,7 +563,7 @@ int main(int ac, char *av[])
             }
         }
 
-        tipl::show_prog = true;
+        tipl::show_prog() = true;
         if(!po.has("action"))
             console.attach();
         tipl::progress prog(dsi_studio_citation);

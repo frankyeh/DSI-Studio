@@ -94,7 +94,7 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
         return;
     uint32_t max_count = uint32_t(cur_tracking_window["roi_track_count"].toInt());
     auto tract_color_style = cur_tracking_window["tract_color_style"].toInt();
-    unsigned int thread_count = tipl::max_thread_count;
+    unsigned int thread_count = tipl::max_thread_count();
     std::vector<std::vector<std::vector<tipl::vector<2,float> > > > lines_threaded(thread_count);
     std::vector<std::vector<std::vector<unsigned int> > > colors_threaded(thread_count);
     tipl::matrix<4,4>* pt = (cur_tracking_window.current_slice->is_diffusion_space ? nullptr : &(cur_tracking_window.current_slice->to_slice));
@@ -108,7 +108,7 @@ void TractTableWidget::draw_tracts(unsigned char dim,int pos,
             return;
         selected_tracts[index]->get_in_slice_tracts(dim,pos,pt,lines_threaded[thread],colors_threaded[thread],max_count,tract_color_style,
                             selected_tracts_rendering[index]->about_to_write);
-    },tipl::max_thread_count);
+    },tipl::max_thread_count());
     if(cur_tracking_window.slice_need_update)
         return;
     std::vector<std::vector<tipl::vector<2,float> > > lines;

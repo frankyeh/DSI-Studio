@@ -653,7 +653,7 @@ void MainWindow::loadSrc(QStringList filenames)
     }
     catch(const std::runtime_error& error)
     {
-        if(!tipl::prog_aborted)
+        if(!tipl::prog_aborted())
             QMessageBox::critical(this,"ERROR",error.what());
     }
 
@@ -1362,7 +1362,7 @@ bool dicom2src_and_nii(std::vector<std::filesystem::path> files,bool overwrite)
 
     if(!parse_dwi(files,dicom_files,error_msg) || dicom_files.size() == 1)
     {
-        if(tipl::prog_aborted)
+        if(tipl::prog_aborted())
             return false;
         if(!error_msg.empty())
             return tipl::error() << error_msg,false;

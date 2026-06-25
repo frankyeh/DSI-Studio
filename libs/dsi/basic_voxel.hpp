@@ -86,7 +86,7 @@ public:
 
     std::string intro,report,steps;
     std::ostringstream recon_report, step_report;
-    unsigned int thread_count = tipl::max_thread_count;
+    unsigned int thread_count = tipl::max_thread_count();
     void load_from_src(src_data& image_model);
 public:
     unsigned char method_id;

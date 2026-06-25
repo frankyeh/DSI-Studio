@@ -141,7 +141,7 @@ bool src_data::warp_b0_to_image(tipl::reg::mm_reg<tipl::out>& r)
     bool ended = false;
     std::thread thread([&](void)
     {
-        r.linear_reg(tipl::prog_aborted);
+        r.linear_reg(tipl::prog_aborted());
         if(r.linear_param.reg_type == tipl::reg::rigid_body)
         {
             tipl::image<3> mask(r.J[2]);
@@ -157,7 +157,7 @@ bool src_data::warp_b0_to_image(tipl::reg::mm_reg<tipl::out>& r)
             r.J[0].swap(r.J[1]);
             r.I[0].swap(r.I[1]);
         }
-        r.nonlinear_reg(tipl::prog_aborted);
+        r.nonlinear_reg(tipl::prog_aborted());
         ended = true;
     });
     while(!ended)
@@ -1635,7 +1635,7 @@ bool src_data::correct_bias_field(void)
             if(!estimate_bias_field(dwi,mask,bias_field,
                     tipl::vector<3>(1.0f,voxel.vs[0]/voxel.vs[1],voxel.vs[0]/voxel.vs[2])))
             {
-                if(tipl::prog_aborted)
+                if(tipl::prog_aborted())
                     return false;
                 tipl::warning() << "bias field correction cannot be applied to the image";
                 return true;
@@ -1688,7 +1688,7 @@ bool src_data::correct_motion(void)
             tipl::reg::linear<tipl::out>(
                         tipl::reg::make_list(tipl::reg::subject_image_pre(tipl::image<3>(I0))),voxel.vs,
                         tipl::reg::make_list(tipl::reg::subject_image_pre(std::move(Ii))),voxel.vs,args[i],
-                        {tipl::reg::rigid_body,tipl::reg::mutual_info,tipl::reg::narrow_bound},tipl::prog_aborted);
+                        {tipl::reg::rigid_body,tipl::reg::mutual_info,tipl::reg::narrow_bound},tipl::prog_aborted());
             tipl::out() << "dwi (" << i+1 << "/" << src_bvalues.size() << ")" <<
                          " shift=" << tipl::vector<3>(args[i].translocation) <<
                          " rotation=" << tipl::vector<3>(args[i].rotation) << std::endl;
@@ -1751,7 +1751,7 @@ bool src_data::correct_motion(void)
             tipl::reg::linear<tipl::out>(
                         tipl::reg::make_list(tipl::reg::subject_image_pre(std::move(from))),voxel.vs,
                         tipl::reg::make_list(tipl::reg::subject_image_pre(std::move(Ii))),voxel.vs,new_args[i],
-                        {tipl::reg::rigid_body,tipl::reg::corr,tipl::reg::narrow_bound},tipl::prog_aborted);
+                        {tipl::reg::rigid_body,tipl::reg::corr,tipl::reg::narrow_bound},tipl::prog_aborted());
             tipl::out() << "dwi (" << i+1 << "/" << src_bvalues.size() << ") = "
                       << " shift=" << tipl::vector<3>(new_args[i].translocation)
                       << " rotation=" << tipl::vector<3>(new_args[i].rotation) << std::endl;

@@ -720,7 +720,7 @@ bool CustomSliceModel::load_slices(void)
 void CustomSliceModel::run_registration(void)
 {
     running = true;
-    if(tipl::show_prog)
+    if(tipl::show_prog())
         thread.reset(new std::thread([this](){argmin();}));
     else
         argmin();

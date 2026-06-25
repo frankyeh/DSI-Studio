@@ -81,9 +81,9 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
         else
         {
             tipl::progress p("create limiting/seeding/not end regions");
-            std::vector<std::vector<tipl::vector<3,short> > > limiting_points(tipl::max_thread_count),
-                                                              seed_points(tipl::max_thread_count),
-                                                              not_end_points(tipl::max_thread_count);
+            std::vector<std::vector<tipl::vector<3,short> > > limiting_points(tipl::max_thread_count()),
+                                                              seed_points(tipl::max_thread_count()),
+                                                              not_end_points(tipl::max_thread_count());
             auto fa0 = handle->dir.fa[0];
             tipl::par_for<tipl::dynamic_with_id>(limiting_mask.shape(),[&](const auto& pos,size_t thread_id)
             {
@@ -95,7 +95,7 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
                     seed_points[thread_id].push_back(point);
                 if(not_end_threshold != 0.0f && fa0[pos.index()] > not_end_threshold)
                     not_end_points[thread_id].push_back(point);
-            },tipl::max_thread_count);
+            },tipl::max_thread_count());
 
             tipl::aggregate_results(std::move(limiting_points),atlas_limiting);
             tipl::aggregate_results(std::move(seed_points),atlas_seed);
@@ -177,8 +177,8 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
             is_target[i] = (std::find(track_ids.begin(),track_ids.end(),atlas_cluster[i]) != track_ids.end());
         });
 
-        std::vector<std::vector<std::vector<float> > > selected_atlas_tracts_threads(tipl::max_thread_count);
-        std::vector<std::vector<unsigned int> > selected_atlas_cluster_threads(tipl::max_thread_count);
+        std::vector<std::vector<std::vector<float> > > selected_atlas_tracts_threads(tipl::max_thread_count());
+        std::vector<std::vector<unsigned int> > selected_atlas_cluster_threads(tipl::max_thread_count());
         tipl::par_for<tipl::dynamic_with_id>(atlas_tract.size(),[&](unsigned int i,unsigned int id)
         {
             if(!is_target[i])
@@ -200,7 +200,7 @@ bool RoiMgr::setAtlas(bool& terminated,float seed_threshold,float not_end_thresh
             selected_atlas_tracts_threads[id].push_back(atlas_tract[i]);
             selected_atlas_cluster_threads[id].push_back(atlas_cluster[i]);
 
-        },tipl::max_thread_count);
+        },tipl::max_thread_count());
         tipl::aggregate_results(std::move(selected_atlas_tracts_threads),selected_atlas_tracts);
         tipl::aggregate_results(std::move(selected_atlas_cluster_threads),selected_atlas_cluster);
     }
