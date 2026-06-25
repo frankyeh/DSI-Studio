@@ -1291,7 +1291,8 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
     std::vector<int> rows_to_be_updated;
     tipl::progress prog(action.toStdString(),true);
     {
-        if(action == "1st_ex_all" || action == "all_ex_1st" || action == "all_inter_1st" || action == "all_to_1st")
+        if(action == "1st_ex_all" || action == "all_ex_1st" || action == "all_inter_1st" || action == "all_to_1st" ||
+           action == "reclassify")
         {
             if(checked_regions.size() < 2)
                 return false;
@@ -1347,6 +1348,51 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                 std::lock_guard<std::mutex> lock(mtx);
                 rows_to_be_updated.push_back(checked_row[r]);
             };
+            auto get_ref = [&](tipl::image<3,float>& ref,const auto& dim,const auto& to_dif)
+            {
+                auto I = cur_tracking_window.current_slice->get_source();
+                if(I.empty())
+                    return false;
+                ref.resize(dim);
+                if(cur_tracking_window.current_slice->dim == dim &&
+                    cur_tracking_window.current_slice->to_dif == to_dif)
+                    std::copy(I.begin(),I.end(),ref.begin());
+                else
+                {
+                    tipl::matrix<4,4> T = cur_tracking_window.current_slice->to_slice*to_dif;
+                    tipl::resample(I,ref,tipl::transformation_matrix<float>(T));
+                }
+                return true;
+            };
+
+            auto load_labels = [&](const auto& labels,size_t from = 0)
+            {
+                tipl::progress prog_load("loading regions",true);
+                size_t prog_count = 0;
+                tipl::par_for(checked_regions.size(),[&](size_t r)
+                              {
+                                  prog_load(prog_count++,checked_regions.size());
+                                  if(r < from)
+                                      return;
+                                  tipl::image<3,unsigned char> B(base_dim);
+                                  for(size_t i = 0;i < labels.size();++i)
+                                      B[i] = labels[i] == r+1;
+                                  update_and_load_region(r,B);
+                              });
+            };
+
+            auto make_labels = [&]
+            {
+                tipl::image<3,uint16_t> labels(base_dim);
+                for(size_t i = 0;i < A.size();++i)
+                    if(A[i])
+                        labels[i] = 1;
+                for(size_t r = 1;r < checked_regions.size();++r)
+                    for(size_t i = 0;i < labels.size();++i)
+                        if(B_buffers[r][i])
+                            labels[i] = uint16_t(r+1);
+                return labels;
+            };
 
             // --- Phase 2: Handle Each Action Separately ---
             if(action == "1st_ex_all")
@@ -1382,33 +1428,28 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             }
             else if(action == "all_to_1st")
             {
-                tipl::image<3,uint16_t> A_labels(base_dim);
-                tipl::progress prog_action("processing all_to_1st");
-                for(size_t r = 1;r < checked_regions.size();++r)
-                {
-                    prog_action(r,checked_regions.size());
-                    for(size_t i = 0;i < A.size();++i)
-                        if(A[i] && B_buffers[r][i] && A_labels[i] < r)
-                            A_labels[i] = uint16_t(r);
-                }
+                auto A_labels = make_labels();
+
+                for(size_t i = 0;i < A.size();++i)
+                    if(!A[i])
+                        A_labels[i] = 0;
 
                 tipl::morphology::fill_and_smooth_labels<void>(A,A_labels);
+                load_labels(A_labels,1);
+            }
+            else if(action == "reclassify")
+            {
+                auto labels = make_labels();
+                tipl::image<3,float> ref;
+                if(!get_ref(ref,base_dim,base_to_dif))
+                    return false;
 
-                tipl::progress prog_load("loading regions",true);
-                size_t prog_count = 0;
-                tipl::par_for(checked_regions.size(),[&](size_t r)
-                {
-                    prog_load(prog_count++,checked_regions.size());
-                    if(r == 0)
-                        return;
-
-                    tipl::image<3,unsigned char> B(base_dim);
-                    for(size_t i = 0;i < A_labels.size();++i)
-                        if(A_labels[i] == r)
-                            B[i] = 1;
-
-                    update_and_load_region(r,B);
-                });
+                float prior_weight = cmd[2].empty() ? 12.0f : QString::fromStdString(cmd[2]).toFloat();
+                size_t total = 0;
+                while((total = tipl::morphology::reclassify(labels,ref,prior_weight)) == 0 && prior_weight > 4.0f)
+                    prior_weight -= 1.0f;
+                tipl::out() << "total flipped voxels: " << total << " at prior: " << prior_weight;
+                load_labels(labels);
             }
         }
 
@@ -1469,6 +1510,8 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                     setItem(i,j,items[pos]);
             end_update();
         }
+
+
 
         tipl::par_for(region_to_be_processed.size(),[&](unsigned int i)
         {
@@ -1545,24 +1588,23 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
 
                 if(action == "threshold_current")
                 {
-                    tipl::image<3,unsigned char> mask(I.shape());
-                    bool need_trans = false;
-                    tipl::matrix<4,4> trans = tipl::identity_matrix();
-                    if(cur_tracking_window.current_slice->dim != region->dim ||
-                       cur_tracking_window.current_slice->to_dif != region->to_diffusion_space)
-                    {
-                        need_trans = true;
-                        trans = cur_tracking_window.current_slice->to_slice*region->to_diffusion_space;
-                    }
-
+                    tipl::image<3,unsigned char> mask;
                     region->save_region_to_buffer(mask);
 
-                    tipl::par_for(mask.shape(),[&](const tipl::pixel_index<3>& pos)
+                    tipl::image<3,float> ref(mask.shape());
+                    if(cur_tracking_window.current_slice->dim == region->dim &&
+                        cur_tracking_window.current_slice->to_dif == region->to_diffusion_space)
+                        std::copy(I.begin(),I.end(),ref.begin());
+                    else
                     {
-                        if(!mask[pos.index()])
-                            return;
-                        mask[pos.index()] = (((need_trans ?
-                            I[tipl::v(pos).to(trans)]:I[pos.index()]) > threshold) ^ flip) ? 1:0;
+                        tipl::matrix<4,4> T = cur_tracking_window.current_slice->to_slice*region->to_diffusion_space;
+                        tipl::resample(I,ref,tipl::transformation_matrix<float>(T));
+                    }
+
+                    tipl::par_for(mask.size(),[&](size_t i)
+                    {
+                        if(mask[i])
+                            mask[i] = ((ref[i] > threshold) ^ flip) ? 1:0;
                     });
                     region->load_region_from_buffer(mask);
                 }
