@@ -391,7 +391,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
     {
         if(cmd[1].empty() && (cmd[1] =
                 QInputDialog::getText(this,QApplication::applicationName(),
-                "Please specify the MNI Coordinate and radius of the region, separated by spaces (e.g. 0 -10 21 10)",
+                "Please specify the MNI Coordinate in mm and voxel radius of the region, separated by spaces (e.g. 0 -10 21 10)",
                                                     QLineEdit::Normal,"0 0 0 10").toStdString()).empty())
             return run->canceled();
         QStringList params = QString::fromStdString(cmd[1]).split(' ');
