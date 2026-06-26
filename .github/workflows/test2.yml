@@ -1,49 +1,22 @@
-name: Test DSI Studio (Windows/Linux)
+name: DSI Studio Test 
 
 on:
   workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Tag'
-        required: true
-        default: '2025.04.16'
-      build_prerelease:
-        type: boolean
-        description: 'build pre-release'
-        required: false
-        default: true
-
   workflow_call:
-    inputs:
-      tag:
-        type: string
-        required: false
-        default: '2025.04.16'
-      build_prerelease:
-        type: boolean
-        required: false
-        default: true
 
 jobs:
   linux-build:
     runs-on: ubuntu-latest
     steps:
       - name: Download Build
-        if: ${{ inputs.build_prerelease }}
         run: |
           git clone https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
           mv DSI-Studio-Build/build_packages .
 
-      - name: Set up QEMU
-        if: ${{ inputs.build_prerelease }}
-        uses: docker/setup-qemu-action@v3.0.0
+      - uses: docker/setup-qemu-action@v3.0.0
+      - uses: docker/setup-buildx-action@v3.0.0
 
-      - name: Set up Docker Buildx
-        if: ${{ inputs.build_prerelease }}
-        uses: docker/setup-buildx-action@v3.0.0
-
-      - name: Build and push
-        if: ${{ inputs.build_prerelease }}
+      - name: Build Linux
         uses: docker/build-push-action@v5.1.0
         with:
           context: .
@@ -54,17 +27,15 @@ jobs:
           outputs: dsi-studio
 
       - name: Upload Linux Build
-        if: ${{ inputs.build_prerelease }}
         uses: actions/upload-artifact@v4
         with:
           name: dsi_studio_linux
           path: dsi-studio
-          
+
   windows-cpu-build:
     runs-on: windows-2022
     steps:
-      - name: Checkout DSI Studio
-        uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.1.1
 
       - name: Download Build
         shell: cmd
@@ -79,31 +50,87 @@ jobs:
           modules: qtcharts
           cache: true
 
-      - name: Build Windows CPU DSI Studio
+      - name: Build Windows CPU
         shell: cmd
         run: |
           call .\build_packages\build_win.bat
-          if exist "dsi_studio_win\dsi_studio.exe" (
-            echo "dsi_studio.exe exists!"
-          ) else (
-            echo "Error: dsi_studio.exe not found!" >&2
-            exit /b 1
-          )
+          if not exist "dsi_studio_win\dsi_studio.exe" exit /b 1
 
       - name: Upload Windows CPU Build
         uses: actions/upload-artifact@v4
         with:
           name: dsi_studio_win_cpu
           path: dsi_studio_win
-  
+
+  macos-arm-build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Build
+        run: |
+          git clone --depth 1 https://x-access-token:${{ secrets.DSISTUDIO_TOKEN }}@github.com/frankyeh/DSI-Studio-Build.git
+          mv DSI-Studio-Build/*.txt .
+          mv DSI-Studio-Build/build_packages/build_mac.sh .
+
+      - name: Check tools
+        run: |
+          cmake --version
+          ninja --version || brew install ninja
+          ccache --version || brew install ccache
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: 6.8
+          modules: qtcharts
+          cache: true
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: macos-ccache-arm64-${{ github.ref_name }}
+          restore-keys: |
+            macos-ccache-arm64-
+
+      - name: Build macOS ARM
+        run: |
+          sh build_mac.sh macos-15 3
+          file dsi_studio.app/Contents/MacOS/dsi_studio
+
+      - name: Upload macOS ARM Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsi_studio_macos_arm
+          path: dsi_studio.app
+
   test-routines:
-    needs: [linux-build, windows-cpu-build]
-    runs-on: ${{ matrix.os }}
+    needs: [linux-build, windows-cpu-build, macos-arm-build]
+    runs-on: ${{ matrix.platform.os }}
 
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-2022]
+        platform:
+          - os: ubuntu-latest
+            artifact: dsi_studio_linux
+            path: dsi-studio
+            bin: dsi-studio
+            exe: dsi_studio
+
+          - os: windows-2022
+            artifact: dsi_studio_win_cpu
+            path: dsi_studio_win
+            bin: dsi_studio_win
+            exe: dsi_studio.exe
+
+          - os: macos-14
+            artifact: dsi_studio_macos_arm
+            path: dsi_studio_macos_arm
+            bin: dsi_studio_macos_arm/dsi_studio.app/Contents/MacOS
+            exe: dsi_studio
+
         routine:
           - dicom
           - image-processing
@@ -120,46 +147,29 @@ jobs:
           - topup
 
     steps:
-      - name: Download Windows CPU Build
-        if: ${{ runner.os == 'Windows' }}
+      - name: Download DSI Studio
         uses: actions/download-artifact@v4
         with:
-          name: dsi_studio_win_cpu
-          path: dsi_studio_win
-          
-      - name: Download Linux Build
-        if: ${{ runner.os == 'Linux' }}
-        uses: actions/download-artifact@v4
-        with:
-          name: dsi_studio_linux
-          path: dsi-studio
-          
-      - name: Prepare Linux DSI Studio
-        if: ${{ runner.os == 'Linux' }}
+          name: ${{ matrix.platform.artifact }}
+          path: ${{ matrix.platform.path }}
+
+      - name: Prepare DSI Studio
         shell: bash
         run: |
-          find . -maxdepth 3 -name "dsi_studio" -print
-          ls -l ./dsi-studio/dsi_studio
-          chmod 777 ./dsi-studio/dsi_studio
-          echo "DSI_EXE=./dsi-studio/dsi_studio" >> "$GITHUB_ENV"
+          find "${{ matrix.platform.path }}" -maxdepth 6 -name "${{ matrix.platform.exe }}" -print
+          ls -l "${{ matrix.platform.bin }}/${{ matrix.platform.exe }}"
+          chmod +x "${{ matrix.platform.bin }}/${{ matrix.platform.exe }}" || true
+          echo "$PWD/${{ matrix.platform.bin }}" >> "$GITHUB_PATH"
 
-      - name: Prepare Windows DSI Studio
-        if: ${{ runner.os == 'Windows' }}
-        shell: bash
-        run: |
-          find . -maxdepth 3 -name "dsi_studio.exe" -print
-          ls -l ./dsi_studio_win/dsi_studio.exe
-          echo "DSI_EXE=./dsi_studio_win/dsi_studio.exe" >> "$GITHUB_ENV"
-
-      - name: Cache FSL environment
+      - name: Cache FSL
         if: ${{ runner.os == 'Linux' && matrix.routine == 'topup' }}
         id: cache-fsl
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: /opt/fsl
-          key: ${{ runner.os }}-fsl6.0.5.2
+          key: linux-fsl6.0.5.2
 
-      - name: Prepare FSL environment
+      - name: Install FSL
         if: ${{ runner.os == 'Linux' && matrix.routine == 'topup' && steps.cache-fsl.outputs.cache-hit != 'true' }}
         shell: bash
         run: |
@@ -177,7 +187,7 @@ jobs:
             --exclude='fsl/extras/src' \
             --exclude='fsl/src'
 
-      - name: Set FSL environment
+      - name: Set FSL Environment
         if: ${{ runner.os == 'Linux' && matrix.routine == 'topup' }}
         shell: bash
         run: |
@@ -195,6 +205,7 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
+          which dsi_studio
 
           case "${{ matrix.routine }}" in
 
@@ -206,45 +217,45 @@ jobs:
               rm download.zip
               cd ..
 
-              "$DSI_EXE" --action=ren --source=./data/
-              "$DSI_EXE" --action=src --source=./data/
+              dsi_studio --action=ren --source=./data/
+              dsi_studio --action=src --source=./data/
 
               mv ./data/*/*.nii.gz ./data
               cd data
-              ../$DSI_EXE --action=img --source=*.nii.gz --cmd=change_type:3+normalize_otsu_median+upper_threshold:1+normalize:1+change_type:0 --output=../
+              dsi_studio --action=img --source=*.nii.gz --cmd=change_type:3+normalize_otsu_median+upper_threshold:1+normalize:1+change_type:0 --output=../
               ;;
 
             image-processing)
               curl -sL https://github.com/data-openneuro/brain/releases/download/ds000113/sub-01_ses-forrestgump_T1w.nii.gz -o sub-01_ses-forrestgump_T1w.nii.gz
 
-              "$DSI_EXE" --action=img --source=sub-01_ses-forrestgump_T1w.nii.gz --cmd=change_type:3+bias_field_correction+normalize_otsu_median+change_type:0 --output=sub-01_ses-forrestgump_T1w_norm.nii.gz
+              dsi_studio --action=img --source=sub-01_ses-forrestgump_T1w.nii.gz --cmd=change_type:3+bias_field_correction+normalize_otsu_median+change_type:0 --output=sub-01_ses-forrestgump_T1w_norm.nii.gz
               ls sub-01_ses-forrestgump_T1w_norm.nii.gz
 
-              "$DSI_EXE" --action=img --source=sub-01_ses-forrestgump_T1w.nii.gz --cmd=segmentation --output=sub-01_ses-forrestgump_T1w_seg.nii.gz --model=human_synthseg
+              dsi_studio --action=img --source=sub-01_ses-forrestgump_T1w.nii.gz --cmd=segmentation --output=sub-01_ses-forrestgump_T1w_seg.nii.gz --model=human_synthseg
               ls sub-01_ses-forrestgump_T1w_seg.nii.gz
               ;;
 
             bids)
               aws s3 sync s3://openneuro.org/ds001378/ ./ds001378 --no-sign-request --region eu-west-1 --exclude "*bold*"
 
-              "$DSI_EXE" --action=src --source=./ds001378/
+              dsi_studio --action=src --source=./ds001378/
               ls ./ds001378/*/*/*/*.sz
 
               mv ./ds001378/*/*/*/*.sz .
-              "$DSI_EXE" --action=rec --source=*.sz
+              dsi_studio --action=rec --source=*.sz
               ls *.fz
               ;;
 
             animal-recon)
               curl -sL "https://zenodo.org/record/6321169/files/mountsinai-S-sub-032156_dwi.src.gz?download=1" -o rhesus.src.gz
 
-              "$DSI_EXE" --source=*.src.gz --action=rec --method=1
+              dsi_studio --source=*.src.gz --action=rec --method=1
               ls rhesus.dti.fz
 
-              "$DSI_EXE" --source=*.src.gz --action=rec
+              dsi_studio --source=*.src.gz --action=rec
               ls rhesus.gqi.fz
 
-              "$DSI_EXE" --source=*.src.gz --action=rec --method=7
+              dsi_studio --source=*.src.gz --action=rec --method=7
               ls rhesus.qsdr.fz
               ;;
 
@@ -253,54 +264,42 @@ jobs:
               curl -sL https://github.com/data-openneuro/brain/releases/download/ds000244/sub-01_ses-00_dwi.sz -o dti.sz
               curl -sL https://github.com/data-openneuro/brain/releases/download/ds000031/sub-01_ses-004_dwi.sz -o ms.sz
 
-              "$DSI_EXE" --source=*.sz --action=rec --method=1
-              ls dsi.dti.fz
-              ls dti.dti.fz
-              ls ms.dti.fz
+              dsi_studio --source=*.sz --action=rec --method=1
+              ls dsi.dti.fz dti.dti.fz ms.dti.fz
 
-              "$DSI_EXE" --source=*.sz --action=rec
-              ls dsi.gqi.fz
-              ls dti.gqi.fz
-              ls ms.gqi.fz
+              dsi_studio --source=*.sz --action=rec
+              ls dsi.gqi.fz dti.gqi.fz ms.gqi.fz
 
-              "$DSI_EXE" --source=*.sz --action=rec --method=7 --template=0
-              ls dsi.qsdr.fz
-              ls dti.qsdr.fz
-              ls ms.qsdr.fz
+              dsi_studio --source=*.sz --action=rec --method=7 --template=0
+              ls dsi.qsdr.fz dti.qsdr.fz ms.qsdr.fz
               ;;
 
             human-tracking-qsdr)
               curl -sL https://github.com/data-others/tract/blob/main/human.fz?raw=true -o human.fz
               curl -sL https://github.com/data-hcp/lifespan/releases/download/hcp-ya/100206.gqi.fz -o 100206.gqi.fz
 
-              "$DSI_EXE" --source=human.fz --action=trk --output=icbm152.tt.gz --export=stat,tdi
-              "$DSI_EXE" --source=100206.gqi.fz --action=trk --output=100206.tt.gz --export=stat,tdi
-              ls icbm152.tt.gz
-              ls icbm152.tt.gz.tdi.nii.gz
-              ls icbm152.tt.gz.stat.txt
-              ls 100206.tt.gz
-              ls 100206.tt.gz.tdi.nii.gz
-              ls 100206.tt.gz.stat.txt
+              dsi_studio --source=human.fz --action=trk --output=icbm152.tt.gz --export=stat,tdi
+              dsi_studio --source=100206.gqi.fz --action=trk --output=100206.tt.gz --export=stat,tdi
+              ls icbm152.tt.gz icbm152.tt.gz.tdi.nii.gz icbm152.tt.gz.stat.txt
+              ls 100206.tt.gz 100206.tt.gz.tdi.nii.gz 100206.tt.gz.stat.txt
 
-              "$DSI_EXE" --source=human.fz --action=trk --track_id=ArcuateFasciculusL --tip_iteration=0 --output=AF_L.tt.gz
-              "$DSI_EXE" --source=100206.gqi.fz --action=trk --track_id=ArcuateFasciculusL --tip_iteration=0 --output=100206.AF_L.tt.gz
-              ls AF_L.tt.gz
-              ls 100206.AF_L.tt.gz
+              dsi_studio --source=human.fz --action=trk --track_id=ArcuateFasciculusL --tip_iteration=0 --output=AF_L.tt.gz
+              dsi_studio --source=100206.gqi.fz --action=trk --track_id=ArcuateFasciculusL --tip_iteration=0 --output=100206.AF_L.tt.gz
+              ls AF_L.tt.gz 100206.AF_L.tt.gz
 
-              "$DSI_EXE" --source=human.fz --action=trk --seed_count=1000000 --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=LR.tt.gz
-              "$DSI_EXE" --source=100206.gqi.fz --action=trk --seed_count=1000000 --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=100206.LR.tt.gz
-              ls LR.tt.gz
-              ls 100206.LR.tt.gz
+              dsi_studio --source=human.fz --action=trk --seed_count=1000000 --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=LR.tt.gz
+              dsi_studio --source=100206.gqi.fz --action=trk --seed_count=1000000 --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=100206.LR.tt.gz
+              ls LR.tt.gz 100206.LR.tt.gz
 
-              "$DSI_EXE" --source=human.fz --action=trk --tract_count=1000000 --output=no_file --connectivity=FreeSurferDKT_Cortical
-              "$DSI_EXE" --source=100206.gqi.fz --action=trk --tract_count=1000000 --output=no_file --connectivity=FreeSurferDKT_Cortical
+              dsi_studio --source=human.fz --action=trk --tract_count=1000000 --output=no_file --connectivity=FreeSurferDKT_Cortical
+              dsi_studio --source=100206.gqi.fz --action=trk --tract_count=1000000 --output=no_file --connectivity=FreeSurferDKT_Cortical
               ls human.fz.tt.gz.FreeSurferDKT_Cortical.connectivity.mat
               ls 100206.gqi.fz.tt.gz.FreeSurferDKT_Cortical.connectivity.mat
               ;;
 
             db)
               curl -fsSL https://api.github.com/repos/data-openneuro/disease/releases/tags/ds001378 -o release.json
-            
+
               jq -r '.assets[]
                 | select((.name | endswith(".qsdr.fz")) or .name == "participants.tsv")
                 | [.name, .browser_download_url]
@@ -311,47 +310,42 @@ jobs:
                 echo "Downloading $name"
                 curl -fL --retry 3 "$url" -o "$name"
               done
-            
-              ls *.qsdr.fz
-              ls participants.tsv
-            
-              "$DSI_EXE" --source=*.qsdr.fz --action=db --output=sca2.dz
+
+              ls *.qsdr.fz participants.tsv
+
+              dsi_studio --source=*.qsdr.fz --action=db --output=sca2.dz
               ls sca2.dz
-            
-              "$DSI_EXE" --source=sca2.dz --action=cnt --voi=0 --variable_list=0,1,2 --index_name=dti_fa
+
+              dsi_studio --source=sca2.dz --action=cnt --voi=0 --variable_list=0,1,2 --index_name=dti_fa
               cat *.html
-              ls *.dec.no_tract.txt
-              ls *.inc.tt.gz
+              ls *.dec.no_tract.txt *.inc.tt.gz
               ;;
 
             connectometry)
               curl -sL https://github.com/data-openneuro/disease/releases/download/ds001378/sub-all.dz -o sub-all.dz
 
-              "$DSI_EXE" --source=sub-all.dz --action=cnt_cl --variable_list=0,1,2 --voi=0 --index_name=qa
+              dsi_studio --source=sub-all.dz --action=cnt_cl --variable_list=0,1,2 --voi=0 --index_name=qa
               cat *.html
-              ls *.dec.no_tract.txt
-              ls *.inc.tt.gz
+              ls *.dec.no_tract.txt *.inc.tt.gz
               ;;
 
             human-tracking-gqi)
               curl -sL https://github.com/data-openneuro/brain/releases/download/ds001771/sub-03_dwi.gqi.fz -o gqi.fz
               curl -sL https://github.com/frankyeh/data-atlas/blob/main/human/human_QA.nii.gz?raw=true -o human_QA.nii.gz
 
-              "$DSI_EXE" --source=gqi.fz --action=trk --output=gqi.tt.gz --export=stat,tdi
-              ls gqi.tt.gz
-              ls gqi.tt.gz.tdi.nii.gz
-              ls gqi.tt.gz.stat.txt
+              dsi_studio --source=gqi.fz --action=trk --output=gqi.tt.gz --export=stat,tdi
+              ls gqi.tt.gz gqi.tt.gz.tdi.nii.gz gqi.tt.gz.stat.txt
 
-              "$DSI_EXE" --source=gqi.fz --action=trk --track_id=ArcuateFasciculusL --tip_iteration=0 --output=AF_L.tt.gz
+              dsi_studio --source=gqi.fz --action=trk --track_id=ArcuateFasciculusL --tip_iteration=0 --output=AF_L.tt.gz
               ls AF_L.tt.gz
 
-              "$DSI_EXE" --source=gqi.fz --action=trk --seed_count=1000000 --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=LR.tt.gz
+              dsi_studio --source=gqi.fz --action=trk --seed_count=1000000 --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=LR.tt.gz
               ls LR.tt.gz
 
-              "$DSI_EXE" --source=gqi.fz --action=trk --output=no_file --connectivity=FreeSurferDKT_Cortical
+              dsi_studio --source=gqi.fz --action=trk --output=no_file --connectivity=FreeSurferDKT_Cortical
               ls gqi.fz.tt.gz.FreeSurferDKT_Cortical.connectivity.mat
 
-              "$DSI_EXE" --source=gqi.fz --action=trk --other_slices=human_QA.nii.gz --dt_metric1=human_QA --dt_metric2=qa --seed_count=1000000 --dt_threshold=0.1 --output=dt.tt.gz
+              dsi_studio --source=gqi.fz --action=trk --other_slices=human_QA.nii.gz --dt_metric1=human_QA --dt_metric2=qa --seed_count=1000000 --dt_threshold=0.1 --output=dt.tt.gz
               ls dt.tt.gz
               ;;
 
@@ -360,14 +354,13 @@ jobs:
               git clone https://github.com/frankyeh/data-atlas.git
               mv data-atlas atlas
 
-              "$DSI_EXE" --source=100206.gqi.fz --action=exp --export=qa,iso
-              ls 100206.gqi.fz.qa.nii.gz
-              ls 100206.gqi.fz.iso.nii.gz
+              dsi_studio --source=100206.gqi.fz --action=exp --export=qa,iso
+              ls 100206.gqi.fz.qa.nii.gz 100206.gqi.fz.iso.nii.gz
 
-              "$DSI_EXE" --action=reg --source=100206.gqi.fz.qa.nii.gz --to=./atlas/human/human_QA.nii.gz
+              dsi_studio --action=reg --source=100206.gqi.fz.qa.nii.gz --to=./atlas/human/human_QA.nii.gz
               ls 100206.gqi.fz.qa.nii.gz.wp.nii.gz
 
-              "$DSI_EXE" --action=reg --source=100206.gqi.fz.qa.nii.gz,100206.gqi.fz.iso.nii.gz --to=./atlas/human/human_QA.nii.gz,./atlas/human/human_ISO.nii.gz
+              dsi_studio --action=reg --source=100206.gqi.fz.qa.nii.gz,100206.gqi.fz.iso.nii.gz --to=./atlas/human/human_QA.nii.gz,./atlas/human/human_ISO.nii.gz
               ls 100206.gqi.fz.qa.nii.gz.wp.nii.gz
               ;;
 
@@ -375,14 +368,14 @@ jobs:
               curl -sL https://github.com/data-hcp/lifespan/releases/download/hcp-ya/100206.gqi.fz -o 100206.gqi.fz
               curl -sL https://github.com/data-hcp/lifespan/releases/download/hcp-ya/100307.gqi.fz -o 100307.gqi.fz
 
-              "$DSI_EXE" --source=*.fz --action=atk --track_id=ArcuateFasciculusL
+              dsi_studio --source=*.fz --action=atk --track_id=ArcuateFasciculusL
               ls */*ArcuateFasciculusL.tt.gz
               ;;
 
             src-construction)
               aws s3 sync --no-sign-request --region eu-west-1 --exclude "*" --include "*dwi.*" s3://openneuro.org/ds002087 ds002087
 
-              "$DSI_EXE" --action=src --source=ds002087
+              dsi_studio --action=src --source=ds002087
               ls ds002087/sub-01/dwi/sub-01_run-1_dwi.nii.gz
               ls ds002087/sub-01/dwi/sub-01_run-2_dwi.nii.gz
               ;;
@@ -390,7 +383,7 @@ jobs:
             topup)
               aws s3 sync --no-sign-request --region eu-west-1 --exclude "*" --include "*dwi.*" s3://openneuro.org/ds002080/sub-CON02/ses-postop .
 
-              "$DSI_EXE" --action=src --bids=1 --topup_eddy=1 --source=./dwi
+              dsi_studio --action=src --bids=1 --topup_eddy=1 --source=./dwi
               ;;
 
           esac
