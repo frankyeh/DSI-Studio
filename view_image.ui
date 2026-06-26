@@ -523,7 +523,7 @@
     <addaction name="actionMorphology_Edge"/>
     <addaction name="actionMorphology_XY"/>
     <addaction name="actionMorphology_XZ"/>
-    <addaction name="actionReclassify"/>
+    <addaction name="actionRefine"/>
    </widget>
    <widget class="QMenu" name="menu_Edit">
     <property name="title">
@@ -1007,6 +1007,9 @@
    <property name="toolTip">
     <string>Apply max operator with another image</string>
    </property>
+   <property name="statusTip">
+    <string>file</string>
+   </property>
   </action>
   <action name="actionMin_Image">
    <property name="icon">
@@ -1018,6 +1021,9 @@
    </property>
    <property name="toolTip">
     <string>Apply min operator with another image</string>
+   </property>
+   <property name="statusTip">
+    <string>file</string>
    </property>
   </action>
   <action name="actionMorphology_Defragment_By_Size">
@@ -1134,13 +1140,20 @@
    <property name="text">
     <string>Apply To Image...</string>
    </property>
+   <property name="statusTip">
+    <string>file</string>
+   </property>
   </action>
-  <action name="actionReclassify">
+  <action name="actionRefine">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+   </property>
    <property name="text">
-    <string>Reclassify...</string>
+    <string>Refine Label...</string>
    </property>
    <property name="toolTip">
-    <string>Reclassify labels given a reference image</string>
+    <string>Adjust labels given a reference image</string>
    </property>
    <property name="statusTip">
     <string>file</string>
