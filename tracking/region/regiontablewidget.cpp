@@ -1292,7 +1292,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
     tipl::progress prog(action.toStdString(),true);
     {
         if(action == "1st_ex_all" || action == "all_ex_1st" || action == "all_inter_1st" || action == "all_to_1st" ||
-           action == "reclassify")
+           action == "refine_label")
         {
             if(checked_regions.size() < 2)
                 return false;
@@ -1437,13 +1437,13 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                 tipl::morphology::fill_and_smooth_labels<void>(A,A_labels);
                 load_labels(A_labels,1);
             }
-            else if(action == "reclassify")
+            else if(action == "refine_label")
             {
                 auto labels = make_labels();
                 tipl::image<3,float> ref;
                 if(!get_ref(ref,base_dim,base_to_dif))
                     return false;
-                tipl::out() << "total flipped voxels: " << tipl::morphology::reclassify(labels,ref);
+                tipl::out() << "total flipped voxels: " << tipl::morphology::refine_label(labels,ref);
                 load_labels(labels);
             }
         }
