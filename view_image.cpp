@@ -1088,7 +1088,7 @@ void view_image::run_action2()
     if(!action)
         return;
     QString value;
-    if(action->text().toLower().contains(" image..."))
+    if(action->statusTip() == "file")
         value = tipl::qt::open_image_file(this,
                                           tipl::qt::to_qstring(file_name.parent_path()),"NIFTI file(*nii.gz *.nii)");
     else
