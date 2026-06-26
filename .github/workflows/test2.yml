@@ -53,17 +53,12 @@ jobs:
           push: false
           outputs: dsi-studio
 
-      - name: Packaging
+      - name: Upload Linux Build
         if: ${{ inputs.build_prerelease }}
-        run: |
-          zip -r dsi_studio_prerelease.zip dsi-studio
-
-      - name: Create Release
-        if: ${{ inputs.build_prerelease }}
-        env:
-          GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
-        run: |
-          gh release upload ${{ inputs.tag }} *.zip --clobber --repo frankyeh/DSI-Studio
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsi_studio_linux
+          path: dsi-studio
           
   windows-cpu-build:
     runs-on: windows-2022
@@ -131,13 +126,20 @@ jobs:
         with:
           name: dsi_studio_win_cpu
           path: dsi_studio_win
-
+          
+      - name: Download Linux Build
+        if: ${{ runner.os == 'Linux' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: dsi_studio_linux
+          path: dsi-studio
+          
       - name: Prepare Linux DSI Studio
         if: ${{ runner.os == 'Linux' }}
         shell: bash
         run: |
-          curl -sL "https://github.com/frankyeh/DSI-Studio/releases/download/${{ inputs.tag }}/dsi_studio_prerelease.zip" -o dsi_studio_prerelease.zip
-          jar xf dsi_studio_prerelease.zip
+          find . -maxdepth 3 -name "dsi_studio" -print
+          ls -l ./dsi-studio/dsi_studio
           chmod 777 ./dsi-studio/dsi_studio
           echo "DSI_EXE=./dsi-studio/dsi_studio" >> "$GITHUB_ENV"
 
