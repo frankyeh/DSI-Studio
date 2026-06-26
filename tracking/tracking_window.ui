@@ -5066,10 +5066,10 @@ Tracking</string>
   </action>
   <action name="actionReclassify">
    <property name="text">
-    <string>Reclassify...</string>
+    <string>Refine Label...</string>
    </property>
    <property name="toolTip">
-    <string>run region_action_reclassify</string>
+    <string>run region_action_refine_label</string>
    </property>
   </action>
  </widget>
