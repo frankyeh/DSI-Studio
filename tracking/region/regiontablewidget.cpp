@@ -1443,12 +1443,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                 tipl::image<3,float> ref;
                 if(!get_ref(ref,base_dim,base_to_dif))
                     return false;
-
-                float prior_weight = cmd[2].empty() ? 12.0f : QString::fromStdString(cmd[2]).toFloat();
-                size_t total = 0;
-                while((total = tipl::morphology::reclassify(labels,ref,prior_weight)) == 0 && prior_weight > 4.0f)
-                    prior_weight -= 1.0f;
-                tipl::out() << "total flipped voxels: " << total << " at prior: " << prior_weight;
+                tipl::out() << "total flipped voxels: " << tipl::morphology::reclassify(labels,ref);
                 load_labels(labels);
             }
         }
