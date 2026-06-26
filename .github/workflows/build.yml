@@ -279,13 +279,13 @@ jobs:
           echo "Error: dsi_studio.exe not found!" >&2
           exit /b 1
         )
-        move dsi_studio_win.zip dsi_studio_win_cpu_temp.zip
+        move dsi_studio_win.zip dsi_studio_win_cpu.zip
       shell: cmd
     - name: Create Release
       env:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
       run: |
-        gh release upload ${{ github.event.inputs.tag }} dsi_studio_win_cpu_temp.zip --clobber
+        gh release upload ${{ github.event.inputs.tag }} dsi_studio_win_cpu.zip --clobber
 
   windows_build_cpu_debug:
     if: ${{ github.event.inputs.build_windows_debug == 'true' }}
@@ -367,12 +367,12 @@ jobs:
           echo "Error: dsi_studio.exe not found!" >&2
           exit /b 1
         )
-        move dsi_studio_win.zip dsi_studio_win_temp.zip
+        move dsi_studio_win.zip dsi_studio_win.zip
       shell: cmd
     - name: Create Release
       env:
         GH_TOKEN: ${{ secrets.DSISTUDIO_TOKEN }}
       run: |
-        gh release upload ${{ github.event.inputs.tag }} dsi_studio_win_temp.zip --clobber        
+        gh release upload ${{ github.event.inputs.tag }} dsi_studio_win.zip --clobber        
         
           
