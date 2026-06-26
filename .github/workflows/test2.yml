@@ -300,22 +300,24 @@ jobs:
 
             db)
               curl -fsSL https://api.github.com/repos/data-openneuro/disease/releases/tags/ds001378 -o release.json
-
+            
               jq -r '.assets[]
                 | select((.name | endswith(".qsdr.fz")) or .name == "participants.tsv")
                 | [.name, .browser_download_url]
                 | @tsv' release.json |
               while IFS=$'\t' read -r name url; do
+                name="${name//$'\r'/}"
+                url="${url//$'\r'/}"
                 echo "Downloading $name"
                 curl -fL --retry 3 "$url" -o "$name"
               done
-
+            
               ls *.qsdr.fz
               ls participants.tsv
-  
+            
               "$DSI_EXE" --source=*.qsdr.fz --action=db --output=sca2.dz
               ls sca2.dz
-
+            
               "$DSI_EXE" --source=sca2.dz --action=cnt --voi=0 --variable_list=0,1,2 --index_name=dti_fa
               cat *.html
               ls *.dec.no_tract.txt
