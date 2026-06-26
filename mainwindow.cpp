@@ -63,6 +63,13 @@ void checkForVersionSpecificBugs_Minimal(const QString& bugListText)
     {
         if (!line.contains("versions"))
             continue;
+        if (line.contains("windows") && !QSysInfo::productType().contains("windows"))
+            continue;
+        if (line.contains("macos") && !QSysInfo::productType().contains("macos"))
+            continue;
+        if (line.contains("ubuntu") && !QSysInfo::productType().contains("ubuntu"))
+            continue;
+
         int start = line.indexOf('['), end = line.indexOf(']');
         if (start == -1 || end == -1 || end <= start)
             continue;
