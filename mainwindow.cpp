@@ -210,16 +210,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
             }
 
-            if((host_name.contains(" LLC") || host_name.contains(" L.L.C") || host_name.contains(" Inc") || host_name.contains(" INC")) &&
-                !host_name.toLower().contains("com") && !host_name.toLower().contains("tel"))
-            {
-                auto notice = new QLabel("This license agreement does not cover commercial use. For commercial usage, please contact frank.yeh@gmail.com to obtain a commercial license.");
-                notice->setWordWrap(true);
-                notice->setStyleSheet("color: red; font-weight: bold;");
-                right_layout->addWidget(notice);
-            }
-
-
             {
                 auto registry_info = new QLabel("Registering Information: " + host_name + "," + address);
                 registry_info->setWordWrap(true);
