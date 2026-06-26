@@ -128,7 +128,7 @@ jobs:
           - os: macos-14
             artifact: dsi_studio_macos_arm
             path: dsi_studio_macos_arm
-            bin: dsi_studio_macos_arm/dsi_studio.app/Contents/MacOS
+            bin: dsi_studio_macos_arm/Contents/MacOS
             exe: dsi_studio
 
         routine:
