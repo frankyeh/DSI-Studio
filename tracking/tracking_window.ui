@@ -1280,7 +1280,7 @@
      <addaction name="actionAll_To_First"/>
      <addaction name="separator"/>
      <addaction name="actionDilation_by_voxel"/>
-     <addaction name="actionReclassify"/>
+     <addaction name="actionRefine_Label"/>
     </widget>
     <addaction name="actionThreshold"/>
     <addaction name="actionNew_Region_From_MNI_Coordinate"/>
@@ -5064,7 +5064,7 @@ Tracking</string>
     <string>run cut_tract_RAI_end</string>
    </property>
   </action>
-  <action name="actionReclassify">
+  <action name="actionRefine_Label">
    <property name="text">
     <string>Refine Label...</string>
    </property>
