@@ -488,10 +488,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         if(!cur_tracking_window.history.get_filename(this,cmd[1],regions[cur_row]->name + output_format().toStdString()))
             return run->canceled();
 
-        if(!tipl::ends_with(cmd[1],".mat") &&
-           !tipl::ends_with(cmd[1],".txt") &&
-           !tipl::ends_with(cmd[1],".nii") &&
-           !tipl::ends_with(cmd[1],".nii.gz"))
+        if(!tipl::ends_with(cmd[1],{".mat",".txt",".nii",".nii.gz"}))
             cmd[1] += ".nii.gz";
         if(!regions[cur_row]->save_region_to_file(cmd[1]))
             return run->failed("cannot save region to "+cmd[1]);
