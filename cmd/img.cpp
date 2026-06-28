@@ -104,6 +104,7 @@ bool variant_image::command(std::string cmd,std::string param1)
                 tipl::io::apply_flip_swap_seq(unet.eval.label,flip_swap_seq,true);
                 I_int8 = std::move(unet.eval.label);
             }
+
             return;
         }
 
@@ -164,7 +165,10 @@ bool variant_image::command(std::string cmd,std::string param1)
     });
 
     if(cmd == "segmentation")
+    {
         pixel_type = variant_image::int8;
+        interpolation = false;
+    }
     return result;
 }
 void variant_image::write_mat_image(size_t index,
