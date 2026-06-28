@@ -882,6 +882,8 @@ void view_image::show_image(bool update_others)
     {
         return tipl::volume2slice_scaled(data,d,size_t(z),ui->zoom->value());
     };
+    std::vector<tipl::image<2,uint8_t> > overlay_region_masks;
+    std::vector<tipl::rgb> overlay_region_colors;
 
     switch(ui->overlay_style->currentIndex())
     {
@@ -897,6 +899,26 @@ void view_image::show_image(bool update_others)
             if(overlay_images_visible[i] && opened_images[overlay_images[i]])
             opened_images[overlay_images[i]]->cur_image->apply([&](auto& data)
             {
+                if(!opened_images[overlay_images[i]]->cur_image->interpolation)
+                {
+                    auto slice = tipl::volume2slice(data,d,size_t(z));
+                    std::map<uint32_t,size_t> label_to_mask;
+                    for(size_t j = 0;j < slice.size();++j)
+                    {
+                        uint32_t label = uint32_t(slice[j]);
+                        if(!label)
+                            continue;
+                        auto r = label_to_mask.insert(std::make_pair(label,overlay_region_masks.size()));
+                        if(r.second)
+                        {
+                            overlay_region_masks.emplace_back(slice.shape());
+                            overlay_region_colors.push_back(tipl::rgb::generate_hue(label));
+                            overlay_region_colors.back().a = 255;
+                        }
+                        overlay_region_masks[r.first->second][j] = 1;
+                    }
+                    return;
+                }
                 tipl::color_image buffer2(
                     opened_images[overlay_images[i]]->v2c[get_slice(data)]);
                 for(size_t j = 0;j < buffer.size();++j)
@@ -925,9 +947,28 @@ void view_image::show_image(bool update_others)
 
 
     if(swap_xy)
+    {
         tipl::swap_xy(buffer);
+        for(auto& mask : overlay_region_masks)
+            tipl::swap_xy(mask);
+    }
+
+    QImage region_image;
+    if(!overlay_region_masks.empty())
+        region_image = tipl::qt::draw_regions(
+            overlay_region_masks,overlay_region_colors,1,1,-1,ui->zoom->value());
+
     source_image << buffer;
     source_image = source_image.mirrored(flip_x,flip_y);
+
+    if(!region_image.isNull())
+    {
+        region_image = region_image.mirrored(flip_x,flip_y);
+        QPainter painter(&source_image);
+        painter.setCompositionMode(QPainter::CompositionMode(QPainter::CompositionMode_SourceAtop));
+        painter.drawImage(0,0,region_image);
+    }
+
     {
         QPainter paint(&source_image);
 
