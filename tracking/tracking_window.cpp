@@ -329,6 +329,15 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 addSlices("t2w_template",handle->t2w_template_file_name);
                 addSlices("wm_template",handle->wm_template_file_name);
             }
+            {
+                auto name = handle->fib_file_name.filename().u8string();
+                if(name.find("sub-") == 0)
+                    if(auto pos = name.find_last_of('_');pos != std::string::npos)
+                        for(const auto& each : tipl::search_files(handle->fib_file_name.parent_path(),
+                                                                   name.substr(0,pos) + "_*"))
+                            if(each != handle->fib_file_name)
+                                addSlices(each.stem().stem().u8string(),each);
+            }
 
             if(!handle->other_images.empty())
                 for(const auto& each : tipl::split(handle->other_images,','))
