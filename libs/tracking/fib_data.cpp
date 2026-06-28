@@ -532,10 +532,7 @@ bool fib_data::load_from_file(const std::filesystem::path& file_name)
     {
         tipl::io::bruker_2dseq bruker_header;
         if(!bruker_header.load_from_file(file_name))
-        {
-            error_msg = "Invalid 2dseq format";
-            return false;
-        }
+            return error_msg = "Invalid 2dseq format",false;
         bruker_header.get_image().swap(I);
         bruker_header.get_voxel_size(vs);
         tipl::io::initial_nifti_srow(trans_to_mni,I.shape(),vs);
@@ -545,10 +542,7 @@ bool fib_data::load_from_file(const std::filesystem::path& file_name)
     }
     else
         if(tipl::ends_with(file_name_str,{".trk.gz",".trk",".tck",".tt.gz"}) && !load_fib_from_tracks(file_name_str,I,vs,trans_to_mni))
-        {
-            error_msg = "Invalid track format";
-            return false;
-        }
+            return error_msg = "Invalid track format",false;
 
     if(!I.empty())
     {
@@ -560,8 +554,8 @@ bool fib_data::load_from_file(const std::filesystem::path& file_name)
         dir.findex_buf[0].resize(dir.fa_buf[0].size());
         dir.findex = {dir.findex_buf[0].data()};
         dir.fa = {dir.fa_buf[0].data()};
-        dir.index_name_data.push_back({"image",{dir.fa_buf[0].data()}});
-        slices.push_back(std::make_shared<slice_model>("image", dir.fa_buf[0].data(), dim));
+        dir.index_name_data.push_back({file_name.filename().u8string(),{dir.fa_buf[0].data()}});
+        slices.push_back(std::make_shared<slice_model>(file_name.filename().u8string(), dir.fa_buf[0].data(), dim));
         slices[0]->max_value = 0.0;// this allows calculating the min and max contrast
         trackable = false;
         tipl::out() << "dim: " << dim << " vs: " << vs;
@@ -762,7 +756,7 @@ bool check_fib_dim_vs(tipl::io::gz_mat_read& mat_reader,
         }
         else
         {
-            if(mat_reader.has("trans") && !mat_reader.has("image") && mat_reader.has("report")
+            if(mat_reader.has("trans") && mat_reader.has("report")
                 && tipl::contains(mat_reader.read<std::string>("report"),"q-space diffeomorphic"))
                 is_mni = true;
         }
@@ -775,26 +769,23 @@ tipl::const_pointer_image<3,unsigned char> handle_mask(tipl::io::gz_mat_read& ma
 {
     const unsigned char* mask_ptr = nullptr;
     tipl::shape<3> dim;
-    if(mat_reader.read_pointer("dimension",dim))
+    if(mat_reader.read_pointer("dimension",dim) &&
+       !mat_reader.read("mask",mask_ptr))
     {
-        if(!mat_reader.read("mask",mask_ptr))
-        {
-            auto mask_mat = std::make_shared<tipl::io::mat_matrix>("mask",uint8_t(0),uint32_t(dim.plane_size()),dim.depth());
-            auto& mask_buffer = mask_mat->data_buf;
+        auto mask_mat = std::make_shared<tipl::io::mat_matrix>("mask",uint8_t(0),uint32_t(dim.plane_size()),dim.depth());
+        auto& mask_buffer = mask_mat->data_buf;
 
-            const float* fa0_ptr = nullptr;
-            if(mat_reader.read("fa0",fa0_ptr) ||    // create mask from fib's fa map
-               mat_reader.read("image0",fa0_ptr) || // create mask from src's b0
-               mat_reader.read("image",fa0_ptr))    // create mask from t1w/t2w images
-            {
-                for(size_t i = 0,sz = dim.size();i < sz;++i)
-                    if(fa0_ptr[i] > 0.0f)
-                        mask_buffer[i] = 1;
-            }
-            mask_ptr = mask_buffer.data();
-            mat_reader.push_back(mask_mat);
-            tipl::out() << "mask created from the images";
+        const float* fa0_ptr = nullptr;
+        if(mat_reader.read("fa0",fa0_ptr) ||    // create mask from fib's fa map
+           mat_reader.read("image0",fa0_ptr))  // create mask from src's b0
+        {
+            for(size_t i = 0,sz = dim.size();i < sz;++i)
+                if(fa0_ptr[i] > 0.0f)
+                    mask_buffer[i] = 1;
         }
+        mask_ptr = mask_buffer.data();
+        mat_reader.push_back(mask_mat);
+        tipl::out() << "mask created from the images";
     }
     if(mask_ptr)
     {
@@ -809,21 +800,14 @@ bool fib_data::load_from_mat(void)
 {
     if(!check_fib_dim_vs(mat_reader,dim,vs,trans_to_mni,
                          is_mni = tipl::contains(std::filesystem::path(fib_file_name).filename().string(),".qsdr.")))
-    {
-        error_msg = mat_reader.error_msg;
-        return false;
-    }
+        return error_msg = mat_reader.error_msg,false;
     mask = handle_mask(mat_reader);
     if(mask.empty())
-    {
-        error_msg = "invalid fib file: cannot create mask";
-        return false;
-    }
+        return error_msg = "invalid fib file: cannot create mask",false;
     mat_reader.read("report",report);
     mat_reader.read("steps",steps);
     mat_reader.read("intro",intro);
     mat_reader.read("other_images",other_images);
-
 
     if(!dir.add_data(*this))
         return error_msg = dir.error_msg,false;
@@ -2136,14 +2120,10 @@ bool fib_data::map_to_mni(bool background)
 
 
         // not FIB file, use t1w/t1w or others as template
-        if(dir.index_name_data[0].first == "image")
+        if(mask.empty())
         {
             if(!to_t1wt2w_templates(reg,template_id,is_be))
-            {
-                error_msg = "cannot perform normalization";
-                tipl::prog_aborted = true;
-                return;
-            }
+                return error_msg = "cannot perform normalization",tipl::prog_aborted = true,void();
         }
         else
             reg.match_resolution(false);
