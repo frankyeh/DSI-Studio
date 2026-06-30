@@ -298,7 +298,6 @@ bool find_bval_bvec(const std::filesystem::path& file_name, std::filesystem::pat
 bool load_4d_nii(const std::filesystem::path& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
                  bool search_bvalbvec,
                  bool must_have_bval_bvec,
-                 bool scale_signal,
                  std::string& error_msg)
 {
     tipl::vector<3,float> vs;
@@ -338,36 +337,6 @@ bool load_4d_nii(const std::filesystem::path& file_name,std::vector<std::shared_
         {
             error_msg = "not a 4D nifti file";
             return false;
-        }
-    }
-
-
-    // if the imaging value is larger than 16-bit integer, then scale it.
-    if(scale_signal)
-    {
-        float max_value = 0.0f;
-        for(unsigned int index = 0;index < dwi_data.size();++index)
-            max_value = std::max<float>(max_value,tipl::max_value(dwi_data[index]));
-        if(max_value > float(std::numeric_limits<unsigned short>::max()-1))
-        {
-            float scale = float(std::numeric_limits<unsigned short>::max()-1)/max_value;
-            tipl::par_for(dwi_data.size(),[&](unsigned int index){
-                dwi_data[index] *= scale;
-            });
-        }
-        if(max_value < 256.0f && max_value != 0.0f)
-        {
-            tipl::out() << "The maximum signal is only " << max_value;
-            float scale = 1.0f;
-            while(max_value*scale*32.0f < std::numeric_limits<unsigned short>::max())
-                scale *= 32.0f;
-            if(scale != 1.0f)
-            {
-                tipl::out() << "scaling the image by " << scale << std::endl;
-                tipl::par_for(dwi_data.size(),[&](unsigned int index){
-                    dwi_data[index] *= scale;
-                });
-            }
         }
     }
 
@@ -454,15 +423,13 @@ bool load_4d_nii(const std::filesystem::path& file_name,std::vector<std::shared_
     for(unsigned int index = 0;index < dwi_data.size();++index)
     {
         std::shared_ptr<DwiHeader> new_file(new DwiHeader);
-        tipl::image<3> data;
-        data.swap(dwi_data[index]);
-        if(mask.size() == data.size())
+        if(mask.size() == dwi_data[index].size())
         {
-            tipl::preserve(data.begin(),data.end(),mask.begin());
+            tipl::preserve(dwi_data[index],mask);
             if(dwi_files.empty())
                 new_file->mask = mask;
         }
-        new_file->image = data;
+        new_file->image.swap(dwi_data[index]);
         new_file->file_name = file_name;
         new_file->voxel_size = vs;
         new_file->trans_to_mni = trans_to_mni;
@@ -1047,7 +1014,7 @@ bool parse_dwi(const std::vector<std::filesystem::path>& file_list,
     if(tipl::ends_with(file_list.front().u8string(),{".nii",".nii.gz"}))
     {
         for(int i = 0;i < file_list.size();++i)
-            if(!load_4d_nii(file_list[i],dwi_files,true,false,file_list.size() == 1,error_msg))
+            if(!load_4d_nii(file_list[i],dwi_files,true,false,error_msg))
                 return false;
         return !dwi_files.empty();
     }
