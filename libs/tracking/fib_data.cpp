@@ -554,8 +554,9 @@ bool fib_data::load_from_file(const std::filesystem::path& file_name)
         dir.findex_buf[0].resize(dir.fa_buf[0].size());
         dir.findex = {dir.findex_buf[0].data()};
         dir.fa = {dir.fa_buf[0].data()};
-        dir.index_name_data.push_back({file_name.filename().u8string(),{dir.fa_buf[0].data()}});
-        slices.push_back(std::make_shared<slice_model>(file_name.filename().u8string(), dir.fa_buf[0].data(), dim));
+        auto n = file_name.filename().stem().stem().u8string();
+        dir.index_name_data.push_back({n,{dir.fa_buf[0].data()}});
+        slices.push_back(std::make_shared<slice_model>(n, dir.fa_buf[0].data(), dim));
         slices[0]->max_value = 0.0;// this allows calculating the min and max contrast
         trackable = false;
         tipl::out() << "dim: " << dim << " vs: " << vs;
