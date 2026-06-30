@@ -329,20 +329,31 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
                 addSlices("t2w_template",handle->t2w_template_file_name);
                 addSlices("wm_template",handle->wm_template_file_name);
             }
+
+
+
             {
+                std::unordered_set<std::string> existing_index;
+                if(!handle->other_images.empty())
+                    for(const auto& each : tipl::split(handle->other_images,','))
+                    {
+                        auto n = std::filesystem::path(each).stem().stem().u8string();
+                        existing_index.insert(n);
+                        addSlices(n,each);
+                    }
+
                 auto name = handle->fib_file_name.filename().u8string();
                 if(name.find("sub-") == 0)
                     if(auto pos = name.find_last_of('_');pos != std::string::npos)
                         for(const auto& each : tipl::search_files(handle->fib_file_name.parent_path(),
                                                                    name.substr(0,pos) + "_*"))
-                            if(each != handle->fib_file_name)
-                                addSlices(each.stem().stem().u8string(),each);
+                        {
+                            auto n = each.stem().stem().u8string();
+                            if(each != handle->fib_file_name && tipl::ends_with(each.u8string(),".nii.gz") &&
+                                existing_index.find(n) == existing_index.end())
+                                    addSlices(n,each);
+                        }
             }
-
-            if(!handle->other_images.empty())
-                for(const auto& each : tipl::split(handle->other_images,','))
-                    addSlices(tipl::remove_all_suffix(std::filesystem::path(each).filename().string()),each);
-
             current_slice = slices[0];
             glWidget->slice_texture.resize(slices.size());
         }
