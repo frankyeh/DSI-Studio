@@ -12,7 +12,7 @@ class DwiHeader
 public:
     std::string report,error_msg;
     std::filesystem::path file_name;
-    tipl::image<3,unsigned short> image;
+    tipl::image<3> image;
     tipl::image<3,unsigned char> mask;
 public:
     tipl::vector<3,float> bvec;
@@ -24,22 +24,6 @@ public:
 public:
     bool open(const std::filesystem::path& filename);
 public:
-    const unsigned short* begin(void) const
-    {
-        return &*image.begin();
-    }
-    unsigned short* begin(void)
-    {
-        return &*image.begin();
-    }
-    unsigned short operator[](unsigned int index) const
-    {
-        return image[index];
-    }
-    unsigned short& operator[](unsigned int index)
-    {
-        return image[index];
-    }
     size_t size(void) const
     {
         return image.size();
