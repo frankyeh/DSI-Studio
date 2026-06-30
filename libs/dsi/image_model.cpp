@@ -14,7 +14,7 @@
 #include <filesystem>
 
 bool load_4d_nii(const std::filesystem::path& file_name,std::vector<std::shared_ptr<DwiHeader> >& dwi_files,
-                 bool search_bvalbvec,bool must_have_bval_bvec,bool scale_signal,std::string& error_msg);
+                 bool search_bvalbvec,bool must_have_bval_bvec,std::string& error_msg);
 
 void sort_dwi(std::vector<std::shared_ptr<DwiHeader> >& dwi_files)
 {
@@ -2176,7 +2176,7 @@ bool src_data::load_topup_eddy_result(void)
 
     tipl::out() << "load topup/eddy results" << std::endl;
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-    if(!load_4d_nii(corrected_file(),dwi_files,false,false,true,error_msg))
+    if(!load_4d_nii(corrected_file(),dwi_files,false,false,error_msg))
         return false;
     nifti_dwi.resize(dwi_files.size());
     src_dwi_data.resize(dwi_files.size());
@@ -2185,7 +2185,7 @@ bool src_data::load_topup_eddy_result(void)
     for(size_t index = 0;index < dwi_files.size();++index)
     {
         tipl::reshape(dwi_files[index]->image,voxel.dim);
-        nifti_dwi[index].swap(dwi_files[index]->image);
+        nifti_dwi[index] = dwi_files[index]->image;
         src_dwi_data[index] = &nifti_dwi[index][0];
     }
 
@@ -2824,12 +2824,39 @@ bool src_data::load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_file
         }
     }
 
+    {
+        float max_value = 0.0f;
+        for(unsigned int index = 0;index < dwi_files.size();++index)
+            max_value = std::max<float>(max_value,tipl::max_value(dwi_files[index]->image));
+        if(max_value > float(std::numeric_limits<unsigned short>::max()-1))
+        {
+            tipl::warning() << "The maximum signal larger than 2^16, scaling ";
+            float scale = float(std::numeric_limits<unsigned short>::max()-1)/max_value;
+            tipl::par_for(dwi_files.size(),[&](unsigned int index){
+                dwi_files[index]->image *= scale;
+            });
+        }
+        if(max_value < 256.0f && max_value != 0.0f)
+        {
+            tipl::warning() << "The maximum signal is only " << max_value << ", scaling up";
+            float scale = 1.0f;
+            while(max_value*scale*32.0f < std::numeric_limits<unsigned short>::max())
+                scale *= 32.0f;
+            if(scale != 1.0f)
+            {
+                tipl::out() << "scaling the image by " << scale << std::endl;
+                tipl::par_for(dwi_files.size(),[&](unsigned int index){
+                    dwi_files[index]->image *= scale;
+                });
+            }
+        }
+    }
+
     voxel.dim = dwi_files.front()->image.shape();
     voxel.vs = dwi_files.front()->voxel_size;
     voxel.trans_to_mni = dwi_files.front()->trans_to_mni;
     if(voxel.trans_to_mni == tipl::identity_matrix())
         tipl::io::initial_nifti_srow(voxel.trans_to_mni,voxel.dim,voxel.vs);
-
     nifti_dwi.resize(dwi_files.size());
     src_bvalues.resize(dwi_files.size());
     src_bvectors.resize(dwi_files.size());
@@ -2838,7 +2865,7 @@ bool src_data::load_from_file(std::vector<std::shared_ptr<DwiHeader> >& dwi_file
     {
         src_bvalues[i] = dwi_files[i]->bvalue;
         src_bvectors[i] = dwi_files[i]->bvec;
-        nifti_dwi[i].swap(dwi_files[i]->image);
+        nifti_dwi[i] = dwi_files[i]->image;
         src_dwi_data[i] = nifti_dwi[i].data();
     }
 
@@ -2858,7 +2885,7 @@ bool src_data::load_from_file(const std::vector<std::filesystem::path>& nii_name
 {
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
     for(auto& nii_name : nii_names)
-        if(!load_4d_nii(nii_name,dwi_files,true,need_bval_bvec,nii_names.size() == 1,error_msg))
+        if(!load_4d_nii(nii_name,dwi_files,true,need_bval_bvec,error_msg))
             tipl::warning() << "skipping " << nii_name << ": " << error_msg;
     return load_from_file(dwi_files,false);
 }
@@ -2939,7 +2966,7 @@ bool src_data::load_from_file(const std::filesystem::path& dwi_file_name)
     if(tipl::ends_with(dwi_file_name.u8string(),".nii.gz"))
     {
         std::vector<std::shared_ptr<DwiHeader> > dwi_files;
-        if(!load_4d_nii(dwi_file_name,dwi_files,true,false,true,error_msg))
+        if(!load_4d_nii(dwi_file_name,dwi_files,true,false,error_msg))
             return false;
         return load_from_file(dwi_files,false);
     }
