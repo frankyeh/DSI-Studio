@@ -31,7 +31,8 @@ int rec(tipl::program_option<tipl::out>& po)
         src.voxel.thread_count = tipl::max_thread_count;
         if(src.voxel.method_id == 4 or src.voxel.method_id == 7)
         {
-            src.voxel.param[0] = po.get("param",src.voxel.param[0]);
+            src.voxel.param[0] = po.get("param",tipl::max_value(src.src_bvalues) < 5000.0f ?
+                                                     src.voxel.param[0] : src.get_optimal_L());
             src.voxel.r2_weighted = po.get("r2_weighted",int(0));
             src.voxel.odf_resolving = po.get("odf_resolving",int(0));
             if(src.voxel.method_id == 7)
