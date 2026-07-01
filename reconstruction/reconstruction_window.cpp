@@ -85,11 +85,8 @@ reconstruction_window::reconstruction_window(QStringList filenames_,QWidget *par
     ui->b_table->setHorizontalHeaderLabels(QStringList() << "b value" << "bx" << "by" << "bz");
 
     populate_templates(ui->primary_template,handle->voxel.template_id);
-    if(ui->primary_template->currentIndex() == 0)
-        ui->diffusion_sampling->setValue(1.25); // human studies
-    else
-        ui->diffusion_sampling->setValue(0.6);  // animal studies (likely ex-vivo)
-
+    ui->diffusion_sampling->setValue(tipl::max_value(handle->src_bvalues) < 5000.0f ? 1.25 :
+                                         handle->get_optimal_L());
     v2c.two_color(tipl::rgb(0,0,0),tipl::rgb(255,255,255));
 
     absolute_path = QFileInfo(filenames[0]).absolutePath();
