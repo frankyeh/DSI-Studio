@@ -546,14 +546,26 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                 }
         });
 
+        auto trans_to_mni = checked_regions[0]->trans_to_mni;
+        auto vs = checked_regions[0]->vs;
+        bool is_mni = checked_regions[0]->is_mni;
+        tipl::io::gz_nifti in;
+        if(tipl::ends_with(cur_tracking_window.handle->fib_file_name.u8string(),".nii.gz") &&
+            in.open(cur_tracking_window.handle->fib_file_name,std::ios::in))
+        {
+            in.get_image_transformation(trans_to_mni);
+            in.get_voxel_size(vs);
+            tipl::io::apply_flip_swap_seq(mask,tipl::io::get_flip_swap_seq(trans_to_mni),true);
+        }
+
         bool result = true;
         if(checked_regions.size() <= 255)
         {
             tipl::image<3,uint8_t> i8mask(mask);
-            result = tipl::io::gz_nifti(cmd[1],std::ios::out) << checked_regions[0]->bind(i8mask);
+            result = tipl::io::gz_nifti(cmd[1],std::ios::out) << std::tie(vs,trans_to_mni,is_mni,i8mask);
         }
         else
-            result = tipl::io::gz_nifti(cmd[1],std::ios::out) << checked_regions[0]->bind(mask);
+            result = tipl::io::gz_nifti(cmd[1],std::ios::out) << std::tie(vs,trans_to_mni,is_mni,mask);
         if(!result)
             return run->failed("cannot write to file " + cmd[1]);
         save_checked_region_label_file(cmd[1].c_str(),1); // 3d nifti index starts from 1
