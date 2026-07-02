@@ -271,8 +271,7 @@ bool view_image::command(std::string cmd,std::string param1)
             for(size_t i = 0;i < param_list.size();++i)
             {
                 std::string param2 = param_list[i];
-                if(command_list[i] == "save" ||
-                   command_list[i].find("_image") != std::string::npos)
+                if(!param2.empty() && tipl::ends_with(param2,".nii.gz"))
                 {
                     if(tipl::match_files(original_file_name.u8string(),param_list[i],
                                 file_name2.toStdString(),param2))
