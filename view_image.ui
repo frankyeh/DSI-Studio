@@ -521,6 +521,8 @@
     <addaction name="actionMorphology_Dilation"/>
     <addaction name="actionMorphology_Erosion"/>
     <addaction name="actionMorphology_Edge"/>
+    <addaction name="actionMorphology_Opening"/>
+    <addaction name="actionMorphology_Closing"/>
     <addaction name="actionMorphology_XY"/>
     <addaction name="actionMorphology_XZ"/>
     <addaction name="actionRefine"/>
@@ -1157,6 +1159,16 @@
    </property>
    <property name="statusTip">
     <string>file</string>
+   </property>
+  </action>
+  <action name="actionMorphology_Opening">
+   <property name="text">
+    <string>Morphology Opening</string>
+   </property>
+  </action>
+  <action name="actionMorphology_Closing">
+   <property name="text">
+    <string>Morphology Closing</string>
    </property>
   </action>
  </widget>
