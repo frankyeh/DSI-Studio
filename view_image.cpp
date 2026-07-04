@@ -900,21 +900,24 @@ void view_image::show_image(bool update_others)
             {
                 if(!opened_images[overlay_images[i]]->cur_image->interpolation)
                 {
+                    std::array<int,256> label_to_mask;
+                    label_to_mask.fill(-1);
+
                     auto slice = tipl::volume2slice(data,d,size_t(z));
-                    std::map<uint32_t,size_t> label_to_mask;
                     for(size_t j = 0;j < slice.size();++j)
                     {
                         uint32_t label = uint32_t(slice[j]);
-                        if(!label)
+                        if(!label || label > 255)
                             continue;
-                        auto r = label_to_mask.insert(std::make_pair(label,overlay_region_masks.size()));
-                        if(r.second)
+                        auto& id = label_to_mask[label];
+                        if(id == -1)
                         {
+                            id = int(overlay_region_masks.size());
                             overlay_region_masks.emplace_back(slice.shape());
                             overlay_region_colors.push_back(tipl::rgb::generate_hue(label));
                             overlay_region_colors.back().a = 255;
                         }
-                        overlay_region_masks[r.first->second][j] = 1;
+                        overlay_region_masks[id][j] = 1;
                     }
                     return;
                 }
