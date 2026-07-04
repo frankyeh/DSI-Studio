@@ -92,8 +92,6 @@ public slots:
     void draw_region(const tipl::matrix<4,4>& current_slice_T,unsigned char dim,int slice_pos,
                      const tipl::shape<2>& slice_image_shape,float display_ratio,QImage& scaled_image);
 
-    void move_up(void);
-    void move_down(void);
     void undo(void);
     void redo(void);
 
