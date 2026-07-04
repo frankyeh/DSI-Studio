@@ -445,8 +445,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             }
             else
             {
-                int cur_row = currentRow();
-                if(!get_cur_row(cmd[1],cur_row))
+                if(int cur_row = currentRow();!get_cur_row(cmd[1],cur_row))
                     return false;
             }
         }
@@ -456,6 +455,28 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                 return false;
             return run->canceled();
         }
+        return run->succeed();
+    }
+    if(cmd[0] == "move_up_region" || cmd[0] == "move_down_region")
+    {
+        int cur_row = currentRow(), shift = cmd[0] == "move_up_region" ? -1:1;
+        if(!get_cur_row(cmd[1],cur_row) ||
+            cur_row+shift < 0 || cur_row+shift >= int(regions.size()))
+            return false;
+
+        int new_row = cur_row + shift;
+        regions[cur_row].swap(regions[new_row]);
+
+        begin_update();
+        for(int i = 0;i < columnCount();++i)
+        {
+            auto item0 = takeItem(cur_row,i);
+            auto item1 = takeItem(new_row,i);
+            setItem(cur_row,i,item1);
+            setItem(new_row,i,item0);
+        }
+        end_update();
+        setCurrentCell(new_row,0);
         return run->succeed();
     }
     if(cmd[0] == "move_region")
@@ -1150,43 +1171,6 @@ void RegionTableWidget::check_row(size_t row,bool checked)
 {
     item(row,0)->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
     item(row,0)->setData(Qt::UserRole+1,checked ? Qt::Unchecked : Qt::Checked);
-}
-
-void RegionTableWidget::move_up(void)
-{
-    if(currentRow())
-    {
-        regions[uint32_t(currentRow())].swap(regions[uint32_t(currentRow())-1]);
-        begin_update();
-        for(int i = 0;i < columnCount();++i)
-        {
-            QTableWidgetItem* item0 = takeItem(currentRow()-1,i);
-            QTableWidgetItem* item1 = takeItem(currentRow(),i);
-            setItem(currentRow()-1,i,item1);
-            setItem(currentRow(),i,item0);
-        }
-        end_update();
-        setCurrentCell(currentRow()-1,0);
-    }
-
-}
-
-void RegionTableWidget::move_down(void)
-{
-    if(currentRow()+1 < int(regions.size()))
-    {
-        regions[uint32_t(currentRow())].swap(regions[uint32_t(currentRow())+1]);
-        begin_update();
-        for(int i = 0;i < columnCount();++i)
-        {
-            QTableWidgetItem* item0 = takeItem(currentRow()+1,i);
-            QTableWidgetItem* item1 = takeItem(currentRow(),i);
-            setItem(currentRow()+1,i,item1);
-            setItem(currentRow(),i,item0);
-        }
-        end_update();
-        setCurrentCell(currentRow()+1,0);
-    }
 }
 
 QString RegionTableWidget::output_format(void)
