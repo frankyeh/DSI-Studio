@@ -522,8 +522,9 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         // actions
         connect(ui->actionUndo_Edit,SIGNAL(triggered()),regionWidget,SLOT(undo()));
         connect(ui->actionRedo_Edit,SIGNAL(triggered()),regionWidget,SLOT(redo()));
-        connect(ui->region_up,SIGNAL(clicked()),regionWidget,SLOT(move_up()));
-        connect(ui->region_down,SIGNAL(clicked()),regionWidget,SLOT(move_down()));
+        connect(ui->region_up,&QPushButton::clicked, regionWidget,[this](void){command({"move_up_region"});});
+        connect(ui->region_down,&QPushButton::clicked, regionWidget,[this](void){command({"move_down_region"});});
+
     }
     // View
     {
@@ -1188,7 +1189,7 @@ void tracking_window::on_actionCommand_History_triggered(){
             }
             return sel;
         };
-        QStringList btns{"&Open...", "&Save...", "Reload...", "Clear", "Repeat", "Apply to Files...", "Apply to Folders...", "Delete", "Close"};
+        QStringList btns{"&Open...", "&Save...", "Reload...", "Clear", "Run Selected", "Apply to Files...", "Apply to Folders...", "Delete", "Close"};
         std::vector<QPushButton*> buttons;
         for(auto &b : btns) buttons.push_back(new QPushButton(b, command_dialog));
         auto openB = buttons[0], saveB = buttons[1], reloadB = buttons[2], clearB = buttons[3],
