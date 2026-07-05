@@ -1032,7 +1032,7 @@
    </widget>
    <widget class="QMenu" name="menu_Edit">
     <property name="title">
-     <string>&amp;Edit</string>
+     <string>Tract &amp;Edit</string>
     </property>
     <widget class="QMenu" name="menuCut_by_slice">
      <property name="title">
@@ -1222,80 +1222,22 @@
     <property name="title">
      <string>Regions Misc</string>
     </property>
-    <widget class="QMenu" name="menuSort_Regions">
-     <property name="title">
-      <string>Sort Regions</string>
-     </property>
-     <property name="icon">
-      <iconset resource="../icons.qrc">
-       <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
-     </property>
-     <addaction name="actionBy_Name"/>
-     <addaction name="actionBy_Size"/>
-     <addaction name="actionBy_X"/>
-     <addaction name="actionBy_Y"/>
-     <addaction name="actionBy_Z"/>
-    </widget>
-    <widget class="QMenu" name="menuMove_Current_Region">
-     <property name="title">
-      <string>Move Region</string>
-     </property>
-     <property name="icon">
-      <iconset resource="../icons.qrc">
-       <normaloff>:/icons/icons/move.xpm</normaloff>:/icons/icons/move.xpm</iconset>
-     </property>
-     <addaction name="actionShift_X"/>
-     <addaction name="actionShift_X_2"/>
-     <addaction name="actionShift_Y"/>
-     <addaction name="actionShift_Y_2"/>
-     <addaction name="actionShift_Z"/>
-     <addaction name="actionShift_Z_2"/>
-     <addaction name="actionFlip_X"/>
-     <addaction name="actionFlip_Y"/>
-     <addaction name="actionFlip_Z"/>
-    </widget>
-    <widget class="QMenu" name="menuModify">
-     <property name="title">
-      <string>Modify Region</string>
-     </property>
-     <property name="icon">
-      <iconset resource="../icons.qrc">
-       <normaloff>:/icons/icons/report.xpm</normaloff>:/icons/icons/report.xpm</iconset>
-     </property>
-     <addaction name="actionModify_All"/>
-     <addaction name="separator"/>
-     <addaction name="actionDilation"/>
-     <addaction name="actionErosion"/>
-     <addaction name="actionOpening"/>
-     <addaction name="actionClosing"/>
-     <addaction name="actionSmoothing"/>
-     <addaction name="actionNegate"/>
-     <addaction name="actionDefragment"/>
-     <addaction name="actionSeparate"/>
-     <addaction name="actionThreshold_2"/>
-     <addaction name="separator"/>
-     <addaction name="actionAll_Inter_1st"/>
-     <addaction name="actionAll_Ex_1st"/>
-     <addaction name="action1st_Ex_All"/>
-     <addaction name="actionAll_To_First"/>
-     <addaction name="separator"/>
-     <addaction name="actionDilation_by_voxel"/>
-     <addaction name="actionRefine_Label"/>
-    </widget>
     <addaction name="actionThreshold"/>
     <addaction name="actionNew_Region_From_MNI_Coordinate"/>
     <addaction name="separator"/>
     <addaction name="actionLoad_Region_Color"/>
     <addaction name="actionSave_Region_Color"/>
     <addaction name="separator"/>
-    <addaction name="menuMove_Current_Region"/>
-    <addaction name="actionMove_Objects"/>
-    <addaction name="menuModify"/>
-    <addaction name="menuSort_Regions"/>
+    <addaction name="actionBy_Name"/>
+    <addaction name="actionBy_Size"/>
+    <addaction name="actionBy_X"/>
+    <addaction name="actionBy_Y"/>
+    <addaction name="actionBy_Z"/>
     <addaction name="separator"/>
     <addaction name="actionWhole_brain_seeding"/>
     <addaction name="actionSave_Voxel_Data_As"/>
     <addaction name="separator"/>
+    <addaction name="actionMove_Slices_To_Current_Region"/>
     <addaction name="actionLoad_MNI_mapping"/>
     <addaction name="actionManual_Atlas_Alignment"/>
    </widget>
@@ -1406,16 +1348,62 @@
     <addaction name="menuStore_Camera_Position_3"/>
     <addaction name="menuRecall_Camera_Position_2"/>
    </widget>
+   <widget class="QMenu" name="menuRegion_Move">
+    <property name="title">
+     <string>Region Move</string>
+    </property>
+    <addaction name="separator"/>
+    <addaction name="actionFlip_X"/>
+    <addaction name="actionFlip_Y"/>
+    <addaction name="actionFlip_Z"/>
+    <addaction name="separator"/>
+    <addaction name="actionShift_X"/>
+    <addaction name="actionShift_X_2"/>
+    <addaction name="actionShift_Y"/>
+    <addaction name="actionShift_Y_2"/>
+    <addaction name="actionShift_Z"/>
+    <addaction name="actionShift_Z_2"/>
+    <addaction name="separator"/>
+    <addaction name="actionMove_Objects"/>
+   </widget>
+   <widget class="QMenu" name="menuRegion_Edit">
+    <property name="title">
+     <string>Region Edit</string>
+    </property>
+    <addaction name="actionModify_All"/>
+    <addaction name="separator"/>
+    <addaction name="actionDilation"/>
+    <addaction name="actionDilation_by_voxel"/>
+    <addaction name="actionErosion"/>
+    <addaction name="separator"/>
+    <addaction name="actionOpening"/>
+    <addaction name="actionClosing"/>
+    <addaction name="separator"/>
+    <addaction name="actionSmoothing"/>
+    <addaction name="actionDefragment"/>
+    <addaction name="actionSeparate"/>
+    <addaction name="actionNegate"/>
+    <addaction name="separator"/>
+    <addaction name="actionThreshold_2"/>
+    <addaction name="separator"/>
+    <addaction name="actionAll_Inter_1st"/>
+    <addaction name="actionAll_Ex_1st"/>
+    <addaction name="action1st_Ex_All"/>
+    <addaction name="actionAll_To_First"/>
+    <addaction name="actionRefine_Label"/>
+   </widget>
    <widget class="QMenu" name="menuSegment">
     <property name="title">
-     <string>Segment</string>
+     <string>Slices Segment</string>
     </property>
    </widget>
    <addaction name="menu_File"/>
-   <addaction name="menu_Edit"/>
    <addaction name="menuRegions"/>
+   <addaction name="menuRegion_Edit"/>
+   <addaction name="menuRegion_Move"/>
    <addaction name="menuRegions_Misc"/>
    <addaction name="menuTracts"/>
+   <addaction name="menu_Edit"/>
    <addaction name="menuTracts_Cluster"/>
    <addaction name="menuTracts_Misc"/>
    <addaction name="menu_Slices"/>
@@ -2904,7 +2892,7 @@ Tracking</string>
     <font/>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Shift+X</string>
+    <string>Ctrl+Shift+Backspace</string>
    </property>
   </action>
   <action name="actionOpenTract">
@@ -2958,7 +2946,7 @@ Tracking</string>
     <string>run delete_tract</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Alt+D</string>
+    <string>Ctrl+Alt+Backspace</string>
    </property>
   </action>
   <action name="actionDeleteTractAll">
@@ -4064,6 +4052,9 @@ Tracking</string>
    <property name="text">
     <string>Upper</string>
    </property>
+   <property name="toolTip">
+    <string>run add_surface_upper</string>
+   </property>
   </action>
   <action name="actionLower">
    <property name="text">
@@ -4164,40 +4155,60 @@ Tracking</string>
    </property>
   </action>
   <action name="actionBy_Size">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+   </property>
    <property name="text">
-    <string>By Size</string>
+    <string>Sort By Size</string>
    </property>
    <property name="toolTip">
     <string>run region_action_sort_size</string>
    </property>
   </action>
   <action name="actionBy_X">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+   </property>
    <property name="text">
-    <string>By X</string>
+    <string>Sort By X</string>
    </property>
    <property name="toolTip">
     <string>run region_action_sort_x</string>
    </property>
   </action>
   <action name="actionBy_Y">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+   </property>
    <property name="text">
-    <string>By Y</string>
+    <string>Sort By Y</string>
    </property>
    <property name="toolTip">
     <string>run region_action_sort_y</string>
    </property>
   </action>
   <action name="actionBy_Z">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+   </property>
    <property name="text">
-    <string>By Z</string>
+    <string>Sort By Z</string>
    </property>
    <property name="toolTip">
     <string>run region_action_sort_z</string>
    </property>
   </action>
   <action name="actionBy_Name">
+   <property name="icon">
+    <iconset resource="../icons.qrc">
+     <normaloff>:/icons/icons/down.xpm</normaloff>:/icons/icons/down.xpm</iconset>
+   </property>
    <property name="text">
-    <string>By Name</string>
+    <string>Sort By Name</string>
    </property>
    <property name="toolTip">
     <string>run region_action_sort_name</string>
@@ -4215,7 +4226,7 @@ Tracking</string>
     <string>run move_slice_to_region</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Shift+M</string>
+    <string>Ctrl+S</string>
    </property>
   </action>
   <action name="actionThreshold_2">
@@ -4273,7 +4284,7 @@ Tracking</string>
     <string>Record Video...</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Shift+R</string>
+    <string/>
    </property>
   </action>
   <action name="actionRecognize_and_Rename">
@@ -5066,10 +5077,13 @@ Tracking</string>
   </action>
   <action name="actionRefine_Label">
    <property name="text">
-    <string>Refine Label...</string>
+    <string>Refine</string>
    </property>
    <property name="toolTip">
     <string>run region_action_refine_label</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+5</string>
    </property>
   </action>
  </widget>
