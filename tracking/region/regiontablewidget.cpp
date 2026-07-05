@@ -741,11 +741,14 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         int cur_row = currentRow();
         if(!get_cur_row(cmd[1],cur_row))
             return false;
-        unsigned int color = regions[cur_row]->region_render->color.color;
-        regions.insert(regions.begin() + cur_row + 1,std::make_shared<ROIRegion>(cur_tracking_window.handle));
-        *regions[cur_row + 1] = *regions[cur_row];
-        regions[cur_row + 1]->region_render->color.color = color;
-        add_row(int(cur_row+1),regions[cur_row]->name.c_str());
+        auto cur_region = regions[cur_row];
+        auto new_region = std::make_shared<ROIRegion>(cur_tracking_window.handle);
+        *new_region = *cur_region;
+        regions.insert(regions.begin() + cur_row + 1,new_region);
+        begin_update();
+        add_row(int(cur_row+1),cur_region->name.c_str());
+        end_update();
+        emit need_update();
         return run->succeed();
     }
     if(cmd[0] == "add_region_from_atlas")
