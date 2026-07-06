@@ -51,53 +51,65 @@ std::vector<tipl::vector<3,short> > ROIRegion::to_space(const tipl::shape<3>& di
 }
 
 // ---------------------------------------------------------------------------
+void ROIRegion::point2mask(void)
+{
+    if(region.empty())
+    {
+        index_mask.clear();
+        index_mask_point_count = 0;
+        return;
+    }
+    if(!index_mask.empty() && region.size() == index_mask_point_count)
+        return;
+
+    index_mask.resize(dim);
+    index_mask = 0;
+    std::vector<tipl::vector<3,short> > r;
+    r.reserve(region.size());
+    for(const auto& p : region)
+        if(dim.is_valid(p) && !index_mask.at(p))
+            index_mask.at(p) = r.size()+1,r.push_back(p);
+    region.swap(r);
+    index_mask_point_count = region.size();
+}
 void ROIRegion::add_points(std::vector<tipl::vector<3,short> >&& points, bool del)
 {
+    points.erase(std::remove_if(points.begin(),points.end(),
+                                [this](const auto& p){return !dim.is_valid(p);}),points.end());
+    if(points.empty())
+        return;
+
     if(!region.empty())
         undo_backup.push_back(region);
 
-    points.erase(std::remove_if(points.begin(),points.end(),
-                                [this](const tipl::vector<3,short>&p){return !dim.is_valid(p);}),points.end());
+    point2mask();
+    if(index_mask.empty())
+        index_mask.resize(dim),index_mask = 0;
 
-    if(points.empty())
-        return;
     modified = true;
-    if(region.empty())
+    if(del)
     {
-        region.swap(points);
-        return;
+        for(const auto& p : points)
+        {
+            auto index = index_mask.at(p);
+            if(!index)
+                continue;
+            --index;
+            index_mask.at(p) = 0;
+            if(index+1 != region.size())
+            {
+                region[index] = region.back();
+                index_mask.at(region[index]) = index+1;
+            }
+            region.pop_back();
+        }
     }
+    else
+        for(const auto& p : points)
+            if(!index_mask.at(p))
+                index_mask.at(p) = region.size()+1,region.push_back(p);
 
-    if(!del)
-    {
-        region.insert(region.end(),points.begin(),points.end());
-        points.clear();
-    }
-
-    tipl::vector<3,short> min_value,max_value,geo_size;
-    tipl::bounding_box(region,max_value,min_value);
-    geo_size = max_value-min_value;
-
-    tipl::shape<3> mask_geo(geo_size[0]+1,geo_size[1]+1,geo_size[2]+1);
-    tipl::image<3,unsigned char> mask(mask_geo);
-
-    tipl::par_for (region.size(),[&](unsigned int index)
-    {
-        auto p = region[index];
-        p -= min_value;
-        if (mask.shape().is_valid(p))
-            mask.at(p) = 1;
-    });
-
-    tipl::par_for (points.size(),[&](unsigned int index)
-    {
-        auto p = points[index];
-        p -= min_value;
-        if (mask.shape().is_valid(p))
-            mask.at(p) = 0;
-    });
-    region = tipl::volume2points(mask);
-    tipl::add_constant(region.begin(),region.end(),min_value);
+    index_mask_point_count = region.size();
 }
 
 // ---------------------------------------------------------------------------
@@ -114,13 +126,8 @@ bool ROIRegion::save_region_to_file(const std::filesystem::path& file_name)
     if (tipl::ends_with(file_name.u8string(),".mat"))
     {
         tipl::image<3,unsigned char> mask(dim);
-        for (unsigned int index = 0; index < region.size(); ++index)
-        {
-            if (dim.is_valid(region[index][0], region[index][1],
-                             region[index][2]))
-                mask[tipl::pixel_index<3>(region[index][0], region[index][1],
-                                           region[index][2], dim).index()] = 255;
-        }
+        save_region_to_buffer(mask);
+        tipl::multiply_constant(mask.begin(),mask.end(),uint8_t(255));
         tipl::io::mat_write header(file_name);
         if(!header)
             return false;
@@ -145,7 +152,7 @@ bool ROIRegion::save_region_to_file(const std::filesystem::path& file_name)
 // ---------------------------------------------------------------------------
 
 bool ROIRegion::load_region_from_file(const std::filesystem::path& file_name) {
-    modified = true;
+    set_modified();
     region.clear();
     is_diffusion_space = false;
     to_diffusion_space.identity();
@@ -215,15 +222,20 @@ void ROIRegion::makeMeshes(unsigned char smooth)
 // ---------------------------------------------------------------------------
 void ROIRegion::load_region_from_buffer(const tipl::image<3,unsigned char>& mask)
 {
-    modified = true;
     if(!region.empty())
         undo_backup.push_back(std::move(region));
     region = tipl::volume2points(mask);
+    set_modified();
 }
 // ---------------------------------------------------------------------------
 void ROIRegion::save_region_to_buffer(tipl::image<3,unsigned char>& mask) const
 {
-    mask = std::move(tipl::points2volume(dim,region));
+    if(!index_mask.empty() && index_mask_point_count == region.size())
+    {
+        tipl::threshold(index_mask,mask,0);
+        return;
+    }
+    mask = tipl::points2volume(dim,region);
 }
 // ---------------------------------------------------------------------------
 void ROIRegion::save_region_to_buffer(tipl::image<3,unsigned char>& mask,const tipl::shape<3>& dim_to,const tipl::matrix<4,4>& trans_to) const
@@ -309,11 +321,15 @@ void ROIRegion::perform(const std::string& action)
 
 // ---------------------------------------------------------------------------
 void ROIRegion::flip_region(unsigned int dimension) {
-    modified = true;
+
     if(!region.empty())
         undo_backup.push_back(region);
     for (unsigned int index = 0; index < region.size(); ++index)
         region[index][dimension] = dim[dimension] - region[index][dimension] - 1;
+
+    modified = true;
+    if(!index_mask.empty())
+        tipl::flip(index_mask,dimension);
 }
 
 // ---------------------------------------------------------------------------
@@ -333,6 +349,7 @@ bool ROIRegion::shift(tipl::vector<3,float> dx) // shift in region's voxel space
         region_render->move_object(dx);
     for(size_t index = 0;index < region.size();++index)
         region[index] += dx;
+    set_modified();
     return true;
 }
 // ---------------------------------------------------------------------------
