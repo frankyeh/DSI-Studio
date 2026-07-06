@@ -10,61 +10,84 @@
 RegionRender::~RegionRender(void)
 {
 }
-bool RegionRender::load(const std::vector<tipl::vector<3,short> >& seeds, tipl::matrix<4,4>& trans,unsigned char smooth)
+bool RegionRender::load(const std::vector<tipl::vector<3,short> >& seeds,
+                        const tipl::matrix<4,4>& trans,unsigned char smooth,
+                        const std::atomic_bool* terminated)
 {
-    if(seeds.empty())
+    auto stop = [&]{return terminated && terminated->load();};
+    if(seeds.empty() || stop())
     {
         object.reset();
         return false;
     }
-    bool need_trans = (trans != tipl::identity_matrix());
 
-    tipl::vector<3,short> max_value(seeds[0]), min_value(seeds[0]);
+    bool need_trans = (trans != tipl::identity_matrix());
+    tipl::vector<3,short> max_value(seeds[0]),min_value(seeds[0]);
     tipl::bounding_box(seeds,max_value,min_value);
+    if(stop())
+        return false;
 
     center = max_value;
     center += min_value;
     center *= 0.5f;
-    max_value += tipl::vector<3,short>(5, 5, 5);
-    min_value -= tipl::vector<3,short>(5, 5, 5);
-    tipl::shape<3> geo(uint32_t(max_value[0] - min_value[0]),
-                          uint32_t(max_value[1] - min_value[1]),
-                          uint32_t(max_value[2] - min_value[2]));
+    max_value += tipl::vector<3,short>(5,5,5);
+    min_value -= tipl::vector<3,short>(5,5,5);
+
+    tipl::shape<3> geo(uint32_t(max_value[0]-min_value[0]),
+                       uint32_t(max_value[1]-min_value[1]),
+                       uint32_t(max_value[2]-min_value[2]));
+
     float cur_scale = 1.0f;
     while(geo.width() > 256 || geo.height() > 256 || geo.depth() > 256)
     {
+        if(stop())
+            return false;
         cur_scale *= 2.0f;
         geo = tipl::shape<3>(geo[0]/2,geo[1]/2,geo[2]/2);
     }
 
-
     tipl::image<3,unsigned char> buffer(geo);
     tipl::par_for(seeds.size(),[&](unsigned int index)
-    {
-        tipl::vector<3,short> point(seeds[index]);
-        point -= min_value;
-        point /= cur_scale;
-        if(buffer.shape().is_valid(point))
-            buffer[tipl::pixel_index<3>(point[0], point[1], point[2],
-                                     buffer.shape()).index()] = 200;
-    });
-
+                  {
+                      if(stop())
+                          return;
+                      tipl::vector<3,short> point(seeds[index]);
+                      point -= min_value;
+                      point /= cur_scale;
+                      if(buffer.shape().is_valid(point))
+                          buffer[tipl::pixel_index<3>(point[0],point[1],point[2],buffer.shape()).index()] = 200;
+                  });
+    if(stop())
+        return false;
 
     while(smooth)
     {
         tipl::filter::mean(buffer);
+        if(stop())
+            return false;
         --smooth;
     }
-    object.reset(new tipl::march_cube(buffer, uint8_t(20)));
+
+    decltype(object) new_object;
+    new_object.reset(new tipl::march_cube(buffer,uint8_t(20),terminated));
+    if(stop())
+        return false;
+
     tipl::vector<3,float> shift(min_value);
-    tipl::par_for(object->point_list.size(),[&](unsigned int index)
-    {
-        if (cur_scale != 1.0f)
-            object->point_list[index] *= cur_scale;
-        object->point_list[index] += shift;
-        if(need_trans)
-            object->point_list[index].to(trans);
-    });
+    tipl::par_for(new_object->point_list.size(),[&](unsigned int index)
+                  {
+                      if(stop())
+                          return;
+                      if(cur_scale != 1.0f)
+                          new_object->point_list[index] *= cur_scale;
+                      new_object->point_list[index] += shift;
+                      if(need_trans)
+                          new_object->point_list[index].to(trans);
+                  });
+    if(stop())
+        return false;
+
+    object.swap(new_object);
     return object.get();
 }
 
@@ -132,6 +155,8 @@ void RegionRender::transform_point_list(const tipl::matrix<4,4>& T)
 }
 std::string RegionRender::get_obj(unsigned int& coordinate_count,tipl::vector<3> vs)
 {
+    if(!object)
+        return {};
     std::string output;
     for(auto& pos : object->point_list)
     {
@@ -171,15 +196,16 @@ std::string RegionRender::get_obj(unsigned int& coordinate_count,tipl::vector<3>
 void handleAlpha(tipl::rgb color,float alpha,int blend1,int blend2);
 void RegionRender::draw(tipl::rgb draw_color,unsigned char cur_view,float alpha,int blend1,int blend2)
 {
-    if(!object.get() || object->tri_list.empty())
+    if(!object || object->point_list.empty() || object->normal_list.empty() ||
+        cur_view >= object->sorted_index.size() || object->sorted_index[cur_view].empty())
         return;
     handleAlpha(draw_color,alpha,blend1,blend2);
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_NORMAL_ARRAY);
-    glVertexPointer(3, GL_FLOAT, 0, &object->point_list[0]);
-    glNormalPointer(GL_FLOAT, 0, &object->normal_list[0]);
+    glVertexPointer(3, GL_FLOAT, 0, object->point_list.data());
+    glNormalPointer(GL_FLOAT, 0, object->normal_list.data());
     glDrawElements(GL_TRIANGLES, object->sorted_index[cur_view].size(),
-                       GL_UNSIGNED_INT,&object->sorted_index[cur_view][0]);
+                   GL_UNSIGNED_INT,object->sorted_index[cur_view].data());
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_NORMAL_ARRAY);
 }

@@ -1021,24 +1021,26 @@ void GLWidget::renderLR()
             unsigned char cur_view = (alpha == 1.0f ? 0 : getCurView(transformation_matrix));
             auto& regionWidget = cur_tracking_window.regionWidget;
             auto& regions = regionWidget->regions;
-            std::vector<unsigned int> region_need_update;
-            for(unsigned int index = 0;index < regions.size();++index)
-                if(regionWidget->item(int(index),0)->checkState() == Qt::Checked &&
-                        regions[index]->modified)
-                    region_need_update.push_back(index);
 
+
+            bool mesh_busy = false;
             unsigned char smoothed = get_param("region_mesh_smoothed");
-            tipl::par_for(region_need_update.size(),[&](unsigned int index){
-                regions[region_need_update[index]]->makeMeshes(smoothed);
-            });
+            for(unsigned int index = 0;index < regions.size();++index)
+                if(regionWidget->item(int(index),0)->checkState() == Qt::Checked)
+                    mesh_busy |= regions[index]->makeMeshes(smoothed);
+            if(mesh_busy)
+                QTimer::singleShot(30,this,SLOT(update()));
 
             std::vector<size_t> mesh_count(regions.size());
             for(size_t index = 0;index < regions.size();++index)
-                mesh_count[index] = regions[index]->region.empty() ? 0 : regions[index]->region_render->object->tri_list.size();
+            {
+                auto& r = regions[index]->region_render;
+                mesh_count[index] = r && r->object ? r->object->tri_list.size() : 0;
+            }
 
             for(size_t index : tipl::arg_sort(mesh_count,std::less<size_t>()))
                 if(regionWidget->item(int(index),0)->checkState() == Qt::Checked &&
-                   !regions[index]->region.empty())
+                    mesh_count[index])
                 {
                     regions[index]->region_render->draw(
                         regionWidget->get_region_rendering_color(index),

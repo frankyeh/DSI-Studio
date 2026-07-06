@@ -3,6 +3,9 @@
 #define RegionsH
 #include <vector>
 #include <map>
+#include <atomic>
+#include <mutex>
+#include <thread>
 #include "fib_data.hpp"
 #include "opengl/region_render.hpp"
 // ---------------------------------------------------------------------------
@@ -32,6 +35,13 @@ public:
         std::vector<tipl::vector<3,short> > region;
         std::vector<std::vector<tipl::vector<3,short> > > undo_backup;
         std::vector<std::vector<tipl::vector<3,short> > > redo_backup;
+public:
+        ~ROIRegion();
+        bool makeMeshes(unsigned char smooth);
+        std::thread mesh_thread;
+        std::mutex mesh_lock;
+        std::shared_ptr<RegionRender> pending_region_render;
+        std::atomic_bool mesh_running = false,mesh_terminated = false;
 private:
         tipl::image<3,unsigned int> index_mask; // lazy cache, empty until first add_points()
         size_t index_mask_point_count = 0;    // bookkeeping points count in the mask to avoid mask-region mismatch
@@ -148,7 +158,7 @@ public:
         void save_region_to_buffer(tipl::image<3,unsigned char>& mask) const;
         void save_region_to_buffer(tipl::image<3,unsigned char>& mask,const tipl::shape<3>& dim_to,const tipl::matrix<4,4>& trans_to) const;
         void perform(const std::string& action);
-        void makeMeshes(unsigned char smooth);
+
         template<typename value_type>
         bool has_point(tipl::vector<3,value_type> p) const
         {

@@ -209,15 +209,61 @@ bool ROIRegion::load_region_from_file(const std::filesystem::path& file_name) {
     return false;
 
 }
-
-void ROIRegion::makeMeshes(unsigned char smooth)
+ROIRegion::~ROIRegion()
 {
+    mesh_terminated = true;
+    if(mesh_thread.joinable())
+        mesh_thread.join();
+}
+// ---------------------------------------------------------------------------
+bool ROIRegion::makeMeshes(unsigned char smooth)
+{
+    bool busy = mesh_running;
+    {
+        std::lock_guard lock(mesh_lock);
+        if(pending_region_render)
+        {
+            if(region_render)
+                pending_region_render->color = region_render->color;
+            region_render = std::move(pending_region_render);
+            return true;
+        }
+    }
+
+    if(!mesh_running && mesh_thread.joinable())
+        mesh_thread.join();
     if(!modified)
-        return;
+        return busy;
+
+    mesh_terminated = true;
+    if(mesh_running)
+        return true;
+
     modified = false;
     if(is_diffusion_space)
         to_diffusion_space.identity();
-    region_render->load(region,to_diffusion_space,smooth);
+    if(region.empty())
+    {
+        if(region_render)
+            region_render->object.reset();
+        return false;
+    }
+
+    auto seeds = region;
+    auto trans = to_diffusion_space;
+    mesh_terminated = false;
+    mesh_running = true;
+    mesh_thread = std::thread([this,seeds = std::move(seeds),trans,smooth]
+                              {
+                                  auto r = std::make_shared<RegionRender>();
+                                  if(r->load(seeds,trans,smooth,&mesh_terminated) && !mesh_terminated)
+                                  {
+                                      std::lock_guard lock(mesh_lock);
+                                      pending_region_render = std::move(r);
+                                  }
+                                  mesh_running = false;
+                              });
+    return true;
 }
 // ---------------------------------------------------------------------------
 void ROIRegion::load_region_from_buffer(const tipl::image<3,unsigned char>& mask)
