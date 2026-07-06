@@ -32,13 +32,20 @@ public:
         std::vector<tipl::vector<3,short> > region;
         std::vector<std::vector<tipl::vector<3,short> > > undo_backup;
         std::vector<std::vector<tipl::vector<3,short> > > redo_backup;
+private:
+        tipl::image<3,unsigned int> index_mask; // lazy cache, empty until first add_points()
+        size_t index_mask_point_count = 0;    // bookkeeping points count in the mask to avoid mask-region mismatch
+        void point2mask(void);
+    public:
+        bool modified = true;
+        void set_modified(void){modified = true;index_mask.clear();index_mask_point_count = 0;}
 public:
         bool is_diffusion_space = true;
         tipl::matrix<4,4> to_diffusion_space = tipl::identity_matrix();
 public: // rendering options
         std::shared_ptr<RegionRender> region_render;
         unsigned char regions_feature = default_id;
-        bool modified = true;
+
 public: // rendering options
         ROIRegion(std::shared_ptr<fib_data> handle):
             dim(handle->dim),vs(handle->vs),trans_to_mni(handle->trans_to_mni),is_mni(handle->is_mni),region_render(new RegionRender){}
@@ -66,9 +73,9 @@ public: // rendering options
             redo_backup = rhs.redo_backup;
             regions_feature = rhs.regions_feature;
             region_render->color = rhs.region_render->color;
-            modified = true;
             is_diffusion_space = rhs.is_diffusion_space;
             to_diffusion_space = rhs.to_diffusion_space;
+            set_modified();
             return *this;
         }
         void swap(ROIRegion & rhs) {
@@ -77,6 +84,8 @@ public: // rendering options
             std::swap(vs,rhs.vs);
             trans_to_mni.swap(rhs.trans_to_mni);
             region.swap(rhs.region);
+            index_mask.swap(rhs.index_mask);
+            std::swap(index_mask_point_count,rhs.index_mask_point_count);
             undo_backup.swap(rhs.undo_backup);
             redo_backup.swap(rhs.redo_backup);
             std::swap(regions_feature,rhs.regions_feature);
@@ -116,7 +125,7 @@ public:
                 region = std::move(undo_backup.back());
                 undo_backup.pop_back();
             }
-            modified = true;
+            set_modified();
 
         }
         bool redo(void)
@@ -127,7 +136,7 @@ public:
             undo_backup.back().swap(region);
             region.swap(redo_backup.back());
             redo_backup.pop_back();
-            modified = true;
+            set_modified();
             return true;
         }
         bool save_region_to_file(const std::filesystem::path&);
@@ -141,14 +150,15 @@ public:
         void perform(const std::string& action);
         void makeMeshes(unsigned char smooth);
         template<typename value_type>
-        bool has_point(tipl::vector<3,value_type> point_in_dwi_space) const
+        bool has_point(tipl::vector<3,value_type> p) const
         {
             if(!is_diffusion_space)
-                point_in_dwi_space.to(tipl::matrix<4,4>(tipl::inverse(to_diffusion_space)));
-            return std::find(region.begin(),region.end(),
-                             tipl::vector<3,short>(std::round(point_in_dwi_space[0]),
-                                                   std::round(point_in_dwi_space[1]),
-                                                   std::round(point_in_dwi_space[2]))) != region.end();
+                p.to(tipl::matrix<4,4>(tipl::inverse(to_diffusion_space)));
+            tipl::vector<3,short> q(std::round(p[0]),std::round(p[1]),std::round(p[2]));
+            if(!dim.is_valid(q))
+                return false;
+            return !index_mask.empty() && index_mask_point_count == region.size() ?
+                       index_mask.at(q) : std::find(region.begin(),region.end(),q) != region.end();
         }
 
 
