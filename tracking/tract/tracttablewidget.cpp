@@ -305,7 +305,7 @@ void TractTableWidget::fetch_tracts(void)
                         if(cur_index >= regions.size() || region.empty())
                             return;
                         regions[cur_index]->region = region;
-                        regions[cur_index]->modified = true;
+                        regions[cur_index]->set_modified();
                         cur_tracking_window.regionWidget->item(cur_index,0)->setText(name);
                         ++cur_index;
                     };
