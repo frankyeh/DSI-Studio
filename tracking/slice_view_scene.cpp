@@ -964,7 +964,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         if(move_slice)
         {
             move_slice = false;
-            need_update();
+            emit need_update();
         }
         return;
     }
@@ -974,7 +974,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     auto regionWidget = cur_tracking_window.regionWidget;
     if (regionWidget->currentRow() < 0 || regionWidget->currentRow() >= int(regionWidget->regions.size()))
     {
-        need_update();
+        emit need_update();
         return;
     }
     if(regionWidget->item(regionWidget->currentRow(),0)->checkState() != Qt::Checked)
@@ -1127,7 +1127,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
             tipl::out() << "warping picture: " << from << " to " << to;
             slice->warp_picture(from,to);
         }
-        need_update();
+        emit need_update();
         return;
     }
     }
@@ -1170,7 +1170,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
     cur_region->add_points(std::move(points_int16),
                            mouseEvent->button() == Qt::RightButton || mouseEvent->modifiers() & Qt::ShiftModifier);
 
-    need_update();
+    emit need_update();
 }
 
 void slice_view_scene::center()
