@@ -879,7 +879,7 @@ void view_image::show_image(bool update_others)
 
     auto get_slice = [&](auto& data)
     {
-        return tipl::volume2slice_scaled(data,d,size_t(z),ui->zoom->value());
+        return tipl::volume2slice(data,d,size_t(z));
     };
     std::vector<tipl::image<2,uint8_t> > overlay_region_masks;
     std::vector<tipl::rgb> overlay_region_colors;
@@ -903,7 +903,7 @@ void view_image::show_image(bool update_others)
                     std::array<int,256> label_to_mask;
                     label_to_mask.fill(-1);
 
-                    auto slice = tipl::volume2slice(data,d,size_t(z));
+                    auto slice = get_slice(data);
                     for(size_t j = 0;j < slice.size();++j)
                     {
                         uint32_t label = uint32_t(slice[j]);
@@ -961,6 +961,8 @@ void view_image::show_image(bool update_others)
             overlay_region_masks,overlay_region_colors,1,1,-1,ui->zoom->value());
 
     source_image << buffer;
+    source_image = source_image.scaled(int(buffer.width()*ui->zoom->value()),
+                                       int(buffer.height()*ui->zoom->value()));
     source_image = source_image.mirrored(flip_x,flip_y);
 
     if(!region_image.isNull())
