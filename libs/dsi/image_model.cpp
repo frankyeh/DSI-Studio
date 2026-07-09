@@ -831,7 +831,10 @@ bool src_data::command(std::string cmd,std::string param)
     if(cmd == "[Step T2a][Dilation]")
     {
         if(voxel.mask.depth() == 1)
-            tipl::morphology::dilation(voxel.mask.slice_at(0));
+        {
+            auto slice = voxel.mask.slice_at(0);
+            tipl::morphology::dilation(slice);
+        }
         else
             tipl::morphology::dilation(voxel.mask);
         voxel.steps += cmd+"\n";
