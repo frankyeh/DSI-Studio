@@ -1374,6 +1374,8 @@
     <addaction name="separator"/>
     <addaction name="actionDilation"/>
     <addaction name="actionDilation_by_voxel"/>
+    <addaction name="actionDilation_by_threshold"/>
+    <addaction name="actionErosioin_By_Threshold"/>
     <addaction name="actionErosion"/>
     <addaction name="separator"/>
     <addaction name="actionOpening"/>
@@ -4606,7 +4608,7 @@ Tracking</string>
   </action>
   <action name="actionDilation_by_voxel">
    <property name="text">
-    <string>Dilation by voxel...</string>
+    <string>Dilation By Voxel...</string>
    </property>
    <property name="toolTip">
     <string>run region_action_dilation_by_voxel</string>
@@ -5084,6 +5086,22 @@ Tracking</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+5</string>
+   </property>
+  </action>
+  <action name="actionDilation_by_threshold">
+   <property name="text">
+    <string>Dilation By Threshold...</string>
+   </property>
+   <property name="toolTip">
+    <string>run region_action_dilation_by_threshold</string>
+   </property>
+  </action>
+  <action name="actionErosioin_By_Threshold">
+   <property name="text">
+    <string>Erosioin By Threshold...</string>
+   </property>
+   <property name="toolTip">
+    <string>run region_action_erosion_by_threshold</string>
    </property>
   </action>
  </widget>
