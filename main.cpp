@@ -217,15 +217,6 @@ bool load_file_name(void)
             auto readme = unet_dir/"README.md";
             auto local_unet_dir = tipl::qt::to_path(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))/"unet";
             std::filesystem::create_directories(local_unet_dir);
-
-            auto time = [](const std::filesystem::path& p)
-            {
-                std::error_code ec;
-                auto t = std::filesystem::last_write_time(p,ec);
-                return ec ? std::filesystem::file_time_type::min() : t;
-            };
-
-            auto readme_time = time(readme);
             auto species_prefix = tipl::to_lower(species) + "_";
 
             for(auto line : tipl::read_text_file(readme))
@@ -245,12 +236,8 @@ bool load_file_name(void)
                 if(!tipl::begins_with(tipl::to_lower(nz),species_prefix))
                     continue;
 
-                std::filesystem::path local_nz = local_unet_dir/nz;
-                if(std::filesystem::exists(local_nz) && time(local_nz) <= readme_time)
-                    std::filesystem::remove(local_nz);
-
                 http_list.push_back(url);
-                path_list.push_back(local_nz.u8string());
+                path_list.push_back((local_unet_dir/nz).u8string());
                 name_list.push_back(name);
                 desc_list.push_back(col[2]);
             }
