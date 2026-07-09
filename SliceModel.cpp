@@ -1,6 +1,7 @@
 // ---------------------------------------------------------------------------
 #include <string>
 #include <filesystem>
+#include <unordered_set>
 #include <QFileInfo>
 #include <QImage>
 #include <QInputDialog>
@@ -19,12 +20,37 @@
 
 bool download_file(const std::string& url,
                    const std::filesystem::path& local_path,
-                         std::string& error_msg)
+                   std::string& error_msg,
+                   bool check_size = false)
 {
-    if(!tipl::begins_with(url,"http") || std::filesystem::exists(local_path))
-        return true;
-    tipl::progress p("downloading " + std::filesystem::path(url).filename().string(),true);
     namespace fs = std::filesystem;
+    if(!tipl::begins_with(url,"http"))
+        return true;
+
+    bool has_local = fs::exists(local_path);
+    if(has_local)
+    {
+        if(!check_size)
+            return true;
+
+        QNetworkAccessManager manager;
+        auto* reply = manager.head(QNetworkRequest{QUrl(QString::fromStdString(url))});
+        while(!reply->isFinished())
+            QApplication::processEvents();
+
+        auto online_size = reply->header(QNetworkRequest::ContentLengthHeader).toLongLong();
+        bool online_ok = reply->error() == QNetworkReply::NoError && online_size > 0;
+        reply->deleteLater();
+
+        if(!online_ok)
+            return true;
+
+        std::error_code ec;
+        if(fs::file_size(local_path,ec) == uintmax_t(online_size))
+            return true;
+    }
+
+    tipl::progress p("downloading " + fs::path(url).filename().string(),true);
     fs::create_directories(local_path.parent_path());
 
     auto tmp = local_path;
@@ -36,8 +62,7 @@ bool download_file(const std::string& url,
         return error_msg = "failed to save " + tmp.u8string(),false;
 
     QNetworkAccessManager manager;
-    QNetworkRequest req{QUrl(QString::fromStdString(url))};
-    auto* reply = manager.get(req);
+    auto* reply = manager.get(QNetworkRequest{QUrl(QString::fromStdString(url))});
 
     qint64 received = 0,total = 1;
     QObject::connect(reply,&QNetworkReply::readyRead,[&]{out.write(reply->readAll());});
@@ -53,12 +78,13 @@ bool download_file(const std::string& url,
     bool ok = !p.aborted() && reply->error() == QNetworkReply::NoError;
     if(!ok)
         error_msg = p.aborted() ? "download aborted" : reply->errorString().toStdString();
-
     reply->deleteLater();
 
     if(!ok)
-        return fs::remove(tmp),false;
+        return fs::remove(tmp),has_local;
 
+    if(has_local)
+        fs::remove(local_path);
     fs::rename(tmp,local_path);
     return true;
 }
@@ -66,15 +92,16 @@ bool download_file(const std::string& url,
 extern std::vector<std::vector<std::string> > unet_path,unet_http;
 bool download_unet_model(const std::string& name,std::string& path)
 {
+    static std::unordered_set<std::string> checked;
+
     for(size_t id = 0;id < unet_path.size();++id)
         for(size_t i = 0;i < unet_path[id].size();++i)
             if(name == tipl::remove_all_suffix(std::filesystem::path(unet_path[id][i]).filename().string()))
             {
-                std::string error_msg;
-                if(!download_file(unet_http[id][i],unet_path[id][i],path))
-                    return false;
                 path = unet_path[id][i];
-                return true;
+                if(!checked.insert(path).second && std::filesystem::exists(path))
+                    return true;
+                return download_file(unet_http[id][i],path,path,true);
             }
     path = "cannot find model: " + name;
     return false;
