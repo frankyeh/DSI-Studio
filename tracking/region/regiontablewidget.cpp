@@ -1534,7 +1534,8 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             }
         }
 
-        if(action == "threshold" || action == "threshold_current")
+        if(action == "threshold" || action == "threshold_current" ||
+           action == "dilation_by_threshold" || action == "erosion_by_threshold")
         {
             tipl::const_pointer_image<3,float> I = cur_tracking_window.current_slice->get_source();
             if(I.empty())
@@ -1561,27 +1562,25 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                 threshold = -threshold;
             }
 
-            tipl::image<3,unsigned char> global_mask;
+
             if(action == "threshold")
             {
-                global_mask.resize(I.shape());
-                tipl::par_for(global_mask.size(),[&](size_t i)
-                {
-                    global_mask[i]  = ((I[i] > threshold) ^ flip) ? 1:0;
-                });
+                tipl::image<3,unsigned char> mask(I.shape());
+                for(size_t i = 0;i < mask.size();++i)
+                    mask[i] = ((I[i] > threshold) ^ flip) ? 1:0;
+                for(auto& region : region_to_be_processed)
+                    region->load_region_from_buffer(mask);
             }
-
-            size_t p = 0;
-            for(auto& region : region_to_be_processed)
+            else
             {
-                if(!prog(p++,region_to_be_processed.size()))
-                    break;
-
-                if(action == "threshold_current")
+                size_t p = 0;
+                for(auto& region : region_to_be_processed)
                 {
+                    if(!prog(p++,region_to_be_processed.size()))
+                        break;
+
                     tipl::image<3,unsigned char> mask;
                     region->save_region_to_buffer(mask);
-
                     tipl::image<3,float> ref(mask.shape());
                     if(cur_tracking_window.current_slice->dim == region->dim &&
                         cur_tracking_window.current_slice->to_dif == region->to_diffusion_space)
@@ -1591,16 +1590,16 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                         tipl::matrix<4,4> T = cur_tracking_window.current_slice->to_slice*region->to_diffusion_space;
                         tipl::resample(I,ref,tipl::transformation_matrix<float>(T));
                     }
-
-                    tipl::par_for(mask.size(),[&](size_t i)
-                    {
-                        if(mask[i])
-                            mask[i] = ((ref[i] > threshold) ^ flip) ? 1:0;
-                    });
+                    if(action == "threshold_current")
+                        for(size_t i = 0;i < mask.size();++i)
+                            if(mask[i])
+                                mask[i] = ((ref[i] > threshold) ^ flip) ? 1:0;
+                    if(action == "dilation_by_threshold")
+                        tipl::morphology::dilation_by_threshold(mask,ref,flip ? -threshold : threshold);
+                    if(action == "erosion_by_threshold")
+                        tipl::morphology::erosion_by_threshold(mask,ref,flip ? -threshold : threshold);
                     region->load_region_from_buffer(mask);
                 }
-                else
-                    region->load_region_from_buffer(global_mask);
             }
         }
         if(action == "separate")
