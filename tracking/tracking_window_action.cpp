@@ -1828,8 +1828,7 @@ void tracking_window::on_actionMark_Region_on_T1W_T2W_triggered()
         return;
     auto current_region = regionWidget->regions[uint32_t(regionWidget->currentRow())];
     float mark_value = slice->get_value_range().second*float(ratio);
-    tipl::image<3,unsigned char> mask;
-    current_region->save_region_to_buffer(mask);
+    auto mask = current_region->to_mask();
     if(current_region->to_diffusion_space != slice->to_dif)
     {
         tipl::image<3,unsigned char> new_mask(slice->dim);

@@ -105,12 +105,9 @@ RegionTableWidget::RegionTableWidget(tracking_window& cur_tracking_window_,QWidg
         if (item->column() == 0)
         {
             regions[uint32_t(item->row())]->name = item->text().toStdString();
-            auto current = item->checkState();
-            if (current != static_cast<Qt::CheckState>(item->data(Qt::UserRole+1).toInt()))
-            {
-                item->setData(Qt::UserRole+1, current);
-                emit need_update();
-            }
+            if (item->checkState() != static_cast<Qt::CheckState>(item->data(Qt::UserRole+1).toInt()))
+                command({"check_region", std::to_string(item->row()).c_str(), item->checkState() ? "1" : "0"});
+
         }
         if (item->column() == 1)
             regions[uint32_t(item->row())]->regions_feature = uint8_t(item->text().toInt());
@@ -367,7 +364,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                     mask[index.index()] = 1;
             });
         add_region("whole brain",seed_id);
-        regions.back()->load_region_from_buffer(mask);
+        regions.back()->from_mask(mask);
         emit need_update();
         return run->succeed();
     }
@@ -433,7 +430,8 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         // cmd[2] : additional parameters used by threshold and dilation by voxel
         if(cmd[1].empty())
         {
-            if(cur_tracking_window.ui->actionModify_All->isChecked())
+            if(cur_tracking_window.ui->actionModify_All->isChecked() ||
+               tipl::contains(cmd[0],{"all","sort"}))
             {
                 for (unsigned int roi_index = 0;roi_index < regions.size();++roi_index)
                     if (item(roi_index,0)->checkState() == Qt::Checked)
@@ -455,6 +453,21 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
                 return false;
             return run->canceled();
         }
+        return run->succeed();
+    }
+    if(cmd[0] == "check_region")
+    {
+        // cmd[1] : region index (default current row)
+        // cmd[2] : checked state
+        int cur_row = currentRow();
+        if(!get_cur_row(cmd[1],cur_row))
+            return false;
+        auto check_item = item(cur_row,0);
+        auto check_state = (cmd[2] == "1" ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+        check_item->setData(Qt::UserRole+1, check_state);
+        if (check_item->checkState() != check_state)
+            check_item->setCheckState(check_state);
+        emit need_update();
         return run->succeed();
     }
     if(cmd[0] == "move_up_region" || cmd[0] == "move_down_region")
@@ -506,7 +519,8 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         int cur_row = currentRow();
         if(!get_cur_row(cmd[2],cur_row))
             return false;
-        if(!cur_tracking_window.history.get_filename(this,cmd[1],regions[cur_row]->name + output_format().toStdString()))
+        if(!cur_tracking_window.history.get_filename(this,cmd[1],last_file_name.empty() ?
+                    regions[cur_row]->name + output_format().toStdString() : last_file_name))
             return run->canceled();
 
         if(!tipl::ends_with(cmd[1],{".mat",".txt",".nii",".nii.gz"}))
@@ -520,7 +534,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         auto checked_regions = get_checked_regions();
         if(checked_regions.empty())
             return run->failed("no checked region to save");
-        if(!cur_tracking_window.history.get_filename(this,cmd[1],output_format().toStdString()))
+        if(!cur_tracking_window.history.get_filename(this,cmd[1],last_file_name.empty() ? output_format().toStdString() : last_file_name))
             return run->canceled();
 
         auto dim = checked_regions[0]->dim;
@@ -551,7 +565,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         auto checked_regions = get_checked_regions();
         if (checked_regions.empty())
             return run->failed("no checked region to save");
-        if(!cur_tracking_window.history.get_filename(this,cmd[1],output_format().toStdString()))
+        if(!cur_tracking_window.history.get_filename(this,cmd[1],last_file_name.empty() ? output_format().toStdString() : last_file_name))
             return run->canceled();
         tipl::shape<3> dim = checked_regions[0]->dim;
         tipl::image<3,unsigned short> mask(dim);
@@ -649,11 +663,13 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
             if(!load_multiple_roi_nii(cmd[1].c_str(),cmd[0] == "open_mni_region"))
                 return run->failed(error_msg);
             emit need_update();
+            last_file_name = cmd[1];
             return run->succeed();
         }
         // allow for selecting multiple files
         auto file_list = tipl::qt::open_image_files(this,
-            QString::fromStdString(cur_tracking_window.history.file_stem()) + ".nii.gz",
+            last_file_name.empty() ? QString::fromStdString(cur_tracking_window.history.file_stem()) + ".nii.gz"
+                    : QString::fromStdString(last_file_name),
             "Region files (*.nii *.hdr *nii.gz *.mat);;Text files (*.txt);;All files (*)");
         if(file_list.isEmpty())
             return run->canceled();
@@ -856,7 +872,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         });
         if(prog.aborted())
             return run->canceled();
-        regions[merge_list[0]]->load_region_from_buffer(mask);
+        regions[merge_list[0]]->from_mask(mask);
         begin_update();
         for(int index = merge_list.size()-1;index >= 1;--index)
         {
@@ -1270,79 +1286,64 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
     // cmd[0] : action
     // cmd[1] : region index (default current row)
     // cmd[2] : additional parameters
-    auto checked_regions = get_checked_regions();
 
     QString action = cmd[0].substr(14).c_str();
-    int roi_index = 0;
     std::vector<std::shared_ptr<ROIRegion>> region_to_be_processed;
-    for(auto each : QString::fromStdString(cmd[1]).split('&'))
-    {
-        auto index = each.toInt();
-        if(region_to_be_processed.empty())
-            roi_index = index;
-        if(index < regions.size())
-            region_to_be_processed.push_back(regions[each.toInt()]);
-    }
+    std::vector<size_t> region_rows;
 
-    std::vector<int> rows_to_be_updated;
+    if(cmd[1].empty())
+        cmd[1] = std::to_string(currentRow());
+    for(auto each : QString::fromStdString(cmd[1]).split('&',Qt::SkipEmptyParts))
+    {
+        bool ok = false;
+        int index = each.toInt(&ok);
+        if(!ok || index < 0 || index >= int(regions.size()))
+            return false;
+        region_rows.push_back(size_t(index));
+        region_to_be_processed.push_back(regions[size_t(index)]);
+    }
+    if(region_to_be_processed.empty())
+        return false;
+
     tipl::progress prog(action.toStdString(),true);
     {
-        if(action == "1st_ex_all" || action == "all_ex_1st" || action == "all_inter_1st" || action == "all_to_1st" ||
-           action == "refine_label")
+        if(action.contains("all"))
         {
-            if(checked_regions.size() < 2)
+            if(region_to_be_processed.size() < 2)
                 return false;
-            auto base_dim = checked_regions[0]->dim;
-            auto base_to_dif = checked_regions[0]->to_diffusion_space;
-            std::vector<unsigned int> checked_row;
-            for(unsigned int r = 0;r < regions.size();++r)
-                if(item(r,0)->checkState() == Qt::Checked)
-                    checked_row.push_back(r);
+            auto base_dim = region_to_be_processed[0]->dim;
+            auto base_to_dif = region_to_be_processed[0]->to_diffusion_space;
 
-            tipl::image<3,unsigned char> A;
-            checked_regions[0]->save_region_to_buffer(A);
+            auto A = region_to_be_processed[0]->to_mask();
 
-            std::vector<tipl::image<3,unsigned char>> B_buffers(checked_regions.size());
-            std::vector<uint8_t> same_space_flags(checked_regions.size(),0);
+            std::vector<tipl::image<3,unsigned char>> B_buffers(region_to_be_processed.size());
+            std::vector<uint8_t> same_space_flags(region_to_be_processed.size(),0);
 
             // --- Phase 1: Multithreaded Transformation ---
             {
                 tipl::progress prog_trans("transforming regions",true);
                 size_t prog_count = 0;
-                tipl::par_for(checked_regions.size(),[&](size_t r)
+                tipl::par_for(region_to_be_processed.size(),[&](size_t r)
                 {
-                    prog_trans(prog_count++,checked_regions.size());
+                    prog_trans(prog_count++,region_to_be_processed.size());
                     if(r == 0)
                         return;
 
-                    same_space_flags[r] = (checked_regions[r]->dim == base_dim && checked_regions[r]->to_diffusion_space == base_to_dif) ? 1 : 0;
-
+                    same_space_flags[r] = region_to_be_processed[r]->dim == base_dim &&
+                                          region_to_be_processed[r]->to_diffusion_space == base_to_dif;
                     if(same_space_flags[r])
-                        checked_regions[r]->save_region_to_buffer(B_buffers[r]);
+                        region_to_be_processed[r]->to_mask(B_buffers[r]);
                     else
-                        checked_regions[r]->save_region_to_buffer(B_buffers[r],base_dim,base_to_dif);
+                        region_to_be_processed[r]->to_mask(B_buffers[r],base_dim,base_to_dif);
                 });
             }
 
             // --- Lambda: Unified Region Committer ---
-            std::mutex mtx;
             auto update_and_load_region = [&](size_t r,const tipl::image<3,unsigned char>& buffer)
             {
                 if(r > 0 && !same_space_flags[r])
-                {
-                    checked_regions[r]->vs = checked_regions[0]->vs;
-                    checked_regions[r]->dim = base_dim;
-                    checked_regions[r]->is_diffusion_space = checked_regions[0]->is_diffusion_space;
-                    checked_regions[r]->to_diffusion_space = base_to_dif;
-                    checked_regions[r]->trans_to_mni = checked_regions[0]->trans_to_mni;
-                    checked_regions[r]->is_mni = checked_regions[0]->is_mni;
-                    checked_regions[r]->region.clear();
-                    checked_regions[r]->undo_backup.clear();
-                    checked_regions[r]->redo_backup.clear();
-                }
-                checked_regions[r]->load_region_from_buffer(buffer);
-                std::lock_guard<std::mutex> lock(mtx);
-                rows_to_be_updated.push_back(checked_row[r]);
+                    region_to_be_processed[r]->copy_space(*region_to_be_processed[0]);
+                region_to_be_processed[r]->from_mask(buffer);
             };
             auto get_ref = [&](tipl::image<3,float>& ref,const auto& dim,const auto& to_dif)
             {
@@ -1365,9 +1366,9 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             {
                 tipl::progress prog_load("loading regions",true);
                 size_t prog_count = 0;
-                tipl::par_for(checked_regions.size(),[&](size_t r)
+                tipl::par_for(region_to_be_processed.size(),[&](size_t r)
                               {
-                                  prog_load(prog_count++,checked_regions.size());
+                                  prog_load(prog_count++,region_to_be_processed.size());
                                   if(r < from)
                                       return;
                                   tipl::image<3,unsigned char> B(base_dim);
@@ -1383,7 +1384,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                 for(size_t i = 0;i < A.size();++i)
                     if(A[i])
                         labels[i] = 1;
-                for(size_t r = 1;r < checked_regions.size();++r)
+                for(size_t r = 1;r < region_to_be_processed.size();++r)
                     for(size_t i = 0;i < labels.size();++i)
                         if(B_buffers[r][i])
                             labels[i] = uint16_t(r+1);
@@ -1394,9 +1395,9 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             if(action == "1st_ex_all")
             {
                 tipl::progress prog_action("processing 1st_ex_all");
-                for(size_t r = 1;r < checked_regions.size();++r)
+                for(size_t r = 1;r < region_to_be_processed.size();++r)
                 {
-                    prog_action(r,checked_regions.size());
+                    prog_action(r,region_to_be_processed.size());
                     tipl::masking(A,B_buffers[r]);
                 }
                 update_and_load_region(0,A);
@@ -1404,9 +1405,9 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             else if(action == "all_ex_1st")
             {
                 tipl::progress prog_action("processing all_ex_1st");
-                for(size_t r = 1;r < checked_regions.size();++r)
+                for(size_t r = 1;r < region_to_be_processed.size();++r)
                 {
-                    prog_action(r,checked_regions.size());
+                    prog_action(r,region_to_be_processed.size());
                     tipl::masking(B_buffers[r],A);
                     update_and_load_region(r,B_buffers[r]);
                 }
@@ -1414,9 +1415,9 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             else if(action == "all_inter_1st")
             {
                 tipl::progress prog_action("processing all_inter_1st");
-                for(size_t r = 1;r < checked_regions.size();++r)
+                for(size_t r = 1;r < region_to_be_processed.size();++r)
                 {
-                    prog_action(r,checked_regions.size());
+                    prog_action(r,region_to_be_processed.size());
                     for(size_t i = 0;i < B_buffers[r].size();++i)
                         B_buffers[r][i] = (A[i] & B_buffers[r][i]);
                     update_and_load_region(r,B_buffers[r]);
@@ -1433,7 +1434,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                 tipl::morphology::fill_and_smooth_labels<void>(A,A_labels);
                 load_labels(A_labels,1);
             }
-            else if(action == "refine_label")
+            else if(action == "refine_all")
             {
                 auto labels = make_labels();
                 tipl::image<3,float> ref;
@@ -1460,26 +1461,26 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             std::vector<unsigned int> arg;
             if(action == "sort_name")
             {
-                arg = tipl::arg_sort(regions.size(),[&](int lhs,int rhs)
+                arg = tipl::arg_sort(region_to_be_processed.size(),[&](int lhs,int rhs)
                 {
-                    auto lstr = regions[lhs]->name;
-                    auto rstr = regions[rhs]->name;
+                    auto lstr = region_to_be_processed[lhs]->name;
+                    auto rstr = region_to_be_processed[rhs]->name;
                     return negate ^ (lstr < rstr);
                 });
             }
             else
             {
-                std::vector<float> data(regions.size());
-                tipl::par_for(regions.size(),[&](unsigned int index)
+                std::vector<float> data(region_to_be_processed.size());
+                tipl::par_for(region_to_be_processed.size(),[&](unsigned int index)
                 {
                     if(action == "sort_x")
-                        data[index] = regions[index]->get_pos()[0];
+                        data[index] = region_to_be_processed[index]->get_pos()[0];
                     if(action == "sort_y")
-                        data[index] = regions[index]->get_pos()[1];
+                        data[index] = region_to_be_processed[index]->get_pos()[1];
                     if(action == "sort_z")
-                        data[index] = regions[index]->get_pos()[2];
+                        data[index] = region_to_be_processed[index]->get_pos()[2];
                     if(action == "sort_size")
-                        data[index] = regions[index]->get_volume();
+                        data[index] = region_to_be_processed[index]->get_volume();
                 });
 
                 arg = tipl::arg_sort(data,[negate](float lhs,float rhs){return negate ^ (lhs < rhs);});
@@ -1491,23 +1492,26 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             size_t col_count = columnCount();
             for(size_t i = 0;i < arg.size();++i)
             {
-                new_region[i] = regions[arg[i]];
+                new_region[i] = region_to_be_processed[arg[i]];
                 for(size_t j = 0;j < col_count;++j)
-                    items.push_back(takeItem(arg[i],j));
+                    items.push_back(takeItem(region_rows[arg[i]],j));
             }
-            regions.swap(new_region);
+            region_to_be_processed.swap(new_region);
+            for(size_t i = 0;i < region_rows.size();++i)
+                regions[region_rows[i]] = region_to_be_processed[i];
+
             for(size_t i = 0,pos = 0;i < arg.size();++i)
                 for(size_t j = 0;j < col_count;++j,++pos)
-                    setItem(i,j,items[pos]);
+                    setItem(region_rows[i],j,items[pos]);
             end_update();
         }
 
 
-
-        tipl::par_for(region_to_be_processed.size(),[&](unsigned int i)
-        {
-            region_to_be_processed[i]->perform(action.toStdString());
-        });
+        if(!action.contains("all") && !action.contains("sort"))
+            tipl::par_for(region_to_be_processed.size(),[&](unsigned int i)
+            {
+                region_to_be_processed[i]->perform(action.toStdString());
+            });
 
         if(action == "dilation_by_voxel")
         {
@@ -1527,10 +1531,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
             for(auto& region : region_to_be_processed)
             {
                 prog(p++,region_to_be_processed.size());
-                tipl::image<3,unsigned char> mask;
-                region->save_region_to_buffer(mask);
-                tipl::morphology::dilation_by_radius(mask,threshold);
-                region->load_region_from_buffer(mask);
+                region->from_mask(tipl::morphology::dilation_by_radius(region->to_mask(),threshold));
             }
         }
 
@@ -1569,7 +1570,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                 for(size_t i = 0;i < mask.size();++i)
                     mask[i] = ((I[i] > threshold) ^ flip) ? 1:0;
                 for(auto& region : region_to_be_processed)
-                    region->load_region_from_buffer(mask);
+                    region->from_mask(mask);
             }
             else
             {
@@ -1579,8 +1580,7 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                     if(!prog(p++,region_to_be_processed.size()))
                         break;
 
-                    tipl::image<3,unsigned char> mask;
-                    region->save_region_to_buffer(mask);
+                    auto mask = region->to_mask();
                     tipl::image<3,float> ref(mask.shape());
                     if(cur_tracking_window.current_slice->dim == region->dim &&
                         cur_tracking_window.current_slice->to_dif == region->to_diffusion_space)
@@ -1598,54 +1598,41 @@ bool RegionTableWidget::do_action(std::vector<std::string>& cmd)
                         tipl::morphology::dilation_by_threshold(mask,ref,flip ? -threshold : threshold);
                     if(action == "erosion_by_threshold")
                         tipl::morphology::erosion_by_threshold(mask,ref,flip ? -threshold : threshold);
-                    region->load_region_from_buffer(mask);
+                    region->from_mask(mask);
                 }
             }
         }
         if(action == "separate")
         {
-            ROIRegion& cur_region = *regions[size_t(roi_index)];
-            tipl::image<3,unsigned char> mask;
-            cur_region.save_region_to_buffer(mask);
-            QString name = item(roi_index,0)->text();
-            tipl::image<3,unsigned int> labels;
-            std::vector<std::vector<size_t>> r;
-            tipl::morphology::connected_component_labeling(mask,labels,r);
+            ROIRegion& cur_region = *region_to_be_processed.front();
+            auto r = tipl::morphology::connected_component_labeling(cur_region.to_mask());
 
+            QString name = item(region_rows.front(),0)->text();
             begin_update();
-            mask = 0;
-            for(unsigned int j = 0,total_count = 0;j < r.size() && total_count < 256;++j)
+            for(size_t j = 0,total_count = 0;j < r.size() && total_count < 256;++j)
             {
-                if(!r[j].empty())
-                {
-                    for(unsigned int i = 0;i < r[j].size();++i)
-                        mask[r[j][i]] = 1;
+                if(r[j].empty())
+                    continue;
 
-                    regions.push_back(std::make_shared<ROIRegion>(cur_tracking_window.handle));
-                    regions.back()->dim = cur_region.dim;
-                    regions.back()->vs = cur_region.vs;
-                    regions.back()->is_diffusion_space = cur_region.is_diffusion_space;
-                    regions.back()->to_diffusion_space = cur_region.to_diffusion_space;
-                    regions.back()->is_mni = cur_region.is_mni;
-                    regions.back()->load_region_from_buffer(mask);
-                    add_row(int(regions.size()-1),(name + "_"+QString::number(total_count+1)));
+                auto new_region = std::make_shared<ROIRegion>(cur_tracking_window.handle);
+                new_region->copy_space(cur_region);
+                new_region->region.reserve(r[j].size());
+                for(auto index : r[j])
+                    new_region->region.push_back(tipl::vector<3,short>(tipl::pixel_index<3>(index,cur_region.dim)));
 
-                    for(unsigned int i = 0;i < r[j].size();++i)
-                        mask[r[j][i]] = 0; // Revert ONLY changed voxels
-
-                    ++total_count;
-                }
+                regions.push_back(new_region);
+                add_row(int(regions.size()-1),name + "_" + QString::number(++total_count));
             }
             end_update();
         }
     }
 
-    for(int i : rows_to_be_updated)
+    for(auto i : region_rows)
     {
         closePersistentEditor(item(i,1));
         closePersistentEditor(item(i,2));
-        item(i,1)->setData(Qt::DisplayRole,regions[uint32_t(i)]->regions_feature);
-        item(i,2)->setData(Qt::UserRole,regions[uint32_t(i)]->region_render->color.color);
+        item(i,1)->setData(Qt::DisplayRole,regions[i]->regions_feature);
+        item(i,2)->setData(Qt::UserRole,regions[i]->region_render->color.color);
         item(i,3)->setText(QString("(%1,%2,%3)x(%4,%5,%6)")
                            .arg(regions[i]->dim[0])
                            .arg(regions[i]->dim[1])

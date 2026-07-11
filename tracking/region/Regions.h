@@ -71,20 +71,28 @@ public: // rendering options
             (*this) = rhs;
         }
 
-        const ROIRegion& operator = (const ROIRegion & rhs) {
-
+        void copy_space(const ROIRegion & rhs){
             dim = rhs.dim;
             vs = rhs.vs;
             trans_to_mni = rhs.trans_to_mni;
             is_mni = rhs.is_mni;
+            is_diffusion_space = rhs.is_diffusion_space;
+            to_diffusion_space = rhs.to_diffusion_space;
+
+            region.clear();
+            undo_backup.clear();
+            redo_backup.clear();
+
+        }
+        const ROIRegion& operator = (const ROIRegion & rhs) {
+            copy_space(rhs);
 
             region = rhs.region;
             undo_backup = rhs.undo_backup;
             redo_backup = rhs.redo_backup;
+
             regions_feature = rhs.regions_feature;
             region_render->color = rhs.region_render->color;
-            is_diffusion_space = rhs.is_diffusion_space;
-            to_diffusion_space = rhs.to_diffusion_space;
             set_modified();
             return *this;
         }
@@ -154,9 +162,22 @@ public:
         void flip_region(unsigned int dimension);
         bool shift(tipl::vector<3,float> dx);
 
-        void load_region_from_buffer(const tipl::image<3,unsigned char>& mask);
-        void save_region_to_buffer(tipl::image<3,unsigned char>& mask) const;
-        void save_region_to_buffer(tipl::image<3,unsigned char>& mask,const tipl::shape<3>& dim_to,const tipl::matrix<4,4>& trans_to) const;
+        void from_mask(const tipl::image<3,unsigned char>& mask);
+
+        void to_mask(tipl::image<3,unsigned char>& mask) const;
+        void to_mask(tipl::image<3,unsigned char>& mask,const tipl::shape<3>& dim_to,const tipl::matrix<4,4>& trans_to) const;
+        auto to_mask(void) const
+        {
+            tipl::image<3,unsigned char> mask;
+            to_mask(mask);
+            return mask;
+        }
+        auto to_mask(const tipl::shape<3>& dim_to,const tipl::matrix<4,4>& trans_to) const
+        {
+            tipl::image<3,unsigned char> mask;
+            to_mask(mask,dim_to,trans_to);
+            return mask;
+        }
         void perform(const std::string& action);
 
         template<typename value_type>

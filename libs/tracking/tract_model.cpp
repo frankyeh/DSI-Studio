@@ -1715,18 +1715,13 @@ bool TractModel::delete_branch(void)
 {
     std::vector<tipl::vector<3,short> > p1,p2;
     to_end_point_voxels(p1,p2);
-    tipl::image<3,unsigned char>mask;
     ROIRegion r1(geo,vs,trans_to_mni),r2(geo,vs,trans_to_mni);
     r1.add_points(std::move(p1));
     r2.add_points(std::move(p2));
 
-    r1.save_region_to_buffer(mask);
-    tipl::morphology::defragment(mask);
-    r1.load_region_from_buffer(mask);
+    r1.from_mask(tipl::morphology::defragment(r1.to_mask()));
+    r2.from_mask(tipl::morphology::defragment(r2.to_mask()));
 
-    r2.save_region_to_buffer(mask);
-    tipl::morphology::defragment(mask);
-    r2.load_region_from_buffer(mask);
 
     std::shared_ptr<fib_data> handle(new fib_data(geo,vs,trans_to_mni));
     std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));

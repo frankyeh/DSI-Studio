@@ -812,7 +812,7 @@ bool src_data::command(std::string cmd,std::string param)
         }
         ROIRegion region(voxel.dim,voxel.vs);
         region.load_region_from_file(param);
-        region.save_region_to_buffer(voxel.mask);
+        region.to_mask(voxel.mask);
         voxel.steps += std::string("[Step T2a][Open]=") + param + "\n";
         return true;
     }

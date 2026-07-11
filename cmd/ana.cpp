@@ -312,7 +312,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             regions.back()->trans_to_mni = trans_to_mni;
         }
         tipl::image<3,unsigned char> mask(from);
-        regions.back()->load_region_from_buffer(mask);
+        regions.back()->from_mask(mask);
 
         unsigned int color = 0x00FFFFFF;
         unsigned int type = default_id;
