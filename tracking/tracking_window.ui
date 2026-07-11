@@ -2854,6 +2854,9 @@ Tracking</string>
    <property name="toolTip">
     <string>run new_region</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+F1</string>
+   </property>
   </action>
   <action name="actionOpenRegion">
    <property name="icon">
@@ -2866,6 +2869,9 @@ Tracking</string>
    <property name="toolTip">
     <string>run open_region</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+F2</string>
+   </property>
   </action>
   <action name="actionSaveRegionAs">
    <property name="icon">
@@ -2877,6 +2883,9 @@ Tracking</string>
    </property>
    <property name="toolTip">
     <string>run save_region</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+F5</string>
    </property>
   </action>
   <action name="actionDeleteRegion">
@@ -3566,6 +3575,9 @@ Tracking</string>
    <property name="toolTip">
     <string>run check_all_regions</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+A</string>
+   </property>
   </action>
   <action name="actionUnckech_all_regions">
    <property name="text">
@@ -3573,6 +3585,9 @@ Tracking</string>
    </property>
    <property name="toolTip">
     <string>run uncheck_all_regions</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+U</string>
    </property>
   </action>
   <action name="actionCopyTrack">
@@ -3608,6 +3623,9 @@ Tracking</string>
    </property>
    <property name="toolTip">
     <string>run save_all_regions</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+F6</string>
    </property>
   </action>
   <action name="actionSave_Tracking_Settings">
@@ -3691,6 +3709,9 @@ Tracking</string>
    <property name="toolTip">
     <string>run save_all_regions_to_folder</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+F7</string>
+   </property>
   </action>
   <action name="actionRestore_Settings">
    <property name="icon">
@@ -3711,6 +3732,9 @@ Tracking</string>
    </property>
    <property name="toolTip">
     <string>run merge_regions</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+M</string>
    </property>
   </action>
   <action name="actionSave_All_Tracts_As_Multiple_Files">
@@ -4122,6 +4146,9 @@ Tracking</string>
    <property name="toolTip">
     <string>run open_mni_region</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+F3</string>
+   </property>
   </action>
   <action name="action1st_Ex_All">
    <property name="text">
@@ -4320,9 +4347,6 @@ Tracking</string>
    </property>
    <property name="text">
     <string>Modify All Checked</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+A</string>
    </property>
   </action>
   <action name="actionOpening">
@@ -4624,6 +4648,9 @@ Tracking</string>
    </property>
    <property name="toolTip">
     <string>run save_4d_region</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+S</string>
    </property>
   </action>
   <action name="actionRight_Lower">
@@ -5079,10 +5106,10 @@ Tracking</string>
   </action>
   <action name="actionRefine_Label">
    <property name="text">
-    <string>Refine</string>
+    <string>Refine All</string>
    </property>
    <property name="toolTip">
-    <string>run region_action_refine_label</string>
+    <string>run region_action_refine_all</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+5</string>
