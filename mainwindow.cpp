@@ -616,6 +616,13 @@ void MainWindow::loadFib(QString filename)
         default_geo = tracking_windows.back()->saveGeometry();
     if(!default_state.size())
         default_state = tracking_windows.back()->saveState();
+
+    if(int p = filename.lastIndexOf('_');!filename.endsWith("_dseg.nii.gz") && p != -1)
+    {
+        auto dseg_file = filename.left(p) + "_dseg.nii.gz";
+        if(QFileInfo(dseg_file).exists())
+            tracking_windows.back()->command({"open_region",dseg_file.toUtf8().constData()});
+    }
 }
 void MainWindow::loadNii(QStringList file_names)
 {
