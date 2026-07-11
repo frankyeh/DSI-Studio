@@ -978,7 +978,7 @@ void slice_view_scene::mouseReleaseEvent ( QGraphicsSceneMouseEvent * mouseEvent
         return;
     }
     if(regionWidget->item(regionWidget->currentRow(),0)->checkState() != Qt::Checked)
-        regionWidget->check_row(regionWidget->currentRow(),true);
+        regionWidget->command({"check_region",std::to_string(regionWidget->currentRow()).c_str(),"1"});
 
     std::vector<tipl::vector<3,float> >points;
     switch (sel_mode)
