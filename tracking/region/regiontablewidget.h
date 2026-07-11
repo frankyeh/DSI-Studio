@@ -69,7 +69,7 @@ signals:
 public:
     std::vector<std::shared_ptr<ROIRegion> > regions;
     int color_gen = 0;
-    std::string error_msg;
+    std::string error_msg,last_file_name;
     bool command(std::vector<std::string> cmd);
     bool do_action(std::vector<std::string>& cmd);
 
