@@ -4,8 +4,8 @@
 #include <QTextStream>
 #include "img.hpp"
 std::map<std::string,std::string> dicom_dictionary;
-extern std::vector<std::vector<std::string> > unet_path;
-bool download_unet_model(const std::string& name,std::string& path);
+extern std::vector<std::vector<std::string> > unet_http;
+bool download_unet_model(tipl::ml3d::tissue_seg& unet,const std::string& name);
 bool estimate_bias_field(tipl::image<3> I,
                         tipl::image<3,unsigned char> mask,
                         tipl::image<3>& log_bias_field,
@@ -59,9 +59,7 @@ bool variant_image::command(std::string cmd,std::string param1)
             auto flip_swap_seq = tipl::io::get_flip_swap_seq(T);
             tipl::io::apply_flip_swap_seq(unet.eval.mask,flip_swap_seq);
             tipl::io::apply_flip_swap_seq(J,flip_swap_seq);
-
-            if(!download_unet_model(tipl::remove_all_suffix(std::filesystem::path(param1).filename().string()),unet.error_msg) ||
-               !unet.load_model<tipl::io::gz_mat_read>(unet.error_msg) ||
+            if(!download_unet_model(unet,std::filesystem::path(param1).stem().string()) ||
                !unet.forward(std::move(J),vs))
                 return tipl::error() << unet.error_msg,result = false,void();
 
@@ -609,7 +607,7 @@ int img(tipl::program_option<tipl::out>& po)
                 if(param.empty())
                 {
                     tipl::out() << "please specify model name using --model=[model file path], available models:";
-                    for(const auto& each : unet_path)
+                    for(const auto& each : unet_http)
                         for(const auto& each2 : each)
                             tipl::out() << tipl::remove_all_suffix(std::filesystem::path(each2).filename().string());
                     return 0;
