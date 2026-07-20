@@ -453,6 +453,16 @@ void reconstruction_window::on_doDTI_clicked()
         if(result == QMessageBox::Yes)
             handle->command("[Step T2][Edit][Resample]","2");
     }
+    if(!tipl::contains(handle->voxel.report,"bias field"))
+    {
+        auto result = QMessageBox::information(this,QApplication::applicationName(),
+                                               QString("Correct signal inhomogeneity using bias field correction?"),
+                                               QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+        if(result == QMessageBox::Cancel)
+            return;
+        if(result == QMessageBox::Yes)
+            handle->command("[Step T2][Corrections][Bias Field]");
+    }
     if(!handle->is_human_data && (handle->long_axis_direction() != 1))
     {
         auto result = QMessageBox::information(this,QApplication::applicationName(),
