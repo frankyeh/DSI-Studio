@@ -381,7 +381,7 @@ bool TableKeyEventWatcher::eventFilter(QObject * receiver, QEvent * event)
     return false;
 }
 
-extern std::vector<std::vector<std::string> > unet_path,unet_names;
+extern std::vector<std::vector<std::string> > unet_names,unet_http;
 view_image::view_image(QWidget *parent) :
     QMainWindow(parent),
     cur_image(new variant_image),
@@ -485,9 +485,9 @@ view_image::view_image(QWidget *parent) :
     for(size_t i = 0;i < unet_names.size();++i)
         for(size_t j = 0;j < unet_names[i].size();++j)
         {
-            ui->menuBrain_Extraction->addAction(addSubMenuItem("brain_extraction",unet_names[i][j],unet_path[i][j]));
-            ui->menuSegmentation->addAction(addSubMenuItem("segmentation",unet_names[i][j],unet_path[i][j]));
-            ui->menuDeface->addAction(addSubMenuItem("deface",unet_names[i][j],unet_path[i][j]));
+            ui->menuBrain_Extraction->addAction(addSubMenuItem("brain_extraction",unet_names[i][j],std::filesystem::path(unet_http[i][j]).stem().u8string()));
+            ui->menuSegmentation->addAction(addSubMenuItem("segmentation",unet_names[i][j],std::filesystem::path(unet_http[i][j]).stem().u8string()));
+            ui->menuDeface->addAction(addSubMenuItem("deface",unet_names[i][j],std::filesystem::path(unet_http[i][j]).stem().u8string()));
         }
 
     ui->tabWidget->setCurrentIndex(0);
