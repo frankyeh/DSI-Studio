@@ -192,30 +192,27 @@ bool src_data::mask_from_template(void)
     apply_mask = true;
     return true;
 }
-extern std::vector<std::vector<std::string> > unet_path;
-bool download_unet_model(const std::string& name,std::string& path);
+extern std::vector<std::vector<std::string> > unet_http;
+bool download_unet_model(tipl::ml3d::tissue_seg& unet,const std::string& name);
 bool src_data::mask_from_unet(void)
 {
+    tipl::progress p("generating a mask using unet",true);
     std::vector<tipl::image<3> > b0;
     if(!read_b0(b0))
         return false;
     tipl::filter::gaussian(b0[0]);
-    std::string model_file_name;
-    if(voxel.template_id < unet_path.size())
-        for(const auto& each : unet_path[voxel.template_id])
+    tipl::ml3d::tissue_seg unet;
+    if(voxel.template_id < unet_http.size())
+        for(const auto& each : unet_http[voxel.template_id])
         {
-            if(tipl::ends_with(each,"tissue_T2w.nz"))
+            if(tipl::ends_with(each,"human_tissue.nz"))
             {
-                if(!download_unet_model(tipl::remove_all_suffix(std::filesystem::path(each).filename().string()),model_file_name))
-                    return  error_msg = model_file_name,false;
+                if(!download_unet_model(unet,std::filesystem::path(each).stem().u8string()) ||
+                   !unet.forward(std::move(b0[0]),voxel.vs))
+                    return error_msg = unet.error_msg,false;
                 break;
             }
         }
-    tipl::progress p("generating a mask using unet",true);
-    tipl::ml3d::tissue_seg unet;
-    if(!unet.load_model<tipl::io::gz_mat_read>(model_file_name) ||
-       !unet.forward(std::move(b0[0]),voxel.vs))
-        return error_msg = unet.error_msg,false;
     tipl::threshold(unet.eval.fg_prob,voxel.mask,0.5f,1,0);
     return true;
 }
