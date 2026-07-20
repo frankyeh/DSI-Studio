@@ -213,7 +213,7 @@ bool src_data::mask_from_unet(void)
                 break;
             }
         }
-    tipl::threshold(unet.eval.fg_prob,voxel.mask,0.5f,1,0);
+    tipl::threshold(unet.data.fg_prob,voxel.mask,0.5f,1,0);
     return true;
 }
 
@@ -1655,7 +1655,7 @@ bool src_data::correct_bias_field(void)
             if(prog.aborted())
                 return false;
         }
-        voxel.report += " The bias field was corrected using b0 image.";
+        voxel.report += " The bias field was corrected using the sum of diffusion images.";
     }
     update_dwi_sum();
     update_mask();

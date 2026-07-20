@@ -54,10 +54,10 @@ bool variant_image::command(std::string cmd,std::string param1)
 
             auto J = I;
             tipl::ml3d::tissue_seg unet;
-            unet.eval.mask = brain_outter_mask;
+            unet.data.mask = brain_outter_mask;
 
             auto flip_swap_seq = tipl::io::get_flip_swap_seq(T);
-            tipl::io::apply_flip_swap_seq(unet.eval.mask,flip_swap_seq);
+            tipl::io::apply_flip_swap_seq(unet.data.mask,flip_swap_seq);
             tipl::io::apply_flip_swap_seq(J,flip_swap_seq);
             if(!download_unet_model(unet,std::filesystem::path(param1).stem().string()) ||
                !unet.forward(std::move(J),vs))
@@ -66,12 +66,12 @@ bool variant_image::command(std::string cmd,std::string param1)
 
             if(cmd == "brain_extraction")
             {
-                tipl::io::apply_flip_swap_seq(unet.eval.fg_prob,flip_swap_seq,true);
-                I *= unet.eval.fg_prob;
+                tipl::io::apply_flip_swap_seq(unet.data.fg_prob,flip_swap_seq,true);
+                I *= unet.data.fg_prob;
             }
             if(cmd == "deface")
             {
-                auto& mask = unet.eval.mask;
+                auto& mask = unet.data.mask;
                 tipl::io::apply_flip_swap_seq(mask,flip_swap_seq,true);
 
                 tipl::downsampling(mask);
@@ -89,18 +89,18 @@ bool variant_image::command(std::string cmd,std::string param1)
                 tipl::morphology::erosion(brain_outter_mask);
 
                 brain_outter_mask *= mask;
-                mask.resize(unet.eval.fg_prob.shape());
+                mask.resize(unet.data.fg_prob.shape());
                 tipl::upsample_with_padding(brain_outter_mask,mask);
-                unet.eval.fg_prob = mask;
-                tipl::filter::gaussian(unet.eval.fg_prob);
-                tipl::filter::gaussian(unet.eval.fg_prob);
-                I *= unet.eval.fg_prob;
+                unet.data.fg_prob = mask;
+                tipl::filter::gaussian(unet.data.fg_prob);
+                tipl::filter::gaussian(unet.data.fg_prob);
+                I *= unet.data.fg_prob;
             }
             if(cmd == "segmentation")
             {
                 I.clear();
-                tipl::io::apply_flip_swap_seq(unet.eval.label,flip_swap_seq,true);
-                I_int8 = std::move(unet.eval.label);
+                tipl::io::apply_flip_swap_seq(unet.data.label,flip_swap_seq,true);
+                I_int8 = std::move(unet.data.label);
             }
 
             return;

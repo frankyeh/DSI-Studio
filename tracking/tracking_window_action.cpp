@@ -304,7 +304,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 if(!handle->get_template_mask(reg_slice->source_images.shape(),reg_slice->to_dif,mask))
                     return run->failed(handle->error_msg);
                 tipl::image<3> maskJ(mask),source_images(current_slice->get_source());
-                unet.eval.mask = std::move(mask);
+                unet.data.mask = std::move(mask);
                 tipl::filter::gaussian(maskJ);
                 tipl::filter::gaussian(maskJ);
                 source_images *= maskJ;
@@ -325,8 +325,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
         }
         */
         {
-            const auto& unet_label = unet.eval.label;
-            std::vector<std::vector<tipl::vector<3,short> > > regions(unet.eval.cur_count-1);
+            const auto& unet_label = unet.data.label;
+            std::vector<std::vector<tipl::vector<3,short> > > regions(unet.data.cur_count-1);
             tipl::par_for(regions.size(),[&](size_t label)
             {
                 size_t sz = current_slice->dim.size();
