@@ -2948,7 +2948,7 @@ bool src_data::load_from_file(const std::filesystem::path& dwi_file_name)
                      + std::to_string(voxel.hist_image.height()) + " pixels.";
         tipl::out() << "generating mask";
         tipl::segmentation::otsu(dwi,voxel.mask);
-        tipl::negate(voxel.mask);
+        tipl::morphology::negate(voxel.mask);
         for(int i = 0;i < int(dwi.width()/200);++i)
         {
             auto slice = voxel.mask.slice_at(0);
