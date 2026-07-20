@@ -303,8 +303,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 tipl::image<3,unsigned char> mask;
                 if(!handle->get_template_mask(reg_slice->source_images.shape(),reg_slice->to_dif,mask))
                     return run->failed(handle->error_msg);
-                tipl::image<3> maskJ(mask),source_images(current_slice->get_source());
-                unet.data.mask = std::move(mask);
+                tipl::image<3> maskJ(mask);
                 tipl::filter::gaussian(maskJ);
                 tipl::filter::gaussian(maskJ);
                 source_images *= maskJ;
