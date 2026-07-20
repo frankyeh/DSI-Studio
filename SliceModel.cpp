@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <unordered_set>
 #include <QFileInfo>
+#include <QStandardPaths>
 #include <QImage>
 #include <QInputDialog>
 #include <QMessageBox>
@@ -89,21 +90,23 @@ bool download_file(const std::string& url,
     return true;
 }
 
-extern std::vector<std::vector<std::string> > unet_path,unet_http;
-bool download_unet_model(const std::string& name,std::string& path)
+extern std::vector<std::vector<std::string> > unet_http;
+bool download_unet_model(tipl::ml3d::tissue_seg& unet,const std::string& name)
 {
     static std::unordered_set<std::string> checked;
-
-    for(size_t id = 0;id < unet_path.size();++id)
-        for(size_t i = 0;i < unet_path[id].size();++i)
-            if(name == tipl::remove_all_suffix(std::filesystem::path(unet_path[id][i]).filename().string()))
-            {
-                path = unet_path[id][i];
-                if(!checked.insert(path).second && std::filesystem::exists(path))
-                    return true;
-                return download_file(unet_http[id][i],path,path,true);
-            }
-    path = "cannot find model: " + name;
+    for(const auto& list : unet_http)
+        for(const auto& url : list)
+        {
+            auto file = std::filesystem::path(url).filename().u8string();
+            if(name != tipl::remove_all_suffix(file))
+                continue;
+            auto path = tipl::qt::to_path(QStandardPaths::writableLocation(
+                            QStandardPaths::AppLocalDataLocation))/"unet"/file;
+            return ((!checked.insert(file).second && std::filesystem::exists(path)) ||
+                    download_file(url,path,unet.error_msg,true)) &&
+                   unet.load_model<tipl::io::gz_mat_read>(path);
+        }
+    unet.error_msg = "cannot find model: " + name;
     return false;
 }
 
