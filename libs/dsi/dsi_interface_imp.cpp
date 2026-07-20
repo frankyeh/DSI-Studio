@@ -76,9 +76,6 @@ bool src_data::reconstruction(void)
         if(voxel.is_histology)
             return reconstruction_hist();
 
-        if(!tipl::contains(voxel.report,"bias field"))
-            correct_bias_field();
-
         switch (voxel.method_id)
         {
         case 1://DTI
