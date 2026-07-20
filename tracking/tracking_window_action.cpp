@@ -18,8 +18,8 @@
 #include "libs/tracking/tracking_thread.hpp"
 
 
-extern std::vector<std::vector<std::string> > unet_path,unet_names,unet_desc;
-bool download_unet_model(const std::string& name,std::string& path);
+extern std::vector<std::vector<std::string> > unet_names,unet_http,unet_desc;
+bool download_unet_model(tipl::ml3d::tissue_seg& unet,const std::string& name);
 extern std::vector<std::string> template_name_list;
 std::string show_info_dialog(const std::string& title,
                              const std::string& result,
@@ -289,13 +289,10 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->canceled();
 
         tipl::image<3> source_images(current_slice->get_source());
-        tipl::ml3d::tissue_seg unet;
         tipl::progress prog(cmd[0],true);
-
-        std::string path;
-        if(!download_unet_model(cmd[1],path) || !unet.load_model<tipl::io::gz_mat_read>(path))
+        tipl::ml3d::tissue_seg unet;
+        if(!download_unet_model(unet,cmd[1]))
             return run->failed(unet.error_msg);
-
 
         if(tipl::contains(unet.preproc,"bet") && !current_slice->is_diffusion_space)
         {
@@ -1754,12 +1751,11 @@ void tracking_window::on_template_box_currentIndexChanged(int set_template_id)
     ui->addRegionFromAtlas->setVisible(!handle->atlas_list.empty());
 
     ui->menuSegment->clear();
-    for(size_t i = 0;i < unet_path[set_template_id].size();++i)
+    for(size_t i = 0;i < unet_names[set_template_id].size();++i)
     {
         QAction* added_action;
         ui->menuSegment->addAction(added_action = addSubMenuItem(
-                    tipl::remove_all_suffix(std::filesystem::path(unet_path[set_template_id][i]).filename().string()),
-                    unet_names[set_template_id][i],"run segment_brain"));
+            std::filesystem::path(unet_http[set_template_id][i]).stem().u8string(),unet_names[set_template_id][i],"run segment_brain"));
         added_action->setStatusTip(QString::fromStdString(unet_names[set_template_id][i]));
         added_action->setWhatsThis(QString::fromStdString(unet_desc[set_template_id][i]));
     }
