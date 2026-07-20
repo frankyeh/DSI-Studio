@@ -45,17 +45,8 @@ bool variant_image::command(std::string cmd,std::string param1)
 
         if(cmd == "brain_extraction" || cmd == "segmentation" || cmd == "deface")
         {
-            tipl::image<3,unsigned char> brain_outter_mask;
-            tipl::threshold(I,brain_outter_mask,0);
-            tipl::morphology::defragment(brain_outter_mask);
-            tipl::morphology::negate(brain_outter_mask);
-            tipl::morphology::defragment(brain_outter_mask);
-            tipl::morphology::negate(brain_outter_mask);
-
             auto J = I;
             tipl::ml3d::tissue_seg unet;
-            unet.data.mask = brain_outter_mask;
-
             auto flip_swap_seq = tipl::io::get_flip_swap_seq(T);
             tipl::io::apply_flip_swap_seq(unet.data.mask,flip_swap_seq);
             tipl::io::apply_flip_swap_seq(J,flip_swap_seq);
@@ -75,11 +66,16 @@ bool variant_image::command(std::string cmd,std::string param1)
                 tipl::io::apply_flip_swap_seq(mask,flip_swap_seq,true);
 
                 tipl::downsampling(mask);
-                tipl::downsampling(brain_outter_mask);
                 // expand the mask to include tissue nearby the brain tissue
                 tipl::morphology::smoothing(mask);
                 tipl::morphology::smoothing(mask);
                 tipl::morphology::dilation_by_radius(mask,12/vs[0]);
+
+
+                tipl::image<3,unsigned char> brain_outter_mask;
+                tipl::threshold(I,brain_outter_mask,0);
+                tipl::morphology::dndnco(brain_outter_mask);
+                tipl::downsampling(brain_outter_mask);
 
                 tipl::morphology::dilation(brain_outter_mask);
                 tipl::morphology::dilation(brain_outter_mask);
