@@ -584,8 +584,6 @@ bool fib_data::load_from_file(const std::filesystem::path& file_name)
     if(!load_from_mat())
         return false;
 
-    if(!tipl::contains(report,"bias field"))
-        correct_bias_field();
     return true;
 }
 bool estimate_bias_field(tipl::image<3> I,
