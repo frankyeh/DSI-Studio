@@ -4,6 +4,7 @@
 #include "view_image.h"
 #include "ui_view_image.h"
 #include <QPlainTextEdit>
+#include <QSettings>
 #include <QFileInfo>
 #include <QMessageBox>
 #include <QBuffer>
@@ -483,12 +484,18 @@ view_image::view_image(QWidget *parent) :
     };
 
     for(size_t i = 0;i < unet_names.size();++i)
+    {
         for(size_t j = 0;j < unet_names[i].size();++j)
         {
             ui->menuBrain_Extraction->addAction(addSubMenuItem("brain_extraction",unet_names[i][j],std::filesystem::path(unet_http[i][j]).stem().u8string()));
             ui->menuSegmentation->addAction(addSubMenuItem("segmentation",unet_names[i][j],std::filesystem::path(unet_http[i][j]).stem().u8string()));
             ui->menuDeface->addAction(addSubMenuItem("deface",unet_names[i][j],std::filesystem::path(unet_http[i][j]).stem().u8string()));
         }
+        ui->menuBrain_Extraction->addSeparator();
+        ui->menuSegmentation->addSeparator();
+        ui->menuDeface->addSeparator();
+    }
+    update_recent_unet();
 
     ui->tabWidget->setCurrentIndex(0);
 
@@ -511,6 +518,43 @@ view_image::~view_image()
     qApp->removeEventFilter(this);
     delete ui;
 }
+
+void view_image::update_recent_unet(QAction* used)
+{
+    QSettings settings;
+    auto recent = settings.value("recent_unet").toStringList();
+
+    if(used)
+    {
+        QString value = used->statusTip()+'\t'+used->text().section(" Using ",-1)+'\t'+used->data().toString();
+        recent.removeAll(value);
+        recent.prepend(value);
+        recent = recent.mid(0,5);
+        settings.setValue("recent_unet",recent);
+    }
+
+    while(!ui->menuUNet->actions().empty() &&
+           !ui->menuUNet->actions().front()->menu())
+        delete ui->menuUNet->actions().front();
+
+    auto before = ui->menuUNet->actions().value(0);
+    for(const auto& value : recent)
+    {
+        auto v = value.split('\t');
+        if(v.size() != 3)
+            continue;
+        QString prefix = v[0] == "segmentation" ? "Segment" :
+                          v[0] == "brain_extraction" ? "Brain Extract" : "Deface";
+        auto action = new QAction(prefix + " Using " + v[1],this);
+        action->setStatusTip(v[0]);
+        action->setData(v[2]);
+        connect(action,SIGNAL(triggered()),this,SLOT(run_action()));
+        ui->menuUNet->insertAction(before,action);
+    }
+    if(!recent.empty())
+        ui->menuUNet->insertSeparator(before);
+}
+
 bool view_image::eventFilter(QObject *obj, QEvent *event)
 {
     if (event->type() == QEvent::Wheel && obj->parent() == ui->view)
@@ -1110,20 +1154,21 @@ void view_image::on_dwi_volume_valueChanged(int value)
 
 void view_image::run_action()
 {
-    QAction *action = qobject_cast<QAction *>(sender());
+    auto action = qobject_cast<QAction*>(sender());
     if(!action)
         return;
+
+    bool result;
     if(action->statusTip().isEmpty())
-    {
-        if(!command(action->text().toLower().replace(' ','_').toStdString()))
-            QMessageBox::critical(this,"ERROR",error_msg.c_str());
-    }
+        result = command(action->text().toLower().replace(' ','_').toStdString());
     else
-    // run u-net
-    {
-        if(!command(action->statusTip().toStdString(),action->data().toString().toStdString()))
-            QMessageBox::critical(this,"ERROR",error_msg.c_str());
-    }
+        result = command(action->statusTip().toStdString(),
+                         action->data().toString().toStdString());
+
+    if(!result)
+        QMessageBox::critical(this,"ERROR",error_msg.c_str());
+    else if(!action->statusTip().isEmpty())
+        update_recent_unet(action);
 }
 
 
