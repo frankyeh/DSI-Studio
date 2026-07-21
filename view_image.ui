@@ -518,6 +518,7 @@
     <addaction name="actionMorphology_Smoothing"/>
     <addaction name="actionMorphology_Defragment"/>
     <addaction name="actionMorphology_Defragment_By_Size"/>
+    <addaction name="actionMorphology_Fill_Holes"/>
     <addaction name="actionMorphology_Dilation"/>
     <addaction name="actionMorphology_Erosion"/>
     <addaction name="actionMorphology_Edge"/>
@@ -1175,6 +1176,14 @@
   <action name="actionMorphology_Closing">
    <property name="text">
     <string>Morphology Closing</string>
+   </property>
+  </action>
+  <action name="actionMorphology_Fill_Holes">
+   <property name="text">
+    <string>Morphology Fill Holes</string>
+   </property>
+   <property name="toolTip">
+    <string>Remove holes  from region labels</string>
    </property>
   </action>
  </widget>
