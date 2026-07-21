@@ -221,6 +221,8 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
                     handle = std::make_shared<fib_data>();
                     if(!handle->load_from_file(fib_file_name.c_str()))
                        return handle->error_msg;
+                    if(!tipl::contains(handle->report,"bias field") && po.get("bias_field_correction",1))
+                        handle->correct_bias_field();
                     set_template(handle,po);
                 }
                 std::shared_ptr<TractModel> tract_model(new TractModel(handle));
