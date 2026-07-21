@@ -862,10 +862,7 @@ bool src_data::command(std::string cmd,std::string param)
     if(cmd == "[Step T2a][Smoothing]")
     {
         if(voxel.mask.depth() == 1)
-        {
-            auto slice = voxel.mask.slice_at(0);
-            tipl::morphology::smoothing(slice);
-        }
+            tipl::morphology::smoothing(voxel.mask.slice_at(0));
         else
             tipl::morphology::smoothing(voxel.mask);
         voxel.steps += cmd+"\n";
