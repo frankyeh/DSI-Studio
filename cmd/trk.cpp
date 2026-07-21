@@ -315,6 +315,7 @@ std::shared_ptr<fib_data> cmd_load_fib(std::string file_name)
     if (!handle->load_from_file(file_name.length() == 1 && file_name[0]-'0' < fib_template_list.size() ?
                                     fib_template_list[file_name[0]-'0']:std::filesystem::path(file_name)))
         return tipl::error() << handle->error_msg,std::shared_ptr<fib_data>();
+
     return handle;
 }
 std::shared_ptr<fib_data> cmd_load_fib(tipl::program_option<tipl::out>& po)
@@ -322,6 +323,8 @@ std::shared_ptr<fib_data> cmd_load_fib(tipl::program_option<tipl::out>& po)
     auto handle = cmd_load_fib(po.get_file("source",".fz"));
     if(!handle.get() || !check_other_slices(po,handle))
         return std::shared_ptr<fib_data>();
+    if(!tipl::contains(handle->report,"bias field") && po.get("bias_field_correction",1))
+        handle->correct_bias_field();
     return handle;
 }
 bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
