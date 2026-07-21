@@ -519,6 +519,7 @@
     <addaction name="actionMorphology_Defragment"/>
     <addaction name="actionMorphology_Defragment_By_Size"/>
     <addaction name="actionMorphology_Fill_Holes"/>
+    <addaction name="actionMorphology_Fill_Holes_By_Slice"/>
     <addaction name="actionMorphology_Dilation"/>
     <addaction name="actionMorphology_Erosion"/>
     <addaction name="actionMorphology_Edge"/>
@@ -526,6 +527,7 @@
     <addaction name="actionMorphology_Closing"/>
     <addaction name="actionMorphology_XY"/>
     <addaction name="actionMorphology_XZ"/>
+    <addaction name="actionMorphology_Negate"/>
     <addaction name="actionRefine"/>
    </widget>
    <widget class="QMenu" name="menu_Edit">
@@ -1184,6 +1186,22 @@
    </property>
    <property name="toolTip">
     <string>Remove holes  from region labels</string>
+   </property>
+  </action>
+  <action name="actionMorphology_Fill_Holes_By_Slice">
+   <property name="text">
+    <string>Morphology Fill Holes By Slice</string>
+   </property>
+   <property name="toolTip">
+    <string>Remove holes  from region labels by slices</string>
+   </property>
+  </action>
+  <action name="actionMorphology_Negate">
+   <property name="text">
+    <string>Morphology Negate</string>
+   </property>
+   <property name="toolTip">
+    <string>Negate the region</string>
    </property>
   </action>
  </widget>
