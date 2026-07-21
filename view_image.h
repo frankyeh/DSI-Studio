@@ -39,6 +39,7 @@ public:
     bool command(std::string cmd,std::string param1 = std::string());
     void init_image(void);
 private:
+    void update_recent_unet(QAction* = nullptr);
     void update_other_images(void);
 private slots:
     void DeleteRowPressed(int row);
