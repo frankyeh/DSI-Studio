@@ -884,8 +884,11 @@
    <property name="text">
     <string>Gaussian Filter</string>
    </property>
-   <property name="statusTip">
+   <property name="toolTip">
     <string>Smooth the image intensity using a Gaussian filter</string>
+   </property>
+   <property name="statusTip">
+    <string/>
    </property>
   </action>
   <action name="actionSobel_Filter">
@@ -900,8 +903,11 @@
    <property name="text">
     <string>Smoothing Filter</string>
    </property>
-   <property name="statusTip">
+   <property name="toolTip">
     <string>Smooth the image while preserving the edges</string>
+   </property>
+   <property name="statusTip">
+    <string/>
    </property>
   </action>
   <action name="actionTransform">
