@@ -1080,20 +1080,9 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 break;
             case 2:
                 {
-                tipl::image<3,unsigned char> mask(crop_image);
-                for(size_t index = 0;index < crop_image.size();++index)
-                    if(crop_image[index] > threshold)
-                        mask[index] = 1;
-                tipl::morphology::defragment(mask);
-                tipl::morphology::negate(mask);
-                tipl::morphology::defragment(mask);
-                tipl::morphology::negate(mask);
-                tipl::morphology::smoothing(mask);
-                tipl::morphology::dilation(mask);
-                for(size_t index = 0;index < crop_image.size();++index)
-                    if(mask[index] == 0)
-                        crop_image[index] *= 0.2f;
-                tipl::filter::gaussian(crop_image);
+                    tipl::image<3,unsigned char> mask;
+                    tipl::morphology::dndnco(tipl::threshold(crop_image,mask,threshold));
+                    crop_image *= tipl::filter::gaussian(tipl::image<3>(mask),2);
                 }
                 break;
             }
