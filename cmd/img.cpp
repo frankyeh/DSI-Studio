@@ -62,35 +62,20 @@ bool variant_image::command(std::string cmd,std::string param1)
             }
             if(cmd == "deface")
             {
-                auto& mask = unet.data.mask;
-                tipl::io::apply_flip_swap_seq(mask,flip_swap_seq,true);
+                using namespace tipl;
+                using namespace tipl::morphology;
+                tipl::io::apply_flip_swap_seq(unet.data.mask,flip_swap_seq,true);
 
-                tipl::downsampling(mask);
                 // expand the mask to include tissue nearby the brain tissue
-                tipl::morphology::smoothing(mask);
-                tipl::morphology::smoothing(mask);
-                tipl::morphology::dilation_by_radius(mask,12/vs[0]);
+                dilation_by_radius(smoothing(closing(downsampling(unet.data.mask))),12/vs[0]);
 
 
-                tipl::image<3,unsigned char> brain_outter_mask;
-                tipl::threshold(I,brain_outter_mask,0);
-                tipl::morphology::dndnco(brain_outter_mask);
-                tipl::downsampling(brain_outter_mask);
+                tipl::image<3,unsigned char> mask;
+                closing(downsampling(dndnco(tipl::threshold(I,mask,0)))) *= unet.data.mask;
 
-                tipl::morphology::dilation(brain_outter_mask);
-                tipl::morphology::dilation(brain_outter_mask);
-                tipl::morphology::smoothing(brain_outter_mask);
-                tipl::morphology::smoothing(brain_outter_mask);
-                tipl::morphology::erosion(brain_outter_mask);
-                tipl::morphology::erosion(brain_outter_mask);
+                I *= tipl::filter::gaussian(
+                        unet.data.fg_prob = upsample_with_padding(mask,unet.data.fg_prob.shape()),2);
 
-                brain_outter_mask *= mask;
-                mask.resize(unet.data.fg_prob.shape());
-                tipl::upsample_with_padding(brain_outter_mask,mask);
-                unet.data.fg_prob = mask;
-                tipl::filter::gaussian(unet.data.fg_prob);
-                tipl::filter::gaussian(unet.data.fg_prob);
-                I *= unet.data.fg_prob;
             }
             if(cmd == "segmentation")
             {
