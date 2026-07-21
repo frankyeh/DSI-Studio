@@ -116,7 +116,7 @@ void src_data::update_mask(void)
         tipl::morphology::fit(voxel.mask,dwi);
         tipl::morphology::fit(voxel.mask,dwi);
         tipl::morphology::fit(voxel.mask,dwi);
-        tipl::morphology::defragment_slice(voxel.mask);
+        tipl::morphology::fill_holes_slice(voxel.mask);
         tipl::morphology::defragment(voxel.mask);
         ++p;
         return true;
@@ -847,10 +847,7 @@ bool src_data::command(std::string cmd,std::string param)
     if(cmd == "[Step T2a][Defragment]")
     {
         if(voxel.mask.depth() == 1)
-        {
-            auto slice = voxel.mask.slice_at(0);
-            tipl::morphology::defragment(slice);
-        }
+            tipl::morphology::defragment(voxel.mask.slice_at(0));
         else
             tipl::morphology::defragment(voxel.mask);
         voxel.steps += cmd+"\n";
@@ -858,7 +855,7 @@ bool src_data::command(std::string cmd,std::string param)
     }
     if(cmd == "[Step T2a][Slice Defragment]")
     {
-        tipl::morphology::defragment_slice(voxel.mask);
+        tipl::morphology::fill_holes_slice(voxel.mask);
         voxel.steps += cmd+"\n";
         return true;
     }
