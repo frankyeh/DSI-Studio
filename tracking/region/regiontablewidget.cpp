@@ -1110,7 +1110,7 @@ void RegionTableWidget::draw_region(const tipl::matrix<4,4>& current_slice_T,uns
 
 }
 bool load_nii(std::shared_ptr<fib_data> handle,
-              const std::string& file_name,
+              const std::filesystem::path& file_name,
               std::vector<SliceModel*>& transform_lookup,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::string& error_msg,
