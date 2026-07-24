@@ -170,11 +170,12 @@ bool get_tract_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data
                 file_name_stat += ".txt";
             if(handle->get_name_index(cmd) != handle->slices.size())
             {
-                tract_model->save_data_to_file(handle,file_name_stat,cmd);
+                if(!tract_model->save_data_to_file(handle,file_name_stat,cmd))
+                    return tipl::error() << "cannot write to " << file_name_stat,false;
                 continue;
             }
         }
-        tipl::out() << "invalid export option " << cmd << std::endl;
+        tipl::out() << "invalid export option " << cmd;
         return false;
     }
     return true;
@@ -355,7 +356,8 @@ int trk_post(tipl::program_option<tipl::out>& po,
         std::string cmd = po.get("cluster");
         std::replace(cmd.begin(),cmd.end(),',',' ');
         std::istringstream in(cmd);
-        int method = 0,count = 0,detail = 0;
+        int method = 0,count = 0;
+        float detail = 0.0f;
         std::filesystem::path output;
         in >> method >> count >> detail >> output;
         tipl::out() << "cluster method: " << method << std::endl;
@@ -486,7 +488,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
     return 0;
 }
 bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
-                 ROIRegion& roi,const std::filesystem::path& file_name,const std::string& region_name = {});
+                 ROIRegion& roi,const std::string& region_text);
 bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
 {
     const int total_count = 20;
@@ -505,18 +507,8 @@ bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
                 roi.perform(each);
                 continue;
             }
-
-            // parse [file or atlas]:[region name]
-            std::string region_name;
-            std::filesystem::path file_name = each;
-            auto pos = each.find_last_of(':');
-            if(pos != std::string::npos && pos != 1) // Windows path
-            {
-                region_name = each.substr(pos+1);
-                file_name = each.substr(0,pos);
-            }
             ROIRegion other_roi(handle);
-            if(!load_region(po,handle,roi.region.empty() ? roi : other_roi,file_name,region_name))
+            if(!load_region(po,handle,roi.region.empty() ? roi : other_roi,each))
                 return false;
             if(!other_roi.region.empty())
                 roi.add_points(std::move(other_roi.region));
@@ -614,12 +606,15 @@ void set_template(std::shared_ptr<fib_data> handle,tipl::program_option<tipl::ou
 }
 int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 {
-    if (po.has("threshold_index"))
+    if(po.has("threshold_index"))
     {
         if(!handle->dir.set_tracking_index(po.get("threshold_index")))
             return tipl::error() << "cannot find the index",1;
     }
-    if (po.has("dt_metric1") && po.has("dt_metric2"))
+    if(po.has("dt_metric1") != po.has("dt_metric2"))
+        return tipl::error() << "both --dt_metric1 and --dt_metric2 are required",1;
+
+    if(po.has("dt_metric1") && po.has("dt_metric2"))
     {
         auto index_list = handle->get_index_list();
         std::string prompt("available metrics:");
