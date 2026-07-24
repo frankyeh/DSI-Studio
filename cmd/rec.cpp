@@ -57,9 +57,9 @@ int rec(tipl::program_option<tipl::out>& po)
         {
             if(po.has("output"))
             {
-                std::string output = po.get("output");
-                if(QFileInfo(output.c_str()).isDir())
-                    src.output_file_name = output + "/" + std::filesystem::path(src.file_name).filename().u8string();
+                std::filesystem::path output = po.get("output");
+                if(std::filesystem::is_directory(output))
+                    src.output_file_name = output / src.file_name.filename();
                 else
                     src.output_file_name = output;
             }
@@ -76,18 +76,13 @@ int rec(tipl::program_option<tipl::out>& po)
 
 
     if(po.has("cmd"))
-    {
         for(const auto& each : tipl::split(po.get("cmd"),'+'))
         {
-            auto run_list = tipl::split(each,'=');
-            run_list.resize(2);
-            if(!src.command(run_list[0],run_list[1]))
-            {
-                tipl::error() << src.error_msg << std::endl;
-                return 1;
-            }
+            auto pos = each.find('=');
+            if(!src.command(each.substr(0,pos),
+                             pos == std::string::npos ? std::string() : each.substr(pos+1)))
+                return tipl::error() << src.error_msg,1;
         }
-    }
 
     {
         tipl::progress prog("pre-processing steps");
@@ -113,11 +108,12 @@ int rec(tipl::program_option<tipl::out>& po)
             }
 
             if(remove_index.empty())
-            {
-                tipl::error() << "invalid index specified at --remove " << std::endl;
-                return 1;
-            }
-            std::sort(remove_index.begin(),remove_index.end(),std::greater<int>());
+                return tipl::error() << "invalid index specified at --remove ",1;
+
+            std::sort(remove_index.begin(),remove_index.end(),std::greater<>());
+            remove_index.erase(
+                std::unique(remove_index.begin(),remove_index.end()),
+                remove_index.end());
             std::string removed_index("DWI removed at ");
             for(auto i : remove_index)
             {
@@ -140,24 +136,17 @@ int rec(tipl::program_option<tipl::out>& po)
             return tipl::error() << src.error_msg,1;
 
 
-        {
-            float default_iso = std::max<float>(src.voxel.vs[0],src.voxel.vs[2]);
-            if(src.voxel.method_id != 7 && src.voxel.vs[2] > src.voxel.vs[0]*1.25f && src.is_human_data)
-                default_iso = (src.voxel.vs[0] >= 1.5f ? 2.0f : (src.voxel.vs[0] >= 1.0f ? 1.5f : 1.0f));
-            if(po.has("save_src"))
-                default_iso = 0.0f;
-            if((default_iso = po.get("make_isotropic",default_iso)) > 0.0f)
-                src.command("[Step T2][Edit][Resample]",std::to_string(default_iso));
-        }
-
         if((po.get("volume_correction",0) && !src.command("[Step T2][Corrections][Volume Orientation Correction]")) ||
-           (po.has("correct_by_t2") && !src.command("[Step T2][Corrections][By T2w]",po.get("correct_by_t2"))) ||
-            (po.get("motion_correction",0) && !src.command("[Step T2][Corrections][Motion Correction]")))
+           (po.get("motion_correction",0) && !src.command("[Step T2][Corrections][Motion Correction]")))
                 return tipl::error() << src.error_msg,1;
 
         if(po.has("align_acpc"))
-            src.command("[Step T2][Edit][Align ACPC]",
-                        std::to_string(po.get("align_acpc",std::min<float>(2.0f,std::max<float>(src.voxel.vs[0],src.voxel.vs[2])))));
+        {
+            if(!src.command("[Step T2][Edit][Align ACPC]",
+                             std::to_string(po.get("align_acpc",std::min<float>(2.0f,
+                                std::max<float>(src.voxel.vs[0],src.voxel.vs[2]))))))
+                return tipl::error() << src.error_msg,1;
+        }
         else
         {
             if(po.has("rotate_to") || po.has("align_to"))
@@ -185,10 +174,27 @@ int rec(tipl::program_option<tipl::out>& po)
     }
 
 
-    if(!tipl::contains(src.voxel.report,"bias field") && po.get("bias_field_correction",1))
-        src.correct_bias_field();
+    if(!tipl::contains(src.voxel.report,"bias field") &&
+        po.get("bias_field_correction",src.voxel.method_id == 1/*DTI*/ ? 0 : 1))
+    {
 
-    if(po.has("mask") && std::filesystem::exists(po.get("mask")))
+        if(!src.correct_bias_field())
+            return tipl::error() << src.error_msg,1;
+    }
+
+    // check isotropic
+    {
+        float default_iso = std::max({src.voxel.vs[0],src.voxel.vs[1],src.voxel.vs[2]});
+        if(src.voxel.method_id != 7 && src.voxel.vs[2] > src.voxel.vs[0]*1.25f && src.is_human_data)
+            default_iso = (src.voxel.vs[0] >= 1.5f ? 2.0f : (src.voxel.vs[0] >= 1.0f ? 1.5f : 1.0f));
+        if(po.has("save_src"))
+            default_iso = 0.0f;
+        if((default_iso = po.get("make_isotropic",default_iso)) > 0.0f &&
+            !src.command("[Step T2][Edit][Resample]",std::to_string(default_iso)))
+            return tipl::error() << src.error_msg,1;
+    }
+
+    if(po.has("mask"))
     {
         std::string mask_file = po.get("mask");
         if(mask_file == "1")
@@ -243,18 +249,21 @@ int rec(tipl::program_option<tipl::out>& po)
         for(const auto& each : po.get_files("other_image"))
         {
             tipl::out() << "add image: " << each;
-            auto seps = tipl::split(each.u8string(),':');
             std::string name;
             std::filesystem::path path;
-            if(tipl::begins_with(each.u8string(),"http") || seps.size() == 1)
+            auto value = each.u8string();
+            auto pos = value.find(':');
+            if(tipl::begins_with(value,"http") ||
+                pos == std::string::npos ||
+                pos == 1)
             {
-                name = tipl::remove_all_suffix(each.filename().u8string());
-                path = each;
+                name = "other";
+                path = value;
             }
             else
             {
-                name = seps[0];
-                path = seps[1];
+                name = value.substr(0,pos);
+                path = value.substr(pos+1);
             }
             if(!src.add_other_image(name,path))
                 return tipl::error() << src.error_msg,1;
