@@ -1,11 +1,7 @@
 #include <regex>
-#include <QFileInfo>
-#include <QDir>
-#include <QStringList>
 #include <iostream>
 #include <iterator>
 #include <string>
-#include "zlib.h"
 #include "TIPL/tipl.hpp"
 #include "tracking/region/Regions.h"
 #include "libs/tracking/tract_model.hpp"
@@ -20,10 +16,6 @@
 
 bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list);
 bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
-
-bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
-                 ROIRegion& roi,std::string region_text);
-
 void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<std::shared_ptr<ROIRegion> >& regions,
                             std::string& result)
 {
@@ -53,7 +45,7 @@ void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<s
     }
     result = out.str();
 }
-void load_nii_label(const std::string& filename,std::map<int,std::string>& label_map)
+void load_nii_label(const std::filesystem::path& filename,std::map<int,std::string>& label_map)
 {
     std::ifstream in(filename);
     if(in)
@@ -70,7 +62,7 @@ void load_nii_label(const std::string& filename,std::map<int,std::string>& label
         }
     }
 }
-void load_json_label(const std::string& filename,std::map<int,std::string>& label_map)
+void load_json_label(const std::filesystem::path& filename,std::map<int,std::string>& label_map)
 {
     std::ifstream in(filename);
     if(!in)
@@ -99,28 +91,30 @@ void load_json_label(const std::string& filename,std::map<int,std::string>& labe
 }
 
 
-void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::map<int,tipl::rgb>& label_color)
+void get_roi_label(const std::filesystem::path& file_name,
+                   std::map<int,std::string>& label_map,
+                   std::map<int,tipl::rgb>& label_color)
 {
     label_map.clear();
     label_color.clear();
-    QString label_file = QString::fromStdString(tipl::remove_all_suffix(file_name.toStdString()) + ".txt");
-    tipl::out() <<"looking for region label file " << label_file.toStdString() << std::endl;
-    if(QFileInfo(label_file).exists())
+    std::filesystem::path label_file = tipl::remove_all_suffix(file_name.u8string()) + ".txt";
+    tipl::out() <<"looking for region label file " << label_file;
+    if(std::filesystem::exists(label_file))
     {
-        load_nii_label(label_file.toStdString(),label_map);
+        load_nii_label(label_file,label_map);
         tipl::out() <<"label file loaded";
         return;
     }
-    label_file = QString::fromStdString(tipl::remove_all_suffix(file_name.toStdString()) + ".json");
+    label_file = tipl::remove_all_suffix(file_name.u8string()) + ".json";
     if(QFileInfo(label_file).exists())
     {
-        load_json_label(label_file.toStdString(),label_map);
-        tipl::out() <<"json file loaded " << label_file.toStdString();
+        load_json_label(label_file,label_map);
+        tipl::out() <<"json file loaded " << label_file;
         return;
     }
-    if(QFileInfo(file_name).fileName().contains("aparc") || QFileInfo(file_name).fileName().contains("aseg")) // FreeSurfer
+    if(tipl::contains(file_name.filename().u8string(),{"aparc","aseg"})) // FreeSurfer
     {
-        tipl::out() <<"using freesurfer labels." << std::endl;
+        tipl::out() <<"using freesurfer labels.";
         QFile data(":/data/FreeSurferColorLUT.txt");
         if (data.open(QIODevice::ReadOnly | QIODevice::Text))
         {
@@ -143,13 +137,13 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::m
     tipl::out() <<"no label file found. Use default ROI numbering.";
 }
 bool load_nii(std::shared_ptr<fib_data> handle,
-              const std::string& file_name,
+              const std::filesystem::path& file_name,
               std::vector<SliceModel*>& transform_lookup,
               std::vector<std::shared_ptr<ROIRegion> >& regions,
               std::string& error_msg,
               bool is_mni)
 {
-    if(tipl::contains(std::filesystem::path(file_name).filename().string(),"mni"))
+    if(tipl::contains(file_name.filename().u8string(),"mni"))
     {
         tipl::out() << file_name << " has 'mni' in the file name. It will be treated as mni space image" << std::endl;
         is_mni = true;
@@ -160,7 +154,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         return error_msg = header.error_msg,false;
     bool is_4d = header.dim(4) > 1;
     tipl::image<3,unsigned int> from;
-    std::string nifti_name = std::filesystem::path(file_name).stem().u8string();
+    auto nifti_name = file_name.stem().u8string();
     nifti_name = nifti_name.substr(0,nifti_name.find('.'));
 
     if(is_4d)
@@ -169,7 +163,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     {
         tipl::image<3> tmp;
         header >> tmp;
-        if(std::filesystem::exists(tipl::remove_all_suffix(file_name) + ".txt") || tipl::is_label_image(tmp))
+        if(std::filesystem::exists(tipl::remove_all_suffix(file_name.u8string()) + ".txt") || tipl::is_label_image(tmp))
             from = tmp;
         else
         {
@@ -224,7 +218,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 
     std::string des(header.get_descrip());
     if(multiple_roi)
-        get_roi_label(file_name.c_str(),label_map,label_color);
+        get_roi_label(file_name,label_map,label_color);
 
     bool need_trans = false;
     tipl::matrix<4,4> to_diffusion_space = tipl::identity_matrix();
@@ -366,13 +360,11 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         return error_msg = "empty region file",false;
     return true;
 }
-
-
 extern std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle);
 bool load_nii(tipl::program_option<tipl::out>& po,
               std::shared_ptr<fib_data> handle,
-              const std::string& region_text,
+              const std::filesystem::path& file_name,
               std::vector<std::shared_ptr<ROIRegion> >& regions)
 {
     std::vector<SliceModel*> transform_lookup;
@@ -380,30 +372,65 @@ bool load_nii(tipl::program_option<tipl::out>& po,
         return false;
     for(const auto& each : other_slices)
         transform_lookup.push_back(each.get());
-
-    QStringList str_list = QString(region_text.c_str()).split(",");// splitting actions
-    QString file_name = str_list[0];
     std::string error_msg;
-    if(!load_nii(handle,file_name.toStdString(),transform_lookup,regions,error_msg,false))
+    if(!load_nii(handle,file_name,transform_lookup,regions,error_msg,false))
         return tipl::error() << error_msg,false;
+    return true;
+}
+bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
+                 ROIRegion& roi,const std::filesystem::path& file_name,const std::string& region_name = {})
+{
+    tipl::out() << "load " << (region_name.empty() ? std::string("volume"):region_name) << " from " << file_name;
 
-    // now perform actions
-    for(int i = 1;i < str_list.size();++i)
+    if(tipl::ends_with(file_name.u8string(),{".nii.gz",".nii"}))
     {
-        tipl::out() << str_list[i].toStdString() << " applied." << std::endl;
-        for(size_t j = 0;j < regions.size();++j)
-            regions[j]->perform(str_list[i].toStdString());
+        std::vector<std::shared_ptr<ROIRegion> > regions;
+        if(!load_nii(po,handle,file_name,regions))
+            return false;
+        if(region_name.empty())
+            roi = *(regions[0].get());
+        else
+        {
+            bool found = false;
+            for(size_t index = 0;index < regions.size();++index)
+                if(regions[index]->name == region_name ||
+                    regions[index]->name == tipl::remove_all_suffix(file_name.filename().u8string()) + "_" + region_name)
+                {
+                    found = true;
+                    roi = *(regions[index].get());
+                    break;
+                }
+            if(!found)
+                return tipl::error() << "cannot find " << region_name << " in the NIFTI file.",false;
+        }
     }
+    else
+    {
+        if(!region_name.empty())
+        {
+            std::vector<tipl::vector<3,short> > points;
+            if(!handle->get_atlas_roi(file_name.u8string(),region_name,points))
+                return tipl::error() << handle->error_msg,false;
+            roi.add_points(std::move(points));
+        }
+        else
+            if(!roi.load_region_from_file(file_name))
+                return tipl::error() << "cannot open file as a region" << file_name,false;
+    }
+
+    if(roi.region.empty())
+        tipl::warning() << file_name << " is an empty region file";
 
     return true;
 }
-
 
 int trk_post(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
              std::shared_ptr<TractModel> tract_model,std::filesystem::path tract_file_name,bool output_track);
 std::shared_ptr<fib_data> cmd_load_fib(tipl::program_option<tipl::out>& po);
 
-bool load_tracts(const std::filesystem::path& file_name,std::shared_ptr<fib_data> handle,std::shared_ptr<TractModel> tract_model,std::shared_ptr<RoiMgr> roi_mgr)
+bool load_tracts(const std::filesystem::path& file_name,
+                 std::shared_ptr<fib_data> handle,
+                 std::shared_ptr<TractModel> tract_model,std::shared_ptr<RoiMgr> roi_mgr)
 {
     if(!std::filesystem::exists(file_name))
         return tipl::error() << file_name << " does not exist. terminating...",false;
@@ -434,7 +461,9 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
             for(unsigned int j = 0;j < atlas_list[i]->get_list().size();++j)
             {
                 std::shared_ptr<ROIRegion> region(std::make_shared<ROIRegion>(handle));
-                if(!load_region(po,handle,*region.get(),atlas_list[i]->name + ":" + atlas_list[i]->get_list()[j]))
+                if(!load_region(po,handle,*region.get(),
+                                atlas_list[i]->name,
+                                atlas_list[i]->get_list()[j]))
                     return tipl::out() << "fail to load the ROI: " << atlas_list[i]->get_list()[j],1;
                 region->name = atlas_list[i]->get_list()[j];
                 regions.push_back(region);
@@ -451,14 +480,6 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
                 return tipl::error() << "fail to load the ROI file.",1;
             region->name = each;
             regions.push_back(region);
-        }
-    }
-    if(po.has("regions"))
-    {
-        for(const auto& each : tipl::split(po.get("regions"),','))
-        {
-            if(!load_nii(po,handle,each,regions))
-                return 1;
         }
     }
     if(regions.empty())
@@ -481,6 +502,8 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
     }
     tipl::out() << "saving " << file_name;
     std::ofstream out(file_name);
+    if(!out)
+        return tipl::error() << "cannot write to " << file_name,1;
     out << result <<std::endl;
     return 0;
 }
@@ -642,7 +665,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
             tipl::out() << "saving " << file_name_stat;
             std::ofstream out_stat(file_name_stat);
             if(!out_stat)
-                return tipl::out() << "cannot save statistics. please check write permission",1;
+                return tipl::error() << "cannot write to " << file_name_stat,1;
             out_stat << result;
         }
 
@@ -668,6 +691,8 @@ int ana(tipl::program_option<tipl::out>& po)
         auto result = evaluate_fib(handle->dim,handle->dir.fa_otsu,handle->dir.fa[0],
                                         [handle](size_t pos){return handle->dir.get_fib(pos,0);});
         std::ofstream out(po.get("info"));
+        if(!out)
+            return tipl::error() << "cannot write to " << po.get("info"),1;
         out << "fiber coherence index\t" << result << std::endl;
         return 0;
     }
