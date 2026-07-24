@@ -75,18 +75,6 @@ int rec(tipl::program_option<tipl::out>& po)
         return tipl::error() << src.error_msg,1;
 
 
-    if(po.has("mask") && std::filesystem::exists(po.get("mask")))
-    {
-        if(!(tipl::io::gz_nifti(po.get("mask"),std::ios::in) >> src.voxel.mask
-             >>[](const std::string& e){tipl::error() << e;}))
-            return 1;
-        if(src.voxel.mask.shape() != src.voxel.dim)
-        {
-            tipl::error() << "The mask dimension is different. terminating..." << std::endl;
-            return 1;
-        }
-    }
-
     if(po.has("cmd"))
     {
         for(const auto& each : tipl::split(po.get("cmd"),'+'))
@@ -196,10 +184,11 @@ int rec(tipl::program_option<tipl::out>& po)
         }
     }
 
+
     if(!tipl::contains(src.voxel.report,"bias field") && po.get("bias_field_correction",1))
         src.correct_bias_field();
 
-    if(po.has("mask"))
+    if(po.has("mask") && std::filesystem::exists(po.get("mask")))
     {
         std::string mask_file = po.get("mask");
         if(mask_file == "1")
@@ -208,13 +197,31 @@ int rec(tipl::program_option<tipl::out>& po)
             src.apply_mask = false;
         }
         else
-        if((mask_file == "unet" && !src.command("[Step T2a][Unet]")) ||
-           (mask_file == "template" && !src.command("[Step T2a][Template]")))
-                return tipl::error() << src.error_msg,1;
+            if(mask_file == "unet")
+            {
+                if(!src.command("[Step T2a][Unet]"))
+                    return tipl::error() << src.error_msg,1;
+            }
+            else
+                if(mask_file == "template")
+                {
+                    if(!src.command("[Step T2a][Template]"))
+                        return tipl::error() << src.error_msg,1;
+                }
+                else
+                {
+                    if(!(tipl::io::gz_nifti(po.get("mask"),std::ios::in) >> src.voxel.mask
+                          >>[](const std::string& e){tipl::error() << e;}))
+                        return 1;
+                    if(src.voxel.mask.shape() != src.voxel.dim)
+                        return tipl::error() << "The mask dimension is different. terminating...",1;
+                    src.apply_mask = true;
+                }
     }
 
     if(po.has("apply_mask"))
         src.apply_mask = true;
+
     if(po.has("save_src") || po.has("save_nii"))
     {
         std::string new_src_file = po.has("save_src") ? po.get("save_src") : po.get("save_nii");
