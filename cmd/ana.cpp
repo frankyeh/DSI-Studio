@@ -106,7 +106,7 @@ void get_roi_label(const std::filesystem::path& file_name,
         return;
     }
     label_file = tipl::remove_all_suffix(file_name.u8string()) + ".json";
-    if(QFileInfo(label_file).exists())
+    if(std::filesystem::exists(label_file))
     {
         load_json_label(label_file,label_map);
         tipl::out() <<"json file loaded " << label_file;
@@ -378,7 +378,7 @@ bool load_nii(tipl::program_option<tipl::out>& po,
     return true;
 }
 bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
-                 ROIRegion& roi,const std::filesystem::path& file_name,const std::string& region_name = {})
+                 ROIRegion& roi,const std::filesystem::path& file_name,const std::string& region_name)
 {
     tipl::out() << "load " << (region_name.empty() ? std::string("volume"):region_name) << " from " << file_name;
 
@@ -423,6 +423,21 @@ bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> h
 
     return true;
 }
+bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
+                 ROIRegion& roi,const std::string& region_text)
+{
+    // parse [file or atlas]:[region name]
+    std::string region_name;
+    std::filesystem::path file_name = region_text;
+    auto pos = region_text.find_last_of(':');
+    if(pos != std::string::npos && pos != 1) // Windows path
+    {
+        region_name = region_text.substr(pos+1);
+        file_name = region_text.substr(0,pos);
+    }
+    return load_region(po,handle,roi,file_name,region_name);
+}
+
 
 int trk_post(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
              std::shared_ptr<TractModel> tract_model,std::filesystem::path tract_file_name,bool output_track);
@@ -430,7 +445,7 @@ std::shared_ptr<fib_data> cmd_load_fib(tipl::program_option<tipl::out>& po);
 
 bool load_tracts(const std::filesystem::path& file_name,
                  std::shared_ptr<fib_data> handle,
-                 std::shared_ptr<TractModel> tract_model,std::shared_ptr<RoiMgr> roi_mgr)
+                 std::shared_ptr<TractModel> tract_model)
 {
     if(!std::filesystem::exists(file_name))
         return tipl::error() << file_name << " does not exist. terminating...",false;
@@ -440,12 +455,6 @@ bool load_tracts(const std::filesystem::path& file_name,
     if(!tract_model->load_tracts_from_file(file_name,handle.get(),is_mni))
         return tipl::error() << "cannot read or parse " << file_name,false;
     tipl::out() << "A total of " << tract_model->get_visible_track_count() << " tracks loaded";
-    if(!roi_mgr->report.empty())
-    {
-        tipl::out() << "filtering tracts using roi/roa/end regions.";
-        tract_model->filter_by_roi(roi_mgr);
-        tipl::out() << "remaining tract count: " << tract_model->get_visible_track_count();
-    }
     return true;
 }
 int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
@@ -554,9 +563,6 @@ void get_tract_statistics(std::shared_ptr<fib_data> handle,
 }
 int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 {
-    std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
-    if(!load_roi(po,handle,roi_mgr))
-        return 1;
 
 
     auto tract_files = po.get_files("tract");
@@ -568,10 +574,10 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
     for(const auto& each : tract_files)
     {
         tracts.push_back(std::make_shared<TractModel>(handle));
-        if(!load_tracts(each,handle,tracts.back(),roi_mgr))
+        if(!load_tracts(each,handle,tracts.back()))
             return 1;
     }
-    tipl::out() << "a total of " << tract_files.size() << " tract file(s) loaded" << std::endl;
+    tipl::out() << "a total of " << tracts.size() << " tract file(s) loaded" << std::endl;
     if(tracts.size() == 1 && !tracts[0]->tract_cluster.empty())
     {
         tipl::out() << "loading cluster information";
@@ -608,10 +614,28 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
             tracts[0]->add(*tracts[index].get());
         tracts.resize(1);
     }
+    if(po.has("tip_iteration"))
+        tracts[0]->trim(po.get("tip_iteration",0));
+
+
+    {
+        std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
+        if(!load_roi(po,handle,roi_mgr))
+            return 1;
+        if(!roi_mgr->report.empty())
+        {
+            tipl::out() << "filtering tracts using roi/roa/end regions.";
+            for(const auto& each : tracts)
+            {
+                each->filter_by_roi(roi_mgr);
+                tipl::out() << "remaining tract count: " << each->get_visible_track_count();
+            }
+        }
+    }
 
     if(tracts.size() > 1)
     {
-        tipl::out() << "multiple cluster tracts found. only --output, --connectivity, and --export are supported and cannot use other post-tracking routines.";
+        tipl::out() << "multiple cluster tracts found. only --output and --export are supported and cannot use other post-tracking routines.";
         tipl::out() << "To use other post-tracking routines, please specify --merge_all to merge all clusters into one single cluster.";
 
         if(po.has("output"))
@@ -650,17 +674,21 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
                         return 1;
                 }
             }
-            if(tipl::ends_with(output,".trk.gz") ||
-               tipl::ends_with(output,".tt.gz"))
-            {
-                tipl::out() << "saving multiple tracts into one file: " << output;
-                if(!TractModel::save_all(output,tracts))
-                    return tipl::error() << "cannot write to " << output,1;
-            }
+            else
+                if(tipl::ends_with(output,{".trk.gz",".tt.gz"}))
+                {
+                    tipl::out() << "saving multiple tracts into one file: " << output;
+                    if(!TractModel::save_all(output,tracts))
+                        return tipl::error() << "cannot write to " << output,1;
+                }
+                else
+                    return tipl::error() << "unspported output format: " << output,1;
         }
         if(po.has("export"))
         {
-            std::string result,file_name_stat("stat.txt");
+            std::string result,file_name_stat(po.get("export"));
+            if(tipl::ends_with(file_name_stat,".txt"))
+                file_name_stat += ".txt";
             get_tract_statistics(handle,tracts,result);
             tipl::out() << "saving " << file_name_stat;
             std::ofstream out_stat(file_name_stat);
@@ -668,12 +696,8 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
                 return tipl::error() << "cannot write to " << file_name_stat,1;
             out_stat << result;
         }
-
         return 0;
     }
-
-    if(po.has("tip_iteration"))
-        tracts[0]->trim(po.get("tip_iteration",0));
     return trk_post(po,handle,tracts[0],tract_files[0],false);
 }
 int exp(tipl::program_option<tipl::out>& po);
@@ -682,7 +706,7 @@ int ana(tipl::program_option<tipl::out>& po)
     std::shared_ptr<fib_data> handle = cmd_load_fib(po);
     if(!handle.get())
         return 1;
-    if(po.has("atlas") || po.has("region") || po.has("regions"))
+    if(po.has("atlas") || po.has("region"))
         return ana_region(po,handle);
     if(po.has("tract"))
         return ana_tract(po,handle);
