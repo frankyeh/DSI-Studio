@@ -1,4 +1,5 @@
-#include <regex>
+#include <QFile>
+#include <QTextStream>
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -216,7 +217,6 @@ bool load_nii(std::shared_ptr<fib_data> handle,
     std::map<int,std::string> label_map;
     std::map<int,tipl::rgb> label_color;
 
-    std::string des(header.get_descrip());
     if(multiple_roi)
         get_roi_label(file_name,label_map,label_color);
 
@@ -380,7 +380,7 @@ bool load_nii(tipl::program_option<tipl::out>& po,
 bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::filesystem::path& file_name,const std::string& region_name)
 {
-    tipl::out() << "load " << (region_name.empty() ? std::string("volume"):region_name) << " from " << file_name;
+    tipl::out() << "load " << (region_name.empty() ? "volume":region_name) << " from " << file_name;
 
     if(tipl::ends_with(file_name.u8string(),{".nii.gz",".nii"}))
     {
@@ -388,39 +388,34 @@ bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> h
         if(!load_nii(po,handle,file_name,regions))
             return false;
         if(region_name.empty())
-            roi = *(regions[0].get());
+            roi = *regions.front();
         else
         {
-            bool found = false;
-            for(size_t index = 0;index < regions.size();++index)
-                if(regions[index]->name == region_name ||
-                    regions[index]->name == tipl::remove_all_suffix(file_name.filename().u8string()) + "_" + region_name)
-                {
-                    found = true;
-                    roi = *(regions[index].get());
-                    break;
-                }
-            if(!found)
+            auto name = tipl::remove_all_suffix(file_name.filename().u8string()) + "_" + region_name;
+            auto iter = std::find_if(regions.begin(),regions.end(),[&](const auto& region)
+                                     {
+                                         return region->name == region_name || region->name == name;
+                                     });
+            if(iter == regions.end())
                 return tipl::error() << "cannot find " << region_name << " in the NIFTI file.",false;
+            roi = **iter;
         }
+    }
+    else if(region_name.empty())
+    {
+        if(!roi.load_region_from_file(file_name))
+            return tipl::error() << "cannot open file as a region " << file_name,false;
     }
     else
     {
-        if(!region_name.empty())
-        {
-            std::vector<tipl::vector<3,short> > points;
-            if(!handle->get_atlas_roi(file_name.u8string(),region_name,points))
-                return tipl::error() << handle->error_msg,false;
-            roi.add_points(std::move(points));
-        }
-        else
-            if(!roi.load_region_from_file(file_name))
-                return tipl::error() << "cannot open file as a region" << file_name,false;
+        std::vector<tipl::vector<3,short> > points;
+        if(!handle->get_atlas_roi(file_name.u8string(),region_name,points))
+            return tipl::error() << handle->error_msg,false;
+        roi.add_points(std::move(points));
     }
 
     if(roi.region.empty())
         tipl::warning() << file_name << " is an empty region file";
-
     return true;
 }
 bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
@@ -693,7 +688,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
                         return tipl::error() << "cannot write to " << output,1;
                 }
                 else
-                    return tipl::error() << "unspported output format: " << output,1;
+                    return tipl::error() << "unsupported output format: " << output,1;
         }
         if(po.has("export"))
         {
