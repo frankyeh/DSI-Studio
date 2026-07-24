@@ -228,13 +228,13 @@ bool get_tract_profile(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
 
 bool load_nii(tipl::program_option<tipl::out>& po,
               std::shared_ptr<fib_data> handle,
-              const std::string& file_name,
+              const std::filesystem::path& file_name,
               std::vector<std::shared_ptr<ROIRegion> >& regions);
-bool get_parcellation(tipl::program_option<tipl::out>& po,ConnectivityMatrix& p,std::string roi_file_name)
+bool get_parcellation(tipl::program_option<tipl::out>& po,ConnectivityMatrix& p,const std::filesystem::path& roi_file_name)
 {
-    if(!tipl::contains(roi_file_name,".")) // specify atlas name (e.g. --connectivity=AAL2)
+    if(!tipl::contains(roi_file_name.u8string(),".")) // specify atlas name (e.g. --connectivity=AAL2)
     {
-        if(!p.load_from_atlas(roi_file_name))
+        if(!p.load_from_atlas(roi_file_name.u8string()))
             return tipl::error() << p.error_msg,false;
     }
     else
@@ -246,13 +246,12 @@ bool get_parcellation(tipl::program_option<tipl::out>& po,ConnectivityMatrix& p,
         p.load_from_regions(regions,tipl::remove_all_suffix(std::filesystem::path(roi_file_name).filename().string()));
     }
     if(p.name.empty())
-        p.name = (std::filesystem::exists(roi_file_name)) ?
-                    std::filesystem::path(roi_file_name).stem().string():roi_file_name;
+        p.name = (std::filesystem::exists(roi_file_name)) ? roi_file_name.stem().u8string():roi_file_name.u8string();
     return true;
 }
 bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
                              std::shared_ptr<fib_data> handle,
-                             std::filesystem::path output_name,
+                             const std::filesystem::path& output_name,
                              std::shared_ptr<TractModel> tract_model)
 {
 
@@ -264,8 +263,7 @@ bool get_connectivity_matrix(tipl::program_option<tipl::out>& po,
         ConnectivityMatrix data(handle);
         if(!get_parcellation(po,data,each_connectivity))
             return false;
-        auto save_file_name = output_name;
-        save_file_name += ("." + data.name);
+        auto save_file_name = std::filesystem::path(output_name) += ("." + data.name);
         if(!data.calculate(*(tract_model.get()),(each_connectivity_type == "end")))
             return tipl::error() << data.error_msg,false;
 
@@ -327,63 +325,7 @@ std::shared_ptr<fib_data> cmd_load_fib(tipl::program_option<tipl::out>& po)
         handle->correct_bias_field();
     return handle;
 }
-bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
-                 ROIRegion& roi,std::string file_name)
-{
-    std::string region_name;
-    // --roi=file_name:value but avoid windows path that includes drive letter
-    {
-        auto pos = file_name.find_last_of(':');
-        if(pos != std::string::npos && pos != 1) // Windows path
-        {
-            region_name = file_name.substr(pos+1);
-            file_name = file_name.substr(0,pos);
-        }
-    }
-    tipl::out() << "load " << (region_name.empty() ? std::string("volume"):region_name) << " from " << file_name << std::endl;
 
-    if(tipl::ends_with(file_name,".nii.gz") ||
-       tipl::ends_with(file_name,".nii"))
-    {
-        std::vector<std::shared_ptr<ROIRegion> > regions;
-        if(!load_nii(po,handle,file_name,regions))
-            return false;
-        if(region_name.empty())
-            roi = *(regions[0].get());
-        else
-        {
-            bool found = false;
-            for(size_t index = 0;index < regions.size();++index)
-                if(regions[index]->name == region_name ||
-                   regions[index]->name == tipl::remove_all_suffix(std::filesystem::path(file_name).filename().string()) + "_" + region_name)
-                {
-                    found = true;
-                    roi = *(regions[index].get());
-                    break;
-                }
-            if(!found)
-                return tipl::error() << "cannot find " << region_name << " in the NIFTI file.",false;
-        }
-    }
-    else
-    {
-        if(!region_name.empty())
-        {
-            std::vector<tipl::vector<3,short> > points;
-            if(!handle->get_atlas_roi(file_name,region_name,points))
-                return tipl::error() << handle->error_msg,false;
-            roi.add_points(std::move(points));
-        }
-        else
-            if(!roi.load_region_from_file(file_name))
-                return tipl::error() << "cannot open file as a region" << file_name,false;
-    }
-
-    if(roi.region.empty())
-        tipl::warning() << file_name << " is an empty region file" << std::endl;
-
-    return true;
-}
 
 int trk_post(tipl::program_option<tipl::out>& po,
              std::shared_ptr<fib_data> handle,
@@ -543,7 +485,8 @@ int trk_post(tipl::program_option<tipl::out>& po,
         return 1;
     return 0;
 }
-
+bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
+                 ROIRegion& roi,const std::filesystem::path& file_name,const std::string& region_name = {});
 bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr)
 {
     const int total_count = 20;
@@ -562,8 +505,18 @@ bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
                 roi.perform(each);
                 continue;
             }
+
+            // parse [file or atlas]:[region name]
+            std::string region_name;
+            std::filesystem::path file_name = each;
+            auto pos = each.find_last_of(':');
+            if(pos != std::string::npos && pos != 1) // Windows path
+            {
+                region_name = each.substr(pos+1);
+                file_name = each.substr(0,pos);
+            }
             ROIRegion other_roi(handle);
-            if(!load_region(po,handle,roi.region.empty() ? roi : other_roi,each))
+            if(!load_region(po,handle,roi.region.empty() ? roi : other_roi,file_name,region_name))
                 return false;
             if(!other_roi.region.empty())
                 roi.add_points(std::move(other_roi.region));
