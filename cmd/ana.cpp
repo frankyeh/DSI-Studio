@@ -590,6 +590,9 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
             tract_name = std::vector<std::string>((std::istream_iterator<std::string>(in)),(std::istream_iterator<std::string>()));
         }
         tracts = TractModel::separate_tracts(tracts[0],tracts[0]->tract_cluster,tract_name);
+        tracts.erase(std::remove(tracts.begin(),tracts.end(),nullptr),tracts.end());
+        if(tracts.empty())
+            return tipl::error() << "no tract cluster found",1;
         if(tracts.size() > 1 && !std::filesystem::exists(cluster_file_path))
             tipl::warning() << "cannot find label file: " << cluster_file_path;
         tipl::out() << "cluster count: " << tracts.size();
@@ -615,7 +618,11 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         tracts.resize(1);
     }
     if(po.has("tip_iteration"))
-        tracts[0]->trim(po.get("tip_iteration",0));
+    {
+        tipl::out() << "apply TIP";
+        for(const auto& each : tracts)
+            each->trim(po.get("tip_iteration",0));
+    }
 
 
     {
@@ -686,15 +693,16 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         }
         if(po.has("export"))
         {
-            std::string result,file_name_stat(po.get("export"));
-            if(tipl::ends_with(file_name_stat,".txt"))
-                file_name_stat += ".txt";
+            if(po.get("export") != "stat")
+                return tipl::error() << "multiple clusters support only --export=stat; use --merge_all otherwise",1;
+            std::string result;
+            auto file_name_stat = tract_files[0];
+            file_name_stat += ".stat.txt";
             get_tract_statistics(handle,tracts,result);
-            tipl::out() << "saving " << file_name_stat;
-            std::ofstream out_stat(file_name_stat);
-            if(!out_stat)
+            std::ofstream out(file_name_stat);
+            if(!out)
                 return tipl::error() << "cannot write to " << file_name_stat,1;
-            out_stat << result;
+            out << result;
         }
         return 0;
     }
