@@ -477,7 +477,7 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
         else
             file_name = output;
         if(!tipl::ends_with(file_name.u8string(),".txt"))
-            file_name = std::filesystem::path(file_name) + ".txt";
+            file_name = std::filesystem::path(file_name) += ".txt";
     }
     tipl::out() << "saving " << file_name;
     std::ofstream out(file_name);
