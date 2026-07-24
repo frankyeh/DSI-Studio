@@ -468,17 +468,16 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
     tipl::out() << "calculating region statistics at a total of " << regions.size() << " regions" << std::endl;
     get_regions_statistics(handle,regions,result);
 
-    std::string file_name(po.get("source"));
-    file_name += ".statistics.txt";
+    std::filesystem::path file_name = po.get("source")+".statistics.txt";
     if(po.has("output"))
     {
-        std::string output = po.get("output");
-        if(QFileInfo(output.c_str()).isDir())
-            file_name = output + std::string("/") + std::filesystem::path(file_name).filename().u8string();
+        std::filesystem::path output = po.get("output");
+        if(std::filesystem::is_directory(output))
+            file_name = output / file_name.filename();
         else
             file_name = output;
-        if(file_name.find(".txt") == std::string::npos)
-            file_name += ".txt";
+        if(!tipl::ends_with(file_name.u8string(),".txt"))
+            file_name = std::filesystem::path(file_name) + ".txt";
     }
     tipl::out() << "saving " << file_name;
     std::ofstream out(file_name);
