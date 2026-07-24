@@ -343,11 +343,16 @@ public:
         }
 
         out << roi_name;
-        tipl::vector<3> center;
-        for(size_t i = 0;i < points.size();++i)
-            center += points[i];
-        center /= points.size();
-        out << " (" << int(center[0]) << "," << int(center[1]) << "," << int(center[2]) << ").";
+        if(points.empty())
+            out << " (empty).";
+        else
+        {
+            tipl::vector<3> center;
+            for(const auto& point : points)
+                center += point;
+            center /= points.size();
+            out << " (" << int(center[0]) << "," << int(center[1]) << "," << int(center[2]) << ").";
+        }
 
         auto output = out.str();
         report += " " + output;
