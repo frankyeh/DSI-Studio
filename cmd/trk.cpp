@@ -44,7 +44,7 @@ bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_
                 }
             }
             if(!found)
-                tipl::error() << "cannot find subject in " << subject_demo << ". Please make sure that the FIB or NIFTI file name includes subject's id.",false;
+                return tipl::error() << "cannot find subject in " << subject_demo << ". Please make sure that the FIB or NIFTI file name includes subject's id.",false;
         }
         else
             handle->db.demo = subject_demo;
@@ -139,10 +139,7 @@ bool get_tract_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data
             tipl::out() << std::endl;
             tipl::out() << "saving " << file_name_stat;
             if(!TractModel::export_tdi(file_name_stat,tract,dim,vs,trans_to_mni,to_t1t2,output_color,output_end))
-            {
-                tipl::error() << "failed to save file. Please check write permission." << std::endl;
-                return false;
-            }
+                return tipl::error() << "failed to save file. Please check write permission.",false;
             continue;
         }
 
@@ -153,10 +150,7 @@ bool get_tract_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data
             tipl::out() << "saving " << file_name_stat;
             std::ofstream out_stat(file_name_stat);
             if(!out_stat)
-            {
-                tipl::out() << "Output statistics to file_name_stat failed. Please check write permission" << std::endl;
-                return false;
-            }
+                return tipl::error() << "cannot write to " << file_name_stat,false;
             std::string result;
             tract_model->get_quantitative_info(handle,result);
             out_stat << result;
@@ -206,6 +200,8 @@ bool get_tract_profile(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
     file_name += "." + cmd + ".txt";
     tipl::out() << "save " << file_name;
     std::ofstream report(file_name);
+    if(!report)
+        return tipl::error() << "cannot write to " << file_name,1;
     report << "position\t";
     std::copy(values.begin(),values.end(),std::ostream_iterator<float>(report,"\t"));
     report << std::endl;
@@ -364,11 +360,16 @@ int trk_post(tipl::program_option<tipl::out>& po,
         tipl::out() << "cluster count: " << count << std::endl;
         tipl::out() << "cluster resolution (if method is 0) : " << detail << " mm" << std::endl;
         tipl::out() << "run clustering." << std::endl;
+        if(!(in >> method >> count >> detail) ||
+            method < 0 || method > 255 || count < 0 || detail < 0.0f)
+            return tipl::error() << "invalid --cluster specification",1;
         tract_model->run_clustering(uint8_t(method),uint32_t(count),detail);
         if(output.empty())
             (output = tract_file_name) += "_cluster.txt";
         tipl::out() << "saving " << output << std::endl;
         std::ofstream out(output);
+        if(!out)
+            return tipl::error() << "cannot write to " << output,1;
         std::copy(tract_model->tract_cluster.begin(),tract_model->tract_cluster.end(),std::ostream_iterator<int>(out," "));
     }
     if(po.has("recognize"))
@@ -378,10 +379,14 @@ int trk_post(tipl::program_option<tipl::out>& po,
         handle->recognize(tract_model,labels,names);
         tipl::out() << "saving " << (po.get("recognize") + ".label.txt") << std::endl;
         std::ofstream out1(po.get("recognize") + ".label.txt");
+        if(!out1)
+            return tipl::error() << "cannot write to " << po.get("recognize") + ".label.txt",1;
         std::copy(labels.begin(),labels.end(),std::ostream_iterator<int>(out1," "));
 
         tipl::out() << "saving " << (po.get("recognize") + ".name.txt") << std::endl;
         std::ofstream out2(po.get("recognize") + ".name.txt");
+        if(!out2)
+            return tipl::error() << "cannot write to " << po.get("recognize") + ".name.txt",1;
         std::copy(names.begin(),names.end(),std::ostream_iterator<std::string>(out2,"\n"));
         tract_model->tract_cluster = labels;
     }
@@ -644,6 +649,8 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
         if(po.has("report"))
         {
             std::ofstream out(po.get("report"));
+            if(!out)
+                return tipl::error() << "cannot write to " << po.get("report"),1;
             out << tract_model->report;
         }
 
