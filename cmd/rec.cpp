@@ -74,12 +74,12 @@ int rec(tipl::program_option<tipl::out>& po)
         std::vector<unsigned char> removed(n);
         size_t removed_count = 0;
 
-        auto parse = [](const std::string& text,auto& value)
+        auto parse = [](const std::string& text,auto& value)->bool
         {
             auto [p,e] = std::from_chars(text.data(),text.data()+text.size(),value);
             return e == std::errc{} && p == text.data()+text.size();
         };
-        auto invalid = [](const std::string& text)
+        auto invalid = [](const std::string& text)->int
         {
             return tipl::error() << "invalid --remove: " << text,1;
         };
