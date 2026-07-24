@@ -1614,7 +1614,7 @@ bool estimate_bias_field(tipl::image<3> I,
     return true;
 }
 
-bool src_data::correct_bias_field(bool need_update_mask = true)
+bool src_data::correct_bias_field(bool need_update_mask)
 {
     if(tipl::contains(voxel.report,"bias field"))
         return tipl::warning() << "bias field correction has been previously applied",false;
