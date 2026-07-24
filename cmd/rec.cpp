@@ -74,7 +74,7 @@ int rec(tipl::program_option<tipl::out>& po)
         std::vector<unsigned char> removed(n);
         size_t removed_count = 0;
 
-        auto parse = [](const std::string& text,auto& value)->bool
+        auto parse = [](const std::string& text,size_t& value)
         {
             auto [p,e] = std::from_chars(text.data(),text.data()+text.size(),value);
             return e == std::errc{} && p == text.data()+text.size();
@@ -93,8 +93,9 @@ int rec(tipl::program_option<tipl::out>& po)
         {
             if(text.size() > 1 && text[0] == 'b' && (text[1] == '>' || text[1] == '<'))
             {
-                float b;
-                if(!parse(text.substr(2),b))
+                char* end;
+                float b = std::strtof(text.c_str()+2,&end);
+                if(end == text.c_str()+2 || *end)
                     return invalid(text);
                 for(size_t i = 0;i < n;++i)
                     if(text[1] == '>' ? src.src_bvalues[i] > b : src.src_bvalues[i] < b)
