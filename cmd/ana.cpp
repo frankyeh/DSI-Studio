@@ -108,14 +108,14 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::m
     if(QFileInfo(label_file).exists())
     {
         load_nii_label(label_file.toStdString(),label_map);
-        tipl::out() <<"label file loaded" << std::endl;
+        tipl::out() <<"label file loaded";
         return;
     }
     label_file = QString::fromStdString(tipl::remove_all_suffix(file_name.toStdString()) + ".json");
     if(QFileInfo(label_file).exists())
     {
         load_json_label(label_file.toStdString(),label_map);
-        tipl::out() <<"json file loaded " << label_file.toStdString() << std::endl;
+        tipl::out() <<"json file loaded " << label_file.toStdString();
         return;
     }
     if(QFileInfo(file_name).fileName().contains("aparc") || QFileInfo(file_name).fileName().contains("aseg")) // FreeSurfer
@@ -140,7 +140,7 @@ void get_roi_label(QString file_name,std::map<int,std::string>& label_map,std::m
             return;
         }
     }
-    tipl::out() <<"no label file found. Use default ROI numbering." << std::endl;
+    tipl::out() <<"no label file found. Use default ROI numbering.";
 }
 bool load_nii(std::shared_ptr<fib_data> handle,
               const std::string& file_name,
@@ -157,10 +157,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
 
     tipl::io::gz_nifti header;
     if (!header.open(file_name,std::ios::in))
-    {
-        error_msg = header.error_msg;
-        return false;
-    }
+        return error_msg = header.error_msg,false;
     bool is_4d = header.dim(4) > 1;
     tipl::image<3,unsigned int> from;
     std::string nifti_name = std::filesystem::path(file_name).stem().u8string();
@@ -205,11 +202,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
         for (tipl::pixel_index<3> index(from.shape());index < from.size();++index)
         {
             if(from[index.index()] >= value_map.size())
-            {
-                error_msg = "exceedingly large value found in the ROI file: ";
-                error_msg += std::to_string(from[index.index()]);
-                return false;
-            }
+                return error_msg = "exceedingly large value found in the ROI file: " + std::to_string(from[index.index()]),false;
             value_map[from[index.index()]] = 1;
             max_value = std::max<unsigned short>(uint16_t(from[index.index()]),max_value);
         }
@@ -261,10 +254,7 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             {
                 tipl::out() << "warping " << nifti_name << " from the template space to the native space." << std::endl;
                 if(!handle->mni2sub<tipl::interpolation::majority>(from,trans_to_mni))
-                {
-                    error_msg = handle->error_msg;
-                    return false;
-                }
+                    return error_msg = handle->error_msg,false;
                 trans_to_mni = handle->trans_to_mni;
                 goto end;
             }
@@ -371,12 +361,9 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             if(!region_points[i].empty())
                 regions.back()->add_points(std::move(region_points[i]));
         }
-    tipl::out() <<"a total of " << regions.size() << " regions are loaded." << std::endl;
+    tipl::out() <<"a total of " << regions.size() << " regions are loaded.";
     if(regions.empty())
-    {
-        error_msg = "empty region file";
-        return false;
-    }
+        return error_msg = "empty region file",false;
     return true;
 }
 
@@ -398,10 +385,7 @@ bool load_nii(tipl::program_option<tipl::out>& po,
     QString file_name = str_list[0];
     std::string error_msg;
     if(!load_nii(handle,file_name.toStdString(),transform_lookup,regions,error_msg,false))
-    {
-        tipl::error() << error_msg << std::endl;
-        return false;
-    }
+        return tipl::error() << error_msg,false;
 
     // now perform actions
     for(int i = 1;i < str_list.size();++i)
@@ -451,10 +435,7 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
             {
                 std::shared_ptr<ROIRegion> region(std::make_shared<ROIRegion>(handle));
                 if(!load_region(po,handle,*region.get(),atlas_list[i]->name + ":" + atlas_list[i]->get_list()[j]))
-                {
-                    tipl::out() << "fail to load the ROI: " << atlas_list[i]->get_list()[j] << std::endl;
-                    return 1;
-                }
+                    return tipl::out() << "fail to load the ROI: " << atlas_list[i]->get_list()[j],1;
                 region->name = atlas_list[i]->get_list()[j];
                 regions.push_back(region);
             }
@@ -467,10 +448,7 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
         {
             std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
             if(!load_region(po,handle,*region.get(),each))
-            {
-                tipl::error() << "fail to load the ROI file." << std::endl;
-                return 1;
-            }
+                return tipl::error() << "fail to load the ROI file.",1;
             region->name = each;
             regions.push_back(region);
         }
@@ -484,10 +462,7 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
         }
     }
     if(regions.empty())
-    {
-        tipl::error() << "no region assigned" << std::endl;
-        return 1;
-    }
+        return tipl::error() << "no region assigned",1;
 
     std::string result;
     tipl::out() << "calculating region statistics at a total of " << regions.size() << " regions" << std::endl;
@@ -505,7 +480,7 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
         if(file_name.find(".txt") == std::string::npos)
             file_name += ".txt";
     }
-    tipl::out() << "saving " << file_name << std::endl;
+    tipl::out() << "saving " << file_name;
     std::ofstream out(file_name);
     out << result <<std::endl;
     return 0;
@@ -598,10 +573,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         tipl::out() << "open label file: " << po.get("name");
         std::ifstream in(po.get("name"));
         if(!in)
-        {
-            tipl::error() << "cannot open file:" << po.get("name");
-            return 1;
-        }
+            return tipl::error() << "cannot open file:" << po.get("name"),1;
         std::string line;
         for(size_t i = 0;i < tracts.size() && std::getline(in,line);++i)
             tracts[i]->name = line;
@@ -661,10 +633,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
             {
                 tipl::out() << "saving multiple tracts into one file: " << output;
                 if(!TractModel::save_all(output,tracts))
-                {
-                    tipl::error() << "cannot write to " << output << std::endl;
-                    return 1;
-                }
+                    return tipl::error() << "cannot write to " << output,1;
             }
         }
         if(po.has("export"))
@@ -674,10 +643,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
             tipl::out() << "saving " << file_name_stat;
             std::ofstream out_stat(file_name_stat);
             if(!out_stat)
-            {
-                tipl::out() << "cannot save statistics. please check write permission" << std::endl;
-                return false;
-            }
+                return tipl::out() << "cannot save statistics. please check write permission",1;
             out_stat << result;
         }
 
@@ -708,6 +674,6 @@ int ana(tipl::program_option<tipl::out>& po)
     }
     if(po.has("export"))
         return exp(po);
-    tipl::error() << "please specify --tract or --regions" << std::endl;
+    tipl::error() << "please specify --tract or --regions";
     return 1;
 }
