@@ -481,16 +481,20 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
         }
     }
     if(po.has("region"))
-    {
         for(const auto& each : tipl::split(po.get("region"),','))
         {
-            std::shared_ptr<ROIRegion> region(new ROIRegion(handle));
-            if(!load_region(po,handle,*region.get(),each))
-                return tipl::error() << "fail to load the ROI file.",1;
+            if(tipl::ends_with(each,{".nii.gz",".nii"}))
+            {
+                if(!load_nii(po,handle,each,regions))
+                    return 1;
+                continue;
+            }
+            auto region = std::make_shared<ROIRegion>(handle);
+            if(!load_region(po,handle,*region,each))
+                return tipl::error() << "fail to load region " << each,1;
             region->name = each;
-            regions.push_back(region);
+            regions.push_back(std::move(region));
         }
-    }
     if(regions.empty())
         return tipl::error() << "no region assigned",1;
 
@@ -730,6 +734,6 @@ int ana(tipl::program_option<tipl::out>& po)
     }
     if(po.has("export"))
         return exp(po);
-    tipl::error() << "please specify --tract or --regions";
+    tipl::error() << "please specify --tract or --region";
     return 1;
 }
