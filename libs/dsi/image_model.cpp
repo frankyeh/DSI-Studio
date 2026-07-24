@@ -90,7 +90,7 @@ void src_data::update_dwi_sum(void)
 }
 void src_data::update_mask(void)
 {
-    tipl::progress prog("create mask from dwi sum");
+    tipl::progress prog("update mask from dwi sum");
     prog.run(3,[&](auto& p)
     {
         tipl::segmentation::otsu(dwi,voxel.mask,1,0);
@@ -1614,7 +1614,7 @@ bool estimate_bias_field(tipl::image<3> I,
     return true;
 }
 
-bool src_data::correct_bias_field(void)
+bool src_data::correct_bias_field(bool need_update_mask = true)
 {
     if(tipl::contains(voxel.report,"bias field"))
         return tipl::warning() << "bias field correction has been previously applied",false;
@@ -1652,7 +1652,8 @@ bool src_data::correct_bias_field(void)
         voxel.report += " The bias field was corrected using the sum of diffusion images.";
     }
     update_dwi_sum();
-    update_mask();
+    if(need_update_mask)
+        update_mask();
     return true;
 }
 extern bool has_cuda;
