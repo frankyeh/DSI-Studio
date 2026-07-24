@@ -2277,7 +2277,7 @@ void fib_data::mni2sub(tipl::vector<3>& pos)
     apply_inverse_trans(pos,template_to_mni);
     temp2sub(pos);
 }
-std::shared_ptr<atlas> fib_data::get_atlas(const std::string atlas_name)
+std::shared_ptr<atlas> fib_data::get_atlas(const std::string& atlas_name)
 {
     for(auto at : atlas_list)
         if(at->name == atlas_name)
@@ -2294,11 +2294,7 @@ bool fib_data::get_atlas_roi(const std::string& atlas_name,const std::string& re
 {
     auto at = get_atlas(atlas_name);
     if(!at.get())
-    {
-        error_msg = "cannot find atlas: ";
-        error_msg += atlas_name;
-        return false;
-    }
+        return error_msg = "cannot find atlas: "+atlas_name,false;
     return get_atlas_roi(at,region_name,points);
 }
 bool fib_data::get_atlas_roi(std::shared_ptr<atlas> at,const std::string& region_name,std::vector<tipl::vector<3,short> >& points)
