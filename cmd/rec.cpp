@@ -1,10 +1,6 @@
-#include <QString>
-#include <QFileInfo>
-#include <QDir>
-#include <iostream>
-#include <iterator>
 #include <string>
 #include <filesystem>
+#include <charconv>
 #include "fib_data.hpp"
 #include "tracking/region/Regions.h"
 #include "libs/dsi/image_model.hpp"
@@ -23,6 +19,7 @@ int rec(tipl::program_option<tipl::out>& po)
         tipl::error() << src.error_msg;
         return 1;
     }
+    float max_reso = std::max({src.voxel.vs[0],src.voxel.vs[1],src.voxel.vs[2]});
     {
         tipl::progress prog("reconstruction parameters");
         src.voxel.method_id = uint8_t(po.get("method",4));
@@ -44,8 +41,7 @@ int rec(tipl::program_option<tipl::out>& po)
         }
         src.voxel.template_id = get_template_id(po,src.voxel.template_id);
         if(src.voxel.method_id == 7) // is qsdr
-            src.voxel.qsdr_reso = po.get("qsdr_reso",src.is_human_data ?
-                    std::min<float>(2.0f,std::max<float>(src.voxel.vs[0],src.voxel.vs[2])) : src.voxel.vs[2]);
+            src.voxel.qsdr_reso = po.get("qsdr_reso",src.is_human_data ? std::min<float>(2.0f,max_reso) : src.voxel.vs[2]);
 
     }
 
@@ -71,8 +67,88 @@ int rec(tipl::program_option<tipl::out>& po)
             return tipl::out() << "output file exist at " << check_exist_file,0;
     }
 
-    if(po.has("intro") && !src.load_intro(po.get("intro")))
-        return tipl::error() << src.error_msg,1;
+    // Examples: --remove=1,3:5,8:end or --remove="b>3000" or --remove="b<100"
+    if(po.has("remove"))
+    {
+        const size_t n = src.src_bvalues.size();
+        std::vector<unsigned char> removed(n);
+        size_t removed_count = 0;
+
+        auto parse = [](const std::string& text,auto& value)
+        {
+            auto [p,e] = std::from_chars(text.data(),text.data()+text.size(),value);
+            return e == std::errc{} && p == text.data()+text.size();
+        };
+        auto invalid = [](const std::string& text)
+        {
+            return tipl::error() << "invalid --remove: " << text,1;
+        };
+        auto mark = [&](size_t i)
+        {
+            if(!removed[i])
+                removed[i] = 1,++removed_count;
+        };
+
+        for(const auto& text : tipl::split(po.get("remove"),','))
+        {
+            if(text.size() > 1 && text[0] == 'b' && (text[1] == '>' || text[1] == '<'))
+            {
+                float b;
+                if(!parse(text.substr(2),b))
+                    return invalid(text);
+                for(size_t i = 0;i < n;++i)
+                    if(text[1] == '>' ? src.src_bvalues[i] > b : src.src_bvalues[i] < b)
+                        mark(i);
+                continue;
+            }
+
+            auto range = tipl::split(text,':');
+            size_t from,to;
+            if(range.empty() || range.size() > 2 || !parse(range[0],from) || from >= n)
+                return invalid(text);
+
+            to = from;
+            if(range.size() == 2)
+            {
+                if(range[1] == "end")
+                    to = n-1;
+                else
+                    if(!parse(range[1],to) || to >= n)
+                        return invalid(text);
+                if(from > to)
+                    return invalid(text);
+            }
+            for(size_t i = from;i <= to;++i)
+                mark(i);
+        }
+
+        if(!removed_count)
+            return tipl::error() << "no DWI matched --remove",1;
+        if(removed_count == n)
+            return tipl::error() << "--remove cannot remove all DWI",1;
+
+        std::string log("DWI removed at ");
+        size_t out = 0;
+        for(size_t i = 0;i < n;++i)
+            if(removed[i])
+                log += std::to_string(i) + " ";
+            else
+            {
+                src.src_dwi_data[out] = src.src_dwi_data[i];
+                src.src_bvalues[out] = src.src_bvalues[i];
+                src.src_bvectors[out++] = src.src_bvectors[i];
+            }
+
+        src.src_dwi_data.resize(out);
+        src.src_bvalues.resize(out);
+        src.src_bvectors.resize(out);
+        src.update_dwi_sum();
+
+        const char* report = " Reconstruction was conducted on a subset of DWI.";
+        if(!tipl::contains(src.voxel.report,report))
+            src.voxel.report += report;
+        tipl::out() << log << "\ncurrent DWI count: " << out;
+    }
 
 
     if(po.has("cmd"))
@@ -86,48 +162,6 @@ int rec(tipl::program_option<tipl::out>& po)
 
     {
         tipl::progress prog("pre-processing steps");
-        if(po.has("remove"))
-        {
-            std::vector<int> remove_index;
-            for(const auto& str : tipl::split(po.get("remove"),','))
-            {
-                if(tipl::contains(str,":"))
-                {
-                    auto range = tipl::split(str,':');
-                    if(range.size() != 2)
-                        return tipl::error() << "invalid index specified at --remove: " << str,1;
-                    int from = std::stoi(range[0]);
-                    int to = src.src_bvalues.size()-1;
-                    if(range[1] != "end")
-                        to = std::stoi(range[1]);
-                    for(int i = from;i <= to;++i)
-                        remove_index.push_back(i);
-                }
-                else
-                    remove_index.push_back(std::stoi(str));
-            }
-
-            if(remove_index.empty())
-                return tipl::error() << "invalid index specified at --remove ",1;
-
-            std::sort(remove_index.begin(),remove_index.end(),std::greater<>());
-            remove_index.erase(
-                std::unique(remove_index.begin(),remove_index.end()),
-                remove_index.end());
-            std::string removed_index("DWI removed at ");
-            for(auto i : remove_index)
-            {
-                if(i < src.src_bvalues.size())
-                    src.remove(i);
-                removed_index += std::to_string(i);
-                removed_index += " ";
-            }
-            tipl::out() << removed_index << std::endl;
-            tipl::out() << "current DWI count: " << src.src_bvalues.size() << std::endl;
-            std::ostringstream bvalue_list;
-            std::copy(src.src_bvalues.begin(),src.src_bvalues.end(),std::ostream_iterator<float>(bvalue_list," "));
-            tipl::out() << "current DWI b values: " << bvalue_list.str() << std::endl;
-        }
 
         if((po.get("check_btable",0) && !src.command(po.get("check_btable",0) == 1 ?
                     "[Step T2][B-table][Check B-table]" : "[Step T2][B-table][Check B-table2]")))
@@ -138,17 +172,53 @@ int rec(tipl::program_option<tipl::out>& po)
 
         if((po.get("volume_correction",0) && !src.command("[Step T2][Corrections][Volume Orientation Correction]")) ||
            (po.get("motion_correction",0) && !src.command("[Step T2][Corrections][Motion Correction]")))
-                return tipl::error() << src.error_msg,1;
+            return tipl::error() << src.error_msg,1;
 
+        if(po.has("mask"))
+        {
+            std::string mask_file = po.get("mask");
+            src.apply_mask = true;
+            if(mask_file == "1")
+            {
+                tipl::out() << "mask covering entire image volume";
+                src.voxel.mask = 1;
+                src.apply_mask = false;
+            }
+            else
+                if(mask_file == "unet")
+                {
+                    if(!src.command("[Step T2a][Unet]"))
+                        return tipl::error() << src.error_msg,1;
+                }
+                else
+                    if(mask_file == "template")
+                    {
+                        if(!src.command("[Step T2a][Template]"))
+                            return tipl::error() << src.error_msg,1;
+                    }
+                    else
+                    {
+                        if(!(tipl::io::gz_nifti(po.get("mask"),std::ios::in) >> src.voxel.mask
+                              >>[](const std::string& e){tipl::error() << e;}))
+                            return 1;
+                        if(src.voxel.mask.shape() != src.voxel.dim)
+                            return tipl::error() << "The mask dimension is different. terminating...",1;
+                    }
+        }
+
+        if(!tipl::contains(src.voxel.report,"bias field") &&
+            po.get("bias_field_correction",src.voxel.method_id == 1/*DTI*/ ? 0 : 1) &&
+            !src.correct_bias_field(!po.has("mask"))) // don't update mask if user supplied mask
+            return tipl::error() << src.error_msg,1;
+
+
+        // handle resolution, make isotropic
         if(po.has("align_acpc"))
         {
-            if(!src.command("[Step T2][Edit][Align ACPC]",
-                             std::to_string(po.get("align_acpc",std::min<float>(2.0f,
-                                std::max<float>(src.voxel.vs[0],src.voxel.vs[2]))))))
+            if(!src.command("[Step T2][Edit][Align ACPC]",std::to_string(po.get("align_acpc",std::min<float>(2.0f,max_reso)))))
                 return tipl::error() << src.error_msg,1;
         }
         else
-        {
             if(po.has("rotate_to") || po.has("align_to"))
             {
                 std::string file_name = po.has("rotate_to") ? po.get("rotate_to"):po.get("align_to");
@@ -160,73 +230,34 @@ int rec(tipl::program_option<tipl::out>& po)
                     return 1;
 
                 if(po.has("rotate_to"))
-                    tipl::out() << "running rigid body transformation" << std::endl;
+                    tipl::out() << "running rigid body transformation";
                 else
-                    tipl::out() << "running affine transformation" << std::endl;
+                    tipl::out() << "running affine transformation";
                 tipl::filter::gaussian(I);
                 tipl::filter::gaussian(src.dwi);
                 src.rotate(I.shape(),vs,
                            tipl::reg::linear<tipl::out>(tipl::reg::make_list(I),vs,tipl::reg::make_list(src.dwi),src.voxel.vs,
                                   {po.has("rotate_to") ? tipl::reg::rigid_body : tipl::reg::affine}));
-                tipl::out() << "DWI rotated." << std::endl;
-            }
-        }
-    }
-
-
-    if(!tipl::contains(src.voxel.report,"bias field") &&
-        po.get("bias_field_correction",src.voxel.method_id == 1/*DTI*/ ? 0 : 1))
-    {
-
-        if(!src.correct_bias_field())
-            return tipl::error() << src.error_msg,1;
-    }
-
-    // check isotropic
-    {
-        float default_iso = std::max({src.voxel.vs[0],src.voxel.vs[1],src.voxel.vs[2]});
-        if(src.voxel.method_id != 7 && src.voxel.vs[2] > src.voxel.vs[0]*1.25f && src.is_human_data)
-            default_iso = (src.voxel.vs[0] >= 1.5f ? 2.0f : (src.voxel.vs[0] >= 1.0f ? 1.5f : 1.0f));
-        if(po.has("save_src"))
-            default_iso = 0.0f;
-        if((default_iso = po.get("make_isotropic",default_iso)) > 0.0f &&
-            !src.command("[Step T2][Edit][Resample]",std::to_string(default_iso)))
-            return tipl::error() << src.error_msg,1;
-    }
-
-    if(po.has("mask"))
-    {
-        std::string mask_file = po.get("mask");
-        if(mask_file == "1")
-        {
-            src.voxel.mask = 1;
-            src.apply_mask = false;
-        }
-        else
-            if(mask_file == "unet")
-            {
-                if(!src.command("[Step T2a][Unet]"))
-                    return tipl::error() << src.error_msg,1;
+                tipl::out() << "DWI rotated.";
             }
             else
-                if(mask_file == "template")
-                {
-                    if(!src.command("[Step T2a][Template]"))
-                        return tipl::error() << src.error_msg,1;
-                }
-                else
-                {
-                    if(!(tipl::io::gz_nifti(po.get("mask"),std::ios::in) >> src.voxel.mask
-                          >>[](const std::string& e){tipl::error() << e;}))
-                        return 1;
-                    if(src.voxel.mask.shape() != src.voxel.dim)
-                        return tipl::error() << "The mask dimension is different. terminating...",1;
-                    src.apply_mask = true;
-                }
+            {
+                float default_iso = max_reso;
+                if(src.voxel.method_id != 7 && src.voxel.vs[2] > src.voxel.vs[0]*1.25f && src.is_human_data)
+                    default_iso = (src.voxel.vs[0] >= 1.5f ? 2.0f : (src.voxel.vs[0] >= 1.0f ? 1.5f : 1.0f));
+                if(po.has("save_src"))
+                    default_iso = 0.0f;
+                if((default_iso = po.get("make_isotropic",default_iso)) > 0.0f &&
+                    !src.command("[Step T2][Edit][Resample]",std::to_string(default_iso)))
+                    return tipl::error() << src.error_msg,1;
+            }
     }
 
     if(po.has("apply_mask"))
         src.apply_mask = true;
+
+    if(po.has("intro") && !src.load_intro(po.get("intro")))
+        return tipl::error() << src.error_msg,1;
 
     if(po.has("save_src") || po.has("save_nii"))
     {
@@ -257,7 +288,7 @@ int rec(tipl::program_option<tipl::out>& po)
                 pos == std::string::npos ||
                 pos == 1)
             {
-                name = "other";
+                name = tipl::remove_all_suffix(each.filename().u8string());
                 path = value;
             }
             else
@@ -272,6 +303,6 @@ int rec(tipl::program_option<tipl::out>& po)
     if (!src.reconstruction())
         return tipl::error() << src.error_msg,1;
     if(po.get("export_r",0) && src.voxel.R2 != 0.0f)
-        std::ofstream(file_name + ".r" + std::to_string(int(src.voxel.R2*100))) << std::endl;
+        std::ofstream(file_name + ".r" + std::to_string(int(src.voxel.R2*100)));
     return 0;
 }
