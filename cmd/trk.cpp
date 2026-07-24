@@ -1,6 +1,4 @@
 #include <QFileInfo>
-#include <QStringList>
-#include <QDir>
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -79,7 +77,7 @@ bool get_tract_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data
         auto file_name_stat = file_name;
         file_name_stat += "." + cmd;
         // export statistics
-        if(QString(cmd.c_str()).startsWith("tdi"))
+        if(tipl::begins_with(cmd,"tdi"))
         {
             float ratio = 1.0f;
             {
@@ -90,8 +88,8 @@ bool get_tract_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data
                 tipl::out() << "calculating TDI at x" << ratio << " resolution" << std::endl;
             }
 
-            bool output_color = QString(cmd.c_str()).contains("color");
-            bool output_end = QString(cmd.c_str()).contains("end");
+            bool output_color = tipl::contains(cmd,"color");
+            bool output_end = tipl::contains(cmd,"end");
             file_name_stat += ".nii.gz";
             tipl::matrix<4,4> to_t1t2,trans_to_mni;
             tipl::shape<3> dim;
@@ -347,6 +345,9 @@ int trk_post(tipl::program_option<tipl::out>& po,
         tract_model->delete_by_length(length);
         tipl::out() << "tracks with voxel distance shorter than " << length << " are deleted";
     }
+    if(!tract_model->get_visible_track_count())
+        return tipl::out() << "no tract remains for further actions",0;
+
     if(po.has("cluster"))
     {
         std::string cmd = po.get("cluster");
@@ -356,7 +357,8 @@ int trk_post(tipl::program_option<tipl::out>& po,
         float detail = 0.0f;
         std::filesystem::path output;
         if(!(in >> method >> count >> detail) ||
-            method < 0 || method > 255 || count < 0 || detail < 0.0f)
+            method < 0 || method > 2 || count <= 0 ||
+            !std::isfinite(detail) || detail < 0.0f || (!method && detail == 0.0f))
             return tipl::error() << "invalid --cluster specification",1;
         in >> output;
         tipl::out() << "cluster method: " << method << std::endl;
@@ -619,7 +621,6 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 
     if(po.has("dt_metric1") && po.has("dt_metric2"))
     {
-        auto index_list = handle->get_index_list();
         std::string prompt("available metrics:");
         for(const auto& each : handle->get_index_list())
             prompt += " " + each;
