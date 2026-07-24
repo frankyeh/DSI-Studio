@@ -201,7 +201,7 @@ bool get_tract_profile(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
     tipl::out() << "save " << file_name;
     std::ofstream report(file_name);
     if(!report)
-        return tipl::error() << "cannot write to " << file_name,1;
+        return tipl::error() << "cannot write to " << file_name,false;
     report << "position\t";
     std::copy(values.begin(),values.end(),std::ostream_iterator<float>(report,"\t"));
     report << std::endl;
@@ -355,14 +355,14 @@ int trk_post(tipl::program_option<tipl::out>& po,
         int method = 0,count = 0;
         float detail = 0.0f;
         std::filesystem::path output;
-        in >> method >> count >> detail >> output;
+        if(!(in >> method >> count >> detail) ||
+            method < 0 || method > 255 || count < 0 || detail < 0.0f)
+            return tipl::error() << "invalid --cluster specification",1;
+        in >> output;
         tipl::out() << "cluster method: " << method << std::endl;
         tipl::out() << "cluster count: " << count << std::endl;
         tipl::out() << "cluster resolution (if method is 0) : " << detail << " mm" << std::endl;
         tipl::out() << "run clustering." << std::endl;
-        if(!(in >> method >> count >> detail) ||
-            method < 0 || method > 255 || count < 0 || detail < 0.0f)
-            return tipl::error() << "invalid --cluster specification",1;
         tract_model->run_clustering(uint8_t(method),uint32_t(count),detail);
         if(output.empty())
             (output = tract_file_name) += "_cluster.txt";
@@ -377,16 +377,18 @@ int trk_post(tipl::program_option<tipl::out>& po,
         std::vector<unsigned int> labels;
         std::vector<std::string> names;
         handle->recognize(tract_model,labels,names);
-        tipl::out() << "saving " << (po.get("recognize") + ".label.txt") << std::endl;
-        std::ofstream out1(po.get("recognize") + ".label.txt");
+        auto label_file_name = po.get("recognize") + ".label.txt";
+        tipl::out() << "saving " << label_file_name;
+        std::ofstream out1(label_file_name);
         if(!out1)
-            return tipl::error() << "cannot write to " << po.get("recognize") + ".label.txt",1;
+            return tipl::error() << "cannot write to " << label_file_name,1;
         std::copy(labels.begin(),labels.end(),std::ostream_iterator<int>(out1," "));
 
-        tipl::out() << "saving " << (po.get("recognize") + ".name.txt") << std::endl;
-        std::ofstream out2(po.get("recognize") + ".name.txt");
+        auto name_file_name = po.get("recognize") + ".name.txt";
+        tipl::out() << "saving " << name_file_name;
+        std::ofstream out2(name_file_name);
         if(!out2)
-            return tipl::error() << "cannot write to " << po.get("recognize") + ".name.txt",1;
+            return tipl::error() << "cannot write to " << name_file_name,1;
         std::copy(names.begin(),names.end(),std::ostream_iterator<std::string>(out2,"\n"));
         tract_model->tract_cluster = labels;
     }
@@ -400,17 +402,13 @@ int trk_post(tipl::program_option<tipl::out>& po,
         {
             std::filesystem::path out(output);
             if(std::filesystem::is_directory(out))
-            {
-                if(tract_file_name.empty())
-                    tract_file_name = out/tipl::remove_all_suffix(std::filesystem::path(po.get("source")).filename());
-                else
-                    tract_file_name = out/std::filesystem::path(tract_file_name).filename();
-            }
+                tract_file_name = out/(tract_file_name.empty() ?
+                                             tipl::remove_all_suffix(std::filesystem::path(po.get("source")).filename()) :
+                                             tract_file_name.filename());
             else
-            {
-                tract_file_name = output;
-                output_track = true;
-            }
+                tract_file_name = out;
+
+            output_track = true;
         }
     }
 
@@ -423,7 +421,7 @@ int trk_post(tipl::program_option<tipl::out>& po,
         {
             auto new_slice = std::make_shared<CustomSliceModel>(handle,po.get("ref"));
             if(!new_slice->load_slices())
-                return tipl::error() << new_slice->error_msg,false;
+                return tipl::error() << new_slice->error_msg,1;
             new_slice->wait();
             if(!tract_model->save_transformed_tract(tract_file_name,new_slice->dim,new_slice->vs,new_slice->trans_to_mni,new_slice->to_slice,false))
                 failed = true;
