@@ -70,7 +70,7 @@ static void ai_reply(QLocalSocket* socket,const QString& agent,
         prompts = {};
 }
 
-void ai_request_list(QLocalSocket* socket)
+void ai_request_list(QLocalSocket* socket,const QByteArray& request)
 {
     auto agent = QString::fromUtf8(request.mid(5));
     static quint64 next_id = 0;
