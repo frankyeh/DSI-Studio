@@ -65,6 +65,70 @@ void ai_request_list(QLocalSocket *clientSocket)
         "OKAY\n" + result.join('\n').toUtf8());
 }
 
+void ai_request_command(QLocalSocket* socket,const QByteArray& request)
+{
+    auto args = QString::fromUtf8(request).split('\t');
+    if(args.size() < 3)
+        return socket->write("ERROR\tinvalid command"),void();
+
+    QWidget* target = nullptr;
+    for(auto* window : QApplication::allWidgets())
+        if(window->property("remote_id").toString() == args[1])
+        {
+            target = window;
+            break;
+        }
+
+    if(!target)
+        return socket->write("ERROR\twindow not found"),void();
+
+    std::vector<std::string> cmd;
+    for(int i = 2;i < args.size();++i)
+        cmd.push_back(args[i].toUtf8().toStdString());
+
+    QString output,error;
+    bool okay = false;
+
+    {
+        std::lock_guard<std::mutex> lock(console.edit_buf);
+        console.capture = &output;
+    }
+
+    try
+    {
+        if(auto* window = qobject_cast<tracking_window*>(target))
+        {
+            okay = window->command(cmd);
+            error = QString::fromStdString(window->error_msg);
+        }
+        else if(auto* window = qobject_cast<view_image*>(target))
+        {
+            if(cmd.size() > 2)
+                error = "too many parameters";
+            else
+            {
+                okay = window->command(
+                    cmd[0],cmd.size() == 2 ? cmd[1] : "");
+                error = QString::fromStdString(window->error_msg);
+            }
+        }
+        else
+            error = "unsupported window";
+    }
+    catch(const std::exception& e)
+    {
+        error = e.what();
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(console.edit_buf);
+        console.capture = nullptr;
+    }
+
+    QString reply = okay ? "OKAY\n" : "ERROR\t" + error + "\n";
+    socket->write((reply + output).toUtf8());
+}
+
 void checkForVersionSpecificBugs_Minimal(const QString& bugListText)
 {
     QDate compDate = QDate::fromString(__DATE__, "MMM dd yyyy");
