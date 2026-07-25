@@ -140,7 +140,7 @@ bool command_history::run(tracking_window *parent,const std::vector<std::string>
     auto first_load = std::find_if(cmd.begin(),cmd.end(),[](const auto& cmd_line){return is_loading(cmd_line);});
     if(first_load != cmd.end() && type)
     {
-        loading_index = first_load-cmd.end();
+        loading_index = static_cast<int>(first_load-cmd.begin());
         auto param = tipl::split(*first_load,',');
         original_file = param[1];
         if(type == 1) // select files
