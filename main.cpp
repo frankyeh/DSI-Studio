@@ -12,6 +12,8 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QImageReader>
+#include <QJsonArray>
+#include <QJsonDocument>
 #include "mapping/atlas.hpp"
 #include "mainwindow.h"
 #include "console.h"
@@ -469,6 +471,7 @@ MainWindow* main_window = nullptr;
 
 void ai_request_list(QLocalSocket *clientSocket);
 void ai_request_command(QLocalSocket*,const QByteArray&);
+void ai_request_batch(QLocalSocket*,const QByteArray&);
 void ai_request_log(QLocalSocket* socket);
 int main(int ac, char *av[])
 {
@@ -489,7 +492,15 @@ int main(int ac, char *av[])
                 reply = "TIMEOUT";
             std::cout << reply.constData() << std::endl;
             socket.disconnectFromServer();
-            return reply.startsWith("OKAY") ? 0 : 1;
+            bool okay = reply.startsWith("OKAY");
+            if(!okay && std::string(av[1]).rfind("BATCH\t",0) == 0)
+            {
+                auto doc = QJsonDocument::fromJson(reply);
+                auto result = doc.array();
+                okay = doc.isArray() && std::all_of(result.begin(),result.end(),
+                                                    [](const auto& value){return value.toObject()["okay"].toBool();});
+            }
+            return okay ? 0 : 1;
         }
         if(std::string(av[1]) == "LIST")
             return std::cout << "NO_INSTANCE\n" << std::endl,1;
@@ -576,6 +587,8 @@ int main(int ac, char *av[])
                     tipl::out() << "received: " << request.constData();
                     if(request == "LIST")
                         ai_request_list(clientSocket);
+                    else if(request.startsWith("BATCH\t"))
+                        ai_request_batch(clientSocket,request);
                     else if(request.startsWith("CMD\t"))
                         ai_request_command(clientSocket,request);
                     else if(request == "LOG")
