@@ -477,11 +477,13 @@ int main(int ac, char *av[])
         socket.connectToServer("dsi-studio");
         if (socket.waitForConnected(5000))
         {
-            tipl::out() << "another instance is running, passing file name.";
             socket.write(av[1]);
             socket.flush();
             socket.waitForBytesWritten(5000);
-            auto reply = socket.waitForReadyRead(5000) ? socket.readAll() : QByteArray("TIMEOUT");
+            socket.waitForReadyRead(5000);
+            auto reply = socket.readAll();
+            if(reply.isEmpty())
+                reply = "TIMEOUT";
             std::cout << reply.constData() << std::endl;
             socket.disconnectFromServer();
             return reply.startsWith("OKAY") ? 0 : 1;
