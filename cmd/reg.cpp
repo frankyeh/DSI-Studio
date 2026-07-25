@@ -1,5 +1,6 @@
 #include <QString>
 #include <QImage>
+#include <atomic>
 #include "img.hpp"
 
 #include "tract_model.hpp"
@@ -95,11 +96,10 @@ bool apply_warping_fzsz(const reg_type& reg,const std::string& input,const std::
     if(trans != (direction ? reg.IR : reg.ItR))
         return reg.error_msg = "transformation matrix does not match",false;
 
-    size_t p = 0;
-    bool failed = false;
+    std::atomic_size_t p = 0;
     tipl::par_for(mat_reader.size(),[&](unsigned int i)
     {
-        if(!prog(p++,mat_reader.size()) || failed)
+        if(!prog(p++,mat_reader.size()))
             return;
         auto& mat = mat_reader[i];
         size_t mat_size = mat_reader.cols(i)*mat_reader.rows(i);
@@ -127,6 +127,9 @@ bool apply_warping_fzsz(const reg_type& reg,const std::string& input,const std::
         }
 
     },tipl::max_thread_count);
+
+    if(prog.aborted())
+        return reg.error_msg = "aborted",false;
 
     {
         if((direction ? reg.Its : reg.Is) != dim)
@@ -159,33 +162,31 @@ bool load_warping(tipl::reg::mm_reg<tipl::out>& reg,const std::filesystem::path&
     if(!in.load_from_file(filename))
         return reg.error_msg = "cannot read file " + filename.u8string(),false;
 
-    if(in.read_as_value<int>("version") > map_ver)
-        return reg.error_msg = "incompatible map file format: the version "
-                + std::to_string(in.read_as_value<int>("version"))
-                + " is not supported within current rage "
-                + std::to_string(map_ver),false;
+    auto version = in.read_as_value<int>("version");
+    if(version > map_ver)
+        return reg.error_msg = "incompatible map file format: version " +
+                               std::to_string(version) + " exceeds " + std::to_string(map_ver),false;
 
-    const float* f2t_dis_ptr = nullptr;
-    const float* t2f_dis_ptr = nullptr;
-    unsigned int row,col;
-    if (!in.read_pointer("dimension",reg.Its) ||
+    const float *f2t_dis_ptr = nullptr,*t2f_dis_ptr = nullptr;
+    unsigned int f2t_row,f2t_col,t2f_row,t2f_col;
+    if(!in.read_pointer("dimension",reg.Its) ||
         !in.read_pointer("voxel_size",reg.Itvs) ||
         !in.read_pointer("trans",reg.ItR) ||
         !in.read_pointer("dimension_from",reg.Is) ||
         !in.read_pointer("voxel_size_from",reg.Ivs) ||
         !in.read_pointer("trans_from",reg.IR) ||
         !in.read_pointer("arg",reg.arg) ||
-        !in.read("f2t_dis",row,col,f2t_dis_ptr) ||
-        !in.read("t2f_dis",row,col,t2f_dis_ptr))
+        !in.read("f2t_dis",f2t_row,f2t_col,f2t_dis_ptr) ||
+        !in.read("t2f_dis",t2f_row,t2f_col,t2f_dis_ptr))
         return reg.error_msg = "invalid warp file format",false;
 
-    tipl::shape<3> sub_shape;
-    sub_shape = tipl::shape<3>((reg.Its[0]+1)/2,(reg.Its[1]+1)/2,(reg.Its[2]+1)/2);
-
-    reg.t2f_dis.resize(sub_shape);
-    reg.f2t_dis.resize(sub_shape);
-    if(row*col != sub_shape.size()*3)
+    tipl::shape<3> sub_shape((reg.Its[0]+1)/2,(reg.Its[1]+1)/2,(reg.Its[2]+1)/2);
+    if(f2t_row*f2t_col != sub_shape.size()*3 ||
+        t2f_row*t2f_col != sub_shape.size()*3)
         return reg.error_msg = "invalid displacement field",false;
+
+    reg.f2t_dis.resize(sub_shape);
+    reg.t2f_dis.resize(sub_shape);
 
     std::copy_n(f2t_dis_ptr,reg.f2t_dis.size()*3,&reg.f2t_dis[0][0]);
     std::copy_n(t2f_dis_ptr,reg.t2f_dis.size()*3,&reg.t2f_dis[0][0]);
@@ -205,7 +206,21 @@ bool load_warping(tipl::reg::mm_reg<tipl::out>& reg,const std::filesystem::path&
     return true;
 }
 
-
+std::string warping_output(const std::string& file,const std::string& dir,bool direction)
+{
+    std::string ext;
+    for(const auto* e : {".nii.gz",".nii",".tt.gz",".sz",".src.gz",".fz",".fib.gz"})
+        if(tipl::ends_with(file,e))
+        {
+            ext = (direction ? ".wp" : ".uwp")+std::string(e);
+            break;
+        }
+    if(ext.empty())
+        return {};
+    return dir.empty() ? file+ext :
+               (std::filesystem::path(dir)/
+                (std::filesystem::path(file).filename().string()+ext)).string();
+}
 bool save_warping(const tipl::reg::mm_reg<tipl::out>& reg,const std::filesystem::path& filename)
 {
     std::string output_name = filename.u8string();
@@ -232,9 +247,14 @@ bool save_warping(const tipl::reg::mm_reg<tipl::out>& reg,const std::filesystem:
                     buffer2[i+shift] = reg.to2from[i][d];
             }
         },6);
-        tipl::io::gz_nifti(filename,std::ios::out) << reg.Ivs << reg.IR << buffer;
-        tipl::io::gz_nifti(tipl::remove_all_suffix(output_name) + ".inv.nii.gz",std::ios::out) << reg.Itvs << reg.ItR << buffer2;
-        return true;
+        auto write = [&](const auto& name,const auto& vs,const auto& trans,const auto& image)->bool
+        {
+            return tipl::io::gz_nifti(name,std::ios::out) << vs << trans << image <<
+                   [&](const std::string& e){reg.error_msg = e;};
+        };
+        return write(filename,reg.Ivs,reg.IR,buffer) &&
+               write(tipl::remove_all_suffix(output_name)+".inv.nii.gz",
+                     reg.Itvs,reg.ItR,buffer2);
     }
 
     if(!tipl::ends_with(output_name,".mz"))
@@ -326,7 +346,6 @@ int reg(tipl::program_option<tipl::out>& po)
             return tipl::error() << "please specify images to warp/unwwarp at --source/--to, respectively.",1;
         tipl::out() << "dim: " << r.Is << " to " << r.Its;
         tipl::out() << "vs: " << r.Ivs << " to " << r.Itvs;
-        bool good = true;
         if(!save_warping<true>(r,from_filename,po.get("output")) ||
            !save_warping<false>(r,to_filename,po.get("output")))
             return 1;
