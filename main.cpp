@@ -565,18 +565,17 @@ int main(int ac, char *av[])
         {
             QObject::connect(&server, &QLocalServer::newConnection, [&server,&w]()
             {
-                tipl::out() << "received file name from another instance";
                 QLocalSocket *clientSocket = server.nextPendingConnection();
                 if (clientSocket)
                 {
                     clientSocket->waitForReadyRead(500);
                     auto request = clientSocket->readAll();
+                    tipl::out() << "received: " << request.begin();
                     if(request =="LIST")
                         ai_request_list(clientSocket);
                     else
                     {
                         // Existing filename-opening behavior remains unchanged.
-                        tipl::out() << "file name:" << request.begin();
                         bool busy = tipl::progress::is_running();
                         bool exists = std::filesystem::exists(request.begin());
 
