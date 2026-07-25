@@ -16,6 +16,9 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QRegularExpression>
+#include <QProcess>
+#include <QUuid>
+#include <QTextCursor>
 
 #include <filesystem>
 #include "mainwindow.h"
@@ -73,6 +76,7 @@ static void ai_reply(QLocalSocket* socket,const QString& agent,
 void ai_request_list(QLocalSocket* socket,const QByteArray& request)
 {
     auto agent = QString::fromUtf8(request.mid(5));
+    main_window->log_ai_call(agent,"LIST");
     static quint64 next_id = 0;
     QStringList result;
     for(auto* window : QApplication::allWidgets())
@@ -103,7 +107,10 @@ void ai_request_command(QLocalSocket* socket,const QByteArray& request)
     QString agent;
     int begin = 4,tab = request.indexOf('\t',begin);
     if(tab < 0)
+    {
+        main_window->log_ai_call(agent,QString::fromUtf8(request));
         return ai_reply(socket,agent,"ERROR\tinvalid command");
+    }
 
     if(request[begin] == '@')
     {
@@ -111,8 +118,12 @@ void ai_request_command(QLocalSocket* socket,const QByteArray& request)
         begin = tab+1;
         tab = request.indexOf('\t',begin);
         if(tab < 0)
+        {
+            main_window->log_ai_call(agent,"CMD\t" + QString::fromUtf8(request.mid(begin)));
             return ai_reply(socket,agent,"ERROR\tinvalid command");
+        }
     }
+    main_window->log_ai_call(agent,"CMD\t" + QString::fromUtf8(request.mid(begin)));
 
     QWidget* target = nullptr;
     auto id = QString::fromUtf8(request.mid(begin,tab-begin));
@@ -236,12 +247,91 @@ void ai_request_command(QLocalSocket* socket,const QByteArray& request)
 void ai_request_log(QLocalSocket* socket,const QByteArray& request)
 {
     auto agent = QString::fromUtf8(request.mid(4));
+    main_window->log_ai_call(agent,"LOG");
     QByteArray output;
     {
         std::lock_guard<std::mutex> lock(console.edit_buf);
         output = console.history.toUtf8();
     }
     ai_reply(socket,agent,"OKAY\n" + output);
+}
+
+void MainWindow::log_ai_call(const QString& agent,const QString& request)
+{
+    QString name = agent.startsWith("@C") ? "Codex" :
+                   agent.startsWith("@A") ? "Claude Code" : "AI agent";
+    QString color = agent.startsWith("@C") ? "#e8f0fe" :
+                    agent.startsWith("@A") ? "#fff1e6" : "#f1f3f4";
+    QString id = agent.isEmpty() ? "legacy" : agent;
+    QString text = request.toHtmlEscaped().replace("\t","&nbsp;&nbsp;&nbsp;&nbsp;").replace("\n","<br>");
+    QTextCursor cursor(ui->ai_chat_history->document());
+    cursor.movePosition(QTextCursor::End);
+    cursor.insertHtml(QString("<table width=\"100%\" cellspacing=\"0\" cellpadding=\"7\">"
+                              "<tr><td bgcolor=\"%1\"><b>%2%3</b> "
+                              "<font color=\"#80868b\">%4</font><br>"
+                              "<font face=\"Consolas\">%5</font></td></tr></table>")
+                      .arg(color,name.toHtmlEscaped()," &middot; " + id.toHtmlEscaped(),
+                           QDateTime::currentDateTime().toString("HH:mm:ss"),text));
+    cursor.insertBlock();
+    ui->ai_chat_history->setTextCursor(cursor);
+    ui->ai_chat_history->ensureCursorVisible();
+    if(ai_agent.isEmpty() && !agent.isEmpty())
+    {
+        ai_agent = agent;
+        ai_agent_started = true;
+        ui->ai_connected_agent->setText("Agent: " + name + " " + agent);
+    }
+    if(agent == ai_agent)
+        ui->ai_control_status->setText("● Active");
+}
+
+void MainWindow::on_ai_new_codex_chat_clicked()
+{
+    ai_agent = "@C" + QUuid::createUuid().toString(QUuid::WithoutBraces).left(8);
+    ai_agent_started = false;
+    ai_prompts[ai_agent];
+    ui->ai_connected_agent->setText("Agent: Codex " + ai_agent);
+    ui->ai_control_status->setText("● Ready");
+    ui->ai_chat_input->setFocus();
+    if(!ui->ai_chat_input->toPlainText().trimmed().isEmpty())
+        on_ai_send_message_clicked();
+}
+
+void MainWindow::on_ai_send_message_clicked()
+{
+    auto text = ui->ai_chat_input->toPlainText().trimmed();
+    if(text.isEmpty())
+        return;
+    if(ai_agent.isEmpty())
+        return on_ai_new_codex_chat_clicked();
+
+    ai_prompts[ai_agent].append(QJsonObject{{"text",text}});
+    ui->ai_chat_input->clear();
+    ui->ai_control_status->setText("● Message queued");
+    if(ai_agent_started)
+        return;
+
+#ifdef Q_OS_WIN
+    auto codex = QStandardPaths::findExecutable("codex");
+    auto setup = QDir::toNativeSeparators(QApplication::applicationDirPath() + "/DSI_STUDIO_AI_SETUP.md");
+    auto manual = QDir::toNativeSeparators(QApplication::applicationDirPath() + "/DSI_STUDIO_AI_MANUAL.md");
+    if(codex.isEmpty() || !QFileInfo::exists(setup) || !QFileInfo::exists(manual))
+        return QMessageBox::critical(this,"Codex",
+               codex.isEmpty() ? "Codex CLI is not installed or not available on PATH." :
+                                 "Cannot find the DSI Studio AI setup or manual file."),void();
+
+    auto prompt = QString("Read \"%1\" and \"%2\" completely. You are Codex agent %3. "
+                          "Connect to DSI Studio using LIST<TAB>%3, CMD<TAB>%3<TAB>..., and "
+                          "LOG<TAB>%3. Follow every PROMPT payload and keep this identity for the whole session.")
+                  .arg(setup,manual,ai_agent);
+    auto dir = QDir(ui->workDir->currentText()).exists() ? ui->workDir->currentText() : QDir::currentPath();
+    if(!QProcess::startDetached("cmd.exe",{"/k",codex,prompt},dir))
+        return QMessageBox::critical(this,"Codex","Cannot start Codex CLI."),void();
+    ai_agent_started = true;
+    ui->ai_control_status->setText("● Waiting");
+#else
+    QMessageBox::information(this,"Codex","New Codex chat is currently available on Windows.");
+#endif
 }
 
 
