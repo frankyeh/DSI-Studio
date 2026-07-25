@@ -149,15 +149,13 @@ bool variant_image::command(std::string cmd,std::string param1)
 void variant_image::write_mat_image(size_t index,
                     tipl::io::gz_mat_read& mat)
 {
-    mat[index].set_row_col(shape.plane_size(),shape.depth());
-    apply([&](const auto& image_data)
+    auto& m = mat[index];
+    apply([&](const auto& data)
     {
-        if(mat[index].type_compatible<short>())
-            std::copy(image_data.begin(),image_data.end(),mat[index].get_data<short>());
-        if(mat[index].type_compatible<float>())
-            std::copy(image_data.begin(),image_data.end(),mat[index].get_data<float>());
-        if(mat[index].type_compatible<char>())
-            std::copy(image_data.begin(),image_data.end(),mat[index].get_data<char>());
+        using value_type = typename std::decay_t<decltype(data)>::value_type;
+        m.convert_to<value_type>();
+        m.set_row_col(shape.plane_size(),shape.depth());
+        std::copy(data.begin(),data.end(),m.get_data<value_type>());
     });
 }
 
