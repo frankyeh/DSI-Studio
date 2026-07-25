@@ -25,8 +25,10 @@ void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<s
     tipl::progress p("for each region");
     for(size_t index = 0;index < regions.size();++index)
     {
-        std::vector<std::string> dummy;
-        regions[index]->get_quantitative_data(handle,(index == 0) ? titles : dummy,data[index]);
+        std::vector<std::string> current;
+        regions[index]->get_quantitative_data(handle,current,data[index]);
+        if(current.size() > titles.size())
+            titles = std::move(current);
     }
     std::ostringstream out;
     out << "Name";
@@ -388,7 +390,13 @@ bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> h
         if(!load_nii(po,handle,file_name,regions))
             return false;
         if(region_name.empty())
+        {
             roi = *regions.front();
+            for(size_t i = 1;i < regions.size();++i)
+                roi.region.insert(roi.region.end(),
+                                  std::make_move_iterator(regions[i]->region.begin()),
+                                  std::make_move_iterator(regions[i]->region.end()));
+        }
         else
         {
             auto name = tipl::remove_all_suffix(file_name.filename().u8string()) + "_" + region_name;
@@ -438,20 +446,6 @@ int trk_post(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handl
              std::shared_ptr<TractModel> tract_model,std::filesystem::path tract_file_name,bool output_track);
 std::shared_ptr<fib_data> cmd_load_fib(tipl::program_option<tipl::out>& po);
 
-bool load_tracts(const std::filesystem::path& file_name,
-                 std::shared_ptr<fib_data> handle,
-                 std::shared_ptr<TractModel> tract_model)
-{
-    if(!std::filesystem::exists(file_name))
-        return tipl::error() << file_name << " does not exist. terminating...",false;
-    auto is_mni = tipl::contains(file_name.filename().u8string(),"mni");
-    if(is_mni)
-        tipl::out() << file_name << " has 'mni' in the file name. It will be treated as mni-space tracts" << std::endl;
-    if(!tract_model->load_tracts_from_file(file_name,handle.get(),is_mni))
-        return tipl::error() << "cannot read or parse " << file_name,false;
-    tipl::out() << "A total of " << tract_model->get_visible_track_count() << " tracks loaded";
-    return true;
-}
 int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
 {
     std::vector<std::shared_ptr<ROIRegion> > regions;
@@ -570,12 +564,19 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
 
 
     std::vector<std::shared_ptr<TractModel> > tracts;
-    for(const auto& each : tract_files)
+    for(const auto& file : tract_files)
     {
-        tracts.push_back(std::make_shared<TractModel>(handle));
-        if(!load_tracts(each,handle,tracts.back()))
-            return 1;
+        auto loaded = TractModel::load_from_file(
+            file,handle,tipl::contains(file.filename().u8string(),"mni"));
+        loaded.erase(std::remove(loaded.begin(),loaded.end(),nullptr),loaded.end());
+        if(loaded.empty())
+            return tipl::error() << "cannot read or parse " << file,1;
+        tracts.insert(tracts.end(),
+                      std::make_move_iterator(loaded.begin()),
+                      std::make_move_iterator(loaded.end()));
     }
+
+
     tipl::out() << "a total of " << tracts.size() << " tract file(s) loaded" << std::endl;
     if(tracts.size() == 1 && !tracts[0]->tract_cluster.empty())
     {
@@ -622,7 +623,6 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         for(const auto& each : tracts)
             each->trim(po.get("tip_iteration",0));
     }
-
 
     {
         std::shared_ptr<RoiMgr> roi_mgr(new RoiMgr(handle));
