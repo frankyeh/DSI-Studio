@@ -1,8 +1,11 @@
 # DSI Studio AI-Agent Control Manual
 
-**Source snapshot:** DSI Studio `master` at commit
-[`9e00c9c23f49df581a78bc1c9928134d262092ad`](https://github.com/frankyeh/DSI-Studio/commit/9e00c9c23f49df581a78bc1c9928134d262092ad), inspected 2026-07-25.
-All source links below are permanent links pinned to that commit.
+**Source review:** The comprehensive command audit is pinned to
+[`9e00c9c23f49df581a78bc1c9928134d262092ad`](https://github.com/frankyeh/DSI-Studio/commit/9e00c9c23f49df581a78bc1c9928134d262092ad).
+Protocol and command changes were reviewed through
+[`8ad955a333cdfcb8d6433a6a88137c0ae76f6cad`](https://github.com/frankyeh/DSI-Studio/commit/8ad955a333cdfcb8d6433a6a88137c0ae76f6cad)
+on 2026-07-25. Existing command-audit links remain pinned to the base commit;
+revised entries link to the implementing commit.
 
 ## Purpose and scope
 
@@ -14,11 +17,14 @@ handler and its delegated handlers. The current surface exposes `main`,
 `tracking`, and `image` windows. Reconstruction-window and `src_data` command
 methods exist in source but are not remotely targetable through `LIST`.
 
-The latest command-interface work was reviewed, including the twelve commits
+The command-interface work was reviewed, including the twelve commits
 from [`4c44366a`](https://github.com/frankyeh/DSI-Studio/commit/4c44366aba7ce5696f1ac3df9dccb6822637395b)
 through [`9e00c9c23f49df581a78bc1c9928134d262092ad`](https://github.com/frankyeh/DSI-Studio/commit/9e00c9c23f49df581a78bc1c9928134d262092ad). Those
 commits added and refined the IPC list/command routes and the tracking, tract,
-and region commands described here.
+and region commands described here. The later review through
+[`8ad955a3`](https://github.com/frankyeh/DSI-Studio/commit/8ad955a333cdfcb8d6433a6a88137c0ae76f6cad)
+adds JSON batching inside `CMD`, `list_recent`, `run_cli`, richer readiness
+lists, multiple-parameter updates, and shorter `run_tracking` forms.
 
 ## Critical safety rules
 
