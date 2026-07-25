@@ -7,7 +7,7 @@
 bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,std::shared_ptr<RoiMgr> roi_mgr);
 int cnt(tipl::program_option<tipl::out>& po)
 {
-    std::shared_ptr<group_connectometry_analysis> vbc(new group_connectometry_analysis);
+    auto vbc = std::make_shared<group_connectometry_analysis>();
     if(!vbc->load_database(po.get("source").c_str()))
     {
         tipl::error() << vbc->error_msg << std::endl;
@@ -89,11 +89,9 @@ int cnt(tipl::program_option<tipl::out>& po)
             foi_str = db.feature[voi_index].title;
         }
 
-        {
-            // sort and variables, make them unique
-            std::set<unsigned int> s(variable_list.begin(),variable_list.end());
-            variable_list.assign(s.begin(),s.end());
-        }
+        // sort and variables, make them unique
+        std::sort(variable_list.begin(),variable_list.end());
+        variable_list.erase(std::unique(variable_list.begin(),variable_list.end()),variable_list.end());
 
         for(auto& each : db.feature)
             each.selected = false;
@@ -119,19 +117,15 @@ int cnt(tipl::program_option<tipl::out>& po)
         vbc->fdr_threshold = po.get("fdr_threshold",0.0f);
 
         // select cohort and feature
-        vbc->model.reset(new stat_model);
+        vbc->model = std::make_shared<stat_model>();
         vbc->model->read_demo(db);
         if(!vbc->model->select_cohort(db,po.get("select")) || !vbc->model->select_feature(db,vbc->foi_str))
         {
             tipl::error() << vbc->model->error_msg.c_str() << std::endl;
             return 1;
         }
-        size_t n = 0;
-        for(size_t i = 0;i < vbc->model->remove_list.size();++i)
-        {
-            if(!vbc->model->remove_list[i])
-                n++;
-        }
+        size_t n = std::count(vbc->model->remove_list.begin(),
+                              vbc->model->remove_list.end(),false);
         tipl::out() << "sample size:" << n;
         if(n <= 2)
         {
