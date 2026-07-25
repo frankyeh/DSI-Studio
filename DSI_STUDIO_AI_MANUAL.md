@@ -248,8 +248,8 @@ When DSI Studio should display the final answer, attach it once to the final
 {"agent":"@C7f2a","request":"LOG","chat":"The requested tract was created and saved successfully."}
 ```
 
-The `LOG` reply is generated before the attached text is added to AI history,
-so the same request does not echo that text. Do not resend it.
+Chat is stored in `ai_chat_history`, not console history, so the `LOG` reply
+does not echo the attached text. Do not resend it.
 
 ### Command batches
 
@@ -300,7 +300,6 @@ returns `BUSY`, `OKAY`, or `ERROR`; `OKAY` means only that the path existed and
 `openFile()` was called, not that the correct new window became ready
 ([open-file route](https://github.com/frankyeh/DSI-Studio/blob/master/main.cpp#L592-L615)).
 After `OKAY`, send JSON `LIST` requests until the expected window appears.
-the expected window.
 
 ### Replies, fallback exit status, and completion
 
