@@ -301,30 +301,16 @@ bool save_warping(reg_type& r,
                   const std::vector<std::string>& files,
                   const std::string& out_dir)
 {
+    if(!out_dir.empty())
+        std::filesystem::create_directories(out_dir);
     for(const auto& file : files)
     {
-        std::string ext;
-        for(const auto* e : {".nii.gz", ".tt.gz", ".sz", ".fz"})
-            if (tipl::ends_with(file, e))
-                ext = e;
-
-        if(ext.empty())
-            return tipl::error() << "unsupported format: " << file, false;
-
-        ext = (direction ? ".wp" : ".uwp") + ext;
-        std::string out_file = file + ext;
-
-        if (!out_dir.empty())
-        {
-            std::filesystem::create_directories(out_dir);
-            auto fname = std::filesystem::path(file).filename().string();
-            out_file = (std::filesystem::path(out_dir) / (fname + ext)).string();
-        }
-
+        auto out_file = warping_output(file,out_dir,direction);
+        if(out_file.empty())
+            return tipl::error() << "unsupported format: " << file,false;
         tipl::out() << (direction ? "warping " : "unwarping") << file << " into " << out_file;
-
-        if (!apply_warping<direction>(r,file,out_file))
-            return tipl::error() << r.error_msg, false;
+        if(!apply_warping<direction>(r,file,out_file))
+            return tipl::error() << r.error_msg,false;
     }
     return true;
 }
@@ -355,19 +341,20 @@ int reg(tipl::program_option<tipl::out>& po)
 
     if(from_filename.empty() || to_filename.empty())
         return tipl::error() << "please specify the images to warp using --source and --to",1;
+
+    auto s2t = tipl::split(po.get("s2t",po.get("source")),',');
+    auto t2s = tipl::split(po.get("t2s"),',');
     if(!po.get("overwrite",0))
     {
-        bool skip = true;
-        for(const auto& each_file: from_filename)
+        auto exist = [&](const auto& files,bool direction)
         {
-            if((tipl::ends_with(each_file,".tt.gz") && !std::filesystem::exists(each_file+".wp.tt.gz")) ||
-               (tipl::ends_with(each_file,".nii.gz") && !std::filesystem::exists(each_file+".wp.nii.gz")))
-            {
-                skip = false;
-                break;
-            }
-        }
-        if(skip)
+            return std::all_of(files.begin(),files.end(),[&](const auto& file)
+                               {
+                                   auto output = warping_output(file,po.get("output"),direction);
+                                   return !output.empty() && std::filesystem::exists(output);
+                               });
+        };
+        if(exist(s2t,true) && exist(t2s,false))
             return tipl::out() << "output file exists, skipping",0;
     }
 
@@ -404,8 +391,8 @@ int reg(tipl::program_option<tipl::out>& po)
     }
     if(po.has("output_mapping") && !save_warping(r,po.get("output_mapping")))
         return tipl::error() << r.error_msg,1;
-    if(!save_warping<true>(r,tipl::split(po.get("s2t",po.get("source")),','),po.get("output")) ||
-       !save_warping<false>(r,tipl::split(po.get("t2s"),','),po.get("output")))
+    if(!save_warping<true>(r,s2t,po.get("output")) ||
+        !save_warping<false>(r,t2s,po.get("output")))
         return 1;
     if(po.get("export_r",0))
         std::ofstream(from_filename.front() + ".r" + std::to_string(int(r.r[0]*100))) << std::endl;
