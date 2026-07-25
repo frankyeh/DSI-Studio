@@ -38,6 +38,47 @@
 
 QString access_token;
 
+void ai_request_list(QLocalSocket *clientSocket)
+{
+    static quint64 next_id = 0;
+
+    auto remote_id = [](QWidget* window)
+    {
+        static std::atomic_uint64_t next_id = 1;
+
+        QVariant id = window->property("remote_id");
+        if(!id.isValid())
+        {
+            id = QString::number(next_id++);
+            window->setProperty("remote_id",id);
+        }
+        return id.toString();
+    };
+
+    QStringList result;
+
+    for(auto* window : QApplication::topLevelWidgets())
+    {
+        if(!window->property("remote_id").isValid())
+            window->setProperty("remote_id",++next_id);
+
+        QString type;
+        if(qobject_cast<tracking_window*>(window))
+            type = "tracking";
+        else if(qobject_cast<view_image*>(window))
+            type = "image";
+        else
+            continue;
+
+        result << QString("%1\t%2\t%3")
+                      .arg(type)
+                      .arg(window->property("remote_id").toULongLong())
+                      .arg(window->windowTitle());
+    }
+
+    clientSocket->write(result.join('\n').toUtf8());
+}
+
 void checkForVersionSpecificBugs_Minimal(const QString& bugListText)
 {
     QDate compDate = QDate::fromString(__DATE__, "MMM dd yyyy");
