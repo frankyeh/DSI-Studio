@@ -2261,6 +2261,13 @@ bool GLWidget::command(std::vector<std::string> cmd)
         update();
         return true;
     }
+    if(cmd[0] == "rotate")
+    {
+        float angle = 0.0f,x = 0.0f,y = 1.0f,z = 0.0f;
+        std::istringstream(cmd[1]) >> angle >> x >> y >> z;
+        rotate_angle(angle,x,y,z);
+        return true;
+    }
     if(cmd[0] == "set_stereoscopic")
     {
         makeCurrent();
