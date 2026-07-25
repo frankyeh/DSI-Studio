@@ -15,6 +15,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QRegularExpression>
+#include <QSaveFile>
 
 #include <filesystem>
 #include "mainwindow.h"
@@ -45,7 +46,9 @@ void ai_request_list(QLocalSocket *clientSocket)
     for(auto* window : QApplication::allWidgets())
     {
         QString type;
-        if(qobject_cast<tracking_window*>(window))
+        if(qobject_cast<MainWindow*>(window))
+            type = "main";
+        else if(qobject_cast<tracking_window*>(window))
             type = "tracking";
         else if(qobject_cast<view_image*>(window))
             type = "image";
@@ -96,7 +99,12 @@ void ai_request_command(QLocalSocket* socket,const QByteArray& request)
 
     try
     {
-        if(auto* window = qobject_cast<tracking_window*>(target))
+        if(auto* window = qobject_cast<MainWindow*>(target))
+        {
+            okay = window->command(cmd);
+            error = QString::fromStdString(window->error_msg);
+        }
+        else if(auto* window = qobject_cast<tracking_window*>(target))
         {
             okay = window->command(cmd);
             error = QString::fromStdString(window->error_msg);
@@ -1837,6 +1845,192 @@ void MainWindow::update_rate_limit(QSharedPointer<QNetworkReply> reply)
     if(reply->rawHeader("X-RateLimit-Remaining").toInt() == 0)
         return;
     tipl::out() << "api rate limit: " << (github_api_rate_limit = reply->rawHeader("X-RateLimit-Remaining").toInt());
+}
+
+bool MainWindow::command(const std::vector<std::string>& cmd)
+{
+    error_msg.clear();
+    auto fail = [this](QString error)
+    {
+        error_msg = error.toStdString();
+        return false;
+    };
+    const QString usage =
+        "hub repos | hub tags <repo> | hub files <repo> <tag> [text] | "
+        "hub open <repo> <tag> <file> | hub download <repo> <tag> <file> <path>";
+    if(cmd.empty() || cmd[0] != "hub")
+        return fail(usage);
+    if(cmd.size() == 1 || cmd[1] == "help")
+        return tipl::out() << usage.toStdString(),true;
+
+    QByteArray data,link;
+    auto read = [this,&data,&link,&fail](QUrl url)
+    {
+        auto reply = get(url);
+        QEventLoop loop;
+        connect(reply.get(),&QNetworkReply::finished,&loop,&QEventLoop::quit);
+        loop.exec();
+        if(reply->error() != QNetworkReply::NoError)
+            return fail(showQNetworkReplyError(reply.get()));
+        update_rate_limit(reply);
+        link = reply->rawHeader("Link");
+        data = reply->readAll();
+        return true;
+    };
+
+    QString action = QString::fromUtf8(cmd[1]);
+    if(action == "repos")
+    {
+        if(cmd.size() != 2)
+            return fail(usage);
+        QString content = settings.value("hub_content").toString();
+        if(content.isEmpty())
+        {
+            if(info.size() < 5 || !read(info[4]))
+                return fail(error_msg.empty() ? "Fiber Data Hub is not ready" : QString::fromStdString(error_msg));
+            settings.setValue("hub_content",content = QString::fromUtf8(data));
+        }
+        QStringList result;
+        QRegularExpression re("https://github\\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)");
+        auto matches = re.globalMatch(content);
+        while(matches.hasNext())
+        {
+            QString repo = matches.next().captured(1);
+            if(!result.contains(repo))
+                result << repo;
+        }
+        if(result.empty())
+            return fail("No Fiber Data Hub repositories found");
+        return tipl::out() << result.join('\n').toStdString(),true;
+    }
+
+    if(cmd.size() < 3)
+        return fail(usage);
+    QString repo = QString::fromUtf8(cmd[2]);
+    if(!QRegularExpression("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$").match(repo).hasMatch())
+        return fail("invalid repository");
+
+    if(action == "tags")
+    {
+        if(cmd.size() != 3)
+            return fail(usage);
+        QJsonArray releases;
+        QUrl next(QString("https://api.github.com/repos/%1/releases?per_page=100").arg(repo));
+        while(next.isValid())
+        {
+            if(!read(next))
+                return false;
+            auto page = QJsonDocument::fromJson(data).array();
+            for(const auto& release : page)
+                releases.append(release);
+            auto match = QRegularExpression("<([^>]+)>; rel=\"next\"").match(link);
+            next = match.hasMatch() ? QUrl(match.captured(1)) : QUrl();
+        }
+        QStringList result({"tag\tname\tfiles\tpublished"});
+        for(const auto& release : releases)
+        {
+            auto object = release.toObject();
+            result << QString("%1\t%2\t%3\t%4")
+                      .arg(object["tag_name"].toString(),object["name"].toString())
+                      .arg(object["assets"].toArray().size())
+                      .arg(object["published_at"].toString());
+        }
+        return tipl::out() << result.join('\n').toStdString(),true;
+    }
+
+    if(cmd.size() < 4)
+        return fail(usage);
+    QString tag = QString::fromUtf8(cmd[3]);
+    QString encoded_tag = QString::fromLatin1(QUrl::toPercentEncoding(tag));
+    if(!read(QUrl(QString("https://api.github.com/repos/%1/releases/tags/%2").arg(repo,encoded_tag))))
+        return false;
+    auto release = QJsonDocument::fromJson(data).object();
+    auto release_assets = release["assets"].toArray();
+
+    if(action == "files")
+    {
+        if(cmd.size() > 5)
+            return fail(usage);
+        QString pattern = cmd.size() == 5 ? QString::fromUtf8(cmd[4]) : QString();
+        QStringList result({"name\tbytes\tdownloads\tcreated"});
+        for(const auto& value : release_assets)
+        {
+            auto asset = value.toObject();
+            QString name = asset["name"].toString();
+            if(pattern.isEmpty() || name.contains(pattern,Qt::CaseInsensitive))
+                result << QString("%1\t%2\t%3\t%4")
+                          .arg(name)
+                          .arg(asset["size"].toInteger())
+                          .arg(asset["download_count"].toInteger())
+                          .arg(asset["created_at"].toString());
+        }
+        return tipl::out() << result.join('\n').toStdString(),true;
+    }
+
+    if((action != "open" || cmd.size() != 5) &&
+       (action != "download" || cmd.size() != 6))
+        return fail(usage);
+    QString name = QString::fromUtf8(cmd[4]);
+    QJsonObject asset;
+    for(const auto& value : release_assets)
+        if(value["name"].toString() == name)
+        {
+            asset = value.toObject();
+            break;
+        }
+    if(asset.isEmpty())
+        return fail("file not found in release");
+    if(QFileInfo(name).fileName() != name)
+        return fail("invalid file name");
+
+    QString path;
+    if(action == "open")
+    {
+        QString dir = repo + "/" + tag;
+        dir.replace(QRegularExpression("[^A-Za-z0-9_.-]"),"_");
+        path = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) +
+               "/fiber_data_hub/files/" + dir + "/" + name;
+        if(QFile::exists(path))
+            return openFile(QStringList() << path),true;
+    }
+    else
+    {
+        path = QString::fromUtf8(cmd[5]);
+        if(QFileInfo(path).isDir() || path.endsWith('/') || path.endsWith('\\'))
+            path = QDir(path).filePath(name);
+        if(QFile::exists(path))
+            return fail("destination already exists");
+    }
+
+    if(!QDir().mkpath(QFileInfo(path).absolutePath()))
+        return fail("cannot create download directory");
+    QSaveFile file(path);
+    if(!file.open(QFile::WriteOnly))
+        return fail(file.errorString());
+
+    QString url = repo.contains("restricted") ?
+                  asset["url"].toString() : asset["browser_download_url"].toString();
+    auto reply = get(url);
+    bool write_ok = true;
+    connect(reply.get(),&QNetworkReply::readyRead,this,[&]()
+    {
+        if(file.write(reply->readAll()) < 0)
+            write_ok = false;
+    });
+    QEventLoop loop;
+    connect(reply.get(),&QNetworkReply::finished,&loop,&QEventLoop::quit);
+    loop.exec();
+    if(reply->error() != QNetworkReply::NoError)
+        return fail(showQNetworkReplyError(reply.get()));
+    if(reply->bytesAvailable() && file.write(reply->readAll()) < 0)
+        write_ok = false;
+    if(!write_ok || !file.commit())
+        return fail(file.errorString());
+
+    tipl::out() << "downloaded " << path.toStdString();
+    if(action == "open")
+        openFile(QStringList() << path);
+    return true;
 }
 
 void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array,int per_page)
