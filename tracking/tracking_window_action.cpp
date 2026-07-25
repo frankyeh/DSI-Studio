@@ -730,6 +730,29 @@ bool tracking_window::command(std::vector<std::string> cmd)
         ui->perform_tracking->show();
         return run->succeed();
     }
+    if(cmd[0] == "list_auto_tract")
+    {
+        if(!handle->load_track_atlas(true))
+            return run->failed(handle->error_msg);
+        tipl::out() << "name";
+        for(const auto& name : handle->tractography_name_list)
+            tipl::out() << name;
+        return run->succeed();
+    }
+    if(cmd[0] == "run_auto_track")
+    {
+        if(cmd[1].empty())
+            return run->failed("please specify tract name");
+        if(!handle->load_track_atlas(true))
+            return run->failed(handle->error_msg);
+        auto param = get_parameter_id();
+        if(!cmd[2].empty())
+            param += " " + cmd[2];
+        if(!tractWidget->command({"run_tracking",cmd[1],param,
+                                   std::to_string((*this)["tolerance"].toFloat())}))
+            return run->failed(tractWidget->error_msg);
+        return run->succeed();
+    }
     // the following must has cmd[1]
     if(cmd[0] == "set_roi_view")
     {
