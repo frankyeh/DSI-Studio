@@ -528,9 +528,17 @@ int main(int ac, char *av[])
                 socket.flush();
                 socket.waitForBytesWritten(5000);
                 auto reply = socket.waitForReadyRead(5000) ? socket.readAll() : QByteArray("TIMEOUT");
-                tipl::out() << reply.constData();
+                std::fwrite(reply.constData(),1,reply.size(),stdout);
+                std::fputc('\n',stdout);
+                std::fflush(stdout);
                 socket.disconnectFromServer();
                 return reply == "OKAY" ? 0 : 1;
+            }
+            if(std::string(av[1]) == "LIST")
+            {
+                std::fputs("NO_INSTANCE\n",stdout);
+                std::fflush(stdout);
+                return 1;
             }
         }
 
