@@ -28,6 +28,8 @@ public:
     QString cur_tag;
     void update_rate_limit(QSharedPointer<QNetworkReply>);
 public:
+    QJsonArray ai_prompts;
+public:
     bool fetch_github = false;
     QNetworkAccessManager manager;
     std::map<QString,QString> notes,dates;
