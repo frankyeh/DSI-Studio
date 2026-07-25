@@ -536,15 +536,10 @@ int main(int ac, char *av[])
                 socket.write(av[1]);
                 socket.flush();
                 socket.waitForBytesWritten(5000);
-                if(socket.waitForReadyRead(5000))
-                {
-                    if (socket.readAll() == "OKAY")
-                    {
-                        socket.disconnectFromServer();
-                        return 0;
-                    }
-                }
+                auto reply = socket.waitForReadyRead(5000) ? socket.readAll() : QByteArray("TIMEOUT");
+                std::cout << reply.constData() << std::endl;
                 socket.disconnectFromServer();
+                return reply == "OKAY" ? 0 : 1;
             }
         }
 
