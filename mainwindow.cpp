@@ -37,9 +37,39 @@
 #include "xnat_dialog.h"
 #include "console.h"
 
-QString access_token;
 
-void ai_request_list(QLocalSocket *clientSocket)
+QString access_token;
+extern MainWindow* main_window;
+
+static void ai_reply(QLocalSocket* socket,QByteArray reply,QJsonArray* results = nullptr)
+{
+    auto& prompts = main_window->ai_prompts;
+    if(results)
+    {
+        if(!prompts.isEmpty())
+        {
+            auto result = results->last().toObject();
+            result["prompt"] = prompts;
+            results->replace(results->size()-1,result);
+        }
+        reply = QJsonDocument(*results).toJson(QJsonDocument::Compact);
+    }
+    else if(!prompts.isEmpty())
+    {
+        QByteArray payload = "PROMPT\t";
+        payload += QJsonDocument(prompts).toJson(QJsonDocument::Compact);
+        payload += '\n';
+        int pos = reply.indexOf('\n');
+        if(pos < 0)
+            reply.append('\n').append(payload);
+        else
+            reply.insert(pos+1,payload);
+    }
+    if(socket->write(reply) >= 0)
+        prompts = {};
+}
+
+void ai_request_list(QLocalSocket* socket)
 {
     static quint64 next_id = 0;
     QStringList result;
@@ -63,16 +93,14 @@ void ai_request_list(QLocalSocket *clientSocket)
                       .arg(window->property("remote_id").toULongLong())
                       .arg(window->windowTitle());
     }
-
-    clientSocket->write(
-        "OKAY\n" + result.join('\n').toUtf8());
+    ai_reply(socket,"OKAY\n" + result.join('\n').toUtf8());
 }
 
 void ai_request_command(QLocalSocket* socket,const QByteArray& request)
 {
     int tab = request.indexOf('\t',4);
     if(tab < 0)
-        return socket->write("ERROR\tinvalid command"),void();
+        return ai_reply(socket,"ERROR\tinvalid command");
 
     QWidget* target = nullptr;
     auto id = QString::fromUtf8(request.mid(4,tab-4));
@@ -80,7 +108,7 @@ void ai_request_command(QLocalSocket* socket,const QByteArray& request)
         if(window->property("remote_id").toString() == id)
             target = window;
     if(!target)
-        return socket->write("ERROR\twindow not found"),void();
+        return ai_reply(socket,"ERROR\twindow not found");
 
     auto run = [&](const std::vector<std::string>& cmd,QString& output,QString& error)
     {
@@ -132,20 +160,23 @@ void ai_request_command(QLocalSocket* socket,const QByteArray& request)
             cmd.push_back(arg.toStdString());
         QString output,error;
         bool okay = run(cmd,output,error);
-        return socket->write(((okay ? "OKAY\n" :
-                                   "ERROR\t" + error + "\n") + output).toUtf8()),void();
+        return ai_reply(socket,((okay ? "OKAY\n" :
+                                      "ERROR\t" + error + "\n") + output).toUtf8());
     }
 
     QJsonParseError parse_error;
     auto doc = QJsonDocument::fromJson(payload,&parse_error);
     if(!doc.isArray())
-        return socket->write(("ERROR\tinvalid batch JSON: " +
-                              parse_error.errorString()).toUtf8()),void();
+        return ai_reply(socket,("ERROR\tinvalid batch JSON: " +
+                                 parse_error.errorString()).toUtf8());
+
+    auto commands = doc.array();
+    if(commands.isEmpty())
+        return ai_reply(socket,"ERROR\tempty batch");
 
     bool updates_enabled = target->updatesEnabled();
     target->setUpdatesEnabled(false);
     QJsonArray results;
-    auto commands = doc.array();
 
     for(int index = 0;index < commands.size();++index)
     {
@@ -185,8 +216,9 @@ void ai_request_command(QLocalSocket* socket,const QByteArray& request)
     else
         target->update();
 
-    socket->write(QJsonDocument(results).toJson(QJsonDocument::Compact));
+    ai_reply(socket,QByteArray(),&results);
 }
+
 void ai_request_log(QLocalSocket* socket)
 {
     QByteArray output;
@@ -194,8 +226,10 @@ void ai_request_log(QLocalSocket* socket)
         std::lock_guard<std::mutex> lock(console.edit_buf);
         output = console.history.toUtf8();
     }
-    socket->write("OKAY\n" + output);
+    ai_reply(socket,"OKAY\n" + output);
 }
+
+
 void checkForVersionSpecificBugs_Minimal(const QString& bugListText)
 {
     QDate compDate = QDate::fromString(__DATE__, "MMM dd yyyy");
