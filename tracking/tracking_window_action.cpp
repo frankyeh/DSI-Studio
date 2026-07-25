@@ -197,10 +197,22 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "list_slice")
     {
-        tipl::out() << "index\tcurrent\tname";
+        tipl::out() << "index\tcurrent\tname\tready\trunning\tdownloaded\tregistered";
         for(int index = 0;index < ui->SliceModality->count();++index)
+        {
+            auto& slice = slices[index];
+            auto custom = std::dynamic_pointer_cast<CustomSliceModel>(slice);
+            auto source = custom ? custom->source_file_name : std::filesystem::path();
+            if(tipl::begins_with(source.u8string(),"http"))
+                source = handle->fib_file_name.parent_path()/source.filename();
+            bool ready = slice->view->image_ready();
+            bool running = custom && custom->running;
             tipl::out() << index << "\t" << (index == ui->SliceModality->currentIndex()) << "\t"
-                        << ui->SliceModality->itemText(index).toStdString();
+                        << ui->SliceModality->itemText(index).toStdString() << "\t"
+                        << ready << "\t" << running << "\t"
+                        << (!custom || std::filesystem::exists(source)) << "\t"
+                        << (!custom || (ready && !running));
+        }
         return run->succeed();
     }
     if(cmd[0] == "set_slice")
@@ -892,9 +904,17 @@ bool tracking_window::command(std::vector<std::string> cmd)
                     << (*this)[cmd[1].c_str()].toString().toStdString();
         return run->succeed();
     }
-    if(cmd[0] == "set_param")
+    if(cmd[0] == "set_param" || cmd[0] == "set_params")
     {
-        set_data(cmd[1].c_str(),cmd[2].c_str());
+        if(cmd.size() > 2)
+            set_data(cmd[1].c_str(),cmd[2].c_str());
+        else
+            for(auto param : tipl::split(cmd[1],'&'))
+            {
+                auto pos = param.find('=');
+                if(pos != std::string::npos)
+                    set_data(param.substr(0,pos).c_str(),param.substr(pos+1).c_str());
+            }
         glWidget->update();
         slice_need_update = true;
         return run->succeed();
