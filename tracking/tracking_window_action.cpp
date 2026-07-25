@@ -960,13 +960,25 @@ bool tracking_window::command(std::vector<std::string> cmd)
         slice_need_update = true;
         return run->succeed();
     }
-    if(cmd[0] == "set_region_color")
+    if(cmd[0] == "set_region_name" || cmd[0] == "set_region_color")
     {
-        if(regionWidget->regions.empty())
-            return run->canceled();
-        regionWidget->regions.back()->region_render->color = QString(cmd[1].c_str()).toInt();
-        glWidget->update();
-        slice_need_update = true;
+        bool ok;
+        int row = QString::fromStdString(cmd[1]).toInt(&ok);
+        if(!ok || row < 0 || row >= regionWidget->rowCount())
+            return run->failed("invalid region index: " + cmd[1]);
+        if(cmd[0] == "set_region_name")
+        {
+            if(cmd[2].empty())
+                return run->failed("region name cannot be empty");
+            regionWidget->item(row,0)->setText(QString::fromStdString(cmd[2]));
+        }
+        else
+        {
+            uint color = QString::fromStdString(cmd[2]).toUInt(&ok);
+            if(!ok)
+                return run->failed("invalid region color: " + cmd[2]);
+            regionWidget->item(row,2)->setData(Qt::UserRole,color);
+        }
         return run->succeed();
     }
     if(cmd[0] == "add_slice" || cmd[0] == "add_mni_slice")
