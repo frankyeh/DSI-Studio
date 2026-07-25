@@ -471,6 +471,8 @@ MainWindow* main_window = nullptr;
 void ai_request_list(QLocalSocket*,const QByteArray&);
 void ai_request_command(QLocalSocket*,const QByteArray&);
 void ai_request_log(QLocalSocket*,const QByteArray&);
+void ai_request(QLocalSocket*,const QByteArray&);
+
 int main(int ac, char *av[])
 {
     if(ac == 2)
@@ -497,7 +499,7 @@ int main(int ac, char *av[])
                                                   [](const auto& value){return value.toObject()["okay"].toBool();}))) ? 0 : 1;
 
         }
-        if(std::string(av[1]) == "LIST")
+        if(std::string(av[1]) == "LIST" || av[1][0] == '{')
             return std::cout << "NO_INSTANCE\n" << std::endl,1;
     }
 
@@ -579,8 +581,9 @@ int main(int ac, char *av[])
                 {
                     clientSocket->waitForReadyRead(500);
                     auto request = clientSocket->readAll();
-                    tipl::out() << "received: " << request.constData();
-                    if(request == "LIST" || request.startsWith("LIST\t"))
+                    if(request.trimmed().startsWith('{'))
+                        ai_request(clientSocket,request);
+                    else if(request == "LIST" || request.startsWith("LIST\t"))
                         ai_request_list(clientSocket,request);
                     else if(request.startsWith("CMD\t"))
                         ai_request_command(clientSocket,request);
