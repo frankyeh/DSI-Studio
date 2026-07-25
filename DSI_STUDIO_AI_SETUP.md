@@ -1,6 +1,6 @@
 # DSI Studio AI-Agent Setup
 
-Use this file to connect a local AI agent to an AI-control-enabled DSI Studio. Read `dsi_studio_manual.md` completely before issuing domain commands; it is the authoritative command reference.
+Use this file to connect a local AI agent to an AI-control-enabled DSI Studio. Read `DSI_STUDIO_AI_MANUAL.md` completely before issuing domain commands; it is the authoritative command reference.
 
 ## Requirements
 
@@ -44,7 +44,7 @@ Protocol:
 CMD<TAB>window_id<TAB>command<TAB>parameter_1<TAB>parameter_2...
 ```
 
-Each array element is one command field. A parameter containing spaces must remain one element. Never split or reinterpret compound parameters described by `dsi_studio_manual.md`.
+Each array element is one command field. A parameter containing spaces must remain one element. Never split or reinterpret compound parameters described by `DSI_STUDIO_AI_MANUAL.md`.
 
 Target commands according to the window type returned by `LIST`:
 
@@ -78,7 +78,7 @@ list_unet
 list_auto_tract
 ```
 
-Use only commands and parameters documented in `dsi_studio_manual.md`.
+Use only commands and parameters documented in `DSI_STUDIO_AI_MANUAL.md`.
 
 ## Console output
 
