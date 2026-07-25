@@ -14,46 +14,18 @@ bool tt2trk(const std::string& tt_file,const char* trk_file);
 int exp(tipl::program_option<tipl::out>& po)
 {
     std::string file_name = po.get("source");
-    if(tipl::ends_with(file_name,".trk.gz"))
+    if(tipl::ends_with(file_name,{".trk.gz",".tt.gz"}))
     {
-        std::string output_name = po.get("output");
-        if(tipl::ends_with(output_name,".tt.gz"))
-        {
-            if(trk2tt(file_name,output_name.c_str()))
-            {
-                tipl::out() << "file converted." << std::endl;
-                return 0;
-            }
-            else
-            {
-                tipl::error() << "cannot write to " << output_name << std::endl;
-                return 1;
-            }
-        }
-        tipl::error() << "unsupported file format" << std::endl;
-        return 1;
+        auto output_name = po.get("output");
+        bool from_trk = tipl::ends_with(file_name,".trk.gz");
+        if(!tipl::ends_with(output_name,from_trk ? ".tt.gz" : ".trk.gz"))
+            return tipl::error() << "unsupported file format",1;
+        if(!(from_trk ? trk2tt(file_name,output_name.c_str()) :
+                  tt2trk(file_name,output_name.c_str())))
+            return tipl::error() << "cannot write to " << output_name,1;
+        return tipl::out() << "file converted.",0;
     }
-    if(tipl::ends_with(file_name,".tt.gz"))
-    {
-        std::string output_name = po.get("output");
-        if(tipl::ends_with(output_name,".trk.gz"))
-        {
-            if(tt2trk(file_name,output_name.c_str()))
-            {
-                tipl::out() << "file converted." << std::endl;
-                return 0;
-            }
-            else
-            {
-                tipl::error() << "cannot write to " << output_name << std::endl;
-                return 1;
-            }
-        }
-        tipl::error() << "unsupported file format" << std::endl;
-        return 1;
-    }
-    if(tipl::ends_with(file_name,".fib.gz") ||
-       tipl::ends_with(file_name,".fz"))
+    if(tipl::ends_with(file_name,{".fib.gz",".fz"}))
     {
         std::shared_ptr<fib_data> handle;
         handle = cmd_load_fib(po);
