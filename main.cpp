@@ -256,8 +256,7 @@ bool load_file_name(void)
 }
 
 const char* version_string = "Sun \"\xe5\xad\xab\"";
-std::string dsi_studio_citation = std::string("DSI Studio (doi:10.1038/s41592-025-02762-8), the ") +
-                                version_string + " version (" + __DATE__ + ", http://dsi-studio.labsolver.org)";
+std::string dsi_studio_citation = std::string("DSI Studio (doi:10.1038/s41592-025-02762-8), ") + version_string + " " + __DATE__ + " ";
 int map_ver = 202408;
 int src_ver = 202408;
 int fib_ver = 202504;
