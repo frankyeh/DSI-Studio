@@ -342,6 +342,12 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         return run->succeed();
     };
 
+    if(cmd[0] == "list_region")
+    {
+        for(int row = 0;row < rowCount();++row)
+            tipl::out() << row << "\t" << item(row,0)->text().toStdString();
+        return run->succeed();
+    }
     if(cmd[0] == "new_region")
     {
         add_region("new region");
