@@ -73,8 +73,9 @@ round trips were approximately 1 ms (the first .NET call took approximately
 Invoking `dsi_studio.exe` with one argument remains a fallback. That client
 tries to connect for 5,000 ms, writes the argument as the complete request,
 waits up to 5,000 ms for a reply, prints `TIMEOUT` if no bytes arrive, and
-exits `0` only when the reply starts with `OKAY`; otherwise it exits `1`
-([`main()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/main.cpp#L473-L496)).
+exits `0` when a single reply starts with `OKAY`, or when a JSON batch reply
+contains only results whose `okay` value is `true`; otherwise it exits `1`
+([`main()`](https://github.com/frankyeh/DSI-Studio/blob/8ad955a333cdfcb8d6433a6a88137c0ae76f6cad/main.cpp#L474-L502)).
 
 The running GUI creates a world-access local server named `dsi-studio`, waits
 500 ms for each request, and recognizes `LIST`, `LOG`, `CMD<TAB>...`, or a raw
@@ -123,6 +124,11 @@ function Invoke-Dsi([string[]]$Fields)
     Invoke-DsiRequest ([string]::Join([char]9, $Fields))
 }
 
+function Invoke-DsiBatch([string]$WindowId, [string]$Json)
+{
+    Invoke-DsiRequest ([string]::Join([char]9, @('CMD', $WindowId, $Json)))
+}
+
 $listReply = Invoke-DsiRequest 'LIST'
 if(-not $listReply.StartsWith('OKAY')) { throw $listReply }
 ```
@@ -131,10 +137,11 @@ Do not manually embed tabs. Do not join a parameter's internal words with
 tabs: `move_slice` needs one parameter field containing `80 90 60`, whereas
 `save_slice_image` needs two tab-delimited parameter fields.
 
-The protocol has no escaping layer. Spaces are safe inside a field. A field
-cannot contain a literal tab. Paths with spaces are safe when they are one
-PowerShell array element. UTF-8 conversion occurs in
-[`ai_request_command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L70-L136).
+The single-command form has no escaping layer. Spaces are safe inside a field;
+a field cannot contain a literal tab. Paths with spaces are safe when they are
+one PowerShell array element. The batch form uses JSON escaping. UTF-8
+conversion occurs in
+[`ai_request_command()`](https://github.com/frankyeh/DSI-Studio/blob/438176e0c680122503562b8762036140204cdf62/mainwindow.cpp#L71-L188).
 
 ### Request forms
 
@@ -142,13 +149,49 @@ PowerShell array element. UTF-8 conversion occurs in
 |---|---|---|
 | Discover | `LIST` | Return targetable windows. |
 | Console | `LOG` | Return the rolling console history. |
-| Command | `CMD<TAB>window_id<TAB>command<TAB>parameter...` | Route a command to one target. |
+| Single command | `CMD<TAB>window_id<TAB>command<TAB>parameter...` | Route one command to one target. |
+| Command batch | `CMD<TAB>window_id<TAB>[["command","parameter"],["command",...]]` | Run several commands sequentially on one target. |
 | Raw open | one absolute filename | Ask the main window to open a file. |
 
-Tracking and main windows accept any number of fields after the command.
+There is no standalone `BATCH` request: both forms use `CMD`. Tracking and main
+windows accept any number of fields after the command.
 Image windows reject more than one parameter field with `ERROR` `"too many
 parameters"` ([image route](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L111-L120)); put all image
 command parameters in one space-delimited field.
+
+### Command batches
+
+In batch form, the entire payload after the window ID is a JSON outer array.
+Every outer element must be an array, and every command or parameter value must
+be a JSON string. All commands use the same target window.
+
+```powershell
+$json = '[["list_slice"],["list_region"],["list_tract"]]'
+$reply = Invoke-DsiBatch $trackingId $json
+$results = $reply | ConvertFrom-Json
+if($results | Where-Object { -not $_.okay }) { throw $reply }
+```
+
+The compact reply is a JSON array in execution order:
+
+```json
+[
+  {"index":0,"okay":true,"output":"..."},
+  {"index":1,"okay":false,"output":"...","error":"canceled"}
+]
+```
+
+DSI Studio stops at the first failed command, so later commands are absent.
+Each command gets its own captured `output`. During the batch, widget updates
+are disabled and the target is redrawn once afterward. This reduces connection
+and repaint overhead but does not skip command computation or side effects.
+The batch is not a transaction and does not roll back earlier commands
+([batch implementation](https://github.com/frankyeh/DSI-Studio/blob/438176e0c680122503562b8762036140204cdf62/mainwindow.cpp#L127-L188)).
+
+Batch only short synchronous commands whose inputs are already ready. A command
+that starts asynchronous loading, registration, segmentation, tracking, a Hub
+download, or a new window can return before that work completes; do not place a
+dependent command after it in the same batch. Never send an empty batch.
 
 Raw filename forwarding checks the global progress flag and path existence. It
 returns `BUSY`, `OKAY`, or `ERROR`; `OKAY` means only that the path existed and
@@ -158,16 +201,18 @@ the expected window.
 
 ### Replies, fallback exit status, and completion
 
-| Reply prefix | Executable fallback exit | Interpretation |
+| Reply form | Executable fallback exit | Interpretation |
 |---|---:|---|
 | `OKAY` | 0 | Handler returned `true`; captured console text may follow. |
 | `ERROR<TAB>message` | 1 | Handler returned `false`, target was invalid, or an exception was caught. |
+| JSON result array | 0 only when every returned `okay` is `true` | Batch result; inspect every object and ensure the expected command count is present. |
 | `BUSY` | 1 | Raw filename forwarding was refused because global progress was active. |
 | `TIMEOUT` | 1 | Executable fallback only: no bytes arrived within five seconds. The GUI command may still be running. |
 | `NO_INSTANCE` | 1 | Executable fallback only: `LIST` could not connect to a running server. A direct pipe client instead gets a connection timeout/exception. |
 
-The server executes handlers synchronously on the GUI thread. Long synchronous
-work can outlive the client's five-second wait. Some handlers return after
+The server executes command handlers synchronously on the GUI thread. Long
+synchronous work can outlive the executable fallback's five-second wait; the
+direct pipe helper waits for server disconnect. Some handlers return after
 starting a background task, and Hub handlers defer their final GUI/file action
 to a zero-delay timer. Therefore:
 
@@ -236,17 +281,19 @@ handler returns is absent from that handler's immediate reply.
 
 ## Main-window commands
 
-The main window accepts only the `hub` command family
-([`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L1849-L1937)). Repository
-and tag arguments are exact strings returned by the preceding list command.
-File filtering is case-insensitive substring matching.
+The main window accepts `list_recent`, `run_cli`, and the `hub` command family
+([`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/438176e0c680122503562b8762036140204cdf62/mainwindow.cpp#L1901-L2013)).
+Repository and tag arguments are exact strings returned by the preceding list
+command. File filtering is case-insensitive substring matching.
 
 | Command | Syntax / parameters | Output | Effect and completion | Safety | Example | Handler and source |
 |---|---|---|---|---|---|---|
+| `list_recent` | No parameters. | Recent `.sz` and `.fz` paths, one per line; no header. | Reads the stored source/FIB recent-file lists. Paths may no longer exist. **Completion:** Immediate. | Read-only | `Invoke-Dsi -Fields @("CMD",$mainId,"list_recent")` | `MainWindow::command`; [current implementation](https://github.com/frankyeh/DSI-Studio/blob/438176e0c680122503562b8762036140204cdf62/mainwindow.cpp#L1914-L1922) |
+| `run_cli` | One parameter containing the complete DSI Studio command line. `--action` is required. | CLI progress, warnings, and errors captured in the reply while the handler runs. | Parses internally and calls `run_action_with_wildcard()` synchronously on the GUI thread. Supports `rec`, `trk`, `src`, `ana`, `exp`, `atl`, `db`, `tmp`, `cnt`, `cnt_cl`, `vis`, `ren`, `qc`, `reg`, `atk`, `xnat`, and `img`. Explicit `--loop`, or a wildcard `--source` for supported actions, may process many files. **Completion:** Synchronous handler result; still verify outputs. | Varies; inspect the full CLI action, sources, wildcards, and outputs. Confirm destructive, overwrite, download, or unexpectedly large batch scope. | `Invoke-Dsi -Fields @("CMD",$mainId,"run_cli","--action=qc --source=E:\data\subject.fz")` | `MainWindow::command`; [`run_cli`](https://github.com/frankyeh/DSI-Studio/blob/438176e0c680122503562b8762036140204cdf62/mainwindow.cpp#L1924-L1933), [action dispatch](https://github.com/frankyeh/DSI-Studio/blob/8ad955a333cdfcb8d6433a6a88137c0ae76f6cad/main.cpp#L347-L465) |
 | `hub help` | Send command field `hub`, parameter `help`. | Usage line. | None. **Completion:** Immediate. | Read-only | `Invoke-Dsi -Fields @("CMD",$mainId,"hub","help")` | `MainWindow::command`; [`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L1849-L1937) |
 | `hub repos` | Command `hub`; first parameter `repos`. | `index<TAB>repository` rows. | Initializes/selects the Hub tab. **Completion:** Immediate unless Hub initialization itself is still loading. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$mainId,"hub","repos")` | `MainWindow::command`; [`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L1849-L1937) |
 | `hub tags` | `hub`, `tags`, exact repository. | `index<TAB>tag` rows; may print loading warning. | Selects repository. **Completion:** Immediate list; retry if output says loading. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$mainId,"hub","tags","owner/repository")` | `MainWindow::command`; [`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L1849-L1937) |
-| `hub files` | `hub`, `files`, repository, tag, optional text filter. | `row<TAB>filename<TAB>display-size`. | Selects repository/tag. **Completion:** Immediate list; retry if Hub data is loading. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$mainId,"hub","files","owner/repository","tag","CST")` | `MainWindow::command`; [`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L1849-L1937) |
+| `hub files` | `hub`, `files`, repository, tag, optional text filter. | `row<TAB>filename<TAB>display-size<TAB>cached`; `cached` is `0`/`1`. | Selects repository/tag. The cache flag tests the Hub temporary cache path. **Completion:** Immediate list; retry if Hub data is loading. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$mainId,"hub","files","owner/repository","tag","CST")` | `MainWindow::command`; [current implementation](https://github.com/frankyeh/DSI-Studio/blob/438176e0c680122503562b8762036140204cdf62/mainwindow.cpp#L1980-L1991) |
 | `hub open` | `hub`, `open`, repository, tag, exact filename. | Console messages only. | May download/cache, then open the file. **Completion:** Deferred: handler may schedule the open after `OKAY`; poll `LIST`. | File creation | `Invoke-Dsi -Fields @("CMD",$mainId,"hub","open","owner/repository","tag","file.fz")` | `MainWindow::command`; [`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L1849-L1937) |
 | `hub download` | `hub`, `download`, repository, tag, exact filename, absolute directory. | Console messages only. | Downloads with overwrite disabled. **Completion:** Deferred file write; verify path and stable size. | File creation | `Invoke-Dsi -Fields @("CMD",$mainId,"hub","download","owner/repository","tag","file.fz","E:\data")` | `MainWindow::command`; [`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L1849-L1937) |
 
@@ -296,7 +343,7 @@ before downstream use.
 
 | Command | Syntax / parameters | Output | Effect and completion | Safety | Example | Handler and source |
 |---|---|---|---|---|---|---|
-| `list_slice` | No parameters. | Header `index<TAB>current<TAB>name`; `current` is `0`/`1`. | None. **Completion:** Immediate. | Read-only | `Invoke-Dsi -Fields @("CMD",$trackingId,"list_slice")` | `tracking_window::command`; [atlas and slice lists](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tracking_window_action.cpp#L189-L314) |
+| `list_slice` | No parameters. | Header `index<TAB>current<TAB>name<TAB>ready<TAB>running<TAB>downloaded<TAB>registered`; flags are `0`/`1`. | Reports image readiness, active custom-slice work, local download presence, and custom-slice registration readiness. Built-in slices report downloaded/registered as true. **Completion:** Immediate snapshot. | Read-only | `Invoke-Dsi -Fields @("CMD",$trackingId,"list_slice")` | `tracking_window::command`; [current implementation](https://github.com/frankyeh/DSI-Studio/blob/1e79a4e6d3eb8c61eca1e6e13d92f9770255cf4/tracking/tracking_window_action.cpp#L198-L221) |
 | `set_slice` | Optional zero-based slice index; default current. | Console/error output. | Selects/loads the slice and may start registration for a custom slice. **Completion:** Selection is immediate; derived data may remain asynchronous. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"set_slice","2")` | `tracking_window::command`; [atlas and slice lists](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tracking_window_action.cpp#L189-L314) |
 | `set_slice_by_name` | Exact slice name. | Error if not found. | Selects the named slice. **Completion:** Immediate. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"set_slice_by_name","qa")` | `tracking_window::command`; [slice display commands](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tracking_window_action.cpp#L778-L910) |
 | `enable_slice` | One field: `sagittal coronal axial`, each `0`/`1`; default current values. | None. | Changes slice-plane visibility. **Completion:** Immediate redraw. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"enable_slice","1 0 1")` | `tracking_window::command`; [slice controls](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tracking_window_action.cpp#L438-L499) |
