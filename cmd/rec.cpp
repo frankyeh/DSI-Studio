@@ -1,4 +1,5 @@
 #include <string>
+#include <cstdlib>
 #include <filesystem>
 #include <charconv>
 #include "fib_data.hpp"
@@ -14,11 +15,9 @@ int rec(tipl::program_option<tipl::out>& po)
 {
     std::string file_name = po.get("source");
     src_data src;
+    auto fail = [&]{return tipl::error() << src.error_msg,1;};
     if (!src.load_from_file(file_name.c_str()))
-    {
-        tipl::error() << src.error_msg;
-        return 1;
-    }
+        return fail();
     float max_reso = std::max({src.voxel.vs[0],src.voxel.vs[1],src.voxel.vs[2]});
     {
         tipl::progress prog("reconstruction parameters");
@@ -45,26 +44,24 @@ int rec(tipl::program_option<tipl::out>& po)
 
     }
 
+    std::filesystem::path output_file;
+
     {
-        std::filesystem::path check_exist_file;
         if(po.has("save_src") || po.has("save_nii"))
-            check_exist_file = po.has("save_src") ? po.get("save_src") : po.get("save_nii");
+            output_file = po.has("save_src") ? po.get("save_src") : po.get("save_nii");
         else
         {
             if(po.has("output"))
             {
                 std::filesystem::path output = po.get("output");
-                if(std::filesystem::is_directory(output))
-                    src.output_file_name = output / src.file_name.filename();
-                else
-                    src.output_file_name = output;
+                src.output_file_name = std::filesystem::is_directory(output) ?
+                                           output/src.file_name.filename() : output;
             }
             src.check_output_file_name();
-            check_exist_file = src.output_file_name;
+            output_file = src.output_file_name;
         }
-
-        if(po.get("overwrite",0) == 0 && std::filesystem::exists(check_exist_file))
-            return tipl::out() << "output file exist at " << check_exist_file,0;
+        if(!po.get("overwrite",0) && std::filesystem::exists(output_file))
+            return tipl::out() << "output file exist at " << output_file,0;
     }
 
     // Examples: --remove=1,3:5,8:end or --remove="b>3000" or --remove="b<100"
@@ -158,7 +155,7 @@ int rec(tipl::program_option<tipl::out>& po)
             auto pos = each.find('=');
             if(!src.command(each.substr(0,pos),
                              pos == std::string::npos ? std::string() : each.substr(pos+1)))
-                return tipl::error() << src.error_msg,1;
+                return fail();
         }
 
     {
@@ -166,14 +163,14 @@ int rec(tipl::program_option<tipl::out>& po)
 
         if((po.get("check_btable",0) && !src.command(po.get("check_btable",0) == 1 ?
                     "[Step T2][B-table][Check B-table]" : "[Step T2][B-table][Check B-table2]")))
-            return tipl::error() << src.error_msg,1;
+            return fail();
         if((po.has("rev_pe") && !src.command("[Step T2][Corrections][TOPUP EDDY]",po.get("rev_pe"))))
-            return tipl::error() << src.error_msg,1;
+            return fail();
 
 
         if((po.get("volume_correction",0) && !src.command("[Step T2][Corrections][Volume Orientation Correction]")) ||
            (po.get("motion_correction",0) && !src.command("[Step T2][Corrections][Motion Correction]")))
-            return tipl::error() << src.error_msg,1;
+            return fail();
 
         if(po.has("mask"))
         {
@@ -189,13 +186,13 @@ int rec(tipl::program_option<tipl::out>& po)
                 if(mask_file == "unet")
                 {
                     if(!src.command("[Step T2a][Unet]"))
-                        return tipl::error() << src.error_msg,1;
+                        return fail();
                 }
                 else
                     if(mask_file == "template")
                     {
                         if(!src.command("[Step T2a][Template]"))
-                            return tipl::error() << src.error_msg,1;
+                            return fail();
                     }
                     else
                     {
@@ -210,14 +207,14 @@ int rec(tipl::program_option<tipl::out>& po)
         if(!tipl::contains(src.voxel.report,"bias field") &&
             po.get("bias_field_correction",src.voxel.method_id == 1/*DTI*/ ? 0 : 1) &&
             !src.correct_bias_field(!po.has("mask"))) // don't update mask if user supplied mask
-            return tipl::error() << src.error_msg,1;
+            return fail();
 
 
         // handle resolution, make isotropic
         if(po.has("align_acpc"))
         {
             if(!src.command("[Step T2][Edit][Align ACPC]",std::to_string(po.get("align_acpc",std::min<float>(2.0f,max_reso)))))
-                return tipl::error() << src.error_msg,1;
+                return fail();
         }
         else
             if(po.has("rotate_to") || po.has("align_to"))
@@ -250,7 +247,7 @@ int rec(tipl::program_option<tipl::out>& po)
                     default_iso = 0.0f;
                 if((default_iso = po.get("make_isotropic",default_iso)) > 0.0f &&
                     !src.command("[Step T2][Edit][Resample]",std::to_string(default_iso)))
-                    return tipl::error() << src.error_msg,1;
+                    return fail();
             }
     }
 
@@ -258,22 +255,18 @@ int rec(tipl::program_option<tipl::out>& po)
         src.apply_mask = true;
 
     if(po.has("intro") && !src.load_intro(po.get("intro")))
-        return tipl::error() << src.error_msg,1;
+        return fail();
 
     if(po.has("save_src") || po.has("save_nii"))
-    {
-        std::string new_src_file = po.has("save_src") ? po.get("save_src") : po.get("save_nii");
-        if(!src.save_to_file(new_src_file.c_str()))
-            return tipl::error() << src.error_msg,1;
-        return 0;
-    }
+        return src.save_to_file(output_file) ? 0 : fail();
+
     if(po.has("reg"))
     {
         auto file_list = tipl::split(po.get("reg"),',');
         if(file_list.size() != 2)
             return tipl::error() << "invalid reg setting",1;
         if(!src.add_other_image("reg",file_list[0]))
-            return tipl::error() << src.error_msg,1;
+            return fail();
         tipl::out() << "other modality template: " << (src.voxel.other_modality_template = file_list[1]);
     }
     if(po.has("other_image"))
@@ -298,11 +291,11 @@ int rec(tipl::program_option<tipl::out>& po)
                 path = value.substr(pos+1);
             }
             if(!src.add_other_image(name,path))
-                return tipl::error() << src.error_msg,1;
+                return fail();
         }
     }
     if (!src.reconstruction())
-        return tipl::error() << src.error_msg,1;
+        return fail();
     if(po.get("export_r",0) && src.voxel.R2 != 0.0f)
         std::ofstream(file_name + ".r" + std::to_string(int(src.voxel.R2*100)));
     return 0;
