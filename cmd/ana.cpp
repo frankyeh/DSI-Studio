@@ -23,7 +23,7 @@ void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<s
     std::vector<std::string> titles;
     std::vector<std::vector<float> > data(regions.size());
     tipl::progress p("for each region");
-    for(size_t index = 0;index < regions.size();++index)
+    for(size_t index = 0;p(index,regions.size());++index)
     {
         std::vector<std::string> current;
         regions[index]->get_quantitative_data(handle,current,data[index]);
@@ -510,47 +510,37 @@ int ana_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> han
     return 0;
 }
 void get_tract_statistics(std::shared_ptr<fib_data> handle,
-                          const std::vector<std::shared_ptr<TractModel> >& tract_models,
+                          const std::vector<std::shared_ptr<TractModel> >& tracts,
                           std::string& result)
 {
-    if(tract_models.empty())
+    if(tracts.empty())
         return;
-    std::vector<std::vector<std::string> > track_results(tract_models.size());
+    std::vector<std::string> titles;
+    std::vector<std::vector<float> > data(tracts.size());
+    tipl::progress p("for each tract");
+    for(size_t i = 0;p(i,tracts.size());++i)
     {
-        tipl::progress p("for each tract");
-        for(size_t index = 0;p(index,tract_models.size());++index)
-        {
-            std::string tmp,line;
-            tract_models[index]->get_quantitative_info(handle,tmp);
-            std::istringstream in(tmp);
-            while(std::getline(in,line))
-            {
-                if(line.find("\t") == std::string::npos)
-                    continue;
-                track_results[index].push_back(line);
-            }
-        }
-        if(p.aborted())
-            return;
+        std::vector<std::string> current;
+        tracts[i]->get_quantitative_info(handle,current,data[i]);
+        if(!i)
+            titles = std::move(current);
     }
-    std::vector<std::string> metrics_name;
-    for(unsigned int j = 0;j < track_results[0].size();++j)
-        metrics_name.push_back(track_results[0][j].substr(0,track_results[0][j].find("\t")));
-
+    if(p.aborted())
+        return;
     std::ostringstream out;
     out << "Tract Name\t";
-    for(unsigned int index = 0;index < tract_models.size();++index)
-        out << tract_models[index]->name << "\t";
-    out << std::endl;
-    for(unsigned int index = 0;index < metrics_name.size();++index)
+    for(const auto& tract : tracts)
+        out << tract->name << "\t";
+    out << "\n";
+    for(size_t i = 0;i < titles.size();++i)
     {
-        out << metrics_name[index];
-        for(unsigned int i = 0;i < track_results.size();++i)
-            if(index < track_results[i].size())
-                out << track_results[i][index].substr(track_results[i][index].find("\t"));
+        out << titles[i];
+        for(const auto& values : data)
+            if(i < values.size() && !std::isnan(values[i]))
+                out << "\t" << std::to_string(values[i]);
             else
                 out << "\t";
-        out << std::endl;
+        out << "\n";
     }
     result = out.str();
 }
@@ -575,30 +565,7 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
                       std::make_move_iterator(loaded.begin()),
                       std::make_move_iterator(loaded.end()));
     }
-
-
     tipl::out() << "a total of " << tracts.size() << " tract file(s) loaded" << std::endl;
-    if(tracts.size() == 1 && !tracts[0]->tract_cluster.empty())
-    {
-        tipl::out() << "loading cluster information";
-        auto cluster_file_path = tract_files[0];
-        cluster_file_path += ".txt";
-        std::vector<std::string> tract_name;
-        if(std::filesystem::exists(cluster_file_path))
-        {
-            std::ifstream in(cluster_file_path);
-            tract_name = std::vector<std::string>((std::istream_iterator<std::string>(in)),(std::istream_iterator<std::string>()));
-        }
-        tracts = TractModel::separate_tracts(tracts[0],tracts[0]->tract_cluster,tract_name);
-        tracts.erase(std::remove(tracts.begin(),tracts.end(),nullptr),tracts.end());
-        if(tracts.empty())
-            return tipl::error() << "no tract cluster found",1;
-        if(tracts.size() > 1 && !std::filesystem::exists(cluster_file_path))
-            tipl::warning() << "cannot find label file: " << cluster_file_path;
-        tipl::out() << "cluster count: " << tracts.size();
-
-    }
-
     if(po.has("name"))
     {
         tipl::out() << "open label file: " << po.get("name");
@@ -646,50 +613,15 @@ int ana_tract(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
 
         if(po.has("output"))
         {
-            std::string output = po.get("output");
-            // accumulate multiple tracts into one probabilistic nifti volume
-            if(tipl::ends_with(output,".nii.gz"))
-            {
-                tipl::out() << "computing tract probability to " << output << std::endl;
-                if(std::filesystem::exists(output))
-                    tipl::out() << output << " exists." << std::endl;
-                else
-                {
-                    auto dim = handle->dim;
-                    tipl::image<3,uint32_t> accumulate_map(dim);
-                    std::mutex add_lock;
-                    tipl::par_for(tracts.size(),[&](size_t i)
-                    {
-                        tipl::out() << "accumulating " << tracts[i] << "..." <<std::endl;
-                        std::vector<tipl::vector<3,short> > points;
-                        tracts[i]->to_voxel(points);
-                        tipl::image<3,char> tract_mask(dim);
-                        for(size_t j = 0;j < points.size();++j)
-                        {
-                            auto p = points[j];
-                            if(dim.is_valid(p))
-                                tract_mask[tipl::pixel_index<3>(p[0],p[1],p[2],dim).index()]=1;
-                        }
-                        std::scoped_lock lock(add_lock);
-                        accumulate_map += tract_mask;
-                    });
-                    tipl::image<3> pdi(accumulate_map);
-                    pdi *= 1.0f/float(tracts.size());
-                    if(!(tipl::io::gz_nifti(output,std::ios::out) << handle->bind(pdi)
-                         << [](const std::string& e){tipl::error() << e;}))
-                        return 1;
-                }
-            }
-            else
-                if(tipl::ends_with(output,{".trk.gz",".tt.gz"}))
-                {
-                    tipl::out() << "saving multiple tracts into one file: " << output;
-                    if(!TractModel::save_all(output,tracts))
-                        return tipl::error() << "cannot write to " << output,1;
-                }
-                else
-                    return tipl::error() << "unsupported output format: " << output,1;
+            auto output = po.get("output");
+            if(!tipl::ends_with(output,{".nii.gz",".trk.gz",".tt.gz"}))
+                return tipl::error() << "unsupported output format: " << output,1;
+            if(tipl::ends_with(output,".nii.gz") && (!po.get("overwrite",1) && std::filesystem::exists(output)))
+                tipl::out() << output << " exists.";
+            else if(!TractModel::save_all(output,tracts))
+                return tipl::error() << "cannot write to " << output,1;
         }
+
         if(po.has("export"))
         {
             if(po.get("export") != "stat")
