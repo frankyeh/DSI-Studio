@@ -186,6 +186,15 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->failed(handle->error_msg);
         return run->succeed();
     }
+    if(cmd[0] == "list_atlas")
+    {
+        tipl::out() << "template\tatlas\tname\tregions";
+        for(size_t i = 0;i < handle->atlas_list.size();++i)
+            tipl::out() << handle->template_id << "\t" << i << "\t"
+                        << handle->atlas_list[i]->name << "\t"
+                        << handle->atlas_list[i]->get_list().size();
+        return run->succeed();
+    }
     if(cmd[0] == "list_slice")
     {
         tipl::out() << "index\tcurrent\tname";
