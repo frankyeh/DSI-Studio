@@ -44,6 +44,8 @@ public:
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dropEvent(QDropEvent *event) override;
     void openFile(QStringList file_name);
+    std::string error_msg;
+    bool command(const std::vector<std::string>& cmd);
 public:
     void open_DWI(QStringList files);
     void loadFib(QString Filename);
