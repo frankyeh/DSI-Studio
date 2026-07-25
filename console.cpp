@@ -79,19 +79,30 @@ void appendColoredText(QTextEdit &textEdit, const QString &text)
 }
 
 
-std::basic_streambuf<char>::int_type console_stream::overflow(std::basic_streambuf<char>::int_type v)
+std::basic_streambuf<char>::int_type
+console_stream::overflow(std::basic_streambuf<char>::int_type v)
 {
     std::lock_guard<std::mutex> lock(edit_buf);
     buf.push_back(char(v));
-    if (v == '\n')
+    if(capture)
+        capture->push_back(char(v));
+    if(v == '\n')
         has_output = true;
     return v;
 }
 
-std::streamsize console_stream::xsputn(const char *p, std::streamsize n)
+std::streamsize console_stream::xsputn(
+    const char* p,
+    std::streamsize n)
 {
     std::lock_guard<std::mutex> lock(edit_buf);
-    buf += p;
+    QString text = QString::fromUtf8(
+        p,static_cast<qsizetype>(n));
+
+    buf += text;
+    if(capture)
+        *capture += text;
+
     return n;
 }
 
