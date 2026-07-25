@@ -80,13 +80,21 @@ std::string quality_check_src_files(const std::vector<std::filesystem::path>& fi
         if(!error.empty())
             out << error << std::endl;
 
-    float outlier_threshold = tipl::outlier_range(ndc.begin(),ndc.end()).first;
-    // 3 "scaled" MAD approach. The scale is -1/(sqrt(2)*erfcinv(3/2)) = 1.482602218505602f
+    std::vector<float> valid_ndc;
+    for(size_t i = 0;i < output.size();++i)
+        if(!output[i].empty())
+            valid_ndc.push_back(ndc[i]);
+    if(valid_ndc.empty())
+        return out.str();
+
+    float outlier_threshold = tipl::outlier_range(valid_ndc.begin(),valid_ndc.end()).first;
     for(size_t i = 0;i < output.size();++i)
     {
-        for(size_t j = 0 ;j < output[i].size();++j)
-            out << output[i][j] << "\t";
-        out << ((ndc[i] < outlier_threshold) ? "1" : "0") << std::endl;
+        if(output[i].empty())
+            continue;
+        for(const auto& each : output[i])
+            out << each << "\t";
+        out << (ndc[i] < outlier_threshold ? "1" : "0") << std::endl;
     }
     return out.str();
 }
