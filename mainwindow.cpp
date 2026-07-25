@@ -1921,7 +1921,9 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
             if(ui->github_release_files->item(row,0)->text().contains(text,Qt::CaseInsensitive))
                 tipl::out() << row << "\t"
                             << ui->github_release_files->item(row,0)->text().toStdString() << "\t"
-                            << ui->github_release_files->item(row,1)->text().toStdString();
+                            << ui->github_release_files->item(row,1)->text().toStdString() << "\t"
+                            << QFile::exists(QStandardPaths::writableLocation(QStandardPaths::TempLocation) +
+                                             "/" + cur_tag + "/" + ui->github_release_files->item(row,0)->text());
         return true;
     }
 
