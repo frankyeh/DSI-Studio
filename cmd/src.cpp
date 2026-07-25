@@ -351,7 +351,7 @@ int src(tipl::program_option<tipl::out>& po)
         if(std::filesystem::is_directory(other_source))
         {
             if(!search_nii(other_source,other_file_list))
-                tipl::warning() << "cannot find NIFTI files in " << source;
+                tipl::warning() << "cannot find NIFTI files in " << other_source;
         }
         else
             other_file_list = po.get_files("other_source");
@@ -368,7 +368,8 @@ int src(tipl::program_option<tipl::out>& po)
         output = (std::filesystem::path(output)/output_name).u8string();
     if(!tipl::ends_with(output,{".sz",".rz"}))
         output += ".sz";
-
+    if(!po.get("overwrite",0) && std::filesystem::exists(output))
+        return tipl::out() << "skipping " << output << " already exists",0;
 
     src_data src;
     std::vector<std::shared_ptr<DwiHeader> > dwi_files;
