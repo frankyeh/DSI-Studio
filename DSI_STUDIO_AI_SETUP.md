@@ -205,8 +205,8 @@ $final = 'The requested tract was created and saved to C:\data\CST_L.tt.gz.'
 $logReply = Read-DsiTextReply (Invoke-Dsi @{request='LOG';chat=$final})
 ```
 
-The returned log is the console snapshot taken before the attached final text
-is added to DSI Studio's AI history. Do not send the same final text again.
+Chat is stored in `ai_chat_history`, not console history, so the `LOG` reply
+does not echo the attached text. Do not send the same final text again.
 
 ## Open a local file
 
