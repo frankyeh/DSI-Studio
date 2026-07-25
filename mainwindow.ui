@@ -309,15 +309,12 @@ Claude Code</string>
             <item>
              <layout class="QHBoxLayout" name="ai_projects_header_layout">
               <item>
-               <widget class="QLabel" name="ai_projects_title">
-                <property name="font">
-                 <font>
-                  <pointsize>9</pointsize>
-                  <bold>true</bold>
-                 </font>
+               <widget class="QLineEdit" name="ai_project_filter">
+                <property name="placeholderText">
+                 <string>Search projects</string>
                 </property>
-                <property name="text">
-                 <string>Projects</string>
+                <property name="clearButtonEnabled">
+                 <bool>true</bool>
                 </property>
                </widget>
               </item>
@@ -342,16 +339,6 @@ Claude Code</string>
                </widget>
               </item>
              </layout>
-            </item>
-            <item>
-             <widget class="QLineEdit" name="ai_project_filter">
-              <property name="placeholderText">
-               <string>Search projects</string>
-              </property>
-              <property name="clearButtonEnabled">
-               <bool>true</bool>
-              </property>
-             </widget>
             </item>
             <item>
              <widget class="QListWidget" name="ai_project_list">
@@ -664,6 +651,45 @@ QWidget#tab_6 QPushButton:disabled {
     color: #8a8a8f;
     background-color: #ececef;
     border-color: #dddddf;
+}
+QWidget#tab_6 QScrollBar:vertical {
+    background-color: transparent;
+    border: 0px;
+    width: 10px;
+    margin: 2px;
+}
+QWidget#tab_6 QScrollBar:horizontal {
+    background-color: transparent;
+    border: 0px;
+    height: 10px;
+    margin: 2px;
+}
+QWidget#tab_6 QScrollBar::handle {
+    background-color: #c7c7cc;
+    border: 0px;
+    border-radius: 4px;
+}
+QWidget#tab_6 QScrollBar::handle:vertical {
+    min-height: 24px;
+}
+QWidget#tab_6 QScrollBar::handle:horizontal {
+    min-width: 24px;
+}
+QWidget#tab_6 QScrollBar::handle:hover {
+    background-color: #a9a9af;
+}
+QWidget#tab_6 QScrollBar::add-line:vertical,
+QWidget#tab_6 QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+QWidget#tab_6 QScrollBar::add-line:horizontal,
+QWidget#tab_6 QScrollBar::sub-line:horizontal {
+    width: 0px;
+}
+QWidget#tab_6 QScrollBar::add-page,
+QWidget#tab_6 QScrollBar::sub-page {
+    background-color: transparent;
+    border: 0px;
 }</string>
        </property>
        <attribute name="icon">
