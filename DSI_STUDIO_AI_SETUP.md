@@ -11,7 +11,7 @@ Use this file to connect a local AI agent to an AI-control-enabled DSI Studio. R
 
 ## Connect directly
 
-`QLocalServer("dsi-studio")` is the Windows named pipe `\\.\pipe\dsi-studio`. The server handles one request per connection and then disconnects, so open a new lightweight pipe connection for each request:
+`QLocalServer("dsi-studio")` is the Windows named pipe `\\.\pipe\dsi-studio`. The server handles one request per connection and then disconnects. A request may contain one command or a same-window command batch.
 
 ```powershell
 function Invoke-DsiRequest([string]$Request)
@@ -75,6 +75,27 @@ CMD<TAB>window_id<TAB>command<TAB>parameter_1<TAB>parameter_2...
 
 Each array element is one command field. A parameter containing spaces must remain one element. Never split or reinterpret compound parameters described by `DSI_STUDIO_AI_MANUAL.md`.
 
+## Send a command batch
+
+Use the same `CMD` route with a JSON array as its third field. There is no separate `BATCH` request:
+
+```powershell
+$json = '[["list_slice"],["list_region"],["list_tract"]]'
+$reply = Invoke-DsiRequest ([string]::Join([char]9, @('CMD', '2', $json)))
+$results = $reply | ConvertFrom-Json
+if($results | Where-Object { -not $_.okay }) { throw $reply }
+```
+
+Protocol:
+
+```text
+CMD<TAB>window_id<TAB>[["command","parameter"],["command",...]]
+```
+
+All JSON values must be strings, all commands target the same window, and commands run in order. DSI Studio suppresses intermediate widget repaint and redraws once afterward. The reply is a compact JSON array containing `index`, `okay`, `output`, and, on failure, `error`. Execution stops at the first failure; a batch is not transactional and has no rollback.
+
+Use batching for short synchronous commands whose inputs are already ready. Do not send an empty batch or batch a command that depends on an earlier asynchronous download, registration, segmentation, tracking, or window-opening result.
+
 Target commands according to the window type returned by `LIST`:
 
 - `main`: Fiber Data Hub and main-window operations
@@ -97,6 +118,7 @@ The client forwards the filename to the running DSI Studio. Refresh `LIST` to di
 Never guess names, indices, or parameter values. Use the available introspection commands first, including:
 
 ```text
+list_recent
 list_slice
 list_region
 list_tract
@@ -107,6 +129,14 @@ list_auto_tract
 ```
 
 Use only commands and parameters documented in `DSI_STUDIO_AI_MANUAL.md`.
+
+`list_recent` targets the main window and lists recent `.sz` and `.fz` paths. The main-window command `run_cli` accepts one complete DSI Studio command line as a single parameter field:
+
+```powershell
+Invoke-Dsi @('CMD', '1', 'run_cli', '--action=qc --source=C:\data\subject.fz')
+```
+
+`--action` is required. DSI Studio parses this string internally and runs the CLI action synchronously on the GUI thread, including wildcard or `--loop` processing. Inspect the full command line and obtain any required confirmation before running it; do not use `run_cli` as a shell.
 
 ## Console output
 
@@ -132,7 +162,8 @@ This starts a new client process for every request and has a fixed five-second r
 
 ## Completion and verification
 
-- `OKAY` means the command was accepted; it may not mean an asynchronous operation has finished.
+- `OKAY` means a single command was accepted; it may not mean an asynchronous operation has finished.
+- A batch succeeds only when every returned object has `"okay":true`; later commands are absent after the first failure.
 - Poll the relevant list or status command until completion.
 - Refresh `LIST` when a command opens or closes a window.
 - Verify created regions or tracts using their list commands.
