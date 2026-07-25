@@ -5,13 +5,12 @@
 
 bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list)
 {
-    QStringList name_list = QString(atlas_name.c_str()).split(",");
-    for(int index = 0;index < name_list.size();++index)
+    for(const auto& each : tipl::split(atlas_name,','))
     {
-        auto at = handle->get_atlas(name_list[index].toStdString());
-        if(!at.get())
+        if(auto at = handle->get_atlas(each);at.get())
+            atlas_list.push_back(at);
+        else
             return tipl::error() << handle->error_msg,false;
-        atlas_list.push_back(at);
     }
     return true;
 }
