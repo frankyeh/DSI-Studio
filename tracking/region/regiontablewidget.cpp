@@ -344,7 +344,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
 
     if(cmd[0] == "list_region")
     {
-        static const char* type[] = {"ROI","ROA","End","Seed","Terminative","NotEnd","Limiting","..."};
+        static const char* type[] = {"ROI","ROA","End","Seed","Terminative","NotEnd","Limiting","n/a"};
         tipl::out() << "index\tshown\tname\ttype\tcolor\tdimension x resolution";
         for(int row = 0;row < rowCount();++row)
         {
