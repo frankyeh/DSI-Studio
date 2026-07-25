@@ -11,6 +11,8 @@
 #include <QNetworkReply>
 #include <QJsonArray>
 
+void add_ai_history(const QString& agent,const QString& type,const QString& text);
+
 namespace Ui {
     class MainWindow;
 }
