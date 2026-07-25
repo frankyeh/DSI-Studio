@@ -150,7 +150,7 @@
        <string notr="true">QWidget { color: black;  background-color : white; }</string>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab_8">
        <property name="styleSheet">
@@ -606,7 +606,7 @@ QWidget#tab_6 QHeaderView::section {
     border: 0px;
     border-right: 1px solid #e2e2e5;
     border-bottom: 1px solid #d9d9dc;
-    padding: 6px;
+    padding: 2px 6px;
     font-weight: bold;
 }
 QTextBrowser#github_note {
@@ -714,7 +714,7 @@ QWidget#tab_6 QScrollBar::sub-page {
           <widget class="QWidget" name="widget_9" native="true">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-             <horstretch>1</horstretch>
+             <horstretch>2</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
@@ -804,6 +804,12 @@ QWidget#tab_6 QScrollBar::sub-page {
               </property>
               <attribute name="horizontalHeaderStretchLastSection">
                <bool>true</bool>
+              </attribute>
+              <attribute name="verticalHeaderMinimumSectionSize">
+               <number>18</number>
+              </attribute>
+              <attribute name="verticalHeaderDefaultSectionSize">
+               <number>20</number>
               </attribute>
               <column>
                <property name="text">
@@ -1108,6 +1114,158 @@ p, li { white-space: pre-wrap; }
        </layout>
       </widget>
       <widget class="QWidget" name="tab">
+       <property name="styleSheet">
+        <string notr="true">QWidget#tab {
+    color: #202124;
+    background-color: #ffffff;
+}
+QFrame#tract_recent_panel {
+    background-color: #f7f7f8;
+    border: 1px solid #dddddf;
+    border-radius: 9px;
+}
+QLabel#recent_files_title,
+QLabel#label_2,
+QLabel#label_3 {
+    background-color: transparent;
+}
+QFrame#recent_src_card,
+QFrame#recent_fib_card,
+QFrame#tract_input_stage,
+QFrame#tract_reconstruction_stage,
+QFrame#tract_tracking_stage,
+QFrame#tract_template_stage,
+QFrame#tract_connectometry_stage {
+    background-color: #fafafa;
+    border: 1px solid #dddddf;
+    border-radius: 9px;
+}
+QWidget#tab QPushButton {
+    color: #202124;
+    background-color: #f4f4f5;
+    border: 1px solid #d9d9dc;
+    border-radius: 7px;
+    padding: 5px 9px;
+}
+QWidget#tab QPushButton:hover {
+    background-color: #e9e9eb;
+    border-color: #c8c8cc;
+}
+QWidget#tab QPushButton:pressed {
+    background-color: #dddddf;
+}
+QWidget#tab QPushButton:disabled {
+    color: #9a9a9f;
+    background-color: #eeeeef;
+}
+QFrame#tract_input_stage QPushButton,
+QFrame#tract_reconstruction_stage QPushButton,
+QFrame#tract_tracking_stage QPushButton,
+QFrame#tract_template_stage QPushButton,
+QFrame#tract_connectometry_stage QPushButton {
+    color: #202124;
+    background-color: #ffffff;
+    border: 1px solid #d9d9dc;
+    border-radius: 7px;
+    padding: 5px 8px;
+    min-height: 32px;
+}
+QFrame#tract_input_stage QPushButton:hover,
+QFrame#tract_reconstruction_stage QPushButton:hover,
+QFrame#tract_tracking_stage QPushButton:hover,
+QFrame#tract_template_stage QPushButton:hover,
+QFrame#tract_connectometry_stage QPushButton:hover {
+    background-color: #f1f1f3;
+    border-color: #bfc0c4;
+}
+QFrame#tract_input_stage QPushButton:pressed,
+QFrame#tract_reconstruction_stage QPushButton:pressed,
+QFrame#tract_tracking_stage QPushButton:pressed,
+QFrame#tract_template_stage QPushButton:pressed,
+QFrame#tract_connectometry_stage QPushButton:pressed {
+    background-color: #e5e5e7;
+}
+QWidget#tab QTableWidget,
+QListWidget#template_list {
+    color: #202124;
+    background-color: #ffffff;
+    alternate-background-color: #fafafa;
+    border: 1px solid #d9d9dc;
+    border-radius: 7px;
+    gridline-color: #eeeeef;
+    selection-background-color: #e5e5e7;
+    selection-color: #202124;
+}
+QWidget#tab QHeaderView::section {
+    color: #4f4f54;
+    background-color: #f4f4f5;
+    border: 0px;
+    border-right: 1px solid #e2e2e5;
+    border-bottom: 1px solid #d9d9dc;
+    padding: 2px 5px;
+    font-weight: bold;
+}
+QListWidget#template_list::item {
+    margin: 3px;
+    padding: 7px 12px;
+    border-radius: 6px;
+}
+QListWidget#template_list::item:selected {
+    background-color: #e5e5e7;
+}
+QLabel#tract_workflow_title {
+    font-size: 12pt;
+    font-weight: bold;
+}
+QLabel#label_45,
+QLabel#label_17,
+QLabel#label_28,
+QLabel#tract_connectometry_title {
+    font-size: 10pt;
+    font-weight: bold;
+}
+QLabel#tract_workflow_hint,
+QLabel#tract_input_hint,
+QLabel#tract_reconstruction_hint,
+QLabel#tract_tracking_hint,
+QLabel#tract_connectometry_hint,
+QLabel#tract_direct_header,
+QLabel#tract_dicom_header,
+QLabel#tract_batch_header {
+    color: #67676c;
+}
+QWidget#tab QScrollBar:vertical {
+    background-color: transparent;
+    border: 0px;
+    width: 10px;
+    margin: 2px;
+}
+QWidget#tab QScrollBar:horizontal {
+    background-color: transparent;
+    border: 0px;
+    height: 10px;
+    margin: 2px;
+}
+QWidget#tab QScrollBar::handle {
+    background-color: #c7c7cc;
+    border: 0px;
+    border-radius: 4px;
+    min-height: 24px;
+    min-width: 24px;
+}
+QWidget#tab QScrollBar::handle:hover {
+    background-color: #a9a9af;
+}
+QWidget#tab QScrollBar::add-line,
+QWidget#tab QScrollBar::sub-line {
+    width: 0px;
+    height: 0px;
+}
+QWidget#tab QScrollBar::add-page,
+QWidget#tab QScrollBar::sub-page {
+    background-color: transparent;
+}</string>
+       </property>
        <attribute name="icon">
         <iconset resource="icons.qrc">
          <normaloff>:/icons/icons/tracts.xpm</normaloff>:/icons/icons/tracts.xpm</iconset>
@@ -1115,2571 +1273,984 @@ p, li { white-space: pre-wrap; }
        <attribute name="title">
         <string>Tractography</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_8">
+       <layout class="QHBoxLayout" name="tractography_layout">
         <property name="spacing">
-         <number>0</number>
+         <number>6</number>
         </property>
         <property name="leftMargin">
-         <number>0</number>
+         <number>6</number>
         </property>
         <property name="topMargin">
-         <number>0</number>
+         <number>6</number>
         </property>
         <property name="rightMargin">
-         <number>0</number>
+         <number>6</number>
         </property>
         <property name="bottomMargin">
-         <number>0</number>
+         <number>6</number>
         </property>
         <item>
-         <widget class="QScrollArea" name="scrollArea">
-          <property name="verticalScrollBarPolicy">
-           <enum>Qt::ScrollBarAsNeeded</enum>
+         <widget class="QSplitter" name="tractography_splitter">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
           </property>
-          <property name="widgetResizable">
-           <bool>true</bool>
+          <property name="handleWidth">
+           <number>6</number>
           </property>
-          <widget class="QWidget" name="scrollAreaWidgetContents">
-           <property name="geometry">
-            <rect>
-             <x>0</x>
-             <y>0</y>
-             <width>1266</width>
-             <height>700</height>
-            </rect>
+          <property name="childrenCollapsible">
+           <bool>false</bool>
+          </property>
+          <widget class="QFrame" name="tract_recent_panel">
+           <property name="minimumSize">
+            <size>
+             <width>270</width>
+             <height>0</height>
+            </size>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_3">
+           <property name="maximumSize">
+            <size>
+             <width>380</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <layout class="QVBoxLayout" name="tract_recent_layout" stretch="0,1,1">
             <property name="spacing">
-             <number>0</number>
+             <number>7</number>
             </property>
             <property name="leftMargin">
-             <number>0</number>
+             <number>8</number>
             </property>
             <property name="topMargin">
-             <number>0</number>
+             <number>8</number>
             </property>
             <property name="rightMargin">
-             <number>0</number>
+             <number>8</number>
             </property>
             <property name="bottomMargin">
-             <number>0</number>
+             <number>8</number>
             </property>
             <item>
-             <widget class="QWidget" name="widget" native="true">
-              <property name="minimumSize">
-               <size>
-                <width>1250</width>
-                <height>700</height>
-               </size>
+             <widget class="QLabel" name="recent_files_title">
+              <property name="font">
+               <font>
+                <pointsize>10</pointsize>
+                <bold>true</bold>
+               </font>
               </property>
-              <property name="styleSheet">
-               <string notr="true">QWidget { color: black;  background-color : white; }</string>
+              <property name="text">
+               <string>Recent files</string>
               </property>
-              <widget class="QTableWidget" name="recentFib">
-               <property name="geometry">
-                <rect>
-                 <x>663</x>
-                 <y>346</y>
-                 <width>281</width>
-                 <height>303</height>
-                </rect>
+             </widget>
+            </item>
+            <item>
+             <widget class="QFrame" name="recent_src_card">
+              <layout class="QVBoxLayout" name="recent_src_layout" stretch="0,1">
+               <property name="spacing">
+                <number>5</number>
                </property>
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
+               <property name="leftMargin">
+                <number>6</number>
                </property>
-               <property name="maximumSize">
+               <property name="topMargin">
+                <number>6</number>
+               </property>
+               <property name="rightMargin">
+                <number>6</number>
+               </property>
+               <property name="bottomMargin">
+                <number>6</number>
+               </property>
+               <item>
+                <layout class="QHBoxLayout" name="recent_src_header">
+                 <item>
+                  <widget class="QLabel" name="label_3">
+                   <property name="font">
+                    <font>
+                     <bold>true</bold>
+                    </font>
+                   </property>
+                   <property name="text">
+                    <string>SRC files (*.sz)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <spacer name="recent_src_header_spacer">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>20</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="open_selected_src">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
+                   <property name="text">
+                    <string>Open</string>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="icons.qrc">
+                     <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="clear_src_history">
+                   <property name="text">
+                    <string>Clear</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <widget class="QTableWidget" name="recentSrc">
+                 <property name="horizontalScrollBarPolicy">
+                  <enum>Qt::ScrollBarAlwaysOff</enum>
+                 </property>
+                 <property name="editTriggers">
+                  <set>QAbstractItemView::NoEditTriggers</set>
+                 </property>
+                 <property name="selectionMode">
+                  <enum>QAbstractItemView::SingleSelection</enum>
+                 </property>
+                 <property name="selectionBehavior">
+                  <enum>QAbstractItemView::SelectRows</enum>
+                 </property>
+                 <property name="showGrid">
+                  <bool>false</bool>
+                 </property>
+                 <attribute name="horizontalHeaderStretchLastSection">
+                  <bool>true</bool>
+                 </attribute>
+                 <attribute name="verticalHeaderVisible">
+                  <bool>false</bool>
+                 </attribute>
+                 <attribute name="verticalHeaderMinimumSectionSize">
+                  <number>18</number>
+                 </attribute>
+                 <attribute name="verticalHeaderDefaultSectionSize">
+                  <number>20</number>
+                 </attribute>
+                 <column>
+                  <property name="text">
+                   <string>File Name</string>
+                  </property>
+                 </column>
+                 <column>
+                  <property name="text">
+                   <string>Directory</string>
+                  </property>
+                 </column>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QFrame" name="recent_fib_card">
+              <layout class="QVBoxLayout" name="recent_fib_layout" stretch="0,1">
+               <property name="spacing">
+                <number>5</number>
+               </property>
+               <property name="leftMargin">
+                <number>6</number>
+               </property>
+               <property name="topMargin">
+                <number>6</number>
+               </property>
+               <property name="rightMargin">
+                <number>6</number>
+               </property>
+               <property name="bottomMargin">
+                <number>6</number>
+               </property>
+               <item>
+                <layout class="QHBoxLayout" name="recent_fib_header">
+                 <item>
+                  <widget class="QLabel" name="label_2">
+                   <property name="font">
+                    <font>
+                     <bold>true</bold>
+                    </font>
+                   </property>
+                   <property name="text">
+                    <string>FIB files (*.fz)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <spacer name="recent_fib_header_spacer">
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>20</width>
+                     <height>20</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="open_selected_fib">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
+                   <property name="text">
+                    <string>Open</string>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="icons.qrc">
+                     <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="clear_fib_history">
+                   <property name="text">
+                    <string>Clear</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <widget class="QTableWidget" name="recentFib">
+                 <property name="horizontalScrollBarPolicy">
+                  <enum>Qt::ScrollBarAlwaysOff</enum>
+                 </property>
+                 <property name="editTriggers">
+                  <set>QAbstractItemView::NoEditTriggers</set>
+                 </property>
+                 <property name="selectionMode">
+                  <enum>QAbstractItemView::SingleSelection</enum>
+                 </property>
+                 <property name="selectionBehavior">
+                  <enum>QAbstractItemView::SelectRows</enum>
+                 </property>
+                 <property name="showGrid">
+                  <bool>false</bool>
+                 </property>
+                 <attribute name="horizontalHeaderStretchLastSection">
+                  <bool>true</bool>
+                 </attribute>
+                 <attribute name="verticalHeaderVisible">
+                  <bool>false</bool>
+                 </attribute>
+                 <attribute name="verticalHeaderMinimumSectionSize">
+                  <number>18</number>
+                 </attribute>
+                 <attribute name="verticalHeaderDefaultSectionSize">
+                  <number>20</number>
+                 </attribute>
+                 <column>
+                  <property name="text">
+                   <string>File Name</string>
+                  </property>
+                 </column>
+                 <column>
+                  <property name="text">
+                   <string>Directory</string>
+                  </property>
+                 </column>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QScrollArea" name="scrollArea">
+           <property name="frameShape">
+            <enum>QFrame::NoFrame</enum>
+           </property>
+           <property name="horizontalScrollBarPolicy">
+            <enum>Qt::ScrollBarAlwaysOff</enum>
+           </property>
+           <property name="widgetResizable">
+            <bool>true</bool>
+           </property>
+           <widget class="QWidget" name="scrollAreaWidgetContents">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>0</y>
+              <width>870</width>
+              <height>690</height>
+             </rect>
+            </property>
+            <layout class="QVBoxLayout" name="tract_workflow_layout">
+             <property name="spacing">
+              <number>7</number>
+             </property>
+             <property name="leftMargin">
+              <number>5</number>
+             </property>
+             <property name="topMargin">
+              <number>2</number>
+             </property>
+             <property name="rightMargin">
+              <number>5</number>
+             </property>
+             <property name="bottomMargin">
+              <number>5</number>
+             </property>
+             <item>
+              <widget class="QFrame" name="tract_input_stage">
+               <layout class="QVBoxLayout" name="tract_input_layout">
+                <property name="spacing">
+                 <number>5</number>
+                </property>
+                <property name="leftMargin">
+                 <number>8</number>
+                </property>
+                <property name="topMargin">
+                 <number>7</number>
+                </property>
+                <property name="rightMargin">
+                 <number>8</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>8</number>
+                </property>
+                <item>
+                 <layout class="QHBoxLayout" name="tract_input_header">
+                  <property name="spacing">
+                   <number>7</number>
+                  </property>
+                  <item>
+                   <widget class="QLabel" name="label_45">
+                    <property name="text">
+                     <string>Parse source image</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="tract_input_hint">
+                    <property name="text">
+                     <string>NIFTI (.nii/.nii.gz), DICOM (.dcm), 2dseq, and Varian (.fdf) → SRC files (*.sz)</string>
+                    </property>
+                    <property name="textFormat">
+                     <enum>Qt::AutoText</enum>
+                    </property>
+                    <property name="wordWrap">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <spacer name="tract_input_header_spacer">
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>10</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                 </layout>
+                </item>
+                <item>
+                 <layout class="QGridLayout" name="tract_input_actions">
+                  <property name="horizontalSpacing">
+                   <number>6</number>
+                  </property>
+                  <property name="verticalSpacing">
+                   <number>5</number>
+                  </property>
+                  <item row="0" column="0">
+                   <widget class="QLabel" name="tract_direct_header">
+                    <property name="text">
+                     <string>Direct conversion</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="0" column="1">
+                   <widget class="QLabel" name="tract_dicom_header">
+                    <property name="text">
+                     <string>DICOM preparation</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="0" column="2">
+                   <widget class="QLabel" name="tract_batch_header">
+                    <property name="text">
+                     <string>Batch conversion</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="0">
+                   <widget class="QPushButton" name="OpenDWI_NIFTI">
+                    <property name="toolTip">
+                     <string>Convert one NIFTI file to SRC</string>
+                    </property>
+                    <property name="text">
+                     <string>Step T1: NIFTI → SRC</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="icons.qrc">
+                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                    </property>
+                    <property name="autoDefault">
+                     <bool>false</bool>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="2" column="0">
+                   <widget class="QPushButton" name="OpenDWI_DICOM">
+                    <property name="toolTip">
+                     <string>Convert DICOM files to SRC</string>
+                    </property>
+                    <property name="autoFillBackground">
+                     <bool>false</bool>
+                    </property>
+                    <property name="text">
+                     <string>Step T1: DICOM → SRC</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="icons.qrc">
+                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                    </property>
+                    <property name="autoDefault">
+                     <bool>false</bool>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="3" column="0">
+                   <widget class="QPushButton" name="OpenDWI_2dseq">
+                    <property name="toolTip">
+                     <string>Convert 2dseq or Varian FDF to SRC</string>
+                    </property>
+                    <property name="text">
+                     <string>Step T1: 2dseq / FDF → SRC</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="icons.qrc">
+                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="1">
+                   <widget class="QPushButton" name="RenameDICOM">
+                    <property name="toolTip">
+                     <string>Organize DICOM file names</string>
+                    </property>
+                    <property name="text">
+                     <string>Step B1a: Rename DICOM files</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="icons.qrc">
+                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="2" column="1">
+                   <widget class="QPushButton" name="RenameDICOMDir">
+                    <property name="toolTip">
+                     <string>Rename DICOM files across folders</string>
+                    </property>
+                    <property name="text">
+                     <string>Step B1b: Rename DICOM folders</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="icons.qrc">
+                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="3" column="1">
+                   <widget class="QPushButton" name="dicom2nii">
+                    <property name="toolTip">
+                     <string>Convert a DICOM folder to SRC</string>
+                    </property>
+                    <property name="text">
+                     <string>Step B1c: DICOM folder → SRC</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="icons.qrc">
+                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="2">
+                   <widget class="QPushButton" name="nii2src_bids">
+                    <property name="toolTip">
+                     <string>Convert a BIDS folder to SRC files</string>
+                    </property>
+                    <property name="text">
+                     <string>Step B2a: BIDS NIFTI → SRC</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="icons.qrc">
+                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="2" column="2">
+                   <widget class="QPushButton" name="nii2src_sf">
+                    <property name="toolTip">
+                     <string>Convert a folder of NIFTI files to SRC</string>
+                    </property>
+                    <property name="text">
+                     <string>Step B2b: NIFTI folder → SRC</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="icons.qrc">
+                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="3" column="2">
+                   <spacer name="tract_batch_actions_spacer">
+                    <property name="orientation">
+                     <enum>Qt::Vertical</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>20</width>
+                      <height>42</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                 </layout>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="tract_fib_stage_layout" stretch="3,1">
+               <property name="spacing">
+                <number>7</number>
+               </property>
+               <item>
+                <widget class="QWidget" name="tract_fib_standard_column" native="true">
+                 <layout class="QVBoxLayout" name="tract_fib_standard_layout">
+                  <property name="spacing">
+                   <number>7</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QFrame" name="tract_reconstruction_stage">
+                    <layout class="QVBoxLayout" name="tract_reconstruction_layout">
+                     <property name="spacing">
+                      <number>5</number>
+                     </property>
+                     <property name="leftMargin">
+                      <number>8</number>
+                     </property>
+                     <property name="topMargin">
+                      <number>7</number>
+                     </property>
+                     <property name="rightMargin">
+                      <number>8</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>8</number>
+                     </property>
+                     <item>
+                      <layout class="QHBoxLayout" name="tract_reconstruction_header">
+                       <property name="spacing">
+                        <number>7</number>
+                       </property>
+                       <item>
+                        <widget class="QLabel" name="label_17">
+                         <property name="text">
+                          <string>Reconstruct fiber data</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QLabel" name="tract_reconstruction_hint">
+                         <property name="text">
+                          <string>SRC files (*.sz) → FIB files (*.fz)</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <spacer name="tract_reconstruction_header_spacer">
+                         <property name="orientation">
+                          <enum>Qt::Horizontal</enum>
+                         </property>
+                         <property name="sizeHint" stdset="0">
+                          <size>
+                           <width>10</width>
+                           <height>20</height>
+                          </size>
+                         </property>
+                        </spacer>
+                       </item>
+                      </layout>
+                     </item>
+                     <item>
+                      <layout class="QHBoxLayout" name="tract_reconstruction_actions">
+                       <property name="spacing">
+                        <number>6</number>
+                       </property>
+                       <item>
+                        <widget class="QPushButton" name="Reconstruction">
+                         <property name="toolTip">
+                          <string>Reconstruct one or more SRC files</string>
+                         </property>
+                         <property name="text">
+                          <string>Step T2: Open SRC for reconstruction</string>
+                         </property>
+                         <property name="icon">
+                          <iconset resource="icons.qrc">
+                           <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QPushButton" name="batch_reconstruction">
+                         <property name="toolTip">
+                          <string>Reconstruct a folder of SRC files</string>
+                         </property>
+                         <property name="text">
+                          <string>Step B3: Batch SRC → FIB</string>
+                         </property>
+                         <property name="icon">
+                          <iconset resource="icons.qrc">
+                           <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                         </property>
+                        </widget>
+                       </item>
+                      </layout>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QFrame" name="tract_tracking_stage">
+                    <layout class="QVBoxLayout" name="tract_tracking_layout">
+                     <property name="spacing">
+                      <number>5</number>
+                     </property>
+                     <property name="leftMargin">
+                      <number>8</number>
+                     </property>
+                     <property name="topMargin">
+                      <number>7</number>
+                     </property>
+                     <property name="rightMargin">
+                      <number>8</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>8</number>
+                     </property>
+                     <item>
+                      <layout class="QHBoxLayout" name="tract_tracking_header">
+                       <property name="spacing">
+                        <number>7</number>
+                       </property>
+                       <item>
+                        <widget class="QLabel" name="label_28">
+                         <property name="text">
+                          <string>Track fibers</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QLabel" name="tract_tracking_hint">
+                         <property name="text">
+                          <string>FIB files (*.fz) → tractography (*.tt.gz)</string>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <spacer name="tract_tracking_header_spacer">
+                         <property name="orientation">
+                          <enum>Qt::Horizontal</enum>
+                         </property>
+                         <property name="sizeHint" stdset="0">
+                          <size>
+                           <width>10</width>
+                           <height>20</height>
+                          </size>
+                         </property>
+                        </spacer>
+                       </item>
+                      </layout>
+                     </item>
+                     <item>
+                      <layout class="QHBoxLayout" name="tract_tracking_actions">
+                       <property name="spacing">
+                        <number>6</number>
+                       </property>
+                       <item>
+                        <widget class="QPushButton" name="FiberTracking">
+                         <property name="toolTip">
+                          <string>Open a FIB file for tractography</string>
+                         </property>
+                         <property name="text">
+                          <string>Step T3: Fiber tracking</string>
+                         </property>
+                         <property name="icon">
+                          <iconset resource="icons.qrc">
+                           <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QPushButton" name="T1WFiberTracking">
+                         <property name="toolTip">
+                          <string>Open structural images with an aligned tractography atlas</string>
+                         </property>
+                         <property name="text">
+                          <string>Step T3a: T1W/T2W aligned tracking</string>
+                         </property>
+                         <property name="icon">
+                          <iconset resource="icons.qrc">
+                           <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QPushButton" name="auto_track">
+                         <property name="toolTip">
+                          <string>Run automatic tracking on selected FIB files</string>
+                         </property>
+                         <property name="text">
+                          <string>Step B4: Automatic tracking</string>
+                         </property>
+                         <property name="icon">
+                          <iconset resource="icons.qrc">
+                           <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                         </property>
+                        </widget>
+                       </item>
+                      </layout>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QFrame" name="tract_template_stage">
+                 <property name="minimumSize">
+                  <size>
+                   <width>180</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>260</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <layout class="QVBoxLayout" name="tract_template_layout" stretch="0,1,0">
+                  <property name="spacing">
+                   <number>5</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>8</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>7</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>8</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>8</number>
+                  </property>
+                  <item>
+                   <widget class="QLabel" name="label_4">
+                    <property name="font">
+                     <font>
+                      <bold>true</bold>
+                     </font>
+                    </property>
+                    <property name="text">
+                     <string>Population-averaged FIB</string>
+                    </property>
+                    <property name="wordWrap">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QListWidget" name="template_list">
+                    <property name="verticalScrollBarPolicy">
+                     <enum>Qt::ScrollBarAsNeeded</enum>
+                    </property>
+                    <property name="horizontalScrollBarPolicy">
+                     <enum>Qt::ScrollBarAlwaysOff</enum>
+                    </property>
+                    <property name="flow">
+                     <enum>QListView::LeftToRight</enum>
+                    </property>
+                    <property name="isWrapping" stdset="0">
+                     <bool>true</bool>
+                    </property>
+                    <property name="resizeMode">
+                     <enum>QListView::Adjust</enum>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="TemplateFiberTracking">
+                    <property name="toolTip">
+                     <string>Open the selected population-averaged FIB template</string>
+                    </property>
+                    <property name="text">
+                     <string>Open selected</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="icons.qrc">
+                      <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <widget class="QFrame" name="tract_connectometry_stage">
+               <layout class="QVBoxLayout" name="tract_connectometry_layout">
+                <property name="spacing">
+                 <number>5</number>
+                </property>
+                <property name="leftMargin">
+                 <number>8</number>
+                </property>
+                <property name="topMargin">
+                 <number>7</number>
+                </property>
+                <property name="rightMargin">
+                 <number>8</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>8</number>
+                </property>
+                <item>
+                 <layout class="QHBoxLayout" name="tract_connectometry_header">
+                  <property name="spacing">
+                   <number>7</number>
+                  </property>
+                  <item>
+                   <widget class="QLabel" name="tract_connectometry_title">
+                    <property name="text">
+                     <string>Correlational tractography</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QLabel" name="tract_connectometry_hint">
+                    <property name="text">
+                     <string>FIB files (*.fz) → database (*.dz) → group analysis</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <spacer name="tract_connectometry_header_spacer">
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>10</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                 </layout>
+                </item>
+                <item>
+                 <layout class="QHBoxLayout" name="tract_connectometry_actions">
+                  <property name="spacing">
+                   <number>6</number>
+                  </property>
+                  <item>
+                   <widget class="QPushButton" name="vbc">
+                    <property name="toolTip">
+                     <string>Aggregate FIB files into a database</string>
+                    </property>
+                    <property name="text">
+                     <string>Step C1: Create database (.dz)</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="icons.qrc">
+                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="open_db">
+                    <property name="toolTip">
+                     <string>Manage subjects and longitudinal changes</string>
+                    </property>
+                    <property name="text">
+                     <string>Step C2: View / edit database</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="icons.qrc">
+                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="group_connectometry">
+                    <property name="toolTip">
+                     <string>Run correlational tractography and connectometry analysis</string>
+                    </property>
+                    <property name="text">
+                     <string>Step C3: Correlational tractography</string>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="icons.qrc">
+                      <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <spacer name="tract_workflow_bottom_spacer">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
                 <size>
-                 <width>16777215</width>
-                 <height>16777215</height>
+                 <width>20</width>
+                 <height>4</height>
                 </size>
                </property>
-               <property name="styleSheet">
-                <string notr="true">QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black;alternate-background-color: white}  QHeaderView::section { border: 0px ;background-color: white;color: black;}</string>
-               </property>
-               <property name="selectionMode">
-                <enum>QAbstractItemView::SingleSelection</enum>
-               </property>
-               <property name="selectionBehavior">
-                <enum>QAbstractItemView::SelectRows</enum>
-               </property>
-               <column>
-                <property name="text">
-                 <string>File Name</string>
-                </property>
-               </column>
-               <column>
-                <property name="text">
-                 <string>Directory</string>
-                </property>
-               </column>
-              </widget>
-              <widget class="QPushButton" name="clear_fib_history">
-               <property name="geometry">
-                <rect>
-                 <x>767</x>
-                 <y>296</y>
-                 <width>81</width>
-                 <height>41</height>
-                </rect>
-               </property>
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px; color: black}</string>
-               </property>
-               <property name="text">
-                <string>Clear All</string>
-               </property>
-              </widget>
-              <widget class="QTableWidget" name="recentSrc">
-               <property name="geometry">
-                <rect>
-                 <x>339</x>
-                 <y>346</y>
-                 <width>281</width>
-                 <height>303</height>
-                </rect>
-               </property>
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QTableWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black;alternate-background-color: white}  QHeaderView::section { border: 0px ;background-color: white;color: black;}</string>
-               </property>
-               <property name="selectionMode">
-                <enum>QAbstractItemView::SingleSelection</enum>
-               </property>
-               <property name="selectionBehavior">
-                <enum>QAbstractItemView::SelectRows</enum>
-               </property>
-               <column>
-                <property name="text">
-                 <string>File Name</string>
-                </property>
-               </column>
-               <column>
-                <property name="text">
-                 <string>Directory</string>
-                </property>
-               </column>
-              </widget>
-              <widget class="QLabel" name="label_17">
-               <property name="geometry">
-                <rect>
-                 <x>705</x>
-                 <y>90</y>
-                 <width>191</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="font">
-                <font>
-                 <pointsize>15</pointsize>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 157); color: black; }</string>
-               </property>
-               <property name="text">
-                <string>FIB File (*.fz)</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_57">
-               <property name="geometry">
-                <rect>
-                 <x>654</x>
-                 <y>20</y>
-                 <width>301</width>
-                 <height>261</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_55">
-               <property name="geometry">
-                <rect>
-                 <x>329</x>
-                 <y>20</y>
-                 <width>301</width>
-                 <height>261</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-              </widget>
-              <widget class="QCommandLinkButton" name="FiberTracking">
-               <property name="geometry">
-                <rect>
-                 <x>680</x>
-                 <y>210</y>
-                 <width>250</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Step T3: Fiber Tracking</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-               </property>
-               <property name="autoRepeatDelay">
-                <number>296</number>
-               </property>
-               <property name="description">
-                <string>Open a FIB file to run fiber tracking</string>
-               </property>
-              </widget>
-              <widget class="QPushButton" name="clear_src_history">
-               <property name="geometry">
-                <rect>
-                 <x>445</x>
-                 <y>296</y>
-                 <width>81</width>
-                 <height>41</height>
-                </rect>
-               </property>
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px; color: black}</string>
-               </property>
-               <property name="text">
-                <string>Clear All</string>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_13">
-               <property name="geometry">
-                <rect>
-                 <x>356</x>
-                 <y>30</y>
-                 <width>171</width>
-                 <height>170</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="pixmap">
-                <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-              <widget class="QCommandLinkButton" name="OpenDWI_NIFTI">
-               <property name="geometry">
-                <rect>
-                 <x>40</x>
-                 <y>210</y>
-                 <width>250</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="autoFillBackground">
-                <bool>false</bool>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Step T1: NIFTI to SRC...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-               </property>
-               <property name="autoDefault">
-                <bool>false</bool>
-               </property>
-               <property name="description">
-                <string>Convert a NIFTI to an SRC file</string>
-               </property>
-              </widget>
-              <widget class="QCommandLinkButton" name="Reconstruction">
-               <property name="geometry">
-                <rect>
-                 <x>355</x>
-                 <y>210</y>
-                 <width>250</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Step T2: Reconstruction</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-               </property>
-               <property name="description">
-                <string>Open SRC file(s) for reconstruction</string>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_15">
-               <property name="geometry">
-                <rect>
-                 <x>680</x>
-                 <y>30</y>
-                 <width>251</width>
-                 <height>170</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="pixmap">
-                <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_14">
-               <property name="geometry">
-                <rect>
-                 <x>380</x>
-                 <y>90</y>
-                 <width>191</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="font">
-                <font>
-                 <pointsize>15</pointsize>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 157); color: black; }</string>
-               </property>
-               <property name="text">
-                <string>SRC File (*.sz)</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-              <widget class="Line" name="line_4">
-               <property name="geometry">
-                <rect>
-                 <x>150</x>
-                 <y>110</y>
-                 <width>941</width>
-                 <height>21</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">Line { background-color: black; color: black; }</string>
-               </property>
-               <property name="frameShadow">
-                <enum>QFrame::Plain</enum>
-               </property>
-               <property name="lineWidth">
-                <number>20</number>
-               </property>
-               <property name="midLineWidth">
-                <number>0</number>
-               </property>
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_16">
-               <property name="geometry">
-                <rect>
-                 <x>980</x>
-                 <y>20</y>
-                 <width>250</width>
-                 <height>321</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="pixmap">
-                <pixmap resource="icons.qrc">:/icons/icons/tractogram.png</pixmap>
-               </property>
-              </widget>
-              <widget class="QPushButton" name="open_selected_fib">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="geometry">
-                <rect>
-                 <x>847</x>
-                 <y>296</y>
-                 <width>81</width>
-                 <height>41</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Load...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
-               </property>
-              </widget>
-              <widget class="QPushButton" name="open_selected_src">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="geometry">
-                <rect>
-                 <x>525</x>
-                 <y>296</y>
-                 <width>81</width>
-                 <height>41</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Load...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_64">
-               <property name="geometry">
-                <rect>
-                 <x>25</x>
-                 <y>20</y>
-                 <width>280</width>
-                 <height>381</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_45">
-               <property name="geometry">
-                <rect>
-                 <x>60</x>
-                 <y>70</y>
-                 <width>211</width>
-                 <height>101</height>
-                </rect>
-               </property>
-               <property name="font">
-                <font>
-                 <pointsize>13</pointsize>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 157); color: black; }</string>
-               </property>
-               <property name="text">
-                <string>NIFTI (.nii.gz)
-DICOM (.dcm)
-2dseq
-Varian (.fdf)</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-              <widget class="QCommandLinkButton" name="OpenDWI_DICOM">
-               <property name="geometry">
-                <rect>
-                 <x>40</x>
-                 <y>270</y>
-                 <width>250</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="autoFillBackground">
-                <bool>false</bool>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Step T1: DICOM(s) to SRC...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-               </property>
-               <property name="autoDefault">
-                <bool>false</bool>
-               </property>
-               <property name="description">
-                <string>Convert DICOM to an SRC file</string>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_28">
-               <property name="geometry">
-                <rect>
-                 <x>1025</x>
-                 <y>150</y>
-                 <width>171</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="font">
-                <font>
-                 <pointsize>15</pointsize>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 157); color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Tractography (*.tt.gz)</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_2">
-               <property name="geometry">
-                <rect>
-                 <x>677</x>
-                 <y>296</y>
-                 <width>91</width>
-                 <height>41</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel { color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Recent
-FIB Files</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_3">
-               <property name="geometry">
-                <rect>
-                 <x>355</x>
-                 <y>296</y>
-                 <width>91</width>
-                 <height>41</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel { color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Recent
-SRC Files</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_27">
-               <property name="geometry">
-                <rect>
-                 <x>526</x>
-                 <y>30</y>
-                 <width>81</width>
-                 <height>170</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: lightgray; }</string>
-               </property>
-               <property name="text">
-                <string>B-table
-0    0 0 0
-1000    1 0 0
-1000    0 1 0
-1000    0 0 1
-...
- </string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-              <widget class="QCommandLinkButton" name="OpenDWI_2dseq">
-               <property name="geometry">
-                <rect>
-                 <x>40</x>
-                 <y>330</y>
-                 <width>250</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="autoFillBackground">
-                <bool>false</bool>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Step T1: 2dseq, *.fdf to SRC...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-               </property>
-               <property name="autoDefault">
-                <bool>false</bool>
-               </property>
-               <property name="description">
-                <string>Convert 2dseq *.fdf to an SRC file</string>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_40">
-               <property name="geometry">
-                <rect>
-                 <x>10</x>
-                 <y>10</y>
-                 <width>1241</width>
-                 <height>661</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel { border: 0px; background-color: rgba(155,155,155,127); }</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_66">
-               <property name="geometry">
-                <rect>
-                 <x>329</x>
-                 <y>286</y>
-                 <width>301</width>
-                 <height>375</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_67">
-               <property name="geometry">
-                <rect>
-                 <x>654</x>
-                 <y>285</y>
-                 <width>301</width>
-                 <height>375</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_51">
-               <property name="geometry">
-                <rect>
-                 <x>80</x>
-                 <y>30</y>
-                 <width>171</width>
-                 <height>170</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="pixmap">
-                <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-              <widget class="QCommandLinkButton" name="NII_qc">
-               <property name="geometry">
-                <rect>
-                 <x>40</x>
-                 <y>440</y>
-                 <width>251</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>NIFTI Quality Control...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-               </property>
-               <property name="autoRepeatDelay">
-                <number>296</number>
-               </property>
-               <property name="description">
-                <string>Select NIFTI files to run QC</string>
-               </property>
-              </widget>
-              <widget class="QCommandLinkButton" name="SRC_qc">
-               <property name="geometry">
-                <rect>
-                 <x>40</x>
-                 <y>500</y>
-                 <width>251</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>SRC Quality Control...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-               </property>
-               <property name="autoRepeatDelay">
-                <number>296</number>
-               </property>
-               <property name="description">
-                <string>Select SRC files to run QC</string>
-               </property>
-              </widget>
-              <widget class="QCommandLinkButton" name="FIB_qc">
-               <property name="geometry">
-                <rect>
-                 <x>40</x>
-                 <y>560</y>
-                 <width>251</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>FIB Quality Control...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-               </property>
-               <property name="autoRepeatDelay">
-                <number>296</number>
-               </property>
-               <property name="description">
-                <string>Select FIB files to run QC</string>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_68">
-               <property name="geometry">
-                <rect>
-                 <x>25</x>
-                 <y>430</y>
-                 <width>280</width>
-                 <height>201</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-              </widget>
-              <zorder>label_40</zorder>
-              <zorder>label_68</zorder>
-              <zorder>label_67</zorder>
-              <zorder>label_66</zorder>
-              <zorder>line_4</zorder>
-              <zorder>label_57</zorder>
-              <zorder>label_15</zorder>
-              <zorder>FiberTracking</zorder>
-              <zorder>label_64</zorder>
-              <zorder>label_17</zorder>
-              <zorder>label_55</zorder>
-              <zorder>label_13</zorder>
-              <zorder>OpenDWI_NIFTI</zorder>
-              <zorder>Reconstruction</zorder>
-              <zorder>label_16</zorder>
-              <zorder>OpenDWI_DICOM</zorder>
-              <zorder>label_28</zorder>
-              <zorder>label_2</zorder>
-              <zorder>label_3</zorder>
-              <zorder>label_27</zorder>
-              <zorder>clear_src_history</zorder>
-              <zorder>clear_fib_history</zorder>
-              <zorder>open_selected_src</zorder>
-              <zorder>open_selected_fib</zorder>
-              <zorder>recentFib</zorder>
-              <zorder>recentSrc</zorder>
-              <zorder>OpenDWI_2dseq</zorder>
-              <zorder>label_14</zorder>
-              <zorder>label_51</zorder>
-              <zorder>label_45</zorder>
-              <zorder>NII_qc</zorder>
-              <zorder>SRC_qc</zorder>
-              <zorder>FIB_qc</zorder>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="tab_2">
-       <attribute name="icon">
-        <iconset resource="icons.qrc">
-         <normaloff>:/icons/icons/tracts.xpm</normaloff>:/icons/icons/tracts.xpm</iconset>
-       </attribute>
-       <attribute name="title">
-        <string>FIB Template &amp;&amp; Tractography Atlas</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout">
-        <property name="spacing">
-         <number>0</number>
-        </property>
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
-         <number>0</number>
-        </property>
-        <item>
-         <widget class="QScrollArea" name="scrollArea_2">
-          <property name="widgetResizable">
-           <bool>true</bool>
-          </property>
-          <widget class="QWidget" name="scrollAreaWidgetContents_2">
-           <property name="geometry">
-            <rect>
-             <x>0</x>
-             <y>0</y>
-             <width>1252</width>
-             <height>800</height>
-            </rect>
-           </property>
-           <layout class="QVBoxLayout" name="verticalLayout_4">
-            <property name="spacing">
-             <number>0</number>
-            </property>
-            <property name="leftMargin">
-             <number>0</number>
-            </property>
-            <property name="topMargin">
-             <number>0</number>
-            </property>
-            <property name="rightMargin">
-             <number>0</number>
-            </property>
-            <property name="bottomMargin">
-             <number>0</number>
-            </property>
-            <item>
-             <widget class="QWidget" name="widget_6" native="true">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>800</height>
-               </size>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">QWidget { color: black;  background-color : white; }</string>
-              </property>
-              <widget class="QWidget" name="widget_4" native="true">
-               <property name="geometry">
-                <rect>
-                 <x>10</x>
-                 <y>0</y>
-                 <width>641</width>
-                 <height>351</height>
-                </rect>
-               </property>
-               <widget class="QLabel" name="label_58">
-                <property name="geometry">
-                 <rect>
-                  <x>15</x>
-                  <y>20</y>
-                  <width>280</width>
-                  <height>320</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_18">
-                <property name="geometry">
-                 <rect>
-                  <x>335</x>
-                  <y>20</y>
-                  <width>250</width>
-                  <height>320</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="pixmap">
-                 <pixmap resource="icons.qrc">:/icons/icons/tractogram.png</pixmap>
-                </property>
-               </widget>
-               <widget class="QListWidget" name="template_list">
-                <property name="geometry">
-                 <rect>
-                  <x>25</x>
-                  <y>80</y>
-                  <width>261</width>
-                  <height>251</height>
-                 </rect>
-                </property>
-                <property name="font">
-                 <font>
-                  <pointsize>11</pointsize>
-                 </font>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QListWidget {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black;alternate-background-color: white}</string>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_4">
-                <property name="geometry">
-                 <rect>
-                  <x>35</x>
-                  <y>30</y>
-                  <width>141</width>
-                  <height>41</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel { color: black; }</string>
-                </property>
-                <property name="text">
-                 <string>Population-averaged FIB templates</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignCenter</set>
-                </property>
-                <property name="wordWrap">
-                 <bool>true</bool>
-                </property>
-               </widget>
-               <widget class="Line" name="line_7">
-                <property name="geometry">
-                 <rect>
-                  <x>145</x>
-                  <y>160</y>
-                  <width>411</width>
-                  <height>21</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">Line { background-color: black; color: black; }</string>
-                </property>
-                <property name="frameShadow">
-                 <enum>QFrame::Plain</enum>
-                </property>
-                <property name="lineWidth">
-                 <number>20</number>
-                </property>
-                <property name="midLineWidth">
-                 <number>0</number>
-                </property>
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-               </widget>
-               <widget class="QPushButton" name="TemplateFiberTracking">
-                <property name="enabled">
-                 <bool>true</bool>
-                </property>
-                <property name="geometry">
-                 <rect>
-                  <x>195</x>
-                  <y>30</y>
-                  <width>81</width>
-                  <height>41</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QPushButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-                </property>
-                <property name="text">
-                 <string>Load...</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="icons.qrc">
-                  <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_29">
-                <property name="geometry">
-                 <rect>
-                  <x>385</x>
-                  <y>150</y>
-                  <width>171</width>
-                  <height>61</height>
-                 </rect>
-                </property>
-                <property name="font">
-                 <font>
-                  <pointsize>12</pointsize>
-                  <bold>true</bold>
-                 </font>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 157); color: black; }</string>
-                </property>
-                <property name="text">
-                 <string>Template-Based
-Tractography</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignCenter</set>
-                </property>
-                <property name="wordWrap">
-                 <bool>true</bool>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_8">
-                <property name="geometry">
-                 <rect>
-                  <x>-10</x>
-                  <y>10</y>
-                  <width>611</width>
-                  <height>341</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel { border: 0px; background-color: rgba(225, 125,125, 127); }</string>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-               <zorder>label_8</zorder>
-               <zorder>line_7</zorder>
-               <zorder>label_58</zorder>
-               <zorder>label_18</zorder>
-               <zorder>template_list</zorder>
-               <zorder>label_4</zorder>
-               <zorder>TemplateFiberTracking</zorder>
-               <zorder>label_29</zorder>
-              </widget>
-              <widget class="QWidget" name="widget_3" native="true">
-               <property name="geometry">
-                <rect>
-                 <x>-10</x>
-                 <y>350</y>
-                 <width>661</width>
-                 <height>351</height>
-                </rect>
-               </property>
-               <widget class="QLabel" name="label_53">
-                <property name="geometry">
-                 <rect>
-                  <x>410</x>
-                  <y>140</y>
-                  <width>151</width>
-                  <height>91</height>
-                 </rect>
-                </property>
-                <property name="font">
-                 <font>
-                  <pointsize>12</pointsize>
-                  <bold>true</bold>
-                 </font>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 157); color: black; }</string>
-                </property>
-                <property name="text">
-                 <string>Tractography
-Atlas</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignCenter</set>
-                </property>
-                <property name="wordWrap">
-                 <bool>true</bool>
-                </property>
-               </widget>
-               <widget class="Line" name="line_6">
-                <property name="geometry">
-                 <rect>
-                  <x>85</x>
-                  <y>170</y>
-                  <width>501</width>
-                  <height>21</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">Line { background-color: black; color: black; }</string>
-                </property>
-                <property name="frameShadow">
-                 <enum>QFrame::Plain</enum>
-                </property>
-                <property name="lineWidth">
-                 <number>20</number>
-                </property>
-                <property name="midLineWidth">
-                 <number>0</number>
-                </property>
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_26">
-                <property name="geometry">
-                 <rect>
-                  <x>355</x>
-                  <y>20</y>
-                  <width>250</width>
-                  <height>320</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="pixmap">
-                 <pixmap resource="icons.qrc">:/icons/icons/tractogram.png</pixmap>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_9">
-                <property name="geometry">
-                 <rect>
-                  <x>99</x>
-                  <y>47</y>
-                  <width>151</width>
-                  <height>171</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="pixmap">
-                 <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_60">
-                <property name="geometry">
-                 <rect>
-                  <x>35</x>
-                  <y>20</y>
-                  <width>280</width>
-                  <height>320</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-               <widget class="QCommandLinkButton" name="T1WFiberTracking">
-                <property name="geometry">
-                 <rect>
-                  <x>55</x>
-                  <y>240</y>
-                  <width>250</width>
-                  <height>81</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-                </property>
-                <property name="text">
-                 <string>T1W/T2W Aligned Tractography</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="icons.qrc">
-                  <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                </property>
-                <property name="autoRepeatDelay">
-                 <number>296</number>
-                </property>
-                <property name="description">
-                 <string>Open T1W/T2W with aligned tractography atlas</string>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_52">
-                <property name="geometry">
-                 <rect>
-                  <x>104</x>
-                  <y>97</y>
-                  <width>151</width>
-                  <height>61</height>
-                 </rect>
-                </property>
-                <property name="font">
-                 <font>
-                  <pointsize>12</pointsize>
-                  <bold>true</bold>
-                 </font>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 157); color: black; }</string>
-                </property>
-                <property name="text">
-                 <string>T1W/T2W
-(*.nii.gz)</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignCenter</set>
-                </property>
-                <property name="wordWrap">
-                 <bool>true</bool>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_7">
-                <property name="geometry">
-                 <rect>
-                  <x>20</x>
-                  <y>10</y>
-                  <width>601</width>
-                  <height>341</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel { border: 0px; background-color: rgba(225, 225,125, 127); }</string>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-               <zorder>label_7</zorder>
-               <zorder>line_6</zorder>
-               <zorder>label_26</zorder>
-               <zorder>label_60</zorder>
-               <zorder>label_53</zorder>
-               <zorder>label_9</zorder>
-               <zorder>T1WFiberTracking</zorder>
-               <zorder>label_52</zorder>
-              </widget>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="tab_3">
-       <attribute name="icon">
-        <iconset resource="icons.qrc">
-         <normaloff>:/icons/icons/tracts.xpm</normaloff>:/icons/icons/tracts.xpm</iconset>
-       </attribute>
-       <attribute name="title">
-        <string>Correlational Tractography</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_5">
-        <property name="spacing">
-         <number>0</number>
-        </property>
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
-         <number>0</number>
-        </property>
-        <item>
-         <widget class="QScrollArea" name="scrollArea_3">
-          <property name="widgetResizable">
-           <bool>true</bool>
-          </property>
-          <widget class="QWidget" name="scrollAreaWidgetContents_3">
-           <property name="geometry">
-            <rect>
-             <x>0</x>
-             <y>0</y>
-             <width>1266</width>
-             <height>700</height>
-            </rect>
-           </property>
-           <layout class="QVBoxLayout" name="verticalLayout_6">
-            <property name="spacing">
-             <number>0</number>
-            </property>
-            <property name="leftMargin">
-             <number>0</number>
-            </property>
-            <property name="topMargin">
-             <number>0</number>
-            </property>
-            <property name="rightMargin">
-             <number>0</number>
-            </property>
-            <property name="bottomMargin">
-             <number>0</number>
-            </property>
-            <item>
-             <widget class="QWidget" name="widget_7" native="true">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>500</height>
-               </size>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">QWidget { color: black;  background-color : white; }</string>
-              </property>
-              <widget class="QWidget" name="widget_2" native="true">
-               <property name="geometry">
-                <rect>
-                 <x>10</x>
-                 <y>0</y>
-                 <width>921</width>
-                 <height>451</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true"/>
-               </property>
-               <widget class="QLabel" name="label_19">
-                <property name="geometry">
-                 <rect>
-                  <x>650</x>
-                  <y>20</y>
-                  <width>250</width>
-                  <height>320</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="pixmap">
-                 <pixmap resource="icons.qrc">:/icons/icons/tractogram.png</pixmap>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_25">
-                <property name="geometry">
-                 <rect>
-                  <x>355</x>
-                  <y>54</y>
-                  <width>250</width>
-                  <height>171</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="pixmap">
-                 <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
-                </property>
-               </widget>
-               <widget class="QCommandLinkButton" name="group_connectometry">
-                <property name="geometry">
-                 <rect>
-                  <x>344</x>
-                  <y>230</y>
-                  <width>251</width>
-                  <height>91</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-                </property>
-                <property name="text">
-                 <string>Step C3: Correlational Tracking</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="icons.qrc">
-                  <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                </property>
-                <property name="description">
-                 <string>Generate correlational tractography and test the results using connectometry analysis</string>
-                </property>
-               </widget>
-               <widget class="QCommandLinkButton" name="vbc">
-                <property name="geometry">
-                 <rect>
-                  <x>30</x>
-                  <y>210</y>
-                  <width>250</width>
-                  <height>81</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-                </property>
-                <property name="text">
-                 <string>Step C1: Create a Database</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="icons.qrc">
-                  <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                </property>
-                <property name="description">
-                 <string>Aggregate FIB files to create a database</string>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_62">
-                <property name="geometry">
-                 <rect>
-                  <x>330</x>
-                  <y>20</y>
-                  <width>280</width>
-                  <height>321</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_23">
-                <property name="geometry">
-                 <rect>
-                  <x>370</x>
-                  <y>90</y>
-                  <width>221</width>
-                  <height>61</height>
-                 </rect>
-                </property>
-                <property name="font">
-                 <font>
-                  <pointsize>12</pointsize>
-                  <bold>true</bold>
-                 </font>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
-                </property>
-                <property name="text">
-                 <string>Database File(*.dz)</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignCenter</set>
-                </property>
-                <property name="wordWrap">
-                 <bool>true</bool>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_22">
-                <property name="geometry">
-                 <rect>
-                  <x>45</x>
-                  <y>30</y>
-                  <width>220</width>
-                  <height>170</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="pixmap">
-                 <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_21">
-                <property name="geometry">
-                 <rect>
-                  <x>339</x>
-                  <y>30</y>
-                  <width>250</width>
-                  <height>171</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="pixmap">
-                 <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_20">
-                <property name="geometry">
-                 <rect>
-                  <x>90</x>
-                  <y>90</y>
-                  <width>141</width>
-                  <height>61</height>
-                 </rect>
-                </property>
-                <property name="font">
-                 <font>
-                  <pointsize>12</pointsize>
-                  <bold>true</bold>
-                 </font>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
-                </property>
-                <property name="text">
-                 <string>FIB File(*.fz)</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignCenter</set>
-                </property>
-                <property name="wordWrap">
-                 <bool>true</bool>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_30">
-                <property name="geometry">
-                 <rect>
-                  <x>690</x>
-                  <y>150</y>
-                  <width>171</width>
-                  <height>61</height>
-                 </rect>
-                </property>
-                <property name="font">
-                 <font>
-                  <pointsize>12</pointsize>
-                  <bold>true</bold>
-                 </font>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
-                </property>
-                <property name="text">
-                 <string>Correlational
-Tractography</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignCenter</set>
-                </property>
-                <property name="wordWrap">
-                 <bool>true</bool>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_61">
-                <property name="geometry">
-                 <rect>
-                  <x>15</x>
-                  <y>20</y>
-                  <width>280</width>
-                  <height>281</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_24">
-                <property name="geometry">
-                 <rect>
-                  <x>347</x>
-                  <y>42</y>
-                  <width>250</width>
-                  <height>171</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="pixmap">
-                 <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
-                </property>
-               </widget>
-               <widget class="QCommandLinkButton" name="open_db">
-                <property name="geometry">
-                 <rect>
-                  <x>350</x>
-                  <y>350</y>
-                  <width>250</width>
-                  <height>81</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-                </property>
-                <property name="text">
-                 <string>Step C2: View/Edit Database</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="icons.qrc">
-                  <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                </property>
-                <property name="description">
-                 <string>Add or remove subjects, calculate longitudinal change</string>
-                </property>
-               </widget>
-               <widget class="Line" name="line_5">
-                <property name="geometry">
-                 <rect>
-                  <x>150</x>
-                  <y>170</y>
-                  <width>671</width>
-                  <height>21</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">Line { background-color: black; color: black; }</string>
-                </property>
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-               </widget>
-               <widget class="QLabel" name="label_5">
-                <property name="geometry">
-                 <rect>
-                  <x>0</x>
-                  <y>10</y>
-                  <width>921</width>
-                  <height>441</height>
-                 </rect>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">QLabel { border: 0px; background-color: rgba(155, 225, 225, 127); }</string>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-               <zorder>label_5</zorder>
-               <zorder>line_5</zorder>
-               <zorder>label_61</zorder>
-               <zorder>label_62</zorder>
-               <zorder>label_19</zorder>
-               <zorder>group_connectometry</zorder>
-               <zorder>vbc</zorder>
-               <zorder>label_22</zorder>
-               <zorder>label_21</zorder>
-               <zorder>label_20</zorder>
-               <zorder>label_30</zorder>
-               <zorder>label_24</zorder>
-               <zorder>open_db</zorder>
-               <zorder>label_25</zorder>
-               <zorder>label_23</zorder>
-              </widget>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="tab_5">
-       <attribute name="icon">
-        <iconset resource="icons.qrc">
-         <normaloff>:/icons/icons/tracts.xpm</normaloff>:/icons/icons/tracts.xpm</iconset>
-       </attribute>
-       <attribute name="title">
-        <string>Tractography (Batch)</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_9">
-        <property name="spacing">
-         <number>0</number>
-        </property>
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
-         <number>0</number>
-        </property>
-        <item>
-         <widget class="QScrollArea" name="scrollArea_4">
-          <property name="widgetResizable">
-           <bool>true</bool>
-          </property>
-          <widget class="QWidget" name="scrollAreaWidgetContents_4">
-           <property name="geometry">
-            <rect>
-             <x>0</x>
-             <y>0</y>
-             <width>1266</width>
-             <height>700</height>
-            </rect>
-           </property>
-           <layout class="QVBoxLayout" name="verticalLayout_10">
-            <property name="spacing">
-             <number>0</number>
-            </property>
-            <property name="leftMargin">
-             <number>0</number>
-            </property>
-            <property name="topMargin">
-             <number>0</number>
-            </property>
-            <property name="rightMargin">
-             <number>0</number>
-            </property>
-            <property name="bottomMargin">
-             <number>0</number>
-            </property>
-            <item>
-             <widget class="QWidget" name="widget_8" native="true">
-              <property name="minimumSize">
-               <size>
-                <width>1250</width>
-                <height>700</height>
-               </size>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">QWidget { color: black;  background-color : white; }</string>
-              </property>
-              <widget class="QCommandLinkButton" name="RenameDICOMDir">
-               <property name="geometry">
-                <rect>
-                 <x>40</x>
-                 <y>560</y>
-                 <width>250</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Step B1b: Rename DICOM in Folders...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-               </property>
-               <property name="autoRepeatDelay">
-                <number>296</number>
-               </property>
-               <property name="description">
-                <string>Rename all DICOM of a folder</string>
-               </property>
-              </widget>
-              <widget class="QCommandLinkButton" name="nii2src_bids">
-               <property name="geometry">
-                <rect>
-                 <x>40</x>
-                 <y>170</y>
-                 <width>250</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Step B2a: NIFTI to SRC (BIDS)...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-               </property>
-               <property name="autoRepeatDelay">
-                <number>296</number>
-               </property>
-               <property name="description">
-                <string>Convert a BIDS folder to SRC(s)</string>
-               </property>
-              </widget>
-              <widget class="QCommandLinkButton" name="dicom2nii">
-               <property name="geometry">
-                <rect>
-                 <x>40</x>
-                 <y>440</y>
-                 <width>250</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Step B1c: DICOM to SRC...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-               </property>
-               <property name="autoRepeatDelay">
-                <number>296</number>
-               </property>
-               <property name="description">
-                <string>Convert a DICOM folder to SRC</string>
-               </property>
-              </widget>
-              <widget class="QCommandLinkButton" name="nii2src_sf">
-               <property name="geometry">
-                <rect>
-                 <x>40</x>
-                 <y>230</y>
-                 <width>250</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Step B2b: NIFTI(s) to SRC(s)...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-               </property>
-               <property name="autoRepeatDelay">
-                <number>296</number>
-               </property>
-               <property name="description">
-                <string>Convert a folder of NIFTI to SRC(s)</string>
-               </property>
-              </widget>
-              <widget class="QCommandLinkButton" name="RenameDICOM">
-               <property name="geometry">
-                <rect>
-                 <x>40</x>
-                 <y>500</y>
-                 <width>250</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Step B1a: Rename DICOM...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-               </property>
-               <property name="autoRepeatDelay">
-                <number>296</number>
-               </property>
-               <property name="description">
-                <string>Rename DICOM files </string>
-               </property>
-              </widget>
-              <widget class="QCommandLinkButton" name="auto_track">
-               <property name="geometry">
-                <rect>
-                 <x>675</x>
-                 <y>210</y>
-                 <width>261</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Step B4: Automatic Tracking...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-               </property>
-               <property name="autoRepeatDelay">
-                <number>296</number>
-               </property>
-               <property name="description">
-                <string>Select FIB files for automatic tracking</string>
-               </property>
-              </widget>
-              <widget class="QCommandLinkButton" name="batch_reconstruction">
-               <property name="geometry">
-                <rect>
-                 <x>360</x>
-                 <y>210</y>
-                 <width>250</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Step B3: SRC(s) to FIB(s)...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-               </property>
-               <property name="autoRepeatDelay">
-                <number>296</number>
-               </property>
-               <property name="description">
-                <string>Select a SRC file folder for reconstruction</string>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_56">
-               <property name="geometry">
-                <rect>
-                 <x>345</x>
-                 <y>20</y>
-                 <width>280</width>
-                 <height>261</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black;}</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_31">
-               <property name="geometry">
-                <rect>
-                 <x>361</x>
-                 <y>30</y>
-                 <width>171</width>
-                 <height>170</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="pixmap">
-                <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_65">
-               <property name="geometry">
-                <rect>
-                 <x>25</x>
-                 <y>20</y>
-                 <width>280</width>
-                 <height>621</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black;}</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_32">
-               <property name="geometry">
-                <rect>
-                 <x>705</x>
-                 <y>90</y>
-                 <width>191</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="font">
-                <font>
-                 <pointsize>15</pointsize>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127);color: black }</string>
-               </property>
-               <property name="text">
-                <string>FIB File (*.fz)</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_33">
-               <property name="geometry">
-                <rect>
-                 <x>385</x>
-                 <y>90</y>
-                 <width>191</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="font">
-                <font>
-                 <pointsize>15</pointsize>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
-               </property>
-               <property name="text">
-                <string>SRC File (*.sz)</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_59">
-               <property name="geometry">
-                <rect>
-                 <x>665</x>
-                 <y>20</y>
-                 <width>280</width>
-                 <height>261</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black;}</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-              </widget>
-              <widget class="Line" name="line_8">
-               <property name="geometry">
-                <rect>
-                 <x>145</x>
-                 <y>170</y>
-                 <width>941</width>
-                 <height>21</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">Line { background-color: black; color: black; }</string>
-               </property>
-               <property name="frameShadow">
-                <enum>QFrame::Plain</enum>
-               </property>
-               <property name="lineWidth">
-                <number>20</number>
-               </property>
-               <property name="midLineWidth">
-                <number>0</number>
-               </property>
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_35">
-               <property name="geometry">
-                <rect>
-                 <x>985</x>
-                 <y>20</y>
-                 <width>250</width>
-                 <height>321</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black;}</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="pixmap">
-                <pixmap resource="icons.qrc">:/icons/icons/tractogram.png</pixmap>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_36">
-               <property name="geometry">
-                <rect>
-                 <x>1025</x>
-                 <y>150</y>
-                 <width>171</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="font">
-                <font>
-                 <pointsize>15</pointsize>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Tractography</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_37">
-               <property name="geometry">
-                <rect>
-                 <x>675</x>
-                 <y>30</y>
-                 <width>261</width>
-                 <height>170</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="pixmap">
-                <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_38">
-               <property name="geometry">
-                <rect>
-                 <x>530</x>
-                 <y>30</y>
-                 <width>81</width>
-                 <height>170</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: rgba(128, 128, 128, 127);}</string>
-               </property>
-               <property name="text">
-                <string>B-table
-0    0 0 0
-1000    1 0 0
-1000    0 1 0
-1000    0 0 1
-...
- </string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_46">
-               <property name="geometry">
-                <rect>
-                 <x>100</x>
-                 <y>30</y>
-                 <width>121</width>
-                 <height>131</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="pixmap">
-                <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
-               </property>
-               <property name="scaledContents">
-                <bool>true</bool>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_47">
-               <property name="geometry">
-                <rect>
-                 <x>50</x>
-                 <y>50</y>
-                 <width>211</width>
-                 <height>81</height>
-                </rect>
-               </property>
-               <property name="font">
-                <font>
-                 <pointsize>15</pointsize>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
-               </property>
-               <property name="text">
-                <string>NIFTI
-*.nii.gz+bval/bvec</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_34">
-               <property name="geometry">
-                <rect>
-                 <x>100</x>
-                 <y>300</y>
-                 <width>121</width>
-                 <height>131</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="pixmap">
-                <pixmap resource="icons.qrc">:/icons/icons/dwi.png</pixmap>
-               </property>
-               <property name="scaledContents">
-                <bool>true</bool>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_48">
-               <property name="geometry">
-                <rect>
-                 <x>80</x>
-                 <y>340</y>
-                 <width>151</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="font">
-                <font>
-                 <pointsize>15</pointsize>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127); color: black; }</string>
-               </property>
-               <property name="text">
-                <string>DICOM
-*.dcm</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-              <widget class="QCommandLinkButton" name="xnat_download">
-               <property name="geometry">
-                <rect>
-                 <x>345</x>
-                 <y>550</y>
-                 <width>280</width>
-                 <height>81</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Step B0: XNAT Download...</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/preferences.xpm</normaloff>:/icons/icons/preferences.xpm</iconset>
-               </property>
-               <property name="autoRepeatDelay">
-                <number>296</number>
-               </property>
-               <property name="description">
-                <string>connect to a XNAT server to download and process data</string>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_41">
-               <property name="geometry">
-                <rect>
-                 <x>10</x>
-                 <y>10</y>
-                 <width>1241</width>
-                 <height>641</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel { border: 0px; background-color: rgba(100, 100,100, 127); }</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_39">
-               <property name="geometry">
-                <rect>
-                 <x>680</x>
-                 <y>372</y>
-                 <width>250</width>
-                 <height>171</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="pixmap">
-                <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_43">
-               <property name="geometry">
-                <rect>
-                 <x>672</x>
-                 <y>360</y>
-                 <width>250</width>
-                 <height>171</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="pixmap">
-                <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_44">
-               <property name="geometry">
-                <rect>
-                 <x>688</x>
-                 <y>384</y>
-                 <width>250</width>
-                 <height>171</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;}</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="pixmap">
-                <pixmap resource="icons.qrc">:/icons/icons/fib.png</pixmap>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_69">
-               <property name="geometry">
-                <rect>
-                 <x>665</x>
-                 <y>350</y>
-                 <width>280</width>
-                 <height>281</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-              </widget>
-              <widget class="QCommandLinkButton" name="averagefib">
-               <property name="geometry">
-                <rect>
-                 <x>675</x>
-                 <y>560</y>
-                 <width>261</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
-               </property>
-               <property name="text">
-                <string>Create Population Average</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-               </property>
-               <property name="autoRepeatDelay">
-                <number>296</number>
-               </property>
-               <property name="description">
-                <string>Select FIB or NIFTI files for averaging</string>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_49">
-               <property name="geometry">
-                <rect>
-                 <x>720</x>
-                 <y>440</y>
-                 <width>191</width>
-                 <height>61</height>
-                </rect>
-               </property>
-               <property name="font">
-                <font>
-                 <pointsize>15</pointsize>
-                 <bold>true</bold>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QLabel { background-color: rgba(255, 255, 255, 127);color: black }</string>
-               </property>
-               <property name="text">
-                <string>FIB Files (*.fz)
- NIFTI Files (*.nii.gz)</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-              <zorder>label_41</zorder>
-              <zorder>label_69</zorder>
-              <zorder>line_8</zorder>
-              <zorder>label_65</zorder>
-              <zorder>label_59</zorder>
-              <zorder>label_56</zorder>
-              <zorder>RenameDICOMDir</zorder>
-              <zorder>nii2src_bids</zorder>
-              <zorder>dicom2nii</zorder>
-              <zorder>nii2src_sf</zorder>
-              <zorder>RenameDICOM</zorder>
-              <zorder>auto_track</zorder>
-              <zorder>batch_reconstruction</zorder>
-              <zorder>label_31</zorder>
-              <zorder>label_35</zorder>
-              <zorder>label_36</zorder>
-              <zorder>label_37</zorder>
-              <zorder>label_38</zorder>
-              <zorder>label_46</zorder>
-              <zorder>label_47</zorder>
-              <zorder>label_34</zorder>
-              <zorder>label_48</zorder>
-              <zorder>xnat_download</zorder>
-              <zorder>label_33</zorder>
-              <zorder>label_32</zorder>
-              <zorder>label_43</zorder>
-              <zorder>label_39</zorder>
-              <zorder>label_44</zorder>
-              <zorder>averagefib</zorder>
-              <zorder>label_49</zorder>
-             </widget>
-            </item>
-           </layout>
+              </spacer>
+             </item>
+            </layout>
+           </widget>
           </widget>
          </widget>
         </item>
@@ -3790,9 +2361,9 @@ Tractography</string>
           <widget class="QLabel" name="label_63">
            <property name="geometry">
             <rect>
-             <x>20</x>
-             <y>120</y>
-             <width>301</width>
+             <x>640</x>
+             <y>210</y>
+             <width>321</width>
              <height>81</height>
             </rect>
            </property>
@@ -3806,8 +2377,8 @@ Tractography</string>
           <widget class="QLabel" name="label_11">
            <property name="geometry">
             <rect>
-             <x>40</x>
-             <y>134</y>
+             <x>660</x>
+             <y>240</y>
              <width>101</width>
              <height>20</height>
             </rect>
@@ -3828,8 +2399,8 @@ Tractography</string>
           <widget class="QPushButton" name="clear_settings">
            <property name="geometry">
             <rect>
-             <x>220</x>
-             <y>130</y>
+             <x>840</x>
+             <y>236</y>
              <width>93</width>
              <height>29</height>
             </rect>
@@ -3844,8 +2415,8 @@ Tractography</string>
           <widget class="QComboBox" name="styles">
            <property name="geometry">
             <rect>
-             <x>140</x>
-             <y>131</y>
+             <x>760</x>
+             <y>237</y>
              <width>80</width>
              <height>26</height>
             </rect>
@@ -3867,6 +2438,152 @@ Tractography</string>
             <string/>
            </property>
           </widget>
+          <widget class="QCommandLinkButton" name="xnat_download">
+           <property name="geometry">
+            <rect>
+             <x>330</x>
+             <y>120</y>
+             <width>301</width>
+             <height>81</height>
+            </rect>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+           </property>
+           <property name="text">
+            <string>Step B0: XNAT Download...</string>
+           </property>
+           <property name="icon">
+            <iconset resource="icons.qrc">
+             <normaloff>:/icons/icons/preferences.xpm</normaloff>:/icons/icons/preferences.xpm</iconset>
+           </property>
+           <property name="autoRepeatDelay">
+            <number>296</number>
+           </property>
+           <property name="description">
+            <string>connect to a XNAT server to download and process data</string>
+           </property>
+          </widget>
+          <widget class="QCommandLinkButton" name="averagefib">
+           <property name="geometry">
+            <rect>
+             <x>20</x>
+             <y>120</y>
+             <width>301</width>
+             <height>81</height>
+            </rect>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+           </property>
+           <property name="text">
+            <string>Create Population Average</string>
+           </property>
+           <property name="icon">
+            <iconset resource="icons.qrc">
+             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+           </property>
+           <property name="autoRepeatDelay">
+            <number>296</number>
+           </property>
+           <property name="description">
+            <string>Select FIB or NIFTI files for averaging</string>
+           </property>
+          </widget>
+          <widget class="QLabel" name="label_68">
+           <property name="geometry">
+            <rect>
+             <x>640</x>
+             <y>300</y>
+             <width>321</width>
+             <height>221</height>
+            </rect>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QLabel {border: 2px solid gray;border-radius: 15px;padding: 5px;color: black; }</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+          <widget class="QCommandLinkButton" name="NII_qc">
+           <property name="geometry">
+            <rect>
+             <x>670</x>
+             <y>320</y>
+             <width>251</width>
+             <height>61</height>
+            </rect>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+           </property>
+           <property name="text">
+            <string>NIFTI Quality Control...</string>
+           </property>
+           <property name="icon">
+            <iconset resource="icons.qrc">
+             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+           </property>
+           <property name="autoRepeatDelay">
+            <number>296</number>
+           </property>
+           <property name="description">
+            <string>Select NIFTI files to run QC</string>
+           </property>
+          </widget>
+          <widget class="QCommandLinkButton" name="FIB_qc">
+           <property name="geometry">
+            <rect>
+             <x>670</x>
+             <y>440</y>
+             <width>251</width>
+             <height>61</height>
+            </rect>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+           </property>
+           <property name="text">
+            <string>FIB Quality Control...</string>
+           </property>
+           <property name="icon">
+            <iconset resource="icons.qrc">
+             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+           </property>
+           <property name="autoRepeatDelay">
+            <number>296</number>
+           </property>
+           <property name="description">
+            <string>Select FIB files to run QC</string>
+           </property>
+          </widget>
+          <widget class="QCommandLinkButton" name="SRC_qc">
+           <property name="geometry">
+            <rect>
+             <x>670</x>
+             <y>380</y>
+             <width>251</width>
+             <height>61</height>
+            </rect>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QCommandLinkButton {border: 2px solid #8f8f91;border-radius: 6px;background-color: #e7e7e7;padding: 10px;color: black;} QCommandLinkButton:hover {background-color: #d0d0d0;} QCommandLinkButton:pressed {background-color: #bfbfbf;border-style: inset;color: black; }</string>
+           </property>
+           <property name="text">
+            <string>SRC Quality Control...</string>
+           </property>
+           <property name="icon">
+            <iconset resource="icons.qrc">
+             <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
+           </property>
+           <property name="autoRepeatDelay">
+            <number>296</number>
+           </property>
+           <property name="description">
+            <string>Select SRC files to run QC</string>
+           </property>
+          </widget>
           <zorder>label_12</zorder>
           <zorder>parse_network_measures</zorder>
           <zorder>linear_reg</zorder>
@@ -3876,6 +2593,12 @@ Tractography</string>
           <zorder>label_11</zorder>
           <zorder>clear_settings</zorder>
           <zorder>styles</zorder>
+          <zorder>xnat_download</zorder>
+          <zorder>averagefib</zorder>
+          <zorder>label_68</zorder>
+          <zorder>NII_qc</zorder>
+          <zorder>FIB_qc</zorder>
+          <zorder>SRC_qc</zorder>
          </widget>
         </item>
        </layout>
