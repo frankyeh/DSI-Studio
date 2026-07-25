@@ -558,6 +558,7 @@ int main(int ac, char *av[])
             w.openFile(QStringList() << av[1]);
 
         QLocalServer server;
+        server.setSocketOptions(QLocalServer::WorldAccessOption);
         if(server.listen("dsi-studio"))
         {
             QObject::connect(&server, &QLocalServer::newConnection, [&server,&w]()
@@ -599,6 +600,8 @@ int main(int ac, char *av[])
                 }
             });
         }
+        else
+            tipl::error() << "cannot start local server: " << server.errorString().toStdString();
         if(po.has("action"))
         {
             auto result = run_action_with_wildcard(po);
