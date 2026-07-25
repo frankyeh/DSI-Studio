@@ -1,3 +1,4 @@
+#include <atomic>
 #include "libs/dsi/image_model.hpp"
 #include "fib_data.hpp"
 
@@ -7,9 +8,10 @@ std::string quality_check_src_files(const std::vector<std::filesystem::path>& fi
     std::ostringstream out;
     out << "file name\tdimension\tresolution\tdwi count(b0/dwi)\tmax b-value\tDWI contrast\tneighboring DWI correlation\tneighboring DWI correlation(masked)\t#bad slices\toutlier" << std::endl;
     std::vector<std::vector<std::string> > output(file_list.size());
+    std::vector<std::string> errors(file_list.size());
     std::vector<float> ndc(file_list.size());
     tipl::progress prog("checking SRC files");
-    size_t p = 0;
+    std::atomic_size_t p = 0;
     tipl::par_for(file_list.size(),[&](size_t i)
     {
         prog(++p,file_list.size());
@@ -19,9 +21,9 @@ std::string quality_check_src_files(const std::vector<std::filesystem::path>& fi
         tipl::out() << "checking " << file_list[i];
         output_each.push_back(file_list[i].filename().u8string());
         src_data handle;
-        if (!handle.load_from_file(file_list[i]))
+        if(!handle.load_from_file(file_list[i]))
         {
-            out << "cannot load SRC file " << file_list[i] ;
+            errors[i] = "cannot load SRC file " + file_list[i].u8string();
             return;
         }
         // output image dimension
@@ -74,6 +76,9 @@ std::string quality_check_src_files(const std::vector<std::filesystem::path>& fi
         output[i] = std::move(output_each);
     });
 
+    for(const auto& error : errors)
+        if(!error.empty())
+            out << error << std::endl;
 
     float outlier_threshold = tipl::outlier_range(ndc.begin(),ndc.end()).first;
     // 3 "scaled" MAD approach. The scale is -1/(sqrt(2)*erfcinv(3/2)) = 1.482602218505602f
