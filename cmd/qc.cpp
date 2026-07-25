@@ -1,10 +1,5 @@
-#include <QString>
-#include <QStringList>
-#include <QFileInfo>
 #include "libs/dsi/image_model.hpp"
 #include "fib_data.hpp"
-
-QStringList search_files(QString dir,QString filter);
 
 std::string quality_check_src_files(const std::vector<std::filesystem::path>& file_list,
                                     bool check_btable,bool use_template,unsigned int template_id)
@@ -95,8 +90,6 @@ std::string quality_check_fib_files(const std::vector<std::filesystem::path>& fi
 {
     std::ostringstream out;
     out << "FileName\tImage dimension\tResolution\tCoherence Index\tR2 (QSDR)" << std::endl;
-    std::vector<std::vector<std::string> > output;
-    std::vector<float> ndc;
     tipl::progress prog("checking FIB files");
     for(int i = 0;prog(i,file_list.size());++i)
     {
@@ -156,23 +149,15 @@ std::string quality_check_nii_files(const std::vector<std::filesystem::path>& fi
             else
                 out << nii.get_image_dimension<4>() << "\t";
             auto sform = uint16_t(nii.nif_header.sform_code);
+            auto trans = nii.get_transformation();
             out << nii.get_voxel_size<3>() << "\t"
                 << data_type[nii.nif_header.datatype] << "\t"
                 << nii.nif_header.scl_slope << "\t"
                 << nii.nif_header.scl_inter << "\t"
                 << (sform < sform_code.size() ? sform_code[sform] : "NIFTI_XFORM_UNKNOWN") << "\t"
-                << nii.get_transformation()[0] << " "
-                << nii.get_transformation()[1] << " "
-                << nii.get_transformation()[2] << " "
-                << nii.get_transformation()[3] << "\t"
-                << nii.get_transformation()[4] << " "
-                << nii.get_transformation()[5] << " "
-                << nii.get_transformation()[6] << " "
-                << nii.get_transformation()[7] << "\t"
-                << nii.get_transformation()[8] << " "
-                << nii.get_transformation()[9] << " "
-                << nii.get_transformation()[10] << " "
-                << nii.get_transformation()[11];
+                << trans[0] << " " << trans[1] << " " << trans[2] << " " << trans[3] << "\t"
+                << trans[4] << " " << trans[5] << " " << trans[6] << " " << trans[7] << "\t"
+                << trans[8] << " " << trans[9] << " " << trans[10] << " " << trans[11];
         }
         out << std::endl;
     }
@@ -203,11 +188,10 @@ int qc(tipl::program_option<tipl::out>& po)
     std::string report_file_name = po.get("output","qc.tsv");
     tipl::out() << "saving " << report_file_name << std::endl;
 
-    if(tipl::ends_with(source,".nii.gz"))
-        return (std::ofstream(report_file_name) << quality_check_nii_files(file_list)) ? 0:1;
-    if(is_fib)
-        return (std::ofstream(report_file_name) << quality_check_fib_files(file_list)) ? 0:1;
-
-    return (std::ofstream(report_file_name) << quality_check_src_files(file_list,
-                    po.get("check_btable",0),po.has("template"),get_template_id(po,0))) ? 0:1;
+    auto report = tipl::ends_with(source,{".nii",".nii.gz"}) ?
+                      quality_check_nii_files(file_list) :
+                      is_fib ? quality_check_fib_files(file_list) :
+                          quality_check_src_files(file_list,po.get("check_btable",0),
+                                                  po.has("template"),get_template_id(po,0));
+    return (std::ofstream(report_file_name) << report) ? 0:1;
 }
