@@ -114,8 +114,9 @@ bool handle_bids_folder(const std::vector<std::filesystem::path>& dwi_nii_files,
               [&](const auto& lhs,const auto& rhs){return std::get<size_t>(lhs) > std::get<size_t>(rhs);});
 
 
-    if(dwi_info.size() > 2 &&
-        std::count_if(dwi_info.begin(),dwi_info.end(),[](auto& each){return std::get<std::string>(each).empty();}) == dwi_info.size())
+    if(dwi_info.size() > 1 &&
+        std::all_of(dwi_info.begin(),dwi_info.end(),
+                    [](const auto& each){return std::get<1>(each).empty();}))
     {
         tipl::out() << "no phase encoding information found in json files, try using file name to determine";
         for(auto& each : dwi_info)
@@ -202,7 +203,7 @@ bool handle_bids_folder(const std::vector<std::filesystem::path>& dwi_nii_files,
             src.rev_pe_src = std::make_shared<src_data>();
             if(!src.rev_pe_src->load_from_file(rev_pe_list,rev_pe_list.size() > 1 /*if more than one file, need bval bvec*/))
             {
-                tipl::warning() << src.error_msg;
+                tipl::warning() << src.rev_pe_src->error_msg;
                 src.rev_pe_src.reset();
             }
         }
@@ -252,16 +253,11 @@ bool nii2src(const std::vector<std::filesystem::path>& dwi_nii_files,
     {
         if(is_bids)
         {
-            std::vector<std::filesystem::path> dwi_list;
-            dwi_list.push_back(dwi_nii_files[i]);
-            for(size_t j = i + 1;j < dwi_nii_files.size();++j)
-                if(dwi_nii_files[j].parent_path() == dwi_nii_files[i].parent_path())
-                {
-                    ++i;
-                    dwi_list.push_back(dwi_nii_files[i]);
-                }
-                else
-                    break;
+            std::vector<std::filesystem::path> dwi_list{dwi_nii_files[i]};
+            while(i+1 < dwi_nii_files.size() &&
+                   dwi_nii_files[i+1].parent_path() == dwi_list.front().parent_path())
+                dwi_list.push_back(dwi_nii_files[++i]);
+
             std::string error_msg;
             if(!handle_bids_folder(dwi_list,output_dir,overwrite,topup_eddy,error_msg))
             {
@@ -296,6 +292,11 @@ int src(tipl::program_option<tipl::out>& po)
 {
     std::filesystem::path source = po.get("source");
     std::vector<std::filesystem::path> file_list,other_file_list;
+    auto search_nii = [](const auto& dir,auto& files)
+    {
+        return tipl::search_filesystem(dir/"*.nii.gz",files)+
+               tipl::search_filesystem(dir/"*.nii",files);
+    };
     if(std::filesystem::is_directory(source))
     {
 
@@ -307,8 +308,7 @@ int src(tipl::program_option<tipl::out>& po)
             if(dwi_nii_files.empty())
             {
                 tipl::out() << "could not find bids format files, try searching NIFTI files in " << source;
-                if(!tipl::search_filesystem(source/"*.nii.gz",dwi_nii_files) &&
-                   !tipl::search_filesystem(source/"*.nii",dwi_nii_files))
+                if(!search_nii(source,dwi_nii_files))
                     tipl::out() << "cannot find NIFTI files in " << source.u8string();
             }
 
@@ -350,8 +350,7 @@ int src(tipl::program_option<tipl::out>& po)
         std::filesystem::path other_source = po.get("other_source");
         if(std::filesystem::is_directory(other_source))
         {
-            if(!(tipl::search_filesystem(other_source/"*.nii.gz",other_file_list)+
-                  tipl::search_filesystem(other_source/"*.nii",other_file_list)))
+            if(!search_nii(other_source,other_file_list))
                 tipl::warning() << "cannot find NIFTI files in " << source;
         }
         else
@@ -363,16 +362,12 @@ int src(tipl::program_option<tipl::out>& po)
         return tipl::error() << "no file found for creating src",1;
 
 
-    auto output = po.get("output",tipl::remove_all_suffix(std::filesystem::path(file_list[0]).filename().string()) + ".sz");
+    auto output_name = tipl::remove_all_suffix(file_list.front().filename().string())+".sz";
+    auto output = po.get("output",output_name);
     if(std::filesystem::is_directory(output))
-        output += std::string("/") + tipl::remove_all_suffix(std::filesystem::path(file_list[0]).filename().string()) + ".sz";
-    if(!tipl::ends_with(output,".sz") && !tipl::ends_with(output,".rz"))
+        output = (std::filesystem::path(output)/output_name).u8string();
+    if(!tipl::ends_with(output,{".sz",".rz"}))
         output += ".sz";
-    if(!po.get("overwrite",0) && std::filesystem::exists(output))
-    {
-        tipl::out() << "skipping " << output << " already exists";
-        return 0;
-    }
 
 
     src_data src;
