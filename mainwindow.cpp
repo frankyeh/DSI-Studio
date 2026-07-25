@@ -1855,9 +1855,20 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         return false;
     };
     const std::string usage =
-        "run_cli <command line> | hub repos | hub tags <repo> | "
+        "list_recent | run_cli <command line> | hub repos | hub tags <repo> | "
         "hub files <repo> <tag> [text] | hub open <repo> <tag> <file> | "
         "hub download <repo> <tag> <file> <dir>";
+
+    if(cmd.size() == 1 && cmd[0] == "list_recent")
+    {
+        for(const auto& file : settings.value("recentSrcFileList").toStringList() +
+                                    settings.value("recentFibFileList").toStringList())
+            if(file.endsWith(".sz",Qt::CaseInsensitive) ||
+                file.endsWith(".fz",Qt::CaseInsensitive))
+                tipl::out() << file.toStdString();
+        return true;
+    }
+
     if(cmd.size() == 2 && cmd[0] == "run_cli")
     {
         tipl::program_option<tipl::out> po;
