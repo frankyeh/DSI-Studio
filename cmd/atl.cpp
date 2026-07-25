@@ -7,7 +7,7 @@ bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std:
 {
     for(const auto& each : tipl::split(atlas_name,','))
     {
-        if(auto at = handle->get_atlas(each);at.get())
+        if(auto at = handle->get_atlas(each))
             atlas_list.push_back(at);
         else
             return tipl::error() << handle->error_msg,false;
@@ -77,22 +77,17 @@ int tmp(tipl::program_option<tipl::out>& po)
     auto name_list = po.get_files("source","*.fz");
     if(name_list.empty())
         return tipl::error() << po.error_msg,1;
-    std::string error_msg;
-    tipl::out() << "constructing a group average template" << std::endl;
-    if(tipl::ends_with(name_list[0].u8string(),{".fib.gz",".fz"}))
-    {
-        if(!odf_average(po.get("output",(name_list[0].parent_path()/"template").u8string()),name_list,error_msg))
-            return tipl::error() << error_msg,1;
-        return 0;
-    }
-    if(tipl::ends_with(name_list[0].u8string(),".nii.gz"))
-    {
-        if(!odf_average(po.get("output",name_list[0].u8string() + ".avg.nii.gz"),name_list,error_msg))
-            return tipl::error() << error_msg,1;
-        return 0;
-    }
-    tipl::error() << "unsupported format" << std::endl;
-    return 1;
+    std::string error_msg,output;
+    auto source = name_list.front().u8string();
+    tipl::out() << "constructing a group average template";
+    if(tipl::ends_with(source,{".fib.gz",".fz"}))
+        output = (name_list.front().parent_path()/"template").u8string();
+    else if(tipl::ends_with(source,".nii.gz"))
+        output = source+".avg.nii.gz";
+    else
+        return tipl::error() << "unsupported format",1;
+    return odf_average(po.get("output",output),name_list,error_msg) ?
+               0 : (tipl::error() << error_msg,1);
 }
 std::shared_ptr<fib_data> cmd_load_fib(tipl::program_option<tipl::out>& po);
 int atl(tipl::program_option<tipl::out>& po)
