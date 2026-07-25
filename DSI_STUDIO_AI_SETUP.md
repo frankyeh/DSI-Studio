@@ -8,6 +8,7 @@ Use this file to connect a local AI agent to an AI-control-enabled DSI Studio. R
 - Obtain the exact path to `dsi_studio.exe` only when DSI Studio must be started or the executable fallback is needed.
 - Obtain access only to the executable (if needed), requested input data, manual, and output directories required for the task.
 - DSI Studio should already be running unless the user explicitly asks the agent to start it.
+- Generate one stable, unique ID for each agent session. Keep the leading `@`, reuse the exact same case-sensitive ID for every request in that session, and never share it with another simultaneous agent.
 
 ## Connect directly
 
@@ -41,12 +42,30 @@ function Invoke-DsiRequest([string]$Request)
     }
 }
 
+$DsiAgentId = '@' + [guid]::NewGuid().ToString('N').Substring(0,12)
+
 function Invoke-Dsi([string[]]$Fields)
 {
-    Invoke-DsiRequest ([string]::Join([char]9, $Fields))
+    if($Fields.Count -eq 0) { throw 'Empty DSI Studio request' }
+    $wire = @($Fields[0], $DsiAgentId)
+    if($Fields.Count -gt 1) { $wire += $Fields[1..($Fields.Count-1)] }
+    Invoke-DsiRequest ([string]::Join([char]9, $wire))
 }
 
-Invoke-DsiRequest 'LIST'
+function Read-DsiTextReply([string]$Reply)
+{
+    $lines = @($Reply -split '\r?\n')
+    $prompts = @()
+    if($lines.Count -gt 1 -and $lines[1].StartsWith("PROMPT`t"))
+    {
+        $prompts = @($lines[1].Substring(7) | ConvertFrom-Json)
+        $lines = @($lines[0]) + @($lines | Select-Object -Skip 2)
+    }
+    [pscustomobject]@{ Text=($lines -join "`n"); Prompts=$prompts }
+}
+
+$listReply = Read-DsiTextReply (Invoke-Dsi @('LIST'))
+if(-not $listReply.Text.StartsWith('OKAY')) { throw $listReply.Text }
 ```
 
 A successful response resembles:
@@ -59,18 +78,28 @@ tracking    2    C:\data\subject.fz
 
 `LIST` assigns and returns remote window IDs. Always call it before the first command and again after opening or closing a window. A pipe connection timeout means no compatible DSI Studio server is available; ask the user to start it.
 
+The preferred wire forms are:
+
+```text
+LIST<TAB>@C7f2a
+CMD<TAB>@C7f2a<TAB>2<TAB>list_region
+LOG<TAB>@C7f2a
+```
+
+`@C7f2a` is an example only. Generate a new ID when the agent session begins, then keep it stable for that session.
+
 ## Send a command
 
 Build the request with actual tab characters:
 
 ```powershell
-Invoke-Dsi @('CMD', '2', 'list_slice')
+$reply = Read-DsiTextReply (Invoke-Dsi @('CMD', '2', 'list_slice'))
 ```
 
 Protocol:
 
 ```text
-CMD<TAB>window_id<TAB>command<TAB>parameter_1<TAB>parameter_2...
+CMD<TAB>@agent_id<TAB>window_id<TAB>command<TAB>parameter_1<TAB>parameter_2...
 ```
 
 Each array element is one command field. A parameter containing spaces must remain one element. Never split or reinterpret compound parameters described by `DSI_STUDIO_AI_MANUAL.md`.
@@ -81,18 +110,19 @@ Use the same `CMD` route with a JSON array as its third field. There is no separ
 
 ```powershell
 $json = '[["list_slice"],["list_region"],["list_tract"]]'
-$reply = Invoke-DsiRequest ([string]::Join([char]9, @('CMD', '2', $json)))
+$reply = Invoke-Dsi @('CMD', '2', $json)
 $results = $reply | ConvertFrom-Json
 if($results | Where-Object { -not $_.okay }) { throw $reply }
+$prompts = @($results[-1].prompt)
 ```
 
 Protocol:
 
 ```text
-CMD<TAB>window_id<TAB>[["command","parameter"],["command",...]]
+CMD<TAB>@agent_id<TAB>window_id<TAB>[["command","parameter"],["command",...]]
 ```
 
-All JSON values must be strings, all commands target the same window, and commands run in order. DSI Studio suppresses intermediate widget repaint and redraws once afterward. The reply is a compact JSON array containing `index`, `okay`, `output`, and, on failure, `error`. Execution stops at the first failure; a batch is not transactional and has no rollback.
+All JSON values must be strings, all commands target the same window, and commands run in order. DSI Studio suppresses intermediate widget repaint and redraws once afterward. The reply is a compact JSON array containing `index`, `okay`, `output`, and, on failure, `error`. When DSI Studio has queued prompts for this agent, the last returned result also contains a `prompt` JSON-array property. Read and act on that property before continuing. Execution stops at the first failure; a batch is not transactional and has no rollback.
 
 Use batching for short synchronous commands whose inputs are already ready. Do not send an empty batch or batch a command that depends on an earlier asynchronous download, registration, segmentation, tracking, or window-opening result.
 
@@ -108,7 +138,7 @@ Send an existing filename as the executable's single argument:
 
 ```powershell
 Invoke-DsiRequest 'C:\data\subject.fz'
-Invoke-DsiRequest 'LIST'
+$listReply = Read-DsiTextReply (Invoke-Dsi @('LIST'))
 ```
 
 The client forwards the filename to the running DSI Studio. Refresh `LIST` to discover the new window ID.
@@ -133,7 +163,8 @@ Use only commands and parameters documented in `DSI_STUDIO_AI_MANUAL.md`.
 `list_recent` targets the main window and lists recent `.sz` and `.fz` paths. The main-window command `run_cli` accepts one complete DSI Studio command line as a single parameter field:
 
 ```powershell
-Invoke-Dsi @('CMD', '1', 'run_cli', '--action=qc --source=C:\data\subject.fz')
+$reply = Read-DsiTextReply (
+    Invoke-Dsi @('CMD', '1', 'run_cli', '--action=qc --source=C:\data\subject.fz'))
 ```
 
 `--action` is required. DSI Studio parses this string internally and runs the CLI action synchronously on the GUI thread, including wildcard or `--loop` processing. Inspect the full command line and obtain any required confirmation before running it; do not use `run_cli` as a shell.
@@ -143,10 +174,24 @@ Invoke-Dsi @('CMD', '1', 'run_cli', '--action=qc --source=C:\data\subject.fz')
 Retrieve DSI Studio's available console history with:
 
 ```powershell
-Invoke-DsiRequest 'LOG'
+$logReply = Read-DsiTextReply (Invoke-Dsi @('LOG'))
 ```
 
 Use the console to diagnose loading, registration, downloading, segmentation, tracking, and export failures. Do not treat the absence of an error message as proof of success.
+
+## Prompts from DSI Studio
+
+For `LIST`, `LOG`, and single-command text replies, DSI Studio inserts this immediately after the first status line when prompts are pending for the current agent:
+
+```text
+PROMPT<TAB><JSON>
+```
+
+Pass every non-batch `LIST`, `CMD`, and `LOG` reply through `Read-DsiTextReply`. Process its `Prompts` values as agent input before continuing, and interpret only its cleaned `Text` as command output. For a batch reply, parse the JSON array and read the optional `prompt` property from its last result instead; no `PROMPT` text line is added to a batch.
+
+DSI Studio keeps prompt queues separate by agent ID and clears only the matching queue after the complete reply is written. This protection works only when the same stable, unique session ID is included in `LIST`, `CMD`, and `LOG`.
+
+Legacy requests without an ID (`LIST`, `CMD<TAB>window_id...`, and `LOG`) remain accepted, but they all share the empty legacy identity. They cannot safely separate prompts when multiple agents are active and must not be used for simultaneous-agent sessions.
 
 ## Executable fallback
 
@@ -154,7 +199,7 @@ If the agent cannot use Windows named pipes, invoke the executable with one comp
 
 ```powershell
 $dsiExe = 'C:\DSI-Studio\dsi_studio.exe'
-$request = [string]::Join([char]9, @('CMD', '2', 'list_slice'))
+$request = [string]::Join([char]9, @('CMD', $DsiAgentId, '2', 'list_slice'))
 & $dsiExe $request
 ```
 
