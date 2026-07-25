@@ -250,17 +250,28 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
 void MainWindow::add_ai_history(const QString& agent,const QString& type,
                                 const QString& text)
 {
-    bool assistant = type == "assistant";
+    bool user = type == "user",request = type == "request";
     QString name = agent.startsWith("@C") ? "Codex" :
-                   agent.startsWith("@A") ? "Claude" : "AI";
-    auto content = text.toHtmlEscaped().replace('\n',"<br>");
+                       agent.startsWith("@A") ? "Claude Code" : "AI Agent";
+    QString title = request ? name + " activity" :
+                        user ? "You → " + name : name;
+                                   QString content = text.toHtmlEscaped().replace('\n',"<br>");
+    QString card = QString(
+                       "<td bgcolor=\"%1\"><b>%2 · %3</b> "
+                       "<font color=\"#80868b\">%4</font><br>%5</td>")
+                       .arg(request ? "#f1f3f4" : user ? "#e8f0fe" : "#e8f5e9",
+                            title.toHtmlEscaped(),agent.toHtmlEscaped(),
+                            QDateTime::currentDateTime().toString("HH:mm:ss"),
+                            request ? "<code>" + content + "</code>" : content);
 
     ui->ai_chat_history->append(
-        QString("<div style=\"background:%1;padding:6px;margin:4px\">"
-                "<b>%2 · %3</b><br>%4</div>")
-        .arg(assistant ? "#e8f5e9" : "#f1f3f4",
-             name,agent.toHtmlEscaped(),
-             assistant ? content : "<code>" + content + "</code>"));
+        QString("<table width=\"100%\" cellspacing=\"3\" cellpadding=\"7\"><tr>%1</tr></table>")
+            .arg(request ? card :
+                     user ? "<td width=\"20%\"></td>" + card :
+                     card + "<td width=\"20%\"></td>"));
+    ui->ai_chat_history->ensureCursorVisible();
+    ui->ai_connected_agent->setText("Agent: " + name + " " + agent);
+    ui->ai_control_status->setText("● Active");
 }
 
 
