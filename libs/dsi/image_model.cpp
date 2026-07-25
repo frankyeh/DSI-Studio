@@ -186,7 +186,7 @@ bool src_data::mask_from_template(void)
     if(!warp_to_template(r))
         return false;
 
-    tipl::threshold(r.apply_warping<false,tipl::interpolation::linear>(r.It[1]),voxel.mask,0.0f);
+    voxel.mask = r.apply_warping<false,tipl::interpolation::linear>(r.It[1]) > 0.0f;
     for(size_t i = 0;i < 4;++i)
         tipl::morphology::smoothing(voxel.mask);
     apply_mask = true;
@@ -213,7 +213,7 @@ bool src_data::mask_from_unet(void)
                 break;
             }
         }
-    tipl::threshold(unet.data.fg_prob,voxel.mask,0.5f,1,0);
+    voxel.mask = unet.data.fg_prob > 0.5f;
     return true;
 }
 
@@ -903,7 +903,7 @@ bool src_data::command(std::string cmd,std::string param)
         }
         else
             threshold = std::stoi(param);
-        tipl::threshold(dwi,voxel.mask,uint8_t(threshold));
+        voxel.mask = dwi > threshold;
         voxel.steps += cmd + "=" + std::to_string(threshold) + "\n";
         return true;
     }
@@ -929,7 +929,7 @@ bool src_data::command(std::string cmd,std::string param)
             for(size_t i = 0;i < prob.size();++i)
                 buf[i] *= prob[i];
         });
-        tipl::threshold(prob,voxel.mask,0.0f);
+        voxel.mask = prob > 0.0f;
         update_dwi_sum();
         voxel.steps += cmd+"="+param+"\n";
         return true;
@@ -1624,9 +1624,7 @@ bool src_data::correct_bias_field(bool need_update_mask)
         tipl::progress prog("correct bias field");
         tipl::image<3>  bias_field;
         {
-            tipl::image<3,unsigned char> mask;
-            tipl::threshold(dwi,mask,25,1,0);
-            if(!estimate_bias_field(dwi,mask,bias_field,
+            if(!estimate_bias_field(dwi,dwi > 25,bias_field,
                     tipl::vector<3>(1.0f,voxel.vs[0]/voxel.vs[1],voxel.vs[0]/voxel.vs[2])))
             {
                 if(tipl::prog_aborted)
@@ -2040,14 +2038,8 @@ bool src_data::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
 
 
     unsigned int phase_dim = (is_appa ? 1 : 0);
-    tipl::vector<3> c1,c2;
-    {
-        tipl::image<3,unsigned char> mb0,rev_mb0;
-        tipl::threshold(b0[0],mb0,tipl::max_value(b0[0])*0.8f,1,0);
-        tipl::threshold(rev_b0[0],rev_mb0,tipl::max_value(rev_b0[0])*0.8f,1,0);
-        c1 = tipl::center_of_mass_weighted(mb0);
-        c2 = tipl::center_of_mass_weighted(rev_mb0);
-    }
+    auto c1 = tipl::center_of_mass_weighted(b0[0] > tipl::max_value(b0[0])*0.8f);
+    auto c2 = tipl::center_of_mass_weighted(rev_b0[0] > tipl::max_value(rev_b0[0])*0.8f);
     tipl::out() << "source com: " << c1 << std::endl;
     tipl::out() << "rev pe com: " << c2 << std::endl;
     bool phase_dir = c1[phase_dim] > c2[phase_dim];
@@ -2690,7 +2682,7 @@ bool src_data::save_to_file(const std::filesystem::path& filename)
                 mat_writer.write("b_table",b_table,4);
             }
             if(voxel.mask.empty())
-                tipl::threshold(dwi,voxel.mask,0,1,0);
+                voxel.mask = dwi > 0;
 
             if(tipl::ends_with(filename.u8string(),".sz"))
             {
