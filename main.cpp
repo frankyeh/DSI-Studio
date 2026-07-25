@@ -491,15 +491,12 @@ int main(int ac, char *av[])
                 reply = "TIMEOUT";
             std::cout << reply.constData() << std::endl;
             socket.disconnectFromServer();
-            bool okay = reply.startsWith("OKAY");
-            if(!okay && std::string(av[1]).rfind("BATCH\t",0) == 0)
-            {
-                auto doc = QJsonDocument::fromJson(reply);
-                auto result = doc.array();
-                okay = doc.isArray() && std::all_of(result.begin(),result.end(),
-                                                    [](const auto& value){return value.toObject()["okay"].toBool();});
-            }
-            return okay ? 0 : 1;
+            auto doc = QJsonDocument::fromJson(reply);
+            auto result = doc.array();
+            return (reply.startsWith("OKAY") ||
+                    (doc.isArray() && std::all_of(result.begin(),result.end(),
+                                                  [](const auto& value){return value.toObject()["okay"].toBool();}))) ? 0 : 1;
+
         }
         if(std::string(av[1]) == "LIST")
             return std::cout << "NO_INSTANCE\n" << std::endl,1;
