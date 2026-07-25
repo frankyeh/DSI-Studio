@@ -16,8 +16,8 @@ int xnat(tipl::program_option<tipl::out>& po)
 
     if(!po.has("id"))
     {
-        if(output.empty() || QFileInfo(output.c_str()).isDir())
-            output = "data.txt";
+        if(QFileInfo(output.c_str()).isDir())
+            output += "data.txt";
         if(!tipl::ends_with(output,".txt"))
             output += ".txt";
         tipl::out() << "writing output to " << output << std::endl;
@@ -25,8 +25,6 @@ int xnat(tipl::program_option<tipl::out>& po)
     }
     else
     {
-        if(output.empty())
-            output = QDir::current().path().toStdString();
         if(!QFileInfo(output.c_str()).isDir())
         {
             tipl::error() << "please specify output directory using --output" << std::endl;
@@ -37,7 +35,7 @@ int xnat(tipl::program_option<tipl::out>& po)
     }
 
     while(xnat_connection.is_running())
-        QApplication::processEvents();
+        QCoreApplication::processEvents();
 
     if (xnat_connection.has_error())
     {
@@ -47,8 +45,9 @@ int xnat(tipl::program_option<tipl::out>& po)
 
     if(!po.has("id"))
     {
-        tipl::out() << "write experiment info to " << output << std::endl;
-        std::ofstream(output) << xnat_connection.result;
+        tipl::out() << "write experiment info to " << output;
+        if(!(std::ofstream(output) << xnat_connection.result))
+            return tipl::error() << "cannot write to " << output,1;
     }
     return 0;
 }
