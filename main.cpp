@@ -528,7 +528,7 @@ int main(int ac, char *av[])
                 socket.flush();
                 socket.waitForBytesWritten(5000);
                 auto reply = socket.waitForReadyRead(5000) ? socket.readAll() : QByteArray("TIMEOUT");
-                std::cout << reply.constData() << std::endl;
+                tipl::out() << reply.constData();
                 socket.disconnectFromServer();
                 return reply == "OKAY" ? 0 : 1;
             }
@@ -555,7 +555,7 @@ int main(int ac, char *av[])
             w.show();
 
 
-        if(ac == 2)
+        if(ac == 2 && std::string(av[1]) != "LIST")
             w.openFile(QStringList() << av[1]);
 
         QLocalServer server;
