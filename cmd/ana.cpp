@@ -32,7 +32,7 @@ void get_regions_statistics(std::shared_ptr<fib_data> handle,const std::vector<s
     }
     std::ostringstream out;
     out << "Name";
-    for(auto each : regions)
+    for(const auto& each : regions)
         out << "\t" << each->name;
     out << std::endl;
     for(unsigned int i = 0;i < titles.size();++i)
