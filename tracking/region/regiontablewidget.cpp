@@ -55,7 +55,7 @@ void ImageDelegate::setEditorData(QWidget *editor,
     else
         if (index.column() == 2)
         {
-            tipl::rgb color(uint32_t(index.data(Qt::UserRole).toInt()));
+            tipl::rgb color(index.data(Qt::UserRole).toUInt());
             dynamic_cast<QColorToolButton*>(editor)->setColor(
                 QColor(color.r,color.g,color.b,color.a));
         }
@@ -70,7 +70,7 @@ void ImageDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
         model->setData(index,QString::number(dynamic_cast<QComboBox*>(editor)->currentIndex()));
     else
         if (index.column() == 2)
-            model->setData(index,int((dynamic_cast<QColorToolButton*>(editor)->color().rgba())),Qt::UserRole);
+            model->setData(index,dynamic_cast<QColorToolButton*>(editor)->color().rgba(),Qt::UserRole);
         else
             QItemDelegate::setModelData(editor,model,index);
 }
@@ -113,7 +113,7 @@ RegionTableWidget::RegionTableWidget(tracking_window& cur_tracking_window_,QWidg
             regions[uint32_t(item->row())]->regions_feature = uint8_t(item->text().toInt());
         if (item->column() == 2)
         {
-            regions[uint32_t(item->row())]->region_render->color = uint32_t(item->data(Qt::UserRole).toInt());
+            regions[uint32_t(item->row())]->region_render->color = item->data(Qt::UserRole).toUInt();
             emit need_update();
         }
     });
