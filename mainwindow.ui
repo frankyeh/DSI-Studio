@@ -150,7 +150,7 @@
        <string notr="true">QWidget { color: black;  background-color : white; }</string>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab_8">
        <property name="styleSheet">
