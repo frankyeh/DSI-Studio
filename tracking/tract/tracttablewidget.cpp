@@ -1413,6 +1413,15 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             return run->failed("cannot save image to " + cmd[1]);
         return true;
     }
+    if(cmd[0] == "check_tract")
+    {
+        int row = currentRow();
+        if(!get_cur_row(cmd[1],row))
+            return false;
+        item(row,0)->setCheckState(
+            cmd[2] == "1" ? Qt::Checked : Qt::Unchecked);
+        return true;
+    }
     if(cmd[0] == "check_uncheck_all_tract")
     {
         if(tract_models.empty())
