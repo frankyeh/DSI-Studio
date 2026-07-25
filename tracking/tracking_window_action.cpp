@@ -291,6 +291,18 @@ bool tracking_window::command(std::vector<std::string> cmd)
         command({"set_slice_contrast"});
         return run->succeed();
     }
+    if(cmd[0] == "list_unet")
+    {
+        update_unet_models();
+        tipl::out() << "index\tavailable\tmodel\tname\tdescription";
+        const auto& actions = ui->menuSegment->actions();
+        for(int i = 0;i < actions.size();++i)
+            tipl::out() << i << "\t" << actions[i]->isEnabled() << "\t"
+                        << actions[i]->data().toString().toStdString() << "\t"
+                        << actions[i]->statusTip().toStdString() << "\t"
+                        << actions[i]->whatsThis().toStdString();
+        return run->succeed();
+    }
     if(cmd[0] == "segment_brain")
     {
         if(cmd[1].empty() && (cmd[1] = get_action_data().toStdString()).empty())
