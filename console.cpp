@@ -78,12 +78,16 @@ void appendColoredText(QTextEdit &textEdit, const QString &text)
     cursor.insertText(currentPart);
 }
 
-
+constexpr qsizetype max_console_history = 4*1024*1024;
 std::basic_streambuf<char>::int_type
 console_stream::overflow(std::basic_streambuf<char>::int_type v)
 {
     std::lock_guard<std::mutex> lock(edit_buf);
     buf.push_back(char(v));
+    history.push_back(char(v));
+    if(history.size() > max_console_history)
+        history.remove(0,history.size()-max_console_history);
+
     if(capture)
         capture->push_back(char(v));
     if(v == '\n')
@@ -100,6 +104,9 @@ std::streamsize console_stream::xsputn(
         p,static_cast<qsizetype>(n));
 
     buf += text;
+    history += text;
+    if(history.size() > max_console_history)
+        history.remove(0,history.size()-max_console_history);
     if(capture)
         *capture += text;
 
