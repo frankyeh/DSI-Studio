@@ -128,10 +128,7 @@ int cnt(tipl::program_option<tipl::out>& po)
                               vbc->model->remove_list.end(),false);
         tipl::out() << "sample size:" << n;
         if(n <= 2)
-        {
-            tipl::error() << "not enough sample size: " << n;
-            return 1;
-        }
+            return tipl::error() << "not enough sample size: " << n,1;
 
 
         if(po.has("t_threshold"))
