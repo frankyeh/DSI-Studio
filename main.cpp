@@ -570,8 +570,8 @@ int main(int ac, char *av[])
                 {
                     clientSocket->waitForReadyRead(500);
                     auto request = clientSocket->readAll();
-                    tipl::out() << "received: " << request.begin();
-                    if(request =="LIST")
+                    tipl::out() << "received: " << request.constData();
+                    if(request == "LIST")
                         ai_request_list(clientSocket);
                     else
                     {
