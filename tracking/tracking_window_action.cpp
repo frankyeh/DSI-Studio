@@ -327,8 +327,36 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "segment_brain")
     {
-        if(cmd[1].empty() && (cmd[1] = get_action_data().toStdString()).empty())
-            return run->canceled();
+        if(cmd[1].empty())
+        {
+            if((cmd[1] = get_action_data().toStdString()).empty())
+                return run->canceled();
+        }
+        else if(cmd[2].empty())
+            return run->failed("please specify slice name");
+        if(!cmd[2].empty())
+        {
+            int index = ui->SliceModality->findText(cmd[2].c_str());
+            if(index < 0)
+                return run->failed("cannot find slice: " + cmd[2]);
+            int previous_index = ui->SliceModality->currentIndex();
+            QSignalBlocker blocker(ui->SliceModality);
+            ui->SliceModality->setCurrentIndex(index);
+            if(!command({"set_slice",std::to_string(index)}))
+            {
+                ui->SliceModality->setCurrentIndex(previous_index);
+                return false;
+            }
+        }
+        auto reg_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
+        if(reg_slice)
+        {
+            reg_slice->wait();
+            check_reg();
+        }
+        if(!current_slice->view->image_ready() || (reg_slice && reg_slice->running))
+            return run->failed("slice is not ready: " + current_slice->get_name());
+
 
         tipl::image<3> source_images(current_slice->get_source());
         tipl::progress prog(cmd[0],true);
