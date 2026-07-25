@@ -2,6 +2,8 @@
 
 Use this file to connect a local AI agent to an AI-control-enabled DSI Studio. Read `DSI_STUDIO_AI_MANUAL.md` completely before issuing domain commands; it is the authoritative command reference. On Windows, connect directly to the `dsi-studio` named pipe. Launching `dsi_studio.exe` for every request is only a fallback.
 
+The identity-aware protocol documented here reflects source through commit `ecacbd0478e8b7d383a9cd9a5606cc08e6d78a58`.
+
 ## Requirements
 
 - The agent must be able to execute local Windows processes on the same computer as DSI Studio. A remote or browser-only agent cannot control the local application without a separate local execution bridge.
@@ -190,6 +192,8 @@ PROMPT<TAB><JSON>
 Pass every non-batch `LIST`, `CMD`, and `LOG` reply through `Read-DsiTextReply`. Process its `Prompts` values as agent input before continuing, and interpret only its cleaned `Text` as command output. For a batch reply, parse the JSON array and read the optional `prompt` property from its last result instead; no `PROMPT` text line is added to a batch.
 
 DSI Studio keeps prompt queues separate by agent ID and clears only the matching queue after the complete reply is written. This protection works only when the same stable, unique session ID is included in `LIST`, `CMD`, and `LOG`.
+
+Different agents may interleave requests when they use different IDs. DSI Studio still executes GUI commands serially on Qt's main thread, so one long command can delay other agents.
 
 Legacy requests without an ID (`LIST`, `CMD<TAB>window_id...`, and `LOG`) remain accepted, but they all share the empty legacy identity. They cannot safely separate prompts when multiple agents are active and must not be used for simultaneous-agent sessions.
 
