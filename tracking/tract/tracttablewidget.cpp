@@ -450,6 +450,9 @@ bool TractTableWidget::render_tracts(GLWidget* glwidget)
 
 bool TractTableWidget::command(std::vector<std::string> cmd)
 {
+    if(cmd.size() == 2 && cmd[0] == "run_tracking")
+        cmd.push_back(cur_tracking_window.get_parameter_id());
+
     auto run = cur_tracking_window.history.record(error_msg,cmd);
     if(cmd.size() < 3)
         cmd.resize(3);
@@ -476,9 +479,11 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
 
     if(cmd[0] == "list_tract")
     {
-        tipl::out() << "index\tshown\tname\ttracts\tdeleted\tseeds";
+        tipl::out() << "index\trunning\tshown\tname\ttracts\tdeleted\tseeds";
         for(int row = 0;row < rowCount();++row)
-            tipl::out() << row << "\t" << (item(row,0)->checkState() == Qt::Checked) << "\t"
+            tipl::out() << row << "\t"
+                        << bool(thread_data[row]) << "\t"
+                        << (item(row,0)->checkState() == Qt::Checked) << "\t"
                         << item(row,0)->text().toStdString() << "\t"
                         << item(row,1)->text().toStdString() << "\t"
                         << item(row,2)->text().toStdString() << "\t"
