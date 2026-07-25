@@ -1080,9 +1080,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 break;
             case 2:
                 {
-                    tipl::image<3,unsigned char> mask;
-                    tipl::morphology::dndnco(tipl::threshold(crop_image,mask,threshold));
-                    crop_image *= tipl::filter::gaussian(tipl::image<3>(mask),2);
+                    crop_image *= tipl::filter::gaussian(
+                    tipl::image<3>(tipl::morphology::dndnco(crop_image > threshold)),2);
                 }
                 break;
             }
