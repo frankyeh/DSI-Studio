@@ -1169,6 +1169,14 @@ QFrame#tract_connectometry_stage QPushButton {
     border-radius: 7px;
     padding: 5px 8px;
     min-height: 32px;
+    min-width: 0px;
+    text-align: left;
+}
+QPushButton#OpenDWI_NIFTI,
+QPushButton#OpenDWI_DICOM,
+QPushButton#Reconstruction,
+QPushButton#FiberTracking {
+    font-weight: bold;
 }
 QFrame#tract_input_stage QPushButton:hover,
 QFrame#tract_reconstruction_stage QPushButton:hover,
@@ -1214,7 +1222,7 @@ QListWidget#template_list::item:selected {
     background-color: #e5e5e7;
 }
 QLabel#tract_workflow_title {
-    font-size: 12pt;
+    font-size: 11pt;
     font-weight: bold;
 }
 QLabel#label_45,
@@ -1301,15 +1309,21 @@ QWidget#tab QScrollBar::sub-page {
            <bool>false</bool>
           </property>
           <widget class="QFrame" name="tract_recent_panel">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Ignored" vsizetype="Expanding">
+             <horstretch>1</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="minimumSize">
             <size>
-             <width>270</width>
+             <width>0</width>
              <height>0</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>380</width>
+             <width>16777215</width>
              <height>16777215</height>
             </size>
            </property>
@@ -1569,8 +1583,17 @@ QWidget#tab QScrollBar::sub-page {
            </layout>
           </widget>
           <widget class="QScrollArea" name="scrollArea">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Ignored" vsizetype="Expanding">
+             <horstretch>1</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="frameShape">
             <enum>QFrame::NoFrame</enum>
+           </property>
+           <property name="lineWidth">
+            <number>1</number>
            </property>
            <property name="horizontalScrollBarPolicy">
             <enum>Qt::ScrollBarAlwaysOff</enum>
@@ -1583,8 +1606,8 @@ QWidget#tab QScrollBar::sub-page {
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>870</width>
-              <height>690</height>
+              <width>900</width>
+              <height>707</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="tract_workflow_layout">
@@ -1595,7 +1618,7 @@ QWidget#tab QScrollBar::sub-page {
               <number>5</number>
              </property>
              <property name="topMargin">
-              <number>2</number>
+              <number>0</number>
              </property>
              <property name="rightMargin">
               <number>5</number>
@@ -1622,6 +1645,13 @@ QWidget#tab QScrollBar::sub-page {
                  <number>8</number>
                 </property>
                 <item>
+                 <widget class="QLabel" name="tract_workflow_title">
+                  <property name="text">
+                   <string>Tractography workflow</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
                  <layout class="QHBoxLayout" name="tract_input_header">
                   <property name="spacing">
                    <number>7</number>
@@ -1635,6 +1665,12 @@ QWidget#tab QScrollBar::sub-page {
                   </item>
                   <item>
                    <widget class="QLabel" name="tract_input_hint">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+                      <horstretch>1</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
                     <property name="text">
                      <string>NIFTI (.nii/.nii.gz), DICOM (.dcm), 2dseq, and Varian (.fdf) → SRC files (*.sz)</string>
                     </property>
@@ -1642,7 +1678,7 @@ QWidget#tab QScrollBar::sub-page {
                      <enum>Qt::AutoText</enum>
                     </property>
                     <property name="wordWrap">
-                     <bool>true</bool>
+                     <bool>false</bool>
                     </property>
                    </widget>
                   </item>
@@ -1905,7 +1941,7 @@ QWidget#tab QScrollBar::sub-page {
                       </layout>
                      </item>
                      <item>
-                      <layout class="QHBoxLayout" name="tract_reconstruction_actions">
+                      <layout class="QVBoxLayout" name="tract_reconstruction_actions">
                        <property name="spacing">
                         <number>6</number>
                        </property>
@@ -1995,7 +2031,7 @@ QWidget#tab QScrollBar::sub-page {
                       </layout>
                      </item>
                      <item>
-                      <layout class="QHBoxLayout" name="tract_tracking_actions">
+                      <layout class="QVBoxLayout" name="tract_tracking_actions">
                        <property name="spacing">
                         <number>6</number>
                        </property>
@@ -2103,10 +2139,10 @@ QWidget#tab QScrollBar::sub-page {
                      <enum>Qt::ScrollBarAlwaysOff</enum>
                     </property>
                     <property name="flow">
-                     <enum>QListView::LeftToRight</enum>
+                     <enum>QListView::TopToBottom</enum>
                     </property>
                     <property name="isWrapping" stdset="0">
-                     <bool>true</bool>
+                     <bool>false</bool>
                     </property>
                     <property name="resizeMode">
                      <enum>QListView::Adjust</enum>
