@@ -742,12 +742,12 @@ bool tracking_window::eventFilter(QObject *obj, QEvent *event)
     bool has_info = false;
     tipl::vector<3> pos;
     // update slice here
-    if(slice_need_update)
+    if(slice_need_update && updatesEnabled())
     {
         slice_need_update = false;
         scene.show_slice();
     }
-    if(scene.complete_view_ready)
+    if(scene.complete_view_ready && updatesEnabled())
         scene.show_complete_slice();
 
     if (event->type() == QEvent::MouseMove && obj->isWidgetType())
