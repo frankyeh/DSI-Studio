@@ -1973,7 +1973,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
     QString name = QString::fromUtf8(cmd[4]);
     QJsonObject asset;
     for(const auto& value : release_assets)
-        if(value["name"].toString() == name)
+        if(value.toObject().value("name").toString() == name)
         {
             asset = value.toObject();
             break;
