@@ -22,8 +22,7 @@ bool variant_image::command(std::string cmd,std::string param1)
         if(cmd == "bias_field_correction")
         {
             float prev_max = tipl::max_value(I);
-            tipl::image<3,unsigned char> mask;
-            tipl::threshold(I,mask,0);
+            auto mask = I > 0;
             for(size_t i = 0;i < 10;++i)
             {
                 tipl::image<3> bias_field;
@@ -66,12 +65,10 @@ bool variant_image::command(std::string cmd,std::string param1)
                 using namespace tipl::morphology;
                 tipl::io::apply_flip_swap_seq(unet.data.mask,flip_swap_seq,true);
 
+                auto mask = I > 0;
+                closing(downsampling(dndnco(mask))) *=
+                    dilation_by_radius(smoothing(closing(downsampling(unet.data.mask))),12/vs[0]);
                 // expand the mask to include tissue nearby the brain tissue
-                dilation_by_radius(smoothing(closing(downsampling(unet.data.mask))),12/vs[0]);
-
-
-                tipl::image<3,unsigned char> mask;
-                closing(downsampling(dndnco(tipl::threshold(I,mask,0)))) *= unet.data.mask;
 
                 I *= tipl::filter::gaussian(
                         unet.data.fg_prob = upsample_with_padding(mask,unet.data.fg_prob.shape()),2);
