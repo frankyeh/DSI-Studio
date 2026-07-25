@@ -128,7 +128,15 @@ void ai_request_command(QLocalSocket* socket,const QByteArray& request)
     QString reply = okay ? "OKAY\n" : "ERROR\t" + error + "\n";
     socket->write((reply + output).toUtf8());
 }
-
+void ai_request_log(QLocalSocket* socket)
+{
+    QByteArray output;
+    {
+        std::lock_guard<std::mutex> lock(console.edit_buf);
+        output = console.history.toUtf8();
+    }
+    socket->write("OKAY\n" + output);
+}
 void checkForVersionSpecificBugs_Minimal(const QString& bugListText)
 {
     QDate compDate = QDate::fromString(__DATE__, "MMM dd yyyy");
