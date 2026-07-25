@@ -344,8 +344,17 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
 
     if(cmd[0] == "list_region")
     {
+        static const char* type[] = {"ROI","ROA","End","Seed","Terminative","NotEnd","Limiting","..."};
+        tipl::out() << "index\tshown\tname\ttype\tcolor\tdimension x resolution";
         for(int row = 0;row < rowCount();++row)
-            tipl::out() << row << "\t" << item(row,0)->text().toStdString();
+        {
+            auto color = regions[row]->region_render->color;
+            tipl::out() << row << "\t" << (item(row,0)->checkState() == Qt::Checked) << "\t"
+                        << item(row,0)->text().toStdString() << "\t"
+                        << type[regions[row]->regions_feature] << "\t"
+                        << QColor(color.r,color.g,color.b,color.a).name(QColor::HexArgb).toStdString() << "\t"
+                        << item(row,3)->text().toStdString();
+        }
         return run->succeed();
     }
     if(cmd[0] == "new_region")
