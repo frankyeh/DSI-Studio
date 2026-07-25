@@ -191,6 +191,9 @@ bool load_file_name(void)
         });
     }
 
+    auto unet_info = tipl::read_text_file(unet_dir/"README.md");
+    QDir().mkpath(QStandardPaths::writableLocation(
+                      QStandardPaths::AppLocalDataLocation)+"/unet");
 
     for(const auto& species : species_list)
     {
@@ -213,14 +216,9 @@ bool load_file_name(void)
 
         {
             std::vector<std::string> http_list,desc_list,name_list;
-
-            auto readme = unet_dir/"README.md";
-            QDir().mkpath(QStandardPaths::writableLocation(
-                              QStandardPaths::AppLocalDataLocation) + "/unet");
-
             auto species_prefix = tipl::to_lower(species) + "_";
 
-            for(auto line : tipl::read_text_file(readme))
+            for(const auto& line : unet_info)
             {
                 if(std::count(line.begin(),line.end(),'|') != 4 ||
                     !tipl::contains(line,".nz") || !tipl::contains(line,"https"))
@@ -312,13 +310,7 @@ bool init_application(void)
     }
 
     if(!load_file_name())
-    {
-        if(tipl::show_prog)
-            QMessageBox::critical(nullptr,"ERROR","Cannot find template data.");
-        tipl::error() << "cannot find template data.";
         return false;
-    }
-
 
     if constexpr(tipl::use_cuda)
     {
@@ -329,7 +321,7 @@ bool init_application(void)
             tipl::has_gpu = false;
             if(tipl::show_prog)
                 QMessageBox::critical(nullptr,"ERROR",cuda_msg.c_str());
-            return 1;
+            return false;
         }
         else
             tipl::out() << "Enable multi-thread CPU/GPU computation";
@@ -466,7 +458,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
                 tipl::out() << wildcard.first << "=" << wildcard.second << "->" << apply_wildcard;
                 po.set(wildcard.first.c_str(),apply_wildcard);
             }
-            if(run_action(po) == 1 && !po.has("continue_on_error"))
+            if(run_action(po) && !po.has("continue_on_error"))
                 return 1;
         }
     }
@@ -497,8 +489,7 @@ int main(int ac, char *av[])
             std::string action = po.get("action",action_list,"qc");
             if(action != "vis" && action != "cnt")
             {
-                std::shared_ptr<QCoreApplication> cmd;
-                cmd.reset(new QCoreApplication(ac, av));
+                QCoreApplication cmd(ac,av);
                 if(!init_application())
                     return 1;
                 if(run_action_with_wildcard(po))
@@ -579,20 +570,17 @@ int main(int ac, char *av[])
                     clientSocket->waitForReadyRead(500);
                     auto file_name = clientSocket->readAll();
                     tipl::out() << "file name:" << file_name.begin();
-                    if(!tipl::progress::is_running())
+                    bool busy = tipl::progress::is_running();
+                    bool exists = std::filesystem::exists(file_name.begin());
+                    if(!busy && exists)
                     {
-                        if(std::filesystem::exists(file_name.begin()))
-                        {
-                            w.openFile(QStringList() << file_name);
-                            w.show();
-                            w.setWindowState((w.windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
-                            w.raise();
-                            w.activateWindow();
-                        }
-                        clientSocket->write("OKAY");
+                        w.openFile(QStringList() << file_name);
+                        w.show();
+                        w.setWindowState((w.windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
+                        w.raise();
+                        w.activateWindow();
                     }
-                    else
-                        clientSocket->write("BUSY");
+                    clientSocket->write(busy ? "BUSY" : exists ? "OKAY" : "ERROR");
                     clientSocket->flush();
                     clientSocket->waitForBytesWritten(500);
                     clientSocket->disconnectFromServer();
@@ -602,9 +590,10 @@ int main(int ac, char *av[])
         }
         if(po.has("action"))
         {
-            run_action_with_wildcard(po);
+            auto result = run_action_with_wildcard(po);
+            po.check_end_param<tipl::warning>();
             if(!po.has("stay_open"))
-                return 0;
+                return result;
         }
         return a.exec();
     }
