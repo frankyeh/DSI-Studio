@@ -15,7 +15,6 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QRegularExpression>
-#include <QSaveFile>
 
 #include <filesystem>
 #include "mainwindow.h"
@@ -1850,187 +1849,90 @@ void MainWindow::update_rate_limit(QSharedPointer<QNetworkReply> reply)
 bool MainWindow::command(const std::vector<std::string>& cmd)
 {
     error_msg.clear();
-    auto fail = [this](QString error)
+    auto fail = [this](std::string error)
     {
-        error_msg = error.toStdString();
+        error_msg = error;
         return false;
     };
-    const QString usage =
+    const std::string usage =
         "hub repos | hub tags <repo> | hub files <repo> <tag> [text] | "
-        "hub open <repo> <tag> <file> | hub download <repo> <tag> <file> <path>";
+        "hub open <repo> <tag> <file> | hub download <repo> <tag> <file> <dir>";
     if(cmd.empty() || cmd[0] != "hub")
         return fail(usage);
-    if(cmd.size() == 1 || cmd[1] == "help")
-        return tipl::out() << usage.toStdString(),true;
+    if(cmd.size() < 2 || cmd[1] == "help")
+        return tipl::out() << usage,true;
 
-    QByteArray data,link;
-    auto read = [this,&data,&link,&fail](QUrl url)
+    if(!fetch_github)
+        on_tabWidget_currentChanged(4);
+    if(!ui->github_repo->count())
     {
-        auto reply = get(url);
-        QEventLoop loop;
-        connect(reply.get(),&QNetworkReply::finished,&loop,&QEventLoop::quit);
-        loop.exec();
-        if(reply->error() != QNetworkReply::NoError)
-            return fail(showQNetworkReplyError(reply.get()));
-        update_rate_limit(reply);
-        link = reply->rawHeader("Link");
-        data = reply->readAll();
+        fetch_github = false;
+        return fail("Fiber Data Hub is not ready; retry");
+    }
+    if(cmd[1] == "repos")
+    {
+        for(int row = 0;row < ui->github_repo->count();++row)
+            tipl::out() << row << "\t" << ui->github_repo->itemData(row).toString().toStdString();
         return true;
-    };
-
-    QString action = QString::fromUtf8(cmd[1]);
-    if(action == "repos")
-    {
-        if(cmd.size() != 2)
-            return fail(usage);
-        QString content = settings.value("hub_content").toString();
-        if(content.isEmpty())
-        {
-            if(info.size() < 5 || !read(info[4]))
-                return fail(error_msg.empty() ? "Fiber Data Hub is not ready" : QString::fromStdString(error_msg));
-            settings.setValue("hub_content",content = QString::fromUtf8(data));
-        }
-        QStringList result;
-        QRegularExpression re("https://github\\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)");
-        auto matches = re.globalMatch(content);
-        while(matches.hasNext())
-        {
-            QString repo = matches.next().captured(1);
-            if(!result.contains(repo))
-                result << repo;
-        }
-        if(result.empty())
-            return fail("No Fiber Data Hub repositories found");
-        return tipl::out() << result.join('\n').toStdString(),true;
     }
 
     if(cmd.size() < 3)
         return fail(usage);
-    QString repo = QString::fromUtf8(cmd[2]);
-    if(!QRegularExpression("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$").match(repo).hasMatch())
-        return fail("invalid repository");
-
-    if(action == "tags")
+    int repo = ui->github_repo->findData(QString::fromUtf8(cmd[2]));
+    if(repo < 0)
+        return fail("repository not found");
+    ui->github_repo->setCurrentIndex(repo);
+    on_github_repo_currentIndexChanged(repo);
+    if(cmd[1] == "tags")
     {
-        if(cmd.size() != 3)
-            return fail(usage);
-        QJsonArray releases;
-        QUrl next(QString("https://api.github.com/repos/%1/releases?per_page=100").arg(repo));
-        while(next.isValid())
-        {
-            if(!read(next))
-                return false;
-            auto page = QJsonDocument::fromJson(data).array();
-            for(const auto& release : page)
-                releases.append(release);
-            auto match = QRegularExpression("<([^>]+)>; rel=\"next\"").match(link);
-            next = match.hasMatch() ? QUrl(match.captured(1)) : QUrl();
-        }
-        QStringList result({"tag\tname\tfiles\tpublished"});
-        for(const auto& release : releases)
-        {
-            auto object = release.toObject();
-            result << QString("%1\t%2\t%3\t%4")
-                      .arg(object["tag_name"].toString(),object["name"].toString())
-                      .arg(object["assets"].toArray().size())
-                      .arg(object["published_at"].toString());
-        }
-        return tipl::out() << result.join('\n').toStdString(),true;
+        if(!ui->github_tags->rowCount())
+            return fail("repository data is loading; retry");
+        for(int row = 0;row < ui->github_tags->rowCount();++row)
+            tipl::out() << row << "\t" << ui->github_tags->item(row,0)->text().toStdString();
+        return true;
     }
 
     if(cmd.size() < 4)
         return fail(usage);
-    QString tag = QString::fromUtf8(cmd[3]);
-    QString encoded_tag = QString::fromLatin1(QUrl::toPercentEncoding(tag));
-    if(!read(QUrl(QString("https://api.github.com/repos/%1/releases/tags/%2").arg(repo,encoded_tag))))
-        return false;
-    auto release = QJsonDocument::fromJson(data).object();
-    auto release_assets = release["assets"].toArray();
-
-    if(action == "files")
+    int tag = -1;
+    for(int row = 0;row < ui->github_tags->rowCount();++row)
+        if(ui->github_tags->item(row,0)->text() == QString::fromUtf8(cmd[3]))
+            tag = row;
+    if(tag < 0)
+        return fail("tag not found or still loading");
+    ui->github_tags->setCurrentCell(tag,0);
+    on_github_tags_itemSelectionChanged();
+    if(cmd[1] == "files")
     {
-        if(cmd.size() > 5)
-            return fail(usage);
-        QString pattern = cmd.size() == 5 ? QString::fromUtf8(cmd[4]) : QString();
-        QStringList result({"name\tbytes\tdownloads\tcreated"});
-        for(const auto& value : release_assets)
-        {
-            auto asset = value.toObject();
-            QString name = asset["name"].toString();
-            if(pattern.isEmpty() || name.contains(pattern,Qt::CaseInsensitive))
-                result << QString("%1\t%2\t%3\t%4")
-                          .arg(name)
-                          .arg(asset["size"].toInteger())
-                          .arg(asset["download_count"].toInteger())
-                          .arg(asset["created_at"].toString());
-        }
-        return tipl::out() << result.join('\n').toStdString(),true;
+        QString text = cmd.size() > 4 ? QString::fromUtf8(cmd[4]) : QString();
+        for(int row = 0;row < ui->github_release_files->rowCount();++row)
+            if(ui->github_release_files->item(row,0)->text().contains(text,Qt::CaseInsensitive))
+                tipl::out() << row << "\t"
+                            << ui->github_release_files->item(row,0)->text().toStdString() << "\t"
+                            << ui->github_release_files->item(row,1)->text().toStdString();
+        return true;
     }
 
-    if((action != "open" || cmd.size() != 5) &&
-       (action != "download" || cmd.size() != 6))
+    if(cmd.size() < 5)
         return fail(usage);
-    QString name = QString::fromUtf8(cmd[4]);
-    QJsonObject asset;
-    for(const auto& value : release_assets)
-        if(value.toObject().value("name").toString() == name)
-        {
-            asset = value.toObject();
-            break;
-        }
-    if(asset.isEmpty())
-        return fail("file not found in release");
-    if(QFileInfo(name).fileName() != name)
-        return fail("invalid file name");
-
-    QString path;
-    if(action == "open")
+    int file = -1;
+    for(int row = 0;row < ui->github_release_files->rowCount();++row)
+        if(ui->github_release_files->item(row,0)->text() == QString::fromUtf8(cmd[4]))
+            file = row;
+    if(file < 0)
+        return fail("file not found");
+    ui->github_release_files->setCurrentCell(file,0);
+    ui->github_release_files->selectRow(file);
+    on_github_release_files_itemSelectionChanged();
+    if(cmd[1] == "open")
+        return on_github_open_file_clicked(),true;
+    if(cmd[1] == "download" && cmd.size() == 6)
     {
-        QString dir = repo + "/" + tag;
-        dir.replace(QRegularExpression("[^A-Za-z0-9_.-]"),"_");
-        path = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) +
-               "/fiber_data_hub/files/" + dir + "/" + name;
-        if(QFile::exists(path))
-            return openFile(QStringList() << path),true;
+        ui->download_dir->setText(QString::fromUtf8(cmd[5]));
+        ui->download_overwrite->setChecked(false);
+        return on_github_download_clicked(),true;
     }
-    else
-    {
-        path = QString::fromUtf8(cmd[5]);
-        if(QFileInfo(path).isDir() || path.endsWith('/') || path.endsWith('\\'))
-            path = QDir(path).filePath(name);
-        if(QFile::exists(path))
-            return fail("destination already exists");
-    }
-
-    if(!QDir().mkpath(QFileInfo(path).absolutePath()))
-        return fail("cannot create download directory");
-    QSaveFile file(path);
-    if(!file.open(QFile::WriteOnly))
-        return fail(file.errorString());
-
-    QString url = repo.contains("restricted") ?
-                  asset["url"].toString() : asset["browser_download_url"].toString();
-    auto reply = get(url);
-    bool write_ok = true;
-    connect(reply.get(),&QNetworkReply::readyRead,this,[&]()
-    {
-        if(file.write(reply->readAll()) < 0)
-            write_ok = false;
-    });
-    QEventLoop loop;
-    connect(reply.get(),&QNetworkReply::finished,&loop,&QEventLoop::quit);
-    loop.exec();
-    if(reply->error() != QNetworkReply::NoError)
-        return fail(showQNetworkReplyError(reply.get()));
-    if(reply->bytesAvailable() && file.write(reply->readAll()) < 0)
-        write_ok = false;
-    if(!write_ok || !file.commit())
-        return fail(file.errorString());
-
-    tipl::out() << "downloaded " << path.toStdString();
-    if(action == "open")
-        openFile(QStringList() << path);
-    return true;
+    return fail(usage);
 }
 
 void MainWindow::loadTags(QUrl url,QString repo,QJsonArray array,int per_page)
