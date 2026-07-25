@@ -178,7 +178,7 @@ public:
             to_mask(mask,dim_to,trans_to);
             return mask;
         }
-        void perform(const std::string& action);
+        bool perform(const std::string& action);
 
         template<typename value_type>
         bool has_point(tipl::vector<3,value_type> p) const
