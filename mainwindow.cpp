@@ -6,6 +6,7 @@
 #include <QDragEnterEvent>
 #include <QMimeData>
 #include <QAction>
+#include <QHeaderView>
 #include <QStyleFactory>
 #include <QNetworkInterface>
 #include <QSysInfo>
@@ -301,16 +302,13 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->styles->addItems(QStringList("default") << QStyleFactory::keys());
     ui->styles->setCurrentText(settings.value("styles","Fusion").toString());
 
-    ui->recentFib->setColumnCount(3);
-    ui->recentFib->setColumnWidth(0,300);
-    ui->recentFib->setColumnWidth(1,250);
-    ui->recentFib->setColumnWidth(2,150);
-    ui->recentFib->setAlternatingRowColors(true);
-    ui->recentSrc->setColumnCount(3);
-    ui->recentSrc->setColumnWidth(0,300);
-    ui->recentSrc->setColumnWidth(1,250);
-    ui->recentSrc->setColumnWidth(2,150);
-    ui->recentSrc->setAlternatingRowColors(true);
+    for(auto* table : {ui->recentSrc,ui->recentFib})
+    {
+        table->setColumnCount(2);
+        table->horizontalHeader()->setSectionResizeMode(0,QHeaderView::ResizeToContents);
+        table->horizontalHeader()->setSectionResizeMode(1,QHeaderView::Stretch);
+        table->setAlternatingRowColors(true);
+    }
     QObject::connect(ui->recentFib,SIGNAL(cellDoubleClicked(int,int)),this,SLOT(open_fib_at(int,int)));
     QObject::connect(ui->recentSrc,SIGNAL(cellDoubleClicked(int,int)),this,SLOT(open_src_at(int,int)));
     updateRecentList();
