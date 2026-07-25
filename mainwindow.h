@@ -11,7 +11,6 @@
 #include <QNetworkReply>
 #include <QJsonArray>
 
-void add_ai_history(const QString& agent,const QString& type,const QString& text);
 
 namespace Ui {
     class MainWindow;
@@ -31,6 +30,8 @@ public:
     void update_rate_limit(QSharedPointer<QNetworkReply>);
 public:
     std::map<QString,QJsonArray> ai_prompts;
+    void add_ai_history(const QString& agent,const QString& type,const QString& text);
+
 public:
     bool fetch_github = false;
     QNetworkAccessManager manager;
