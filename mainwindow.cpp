@@ -1862,6 +1862,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
     if(cmd.size() < 2 || cmd[1] == "help")
         return tipl::out() << usage,true;
 
+    ui->tabWidget->setCurrentIndex(4);
     if(!fetch_github)
         on_tabWidget_currentChanged(4);
     if(!ui->github_repo->count())
