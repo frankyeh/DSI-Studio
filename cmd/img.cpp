@@ -93,7 +93,7 @@ bool variant_image::command(std::string cmd,std::string param1)
             if(cmd == "apply_to_image")
             {
                 if(r.r.front() == 0.0f)
-                    return error_msg = "run registration first to get the mapping field",void();
+                    return error_msg = "run registration first to get the mapping field",result = false,void();
                 I.resize(r.Is);
                 bool result = interpolation ? nii.to_space<tipl::interpolation::linear>(I,r.IR):
                                   nii.to_space<tipl::interpolation::majority>(I,r.IR);
@@ -110,7 +110,7 @@ bool variant_image::command(std::string cmd,std::string param1)
 
                 tipl::image<3> It;
                 if(!(nii >> It >> r.Itvs >> r.ItR >> r.Its >> r.It_is_mni >> [&](const std::string& e){error_msg = e;}))
-                    return;
+                    return result = false,void();
 
                 tipl::io::apply_flip_swap_seq(I,tipl::io::toLPS(tipl::vector<3,int>(I.shape()).begin(),r.Ivs.begin(),r.IR.begin()));
                 r.Is = I.shape();
@@ -123,7 +123,7 @@ bool variant_image::command(std::string cmd,std::string param1)
                 if(!terminated && warp)
                     r.nonlinear_reg(terminated);
                 if(terminated)
-                    return error_msg = "aborted",void();
+                    return error_msg = "aborted",result = false,void();
 
                 vs = tipl::to_vs(T);
                 is_mni = r.It_is_mni;
@@ -172,35 +172,19 @@ bool variant_image::read_mat_image(size_t index,
         return false;
     if(mat[index].is_scaled())
         mat[index].convert_to<float>();
-    if(mat[index].type_compatible<unsigned int>())
+
+    auto read = [&](auto& I,decltype(pixel_type) type)
     {
-        I_int32.resize(shape);
-        mat.read(index,I_int32.begin(),I_int32.end());
-        pixel_type = int32;
+        using value_type = typename std::decay_t<decltype(I)>::value_type;
+        if(!mat[index].type_compatible<value_type>())
+            return false;
+        I.resize(shape);
+        mat.read(index,I.begin(),I.end());
+        pixel_type = type;
         return true;
-    }
-    if(mat[index].type_compatible<unsigned short>())
-    {
-        I_int16.resize(shape);
-        mat.read(index,I_int16.begin(),I_int16.end());
-        pixel_type = int16;
-        return true;
-    }
-    if(mat[index].type_compatible<unsigned char>())
-    {
-        I_int8.resize(shape);
-        mat.read(index,I_int8.begin(),I_int8.end());
-        pixel_type = int8;
-        return true;
-    }
-    if(mat[index].type_compatible<float>())
-    {
-        I_float32.resize(shape);
-        mat.read(index,I_float32.begin(),I_float32.end());
-        pixel_type = float32;
-        return true;
-    }
-    return false;
+    };
+    return read(I_int32,int32) || read(I_int16,int16) ||
+           read(I_int8,int8) || read(I_float32,float32);
 }
 
 void variant_image::change_type(decltype(pixel_type) new_type)
@@ -548,14 +532,14 @@ int img(tipl::program_option<tipl::out>& po)
         tipl::io::gz_nifti nifti;
         prepare_idx(source,nifti.input_stream);
         if(!nifti.open(source,std::ios::in))
-            return tipl::error() << var_image.error_msg,1;
+            return tipl::error() << nifti.error_msg,1;
 
         if(!var_image.apply([&](auto& I)
         {
             I.resize(var_image.shape = tipl::shape<3>(I.width(),I.height(),I.depth()*var_image.dim4));
             return nifti.save_to_buffer(I.data(),dim4.size()) ? true : (tipl::error() << nifti.error_msg,false);
         }))
-        return 0;
+            return 1;
     }
 
     {
@@ -594,14 +578,10 @@ int img(tipl::program_option<tipl::out>& po)
             }
             if(cmd == "info")
             {
-                if(var_image.pixel_type == variant_image::int8)
-                    show_slice(tipl::image<2,float>(var_image.I_int8.slice_at(var_image.shape.depth()/2)));
-                if(var_image.pixel_type == variant_image::int16)
-                    show_slice(tipl::image<2,float>(var_image.I_int16.slice_at(var_image.shape.depth()/2)));
-                if(var_image.pixel_type == variant_image::int32)
-                    show_slice(tipl::image<2,float>(var_image.I_int32.slice_at(var_image.shape.depth()/2)));
-                if(var_image.pixel_type == variant_image::float32)
-                    show_slice(tipl::image<2,float>(var_image.I_float32.slice_at(var_image.shape.depth()/2)));
+                var_image.apply([&](auto& I)
+                {
+                    show_slice(tipl::image<2,float>(I.slice_at(var_image.shape.depth()/2)));
+                });
                 tipl::out() << var_image.info;
                 continue;
             }
@@ -619,7 +599,7 @@ int img(tipl::program_option<tipl::out>& po)
             {
                 return tipl::io::gz_nifti(output,std::ios::out) << var_image.bind(tipl::make_image(I.data(),dim4));
             }))
-            return 0;
+                return tipl::error() << "cannot write to " << output,1;
         }
         else
         {
