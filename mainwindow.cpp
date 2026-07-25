@@ -70,71 +70,122 @@ void ai_request_list(QLocalSocket *clientSocket)
 
 void ai_request_command(QLocalSocket* socket,const QByteArray& request)
 {
-    auto args = QString::fromUtf8(request).split('\t');
-    if(args.size() < 3)
+    int tab = request.indexOf('\t',4);
+    if(tab < 0)
         return socket->write("ERROR\tinvalid command"),void();
 
     QWidget* target = nullptr;
+    auto id = QString::fromUtf8(request.mid(4,tab-4));
     for(auto* window : QApplication::allWidgets())
-        if(window->property("remote_id").toString() == args[1])
-        {
+        if(window->property("remote_id").toString() == id)
             target = window;
-            break;
-        }
-
     if(!target)
         return socket->write("ERROR\twindow not found"),void();
 
-    std::vector<std::string> cmd;
-    for(int i = 2;i < args.size();++i)
-        cmd.push_back(args[i].toUtf8().toStdString());
-
-    QString output,error;
-    bool okay = false;
-
+    auto run = [&](const std::vector<std::string>& cmd,QString& output,QString& error)
     {
-        std::lock_guard<std::mutex> lock(console.edit_buf);
-        console.capture = &output;
-    }
+        if(cmd.empty() || cmd[0].empty())
+            return error = "empty command",false;
 
-    try
-    {
-        if(auto* window = qobject_cast<MainWindow*>(target))
+        bool okay = false;
         {
-            okay = window->command(cmd);
-            error = QString::fromStdString(window->error_msg);
+            std::lock_guard<std::mutex> lock(console.edit_buf);
+            console.capture = &output;
         }
-        else if(auto* window = qobject_cast<tracking_window*>(target))
+        try
         {
-            okay = window->command(cmd);
-            error = QString::fromStdString(window->error_msg);
-        }
-        else if(auto* window = qobject_cast<view_image*>(target))
-        {
-            if(cmd.size() > 2)
-                error = "too many parameters";
+            if(auto* window = qobject_cast<MainWindow*>(target))
+                okay = window->command(cmd),
+                    error = QString::fromStdString(window->error_msg);
+            else if(auto* window = qobject_cast<tracking_window*>(target))
+                okay = window->command(cmd),
+                    error = QString::fromStdString(window->error_msg);
+            else if(auto* window = qobject_cast<view_image*>(target))
+                if(cmd.size() > 2)
+                    error = "too many parameters";
+                else
+                    okay = window->command(cmd[0],cmd.size() == 2 ? cmd[1] : ""),
+                        error = QString::fromStdString(window->error_msg);
             else
-            {
-                okay = window->command(
-                    cmd[0],cmd.size() == 2 ? cmd[1] : "");
-                error = QString::fromStdString(window->error_msg);
-            }
+                error = "unsupported window";
         }
+        catch(const std::exception& e)
+        {
+            error = e.what();
+        }
+        catch(...)
+        {
+            error = "unknown error";
+        }
+        {
+            std::lock_guard<std::mutex> lock(console.edit_buf);
+            console.capture = nullptr;
+        }
+        return okay;
+    };
+
+    auto payload = request.mid(tab+1).trimmed();
+    if(!payload.startsWith('['))
+    {
+        std::vector<std::string> cmd;
+        for(const auto& arg : payload.split('\t'))
+            cmd.push_back(arg.toStdString());
+        QString output,error;
+        bool okay = run(cmd,output,error);
+        return socket->write(((okay ? "OKAY\n" :
+                                   "ERROR\t" + error + "\n") + output).toUtf8()),void();
+    }
+
+    QJsonParseError parse_error;
+    auto doc = QJsonDocument::fromJson(payload,&parse_error);
+    if(!doc.isArray())
+        return socket->write(("ERROR\tinvalid batch JSON: " +
+                              parse_error.errorString()).toUtf8()),void();
+
+    bool updates_enabled = target->updatesEnabled();
+    target->setUpdatesEnabled(false);
+    QJsonArray results;
+    auto commands = doc.array();
+
+    for(int index = 0;index < commands.size();++index)
+    {
+        QJsonObject result{{"index",index}};
+        QString output,error;
+        std::vector<std::string> cmd;
+        auto args = commands[index].toArray();
+
+        if(!commands[index].isArray() ||
+            !std::all_of(args.begin(),args.end(),
+                         [](const auto& value){return value.isString();}))
+            error = "command and parameters must be strings in an array";
         else
-            error = "unsupported window";
-    }
-    catch(const std::exception& e)
-    {
-        error = e.what();
+            for(const auto& value : args)
+                cmd.push_back(value.toString().toUtf8().toStdString());
+
+        bool okay = error.isEmpty() && run(cmd,output,error);
+        if(!okay && error.isEmpty())
+            error = "command failed";
+
+        result["okay"] = okay;
+        result["output"] = output;
+        if(!okay)
+            result["error"] = error;
+        results.append(result);
+
+        if(!okay)
+            break;
     }
 
+    target->setUpdatesEnabled(updates_enabled);
+    if(auto* window = qobject_cast<tracking_window*>(target))
     {
-        std::lock_guard<std::mutex> lock(console.edit_buf);
-        console.capture = nullptr;
+        window->slice_need_update = true;
+        window->glWidget->update_slice();
     }
+    else
+        target->update();
 
-    QString reply = okay ? "OKAY\n" : "ERROR\t" + error + "\n";
-    socket->write((reply + output).toUtf8());
+    socket->write(QJsonDocument(results).toJson(QJsonDocument::Compact));
 }
 void ai_request_log(QLocalSocket* socket)
 {
