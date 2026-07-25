@@ -894,25 +894,7 @@ QStringList GetSubDir(QString Dir,bool recursive = true)
 }
 
 std::vector<std::filesystem::path> rename_dicom_at_dir(std::filesystem::path path,
-                                                       std::filesystem::path output)
-{
-    tipl::progress prog("Renaming DICOM",true);
-    tipl::out() << "current directory is " << std::filesystem::current_path();
-    tipl::out() << "source directory is " << path;
-    tipl::out() << "output directory is " << output;
-
-    auto files = tipl::search_files(path,"",true);
-    tipl::par_for(files.size(),[&](size_t i)
-    {
-        auto renamed = rename_dicom(files[i],output);
-        files[i] = renamed.empty() ? std::filesystem::path() : renamed.parent_path().parent_path();
-    });
-    files.erase(std::remove_if(files.begin(),files.end(),
-                                      [](const auto& p){return p.empty();}),files.end());
-    std::sort(files.begin(),files.end());
-    files.erase(std::unique(files.begin(),files.end()),files.end());
-    return files;
-}
+                                                       std::filesystem::path output);
 void MainWindow::on_RenameDICOMDir_clicked()
 {
     QString path =
