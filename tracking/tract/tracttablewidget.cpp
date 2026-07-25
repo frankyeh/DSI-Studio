@@ -474,6 +474,12 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         return true;
     };
 
+    if(cmd[0] == "list_tract")
+    {
+        for(int row = 0;row < rowCount();++row)
+            tipl::out() << row << "\t" << item(row,0)->text().toStdString();
+        return run->succeed();
+    }
     if(cmd[0] == "delete_branch")
     {
         for_each_bundle(cmd[0].c_str(), [&](unsigned int index){return tract_models[index]->delete_branch();});
