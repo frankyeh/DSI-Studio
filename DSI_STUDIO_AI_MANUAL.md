@@ -87,6 +87,8 @@ The running GUI creates a world-access local server named `dsi-studio`, waits
 500 ms for each request, and recognizes identity-aware or legacy `LIST`, `LOG`,
 `CMD<TAB>...`, or a raw filename
 ([server dispatch](https://github.com/frankyeh/DSI-Studio/blob/ecacbd0478e8b7d383a9cd9a5606cc08e6d78a58/main.cpp#L571-L615)).
+`main.cpp` only dispatches these requests; agent parsing, command execution,
+prompt attachment, and reply writing are handled in `mainwindow.cpp`.
 
 **Precondition:** start DSI Studio normally and wait for its main window. If no
 instance exists, `LIST` returns `NO_INSTANCE`; other one-argument strings may
@@ -165,7 +167,7 @@ The single-command form has no escaping layer. Spaces are safe inside a field;
 a field cannot contain a literal tab. Paths with spaces are safe when they are
 one PowerShell array element. The batch form uses JSON escaping. UTF-8
 conversion occurs in
-[`ai_request_command()`](https://github.com/frankyeh/DSI-Studio/blob/438176e0aa47139cf54bd5f0c22e69e31e2ff11f/mainwindow.cpp#L71-L188).
+[`ai_request_command()`](https://github.com/frankyeh/DSI-Studio/blob/ecacbd0478e8b7d383a9cd9a5606cc08e6d78a58/mainwindow.cpp#L101-L233).
 
 ### Request forms
 
@@ -250,7 +252,7 @@ are disabled and the target is redrawn once afterward. This reduces connection
 and repaint overhead but does not skip command computation or side effects.
 The optional `prompt` property appears only on the last returned object and
 only when this agent has queued prompts. The batch is not a transaction and does not roll back earlier commands
-([batch implementation](https://github.com/frankyeh/DSI-Studio/blob/438176e0aa47139cf54bd5f0c22e69e31e2ff11f/mainwindow.cpp#L127-L188)).
+([batch and prompt implementation](https://github.com/frankyeh/DSI-Studio/blob/ecacbd0478e8b7d383a9cd9a5606cc08e6d78a58/mainwindow.cpp#L45-L233)).
 An invalid window ID or invalid outer JSON document returns a plain
 `ERROR<TAB>message` instead of a JSON result array.
 
@@ -304,11 +306,12 @@ image<TAB>3<TAB>image.nii.gz
 The columns are `type`, `window_id`, and current window title. IDs are assigned
 monotonically the first time a widget appears in `LIST`, persist for that
 widget's lifetime, and are not intentionally reused
-([`ai_request_list()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L41-L68)). Refresh `LIST` after
+([`ai_request_list()`](https://github.com/frankyeh/DSI-Studio/blob/ecacbd0478e8b7d383a9cd9a5606cc08e6d78a58/mainwindow.cpp#L73-L99)). Refresh `LIST` after
 opening or closing anything. Never cache an ID across application restarts.
 
 ```powershell
-$rows = (Invoke-Dsi @('LIST')) -split '\r?\n' | Select-Object -Skip 1 |
+$listReply = Read-DsiTextReply (Invoke-Dsi @('LIST'))
+$rows = $listReply.Text -split '\r?\n' | Select-Object -Skip 1 |
     ForEach-Object {
         $c = $_ -split "`t", 3
         [pscustomobject]@{ Type=$c[0]; Id=$c[1]; Title=$c[2] }
@@ -325,19 +328,23 @@ dirty-state flag, or creation timestamp.
 
 During a command, `ai_request_command()` points `console.capture` at a temporary
 buffer and appends captured text to the reply
-([capture and reply](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L91-L136)). `LOG` returns the
+([capture and reply](https://github.com/frankyeh/DSI-Studio/blob/ecacbd0478e8b7d383a9cd9a5606cc08e6d78a58/mainwindow.cpp#L127-L233)). `LOG` returns the
 entire rolling history, not only text since the last call
-([`ai_request_log()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L138-L146)). The history is
+([`ai_request_log()`](https://github.com/frankyeh/DSI-Studio/blob/ecacbd0478e8b7d383a9cd9a5606cc08e6d78a58/mainwindow.cpp#L236-L245)). The history is
 capped at 4 MiB by dropping its oldest half
 ([console history](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/console.cpp#L81-L114)).
 
 Capture a baseline before asynchronous work, then compare later text:
 
 ```powershell
-$before = Invoke-Dsi @('LOG')
-$ack = Invoke-Dsi -Fields @('CMD',$trackingId,'run_auto_track','CST_L','')
+$beforeReply = Read-DsiTextReply (Invoke-Dsi @('LOG'))
+$before = $beforeReply.Text
+$ackReply = Read-DsiTextReply (
+    Invoke-Dsi -Fields @('CMD',$trackingId,'run_auto_track','CST_L',''))
+$ack = $ackReply.Text
 Start-Sleep -Seconds 2
-$after = Invoke-Dsi @('LOG')
+$afterReply = Read-DsiTextReply (Invoke-Dsi @('LOG'))
+$after = $afterReply.Text
 $delta = if ($after.StartsWith($before)) { $after.Substring($before.Length) } else { $after }
 ```
 
@@ -1485,7 +1492,8 @@ if ($open -notmatch '^(OKAY|BUSY)') { throw $open }
 $deadline = (Get-Date).AddMinutes(2)
 do {
     Start-Sleep -Milliseconds 500
-    $rows = (Invoke-Dsi @('LIST')) -split '\r?\n' | Select-Object -Skip 1 |
+    $listReply = Read-DsiTextReply (Invoke-Dsi @('LIST'))
+    $rows = $listReply.Text -split '\r?\n' | Select-Object -Skip 1 |
         ForEach-Object {
             $c = $_ -split "`t",3
             [pscustomobject]@{Type=$c[0];Id=$c[1];Title=$c[2]}
@@ -1788,7 +1796,7 @@ OKAY
 LIST
 LOG
 SCHEMA
-CMD<TAB>window_id<TAB>command<TAB>parameter...
+CMD<TAB>@agent_id<TAB>window_id<TAB>command<TAB>parameter...
 
 SCHEMA
 OKAY
@@ -1875,22 +1883,27 @@ defers work, or immediate acknowledgement cannot represent completion.
 
 ```json
 {
-  "source_commit": "8ad955a333cdfcb8d6433a6a88137c0ae76f6cad",
+  "source_commit": "ecacbd0478e8b7d383a9cd9a5606cc08e6d78a58",
   "base_audit_commit": "9e00c9c23f49df581a78bc1c9928134d262092ad",
   "server_name": "dsi-studio",
   "request_prefixes": {
     "LIST": {
-      "fields": 1,
+      "fields": 2,
+      "wire": "LIST<TAB>@agent_id",
+      "legacy_fields": 1,
       "meaning": "discover targetable windows"
     },
     "LOG": {
-      "fields": 1,
+      "fields": 2,
+      "wire": "LOG<TAB>@agent_id",
+      "legacy_fields": 1,
       "meaning": "rolling console history"
     },
     "CMD": {
-      "minimum_fields": 3,
-      "wire_single": "CMD<TAB>window_id<TAB>command<TAB>parameter...",
-      "wire_batch": "CMD<TAB>window_id<TAB>[[\"command\",\"parameter\"],[\"command\",...]]"
+      "minimum_fields": 4,
+      "legacy_minimum_fields": 3,
+      "wire_single": "CMD<TAB>@agent_id<TAB>window_id<TAB>command<TAB>parameter...",
+      "wire_batch": "CMD<TAB>@agent_id<TAB>window_id<TAB>[[\"command\",\"parameter\"],[\"command\",...]]"
     },
     "raw_filename": {
       "fields": 1,
@@ -1996,6 +2009,16 @@ defers work, or immediate acknowledgement cannot represent completion.
       "output",
       "error (failure only)"
     ]
+  },
+  "agent_session": {
+    "id": "stable unique case-sensitive string beginning with @",
+    "lifetime": "one agent session",
+    "legacy_warning": "requests without an ID share one prompt queue and are unsafe for simultaneous agents"
+  },
+  "prompt_delivery": {
+    "text_reply": "PROMPT<TAB><JSON> immediately after the first status line",
+    "batch_reply": "optional prompt property on the last result object",
+    "clear_rule": "clear only the matching agent queue after the complete reply is written"
   },
   "commands": [
     {
