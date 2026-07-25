@@ -291,44 +291,44 @@ void ROIRegion::to_mask(tipl::image<3,unsigned char>& mask,const tipl::shape<3>&
             tipl::transformation_matrix<float>(tipl::from_space(trans_to).to(to_diffusion_space)));
 }
 // ---------------------------------------------------------------------------
-void ROIRegion::perform(const std::string& action)
+bool ROIRegion::perform(const std::string& action)
 {
     if(action == "flipx")
-        flip_region(0);
+        return flip_region(0),true;
     if(action == "flipy")
-        flip_region(1);
+        return flip_region(1),true;
     if(action == "flipz")
-        flip_region(2);
+        return flip_region(2),true;
     if(action == "shiftx")
-        shift(tipl::vector<3,float>(1.0, 0.0, 0.0));
+        return shift(tipl::vector<3,float>(1.0, 0.0, 0.0)),true;
     if(action == "shiftnx")
-        shift(tipl::vector<3,float>(-1.0, 0.0, 0.0));
+        return shift(tipl::vector<3,float>(-1.0, 0.0, 0.0)),true;
     if(action == "shifty")
-        shift(tipl::vector<3,float>(0.0, 1.0, 0.0));
+        return shift(tipl::vector<3,float>(0.0, 1.0, 0.0)),true;
     if(action == "shiftny")
-        shift(tipl::vector<3,float>(0.0, -1.0, 0.0));
+        return shift(tipl::vector<3,float>(0.0, -1.0, 0.0)),true;
     if(action == "shiftz")
-        shift(tipl::vector<3,float>(0.0, 0.0, 1.0));
+        return shift(tipl::vector<3,float>(0.0, 0.0, 1.0)),true;
     if(action == "shiftnz")
-        shift(tipl::vector<3,float>(0.0, 0.0, -1.0));
+        return shift(tipl::vector<3,float>(0.0, 0.0, -1.0)),true;
 
     tipl::image<3,unsigned char>mask;
     using namespace tipl::morphology;
     if(action == "smoothing")
-        from_mask(smoothing(to_mask()));
+        return from_mask(smoothing(to_mask())),true;
     if(action == "erosion")
-        from_mask(erosion(to_mask()));
+        return from_mask(erosion(to_mask())),true;
     if(action == "dilation")
-        from_mask(dilation(to_mask()));
+        return from_mask(dilation(to_mask())),true;
     if(action == "opening")
-        from_mask(opening(to_mask()));
+        return from_mask(opening(to_mask())),true;
     if(action == "closing")
-        from_mask(closing(to_mask()));
+        return from_mask(closing(to_mask())),true;
     if(action == "defragment")
-        from_mask(defragment(to_mask()));
+        return from_mask(defragment(to_mask())),true;
     if(action == "negate")
-        from_mask(negate(to_mask()));
-
+        return from_mask(negate(to_mask())),true;
+    return false;
 }
 
 // ---------------------------------------------------------------------------
