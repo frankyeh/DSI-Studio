@@ -186,6 +186,14 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->failed(handle->error_msg);
         return run->succeed();
     }
+    if(cmd[0] == "list_slice")
+    {
+        tipl::out() << "index\tcurrent\tname";
+        for(int index = 0;index < ui->SliceModality->count();++index)
+            tipl::out() << index << "\t" << (index == ui->SliceModality->currentIndex()) << "\t"
+                        << ui->SliceModality->itemText(index).toStdString();
+        return run->succeed();
+    }
     if(cmd[0] == "set_slice")
     {
         if(no_update)
