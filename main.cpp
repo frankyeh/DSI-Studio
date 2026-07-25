@@ -468,9 +468,9 @@ int gpu_count = 0;
 extern console_stream console;
 MainWindow* main_window = nullptr;
 
-void ai_request_list(QLocalSocket *clientSocket);
+void ai_request_list(QLocalSocket*,const QByteArray&);
 void ai_request_command(QLocalSocket*,const QByteArray&);
-void ai_request_log(QLocalSocket* socket);
+void ai_request_log(QLocalSocket*,const QByteArray&);
 int main(int ac, char *av[])
 {
     if(ac == 2)
@@ -580,12 +580,12 @@ int main(int ac, char *av[])
                     clientSocket->waitForReadyRead(500);
                     auto request = clientSocket->readAll();
                     tipl::out() << "received: " << request.constData();
-                    if(request == "LIST")
-                        ai_request_list(clientSocket);
+                    if(request == "LIST" || request.startsWith("LIST\t"))
+                        ai_request_list(clientSocket,request);
                     else if(request.startsWith("CMD\t"))
                         ai_request_command(clientSocket,request);
-                    else if(request == "LOG")
-                        ai_request_log(clientSocket);
+                    else if(request == "LOG" || request.startsWith("LOG\t"))
+                        ai_request_log(clientSocket,request);
                     else
                     {
                         // Existing filename-opening behavior remains unchanged.
