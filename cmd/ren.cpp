@@ -1,5 +1,45 @@
 #include "TIPL/tipl.hpp"
 
+std::filesystem::path rename_dicom(const std::filesystem::path& file_name,
+                                   std::filesystem::path output)
+{
+    std::string person, sequence, imagename;
+    {
+        tipl::io::dicom header;
+        if (!header.load_from_file(file_name))
+        {
+            tipl::out() << "not a DICOM file. Skipping";
+            return std::string();
+        }
+        header.get_patient(person);
+        header.get_sequence(sequence);
+        header.get_image_name(imagename);
+    }
+    check_name(person);
+    check_name(sequence);
+    check_name(imagename);
+    output = output/person;
+    output = output/sequence;
+    output = output/imagename;
+    if(file_name != output)
+    {
+        tipl::out() << file_name << "->" << output;
+        std::error_code ec;
+        if (!std::filesystem::exists(output.parent_path()) && !std::filesystem::create_directories(output.parent_path()))
+        {
+            if(!std::filesystem::exists(output.parent_path()))
+                tipl::error() << "cannot create dir " << output;
+        }
+        std::filesystem::rename(file_name,output,ec);
+        if(ec)
+        {
+            tipl::error() << "cannot rename " << file_name << " to " << output << ": " << ec.message();
+            return {};
+        }
+    }
+    return output;
+}
+
 std::vector<std::filesystem::path> rename_dicom_at_dir(std::filesystem::path path,
                                                        std::filesystem::path output)
 {
@@ -10,10 +50,10 @@ std::vector<std::filesystem::path> rename_dicom_at_dir(std::filesystem::path pat
 
     auto files = tipl::search_files(path,"",true);
     tipl::par_for(files.size(),[&](size_t i)
-                  {
-                      auto renamed = rename_dicom(files[i],output);
-                      files[i] = renamed.empty() ? std::filesystem::path() : renamed.parent_path().parent_path();
-                  });
+    {
+        auto renamed = rename_dicom(files[i],output);
+        files[i] = renamed.empty() ? std::filesystem::path() : renamed.parent_path().parent_path();
+    });
     files.erase(std::remove_if(files.begin(),files.end(),
                                [](const auto& p){return p.empty();}),files.end());
     std::sort(files.begin(),files.end());
