@@ -1,21 +1,52 @@
 # DSI Studio AI-Agent Setup
 
-Use this file to connect a local AI agent to an AI-control-enabled DSI Studio. Read `DSI_STUDIO_AI_MANUAL.md` completely before issuing domain commands; it is the authoritative command reference.
+Use this file to connect a local AI agent to an AI-control-enabled DSI Studio. Read `DSI_STUDIO_AI_MANUAL.md` completely before issuing domain commands; it is the authoritative command reference. On Windows, connect directly to the `dsi-studio` named pipe. Launching `dsi_studio.exe` for every request is only a fallback.
 
 ## Requirements
 
 - The agent must be able to execute local Windows processes on the same computer as DSI Studio. A remote or browser-only agent cannot control the local application without a separate local execution bridge.
-- Obtain the exact path to `dsi_studio.exe` and do not substitute another installation without the user's approval.
-- Obtain access only to the executable, requested input data, manual, and output directories needed for the task.
+- Obtain the exact path to `dsi_studio.exe` only when DSI Studio must be started or the executable fallback is needed.
+- Obtain access only to the executable (if needed), requested input data, manual, and output directories required for the task.
 - DSI Studio should already be running unless the user explicitly asks the agent to start it.
 
-## Connect
+## Connect directly
 
-Use a task-specific PowerShell variable:
+`QLocalServer("dsi-studio")` is the Windows named pipe `\\.\pipe\dsi-studio`. The server handles one request per connection and then disconnects, so open a new lightweight pipe connection for each request:
 
 ```powershell
-$dsiExe = 'C:\DSI-Studio\dsi_studio.exe'
-& $dsiExe 'LIST'
+function Invoke-DsiRequest([string]$Request)
+{
+    $pipe = [System.IO.Pipes.NamedPipeClientStream]::new(
+        '.', 'dsi-studio',
+        [System.IO.Pipes.PipeDirection]::InOut)
+    try
+    {
+        $pipe.Connect(2000)
+        $utf8 = [System.Text.UTF8Encoding]::new($false)
+        $bytes = $utf8.GetBytes($Request)
+        $pipe.Write($bytes, 0, $bytes.Length)
+        $pipe.Flush()
+
+        $buffer = New-Object byte[] 8192
+        $reply = [System.Text.StringBuilder]::new()
+        while(($count = $pipe.Read($buffer, 0, $buffer.Length)) -gt 0)
+        {
+            [void]$reply.Append($utf8.GetString($buffer, 0, $count))
+        }
+        $reply.ToString()
+    }
+    finally
+    {
+        $pipe.Dispose()
+    }
+}
+
+function Invoke-Dsi([string[]]$Fields)
+{
+    Invoke-DsiRequest ([string]::Join([char]9, $Fields))
+}
+
+Invoke-DsiRequest 'LIST'
 ```
 
 A successful response resembles:
@@ -26,16 +57,14 @@ main    1    DSI Studio ...
 tracking    2    C:\data\subject.fz
 ```
 
-`LIST` assigns and returns remote window IDs. Always call it before the first command and again after opening or closing a window. If it returns `NO_INSTANCE`, ask the user to start the AI-control-enabled DSI Studio.
+`LIST` assigns and returns remote window IDs. Always call it before the first command and again after opening or closing a window. A pipe connection timeout means no compatible DSI Studio server is available; ask the user to start it.
 
 ## Send a command
 
 Build the request with actual tab characters:
 
 ```powershell
-$request = [string]::Join([char]9, @('CMD', '2', 'list_slice'))
-& $dsiExe $request
-Start-Sleep -Seconds 2
+Invoke-Dsi @('CMD', '2', 'list_slice')
 ```
 
 Protocol:
@@ -57,9 +86,8 @@ Target commands according to the window type returned by `LIST`:
 Send an existing filename as the executable's single argument:
 
 ```powershell
-& $dsiExe 'C:\data\subject.fz'
-Start-Sleep -Seconds 2
-& $dsiExe 'LIST'
+Invoke-DsiRequest 'C:\data\subject.fz'
+Invoke-DsiRequest 'LIST'
 ```
 
 The client forwards the filename to the running DSI Studio. Refresh `LIST` to discover the new window ID.
@@ -85,10 +113,22 @@ Use only commands and parameters documented in `DSI_STUDIO_AI_MANUAL.md`.
 Retrieve DSI Studio's available console history with:
 
 ```powershell
-& $dsiExe 'LOG'
+Invoke-DsiRequest 'LOG'
 ```
 
 Use the console to diagnose loading, registration, downloading, segmentation, tracking, and export failures. Do not treat the absence of an error message as proof of success.
+
+## Executable fallback
+
+If the agent cannot use Windows named pipes, invoke the executable with one complete request:
+
+```powershell
+$dsiExe = 'C:\DSI-Studio\dsi_studio.exe'
+$request = [string]::Join([char]9, @('CMD', '2', 'list_slice'))
+& $dsiExe $request
+```
+
+This starts a new client process for every request and has a fixed five-second reply timeout, so it is slower and can print `TIMEOUT` while the GUI operation continues. Do not retry an unknown operation blindly.
 
 ## Completion and verification
 
