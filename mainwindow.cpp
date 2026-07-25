@@ -22,6 +22,7 @@
 #include "regtoolbox.h"
 #include "reconstruction/reconstruction_window.h"
 #include "tracking/tracking_window.h"
+#include "opengl/glwidget.h"
 #include "dicom/dicom_parser.h"
 #include "view_image.h"
 #include "mapping/atlas.hpp"
