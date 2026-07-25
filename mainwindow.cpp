@@ -243,7 +243,61 @@ void ai_request_log(QLocalSocket* socket,const QByteArray& request)
     }
     ai_reply(socket,agent,"OKAY\n" + output);
 }
+void ai_request(QLocalSocket* socket,const QByteArray& data)
+{
+    QJsonParseError error;
+    auto doc = QJsonDocument::fromJson(data,&error);
+    if(!doc.isObject())
+        return ai_reply(socket,{},("ERROR\tinvalid JSON: " +
+                                     error.errorString()).toUtf8());
 
+    auto request = doc.object();
+    auto agent = request["agent"].toString();
+    auto type = request["request"].toString().toUpper();
+
+    if(!agent.startsWith('@'))
+        return ai_reply(socket,agent,"ERROR\tinvalid agent");
+
+    auto activity = request;
+    activity.remove("chat");
+    main_window->add_ai_history(
+        agent,"request",
+        QString::fromUtf8(
+            QJsonDocument(activity).toJson(QJsonDocument::Compact)));
+
+    if(type == "LIST")
+        ai_request_list(socket,"LIST\t" + agent.toUtf8());
+    else if(type == "LOG")
+        ai_request_log(socket,"LOG\t" + agent.toUtf8());
+    else if(type == "CMD")
+    {
+        auto command = request["command"].toArray();
+        auto window = request["window"].toVariant().toString().toUtf8();
+        if(window.isEmpty() || command.isEmpty())
+            return ai_reply(socket,agent,"ERROR\tinvalid command");
+
+        if(command[0].isString())
+        {
+            QJsonArray batch;
+            batch.append(command);
+            command = batch;
+        }
+
+        QByteArray converted = "CMD\t";
+        converted += agent.toUtf8();
+        converted += '\t';
+        converted += window;
+        converted += '\t';
+        converted += QJsonDocument(command).toJson(QJsonDocument::Compact);
+        ai_request_command(socket,converted);
+    }
+    else
+        return ai_reply(socket,agent,"ERROR\tunknown request");
+
+    auto chat = request["chat"].toString().trimmed();
+    if(!chat.isEmpty())
+        main_window->add_ai_history(agent,"assistant",chat);
+}
 
 void checkForVersionSpecificBugs_Minimal(const QString& bugListText)
 {
