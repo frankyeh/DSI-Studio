@@ -41,22 +41,7 @@ QString access_token;
 void ai_request_list(QLocalSocket *clientSocket)
 {
     static quint64 next_id = 0;
-
-    auto remote_id = [](QWidget* window)
-    {
-        static std::atomic_uint64_t next_id = 1;
-
-        QVariant id = window->property("remote_id");
-        if(!id.isValid())
-        {
-            id = QString::number(next_id++);
-            window->setProperty("remote_id",id);
-        }
-        return id.toString();
-    };
-
     QStringList result;
-
     for(auto* window : QApplication::topLevelWidgets())
     {
         if(!window->property("remote_id").isValid())
@@ -76,7 +61,8 @@ void ai_request_list(QLocalSocket *clientSocket)
                       .arg(window->windowTitle());
     }
 
-    clientSocket->write(result.join('\n').toUtf8());
+    clientSocket->write(
+        "OKAY\n" + result.join('\n').toUtf8());
 }
 
 void checkForVersionSpecificBugs_Minimal(const QString& bugListText)
