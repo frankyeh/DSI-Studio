@@ -255,8 +255,8 @@ bool load_file_name(void)
     return true;
 }
 
-const char* version_string = "Hou \"\xe4\xbe\xaf\"";
-std::string dsi_studio_citation = std::string("DSI Studio (Yeh 2025, doi:10.1038/s41592-025-02762-8), the ") +
+const char* version_string = "Sun \"\xe5\xad\xab\"";
+std::string dsi_studio_citation = std::string("DSI Studio (doi:10.1038/s41592-025-02762-8), the ") +
                                 version_string + " version (" + __DATE__ + ", http://dsi-studio.labsolver.org)";
 int map_ver = 202408;
 int src_ver = 202408;
