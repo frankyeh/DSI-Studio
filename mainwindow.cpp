@@ -105,7 +105,11 @@ static void ai_request_command(QLocalSocket* socket,const QString& agent,
     if(id.isEmpty() || commands.isEmpty())
         return ai_reply(socket,agent,"ERROR\tinvalid command");
     if(commands[0].isString())
-        commands = QJsonArray{commands};
+    {
+        QJsonArray batch;
+        batch.append(commands);
+        commands = batch;
+    }
 
     QWidget* target = nullptr;
     for(auto* window : QApplication::allWidgets())
