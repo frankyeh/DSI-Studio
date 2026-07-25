@@ -135,7 +135,7 @@ public:
         }
 
         // assign mask
-        tipl::threshold(reg.It[0],voxel.mask,0.0f);
+        voxel.mask = reg.It[0] > 0.0f;
 
 
         // setup voxel data for QSDR
