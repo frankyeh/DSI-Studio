@@ -1,4 +1,4 @@
-# DSI Studio Codex Control Manual
+# DSI Studio AI-Agent Control Manual
 
 **Source snapshot:** DSI Studio `master` at commit
 [`9e00c9c23f49df581a78bc1c9928134d262092ad`](https://github.com/frankyeh/DSI-Studio/commit/9e00c9c23f49df581a78bc1c9928134d262092ad), inspected 2026-07-25.
@@ -6,8 +6,8 @@ All source links below are permanent links pinned to that commit.
 
 ## Purpose and scope
 
-Use this manual to control an already-running DSI Studio GUI from a Windows
-Codex session. Treat the source as authoritative: the public command surface is
+Use this manual to control an already-running DSI Studio GUI from a local
+Windows AI-agent session. Treat the source as authoritative: the public command surface is
 the local-server routing in [`main.cpp`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/main.cpp#L473-L496) and
 [`mainwindow.cpp`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L41-L146), then the target window's
 handler and its delegated handlers. The current surface exposes `main`,
@@ -24,7 +24,7 @@ and region commands described here.
 
 Classify every operation before sending it:
 
-| Class | Meaning | Codex rule |
+| Class | Meaning | AI-agent rule |
 |---|---|---|
 | **Read-only** | Lists state or returns logs without changing data or GUI state. | Run directly. |
 | **GUI-state change** | Changes selection, visibility, camera, slice position, or display parameters. | Run directly when reversible; record prior state when practical. |
@@ -53,10 +53,21 @@ subsequent IPC commands.
 
 ### Server and client lifecycle
 
-The server name is exactly `dsi-studio`. A one-argument invocation first tries
-to connect for 5,000 ms, writes that one argument as the complete request, waits
-up to 5,000 ms for a reply, prints `TIMEOUT` if no bytes arrive, and exits `0`
-only when the reply starts with `OKAY`; otherwise it exits `1`
+The server name is exactly `dsi-studio`. On Windows, `QLocalServer` exposes it
+as the named pipe `\\.\pipe\dsi-studio`. Connect to this pipe directly for
+normal AI operation. The server processes one request per connection, writes
+one reply, and disconnects; the client should therefore make a fresh lightweight
+pipe connection for every request.
+
+Direct pipe access was operationally verified on 2026-07-25 with `LIST` and
+`CMD<TAB>1<TAB>hub<TAB>repos`. In a warm PowerShell process, measured local
+round trips were approximately 1 ms (the first .NET call took approximately
+381 ms for initialization).
+
+Invoking `dsi_studio.exe` with one argument remains a fallback. That client
+tries to connect for 5,000 ms, writes the argument as the complete request,
+waits up to 5,000 ms for a reply, prints `TIMEOUT` if no bytes arrive, and
+exits `0` only when the reply starts with `OKAY`; otherwise it exits `1`
 ([`main()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/main.cpp#L473-L496)).
 
 The running GUI creates a world-access local server named `dsi-studio`, waits
@@ -67,28 +78,47 @@ filename ([server dispatch](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c2
 instance exists, `LIST` returns `NO_INSTANCE`; other one-argument strings may
 instead start a new GUI and be interpreted as filenames.
 
-### PowerShell helper
+### Preferred PowerShell named-pipe helper
 
 Use `[string]::Join([char]9, ...)` because the protocol delimiter is a literal
 tab. It preserves empty fields and avoids editors, shells, or copied text
 silently converting a tab to spaces.
 
 ```powershell
-$DsiStudio = 'E:\Dropbox\work\GitHub\DSI-Studio\build\dsi_studio.exe'
+function Invoke-DsiRequest([string]$Request)
+{
+    $pipe = [System.IO.Pipes.NamedPipeClientStream]::new(
+        '.', 'dsi-studio',
+        [System.IO.Pipes.PipeDirection]::InOut)
+    try
+    {
+        $pipe.Connect(2000)
+        $utf8 = [System.Text.UTF8Encoding]::new($false)
+        $bytes = $utf8.GetBytes($Request)
+        $pipe.Write($bytes, 0, $bytes.Length)
+        $pipe.Flush()
 
-function Invoke-Dsi {
-    param([Parameter(Mandatory)][string[]]$Fields)
-    $request = [string]::Join([char]9, $Fields)
-    $reply = & $DsiStudio $request 2>&1
-    [pscustomobject]@{
-        ExitCode = $LASTEXITCODE
-        Reply    = ($reply -join "`n")
+        $buffer = New-Object byte[] 8192
+        $reply = [System.Text.StringBuilder]::new()
+        while(($count = $pipe.Read($buffer, 0, $buffer.Length)) -gt 0)
+        {
+            [void]$reply.Append($utf8.GetString($buffer, 0, $count))
+        }
+        $reply.ToString()
+    }
+    finally
+    {
+        $pipe.Dispose()
     }
 }
 
-# Discovery uses a single literal request, not CMD fields.
-$listReply = & $DsiStudio 'LIST' 2>&1
-if ($LASTEXITCODE -ne 0) { throw ($listReply -join "`n") }
+function Invoke-Dsi([string[]]$Fields)
+{
+    Invoke-DsiRequest ([string]::Join([char]9, $Fields))
+}
+
+$listReply = Invoke-DsiRequest 'LIST'
+if(-not $listReply.StartsWith('OKAY')) { throw $listReply }
 ```
 
 Do not manually embed tabs. Do not join a parameter's internal words with
@@ -120,15 +150,15 @@ returns `BUSY`, `OKAY`, or `ERROR`; `OKAY` means only that the path existed and
 ([raw open route](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/main.cpp#L583-L603)). After `OKAY`, poll `LIST` for
 the expected window.
 
-### Replies, exit status, and completion
+### Replies, fallback exit status, and completion
 
-| Reply prefix | Client exit | Interpretation |
+| Reply prefix | Executable fallback exit | Interpretation |
 |---|---:|---|
 | `OKAY` | 0 | Handler returned `true`; captured console text may follow. |
 | `ERROR<TAB>message` | 1 | Handler returned `false`, target was invalid, or an exception was caught. |
 | `BUSY` | 1 | Raw filename forwarding was refused because global progress was active. |
-| `TIMEOUT` | 1 | No bytes arrived within five seconds. The GUI command may still be running. |
-| `NO_INSTANCE` | 1 | `LIST` could not connect to a running server. |
+| `TIMEOUT` | 1 | Executable fallback only: no bytes arrived within five seconds. The GUI command may still be running. |
+| `NO_INSTANCE` | 1 | Executable fallback only: `LIST` could not connect to a running server. A direct pipe client instead gets a connection timeout/exception. |
 
 The server executes handlers synchronously on the GUI thread. Long synchronous
 work can outlive the client's five-second wait. Some handlers return after
@@ -161,7 +191,7 @@ widget's lifetime, and are not intentionally reused
 opening or closing anything. Never cache an ID across application restarts.
 
 ```powershell
-$rows = (& $DsiStudio 'LIST') | Select-Object -Skip 1 |
+$rows = (Invoke-DsiRequest 'LIST') -split '\r?\n' | Select-Object -Skip 1 |
     ForEach-Object {
         $c = $_ -split "`t", 3
         [pscustomobject]@{ Type=$c[0]; Id=$c[1]; Title=$c[2] }
@@ -187,10 +217,10 @@ capped at 4 MiB by dropping its oldest half
 Capture a baseline before asynchronous work, then compare later text:
 
 ```powershell
-$before = (& $DsiStudio 'LOG') -join "`n"
+$before = Invoke-DsiRequest 'LOG'
 $ack = Invoke-Dsi -Fields @('CMD',$trackingId,'run_auto_track','CST_L','')
 Start-Sleep -Seconds 2
-$after = (& $DsiStudio 'LOG') -join "`n"
+$after = Invoke-DsiRequest 'LOG'
 $delta = if ($after.StartsWith($before)) { $after.Substring($before.Length) } else { $after }
 ```
 
@@ -845,13 +875,13 @@ the same view alternate opposite faces. For reproducibility, prefer a saved
 | `open_camera` | Absolute text file containing at least 16 floats. | Error if unreadable/short. | Loads camera matrix. **Completion:** Immediate redraw. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"open_camera","E:\settings\camera.txt")` | `GLWidget::command`; [`GLWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453) |
 | `save_camera` | Absolute output path. | Error on write failure. | Writes 16 camera floats. **Completion:** Synchronous; verify output. | File creation | `Invoke-Dsi -Fields @("CMD",$trackingId,"save_camera","E:\settings\camera.txt")` | `GLWidget::command`; [`GLWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453) |
 | `set_camera` | One field containing at least 16 floats. | Error `canceled` when empty/short. | Loads camera matrix from the request. **Completion:** Immediate redraw. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"set_camera","1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1")` | `GLWidget::command`; [`GLWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453) |
-| `store_camera1` | No parameters. | Shows a modal information box, then returns `ERROR` `canceled`. | Stores current camera in QSettings slot `1` before reporting error. **Completion:** State is stored immediately, but the modal must be dismissed. **Caveat:** Not safe for unattended Codex despite changing state. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"store_camera1")` | `GLWidget::command`; [`GLWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453) |
+| `store_camera1` | No parameters. | Shows a modal information box, then returns `ERROR` `canceled`. | Stores current camera in QSettings slot `1` before reporting error. **Completion:** State is stored immediately, but the modal must be dismissed. **Caveat:** Not safe for an unattended AI agent despite changing state. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"store_camera1")` | `GLWidget::command`; [`GLWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453) |
 | `restore_camera1` | No parameters. | Error if slot is empty. | Restores QSettings camera slot `1`. **Completion:** Immediate redraw. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"restore_camera1")` | `GLWidget::command`; [`GLWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453) |
-| `store_camera2` | No parameters. | Shows a modal information box, then returns `ERROR` `canceled`. | Stores current camera in QSettings slot `2` before reporting error. **Completion:** State is stored immediately, but the modal must be dismissed. **Caveat:** Not safe for unattended Codex despite changing state. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"store_camera2")` | `GLWidget::command`; [`GLWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453) |
+| `store_camera2` | No parameters. | Shows a modal information box, then returns `ERROR` `canceled`. | Stores current camera in QSettings slot `2` before reporting error. **Completion:** State is stored immediately, but the modal must be dismissed. **Caveat:** Not safe for an unattended AI agent despite changing state. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"store_camera2")` | `GLWidget::command`; [`GLWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453) |
 | `restore_camera2` | No parameters. | Error if slot is empty. | Restores QSettings camera slot `2`. **Completion:** Immediate redraw. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"restore_camera2")` | `GLWidget::command`; [`GLWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453) |
-| `store_camera3` | No parameters. | Shows a modal information box, then returns `ERROR` `canceled`. | Stores current camera in QSettings slot `3` before reporting error. **Completion:** State is stored immediately, but the modal must be dismissed. **Caveat:** Not safe for unattended Codex despite changing state. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"store_camera3")` | `GLWidget::command`; [`GLWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453) |
+| `store_camera3` | No parameters. | Shows a modal information box, then returns `ERROR` `canceled`. | Stores current camera in QSettings slot `3` before reporting error. **Completion:** State is stored immediately, but the modal must be dismissed. **Caveat:** Not safe for an unattended AI agent despite changing state. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"store_camera3")` | `GLWidget::command`; [`GLWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453) |
 | `restore_camera3` | No parameters. | Error if slot is empty. | Restores QSettings camera slot `3`. **Completion:** Immediate redraw. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"restore_camera3")` | `GLWidget::command`; [`GLWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453) |
-| `store_camera4` | No parameters. | Shows a modal information box, then returns `ERROR` `canceled`. | Stores current camera in QSettings slot `4` before reporting error. **Completion:** State is stored immediately, but the modal must be dismissed. **Caveat:** Not safe for unattended Codex despite changing state. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"store_camera4")` | `GLWidget::command`; [`GLWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453) |
+| `store_camera4` | No parameters. | Shows a modal information box, then returns `ERROR` `canceled`. | Stores current camera in QSettings slot `4` before reporting error. **Completion:** State is stored immediately, but the modal must be dismissed. **Caveat:** Not safe for an unattended AI agent despite changing state. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"store_camera4")` | `GLWidget::command`; [`GLWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453) |
 | `restore_camera4` | No parameters. | Error if slot is empty. | Restores QSettings camera slot `4`. **Completion:** Immediate redraw. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"restore_camera4")` | `GLWidget::command`; [`GLWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453) |
 | `save_screen` | Absolute image output; omission opens a dialog. | Error on image-save failure. | Writes current 3-D view. **Completion:** Synchronous; verify image. | File creation | `Invoke-Dsi -Fields @("CMD",$trackingId,"save_screen","E:\out\save_screen.png")` | `GLWidget::command`; [`GLWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453) |
 | `save_3view_screen` | Absolute image output; omission opens a dialog. | Error on image-save failure. | Writes 2×2 slice/3-D composite. **Completion:** Synchronous; verify image. | File creation | `Invoke-Dsi -Fields @("CMD",$trackingId,"save_3view_screen","E:\out\save_3view_screen.png")` | `GLWidget::command`; [`GLWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453) |
@@ -1303,7 +1333,7 @@ camera-restore slots, three tract flips, six tract cuts, and 32 region actions.
 | `unet` | `list_unet` | `0` | Read-only | Immediate after model-menu refresh. | `tracking_window::command` | [atlas and slice lists](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tracking_window_action.cpp#L189-L314) |
 | `unet` | `segment_brain` | `1` | Computation | Synchronous computation and download; likely to exceed five seconds. Verify with `list_region`. | `tracking_window::command` | [`segment_brain`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tracking_window_action.cpp#L315-L437) |
 
-## End-to-end Codex workflows
+## End-to-end AI-agent workflows
 
 The examples below use the `Invoke-Dsi` helper and fresh IDs from `LIST`.
 
@@ -1320,13 +1350,13 @@ The examples below use the `Invoke-Dsi` helper and fresh IDs from `LIST`.
 ```powershell
 $fib = 'E:\data\subject01.fz'
 if (-not (Test-Path -LiteralPath $fib)) { throw "Missing $fib" }
-$open = & $DsiStudio $fib 2>&1
-if ($LASTEXITCODE -ne 0 -and $open -notmatch 'TIMEOUT') { throw ($open -join "`n") }
+$open = Invoke-DsiRequest $fib
+if ($open -notmatch '^(OKAY|BUSY)') { throw $open }
 
 $deadline = (Get-Date).AddMinutes(2)
 do {
     Start-Sleep -Milliseconds 500
-    $rows = (& $DsiStudio 'LIST') | Select-Object -Skip 1 |
+    $rows = (Invoke-DsiRequest 'LIST') -split '\r?\n' | Select-Object -Skip 1 |
         ForEach-Object {
             $c = $_ -split "`t",3
             [pscustomobject]@{Type=$c[0];Id=$c[1];Title=$c[2]}
@@ -1483,7 +1513,7 @@ OKAY or ERROR<TAB>not running
 ```
 
 **Reason:** current numeric counts cannot distinguish running, completed,
-failed, or canceled. Codex also cannot stop one mistaken/expensive job.
+failed, or canceled. An AI agent also cannot stop one mistaken/expensive job.
 
 ```cpp
 if(cmd[0] == "tracking_status") {
@@ -1585,7 +1615,7 @@ if(cmd[0] == "get_camera")
 **Revise:** [`opengl/glwidget.cpp:2313-2318`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2313-L2318), same function, remove the modal `QMessageBox` from
 `store_camera*` and return `run->succeed()` rather than `run->canceled()`.
 
-**Reason:** Codex can snapshot and restore a camera without temporary files or
+**Reason:** An AI agent can snapshot and restore a camera without temporary files or
 blocking the GUI.
 
 ### P1 — `list_device`
@@ -1723,7 +1753,7 @@ validated dispatcher and pause for safety-category confirmation.
 **Revise:** [`opengl/glwidget.cpp:2405-2451`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2405-L2451), function `GLWidget::command()`, remove the unconditional return
 at lines 2407-2410, validate AVI creation, and return an error on encoder/open/
 write failure. Prefer a job ID and progress/cancel support before exposing this
-to Codex.
+to an AI agent.
 
 
 ## Machine-readable appendix
@@ -4231,7 +4261,7 @@ defers work, or immediate acknowledgement cannot represent completion.
       "handler": "GLWidget::command",
       "output": "Shows a modal information box, then returns `ERROR` `canceled`.",
       "source": "https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453",
-      "caveat": "Not safe for unattended Codex despite changing state."
+      "caveat": "Not safe for an unattended AI agent despite changing state."
     },
     {
       "scope": "render",
@@ -4254,7 +4284,7 @@ defers work, or immediate acknowledgement cannot represent completion.
       "handler": "GLWidget::command",
       "output": "Shows a modal information box, then returns `ERROR` `canceled`.",
       "source": "https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453",
-      "caveat": "Not safe for unattended Codex despite changing state."
+      "caveat": "Not safe for an unattended AI agent despite changing state."
     },
     {
       "scope": "render",
@@ -4277,7 +4307,7 @@ defers work, or immediate acknowledgement cannot represent completion.
       "handler": "GLWidget::command",
       "output": "Shows a modal information box, then returns `ERROR` `canceled`.",
       "source": "https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453",
-      "caveat": "Not safe for unattended Codex despite changing state."
+      "caveat": "Not safe for an unattended AI agent despite changing state."
     },
     {
       "scope": "render",
@@ -4300,7 +4330,7 @@ defers work, or immediate acknowledgement cannot represent completion.
       "handler": "GLWidget::command",
       "output": "Shows a modal information box, then returns `ERROR` `canceled`.",
       "source": "https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/opengl/glwidget.cpp#L2233-L2453",
-      "caveat": "Not safe for unattended Codex despite changing state."
+      "caveat": "Not safe for an unattended AI agent despite changing state."
     },
     {
       "scope": "render",
