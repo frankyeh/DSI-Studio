@@ -367,15 +367,16 @@ bool tracking_window::command(std::vector<std::string> cmd)
         {
             const auto& unet_label = unet.data.label;
             std::vector<std::vector<tipl::vector<3,short> > > regions(unet.data.cur_count-1);
-            tipl::par_for(regions.size(),[&](size_t label)
-            {
-                size_t sz = current_slice->dim.size();
-                for(tipl::pixel_index<3> p(current_slice->dim);p < sz;++p)
-                {
-                    if(unet_label[p.index()] == label+1)
-                        regions[label].push_back(p);
-                }
-            });
+            std::vector<size_t> count(regions.size());
+            for(auto label : unet_label)
+                if(label)
+                    ++count[label-1];
+            for(size_t label = 0;label < regions.size();++label)
+                regions[label].reserve(count[label]);
+            size_t sz = current_slice->dim.size();
+            for(tipl::pixel_index<3> p(current_slice->dim);p < sz;++p)
+                if(auto label = unet_label[p.index()])
+                    regions[label-1].push_back(p);
 
             regionWidget->begin_update();
             for(size_t i = 0;prog(i,regions.size());++i)
