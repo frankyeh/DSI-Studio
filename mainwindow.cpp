@@ -42,7 +42,7 @@ void ai_request_list(QLocalSocket *clientSocket)
 {
     static quint64 next_id = 0;
     QStringList result;
-    for(auto* window : QApplication::topLevelWidgets())
+    for(auto* window : QApplication::allWidgets())
     {
         QString type;
         if(qobject_cast<tracking_window*>(window))
