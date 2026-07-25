@@ -16,7 +16,7 @@ protected:
     virtual std::streamsize xsputn(const char *p, std::streamsize n) override;
 public:
     std::mutex edit_buf;
-    QString buf;
+    QString buf,history;
     QString* capture = nullptr;
     QTextEdit* log_window = nullptr;
     bool has_output = false;
