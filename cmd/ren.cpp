@@ -1,5 +1,16 @@
 #include "TIPL/tipl.hpp"
 
+
+void check_name(std::string& name)
+{
+    for(unsigned int index = 0;index < name.size();++index)
+        if((name[index] < '0' || name[index] > '9') &&
+            (name[index] < 'a' || name[index] > 'z') &&
+            (name[index] < 'A' || name[index] > 'Z') &&
+            name[index] != '.')
+            name[index] = '_';
+}
+
 std::filesystem::path rename_dicom(const std::filesystem::path& file_name,
                                    std::filesystem::path output)
 {
