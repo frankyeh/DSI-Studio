@@ -468,9 +468,6 @@ int gpu_count = 0;
 extern console_stream console;
 MainWindow* main_window = nullptr;
 
-void ai_request_list(QLocalSocket*,const QByteArray&);
-void ai_request_command(QLocalSocket*,const QByteArray&);
-void ai_request_log(QLocalSocket*,const QByteArray&);
 void ai_request(QLocalSocket*,const QByteArray&);
 
 int main(int ac, char *av[])
@@ -499,7 +496,7 @@ int main(int ac, char *av[])
                                                   [](const auto& value){return value.toObject()["okay"].toBool();}))) ? 0 : 1;
 
         }
-        if(std::string(av[1]) == "LIST" || av[1][0] == '{')
+        if(QByteArray(av[1]).trimmed().startsWith('{'))
             return std::cout << "NO_INSTANCE\n" << std::endl,1;
     }
 
@@ -583,15 +580,8 @@ int main(int ac, char *av[])
                     auto request = clientSocket->readAll();
                     if(request.trimmed().startsWith('{'))
                         ai_request(clientSocket,request);
-                    else if(request == "LIST" || request.startsWith("LIST\t"))
-                        ai_request_list(clientSocket,request);
-                    else if(request.startsWith("CMD\t"))
-                        ai_request_command(clientSocket,request);
-                    else if(request == "LOG" || request.startsWith("LOG\t"))
-                        ai_request_log(clientSocket,request);
                     else
                     {
-                        // Existing filename-opening behavior remains unchanged.
                         bool busy = tipl::progress::is_running();
                         bool exists = std::filesystem::exists(request.begin());
 
@@ -599,16 +589,12 @@ int main(int ac, char *av[])
                         {
                             w.openFile(QStringList() << request);
                             w.show();
-                            w.setWindowState(
-                                (w.windowState() & ~Qt::WindowMinimized) |
-                                Qt::WindowActive);
+                            w.setWindowState((w.windowState() & ~Qt::WindowMinimized) |
+                                             Qt::WindowActive);
                             w.raise();
                             w.activateWindow();
                         }
-
-                        clientSocket->write(
-                            busy ? "BUSY" :
-                                exists ? "OKAY" : "ERROR");
+                        clientSocket->write(busy ? "BUSY" : exists ? "OKAY" : "ERROR");
                     }
                     clientSocket->flush();
                     clientSocket->waitForBytesWritten(500);
