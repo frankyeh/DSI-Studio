@@ -356,7 +356,7 @@ bool RegionTableWidget::command(std::vector<std::string> cmd)
         tipl::image<3,unsigned char> mask(cur_slice->dim);
         auto fa_map = tipl::make_image(cur_tracking_window.handle->dir.fa[0],cur_tracking_window.handle->dim);
         if(cur_slice->is_diffusion_space)
-            tipl::threshold(fa_map,mask,threshold);
+            mask = fa_map > threshold;
         else
             tipl::par_for(mask.shape(),[&](const tipl::pixel_index<3>& index)
             {
