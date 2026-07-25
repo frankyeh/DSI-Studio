@@ -272,7 +272,7 @@ void ROIRegion::to_mask(tipl::image<3,unsigned char>& mask) const
 {
     if(!index_mask.empty() && index_mask_point_count == region.size())
     {
-        tipl::threshold(index_mask,mask,0);
+        mask = index_mask > 0;
         return;
     }
     mask = tipl::points2volume(dim,region);
