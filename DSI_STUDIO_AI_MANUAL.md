@@ -2,17 +2,19 @@
 
 **Source review:** The comprehensive command audit is pinned to
 [`9e00c9c23f49df581a78bc1c9928134d262092ad`](https://github.com/frankyeh/DSI-Studio/commit/9e00c9c23f49df581a78bc1c9928134d262092ad).
-Protocol and command changes were reviewed through
-[`8ad955a333cdfcb8d6433a6a88137c0ae76f6cad`](https://github.com/frankyeh/DSI-Studio/commit/8ad955a333cdfcb8d6433a6a88137c0ae76f6cad)
+Protocol, batching, agent-session routing, and prompt delivery were source-reviewed through
+[`ecacbd0478e8b7d383a9cd9a5606cc08e6d78a58`](https://github.com/frankyeh/DSI-Studio/commit/ecacbd0478e8b7d383a9cd9a5606cc08e6d78a58)
 on 2026-07-25. Existing command-audit links remain pinned to the base commit;
-revised entries link to the implementing commit.
+revised entries link to their implementing commits. No GitHub Actions or status
+checks were present on this HEAD, so the protocol description is source-verified
+but compilation was not independently confirmed.
 
 ## Purpose and scope
 
 Use this manual to control an already-running DSI Studio GUI from a local
 Windows AI-agent session. Treat the source as authoritative: the public command surface is
-the local-server routing in [`main.cpp`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/main.cpp#L473-L496) and
-[`mainwindow.cpp`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L41-L146), then the target window's
+the local-server routing in [`main.cpp`](https://github.com/frankyeh/DSI-Studio/blob/ecacbd0478e8b7d383a9cd9a5606cc08e6d78a58/main.cpp#L571-L615) and
+[`mainwindow.cpp`](https://github.com/frankyeh/DSI-Studio/blob/ecacbd0478e8b7d383a9cd9a5606cc08e6d78a58/mainwindow.cpp#L45-L245), then the target window's
 handler and its delegated handlers. The current surface exposes `main`,
 `tracking`, and `image` windows. Reconstruction-window and `src_data` command
 methods exist in source but are not remotely targetable through `LIST`.
@@ -24,7 +26,10 @@ commits added and refined the IPC list/command routes and the tracking, tract,
 and region commands described here. The later review through
 [`8ad955a3`](https://github.com/frankyeh/DSI-Studio/commit/8ad955a333cdfcb8d6433a6a88137c0ae76f6cad)
 adds JSON batching inside `CMD`, `list_recent`, `run_cli`, richer readiness
-lists, multiple-parameter updates, and shorter `run_tracking` forms.
+lists, multiple-parameter updates, and shorter `run_tracking` forms. Review
+through [`ecacbd04`](https://github.com/frankyeh/DSI-Studio/commit/ecacbd0478e8b7d383a9cd9a5606cc08e6d78a58)
+adds stable agent/session identities and per-agent prompt delivery while
+retaining the legacy wire forms.
 
 ## Critical safety rules
 
@@ -65,10 +70,11 @@ normal AI operation. The server processes one request per connection, writes
 one reply, and disconnects; the client should therefore make a fresh lightweight
 pipe connection for every request.
 
-Direct pipe access was operationally verified on 2026-07-25 with `LIST` and
-`CMD<TAB>1<TAB>hub<TAB>repos`. In a warm PowerShell process, measured local
+Direct pipe access was operationally verified on 2026-07-25 with the legacy
+forms `LIST` and `CMD<TAB>1<TAB>hub<TAB>repos`. In a warm PowerShell process, measured local
 round trips were approximately 1 ms (the first .NET call took approximately
-381 ms for initialization).
+381 ms for initialization). The identity-aware forms documented below were
+source-reviewed through `ecacbd04`; they do not change the one-connection-per-request lifecycle.
 
 Invoking `dsi_studio.exe` with one argument remains a fallback. That client
 tries to connect for 5,000 ms, writes the argument as the complete request,
@@ -78,8 +84,9 @@ contains only results whose `okay` value is `true`; otherwise it exits `1`
 ([`main()`](https://github.com/frankyeh/DSI-Studio/blob/8ad955a333cdfcb8d6433a6a88137c0ae76f6cad/main.cpp#L474-L502)).
 
 The running GUI creates a world-access local server named `dsi-studio`, waits
-500 ms for each request, and recognizes `LIST`, `LOG`, `CMD<TAB>...`, or a raw
-filename ([server dispatch](https://github.com/frankyeh/DSI-Studio/blob/8ad955a333cdfcb8d6433a6a88137c0ae76f6cad/main.cpp#L571-L611)).
+500 ms for each request, and recognizes identity-aware or legacy `LIST`, `LOG`,
+`CMD<TAB>...`, or a raw filename
+([server dispatch](https://github.com/frankyeh/DSI-Studio/blob/ecacbd0478e8b7d383a9cd9a5606cc08e6d78a58/main.cpp#L571-L615)).
 
 **Precondition:** start DSI Studio normally and wait for its main window. If no
 instance exists, `LIST` returns `NO_INSTANCE`; other one-argument strings may
@@ -119,18 +126,35 @@ function Invoke-DsiRequest([string]$Request)
     }
 }
 
+$DsiAgentId = '@' + [guid]::NewGuid().ToString('N').Substring(0,12)
+
 function Invoke-Dsi([string[]]$Fields)
 {
-    Invoke-DsiRequest ([string]::Join([char]9, $Fields))
+    if($Fields.Count -eq 0) { throw 'Empty DSI Studio request' }
+    $wire = @($Fields[0], $DsiAgentId)
+    if($Fields.Count -gt 1) { $wire += $Fields[1..($Fields.Count-1)] }
+    Invoke-DsiRequest ([string]::Join([char]9, $wire))
+}
+
+function Read-DsiTextReply([string]$Reply)
+{
+    $lines = @($Reply -split '\r?\n')
+    $prompts = @()
+    if($lines.Count -gt 1 -and $lines[1].StartsWith("PROMPT`t"))
+    {
+        $prompts = @($lines[1].Substring(7) | ConvertFrom-Json)
+        $lines = @($lines[0]) + @($lines | Select-Object -Skip 2)
+    }
+    [pscustomobject]@{ Text=($lines -join "`n"); Prompts=$prompts }
 }
 
 function Invoke-DsiBatch([string]$WindowId, [string]$Json)
 {
-    Invoke-DsiRequest ([string]::Join([char]9, @('CMD', $WindowId, $Json)))
+    Invoke-Dsi @('CMD', $WindowId, $Json)
 }
 
-$listReply = Invoke-DsiRequest 'LIST'
-if(-not $listReply.StartsWith('OKAY')) { throw $listReply }
+$listReply = Read-DsiTextReply (Invoke-Dsi @('LIST'))
+if(-not $listReply.Text.StartsWith('OKAY')) { throw $listReply.Text }
 ```
 
 Do not manually embed tabs. Do not join a parameter's internal words with
@@ -147,10 +171,10 @@ conversion occurs in
 
 | Request | Exact wire form | Meaning |
 |---|---|---|
-| Discover | `LIST` | Return targetable windows. |
-| Console | `LOG` | Return the rolling console history. |
-| Single command | `CMD<TAB>window_id<TAB>command<TAB>parameter...` | Route one command to one target. |
-| Command batch | `CMD<TAB>window_id<TAB>[["command","parameter"],["command",...]]` | Run several commands sequentially on one target. |
+| Discover | `LIST<TAB>@agent_id` | Return targetable windows and deliver prompts queued for this agent. |
+| Console | `LOG<TAB>@agent_id` | Return the rolling console history and deliver prompts queued for this agent. |
+| Single command | `CMD<TAB>@agent_id<TAB>window_id<TAB>command<TAB>parameter...` | Route one command to one target. |
+| Command batch | `CMD<TAB>@agent_id<TAB>window_id<TAB>[["command","parameter"],["command",...]]` | Run several commands sequentially on one target. |
 | Raw open | one absolute filename | Ask the main window to open a file. |
 
 There is no standalone `BATCH` request: both forms use `CMD`. Tracking and main
@@ -158,6 +182,44 @@ windows accept any number of fields after the command.
 Image windows reject more than one parameter field with `ERROR` `"too many
 parameters"` ([image route](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L111-L120)); put all image
 command parameters in one space-delimited field.
+
+### Agent session IDs and prompt delivery
+
+Generate one stable, unique ID when an agent session begins. The ID must start
+with `@`, contain no tab or newline, and be reused with identical case in every
+`LIST`, `CMD`, and `LOG` request from that session. Do not generate a new ID for
+each connection and do not share one ID between simultaneous agents.
+
+```text
+LIST<TAB>@C7f2a
+CMD<TAB>@C7f2a<TAB>2<TAB>list_region
+LOG<TAB>@C7f2a
+```
+
+For a text reply, pending prompts are inserted immediately after the first
+status line:
+
+```text
+OKAY
+PROMPT<TAB><JSON>
+<normal command output...>
+```
+
+Pass every non-batch reply through `Read-DsiTextReply`. Process its `Prompts`
+values as agent input before continuing, and interpret only its cleaned `Text`
+as normal command output. For a batch, no text metadata line is added; the last
+result object instead receives an optional `prompt` JSON-array property. Read
+that property before continuing.
+
+Prompt queues are keyed by the exact agent ID. DSI Studio clears only the
+matching agent's queue, and only after the complete reply is written. Multiple
+agents may interleave pipe requests safely when their IDs differ, although all
+GUI command handlers still run serially on Qt's main thread.
+
+Legacy `LIST`, `LOG`, and `CMD<TAB>window_id...` requests remain compatible.
+They use the empty legacy identity, so simultaneous legacy agents share one
+prompt queue and cannot safely separate their prompts. Never use legacy forms
+when more than one agent may be active.
 
 ### Command batches
 
@@ -170,6 +232,7 @@ $json = '[["list_slice"],["list_region"],["list_tract"]]'
 $reply = Invoke-DsiBatch $trackingId $json
 $results = $reply | ConvertFrom-Json
 if($results | Where-Object { -not $_.okay }) { throw $reply }
+$prompts = @($results[-1].prompt)
 ```
 
 The compact reply is a JSON array in execution order:
@@ -177,7 +240,7 @@ The compact reply is a JSON array in execution order:
 ```json
 [
   {"index":0,"okay":true,"output":"..."},
-  {"index":1,"okay":false,"output":"...","error":"canceled"}
+  {"index":1,"okay":false,"output":"...","error":"canceled","prompt":[...]}
 ]
 ```
 
@@ -185,7 +248,8 @@ DSI Studio stops at the first failed command, so later commands are absent.
 Each command gets its own captured `output`. During the batch, widget updates
 are disabled and the target is redrawn once afterward. This reduces connection
 and repaint overhead but does not skip command computation or side effects.
-The batch is not a transaction and does not roll back earlier commands
+The optional `prompt` property appears only on the last returned object and
+only when this agent has queued prompts. The batch is not a transaction and does not roll back earlier commands
 ([batch implementation](https://github.com/frankyeh/DSI-Studio/blob/438176e0aa47139cf54bd5f0c22e69e31e2ff11f/mainwindow.cpp#L127-L188)).
 An invalid window ID or invalid outer JSON document returns a plain
 `ERROR<TAB>message` instead of a JSON result array.
@@ -205,9 +269,9 @@ the expected window.
 
 | Reply form | Executable fallback exit | Interpretation |
 |---|---:|---|
-| `OKAY` | 0 | Handler returned `true`; captured console text may follow. |
-| `ERROR<TAB>message` | 1 | Handler returned `false`, target was invalid, or an exception was caught. |
-| JSON result array | 0 only when every returned `okay` is `true` | Batch result; inspect every object and ensure the expected command count is present. |
+| `OKAY` | 0 | Handler returned `true`; optional `PROMPT<TAB><JSON>` metadata and captured console text may follow. |
+| `ERROR<TAB>message` | 1 | Handler returned `false`, target was invalid, or an exception was caught; optional prompt metadata may follow. |
+| JSON result array | 0 only when every returned `okay` is `true` | Batch result; inspect every object, the final object's optional `prompt`, and the expected command count. |
 | `BUSY` | 1 | Raw filename forwarding was refused because global progress was active. |
 | `TIMEOUT` | 1 | Executable fallback only: no bytes arrived within five seconds. The GUI command may still be running. |
 | `NO_INSTANCE` | 1 | Executable fallback only: `LIST` could not connect to a running server. A direct pipe client instead gets a connection timeout/exception. |
@@ -244,7 +308,7 @@ widget's lifetime, and are not intentionally reused
 opening or closing anything. Never cache an ID across application restarts.
 
 ```powershell
-$rows = (Invoke-DsiRequest 'LIST') -split '\r?\n' | Select-Object -Skip 1 |
+$rows = (Invoke-Dsi @('LIST')) -split '\r?\n' | Select-Object -Skip 1 |
     ForEach-Object {
         $c = $_ -split "`t", 3
         [pscustomobject]@{ Type=$c[0]; Id=$c[1]; Title=$c[2] }
@@ -270,10 +334,10 @@ capped at 4 MiB by dropping its oldest half
 Capture a baseline before asynchronous work, then compare later text:
 
 ```powershell
-$before = Invoke-DsiRequest 'LOG'
+$before = Invoke-Dsi @('LOG')
 $ack = Invoke-Dsi -Fields @('CMD',$trackingId,'run_auto_track','CST_L','')
 Start-Sleep -Seconds 2
-$after = Invoke-DsiRequest 'LOG'
+$after = Invoke-Dsi @('LOG')
 $delta = if ($after.StartsWith($before)) { $after.Substring($before.Length) } else { $after }
 ```
 
@@ -1421,7 +1485,7 @@ if ($open -notmatch '^(OKAY|BUSY)') { throw $open }
 $deadline = (Get-Date).AddMinutes(2)
 do {
     Start-Sleep -Milliseconds 500
-    $rows = (Invoke-DsiRequest 'LIST') -split '\r?\n' | Select-Object -Skip 1 |
+    $rows = (Invoke-Dsi @('LIST')) -split '\r?\n' | Select-Object -Skip 1 |
         ForEach-Object {
             $c = $_ -split "`t",3
             [pscustomobject]@{Type=$c[0];Id=$c[1];Title=$c[2]}
