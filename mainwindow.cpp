@@ -44,9 +44,6 @@ void ai_request_list(QLocalSocket *clientSocket)
     QStringList result;
     for(auto* window : QApplication::topLevelWidgets())
     {
-        if(!window->property("remote_id").isValid())
-            window->setProperty("remote_id",++next_id);
-
         QString type;
         if(qobject_cast<tracking_window*>(window))
             type = "tracking";
@@ -54,6 +51,9 @@ void ai_request_list(QLocalSocket *clientSocket)
             type = "image";
         else
             continue;
+
+        if(!window->property("remote_id").isValid())
+            window->setProperty("remote_id",++next_id);
 
         result << QString("%1\t%2\t%3")
                       .arg(type)
