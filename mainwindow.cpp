@@ -42,9 +42,10 @@
 QString access_token;
 extern MainWindow* main_window;
 
-static void ai_reply(QLocalSocket* socket,QByteArray reply,QJsonArray* results = nullptr)
+static void ai_reply(QLocalSocket* socket,const QString& agent,
+                     QByteArray reply,QJsonArray* results = nullptr)
 {
-    auto& prompts = main_window->ai_prompts;
+    auto& prompts = main_window->ai_prompts[agent];
     if(results)
     {
         if(!prompts.isEmpty())
@@ -57,21 +58,21 @@ static void ai_reply(QLocalSocket* socket,QByteArray reply,QJsonArray* results =
     }
     else if(!prompts.isEmpty())
     {
-        QByteArray payload = "PROMPT\t";
-        payload += QJsonDocument(prompts).toJson(QJsonDocument::Compact);
-        payload += '\n';
+        auto payload = "PROMPT\t" +
+                       QJsonDocument(prompts).toJson(QJsonDocument::Compact) + '\n';
         int pos = reply.indexOf('\n');
         if(pos < 0)
             reply.append('\n').append(payload);
         else
             reply.insert(pos+1,payload);
     }
-    if(socket->write(reply) >= 0)
+    if(socket->write(reply) == reply.size())
         prompts = {};
 }
 
 void ai_request_list(QLocalSocket* socket)
 {
+    auto agent = QString::fromUtf8(request.mid(5));
     static quint64 next_id = 0;
     QStringList result;
     for(auto* window : QApplication::allWidgets())
@@ -94,22 +95,34 @@ void ai_request_list(QLocalSocket* socket)
                       .arg(window->property("remote_id").toULongLong())
                       .arg(window->windowTitle());
     }
-    ai_reply(socket,"OKAY\n" + result.join('\n').toUtf8());
+    ai_reply(socket,agent,"OKAY\n" + result.join('\n').toUtf8());
 }
 
 void ai_request_command(QLocalSocket* socket,const QByteArray& request)
 {
-    int tab = request.indexOf('\t',4);
+    QString agent;
+    int begin = 4,tab = request.indexOf('\t',begin);
     if(tab < 0)
-        return ai_reply(socket,"ERROR\tinvalid command");
+        return ai_reply(socket,agent,"ERROR\tinvalid command");
+
+    if(request[begin] == '@')
+    {
+        agent = QString::fromUtf8(request.mid(begin,tab-begin));
+        begin = tab+1;
+        tab = request.indexOf('\t',begin);
+        if(tab < 0)
+            return ai_reply(socket,agent,"ERROR\tinvalid command");
+    }
 
     QWidget* target = nullptr;
-    auto id = QString::fromUtf8(request.mid(4,tab-4));
+    auto id = QString::fromUtf8(request.mid(begin,tab-begin));
+
+
     for(auto* window : QApplication::allWidgets())
         if(window->property("remote_id").toString() == id)
             target = window;
     if(!target)
-        return ai_reply(socket,"ERROR\twindow not found");
+        return ai_reply(socket,agent,"ERROR\twindow not found");
 
     auto run = [&](const std::vector<std::string>& cmd,QString& output,QString& error)
     {
@@ -161,19 +174,19 @@ void ai_request_command(QLocalSocket* socket,const QByteArray& request)
             cmd.push_back(arg.toStdString());
         QString output,error;
         bool okay = run(cmd,output,error);
-        return ai_reply(socket,((okay ? "OKAY\n" :
+        return ai_reply(socket,agent,((okay ? "OKAY\n" :
                                       "ERROR\t" + error + "\n") + output).toUtf8());
     }
 
     QJsonParseError parse_error;
     auto doc = QJsonDocument::fromJson(payload,&parse_error);
     if(!doc.isArray())
-        return ai_reply(socket,("ERROR\tinvalid batch JSON: " +
+        return ai_reply(socket,agent,("ERROR\tinvalid batch JSON: " +
                                  parse_error.errorString()).toUtf8());
 
     auto commands = doc.array();
     if(commands.isEmpty())
-        return ai_reply(socket,"ERROR\tempty batch");
+        return ai_reply(socket,agent,"ERROR\tempty batch");
 
     bool updates_enabled = target->updatesEnabled();
     target->setUpdatesEnabled(false);
@@ -217,17 +230,18 @@ void ai_request_command(QLocalSocket* socket,const QByteArray& request)
     else
         target->update();
 
-    ai_reply(socket,QByteArray(),&results);
+    ai_reply(socket,agent,QByteArray(),&results);
 }
 
-void ai_request_log(QLocalSocket* socket)
+void ai_request_log(QLocalSocket* socket,const QByteArray& request)
 {
+    auto agent = QString::fromUtf8(request.mid(4));
     QByteArray output;
     {
         std::lock_guard<std::mutex> lock(console.edit_buf);
         output = console.history.toUtf8();
     }
-    ai_reply(socket,"OKAY\n" + output);
+    ai_reply(socket,agent,"OKAY\n" + output);
 }
 
 
@@ -715,26 +729,36 @@ void MainWindow::updateRecentList(void)
         QStringList file_list = settings.value("recentFibFileList").toStringList();
         ui->recentFib->clear();
         ui->recentFib->setRowCount(file_list.size());
-        for (int index = 0;index < file_list.size();++index)
+        for(int index = 0;index < file_list.size();++index)
         {
             ui->recentFib->setRowHeight(index,20);
-            ui->recentFib->setItem(index, 0, new QTableWidgetItem(std::filesystem::path(file_list[index].toStdString()).filename().string().c_str()));
-            ui->recentFib->setItem(index, 1, new QTableWidgetItem(std::filesystem::path(file_list[index].toStdString()).parent_path().string().c_str()));
-            ui->recentFib->item(index,0)->setFlags(ui->recentFib->item(index,0)->flags() & ~Qt::ItemIsEditable);
-            ui->recentFib->item(index,1)->setFlags(ui->recentFib->item(index,1)->flags() & ~Qt::ItemIsEditable);
+            ui->recentFib->setItem(index,0,new QTableWidgetItem(std::filesystem::path(file_list[index].toStdString()).filename().string().c_str()));
+            ui->recentFib->setItem(index,1,new QTableWidgetItem(std::filesystem::path(file_list[index].toStdString()).parent_path().string().c_str()));
+            for(int col = 0;col < 2;++col)
+            {
+                auto item = ui->recentFib->item(index,col);
+                item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+                if(!QFileInfo::exists(file_list[index]))
+                    item->setForeground(Qt::gray);
+            }
         }
     }
     {
         QStringList file_list = settings.value("recentSrcFileList").toStringList();
         ui->recentSrc->clear();
         ui->recentSrc->setRowCount(file_list.size());
-        for (int index = 0;index < file_list.size();++index)
+        for(int index = 0;index < file_list.size();++index)
         {
             ui->recentSrc->setRowHeight(index,20);
-            ui->recentSrc->setItem(index, 0, new QTableWidgetItem(std::filesystem::path(file_list[index].toStdString()).filename().string().c_str()));
-            ui->recentSrc->setItem(index, 1, new QTableWidgetItem(std::filesystem::path(file_list[index].toStdString()).parent_path().string().c_str()));
-            ui->recentSrc->item(index,0)->setFlags(ui->recentSrc->item(index,0)->flags() & ~Qt::ItemIsEditable);
-            ui->recentSrc->item(index,1)->setFlags(ui->recentSrc->item(index,1)->flags() & ~Qt::ItemIsEditable);
+            ui->recentSrc->setItem(index,0,new QTableWidgetItem(std::filesystem::path(file_list[index].toStdString()).filename().string().c_str()));
+            ui->recentSrc->setItem(index,1,new QTableWidgetItem(std::filesystem::path(file_list[index].toStdString()).parent_path().string().c_str()));
+            for(int col = 0;col < 2;++col)
+            {
+                auto item = ui->recentSrc->item(index,col);
+                item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+                if(!QFileInfo::exists(file_list[index]))
+                    item->setForeground(Qt::gray);
+            }
         }
     }
     QStringList header;
@@ -742,6 +766,7 @@ void MainWindow::updateRecentList(void)
     ui->recentFib->setHorizontalHeaderLabels(header);
     ui->recentSrc->setHorizontalHeaderLabels(header);
 }
+
 
 void MainWindow::addFib(QString filename)
 {
