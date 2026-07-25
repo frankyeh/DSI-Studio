@@ -38,7 +38,7 @@ bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_
                 {
                     tipl::out() << "found subject's demographics: " << line << std::endl;
                     found = true;
-                    handle->db.demo = line.substr(name.length()+1);
+                    std::getline(in2 >> std::ws,handle->db.demo);
                 }
             }
             if(!found)
@@ -504,8 +504,7 @@ bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         ROIRegion roi(handle);
         for(const auto& each : tipl::split(po.get(roi_names[index]),','))
         {
-            if(!each.empty() && std::all_of(each.begin(),each.end(),[](char c){return c >= 'a' && c <= 'z';})
-                && roi.perform(each) && (tipl::out() << "apply region operation: " << each,true))
+            if(roi.perform(each) && (tipl::out() << "apply region operation: " << each,true))
                 continue;
             ROIRegion other_roi(handle);
             if(!load_region(po,handle,roi.region.empty() ? roi : other_roi,each))
