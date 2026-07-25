@@ -1845,7 +1845,7 @@ void MainWindow::update_rate_limit(QSharedPointer<QNetworkReply> reply)
         return;
     tipl::out() << "api rate limit: " << (github_api_rate_limit = reply->rawHeader("X-RateLimit-Remaining").toInt());
 }
-
+int run_action_with_wildcard(tipl::program_option<tipl::out>&);
 bool MainWindow::command(const std::vector<std::string>& cmd)
 {
     error_msg.clear();
@@ -1855,8 +1855,19 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         return false;
     };
     const std::string usage =
-        "hub repos | hub tags <repo> | hub files <repo> <tag> [text] | "
-        "hub open <repo> <tag> <file> | hub download <repo> <tag> <file> <dir>";
+        "run_cli <command line> | hub repos | hub tags <repo> | "
+        "hub files <repo> <tag> [text] | hub open <repo> <tag> <file> | "
+        "hub download <repo> <tag> <file> <dir>";
+    if(cmd.size() == 2 && cmd[0] == "run_cli")
+    {
+        tipl::program_option<tipl::out> po;
+        if(!po.parse(cmd[1]) || !po.check("action"))
+            return fail(po.error_msg);
+        if(run_action_with_wildcard(po))
+            return fail("command line failed");
+        po.check_end_param<tipl::warning>();
+        return true;
+    }
     if(cmd.empty() || cmd[0] != "hub")
         return fail(usage);
     if(cmd.size() < 2 || cmd[1] == "help")
