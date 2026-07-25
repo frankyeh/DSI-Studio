@@ -479,6 +479,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
 
     if(cmd[0] == "list_tract")
     {
+        fetch_tracts();
         tipl::out() << "index\trunning\tshown\tname\ttracts\tdeleted\tseeds";
         for(int row = 0;row < rowCount();++row)
             tipl::out() << row << "\t"
