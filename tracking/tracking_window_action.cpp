@@ -522,7 +522,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
                                (is_region ? "region" : "tract") + " index specified");
 
         std::vector<bool> shown(size_t(table->rowCount()));
-        for(auto each : index_list)
+        for(const auto& each : index_list)
         {
             bool ok;
             int row = each.toInt(&ok);
@@ -960,7 +960,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
         slice_need_update = true;
         return run->succeed();
     }
-    if(cmd[0] == "set_region_name" || cmd[0] == "set_region_color")
+    if(cmd[0] == "set_region_name" || cmd[0] == "set_region_color" ||
+        cmd[0] == "set_region_type")
     {
         bool ok;
         int row = QString::fromStdString(cmd[1]).toInt(&ok);
@@ -971,6 +972,13 @@ bool tracking_window::command(std::vector<std::string> cmd)
             if(cmd[2].empty())
                 return run->failed("region name cannot be empty");
             regionWidget->item(row,0)->setText(QString::fromStdString(cmd[2]));
+        }
+        else if(cmd[0] == "set_region_type")
+        {
+            int type = QString::fromStdString(cmd[2]).toInt(&ok);
+            if(!ok || type < 0 || type > 6)
+                return run->failed("invalid region type: " + cmd[2]);
+            regionWidget->item(row,1)->setText(QString::number(type));
         }
         else
         {
