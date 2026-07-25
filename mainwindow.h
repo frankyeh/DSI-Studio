@@ -28,7 +28,7 @@ public:
     QString cur_tag;
     void update_rate_limit(QSharedPointer<QNetworkReply>);
 public:
-    QJsonArray ai_prompts;
+    std::map<QString,QJsonArray> ai_prompts;
 public:
     bool fetch_github = false;
     QNetworkAccessManager manager;
