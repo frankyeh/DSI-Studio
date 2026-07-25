@@ -476,8 +476,13 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
 
     if(cmd[0] == "list_tract")
     {
+        tipl::out() << "index\tshown\tname\ttracts\tdeleted\tseeds";
         for(int row = 0;row < rowCount();++row)
-            tipl::out() << row << "\t" << item(row,0)->text().toStdString();
+            tipl::out() << row << "\t" << (item(row,0)->checkState() == Qt::Checked) << "\t"
+                        << item(row,0)->text().toStdString() << "\t"
+                        << item(row,1)->text().toStdString() << "\t"
+                        << item(row,2)->text().toStdString() << "\t"
+                        << item(row,3)->text().toStdString();
         return run->succeed();
     }
     if(cmd[0] == "delete_branch")
