@@ -297,14 +297,13 @@ bool load_nii(std::shared_ptr<fib_data> handle,
             regions.back()->to_diffusion_space = to_diffusion_space;
             regions.back()->trans_to_mni = trans_to_mni;
         }
-        tipl::image<3,unsigned char> mask(from);
-        regions.back()->from_mask(mask);
+        regions.back()->from_mask(from > 0);
 
         unsigned int color = 0x00FFFFFF;
         unsigned int type = default_id;
 
         try{
-            for(const auto each : tipl::split(std::string(header.get_descrip()),';'))
+            for(const auto& each : tipl::split(std::string(header.get_descrip()),';'))
             {
                 auto name_value = tipl::split(each,'=');
                 if(name_value.size() != 2)
