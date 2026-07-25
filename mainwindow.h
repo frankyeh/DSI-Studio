@@ -30,8 +30,10 @@ public:
     void update_rate_limit(QSharedPointer<QNetworkReply>);
 public:
     std::map<QString,QJsonArray> ai_prompts;
-    void add_ai_history(const QString& agent,const QString& type,const QString& text);
-
+    QMap<QString,QJsonArray> ai_history;
+    void add_ai_history(const QString&,const QString&,const QString&);
+    void show_ai_history(const QString&);
+    void load_ai_history(void);
 public:
     bool fetch_github = false;
     QNetworkAccessManager manager;
