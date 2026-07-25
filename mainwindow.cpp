@@ -1966,7 +1966,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
     };
     const std::string usage =
         "list_recent | run_cli <command line> | hub repos | hub tags <repo> | "
-        "hub files <repo> <tag> [text] | hub open <repo> <tag> <file> | "
+        "hub files <repo> <tag> [text] [offset] [limit] | hub open <repo> <tag> <file> | "
         "hub download <repo> <tag> <file> <dir>";
 
     if(cmd.size() == 1 && cmd[0] == "list_recent")
@@ -2043,13 +2043,31 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
     if(cmd[1] == "files")
     {
         QString text = cmd.size() > 4 ? QString::fromUtf8(cmd[4]) : QString();
-        for(int row = 0;row < ui->github_release_files->rowCount();++row)
-            if(ui->github_release_files->item(row,0)->text().contains(text,Qt::CaseInsensitive))
-                tipl::out() << row << "\t"
-                            << ui->github_release_files->item(row,0)->text().toStdString() << "\t"
-                            << ui->github_release_files->item(row,1)->text().toStdString() << "\t"
-                            << QFile::exists(QStandardPaths::writableLocation(QStandardPaths::TempLocation) +
-                                             "/" + cur_tag + "/" + ui->github_release_files->item(row,0)->text());
+        bool ok = true;
+        int offset = cmd.size() > 5 ? QString::fromUtf8(cmd[5]).toInt(&ok) : 0;
+        if(!ok || offset < 0)
+            return fail("invalid offset");
+        int limit = cmd.size() > 6 ? QString::fromUtf8(cmd[6]).toInt(&ok) :
+                        ui->github_release_files->rowCount();
+        if(!ok || limit < 0)
+            return fail("invalid limit");
+        for(int row = 0;row < ui->github_release_files->rowCount() && limit;++row)
+        {
+            if(!ui->github_release_files->item(row,0)->text().contains(text,Qt::CaseInsensitive))
+                continue;
+            if(offset)
+            {
+                --offset;
+                continue;
+            }
+            tipl::out() << row << "\t"
+                        << ui->github_release_files->item(row,0)->text().toStdString() << "\t"
+                        << ui->github_release_files->item(row,1)->text().toStdString() << "\t"
+                        << QFile::exists(QStandardPaths::writableLocation(QStandardPaths::TempLocation) +
+                                         "/" + cur_tag + "/" +
+                                         ui->github_release_files->item(row,0)->text());
+            --limit;
+        }
         return true;
     }
 
