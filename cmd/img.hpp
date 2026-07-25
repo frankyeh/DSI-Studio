@@ -58,23 +58,12 @@ public:
     template<typename T>
     bool apply(T&& fun)
     {
-        auto call_function = [&fun](auto&& arg) -> bool
-        {
-            if constexpr(std::is_void_v<decltype(fun(std::forward<decltype(arg)>(arg)))>)
-            {
-                fun(std::forward<decltype(arg)>(arg));
-                return true;
-            }
-            else
-                return fun(std::forward<decltype(arg)>(arg));
-        };
-
         switch(pixel_type)
         {
-        case int8:    return call_function(I_int8);
-        case int16:   return call_function(I_int16);
-        case int32:   return call_function(I_int32);
-        case float32: return call_function(I_float32);
+        case int8:    return call_function(fun,I_int8);
+        case int16:   return call_function(fun,I_int16);
+        case int32:   return call_function(fun,I_int32);
+        case float32: return call_function(fun,I_float32);
         }
         return false;
     }
