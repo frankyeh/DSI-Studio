@@ -31,7 +31,6 @@ std::vector<std::vector<std::string> > unet_http,unet_desc,unet_names;
 class CustomSliceModel;
 std::vector<std::shared_ptr<CustomSliceModel> > other_slices;
 
-
 size_t match_volume(tipl::const_pointer_image<3,unsigned char> mask,tipl::vector<3> vs)
 {
     if(mask.empty())
@@ -467,6 +466,7 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
 int gpu_count = 0;
 extern console_stream console;
 MainWindow* main_window = nullptr;
+void ai_request_list(QLocalSocket *clientSocket);
 int main(int ac, char *av[])
 {
 
@@ -568,19 +568,31 @@ int main(int ac, char *av[])
                 if (clientSocket)
                 {
                     clientSocket->waitForReadyRead(500);
-                    auto file_name = clientSocket->readAll();
-                    tipl::out() << "file name:" << file_name.begin();
-                    bool busy = tipl::progress::is_running();
-                    bool exists = std::filesystem::exists(file_name.begin());
-                    if(!busy && exists)
+                    auto request = clientSocket->readAll();
+                    if(request =="LIST")
+                        ai_request_list(clientSocket);
+                    else
                     {
-                        w.openFile(QStringList() << file_name);
-                        w.show();
-                        w.setWindowState((w.windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
-                        w.raise();
-                        w.activateWindow();
+                        // Existing filename-opening behavior remains unchanged.
+                        tipl::out() << "file name:" << request.begin();
+                        bool busy = tipl::progress::is_running();
+                        bool exists = std::filesystem::exists(request.begin());
+
+                        if(!busy && exists)
+                        {
+                            w.openFile(QStringList() << request);
+                            w.show();
+                            w.setWindowState(
+                                (w.windowState() & ~Qt::WindowMinimized) |
+                                Qt::WindowActive);
+                            w.raise();
+                            w.activateWindow();
+                        }
+
+                        clientSocket->write(
+                            busy ? "BUSY" :
+                                exists ? "OKAY" : "ERROR");
                     }
-                    clientSocket->write(busy ? "BUSY" : exists ? "OKAY" : "ERROR");
                     clientSocket->flush();
                     clientSocket->waitForBytesWritten(500);
                     clientSocket->disconnectFromServer();
