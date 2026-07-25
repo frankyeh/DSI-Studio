@@ -79,7 +79,7 @@ contains only results whose `okay` value is `true`; otherwise it exits `1`
 
 The running GUI creates a world-access local server named `dsi-studio`, waits
 500 ms for each request, and recognizes `LIST`, `LOG`, `CMD<TAB>...`, or a raw
-filename ([server dispatch](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/main.cpp#L565-L607)).
+filename ([server dispatch](https://github.com/frankyeh/DSI-Studio/blob/8ad955a333cdfcb8d6433a6a88137c0ae76f6cad/main.cpp#L571-L611)).
 
 **Precondition:** start DSI Studio normally and wait for its main window. If no
 instance exists, `LIST` returns `NO_INSTANCE`; other one-argument strings may
@@ -141,7 +141,7 @@ The single-command form has no escaping layer. Spaces are safe inside a field;
 a field cannot contain a literal tab. Paths with spaces are safe when they are
 one PowerShell array element. The batch form uses JSON escaping. UTF-8
 conversion occurs in
-[`ai_request_command()`](https://github.com/frankyeh/DSI-Studio/blob/438176e0c680122503562b8762036140204cdf62/mainwindow.cpp#L71-L188).
+[`ai_request_command()`](https://github.com/frankyeh/DSI-Studio/blob/438176e0aa47139cf54bd5f0c22e69e31e2ff11f/mainwindow.cpp#L71-L188).
 
 ### Request forms
 
@@ -186,7 +186,9 @@ Each command gets its own captured `output`. During the batch, widget updates
 are disabled and the target is redrawn once afterward. This reduces connection
 and repaint overhead but does not skip command computation or side effects.
 The batch is not a transaction and does not roll back earlier commands
-([batch implementation](https://github.com/frankyeh/DSI-Studio/blob/438176e0c680122503562b8762036140204cdf62/mainwindow.cpp#L127-L188)).
+([batch implementation](https://github.com/frankyeh/DSI-Studio/blob/438176e0aa47139cf54bd5f0c22e69e31e2ff11f/mainwindow.cpp#L127-L188)).
+An invalid window ID or invalid outer JSON document returns a plain
+`ERROR<TAB>message` instead of a JSON result array.
 
 Batch only short synchronous commands whose inputs are already ready. A command
 that starts asynchronous loading, registration, segmentation, tracking, a Hub
@@ -282,20 +284,24 @@ handler returns is absent from that handler's immediate reply.
 ## Main-window commands
 
 The main window accepts `list_recent`, `run_cli`, and the `hub` command family
-([`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/438176e0c680122503562b8762036140204cdf62/mainwindow.cpp#L1901-L2013)).
+([`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/438176e0aa47139cf54bd5f0c22e69e31e2ff11f/mainwindow.cpp#L1901-L2013)).
 Repository and tag arguments are exact strings returned by the preceding list
 command. File filtering is case-insensitive substring matching.
 
 | Command | Syntax / parameters | Output | Effect and completion | Safety | Example | Handler and source |
 |---|---|---|---|---|---|---|
-| `list_recent` | No parameters. | Recent `.sz` and `.fz` paths, one per line; no header. | Reads the stored source/FIB recent-file lists. Paths may no longer exist. **Completion:** Immediate. | Read-only | `Invoke-Dsi -Fields @("CMD",$mainId,"list_recent")` | `MainWindow::command`; [current implementation](https://github.com/frankyeh/DSI-Studio/blob/438176e0c680122503562b8762036140204cdf62/mainwindow.cpp#L1914-L1922) |
-| `run_cli` | One parameter containing the complete DSI Studio command line. `--action` is required. | CLI progress, warnings, and errors captured in the reply while the handler runs. | Parses internally and calls `run_action_with_wildcard()` synchronously on the GUI thread. Supports `rec`, `trk`, `src`, `ana`, `exp`, `atl`, `db`, `tmp`, `cnt`, `cnt_cl`, `vis`, `ren`, `qc`, `reg`, `atk`, `xnat`, and `img`. Explicit `--loop`, or a wildcard `--source` for supported actions, may process many files. **Completion:** Synchronous handler result; still verify outputs. | Varies; inspect the full CLI action, sources, wildcards, and outputs. Confirm destructive, overwrite, download, or unexpectedly large batch scope. | `Invoke-Dsi -Fields @("CMD",$mainId,"run_cli","--action=qc --source=E:\data\subject.fz")` | `MainWindow::command`; [`run_cli`](https://github.com/frankyeh/DSI-Studio/blob/438176e0c680122503562b8762036140204cdf62/mainwindow.cpp#L1924-L1933), [action dispatch](https://github.com/frankyeh/DSI-Studio/blob/8ad955a333cdfcb8d6433a6a88137c0ae76f6cad/main.cpp#L347-L465) |
+| `list_recent` | No parameters. | Recent `.sz` and `.fz` paths, one per line; no header. | Reads the stored source/FIB recent-file lists. Paths may no longer exist. **Completion:** Immediate. | Read-only | `Invoke-Dsi -Fields @("CMD",$mainId,"list_recent")` | `MainWindow::command`; [current implementation](https://github.com/frankyeh/DSI-Studio/blob/438176e0aa47139cf54bd5f0c22e69e31e2ff11f/mainwindow.cpp#L1914-L1922) |
+| `run_cli` | One parameter containing the complete DSI Studio command line. `--action` is required. | CLI progress, warnings, and errors captured in the reply while the handler runs. | Parses internally and calls `run_action_with_wildcard()` synchronously on the GUI thread. Supports `rec`, `trk`, `src`, `ana`, `exp`, `atl`, `db`, `tmp`, `cnt`, `cnt_cl`, `vis`, `ren`, `qc`, `reg`, `atk`, `xnat`, and `img`. Explicit `--loop`, or a wildcard `--source` for supported actions, may process many files. **Completion:** Synchronous handler result; still verify outputs. | Varies; inspect the full CLI action, sources, wildcards, and outputs. Confirm destructive, overwrite, download, or unexpectedly large batch scope. | `Invoke-Dsi -Fields @("CMD",$mainId,"run_cli","--action=qc --source=E:\data\subject.fz")` | `MainWindow::command`; [`run_cli`](https://github.com/frankyeh/DSI-Studio/blob/438176e0aa47139cf54bd5f0c22e69e31e2ff11f/mainwindow.cpp#L1924-L1933), [action dispatch](https://github.com/frankyeh/DSI-Studio/blob/8ad955a333cdfcb8d6433a6a88137c0ae76f6cad/main.cpp#L347-L465) |
 | `hub help` | Send command field `hub`, parameter `help`. | Usage line. | None. **Completion:** Immediate. | Read-only | `Invoke-Dsi -Fields @("CMD",$mainId,"hub","help")` | `MainWindow::command`; [`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L1849-L1937) |
 | `hub repos` | Command `hub`; first parameter `repos`. | `index<TAB>repository` rows. | Initializes/selects the Hub tab. **Completion:** Immediate unless Hub initialization itself is still loading. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$mainId,"hub","repos")` | `MainWindow::command`; [`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L1849-L1937) |
 | `hub tags` | `hub`, `tags`, exact repository. | `index<TAB>tag` rows; may print loading warning. | Selects repository. **Completion:** Immediate list; retry if output says loading. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$mainId,"hub","tags","owner/repository")` | `MainWindow::command`; [`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L1849-L1937) |
-| `hub files` | `hub`, `files`, repository, tag, optional text filter. | `row<TAB>filename<TAB>display-size<TAB>cached`; `cached` is `0`/`1`. | Selects repository/tag. The cache flag tests the Hub temporary cache path. **Completion:** Immediate list; retry if Hub data is loading. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$mainId,"hub","files","owner/repository","tag","CST")` | `MainWindow::command`; [current implementation](https://github.com/frankyeh/DSI-Studio/blob/438176e0c680122503562b8762036140204cdf62/mainwindow.cpp#L1980-L1991) |
+| `hub files` | `hub`, `files`, repository, tag, optional text filter. | `row<TAB>filename<TAB>display-size<TAB>cached`; `cached` is `0`/`1`. | Selects repository/tag. The cache flag tests the Hub temporary cache path. **Completion:** Immediate list; retry if Hub data is loading. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$mainId,"hub","files","owner/repository","tag","CST")` | `MainWindow::command`; [current implementation](https://github.com/frankyeh/DSI-Studio/blob/438176e0aa47139cf54bd5f0c22e69e31e2ff11f/mainwindow.cpp#L1980-L1991) |
 | `hub open` | `hub`, `open`, repository, tag, exact filename. | Console messages only. | May download/cache, then open the file. **Completion:** Deferred: handler may schedule the open after `OKAY`; poll `LIST`. | File creation | `Invoke-Dsi -Fields @("CMD",$mainId,"hub","open","owner/repository","tag","file.fz")` | `MainWindow::command`; [`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L1849-L1937) |
 | `hub download` | `hub`, `download`, repository, tag, exact filename, absolute directory. | Console messages only. | Downloads with overwrite disabled. **Completion:** Deferred file write; verify path and stable size. | File creation | `Invoke-Dsi -Fields @("CMD",$mainId,"hub","download","owner/repository","tag","file.fz","E:\data")` | `MainWindow::command`; [`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L1849-L1937) |
+
+`run_cli` is not a shell: DSI Studio parses the one parameter string itself.
+Unknown or unused options can be reported as warnings only after the action
+runs, so inspect the captured output as well as the reply status.
 
 Hub readiness is not exposed as a state bit. An empty repository list causes
 `ERROR` “Fiber Data Hub is not ready; retry.” Retry with bounded backoff. `hub
@@ -404,16 +410,16 @@ Obtain them through an existing trusted mapping or wait for the recommended
 `list_auto_tract` is the authoritative source of tract names. `run_auto_track`
 returns after starting `ThreadData`; it does not report final success. Use
 `list_tract` immediately to identify the new row, then poll its counts and
-`LOG`. The present API cannot reliably distinguish an active job from a
-completed job once numeric counts appear, which is why `tracking_status` is a
-high-priority recommendation below.
+`running` flag and `LOG`. A transition from `running=1` to `running=0` shows
+that the thread ended, but does not distinguish success, failure, or
+cancellation.
 
 | Command | Syntax / parameters | Output | Effect and completion | Safety | Example | Handler and source |
 |---|---|---|---|---|---|---|
 | `enable_auto_tract` | No parameters. | Console/error output. | Loads the symmetric tract atlas and enables auto-track UI. **Completion:** Synchronous atlas load. | Computation | `Invoke-Dsi -Fields @("CMD",$trackingId,"enable_auto_tract")` | `tracking_window::command`; [automatic tracking](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tracking_window_action.cpp#L734-L776) |
 | `list_auto_tract` | No parameters. | Header `name`, then exact accepted tract names. | Loads tract atlas if necessary. **Completion:** Synchronous list. | Read-only | `Invoke-Dsi -Fields @("CMD",$trackingId,"list_auto_tract")` | `tracking_window::command`; [automatic tracking](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tracking_window_action.cpp#L734-L776) |
 | `run_auto_track` | Field 1: exact tract name from `list_auto_tract`; field 2: optional ROI setting appended to the current tracking parameter. | Immediate start/error output; progress later appears in `LOG`/`list_tract`. | Creates a tract row and starts background tracking with tolerance. **Completion:** Asynchronous; `OKAY` means started only. | Computation | `Invoke-Dsi -Fields @("CMD",$trackingId,"run_auto_track","CST_L","18:0")` | `tracking_window::command`; [automatic tracking](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tracking_window_action.cpp#L734-L776) |
-| `run_tracking` | Field 1: new tract name; field 2: opaque tracking parameter ID optionally followed by a space and ROI grammar; field 3: optional auto-track tolerance. | Immediate start/error output. | Creates a tract row and starts background tracking. **Completion:** Asynchronous; poll `list_tract` and `LOG`. **Caveat:** Generate the opaque parameter ID from current GUI settings; do not hand-edit it. | Computation | `Invoke-Dsi -Fields @("CMD",$trackingId,"run_tracking","custom_track","<parameter_id> 18:0&21:1")` | `tracking_window::command`; [`run_tracking`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tract/tracttablewidget.cpp#L562-L593) |
+| `run_tracking` | Field 1: new tract name. If field 2 is absent, current GUI tracking settings are used. If field 2 contains `:`, it is ROI grammar appended to current settings; otherwise it is an explicit opaque parameter ID optionally followed by a space and ROI grammar. Field 3 is optional auto-track tolerance. | Immediate start/error output. | Creates a tract row and starts background tracking. **Completion:** Asynchronous; poll `list_tract` until `running=0` and inspect `LOG`. **Caveat:** Prefer the short current-settings form; do not hand-edit opaque parameter IDs. | Computation | `Invoke-Dsi -Fields @("CMD",$trackingId,"run_tracking","thalamic_fibers","18:0&21:1")` | `TractTableWidget::command`; [current-settings expansion](https://github.com/frankyeh/DSI-Studio/blob/21146a6f491a61893a8e4866a03b1e09a75d12cd/tracking/tract/tracttablewidget.cpp#L451-L460), [tracking start](https://github.com/frankyeh/DSI-Studio/blob/21146a6f491a61893a8e4866a03b1e09a75d12cd/tracking/tract/tracttablewidget.cpp#L575-L605) |
 
 The ROI grammar used by tracking is:
 
@@ -456,8 +462,9 @@ generated surface to the named half-space combination.
 
 `list_param` is misleadingly named: it does not enumerate parameters. It
 requires one exact parameter ID and prints `name: value`. `set_param` accepts
-the ID and a textual value, calls the model's `setData()`, then requests a GL
-and slice redraw ([parameter commands](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tracking_window_action.cpp#L889-L901)). Enum parameters use their **zero-based numeric choice
+the ID and a textual value. `set_params` accepts one
+`name=value&name=value...` field and applies all entries before requesting one
+GL and slice redraw ([parameter commands](https://github.com/frankyeh/DSI-Studio/blob/1e79a4e6d3eb8c61eca1e6e13d92f9770255cf4d/tracking/tracking_window_action.cpp#L902-L922)). Enum parameters use their **zero-based numeric choice
 index**, not choice text. Checkbox values are Qt states (`0` unchecked, `2`
 checked). Colors are packed Qt ARGB integers.
 
@@ -470,7 +477,8 @@ state matters, and restore the old value when the result is wrong.
 | Command | Syntax / parameters | Output | Effect and completion | Safety | Example | Handler and source |
 |---|---|---|---|---|---|---|
 | `list_param` | Exact parameter ID. | One line: `name: value`. | None. **Completion:** Immediate. | Read-only | `Invoke-Dsi -Fields @("CMD",$trackingId,"list_param","tract_style")` | `tracking_window::command`; [parameter commands](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tracking_window_action.cpp#L889-L901) |
-| `set_param` | Field 1: exact parameter ID; field 2: value. | None/error. | Changes rendering/tracking state and requests redraw. **Completion:** Immediate state mutation. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"set_param","tract_style","1")` | `tracking_window::command`; [parameter commands](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tracking_window_action.cpp#L889-L901) |
+| `set_param` | Field 1: exact parameter ID; field 2: value. | None/error. | Changes one rendering/tracking value and requests redraw. **Completion:** Immediate state mutation. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"set_param","tract_style","1")` | `tracking_window::command`; [current implementation](https://github.com/frankyeh/DSI-Studio/blob/1e79a4e6d3eb8c61eca1e6e13d92f9770255cf4d/tracking/tracking_window_action.cpp#L908-L922) |
+| `set_params` | One field: `name=value&name=value...`. | None/error. Malformed fragments without `=` are ignored. | Changes several rendering/tracking values and requests one redraw. **Completion:** Immediate state mutation. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"set_params","tract_style=1&tract_alpha=0.8")` | `tracking_window::command`; [current implementation](https://github.com/frankyeh/DSI-Studio/blob/1e79a4e6d3eb8c61eca1e6e13d92f9770255cf4d/tracking/tracking_window_action.cpp#L908-L922) |
 
 #### Complete parameter schema
 
@@ -795,7 +803,7 @@ unselected current row ([`for_each_bundle()`](https://github.com/frankyeh/DSI-St
 
 | Command | Syntax / parameters | Output | Effect and completion | Safety | Example | Handler and source |
 |---|---|---|---|---|---|---|
-| `list_tract` | No parameters. | Header `index shown name tracts deleted seeds` (tab-separated). | Fetches any newly generated tracts into table models. **Completion:** Immediate snapshot. | Read-only | `Invoke-Dsi -Fields @("CMD",$trackingId,"list_tract")` | `TractTableWidget::command`; [tract discovery/editing](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tract/tracttablewidget.cpp#L451-L561) |
+| `list_tract` | No parameters. | Header `index running shown name tracts deleted seeds` (tab-separated); flags are `0`/`1`. | Fetches newly generated tracts into table models and reports whether each tracking thread is active. **Completion:** Immediate snapshot; `running=0` does not itself prove success. | Read-only | `Invoke-Dsi -Fields @("CMD",$trackingId,"list_tract")` | `TractTableWidget::command`; [current implementation](https://github.com/frankyeh/DSI-Studio/blob/21146a6f491a61893a8e4866a03b1e09a75d12cd/tracking/tract/tracttablewidget.cpp#L487-L500) |
 | `set_dt_index` | Field 1: `metric1&metric2`; field 2: threshold-type integer. | None/error. | Sets differential-tracking metric indices. **Completion:** Immediate. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"set_dt_index","qa&inc_qa","0")` | `TractTableWidget::command`; [tract discovery/editing](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tract/tracttablewidget.cpp#L451-L561) |
 | `open_tract` | Field 1: absolute tract path; field 2: any nonempty value suppresses showing the loaded row. | New row/error. | Loads a native-space tract. **Completion:** Synchronous file load. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"open_tract","E:\data\tract.tt.gz","0")` | `TractTableWidget::command`; [tracking/open/atlas](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tract/tracttablewidget.cpp#L562-L682) |
 | `open_mni_tract` | Field 1: absolute tract path; field 2: any nonempty value suppresses showing the loaded row. | New row/error. | Loads a MNI-space tract. **Completion:** Synchronous file load. | GUI-state change | `Invoke-Dsi -Fields @("CMD",$trackingId,"open_mni_tract","E:\data\tract.tt.gz","0")` | `TractTableWidget::command`; [tracking/open/atlas](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tract/tracttablewidget.cpp#L562-L682) |
@@ -1074,7 +1082,8 @@ consolidated index contains every documented command spelling/variant and its
 argument-field count. Dynamic prefixes are counted only for the source-defined
 GUI variants: 14 `add_surface*` commands, four camera-store slots, four
 camera-restore slots, three tract flips, six tract cuts, and 32 region actions.
-`set_param` values are separately enumerated in the complete parameter schema.
+`set_param`/`set_params` values are separately enumerated in the complete
+parameter schema.
 
 | Scope | Command | Parameter fields | Safety | Completion | Handler | Source |
 |---|---|---:|---|---|---|---|
@@ -1083,7 +1092,7 @@ camera-restore slots, three tract flips, six tract cuts, and 32 region actions.
 | `auto` | `enable_auto_tract` | `0` | Computation | Synchronous atlas load. | `tracking_window::command` | [automatic tracking](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tracking_window_action.cpp#L734-L776) |
 | `auto` | `list_auto_tract` | `0` | Read-only | Synchronous list. | `tracking_window::command` | [automatic tracking](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tracking_window_action.cpp#L734-L776) |
 | `auto` | `run_auto_track` | `1-2` | Computation | Asynchronous; `OKAY` means started only. | `tracking_window::command` | [automatic tracking](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tracking_window_action.cpp#L734-L776) |
-| `auto` | `run_tracking` | `2-3` | Computation | Asynchronous; poll `list_tract` and `LOG`. | `tracking_window::command` | [`run_tracking`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tract/tracttablewidget.cpp#L562-L593) |
+| `auto` | `run_tracking` | `1-3` | Computation | Asynchronous; poll `list_tract` until `running=0` and inspect `LOG`. | `TractTableWidget::command` | [current implementation](https://github.com/frankyeh/DSI-Studio/blob/21146a6f491a61893a8e4866a03b1e09a75d12cd/tracking/tract/tracttablewidget.cpp#L451-L460) |
 | `device` | `copy_device` | `0-1` | GUI-state change | Immediate. | `DeviceTableWidget::command` | [`DeviceTableWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/devicetablewidget.cpp#L500-L675) |
 | `device` | `delete_all_devices` | `0` | Destructive | Immediate. | `DeviceTableWidget::command` | [`DeviceTableWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/devicetablewidget.cpp#L500-L675) |
 | `device` | `delete_device` | `0-1` | Destructive | Immediate. | `DeviceTableWidget::command` | [`DeviceTableWidget::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/devicetablewidget.cpp#L500-L675) |
@@ -1171,14 +1180,17 @@ camera-restore slots, three tract flips, six tract cuts, and 32 region actions.
 | `image-transform` | `upper_threshold` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. | `view_image::command → variant_image::command/TIPL` | [`view_image.ui:689-699`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/view_image.ui#L689-L699) |
 | `image-transform` | `upsampling` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. | `view_image::command → variant_image::command/TIPL` | [`view_image.ui:775-782`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/view_image.ui#L775-L782) |
 | `image-transform` | `warp_to_image` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. | `view_image::command → variant_image::command/TIPL` | [`view_image.ui:1131-1145`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/view_image.ui#L1131-L1145) |
+| `main` | `list_recent` | `0` | Read-only | Immediate list. | `MainWindow::command` | [current implementation](https://github.com/frankyeh/DSI-Studio/blob/438176e0aa47139cf54bd5f0c22e69e31e2ff11f/mainwindow.cpp#L1914-L1922) |
+| `main` | `run_cli` | `1` | Varies | Synchronous CLI action on GUI thread; verify outputs. | `MainWindow::command` | [current implementation](https://github.com/frankyeh/DSI-Studio/blob/438176e0aa47139cf54bd5f0c22e69e31e2ff11f/mainwindow.cpp#L1924-L1933) |
 | `main` | `hub download` | `4` | File creation | Deferred file write; verify path and stable size. | `MainWindow::command` | [`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L1849-L1937) |
-| `main` | `hub files` | `2-3` | GUI-state change | Immediate list; retry if Hub data is loading. | `MainWindow::command` | [`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L1849-L1937) |
+| `main` | `hub files` | `2-3` | GUI-state change | Immediate list; retry if Hub data is loading. | `MainWindow::command` | [current implementation](https://github.com/frankyeh/DSI-Studio/blob/438176e0aa47139cf54bd5f0c22e69e31e2ff11f/mainwindow.cpp#L1980-L1991) |
 | `main` | `hub help` | `0` | Read-only | Immediate. | `MainWindow::command` | [`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L1849-L1937) |
 | `main` | `hub open` | `3` | File creation | Deferred: handler may schedule the open after `OKAY`; poll `LIST`. | `MainWindow::command` | [`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L1849-L1937) |
 | `main` | `hub repos` | `0` | GUI-state change | Immediate unless Hub initialization itself is still loading. | `MainWindow::command` | [`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L1849-L1937) |
 | `main` | `hub tags` | `1` | GUI-state change | Immediate list; retry if output says loading. | `MainWindow::command` | [`MainWindow::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L1849-L1937) |
 | `parameters` | `list_param` | `1` | Read-only | Immediate. | `tracking_window::command` | [parameter commands](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tracking_window_action.cpp#L889-L901) |
-| `parameters` | `set_param` | `2` | GUI-state change | Immediate state mutation. | `tracking_window::command` | [parameter commands](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tracking_window_action.cpp#L889-L901) |
+| `parameters` | `set_param` | `2` | GUI-state change | Immediate state mutation. | `tracking_window::command` | [current implementation](https://github.com/frankyeh/DSI-Studio/blob/1e79a4e6d3eb8c61eca1e6e13d92f9770255cf4d/tracking/tracking_window_action.cpp#L908-L922) |
+| `parameters` | `set_params` | `1` | GUI-state change | Applies multiple values, then requests one redraw. | `tracking_window::command` | [current implementation](https://github.com/frankyeh/DSI-Studio/blob/1e79a4e6d3eb8c61eca1e6e13d92f9770255cf4d/tracking/tracking_window_action.cpp#L908-L922) |
 | `region-action` | `region_action_1st_ex_all` | `1` | Destructive | Synchronous; refresh `list_region`. | `RegionTableWidget::do_action` | [advanced region actions](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/region/regiontablewidget.cpp#L1299-L1642) |
 | `region-action` | `region_action_all_ex_1st` | `1` | Destructive | Synchronous; refresh `list_region`. | `RegionTableWidget::do_action` | [advanced region actions](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/region/regiontablewidget.cpp#L1299-L1642) |
 | `region-action` | `region_action_all_inter_1st` | `1` | Destructive | Synchronous; refresh `list_region`. | `RegionTableWidget::do_action` | [advanced region actions](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/region/regiontablewidget.cpp#L1299-L1642) |
@@ -1549,34 +1561,15 @@ if(slice_index >= slices.size())
 auto custom_slice = std::dynamic_pointer_cast<CustomSliceModel>(slices[slice_index]);
 ```
 
-### P0 — `tracking_status` and indexed `cancel_tracking`
+### P0 — terminal tracking result and indexed `cancel_tracking`
 
-**Insert:** [`tracking/tract/tracttablewidget.cpp:477-487`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tract/tracttablewidget.cpp#L477-L487), function `TractTableWidget::command()`, after the `list_tract`
-branch at current line 487; reuse `thread_data` whose lifecycle is managed at
-[tracking thread lifecycle](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tract/tracttablewidget.cpp#L263-L340).
-
-**Syntax/output:**
-
-```text
-tracking_status [tract_index]
-index<TAB>state<TAB>tracts<TAB>seeds
-
-cancel_tracking <tract_index>
-OKAY or ERROR<TAB>not running
-```
-
-**Reason:** current numeric counts cannot distinguish running, completed,
-failed, or canceled. An AI agent also cannot stop one mistaken/expensive job.
+`list_tract` now exposes each row's `running` flag. The remaining gap is a
+terminal result/error and a way to stop one job. Preserve the final status when
+`ThreadData` ends, add `state` and `error` columns to `list_tract`, and insert
+the following branch after the current list handler
+([current list handler](https://github.com/frankyeh/DSI-Studio/blob/21146a6f491a61893a8e4866a03b1e09a75d12cd/tracking/tract/tracttablewidget.cpp#L487-L500)):
 
 ```cpp
-if(cmd[0] == "tracking_status") {
-    tipl::out() << "index\tstate\ttracts\tseeds";
-    for(size_t i = 0;i < thread_data.size();++i)
-        tipl::out() << i << "\t" << (thread_data[i] ? "running" : "idle")
-                    << "\t" << item(int(i),1)->text().toStdString()
-                    << "\t" << item(int(i),3)->text().toStdString();
-    return run->succeed();
-}
 if(cmd[0] == "cancel_tracking") {
     int row = currentRow();
     if(!get_cur_row(cmd[1],row) || !thread_data[size_t(row)])
@@ -1586,8 +1579,8 @@ if(cmd[0] == "cancel_tracking") {
 }
 ```
 
-Add an explicit terminal result/error field to `ThreadData` before promising
-`completed` versus `failed`; otherwise report only `running`/`idle`.
+Until a terminal field exists, report only `running`/`idle`; never infer
+`completed` from `running=0`.
 
 ### P0 — `list_atlas_label`
 
@@ -1811,14 +1804,15 @@ to an AI agent.
 
 ## Machine-readable appendix
 
-This JSON is generated from the same 307-entry command inventory used for the
+This JSON is generated from the same 310-entry command inventory used for the
 human-readable tables. `argument_fields` counts fields after the command field;
 ranges such as `0-2` are strings. `async=true` means the handler starts or
 defers work, or immediate acknowledgement cannot represent completion.
 
 ```json
 {
-  "source_commit": "9e00c9c23f49df581a78bc1c9928134d262092ad",
+  "source_commit": "8ad955a333cdfcb8d6433a6a88137c0ae76f6cad",
+  "base_audit_commit": "9e00c9c23f49df581a78bc1c9928134d262092ad",
   "server_name": "dsi-studio",
   "request_prefixes": {
     "LIST": {
@@ -1831,7 +1825,8 @@ defers work, or immediate acknowledgement cannot represent completion.
     },
     "CMD": {
       "minimum_fields": 3,
-      "wire": "CMD<TAB>window_id<TAB>command<TAB>parameter..."
+      "wire_single": "CMD<TAB>window_id<TAB>command<TAB>parameter...",
+      "wire_batch": "CMD<TAB>window_id<TAB>[[\"command\",\"parameter\"],[\"command\",...]]"
     },
     "raw_filename": {
       "fields": 1,
@@ -1858,6 +1853,10 @@ defers work, or immediate acknowledgement cannot represent completion.
     "NO_INSTANCE": {
       "client_exit": 1,
       "meaning": "LIST found no server"
+    },
+    "JSON_BATCH": {
+      "client_exit": "0 only when every returned okay is true",
+      "meaning": "per-command batch results; execution stops at first failure"
     }
   },
   "window_types": [
@@ -1880,7 +1879,11 @@ defers work, or immediate acknowledgement cannot represent completion.
     "list_slice": [
       "index",
       "current",
-      "name"
+      "name",
+      "ready",
+      "running",
+      "downloaded",
+      "registered"
     ],
     "list_unet": [
       "index",
@@ -1902,6 +1905,7 @@ defers work, or immediate acknowledgement cannot represent completion.
     ],
     "list_tract": [
       "index",
+      "running",
       "shown",
       "name",
       "tracts",
@@ -1919,10 +1923,40 @@ defers work, or immediate acknowledgement cannot represent completion.
     "hub files": [
       "row",
       "filename",
-      "display-size"
+      "display-size",
+      "cached"
+    ],
+    "CMD batch": [
+      "index",
+      "okay",
+      "output",
+      "error (failure only)"
     ]
   },
   "commands": [
+    {
+      "scope": "main",
+      "name": "list_recent",
+      "argument_fields": "0",
+      "safety": "Read-only",
+      "async": false,
+      "available": true,
+      "handler": "MainWindow::command",
+      "output": "Recent `.sz` and `.fz` paths, one per line.",
+      "source": "https://github.com/frankyeh/DSI-Studio/blob/438176e0aa47139cf54bd5f0c22e69e31e2ff11f/mainwindow.cpp#L1914-L1922"
+    },
+    {
+      "scope": "main",
+      "name": "run_cli",
+      "argument_fields": "1",
+      "safety": "Varies",
+      "async": false,
+      "available": true,
+      "handler": "MainWindow::command",
+      "output": "CLI progress, warnings, and errors.",
+      "source": "https://github.com/frankyeh/DSI-Studio/blob/438176e0aa47139cf54bd5f0c22e69e31e2ff11f/mainwindow.cpp#L1924-L1933",
+      "caveat": "One complete DSI Studio command line; --action is required; wildcard or --loop processing may affect many files."
+    },
     {
       "scope": "main",
       "name": "hub help",
@@ -1964,8 +1998,8 @@ defers work, or immediate acknowledgement cannot represent completion.
       "async": false,
       "available": true,
       "handler": "MainWindow::command",
-      "output": "`row<TAB>filename<TAB>display-size`.",
-      "source": "https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/mainwindow.cpp#L1849-L1937"
+      "output": "`row<TAB>filename<TAB>display-size<TAB>cached`.",
+      "source": "https://github.com/frankyeh/DSI-Studio/blob/438176e0aa47139cf54bd5f0c22e69e31e2ff11f/mainwindow.cpp#L1980-L1991"
     },
     {
       "scope": "main",
@@ -2163,8 +2197,8 @@ defers work, or immediate acknowledgement cannot represent completion.
       "async": false,
       "available": true,
       "handler": "tracking_window::command",
-      "output": "Header `index<TAB>current<TAB>name`; `current` is `0`/`1`.",
-      "source": "https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tracking_window_action.cpp#L189-L314"
+      "output": "Header `index<TAB>current<TAB>name<TAB>ready<TAB>running<TAB>downloaded<TAB>registered`; flags are `0`/`1`.",
+      "source": "https://github.com/frankyeh/DSI-Studio/blob/1e79a4e6d3eb8c61eca1e6e13d92f9770255cf4d/tracking/tracking_window_action.cpp#L198-L221"
     },
     {
       "scope": "slice",
@@ -2458,14 +2492,14 @@ defers work, or immediate acknowledgement cannot represent completion.
     {
       "scope": "auto",
       "name": "run_tracking",
-      "argument_fields": "2-3",
+      "argument_fields": "1-3",
       "safety": "Computation",
       "async": true,
       "available": true,
-      "handler": "tracking_window::command",
+      "handler": "TractTableWidget::command",
       "output": "Immediate start/error output.",
-      "source": "https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tract/tracttablewidget.cpp#L562-L593",
-      "caveat": "Generate the opaque parameter ID from current GUI settings; do not hand-edit it."
+      "source": "https://github.com/frankyeh/DSI-Studio/blob/21146a6f491a61893a8e4866a03b1e09a75d12cd/tracking/tract/tracttablewidget.cpp#L451-L460",
+      "caveat": "With only a tract name, current GUI tracking settings are used; a next field containing ':' is treated as ROI grammar."
     },
     {
       "scope": "surface",
@@ -2641,7 +2675,19 @@ defers work, or immediate acknowledgement cannot represent completion.
       "available": true,
       "handler": "tracking_window::command",
       "output": "None/error.",
-      "source": "https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tracking_window_action.cpp#L889-L901"
+      "source": "https://github.com/frankyeh/DSI-Studio/blob/1e79a4e6d3eb8c61eca1e6e13d92f9770255cf4d/tracking/tracking_window_action.cpp#L908-L922"
+    },
+    {
+      "scope": "parameters",
+      "name": "set_params",
+      "argument_fields": "1",
+      "safety": "GUI-state change",
+      "async": false,
+      "available": true,
+      "handler": "tracking_window::command",
+      "output": "None/error.",
+      "source": "https://github.com/frankyeh/DSI-Studio/blob/1e79a4e6d3eb8c61eca1e6e13d92f9770255cf4d/tracking/tracking_window_action.cpp#L908-L922",
+      "caveat": "One name=value&name=value field; fragments without '=' are ignored."
     },
     {
       "scope": "region-create",
@@ -3421,8 +3467,8 @@ defers work, or immediate acknowledgement cannot represent completion.
       "async": false,
       "available": true,
       "handler": "TractTableWidget::command",
-      "output": "Header `index shown name tracts deleted seeds` (tab-separated).",
-      "source": "https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/tracking/tract/tracttablewidget.cpp#L451-L561"
+      "output": "Header `index running shown name tracts deleted seeds` (tab-separated).",
+      "source": "https://github.com/frankyeh/DSI-Studio/blob/21146a6f491a61893a8e4866a03b1e09a75d12cd/tracking/tract/tracttablewidget.cpp#L487-L500"
     },
     {
       "scope": "tract-discovery",
@@ -5408,7 +5454,7 @@ defers work, or immediate acknowledgement cannot represent completion.
   - inspected but not remotely targetable:
     [`reconstruction_window::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/reconstruction/reconstruction_window.cpp#L345-L442)
     and [`src_data::command()`](https://github.com/frankyeh/DSI-Studio/blob/9e00c9c23f49df581a78bc1c9928134d262092ad/libs/dsi/image_model.cpp#L767-L835).
-- **Operational command names/variants documented:** 307.
+- **Operational command names/variants documented:** 310.
 - **Rendering/tracking parameters documented:** 185
   (`178` from `options.txt` plus seven top-level visibility
   parameters).
@@ -5417,8 +5463,8 @@ defers work, or immediate acknowledgement cannot represent completion.
 
 1. Generic image-transform parsing and exact default behavior are delegated to
    external TIPL code not present in this DSI Studio source snapshot.
-2. Tracking has no terminal job result: `list_tract` counts cannot prove
-   completed versus failed/canceled.
+2. Tracking has no terminal job result: `list_tract` reports `running`, but
+   `running=0` cannot prove completed versus failed/canceled.
 3. `OKAY` from raw filename forwarding does not prove `openFile()` succeeded,
    and Hub open/download has deferred final actions.
 4. `TIMEOUT` does not distinguish slow synchronous work, a modal dialog, a
@@ -5434,7 +5480,7 @@ defers work, or immediate acknowledgement cannot represent completion.
 
 ### Top five command additions
 
-1. `tracking_status` plus indexed `cancel_tracking`.
+1. Terminal tracking result/error plus indexed `cancel_tracking`.
 2. `list_atlas_label`.
 3. versioned `HELP`, `SCHEMA`, and `STATE`.
 4. `get_param`, `list_render_param`, and `list_tracking_param`.
