@@ -95,9 +95,8 @@ bool variant_image::command(std::string cmd,std::string param1)
                 if(r.r.front() == 0.0f)
                     return error_msg = "run registration first to get the mapping field",result = false,void();
                 I.resize(r.Is);
-                bool result = interpolation ? nii.to_space<tipl::interpolation::linear>(I,r.IR):
-                                  nii.to_space<tipl::interpolation::majority>(I,r.IR);
-                if(!result)
+                if(!(interpolation ? nii.to_space<tipl::interpolation::linear>(I,r.IR):
+                          nii.to_space<tipl::interpolation::majority>(I,r.IR)))
                     return error_msg = "failed to read file data",result = false,void();
             }
             else
