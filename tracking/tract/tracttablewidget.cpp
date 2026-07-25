@@ -450,8 +450,15 @@ bool TractTableWidget::render_tracts(GLWidget* glwidget)
 
 bool TractTableWidget::command(std::vector<std::string> cmd)
 {
-    if(cmd.size() == 2 && cmd[0] == "run_tracking")
-        cmd.push_back(cur_tracking_window.get_parameter_id());
+    if(cmd[0] == "run_tracking" &&
+        (cmd.size() == 2 ||
+         (cmd.size() == 3 && cmd[2].find(':') != std::string::npos)))
+    {
+        auto roi = cmd.size() == 3 ? " " + cmd[2] : "";
+        cmd.resize(3);
+        cmd[2] = cur_tracking_window.get_parameter_id() + roi;
+    }
+
 
     auto run = cur_tracking_window.history.record(error_msg,cmd);
     if(cmd.size() < 3)
