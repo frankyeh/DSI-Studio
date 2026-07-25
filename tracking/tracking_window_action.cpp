@@ -1,6 +1,7 @@
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QSettings>
+#include <QSignalBlocker>
 #include <QClipboard>
 #include <QMessageBox>
 
@@ -508,6 +509,44 @@ bool tracking_window::command(std::vector<std::string> cmd)
 
         if(!handle->save_slice(cmd[2],cmd[1],cmd[0] == "save_slice_mni_image"))
             return run->failed(handle->error_msg);
+        return run->succeed();
+    }
+    if(cmd[0] == "show_only_regions" || cmd[0] == "show_only_tracts")
+    {
+        bool is_region = cmd[0] == "show_only_regions";
+        QTableWidget* table = is_region ? static_cast<QTableWidget*>(regionWidget) :
+                                  static_cast<QTableWidget*>(tractWidget);
+        auto index_list = QString::fromStdString(cmd[1]).split('&',Qt::SkipEmptyParts);
+        if(index_list.empty())
+            return run->failed(std::string("no ") +
+                               (is_region ? "region" : "tract") + " index specified");
+
+        std::vector<bool> shown(size_t(table->rowCount()));
+        for(auto each : index_list)
+        {
+            bool ok;
+            int row = each.toInt(&ok);
+            if(!ok || row < 0 || row >= table->rowCount())
+                return run->failed(std::string("invalid ") +
+                                   (is_region ? "region" : "tract") +
+                                   " index: " + each.toStdString());
+            shown[size_t(row)] = true;
+        }
+
+        {
+            QSignalBlocker blocker(table);
+            for(int row = 0;row < table->rowCount();++row)
+            {
+                auto state = shown[size_t(row)] ? Qt::Checked : Qt::Unchecked;
+                table->item(row,0)->setCheckState(state);
+                table->item(row,0)->setData(Qt::UserRole+1,state);
+            }
+        }
+
+        if(is_region)
+            emit regionWidget->need_update();
+        else
+            emit tractWidget->show_tracts();
         return run->succeed();
     }
     if(cmd[0] == "presentation_mode")
