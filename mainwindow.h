@@ -29,6 +29,9 @@ public:
     void update_rate_limit(QSharedPointer<QNetworkReply>);
 public:
     std::map<QString,QJsonArray> ai_prompts;
+    QString ai_agent;
+    bool ai_agent_started = false;
+    void log_ai_call(const QString& agent,const QString& request);
 public:
     bool fetch_github = false;
     QNetworkAccessManager manager;
@@ -63,6 +66,8 @@ private:
     void login(void);
 private slots:
 
+    void on_ai_new_codex_chat_clicked();
+    void on_ai_send_message_clicked();
     void on_averagefib_clicked();
     void on_vbc_clicked();
     void on_RenameDICOMDir_clicked();
