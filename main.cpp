@@ -469,11 +469,28 @@ MainWindow* main_window = nullptr;
 void ai_request_list(QLocalSocket *clientSocket);
 int main(int ac, char *av[])
 {
+    if(ac == 2)
+    {
+        if(std::string(av[1]) == "--version")
+            return std::cout << dsi_studio_citation << std::endl,0;
+        QLocalSocket socket;
+        socket.connectToServer("dsi-studio");
+        if (socket.waitForConnected(5000))
+        {
+            tipl::out() << "another instance is running, passing file name.";
+            socket.write(av[1]);
+            socket.flush();
+            socket.waitForBytesWritten(5000);
+            auto reply = socket.waitForReadyRead(5000) ? socket.readAll() : QByteArray("TIMEOUT");
+            std::cout << reply.constData() << std::endl;
+            socket.disconnectFromServer();
+            return reply.startsWith("OKAY") ? 0 : 1;
+        }
+        if(std::string(av[1]) == "LIST")
+            return std::cout << "NO_INSTANCE\n" << std::endl,1;
+    }
 
     std::cout << dsi_studio_citation << std::endl;
-
-    if(ac == 2 && std::string(av[1]) == "--version")
-        return 0;
 
     tipl::program_option<tipl::out> po;
     if(ac > 2 || (ac == 2 && std::string(av[1]) == "--interact"))
@@ -516,32 +533,6 @@ int main(int ac, char *av[])
 
     try
     {
-
-        if(ac == 2)
-        {
-            QLocalSocket socket;
-            socket.connectToServer("dsi-studio");
-            if (socket.waitForConnected(5000))
-            {
-                tipl::out() << "another instance is running, passing file name.";
-                socket.write(av[1]);
-                socket.flush();
-                socket.waitForBytesWritten(5000);
-                auto reply = socket.waitForReadyRead(5000) ? socket.readAll() : QByteArray("TIMEOUT");
-                std::fwrite(reply.constData(),1,reply.size(),stdout);
-                std::fputc('\n',stdout);
-                std::fflush(stdout);
-                socket.disconnectFromServer();
-                return reply == "OKAY" ? 0 : 1;
-            }
-            if(std::string(av[1]) == "LIST")
-            {
-                std::fputs("NO_INSTANCE\n",stdout);
-                std::fflush(stdout);
-                return 1;
-            }
-        }
-
         tipl::show_prog = true;
         if(!po.has("action"))
             console.attach();
@@ -563,7 +554,7 @@ int main(int ac, char *av[])
             w.show();
 
 
-        if(ac == 2 && std::string(av[1]) != "LIST")
+        if(ac == 2)
             w.openFile(QStringList() << av[1]);
 
         QLocalServer server;
