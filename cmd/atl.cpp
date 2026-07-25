@@ -1,11 +1,7 @@
-#include <QFileInfo>
-#include <QApplication>
-#include <QDir>
+#include <filesystem>
 #include "fib_data.hpp"
 #include "mapping/atlas.hpp"
 #include "connectometry/group_connectometry_analysis.h"
-
-#include <filesystem>
 
 bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std::vector<std::shared_ptr<atlas> >& atlas_list)
 {
@@ -14,10 +10,7 @@ bool atl_load_atlas(std::shared_ptr<fib_data> handle,std::string atlas_name,std:
     {
         auto at = handle->get_atlas(name_list[index].toStdString());
         if(!at.get())
-        {
-            tipl::error() << handle->error_msg << std::endl;
-            return false;
-        }
+            return tipl::error() << handle->error_msg,false;
         atlas_list.push_back(at);
     }
     return true;
@@ -90,19 +83,13 @@ int tmp(tipl::program_option<tipl::out>& po)
     if(tipl::ends_with(name_list[0].u8string(),{".fib.gz",".fz"}))
     {
         if(!odf_average(po.get("output",(name_list[0].parent_path()/"template").u8string()),name_list,error_msg))
-        {
-            tipl::error() << error_msg;
-            return 1;
-        }
+            return tipl::error() << error_msg,1;
         return 0;
     }
     if(tipl::ends_with(name_list[0].u8string(),".nii.gz"))
     {
         if(!odf_average(po.get("output",name_list[0].u8string() + ".avg.nii.gz"),name_list,error_msg))
-        {
-            tipl::error() << error_msg;
-            return 1;
-        }
+            return tipl::error() << error_msg,1;
         return 0;
     }
     tipl::error() << "unsupported format" << std::endl;
@@ -118,10 +105,7 @@ int atl(tipl::program_option<tipl::out>& po)
     if(!atl_load_atlas(handle,po.get("atlas"),atlas_list))
         return 1;
     if(handle->get_sub2temp_mapping().empty())
-    {
-        tipl::error() << "cannot output connectivity: no mni mapping" << std::endl;
-        return 1;
-    }
+        return tipl::error() << "cannot output connectivity: no mni mapping",1;
     std::string file_name = po.get("source");
     const auto& mapping = handle->get_sub2temp_mapping();
     bool multiple = (po.get("output","multiple") == "multiple");
