@@ -1,5 +1,6 @@
 #ifndef SliceModelH
 #define SliceModelH
+#include <atomic>
 #include <memory>
 #include <future>
 #include "zlib.h"
@@ -130,7 +131,7 @@ public:
     std::shared_ptr<std::thread> thread;
     tipl::affine_param<float> arg_min;
     bool terminated = true;
-    bool running = false;
+    std::atomic_bool running = false;
     void terminate(void);
     void wait(void);
     void argmin(void);
