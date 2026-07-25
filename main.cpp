@@ -466,7 +466,10 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>& po)
 int gpu_count = 0;
 extern console_stream console;
 MainWindow* main_window = nullptr;
+
 void ai_request_list(QLocalSocket *clientSocket);
+void ai_request_command(QLocalSocket*,const QByteArray&);
+
 int main(int ac, char *av[])
 {
     if(ac == 2)
@@ -573,6 +576,8 @@ int main(int ac, char *av[])
                     tipl::out() << "received: " << request.constData();
                     if(request == "LIST")
                         ai_request_list(clientSocket);
+                    else if(request.startsWith("CMD\t"))
+                        ai_request_command(clientSocket,request);
                     else
                     {
                         // Existing filename-opening behavior remains unchanged.
