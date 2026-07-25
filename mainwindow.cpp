@@ -1718,7 +1718,8 @@ void MainWindow::on_OpenDWI_2dseq_clicked()
 }
 void MainWindow::on_tabWidget_currentChanged(int index)
 {
-    if(index != 4 || ui->github_tags->rowCount() || fetch_github)
+    if(ui->tabWidget->tabText(index) != "Fiber Data Hub" ||
+        ui->github_tags->rowCount() || fetch_github)
         return;
     fetch_github = true;
 
@@ -1970,9 +1971,14 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
     if(cmd.size() < 2 || cmd[1] == "help")
         return tipl::out() << usage,true;
 
-    ui->tabWidget->setCurrentIndex(4);
-    if(!fetch_github)
-        on_tabWidget_currentChanged(4);
+    for(int i = 0;i < ui->tabWidget->count();++i)
+        if(ui->tabWidget->tabText(i) == "Fiber Data Hub")
+        {
+            ui->tabWidget->setCurrentIndex(i);
+            if(!fetch_github)
+                on_tabWidget_currentChanged(i);
+            break;
+        }
     if(!ui->github_repo->count())
     {
         fetch_github = false;
