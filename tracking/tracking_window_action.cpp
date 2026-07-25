@@ -834,7 +834,12 @@ bool tracking_window::command(std::vector<std::string> cmd)
         history.overwrite(cmd[0]);
         return run->succeed();
     }
-
+    if(cmd[0] == "list_param")
+    {
+        tipl::out() << cmd[1] << ": "
+                    << (*this)[cmd[1].c_str()].toString().toStdString();
+        return run->succeed();
+    }
     if(cmd[0] == "set_param")
     {
         set_data(cmd[1].c_str(),cmd[2].c_str());
