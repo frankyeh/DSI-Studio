@@ -1,4 +1,3 @@
-#include <QFileInfo>
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -32,7 +31,8 @@ bool check_other_slices(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_
                 std::replace(line.begin(),line.end(),',','\t');
                 std::istringstream in2(line);
                 std::string name;
-                in2 >> name;
+                if(!(in2 >> name))
+                    continue;
                 if(po.get("source").find(name) != std::string::npos ||
                    po.get("other_slices").find(name) != std::string::npos)
                 {
@@ -86,6 +86,8 @@ bool get_tract_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data
                 if(!digit.empty())
                     (std::istringstream(digit)) >> ratio;
                 tipl::out() << "calculating TDI at x" << ratio << " resolution" << std::endl;
+                if(ratio <= 0.0f || !std::isfinite(ratio))
+                    return tipl::error() << "invalid TDI resolution ratio",false;
             }
 
             bool output_color = tipl::contains(cmd,"color");
@@ -130,11 +132,7 @@ bool get_tract_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data
                 tipl::out() << " in RGB color";
             if(output_end)
                 tipl::out() << " end point only";
-            tipl::out() << std::endl;
-            tipl::out() << "TDI dimension: " << dim << std::endl;
-            tipl::out() << "TDI voxel size: " << vs << std::endl;
-            tipl::out() << "TDI srow: " << trans_to_mni << std::endl;
-            tipl::out() << std::endl;
+            tipl::out() << "tdi dim: " << dim << " vs: " << vs << " srow: " << trans_to_mni;
             tipl::out() << "saving " << file_name_stat;
             if(!TractModel::export_tdi(file_name_stat,tract,dim,vs,trans_to_mni,to_t1t2,output_color,output_end))
                 return tipl::error() << "failed to save file. Please check write permission.",false;
@@ -183,10 +181,13 @@ bool get_tract_profile(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
     std::string metrics;
     uint32_t profile_dir = 0;
     float bandwidth = 1.0;
-    std::istringstream(cmd) >> metrics >> profile_dir >> bandwidth;
-    tipl::out() << "metrics: " << metrics;
-    tipl::out() << "type: " << profile_dir;
-    tipl::out() << "bandwidth: " << bandwidth;
+
+    std::istringstream in(cmd);
+    if(!(in >> metrics >> profile_dir >> bandwidth) ||
+        profile_dir > 8 || bandwidth <= 0.0f || !std::isfinite(bandwidth))
+        return tipl::error() << "invalid --profile specification",false;
+
+    tipl::out() << "metrics: " << metrics << " type: " << profile_dir << " bandwidth: " << bandwidth;
 
     std::vector<float> values,data_profile,data_ci1,data_ci2;
     // check index
@@ -202,19 +203,16 @@ bool get_tract_profile(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_d
         return tipl::error() << "cannot write to " << file_name,false;
     report << "position\t";
     std::copy(values.begin(),values.end(),std::ostream_iterator<float>(report,"\t"));
-    report << std::endl;
-    report << "value\t";
+    report << "\nvalue\t";
     std::copy(data_profile.begin(),data_profile.end(),std::ostream_iterator<float>(report,"\t"));
     if(!data_ci1.empty())
     {
-        report << std::endl;
-        report << "CI\t";
+        report << "\nCI\t";
         std::copy(data_ci1.begin(),data_ci1.end(),std::ostream_iterator<float>(report,"\t"));
     }
     if(!data_ci2.empty())
     {
-        report << std::endl;
-        report << "CI\t";
+        report << "\nCI\t";
         std::copy(data_ci2.begin(),data_ci2.end(),std::ostream_iterator<float>(report,"\t"));
     }
     report << std::endl;
@@ -506,17 +504,16 @@ bool load_roi(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> hand
         ROIRegion roi(handle);
         for(const auto& each : tipl::split(po.get(roi_names[index]),','))
         {
-            if(!each.empty() && std::all_of(each.begin(),each.end(),[](char c){return c >= 'a' && c <= 'z';}))
-            {
-                tipl::out() << "apply region operation: " << each;
-                roi.perform(each);
+            if(!each.empty() && std::all_of(each.begin(),each.end(),[](char c){return c >= 'a' && c <= 'z';})
+                && roi.perform(each) && (tipl::out() << "apply region operation: " << each,true))
                 continue;
-            }
             ROIRegion other_roi(handle);
             if(!load_region(po,handle,roi.region.empty() ? roi : other_roi,each))
                 return false;
             if(!other_roi.region.empty())
-                roi.add_points(std::move(other_roi.region));
+                roi.add_points(roi.is_same_space(other_roi) ?
+                                   std::move(other_roi.region) :
+                                   other_roi.to_space(roi.dim,roi.to_diffusion_space));
         }
         roi_mgr->setRegions(roi.region,roi.dim,roi.to_diffusion_space,type[index],po.get(roi_names[index]).c_str());
     }
@@ -654,27 +651,6 @@ int trk(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle)
         }
 
         tracking_thread.fetchTracks(tract_model.get());
-    }
-
-
-    if(tract_model->get_visible_track_count() && po.has("refine") && (po.get("refine",1) >= 1))
-    {
-        for(int i = 0;i < po.get("refine",1);++i)
-            tract_model->trim();
-        tipl::out() << "refine tracking result..." << std::endl;
-        tipl::out() << "convert tracks to seed regions" << std::endl;
-        tracking_thread.roi_mgr->seeds.clear();
-        std::vector<tipl::vector<3,short> > points;
-        tract_model->to_voxel(points);
-        tract_model->clear();
-        tracking_thread.roi_mgr->setRegions(points,3/*seed*/,"refine seeding region");
-
-        tipl::out() << "restart tracking..." << std::endl;
-        tracking_thread.run(tipl::max_thread_count,true);
-        tracking_thread.fetchTracks(tract_model.get());
-        tipl::out() << "finished tracking." << std::endl;
-        if(tract_model->get_visible_track_count() == 0)
-            return tipl::out() << "no tract produced. terminating...",0;
     }
 
     tract_model->trim(tracking_thread.param.tip_iteration);
