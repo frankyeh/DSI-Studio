@@ -70,9 +70,8 @@ static void ai_reply(QLocalSocket* socket,const QString& agent,
         prompts = {};
 }
 
-void ai_request_list(QLocalSocket* socket,const QByteArray& request)
+static void ai_request_list(QLocalSocket* socket,const QString& agent)
 {
-    auto agent = QString::fromUtf8(request.mid(5));
     static quint64 next_id = 0;
     QStringList result;
     for(auto* window : QApplication::allWidgets())
@@ -98,26 +97,17 @@ void ai_request_list(QLocalSocket* socket,const QByteArray& request)
     ai_reply(socket,agent,"OKAY\n" + result.join('\n').toUtf8());
 }
 
-void ai_request_command(QLocalSocket* socket,const QByteArray& request)
+static void ai_request_command(QLocalSocket* socket,const QString& agent,
+                               const QJsonObject& request)
 {
-    QString agent;
-    int begin = 4,tab = request.indexOf('\t',begin);
-    if(tab < 0)
+    auto id = request["window"].toVariant().toString();
+    auto commands = request["command"].toArray();
+    if(id.isEmpty() || commands.isEmpty())
         return ai_reply(socket,agent,"ERROR\tinvalid command");
-
-    if(request[begin] == '@')
-    {
-        agent = QString::fromUtf8(request.mid(begin,tab-begin));
-        begin = tab+1;
-        tab = request.indexOf('\t',begin);
-        if(tab < 0)
-            return ai_reply(socket,agent,"ERROR\tinvalid command");
-    }
+    if(commands[0].isString())
+        commands = QJsonArray{commands};
 
     QWidget* target = nullptr;
-    auto id = QString::fromUtf8(request.mid(begin,tab-begin));
-
-
     for(auto* window : QApplication::allWidgets())
         if(window->property("remote_id").toString() == id)
             target = window;
@@ -166,28 +156,6 @@ void ai_request_command(QLocalSocket* socket,const QByteArray& request)
         return okay;
     };
 
-    auto payload = request.mid(tab+1).trimmed();
-    if(!payload.startsWith('['))
-    {
-        std::vector<std::string> cmd;
-        for(const auto& arg : payload.split('\t'))
-            cmd.push_back(arg.toStdString());
-        QString output,error;
-        bool okay = run(cmd,output,error);
-        return ai_reply(socket,agent,((okay ? "OKAY\n" :
-                                      "ERROR\t" + error + "\n") + output).toUtf8());
-    }
-
-    QJsonParseError parse_error;
-    auto doc = QJsonDocument::fromJson(payload,&parse_error);
-    if(!doc.isArray())
-        return ai_reply(socket,agent,("ERROR\tinvalid batch JSON: " +
-                                 parse_error.errorString()).toUtf8());
-
-    auto commands = doc.array();
-    if(commands.isEmpty())
-        return ai_reply(socket,agent,"ERROR\tempty batch");
-
     bool updates_enabled = target->updatesEnabled();
     target->setUpdatesEnabled(false);
     QJsonArray results;
@@ -233,9 +201,8 @@ void ai_request_command(QLocalSocket* socket,const QByteArray& request)
     ai_reply(socket,agent,QByteArray(),&results);
 }
 
-void ai_request_log(QLocalSocket* socket,const QByteArray& request)
+static void ai_request_log(QLocalSocket* socket,const QString& agent)
 {
-    auto agent = QString::fromUtf8(request.mid(4));
     QByteArray output;
     {
         std::lock_guard<std::mutex> lock(console.edit_buf);
@@ -254,7 +221,6 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     auto request = doc.object();
     auto agent = request["agent"].toString();
     auto type = request["request"].toString().toUpper();
-
     if(!agent.startsWith('@'))
         return ai_reply(socket,agent,"ERROR\tinvalid agent");
 
@@ -262,42 +228,37 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     activity.remove("chat");
     main_window->add_ai_history(
         agent,"request",
-        QString::fromUtf8(
-            QJsonDocument(activity).toJson(QJsonDocument::Compact)));
-
-    if(type == "LIST")
-        ai_request_list(socket,"LIST\t" + agent.toUtf8());
-    else if(type == "LOG")
-        ai_request_log(socket,"LOG\t" + agent.toUtf8());
-    else if(type == "CMD")
-    {
-        auto command = request["command"].toArray();
-        auto window = request["window"].toVariant().toString().toUtf8();
-        if(window.isEmpty() || command.isEmpty())
-            return ai_reply(socket,agent,"ERROR\tinvalid command");
-
-        if(command[0].isString())
-        {
-            QJsonArray batch;
-            batch.append(command);
-            command = batch;
-        }
-
-        QByteArray converted = "CMD\t";
-        converted += agent.toUtf8();
-        converted += '\t';
-        converted += window;
-        converted += '\t';
-        converted += QJsonDocument(command).toJson(QJsonDocument::Compact);
-        ai_request_command(socket,converted);
-    }
-    else
-        return ai_reply(socket,agent,"ERROR\tunknown request");
+        QJsonDocument(activity).toJson(QJsonDocument::Compact));
 
     auto chat = request["chat"].toString().trimmed();
     if(!chat.isEmpty())
         main_window->add_ai_history(agent,"assistant",chat);
+
+    if(type == "LIST")
+        return ai_request_list(socket,agent);
+    if(type == "LOG")
+        return ai_request_log(socket,agent);
+    if(type == "CMD")
+        return ai_request_command(socket,agent,request);
+    ai_reply(socket,agent,"ERROR\tunknown request");
 }
+
+void MainWindow::add_ai_history(const QString& agent,const QString& type,
+                                const QString& text)
+{
+    bool assistant = type == "assistant";
+    QString name = agent.startsWith("@C") ? "Codex" :
+                   agent.startsWith("@A") ? "Claude" : "AI";
+    auto content = text.toHtmlEscaped().replace('\n',"<br>");
+
+    ui->ai_chat_history->append(
+        QString("<div style=\"background:%1;padding:6px;margin:4px\">"
+                "<b>%2 · %3</b><br>%4</div>")
+        .arg(assistant ? "#e8f5e9" : "#f1f3f4",
+             name,agent.toHtmlEscaped(),
+             assistant ? content : "<code>" + content + "</code>"));
+}
+
 
 void checkForVersionSpecificBugs_Minimal(const QString& bugListText)
 {
