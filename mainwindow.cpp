@@ -793,46 +793,7 @@ void check_name(std::string& name)
             name[index] = '_';
 }
 
-std::filesystem::path rename_dicom(const std::filesystem::path& file_name,
-                  std::filesystem::path output)
-{
-    std::string person, sequence, imagename;
-    {
-        tipl::io::dicom header;
-        if (!header.load_from_file(file_name))
-        {
-            tipl::out() << "not a DICOM file. Skipping";
-            return std::string();
-        }
-        header.get_patient(person);
-        header.get_sequence(sequence);
-        header.get_image_name(imagename);
-    }
-    check_name(person);
-    check_name(sequence);
-    check_name(imagename);
-    output = output/person;
-    output = output/sequence;
-    output = output/imagename;
-    if(file_name != output)
-    {
-        tipl::out() << file_name << "->" << output;
-        std::error_code ec;
-        if (!std::filesystem::exists(output.parent_path()) && !std::filesystem::create_directories(output.parent_path()))
-        {
-            if(!std::filesystem::exists(output.parent_path()))
-                tipl::error() << "cannot create dir " << output;
-        }
-        std::filesystem::rename(file_name,output,ec);
-        if(ec)
-        {
-            tipl::error() << "cannot rename " << file_name << " to " << output << ": " << ec.message();
-            return {};
-        }
-    }
-    return output;
-}
-
+std::filesystem::path rename_dicom(const std::filesystem::path& file_name,std::filesystem::path output);
 void MainWindow::on_RenameDICOM_clicked()
 {
     QStringList filenames = QFileDialog::getOpenFileNames(
