@@ -59,7 +59,8 @@ function Send-Dsi($request)
 
 Each call opens one connection, sends exactly one request, reads its complete
 reply, and closes. Never combine requests on one connection or send incomplete
-JSON.
+JSON. Use `Send-Dsi` exactly as written: it returns raw text. Do not add
+`ConvertFrom-Json` inside the helper.
 
 ## Requests
 
@@ -101,9 +102,18 @@ each other's new DSI output. Final `LOG` with `chat` returns no console history.
 lines report synchronous DSI-side request handling, not agent runtime or
 asynchronous completion.
 
-A queued user prompt may follow a text reply as `PROMPT<TAB><JSON>`. `CMD`
-returns `{index,okay,output,error?}` objects; its last result may contain a
-`prompt` property. Treat returned prompts as new user input.
+Filename-open replies and validation errors are also text. A `CMD` reply
+beginning with `[` is a JSON array of `{index,okay,output,error?}` objects and
+may be passed separately to `ConvertFrom-Json`. List-command data remains text
+inside each result's `output`; do not invent properties such as `.windows` or
+`.tracks`.
+
+Every `CMD`, including every `list_*` command, requires the numeric `window`
+from the latest `LIST`. Use the `main` window ID for `list_recent_fib` and
+`list_recent_src`; use a `tracking` window ID for `list_tract`.
+
+A queued user prompt may follow a text reply as `PROMPT<TAB><JSON>` or appear
+in the last command result's `prompt` property. Treat it as new user input.
 
 ## Opening local files
 
@@ -149,6 +159,8 @@ path into fields, or substitute `add_image`. Refresh `LIST` afterward.
 10. Send the final answer once with the final `LOG`.
 11. Minimize round trips: one initial `LIST`, a safe same-window batch, concise
     verification, and final `LOG`.
+12. When asked to operate DSI Studio, execute the requests. Do not return a
+    script or tutorial unless the user asks for one.
 
 If DSI Studio resumes an agent, reconnect with the exact same agent and
 session strings. Process every returned `PROMPT` and exit naturally when none
