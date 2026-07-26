@@ -18,6 +18,7 @@
 #include <QTimer>
 #include <QScrollBar>
 #include <QEvent>
+#include <QTextFrame>
 
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -439,12 +440,14 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
                      toString("MM/dd HH:mm:ss"),
                  content);
 
-        ui->ai_chat_history->append(
+        auto cursor = ui->ai_chat_history->document()->
+                      rootFrame()->lastCursorPosition();
+        cursor.insertHtml(
             QString("<table width=\"100%\" cellspacing=\"3\" "
                     "cellpadding=\"7\"><tr>%1</tr></table>")
-            .arg(request ? cell :
-                 user ? "<td width=\"20%\"></td>"+cell :
-                        cell+"<td width=\"20%\"></td>"));
+                .arg(request ? cell :
+                         user ? "<td width=\"20%\"></td>"+cell :
+                         cell+"<td width=\"20%\"></td>"));
     };
 
     if(added.isEmpty())
