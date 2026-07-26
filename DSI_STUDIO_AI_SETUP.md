@@ -223,7 +223,8 @@ path into fields, or substitute `add_image`. Refresh `LIST` afterward.
 
 ## Required behavior
 
-1. Prefer GUI commands; use `run_cli` only when explicitly requested.
+1. Use GUI commands. **Do not use `run_cli` unless the user explicitly says to
+   run the CLI.** Never infer CLI permission from a requested outcome.
 2. Call `LIST` first and after windows open or close.
 3. Use only numeric IDs returned by the latest `LIST`.
 4. Discover values with `list_slice`, `list_region`, `list_tract`,
