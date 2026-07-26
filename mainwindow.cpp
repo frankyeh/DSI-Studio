@@ -508,7 +508,7 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
     if(ui->ai_project_list->currentItem() != item)
         return;
 
-    auto request_content = [](const QJsonObject& entry)
+    auto request_content = [](const QJsonObject& entry,bool compact = false)
     {
         auto summary = entry["_summary"].toString();
         if(!summary.isEmpty())
@@ -538,6 +538,8 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
                 "window "+detail["window"].toVariant().toString() :
                 target+" window";
             auto title = detail["_target_title"].toString();
+            if(compact)
+                return names.join(", ");
             return QString("Sent %1 command%2 to %3%4")
                    .arg(names.isEmpty() ? "unknown" : names.join(", "))
                    .arg(names.size() == 1 ? "" : "s")
@@ -617,15 +619,20 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
                 if(!standalone_request(index))
                     continue;
                 auto combined = entry;
-                QStringList activities{request_content(entry)};
+                QStringList activities{request_content(entry,true)};
                 auto window = request_window(entry);
                 auto end = index;
-                while(end+1 < history.size() && standalone_request(end+1) &&
+                while(!window.isEmpty() && end+1 < history.size() &&
+                      standalone_request(end+1) &&
                       request_window(history[end+1].toObject()) == window)
-                    activities << request_content(history[++end].toObject());
-                combined["_summary"] = activities.join(" \u00b7 ");
+                    activities << request_content(history[++end].toObject(),true);
                 if(end != index)
+                {
+                    auto target = request_content(entry);
+                    target = target.mid(target.lastIndexOf(" to ")+4);
+                    combined["_summary"] = activities.join(", ")+" \u2192 "+target;
                     combined["_end_time"] = history[end].toObject()["time"];
+                }
                 append(combined);
                 index = end;
                 continue;
