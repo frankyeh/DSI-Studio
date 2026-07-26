@@ -273,6 +273,23 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     auto json = QString::fromUtf8(QJsonDocument(activity).toJson(
                                       QJsonDocument::Compact));
     tipl::out() << json.toStdString();
+    if(type == "CMD")
+        for(auto* window : QApplication::allWidgets())
+            if(window->property("remote_id").toString() ==
+               request["window"].toVariant().toString())
+            {
+                QString target_type =
+                    qobject_cast<MainWindow*>(window) ? "main" :
+                    qobject_cast<tracking_window*>(window) ? "tracking" :
+                    qobject_cast<view_image*>(window) ? "image" : "unknown";
+                activity["_target_type"] = target_type;
+                if(target_type != "main")
+                    activity["_target_title"] =
+                        QFileInfo(window->windowTitle()).fileName();
+                break;
+            }
+    json = QString::fromUtf8(QJsonDocument(activity).toJson(
+                                 QJsonDocument::Compact));
     main_window->add_ai_history(agent,"request",json);
 
     auto chat = request["chat"].toString().trimmed();
@@ -362,11 +379,30 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
             if(action == "CMD")
             {
                 auto commands = detail["command"].toArray();
-                int count = commands.isEmpty() ? 0 :
-                            commands[0].isArray() ? commands.size() : 1;
-                content = QString("Sent %1 command%2 to window %3")
-                          .arg(count).arg(count == 1 ? "" : "s")
-                          .arg(detail["window"].toVariant().toString());
+                auto command_name = [](const QJsonArray& command)
+                {
+                    auto name = command[0].toString();
+                    if(name == "hub" && command.size() > 1)
+                        name += " "+command[1].toString();
+                    return name;
+                };
+                QStringList names;
+                if(!commands.isEmpty())
+                    if(commands[0].isArray())
+                        for(const auto& command : commands)
+                            names << command_name(command.toArray());
+                    else
+                        names << command_name(commands);
+                auto target = detail["_target_type"].toString();
+                auto destination = target.isEmpty() ?
+                    "window "+detail["window"].toVariant().toString() :
+                    target+" window";
+                auto title = detail["_target_title"].toString();
+                content = QString("Sent %1 command%2 to %3%4")
+                          .arg(names.isEmpty() ? "unknown" : names.join(", "))
+                          .arg(names.size() == 1 ? "" : "s")
+                          .arg(destination)
+                          .arg(title.isEmpty() ? "" : " "+title);
             }
             else
                 content = action == "LIST" ? "Checked open windows" :
