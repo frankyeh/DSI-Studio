@@ -43,7 +43,35 @@ if($separator -lt 1 -or $separator -eq $Identity.Length-1)
 }
 $agent = $Identity.Substring(0,$separator)
 $session = $Identity.Substring($separator+1)
-$exe = Join-Path $PSScriptRoot 'dsi_studio.exe'
+$exe = @(
+    (Join-Path $PSScriptRoot 'dsi_studio.exe')
+    $env:DSI_STUDIO_EXE
+    (Join-Path (Split-Path $PSScriptRoot -Parent) 'DSI-Studio-CMAKE\dsi_studio.exe')
+) | Where-Object {$_ -and (Test-Path -LiteralPath $_)} |
+    Select-Object -First 1
+if(!$exe)
+{
+    Write-Error 'Cannot find dsi_studio.exe. Place dsi.ps1 beside it or set DSI_STUDIO_EXE.'
+    exit 2
+}
+
+function Invoke-DsiStudio([string]$Argument)
+{
+    $start = [Diagnostics.ProcessStartInfo]::new()
+    $start.FileName = $exe
+    $start.UseShellExecute = $false
+    $start.CreateNoWindow = $true
+    $start.RedirectStandardOutput = $true
+    $start.RedirectStandardError = $true
+    $start.Arguments = '"'+$Argument.Replace('"','\"')+'"'
+    $process = [Diagnostics.Process]::Start($start)
+    $stdout = $process.StandardOutput.ReadToEndAsync()
+    $stderr = $process.StandardError.ReadToEndAsync()
+    $process.WaitForExit()
+    [Console]::Out.Write($stdout.Result)
+    [Console]::Error.Write($stderr.Result)
+    return $process.ExitCode
+}
 
 if($Target -eq 'OPEN')
 {
@@ -52,8 +80,7 @@ if($Target -eq 'OPEN')
         Write-Error 'Usage: .\dsi.ps1 agent@session OPEN <file>'
         exit 2
     }
-    & $exe (Resolve-Path -LiteralPath $Command[0]).Path
-    exit $LASTEXITCODE
+    exit (Invoke-DsiStudio (Resolve-Path -LiteralPath $Command[0]).Path)
 }
 
 $request = [ordered]@{
@@ -82,14 +109,22 @@ elseif($request.request -ne 'LIST')
     $request.command = $Command
 }
 
-& $exe ($request | ConvertTo-Json -Compress -Depth 8)
-exit $LASTEXITCODE
+$json = $request | ConvertTo-Json -Compress -Depth 8
+exit (Invoke-DsiStudio $json)
 ```
 
 Use the same `agent@session` identity for the entire conversation. Each script
 invocation sends exactly one request through `dsi_studio.exe` and exits. Use
 this script directly; do not create another PowerShell, Python, batch, or
 temporary client.
+
+If Windows blocks direct script execution, do not change the user's execution
+policy. Invoke the same file with:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\dsi.ps1 `
+    myagent@session1 LIST
+```
 
 ## Requests
 
