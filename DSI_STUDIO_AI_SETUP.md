@@ -18,81 +18,103 @@ $DsiAgent = '<agent name>'
 $DsiSession = '<session name>'
 ```
 
-## Connect
+## Universal client
 
-Run on the same Windows computer as DSI Studio. Define this helper once per
-PowerShell process:
+Run on the same Windows computer as DSI Studio. If `dsi.ps1` does not exist
+beside `dsi_studio.exe`, create it there once with this exact content:
 
 ```powershell
-function Send-Dsi($request)
+param(
+    [Parameter(Mandatory,Position=0)]
+    [string]$Identity,
+
+    [Parameter(Mandatory,Position=1)]
+    [string]$Target,
+
+    [Parameter(Position=2,ValueFromRemainingArguments)]
+    [string[]]$Command
+)
+
+$separator = $Identity.IndexOf('@')
+if($separator -lt 1 -or $separator -eq $Identity.Length-1)
 {
-    if($request -is [string])
+    Write-Error 'Identity must be agent@session.'
+    exit 2
+}
+$agent = $Identity.Substring(0,$separator)
+$session = $Identity.Substring($separator+1)
+$exe = Join-Path $PSScriptRoot 'dsi_studio.exe'
+
+if($Target -eq 'OPEN')
+{
+    if($Command.Count -ne 1)
     {
-        $payload = (Resolve-Path -LiteralPath $request).Path
+        Write-Error 'Usage: .\dsi.ps1 agent@session OPEN <file>'
+        exit 2
     }
-    else
+    & $exe (Resolve-Path -LiteralPath $Command[0]).Path
+    exit $LASTEXITCODE
+}
+
+$request = [ordered]@{
+    agent = $agent
+    session = $session
+    cwd = (Get-Location).Path
+    request = $Target.ToUpper()
+}
+
+if($request.request -eq 'LOG')
+{
+    if($Command.Count)
     {
-        $request = @{}+$request
-        $request.agent = $DsiAgent
-        $request.session = $DsiSession
-        $request.cwd = (Get-Location).Path
-        $payload = $request | ConvertTo-Json -Compress -Depth 8
-    }
-    $pipe = [IO.Pipes.NamedPipeClientStream]::new(
-        '.', 'dsi-studio', [IO.Pipes.PipeDirection]::InOut)
-    try
-    {
-        $pipe.Connect(2000)
-        $utf8 = [Text.UTF8Encoding]::new($false)
-        $bytes = $utf8.GetBytes($payload)
-        $pipe.Write($bytes,0,$bytes.Length)
-        $pipe.Flush()
-        $reader = [IO.StreamReader]::new($pipe,$utf8)
-        $reader.ReadToEnd()
-    }
-    finally
-    {
-        $pipe.Dispose()
+        $request.chat = $Command -join ' '
     }
 }
+elseif($request.request -ne 'LIST')
+{
+    if($Target -notmatch '^\d+$' -or !$Command.Count)
+    {
+        Write-Error 'Usage: .\dsi.ps1 agent@session <window-id> <command> [parameters...]'
+        exit 2
+    }
+    $request.request = 'CMD'
+    $request.window = $Target
+    $request.command = $Command
+}
+
+& $exe ($request | ConvertTo-Json -Compress -Depth 8)
+exit $LASTEXITCODE
 ```
 
-Each call opens one connection, sends exactly one request, reads its complete
-reply, and closes. Never combine requests on one connection or send incomplete
-JSON. Use `Send-Dsi` exactly as written: it returns raw text. Do not add
-`ConvertFrom-Json` inside the helper.
+Use the same `agent@session` identity for the entire conversation. Each script
+invocation sends exactly one request through `dsi_studio.exe` and exits. Use
+this script directly; do not create another PowerShell, Python, batch, or
+temporary client.
 
 ## Requests
 
 ```powershell
 # Discover windows.
-$list = Send-Dsi @{request='LIST'}
+.\dsi.ps1 myagent@session1 LIST
 
-# Use the numeric ID returned by LIST.
-$reply = Send-Dsi @{
-    request='CMD'; window='2'; command=@('list_region')
-}
+# Use a numeric ID returned by LIST.
+.\dsi.ps1 myagent@session1 2 list_region
 
-# Ordered same-window batch.
-$reply = Send-Dsi @{
-    request='CMD'; window='2'
-    command=@(@('list_slice'),@('list_region'),@('list_tract'))
-}
+# Parameters containing spaces remain one quoted argument.
+.\dsi.ps1 myagent@session1 2 set_region_name 0 "Tumor Core"
 
 # Incremental diagnostics and final user-facing reply.
-$log = Send-Dsi @{request='LOG'}
-$log = Send-Dsi @{request='LOG'; chat='Task completed.'}
+.\dsi.ps1 myagent@session1 LOG
+.\dsi.ps1 myagent@session1 LOG "Task completed."
 ```
 
 Always use the numeric window ID returned by the latest `LIST`; never use a
 window type, title, filename, guessed ID, or stale ID as `window`.
 
 JSON fields are `agent`, `session`, `cwd`, `request`, `window`, `command`, and
-optional `chat`. The helper supplies `agent`, `session`, and `cwd`. Requests
-are `LIST`, `CMD`, or `LOG`. A command is an array of strings; a batch is an
-array of command arrays. Keep parameters containing spaces as one element.
-Batches run in order and stop at the first error. Do not batch asynchronous
-work with commands that depend on its completion.
+optional `chat`. The script supplies them from its arguments. Requests are
+`LIST`, `CMD`, or `LOG`; `OPEN` sends one filename through the existing
+filename transport. Keep parameters containing spaces as one quoted argument.
 
 `LIST` and `LOG` replies begin with `OKAY`. Diagnostic `LOG` returns at most
 4096 new console characters since the prior `LOG` or first request. Every
@@ -103,10 +125,9 @@ lines report synchronous DSI-side request handling, not agent runtime or
 asynchronous completion.
 
 Filename-open replies and validation errors are also text. A `CMD` reply
-beginning with `[` is a JSON array of `{index,okay,output,error?}` objects and
-may be passed separately to `ConvertFrom-Json`. List-command data remains text
-inside each result's `output`; do not invent properties such as `.windows` or
-`.tracks`.
+beginning with `[` is a JSON array of `{index,okay,output,error?}` objects.
+List-command data remains text inside each result's `output`; do not invent
+properties such as `.windows` or `.tracks`.
 
 Every `CMD`, including every `list_*` command, requires the numeric `window`
 from the latest `LIST`. Use the `main` window ID for `list_recent_fib` and
@@ -120,24 +141,22 @@ in the last command result's `prompt` property. Treat it as new user input.
 When only the main window exists, send one absolute filename:
 
 ```powershell
-Send-Dsi 'C:\data\subject.fz'
-$list = Send-Dsi @{request='LIST'}
+.\dsi.ps1 myagent@session1 OPEN 'C:\data\subject.fz'
+.\dsi.ps1 myagent@session1 LIST
 ```
 
 Poll `LIST` for the new numeric `tracking` or `image` window ID. `open_fib`
 requires an existing tracking window and cannot create the first one.
 
 In DSI Studio, **FIB means `.fz`**. Never substitute `.sz`; `.sz` is an SRC
-file. `Send-Dsi` can open one `.fz`, `.sz`, or image file.
+file. `OPEN` can open one `.fz`, `.sz`, or image file.
 
 To open multiple images in one O1 window, send one flat command to the numeric
 main-window ID:
 
 ```powershell
-Send-Dsi @{
-    request='CMD'; window='1'
-    command=@('open_image','C:\data\a.nii.gz','C:\data\b.nii.gz')
-}
+.\dsi.ps1 myagent@session1 1 open_image `
+    'C:\data\a.nii.gz' 'C:\data\b.nii.gz'
 ```
 
 Do not send separate `open_image` commands, target an image window, split a
@@ -157,7 +176,7 @@ path into fields, or substitute `add_image`. Refresh `LIST` afterward.
 8. Do not answer modal dialogs remotely; tell the user what is required.
 9. Put only new user-facing text in `chat`; never include reasoning/tool output.
 10. Send the final answer once with the final `LOG`.
-11. Minimize round trips: one initial `LIST`, a safe same-window batch, concise
+11. Minimize round trips: one initial `LIST`, only necessary commands, concise
     verification, and final `LOG`.
 12. When asked to operate DSI Studio, execute the requests. Do not return a
     script or tutorial unless the user asks for one.
