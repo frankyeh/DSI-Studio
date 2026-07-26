@@ -67,7 +67,7 @@ $reply = Invoke-Dsi @{
     command=@(@('list_slice'),@('list_region'),@('list_tract'))
 }
 
-# Console and final user-facing reply.
+# Incremental diagnostics and final user-facing reply.
 $log = Invoke-Dsi @{request='LOG'}
 $log = Invoke-Dsi @{request='LOG'; chat='Task completed.'}
 ```
@@ -77,8 +77,10 @@ optional `chat`. Requests are `LIST`, `CMD`, or `LOG`. A command is an array of
 strings; a batch is an array of command arrays. Keep a parameter containing
 spaces as one element.
 
-`LIST` and `LOG` are text replies beginning with `OKAY`. A queued user prompt
-may follow as `PROMPT<TAB><JSON>`. `CMD` returns an array of
+`LIST` and `LOG` are text replies beginning with `OKAY`. Diagnostic `LOG`
+returns at most 16 KB generated since this agent's previous `LOG`; use it only
+when needed. `LOG` with `chat` stores the final reply but returns no console
+history. A queued user prompt may follow as `PROMPT<TAB><JSON>`. `CMD` returns an array of
 `{index,okay,output,error?}`; a queued prompt is the last result's optional
 `prompt` property. Process prompts as new user input.
 
@@ -132,6 +134,8 @@ refresh `LIST`. The direct non-JSON filename transport opens only one file.
    expected and wait for the human response.
 10. Put only new user-facing text in `chat`; never send reasoning or tool output.
 11. Send the final answer once on the final `LOG`.
+12. Minimize round trips: one initial `LIST`, one safe same-window batch, one
+    concise verification, and the final `LOG`; refresh only after window changes.
 
 ## DSI-initiated Codex turns
 
