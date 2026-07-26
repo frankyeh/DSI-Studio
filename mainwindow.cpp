@@ -488,96 +488,246 @@ void MainWindow::add_ai_history(const QString& agent,const QString& type,
     show_ai_project(agent,entry);
 }
 
+void MainWindow::on_ai_new_chat_clicked()
+{
+    ui->ai_project_list->setCurrentItem(nullptr);
+    ui->ai_chat_history->clear();
+    ui->ai_chat_input->clear();
+    ui->ai_chat_input->setFocus();
+    ui->ai_control_status->setText("● New Chat");
+}
+
 void MainWindow::on_ai_send_message_clicked()
 {
-    auto* item = ui->ai_project_list->currentItem();
     auto text = ui->ai_chat_input->toPlainText().trimmed();
-    if(!item || text.isEmpty())
+    if(text.isEmpty())
         return;
 
-    auto agent = item->data(Qt::UserRole).toString();
-    add_ai_history(agent,"user",text);
-    ui->ai_chat_input->clear();
-    auto session = ai_sessions.value(agent);
-    auto codex = find_codex_executable();
-    if(!agent.startsWith("@C") || session.isEmpty() || codex.isEmpty() ||
-       ai_processes.contains(agent))
+    auto* item = ui->ai_project_list->currentItem();
+    auto agent = item ? item->data(Qt::UserRole).toString() : QString();
+    if(!agent.isEmpty() && !agent.startsWith("@C"))
+    {
+        QMessageBox::warning(this,"AI Agent",
+                             "Only Codex is currently supported.");
+        return;
+    }
+
+    if(!agent.isEmpty() && ai_processes.contains(agent))
     {
         ai_prompts[agent].append(text);
+        add_ai_history(agent,"user",text);
+        ui->ai_chat_input->clear();
         ui->ai_control_status->setText("● Queued");
         return;
     }
 
+    auto codex = find_codex_executable();
+    if(codex.isEmpty())
+    {
+        QMessageBox::warning(this,"Codex",
+                             "Codex is not installed or cannot be located.");
+        return;
+    }
+
+    auto session = ai_sessions.value(agent);
+    if(!agent.isEmpty() && session.isEmpty())
+    {
+        QMessageBox::warning(this,"Codex",
+                             "This project has no Codex session.");
+        return;
+    }
+
+    auto cwd = ai_work_dirs.value(agent);
+    if(!QDir(cwd).exists())
+        cwd = work_dir();
+    if(!QDir(cwd).exists())
+        cwd = QApplication::applicationDirPath();
+
     auto* process = new QProcess(this);
-    ai_processes[agent] = process;
+    process->setObjectName(agent);
+    process->setWorkingDirectory(cwd);
     process->setProperty("stdout_bytes",0LL);
     process->setProperty("stderr_bytes",0LL);
-    if(QDir(ai_work_dirs.value(agent)).exists())
-        process->setWorkingDirectory(ai_work_dirs[agent]);
 
-    connect(process,&QProcess::readyReadStandardOutput,this,
-            [=]
+    if(!agent.isEmpty())
     {
-        auto bytes = process->readAllStandardOutput().size();
-        process->setProperty("stdout_bytes",
-            process->property("stdout_bytes").toLongLong()+bytes);
+        ai_processes[agent] = process;
+        add_ai_history(agent,"user",text);
+    }
+    else
+        for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
+            button->setEnabled(false);
+
+    ui->ai_chat_input->clear();
+
+    connect(process,&QProcess::readyReadStandardOutput,this,[=]
+    {
+        auto output = process->readAllStandardOutput();
+        process->setProperty(
+            "stdout_bytes",
+            process->property("stdout_bytes").toLongLong()+output.size());
+
+        auto buffer =
+            process->property("stdout_buffer").toByteArray()+output;
+        for(int pos;(pos = buffer.indexOf('\n')) >= 0;)
+        {
+            auto event = QJsonDocument::fromJson(
+                             buffer.left(pos)).object();
+            buffer.remove(0,pos+1);
+            if(event["type"] != "thread.started")
+                continue;
+
+            auto session = event["thread_id"].toString();
+            if(QUuid(session).isNull())
+                continue;
+
+            auto agent = process->objectName();
+            if(agent.isEmpty())
+            {
+                agent = "@C"+session.left(12);
+                process->setObjectName(agent);
+                ai_work_dirs[agent] = process->workingDirectory();
+                ai_processes[agent] = process;
+                add_ai_history(agent,"user",text);
+                for(auto* button :
+                    {ui->ai_new_chat,ui->ai_send_message})
+                    button->setEnabled(true);
+            }
+            ai_sessions[agent] = session;
+            tipl::out() << "AI Codex session agent="
+                        << agent.toStdString()
+                        << " session=" << session.toStdString();
+        }
+        process->setProperty("stdout_buffer",buffer);
     });
-    connect(process,&QProcess::readyReadStandardError,this,
-            [=]
+
+    connect(process,&QProcess::readyReadStandardError,this,[=]
     {
         auto bytes = process->readAllStandardError().size();
-        process->setProperty("stderr_bytes",
+        process->setProperty(
+            "stderr_bytes",
             process->property("stderr_bytes").toLongLong()+bytes);
     });
-    connect(process,&QProcess::started,this,
-            [=]
+
+    connect(process,&QProcess::started,this,[=]
     {
-        tipl::out() << "AI Codex started agent=" << agent.toStdString()
+        process->closeWriteChannel();
+        auto agent = process->objectName();
+        tipl::out() << "AI Codex started agent="
+                    << (agent.isEmpty() ? std::string("new") :
+                                          agent.toStdString())
                     << " pid=" << process->processId();
-        show_ai_project(agent);
+        if(!agent.isEmpty())
+            show_ai_project(agent);
     });
-    connect(process,&QProcess::errorOccurred,this,[=](QProcess::ProcessError error)
+
+    connect(process,&QProcess::errorOccurred,this,
+            [=](QProcess::ProcessError error)
     {
         if(error != QProcess::FailedToStart)
             return;
-        ai_processes.remove(agent);
-        ai_prompts[agent].append(text);
-        tipl::out() << "AI Codex start failed agent=" << agent.toStdString()
+
+        auto agent = process->objectName();
+        tipl::out() << "AI Codex start failed agent="
+                    << agent.toStdString()
                     << " error=" << process->errorString().toStdString();
-        add_ai_history(agent,"activity","Cannot start Codex: "+
-                       process->errorString());
-        show_ai_project(agent);
-        ui->ai_control_status->setText("● Queued");
+
+        if(agent.isEmpty())
+        {
+            for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
+                button->setEnabled(true);
+            ui->ai_chat_input->setPlainText(text);
+            QMessageBox::warning(this,"Codex",
+                                 "Cannot start Codex: "+
+                                 process->errorString());
+        }
+        else
+        {
+            ai_processes.remove(agent);
+            add_ai_history(agent,"activity",
+                           "Cannot start Codex: "+
+                           process->errorString());
+            show_ai_project(agent);
+        }
+        ui->ai_control_status->setText("● Ready");
         process->deleteLater();
     });
-    connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
+
+    connect(process,
+            QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
             this,[=](int exit_code,QProcess::ExitStatus exit_status)
     {
-        tipl::out() << "AI Codex finished agent=" << agent.toStdString()
+        auto agent = process->objectName();
+        tipl::out() << "AI Codex finished agent="
+                    << agent.toStdString()
                     << " exit=" << exit_code
                     << " crashed=" << (exit_status == QProcess::CrashExit)
-                    << " stdout=" << process->property("stdout_bytes").toLongLong()
-                    << " stderr=" << process->property("stderr_bytes").toLongLong();
-        ai_processes.remove(agent);
-        show_ai_project(agent);
-        if(auto* item = ui->ai_project_list->currentItem();
-           item && item->data(Qt::UserRole).toString() == agent)
-            ui->ai_control_status->setText("● Ready");
+                    << " stdout="
+                    << process->property("stdout_bytes").toLongLong()
+                    << " stderr="
+                    << process->property("stderr_bytes").toLongLong();
+
+        if(agent.isEmpty())
+        {
+            for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
+                button->setEnabled(true);
+            ui->ai_chat_input->setPlainText(text);
+            QMessageBox::warning(
+                this,"Codex",
+                "Codex ended before creating a new chat. Check the console.");
+        }
+        else
+        {
+            ai_processes.remove(agent);
+            show_ai_project(agent);
+        }
+        ui->ai_control_status->setText("● Ready");
         process->deleteLater();
     });
-    show_ai_project(agent);
-    ui->ai_control_status->setText("Starting Codex…");
-    auto prompt = text+
-        "\n\n[DSI Studio] Reply through the DSI Studio local server using "
-        "agent "+agent+" and session "+session+". Send user-facing progress "
-        "with the JSON chat field and attach the final answer once to a LOG "
-        "request. Continue with every PROMPT returned by the local server. End "
-        "only after the latest server reply contains no PROMPT. Do not use "
-        "Codex CLI output as the reply.";
-    tipl::out() << "AI Codex resume agent=" << agent.toStdString()
+
+    QString prompt = text;
+    if(session.isEmpty())
+    {
+        QDir app(QApplication::applicationDirPath());
+        prompt +=
+            "\n\n[DSI Studio] Read \""+
+            QDir::toNativeSeparators(
+                app.filePath("DSI_STUDIO_AI_SETUP.md"))+
+            "\" and \""+
+            QDir::toNativeSeparators(
+                app.filePath("DSI_STUDIO_AI_MANUAL.md"))+
+            "\" completely, then use the DSI Studio local server to complete "
+            "the request. Keep the setup-generated agent and session identity "
+            "throughout this chat.";
+    }
+    else
+        prompt +=
+            "\n\n[DSI Studio] Reply through the DSI Studio local server using "
+            "agent "+agent+" and session "+session+".";
+
+    prompt +=
+        " Use JSON for every request. Attach chat only when there is new "
+        "user-facing text and never repeat it. Attach the final answer once to "
+        "the final LOG request. Continue with every PROMPT returned by the "
+        "server and exit only when the latest reply contains no PROMPT. Do not "
+        "use Codex CLI output as the reply.";
+
+    QStringList args{"exec"};
+    if(session.isEmpty())
+        args << "--json" << "--skip-git-repo-check";
+    else
+        args << "resume" << session << "--json"
+             << "--skip-git-repo-check";
+    args << prompt;
+
+    tipl::out() << "AI Codex "
+                << (session.isEmpty() ? "new chat" : "resume")
                 << " executable=" << codex.toStdString()
                 << " prompt_chars=" << text.size();
-    process->start(codex,{"exec","resume",session,prompt});
+    ui->ai_control_status->setText(
+        session.isEmpty() ? "Starting new Codex chat…" :
+                            "Starting Codex…");
+    process->start(codex,args);
 }
 
 
