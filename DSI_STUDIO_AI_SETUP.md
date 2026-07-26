@@ -1,62 +1,45 @@
 # DSI Studio AI Setup
 
-Use this file for transport and session rules. Use
-`DSI_STUDIO_AI_MANUAL.md` for commands.
+Read this file completely. Search `DSI_STUDIO_AI_MANUAL.md` only for commands
+needed by the request; do not read its entire inventory.
 
-## Requirements
+## Identity
 
-- Run on the same Windows computer as an AI-enabled DSI Studio.
-- Keep one stable agent ID for the task. Codex uses `@C` plus a prefix of
-  `CODEX_THREAD_ID`, and sends the full ID as `session`.
-- Use GUI control by default. Use `run_cli` only when the user explicitly asks
-  for CLI operation.
-- Send control requests as JSON. To open an existing local file in the GUI,
-  send its absolute filename directly; this is the only non-JSON request.
-- Use the `dsi-studio` named pipe. Do not launch `dsi_studio.exe` per command.
+Use one UUID for the entire AI conversation. Generate or obtain it once when
+the session starts, retain it in the agent context, and reuse it exactly.
+Never generate a UUID inside an individual command script.
+
+Provider prefixes are `@C` for Codex, `@A` for Claude Code, and another
+two-character ID such as `@G` or `@L` for other agents. The client derives the
+full agent ID as the provider prefix plus the first 12 UUID characters.
 
 ## PowerShell client
 
+Set the identity, then dot-source the shipped client:
+
 ```powershell
-function Invoke-DsiPipe([string]$json)
-{
-    $pipe = [IO.Pipes.NamedPipeClientStream]::new(
-        '.', 'dsi-studio', [IO.Pipes.PipeDirection]::InOut)
-    try {
-        $pipe.Connect(2000)
-        $utf8 = [Text.UTF8Encoding]::new($false)
-        $bytes = $utf8.GetBytes($json)
-        $pipe.Write($bytes,0,$bytes.Length)
-        $pipe.Flush()
-        $buf = [byte[]]::new(8192)
-        $reply = [Text.StringBuilder]::new()
-        while(($n = $pipe.Read($buf,0,$buf.Length)) -gt 0) {
-            [void]$reply.Append($utf8.GetString($buf,0,$n))
-        }
-        $reply.ToString()
-    } finally { $pipe.Dispose() }
-}
+$DsiProvider = '@A'       # Use the provider ID for the current agent.
+$DsiSession = '<stable UUID retained for this conversation>'
+. .\DSI_STUDIO_AI_CLIENT.ps1
 
-$DsiSession = $env:CODEX_THREAD_ID
-if(-not $DsiSession) { throw 'CODEX_THREAD_ID is required' }
-$DsiAgent = '@C' + $DsiSession.Substring(0,12)
-
-function Invoke-Dsi([hashtable]$request)
-{
-    $request = @{} + $request
-    $request.agent = $DsiAgent
-    $request.session = $DsiSession
-    $request.cwd = (Get-Location).Path
-    Invoke-DsiPipe ($request | ConvertTo-Json -Compress -Depth 8)
-}
+$list = Invoke-Dsi @{request='LIST'}
 ```
 
-## Protocol
+Repeat the same provider and session values if a later tool call starts a new
+PowerShell process. Always use `Invoke-Dsi`; do not reconstruct the pipe code,
+create temporary scripts, or send incomplete raw JSON.
+
+Each `Invoke-Dsi` call opens one `dsi-studio` named-pipe connection, sends
+exactly one request, reads one complete reply, and closes. Run on the same
+Windows computer as DSI Studio. Do not launch `dsi_studio.exe` per command.
+
+## Requests
 
 ```powershell
-# Discover current windows.
+# Discover windows.
 $list = Invoke-Dsi @{request='LIST'}
 
-# One command.
+# Use the numeric ID returned by LIST.
 $reply = Invoke-Dsi @{
     request='CMD'; window='2'; command=@('list_region')
 }
@@ -72,46 +55,45 @@ $log = Invoke-Dsi @{request='LOG'}
 $log = Invoke-Dsi @{request='LOG'; chat='Task completed.'}
 ```
 
+Always use the numeric window ID returned by the latest `LIST`; never use a
+window type, title, filename, guessed ID, or stale ID as `window`.
+
 JSON fields are `agent`, `session`, `cwd`, `request`, `window`, `command`, and
-optional `chat`. Requests are `LIST`, `CMD`, or `LOG`. A command is an array of
-strings; a batch is an array of command arrays. Keep a parameter containing
-spaces as one element.
+optional `chat`. The client supplies `agent`, `session`, and `cwd`. Requests
+are `LIST`, `CMD`, or `LOG`. A command is an array of strings; a batch is an
+array of command arrays. Keep parameters containing spaces as one element.
+Batches run in order and stop at the first error. Do not batch asynchronous
+work with commands that depend on its completion.
 
-`LIST` and `LOG` are text replies beginning with `OKAY`. Diagnostic `LOG`
-returns at most 4096 new console characters since this agent's previous
-`LOG`, or since its first valid request; use it only when needed. Every `LOG`
-advances that cursor. The console is global, so concurrent agents may see each
-other's new DSI output. `LOG` with `chat` stores the final reply but returns no
-console history. Local AI trace lines marked `[AI AGENT]` are omitted. A
-queued user prompt may follow as `PROMPT<TAB><JSON>`. `CMD` returns an array of
-`{index,okay,output,error?}`; a queued prompt is the last result's optional
-`prompt` property. Process prompts as new user input.
+`LIST` and `LOG` replies begin with `OKAY`. Diagnostic `LOG` returns at most
+4096 new console characters since the prior `LOG` or first request. Every
+`LOG` advances the cursor. The console is global, so concurrent agents may see
+each other's new DSI output. Final `LOG` with `chat` returns no console history.
+`[AI AGENT]` trace lines are omitted. `[AI REQUEST]` groups and closing `⏱`
+lines report synchronous DSI-side request handling, not agent runtime or
+asynchronous completion.
 
-`[AI REQUEST]` groups and their closing `⏱` lines remain in diagnostic output.
-They measure DSI Studio's server-side `LIST` or `CMD` handling, including
-synchronous command execution—not agent runtime or asynchronous completion.
+A queued user prompt may follow a text reply as `PROMPT<TAB><JSON>`. `CMD`
+returns `{index,okay,output,error?}` objects; its last result may contain a
+`prompt` property. Treat returned prompts as new user input.
 
-Commands in a batch run in order and stop at the first error. Do not batch an
-asynchronous command with work that depends on its completion.
+## Opening local files
 
-## Open a local file in the GUI
-
-When only the main window exists, open an `.fz`, `.sz`, or image by sending its
-absolute filename directly—not as `CMD`, `run_cli`, or `open_fib`:
+Use `Invoke-Dsi -File` when only the main window exists:
 
 ```powershell
-$path = (Resolve-Path 'C:\data\subject.fz').Path
-Invoke-DsiPipe $path
+Invoke-Dsi -File 'C:\data\subject.fz'
 $list = Invoke-Dsi @{request='LIST'}
 ```
 
-Poll `LIST` for the new `tracking` or `image` window. `open_fib` targets an
-already-open tracking window; it cannot create the first tracking window from
-the main window.
+Poll `LIST` for the new numeric `tracking` or `image` window ID. `open_fib`
+requires an existing tracking window and cannot create the first one.
 
-To open multiple local images together in one O1 image window, send exactly
-one flat `open_image` command to the `main` window. Put every complete absolute
-filepath in that same command:
+In DSI Studio, **FIB means `.fz`**. Never substitute `.sz`; `.sz` is an SRC
+file. `Invoke-Dsi -File` can open one `.fz`, `.sz`, or image file.
+
+To open multiple images in one O1 window, send one flat command to the numeric
+main-window ID:
 
 ```powershell
 Invoke-Dsi @{
@@ -120,34 +102,26 @@ Invoke-Dsi @{
 }
 ```
 
-Do not send a batch of separate `open_image` commands, target an existing
-`image` window, split a directory and filename into separate parameters, or
-use `add_image`; none of these creates the retained batch-file list. Then
-refresh `LIST`. The direct non-JSON filename transport opens only one file.
+Do not send separate `open_image` commands, target an image window, split a
+path into fields, or substitute `add_image`. Refresh `LIST` afterward.
 
 ## Required behavior
 
-1. Prefer GUI windows and commands unless the user explicitly requests CLI.
-2. Call `LIST` before the first command and after windows open or close.
-3. Target `main`, `tracking`, or `image` windows by the returned ID.
-4. Discover names and values with `list_slice`, `list_region`, `list_tract`,
+1. Prefer GUI commands; use `run_cli` only when explicitly requested.
+2. Call `LIST` first and after windows open or close.
+3. Use only numeric IDs returned by the latest `LIST`.
+4. Discover values with `list_slice`, `list_region`, `list_tract`,
    `list_param`, `list_atlas`, `list_unet`, and `list_auto_tract`.
-5. Treat `okay:true` as acceptance. Poll the relevant list/status command for
-   asynchronous work and use `LOG` for errors.
-6. On `window not found`, refresh `LIST` once; never repeat the stale ID.
-7. Verify exported files before reporting success.
-8. Ask before overwriting/deleting files or replacing unsaved regions/tracts.
-9. Do not answer modal dialogs remotely. Tell the user what confirmation is
-   expected and wait for the human response.
-10. Put only new user-facing text in `chat`; never send reasoning or tool output.
-11. Send the final answer once on the final `LOG`.
-12. Minimize round trips: one initial `LIST`, one safe same-window batch, one
-    concise verification, and the final `LOG`; refresh only after window changes.
+5. Treat `okay:true` as acceptance. Poll the relevant list command for
+   asynchronous completion; use `LOG` only when diagnostics are needed.
+6. On `window not found`, refresh `LIST` once and do not repeat the stale ID.
+7. Verify outputs. Ask before destructive operations or overwrites.
+8. Do not answer modal dialogs remotely; tell the user what is required.
+9. Put only new user-facing text in `chat`; never include reasoning/tool output.
+10. Send the final answer once with the final `LOG`.
+11. Minimize round trips: one initial `LIST`, a safe same-window batch, concise
+    verification, and final `LOG`.
 
-## DSI-initiated Codex turns
-
-DSI Studio may resume the saved task with
-`codex exec resume <session> <prompt>`. Contact the named pipe, do the work,
-send progress through `chat` only when useful, send the final answer on `LOG`,
-then continue any returned `PROMPT` and exit naturally when none remains. DSI
-Studio displays a waiting indicator and ignores CLI diagnostic output as chat.
+If DSI Studio resumes an agent, reconnect with the same provider, agent ID,
+and session UUID. Process every returned `PROMPT` and exit naturally when none
+remains.
