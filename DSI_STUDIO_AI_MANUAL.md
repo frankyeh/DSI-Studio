@@ -18,6 +18,9 @@ do not read the entire inventory.
 - Use GUI control by default. Use `run_cli` only when the user explicitly asks
   for CLI operation.
 - Commands and every parameter are JSON strings. Never guess names or indices.
+- Attach a brief intent/status `chat` to an already-needed request at task
+  start and meaningful phase changes. Activity shows what ran; chat tells the
+  user why. Do not send repetitive updates or status-only requests.
 - Use list commands before mutation and after completion.
 - `okay:true` means the handler accepted the command, not necessarily that
   asynchronous work finished.
