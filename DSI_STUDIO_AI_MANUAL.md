@@ -1,6 +1,7 @@
 # DSI Studio AI Command Manual
 
-This is the concise runtime reference. Read `DSI_STUDIO_AI_SETUP.md` first.
+Read `DSI_STUDIO_AI_SETUP.md` first. Read the operating rules and common
+syntax below, then search the inventory only for commands needed by the task.
 
 ## Operating rules
 
@@ -111,6 +112,11 @@ ARGB integers.
 Tracking is asynchronous. Poll `list_tract` until `running=0`. Segmentation is
 complete when `list_region` shows the expected output. For rendering/export,
 verify the created file and inspect it when possible.
+
+Minimize round trips: use one initial `LIST`, batch independent synchronous
+commands for one window, verify concisely, and send the final reply with
+`LOG`. Diagnostic `LOG` is incremental and capped; final `LOG` returns no
+console history.
 
 ## Command inventory
 
