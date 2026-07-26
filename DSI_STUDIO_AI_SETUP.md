@@ -209,6 +209,11 @@ Codex cannot be started or is already running for that project, DSI Studio
 keeps the message in the existing per-agent prompt queue for the next `LIST`,
 `LOG`, or `CMD` reply.
 
+The DSI Studio console records concise trace summaries for local-server
+connections, request/reply byte counts, Codex start/finish status, process ID,
+exit code, and total stdout/stderr bytes. Request payloads and CLI diagnostic
+content are not copied into the trace.
+
 ## Attach chat without duplication
 
 `chat` is optional and independent of command execution:
