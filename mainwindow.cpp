@@ -425,7 +425,6 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
         auto* bar = ui->ai_chat_history->verticalScrollBar();
         bar->setValue(bar->maximum());
     });
-    ui->ai_connected_agent->setText("Agent: "+name+" "+agent);
     ui->ai_control_status->setText(
         process ? process->property("finishing").toBool() ?
                   "Finishing Codex…" : "Waiting for Codex…" : "● Active");
@@ -664,7 +663,6 @@ MainWindow::MainWindow(QWidget *parent) :
         else
         {
             ui->ai_chat_history->clear();
-            ui->ai_connected_agent->setText("Agent: None");
             ui->ai_control_status->setText("● Ready");
         }
     });
