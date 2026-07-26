@@ -280,7 +280,7 @@ static void ai_request_log(QLocalSocket* socket,const QString& agent,
         }
         ai_log_positions[agent] = end;
     }
-    ai_reply(socket,agent,include ? "OKAY\n"+output : "OKAY");
+    ai_reply(socket,agent,include ? QByteArray("OKAY\n"+output) : QByteArray("OKAY"));
 }
 void ai_request(QLocalSocket* socket,const QByteArray& data)
 {
@@ -305,8 +305,10 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     }
     tipl::progress p;
     if(type == "LIST" || type == "CMD")
-        p = tipl::progress((QString("[AI REQUEST] ")+type+" from "+agent)
-                           .remove('\r').replace('\n',' ').toStdString());
+    {
+        auto msg = QString("[AI REQUEST] ")+type+" from "+agent;
+        p = tipl::progress(msg.remove('\r').replace('\n',' ').toStdString());
+    }
     if(!session.isEmpty())
         main_window->ai_sessions[agent] = session;
     auto cwd = request["cwd"].toString();
