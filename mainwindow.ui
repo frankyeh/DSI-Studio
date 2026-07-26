@@ -230,6 +230,28 @@ QPushButton#ai_send_message:hover {
 }
 QPushButton#ai_send_message:pressed {
     background-color: #000000;
+}
+QTextBrowser#ai_chat_history QScrollBar:vertical {
+    background: transparent;
+    width: 8px;
+    margin: 0;
+}
+QTextBrowser#ai_chat_history QScrollBar::handle:vertical {
+    background: #c7c7ca;
+    border: 0;
+    border-radius: 4px;
+    min-height: 24px;
+}
+QTextBrowser#ai_chat_history QScrollBar::handle:vertical:hover {
+    background: #a9a9ad;
+}
+QTextBrowser#ai_chat_history QScrollBar::add-line:vertical,
+QTextBrowser#ai_chat_history QScrollBar::sub-line:vertical {
+    height: 0;
+}
+QTextBrowser#ai_chat_history QScrollBar::add-page:vertical,
+QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
+    background: transparent;
 }</string>
        </property>
        <attribute name="icon">
