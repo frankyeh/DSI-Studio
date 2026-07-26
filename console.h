@@ -17,6 +17,7 @@ protected:
 public:
     std::mutex edit_buf;
     QString buf,history;
+    quint64 total_size = 0;
     QString* capture = nullptr;
     QTextEdit* log_window = nullptr;
     bool has_output = false;
