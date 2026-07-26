@@ -45,10 +45,14 @@ QString access_token;
 extern MainWindow* main_window;
 
 static void ai_reply(QLocalSocket* socket,const QString& agent,
-                     QByteArray reply,QJsonArray* results = nullptr)
+                     QByteArray reply,QJsonArray* results = nullptr,
+                     bool prompt_only = false)
 {
     auto& prompts = main_window->ai_prompts[agent];
-    if(results)
+    if(prompt_only)
+        reply = QJsonDocument(QJsonObject{{"prompt",prompts}}).
+                toJson(QJsonDocument::Compact);
+    else if(results)
     {
         if(!prompts.isEmpty())
         {
@@ -216,19 +220,19 @@ static void ai_request_log(QLocalSocket* socket,const QString& agent)
     }
     ai_reply(socket,agent,"OKAY\n" + output);
 }
-void ai_request(QLocalSocket* socket,const QByteArray& data)
+bool ai_request(QLocalSocket* socket,const QByteArray& data)
 {
     QJsonParseError error;
     auto doc = QJsonDocument::fromJson(data,&error);
     if(!doc.isObject())
         return ai_reply(socket,{},("ERROR\tinvalid JSON: " +
-                                     error.errorString()).toUtf8());
+                                     error.errorString()).toUtf8()),true;
 
     auto request = doc.object();
     auto agent = request["agent"].toString();
     auto type = request["request"].toString().toUpper();
     if(!agent.startsWith('@'))
-        return ai_reply(socket,agent,"ERROR\tinvalid agent");
+        return ai_reply(socket,agent,"ERROR\tinvalid agent"),true;
 
     auto activity = request;
     activity.remove("chat");
@@ -241,12 +245,28 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
         main_window->add_ai_history(agent,"assistant",chat);
 
     if(type == "LIST")
-        return ai_request_list(socket,agent);
+        return ai_request_list(socket,agent),true;
     if(type == "LOG")
-        return ai_request_log(socket,agent);
+        return ai_request_log(socket,agent),true;
     if(type == "CMD")
-        return ai_request_command(socket,agent,request);
-    ai_reply(socket,agent,"ERROR\tunknown request");
+        return ai_request_command(socket,agent,request),true;
+    if(type == "WAIT")
+    {
+        if(!main_window->ai_prompts[agent].isEmpty())
+            return ai_reply(socket,agent,{},nullptr,true),true;
+        if(auto* previous = main_window->ai_waiting.value(agent))
+            previous->disconnectFromServer();
+        main_window->ai_waiting[agent] = socket;
+        QObject::connect(socket,&QLocalSocket::disconnected,main_window,
+                         [agent,socket]
+        {
+            if(main_window->ai_waiting.value(agent) == socket)
+                main_window->ai_waiting.remove(agent);
+            socket->deleteLater();
+        });
+        return false;
+    }
+    return ai_reply(socket,agent,"ERROR\tunknown request"),true;
 }
 
 void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
@@ -378,6 +398,12 @@ void MainWindow::on_ai_send_message_clicked()
     add_ai_history(agent,"user",text);
     ui->ai_chat_input->clear();
     ui->ai_control_status->setText("● Queued");
+    if(auto* socket = ai_waiting.take(agent))
+    {
+        ai_reply(socket,agent,{},nullptr,true);
+        socket->flush();
+        socket->disconnectFromServer();
+    }
 }
 
 
