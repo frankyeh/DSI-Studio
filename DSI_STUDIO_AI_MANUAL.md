@@ -5,6 +5,8 @@ This is the concise runtime reference. Read `DSI_STUDIO_AI_SETUP.md` first.
 ## Operating rules
 
 - Use `LIST` to obtain fresh window IDs: `main`, `tracking`, or `image`.
+- Use GUI control by default. Use `run_cli` only when the user explicitly asks
+  for CLI operation.
 - Commands and every parameter are JSON strings. Never guess names or indices.
 - Use list commands before mutation and after completion.
 - `okay:true` means the handler accepted the command, not necessarily that
@@ -39,7 +41,7 @@ Parameters shown below are separate JSON array elements.
 | Hub files | `["hub","files",repo,tag,filter,offset,limit]` |
 | Open Hub file | `["hub","open",repo,tag,file]` |
 | Download Hub file | `["hub","download",repo,tag,file,directory]` |
-| Run CLI action | `["run_cli","--action=... --source=..."]` |
+| Run CLI action | `["run_cli","--action=rec --loop=C:\\data\\*.sz --method=4"]` |
 | Select slice | `["set_slice",zero-based-index]` |
 | Move slices | `["move_slice","x y z"]` |
 | Segment a slice | `["segment_brain",exact-model,exact-slice]` |
@@ -54,8 +56,23 @@ Parameters shown below are separate JSON array elements.
 | Rotate 3D view | `["rotate","degrees x y z"]` |
 | Save rendering | `["save_hd_screen",path,"width height"]` |
 
-`hub open` may download before opening; poll `LIST`. `run_cli` takes one
-complete DSI Studio argument string and requires `--action`; it is not a shell.
+`hub open` may download before opening; poll `LIST`. To open a local file when
+only the main window exists, send its absolute filename directly through the
+named pipe, then poll `LIST`. Do not send the path as a main-window `CMD`;
+`open_fib` requires an existing tracking window.
+
+`run_cli` takes one complete DSI Studio argument string, requires `--action`,
+and is not a shell. For an explicitly requested CLI batch, prefer one wildcard
+loop over repeated commands:
+
+```text
+["run_cli","--action=rec --loop=C:\\data\\*.sz --method=4"]
+```
+
+Use an absolute wildcard unless DSI Studio's current directory is the data
+directory; there `--loop=*.sz` is sufficient. Wildcards in other CLI arguments
+are expanded for each matched loop file. Verify all expected outputs.
+
 With `segment_brain`, use exact values returned by `list_unet` and
 `list_slice`. Use ampersand-joined indices for `show_only_regions` and
 `show_only_tracts`. Region types are `0=ROI`, `1=ROA`, `2=End`, `3=Seed`,
