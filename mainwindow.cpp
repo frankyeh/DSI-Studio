@@ -51,7 +51,7 @@
 QString access_token;
 extern MainWindow* main_window;
 
-static QString find_codex_executable()
+QString find_codex_executable()
 {
     auto executable = QStandardPaths::findExecutable("codex");
     if(!executable.isEmpty())
@@ -66,7 +66,7 @@ static QString find_codex_executable()
     return {};
 }
 
-static QString find_claude_executable()
+QString find_claude_executable()
 {
     auto executable = QStandardPaths::findExecutable("claude");
 #ifdef Q_OS_WIN
@@ -76,13 +76,13 @@ static QString find_claude_executable()
     return QFileInfo::exists(executable) ? executable : QString();
 }
 
-static std::string ai_log(QString text)
+std::string ai_log(QString text)
 {
     return ("[AI AGENT] "+text.remove('\r').replace(
                 '\n',"\n[AI AGENT] ")).toStdString();
 }
 
-static void ai_reply(QLocalSocket* socket,const QString& agent,
+void ai_reply(QLocalSocket* socket,const QString& agent,
                      QByteArray reply,QJsonArray* results = nullptr)
 {
     auto& prompts = main_window->ai_prompts[agent];
@@ -113,7 +113,7 @@ static void ai_reply(QLocalSocket* socket,const QString& agent,
         prompts = {};
 }
 
-static void ai_request_list(QLocalSocket* socket,const QString& agent)
+void ai_request_list(QLocalSocket* socket,const QString& agent)
 {
     static quint64 next_id = 0;
     QStringList result;
@@ -140,7 +140,7 @@ static void ai_request_list(QLocalSocket* socket,const QString& agent)
     ai_reply(socket,agent,"OKAY\n" + result.join('\n').toUtf8());
 }
 
-static void ai_request_command(QLocalSocket* socket,const QString& agent,
+void ai_request_command(QLocalSocket* socket,const QString& agent,
                                const QJsonObject& request)
 {
     auto fail = [&](const QString& error)
@@ -254,8 +254,8 @@ static void ai_request_command(QLocalSocket* socket,const QString& agent,
     ai_reply(socket,agent,QByteArray(),&results);
 }
 
-static QMap<QString,quint64> ai_log_positions;
-static void ai_request_log(QLocalSocket* socket,const QString& agent,
+QMap<QString,quint64> ai_log_positions;
+void ai_request_log(QLocalSocket* socket,const QString& agent,
                            bool include)
 {
     QByteArray output;
@@ -1037,8 +1037,8 @@ MainWindow::MainWindow(QWidget *parent) :
     tipl::qt::working_dirs << QUrl::fromLocalFile(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
     tipl::qt::working_dirs << QUrl::fromLocalFile(QStandardPaths::writableLocation(QStandardPaths::DownloadLocation));
 
-    for(auto each : workdir_list)
-        if(QFileInfo(each).exists())
+    for(const auto& each : workdir_list)
+        if(QFileInfo::exists(each))
         {
             ui->workDir->addItem(each);
             tipl::qt::working_dirs << QUrl::fromLocalFile(each);
@@ -1274,7 +1274,7 @@ void MainWindow::login(void)
 void MainWindow::openFile(QStringList file_names)
 {
     QString file_name = file_names[0];
-    if(!QFileInfo(file_name).exists())
+    if(!QFileInfo::exists(file_name))
     {
         if(file_name[0] == '-') // Mac pass a variable
             return;
@@ -1313,7 +1313,7 @@ void MainWindow::openFile(QStringList file_names)
             if(file_list.size() == 1)
             {
                 loadFib(QFileInfo(file_name).absolutePath() + "/" + file_list[0]);
-                for(auto each:file_names)
+                for(const auto& each:file_names)
                     tracking_windows.back()->command({"open_tract",each.toStdString()});
             }
             else
@@ -1531,7 +1531,7 @@ void MainWindow::loadFib(QString filename)
     if(int p = filename.lastIndexOf('_');!filename.endsWith("_dseg.nii.gz") && p != -1)
     {
         auto dseg_file = filename.left(p) + "_dseg.nii.gz";
-        if(QFileInfo(dseg_file).exists())
+        if(QFileInfo::exists(dseg_file))
             tracking_windows.back()->command({"open_region",dseg_file.toUtf8().constData()});
     }
 }
