@@ -20,7 +20,7 @@ namespace Ui {
 }
 class group_connectometry_analysis;
 class FiberDataHub;
-class QLocalSocket;
+class QProcess;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -30,7 +30,8 @@ class MainWindow : public QMainWindow
 
 public:
     std::map<QString,QJsonArray> ai_prompts;
-    QMap<QString,QLocalSocket*> ai_waiting;
+    QMap<QString,QString> ai_sessions,ai_work_dirs;
+    QMap<QString,QProcess*> ai_processes;
     QString ai_project_dir;
     QMap<QString,QJsonArray> ai_projects;
     QMap<QString,QListWidgetItem*> ai_project_items;
