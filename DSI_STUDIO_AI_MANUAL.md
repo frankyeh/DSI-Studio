@@ -259,6 +259,12 @@ missing, or a DSI-launched Codex process is already running for that agent, the
 text remains in the existing per-agent queue for delivery in the next `LIST`,
 `LOG`, or `CMD` reply.
 
+`tipl::out()` writes concise console traces for each local-server connection
+and JSON request/reply, including agent, request type, target window, and byte
+counts. Codex resume traces include executable path, process ID, exit status,
+and aggregate stdout/stderr byte counts. Full request payloads and CLI stream
+content are intentionally omitted.
+
 All `CMD` replies use the JSON result-array shape. If a target window has been
 closed, DSI Studio returns:
 
