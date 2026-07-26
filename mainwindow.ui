@@ -352,7 +352,7 @@ Claude Code</string>
             <item>
              <widget class="QListWidget" name="ai_project_list">
               <property name="styleSheet">
-               <string notr="true">QListWidget { border: 0px; background-color: transparent; padding: 2px; } QListWidget::item { padding: 8px; border-radius: 5px; } QListWidget::item:selected { background-color: #e5e5e7; color: black; }</string>
+               <string notr="true">QListWidget { border: 0px; background-color: transparent; padding: 2px; } QListWidget::item { padding: 0px; border-radius: 5px; } QListWidget::item:selected { background-color: #e5e5e7; color: black; }</string>
               </property>
               <property name="editTriggers">
                <set>QAbstractItemView::NoEditTriggers</set>
