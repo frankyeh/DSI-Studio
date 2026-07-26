@@ -564,10 +564,10 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
             content = "<span style=\"color:#5f6368;\">"+content+"</span>";
         auto color = request ? "#f1f3f4" : user ? "#e8f0fe" : "#e8f5e9";
         auto cell = QString(
-                        "<td bgcolor=\"%1\"><b style=\"background-color:%1\">%2</b> "
+                        "<td bgcolor=\"%1\"><b style=\"background-color:%1\">%2</b>"
                         "<font color=\"#80868b\">%3</font><br>%4</td>")
                         .arg(color,
-                             user ? "You" : agent.toHtmlEscaped(),
+                             user ? "You &middot; " : "",
                              QDateTime::fromString(entry["time"].toString(),Qt::ISODate).
                              toString("MM/dd HH:mm:ss"),
                              content);
