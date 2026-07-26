@@ -5,17 +5,17 @@ needed by the request; do not read its entire inventory.
 
 ## Identity
 
-Generate one UUID when the AI conversation starts and reuse the exact same
-`agent` and `session` in every request. Never generate a UUID inside an
-individual command.
+Choose one non-empty agent name and one non-empty session name when the AI
+conversation starts. Reuse both strings exactly in every request. The agent
+name must not contain `@`, which DSI Studio reserves as the separator.
 
-Provider prefixes are `@C` for Codex, `@A` for Claude Code, and another
-two-character prefix for other agents. The agent ID is the prefix followed by
-the first 12 characters of the session UUID.
+DSI Studio identifies the conversation as `agent@session`. The request still
+sends `agent` and `session` as separate JSON fields. Both may be arbitrary
+names; no provider-specific prefix is required.
 
 ```powershell
-$DsiSession = '<one UUID retained for this conversation>'
-$DsiAgent = '<provider prefix>'+$DsiSession.Substring(0,12)
+$DsiAgent = '<agent name>'
+$DsiSession = '<session name>'
 ```
 
 ## Connect
@@ -150,6 +150,6 @@ path into fields, or substitute `add_image`. Refresh `LIST` afterward.
 11. Minimize round trips: one initial `LIST`, a safe same-window batch, concise
     verification, and final `LOG`.
 
-If DSI Studio resumes an agent, reconnect with the same provider, agent ID,
-and session UUID. Process every returned `PROMPT` and exit naturally when none
+If DSI Studio resumes an agent, reconnect with the exact same agent and
+session strings. Process every returned `PROMPT` and exit naturally when none
 remains.
