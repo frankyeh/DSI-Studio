@@ -250,10 +250,13 @@ codex exec resume <session> <prompt>
 DSI Studio first checks `PATH`, then the newest
 `%LOCALAPPDATA%\OpenAI\Codex\bin\<version>\codex.exe`.
 
-Standard output and error are appended to the project's activity history. If
-the executable is unavailable, the session is missing, or a DSI-launched Codex
-process is already running for that agent, the text remains in the existing
-per-agent queue for delivery in the next `LIST`, `LOG`, or `CMD` reply.
+The resumed prompt explicitly instructs Codex to return user-facing progress
+through the JSON `chat` field and the final answer through a `LOG` request.
+DSI Studio drains CLI standard output and error without adding diagnostic
+events to project chat. If the executable is unavailable, the session is
+missing, or a DSI-launched Codex process is already running for that agent, the
+text remains in the existing per-agent queue for delivery in the next `LIST`,
+`LOG`, or `CMD` reply.
 
 ### User-facing chat attachment
 
