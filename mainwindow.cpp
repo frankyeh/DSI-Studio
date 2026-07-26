@@ -567,7 +567,7 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
                         "<td bgcolor=\"%1\"><b style=\"background-color:%1\">%2</b>"
                         "<font color=\"#80868b\">%3</font><br>%4</td>")
                         .arg(color,
-                             user ? "You &middot; " : "",
+                             (user ? QString("You") : agent.section('@',0,0)).toHtmlEscaped()+" &middot; ",
                              QDateTime::fromString(entry["time"].toString(),Qt::ISODate).
                              toString("MM/dd HH:mm:ss"),
                              content);
