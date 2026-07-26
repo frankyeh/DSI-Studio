@@ -265,6 +265,11 @@ counts. Codex resume traces include executable path, process ID, exit status,
 and aggregate stdout/stderr byte counts. Full request payloads and CLI stream
 content are intentionally omitted.
 
+The resumed `QProcess` stays alive only while Codex is working. A final `LOG`
+request with non-empty `chat` is the completion signal. Its reply is written
+first; DSI Studio then shows `Finishing Codex…`, asks the process to terminate
+after 1.5 seconds, and kills it after 3 seconds only if it remains running.
+
 All `CMD` replies use the JSON result-array shape. If a target window has been
 closed, DSI Studio returns:
 
