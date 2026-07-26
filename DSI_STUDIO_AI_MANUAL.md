@@ -15,8 +15,8 @@ do not read the entire inventory.
 - Use `LIST` to obtain fresh windows, then target only its numeric window ID.
   Never send `main`, `tracking`, `image`, a title, or a filename as `window`.
 - In DSI Studio, FIB means `.fz`; never substitute `.sz`, which is an SRC file.
-- Use GUI control by default. Use `run_cli` only when the user explicitly asks
-  for CLI operation.
+- Use GUI control. **Do not use `run_cli` unless the user explicitly says to
+  run the CLI.** Never infer CLI permission from a requested outcome.
 - Commands and every parameter are JSON strings. Never guess names or indices.
 - Attach a brief intent/status `chat` to an already-needed request at task
   start and meaningful phase changes. Activity shows what ran; chat tells the
@@ -67,7 +67,7 @@ Parameters shown below are separate JSON array elements.
 | Open Hub file | `["hub","open",repo,tag,file]` |
 | Download Hub file | `["hub","download",repo,tag,file,directory]` |
 | Open local images together | Main only: one flat `["open_image",full-path1,full-path2,...]` |
-| Run CLI action | `["run_cli","--action=rec --loop=C:\\data\\*.sz --method=4"]` |
+| Run CLI action—explicit user request only | `["run_cli","--action=rec --loop=C:\\data\\*.sz --method=4"]` |
 | Select slice | `["set_slice",zero-based-index]` |
 | Move slices | `["move_slice","x y z"]` |
 | Segment a slice | `["segment_brain",exact-model,exact-slice]` |
@@ -116,9 +116,10 @@ saving for the remaining files, mapping each output to its original filename.
 If the user selects **No**, only the first image is saved. Verify all expected
 files after the dialog closes.
 
-`run_cli` takes one complete DSI Studio argument string, requires `--action`,
-and is not a shell. For an explicitly requested CLI batch, prefer one wildcard
-loop over repeated commands:
+Do not use `run_cli` unless the user explicitly requested CLI execution.
+When explicitly authorized, it takes one complete DSI Studio argument string,
+requires `--action`, and is not a shell. Prefer one wildcard loop over repeated
+commands:
 
 ```text
 ["run_cli","--action=rec --loop=C:\\data\\*.sz --method=4"]
@@ -250,7 +251,7 @@ already grants it.
 | `main` | `list_recent_fib` | `0` | Read-only | Immediate `.fz` list. |
 | `main` | `list_recent_src` | `0` | Read-only | Immediate `.sz` list. |
 | `main` | `open_image` | `1+` | GUI-state change | Main-window only; send one flat command containing all complete paths. |
-| `main` | `run_cli` | `1` | Varies | Synchronous CLI action on GUI thread; verify outputs. |
+| `main` | `run_cli` | `1` | Explicit CLI request only | Synchronous CLI action on GUI thread; verify outputs. |
 | `main` | `hub download` | `4` | File creation | Deferred file write; verify path and stable size. |
 | `main` | `hub files` | `2-5` | GUI-state change | Immediate filtered/paginated list; retry if Hub data is loading. |
 | `main` | `hub help` | `0` | Read-only | Immediate. |
