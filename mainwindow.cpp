@@ -2628,17 +2628,14 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         return false;
     };
     const std::string usage =
-        "list_recent | open_image <file1> [file2...] | run_cli <command line> | hub repos | hub tags <repo> | "
+        "list_recent_fib | list_recent_src | open_image <file1> [file2...] | run_cli <command line> | hub repos | hub tags <repo> | "
         "hub files <repo> <tag> [text] [offset] [limit] | hub open <repo> <tag> <file> | "
         "hub download <repo> <tag> <file> <dir>";
 
-    if(cmd.size() == 1 && cmd[0] == "list_recent")
+    if(cmd.size() == 1 && tipl::begins_with(cmd[0],"list_recent"))
     {
-        for(const auto& file : settings.value("recentSrcFileList").toStringList() +
-                                    settings.value("recentFibFileList").toStringList())
-            if(file.endsWith(".sz",Qt::CaseInsensitive) ||
-                file.endsWith(".fz",Qt::CaseInsensitive))
-                tipl::out() << file.toStdString();
+        for(const auto& file : settings.value(tipl::ends_with(cmd[0],"fib") ? "recentFibFileList" : "recentSrcFileList").toStringList())
+            tipl::out() << file.toStdString();
         return true;
     }
 
