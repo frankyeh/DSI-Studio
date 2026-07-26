@@ -738,7 +738,7 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
             bool new_agent = agent.isEmpty();
             if(agent.isEmpty())
             {
-                agent = "@"+session;
+                agent = "agent@"+session;
                 process->setObjectName(agent);
                 ai_work_dirs[agent] = process->workingDirectory();
                 ai_processes[agent] = process;
@@ -896,7 +896,7 @@ void MainWindow::on_ai_send_message_clicked()
         return;
     auto* item = ui->ai_project_list->currentItem();
     auto agent = item ? item->data(Qt::UserRole).toString() : QString();
-    if(!agent.isEmpty() && ai_processes.contains(agent))
+    if(!agent.isEmpty() && (ai_processes.contains(agent) || !agent.startsWith("Codex@")))
     {
         ai_prompts[agent].append(text);
         add_ai_history(agent,"user",text);
