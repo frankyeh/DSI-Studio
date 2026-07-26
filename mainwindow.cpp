@@ -396,7 +396,8 @@ void MainWindow::add_ai_history(const QString& agent,const QString& type,
     for(int index = history.size()-1;index >= 0;--index)
     {
         auto entry = history[index].toObject();
-        if(entry["type"] != type || entry["text"] != text)
+        if(entry["type"].toString() != type ||
+           entry["text"].toString() != text)
             break;
         if(++repeated == 3)
             return;
