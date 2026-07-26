@@ -12,6 +12,7 @@
 #include <QNetworkInterface>
 #include <QSysInfo>
 #include <QStandardPaths>
+#include <QShortcut>
 
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -365,6 +366,20 @@ void MainWindow::add_ai_history(const QString& agent,const QString& type,
     show_ai_project(agent,entry);
 }
 
+void MainWindow::on_ai_send_message_clicked()
+{
+    auto* item = ui->ai_project_list->currentItem();
+    auto text = ui->ai_chat_input->toPlainText().trimmed();
+    if(!item || text.isEmpty())
+        return;
+
+    auto agent = item->data(Qt::UserRole).toString();
+    ai_prompts[agent].append(text);
+    add_ai_history(agent,"user",text);
+    ui->ai_chat_input->clear();
+    ui->ai_control_status->setText("● Queued");
+}
+
 
 void checkForVersionSpecificBugs_Minimal(const QString& bugListText)
 {
@@ -434,6 +449,11 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     setAcceptDrops(true);
     ui->setupUi(this);
+    auto* send = new QShortcut(QKeySequence(Qt::CTRL|Qt::Key_Return),
+                               ui->ai_chat_input);
+    send->setContext(Qt::WidgetShortcut);
+    connect(send,&QShortcut::activated,
+            ui->ai_send_message,&QPushButton::click);
 
     ai_project_dir = QStandardPaths::writableLocation(
                          QStandardPaths::AppLocalDataLocation)+"/ai_projects";
@@ -441,6 +461,12 @@ MainWindow::MainWindow(QWidget *parent) :
     dir.mkpath(".");
 
     ai_project_menu = new QMenu(this);
+    ai_project_menu->setStyleSheet(
+        "QMenu{background:#fff;border:1px solid #d9d9dc;padding:4px;}"
+        "QMenu::item{padding:6px 24px 6px 10px;border-radius:4px;}"
+        "QMenu::item:selected{background:#e9e9eb;}"
+        "QMenu::item:disabled{color:#9a9a9e;}"
+        "QMenu::separator{height:1px;background:#dedee1;margin:4px;}");
     for(auto name : {"Rename","Share"})
         ai_project_menu->addAction(name)->setEnabled(false);
     ai_project_menu->addSeparator();
