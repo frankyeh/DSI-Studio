@@ -369,7 +369,7 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
     item->setHidden(!project_title.contains(
         ui->ai_project_filter->text(),Qt::CaseInsensitive));
 
-    if(added["type"] == "assistant")
+    if(!added.isEmpty() && added["type"].toString() != "user")
     {
         row->setStyleSheet("background:#ffe082;border-radius:5px;");
         row->findChild<QTimer*>("ai_chat_blink")->start();
@@ -428,17 +428,20 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
         }
         else
             content = entry["text"].toString();
+        if(content.trimmed().isEmpty())
+            return;
+
         content = content.toHtmlEscaped().replace('\n',"<br>");
+        auto color = request ? "#f1f3f4" : user ? "#e8f0fe" : "#e8f5e9";
         auto cell = QString(
-            "<td bgcolor=\"%1\"><b>%2 · %3</b> "
-            "<font color=\"#80868b\">%4</font><br>%5</td>")
-            .arg(request ? "#f1f3f4" : user ? "#e8f0fe" : "#e8f5e9",
-                 request ? "Activity" : user ? "You" : name,
-                 agent.toHtmlEscaped(),
-                 QDateTime::fromString(
-                     entry["time"].toString(),Qt::ISODate).
-                     toString("MM/dd HH:mm:ss"),
-                 content);
+                        "<td bgcolor=\"%1\"><b style=\"background-color:%1\">%2 · %3</b> "
+                        "<font color=\"#80868b\">%4</font><br>%5</td>")
+                        .arg(color,
+                             request ? "Activity" : user ? "You" : name,
+                             agent.toHtmlEscaped(),
+                             QDateTime::fromString(entry["time"].toString(),Qt::ISODate).
+                             toString("MM/dd HH:mm:ss"),
+                             content);
 
         auto cursor = ui->ai_chat_history->document()->
                       rootFrame()->lastCursorPosition();
