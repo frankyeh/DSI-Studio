@@ -240,6 +240,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
                 new_slice->get_source();
         }
 
+        QSignalBlocker blocker(ui->SliceModality);
+        ui->SliceModality->setCurrentIndex(int(index));
         no_update = true;
         auto previous_slice = current_slice;
         auto previous_custom_slice = std::dynamic_pointer_cast<CustomSliceModel>(current_slice);
@@ -833,7 +835,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "list_auto_tract")
     {
-        if(!handle->load_track_atlas(true))
+        if(!handle->load_tractography_name_list())
             return run->failed(handle->error_msg);
         tipl::out() << "name";
         for(const auto& name : handle->tractography_name_list)
