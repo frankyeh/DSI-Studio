@@ -1094,6 +1094,7 @@ MainWindow::MainWindow(QWidget *parent) :
         ai_work_dirs.remove(agent);
         ai_prompts.erase(agent);
         ai_log_positions.remove(agent);
+        ui->ai_project_list->setCurrentItem(nullptr);
         delete item;
 
         if(ui->ai_project_list->count())
