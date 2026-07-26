@@ -7,6 +7,9 @@ do not read the entire inventory.
 ## Operating rules
 
 - Each named-pipe connection sends exactly one request and then closes.
+- Prefer a native local client for `\\\\.\\pipe\\dsi-studio` when available.
+  Use the generated PowerShell client only when direct named-pipe access is
+  unavailable.
 - Send separate non-empty `agent` and `session` strings and reuse the exact
   pair. `agent` must not contain `@`; DSI Studio identifies it as
   `agent@session`.
