@@ -17,6 +17,7 @@
 #include <QUuid>
 #include <QTimer>
 #include <QScrollBar>
+#include <QEvent>
 
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -343,6 +344,15 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
         layout->addWidget(button);
         ui->ai_project_list->setItemWidget(item,row);
 
+        auto* blink = new QTimer(row);
+        blink->setObjectName("ai_chat_blink");
+        blink->setInterval(500);
+        connect(blink,&QTimer::timeout,row,[row]
+        {
+            row->setStyleSheet(row->styleSheet().isEmpty() ?
+                "background:#ffe082;border-radius:5px;" : "");
+        });
+
         connect(title,&QPushButton::clicked,this,
                 [this,item]{ui->ai_project_list->setCurrentItem(item);});
         connect(button,&QToolButton::pressed,this,
@@ -357,6 +367,12 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
     item->setSizeHint(row->sizeHint());
     item->setHidden(!project_title.contains(
         ui->ai_project_filter->text(),Qt::CaseInsensitive));
+
+    if(added["type"] == "assistant")
+    {
+        row->setStyleSheet("background:#ffe082;border-radius:5px;");
+        row->findChild<QTimer*>("ai_chat_blink")->start();
+    }
 
     if(!ui->ai_project_list->currentItem())
     {
@@ -448,6 +464,28 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
     });
     ui->ai_control_status->setText(
         ai_processes.contains(agent) ? "Codex is working…" : "● Active");
+}
+
+void MainWindow::stop_ai_blink()
+{
+    auto* item = ui->ai_project_list->currentItem();
+    auto* row = item ? ui->ai_project_list->itemWidget(item) : nullptr;
+    if(!row)
+        return;
+    row->findChild<QTimer*>("ai_chat_blink")->stop();
+    row->setStyleSheet({});
+}
+
+bool MainWindow::eventFilter(QObject* object,QEvent* event)
+{
+    auto type = event->type();
+    auto* widget = qobject_cast<QWidget*>(object);
+    if((type == QEvent::MouseButtonRelease || type == QEvent::KeyRelease ||
+        type == QEvent::Wheel) && widget &&
+       ui->tabWidget->currentWidget() == ui->tab_8 &&
+       (widget == ui->tab_8 || ui->tab_8->isAncestorOf(widget)))
+        QTimer::singleShot(0,this,&MainWindow::stop_ai_blink);
+    return QMainWindow::eventFilter(object,event);
 }
 
 void MainWindow::add_ai_history(const QString& agent,const QString& type,
@@ -808,6 +846,12 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     setAcceptDrops(true);
     ui->setupUi(this);
+    qApp->installEventFilter(this);
+    connect(ui->tabWidget,&QTabWidget::currentChanged,this,[this]
+    {
+        if(ui->tabWidget->currentWidget() == ui->tab_8)
+            stop_ai_blink();
+    });
     auto* send = new QShortcut(QKeySequence(Qt::CTRL|Qt::Key_Return),
                                ui->ai_chat_input);
     send->setContext(Qt::WidgetShortcut);
