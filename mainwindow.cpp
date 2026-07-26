@@ -17,7 +17,6 @@
 #include <QUuid>
 #include <QTimer>
 #include <QScrollBar>
-#include <QMovie>
 
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -292,7 +291,8 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
             {
                 tipl::out() << "AI Codex final reply received agent="
                             << agent.toStdString();
-                main_window->ui->ai_control_status->setText("Finishing Codex…");
+                process->setProperty("finishing",true);
+                main_window->show_ai_project(agent);
                 QTimer::singleShot(1500,process,[process]
                 {
                     if(process->state() != QProcess::NotRunning)
@@ -397,7 +397,8 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
                         cell+"<td width=\"20%\"></td>"));
     };
 
-    if(added.isEmpty())
+    auto* process = ai_processes.value(agent);
+    if(added.isEmpty() || process)
     {
         ui->ai_chat_history->clear();
         for(const auto& entry : history)
@@ -406,6 +407,18 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
     else
         append(added);
 
+    if(process)
+    {
+        auto text = process->property("finishing").toBool() ?
+                    "Finishing Codex&hellip;" : "Codex is working&hellip;";
+        ui->ai_chat_history->append(QString(
+            "<table width=\"100%\" cellspacing=\"3\" cellpadding=\"7\"><tr>"
+            "<td bgcolor=\"#f1f3f4\"><b>%1 · %2</b><br>"
+            "<font color=\"#5f6368\">&#9679;&nbsp;%3</font></td>"
+            "<td width=\"20%\"></td></tr></table>")
+            .arg(name,agent.toHtmlEscaped(),text));
+    }
+
     ui->ai_chat_history->ensureCursorVisible();
     QTimer::singleShot(0,ui->ai_chat_history,[this]
     {
@@ -413,7 +426,9 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
         bar->setValue(bar->maximum());
     });
     ui->ai_connected_agent->setText("Agent: "+name+" "+agent);
-    ui->ai_control_status->setText("● Active");
+    ui->ai_control_status->setText(
+        process ? process->property("finishing").toBool() ?
+                  "Finishing Codex…" : "Waiting for Codex…" : "● Active");
 }
 
 void MainWindow::add_ai_history(const QString& agent,const QString& type,
@@ -461,7 +476,6 @@ void MainWindow::on_ai_send_message_clicked()
        ai_processes.contains(agent))
     {
         ai_prompts[agent].append(text);
-        ui->ai_waiting_indicator->hide();
         ui->ai_control_status->setText("● Queued");
         return;
     }
@@ -492,7 +506,7 @@ void MainWindow::on_ai_send_message_clicked()
     {
         tipl::out() << "AI Codex started agent=" << agent.toStdString()
                     << " pid=" << process->processId();
-        ui->ai_control_status->setText("Waiting for Codex…");
+        show_ai_project(agent);
     });
     connect(process,&QProcess::errorOccurred,this,[=](QProcess::ProcessError error)
     {
@@ -504,7 +518,7 @@ void MainWindow::on_ai_send_message_clicked()
                     << " error=" << process->errorString().toStdString();
         add_ai_history(agent,"activity","Cannot start Codex: "+
                        process->errorString());
-        ui->ai_waiting_indicator->hide();
+        show_ai_project(agent);
         ui->ai_control_status->setText("● Queued");
         process->deleteLater();
     });
@@ -517,11 +531,13 @@ void MainWindow::on_ai_send_message_clicked()
                     << " stdout=" << process->property("stdout_bytes").toLongLong()
                     << " stderr=" << process->property("stderr_bytes").toLongLong();
         ai_processes.remove(agent);
-        ui->ai_waiting_indicator->hide();
-        ui->ai_control_status->setText("● Ready");
+        show_ai_project(agent);
+        if(auto* item = ui->ai_project_list->currentItem();
+           item && item->data(Qt::UserRole).toString() == agent)
+            ui->ai_control_status->setText("● Ready");
         process->deleteLater();
     });
-    ui->ai_waiting_indicator->show();
+    show_ai_project(agent);
     ui->ai_control_status->setText("Starting Codex…");
     auto prompt = text+
         "\n\n[DSI Studio] Reply through the DSI Studio local server using "
@@ -604,12 +620,6 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     setAcceptDrops(true);
     ui->setupUi(this);
-    auto* waiting = new QMovie(
-        ":/icons/icons/ajax-loader.gif",{},ui->ai_waiting_indicator);
-    waiting->setScaledSize({16,16});
-    ui->ai_waiting_indicator->setMovie(waiting);
-    waiting->start();
-    ui->ai_waiting_indicator->hide();
     auto* send = new QShortcut(QKeySequence(Qt::CTRL|Qt::Key_Return),
                                ui->ai_chat_input);
     send->setContext(Qt::WidgetShortcut);
