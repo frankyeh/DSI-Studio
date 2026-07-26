@@ -1,6 +1,7 @@
 #include <QFileDialog>
 #include <QDateTime>
 #include <QDir>
+#include <QInputDialog>
 #include <QMenu>
 #include <QUrl>
 #include <QMessageBox>
@@ -360,7 +361,7 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
 
     QString name = agent.startsWith("@C") ? "Codex" :
                    agent.startsWith("@A") ? "Claude Code" : "AI Agent";
-    QString project_title = name+" · "+agent;
+    QString project_title = ai_project_titles.value(agent,name+" · "+agent);
 
     auto* item = ai_project_items.value(agent);
     if(!item)
@@ -922,8 +923,73 @@ MainWindow::MainWindow(QWidget *parent) :
         "QMenu::item:selected{background:#e9e9eb;}"
         "QMenu::item:disabled{color:#9a9a9e;}"
         "QMenu::separator{height:1px;background:#dedee1;margin:4px;}");
-    for(auto name : {"Rename","Details..."})
-        ai_project_menu->addAction(name)->setEnabled(false);
+    connect(ai_project_menu->addAction("Rename"),&QAction::triggered,this,[this]
+    {
+        auto* item = ui->ai_project_list->currentItem();
+        if(!item)
+            return;
+        auto agent = item->data(Qt::UserRole).toString();
+        auto* button = ui->ai_project_list->itemWidget(item)->
+                           findChild<QPushButton*>("ai_project_title");
+        bool okay;
+        auto title = QInputDialog::getText(
+                         this,"Rename Chat","Chat name:",QLineEdit::Normal,
+                         button->text(),&okay).trimmed();
+        if(!okay || title.isEmpty() || title == button->text())
+            return;
+
+        QJsonObject entry{
+            {"type","title"},{"text",title},
+            {"time",QDateTime::currentDateTime().toString(Qt::ISODate)}
+        };
+        QFile file(ai_project_dir+"/"+QString::fromLatin1(
+                       QUrl::toPercentEncoding(agent))+".jsonl");
+        if(!file.open(QIODevice::WriteOnly|QIODevice::Append) ||
+           file.write(QJsonDocument(entry).toJson(QJsonDocument::Compact)+'\n') < 0)
+        {
+            QMessageBox::warning(this,"Rename Chat",
+                                 "The chat name could not be saved.");
+            return;
+        }
+        ai_project_titles[agent] = title;
+        show_ai_project(agent);
+    });
+
+    connect(ai_project_menu->addAction("Details..."),&QAction::triggered,this,[this]
+    {
+        auto* item = ui->ai_project_list->currentItem();
+        if(!item)
+            return;
+        auto agent = item->data(Qt::UserRole).toString();
+        const auto& history = ai_projects[agent];
+        int user = 0,assistant = 0,activity = 0;
+        for(const auto& value : history)
+        {
+            auto type = value.toObject()["type"].toString();
+            user += type == "user";
+            assistant += type == "assistant";
+            activity += type == "request" || type == "activity";
+        }
+        auto time = [](const QJsonValue& value)
+        {
+            return QDateTime::fromString(value.toString(),Qt::ISODate).
+                    toString("yyyy-MM-dd HH:mm:ss");
+        };
+        auto text = QString(
+            "<b>%1</b><br><br>"
+            "Agent: %2<br>Session: %3<br>Status: %4<br>"
+            "Messages: %5 (%6 you, %7 AI)<br>Activities: %8<br>"
+            "Created: %9<br>Updated: %10<br>Working folder: %11")
+            .arg(ai_project_titles.value(agent,item->text()).toHtmlEscaped(),
+                 agent.toHtmlEscaped(),
+                 ai_sessions.value(agent,"Not available").toHtmlEscaped(),
+                 ai_processes.contains(agent) ? "Working" : "Idle")
+            .arg(user+assistant).arg(user).arg(assistant).arg(activity)
+            .arg(time(history.first().toObject()["time"]),
+                 time(history.last().toObject()["time"]),
+                 ai_work_dirs.value(agent,"Not available").toHtmlEscaped());
+        QMessageBox::information(this,"Chat Details",text);
+    });
     ai_project_menu->addSeparator();
 
     connect(ai_project_menu->addAction("Remove"),&QAction::triggered,this,[this]
@@ -947,6 +1013,7 @@ MainWindow::MainWindow(QWidget *parent) :
                           QUrl::toPercentEncoding(agent))+".jsonl");
         ai_projects.remove(agent);
         ai_project_items.remove(agent);
+        ai_project_titles.remove(agent);
         ai_sessions.remove(agent);
         ai_work_dirs.remove(agent);
         ai_prompts.erase(agent);
@@ -991,6 +1058,11 @@ MainWindow::MainWindow(QWidget *parent) :
             if(doc.isObject())
             {
                 auto entry = doc.object();
+                if(entry["type"] == "title")
+                {
+                    ai_project_titles[agent] = entry["text"].toString();
+                    continue;
+                }
                 history.append(entry);
                 if(entry["type"] == "request")
                 {
