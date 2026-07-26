@@ -24,6 +24,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 
+#include <algorithm>
 #include <filesystem>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -239,10 +240,17 @@ static void ai_request_command(QLocalSocket* socket,const QString& agent,
 
 static void ai_request_log(QLocalSocket* socket,const QString& agent)
 {
+    static QMap<QString,quint64> positions;
     QByteArray output;
     {
         std::lock_guard<std::mutex> lock(console.edit_buf);
-        output = console.history.toUtf8();
+        auto end = console.total_size;
+        auto first = end-quint64(console.history.size());
+        auto begin = std::max(positions.value(agent),first);
+        if(end-begin > 16*1024)
+            begin = end-16*1024;
+        output = console.history.mid(qsizetype(begin-first)).toUtf8();
+        positions[agent] = end;
     }
     ai_reply(socket,agent,"OKAY\n" + output);
 }
@@ -301,7 +309,11 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     if(type == "LIST")
         return ai_request_list(socket,agent);
     if(type == "LOG")
+    {
+        if(!chat.isEmpty())
+            return ai_reply(socket,agent,"OKAY");
         return ai_request_log(socket,agent);
+    }
     if(type == "CMD")
         return ai_request_command(socket,agent,request);
     ai_reply(socket,agent,"ERROR\tunknown request");
@@ -421,7 +433,7 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
             }
             else
                 content = action == "LIST" ? "Checked open windows" :
-                          action == "LOG" ? "Read console history" :
+                          action == "LOG" ? "Read new console output" :
                           action+" request";
         }
         else
@@ -588,6 +600,18 @@ void MainWindow::start_codex(const QString& agent,const QString& text,
             auto event = QJsonDocument::fromJson(
                              buffer.left(pos)).object();
             buffer.remove(0,pos+1);
+            if(event["type"] == "turn.completed")
+            {
+                auto usage = event["usage"].toObject();
+                auto agent = process->objectName();
+                if(!agent.isEmpty() && !usage.isEmpty())
+                    add_ai_history(agent,"activity",
+                        QString("Tokens: %1 input (%2 cached), %3 output")
+                        .arg(usage["input_tokens"].toInt())
+                        .arg(usage["cached_input_tokens"].toInt())
+                        .arg(usage["output_tokens"].toInt()));
+                continue;
+            }
             if(event["type"] != "thread.started")
                 continue;
 
@@ -621,9 +645,9 @@ void MainWindow::start_codex(const QString& agent,const QString& text,
 
     connect(process,&QProcess::readyReadStandardError,this,[=]
     {
-        auto error = process->readAllStandardError().trimmed();
-        if(!error.isEmpty())
-            tipl::out() << error.toStdString();
+        auto error = process->property("stderr").toByteArray()+
+                     process->readAllStandardError();
+        process->setProperty("stderr",error.right(8*1024));
     });
 
     connect(process,&QProcess::started,this,[=]
@@ -679,6 +703,10 @@ void MainWindow::start_codex(const QString& agent,const QString& text,
                     << agent.toStdString()
                     << " exit=" << exit_code
                     << " crashed=" << (exit_status == QProcess::CrashExit);
+        auto error = (process->property("stderr").toByteArray()+
+                      process->readAllStandardError()).trimmed();
+        if((exit_code || exit_status == QProcess::CrashExit) && !error.isEmpty())
+            tipl::out() << error.toStdString();
 
         if(agent.isEmpty())
         {
@@ -715,27 +743,21 @@ void MainWindow::start_codex(const QString& agent,const QString& text,
             "\n\n[DSI Studio] Read \""+
             QDir::toNativeSeparators(
                 app.filePath("DSI_STUDIO_AI_SETUP.md"))+
-            "\" and \""+
+            "\" completely. In \""+
             QDir::toNativeSeparators(
                 app.filePath("DSI_STUDIO_AI_MANUAL.md"))+
-            "\" completely, then use the DSI Studio local server to complete "
-            "the request. Keep the setup-generated agent and session identity "
-            "throughout this chat.";
+            "\", read the operating rules and common syntax, then search the "
+            "command inventory only for commands relevant to this request. "
+            "Use the local server and keep the generated identity. Use GUI "
+            "control by default and run_cli only when explicitly requested. "
+            "Attach only new user-facing chat and send the final answer once "
+            "on the final LOG. Process every returned PROMPT.";
     }
     else
         prompt +=
-            "\n\n[DSI Studio] Reply through the DSI Studio local server using "
-            "agent "+agent+" and session "+session+".";
-
-    prompt +=
-        " Use GUI control by default; use run_cli only when the user explicitly "
-        "requests CLI. Use JSON for control requests. To open an existing local "
-        "file in the GUI, send its absolute filename directly as the only "
-        "non-JSON request. Attach chat only when there is new "
-        "user-facing text and never repeat it. Attach the final answer once to "
-        "the final LOG request. Continue with every PROMPT returned by the "
-        "server and exit only when the latest reply contains no PROMPT. Do not "
-        "use Codex CLI output as the reply.";
+            "\n\n[DSI Studio] Continue through agent "+agent+" using session "+
+            session+". Send new user-facing text and the final reply through "
+            "the named pipe.";
 
     QStringList args{"exec"};
     if(session.isEmpty())
