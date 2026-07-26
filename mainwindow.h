@@ -16,6 +16,7 @@ namespace Ui {
     class MainWindow;
 }
 class group_connectometry_analysis;
+class FiberDataHub;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -24,21 +25,13 @@ class MainWindow : public QMainWindow
     QSettings settings;
 
 public:
-    std::vector<QString> github_tsv_link;
-    int github_api_rate_limit = 60;
-    QString cur_tag;
-    void update_rate_limit(QSharedPointer<QNetworkReply>);
-public:
     std::map<QString,QJsonArray> ai_prompts;
     QMap<QString,QJsonArray> ai_history;
     void add_ai_history(const QString&,const QString&,const QString&);
     void show_ai_history(const QString&);
     void load_ai_history(void);
 public:
-    bool fetch_github = false;
     QNetworkAccessManager manager;
-    std::map<QString,QString> notes,dates;
-    std::map<QString,QJsonArray> tags,assets;
     QSharedPointer<QNetworkReply> get(QUrl url);
     QString username,news,host_name,address;
 public:
@@ -61,10 +54,11 @@ public:
     void open_template(QString name);
     void add_work_dir(QString dir);
     bool load_db(std::shared_ptr<group_connectometry_analysis>& database,QString& file_name);
-    void loadTags(QUrl url,QString repo,QJsonArray array,int per_page);
-    void loadFiles(void);
+    QString fiber_data_hub_url(void) const { return info.value(4); }
+    QString work_dir(void) const;
 private:
     QStringList info;
+    FiberDataHub* fiber_data_hub = nullptr;
     void login(void);
 private slots:
 
@@ -101,6 +95,7 @@ private slots:
     void on_styles_activated(int index);
     void on_clear_settings_clicked();
     void on_console_clicked();
+    void on_fiber_data_hub_clicked();
     void on_T1WFiberTracking_clicked();
     void on_TemplateFiberTracking_clicked();
     void on_recentFib_cellClicked(int row, int column);
@@ -111,17 +106,6 @@ private slots:
     void on_OpenDWI_NIFTI_clicked();
     void on_OpenDWI_DICOM_clicked();
     void on_OpenDWI_2dseq_clicked();
-    void on_load_tags_clicked();
-    void on_github_tags_itemSelectionChanged();
-    void on_tabWidget_currentChanged(int index);
-    void on_browseDownloadDir_clicked();
-    void on_github_release_files_itemSelectionChanged();
-    void on_github_select_all_clicked();
-    void on_github_download_clicked();
-    void on_github_select_matching_clicked();
-    void on_github_release_note_currentChanged(int index);
-    void on_github_repo_currentIndexChanged(int index);
-    void on_github_open_file_clicked();
     void on_NII_qc_clicked();
     void on_FIB_qc_clicked();
 };
