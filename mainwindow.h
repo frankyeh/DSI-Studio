@@ -70,7 +70,7 @@ private:
     QStringList info;
     FiberDataHub* fiber_data_hub = nullptr;
     void login(void);
-    void start_codex(const QString&,const QString&,bool);
+    void start_ai(const QString&,const QString&,bool);
 private slots:
 
     void on_ai_new_chat_clicked();
