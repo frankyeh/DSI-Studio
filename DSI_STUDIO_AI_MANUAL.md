@@ -46,7 +46,7 @@ plus per-agent request and assistant history.
 
 - Keep one stable, unique, case-sensitive agent ID beginning with `@` for the
   entire session.
-- Send every control request as a JSON object. `LIST`, `CMD`, and `LOG` exist
+- Send every control request as a JSON object. `LIST`, `CMD`, `LOG`, and `WAIT` exist
   only as values of its `request` property; never send standalone text forms.
   An existing filename to open is the only non-JSON request.
 - Add `chat` only when there is new user-facing assistant text for DSI Studio
@@ -93,7 +93,8 @@ The server name is exactly `dsi-studio`. On Windows, `QLocalServer` exposes it
 as the named pipe `\\.\pipe\dsi-studio`. Connect to this pipe directly for
 normal AI operation. The server processes one request per connection, writes
 one reply, and disconnects; the client should therefore make a fresh lightweight
-pipe connection for every request.
+pipe connection for every request. A `WAIT` connection remains open until DSI
+Studio delivers a user prompt.
 
 Direct pipe access was operationally verified on 2026-07-25. In a warm
 PowerShell process, measured local round trips were approximately 1 ms (the
@@ -184,11 +185,12 @@ escaping safely represents paths, spaces, Unicode, tabs, and newlines.
 |---|---|---|
 | Discover | `{"agent":"@id","request":"LIST"}` | Return targetable windows and prompts queued for this agent. |
 | Console | `{"agent":"@id","request":"LOG"}` | Return rolling console history and queued prompts. |
+| Wait | `{"agent":"@id","request":"WAIT"}` | Keep the connection open until a prompt is available. |
 | One command | `{"agent":"@id","request":"CMD","window":"2","command":["command","parameter"]}` | Route one command to one target. |
 | Command batch | `{"agent":"@id","request":"CMD","window":"2","command":[["command","parameter"],["command"]]}` | Run commands sequentially on one target. |
 | Open file | one existing absolute filename | Ask the main window to open a local file. |
 
-`LIST`, `CMD`, and `LOG` are JSON property values, never standalone wire
+`LIST`, `CMD`, `LOG`, and `WAIT` are JSON property values, never standalone wire
 messages. `window` may be a JSON string or number. Tracking and main windows
 accept any number of strings in a command array. Image windows reject more than
 one parameter string with `ERROR` `"too many parameters"`
@@ -206,6 +208,7 @@ between simultaneous agents.
 {"agent":"@C7f2a","request":"LIST"}
 {"agent":"@C7f2a","request":"CMD","window":"2","command":["list_region"]}
 {"agent":"@C7f2a","request":"LOG"}
+{"agent":"@C7f2a","request":"WAIT"}
 ```
 
 For a text reply, pending prompts are inserted immediately after the first
@@ -227,6 +230,30 @@ Prompt queues are keyed by the exact agent ID. DSI Studio clears only the
 matching agent's queue, and only after the complete reply is written. Multiple
 agents may interleave pipe requests safely when their IDs differ, although all
 GUI command handlers still run serially on Qt's main thread.
+
+After completing a turn, an agent that can remain running should issue `WAIT`
+instead of polling `LIST`:
+
+```json
+{"agent":"@C7f2a","request":"WAIT"}
+```
+
+DSI Studio leaves that socket open. A user message sent from the AI Agents tab
+completes it with:
+
+```json
+{"prompt":["Please change the tracking parameters."]}
+```
+
+The agent should process every string in `prompt`, complete the turn, and issue
+another `WAIT`. If prompts were already queued, `WAIT` replies immediately.
+When no waiting socket exists, prompts remain available through the next
+`LIST`, `LOG`, `CMD`, or `WAIT` reply. A second `WAIT` from the same agent
+replaces its previous waiting socket.
+
+`WAIT` does not launch or resume an exited process. Resuming Codex requires a
+real Codex thread/session ID, which is distinct from DSI Studio's `@agent` ID
+and is not stored by this protocol.
 
 ### User-facing chat attachment
 
