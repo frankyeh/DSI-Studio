@@ -50,17 +50,13 @@ extern MainWindow* main_window;
 
 static QString find_codex_executable()
 {
-    auto executable = QStandardPaths::findExecutable("codex");
-    if(!executable.isEmpty())
-        return executable;
-
-    QDir dir(QStandardPaths::writableLocation(
-                 QStandardPaths::GenericDataLocation)+"/OpenAI/Codex/bin");
-    for(const auto& name : dir.entryList(
-            QDir::Dirs|QDir::NoDotAndDotDot,QDir::Time))
-        if(QFileInfo::exists(executable = dir.filePath(name+"/codex.exe")))
-            return executable;
-    return {};
+    auto path = QStandardPaths::findExecutable("codex");
+#ifdef Q_OS_WIN
+    if(path.isEmpty())
+        path = qEnvironmentVariable("LOCALAPPDATA")+
+               "/Programs/OpenAI/Codex/bin/codex.exe";
+#endif
+    return QFileInfo::exists(path) ? path : QString();
 }
 
 static void ai_reply(QLocalSocket* socket,const QString& agent,
@@ -431,8 +427,7 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
                         cell+"<td width=\"20%\"></td>"));
     };
 
-    auto* process = ai_processes.value(agent);
-    if(added.isEmpty() || process)
+    if(added.isEmpty())
     {
         ui->ai_chat_history->clear();
         for(const auto& entry : history)
@@ -441,14 +436,6 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
     else
         append(added);
 
-    if(process)
-        ui->ai_chat_history->append(QString(
-            "<table width=\"100%\" cellspacing=\"3\" cellpadding=\"7\"><tr>"
-            "<td bgcolor=\"#f1f3f4\"><b>%1 · %2</b><br>"
-            "<font color=\"#5f6368\">&#9679;&nbsp;Codex is working&hellip;</font></td>"
-            "<td width=\"20%\"></td></tr></table>")
-            .arg(name,agent.toHtmlEscaped()));
-
     ui->ai_chat_history->ensureCursorVisible();
     QTimer::singleShot(0,ui->ai_chat_history,[this]
     {
@@ -456,7 +443,7 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
         bar->setValue(bar->maximum());
     });
     ui->ai_control_status->setText(
-        process ? "Codex is working…" : "● Active");
+        ai_processes.contains(agent) ? "Codex is working…" : "● Active");
 }
 
 void MainWindow::add_ai_history(const QString& agent,const QString& type,
@@ -497,33 +484,14 @@ void MainWindow::on_ai_new_chat_clicked()
     ui->ai_control_status->setText("● New Chat");
 }
 
-void MainWindow::on_ai_send_message_clicked()
+void MainWindow::start_codex(const QString& agent,const QString& text,
+                             bool add_history)
 {
-    auto text = ui->ai_chat_input->toPlainText().trimmed();
-    if(text.isEmpty())
-        return;
-
-    auto* item = ui->ai_project_list->currentItem();
-    auto agent = item ? item->data(Qt::UserRole).toString() : QString();
-    if(!agent.isEmpty() && !agent.startsWith("@C"))
-    {
-        QMessageBox::warning(this,"AI Agent",
-                             "Only Codex is currently supported.");
-        return;
-    }
-
-    if(!agent.isEmpty() && ai_processes.contains(agent))
-    {
-        ai_prompts[agent].append(text);
-        add_ai_history(agent,"user",text);
-        ui->ai_chat_input->clear();
-        ui->ai_control_status->setText("● Queued");
-        return;
-    }
-
     auto codex = find_codex_executable();
     if(codex.isEmpty())
     {
+        if(!add_history && !agent.isEmpty())
+            ai_prompts[agent].append(text);
         QMessageBox::warning(this,"Codex",
                              "Codex is not installed or cannot be located.");
         return;
@@ -532,6 +500,8 @@ void MainWindow::on_ai_send_message_clicked()
     auto session = ai_sessions.value(agent);
     if(!agent.isEmpty() && session.isEmpty())
     {
+        if(!add_history)
+            ai_prompts[agent].append(text);
         QMessageBox::warning(this,"Codex",
                              "This project has no Codex session.");
         return;
@@ -546,27 +516,23 @@ void MainWindow::on_ai_send_message_clicked()
     auto* process = new QProcess(this);
     process->setObjectName(agent);
     process->setWorkingDirectory(cwd);
-    process->setProperty("stdout_bytes",0LL);
-    process->setProperty("stderr_bytes",0LL);
 
     if(!agent.isEmpty())
     {
         ai_processes[agent] = process;
-        add_ai_history(agent,"user",text);
+        if(add_history)
+            add_ai_history(agent,"user",text);
     }
     else
         for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
             button->setEnabled(false);
 
-    ui->ai_chat_input->clear();
+    if(add_history)
+        ui->ai_chat_input->clear();
 
     connect(process,&QProcess::readyReadStandardOutput,this,[=]
     {
         auto output = process->readAllStandardOutput();
-        process->setProperty(
-            "stdout_bytes",
-            process->property("stdout_bytes").toLongLong()+output.size());
-
         auto buffer =
             process->property("stdout_buffer").toByteArray()+output;
         for(int pos;(pos = buffer.indexOf('\n')) >= 0;)
@@ -582,18 +548,22 @@ void MainWindow::on_ai_send_message_clicked()
                 continue;
 
             auto agent = process->objectName();
+            bool new_agent = agent.isEmpty();
             if(agent.isEmpty())
             {
                 agent = "@C"+session.left(12);
                 process->setObjectName(agent);
                 ai_work_dirs[agent] = process->workingDirectory();
                 ai_processes[agent] = process;
+            }
+            ai_sessions[agent] = session;
+            if(new_agent)
+            {
                 add_ai_history(agent,"user",text);
                 for(auto* button :
                     {ui->ai_new_chat,ui->ai_send_message})
                     button->setEnabled(true);
             }
-            ai_sessions[agent] = session;
             tipl::out() << "AI Codex session agent="
                         << agent.toStdString()
                         << " session=" << session.toStdString();
@@ -603,10 +573,9 @@ void MainWindow::on_ai_send_message_clicked()
 
     connect(process,&QProcess::readyReadStandardError,this,[=]
     {
-        auto bytes = process->readAllStandardError().size();
-        process->setProperty(
-            "stderr_bytes",
-            process->property("stderr_bytes").toLongLong()+bytes);
+        auto error = process->readAllStandardError().trimmed();
+        if(!error.isEmpty())
+            tipl::out() << error.toStdString();
     });
 
     connect(process,&QProcess::started,this,[=]
@@ -644,6 +613,7 @@ void MainWindow::on_ai_send_message_clicked()
         else
         {
             ai_processes.remove(agent);
+            ai_prompts[agent].append(text);
             add_ai_history(agent,"activity",
                            "Cannot start Codex: "+
                            process->errorString());
@@ -661,11 +631,7 @@ void MainWindow::on_ai_send_message_clicked()
         tipl::out() << "AI Codex finished agent="
                     << agent.toStdString()
                     << " exit=" << exit_code
-                    << " crashed=" << (exit_status == QProcess::CrashExit)
-                    << " stdout="
-                    << process->property("stdout_bytes").toLongLong()
-                    << " stderr="
-                    << process->property("stderr_bytes").toLongLong();
+                    << " crashed=" << (exit_status == QProcess::CrashExit);
 
         if(agent.isEmpty())
         {
@@ -679,6 +645,16 @@ void MainWindow::on_ai_send_message_clicked()
         else
         {
             ai_processes.remove(agent);
+            QStringList pending;
+            for(const auto& prompt : ai_prompts[agent])
+                pending << prompt.toString();
+            ai_prompts[agent] = {};
+            if(!pending.isEmpty())
+            {
+                process->deleteLater();
+                start_codex(agent,pending.join("\n\n"),false);
+                return;
+            }
             show_ai_project(agent);
         }
         ui->ai_control_status->setText("● Ready");
@@ -731,6 +707,32 @@ void MainWindow::on_ai_send_message_clicked()
         session.isEmpty() ? "Starting new Codex chat…" :
                             "Starting Codex…");
     process->start(codex,args);
+}
+
+void MainWindow::on_ai_send_message_clicked()
+{
+    auto text = ui->ai_chat_input->toPlainText().trimmed();
+    if(text.isEmpty())
+        return;
+
+    auto* item = ui->ai_project_list->currentItem();
+    auto agent = item ? item->data(Qt::UserRole).toString() : QString();
+    if(!agent.isEmpty() && !agent.startsWith("@C"))
+    {
+        QMessageBox::warning(this,"AI Agent",
+                             "Only Codex is currently supported.");
+        return;
+    }
+
+    if(!agent.isEmpty() && ai_processes.contains(agent))
+    {
+        ai_prompts[agent].append(text);
+        add_ai_history(agent,"user",text);
+        ui->ai_chat_input->clear();
+        ui->ai_control_status->setText("● Queued");
+        return;
+    }
+    start_codex(agent,text,true);
 }
 
 
@@ -827,18 +829,27 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ai_project_menu->addAction("Remove"),&QAction::triggered,this,[this]
     {
         auto* item = ui->ai_project_list->currentItem();
-        if(!item || QMessageBox::question(
+        if(!item)
+            return;
+        auto agent = item->data(Qt::UserRole).toString();
+        if(ai_processes.contains(agent))
+        {
+            QMessageBox::information(this,"Remove Project",
+                                     "Wait for Codex to finish first.");
+            return;
+        }
+        if(QMessageBox::question(
                this,"Remove Project",
                "Remove this project and its saved history?") != QMessageBox::Yes)
             return;
 
-        auto agent = item->data(Qt::UserRole).toString();
         QFile::remove(ai_project_dir+"/"+QString::fromLatin1(
                           QUrl::toPercentEncoding(agent))+".jsonl");
         ai_projects.remove(agent);
         ai_project_items.remove(agent);
         ai_sessions.remove(agent);
         ai_work_dirs.remove(agent);
+        ai_prompts.erase(agent);
         delete item;
 
         if(ui->ai_project_list->count())
