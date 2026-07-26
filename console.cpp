@@ -85,6 +85,7 @@ console_stream::overflow(std::basic_streambuf<char>::int_type v)
     std::lock_guard<std::mutex> lock(edit_buf);
     buf.push_back(char(v));
     history.push_back(char(v));
+    ++total_size;
     if(history.size() > max_console_history)
         history.remove(0,history.size()-max_console_history);
 
@@ -105,6 +106,7 @@ std::streamsize console_stream::xsputn(
 
     buf += text;
     history += text;
+    total_size += text.size();
     if(history.size() > max_console_history)
         history.remove(0,history.size()-max_console_history);
     if(capture)
