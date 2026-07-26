@@ -7,6 +7,9 @@ do not read the entire inventory.
 ## Operating rules
 
 - Each named-pipe connection sends exactly one request and then closes.
+- Send separate non-empty `agent` and `session` strings and reuse the exact
+  pair. `agent` must not contain `@`; DSI Studio identifies it as
+  `agent@session`.
 - Use `LIST` to obtain fresh windows, then target only its numeric window ID.
   Never send `main`, `tracking`, `image`, a title, or a filename as `window`.
 - In DSI Studio, FIB means `.fz`; never substitute `.sz`, which is an SRC file.
