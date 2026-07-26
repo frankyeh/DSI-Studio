@@ -1,400 +1,105 @@
-# DSI Studio AI-Agent Setup
+# DSI Studio AI Setup
 
-Use this file to connect a local AI agent to an AI-control-enabled DSI Studio.
-Read `DSI_STUDIO_AI_MANUAL.md` completely before issuing domain commands; it is
-the authoritative command reference. On Windows, connect directly to the
-`dsi-studio` named pipe. Launching `dsi_studio.exe` for every request is only a
-fallback.
-
-This setup was reviewed against the current DSI Studio source on 2026-07-25,
-including the JSON request envelope and AI chat-history integration added after
-`bdfd98b5647f2a68b9bb8bd0691240f34c1c9a4b`.
-
-## Mandatory agent rules
-
-- Generate one stable, unique agent ID at the start of the session. It must
-  begin with `@`. Reuse the exact same case-sensitive ID for every request in
-  that session.
-- Send every control request as one JSON object. `LIST`, `CMD`, and `LOG` are
-  values of the JSON `request` property; never send any of them as a standalone
-  text request. The only non-JSON request is an existing filename that DSI
-  Studio should open.
-- Include `chat` only when the agent has new user-facing text that DSI Studio
-  should display. Do not attach internal reasoning, tool output, or text that
-  has already been attached.
-- Never resend previously attached `chat`.
-- A Codex agent ID begins with `@C`. Include the UUID from `CODEX_THREAD_ID` as
-  `session` and the current project directory as `cwd` in every request.
-- When DSI Studio should display the final answer, attach that answer once as
-  `chat` on the final JSON `LOG` request.
-
-These rules preserve one continuous agent identity and prevent duplicate chat
-messages in DSI Studio.
+Use this file for transport and session rules. Use
+`DSI_STUDIO_AI_MANUAL.md` for commands.
 
 ## Requirements
 
-- The agent must be able to execute local Windows processes on the same
-  computer as DSI Studio. A remote or browser-only agent requires a separate
-  local execution bridge.
-- Obtain the exact path to `dsi_studio.exe` only when DSI Studio must be started
-  or the executable fallback is needed.
-- Obtain access only to the executable, requested input data, manuals, and
-  output directories required for the task.
-- DSI Studio should already be running unless the user explicitly asks the
-  agent to start it.
+- Run on the same Windows computer as an AI-enabled DSI Studio.
+- Keep one stable agent ID for the task. Codex uses `@C` plus a prefix of
+  `CODEX_THREAD_ID`, and sends the full ID as `session`.
+- Send JSON only. An existing filename is the sole legacy non-JSON request.
+- Use the `dsi-studio` named pipe. Do not launch `dsi_studio.exe` per command.
 
-## Connect directly
-
-`QLocalServer("dsi-studio")` is the Windows named pipe
-`\\.\pipe\dsi-studio`. The server handles one request per connection, writes
-one reply, and disconnects.
+## PowerShell client
 
 ```powershell
-function Invoke-DsiRequest([string]$Request)
+function Invoke-DsiPipe([string]$json)
 {
-    $pipe = [System.IO.Pipes.NamedPipeClientStream]::new(
-        '.', 'dsi-studio',
-        [System.IO.Pipes.PipeDirection]::InOut)
-    try
-    {
+    $pipe = [IO.Pipes.NamedPipeClientStream]::new(
+        '.', 'dsi-studio', [IO.Pipes.PipeDirection]::InOut)
+    try {
         $pipe.Connect(2000)
-        $utf8 = [System.Text.UTF8Encoding]::new($false)
-        $bytes = $utf8.GetBytes($Request)
-        $pipe.Write($bytes, 0, $bytes.Length)
+        $utf8 = [Text.UTF8Encoding]::new($false)
+        $bytes = $utf8.GetBytes($json)
+        $pipe.Write($bytes,0,$bytes.Length)
         $pipe.Flush()
-
-        $buffer = New-Object byte[] 8192
-        $reply = [System.Text.StringBuilder]::new()
-        while(($count = $pipe.Read($buffer, 0, $buffer.Length)) -gt 0)
-        {
-            [void]$reply.Append($utf8.GetString($buffer, 0, $count))
+        $buf = [byte[]]::new(8192)
+        $reply = [Text.StringBuilder]::new()
+        while(($n = $pipe.Read($buf,0,$buf.Length)) -gt 0) {
+            [void]$reply.Append($utf8.GetString($buf,0,$n))
         }
         $reply.ToString()
-    }
-    finally
-    {
-        $pipe.Dispose()
-    }
+    } finally { $pipe.Dispose() }
 }
 
-$DsiSessionId = $env:CODEX_THREAD_ID
-if(-not $DsiSessionId) { throw 'CODEX_THREAD_ID is required' }
-$DsiAgentId = '@C' + $DsiSessionId.Substring(0,12)
+$DsiSession = $env:CODEX_THREAD_ID
+if(-not $DsiSession) { throw 'CODEX_THREAD_ID is required' }
+$DsiAgent = '@C' + $DsiSession.Substring(0,12)
 
-function Invoke-Dsi([hashtable]$Request)
+function Invoke-Dsi([hashtable]$request)
 {
-    if($Request.ContainsKey('agent')) { throw 'Invoke-Dsi supplies the agent ID' }
-    $Request = @{} + $Request
-    $Request.agent = $DsiAgentId
-    $Request.session = $DsiSessionId
-    $Request.cwd = (Get-Location).Path
-    Invoke-DsiRequest ($Request | ConvertTo-Json -Compress -Depth 8)
+    $request = @{} + $request
+    $request.agent = $DsiAgent
+    $request.session = $DsiSession
+    $request.cwd = (Get-Location).Path
+    Invoke-DsiPipe ($request | ConvertTo-Json -Compress -Depth 8)
 }
-
-function Read-DsiTextReply([string]$Reply)
-{
-    $lines = @($Reply -split '\r?\n')
-    $prompts = @()
-    if($lines.Count -gt 1 -and $lines[1].StartsWith("PROMPT`t"))
-    {
-        $prompts = @($lines[1].Substring(7) | ConvertFrom-Json)
-        $lines = @($lines[0]) + @($lines | Select-Object -Skip 2)
-    }
-    [pscustomobject]@{ Text=($lines -join "`n"); Prompts=$prompts }
-}
-
-$listReply = Read-DsiTextReply (Invoke-Dsi @{request='LIST'})
-if(-not $listReply.Text.StartsWith('OKAY')) { throw $listReply.Text }
 ```
 
-A successful `LIST` response resembles:
-
-```text
-OKAY
-main<TAB>1<TAB>DSI Studio ...
-tracking<TAB>2<TAB>C:\data\subject.fz
-```
-
-Always request `LIST` before the first command and again after opening or
-closing a window. A pipe connection timeout means no compatible DSI Studio
-server is available; ask the user to start it.
-
-## JSON request forms
-
-Use the same agent ID in every object:
-
-```json
-{"agent":"@C7f2a","session":"019f...","cwd":"C:\\work","request":"LIST"}
-{"agent":"@C7f2a","session":"019f...","cwd":"C:\\work","request":"CMD","window":"2","command":["list_region"]}
-{"agent":"@C7f2a","session":"019f...","cwd":"C:\\work","request":"LOG"}
-```
-
-`@C7f2a` is only an example. Generate a new ID once when the agent session
-begins.
-
-### Send one command
-
-`command` is an array of strings. Its first element is the command name and the
-remaining elements are parameters:
+## Protocol
 
 ```powershell
+# Discover current windows.
+$list = Invoke-Dsi @{request='LIST'}
+
+# One command.
 $reply = Invoke-Dsi @{
-    request='CMD'
-    window='2'
-    command=@('list_slice')
+    request='CMD'; window='2'; command=@('list_region')
 }
-$results = $reply | ConvertFrom-Json
-if($results | Where-Object { -not $_.okay }) { throw $reply }
-$prompts = @($results[-1].prompt)
-```
 
-Each parameter remains one array element. A parameter containing spaces must
-not be split. Empty strings are valid only where the command reference
-explicitly documents them.
-
-### Send a command batch
-
-For a same-window batch, `command` is an array of command arrays:
-
-```powershell
+# Ordered same-window batch.
 $reply = Invoke-Dsi @{
-    request='CMD'
-    window='2'
-    command=@(
-        @('list_slice'),
-        @('list_region'),
-        @('list_tract')
-    )
+    request='CMD'; window='2'
+    command=@(@('list_slice'),@('list_region'),@('list_tract'))
 }
-$results = $reply | ConvertFrom-Json
-if($results | Where-Object { -not $_.okay }) { throw $reply }
-$prompts = @($results[-1].prompt)
+
+# Console and final user-facing reply.
+$log = Invoke-Dsi @{request='LOG'}
+$log = Invoke-Dsi @{request='LOG'; chat='Task completed.'}
 ```
 
-All command and parameter values must be strings. Commands run in order and
-stop at the first failure. The result is a compact JSON array containing
-`index`, `okay`, `output`, and, on failure, `error`. A queued DSI Studio prompt
-appears in the optional `prompt` property of the last result.
+JSON fields are `agent`, `session`, `cwd`, `request`, `window`, `command`, and
+optional `chat`. Requests are `LIST`, `CMD`, or `LOG`. A command is an array of
+strings; a batch is an array of command arrays. Keep a parameter containing
+spaces as one element.
 
-Batch only short synchronous commands whose inputs are ready. Do not send an
-empty batch or place a command after an asynchronous operation on which it
-depends. A batch is not transactional and does not roll back earlier commands.
+`LIST` and `LOG` are text replies beginning with `OKAY`. A queued user prompt
+may follow as `PROMPT<TAB><JSON>`. `CMD` returns an array of
+`{index,okay,output,error?}`; a queued prompt is the last result's optional
+`prompt` property. Process prompts as new user input.
 
-Target commands according to the window type returned by `LIST`:
+Commands in a batch run in order and stop at the first error. Do not batch an
+asynchronous command with work that depends on its completion.
 
-- `main`: Fiber Data Hub and main-window operations
-- `tracking`: slices, regions, tracts, atlases, segmentation, rendering, and
-  tracking
-- `image`: image-window operations
+## Required behavior
 
-### Receive a message initiated by DSI Studio
+1. Call `LIST` before the first command and after windows open or close.
+2. Target `main`, `tracking`, or `image` windows by the returned ID.
+3. Discover names and values with `list_slice`, `list_region`, `list_tract`,
+   `list_param`, `list_atlas`, `list_unet`, and `list_auto_tract`.
+4. Treat `okay:true` as acceptance. Poll the relevant list/status command for
+   asynchronous work and use `LOG` for errors.
+5. On `window not found`, refresh `LIST` once; never repeat the stale ID.
+6. Verify exported files before reporting success.
+7. Ask before overwriting/deleting files or replacing unsaved regions/tracts.
+8. Put only new user-facing text in `chat`; never send reasoning or tool output.
+9. Send the final answer once on the final `LOG`.
 
-DSI Studio saves the supplied Codex session UUID with the project. When the
-user sends a message from the AI Agents tab and no DSI-launched Codex process
-is running, DSI Studio starts:
+## DSI-initiated Codex turns
 
-```text
-codex exec resume <session> <prompt>
-```
-
-DSI Studio locates Codex through `PATH`, then the newest executable under
-`%LOCALAPPDATA%\OpenAI\Codex\bin`.
-
-The executable and each argument are passed directly without a shell. Codex
-resumes the same session and receives the text plus an instruction to return
-user-facing progress and the final answer through DSI Studio's JSON `chat`
-field. While Codex is running, DSI Studio shows an animated waiting indicator.
-DSI Studio drains CLI output without adding it to project history. If
-Codex cannot be started or is already running for that project, DSI Studio
-keeps the message in the existing per-agent prompt queue for the next `LIST`,
-`LOG`, or `CMD` reply.
-
-The DSI Studio console records concise trace summaries for local-server
-connections, request/reply byte counts, Codex start/finish status, process ID,
-exit code, and total stdout/stderr bytes. Request payloads and CLI diagnostic
-content are not copied into the trace.
-
-The resumed process remains alive while Codex is working. A non-empty `chat`
-on its final `LOG` reply marks the turn complete. DSI Studio asks Codex to exit,
-shows `Finishing Codex…`, then terminates it after 1.5 seconds and kills it
-after 3 seconds only if it has not exited naturally.
-
-## Attach chat without duplication
-
-`chat` is optional and independent of command execution:
-
-```powershell
-$reply = Invoke-Dsi @{
-    request='CMD'
-    window='2'
-    command=@('list_region')
-    chat='I am checking the current regions before making changes.'
-}
-```
-
-Attach a message only on the first request made after that user-facing text is
-created. Omit `chat` from later polling, verification, and retry requests.
-
-At the end of the task, if DSI Studio should display the agent's final answer,
-send one final log request:
-
-```powershell
-$final = 'The requested tract was created and saved to C:\data\CST_L.tt.gz.'
-$logReply = Read-DsiTextReply (Invoke-Dsi @{request='LOG';chat=$final})
-```
-
-Chat is stored in `ai_chat_history`, not console history, so the `LOG` reply
-does not echo the attached text. Do not send the same final text again.
-
-## Open a local file
-
-An existing filename is the only non-JSON request:
-
-```powershell
-Invoke-DsiRequest 'C:\data\subject.fz'
-$listReply = Read-DsiTextReply (Invoke-Dsi @{request='LIST'})
-```
-
-The server forwards the filename to the running DSI Studio. Poll `LIST` to
-discover the new window ID.
-
-## Inspect before acting
-
-Never guess names, indices, or parameter values. Use the available
-introspection commands first, including:
-
-```text
-list_recent
-list_slice
-list_region
-list_tract
-list_param
-list_atlas
-list_unet
-list_auto_tract
-```
-
-Use only commands and parameters documented in
-`DSI_STUDIO_AI_MANUAL.md`.
-
-`list_recent` targets the main window. `run_cli` accepts one complete DSI
-Studio command line as one string:
-
-```powershell
-$reply = Invoke-Dsi @{
-    request='CMD'
-    window='1'
-    command=@('run_cli','--action=qc --source=C:\data\subject.fz')
-}
-```
-
-`--action` is required. Inspect the full command line and obtain any required
-confirmation before running it; `run_cli` is not a shell.
-
-For large Fiber Data Hub listings, `hub files` accepts optional `text`,
-`offset`, and `limit` strings after repository and tag:
-
-```powershell
-$reply = Invoke-Dsi @{
-    request='CMD'
-    window='1'
-    command=@('hub','files','owner/repository','tag','','100','50')
-}
-```
-
-For segmentation, first select the intended slice, run `list_unet`, and then
-send both the exact model and exact slice name:
-
-```powershell
-$reply = Invoke-Dsi @{
-    request='CMD'
-    window='2'
-    command=@('segment_brain','<model-from-list_unet>','<exact-slice-name>')
-}
-```
-
-An explicit model without a slice name is rejected. For deterministic
-visibility changes, use `show_only_regions` or `show_only_tracts` with
-ampersand-joined indices. Region metadata commands take an index and value:
-`set_region_name`, `set_region_type` (`0..6`), and `set_region_color`
-(unsigned packed Qt ARGB).
-
-## Console output and prompts
-
-Retrieve console history with:
-
-```powershell
-$logReply = Read-DsiTextReply (Invoke-Dsi @{request='LOG'})
-```
-
-For `LIST` and `LOG`, pending prompts are inserted after the first status line:
-
-```text
-PROMPT<TAB><JSON>
-```
-
-Pass `LIST` and `LOG` replies through `Read-DsiTextReply`, process `Prompts` as
-agent input, and interpret only `Text` as normal output. Every JSON `CMD`
-request returns a JSON result array; read the optional `prompt` property from
-its last result.
-
-Prompt queues are keyed by the exact agent ID and cleared only after the
-matching reply is written. Different agents may interleave requests when their
-IDs differ, although GUI commands still execute serially on Qt's main thread.
-
-## Executable fallback
-
-If the agent cannot use Windows named pipes, invoke the executable with one
-complete JSON request:
-
-```powershell
-$dsiExe = 'C:\DSI-Studio\dsi_studio.exe'
-$request = @{agent=$DsiAgentId;session=$DsiSessionId;
-             cwd=(Get-Location).Path;request='CMD';window='2';
-             command=@('list_slice')} | ConvertTo-Json -Compress
-& $dsiExe $request
-```
-
-This starts a new client process for every request and has a fixed five-second
-reply timeout. It can print `TIMEOUT` while a GUI operation continues. Do not
-retry an operation whose state is unknown.
-
-## Completion and verification
-
-- A `CMD` request succeeds only when every returned object has `"okay":true`.
-- A closed window ID returns `"okay":false` with
-  `"error":"window not found"`. Refresh `LIST` once; do not retry the same
-  command against that stale ID.
-- Later batch results are absent after the first failure.
-- Poll the relevant list or status command until completion.
-- Refresh `LIST` when a command opens or closes a window.
-- Verify created regions or tracts using their list commands.
-- Verify every exported file exists and is readable before reporting success.
-- No more than three consecutive identical entries are stored in AI history.
-- If possible, inspect and show exported images to the user.
-- Report errors and partial results accurately; do not silently retry
-  destructive operations.
-
-## Safety
-
-Obtain confirmation before:
-
-- overwriting or deleting files;
-- deleting or replacing regions or tracts;
-- closing windows with unsaved work;
-- downloading unexpectedly large datasets;
-- starting expensive batch processing outside the user's stated scope.
-
-Avoid commands that require modal dialogs during unattended operation. Prefer
-explicit, fully parameterized commands. Use native-space GQI `.fz` data when
-alignment with native structural images is required.
-
-## Agent behavior
-
-Translate the user's scientific goal into documented DSI Studio commands; do
-not require the user to know command names. State which dataset and window will
-be affected, execute the smallest safe sequence, monitor it to completion,
-verify the result, and summarize what DSI Studio produced. Keep the same agent
-identity throughout, attach only newly generated user-facing text, and attach
-the final answer once to the final `LOG` request when DSI Studio should display
-it.
+DSI Studio may resume the saved task with
+`codex exec resume <session> <prompt>`. Contact the named pipe, do the work,
+send progress through `chat` only when useful, send the final answer on `LOG`,
+then exit. DSI Studio displays a waiting indicator, ignores CLI diagnostic
+output as chat, and stops a process that remains after the final reply.
