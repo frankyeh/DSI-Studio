@@ -192,8 +192,26 @@ QPushButton#ai_new_claude_chat {
     font-weight: bold;
     padding: 8px;
 }
-QToolButton#ai_open_project {
-    padding: 4px;
+QPushButton#ai_project_title,
+QPushButton#ai_project_title:hover,
+QPushButton#ai_project_title:pressed {
+    background: transparent;
+    border: 0;
+    padding: 2px;
+    text-align: left;
+}
+QToolButton#ai_project_menu_button {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    font-weight: bold;
+}
+QToolButton#ai_project_menu_button:hover {
+    background: #e2e2e4;
+    border-radius: 4px;
+}
+QToolButton#ai_project_menu_button::menu-indicator {
+    image: none;
 }
 QLineEdit#ai_project_filter {
     background-color: #ffffff;

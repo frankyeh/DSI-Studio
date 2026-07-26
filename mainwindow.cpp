@@ -1,5 +1,7 @@
 #include <QFileDialog>
 #include <QDateTime>
+#include <QDir>
+#include <QMenu>
 #include <QUrl>
 #include <QMessageBox>
 #include <QDragEnterEvent>
@@ -246,31 +248,124 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     ai_reply(socket,agent,"ERROR\tunknown request");
 }
 
+void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
+{
+    const auto& history = ai_projects[agent];
+    if(history.isEmpty())
+        return;
+
+    QString name = agent.startsWith("@C") ? "Codex" :
+                   agent.startsWith("@A") ? "Claude Code" : "AI Agent";
+    auto last = history.last().toObject();
+    QString preview = last["type"].toString() == "request" ?
+        QJsonDocument::fromJson(last["text"].toString().toUtf8()).
+        object()["request"].toString() :
+        last["text"].toString().simplified();
+    QString project_title = name+" · "+agent+"\n"+preview.left(60);
+
+    auto* item = ai_project_items.value(agent);
+    if(!item)
+    {
+        item = new QListWidgetItem;
+        item->setData(Qt::UserRole,agent);
+        ui->ai_project_list->insertItem(0,item);
+        ai_project_items[agent] = item;
+
+        auto* row = new QWidget;
+        auto* title = new QPushButton(row);
+        title->setObjectName("ai_project_title");
+        title->setFlat(true);
+
+        auto* button = new QToolButton(row);
+        button->setObjectName("ai_project_menu_button");
+        button->setText("...");
+        button->setToolTip("Project actions");
+        button->setFixedSize(28,28);
+        button->setPopupMode(QToolButton::InstantPopup);
+        button->setMenu(ai_project_menu);
+
+        auto* layout = new QHBoxLayout(row);
+        layout->setContentsMargins(6,2,2,2);
+        layout->setSpacing(2);
+        layout->addWidget(title,1);
+        layout->addWidget(button);
+        ui->ai_project_list->setItemWidget(item,row);
+
+        connect(title,&QPushButton::clicked,this,
+                [this,item]{ui->ai_project_list->setCurrentItem(item);});
+        connect(button,&QToolButton::pressed,this,
+                [this,item]{ui->ai_project_list->setCurrentItem(item);});
+    }
+
+    item->setText(project_title);
+    auto* row = ui->ai_project_list->itemWidget(item);
+    row->findChild<QPushButton*>("ai_project_title")->setText(project_title);
+    item->setSizeHint(row->sizeHint());
+    item->setHidden(!project_title.contains(
+        ui->ai_project_filter->text(),Qt::CaseInsensitive));
+
+    if(!ui->ai_project_list->currentItem())
+    {
+        ui->ai_project_list->setCurrentItem(item);
+        return;
+    }
+    if(ui->ai_project_list->currentItem() != item)
+        return;
+
+    auto append = [&](const QJsonObject& entry)
+    {
+        auto type = entry["type"].toString();
+        bool user = type == "user",request = type == "request";
+        auto content = entry["text"].toString().
+                       toHtmlEscaped().replace('\n',"<br>");
+        auto cell = QString(
+            "<td bgcolor=\"%1\"><b>%2 · %3</b> "
+            "<font color=\"#80868b\">%4</font><br>%5</td>")
+            .arg(request ? "#f1f3f4" : user ? "#e8f0fe" : "#e8f5e9",
+                 request ? "Activity" : user ? "You" : name,
+                 agent.toHtmlEscaped(),
+                 QDateTime::fromString(
+                     entry["time"].toString(),Qt::ISODate).
+                     toString("MM/dd HH:mm:ss"),
+                 request ? "<code>"+content+"</code>" : content);
+
+        ui->ai_chat_history->append(
+            QString("<table width=\"100%\" cellspacing=\"3\" "
+                    "cellpadding=\"7\"><tr>%1</tr></table>")
+            .arg(request ? cell :
+                 user ? "<td width=\"20%\"></td>"+cell :
+                        cell+"<td width=\"20%\"></td>"));
+    };
+
+    if(added.isEmpty())
+    {
+        ui->ai_chat_history->clear();
+        for(const auto& entry : history)
+            append(entry.toObject());
+    }
+    else
+        append(added);
+
+    ui->ai_chat_history->ensureCursorVisible();
+    ui->ai_connected_agent->setText("Agent: "+name+" "+agent);
+    ui->ai_control_status->setText("● Active");
+}
+
 void MainWindow::add_ai_history(const QString& agent,const QString& type,
                                 const QString& text)
 {
-    bool user = type == "user",request = type == "request";
-    QString name = agent.startsWith("@C") ? "Codex" :
-                       agent.startsWith("@A") ? "Claude Code" : "AI Agent";
-    QString title = request ? name + " activity" :
-                        user ? "You → " + name : name;
-                                   QString content = text.toHtmlEscaped().replace('\n',"<br>");
-    QString card = QString(
-                       "<td bgcolor=\"%1\"><b>%2 · %3</b> "
-                       "<font color=\"#80868b\">%4</font><br>%5</td>")
-                       .arg(request ? "#f1f3f4" : user ? "#e8f0fe" : "#e8f5e9",
-                            title.toHtmlEscaped(),agent.toHtmlEscaped(),
-                            QDateTime::currentDateTime().toString("HH:mm:ss"),
-                            request ? "<code>" + content + "</code>" : content);
+    QJsonObject entry{
+        {"type",type},{"text",text},
+        {"time",QDateTime::currentDateTime().toString(Qt::ISODate)}
+    };
+    ai_projects[agent].append(entry);
 
-    ui->ai_chat_history->append(
-        QString("<table width=\"100%\" cellspacing=\"3\" cellpadding=\"7\"><tr>%1</tr></table>")
-            .arg(request ? card :
-                     user ? "<td width=\"20%\"></td>" + card :
-                     card + "<td width=\"20%\"></td>"));
-    ui->ai_chat_history->ensureCursorVisible();
-    ui->ai_connected_agent->setText("Agent: " + name + " " + agent);
-    ui->ai_control_status->setText("● Active");
+    QFile file(ai_project_dir+"/"+QString::fromLatin1(
+                   QUrl::toPercentEncoding(agent))+".jsonl");
+    if(file.open(QIODevice::WriteOnly|QIODevice::Append))
+        file.write(QJsonDocument(entry).toJson(QJsonDocument::Compact)+'\n');
+
+    show_ai_project(agent,entry);
 }
 
 
@@ -342,6 +437,85 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     setAcceptDrops(true);
     ui->setupUi(this);
+
+    ai_project_dir = QStandardPaths::writableLocation(
+                         QStandardPaths::AppLocalDataLocation)+"/ai_projects";
+    QDir dir(ai_project_dir);
+    dir.mkpath(".");
+
+    ai_project_menu = new QMenu(this);
+    for(auto name : {"Rename","Share"})
+        ai_project_menu->addAction(name)->setEnabled(false);
+    ai_project_menu->addSeparator();
+
+    connect(ai_project_menu->addAction("Remove"),&QAction::triggered,this,[this]
+    {
+        auto* item = ui->ai_project_list->currentItem();
+        if(!item || QMessageBox::question(
+               this,"Remove Project",
+               "Remove this project and its saved history?") != QMessageBox::Yes)
+            return;
+
+        auto agent = item->data(Qt::UserRole).toString();
+        QFile::remove(ai_project_dir+"/"+QString::fromLatin1(
+                          QUrl::toPercentEncoding(agent))+".jsonl");
+        ai_projects.remove(agent);
+        ai_project_items.remove(agent);
+        delete item;
+
+        if(ui->ai_project_list->count())
+            ui->ai_project_list->setCurrentRow(0);
+        else
+        {
+            ui->ai_chat_history->clear();
+            ui->ai_connected_agent->setText("Agent: None");
+            ui->ai_control_status->setText("● Ready");
+        }
+    });
+
+    connect(ui->ai_project_list,&QListWidget::currentItemChanged,this,
+            [this](QListWidgetItem* item,QListWidgetItem*)
+    {
+        if(item)
+            show_ai_project(item->data(Qt::UserRole).toString());
+        else
+            ui->ai_chat_history->clear();
+    });
+
+    connect(ui->ai_project_filter,&QLineEdit::textChanged,this,
+            [this](const QString& text)
+    {
+        for(auto* item : ai_project_items)
+            item->setHidden(
+                !item->text().contains(text,Qt::CaseInsensitive));
+    });
+
+    for(const auto& info : dir.entryInfoList(
+            {"*.jsonl"},QDir::Files,QDir::Time|QDir::Reversed))
+    {
+        auto agent = QUrl::fromPercentEncoding(
+                         info.completeBaseName().toLatin1());
+        QFile file(info.filePath());
+        if(!file.open(QIODevice::ReadOnly))
+            continue;
+
+        auto& history = ai_projects[agent];
+        while(!file.atEnd())
+        {
+            auto doc = QJsonDocument::fromJson(file.readLine());
+            if(doc.isObject())
+                history.append(doc.object());
+        }
+
+        if(history.isEmpty())
+            ai_projects.remove(agent);
+        else
+            show_ai_project(agent);
+    }
+
+    if(ui->ai_project_list->count())
+        ui->ai_project_list->setCurrentRow(0);
+
     ui->styles->addItems(QStringList("default") << QStyleFactory::keys());
     ui->styles->setCurrentText(settings.value("styles","Fusion").toString());
 

@@ -12,6 +12,7 @@
 #include <QJsonArray>
 #include <QMap>
 #include <QJsonObject>
+#include <QMenu>
 
 
 namespace Ui {
@@ -30,6 +31,8 @@ public:
     std::map<QString,QJsonArray> ai_prompts;
     QString ai_project_dir;
     QMap<QString,QJsonArray> ai_projects;
+    QMap<QString,QListWidgetItem*> ai_project_items;
+    QMenu* ai_project_menu = nullptr;
     void add_ai_history(const QString&,const QString&,const QString&);
     void show_ai_project(const QString&,QJsonObject = {});
 public:
