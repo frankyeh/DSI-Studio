@@ -17,6 +17,7 @@
 #include <QUuid>
 #include <QTimer>
 #include <QScrollBar>
+#include <QMovie>
 
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -121,10 +122,16 @@ static void ai_request_list(QLocalSocket* socket,const QString& agent)
 static void ai_request_command(QLocalSocket* socket,const QString& agent,
                                const QJsonObject& request)
 {
+    auto fail = [&](const QString& error)
+    {
+        QJsonArray results{QJsonObject{
+            {"index",0},{"okay",false},{"output",""},{"error",error}}};
+        ai_reply(socket,agent,{},&results);
+    };
     auto id = request["window"].toVariant().toString();
     auto commands = request["command"].toArray();
     if(id.isEmpty() || commands.isEmpty())
-        return ai_reply(socket,agent,"ERROR\tinvalid command");
+        return fail("invalid command");
     if(commands[0].isString())
     {
         QJsonArray batch;
@@ -137,7 +144,7 @@ static void ai_request_command(QLocalSocket* socket,const QString& agent,
         if(window->property("remote_id").toString() == id)
             target = window;
     if(!target)
-        return ai_reply(socket,agent,"ERROR\twindow not found");
+        return fail("window not found");
 
     auto run = [&](const std::vector<std::string>& cmd,QString& output,QString& error)
     {
@@ -384,6 +391,17 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
 void MainWindow::add_ai_history(const QString& agent,const QString& type,
                                 const QString& text)
 {
+    int repeated = 0;
+    const auto& history = ai_projects[agent];
+    for(int index = history.size()-1;index >= 0;--index)
+    {
+        auto entry = history[index].toObject();
+        if(entry["type"] != type || entry["text"] != text)
+            break;
+        if(++repeated == 3)
+            return;
+    }
+
     QJsonObject entry{
         {"type",type},{"text",text},
         {"time",QDateTime::currentDateTime().toString(Qt::ISODate)}
@@ -414,6 +432,7 @@ void MainWindow::on_ai_send_message_clicked()
        ai_processes.contains(agent))
     {
         ai_prompts[agent].append(text);
+        ui->ai_waiting_indicator->hide();
         ui->ai_control_status->setText("● Queued");
         return;
     }
@@ -428,7 +447,7 @@ void MainWindow::on_ai_send_message_clicked()
     connect(process,&QProcess::readyReadStandardError,this,
             [=]{process->readAllStandardError();});
     connect(process,&QProcess::started,this,
-            [=]{ui->ai_control_status->setText("● Codex running");});
+            [=]{ui->ai_control_status->setText("Waiting for Codex…");});
     connect(process,&QProcess::errorOccurred,this,[=](QProcess::ProcessError error)
     {
         if(error != QProcess::FailedToStart)
@@ -437,6 +456,7 @@ void MainWindow::on_ai_send_message_clicked()
         ai_prompts[agent].append(text);
         add_ai_history(agent,"activity","Cannot start Codex: "+
                        process->errorString());
+        ui->ai_waiting_indicator->hide();
         ui->ai_control_status->setText("● Queued");
         process->deleteLater();
     });
@@ -444,10 +464,12 @@ void MainWindow::on_ai_send_message_clicked()
             this,[=]
     {
         ai_processes.remove(agent);
+        ui->ai_waiting_indicator->hide();
         ui->ai_control_status->setText("● Ready");
         process->deleteLater();
     });
-    ui->ai_control_status->setText("● Starting Codex");
+    ui->ai_waiting_indicator->show();
+    ui->ai_control_status->setText("Starting Codex…");
     auto prompt = text+
         "\n\n[DSI Studio] Reply through the DSI Studio local server using "
         "agent "+agent+" and session "+session+". Send user-facing progress "
@@ -525,6 +547,12 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     setAcceptDrops(true);
     ui->setupUi(this);
+    auto* waiting = new QMovie(
+        ":/icons/icons/ajax-loader.gif",{},ui->ai_waiting_indicator);
+    waiting->setScaledSize({16,16});
+    ui->ai_waiting_indicator->setMovie(waiting);
+    waiting->start();
+    ui->ai_waiting_indicator->hide();
     auto* send = new QShortcut(QKeySequence(Qt::CTRL|Qt::Key_Return),
                                ui->ai_chat_input);
     send->setContext(Qt::WidgetShortcut);
