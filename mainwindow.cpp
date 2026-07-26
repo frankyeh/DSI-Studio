@@ -706,7 +706,10 @@ void MainWindow::on_ai_send_message_clicked()
             "agent "+agent+" and session "+session+".";
 
     prompt +=
-        " Use JSON for every request. Attach chat only when there is new "
+        " Use GUI control by default; use run_cli only when the user explicitly "
+        "requests CLI. Use JSON for control requests. To open an existing local "
+        "file in the GUI, send its absolute filename directly as the only "
+        "non-JSON request. Attach chat only when there is new "
         "user-facing text and never repeat it. Attach the final answer once to "
         "the final LOG request. Continue with every PROMPT returned by the "
         "server and exit only when the latest reply contains no PROMPT. Do not "
