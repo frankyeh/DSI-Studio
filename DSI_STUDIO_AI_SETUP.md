@@ -15,7 +15,7 @@ including the JSON request envelope and AI chat-history integration added after
 - Generate one stable, unique agent ID at the start of the session. It must
   begin with `@`. Reuse the exact same case-sensitive ID for every request in
   that session.
-- Send every control request as one JSON object. `LIST`, `CMD`, and `LOG` are
+- Send every control request as one JSON object. `LIST`, `CMD`, `LOG`, and `WAIT` are
   values of the JSON `request` property; never send any of them as a standalone
   text request. The only non-JSON request is an existing filename that DSI
   Studio should open.
@@ -45,7 +45,8 @@ messages in DSI Studio.
 
 `QLocalServer("dsi-studio")` is the Windows named pipe
 `\\.\pipe\dsi-studio`. The server handles one request per connection, writes
-one reply, and disconnects.
+one reply, and disconnects. `WAIT` is the exception: its connection remains
+open until DSI Studio returns a user prompt.
 
 ```powershell
 function Invoke-DsiRequest([string]$Request)
@@ -121,6 +122,7 @@ Use the same agent ID in every object:
 {"agent":"@C7f2a","request":"LIST"}
 {"agent":"@C7f2a","request":"CMD","window":"2","command":["list_region"]}
 {"agent":"@C7f2a","request":"LOG"}
+{"agent":"@C7f2a","request":"WAIT"}
 ```
 
 `@C7f2a` is only an example. Generate a new ID once when the agent session
@@ -180,6 +182,24 @@ Target commands according to the window type returned by `LIST`:
 - `tracking`: slices, regions, tracts, atlases, segmentation, rendering, and
   tracking
 - `image`: image-window operations
+
+### Wait for a user prompt
+
+After completing a turn, keep the agent available without polling:
+
+```powershell
+$waitReply = Invoke-Dsi @{request='WAIT'} | ConvertFrom-Json
+$prompts = @($waitReply.prompt)
+```
+
+`WAIT` keeps its pipe connection open. When the user sends text from DSI
+Studio, the reply is a JSON object whose `prompt` property is an array. Process
+the prompt, complete the requested work, and issue another `WAIT`.
+
+If a prompt was already queued, `WAIT` returns it immediately. If no `WAIT`
+connection exists, DSI Studio retains the prompt for the agent's next `LIST`,
+`LOG`, `CMD`, or `WAIT` request. Do not repeatedly poll `LIST`. DSI Studio
+cannot use `WAIT` to restart an agent process that has exited.
 
 ## Attach chat without duplication
 
