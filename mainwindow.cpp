@@ -66,7 +66,26 @@ QString find_codex_executable()
             return executable;
     return {};
 }
-
+QStringList find_claude_models()
+{
+    auto base_url = qEnvironmentVariable("ANTHROPIC_BASE_URL");
+    if(base_url.isEmpty())
+        return {};
+    QNetworkRequest request(QUrl(base_url).resolved(QUrl("/api/tags")));
+    request.setTransferTimeout(3000);
+    QNetworkAccessManager manager;
+    auto* reply = manager.get(request);
+    QEventLoop loop;
+    connect(reply,&QNetworkReply::finished,&loop,&QEventLoop::quit);
+    loop.exec();
+    QStringList models;
+    if(reply->error() == QNetworkReply::NoError)
+        for(const auto& model : QJsonDocument::fromJson(
+                                     reply->readAll()).object()["models"].toArray())
+            models << model.toObject()["name"].toString();
+    reply->deleteLater();
+    return models;
+}
 QString find_claude_executable()
 {
     auto executable = QStandardPaths::findExecutable("claude");
