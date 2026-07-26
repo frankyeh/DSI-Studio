@@ -10,6 +10,8 @@
 #include <QNetworkRequest>
 #include <QNetworkReply>
 #include <QJsonArray>
+#include <QMap>
+#include <QJsonObject>
 
 
 namespace Ui {
@@ -26,10 +28,10 @@ class MainWindow : public QMainWindow
 
 public:
     std::map<QString,QJsonArray> ai_prompts;
-    QMap<QString,QJsonArray> ai_history;
+    QString ai_project_dir;
+    QMap<QString,QJsonArray> ai_projects;
     void add_ai_history(const QString&,const QString&,const QString&);
-    void show_ai_history(const QString&);
-    void load_ai_history(void);
+    void show_ai_project(const QString&,QJsonObject = {});
 public:
     QNetworkAccessManager manager;
     QSharedPointer<QNetworkReply> get(QUrl url);
