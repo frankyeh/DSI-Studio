@@ -197,6 +197,9 @@ is running, DSI Studio starts:
 codex exec resume <session> <prompt>
 ```
 
+DSI Studio locates Codex through `PATH`, then the newest executable under
+`%LOCALAPPDATA%\OpenAI\Codex\bin`.
+
 The executable and each argument are passed directly without a shell. Codex
 resumes the same session and receives the text as its next user prompt. If
 Codex cannot be started or is already running for that project, DSI Studio
