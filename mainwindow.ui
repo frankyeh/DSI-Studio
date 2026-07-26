@@ -197,6 +197,12 @@ QWidget#tab_8 QPushButton#ai_project_title {
     padding: 6px 2px;
     text-align: left;
 }
+QWidget#tab_8 QPushButton#ai_project_title:hover {
+    background-color: #e9e9eb;
+}
+QWidget#tab_8 QPushButton#ai_project_title:pressed {
+    background-color: #dddddf;
+}
 QToolButton#ai_project_menu_button {
     background: transparent;
     border: 0;
