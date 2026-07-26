@@ -8,7 +8,10 @@ Use this file for transport and session rules. Use
 - Run on the same Windows computer as an AI-enabled DSI Studio.
 - Keep one stable agent ID for the task. Codex uses `@C` plus a prefix of
   `CODEX_THREAD_ID`, and sends the full ID as `session`.
-- Send JSON only. An existing filename is the sole legacy non-JSON request.
+- Use GUI control by default. Use `run_cli` only when the user explicitly asks
+  for CLI operation.
+- Send control requests as JSON. To open an existing local file in the GUI,
+  send its absolute filename directly; this is the only non-JSON request.
 - Use the `dsi-studio` named pipe. Do not launch `dsi_studio.exe` per command.
 
 ## PowerShell client
@@ -82,24 +85,40 @@ may follow as `PROMPT<TAB><JSON>`. `CMD` returns an array of
 Commands in a batch run in order and stop at the first error. Do not batch an
 asynchronous command with work that depends on its completion.
 
+## Open a local file in the GUI
+
+When only the main window exists, open an `.fz`, `.sz`, or image by sending its
+absolute filename directly—not as `CMD`, `run_cli`, or `open_fib`:
+
+```powershell
+$path = (Resolve-Path 'C:\data\subject.fz').Path
+Invoke-DsiPipe $path
+$list = Invoke-Dsi @{request='LIST'}
+```
+
+Poll `LIST` for the new `tracking` or `image` window. `open_fib` targets an
+already-open tracking window; it cannot create the first tracking window from
+the main window.
+
 ## Required behavior
 
-1. Call `LIST` before the first command and after windows open or close.
-2. Target `main`, `tracking`, or `image` windows by the returned ID.
-3. Discover names and values with `list_slice`, `list_region`, `list_tract`,
+1. Prefer GUI windows and commands unless the user explicitly requests CLI.
+2. Call `LIST` before the first command and after windows open or close.
+3. Target `main`, `tracking`, or `image` windows by the returned ID.
+4. Discover names and values with `list_slice`, `list_region`, `list_tract`,
    `list_param`, `list_atlas`, `list_unet`, and `list_auto_tract`.
-4. Treat `okay:true` as acceptance. Poll the relevant list/status command for
+5. Treat `okay:true` as acceptance. Poll the relevant list/status command for
    asynchronous work and use `LOG` for errors.
-5. On `window not found`, refresh `LIST` once; never repeat the stale ID.
-6. Verify exported files before reporting success.
-7. Ask before overwriting/deleting files or replacing unsaved regions/tracts.
-8. Put only new user-facing text in `chat`; never send reasoning or tool output.
-9. Send the final answer once on the final `LOG`.
+6. On `window not found`, refresh `LIST` once; never repeat the stale ID.
+7. Verify exported files before reporting success.
+8. Ask before overwriting/deleting files or replacing unsaved regions/tracts.
+9. Put only new user-facing text in `chat`; never send reasoning or tool output.
+10. Send the final answer once on the final `LOG`.
 
 ## DSI-initiated Codex turns
 
 DSI Studio may resume the saved task with
 `codex exec resume <session> <prompt>`. Contact the named pipe, do the work,
 send progress through `chat` only when useful, send the final answer on `LOG`,
-then exit. DSI Studio displays a waiting indicator, ignores CLI diagnostic
-output as chat, and stops a process that remains after the final reply.
+then continue any returned `PROMPT` and exit naturally when none remains. DSI
+Studio displays a waiting indicator and ignores CLI diagnostic output as chat.
