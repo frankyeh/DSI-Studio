@@ -1,11 +1,15 @@
 # DSI Studio AI Command Manual
 
-Read `DSI_STUDIO_AI_SETUP.md` first. Read the operating rules and common
-syntax below, then search the inventory only for commands needed by the task.
+Read `DSI_STUDIO_AI_SETUP.md` completely. Read the operating rules and common
+syntax below, then search this manual only for commands needed by the request;
+do not read the entire inventory.
 
 ## Operating rules
 
-- Use `LIST` to obtain fresh window IDs: `main`, `tracking`, or `image`.
+- Each named-pipe connection sends exactly one request and then closes.
+- Use `LIST` to obtain fresh windows, then target only its numeric window ID.
+  Never send `main`, `tracking`, `image`, a title, or a filename as `window`.
+- In DSI Studio, FIB means `.fz`; never substitute `.sz`, which is an SRC file.
 - Use GUI control by default. Use `run_cli` only when the user explicitly asks
   for CLI operation.
 - Commands and every parameter are JSON strings. Never guess names or indices.
