@@ -10,6 +10,8 @@ do not read the entire inventory.
 - Send separate non-empty `agent` and `session` strings and reuse the exact
   pair. `agent` must not contain `@`; DSI Studio identifies it as
   `agent@session`.
+- Every `CMD`, including `list_*`, requires a numeric `window` from the latest
+  `LIST`.
 - Use `LIST` to obtain fresh windows, then target only its numeric window ID.
   Never send `main`, `tracking`, `image`, a title, or a filename as `window`.
 - In DSI Studio, FIB means `.fz`; never substitute `.sz`, which is an SRC file.
@@ -28,16 +30,27 @@ do not read the entire inventory.
 | Need | Command |
 |---|---|
 | Windows | JSON `LIST` request |
-| Recent FIB (`.fz`) files | `list_recent_fib` |
-| Recent SRC (`.sz`) files | `list_recent_src` |
+| Recent FIB (`.fz`) files | Main: `list_recent_fib` |
+| Recent SRC (`.sz`) files | Main: `list_recent_src` |
 | Slices | `list_slice` |
 | Regions and ROI/ROA type, color, resolution | `list_region` |
-| Tracts and visible/deleted counts | `list_tract` |
+| Tracts and visible/deleted counts | Tracking: `list_tract` |
 | One GUI parameter | `list_param`, exact parameter ID |
 | Atlases | `list_atlas` |
 | Segmentation models and descriptions | `list_unet` |
 | Automatic tract names | `list_auto_tract` |
 | Console/errors | JSON `LOG` request |
+
+## Reply formats
+
+- `LIST`, `LOG`, filename-open replies, and validation errors are text.
+- `LIST` lines are `type<TAB>numeric-id<TAB>title`; there is no `.windows`
+  property.
+- A `CMD` reply beginning with `[` is a JSON array of
+  `{index,okay,output,error?}`. Apply `ConvertFrom-Json` only to that reply,
+  never inside the pipe helper.
+- List-command results remain tab-separated text in `result[0].output`; there
+  are no `.tracks`, `.regions`, or similar properties.
 
 ## Common syntax
 
