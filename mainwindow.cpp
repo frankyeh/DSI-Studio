@@ -285,7 +285,27 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     if(type == "LIST")
         return ai_request_list(socket,agent);
     if(type == "LOG")
-        return ai_request_log(socket,agent);
+    {
+        ai_request_log(socket,agent);
+        if(!chat.isEmpty())
+            if(auto* process = main_window->ai_processes.value(agent))
+            {
+                tipl::out() << "AI Codex final reply received agent="
+                            << agent.toStdString();
+                main_window->ui->ai_control_status->setText("Finishing Codex…");
+                QTimer::singleShot(1500,process,[process]
+                {
+                    if(process->state() != QProcess::NotRunning)
+                        process->terminate();
+                });
+                QTimer::singleShot(3000,process,[process]
+                {
+                    if(process->state() != QProcess::NotRunning)
+                        process->kill();
+                });
+            }
+        return;
+    }
     if(type == "CMD")
         return ai_request_command(socket,agent,request);
     ai_reply(socket,agent,"ERROR\tunknown request");
@@ -507,7 +527,8 @@ void MainWindow::on_ai_send_message_clicked()
         "\n\n[DSI Studio] Reply through the DSI Studio local server using "
         "agent "+agent+" and session "+session+". Send user-facing progress "
         "with the JSON chat field and attach the final answer once to a LOG "
-        "request. Do not use Codex CLI output as the reply.";
+        "request. After that LOG succeeds, finish the turn and exit immediately. "
+        "Do not use Codex CLI output as the reply.";
     tipl::out() << "AI Codex resume agent=" << agent.toStdString()
                 << " executable=" << codex.toStdString()
                 << " prompt_chars=" << text.size();
