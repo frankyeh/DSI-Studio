@@ -46,6 +46,21 @@
 QString access_token;
 extern MainWindow* main_window;
 
+static QString find_codex_executable()
+{
+    auto executable = QStandardPaths::findExecutable("codex");
+    if(!executable.isEmpty())
+        return executable;
+
+    QDir dir(QStandardPaths::writableLocation(
+                 QStandardPaths::GenericDataLocation)+"/OpenAI/Codex/bin");
+    for(const auto& name : dir.entryList(
+            QDir::Dirs|QDir::NoDotAndDotDot,QDir::Time))
+        if(QFileInfo::exists(executable = dir.filePath(name+"/codex.exe")))
+            return executable;
+    return {};
+}
+
 static void ai_reply(QLocalSocket* socket,const QString& agent,
                      QByteArray reply,QJsonArray* results = nullptr)
 {
@@ -387,10 +402,8 @@ void MainWindow::on_ai_send_message_clicked()
     add_ai_history(agent,"user",text);
     ui->ai_chat_input->clear();
     auto session = ai_sessions.value(agent);
-    auto codex = QStandardPaths::findExecutable("codex");
-    if(codex.isEmpty())
-        codex = "codex";
-    if(!agent.startsWith("@C") || session.isEmpty() ||
+    auto codex = find_codex_executable();
+    if(!agent.startsWith("@C") || session.isEmpty() || codex.isEmpty() ||
        ai_processes.contains(agent))
     {
         ai_prompts[agent].append(text);
