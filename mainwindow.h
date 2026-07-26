@@ -30,7 +30,7 @@ class MainWindow : public QMainWindow
 
 public:
     std::map<QString,QJsonArray> ai_prompts;
-    QMap<QString,QString> ai_sessions,ai_work_dirs;
+    QMap<QString,QString> ai_sessions,ai_work_dirs,ai_project_titles;
     QMap<QString,QProcess*> ai_processes;
     QString ai_project_dir;
     QMap<QString,QJsonArray> ai_projects;
