@@ -34,7 +34,10 @@ param(
     [string]$Target,
 
     [Parameter(Position=2,ValueFromRemainingArguments)]
-    [string[]]$Command
+    [string[]]$Command,
+
+    [Parameter()]
+    [string]$Chat
 )
 
 $separator = $Identity.IndexOf('@')
@@ -91,10 +94,14 @@ $request = [ordered]@{
     cwd = (Get-Location).Path
     request = $Target.ToUpper()
 }
+if($Chat)
+{
+    $request.chat = $Chat
+}
 
 if($request.request -eq 'LOG')
 {
-    if($Command.Count)
+    if(!$Chat -and $Command.Count)
     {
         $request.chat = $Command -join ' '
     }
@@ -132,17 +139,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\dsi_agent.ps1 `
 
 ```powershell
 # Discover windows.
-.\dsi_agent.ps1 myagent@session1 LIST
+.\dsi_agent.ps1 -Chat "Connecting and checking open windows." `
+    myagent@session1 LIST
 
 # Use a numeric ID returned by LIST.
-.\dsi_agent.ps1 myagent@session1 2 list_region
+.\dsi_agent.ps1 -Chat "Inspecting current regions before editing." `
+    myagent@session1 2 list_region
 
 # Parameters containing spaces remain one quoted argument.
 .\dsi_agent.ps1 myagent@session1 2 set_region_name 0 "Tumor Core"
 
 # Incremental diagnostics and final user-facing reply.
 .\dsi_agent.ps1 myagent@session1 LOG
-.\dsi_agent.ps1 myagent@session1 LOG "Task completed."
+.\dsi_agent.ps1 -Chat "Task completed." myagent@session1 LOG
 ```
 
 Always use the numeric window ID returned by the latest `LIST`; never use a
@@ -172,6 +181,19 @@ from the latest `LIST`. Use the `main` window ID for `list_recent_fib` and
 
 A queued user prompt may follow a text reply as `PROMPT<TAB><JSON>` or appear
 in the last command result's `prompt` property. Treat it as new user input.
+
+## Progress chat
+
+DSI Studio's activity history shows which commands ran but cannot explain why
+the agent ran them. Attach a short `chat` update to the next necessary JSON
+request so the user can follow the agent's intent in the AI Agents tab.
+
+Send one concise sentence at task start, before each meaningful phase, when
+waiting for a long operation, when blocked, and at completion. Do not expose
+reasoning, logs, or tool details. Do not repeat unchanged status, attach chat to
+every polling request, or create a separate request only to report status.
+`OPEN` uses filename transport, so attach its intent to the nearest necessary
+`LIST` or `CMD`.
 
 ## Opening local files
 
@@ -211,7 +233,8 @@ path into fields, or substitute `add_image`. Refresh `LIST` afterward.
 6. On `window not found`, refresh `LIST` once and do not repeat the stale ID.
 7. Verify outputs. Ask before destructive operations or overwrites.
 8. Do not answer modal dialogs remotely; tell the user what is required.
-9. Put only new user-facing text in `chat`; never include reasoning/tool output.
+9. Keep the user informed with brief intent-focused `chat` updates at meaningful
+   phase changes, attached to requests already needed for the task.
 10. Send the final answer once with the final `LOG`.
 11. Minimize round trips: one initial `LIST`, only necessary commands, concise
     verification, and final `LOG`.
