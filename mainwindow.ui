@@ -361,64 +361,6 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
               </property>
              </widget>
             </item>
-            <item>
-             <layout class="QHBoxLayout" name="ai_projects_header_layout">
-              <item>
-               <widget class="QLineEdit" name="ai_project_filter">
-                <property name="placeholderText">
-                 <string>Search projects</string>
-                </property>
-                <property name="clearButtonEnabled">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <widget class="QFrame" name="ai_sidebar_status">
-              <property name="styleSheet">
-               <string notr="true">QFrame#ai_sidebar_status { border: 0px; border-top: 1px solid #d8d8d8; background-color: transparent; }</string>
-              </property>
-              <layout class="QHBoxLayout" name="ai_sidebar_status_layout">
-               <property name="leftMargin">
-                <number>2</number>
-               </property>
-               <property name="topMargin">
-                <number>6</number>
-               </property>
-               <property name="rightMargin">
-                <number>2</number>
-               </property>
-               <property name="bottomMargin">
-                <number>2</number>
-               </property>
-               <item>
-                <widget class="QLabel" name="ai_control_status">
-                 <property name="styleSheet">
-                  <string notr="true">QLabel { color: #208020; background-color: transparent; font-weight: bold; }</string>
-                 </property>
-                 <property name="text">
-                  <string>● Ready</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <spacer name="ai_sidebar_status_spacer">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>10</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
-              </layout>
-             </widget>
-            </item>
            </layout>
           </widget>
           <widget class="QWidget" name="ai_conversation_panel" native="true">
