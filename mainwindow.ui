@@ -185,8 +185,7 @@ QWidget#tab_8 QPushButton:pressed,
 QWidget#tab_8 QToolButton:pressed {
     background-color: #dddddf;
 }
-QPushButton#ai_new_codex_chat,
-QPushButton#ai_new_claude_chat {
+QPushButton#ai_new_chat {
     background-color: #ffffff;
     font-size: 9pt;
     font-weight: bold;
@@ -320,7 +319,7 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
             <item>
              <layout class="QHBoxLayout" name="ai_new_chat_layout">
               <item>
-               <widget class="QPushButton" name="ai_new_codex_chat">
+               <widget class="QPushButton" name="ai_new_chat">
                 <property name="minimumSize">
                  <size>
                   <width>0</width>
