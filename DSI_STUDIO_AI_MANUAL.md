@@ -41,6 +41,7 @@ Parameters shown below are separate JSON array elements.
 | Hub files | `["hub","files",repo,tag,filter,offset,limit]` |
 | Open Hub file | `["hub","open",repo,tag,file]` |
 | Download Hub file | `["hub","download",repo,tag,file,directory]` |
+| Open local images together | `["open_image",file1,file2,...]` |
 | Run CLI action | `["run_cli","--action=rec --loop=C:\\data\\*.sz --method=4"]` |
 | Select slice | `["set_slice",zero-based-index]` |
 | Move slices | `["move_slice","x y z"]` |
@@ -60,6 +61,26 @@ Parameters shown below are separate JSON array elements.
 only the main window exists, send its absolute filename directly through the
 named pipe, then poll `LIST`. Do not send the path as a main-window `CMD`;
 `open_fib` requires an existing tracking window.
+
+For multiple images, send one `open_image` command to the main window. The
+first image is displayed and the remaining paths are retained for batch
+processing:
+
+```text
+["open_image","C:\\data\\t1w1.nii.gz","C:\\data\\t1w2.nii.gz","C:\\data\\t1w3.nii.gz"]
+```
+
+Refresh `LIST`, target the new `image` window, and send processing commands
+such as `["smoothing_filter"]`. Saving over the first original with
+`["save","C:\\data\\t1w1.nii.gz"]` opens the existing confirmation:
+`Applying processing to other images and save them?`
+
+This is a human-confirmed destructive workflow. Obtain overwrite permission
+before `save`, do not answer the modal remotely, and do not batch `save` with
+other commands. If the user selects **Yes**, DSI Studio replays smoothing and
+saving for the remaining files, mapping each output to its original filename.
+If the user selects **No**, only the first image is saved. Verify all expected
+files after the dialog closes.
 
 `run_cli` takes one complete DSI Studio argument string, requires `--action`,
 and is not a shell. For an explicitly requested CLI batch, prefer one wildcard
@@ -186,6 +207,7 @@ already grants it.
 | `image-transform` | `upsampling` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
 | `image-transform` | `warp_to_image` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
 | `main` | `list_recent` | `0` | Read-only | Immediate list. |
+| `main` | `open_image` | `1+` | GUI-state change | Opens one O1 window; additional images are retained for confirmed batch processing. |
 | `main` | `run_cli` | `1` | Varies | Synchronous CLI action on GUI thread; verify outputs. |
 | `main` | `hub download` | `4` | File creation | Deferred file write; verify path and stable size. |
 | `main` | `hub files` | `2-5` | GUI-state change | Immediate filtered/paginated list; retry if Hub data is loading. |
