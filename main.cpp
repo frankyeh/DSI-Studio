@@ -576,7 +576,6 @@ int main(int ac, char *av[])
                 QLocalSocket *clientSocket = server.nextPendingConnection();
                 if (clientSocket)
                 {
-                    tipl::out() << "local server connection accepted";
                     clientSocket->waitForReadyRead(500);
                     auto request = clientSocket->readAll();
                     if(request.trimmed().startsWith('{'))
