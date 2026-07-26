@@ -66,6 +66,16 @@ static QString find_codex_executable()
     return {};
 }
 
+static QString find_claude_executable()
+{
+    auto executable = QStandardPaths::findExecutable("claude");
+#ifdef Q_OS_WIN
+    if(executable.isEmpty())
+        executable = QDir::homePath()+"/.local/bin/claude.exe";
+#endif
+    return QFileInfo::exists(executable) ? executable : QString();
+}
+
 static void ai_reply(QLocalSocket* socket,const QString& agent,
                      QByteArray reply,QJsonArray* results = nullptr)
 {
@@ -544,7 +554,7 @@ void MainWindow::on_ai_new_chat_clicked()
     ui->ai_chat_input->setFocus();
 }
 
-void MainWindow::start_codex(const QString& agent,const QString& text,
+void MainWindow::start_ai(const QString& agent,const QString& text,
                              bool add_history)
 {
     auto codex = find_codex_executable();
@@ -727,7 +737,7 @@ void MainWindow::start_codex(const QString& agent,const QString& text,
             if(!pending.isEmpty())
             {
                 process->deleteLater();
-                start_codex(agent,pending.join("\n\n"),false);
+                start_ai(agent,pending.join("\n\n"),false);
                 return;
             }
             show_ai_project(agent);
@@ -796,7 +806,7 @@ void MainWindow::on_ai_send_message_clicked()
         ui->ai_chat_input->clear();
         return;
     }
-    start_codex(agent,text,true);
+    start_ai(agent,text,true);
 }
 
 
