@@ -15,6 +15,8 @@
 #include <QShortcut>
 #include <QProcess>
 #include <QUuid>
+#include <QTimer>
+#include <QScrollBar>
 
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -370,6 +372,11 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
         append(added);
 
     ui->ai_chat_history->ensureCursorVisible();
+    QTimer::singleShot(0,ui->ai_chat_history,[this]
+    {
+        auto* bar = ui->ai_chat_history->verticalScrollBar();
+        bar->setValue(bar->maximum());
+    });
     ui->ai_connected_agent->setText("Agent: "+name+" "+agent);
     ui->ai_control_status->setText("● Active");
 }
@@ -416,16 +423,10 @@ void MainWindow::on_ai_send_message_clicked()
     if(QDir(ai_work_dirs.value(agent)).exists())
         process->setWorkingDirectory(ai_work_dirs[agent]);
 
-    auto output = [=](const QByteArray& data)
-    {
-        auto text = QString::fromUtf8(data).trimmed();
-        if(!text.isEmpty())
-            add_ai_history(agent,"activity",text);
-    };
     connect(process,&QProcess::readyReadStandardOutput,this,
-            [=]{output(process->readAllStandardOutput());});
+            [=]{process->readAllStandardOutput();});
     connect(process,&QProcess::readyReadStandardError,this,
-            [=]{output(process->readAllStandardError());});
+            [=]{process->readAllStandardError();});
     connect(process,&QProcess::started,this,
             [=]{ui->ai_control_status->setText("● Codex running");});
     connect(process,&QProcess::errorOccurred,this,[=](QProcess::ProcessError error)
@@ -447,7 +448,12 @@ void MainWindow::on_ai_send_message_clicked()
         process->deleteLater();
     });
     ui->ai_control_status->setText("● Starting Codex");
-    process->start(codex,{"exec","resume",session,text});
+    auto prompt = text+
+        "\n\n[DSI Studio] Reply through the DSI Studio local server using "
+        "agent "+agent+" and session "+session+". Send user-facing progress "
+        "with the JSON chat field and attach the final answer once to a LOG "
+        "request. Do not use Codex CLI output as the reply.";
+    process->start(codex,{"exec","resume",session,prompt});
 }
 
 
