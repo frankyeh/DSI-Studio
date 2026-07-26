@@ -922,7 +922,7 @@ MainWindow::MainWindow(QWidget *parent) :
         "QMenu::item:selected{background:#e9e9eb;}"
         "QMenu::item:disabled{color:#9a9a9e;}"
         "QMenu::separator{height:1px;background:#dedee1;margin:4px;}");
-    for(auto name : {"Rename","Share"})
+    for(auto name : {"Rename","Details..."})
         ai_project_menu->addAction(name)->setEnabled(false);
     ai_project_menu->addSeparator();
 
@@ -962,8 +962,13 @@ MainWindow::MainWindow(QWidget *parent) :
     });
 
     connect(ui->ai_project_list,&QListWidget::currentItemChanged,this,
-            [this](QListWidgetItem* item,QListWidgetItem*)
+            [this](QListWidgetItem* item,QListWidgetItem* previous)
     {
+        for(auto* i : {previous,item})
+            if(i)
+                ui->ai_project_list->itemWidget(i)->
+                    findChild<QPushButton*>("ai_project_title")->
+                    setStyleSheet(i == item ? "background:#dce9f9;" : "");
         if(item)
             show_ai_project(item->data(Qt::UserRole).toString());
         else
