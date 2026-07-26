@@ -100,8 +100,9 @@ Poll `LIST` for the new `tracking` or `image` window. `open_fib` targets an
 already-open tracking window; it cannot create the first tracking window from
 the main window.
 
-To open multiple local images together in one O1 image window, target the main
-window with JSON `CMD`:
+To open multiple local images together in one O1 image window, send exactly
+one flat `open_image` command to the `main` window. Put every complete absolute
+filepath in that same command:
 
 ```powershell
 Invoke-Dsi @{
@@ -110,8 +111,10 @@ Invoke-Dsi @{
 }
 ```
 
-Then refresh `LIST`. The direct non-JSON filename transport opens only one
-file.
+Do not send a batch of separate `open_image` commands, target an existing
+`image` window, split a directory and filename into separate parameters, or
+use `add_image`; none of these creates the retained batch-file list. Then
+refresh `LIST`. The direct non-JSON filename transport opens only one file.
 
 ## Required behavior
 
