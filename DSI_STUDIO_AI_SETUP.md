@@ -78,11 +78,18 @@ strings; a batch is an array of command arrays. Keep a parameter containing
 spaces as one element.
 
 `LIST` and `LOG` are text replies beginning with `OKAY`. Diagnostic `LOG`
-returns at most 16 KB generated since this agent's previous `LOG`; use it only
-when needed. `LOG` with `chat` stores the final reply but returns no console
-history. A queued user prompt may follow as `PROMPT<TAB><JSON>`. `CMD` returns an array of
+returns at most 4096 new console characters since this agent's previous
+`LOG`, or since its first valid request; use it only when needed. Every `LOG`
+advances that cursor. The console is global, so concurrent agents may see each
+other's new DSI output. `LOG` with `chat` stores the final reply but returns no
+console history. Local AI trace lines marked `[AI AGENT]` are omitted. A
+queued user prompt may follow as `PROMPT<TAB><JSON>`. `CMD` returns an array of
 `{index,okay,output,error?}`; a queued prompt is the last result's optional
 `prompt` property. Process prompts as new user input.
+
+`[AI REQUEST]` groups and their closing `⏱` lines remain in diagnostic output.
+They measure DSI Studio's server-side `LIST` or `CMD` handling, including
+synchronous command execution—not agent runtime or asynchronous completion.
 
 Commands in a batch run in order and stop at the first error. Do not batch an
 asynchronous command with work that depends on its completion.
