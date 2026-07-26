@@ -18,10 +18,12 @@ $DsiAgent = '<agent name>'
 $DsiSession = '<session name>'
 ```
 
-## Universal client
+## PowerShell client
 
-Run on the same Windows computer as DSI Studio. If `dsi.ps1` does not exist
-beside `dsi_studio.exe`, create it there once with this exact content:
+Run on the same Windows computer as DSI Studio. Create one PowerShell client
+for the current AI conversation, for example `dsi_agent.ps1`, using this exact
+template. Save it in the agent's working directory and reuse it for every
+request in that conversation.
 
 ```powershell
 param(
@@ -77,7 +79,7 @@ if($Target -eq 'OPEN')
 {
     if($Command.Count -ne 1)
     {
-        Write-Error 'Usage: .\dsi.ps1 agent@session OPEN <file>'
+        Write-Error 'Usage: <client.ps1> agent@session OPEN <file>'
         exit 2
     }
     exit (Invoke-DsiStudio (Resolve-Path -LiteralPath $Command[0]).Path)
@@ -101,7 +103,7 @@ elseif($request.request -ne 'LIST')
 {
     if($Target -notmatch '^\d+$' -or !$Command.Count)
     {
-        Write-Error 'Usage: .\dsi.ps1 agent@session <window-id> <command> [parameters...]'
+        Write-Error 'Usage: <client.ps1> agent@session <window-id> <command> [parameters...]'
         exit 2
     }
     $request.request = 'CMD'
@@ -115,14 +117,14 @@ exit (Invoke-DsiStudio $json)
 
 Use the same `agent@session` identity for the entire conversation. Each script
 invocation sends exactly one request through `dsi_studio.exe` and exits. Use
-this script directly; do not create another PowerShell, Python, batch, or
-temporary client.
+the same generated script for all requests; do not regenerate it per request
+or create additional PowerShell, Python, or batch clients.
 
 If Windows blocks direct script execution, do not change the user's execution
 policy. Invoke the same file with:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\dsi.ps1 `
+powershell -NoProfile -ExecutionPolicy Bypass -File .\dsi_agent.ps1 `
     myagent@session1 LIST
 ```
 
@@ -130,17 +132,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\dsi.ps1 `
 
 ```powershell
 # Discover windows.
-.\dsi.ps1 myagent@session1 LIST
+.\dsi_agent.ps1 myagent@session1 LIST
 
 # Use a numeric ID returned by LIST.
-.\dsi.ps1 myagent@session1 2 list_region
+.\dsi_agent.ps1 myagent@session1 2 list_region
 
 # Parameters containing spaces remain one quoted argument.
-.\dsi.ps1 myagent@session1 2 set_region_name 0 "Tumor Core"
+.\dsi_agent.ps1 myagent@session1 2 set_region_name 0 "Tumor Core"
 
 # Incremental diagnostics and final user-facing reply.
-.\dsi.ps1 myagent@session1 LOG
-.\dsi.ps1 myagent@session1 LOG "Task completed."
+.\dsi_agent.ps1 myagent@session1 LOG
+.\dsi_agent.ps1 myagent@session1 LOG "Task completed."
 ```
 
 Always use the numeric window ID returned by the latest `LIST`; never use a
@@ -176,8 +178,8 @@ in the last command result's `prompt` property. Treat it as new user input.
 When only the main window exists, send one absolute filename:
 
 ```powershell
-.\dsi.ps1 myagent@session1 OPEN 'C:\data\subject.fz'
-.\dsi.ps1 myagent@session1 LIST
+.\dsi_agent.ps1 myagent@session1 OPEN 'C:\data\subject.fz'
+.\dsi_agent.ps1 myagent@session1 LIST
 ```
 
 Poll `LIST` for the new numeric `tracking` or `image` window ID. `open_fib`
@@ -190,7 +192,7 @@ To open multiple images in one O1 window, send one flat command to the numeric
 main-window ID:
 
 ```powershell
-.\dsi.ps1 myagent@session1 1 open_image `
+.\dsi_agent.ps1 myagent@session1 1 open_image `
     'C:\data\a.nii.gz' 'C:\data\b.nii.gz'
 ```
 
