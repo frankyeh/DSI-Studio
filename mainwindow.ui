@@ -234,6 +234,41 @@ QPushButton#ai_send_message:hover {
 QPushButton#ai_send_message:pressed {
     background-color: #000000;
 }
+QComboBox#ai_agent_selector,
+QComboBox#ai_model_selector {
+    color: #202124;
+    background-color: #f7f7f8;
+    border: 1px solid #d9d9dc;
+    border-radius: 6px;
+    padding: 4px 24px 4px 8px;
+    min-height: 22px;
+}
+QComboBox#ai_agent_selector:hover,
+QComboBox#ai_model_selector:hover {
+    background-color: #eeeeef;
+    border-color: #c8c8cc;
+}
+QComboBox#ai_agent_selector:focus,
+QComboBox#ai_model_selector:focus {
+    border-color: #8a8a8f;
+}
+QComboBox#ai_agent_selector::drop-down,
+QComboBox#ai_model_selector::drop-down {
+    border: 0;
+    width: 22px;
+}
+QComboBox#ai_agent_selector QAbstractItemView,
+QComboBox#ai_model_selector QAbstractItemView {
+    background-color: #ffffff;
+    border: 1px solid #d9d9dc;
+    selection-background-color: #e5e5e7;
+    selection-color: #202124;
+}
+QLabel#ai_control_status {
+    color: #2e7d32;
+    background-color: transparent;
+    padding: 4px 6px;
+}
 QTextBrowser#ai_chat_history QScrollBar:vertical {
     background: transparent;
     width: 8px;
@@ -414,10 +449,7 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
               <property name="styleSheet">
                <string notr="true">QFrame#ai_chat_composer { border: 1px solid #b8b8b8; border-radius: 9px; background-color: white; }</string>
               </property>
-              <layout class="QHBoxLayout" name="ai_chat_composer_layout">
-               <property name="spacing">
-                <number>8</number>
-               </property>
+              <layout class="QGridLayout" name="ai_chat_composer_layout">
                <property name="leftMargin">
                 <number>8</number>
                </property>
@@ -430,7 +462,129 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
                <property name="bottomMargin">
                 <number>7</number>
                </property>
-               <item>
+               <property name="spacing">
+                <number>8</number>
+               </property>
+               <item row="1" column="0">
+                <widget class="QLabel" name="ai_control_status">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>● Ready</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="3">
+                <widget class="QComboBox" name="ai_agent_selector">
+                 <property name="minimumSize">
+                  <size>
+                   <width>120</width>
+                   <height>32</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>160</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>Codex</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Claude</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item row="1" column="4">
+                <widget class="QComboBox" name="ai_model_selector">
+                 <property name="minimumSize">
+                  <size>
+                   <width>180</width>
+                   <height>32</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>280</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="sizeAdjustPolicy">
+                  <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+                 </property>
+                 <property name="minimumContentsLength">
+                  <number>18</number>
+                 </property>
+                 <item>
+                  <property name="text">
+                   <string>Default model</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <spacer name="ai_composer_status_spacer">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item row="1" column="5">
+                <widget class="QPushButton" name="ai_send_message">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>82</width>
+                   <height>30</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>92</width>
+                   <height>34</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <bold>true</bold>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Send</string>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="icons.qrc">
+                   <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
+                 </property>
+                 <property name="default">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="0" colspan="6">
                 <widget class="QPlainTextEdit" name="ai_chat_input">
                  <property name="minimumSize">
                   <size>
@@ -449,43 +603,6 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
                  </property>
                  <property name="placeholderText">
                   <string>Message the AI agent…  Ctrl+Enter to send</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="ai_send_message">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>82</width>
-                   <height>40</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>92</width>
-                   <height>64</height>
-                  </size>
-                 </property>
-                 <property name="font">
-                  <font>
-                   <bold>true</bold>
-                  </font>
-                 </property>
-                 <property name="text">
-                  <string>Send</string>
-                 </property>
-                 <property name="icon">
-                  <iconset resource="icons.qrc">
-                   <normaloff>:/icons/icons/run.xpm</normaloff>:/icons/icons/run.xpm</iconset>
-                 </property>
-                 <property name="default">
-                  <bool>true</bool>
                  </property>
                 </widget>
                </item>
