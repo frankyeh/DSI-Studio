@@ -214,6 +214,11 @@ connections, request/reply byte counts, Codex start/finish status, process ID,
 exit code, and total stdout/stderr bytes. Request payloads and CLI diagnostic
 content are not copied into the trace.
 
+The resumed process remains alive while Codex is working. A non-empty `chat`
+on its final `LOG` reply marks the turn complete. DSI Studio asks Codex to exit,
+shows `Finishing Codex…`, then terminates it after 1.5 seconds and kills it
+after 3 seconds only if it has not exited naturally.
+
 ## Attach chat without duplication
 
 `chat` is optional and independent of command execution:
