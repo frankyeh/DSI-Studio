@@ -366,8 +366,6 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
     title->setText(project_title);
     title->setToolTip(project_title);
     item->setSizeHint(row->sizeHint());
-    item->setHidden(!project_title.contains(
-        ui->ai_project_filter->text(),Qt::CaseInsensitive));
 
     if(!added.isEmpty() && added["type"].toString() != "user")
     {
@@ -453,7 +451,8 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
                          cell+"<td width=\"20%\"></td>"));
     };
 
-    if(added.isEmpty())
+    bool working = ai_processes.contains(agent);
+    if(added.isEmpty() || working)
     {
         ui->ai_chat_history->clear();
         for(const auto& entry : history)
@@ -462,14 +461,16 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
     else
         append(added);
 
+    if(working)
+        append(QJsonObject{{"type","assistant"},
+                           {"text","● Codex is working…"}});
+
     ui->ai_chat_history->ensureCursorVisible();
     QTimer::singleShot(0,ui->ai_chat_history,[this]
     {
         auto* bar = ui->ai_chat_history->verticalScrollBar();
         bar->setValue(bar->maximum());
     });
-    ui->ai_control_status->setText(
-        ai_processes.contains(agent) ? "Codex is working…" : "● Active");
 }
 
 void MainWindow::stop_ai_blink()
@@ -529,7 +530,6 @@ void MainWindow::on_ai_new_chat_clicked()
     ui->ai_chat_history->clear();
     ui->ai_chat_input->clear();
     ui->ai_chat_input->setFocus();
-    ui->ai_control_status->setText("● New Chat");
 }
 
 void MainWindow::start_codex(const QString& agent,const QString& text,
@@ -667,7 +667,6 @@ void MainWindow::start_codex(const QString& agent,const QString& text,
                            process->errorString());
             show_ai_project(agent);
         }
-        ui->ai_control_status->setText("● Ready");
         process->deleteLater();
     });
 
@@ -705,7 +704,6 @@ void MainWindow::start_codex(const QString& agent,const QString& text,
             }
             show_ai_project(agent);
         }
-        ui->ai_control_status->setText("● Ready");
         process->deleteLater();
     });
 
@@ -751,9 +749,6 @@ void MainWindow::start_codex(const QString& agent,const QString& text,
                 << (session.isEmpty() ? "new chat" : "resume")
                 << " executable=" << codex.toStdString()
                 << " prompt_chars=" << text.size();
-    ui->ai_control_status->setText(
-        session.isEmpty() ? "Starting new Codex chat…" :
-                            "Starting Codex…");
     process->start(codex,args);
 }
 
@@ -777,7 +772,6 @@ void MainWindow::on_ai_send_message_clicked()
         ai_prompts[agent].append(text);
         add_ai_history(agent,"user",text);
         ui->ai_chat_input->clear();
-        ui->ai_control_status->setText("● Queued");
         return;
     }
     start_codex(agent,text,true);
@@ -911,7 +905,6 @@ MainWindow::MainWindow(QWidget *parent) :
         else
         {
             ui->ai_chat_history->clear();
-            ui->ai_control_status->setText("● Ready");
         }
     });
 
@@ -922,14 +915,6 @@ MainWindow::MainWindow(QWidget *parent) :
             show_ai_project(item->data(Qt::UserRole).toString());
         else
             ui->ai_chat_history->clear();
-    });
-
-    connect(ui->ai_project_filter,&QLineEdit::textChanged,this,
-            [this](const QString& text)
-    {
-        for(auto* item : ai_project_items)
-            item->setHidden(
-                !item->text().contains(text,Qt::CaseInsensitive));
     });
 
     for(const auto& info : dir.entryInfoList(
