@@ -39,20 +39,23 @@ adds exact show-only region/tract selection, indexed region name/type/color
 updates, explicit slice targeting for segmentation, unsigned ARGB color
 handling, corrected `set_params` dispatch, `n/a` region-type output, and
 paginated Hub file listing. The next three commits add the JSON request object
-with `agent`, `request`, `window`, `command`, and optional `chat` properties,
+with `agent`, `session`, `cwd`, `request`, `window`, `command`, and optional `chat` properties,
 plus per-agent request and assistant history.
 
 ## Mandatory agent behavior
 
 - Keep one stable, unique, case-sensitive agent ID beginning with `@` for the
   entire session.
-- Send every control request as a JSON object. `LIST`, `CMD`, `LOG`, and `WAIT` exist
+- Send every control request as a JSON object. `LIST`, `CMD`, and `LOG` exist
   only as values of its `request` property; never send standalone text forms.
   An existing filename to open is the only non-JSON request.
 - Add `chat` only when there is new user-facing assistant text for DSI Studio
   to display.
 - Never attach internal reasoning, command output, or previously attached
   chat.
+- Codex agents must use an `@C` agent ID and include the UUID from
+  `CODEX_THREAD_ID` as `session` in every request. Include `cwd` so a resumed
+  Codex process starts in the same project.
 - When DSI Studio should display the final answer, attach it once as `chat` on
   the final JSON `LOG` request.
 
@@ -93,8 +96,7 @@ The server name is exactly `dsi-studio`. On Windows, `QLocalServer` exposes it
 as the named pipe `\\.\pipe\dsi-studio`. Connect to this pipe directly for
 normal AI operation. The server processes one request per connection, writes
 one reply, and disconnects; the client should therefore make a fresh lightweight
-pipe connection for every request. A `WAIT` connection remains open until DSI
-Studio delivers a user prompt.
+pipe connection for every request.
 
 Direct pipe access was operationally verified on 2026-07-25. In a warm
 PowerShell process, measured local round trips were approximately 1 ms (the
@@ -148,13 +150,17 @@ function Invoke-DsiRequest([string]$Request)
     }
 }
 
-$DsiAgentId = '@' + [guid]::NewGuid().ToString('N').Substring(0,12)
+$DsiSessionId = $env:CODEX_THREAD_ID
+if(-not $DsiSessionId) { throw 'CODEX_THREAD_ID is required' }
+$DsiAgentId = '@C' + $DsiSessionId.Substring(0,12)
 
 function Invoke-Dsi([hashtable]$Request)
 {
     if($Request.ContainsKey('agent')) { throw 'Invoke-Dsi supplies the agent ID' }
     $Request = @{} + $Request
     $Request.agent = $DsiAgentId
+    $Request.session = $DsiSessionId
+    $Request.cwd = (Get-Location).Path
     Invoke-DsiRequest ($Request | ConvertTo-Json -Compress -Depth 8)
 }
 
@@ -185,12 +191,11 @@ escaping safely represents paths, spaces, Unicode, tabs, and newlines.
 |---|---|---|
 | Discover | `{"agent":"@id","request":"LIST"}` | Return targetable windows and prompts queued for this agent. |
 | Console | `{"agent":"@id","request":"LOG"}` | Return rolling console history and queued prompts. |
-| Wait | `{"agent":"@id","request":"WAIT"}` | Keep the connection open until a prompt is available. |
 | One command | `{"agent":"@id","request":"CMD","window":"2","command":["command","parameter"]}` | Route one command to one target. |
 | Command batch | `{"agent":"@id","request":"CMD","window":"2","command":[["command","parameter"],["command"]]}` | Run commands sequentially on one target. |
 | Open file | one existing absolute filename | Ask the main window to open a local file. |
 
-`LIST`, `CMD`, `LOG`, and `WAIT` are JSON property values, never standalone wire
+`LIST`, `CMD`, and `LOG` are JSON property values, never standalone wire
 messages. `window` may be a JSON string or number. Tracking and main windows
 accept any number of strings in a command array. Image windows reject more than
 one parameter string with `ERROR` `"too many parameters"`
@@ -205,10 +210,9 @@ session. Do not generate a new ID for each connection and do not share one ID
 between simultaneous agents.
 
 ```json
-{"agent":"@C7f2a","request":"LIST"}
-{"agent":"@C7f2a","request":"CMD","window":"2","command":["list_region"]}
-{"agent":"@C7f2a","request":"LOG"}
-{"agent":"@C7f2a","request":"WAIT"}
+{"agent":"@C7f2a","session":"019f...","cwd":"C:\\work","request":"LIST"}
+{"agent":"@C7f2a","session":"019f...","cwd":"C:\\work","request":"CMD","window":"2","command":["list_region"]}
+{"agent":"@C7f2a","session":"019f...","cwd":"C:\\work","request":"LOG"}
 ```
 
 For a text reply, pending prompts are inserted immediately after the first
@@ -231,29 +235,22 @@ matching agent's queue, and only after the complete reply is written. Multiple
 agents may interleave pipe requests safely when their IDs differ, although all
 GUI command handlers still run serially on Qt's main thread.
 
-After completing a turn, an agent that can remain running should issue `WAIT`
-instead of polling `LIST`:
+The Codex `session` and DSI Studio `agent` values are intentionally different.
+`session` is the real resumable Codex UUID; `agent` keys DSI Studio history and
+queued prompts. DSI Studio records the latest `session` and valid `cwd` from
+request history, including across DSI Studio restarts.
 
-```json
-{"agent":"@C7f2a","request":"WAIT"}
+When the user sends a message from the AI Agents tab, DSI Studio starts Codex
+without a shell:
+
+```text
+codex exec resume <session> <prompt>
 ```
 
-DSI Studio leaves that socket open. A user message sent from the AI Agents tab
-completes it with:
-
-```json
-{"prompt":["Please change the tracking parameters."]}
-```
-
-The agent should process every string in `prompt`, complete the turn, and issue
-another `WAIT`. If prompts were already queued, `WAIT` replies immediately.
-When no waiting socket exists, prompts remain available through the next
-`LIST`, `LOG`, `CMD`, or `WAIT` reply. A second `WAIT` from the same agent
-replaces its previous waiting socket.
-
-`WAIT` does not launch or resume an exited process. Resuming Codex requires a
-real Codex thread/session ID, which is distinct from DSI Studio's `@agent` ID
-and is not stored by this protocol.
+Standard output and error are appended to the project's activity history. If
+the executable is unavailable, the session is missing, or a DSI-launched Codex
+process is already running for that agent, the text remains in the existing
+per-agent queue for delivery in the next `LIST`, `LOG`, or `CMD` reply.
 
 ### User-facing chat attachment
 
@@ -261,7 +258,7 @@ The optional JSON `chat` string adds assistant text to DSI Studio's AI history.
 Attach it only when new user-facing text has been produced:
 
 ```json
-{"agent":"@C7f2a","request":"CMD","window":"2","command":["list_region"],"chat":"I am checking the current regions first."}
+{"agent":"@C7f2a","session":"019f...","cwd":"C:\\work","request":"CMD","window":"2","command":["list_region"],"chat":"I am checking the current regions first."}
 ```
 
 Never attach internal reasoning, raw command output, or text already attached
@@ -272,7 +269,7 @@ When DSI Studio should display the final answer, attach it once to the final
 `LOG` request:
 
 ```json
-{"agent":"@C7f2a","request":"LOG","chat":"The requested tract was created and saved successfully."}
+{"agent":"@C7f2a","session":"019f...","cwd":"C:\\work","request":"LOG","chat":"The requested tract was created and saved successfully."}
 ```
 
 Chat is stored in `ai_chat_history`, not console history, so the `LOG` reply
@@ -1976,6 +1973,11 @@ defers work, or immediate acknowledgement cannot represent completion.
       "request"
     ],
     "agent": "stable unique case-sensitive string beginning with @",
+    "codex_required_properties": [
+      "session"
+    ],
+    "session": "real Codex UUID from CODEX_THREAD_ID; required when agent begins with @C",
+    "cwd": "optional existing project directory used by codex exec resume",
     "LIST": {
       "json": {
         "agent": "@agent_id",
