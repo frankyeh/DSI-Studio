@@ -191,12 +191,10 @@ QPushButton#ai_new_chat {
     font-weight: bold;
     padding: 8px;
 }
-QPushButton#ai_project_title,
-QPushButton#ai_project_title:hover,
-QPushButton#ai_project_title:pressed {
+QWidget#tab_8 QPushButton#ai_project_title {
     background: transparent;
     border: 0;
-    padding: 2px;
+    padding: 6px 2px;
     text-align: left;
 }
 QToolButton#ai_project_menu_button {
