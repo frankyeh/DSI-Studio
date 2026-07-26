@@ -324,12 +324,11 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
                 <property name="minimumSize">
                  <size>
                   <width>0</width>
-                  <height>36</height>
+                  <height>0</height>
                  </size>
                 </property>
                 <property name="text">
-                 <string>New Chat
-Codex</string>
+                 <string>New Chat</string>
                 </property>
                 <property name="icon">
                  <iconset resource="icons.qrc">
@@ -338,34 +337,13 @@ Codex</string>
                </widget>
               </item>
               <item>
-               <widget class="QPushButton" name="ai_new_claude_chat">
-                <property name="minimumSize">
-                 <size>
-                  <width>0</width>
-                  <height>36</height>
-                 </size>
-                </property>
+               <widget class="QPushButton" name="ai_quick_settings">
                 <property name="text">
-                 <string>New Chat
-Claude Code</string>
+                 <string>Settings</string>
                 </property>
                 <property name="icon">
                  <iconset resource="icons.qrc">
-                  <normaloff>:/icons/icons/new.xpm</normaloff>:/icons/icons/new.xpm</iconset>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="ai_projects_header_layout">
-              <item>
-               <widget class="QLineEdit" name="ai_project_filter">
-                <property name="placeholderText">
-                 <string>Search projects</string>
-                </property>
-                <property name="clearButtonEnabled">
-                 <bool>true</bool>
+                  <normaloff>:/icons/icons/preferences.xpm</normaloff>:/icons/icons/preferences.xpm</iconset>
                 </property>
                </widget>
               </item>
@@ -383,6 +361,20 @@ Claude Code</string>
                <enum>QAbstractItemView::SingleSelection</enum>
               </property>
              </widget>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="ai_projects_header_layout">
+              <item>
+               <widget class="QLineEdit" name="ai_project_filter">
+                <property name="placeholderText">
+                 <string>Search projects</string>
+                </property>
+                <property name="clearButtonEnabled">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </item>
             <item>
              <widget class="QFrame" name="ai_sidebar_status">
@@ -427,32 +419,6 @@ Claude Code</string>
                </item>
               </layout>
              </widget>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="ai_project_help_layout">
-              <item>
-               <widget class="QPushButton" name="ai_quick_settings">
-                <property name="text">
-                 <string>Settings</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="icons.qrc">
-                  <normaloff>:/icons/icons/preferences.xpm</normaloff>:/icons/icons/preferences.xpm</iconset>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="ai_view_manual">
-                <property name="text">
-                 <string>Command Manual</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="icons.qrc">
-                  <normaloff>:/icons/icons/report.xpm</normaloff>:/icons/icons/report.xpm</iconset>
-                </property>
-               </widget>
-              </item>
-             </layout>
             </item>
            </layout>
           </widget>
@@ -543,6 +509,12 @@ Claude Code</string>
                </item>
                <item>
                 <widget class="QPushButton" name="ai_send_message">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="minimumSize">
                   <size>
                    <width>82</width>
@@ -552,7 +524,7 @@ Claude Code</string>
                  <property name="maximumSize">
                   <size>
                    <width>92</width>
-                   <height>44</height>
+                   <height>64</height>
                   </size>
                  </property>
                  <property name="font">
