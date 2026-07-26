@@ -294,24 +294,36 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     auto request = doc.object();
     auto agent = request["agent"].toString();
     auto type = request["request"].toString().toUpper();
-    if(!agent.startsWith('@'))
-        return ai_reply(socket,agent,"ERROR\tinvalid agent");
     auto session = request["session"].toString().trimmed();
-    if(agent.startsWith("@C") && QUuid(session).isNull())
-        return ai_reply(socket,agent,"ERROR\tinvalid AI agent session");
+    QUuid uuid(session);
+
+    if(agent.size() < 2 || agent[0] != '@')
+        return ai_reply(socket,agent,"ERROR\tmissing agent: use @C for Codex, @A for Claude Code, @G for Gemini, or another two-character provider ID such as @L");
+    if(uuid.isNull())
+        return ai_reply(socket,agent,"ERROR\tinvalid session: supply one UUID and reuse it for the entire AI conversation");
+
+    session = uuid.toString(QUuid::WithoutBraces);
+    auto expected = agent.left(2)+session.left(12);
+    if(agent != expected)
+        return ai_reply(socket,agent,("ERROR\tagent/session mismatch: use agent "+expected+
+                                        " and reuse session "+session+
+                                        " for the entire AI conversation").toUtf8());
+
     if(!ai_log_positions.contains(agent))
     {
         std::lock_guard<std::mutex> lock(console.edit_buf);
         ai_log_positions[agent] = console.total_size;
     }
+
     tipl::progress p;
     if(type == "LIST" || type == "CMD")
     {
         auto msg = QString("[AI REQUEST] ")+type+" from "+agent;
         p = tipl::progress(msg.remove('\r').replace('\n',' ').toStdString());
     }
-    if(!session.isEmpty())
-        main_window->ai_sessions[agent] = session;
+
+    main_window->ai_sessions[agent] = session;
+
     auto cwd = request["cwd"].toString();
     if(QDir(cwd).exists())
         main_window->ai_work_dirs[agent] = cwd;
