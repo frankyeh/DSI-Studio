@@ -76,6 +76,12 @@ static QString find_claude_executable()
     return QFileInfo::exists(executable) ? executable : QString();
 }
 
+static std::string ai_log(QString text)
+{
+    return ("[AI AGENT] "+text.remove('\r').replace(
+                '\n',"\n[AI AGENT] ")).toStdString();
+}
+
 static void ai_reply(QLocalSocket* socket,const QString& agent,
                      QByteArray reply,QJsonArray* results = nullptr)
 {
@@ -101,8 +107,8 @@ static void ai_reply(QLocalSocket* socket,const QString& agent,
             reply.insert(pos+1,payload);
     }
     auto written = socket->write(reply);
-    tipl::out() << "AI local reply agent=" << agent.toStdString()
-                << " bytes=" << reply.size() << " queued=" << written;
+    tipl::out() << ai_log(QString("local reply agent=%1 bytes=%2 queued=%3")
+                          .arg(agent).arg(reply.size()).arg(written));
     if(written == reply.size())
         prompts = {};
 }
@@ -248,21 +254,33 @@ static void ai_request_command(QLocalSocket* socket,const QString& agent,
     ai_reply(socket,agent,QByteArray(),&results);
 }
 
-static void ai_request_log(QLocalSocket* socket,const QString& agent)
+static QMap<QString,quint64> ai_log_positions;
+static void ai_request_log(QLocalSocket* socket,const QString& agent,
+                           bool include)
 {
-    static QMap<QString,quint64> positions;
     QByteArray output;
     {
         std::lock_guard<std::mutex> lock(console.edit_buf);
         auto end = console.total_size;
         auto first = end-quint64(console.history.size());
-        auto begin = std::max(positions.value(agent),first);
-        if(end-begin > 16*1024)
-            begin = end-16*1024;
-        output = console.history.mid(qsizetype(begin-first)).toUtf8();
-        positions[agent] = end;
+        auto begin = std::max(ai_log_positions.value(agent),first);
+        if(include)
+        {
+            bool capped = end-begin > 16*1024;
+            if(capped)
+                begin = end-16*1024;
+            auto text = console.history.mid(qsizetype(begin-first));
+            if(capped)
+                text.remove(0,text.indexOf('\n')+1);
+            QStringList lines;
+            for(const auto& line : text.split('\n'))
+                if(!line.contains("[AI AGENT]"))
+                    lines << line;
+            output = lines.join('\n').right(4*1024).toUtf8();
+        }
+        ai_log_positions[agent] = end;
     }
-    ai_reply(socket,agent,"OKAY\n" + output);
+    ai_reply(socket,agent,include ? "OKAY\n"+output : "OKAY");
 }
 void ai_request(QLocalSocket* socket,const QByteArray& data)
 {
@@ -275,13 +293,20 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     auto request = doc.object();
     auto agent = request["agent"].toString();
     auto type = request["request"].toString().toUpper();
-    tipl::progress p("AI "+type.toStdString()+" request from "+
-                     agent.toStdString());
     if(!agent.startsWith('@'))
         return ai_reply(socket,agent,"ERROR\tinvalid agent");
     auto session = request["session"].toString().trimmed();
     if(agent.startsWith("@C") && QUuid(session).isNull())
-        return ai_reply(socket,agent,"ERROR\tinvalid Codex session");
+        return ai_reply(socket,agent,"ERROR\tinvalid AI agent session");
+    if(!ai_log_positions.contains(agent))
+    {
+        std::lock_guard<std::mutex> lock(console.edit_buf);
+        ai_log_positions[agent] = console.total_size;
+    }
+    tipl::progress p;
+    if(type == "LIST" || type == "CMD")
+        p = tipl::progress((QString("[AI REQUEST] ")+type+" from "+agent)
+                           .remove('\r').replace('\n',' ').toStdString());
     if(!session.isEmpty())
         main_window->ai_sessions[agent] = session;
     auto cwd = request["cwd"].toString();
@@ -292,7 +317,7 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     activity.remove("chat");
     auto json = QString::fromUtf8(QJsonDocument(activity).toJson(
                                       QJsonDocument::Compact));
-    tipl::out() << json.toStdString();
+    tipl::out() << ai_log(json);
     if(type == "CMD")
         for(auto* window : QApplication::allWidgets())
             if(window->property("remote_id").toString() ==
@@ -319,11 +344,7 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     if(type == "LIST")
         return ai_request_list(socket,agent);
     if(type == "LOG")
-    {
-        if(!chat.isEmpty())
-            return ai_reply(socket,agent,"OKAY");
-        return ai_request_log(socket,agent);
-    }
+        return ai_request_log(socket,agent,chat.isEmpty());
     if(type == "CMD")
         return ai_request_command(socket,agent,request);
     ai_reply(socket,agent,"ERROR\tunknown request");
@@ -485,7 +506,7 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
 
     if(working)
         append(QJsonObject{{"type","assistant"},
-                           {"text","● Codex is working…"}});
+                           {"text","● AI agent is working…"}});
 
     ui->ai_chat_history->ensureCursorVisible();
     QTimer::singleShot(0,ui->ai_chat_history,[this]
@@ -562,8 +583,8 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
     {
         if(!add_history && !agent.isEmpty())
             ai_prompts[agent].append(text);
-        QMessageBox::warning(this,"Codex",
-                             "Codex is not installed or cannot be located.");
+        QMessageBox::warning(this,"AI Agent",
+                             "AI agent is not installed or cannot be located.");
         return;
     }
 
@@ -572,8 +593,8 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
     {
         if(!add_history)
             ai_prompts[agent].append(text);
-        QMessageBox::warning(this,"Codex",
-                             "This project has no Codex session.");
+        QMessageBox::warning(this,"AI Agent",
+                             "This project has no AI agent session.");
         return;
     }
 
@@ -646,9 +667,8 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
                     {ui->ai_new_chat,ui->ai_send_message})
                     button->setEnabled(true);
             }
-            tipl::out() << "AI Codex session agent="
-                        << agent.toStdString()
-                        << " session=" << session.toStdString();
+            tipl::out() << ai_log("session agent="+agent+
+                                  " session="+session);
         }
         process->setProperty("stdout_buffer",buffer);
     });
@@ -664,10 +684,9 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
     {
         process->closeWriteChannel();
         auto agent = process->objectName();
-        tipl::out() << "AI Codex started agent="
-                    << (agent.isEmpty() ? std::string("new") :
-                                          agent.toStdString())
-                    << " pid=" << process->processId();
+        tipl::out() << ai_log("started agent="+
+            (agent.isEmpty() ? QString("new") : agent)+
+            " pid="+QString::number(process->processId()));
         if(!agent.isEmpty())
             show_ai_project(agent);
     });
@@ -679,17 +698,16 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
             return;
 
         auto agent = process->objectName();
-        tipl::out() << "AI Codex start failed agent="
-                    << agent.toStdString()
-                    << " error=" << process->errorString().toStdString();
+        tipl::out() << ai_log("start failed agent="+agent+
+                              " error="+process->errorString());
 
         if(agent.isEmpty())
         {
             for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
                 button->setEnabled(true);
             ui->ai_chat_input->setPlainText(text);
-            QMessageBox::warning(this,"Codex",
-                                 "Cannot start Codex: "+
+            QMessageBox::warning(this,"AI Agent",
+                                 "Cannot start AI agent: "+
                                  process->errorString());
         }
         else
@@ -697,7 +715,7 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
             ai_processes.remove(agent);
             ai_prompts[agent].append(text);
             add_ai_history(agent,"activity",
-                           "Cannot start Codex: "+
+                           "Cannot start AI agent: "+
                            process->errorString());
             show_ai_project(agent);
         }
@@ -709,14 +727,15 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
             this,[=](int exit_code,QProcess::ExitStatus exit_status)
     {
         auto agent = process->objectName();
-        tipl::out() << "AI Codex finished agent="
-                    << agent.toStdString()
-                    << " exit=" << exit_code
-                    << " crashed=" << (exit_status == QProcess::CrashExit);
+        tipl::out() << ai_log("finished agent="+agent+
+            " exit="+QString::number(exit_code)+" crashed="+
+            QString::number(exit_status == QProcess::CrashExit));
         auto error = (process->property("stderr").toByteArray()+
                       process->readAllStandardError()).trimmed();
-        if((exit_code || exit_status == QProcess::CrashExit) && !error.isEmpty())
-            tipl::out() << error.toStdString();
+        if(exit_code || exit_status == QProcess::CrashExit)
+            tipl::out() << ai_log("process failed agent="+agent+
+                " exit="+QString::number(exit_code)+" error="+
+                QString::fromUtf8(error));
 
         if(agent.isEmpty())
         {
@@ -724,8 +743,8 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
                 button->setEnabled(true);
             ui->ai_chat_input->setPlainText(text);
             QMessageBox::warning(
-                this,"Codex",
-                "Codex ended before creating a new chat. Check the console.");
+                this,"AI Agent",
+                "AI agent ended before creating a new chat. Check the console.");
         }
         else
         {
@@ -777,10 +796,9 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
              << "--skip-git-repo-check";
     args << prompt;
 
-    tipl::out() << "AI Codex "
-                << (session.isEmpty() ? "new chat" : "resume")
-                << " executable=" << codex.toStdString()
-                << " prompt_chars=" << text.size();
+    tipl::out() << ai_log(
+        QString(session.isEmpty() ? "new chat" : "resume")+
+        QString(" executable=%1 prompt_chars=%2").arg(codex).arg(text.size()));
     process->start(codex,args);
 }
 
@@ -915,7 +933,7 @@ MainWindow::MainWindow(QWidget *parent) :
         if(ai_processes.contains(agent))
         {
             QMessageBox::information(this,"Remove Project",
-                                     "Wait for Codex to finish first.");
+                                     "Wait for the AI agent to finish first.");
             return;
         }
         if(QMessageBox::question(
@@ -930,6 +948,7 @@ MainWindow::MainWindow(QWidget *parent) :
         ai_sessions.remove(agent);
         ai_work_dirs.remove(agent);
         ai_prompts.erase(agent);
+        ai_log_positions.remove(agent);
         delete item;
 
         if(ui->ai_project_list->count())
