@@ -18,9 +18,16 @@ $DsiAgent = '<agent name>'
 $DsiSession = '<session name>'
 ```
 
-## PowerShell client
+## Connection priority
 
-Run on the same Windows computer as DSI Studio. Create one PowerShell client
+Use a native local named-pipe client when the agent runtime supports it. Connect
+to `\\\\.\\pipe\\dsi-studio`, send one complete request, read until DSI Studio
+closes the connection, then close the client. This is the preferred transport:
+it avoids temporary scripts, execution-policy restrictions, and command-line
+JSON quoting.
+
+Use the PowerShell client below only when the agent cannot open the named pipe
+directly. Run on the same Windows computer as DSI Studio. Create one client
 for the current AI conversation, for example `dsi_agent.ps1`, using this exact
 template. Save it in the agent's working directory and reuse it for every
 request in that conversation.
@@ -223,7 +230,8 @@ path into fields, or substitute `add_image`. Refresh `LIST` afterward.
 
 ## Required behavior
 
-1. Use GUI commands. **Do not use `run_cli` unless the user explicitly says to
+1. Prefer a direct local named-pipe client when available; otherwise use the
+   generated PowerShell client. Use GUI commands. **Do not use `run_cli` unless the user explicitly says to
    run the CLI.** Never infer CLI permission from a requested outcome.
 2. Call `LIST` first and after windows open or close.
 3. Use only numeric IDs returned by the latest `LIST`.
