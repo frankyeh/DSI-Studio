@@ -38,6 +38,7 @@ public:
     QMenu* ai_project_menu = nullptr;
     void add_ai_history(const QString&,const QString&,const QString&);
     void show_ai_project(const QString&,QJsonObject = {});
+    void stop_ai_blink();
 public:
     QNetworkAccessManager manager;
     QSharedPointer<QNetworkReply> get(QUrl url);
@@ -45,6 +46,7 @@ public:
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    bool eventFilter(QObject*,QEvent*) override;
     void closeEvent(QCloseEvent *event) override;
     Ui::MainWindow *ui;
     void addFib(QString Filename);
