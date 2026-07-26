@@ -13,6 +13,8 @@
 #include <QSysInfo>
 #include <QStandardPaths>
 #include <QShortcut>
+#include <QProcess>
+#include <QUuid>
 
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -45,14 +47,10 @@ QString access_token;
 extern MainWindow* main_window;
 
 static void ai_reply(QLocalSocket* socket,const QString& agent,
-                     QByteArray reply,QJsonArray* results = nullptr,
-                     bool prompt_only = false)
+                     QByteArray reply,QJsonArray* results = nullptr)
 {
     auto& prompts = main_window->ai_prompts[agent];
-    if(prompt_only)
-        reply = QJsonDocument(QJsonObject{{"prompt",prompts}}).
-                toJson(QJsonDocument::Compact);
-    else if(results)
+    if(results)
     {
         if(!prompts.isEmpty())
         {
@@ -220,19 +218,27 @@ static void ai_request_log(QLocalSocket* socket,const QString& agent)
     }
     ai_reply(socket,agent,"OKAY\n" + output);
 }
-bool ai_request(QLocalSocket* socket,const QByteArray& data)
+void ai_request(QLocalSocket* socket,const QByteArray& data)
 {
     QJsonParseError error;
     auto doc = QJsonDocument::fromJson(data,&error);
     if(!doc.isObject())
         return ai_reply(socket,{},("ERROR\tinvalid JSON: " +
-                                     error.errorString()).toUtf8()),true;
+                                     error.errorString()).toUtf8());
 
     auto request = doc.object();
     auto agent = request["agent"].toString();
     auto type = request["request"].toString().toUpper();
     if(!agent.startsWith('@'))
-        return ai_reply(socket,agent,"ERROR\tinvalid agent"),true;
+        return ai_reply(socket,agent,"ERROR\tinvalid agent");
+    auto session = request["session"].toString().trimmed();
+    if(agent.startsWith("@C") && QUuid(session).isNull())
+        return ai_reply(socket,agent,"ERROR\tinvalid Codex session");
+    if(!session.isEmpty())
+        main_window->ai_sessions[agent] = session;
+    auto cwd = request["cwd"].toString();
+    if(QDir(cwd).exists())
+        main_window->ai_work_dirs[agent] = cwd;
 
     auto activity = request;
     activity.remove("chat");
@@ -245,28 +251,12 @@ bool ai_request(QLocalSocket* socket,const QByteArray& data)
         main_window->add_ai_history(agent,"assistant",chat);
 
     if(type == "LIST")
-        return ai_request_list(socket,agent),true;
+        return ai_request_list(socket,agent);
     if(type == "LOG")
-        return ai_request_log(socket,agent),true;
+        return ai_request_log(socket,agent);
     if(type == "CMD")
-        return ai_request_command(socket,agent,request),true;
-    if(type == "WAIT")
-    {
-        if(!main_window->ai_prompts[agent].isEmpty())
-            return ai_reply(socket,agent,{},nullptr,true),true;
-        if(auto* previous = main_window->ai_waiting.value(agent))
-            previous->disconnectFromServer();
-        main_window->ai_waiting[agent] = socket;
-        QObject::connect(socket,&QLocalSocket::disconnected,main_window,
-                         [agent,socket]
-        {
-            if(main_window->ai_waiting.value(agent) == socket)
-                main_window->ai_waiting.remove(agent);
-            socket->deleteLater();
-        });
-        return false;
-    }
-    return ai_reply(socket,agent,"ERROR\tunknown request"),true;
+        return ai_request_command(socket,agent,request);
+    ai_reply(socket,agent,"ERROR\tunknown request");
 }
 
 void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
@@ -394,16 +384,57 @@ void MainWindow::on_ai_send_message_clicked()
         return;
 
     auto agent = item->data(Qt::UserRole).toString();
-    ai_prompts[agent].append(text);
     add_ai_history(agent,"user",text);
     ui->ai_chat_input->clear();
-    ui->ai_control_status->setText("● Queued");
-    if(auto* socket = ai_waiting.take(agent))
+    auto session = ai_sessions.value(agent);
+    auto codex = QStandardPaths::findExecutable("codex");
+    if(codex.isEmpty())
+        codex = "codex";
+    if(!agent.startsWith("@C") || session.isEmpty() ||
+       ai_processes.contains(agent))
     {
-        ai_reply(socket,agent,{},nullptr,true);
-        socket->flush();
-        socket->disconnectFromServer();
+        ai_prompts[agent].append(text);
+        ui->ai_control_status->setText("● Queued");
+        return;
     }
+
+    auto* process = new QProcess(this);
+    ai_processes[agent] = process;
+    if(QDir(ai_work_dirs.value(agent)).exists())
+        process->setWorkingDirectory(ai_work_dirs[agent]);
+
+    auto output = [=](const QByteArray& data)
+    {
+        auto text = QString::fromUtf8(data).trimmed();
+        if(!text.isEmpty())
+            add_ai_history(agent,"activity",text);
+    };
+    connect(process,&QProcess::readyReadStandardOutput,this,
+            [=]{output(process->readAllStandardOutput());});
+    connect(process,&QProcess::readyReadStandardError,this,
+            [=]{output(process->readAllStandardError());});
+    connect(process,&QProcess::started,this,
+            [=]{ui->ai_control_status->setText("● Codex running");});
+    connect(process,&QProcess::errorOccurred,this,[=](QProcess::ProcessError error)
+    {
+        if(error != QProcess::FailedToStart)
+            return;
+        ai_processes.remove(agent);
+        ai_prompts[agent].append(text);
+        add_ai_history(agent,"activity","Cannot start Codex: "+
+                       process->errorString());
+        ui->ai_control_status->setText("● Queued");
+        process->deleteLater();
+    });
+    connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
+            this,[=]
+    {
+        ai_processes.remove(agent);
+        ui->ai_control_status->setText("● Ready");
+        process->deleteLater();
+    });
+    ui->ai_control_status->setText("● Starting Codex");
+    process->start(codex,{"exec","resume",session,text});
 }
 
 
@@ -510,6 +541,8 @@ MainWindow::MainWindow(QWidget *parent) :
                           QUrl::toPercentEncoding(agent))+".jsonl");
         ai_projects.remove(agent);
         ai_project_items.remove(agent);
+        ai_sessions.remove(agent);
+        ai_work_dirs.remove(agent);
         delete item;
 
         if(ui->ai_project_list->count())
@@ -553,7 +586,21 @@ MainWindow::MainWindow(QWidget *parent) :
         {
             auto doc = QJsonDocument::fromJson(file.readLine());
             if(doc.isObject())
-                history.append(doc.object());
+            {
+                auto entry = doc.object();
+                history.append(entry);
+                if(entry["type"] == "request")
+                {
+                    auto request = QJsonDocument::fromJson(
+                                       entry["text"].toString().toUtf8()).object();
+                    auto session = request["session"].toString();
+                    if(!session.isEmpty())
+                        ai_sessions[agent] = session;
+                    auto cwd = request["cwd"].toString();
+                    if(QDir(cwd).exists())
+                        ai_work_dirs[agent] = cwd;
+                }
+            }
         }
 
         if(history.isEmpty())
