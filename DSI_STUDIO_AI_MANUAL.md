@@ -28,7 +28,8 @@ do not read the entire inventory.
 | Need | Command |
 |---|---|
 | Windows | JSON `LIST` request |
-| Main-window recent files | `list_recent` |
+| Recent FIB (`.fz`) files | `list_recent_fib` |
+| Recent SRC (`.sz`) files | `list_recent_src` |
 | Slices | `list_slice` |
 | Regions and ROI/ROA type, color, resolution | `list_region` |
 | Tracts and visible/deleted counts | `list_tract` |
@@ -229,7 +230,8 @@ already grants it.
 | `image-transform` | `upper_threshold` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
 | `image-transform` | `upsampling` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
 | `image-transform` | `warp_to_image` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `main` | `list_recent` | `0` | Read-only | Immediate list. |
+| `main` | `list_recent_fib` | `0` | Read-only | Immediate `.fz` list. |
+| `main` | `list_recent_src` | `0` | Read-only | Immediate `.sz` list. |
 | `main` | `open_image` | `1+` | GUI-state change | Main-window only; send one flat command containing all complete paths. |
 | `main` | `run_cli` | `1` | Varies | Synchronous CLI action on GUI thread; verify outputs. |
 | `main` | `hub download` | `4` | File creation | Deferred file write; verify path and stable size. |
