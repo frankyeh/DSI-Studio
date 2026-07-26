@@ -88,7 +88,10 @@ static void ai_reply(QLocalSocket* socket,const QString& agent,
         else
             reply.insert(pos+1,payload);
     }
-    if(socket->write(reply) == reply.size())
+    auto written = socket->write(reply);
+    tipl::out() << "AI local reply agent=" << agent.toStdString()
+                << " bytes=" << reply.size() << " queued=" << written;
+    if(written == reply.size())
         prompts = {};
 }
 
@@ -253,6 +256,11 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     auto request = doc.object();
     auto agent = request["agent"].toString();
     auto type = request["request"].toString().toUpper();
+    tipl::out() << "AI local request agent=" << agent.toStdString()
+                << " type=" << type.toStdString()
+                << " window=" << request["window"].toVariant().
+                                  toString().toStdString()
+                << " bytes=" << data.size();
     if(!agent.startsWith('@'))
         return ai_reply(socket,agent,"ERROR\tinvalid agent");
     auto session = request["session"].toString().trimmed();
@@ -440,21 +448,40 @@ void MainWindow::on_ai_send_message_clicked()
 
     auto* process = new QProcess(this);
     ai_processes[agent] = process;
+    process->setProperty("stdout_bytes",0LL);
+    process->setProperty("stderr_bytes",0LL);
     if(QDir(ai_work_dirs.value(agent)).exists())
         process->setWorkingDirectory(ai_work_dirs[agent]);
 
     connect(process,&QProcess::readyReadStandardOutput,this,
-            [=]{process->readAllStandardOutput();});
+            [=]
+    {
+        auto bytes = process->readAllStandardOutput().size();
+        process->setProperty("stdout_bytes",
+            process->property("stdout_bytes").toLongLong()+bytes);
+    });
     connect(process,&QProcess::readyReadStandardError,this,
-            [=]{process->readAllStandardError();});
+            [=]
+    {
+        auto bytes = process->readAllStandardError().size();
+        process->setProperty("stderr_bytes",
+            process->property("stderr_bytes").toLongLong()+bytes);
+    });
     connect(process,&QProcess::started,this,
-            [=]{ui->ai_control_status->setText("Waiting for Codex…");});
+            [=]
+    {
+        tipl::out() << "AI Codex started agent=" << agent.toStdString()
+                    << " pid=" << process->processId();
+        ui->ai_control_status->setText("Waiting for Codex…");
+    });
     connect(process,&QProcess::errorOccurred,this,[=](QProcess::ProcessError error)
     {
         if(error != QProcess::FailedToStart)
             return;
         ai_processes.remove(agent);
         ai_prompts[agent].append(text);
+        tipl::out() << "AI Codex start failed agent=" << agent.toStdString()
+                    << " error=" << process->errorString().toStdString();
         add_ai_history(agent,"activity","Cannot start Codex: "+
                        process->errorString());
         ui->ai_waiting_indicator->hide();
@@ -462,8 +489,13 @@ void MainWindow::on_ai_send_message_clicked()
         process->deleteLater();
     });
     connect(process,QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
-            this,[=]
+            this,[=](int exit_code,QProcess::ExitStatus exit_status)
     {
+        tipl::out() << "AI Codex finished agent=" << agent.toStdString()
+                    << " exit=" << exit_code
+                    << " crashed=" << (exit_status == QProcess::CrashExit)
+                    << " stdout=" << process->property("stdout_bytes").toLongLong()
+                    << " stderr=" << process->property("stderr_bytes").toLongLong();
         ai_processes.remove(agent);
         ui->ai_waiting_indicator->hide();
         ui->ai_control_status->setText("● Ready");
@@ -476,6 +508,9 @@ void MainWindow::on_ai_send_message_clicked()
         "agent "+agent+" and session "+session+". Send user-facing progress "
         "with the JSON chat field and attach the final answer once to a LOG "
         "request. Do not use Codex CLI output as the reply.";
+    tipl::out() << "AI Codex resume agent=" << agent.toStdString()
+                << " executable=" << codex.toStdString()
+                << " prompt_chars=" << text.size();
     process->start(codex,{"exec","resume",session,prompt});
 }
 
