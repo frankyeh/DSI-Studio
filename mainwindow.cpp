@@ -2387,7 +2387,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         return false;
     };
     const std::string usage =
-        "list_recent | run_cli <command line> | hub repos | hub tags <repo> | "
+        "list_recent | open_image <file1> [file2...] | run_cli <command line> | hub repos | hub tags <repo> | "
         "hub files <repo> <tag> [text] [offset] [limit] | hub open <repo> <tag> <file> | "
         "hub download <repo> <tag> <file> <dir>";
 
@@ -2409,6 +2409,14 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         if(run_action_with_wildcard(po))
             return fail("command line failed");
         po.check_end_param<tipl::warning>();
+        return true;
+    }
+    if(cmd.size() > 1 && cmd[0] == "open_image")
+    {
+        QStringList files;
+        for(size_t i = 1;i < cmd.size();++i)
+            files << QString::fromUtf8(cmd[i]);
+        loadNii(files);
         return true;
     }
     if(cmd.empty() || cmd[0] != "hub")
