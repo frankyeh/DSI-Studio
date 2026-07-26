@@ -247,6 +247,9 @@ without a shell:
 codex exec resume <session> <prompt>
 ```
 
+DSI Studio first checks `PATH`, then the newest
+`%LOCALAPPDATA%\OpenAI\Codex\bin\<version>\codex.exe`.
+
 Standard output and error are appended to the project's activity history. If
 the executable is unavailable, the session is missing, or a DSI-launched Codex
 process is already running for that agent, the text remains in the existing
