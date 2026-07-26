@@ -15,7 +15,7 @@ including the JSON request envelope and AI chat-history integration added after
 - Generate one stable, unique agent ID at the start of the session. It must
   begin with `@`. Reuse the exact same case-sensitive ID for every request in
   that session.
-- Send every control request as one JSON object. `LIST`, `CMD`, `LOG`, and `WAIT` are
+- Send every control request as one JSON object. `LIST`, `CMD`, and `LOG` are
   values of the JSON `request` property; never send any of them as a standalone
   text request. The only non-JSON request is an existing filename that DSI
   Studio should open.
@@ -23,6 +23,8 @@ including the JSON request envelope and AI chat-history integration added after
   should display. Do not attach internal reasoning, tool output, or text that
   has already been attached.
 - Never resend previously attached `chat`.
+- A Codex agent ID begins with `@C`. Include the UUID from `CODEX_THREAD_ID` as
+  `session` and the current project directory as `cwd` in every request.
 - When DSI Studio should display the final answer, attach that answer once as
   `chat` on the final JSON `LOG` request.
 
@@ -45,8 +47,7 @@ messages in DSI Studio.
 
 `QLocalServer("dsi-studio")` is the Windows named pipe
 `\\.\pipe\dsi-studio`. The server handles one request per connection, writes
-one reply, and disconnects. `WAIT` is the exception: its connection remains
-open until DSI Studio returns a user prompt.
+one reply, and disconnects.
 
 ```powershell
 function Invoke-DsiRequest([string]$Request)
@@ -76,13 +77,17 @@ function Invoke-DsiRequest([string]$Request)
     }
 }
 
-$DsiAgentId = '@' + [guid]::NewGuid().ToString('N').Substring(0,12)
+$DsiSessionId = $env:CODEX_THREAD_ID
+if(-not $DsiSessionId) { throw 'CODEX_THREAD_ID is required' }
+$DsiAgentId = '@C' + $DsiSessionId.Substring(0,12)
 
 function Invoke-Dsi([hashtable]$Request)
 {
     if($Request.ContainsKey('agent')) { throw 'Invoke-Dsi supplies the agent ID' }
     $Request = @{} + $Request
     $Request.agent = $DsiAgentId
+    $Request.session = $DsiSessionId
+    $Request.cwd = (Get-Location).Path
     Invoke-DsiRequest ($Request | ConvertTo-Json -Compress -Depth 8)
 }
 
@@ -119,10 +124,9 @@ server is available; ask the user to start it.
 Use the same agent ID in every object:
 
 ```json
-{"agent":"@C7f2a","request":"LIST"}
-{"agent":"@C7f2a","request":"CMD","window":"2","command":["list_region"]}
-{"agent":"@C7f2a","request":"LOG"}
-{"agent":"@C7f2a","request":"WAIT"}
+{"agent":"@C7f2a","session":"019f...","cwd":"C:\\work","request":"LIST"}
+{"agent":"@C7f2a","session":"019f...","cwd":"C:\\work","request":"CMD","window":"2","command":["list_region"]}
+{"agent":"@C7f2a","session":"019f...","cwd":"C:\\work","request":"LOG"}
 ```
 
 `@C7f2a` is only an example. Generate a new ID once when the agent session
@@ -183,23 +187,21 @@ Target commands according to the window type returned by `LIST`:
   tracking
 - `image`: image-window operations
 
-### Wait for a user prompt
+### Receive a message initiated by DSI Studio
 
-After completing a turn, keep the agent available without polling:
+DSI Studio saves the supplied Codex session UUID with the project. When the
+user sends a message from the AI Agents tab and no DSI-launched Codex process
+is running, DSI Studio starts:
 
-```powershell
-$waitReply = Invoke-Dsi @{request='WAIT'} | ConvertFrom-Json
-$prompts = @($waitReply.prompt)
+```text
+codex exec resume <session> <prompt>
 ```
 
-`WAIT` keeps its pipe connection open. When the user sends text from DSI
-Studio, the reply is a JSON object whose `prompt` property is an array. Process
-the prompt, complete the requested work, and issue another `WAIT`.
-
-If a prompt was already queued, `WAIT` returns it immediately. If no `WAIT`
-connection exists, DSI Studio retains the prompt for the agent's next `LIST`,
-`LOG`, `CMD`, or `WAIT` request. Do not repeatedly poll `LIST`. DSI Studio
-cannot use `WAIT` to restart an agent process that has exited.
+The executable and each argument are passed directly without a shell. Codex
+resumes the same session and receives the text as its next user prompt. If
+Codex cannot be started or is already running for that project, DSI Studio
+keeps the message in the existing per-agent prompt queue for the next `LIST`,
+`LOG`, or `CMD` reply.
 
 ## Attach chat without duplication
 
@@ -331,7 +333,8 @@ complete JSON request:
 
 ```powershell
 $dsiExe = 'C:\DSI-Studio\dsi_studio.exe'
-$request = @{agent=$DsiAgentId;request='CMD';window='2';
+$request = @{agent=$DsiAgentId;session=$DsiSessionId;
+             cwd=(Get-Location).Path;request='CMD';window='2';
              command=@('list_slice')} | ConvertTo-Json -Compress
 & $dsiExe $request
 ```
