@@ -100,6 +100,19 @@ Poll `LIST` for the new `tracking` or `image` window. `open_fib` targets an
 already-open tracking window; it cannot create the first tracking window from
 the main window.
 
+To open multiple local images together in one O1 image window, target the main
+window with JSON `CMD`:
+
+```powershell
+Invoke-Dsi @{
+    request='CMD'; window='1'
+    command=@('open_image','C:\data\a.nii.gz','C:\data\b.nii.gz')
+}
+```
+
+Then refresh `LIST`. The direct non-JSON filename transport opens only one
+file.
+
 ## Required behavior
 
 1. Prefer GUI windows and commands unless the user explicitly requests CLI.
@@ -112,8 +125,10 @@ the main window.
 6. On `window not found`, refresh `LIST` once; never repeat the stale ID.
 7. Verify exported files before reporting success.
 8. Ask before overwriting/deleting files or replacing unsaved regions/tracts.
-9. Put only new user-facing text in `chat`; never send reasoning or tool output.
-10. Send the final answer once on the final `LOG`.
+9. Do not answer modal dialogs remotely. Tell the user what confirmation is
+   expected and wait for the human response.
+10. Put only new user-facing text in `chat`; never send reasoning or tool output.
+11. Send the final answer once on the final `LOG`.
 
 ## DSI-initiated Codex turns
 
