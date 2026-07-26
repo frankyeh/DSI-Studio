@@ -201,7 +201,9 @@ DSI Studio locates Codex through `PATH`, then the newest executable under
 `%LOCALAPPDATA%\OpenAI\Codex\bin`.
 
 The executable and each argument are passed directly without a shell. Codex
-resumes the same session and receives the text as its next user prompt. If
+resumes the same session and receives the text plus an instruction to return
+user-facing progress and the final answer through DSI Studio's JSON `chat`
+field. DSI Studio drains CLI output without adding it to project history. If
 Codex cannot be started or is already running for that project, DSI Studio
 keeps the message in the existing per-agent prompt queue for the next `LIST`,
 `LOG`, or `CMD` reply.
