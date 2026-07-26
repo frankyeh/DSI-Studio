@@ -252,11 +252,25 @@ DSI Studio first checks `PATH`, then the newest
 
 The resumed prompt explicitly instructs Codex to return user-facing progress
 through the JSON `chat` field and the final answer through a `LOG` request.
-DSI Studio drains CLI standard output and error without adding diagnostic
-events to project chat. If the executable is unavailable, the session is
+DSI Studio shows its bundled animated waiting indicator while the resumed
+process is running, and drains CLI standard output and error without adding
+diagnostic events to project chat. If the executable is unavailable, the session is
 missing, or a DSI-launched Codex process is already running for that agent, the
 text remains in the existing per-agent queue for delivery in the next `LIST`,
 `LOG`, or `CMD` reply.
+
+All `CMD` replies use the JSON result-array shape. If a target window has been
+closed, DSI Studio returns:
+
+```json
+[{"index":0,"okay":false,"output":"","error":"window not found"}]
+```
+
+Treat this as terminal for that window ID. Request `LIST` once to discover the
+remaining windows and do not repeatedly retry the command against the stale ID.
+
+DSI Studio stores at most three consecutive history entries with identical
+`type` and `text`.
 
 ### User-facing chat attachment
 
