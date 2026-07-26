@@ -576,12 +576,15 @@ int main(int ac, char *av[])
                 QLocalSocket *clientSocket = server.nextPendingConnection();
                 if (clientSocket)
                 {
+                    tipl::out() << "local server connection accepted";
                     clientSocket->waitForReadyRead(500);
                     auto request = clientSocket->readAll();
                     if(request.trimmed().startsWith('{'))
                         ai_request(clientSocket,request);
                     else
                     {
+                        tipl::out() << "local server file request bytes="
+                                    << request.size();
                         bool busy = tipl::progress::is_running();
                         bool exists = std::filesystem::exists(request.begin());
 
