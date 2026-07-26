@@ -255,11 +255,8 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     auto request = doc.object();
     auto agent = request["agent"].toString();
     auto type = request["request"].toString().toUpper();
-    tipl::out() << "AI local request agent=" << agent.toStdString()
-                << " type=" << type.toStdString()
-                << " window=" << request["window"].toVariant().
-                                  toString().toStdString()
-                << " bytes=" << data.size();
+    tipl::progress p("AI "+type.toStdString()+" request from "+
+                     agent.toStdString());
     if(!agent.startsWith('@'))
         return ai_reply(socket,agent,"ERROR\tinvalid agent");
     auto session = request["session"].toString().trimmed();
@@ -273,9 +270,10 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
 
     auto activity = request;
     activity.remove("chat");
-    main_window->add_ai_history(
-        agent,"request",
-        QJsonDocument(activity).toJson(QJsonDocument::Compact));
+    auto json = QString::fromUtf8(QJsonDocument(activity).toJson(
+                                      QJsonDocument::Compact));
+    tipl::out() << json.toStdString();
+    main_window->add_ai_history(agent,"request",json);
 
     auto chat = request["chat"].toString().trimmed();
     if(!chat.isEmpty())
@@ -284,28 +282,7 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     if(type == "LIST")
         return ai_request_list(socket,agent);
     if(type == "LOG")
-    {
-        ai_request_log(socket,agent);
-        if(!chat.isEmpty())
-            if(auto* process = main_window->ai_processes.value(agent))
-            {
-                tipl::out() << "AI Codex final reply received agent="
-                            << agent.toStdString();
-                process->setProperty("finishing",true);
-                main_window->show_ai_project(agent);
-                QTimer::singleShot(1500,process,[process]
-                {
-                    if(process->state() != QProcess::NotRunning)
-                        process->terminate();
-                });
-                QTimer::singleShot(3000,process,[process]
-                {
-                    if(process->state() != QProcess::NotRunning)
-                        process->kill();
-                });
-            }
-        return;
-    }
+        return ai_request_log(socket,agent);
     if(type == "CMD")
         return ai_request_command(socket,agent,request);
     ai_reply(socket,agent,"ERROR\tunknown request");
@@ -376,8 +353,29 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
     {
         auto type = entry["type"].toString();
         bool user = type == "user",request = type == "request";
-        auto content = entry["text"].toString().
-                       toHtmlEscaped().replace('\n',"<br>");
+        QString content;
+        if(request)
+        {
+            auto detail = QJsonDocument::fromJson(
+                              entry["text"].toString().toUtf8()).object();
+            auto action = detail["request"].toString().toUpper();
+            if(action == "CMD")
+            {
+                auto commands = detail["command"].toArray();
+                int count = commands.isEmpty() ? 0 :
+                            commands[0].isArray() ? commands.size() : 1;
+                content = QString("Sent %1 command%2 to window %3")
+                          .arg(count).arg(count == 1 ? "" : "s")
+                          .arg(detail["window"].toVariant().toString());
+            }
+            else
+                content = action == "LIST" ? "Checked open windows" :
+                          action == "LOG" ? "Read console history" :
+                          action+" request";
+        }
+        else
+            content = entry["text"].toString();
+        content = content.toHtmlEscaped().replace('\n',"<br>");
         auto cell = QString(
             "<td bgcolor=\"%1\"><b>%2 · %3</b> "
             "<font color=\"#80868b\">%4</font><br>%5</td>")
@@ -387,7 +385,7 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
                  QDateTime::fromString(
                      entry["time"].toString(),Qt::ISODate).
                      toString("MM/dd HH:mm:ss"),
-                 request ? "<code>"+content+"</code>" : content);
+                 content);
 
         ui->ai_chat_history->append(
             QString("<table width=\"100%\" cellspacing=\"3\" "
@@ -408,16 +406,12 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
         append(added);
 
     if(process)
-    {
-        auto text = process->property("finishing").toBool() ?
-                    "Finishing Codex&hellip;" : "Codex is working&hellip;";
         ui->ai_chat_history->append(QString(
             "<table width=\"100%\" cellspacing=\"3\" cellpadding=\"7\"><tr>"
             "<td bgcolor=\"#f1f3f4\"><b>%1 · %2</b><br>"
-            "<font color=\"#5f6368\">&#9679;&nbsp;%3</font></td>"
+            "<font color=\"#5f6368\">&#9679;&nbsp;Codex is working&hellip;</font></td>"
             "<td width=\"20%\"></td></tr></table>")
-            .arg(name,agent.toHtmlEscaped(),text));
-    }
+            .arg(name,agent.toHtmlEscaped()));
 
     ui->ai_chat_history->ensureCursorVisible();
     QTimer::singleShot(0,ui->ai_chat_history,[this]
@@ -426,8 +420,7 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
         bar->setValue(bar->maximum());
     });
     ui->ai_control_status->setText(
-        process ? process->property("finishing").toBool() ?
-                  "Finishing Codex…" : "Waiting for Codex…" : "● Active");
+        process ? "Codex is working…" : "● Active");
 }
 
 void MainWindow::add_ai_history(const QString& agent,const QString& type,
@@ -542,8 +535,9 @@ void MainWindow::on_ai_send_message_clicked()
         "\n\n[DSI Studio] Reply through the DSI Studio local server using "
         "agent "+agent+" and session "+session+". Send user-facing progress "
         "with the JSON chat field and attach the final answer once to a LOG "
-        "request. After that LOG succeeds, finish the turn and exit immediately. "
-        "Do not use Codex CLI output as the reply.";
+        "request. Continue with every PROMPT returned by the local server. End "
+        "only after the latest server reply contains no PROMPT. Do not use "
+        "Codex CLI output as the reply.";
     tipl::out() << "AI Codex resume agent=" << agent.toStdString()
                 << " executable=" << codex.toStdString()
                 << " prompt_chars=" << text.size();
