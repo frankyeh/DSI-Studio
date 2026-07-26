@@ -508,55 +508,58 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
     if(ui->ai_project_list->currentItem() != item)
         return;
 
-    auto append = [&](const QJsonObject& entry)
+    auto request_content = [](const QJsonObject& entry)
+    {
+        auto detail = QJsonDocument::fromJson(
+                          entry["text"].toString().toUtf8()).object();
+        auto action = detail["request"].toString().toUpper();
+        if(action == "CMD")
+        {
+            auto commands = detail["command"].toArray();
+            auto command_name = [](const QJsonArray& command)
+            {
+                auto name = command[0].toString();
+                if(name == "hub" && command.size() > 1)
+                    name += " "+command[1].toString();
+                return name;
+            };
+            QStringList names;
+            if(!commands.isEmpty())
+                if(commands[0].isArray())
+                    for(const auto& command : commands)
+                        names << command_name(command.toArray());
+                else
+                    names << command_name(commands);
+            auto target = detail["_target_type"].toString();
+            auto destination = target.isEmpty() ?
+                "window "+detail["window"].toVariant().toString() :
+                target+" window";
+            auto title = detail["_target_title"].toString();
+            return QString("Sent %1 command%2 to %3%4")
+                   .arg(names.isEmpty() ? "unknown" : names.join(", "))
+                   .arg(names.size() == 1 ? "" : "s")
+                   .arg(destination)
+                   .arg(title.isEmpty() ? "" : " "+title);
+        }
+        return action == "LIST" ? "Checked open windows" :
+               action == "LOG" ? "Read new console output" :
+               action+" request";
+    };
+
+    auto append = [&](const QJsonObject& entry,const QString& activity = {})
     {
         auto type = entry["type"].toString();
         bool user = type == "user",request = type == "request";
-        QString content;
-        if(request)
-        {
-            auto detail = QJsonDocument::fromJson(
-                              entry["text"].toString().toUtf8()).object();
-            auto action = detail["request"].toString().toUpper();
-            if(action == "CMD")
-            {
-                auto commands = detail["command"].toArray();
-                auto command_name = [](const QJsonArray& command)
-                {
-                    auto name = command[0].toString();
-                    if(name == "hub" && command.size() > 1)
-                        name += " "+command[1].toString();
-                    return name;
-                };
-                QStringList names;
-                if(!commands.isEmpty())
-                    if(commands[0].isArray())
-                        for(const auto& command : commands)
-                            names << command_name(command.toArray());
-                    else
-                        names << command_name(commands);
-                auto target = detail["_target_type"].toString();
-                auto destination = target.isEmpty() ?
-                    "window "+detail["window"].toVariant().toString() :
-                    target+" window";
-                auto title = detail["_target_title"].toString();
-                content = QString("Sent %1 command%2 to %3%4")
-                          .arg(names.isEmpty() ? "unknown" : names.join(", "))
-                          .arg(names.size() == 1 ? "" : "s")
-                          .arg(destination)
-                          .arg(title.isEmpty() ? "" : " "+title);
-            }
-            else
-                content = action == "LIST" ? "Checked open windows" :
-                          action == "LOG" ? "Read new console output" :
-                          action+" request";
-        }
-        else
-            content = entry["text"].toString();
+        auto content = request ? request_content(entry) : entry["text"].toString();
         if(content.trimmed().isEmpty())
             return;
 
         content = content.toHtmlEscaped().replace('\n',"<br>");
+        if(!activity.isEmpty())
+            content = QString("<span style=\"font-weight:600;\">%1</span>"
+                              " <span style=\"color:#80868b;font-size:9pt;\">"
+                              "&mdash; %2</span>")
+                      .arg(content,activity.toHtmlEscaped().replace('\n',"<br>"));
         auto color = request ? "#f1f3f4" : user ? "#e8f0fe" : "#e8f5e9";
         auto cell = QString(
                         "<td bgcolor=\"%1\"><b style=\"background-color:%1\">%2 · %3</b> "
@@ -578,12 +581,25 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
                          cell+"<td width=\"20%\"></td>"));
     };
 
+    bool paired = !added.isEmpty() && added["type"] == "assistant" &&
+                  history.size() > 1 &&
+                  history[history.size()-2].toObject()["type"] == "request";
     bool working = ai_processes.contains(agent);
-    if(added.isEmpty() || working)
+    if(added.isEmpty() || working || paired)
     {
         ui->ai_chat_history->clear();
-        for(const auto& entry : history)
-            append(entry.toObject());
+        for(int index = 0;index < history.size();++index)
+        {
+            auto entry = history[index].toObject();
+            auto type = entry["type"].toString();
+            if(type == "request" && index+1 < history.size() &&
+               history[index+1].toObject()["type"] == "assistant")
+                continue;
+            auto activity = type == "assistant" && index &&
+                            history[index-1].toObject()["type"] == "request" ?
+                            request_content(history[index-1].toObject()) : QString();
+            append(entry,activity);
+        }
     }
     else
         append(added);
