@@ -116,7 +116,9 @@ verify the created file and inspect it when possible.
 Minimize round trips: use one initial `LIST`, batch independent synchronous
 commands for one window, verify concisely, and send the final reply with
 `LOG`. Diagnostic `LOG` is incremental and capped; final `LOG` returns no
-console history.
+console history but still advances the agent's cursor.
+`[AI REQUEST] ... ⏱` reports synchronous DSI-side request handling time, not
+agent runtime or asynchronous completion.
 
 ## Command inventory
 
