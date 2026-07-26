@@ -510,6 +510,9 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
 
     auto request_content = [](const QJsonObject& entry)
     {
+        auto summary = entry["_summary"].toString();
+        if(!summary.isEmpty())
+            return summary;
         auto detail = QJsonDocument::fromJson(
                           entry["text"].toString().toUtf8()).object();
         auto action = detail["request"].toString().toUpper();
@@ -563,13 +566,18 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
         if(request)
             content = "<span style=\"color:#5f6368;\">"+content+"</span>";
         auto color = request ? "#f1f3f4" : user ? "#e8f0fe" : "#e8f5e9";
+        auto time = QDateTime::fromString(entry["time"].toString(),Qt::ISODate).
+                    toString("MM/dd HH:mm:ss");
+        auto end_time = entry["_end_time"].toString();
+        if(!end_time.isEmpty())
+            time += "\u2013"+QDateTime::fromString(end_time,Qt::ISODate).
+                    toString("MM/dd HH:mm:ss");
         auto cell = QString(
                         "<td bgcolor=\"%1\"><b style=\"background-color:%1\">%2</b>"
                         "<font color=\"#80868b\">%3</font><br>%4</td>")
                         .arg(color,
                              (user ? QString("You") : agent.section('@',0,0)).toHtmlEscaped()+" &middot; ",
-                             QDateTime::fromString(entry["time"].toString(),Qt::ISODate).
-                             toString("MM/dd HH:mm:ss"),
+                             time,
                              content);
 
         auto cursor = ui->ai_chat_history->document()->
@@ -585,17 +593,43 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
     bool paired = !added.isEmpty() && added["type"] == "assistant" &&
                   history.size() > 1 &&
                   history[history.size()-2].toObject()["type"] == "request";
+    auto standalone_request = [&](int index)
+    {
+        return history[index].toObject()["type"] == "request" &&
+               (index+1 == history.size() ||
+                history[index+1].toObject()["type"] != "assistant");
+    };
+    auto request_window = [](const QJsonObject& entry)
+    {
+        return QJsonDocument::fromJson(entry["text"].toString().toUtf8()).
+               object()["window"].toVariant().toString();
+    };
     bool working = ai_processes.contains(agent);
-    if(added.isEmpty() || working || paired)
+    if(added.isEmpty() || working || paired || added["type"] == "request")
     {
         ui->ai_chat_history->clear();
         for(int index = 0;index < history.size();++index)
         {
             auto entry = history[index].toObject();
             auto type = entry["type"].toString();
-            if(type == "request" && index+1 < history.size() &&
-               history[index+1].toObject()["type"] == "assistant")
+            if(type == "request")
+            {
+                if(!standalone_request(index))
+                    continue;
+                auto combined = entry;
+                QStringList activities{request_content(entry)};
+                auto window = request_window(entry);
+                auto end = index;
+                while(end+1 < history.size() && standalone_request(end+1) &&
+                      request_window(history[end+1].toObject()) == window)
+                    activities << request_content(history[++end].toObject());
+                combined["_summary"] = activities.join(" \u00b7 ");
+                if(end != index)
+                    combined["_end_time"] = history[end].toObject()["time"];
+                append(combined);
+                index = end;
                 continue;
+            }
             auto activity = type == "assistant" && index &&
                             history[index-1].toObject()["type"] == "request" ?
                             request_content(history[index-1].toObject()) : QString();
