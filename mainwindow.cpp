@@ -256,12 +256,7 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
 
     QString name = agent.startsWith("@C") ? "Codex" :
                    agent.startsWith("@A") ? "Claude Code" : "AI Agent";
-    auto last = history.last().toObject();
-    QString preview = last["type"].toString() == "request" ?
-        QJsonDocument::fromJson(last["text"].toString().toUtf8()).
-        object()["request"].toString() :
-        last["text"].toString().simplified();
-    QString project_title = name+" · "+agent+"\n"+preview.left(60);
+    QString project_title = name+" · "+agent;
 
     auto* item = ai_project_items.value(agent);
     if(!item)
@@ -299,7 +294,9 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
 
     item->setText(project_title);
     auto* row = ui->ai_project_list->itemWidget(item);
-    row->findChild<QPushButton*>("ai_project_title")->setText(project_title);
+    auto* title = row->findChild<QPushButton*>("ai_project_title");
+    title->setText(project_title);
+    title->setToolTip(project_title);
     item->setSizeHint(row->sizeHint());
     item->setHidden(!project_title.contains(
         ui->ai_project_filter->text(),Qt::CaseInsensitive));
