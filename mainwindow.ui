@@ -329,26 +329,6 @@ Claude Code</string>
                 </property>
                </widget>
               </item>
-              <item>
-               <widget class="QToolButton" name="ai_open_project">
-                <property name="maximumSize">
-                 <size>
-                  <width>36</width>
-                  <height>28</height>
-                 </size>
-                </property>
-                <property name="toolTip">
-                 <string>Open Project</string>
-                </property>
-                <property name="text">
-                 <string>Open</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="icons.qrc">
-                  <normaloff>:/icons/icons/open.xpm</normaloff>:/icons/icons/open.xpm</iconset>
-                </property>
-               </widget>
-              </item>
              </layout>
             </item>
             <item>
