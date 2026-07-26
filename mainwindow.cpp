@@ -50,13 +50,17 @@ extern MainWindow* main_window;
 
 static QString find_codex_executable()
 {
-    auto path = QStandardPaths::findExecutable("codex");
-#ifdef Q_OS_WIN
-    if(path.isEmpty())
-        path = qEnvironmentVariable("LOCALAPPDATA")+
-               "/Programs/OpenAI/Codex/bin/codex.exe";
-#endif
-    return QFileInfo::exists(path) ? path : QString();
+    auto executable = QStandardPaths::findExecutable("codex");
+    if(!executable.isEmpty())
+        return executable;
+
+    QDir dir(QStandardPaths::writableLocation(
+                 QStandardPaths::GenericDataLocation)+"/OpenAI/Codex/bin");
+    for(const auto& name : dir.entryList(
+            QDir::Dirs|QDir::NoDotAndDotDot,QDir::Time))
+        if(QFileInfo::exists(executable = dir.filePath(name+"/codex.exe")))
+            return executable;
+    return {};
 }
 
 static void ai_reply(QLocalSocket* socket,const QString& agent,
