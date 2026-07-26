@@ -425,16 +425,6 @@ Claude Code</string>
                  </property>
                 </spacer>
                </item>
-               <item>
-                <widget class="QLabel" name="ai_connected_agent">
-                 <property name="styleSheet">
-                  <string notr="true">QLabel { background-color: transparent; }</string>
-                 </property>
-                 <property name="text">
-                  <string>Agent: None</string>
-                 </property>
-                </widget>
-               </item>
               </layout>
              </widget>
             </item>
