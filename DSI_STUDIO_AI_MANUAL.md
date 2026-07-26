@@ -41,7 +41,7 @@ Parameters shown below are separate JSON array elements.
 | Hub files | `["hub","files",repo,tag,filter,offset,limit]` |
 | Open Hub file | `["hub","open",repo,tag,file]` |
 | Download Hub file | `["hub","download",repo,tag,file,directory]` |
-| Open local images together | `["open_image",file1,file2,...]` |
+| Open local images together | Main only: one flat `["open_image",full-path1,full-path2,...]` |
 | Run CLI action | `["run_cli","--action=rec --loop=C:\\data\\*.sz --method=4"]` |
 | Select slice | `["set_slice",zero-based-index]` |
 | Move slices | `["move_slice","x y z"]` |
@@ -62,13 +62,21 @@ only the main window exists, send its absolute filename directly through the
 named pipe, then poll `LIST`. Do not send the path as a main-window `CMD`;
 `open_fib` requires an existing tracking window.
 
-For multiple images, send one `open_image` command to the main window. The
+For multiple images, send **exactly one flat `open_image` command** to the
+**main window**. Each complete absolute filepath is one array element. The
 first image is displayed and the remaining paths are retained for batch
 processing:
 
 ```text
 ["open_image","C:\\data\\t1w1.nii.gz","C:\\data\\t1w2.nii.gz","C:\\data\\t1w3.nii.gz"]
 ```
+
+Never send three separate `open_image` commands or a batch such as
+`[["open_image",file1],["open_image",file2],["open_image",file3]]`. Never
+target an `image` window, split `C:\data\` and `file.nii.gz` into separate
+fields, or substitute `add_image`. `add_image` modifies the current image but
+does not populate the retained file list, so the later save prompt will not
+appear.
 
 Refresh `LIST`, target the new `image` window, and send processing commands
 such as `["smoothing_filter"]`. Saving over the first original with
@@ -207,7 +215,7 @@ already grants it.
 | `image-transform` | `upsampling` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
 | `image-transform` | `warp_to_image` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
 | `main` | `list_recent` | `0` | Read-only | Immediate list. |
-| `main` | `open_image` | `1+` | GUI-state change | Opens one O1 window; additional images are retained for confirmed batch processing. |
+| `main` | `open_image` | `1+` | GUI-state change | Main-window only; send one flat command containing all complete paths. |
 | `main` | `run_cli` | `1` | Varies | Synchronous CLI action on GUI thread; verify outputs. |
 | `main` | `hub download` | `4` | File creation | Deferred file write; verify path and stable size. |
 | `main` | `hub files` | `2-5` | GUI-state change | Immediate filtered/paginated list; retry if Hub data is loading. |
