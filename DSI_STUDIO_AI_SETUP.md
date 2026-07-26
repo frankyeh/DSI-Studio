@@ -203,7 +203,8 @@ DSI Studio locates Codex through `PATH`, then the newest executable under
 The executable and each argument are passed directly without a shell. Codex
 resumes the same session and receives the text plus an instruction to return
 user-facing progress and the final answer through DSI Studio's JSON `chat`
-field. DSI Studio drains CLI output without adding it to project history. If
+field. While Codex is running, DSI Studio shows an animated waiting indicator.
+DSI Studio drains CLI output without adding it to project history. If
 Codex cannot be started or is already running for that project, DSI Studio
 keeps the message in the existing per-agent prompt queue for the next `LIST`,
 `LOG`, or `CMD` reply.
@@ -351,11 +352,15 @@ retry an operation whose state is unknown.
 ## Completion and verification
 
 - A `CMD` request succeeds only when every returned object has `"okay":true`.
+- A closed window ID returns `"okay":false` with
+  `"error":"window not found"`. Refresh `LIST` once; do not retry the same
+  command against that stale ID.
 - Later batch results are absent after the first failure.
 - Poll the relevant list or status command until completion.
 - Refresh `LIST` when a command opens or closes a window.
 - Verify created regions or tracts using their list commands.
 - Verify every exported file exists and is readable before reporting success.
+- No more than three consecutive identical entries are stored in AI history.
 - If possible, inspect and show exported images to the user.
 - Report errors and partial results accurately; do not silently retry
   destructive operations.
