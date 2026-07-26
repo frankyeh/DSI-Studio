@@ -468,7 +468,7 @@ int gpu_count = 0;
 extern console_stream console;
 MainWindow* main_window = nullptr;
 
-void ai_request(QLocalSocket*,const QByteArray&);
+bool ai_request(QLocalSocket*,const QByteArray&);
 
 int main(int ac, char *av[])
 {
@@ -576,10 +576,11 @@ int main(int ac, char *av[])
                 QLocalSocket *clientSocket = server.nextPendingConnection();
                 if (clientSocket)
                 {
+                    bool complete = true;
                     clientSocket->waitForReadyRead(500);
                     auto request = clientSocket->readAll();
                     if(request.trimmed().startsWith('{'))
-                        ai_request(clientSocket,request);
+                        complete = ai_request(clientSocket,request);
                     else
                     {
                         bool busy = tipl::progress::is_running();
@@ -596,10 +597,13 @@ int main(int ac, char *av[])
                         }
                         clientSocket->write(busy ? "BUSY" : exists ? "OKAY" : "ERROR");
                     }
-                    clientSocket->flush();
-                    clientSocket->waitForBytesWritten(500);
-                    clientSocket->disconnectFromServer();
-                    clientSocket->deleteLater();
+                    if(complete)
+                    {
+                        clientSocket->flush();
+                        clientSocket->waitForBytesWritten(500);
+                        clientSocket->disconnectFromServer();
+                        clientSocket->deleteLater();
+                    }
                 }
             });
         }
