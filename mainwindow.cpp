@@ -66,26 +66,62 @@ QString find_codex_executable()
             return executable;
     return {};
 }
-QStringList find_claude_models()
+
+QStringList find_codex_models()
 {
-    auto base_url = qEnvironmentVariable("ANTHROPIC_BASE_URL");
-    if(base_url.isEmpty())
-        return {};
-    QNetworkRequest request(QUrl(base_url).resolved(QUrl("/api/tags")));
-    request.setTransferTimeout(3000);
-    QNetworkAccessManager manager;
-    auto* reply = manager.get(request);
-    QEventLoop loop;
-    connect(reply,&QNetworkReply::finished,&loop,&QEventLoop::quit);
-    loop.exec();
     QStringList models;
-    if(reply->error() == QNetworkReply::NoError)
-        for(const auto& model : QJsonDocument::fromJson(
-                                     reply->readAll()).object()["models"].toArray())
-            models << model.toObject()["name"].toString();
-    reply->deleteLater();
+    auto executable = find_codex_executable();
+
+    if(!executable.isEmpty())
+    {
+        QProcess process;
+        process.start(executable,{"debug","models"});
+        if(process.waitForFinished(5000))
+        {
+            auto doc = QJsonDocument::fromJson(process.readAllStandardOutput());
+            auto list = doc.isArray() ? doc.array() :
+                            doc.object()["models"].toArray();
+            for(const auto& value : list)
+            {
+                auto object = value.toObject();
+                auto model = object["slug"].toString();
+                if(model.isEmpty())
+                    model = object["model"].toString();
+                if(model.isEmpty())
+                    model = object["id"].toString();
+                if(!model.isEmpty())
+                    models << model;
+            }
+        }
+        else
+            process.kill();
+    }
+
+    QDir dir(qEnvironmentVariable(
+        "CODEX_HOME",QDir::homePath()+"/.codex"));
+    QRegularExpression regex(
+        R"((?:^|\n)\s*model\s*=\s*["']([^"']+)["'])");
+
+    for(const auto& name : dir.entryList(
+             {"config.toml","*.config.toml"},QDir::Files))
+    {
+        QFile file(dir.filePath(name));
+        if(!file.open(QIODevice::ReadOnly))
+            continue;
+        auto matches = regex.globalMatch(
+            QString::fromUtf8(file.readAll()));
+        while(matches.hasNext())
+            models << matches.next().captured(1);
+    }
+
+    models.removeDuplicates();
+    models.sort(Qt::CaseInsensitive);
     return models;
 }
+
+
+
+
 QString find_claude_executable()
 {
     auto executable = QStandardPaths::findExecutable("claude");
@@ -95,7 +131,27 @@ QString find_claude_executable()
 #endif
     return QFileInfo::exists(executable) ? executable : QString();
 }
+QStringList find_claude_models()
+{
+    auto base_url = qEnvironmentVariable("ANTHROPIC_BASE_URL");
+    if(base_url.isEmpty())
+        return {};
 
+    QNetworkAccessManager manager;
+    QNetworkRequest request(QUrl(base_url).resolved(QUrl("/api/tags")));
+    request.setTransferTimeout(3000);
+    auto* reply = manager.get(request);
+
+    QEventLoop loop;
+    QObject::connect(reply,&QNetworkReply::finished,&loop,&QEventLoop::quit);
+    loop.exec();
+
+    QStringList models;
+    if(reply->error() == QNetworkReply::NoError)
+        for(const auto& model : QJsonDocument::fromJson(reply->readAll()).object()["models"].toArray())
+            models << model.toObject()["name"].toString();
+    return models;
+}
 std::string ai_log(QString text)
 {
     return ("[AI AGENT] "+text.remove('\r').replace(
@@ -311,22 +367,18 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
                                      error.errorString()).toUtf8());
 
     auto request = doc.object();
-    auto agent = request["agent"].toString();
+    auto agent = request["agent"].toString().trimmed();
     auto type = request["request"].toString().toUpper();
     auto session = request["session"].toString().trimmed();
-    QUuid uuid(session);
 
-    if(agent.size() < 2 || agent[0] != '@')
-        return ai_reply(socket,agent,"ERROR\tmissing agent: use @C for Codex, @A for Claude Code, @G for Gemini, or another two-character provider ID such as @L");
-    if(uuid.isNull())
-        return ai_reply(socket,agent,"ERROR\tinvalid session: supply one UUID and reuse it for the entire AI conversation");
+    if(agent.isEmpty())
+        return ai_reply(socket,{},"ERROR\tmissing agent: provide an agent name and reuse it for the entire conversation");
+    if(agent.contains('@'))
+        return ai_reply(socket,{},"ERROR\tinvalid agent: '@' is reserved as the agent/session separator");
+    if(session.isEmpty())
+        return ai_reply(socket,{},"ERROR\tmissing session: provide a session name and reuse it for the entire conversation");
 
-    session = uuid.toString(QUuid::WithoutBraces);
-    auto expected = agent.left(2)+session.left(12);
-    if(agent != expected)
-        return ai_reply(socket,agent,("ERROR\tagent/session mismatch: use agent "+expected+
-                                        " and reuse session "+session+
-                                        " for the entire AI conversation").toUtf8());
+    agent += "@"+session;
 
     if(!ai_log_positions.contains(agent))
     {
@@ -390,9 +442,7 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
     if(history.isEmpty())
         return;
 
-    QString name = agent.startsWith("@C") ? "Codex" :
-                   agent.startsWith("@A") ? "Claude Code" : "AI Agent";
-    QString project_title = ai_project_titles.value(agent,name+" · "+agent);
+    QString project_title = ai_project_titles.value(agent,agent);
 
     auto* item = ai_project_items.value(agent);
     if(!item)
@@ -512,7 +562,7 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
                         "<td bgcolor=\"%1\"><b style=\"background-color:%1\">%2 · %3</b> "
                         "<font color=\"#80868b\">%4</font><br>%5</td>")
                         .arg(color,
-                             request ? "Activity" : user ? "You" : name,
+                             request ? "Activity" : user ? "You" : agent,
                              agent.toHtmlEscaped(),
                              QDateTime::fromString(entry["time"].toString(),Qt::ISODate).
                              toString("MM/dd HH:mm:ss"),
@@ -688,7 +738,7 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
             bool new_agent = agent.isEmpty();
             if(agent.isEmpty())
             {
-                agent = "@C"+session.left(12);
+                agent = "@"+session;
                 process->setObjectName(agent);
                 ai_work_dirs[agent] = process->workingDirectory();
                 ai_processes[agent] = process;
@@ -817,10 +867,13 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
             "on the final LOG. Process every returned PROMPT.";
     }
     else
+    {
+        auto name = agent.section('@',0,0);
         prompt +=
-            "\n\n[DSI Studio] Continue through agent "+agent+" using session "+
+            "\n\n[DSI Studio] Continue through agent "+name+" using session "+
             session+". Send new user-facing text and the final reply through "
-            "the named pipe.";
+                      "the named pipe.";
+    }
 
     QStringList args{"exec"};
     if(session.isEmpty())
@@ -841,16 +894,8 @@ void MainWindow::on_ai_send_message_clicked()
     auto text = ui->ai_chat_input->toPlainText().trimmed();
     if(text.isEmpty())
         return;
-
     auto* item = ui->ai_project_list->currentItem();
     auto agent = item ? item->data(Qt::UserRole).toString() : QString();
-    if(!agent.isEmpty() && !agent.startsWith("@C"))
-    {
-        QMessageBox::warning(this,"AI Agent",
-                             "Only Codex is currently supported.");
-        return;
-    }
-
     if(!agent.isEmpty() && ai_processes.contains(agent))
     {
         ai_prompts[agent].append(text);
