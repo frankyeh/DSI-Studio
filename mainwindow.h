@@ -67,6 +67,7 @@ private:
     void login(void);
 private slots:
 
+    void on_ai_send_message_clicked();
     void on_averagefib_clicked();
     void on_vbc_clicked();
     void on_RenameDICOMDir_clicked();
