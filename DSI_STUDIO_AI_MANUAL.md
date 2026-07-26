@@ -47,8 +47,8 @@ do not read the entire inventory.
 - `LIST` lines are `type<TAB>numeric-id<TAB>title`; there is no `.windows`
   property.
 - A `CMD` reply beginning with `[` is a JSON array of
-  `{index,okay,output,error?}`. `dsi.ps1` returns raw output; parse only that
-  reply as JSON when needed.
+  `{index,okay,output,error?}`. The generated PowerShell client returns raw
+  output; parse only that reply as JSON when needed.
 - List-command results remain tab-separated text in `result[0].output`; there
   are no `.tracks`, `.regions`, or similar properties.
 
@@ -81,8 +81,8 @@ Parameters shown below are separate JSON array elements.
 
 `hub open` may download before opening; poll `LIST`. To open a local file when
 only the main window exists, run
-`.\dsi.ps1 agent@session OPEN <absolute-path>`, then poll `LIST`. Do not send
-the path as a main-window `CMD`; `open_fib` requires an existing tracking
+`.\<client.ps1> agent@session OPEN <absolute-path>`, then poll `LIST`. Do not
+send the path as a main-window `CMD`; `open_fib` requires an existing tracking
 window.
 
 For multiple images, send **exactly one flat `open_image` command** to the
