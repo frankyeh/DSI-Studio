@@ -455,6 +455,7 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
         auto* title = new QPushButton(row);
         title->setObjectName("ai_project_title");
         title->setFlat(true);
+        title->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
 
         auto* button = new QToolButton(row);
         button->setObjectName("ai_project_menu_button");
@@ -493,7 +494,8 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
     item->setText(project_title);
     title->setText(project_title);
     title->setToolTip(project_title);
-    item->setSizeHint(title->parentWidget()->sizeHint());
+    item->setSizeHint(
+        QSize(0,title->parentWidget()->sizeHint().height()));
 
     auto* current = ui->ai_project_list->currentItem();
     if(!current)
