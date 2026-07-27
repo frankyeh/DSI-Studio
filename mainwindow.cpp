@@ -541,11 +541,8 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
             auto title = detail["_target_title"].toString();
             if(compact)
                 return names.join(", ");
-            return QString("Sent %1 command%2 to %3%4")
-                   .arg(names.isEmpty() ? "unknown" : names.join(", "))
-                   .arg(names.size() == 1 ? "" : "s")
-                   .arg(destination)
-                   .arg(title.isEmpty() ? "" : " "+title);
+            return (names.isEmpty() ? "unknown" : names.join(", "))+
+                   " \u2192 "+destination+(title.isEmpty() ? "" : " "+title);
         }
         return action == "LIST" ? "Checked open windows" :
                action == "LOG" ? "Read new console output" :
@@ -630,7 +627,7 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
                 if(end != index)
                 {
                     auto target = request_content(entry);
-                    target = target.mid(target.lastIndexOf(" to ")+4);
+                    target = target.mid(target.lastIndexOf(" \u2192 ")+3);
                     combined["_summary"] = activities.join(", ")+" \u2192 "+target;
                     combined["_end_time"] = history[end].toObject()["time"];
                 }
