@@ -7,17 +7,17 @@ needed by the request; do not read its entire inventory.
 
 Choose one non-empty agent name and the exact non-empty thread/session ID of
 the initiating chat when the AI conversation starts. Reuse both exactly in
-every request. The agent name must include `Codex`, `Claude`, or `Ollama` and
+every request. The agent name must include `Codex` or `Claude` and
 must not contain `@`.
 
-`Ollama` uses the configured local model endpoint through Claude and therefore
-uses Claude's resumable session ID.
-It runs Claude with `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN=ollama`, and
-an empty `ANTHROPIC_API_KEY`.
+Ollama is a model provider for Claude Code, not an agent. Selecting an Ollama
+model runs Claude with the configured endpoint, `ANTHROPIC_AUTH_TOKEN=ollama`,
+an empty `ANTHROPIC_API_KEY`, and Claude's resumable session ID.
 
-DSI Studio identifies the conversation as `agent@session`. The request still
-sends `agent` and `session` as separate JSON fields. The session must be the
-provider's exact resumable thread ID (for Codex, the `thread_id` from
+DSI Studio uses `session` as the unique conversation key and stores the agent
+name separately. Requests send both as separate JSON fields; `agent@session`
+is only the combined display/wrapper form. The session must be the agent's
+exact resumable thread ID (for Codex, the `thread_id` from
 `thread.started`) in canonical UUID form, never a friendly label or a
 request-local GUID. An agent initiating a DSI connection must provide it in
 its first request; otherwise DSI Studio cannot later resume the correct chat.
