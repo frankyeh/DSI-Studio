@@ -10,9 +10,9 @@
 #include <QNetworkRequest>
 #include <QNetworkReply>
 #include <QJsonArray>
-#include <QMap>
 #include <QJsonObject>
 #include <QMenu>
+#include <unordered_map>
 
 
 namespace Ui {
@@ -22,6 +22,14 @@ class group_connectometry_analysis;
 class FiberDataHub;
 class QProcess;
 
+struct ai_info{
+    QString agent_name,work_dirs,project_titles;
+    QProcess* processes = nullptr;
+    QJsonArray projects,prompts;
+    QListWidgetItem* project_items = nullptr;
+    QJsonObject model_settings;
+};
+extern std::unordered_map<QString,ai_info> ai_infos;
 
 class MainWindow : public QMainWindow
 {
@@ -32,12 +40,6 @@ class MainWindow : public QMainWindow
 
 public:
     QString ai_project_dir;
-    std::map<QString,QJsonArray> ai_prompts;
-    QMap<QString,QString> ai_agent_name,ai_work_dirs,ai_project_titles;
-    QMap<QString,QProcess*> ai_processes;
-    QMap<QString,QJsonArray> ai_projects;
-    QMap<QString,QListWidgetItem*> ai_project_items;
-    QMap<QString,QJsonObject> ai_model_settings;
     QMenu* ai_project_menu = nullptr;
     void add_ai_history(const QString&,const QString&,const QString&);
     void show_ai_project(const QString&,QJsonObject = {});
