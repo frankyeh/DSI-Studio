@@ -176,6 +176,7 @@ bool FiberDataHub::command(const std::vector<std::string>& cmd)
     on_github_tags_itemSelectionChanged();
     if(cmd[1] == "files")
     {
+        tipl::out() << "index\tfile\tsize\tdownloaded";
         QString text = cmd.size() > 4 ? QString::fromUtf8(cmd[4]) : QString();
         bool ok = true;
         int offset = cmd.size() > 5 ? QString::fromUtf8(cmd[5]).toInt(&ok) : 0;
@@ -207,15 +208,37 @@ bool FiberDataHub::command(const std::vector<std::string>& cmd)
     if(cmd.size() < 5)
         return fail(usage);
 
+
+    QString file_value = QString::fromUtf8(cmd[4]);
     int file = -1;
+
+    // Prefer an exact filename match.
     for(int row = 0;row < ui->github_release_files->rowCount();++row)
-        if(ui->github_release_files->item(row,0)->text() == QString::fromUtf8(cmd[4]))
+        if(ui->github_release_files->item(row,0)->text() == file_value)
+        {
             file = row;
+            break;
+        }
+
+    // Otherwise accept the numeric index returned by "hub files".
     if(file < 0)
-        return fail("file not found");
+    {
+        bool okay;
+        int index = file_value.toInt(&okay);
+        if(okay && index >= 0 &&
+            index < ui->github_release_files->rowCount())
+            file = index;
+    }
+
+    if(file < 0)
+        return fail(
+            "file not found: use the exact filename or index returned by hub files");
+
+
     ui->github_release_files->setCurrentCell(file,0);
     ui->github_release_files->selectRow(file);
     on_github_release_files_itemSelectionChanged();
+
     if(cmd[1] == "open")
         return on_github_open_file_clicked(),true;
     if(cmd[1] == "download" && cmd.size() == 6)
