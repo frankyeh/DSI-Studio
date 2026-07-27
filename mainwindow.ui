@@ -395,17 +395,17 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
               <property name="styleSheet">
                <string notr="true">QListWidget { border: 0px; background-color: transparent; padding: 2px; } QListWidget::item { padding: 0px; border-radius: 5px; } QListWidget::item:selected { background-color: #e5e5e7; color: black; }</string>
               </property>
+              <property name="verticalScrollBarPolicy">
+               <enum>Qt::ScrollBarAlwaysOff</enum>
+              </property>
+              <property name="horizontalScrollBarPolicy">
+               <enum>Qt::ScrollBarAlwaysOff</enum>
+              </property>
               <property name="editTriggers">
                <set>QAbstractItemView::NoEditTriggers</set>
               </property>
               <property name="selectionMode">
                <enum>QAbstractItemView::SingleSelection</enum>
-              </property>
-              <property name="horizontalScrollBarPolicy">
-               <enum>Qt::ScrollBarAlwaysOff</enum>
-              </property>
-              <property name="verticalScrollBarPolicy">
-               <enum>Qt::ScrollBarAlwaysOff</enum>
               </property>
              </widget>
             </item>
@@ -474,22 +474,6 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
                <property name="spacing">
                 <number>8</number>
                </property>
-               <item row="1" column="0">
-                <widget class="QLabel" name="ai_control_status">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="text">
-                  <string>● Ready</string>
-                 </property>
-                 <property name="alignment">
-                  <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-                 </property>
-                </widget>
-               </item>
                <item row="1" column="3">
                 <widget class="QComboBox" name="ai_agent_selector">
                  <property name="minimumSize">
