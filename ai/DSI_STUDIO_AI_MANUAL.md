@@ -178,7 +178,8 @@ Every command and parameter is a separate JSON string.
 | Select slice | `["set_slice",index]` |
 | Select slice by name | `["set_slice_by_name",name]` |
 | Move slices | `["move_slice","x y z"]` |
-| Segment a slice | `["segment_brain",model,slice]` |
+| Segment current slice | `["segment_brain",model]` |
+| Segment selected slice | `["segment_brain",model,slice-name-or-index]` |
 | Add atlas region | `["add_region_from_atlas",region]` |
 | Set region name | `["set_region_name",index,name]` |
 | Set region type | `["set_region_type",index,type]` |
@@ -201,6 +202,32 @@ Every command and parameter is a separate JSON string.
 and `hub download`, pass either the exact filename or the numeric index from
 that same `hub files` result. Indices apply only to the currently selected
 repository and tag.
+
+### Brain segmentation
+
+Use `list_unet` to obtain an available model and `list_slice` to obtain the
+current slice names and indices. `segment_brain` accepts either form:
+
+```text
+["segment_brain","model"]
+["segment_brain","model","T1w"]
+["segment_brain","model","7"]
+```
+
+When the slice argument is omitted, DSI Studio segments the current slice. When
+it is supplied, DSI Studio first tries an exact slice-name match and then treats
+the value as a numeric index from the latest `list_slice`. Prefer the numeric
+index when slice names are duplicated.
+
+The command internally selects the requested slice. If that slice references a
+remote image, selection triggers its download and loading. DSI Studio waits for
+custom-slice registration before running segmentation, so a separate
+`set_slice_by_name` call is not required. To preload and inspect the state
+separately, use `set_slice <index>` and poll `list_slice` until `downloaded=1`,
+`ready=1`, and `registering=0` before calling `segment_brain`.
+
+A successful `segment_brain` reply means inference and region creation have
+finished. Verify the expected results with `list_region`.
 
 ### Fiber tracking
 
@@ -251,8 +278,9 @@ After a window opens or closes, refresh `LIST`. Otherwise reuse the latest
 window IDs.
 
 Most Hub FIB files contain an HTTP reference to their native T1w. After opening
-the FIB, use `list_slice`, then select the returned T1w entry. DSI Studio will
-download and load it automatically.
+the FIB, call `list_slice`. Pass the returned T1w name or index directly to
+`segment_brain`, or use `set_slice <index>` first when download and registration
+should be observed separately.
 
 ## Asynchronous work
 
@@ -260,7 +288,8 @@ Tracking is asynchronous. A successful `run_tracking` reply means tracking was
 started. Use `list_tract status` until `running=0`, then call full `list_tract`
 only when bundle details are needed.
 
-Segmentation is complete when `list_region` shows the expected output.
+`segment_brain` is synchronous. A successful reply means segmentation has
+completed; use `list_region` to verify the created regions.
 
 Slice loading/registration is complete when `list_slice` reports the expected
 `ready`, `registering`, and `registered` state.
