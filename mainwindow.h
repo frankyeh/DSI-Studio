@@ -23,14 +23,6 @@ class FiberDataHub;
 class QProcess;
 
 
-struct ai_info{
-    QString sessions,work_dirs,project_titles;
-    QProcess* processes;
-    QJsonArray projects,prompts;
-    QListWidgetItem* project_items;
-    QJsonObject model_settings;
-};
-
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -41,7 +33,7 @@ class MainWindow : public QMainWindow
 public:
     QString ai_project_dir;
     std::map<QString,QJsonArray> ai_prompts;
-    QMap<QString,QString> ai_sessions,ai_work_dirs,ai_project_titles;
+    QMap<QString,QString> ai_agent_name,ai_work_dirs,ai_project_titles;
     QMap<QString,QProcess*> ai_processes;
     QMap<QString,QJsonArray> ai_projects;
     QMap<QString,QListWidgetItem*> ai_project_items;
