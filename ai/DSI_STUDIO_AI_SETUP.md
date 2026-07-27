@@ -328,10 +328,40 @@ including `LIST`, `CHAT`, or `TITLE`, as `PROMPT<TAB><JSON>`, or appear in the
 last command result's `prompt` property. An initial `OKAY` does not mean no
 `PROMPT` follows. Treat every returned prompt as new user input.
 
+## Wait etiquette
+
+Before loading, registration, reconstruction, segmentation, batch processing,
+fiber tracking, or another substantial CPU/GPU operation, call `LIST`.
+
+- If global `busy=0`, proceed.
+- If the activity was started by this agent, do not start another substantial
+  task. Send one concise `CHAT` saying what is still running and that the user
+  may interrupt or terminate it, then wait.
+- If the activity predates the intended operation or may belong to the user or
+  another agent, send one concise `CHAT`: `DSI Studio is busy with <status>. I
+  will wait by default. You may terminate the current work or tell me to proceed
+  right away.` Without a direct instruction to proceed immediately, wait until
+  global `busy=0`.
+- If the user explicitly says to proceed right away, issue the requested work.
+  If DSI Studio rejects it because another synchronous `CMD` is active, do not
+  retry repeatedly; continue waiting.
+- Poll only `LIST` after 4 seconds, then 8, 16, and 32 seconds. Continue every 32
+  seconds while state is unchanged. Reset to 4 seconds whenever `status`,
+  `level`, any window's `busy`, or any `tracking-jobs` value changes.
+- Use a local sleep or timer between checks. Waiting should perform no model
+  reasoning and consume no task tokens. Do not send repeated `CHAT`, call
+  `LOG`, request detailed lists, or narrate unchanged polling.
+- Inspect every complete `LIST` reply for `PROMPT`. User instructions always
+  take priority. When global `busy` becomes `0`, continue without another
+  waiting message unless a meaningful phase change needs one.
+
 ## Token efficiency
 
 - Retain numeric window IDs until a window opens or closes. Poll compact `LIST`
   only while waiting for global or per-window activity to change.
+- During waiting, use the 4/8/16/32-second schedule and sleep between checks;
+  do not use model reasoning, chat, `LOG`, or detailed discovery while state is
+  unchanged.
 - Use each tracking row's `tracking-jobs` count to detect tracking completion.
   Request full `list_tract` only after completion when details are needed.
 - Call `list_param` without an ID once to discover valid IDs, then query only
@@ -344,7 +374,7 @@ last command result's `prompt` property. An initial `OKAY` does not mean no
   commands.
 - Attach short progress `chat` to an already-needed request. Do not attach chat
   to every `LIST` poll. Use a standalone `CHAT` only for the final reply, a
-  required user decision, or an unavoidable waiting or blocked update.
+  required user decision, or the one initial waiting/blocked update.
 - Send `cwd` in the first request after connecting or restarting DSI Studio,
   then omit it until the working directory changes.
 - Reuse discovered names and indices until the relevant state changes. Search
@@ -361,9 +391,11 @@ the agent ran them. Attach a short `chat` update to the next necessary JSON
 request so the user can follow the agent's intent in the AI Agents tab.
 
 Send one concise sentence at task start, before each meaningful phase, when
-waiting for a long operation, when blocked, and at completion. Do not expose
-reasoning, logs, or tool details. Do not repeat unchanged status, attach chat to
-every polling request, or create a separate request only to report status.
+first entering a wait, when blocked, and at completion. For pre-existing busy
+work, state that waiting is the default and that the user may terminate the
+current work or explicitly request immediate execution. Do not expose reasoning,
+logs, or tool details. Do not repeat unchanged status, attach chat to every
+polling request, or create a separate request only to report unchanged status.
 `OPEN` uses filename transport, so attach its intent to the nearest necessary
 `LIST` or `CMD`.
 
@@ -403,33 +435,36 @@ path into fields, or substitute `add_image`. Refresh `LIST` afterward.
    before using an executable wrapper. Use GUI commands. **Do not use `run_cli`
    unless the user explicitly says to run the CLI.** Never infer CLI permission
    from a requested outcome.
-3. Call top-level `LIST` first, after windows open or close, and while waiting
-   for global or per-window activity to change. It does not use a `window`
-   field.
+3. Call top-level `LIST` first, after windows open or close, before substantial
+   work, and while waiting for global or per-window activity to change. It does
+   not use a `window` field.
 4. Use only numeric IDs returned by `LIST` for `CMD` requests.
 5. Use `LIST` for compact busy/progress and tracking-job polling. Discover
    detailed values with `list_slice`, `list_region`, `list_tract`, `list_param`,
    `list_atlas`, `list_unet`, and `list_auto_tract` only when needed.
-6. Treat `okay:true` as acceptance. Poll `LIST` for long-running and
+6. Do not stack substantial work on an already busy DSI Studio by default. Send
+   one waiting `CHAT`. For pre-existing activity, state that the user may
+   terminate it or explicitly request immediate execution. Without that direct
+   instruction, wait for global `busy=0` using `LIST` after 4, 8, 16, and 32
+   seconds, then every 32 seconds. Reset to 4 seconds when state changes. Sleep
+   without model reasoning between checks and inspect every reply for `PROMPT`.
+7. Treat `okay:true` as acceptance. Poll `LIST` for long-running and
    asynchronous activity, then use a targeted list command to verify detailed
-   output. Use `LOG` only when diagnostics are needed. If an operation is still
-   active, state once that waiting will continue and the user can interrupt,
-   then check about every 3 seconds unless interrupted; process every reply.
-   Never automatically repeat a failed, timed-out, unavailable, or unexpected
-   request.
-7. If a required window disappears or returns `window not found`, assume the
+   output. Use `LOG` only when diagnostics are needed. Never automatically
+   repeat a failed, timed-out, unavailable, or unexpected request.
+8. If a required window disappears or returns `window not found`, assume the
    user closed it. Do not recheck, reopen, or retry it. Stop and send one
    `CHAT` asking whether to continue or stop; resume only after the reply.
-8. Verify outputs. Ask before destructive operations or overwrites.
-9. Do not answer modal dialogs remotely; tell the user what is required.
-10. Keep the user informed with brief intent-focused `chat` updates at meaningful
+9. Verify outputs. Ask before destructive operations or overwrites.
+10. Do not answer modal dialogs remotely; tell the user what is required.
+11. Keep the user informed with brief intent-focused `chat` updates at meaningful
     phase changes, attached to requests already needed for the task.
-11. After understanding the initiating prompt, send one concise `TITLE`.
+12. After understanding the initiating prompt, send one concise `TITLE`.
     Send another `TITLE` later only with user permission to rename.
-12. Send the final answer once with `CHAT`.
-13. Minimize round trips: retain window IDs, use compact `LIST` status, batch
+13. Send the final answer once with `CHAT`.
+14. Minimize round trips: retain window IDs, use compact `LIST` status, batch
     safe same-window commands, and avoid unnecessary detailed or `LOG` calls.
-14. When asked to operate DSI Studio, execute the requests. Do not return a
+15. When asked to operate DSI Studio, execute the requests. Do not return a
     script or tutorial unless the user asks for one.
 
 If DSI Studio resumes an agent, reconnect with the exact same agent and
