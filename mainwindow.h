@@ -22,12 +22,18 @@ class group_connectometry_analysis;
 class FiberDataHub;
 class QProcess;
 
+enum class ai_provider {Unknown = -1,Codex = 0,Claude = 1,Ollama = 2};
 struct ai_info{
     QString agent_name,work_dirs,project_titles;
+    ai_provider provider = ai_provider::Unknown;
     QProcess* processes = nullptr;
     QJsonArray projects,prompts;
     QListWidgetItem* project_items = nullptr;
     QJsonObject model_settings;
+    static ai_provider identify_provider(const QString&);
+    QString title(const QString& session) const {return project_titles.isEmpty() ? (agent_name.isEmpty() ? session : agent_name+"@"+session) : project_titles;} QString details(const QString&) const;
+    void update(const QString&,const QString& = {}); void set_provider(ai_provider,const QString&); void set_process(QProcess*);
+    QString take_prompts(void); QByteArray prepare_reply(QByteArray,QJsonArray*) const;
 };
 extern std::unordered_map<QString,ai_info> ai_infos;
 
