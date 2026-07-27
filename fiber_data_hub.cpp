@@ -648,8 +648,6 @@ void FiberDataHub::on_github_download_clicked()
     tipl::progress p("downloading...",true);
     for (int i = 0; p(i,row_list.size());++i)
     {
-        qint64 startTime = QDateTime::currentMSecsSinceEpoch();
-
         QString url = ui->github_release_files->item(row_list[i], 4)->text();
         QString filePath = ui->download_dir->text() + "/" + ui->github_release_files->item(row_list[i], 0)->text();
         if (QFile::exists(filePath) && !ui->download_overwrite->isChecked())
@@ -666,7 +664,6 @@ void FiberDataHub::on_github_download_clicked()
         while (retry < max_retry)
         {
             reply = main_window.get(url);
-            qint64 bytesTotal = ui->github_release_files->item(row_list[i], 1)->data(Qt::UserRole).toLongLong();
             while (!reply->isFinished() && !p.aborted())
             {
                 QCoreApplication::processEvents();
@@ -687,16 +684,13 @@ void FiberDataHub::on_github_download_clicked()
             return;
 
         {
-            auto file = std::make_shared<QFile>(filePath);
-            if (!file->open(QFile::WriteOnly))
+            QFile file(filePath);
+            auto data = reply->readAll();
+            if(!file.open(QFile::WriteOnly) ||file.write(data) != data.size())
             {
-                QMessageBox::critical(this, "ERROR", "Failed to save file to disk");
+                QMessageBox::critical(this,"ERROR","Failed to save file to disk");
                 return;
             }
-            QTimer::singleShot(0, this, [file, reply]()
-            {
-                file->write(reply->readAll());
-            });
         }
     }
 }
