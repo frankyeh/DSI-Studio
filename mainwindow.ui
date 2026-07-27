@@ -508,11 +508,6 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
                    <string>Claude</string>
                   </property>
                  </item>
-                 <item>
-                  <property name="text">
-                    <string>Ollama</string>
-                  </property>
-                 </item>
                 </widget>
                </item>
                <item row="1" column="4">
