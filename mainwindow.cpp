@@ -1416,47 +1416,31 @@ MainWindow::MainWindow(QWidget *parent) :
         auto* item = ui->ai_project_list->currentItem();
         if(!item)
             return;
-        auto agent = item->data(Qt::UserRole).toString();
-        if(ai_processes.contains(agent))
+        auto session = item->data(Qt::UserRole).toString();
+        if(ai_processes.contains(session))
         {
-            QMessageBox::information(this,"Remove Project",
-                                     "Wait for the AI agent to finish first.");
+            QMessageBox::information(this,"Remove Project","Wait for the AI agent to finish first.");
             return;
         }
-        if(QMessageBox::question(
-               this,"Remove Project",
-               "Remove this project and its saved history?") != QMessageBox::Yes)
+        if(QMessageBox::question(this,"Remove Project","Remove this project and its saved history?") != QMessageBox::Yes)
             return;
 
-        auto history_file = ai_project_dir+"/"+QString::fromLatin1(
-                                QUrl::toPercentEncoding(agent))+".jsonl";
-
-        if(QFileInfo::exists(history_file) && !QFile::remove(history_file))
-        {
-            QMessageBox::warning(
-                this,"Remove Project","The saved history could not be removed.");
-            return;
-        }
-
-
-
-        ai_projects.remove(agent);
-        ai_project_items.remove(agent);
-        ai_project_titles.remove(agent);
-        ai_sessions.remove(agent);
-        ai_work_dirs.remove(agent);
-        ai_model_settings.remove(agent);
-        ai_prompts.erase(agent);
-        ai_log_positions.remove(agent);
+        QFile::remove(ai_project_dir+"/"+QString::fromLatin1(QUrl::toPercentEncoding(session))+".jsonl");
+        ai_projects.remove(session);
+        ai_project_items.remove(session);
+        ai_project_titles.remove(session);
+        ai_sessions.remove(session);
+        ai_work_dirs.remove(session);
+        ai_model_settings.remove(session);
+        ai_prompts.erase(session);
+        ai_log_positions.remove(session);
         ui->ai_project_list->setCurrentItem(nullptr);
         delete item;
 
         if(ui->ai_project_list->count())
             ui->ai_project_list->setCurrentRow(0);
         else
-        {
             ui->ai_chat_history->clear();
-        }
     });
 
     connect(ui->ai_project_list,&QListWidget::currentItemChanged,this,
