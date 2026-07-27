@@ -5,14 +5,34 @@ needed by the request; do not read its entire inventory.
 
 ## Identity
 
-Choose one non-empty agent name and the initiating chat's non-empty session ID
-when the AI conversation starts. Reuse both exactly in every request. The agent
-name must include `Codex`, `Claude`, or `Gemini` and must not contain `@`.
+Choose one non-empty agent name and the exact non-empty thread/session ID of
+the initiating chat when the AI conversation starts. Reuse both exactly in
+every request. The agent name must include `Codex`, `Claude`, or `Gemini` and
+must not contain `@`.
 
 DSI Studio identifies the conversation as `agent@session`. The request still
 sends `agent` and `session` as separate JSON fields. The session must be the
-real initiating-chat/session ID, never a request-local GUID, so a prompt sent
-from DSI Studio reaches the correct agent conversation.
+provider's exact resumable thread ID (for Codex, the `thread_id` from
+`thread.started`), never a friendly label or a request-local GUID. An agent
+initiating a DSI connection must provide it in its first request; otherwise
+DSI Studio cannot later resume the correct chat.
+
+### Codex Desktop fallback
+
+Codex Desktop may expose a task UUID indirectly in its injected runtime context
+or a task-specific path, for example `...\visualizations\...\019f...`. If a
+UUID is explicitly present there, use it as the Codex session ID. Do not guess,
+generate, or scan for an ID. This is a best-effort fallback; the reliable route
+is DSI Studio launching Codex with `exec --json` and capturing `thread.started`.
+
+### Claude Code
+
+Claude Code stores its resume name in `~/.claude/sessions/<pid>.json`. Always
+read the current Claude process's file and send its `name` field as the DSI
+Studio `session` value; DSI Studio uses it for `claude -p --resume <name>`.
+Do not use the JSON `sessionId` field for resume. For example, if
+`C:\Users\YEHFC\.claude\sessions\42232.json` contains
+`"name":"test5rer234"`, use `dsi-claude@test5rer234`.
 
 ```powershell
 $DsiAgent = 'Codex'
