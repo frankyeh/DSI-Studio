@@ -123,8 +123,39 @@ std::string ai_log(QString text)
     return ("[AI AGENT] "+text.remove('\r').replace(
                 '\n',"\n[AI AGENT] ")).toStdString();
 }
-static const QRegularExpression ansi_escape(
-    QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
+const QRegularExpression ansi_escape(QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
+
+QString ai_window_status(QWidget* window,bool& busy,int& jobs)
+{
+    busy = window->property("busy").toBool();
+    jobs = 0;
+
+    if(qobject_cast<MainWindow*>(window))
+        return "main";
+
+    if(auto* w = qobject_cast<tracking_window*>(window))
+    {
+        jobs = int(std::count_if(
+            w->tractWidget->thread_data.begin(),
+            w->tractWidget->thread_data.end(),
+            [](const auto& thread){return bool(thread);}));
+
+        busy |= jobs || w->history.running_commands ||
+                std::any_of(w->slices.begin(),w->slices.end(),
+                            [](const auto& slice)
+                            {
+                                auto custom = std::dynamic_pointer_cast<CustomSliceModel>(slice);
+                                return custom && custom->running;
+                            });
+        return "tracking";
+    }
+
+    if(qobject_cast<view_image*>(window))
+        return "image";
+
+    return {};
+}
+
 void ai_reply(QLocalSocket* socket,const QString& session,
                       QByteArray reply,QJsonArray* results = nullptr)
 {
@@ -140,28 +171,58 @@ void ai_reply(QLocalSocket* socket,const QString& session,
 void ai_request_list(QLocalSocket* socket,const QString& session)
 {
     static quint64 next_id = 0;
+
+    int level = std::max(0,int(tipl::status_list.size())-1);
+    bool global_busy = level != 0;
+    bool has_tracking = false;
+    QString status;
+
+    if(level)
+    {
+        const auto& prog = tipl::status_list.back();
+        status = QString::fromStdString(prog.status).section('\n',0,0).replace('\t',' ');
+        if(!prog.at.empty())
+            status += " " + QString::fromStdString(prog.at);
+    }
+
     QStringList result;
     for(auto* window : QApplication::allWidgets())
     {
-        QString type;
-        if(qobject_cast<MainWindow*>(window))
-            type = "main";
-        else if(qobject_cast<tracking_window*>(window))
-            type = "tracking";
-        else if(qobject_cast<view_image*>(window))
-            type = "image";
-        else
+        bool busy;
+        int jobs;
+        auto type = ai_window_status(window,busy,jobs);
+        if(type.isEmpty())
             continue;
 
         if(!window->property("remote_id").isValid())
             window->setProperty("remote_id",++next_id);
 
-        result << QString("%1\t%2\t%3")
-                      .arg(type)
-                      .arg(window->property("remote_id").toULongLong())
-                      .arg(QDir::fromNativeSeparators(window->windowTitle()));
+        auto command =
+            window->property("command").toString();
+        if(level == 1 &&
+            status.startsWith("[AI REQUEST]") &&
+            !command.isEmpty())
+            status = command;
+
+        auto title =
+            QDir::fromNativeSeparators(window->windowTitle());
+        title.replace('\t',' ').replace('\n',' ');
+
+        result << QString("%1\t%2\t%3\t%4\t%5").arg(type).arg(window->property("remote_id").toULongLong())
+                      .arg(int(busy)).arg(jobs).arg(title);
+
+        global_busy |= busy;
+        has_tracking |= jobs != 0;
     }
-    ai_reply(socket,session,"OKAY\n" + result.join('\n').toUtf8());
+
+    if(!level && global_busy)
+    {
+        level = 1;
+        status = has_tracking ? "fiber tracking" : "working";
+    }
+
+    result.prepend(QString("OKAY\t%1\t%2\t%3").arg(int(global_busy)).arg(level).arg(status));
+    ai_reply(socket,session,result.join('\n').toUtf8());
 }
 
 void ai_request_command(QLocalSocket* socket,const QString& session,
@@ -235,6 +296,7 @@ void ai_request_command(QLocalSocket* socket,const QString& session,
 
     bool updates_enabled = target->updatesEnabled();
     target->setUpdatesEnabled(false);
+    target->setProperty("busy",true);
     QJsonArray results;
 
     for(int index = 0;index < commands.size();++index)
@@ -252,7 +314,12 @@ void ai_request_command(QLocalSocket* socket,const QString& session,
             for(const auto& value : args)
                 cmd.push_back(value.toString().toUtf8().toStdString());
 
+        target->setProperty("command",error.isEmpty() ? QString::fromStdString(cmd[0]) : QString());
+
         bool okay = error.isEmpty() && run(cmd,output,error);
+
+        target->setProperty("command",QVariant());
+
         output.remove(ansi_escape);
         error.remove(ansi_escape);
         if(!okay)
@@ -269,6 +336,7 @@ void ai_request_command(QLocalSocket* socket,const QString& session,
             break;
     }
 
+    target->setProperty("busy",false);
     target->setUpdatesEnabled(updates_enabled);
     if(auto* window = qobject_cast<tracking_window*>(target))
     {
@@ -348,7 +416,7 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     }
 
     tipl::progress p;
-    if(type == "LIST" || type == "CMD")
+    if(type == "CMD")
     {
         auto msg = QString("[AI REQUEST] ")+type+" from "+agent_name+"@"+session;
         p = tipl::progress(msg.remove('\r').replace('\n',' ').toStdString());
