@@ -21,6 +21,7 @@ namespace Ui {
 class group_connectometry_analysis;
 class FiberDataHub;
 class QProcess;
+struct ai_launch;
 
 enum class ai_provider {Unknown = -1,Codex = 0,Claude = 1,Ollama = 2};
 struct ai_info{
@@ -85,6 +86,12 @@ private:
     FiberDataHub* fiber_data_hub = nullptr;
     void login(void);
     void start_ai(QString,const QString&,bool);
+    void start_codex(QString,const QString&,bool);
+    void start_claude(QString,const QString&,bool);
+    void start_ollama(QString,const QString&,bool);
+    ai_launch prepare_ai(ai_provider,QString,const QString&,bool);
+    void start_claude_process(const ai_launch&);
+    void run_ai(const ai_launch&,QStringList);
 private slots:
 
     void on_ai_quick_settings_clicked();
