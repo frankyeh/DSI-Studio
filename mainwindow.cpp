@@ -186,7 +186,7 @@ void ai_request_list(QLocalSocket* socket,const QString& session)
         result << QString("%1\t%2\t%3")
                       .arg(type)
                       .arg(window->property("remote_id").toULongLong())
-                      .arg(window->windowTitle());
+                      .arg(QDir::fromNativeSeparators(window->windowTitle()));
     }
     ai_reply(socket,session,"OKAY\n" + result.join('\n').toUtf8());
 }
@@ -3039,7 +3039,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
     if(cmd.size() == 1 && tipl::begins_with(cmd[0],"list_recent"))
     {
         for(const auto& file : settings.value(tipl::ends_with(cmd[0],"fib") ? "recentFibFileList" : "recentSrcFileList").toStringList())
-            tipl::out() << file.toStdString();
+            tipl::out() << QDir::fromNativeSeparators(file).toStdString();
         return true;
     }
 
