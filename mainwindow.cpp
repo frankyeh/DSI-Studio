@@ -707,9 +707,6 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
                 continue;
 
             auto session = event["thread_id"].toString();
-            if(QUuid(session).isNull())
-                continue;
-
             auto agent = process->objectName();
             bool new_agent = agent.isEmpty();
             if(agent.isEmpty())
