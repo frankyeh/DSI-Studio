@@ -649,7 +649,7 @@ void MainWindow::on_ai_quick_settings_clicked()
     QDialog dialog(this);
     dialog.setWindowTitle("AI Settings");
     QFormLayout layout(&dialog);
-    QLineEdit host(settings.value("ai/ollama_host","192.168.1.14").toString());
+    QLineEdit host(settings.value("ai/ollama_host","").toString());
     QSpinBox port;
     port.setRange(1,65535);
     port.setValue(settings.value("ai/ollama_port",11434).toInt());
@@ -1129,28 +1129,6 @@ MainWindow::MainWindow(QWidget *parent) :
             }
             else
                 process.kill();
-            QDir dir(qEnvironmentVariable("CODEX_HOME",QDir::homePath()+"/.codex"));
-            QRegularExpression regex(R"((?:^|\n)\s*model\s*=\s*["']([^"']+)["'])");
-            for(const auto& name : dir.entryList({"config.toml","*.config.toml"},QDir::Files))
-            {
-                QFile file(dir.filePath(name));
-                if(file.open(QIODevice::ReadOnly))
-                {
-                    auto text = QString::fromUtf8(file.readAll());
-                    auto provider = QRegularExpression(
-                        R"((?:^|\n)\s*model_provider\s*=\s*["']([^"']+)["'])").
-                        match(text).captured(1);
-                    for(auto matches = regex.globalMatch(text);
-                        matches.hasNext();)
-                    {
-                        auto model = matches.next().captured(1);
-                        models << model;
-                        if(name != "config.toml")
-                            profiles[model] = QJsonObject{
-                                {"profile",name.chopped(12)},{"provider",provider}};
-                    }
-                }
-            }
             models.removeDuplicates();
             models.sort(Qt::CaseInsensitive);
         }
