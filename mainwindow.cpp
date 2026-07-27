@@ -544,8 +544,8 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
             return (names.isEmpty() ? "unknown" : names.join(", "))+
                    " \u2192 "+destination+(title.isEmpty() ? "" : " "+title);
         }
-        return action == "LIST" ? "Checked open windows" :
-               action == "LOG" ? "Read new console output" :
+        return action == "LIST" ? "checked opened windows" :
+               action == "LOG" ? "read new console output" :
                action+" request";
     };
 
