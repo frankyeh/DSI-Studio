@@ -329,13 +329,13 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
           <widget class="QFrame" name="ai_project_sidebar">
            <property name="minimumSize">
             <size>
-             <width>210</width>
+             <width>360</width>
              <height>0</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>320</width>
+             <width>520</width>
              <height>16777215</height>
             </size>
            </property>
@@ -400,6 +400,12 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
               </property>
               <property name="selectionMode">
                <enum>QAbstractItemView::SingleSelection</enum>
+              </property>
+              <property name="horizontalScrollBarPolicy">
+               <enum>Qt::ScrollBarAlwaysOff</enum>
+              </property>
+              <property name="verticalScrollBarPolicy">
+               <enum>Qt::ScrollBarAlwaysOff</enum>
               </property>
              </widget>
             </item>
