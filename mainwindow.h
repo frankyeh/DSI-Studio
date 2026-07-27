@@ -51,7 +51,7 @@ public:
     QMenu* ai_project_menu = nullptr;
     void add_ai_history(const QString&,const QString&,const QString&);
     bool save_ai_entry(const QString&,const QJsonObject&);
-    bool set_ai_title(const QString&,QString,bool = true);
+    bool set_ai_title(const QString&,QString);
     void select_agent_model(const ai_info& info);
     void show_ai_project(const QString&,QJsonObject = {});
     void stop_ai_blink();
