@@ -485,8 +485,7 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
         cursor.insertHtml(
             QString("<table width=\"100%\" cellspacing=\"3\" "
                     "cellpadding=\"7\"><tr>%1</tr></table>")
-                .arg(request ? cell :
-                         user ? "<td width=\"20%\"></td>"+cell :
+                .arg(user ? "<td width=\"20%\"></td>"+cell :
                          cell+"<td width=\"20%\"></td>"));
     };
 
