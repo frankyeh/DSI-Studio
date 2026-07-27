@@ -421,6 +421,14 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
     if(ui->ai_project_list->currentItem() != item)
         return;
 
+    auto provider = agent.section('@',0,0);
+    auto index = ui->ai_agent_selector->findText(
+        provider.contains("codex",Qt::CaseInsensitive) ? "Codex" :
+        provider.contains("claude",Qt::CaseInsensitive) ? "Claude" : "Gemini",
+        Qt::MatchStartsWith);
+    if(index >= 0)
+        ui->ai_agent_selector->setCurrentIndex(index);
+
     auto request_content = [](const QJsonObject& entry,bool compact = false)
     {
         auto summary = entry["_summary"].toString();
