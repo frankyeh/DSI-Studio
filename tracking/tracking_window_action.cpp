@@ -329,13 +329,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "segment_brain")
     {
-        if(cmd[1].empty())
-        {
-            if((cmd[1] = get_action_data().toStdString()).empty())
-                return run->canceled();
-        }
-        else if(cmd[2].empty())
-            return run->failed("please specify slice name");
+        if(cmd[1].empty() && (cmd[1] = get_action_data().toStdString()).empty())
+            return run->canceled();
         if(!cmd[2].empty())
         {
             int index = ui->SliceModality->findText(cmd[2].c_str());
