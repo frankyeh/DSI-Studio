@@ -410,6 +410,9 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
         return ai_request_list(socket,session);
     if(type == "LOG")
         return ai_request_log(socket,session,chat.isEmpty());
+    if(type == "CHAT")
+        return ai_reply(socket,session,
+                        chat.isEmpty() ? "ERROR\tmissing chat" : "OKAY");
     if(type == "CMD")
         return ai_request_command(socket,session,request);
     ai_reply(socket,session,"ERROR\tunknown request");
@@ -1082,7 +1085,7 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
             "Use the local server and keep the generated identity. Use GUI "
             "control by default and run_cli only when explicitly requested. "
             "Attach only new user-facing chat and send the final answer once "
-            "on the final LOG. Process every returned PROMPT.";
+            "with CHAT. Process every returned PROMPT.";
     }
     if(!session.isEmpty())
     {
