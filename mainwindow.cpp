@@ -15,6 +15,7 @@
 #include <QStandardPaths>
 #include <QShortcut>
 #include <QProcess>
+#include <QProcessEnvironment>
 #include <QStandardItemModel>
 #include <QDialog>
 #include <QFormLayout>
@@ -23,6 +24,7 @@
 #include <QSpinBox>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QEventLoop>
 #include <QUuid>
 #include <QTimer>
 #include <QScrollBar>
@@ -285,9 +287,9 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
         return ai_reply(socket,{},"ERROR\tinvalid agent: '@' is reserved as the agent/session separator");
     auto provider = agent.contains("codex",Qt::CaseInsensitive) ? QString("Codex") :
                     agent.contains("claude",Qt::CaseInsensitive) ? QString("Claude") :
-                    agent.contains("gemini",Qt::CaseInsensitive) ? QString("Gemini") : QString();
+                    agent.contains("ollama",Qt::CaseInsensitive) ? QString("Ollama") : QString();
     if(provider.isEmpty())
-        return ai_reply(socket,{},"ERROR\tinvalid agent: include Codex, Claude, or Gemini in the agent name");
+        return ai_reply(socket,{},"ERROR\tinvalid agent: include Codex, Claude, or Ollama in the agent name");
     if(session.isEmpty())
         return ai_reply(socket,{},"ERROR\tmissing session: provide the initiating-chat session ID and reuse it for the entire conversation");
     if(QUuid(session).toString(QUuid::WithoutBraces).compare(session,Qt::CaseInsensitive))
@@ -433,7 +435,7 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
     auto provider = agent.section('@',0,0);
     auto index = ui->ai_agent_selector->findText(
         provider.contains("codex",Qt::CaseInsensitive) ? "Codex" :
-        provider.contains("claude",Qt::CaseInsensitive) ? "Claude" : "Gemini",
+        provider.contains("ollama",Qt::CaseInsensitive) ? "Ollama" : "Claude",
         Qt::MatchStartsWith);
     if(index >= 0)
         ui->ai_agent_selector->setCurrentIndex(index);
@@ -649,7 +651,7 @@ void MainWindow::on_ai_quick_settings_clicked()
     QDialog dialog(this);
     dialog.setWindowTitle("AI Settings");
     QFormLayout layout(&dialog);
-    QLineEdit host(settings.value("ai/ollama_host","").toString());
+    QLineEdit host(settings.value("ai/ollama_host","localhost").toString());
     QSpinBox port;
     port.setRange(1,65535);
     port.setValue(settings.value("ai/ollama_port",11434).toInt());
@@ -703,13 +705,14 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
     if(provider.isEmpty())
         provider = ui->ai_agent_selector->currentText();
     bool codex = provider.contains("codex",Qt::CaseInsensitive);
-    bool claude = provider.contains("claude",Qt::CaseInsensitive);
+    bool ollama = provider.contains("ollama",Qt::CaseInsensitive);
+    bool claude = ollama || provider.contains("claude",Qt::CaseInsensitive);
     auto executable = ui->ai_agent_selector->itemData(
         ui->ai_agent_selector->findText(codex ? "Codex" : "Claude",
                                          Qt::MatchStartsWith),Qt::UserRole+1).toString();
     if(!codex && !claude)
     {
-        QMessageBox::warning(this,"AI Agent","Only Codex and Claude resume are supported.");
+        QMessageBox::warning(this,"AI Agent","Only Codex and Claude-based sessions are supported.");
         return;
     }
     if(executable.isEmpty())
@@ -718,6 +721,11 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
             ai_prompts[agent].append(text);
         QMessageBox::warning(this,"AI Agent",
                              "AI agent is not installed or cannot be located.");
+        return;
+    }
+    if(ollama && settings.value("ai/ollama_host").toString().trimmed().isEmpty())
+    {
+        QMessageBox::warning(this,"AI Agent","Set the Ollama host/IP in AI Settings first.");
         return;
     }
 
@@ -974,7 +982,26 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
         args << prompt;
     }
     else
-        args = {"-p","--resume",session,prompt};
+    {
+        args = {"-p","--resume",session};
+        if(!model.isEmpty())
+            args << "--model" << model;
+        args << prompt;
+    }
+
+    if(ollama)
+    {
+        auto host = settings.value("ai/ollama_host").toString().trimmed();
+        if(!host.contains("://"))
+            host = "http://"+host;
+        QUrl url(host);
+        url.setPort(settings.value("ai/ollama_port",11434).toInt());
+        auto env = QProcessEnvironment::systemEnvironment();
+        env.insert("ANTHROPIC_BASE_URL",url.toString());
+        env.insert("ANTHROPIC_AUTH_TOKEN","ollama");
+        env.insert("ANTHROPIC_API_KEY","");
+        process->setProcessEnvironment(env);
+    }
 
     tipl::out() << ai_log(session.isEmpty() ?
         QString("starting new %1 chat executable=%2 model=%3 prompt_chars=%4").
@@ -995,7 +1022,8 @@ void MainWindow::on_ai_send_message_clicked()
     auto agent = item ? item->data(Qt::UserRole).toString() : QString();
     auto name = agent.section('@',0,0);
     bool resumable = name.contains("codex",Qt::CaseInsensitive) ||
-                     name.contains("claude",Qt::CaseInsensitive);
+                     name.contains("claude",Qt::CaseInsensitive) ||
+                     name.contains("ollama",Qt::CaseInsensitive);
     if(!agent.isEmpty() && (ai_processes.contains(agent) || !resumable))
     {
         ai_prompts[agent].append(text);
@@ -1093,7 +1121,7 @@ MainWindow::MainWindow(QWidget *parent) :
             tipl::out() << ai_log(agent+" models: "+
                                   (models.isEmpty() ? "none detected" : models.join(", ")));
     };
-    QString codex_path,claude_path,gemini_path;
+    QString codex_path,claude_path,ollama_path;
     {
         // find Codex executable and models
         QStringList models;
@@ -1145,22 +1173,40 @@ MainWindow::MainWindow(QWidget *parent) :
         set_agent("Claude",claude_path,{});
     }
     {
-        // find Gemini executable and models
+        // find Ollama models through Claude
         QStringList models;
-        gemini_path = QStandardPaths::findExecutable("gemini");
-#ifdef Q_OS_WIN
-        if(gemini_path.isEmpty())
-            gemini_path = QStandardPaths::findExecutable("gemini.cmd");
-#endif
-        if(!gemini_path.isEmpty())
-            models = {"auto","pro","flash","flash-lite"};
-        set_agent("Gemini",gemini_path,models);
+        auto host = settings.value("ai/ollama_host").toString().trimmed();
+        if(!claude_path.isEmpty() && !host.isEmpty())
+        {
+            if(!host.contains("://"))
+                host = "http://"+host;
+            QUrl base_url(host);
+            base_url.setPort(settings.value("ai/ollama_port",11434).toInt());
+            QNetworkAccessManager manager;
+            QNetworkRequest request(base_url.resolved(QUrl("/api/tags")));
+            request.setTransferTimeout(3000);
+            auto* reply = manager.get(request);
+            QEventLoop loop;
+            QObject::connect(reply,&QNetworkReply::finished,&loop,&QEventLoop::quit);
+            loop.exec();
+            if(reply->error() == QNetworkReply::NoError)
+                for(const auto& model : QJsonDocument::fromJson(reply->readAll()).
+                    object()["models"].toArray())
+                    models << model.toObject()["name"].toString();
+            tipl::out() << ai_log("Ollama connection: "+
+                (reply->error() == QNetworkReply::NoError ? "connected" :
+                 reply->errorString()));
+            ollama_path = claude_path;
+        }
+        models.removeDuplicates();
+        models.sort(Qt::CaseInsensitive);
+        set_agent("Ollama",ollama_path,models);
     }
-    if(codex_path.isEmpty() && (!claude_path.isEmpty() || !gemini_path.isEmpty()))
+    if(codex_path.isEmpty() && (!claude_path.isEmpty() || !ollama_path.isEmpty()))
         ui->ai_agent_selector->setCurrentText(
-            claude_path.isEmpty() ? "Gemini" : "Claude");
+            claude_path.isEmpty() ? "Ollama" : "Claude");
     ui->ai_agent_selector->setEnabled(
-        !codex_path.isEmpty() || !claude_path.isEmpty() || !gemini_path.isEmpty());
+        !codex_path.isEmpty() || !claude_path.isEmpty() || !ollama_path.isEmpty());
     auto update_models = [this]
     {
         ui->ai_model_selector->clear();
