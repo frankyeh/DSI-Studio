@@ -97,6 +97,7 @@ bool download_unet_model(tipl::ml3d::tissue_seg& unet,const std::string& name)
     for(const auto& list : unet_http)
         for(const auto& url : list)
         {
+            tipl::progress p("loading segmentation model",true);
             auto file = std::filesystem::path(url).filename().u8string();
             if(name != tipl::remove_all_suffix(file))
                 continue;
