@@ -708,13 +708,9 @@ void tracking_window::closeEvent(QCloseEvent *event)
 }
 tracking_window::~tracking_window()
 {
-    for(size_t index = 0;index < tracking_windows.size();++index)
-        if(tracking_windows[index] == this)
-        {
-            tracking_windows[index] = tracking_windows.back();
-            tracking_windows.pop_back();
-            break;
-        }
+    tracking_windows.erase(
+        std::remove(tracking_windows.begin(),tracking_windows.end(),this),
+        tracking_windows.end());
     tractWidget->stop_tracking();
     tractWidget->command({"delete_all_tracts"});
     tractWidget->command({"delete_all_regions"});
