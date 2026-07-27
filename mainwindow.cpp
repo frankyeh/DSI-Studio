@@ -602,6 +602,115 @@ void MainWindow::stop_ai_blink()
     row->findChild<QTimer*>("ai_chat_blink")->stop();
     row->setStyleSheet({});
 }
+void MainWindow::refresh_codex_models(const QString& path)
+{
+    if(path.isEmpty())
+        return;
+
+    auto* process = new QProcess(this);
+    connect(process,
+    QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
+    this,[=]
+    {
+        QStringList models;
+        auto doc = QJsonDocument::fromJson(process->readAllStandardOutput());
+        auto list = doc.isArray() ? doc.array() :
+                        doc.object()["models"].toArray();
+        for(const auto& value : list)
+        {
+            auto object = value.toObject();
+            auto model = object["slug"].toString();
+            if(model.isEmpty()) model = object["model"].toString();
+            if(model.isEmpty()) model = object["id"].toString();
+            if(!model.isEmpty()) models << model;
+        }
+
+        models.removeDuplicates();
+        models.sort(Qt::CaseInsensitive);
+        auto index = ui->ai_agent_selector->findText(
+            "Codex",Qt::MatchStartsWith);
+        ui->ai_agent_selector->setItemData(index,models);
+        if(ui->ai_agent_selector->currentIndex() == index)
+        {
+            ui->ai_model_selector->clear();
+            ui->ai_model_selector->addItem("default");
+            ui->ai_model_selector->addItems(models);
+        }
+        process->deleteLater();
+    });
+
+    process->start(path,{"debug","models"});
+    QTimer::singleShot(5000,process,[process]
+    {
+        if(process->state() != QProcess::NotRunning)
+            process->kill();
+    });
+}
+void MainWindow::refresh_ollama_models()
+{
+    auto index = ui->ai_agent_selector->findText(
+        "Ollama",Qt::MatchStartsWith);
+    auto claude = ui->ai_agent_selector->itemData(
+                                           ui->ai_agent_selector->findText("Claude",Qt::MatchStartsWith),
+                                           Qt::UserRole+1).toString();
+
+    auto set_models = [this,index](const QString& path,QStringList models)
+    {
+        models.removeDuplicates();
+        models.sort(Qt::CaseInsensitive);
+
+        auto* agents = qobject_cast<QStandardItemModel*>(
+            ui->ai_agent_selector->model());
+        auto* item = agents->item(index);
+        item->setText("Ollama"+QString(path.isEmpty() ? " (not found)" : ""));
+        item->setEnabled(!path.isEmpty());
+        ui->ai_agent_selector->setItemData(index,path,Qt::UserRole+1);
+        ui->ai_agent_selector->setItemData(index,models);
+
+        if(ui->ai_agent_selector->currentIndex() == index)
+        {
+            ui->ai_model_selector->clear();
+            ui->ai_model_selector->addItem("default");
+            ui->ai_model_selector->addItems(models);
+        }
+    };
+
+    auto host = settings.value("ai/ollama_host","localhost").
+                toString().trimmed();
+    if(claude.isEmpty() || host.isEmpty())
+        return set_models({},{});
+
+    if(!host.contains("://"))
+        host = "http://"+host;
+    QUrl url(host);
+    url.setPort(settings.value("ai/ollama_port",11434).toInt());
+    url.setPath("/api/tags");
+
+    auto* network = new QNetworkAccessManager(this);
+    network->setProxy(QNetworkProxy::NoProxy);
+    QNetworkRequest request(url);
+    request.setTransferTimeout(10000);
+    auto* reply = network->get(request);
+
+    connect(reply,&QNetworkReply::finished,this,
+            [=]
+            {
+                QStringList models;
+                bool okay = reply->error() == QNetworkReply::NoError;
+                if(okay)
+                    for(const auto& value :
+                         QJsonDocument::fromJson(reply->readAll()).
+                         object()["models"].toArray())
+                        models << value.toObject()["name"].toString();
+
+                tipl::out() << ai_log("Ollama "+url.toString()+": "+
+                                      (okay ? "connected" : reply->errorString()));
+                set_models(okay ? claude : QString(),models);
+                reply->deleteLater();
+                network->deleteLater();
+            });
+}
+
 
 bool MainWindow::eventFilter(QObject* object,QEvent* event)
 {
@@ -703,6 +812,8 @@ void MainWindow::on_ai_quick_settings_clicked()
     settings.setValue("ai/default_model",model.currentText());
     ui->ai_agent_selector->setCurrentIndex(agent.currentData().toInt());
     ui->ai_model_selector->setCurrentText(model.currentText());
+
+    refresh_ollama_models();
 }
 
 void MainWindow::start_ai(const QString& agent,const QString& text,
@@ -730,7 +841,7 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
                              "AI agent is not installed or cannot be located.");
         return;
     }
-    if(ollama && settings.value("ai/ollama_host").toString().trimmed().isEmpty())
+    if(ollama && settings.value("ai/ollama_host","localhost").toString().trimmed().isEmpty())
     {
         QMessageBox::warning(this,"AI Agent","Set the Ollama host/IP in AI Settings first.");
         return;
@@ -816,10 +927,6 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
             auto event = QJsonDocument::fromJson(
                              buffer.left(pos)).object();
             buffer.remove(0,pos+1);
-            if(event["type"] == "turn.completed")
-            {
-                continue;
-            }
             if(event["type"] != "thread.started")
                 continue;
 
@@ -989,7 +1096,7 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
             args << "--model" << model;
             if(!profile.isEmpty())
                 args << "--profile" << profile;
-            auto host = settings.value("ai/ollama_host").toString().trimmed();
+            auto host = settings.value("ai/ollama_host","localhost").toString().trimmed();
             if(!host.isEmpty() && model_provider.contains("ollama",Qt::CaseInsensitive))
             {
                 if(!host.contains("://"))
@@ -1018,7 +1125,7 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
 
     if(ollama)
     {
-        auto host = settings.value("ai/ollama_host").toString().trimmed();
+        auto host = settings.value("ai/ollama_host","localhost").toString().trimmed();
         if(!host.contains("://"))
             host = "http://"+host;
         QUrl url(host);
@@ -1164,29 +1271,8 @@ MainWindow::MainWindow(QWidget *parent) :
         }
         if(!QFileInfo::exists(codex_path))
             codex_path.clear();
-        if(!codex_path.isEmpty())
-        {
-            QProcess process;
-            process.start(codex_path,{"debug","models"});
-            if(process.waitForFinished(5000))
-            {
-                auto doc = QJsonDocument::fromJson(process.readAllStandardOutput());
-                auto list = doc.isArray() ? doc.array() : doc.object()["models"].toArray();
-                for(const auto& value : list)
-                {
-                    auto object = value.toObject();
-                    auto model = object["slug"].toString();
-                    if(model.isEmpty()) model = object["model"].toString();
-                    if(model.isEmpty()) model = object["id"].toString();
-                    if(!model.isEmpty()) models << model;
-                }
-            }
-            else
-                process.kill();
-            models.removeDuplicates();
-            models.sort(Qt::CaseInsensitive);
-        }
-        set_agent("Codex",codex_path,models);
+        set_agent("Codex",codex_path,{});
+        refresh_codex_models(codex_path);
     }
     {
         // find Claude executable and models
@@ -1200,39 +1286,8 @@ MainWindow::MainWindow(QWidget *parent) :
         set_agent("Claude",claude_path,{});
     }
     {
-        QStringList models;
-        auto host = settings.value("ai/ollama_host","127.0.0.1").toString().trimmed();
-        if(!claude_path.isEmpty() && !host.isEmpty())
-        {
-            if(!host.contains("://"))
-                host = "http://"+host;
-            QUrl url(host);
-            url.setPort(settings.value("ai/ollama_port",11434).toInt());
-
-            QNetworkAccessManager manager;
-            QNetworkRequest request(url.resolved(QUrl("/api/tags")));
-            request.setTransferTimeout(5000);
-            auto* reply = manager.get(request);
-            QEventLoop loop;
-            connect(reply,&QNetworkReply::finished,&loop,&QEventLoop::quit);
-            loop.exec();
-
-            if(reply->error() == QNetworkReply::NoError)
-            {
-                for(const auto& model : QJsonDocument::fromJson(reply->readAll()).
-                                         object()["models"].toArray())
-                    models << model.toObject()["name"].toString();
-                if(!models.isEmpty())
-                    ollama_path = claude_path;
-            }
-            tipl::out() << ai_log("Ollama "+request.url().toString()+": "+
-                                  (reply->error() == QNetworkReply::NoError ?
-                                       "connected" : reply->errorString()));
-            reply->deleteLater();
-        }
-        models.removeDuplicates();
-        models.sort(Qt::CaseInsensitive);
-        set_agent("Ollama",ollama_path,models);
+        set_agent("Ollama",{},{});
+        refresh_ollama_models();
     }
     if(codex_path.isEmpty() && (!claude_path.isEmpty() || !ollama_path.isEmpty()))
         ui->ai_agent_selector->setCurrentText(
@@ -1299,14 +1354,18 @@ MainWindow::MainWindow(QWidget *parent) :
             {"type","title"},{"text",title},
             {"time",QDateTime::currentDateTime().toString(Qt::ISODate)}
         };
-        QFile file(ai_project_dir+"/"+QString::fromLatin1(
-                       QUrl::toPercentEncoding(agent))+".jsonl");
-        if(!file.open(QIODevice::WriteOnly|QIODevice::Append) ||
-           file.write(QJsonDocument(entry).toJson(QJsonDocument::Compact)+'\n') < 0)
+        if(settings.value("ai/keep_history",true).toBool())
         {
-            QMessageBox::warning(this,"Rename Chat",
-                                 "The chat name could not be saved.");
-            return;
+            QFile file(ai_project_dir+"/"+QString::fromLatin1(
+                           QUrl::toPercentEncoding(agent))+".jsonl");
+            if(!file.open(QIODevice::WriteOnly|QIODevice::Append) ||
+                file.write(QJsonDocument(entry).
+                           toJson(QJsonDocument::Compact)+'\n') < 0)
+            {
+                QMessageBox::warning(
+                    this,"Rename Chat","The chat name could not be saved.");
+                return;
+            }
         }
         ai_project_titles[agent] = title;
         show_ai_project(agent);
@@ -1366,8 +1425,18 @@ MainWindow::MainWindow(QWidget *parent) :
                "Remove this project and its saved history?") != QMessageBox::Yes)
             return;
 
-        QFile::remove(ai_project_dir+"/"+QString::fromLatin1(
-                          QUrl::toPercentEncoding(agent))+".jsonl");
+        auto history_file = ai_project_dir+"/"+QString::fromLatin1(
+                                QUrl::toPercentEncoding(agent))+".jsonl";
+
+        if(QFileInfo::exists(history_file) && !QFile::remove(history_file))
+        {
+            QMessageBox::warning(
+                this,"Remove Project","The saved history could not be removed.");
+            return;
+        }
+
+
+
         ai_projects.remove(agent);
         ai_project_items.remove(agent);
         ai_project_titles.remove(agent);
@@ -1500,11 +1569,8 @@ MainWindow::MainWindow(QWidget *parent) :
             QString licenseText;
             {
                 QFile licenseFile(QApplication::applicationDirPath() + "/LICENSE");
-                if (!licenseFile.open(QIODevice::ReadOnly))
-                {
-                    QMessageBox::critical(this,"ERROR","cannot locate license file");
-                    return;
-                }
+                if(!licenseFile.open(QIODevice::ReadOnly))
+                    throw std::runtime_error("cannot locate license file");
                 licenseText = licenseFile.readAll();
             }
 
@@ -1634,7 +1700,6 @@ void MainWindow::login(void)
                     settings.setValue("login_news",QString(reply->readAll()));
                     settings.sync();
                 }
-                reply->deleteLater();
             });
         }
         // update registering information
@@ -1662,10 +1727,8 @@ void MainWindow::login(void)
                             }
 
                         }
-                        reply2->deleteLater();
                     });
                 }
-                reply->deleteLater();
             });
         }
         if(info.size() >= 5)
@@ -1709,6 +1772,7 @@ void MainWindow::openFile(QStringList file_names)
     if(file_names.isEmpty() || file_names[0].isEmpty())
         return;
     QString file_name = file_names[0];
+    auto name = file_name.toLower();
     if(!QFileInfo::exists(file_name))
     {
         if(file_name[0] == '-') // Mac pass a variable
@@ -1718,7 +1782,7 @@ void MainWindow::openFile(QStringList file_names)
     }
     else
     {
-        if(QString(file_name).endsWith(".csv"))
+        if(name.endsWith(".csv"))
         {
             auto lines = tipl::read_text_file(tipl::qt::to_path(file_name));
             if(lines.empty() || !tipl::begins_with(lines[0],"open_fib,"))
@@ -1740,9 +1804,9 @@ void MainWindow::openFile(QStringList file_names)
             }
         }
         else
-        if(QString(file_name).endsWith(".tt.gz") ||
-           QString(file_name).endsWith(".trk") ||
-           QString(file_name).endsWith(".trk.gz"))
+        if(name.endsWith(".tt.gz") ||
+           name.endsWith(".trk") ||
+           name.endsWith(".trk.gz"))
         {
             auto file_list = QFileInfo(file_name).dir().entryList(QStringList("*fz"),QDir::Files|QDir::NoSymLinks);
             file_list << QFileInfo(file_name).dir().entryList(QStringList("*fib.gz"),QDir::Files|QDir::NoSymLinks);
@@ -1756,40 +1820,45 @@ void MainWindow::openFile(QStringList file_names)
                 loadFib(file_name);
         }
         else
-        if(QString(file_name).endsWith("fib.gz") ||
-           QString(file_name).endsWith(".fz") ||
-           QString(file_name).endsWith(".dz") ||
-           QString(file_name).endsWith("tck"))
+        if(name.endsWith("fib.gz") ||
+           name.endsWith(".fz") ||
+           name.endsWith(".dz") ||
+           name.endsWith("tck"))
         {
-            if(QString(file_name).endsWith("db.fib.gz") ||
-               QString(file_name).endsWith("db.fz") ||
-               QString(file_name).endsWith(".dz"))
+            if(name.endsWith("db.fib.gz") ||
+               name.endsWith("db.fz") ||
+               name.endsWith(".dz"))
             {
                 std::shared_ptr<group_connectometry_analysis> database(new group_connectometry_analysis);
-                if(database->load_database(file_name.toStdString().c_str()))
+                if(!database->load_database(file_name.toStdString().c_str()))
                 {
-                    db_window* db = new db_window(this,database);
-                    db->setWindowTitle(file_name);
-                    db->setAttribute(Qt::WA_DeleteOnClose);
-                    db->show();
+                    QMessageBox::critical(
+                        this,"ERROR",database->error_msg.c_str());
+                    return;
                 }
+
+                auto* db = new db_window(this,database);
+                db->setWindowTitle(file_name);
+                db->setAttribute(Qt::WA_DeleteOnClose);
+                db->show();
+
             }
             else
                 loadFib(file_name);
         }
         else
-        if(QString(file_name).endsWith("src.gz") || QString(file_name).endsWith(".sz"))
+        if(name.endsWith("src.gz") || name.endsWith(".sz"))
         {
             loadSrc(file_names);
         }
         else
-        if(QString(file_name).endsWith(".nhdr") ||
-           QString(file_name).endsWith(".nrrd") ||
-           QString(file_name).endsWith(".nii") ||
-           QString(file_name).endsWith(".nii.gz") ||
-                QString(file_name).endsWith(".dcm") ||
-                QString(file_name).endsWith(".nz") ||
-                QString(file_name).endsWith(".mz"))
+        if(name.endsWith(".nhdr") ||
+           name.endsWith(".nrrd") ||
+           name.endsWith(".nii") ||
+           name.endsWith(".nii.gz") ||
+                name.endsWith(".dcm") ||
+                name.endsWith(".nz") ||
+                name.endsWith(".mz"))
         {
             loadNii(file_names);
         }
@@ -1830,18 +1899,19 @@ void MainWindow::open_src_at(int row,int)
 }
 
 
-void MainWindow::closeEvent(QCloseEvent *event)
+void MainWindow::closeEvent(QCloseEvent* event)
 {
-    for(size_t index = 0;index < tracking_windows.size();++index)
-    if(tracking_windows[index])
+    auto windows = tracking_windows;
+    for(auto* window : windows)
+        if(window && !window->close())
         {
-            tracking_windows[index]->closeEvent(event);
-            if(!event->isAccepted())
-                return;
-            delete tracking_windows[index];
+            event->ignore();
+            return;
         }
     QMainWindow::closeEvent(event);
 }
+
+
 MainWindow::~MainWindow()
 {
     console.log_window = nullptr;
@@ -1953,9 +2023,12 @@ bool MainWindow::loadFib(QString filename)
     if(!default_state.size())
         default_state = tracking_windows.back()->saveState();
 
-    if(int p = filename.lastIndexOf('_');!filename.endsWith("_dseg.nii.gz") && p != -1)
+    QFileInfo info(filename);
+    auto base = info.completeBaseName();
+    if(int p = base.lastIndexOf('_');!filename.endsWith("_dseg.nii.gz",Qt::CaseInsensitive) && p >= 0)
     {
-        auto dseg_file = filename.left(p) + "_dseg.nii.gz";
+        auto dseg_file = info.dir().filePath(
+            base.left(p)+"_dseg.nii.gz");
         if(QFileInfo::exists(dseg_file))
             tracking_windows.back()->command({"open_region",dseg_file.toUtf8().constData()});
     }
@@ -2163,25 +2236,6 @@ void MainWindow::on_browseDir_clicked()
     if ( filename.isEmpty() )
         return;
     add_work_dir(filename);
-}
-
-
-QStringList GetSubDir(QString Dir,bool recursive = true)
-{
-    QStringList sub_dirs;
-    QStringList dirs = QDir(Dir).entryList(QStringList("*"),
-                                            QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot);
-    if(recursive)
-        sub_dirs << Dir;
-    for(int index = 0;index < dirs.size();++index)
-    {
-        QString new_dir = Dir + "/" + dirs[index];
-        if(recursive)
-            sub_dirs << GetSubDir(new_dir,recursive);
-        else
-            sub_dirs << new_dir;
-    }
-    return sub_dirs;
 }
 
 std::vector<std::filesystem::path> rename_dicom_at_dir(std::filesystem::path path,
@@ -2472,30 +2526,23 @@ void MainWindow::on_auto_track_clicked()
 
 bool get_pe_dir(const std::string& nii_name,size_t& pe_dir,bool& is_neg)
 {
-    const char pe_coding[3][2][5] = { { "\"i\"","\"i-\"" },
-                                       { "\"j\"","\"j-\"" },
-                                       { "\"k\"","\"k-\"" }};
-    std::string json_name(tipl::remove_all_suffix(nii_name) + ".json");
-    if(!std::filesystem::exists(json_name))
+    QFile file(QString::fromUtf8(
+        (tipl::remove_all_suffix(nii_name)+".json").c_str()));
+    if(!file.open(QIODevice::ReadOnly))
         return false;
-    std::stringstream buffer;
-    buffer << std::ifstream(json_name).rdbuf();
-    std::string json_content(buffer.str());
-    for(pe_dir = 0;pe_dir < 3;++pe_dir)
-    {
-        if(json_content.find(pe_coding[pe_dir][0]) != std::string::npos)
-        {
-            is_neg = false;
-            return true;
-        }
-        if(json_content.find(pe_coding[pe_dir][1]) != std::string::npos)
-        {
-            is_neg = true;
-            return true;
-        }
-    }
-    return false;
+
+    auto value = QJsonDocument::fromJson(file.readAll()).
+                 object()["PhaseEncodingDirection"].toString();
+    auto axis = QString("ijk").indexOf(value.left(1));
+    if(axis < 0 || value.size() > 2 ||
+        (value.size() == 2 && value[1] != '-'))
+        return false;
+
+    pe_dir = size_t(axis);
+    is_neg = value.endsWith('-');
+    return true;
 }
+
 std::vector<std::filesystem::path> search_dwi_nii_bids(const std::filesystem::path& dir);
 bool nii2src(const std::vector<std::filesystem::path>& dwi_nii_files,
              const std::filesystem::path& output_dir,
@@ -2601,7 +2648,7 @@ bool dicom2src_and_nii(std::vector<std::filesystem::path> files,bool overwrite)
         header.get_sequence_id(sequence);
         header.get_text(0x0008,0x0070,manu);//Manufacturer
         header.get_text(0x0008,0x1090,make);
-        std::replace(manu.begin(),manu.end(),' ',char(0));
+        manu.erase(std::remove(manu.begin(),manu.end(),' '),manu.end());
         make.erase(std::remove(make.begin(),make.end(),' '),make.end());
         std::ostringstream info;
         info << manu.c_str() << " " << make.c_str() << " " << sequence
@@ -2866,16 +2913,15 @@ QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
         request.setRawHeader("Accept", "application/octet-stream");
     else
         request.setRawHeader("Accept", "application/json");
-
     if(!access_token.isEmpty() && url.toString().contains("restricted"))
         request.setRawHeader("Authorization",QString("token %1").arg(access_token).toUtf8());
     return QSharedPointer<QNetworkReply>(manager.get(request),
-            [](QNetworkReply* reply)
-            {
-                if(reply->isRunning())
-                    reply->abort();
-                reply->deleteLater();
-            });
+                                         [](QNetworkReply* reply)
+                                         {
+                                             if(reply->isRunning())
+                                                 reply->abort();
+                                             reply->deleteLater();
+                                         });
 }
 
 int run_action_with_wildcard(tipl::program_option<tipl::out>&);
