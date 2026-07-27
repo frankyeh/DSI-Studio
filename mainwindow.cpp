@@ -15,6 +15,7 @@
 #include <QStandardPaths>
 #include <QShortcut>
 #include <QProcess>
+#include <QStandardItemModel>
 #include <QUuid>
 #include <QTimer>
 #include <QScrollBar>
@@ -1033,6 +1034,16 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     setAcceptDrops(true);
     ui->setupUi(this);
+    auto* agents = qobject_cast<QStandardItemModel*>(
+                       ui->ai_agent_selector->model());
+    bool codex = !find_codex_executable().isEmpty();
+    bool claude = !find_claude_executable().isEmpty();
+    for(int i = 0;i < ui->ai_agent_selector->count();++i)
+        agents->item(i)->setEnabled(ui->ai_agent_selector->itemText(i) == "Codex" ?
+                                    codex : claude);
+    if(!codex && claude)
+        ui->ai_agent_selector->setCurrentText("Claude");
+    ui->ai_agent_selector->setEnabled(codex || claude);
     qApp->installEventFilter(this);
     connect(ui->tabWidget,&QTabWidget::currentChanged,this,[this]
     {
