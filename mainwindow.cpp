@@ -72,7 +72,7 @@ struct ai_launch{
     QJsonObject model_setting;
     QProcess* process = nullptr;
     ai_model_provider model_provider = ai_model_provider::Native;
-    bool new_session = false,bootstrap = false;
+    bool new_session = false;
 };
 
 ai_provider ai_info::identify_provider(const QString& name)
@@ -1072,12 +1072,6 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
                 this,"AI Agent",
                 "AI agent ended before creating a new chat. Check the console.");
         }
-        else if(process->property("bootstrap").toBool())
-        {
-            process->deleteLater();
-            start_ai(session,text,false);
-            return;
-        }
         else
         {
             auto& info = ai_infos[session];
@@ -1107,13 +1101,9 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
         process->deleteLater();
     });
 
-    launch.bootstrap = launch.new_session && provider == ai_provider::Codex;
-    bool initial_task = !add_history &&
-                        ai_infos[session].projects.size() == 1;
-    QString prompt = launch.bootstrap ?
-        "Initialize this Codex session and exit immediately. Do not read files, "
-        "use tools, or reply to the user." : text;
-    if((launch.new_session && !launch.bootstrap) || initial_task)
+    bool initial_task = !add_history && ai_infos[session].projects.size() == 1;
+    QString prompt = text;
+    if(launch.new_session || initial_task)
     {
         QDir app(QApplication::applicationDirPath());
         prompt +=
@@ -1132,12 +1122,17 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
     }
     if(!session.isEmpty())
     {
-        prompt +=
-            "\n\n[DSI Studio] Continue through agent "+
-            ai_infos[session].agent_name+" using session "+
-            session+". Use this exact value as session in every local-server "
-            "request. Send new user-facing text and the final reply through "
-            "the named pipe.";
+        if(launch.new_session && provider == ai_provider::Codex)
+            prompt +=
+                "\n\n[DSI Studio] Use the CODEX_THREAD_ID environment variable "
+                "as session in every local-server request.";
+        else if(!session.isEmpty())
+            prompt +=
+                "\n\n[DSI Studio] Continue through agent "+
+                ai_infos[session].agent_name+" using session "+
+                session+". Use this exact value as session in every local-server "
+                          "request. Send new user-facing text and the final reply through "
+                          "the named pipe.";
     }
     launch.prompt = prompt;
     return launch;
@@ -1145,7 +1140,6 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
 
 void MainWindow::run_ai(const ai_launch& launch,QStringList args)
 {
-    launch.process->setProperty("bootstrap",launch.bootstrap);
     tipl::out() << ai_log("start " + launch.executable + " with args: " + args.join(" ").remove("\n"));
     launch.process->start(launch.executable,args);
 
