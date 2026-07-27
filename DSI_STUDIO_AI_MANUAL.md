@@ -20,8 +20,8 @@ do not read the entire inventory.
   in injected runtime context or a task-specific path. Use it only when
   explicitly present; never guess or generate a session ID.
 - For Claude Code, always read `~/.claude/sessions/<pid>.json` and use its
-  `name` field—not `sessionId`—as the DSI Studio session. DSI Studio resumes
-  it with `claude -p --resume <name>`.
+  `sessionId` field—not `name`—as the DSI Studio session. DSI Studio resumes
+  it with `claude -p --resume <sessionId>`.
 - Every `CMD`, including `list_*`, requires a numeric `window` from the latest
   `LIST`.
 - Use `LIST` to obtain fresh windows, then target only its numeric window ID.
