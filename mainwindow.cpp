@@ -66,6 +66,13 @@ QString access_token;
 extern MainWindow* main_window;
 std::unordered_map<QString,ai_info> ai_infos;
 
+struct ai_launch{
+    QString session,text,name,executable,model,profile,backend,prompt;
+    QJsonObject model_setting;
+    QProcess* process = nullptr;
+    bool new_session = false,bootstrap = false;
+};
+
 ai_provider ai_info::identify_provider(const QString& name)
 {
     return name.contains("codex",Qt::CaseInsensitive) ? ai_provider::Codex :
@@ -850,43 +857,32 @@ void MainWindow::on_ai_quick_settings_clicked()
     refresh_ollama_models();
 }
 
-void MainWindow::start_ai(QString session,const QString& text,bool add_history)
+ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
+                                 const QString& text,bool add_history)
 {
-    auto provider = session.isEmpty() ?
-        ai_provider(ui->ai_agent_selector->currentIndex()) :
-        ai_infos[session].provider;
-    bool codex = provider == ai_provider::Codex;
-    bool ollama = provider == ai_provider::Ollama;
-    bool claude = provider == ai_provider::Claude || ollama;
-    auto provider_name = ui->ai_agent_selector->itemText(int(provider)).
-                         section(' ',0,0);
-    auto executable = ui->ai_agent_selector->itemData(
-        int(codex ? ai_provider::Codex : ai_provider::Claude),
+    ai_launch launch;
+    launch.session = session;
+    launch.text = text;
+    launch.new_session = session.isEmpty();
+    launch.name = ui->ai_agent_selector->itemText(int(provider)).
+                  section(' ',0,0);
+    launch.executable = ui->ai_agent_selector->itemData(
+        int(provider == ai_provider::Codex ?
+            ai_provider::Codex : ai_provider::Claude),
         Qt::UserRole+1).toString();
-    if(!codex && !claude)
-    {
-        QMessageBox::warning(this,"AI Agent","Only Codex and Claude-based sessions are supported.");
-        return;
-    }
-    if(executable.isEmpty())
+    if(launch.executable.isEmpty())
     {
         if(!add_history && !session.isEmpty())
             ai_infos[session].prompts.append(text);
         QMessageBox::warning(this,"AI Agent","AI agent is not installed or cannot be located.");
-        return;
-    }
-    if(ollama && settings.value("ai/ollama_host","localhost").toString().trimmed().isEmpty())
-    {
-        QMessageBox::warning(this,"AI Agent","Set the Ollama host/IP in AI Settings first.");
-        return;
+        return launch;
     }
 
-    bool new_session = session.isEmpty();
-
-    if(session.isEmpty() && claude)
+    if(session.isEmpty() && provider != ai_provider::Codex)
     {
         session = QUuid::createUuid().toString(QUuid::WithoutBraces);
-        ai_infos[session].set_provider(provider,provider_name);
+        ai_infos[session].set_provider(provider,launch.name);
+        launch.session = session;
     }
 
     auto cwd = ai_infos[session].work_dirs;
@@ -896,29 +892,30 @@ void MainWindow::start_ai(QString session,const QString& text,bool add_history)
         cwd = QApplication::applicationDirPath();
 
 
-    QJsonObject model_setting;
     if(!add_history && !session.isEmpty())
-        model_setting = ai_infos[session].model_settings;
+        launch.model_setting = ai_infos[session].model_settings;
 
-    if(model_setting.isEmpty())
+    if(launch.model_setting.isEmpty())
     {
-        model_setting["model"] = ui->ai_model_selector->currentText();
-        model_setting["info"] = ui->ai_model_selector->currentData().toJsonObject();
+        launch.model_setting["model"] = ui->ai_model_selector->currentText();
+        launch.model_setting["info"] =
+            ui->ai_model_selector->currentData().toJsonObject();
     }
 
-    auto model = model_setting["model"].toString();
-    auto model_info = model_setting["info"].toObject();
-    auto profile = model_info["profile"].toString();
-    auto model_backend = model_info["provider"].toString();
+    launch.model = launch.model_setting["model"].toString();
+    auto model_info = launch.model_setting["info"].toObject();
+    launch.profile = model_info["profile"].toString();
+    launch.backend = model_info["provider"].toString();
 
-    if(model.startsWith("default",Qt::CaseInsensitive))
-        model.clear();
+    if(launch.model.startsWith("default",Qt::CaseInsensitive))
+        launch.model.clear();
 
     if(!session.isEmpty())
-        ai_infos[session].model_settings = model_setting;
+        ai_infos[session].model_settings = launch.model_setting;
 
 
     auto* process = new QProcess(this);
+    launch.process = process;
     process->setObjectName(session);
     process->setWorkingDirectory(cwd);
 
@@ -934,49 +931,6 @@ void MainWindow::start_ai(QString session,const QString& text,bool add_history)
 
     if(add_history)
         ui->ai_chat_input->clear();
-
-    connect(process,&QProcess::readyReadStandardOutput,this,[=]
-    {
-        auto output = process->readAllStandardOutput();
-        if(!codex)
-            return;
-        auto buffer =
-            process->property("stdout_buffer").toByteArray()+output;
-        for(int pos;(pos = buffer.indexOf('\n')) >= 0;)
-        {
-            auto event = QJsonDocument::fromJson(
-                             buffer.left(pos)).object();
-            buffer.remove(0,pos+1);
-            if(event["type"] != "thread.started")
-                continue;
-
-            auto started_session = event["thread_id"].toString();
-            if(started_session.isEmpty())
-                continue;
-            auto session = process->objectName();
-            bool started_new_session = session.isEmpty();
-            if(session.isEmpty())
-            {
-                session = started_session;
-                process->setObjectName(session);
-                ai_infos[session].set_provider(
-                    ai_provider::Codex,provider_name);
-                ai_infos[session].set_process(process);
-            }
-            ai_infos[session].model_settings = model_setting;
-            if(started_new_session)
-            {
-                add_ai_history(session,"user",text);
-                for(auto* button :
-                    {ui->ai_new_chat,ui->ai_send_message})
-                    button->setEnabled(true);
-            }
-            tipl::out() << ai_log("session agent="+
-                                  ai_infos[session].agent_name+
-                                  " session="+session);
-        }
-        process->setProperty("stdout_buffer",buffer);
-    });
 
     connect(process,&QProcess::readyReadStandardError,this,[=]
     {
@@ -1071,13 +1025,13 @@ void MainWindow::start_ai(QString session,const QString& text,bool add_history)
         process->deleteLater();
     });
 
-    bool bootstrap = new_session && codex;
+    launch.bootstrap = launch.new_session && provider == ai_provider::Codex;
     bool initial_task = !add_history &&
                         ai_infos[session].projects.size() == 1;
-    QString prompt = bootstrap ?
+    QString prompt = launch.bootstrap ?
         "Initialize this Codex session and exit immediately. Do not read files, "
         "use tools, or reply to the user." : text;
-    if((new_session && !bootstrap) || initial_task)
+    if((launch.new_session && !launch.bootstrap) || initial_task)
     {
         QDir app(QApplication::applicationDirPath());
         prompt +=
@@ -1103,72 +1057,157 @@ void MainWindow::start_ai(QString session,const QString& text,bool add_history)
             "request. Send new user-facing text and the final reply through "
             "the named pipe.";
     }
+    launch.prompt = prompt;
+    return launch;
+}
 
-    if(model.startsWith("default",Qt::CaseInsensitive))
-        model.clear();
-    QStringList args{"exec"};
-    if(codex)
-    {
-        if(!model.isEmpty())
-        {
-            args << "--model" << model;
-            if(!profile.isEmpty())
-                args << "--profile" << profile;
-            auto host = settings.value("ai/ollama_host","localhost").toString().trimmed();
-            if(!host.isEmpty() && model_backend.contains("ollama",Qt::CaseInsensitive))
-            {
-                if(!host.contains("://"))
-                    host = "http://"+host;
-                auto url = QUrl(host);
-                url.setPort(settings.value("ai/ollama_port",11434).toInt());
-                url.setPath("/v1");
-                args << "--config" << QString("model_providers.%1.base_url=\"%2\"").
-                    arg(model_backend,url.toString());
-            }
-        }
-        if(session.isEmpty())
-            args << "--json" << "--skip-git-repo-check";
-        else
-            args << "resume" << session << "--json"
-                 << "--skip-git-repo-check";
-        args << prompt;
-    }
-    else
-    {
-        args = {"-p",new_session ? "--session-id" : "--resume",session};
-        if(!model.isEmpty())
-            args << "--model" << model;
-        args << prompt;
-    }
-
-    if(ollama)
-    {
-        auto host = settings.value("ai/ollama_host","localhost").toString().trimmed();
-        if(!host.contains("://"))
-            host = "http://"+host;
-        QUrl url(host);
-        url.setPort(settings.value("ai/ollama_port",11434).toInt());
-        auto env = QProcessEnvironment::systemEnvironment();
-        env.insert("ANTHROPIC_BASE_URL",url.toString());
-        env.insert("ANTHROPIC_AUTH_TOKEN","ollama");
-        env.insert("ANTHROPIC_API_KEY","");
-        if(!model.isEmpty())
-            for(auto name : {"ANTHROPIC_DEFAULT_HAIKU_MODEL",
-                              "ANTHROPIC_DEFAULT_SONNET_MODEL",
-                              "ANTHROPIC_DEFAULT_OPUS_MODEL",
-                              "CLAUDE_CODE_SUBAGENT_MODEL"})
-                env.insert(name,model);
-        process->setProcessEnvironment(env);
-    }
-
-    tipl::out() << ai_log(session.isEmpty() ?
+void MainWindow::run_ai(const ai_launch& launch,QStringList args)
+{
+    tipl::out() << ai_log(launch.session.isEmpty() ?
         QString("starting new %1 chat executable=%2 model=%3 prompt_chars=%4").
-        arg(provider_name,executable,model.isEmpty() ? QString("default") : model).arg(text.size()) :
+        arg(launch.name,launch.executable,
+            launch.model.isEmpty() ? QString("default") : launch.model).
+        arg(launch.text.size()) :
         QString("resuming %1 session agent=%2 session=%3 executable=%4 model=%5 prompt_chars=%6").
-        arg(provider_name).arg(ai_infos[session].agent_name).arg(session).arg(executable).
-        arg(model.isEmpty() ? QString("default") : model).arg(text.size()));
-    process->setProperty("bootstrap",bootstrap);
-    process->start(executable,args);
+        arg(launch.name).arg(ai_infos[launch.session].agent_name).
+        arg(launch.session,launch.executable,
+            launch.model.isEmpty() ? QString("default") : launch.model).
+        arg(launch.text.size()));
+    launch.process->setProperty("bootstrap",launch.bootstrap);
+    launch.process->start(launch.executable,args);
+}
+void MainWindow::start_claude_process(const ai_launch& launch)
+{
+    connect(launch.process,&QProcess::readyReadStandardOutput,launch.process,
+            [process = launch.process]{process->readAllStandardOutput();});
+    QStringList args{"-p",launch.new_session ? "--session-id" : "--resume",
+                     launch.session};
+    if(!launch.model.isEmpty())
+        args << "--model" << launch.model;
+    args << launch.prompt;
+    run_ai(launch,args);
+}
+void MainWindow::start_codex(QString session,const QString& text,bool add_history)
+{
+    auto launch = prepare_ai(ai_provider::Codex,session,text,add_history);
+    if(!launch.process)
+        return;
+    auto* process = launch.process;
+    connect(process,&QProcess::readyReadStandardOutput,this,[=]
+    {
+        auto buffer = process->property("stdout_buffer").toByteArray()+
+                      process->readAllStandardOutput();
+        for(int pos;(pos = buffer.indexOf('\n')) >= 0;)
+        {
+            auto event = QJsonDocument::fromJson(buffer.left(pos)).object();
+            buffer.remove(0,pos+1);
+            if(event["type"] != "thread.started")
+                continue;
+            auto session = event["thread_id"].toString();
+            if(session.isEmpty())
+                continue;
+            bool started_new_session = process->objectName().isEmpty();
+            if(started_new_session)
+            {
+                process->setObjectName(session);
+                ai_infos[session].set_provider(ai_provider::Codex,launch.name);
+                ai_infos[session].set_process(process);
+            }
+            ai_infos[session].model_settings = launch.model_setting;
+            if(started_new_session)
+            {
+                add_ai_history(session,"user",text);
+                for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
+                    button->setEnabled(true);
+            }
+            tipl::out() << ai_log("session agent="+
+                                  ai_infos[session].agent_name+
+                                  " session="+session);
+        }
+        process->setProperty("stdout_buffer",buffer);
+    });
+
+    QStringList args{"exec"};
+    if(!launch.model.isEmpty())
+    {
+        args << "--model" << launch.model;
+        if(!launch.profile.isEmpty())
+            args << "--profile" << launch.profile;
+        auto host = settings.value(
+            "ai/ollama_host","localhost").toString().trimmed();
+        if(!host.isEmpty() &&
+           launch.backend.contains("ollama",Qt::CaseInsensitive))
+        {
+            if(!host.contains("://"))
+                host = "http://"+host;
+            QUrl url(host);
+            url.setPort(settings.value("ai/ollama_port",11434).toInt());
+            url.setPath("/v1");
+            args << "--config" <<
+                QString("model_providers.%1.base_url=\"%2\"").
+                arg(launch.backend,url.toString());
+        }
+    }
+    if(launch.session.isEmpty())
+        args << "--json" << "--skip-git-repo-check";
+    else
+        args << "resume" << launch.session << "--json"
+             << "--skip-git-repo-check";
+    args << launch.prompt;
+    run_ai(launch,args);
+}
+void MainWindow::start_claude(QString session,const QString& text,bool add_history)
+{
+    auto launch = prepare_ai(ai_provider::Claude,session,text,add_history);
+    if(launch.process)
+        start_claude_process(launch);
+}
+void MainWindow::start_ollama(QString session,const QString& text,bool add_history)
+{
+    auto host = settings.value(
+        "ai/ollama_host","localhost").toString().trimmed();
+    if(host.isEmpty())
+    {
+        QMessageBox::warning(
+            this,"AI Agent","Set the Ollama host/IP in AI Settings first.");
+        return;
+    }
+    auto launch = prepare_ai(ai_provider::Ollama,session,text,add_history);
+    if(!launch.process)
+        return;
+    if(!host.contains("://"))
+        host = "http://"+host;
+    QUrl url(host);
+    url.setPort(settings.value("ai/ollama_port",11434).toInt());
+    auto env = QProcessEnvironment::systemEnvironment();
+    env.insert("ANTHROPIC_BASE_URL",url.toString());
+    env.insert("ANTHROPIC_AUTH_TOKEN","ollama");
+    env.insert("ANTHROPIC_API_KEY","");
+    if(!launch.model.isEmpty())
+        for(auto name : {"ANTHROPIC_DEFAULT_HAIKU_MODEL",
+                          "ANTHROPIC_DEFAULT_SONNET_MODEL",
+                          "ANTHROPIC_DEFAULT_OPUS_MODEL",
+                          "CLAUDE_CODE_SUBAGENT_MODEL"})
+            env.insert(name,launch.model);
+    launch.process->setProcessEnvironment(env);
+    start_claude_process(launch);
+}
+void MainWindow::start_ai(QString session,const QString& text,bool add_history)
+{
+    auto provider = session.isEmpty() ?
+        ai_provider(ui->ai_agent_selector->currentIndex()) :
+        ai_infos[session].provider;
+    switch(provider)
+    {
+    case ai_provider::Codex:
+        return start_codex(session,text,add_history);
+    case ai_provider::Claude:
+        return start_claude(session,text,add_history);
+    case ai_provider::Ollama:
+        return start_ollama(session,text,add_history);
+    default:
+        QMessageBox::warning(this,"AI Agent","Unsupported AI provider.");
+    }
 }
 
 void MainWindow::on_ai_send_message_clicked()
