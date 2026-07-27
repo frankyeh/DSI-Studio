@@ -510,7 +510,7 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
                  </item>
                  <item>
                   <property name="text">
-                   <string>Gemini</string>
+                    <string>Ollama</string>
                   </property>
                  </item>
                 </widget>
