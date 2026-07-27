@@ -171,8 +171,8 @@ Every command and parameter is a separate JSON string.
 | Hub repositories | `["hub","repos"]` |
 | Hub tags | `["hub","tags",repo]` |
 | Hub files | `["hub","files",repo,tag,filter,offset,limit]` |
-| Open Hub file | `["hub","open",repo,tag,file]` |
-| Download Hub file | `["hub","download",repo,tag,file,directory]` |
+| Open Hub file | `["hub","open",repo,tag,filename-or-index]` |
+| Download Hub file | `["hub","download",repo,tag,filename-or-index,directory]` |
 | Open images together | Main: `["open_image",path1,path2,...]` |
 | Select slice | `["set_slice",index]` |
 | Select slice by name | `["set_slice_by_name",name]` |
@@ -194,6 +194,11 @@ Every command and parameter is a separate JSON string.
 | Rotate 3D view | `["rotate","degrees x y z"]` |
 | Save rendering | `["save_hd_screen",path,"width height"]` |
 | Run CLI, explicit request only | `["run_cli","--action=rec --loop=C:\\data\\*.sz --method=4"]` |
+
+`hub files` returns `index`, `file`, `size`, and `downloaded`. For `hub open`
+and `hub download`, pass either the exact filename or the numeric index from
+that same `hub files` result. Indices apply only to the currently selected
+repository and tag.
 
 ## File and window workflows
 
