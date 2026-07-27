@@ -822,6 +822,8 @@ bool MainWindow::save_ai_entry(const QString& session,const QJsonObject& entry)
 
 bool MainWindow::set_ai_title(const QString& session,QString title)
 {
+    if(session.isEmpty())
+        return false;
     title = title.simplified();
     auto& info = ai_infos[session];
     if(title.isEmpty())
@@ -842,6 +844,8 @@ bool MainWindow::set_ai_title(const QString& session,QString title)
 void MainWindow::add_ai_history(const QString& session,const QString& type,
                                 const QString& text)
 {
+    if(session.isEmpty())
+        return;
     QJsonObject entry{{"type",type},{"text",text},
                       {"time",QDateTime::currentDateTime().toString(Qt::ISODate)}};
     ai_infos[session].projects.append(entry);
@@ -934,14 +938,16 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
         return launch;
     }
 
-    if(session.isEmpty() && provider != ai_provider::Codex)
+    if(session.isEmpty() && provider == ai_provider::Claude)
     {
         session = QUuid::createUuid().toString(QUuid::WithoutBraces);
         ai_infos[session].set_provider(provider,launch.name);
         launch.session = session;
     }
 
-    auto cwd = ai_infos[session].work_dirs;
+    QString cwd;
+    if(!session.isEmpty())
+        cwd = ai_infos[session].work_dirs;
     if(!QDir(cwd).exists())
         cwd = work_dir();
     if(!QDir(cwd).exists())
@@ -1101,7 +1107,8 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
         process->deleteLater();
     });
 
-    bool initial_task = !add_history && ai_infos[session].projects.size() == 1;
+    bool initial_task = !session.isEmpty() && !add_history &&
+                        ai_infos[session].projects.size() == 1;
     QString prompt = text;
     if(launch.new_session || initial_task)
     {
@@ -1120,20 +1127,17 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
             "Attach only new user-facing chat and send the final answer once "
             "with CHAT. Process every returned PROMPT.";
     }
-    if(!session.isEmpty())
-    {
-        if(launch.new_session && provider == ai_provider::Codex)
-            prompt +=
-                "\n\n[DSI Studio] Use the CODEX_THREAD_ID environment variable "
-                "as session in every local-server request.";
-        else if(!session.isEmpty())
-            prompt +=
-                "\n\n[DSI Studio] Continue through agent "+
-                ai_infos[session].agent_name+" using session "+
-                session+". Use this exact value as session in every local-server "
-                          "request. Send new user-facing text and the final reply through "
-                          "the named pipe.";
-    }
+    if(launch.new_session && provider == ai_provider::Codex)
+        prompt +=
+            "\n\n[DSI Studio] Use the CODEX_THREAD_ID environment variable "
+            "as session in every local-server request.";
+    else if(!session.isEmpty())
+        prompt +=
+            "\n\n[DSI Studio] Continue through agent "+
+            ai_infos[session].agent_name+" using session "+
+            session+". Use this exact value as session in every local-server "
+                      "request. Send new user-facing text and the final reply through "
+                      "the named pipe.";
     launch.prompt = prompt;
     return launch;
 }
