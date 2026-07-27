@@ -1116,7 +1116,7 @@ MainWindow::MainWindow(QWidget *parent) :
     auto update_models = [this]
     {
         ui->ai_model_selector->clear();
-        ui->ai_model_selector->addItem("Default model");
+        ui->ai_model_selector->addItem("default");
         ui->ai_model_selector->addItems(
             ui->ai_agent_selector->currentData().toStringList());
     };
