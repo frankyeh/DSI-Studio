@@ -12,6 +12,8 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QMenu>
+#include <QMap>
+#include <string>
 #include <unordered_map>
 
 
@@ -38,6 +40,8 @@ struct ai_info{
     QString take_prompts(void); QByteArray prepare_reply(QByteArray,QJsonArray*) const;
 };
 extern std::unordered_map<QString,ai_info> ai_infos;
+extern QMap<QString,quint64> ai_log_positions;
+std::string ai_log(QString);
 
 class MainWindow : public QMainWindow
 {
