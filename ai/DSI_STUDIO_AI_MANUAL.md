@@ -30,6 +30,10 @@ Do not reread the entire file for each action.
   later `TITLE` only when the user permits renaming.
 - Call top-level `LIST` first. It returns global activity plus every window's
   numeric ID and busy state; it does not use a window ID.
+- Before starting loading, registration, reconstruction, segmentation, batch
+  processing, fiber tracking, or other substantial work, inspect `LIST`. When
+  DSI Studio is already busy, follow the wait etiquette below instead of adding
+  another large task.
 - Every `CMD`, including every `list_*` command, requires a numeric `window`
   returned by `LIST`. Never use a type, title, filename, guessed ID, or stale ID.
 - Use GUI commands. Do not use `run_cli` unless the user explicitly requests
@@ -344,6 +348,33 @@ Slice loading and registration make the tracking-window row busy. When it
 becomes idle, use `list_slice` if exact `downloaded`, `ready`, `registering`, or
 `registered` fields must be verified.
 
+### Wait etiquette
+
+Before starting substantial work, inspect the first `LIST` line and all window
+rows. Loading, registration, reconstruction, segmentation, batch processing,
+fiber tracking, and similarly CPU/GPU-intensive work should not be stacked by
+default.
+
+- When `busy=0`, proceed.
+- When the activity was started by this agent, do not start another substantial
+  operation. Send one concise `CHAT` saying what is still running and that the
+  user may interrupt or terminate it, then wait.
+- When activity was already running before this agent's intended operation, or
+  appears to belong to the user or another agent, send one concise `CHAT` such
+  as: `DSI Studio is busy with <status>. I will wait by default. You may
+  terminate the current work or tell me to proceed right away.` Do not start the
+  substantial operation unless a returned `PROMPT` explicitly says to proceed
+  immediately.
+- Wait without model work between checks. Poll only `LIST` after 4 seconds, then
+  8, 16, and 32 seconds; while the state remains unchanged, continue every 32
+  seconds. Reset the interval to 4 seconds when `status`, `level`, a window's
+  `busy`, or `tracking-jobs` changes.
+- Inspect every complete `LIST` reply for `PROMPT`. User instructions override
+  waiting. Do not send repeated `CHAT`, call `LOG`, request detailed lists, or
+  narrate unchanged polls.
+- When global `busy` becomes `0`, continue the pending operation without another
+  status message unless the next phase itself warrants one.
+
 Never automatically repeat a failed, timed-out, unavailable, or unexpected
 operation.
 
@@ -355,6 +386,8 @@ operation.
   replacing the session ID.
 - Retain window IDs until windows change; poll compact top-level `LIST` only
   while waiting for global or per-window activity to change.
+- During waiting, sleep between the 4/8/16/32-second checks; do not use model
+  reasoning, chat, `LOG`, or detailed discovery while state is unchanged.
 - Use the `tracking-jobs` column instead of `list_tract status` when only
   completion is needed.
 - Use parameterless `list_param` once, then query only needed IDs.
