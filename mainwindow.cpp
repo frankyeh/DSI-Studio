@@ -381,12 +381,10 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
         item = new QListWidgetItem;
         item->setText(project_title);
         item->setData(Qt::UserRole,session);
-
         ui->ai_project_list->insertItem(0,item);
         info.project_items = item;
 
         auto* row = new QWidget;
-        item->setSizeHint(row->sizeHint());
         auto* title = new QPushButton(row);
         title->setObjectName("ai_project_title");
         title->setFlat(true);
@@ -422,9 +420,11 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
         connect(button,&QToolButton::pressed,this,
                 [this,item]{ui->ai_project_list->setCurrentItem(item);});
     }
+
+    auto* row = ui->ai_project_list->itemWidget(item);
+    item->setSizeHint(row->sizeHint());
     if(!added.isEmpty() && added["type"].toString() != "user")
     {
-        auto row = ui->ai_project_list->itemWidget(item);
         row->setStyleSheet("background:#ffe082;border-radius:5px;");
         row->findChild<QTimer*>("ai_chat_blink")->start();
     }
@@ -446,12 +446,9 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
 
     auto saved_model = info.model_settings.value("model").toString();
     if(saved_model.isEmpty())
-        saved_model = settings.value(
-                                  "ai/default_model","default").toString();
-
+        saved_model = settings.value("ai/default_model","default").toString();
     if(ui->ai_model_selector->findText(saved_model) < 0)
         saved_model = "default";
-
     ui->ai_model_selector->setCurrentText(saved_model);
 
 
@@ -1366,9 +1363,7 @@ MainWindow::MainWindow(QWidget *parent) :
             }
         }
         ai_infos[session].project_titles = title;
-        item->setText(title);
-        button->setText(title);
-        button->setToolTip(title);
+        show_ai_project(session);
     });
 
     connect(ai_project_menu->addAction("Details..."),&QAction::triggered,this,[this]
