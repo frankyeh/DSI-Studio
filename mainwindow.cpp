@@ -16,6 +16,13 @@
 #include <QShortcut>
 #include <QProcess>
 #include <QStandardItemModel>
+#include <QDialog>
+#include <QFormLayout>
+#include <QDialogButtonBox>
+#include <QLineEdit>
+#include <QSpinBox>
+#include <QCheckBox>
+#include <QComboBox>
 #include <QUuid>
 #include <QTimer>
 #include <QScrollBar>
@@ -622,7 +629,8 @@ void MainWindow::add_ai_history(const QString& agent,const QString& type,
 
     QFile file(ai_project_dir+"/"+QString::fromLatin1(
                    QUrl::toPercentEncoding(agent))+".jsonl");
-    if(file.open(QIODevice::WriteOnly|QIODevice::Append))
+    if(settings.value("ai/keep_history",true).toBool() &&
+       file.open(QIODevice::WriteOnly|QIODevice::Append))
         file.write(QJsonDocument(entry).toJson(QJsonDocument::Compact)+'\n');
 
     show_ai_project(agent,entry);
@@ -634,6 +642,58 @@ void MainWindow::on_ai_new_chat_clicked()
     ui->ai_chat_history->clear();
     ui->ai_chat_input->clear();
     ui->ai_chat_input->setFocus();
+}
+
+void MainWindow::on_ai_quick_settings_clicked()
+{
+    QDialog dialog(this);
+    dialog.setWindowTitle("AI Settings");
+    QFormLayout layout(&dialog);
+    QLineEdit host(settings.value("ai/ollama_host","192.168.1.14").toString());
+    QSpinBox port;
+    port.setRange(1,65535);
+    port.setValue(settings.value("ai/ollama_port",11434).toInt());
+    QComboBox agent,model;
+    for(int index = 0;index < ui->ai_agent_selector->count();++index)
+        agent.addItem(ui->ai_agent_selector->itemText(index),index);
+    agent.setCurrentIndex(agent.findData(ui->ai_agent_selector->currentIndex()));
+    auto update_models = [&]
+    {
+        auto index = agent.currentData().toInt();
+        auto profiles = ui->ai_agent_selector->itemData(index,Qt::UserRole+2).
+                        toJsonObject();
+        model.clear();
+        model.addItem("default");
+        for(const auto& name : ui->ai_agent_selector->itemData(index).toStringList())
+            model.addItem(name,profiles[name].toObject());
+    };
+    update_models();
+    model.setCurrentText(ui->ai_model_selector->currentText());
+    QCheckBox history("Keep AI chat history");
+    history.setChecked(settings.value("ai/keep_history",true).toBool());
+    layout.addRow("Ollama host/IP:",&host);
+    layout.addRow("Ollama port:",&port);
+    layout.addRow("Default agent:",&agent);
+    layout.addRow("Default model:",&model);
+    layout.addRow(&history);
+    QDialogButtonBox buttons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
+    layout.addRow(&buttons);
+    connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),&dialog,[&](int)
+    {
+        update_models();
+    });
+    connect(&buttons,&QDialogButtonBox::accepted,&dialog,&QDialog::accept);
+    connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
+    if(dialog.exec() != QDialog::Accepted)
+        return;
+
+    settings.setValue("ai/ollama_host",host.text().trimmed());
+    settings.setValue("ai/ollama_port",port.value());
+    settings.setValue("ai/keep_history",history.isChecked());
+    settings.setValue("ai/default_agent",agent.currentText());
+    settings.setValue("ai/default_model",model.currentText());
+    ui->ai_agent_selector->setCurrentIndex(agent.currentData().toInt());
+    ui->ai_model_selector->setCurrentText(model.currentText());
 }
 
 void MainWindow::start_ai(const QString& agent,const QString& text,
@@ -881,7 +941,9 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
     }
 
     auto model = ui->ai_model_selector->currentText();
-    auto profile = ui->ai_model_selector->currentData().toString();
+    auto model_info = ui->ai_model_selector->currentData().toJsonObject();
+    auto profile = model_info["profile"].toString();
+    auto model_provider = model_info["provider"].toString();
     if(model.startsWith("default",Qt::CaseInsensitive))
         model.clear();
     QStringList args{"exec"};
@@ -892,6 +954,17 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
             args << "--model" << model;
             if(!profile.isEmpty())
                 args << "--profile" << profile;
+            auto host = settings.value("ai/ollama_host").toString().trimmed();
+            if(!host.isEmpty() && model_provider.contains("ollama",Qt::CaseInsensitive))
+            {
+                if(!host.contains("://"))
+                    host = "http://"+host;
+                auto url = QUrl(host);
+                url.setPort(settings.value("ai/ollama_port",11434).toInt());
+                url.setPath("/v1");
+                args << "--config" << QString("model_providers.%1.base_url=\"%2\"").
+                    arg(model_provider,url.toString());
+            }
         }
         if(session.isEmpty())
             args << "--json" << "--skip-git-repo-check";
@@ -1013,7 +1086,7 @@ MainWindow::MainWindow(QWidget *parent) :
         item->setEnabled(!path.isEmpty());
         ui->ai_agent_selector->setItemData(index,path,Qt::UserRole+1);
         ui->ai_agent_selector->setItemData(index,models);
-        ui->ai_agent_selector->setItemData(index,profiles,Qt::UserRole+2);
+        ui->ai_agent_selector->setItemData(index,QVariant::fromValue(profiles),Qt::UserRole+2);
         tipl::out() << ai_log(path.isEmpty() ? agent+" not found" :
                               agent+": "+path);
         if(!path.isEmpty())
@@ -1062,14 +1135,21 @@ MainWindow::MainWindow(QWidget *parent) :
             {
                 QFile file(dir.filePath(name));
                 if(file.open(QIODevice::ReadOnly))
-                    for(auto matches = regex.globalMatch(QString::fromUtf8(file.readAll()));
+                {
+                    auto text = QString::fromUtf8(file.readAll());
+                    auto provider = QRegularExpression(
+                        R"((?:^|\n)\s*model_provider\s*=\s*["']([^"']+)["'])").
+                        match(text).captured(1);
+                    for(auto matches = regex.globalMatch(text);
                         matches.hasNext();)
                     {
                         auto model = matches.next().captured(1);
                         models << model;
                         if(name != "config.toml")
-                            profiles[model] = name.chopped(12);
+                            profiles[model] = QJsonObject{
+                                {"profile",name.chopped(12)},{"provider",provider}};
                     }
+                }
             }
             models.removeDuplicates();
             models.sort(Qt::CaseInsensitive);
@@ -1144,11 +1224,16 @@ MainWindow::MainWindow(QWidget *parent) :
         auto profiles = ui->ai_agent_selector->currentData(Qt::UserRole+2).
                         toJsonObject();
         for(const auto& model : ui->ai_agent_selector->currentData().toStringList())
-            ui->ai_model_selector->addItem(model,profiles[model].toString());
+            ui->ai_model_selector->addItem(model,
+                QVariant::fromValue(profiles[model].toObject()));
     };
     connect(ui->ai_agent_selector,&QComboBox::currentTextChanged,this,
             [update_models] { update_models(); });
     update_models();
+    ui->ai_agent_selector->setCurrentText(
+        settings.value("ai/default_agent",ui->ai_agent_selector->currentText()).toString());
+    ui->ai_model_selector->setCurrentText(
+        settings.value("ai/default_model",ui->ai_model_selector->currentText()).toString());
     qApp->installEventFilter(this);
     connect(ui->tabWidget,&QTabWidget::currentChanged,this,[this]
     {
