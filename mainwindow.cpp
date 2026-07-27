@@ -648,7 +648,7 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
         return;
     }
 
-    auto session = ai_sessions.value(agent);
+    auto session = ai_sessions.value(agent,agent.section('@',1));
     if(!agent.isEmpty() && session.isEmpty())
     {
         if(!add_history)
@@ -859,9 +859,11 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
              << "--skip-git-repo-check";
     args << prompt;
 
-    tipl::out() << ai_log(
-        QString(session.isEmpty() ? "new chat" : "resume")+
-        QString(" executable=%1 prompt_chars=%2").arg(codex).arg(text.size()));
+    tipl::out() << ai_log(session.isEmpty() ?
+        QString("starting new Codex chat executable=%1 prompt_chars=%2").
+        arg(codex).arg(text.size()) :
+        QString("resuming Codex session agent=%1 session=%2 executable=%3 prompt_chars=%4").
+        arg(agent,session,codex).arg(text.size()));
     process->start(codex,args);
 }
 
@@ -872,7 +874,8 @@ void MainWindow::on_ai_send_message_clicked()
         return;
     auto* item = ui->ai_project_list->currentItem();
     auto agent = item ? item->data(Qt::UserRole).toString() : QString();
-    if(!agent.isEmpty() && (ai_processes.contains(agent) || !agent.startsWith("Codex@")))
+    bool codex = agent.section('@',0,0).contains("codex",Qt::CaseInsensitive);
+    if(!agent.isEmpty() && (ai_processes.contains(agent) || !codex))
     {
         ai_prompts[agent].append(text);
         add_ai_history(agent,"user",text);
