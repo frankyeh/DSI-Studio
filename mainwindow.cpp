@@ -1033,8 +1033,26 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     auto* agents = qobject_cast<QStandardItemModel*>(
                        ui->ai_agent_selector->model());
-    bool codex = !find_codex_executable().isEmpty();
-    bool claude = !find_claude_executable().isEmpty();
+    auto codex_path = find_codex_executable();
+    auto claude_path = find_claude_executable();
+    bool codex = !codex_path.isEmpty();
+    bool claude = !claude_path.isEmpty();
+    tipl::out() << ai_log(codex_path.isEmpty() ? "Codex not found" :
+                          "Codex: "+codex_path);
+    if(!codex_path.isEmpty())
+    {
+        auto models = find_codex_models();
+        tipl::out() << ai_log("Codex models: "+
+                              (models.isEmpty() ? "none detected" : models.join(", ")));
+    }
+    tipl::out() << ai_log(claude_path.isEmpty() ? "Claude not found" :
+                          "Claude: "+claude_path);
+    if(!claude_path.isEmpty())
+    {
+        auto models = find_claude_models();
+        tipl::out() << ai_log("Claude models: "+
+                              (models.isEmpty() ? "none detected" : models.join(", ")));
+    }
     for(int i = 0;i < ui->ai_agent_selector->count();++i)
         agents->item(i)->setEnabled(ui->ai_agent_selector->itemText(i) == "Codex" ?
                                     codex : claude);
