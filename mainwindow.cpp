@@ -273,11 +273,23 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     auto session = request["session"].toString().trimmed();
 
     if(agent.isEmpty())
-        return ai_reply(socket,{},"ERROR\tmissing agent: provide an agent name and reuse it for the entire conversation");
+        return ai_reply(socket,{},"ERROR\tmissing agent: provide a provider-tagged agent name and reuse it for the entire conversation");
     if(agent.contains('@'))
         return ai_reply(socket,{},"ERROR\tinvalid agent: '@' is reserved as the agent/session separator");
+    auto provider = agent.contains("codex",Qt::CaseInsensitive) ? QString("Codex") :
+                    agent.contains("claude",Qt::CaseInsensitive) ? QString("Claude") :
+                    agent.contains("gemini",Qt::CaseInsensitive) ? QString("Gemini") : QString();
+    if(provider.isEmpty())
+        return ai_reply(socket,{},"ERROR\tinvalid agent: include Codex, Claude, or Gemini in the agent name");
     if(session.isEmpty())
-        return ai_reply(socket,{},"ERROR\tmissing session: provide a session name and reuse it for the entire conversation");
+        return ai_reply(socket,{},"ERROR\tmissing session: provide the initiating-chat session ID and reuse it for the entire conversation");
+
+    auto index = main_window->ui->ai_agent_selector->findText(
+        provider,Qt::MatchStartsWith);
+    if(index >= 0 && main_window->ui->ai_agent_selector->model()->flags(
+           main_window->ui->ai_agent_selector->model()->index(index,0)).testFlag(
+           Qt::ItemIsEnabled))
+        main_window->ui->ai_agent_selector->setCurrentIndex(index);
 
     agent += "@"+session;
 
