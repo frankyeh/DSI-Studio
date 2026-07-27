@@ -1173,30 +1173,35 @@ MainWindow::MainWindow(QWidget *parent) :
         set_agent("Claude",claude_path,{});
     }
     {
-        // find Ollama models through Claude
         QStringList models;
-        auto host = settings.value("ai/ollama_host").toString().trimmed();
+        auto host = settings.value("ai/ollama_host","127.0.0.1").toString().trimmed();
         if(!claude_path.isEmpty() && !host.isEmpty())
         {
             if(!host.contains("://"))
                 host = "http://"+host;
-            QUrl base_url(host);
-            base_url.setPort(settings.value("ai/ollama_port",11434).toInt());
+            QUrl url(host);
+            url.setPort(settings.value("ai/ollama_port",11434).toInt());
+
             QNetworkAccessManager manager;
-            QNetworkRequest request(base_url.resolved(QUrl("/api/tags")));
-            request.setTransferTimeout(3000);
+            QNetworkRequest request(url.resolved(QUrl("/api/tags")));
+            request.setTransferTimeout(5000);
             auto* reply = manager.get(request);
             QEventLoop loop;
-            QObject::connect(reply,&QNetworkReply::finished,&loop,&QEventLoop::quit);
+            connect(reply,&QNetworkReply::finished,&loop,&QEventLoop::quit);
             loop.exec();
+
             if(reply->error() == QNetworkReply::NoError)
+            {
                 for(const auto& model : QJsonDocument::fromJson(reply->readAll()).
-                    object()["models"].toArray())
+                                         object()["models"].toArray())
                     models << model.toObject()["name"].toString();
-            tipl::out() << ai_log("Ollama connection: "+
-                (reply->error() == QNetworkReply::NoError ? "connected" :
-                 reply->errorString()));
-            ollama_path = claude_path;
+                if(!models.isEmpty())
+                    ollama_path = claude_path;
+            }
+            tipl::out() << ai_log("Ollama "+request.url().toString()+": "+
+                                  (reply->error() == QNetworkReply::NoError ?
+                                       "connected" : reply->errorString()));
+            reply->deleteLater();
         }
         models.removeDuplicates();
         models.sort(Qt::CaseInsensitive);
