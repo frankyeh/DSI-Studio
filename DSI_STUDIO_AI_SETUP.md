@@ -13,9 +13,9 @@ must not contain `@`.
 DSI Studio identifies the conversation as `agent@session`. The request still
 sends `agent` and `session` as separate JSON fields. The session must be the
 provider's exact resumable thread ID (for Codex, the `thread_id` from
-`thread.started`), never a friendly label or a request-local GUID. An agent
-initiating a DSI connection must provide it in its first request; otherwise
-DSI Studio cannot later resume the correct chat.
+`thread.started`) in canonical UUID form, never a friendly label or a
+request-local GUID. An agent initiating a DSI connection must provide it in
+its first request; otherwise DSI Studio cannot later resume the correct chat.
 
 ### Codex Desktop fallback
 
@@ -40,16 +40,47 @@ $DsiAgent = 'Codex'
 $DsiSession = '<initiating-chat-session-id>'
 ```
 
-## Connection priority
+## Direct named-pipe connection
 
-Use a native local named-pipe client when the agent runtime supports it. Connect
-to `\\\\.\\pipe\\dsi-studio`, send one complete request, read until DSI Studio
-closes the connection, then close the client. This is the preferred transport:
-it avoids temporary scripts, execution-policy restrictions, and command-line
-JSON quoting.
+**Use the named pipe directly first.** Connect to `\\\\.\\pipe\\dsi-studio`, send
+one complete request, read until DSI Studio closes the connection, then close
+the client. Do **not** run `dsi_agent.ps1`, `dsi_studio.exe`, or another
+existing wrapper merely because it is present. They are fallbacks only after
+direct pipe access is unavailable or a direct connection fails.
 
-Use the PowerShell client below only when the agent cannot open the named pipe
-directly. Run on the same Windows computer as DSI Studio. Create one client
+If the runtime needs PowerShell, this is still a direct pipe client; it does
+not launch DSI Studio:
+
+```powershell
+function Invoke-Dsi($request)
+{
+    $pipe = [IO.Pipes.NamedPipeClientStream]::new(
+        '.','dsi-studio',[IO.Pipes.PipeDirection]::InOut)
+    $pipe.Connect(5000)
+    $utf8 = [Text.UTF8Encoding]::new($false)
+    $writer = [IO.StreamWriter]::new($pipe,$utf8,1024,$true)
+    $writer.AutoFlush = $true
+    if($request -is [string]) { $data = $request }
+    else { $data = $request | ConvertTo-Json -Compress -Depth 8 }
+    $writer.Write($data)
+    $reader = [IO.StreamReader]::new($pipe,$utf8,$false,1024,$true)
+    $reply = $reader.ReadToEnd()
+    $reader.Dispose()
+    $writer.Dispose()
+    $pipe.Dispose()
+    $reply
+}
+$DsiAgent = 'Codex'
+$DsiSession = '<initiating-chat-session-id>'
+```
+
+Reuse this client and the same identity throughout the conversation. Do not
+regenerate it for every request.
+
+## Optional executable fallback
+
+Use this only when a direct named-pipe client cannot run or cannot connect. Run
+on the same Windows computer as DSI Studio. Create one client
 for the current AI conversation, for example `dsi_agent.ps1`, using this exact
 template. Save it in the agent's working directory and reuse it for every
 request in that conversation.
@@ -168,28 +199,30 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\dsi_agent.ps1 `
 
 ```powershell
 # Discover windows.
-.\dsi_agent.ps1 -Chat "Connecting and checking open windows." `
-    Codex@your-session-id LIST
+Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
+             request='LIST';chat='Connecting and checking open windows.'}
 
 # Use a numeric ID returned by LIST.
-.\dsi_agent.ps1 -Chat "Inspecting current regions before editing." `
-    Codex@your-session-id 2 list_region
+Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
+             request='CMD';window='2';command=@('list_region')}
 
-# Parameters containing spaces remain one quoted argument.
-.\dsi_agent.ps1 Codex@your-session-id 2 set_region_name 0 "Tumor Core"
+# Command parameters stay separate array elements.
+Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
+             request='CMD';window='2';command=@('set_region_name','0','Tumor Core')}
 
 # Incremental diagnostics and final user-facing reply.
-.\dsi_agent.ps1 Codex@your-session-id LOG
-.\dsi_agent.ps1 -Chat "Task completed." Codex@your-session-id LOG
+Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;request='LOG'}
+Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
+             request='LOG';chat='Task completed.'}
 ```
 
 Always use the numeric window ID returned by the latest `LIST`; never use a
 window type, title, filename, guessed ID, or stale ID as `window`.
 
 JSON fields are `agent`, `session`, `cwd`, `request`, `window`, `command`, and
-optional `chat`. The script supplies them from its arguments. Requests are
-`LIST`, `CMD`, or `LOG`; `OPEN` sends one filename through the existing
-filename transport. Keep parameters containing spaces as one quoted argument.
+optional `chat`. Requests are `LIST`, `CMD`, or `LOG`; send one absolute path
+as raw pipe text to open a file. Keep every command parameter as one array
+element.
 
 `LIST` and `LOG` replies begin with `OKAY`. Diagnostic `LOG` returns at most
 4096 new console characters since the prior `LOG` or first request. Every
@@ -229,8 +262,8 @@ every polling request, or create a separate request only to report status.
 When only the main window exists, send one absolute filename:
 
 ```powershell
-.\dsi_agent.ps1 Codex@your-session-id OPEN 'C:\data\subject.fz'
-.\dsi_agent.ps1 Codex@your-session-id LIST
+Invoke-Dsi (Resolve-Path -LiteralPath 'C:\data\subject.fz').Path
+Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;request='LIST'}
 ```
 
 Poll `LIST` for the new numeric `tracking` or `image` window ID. `open_fib`
@@ -243,8 +276,9 @@ To open multiple images in one O1 window, send one flat command to the numeric
 main-window ID:
 
 ```powershell
-.\dsi_agent.ps1 Codex@your-session-id 1 open_image `
-    'C:\data\a.nii.gz' 'C:\data\b.nii.gz'
+Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
+             request='CMD';window='1';
+             command=@('open_image','C:\data\a.nii.gz','C:\data\b.nii.gz')}
 ```
 
 Do not send separate `open_image` commands, target an image window, split a
@@ -252,8 +286,8 @@ path into fields, or substitute `add_image`. Refresh `LIST` afterward.
 
 ## Required behavior
 
-1. Prefer a direct local named-pipe client when available; otherwise use the
-   generated PowerShell client. Use GUI commands. **Do not use `run_cli` unless the user explicitly says to
+1. Use a direct local named-pipe client. Use an executable wrapper only after
+   direct pipe access is unavailable or fails. Use GUI commands. **Do not use `run_cli` unless the user explicitly says to
    run the CLI.** Never infer CLI permission from a requested outcome.
 2. Call `LIST` first and after windows open or close.
 3. Use only numeric IDs returned by the latest `LIST`.
