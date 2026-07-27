@@ -2,6 +2,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QInputDialog>
+#include <QRegularExpression>
 #include <QMenu>
 #include <QUrl>
 #include <QMessageBox>
@@ -149,7 +150,8 @@ std::string ai_log(QString text)
     return ("[AI AGENT] "+text.remove('\r').replace(
                 '\n',"\n[AI AGENT] ")).toStdString();
 }
-
+static const QRegularExpression ansi_escape(
+    QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
 void ai_reply(QLocalSocket* socket,const QString& session,
                       QByteArray reply,QJsonArray* results = nullptr)
 {
@@ -278,6 +280,8 @@ void ai_request_command(QLocalSocket* socket,const QString& session,
                 cmd.push_back(value.toString().toUtf8().toStdString());
 
         bool okay = error.isEmpty() && run(cmd,output,error);
+        output.remove(ansi_escape);
+        error.remove(ansi_escape);
         if(!okay)
             error = (error.isEmpty() ? "command failed" : error) +
                     ". Read ai/DSI_STUDIO_AI_MANUAL.md and retry.";
@@ -322,6 +326,7 @@ void ai_request_log(QLocalSocket* socket,const QString& session,
             auto text = console.history.mid(qsizetype(begin-first));
             if(capped)
                 text.remove(0,text.indexOf('\n')+1);
+            text.remove(ansi_escape);
             QStringList lines;
             for(const auto& line : text.split('\n'))
                 if(!line.contains("[AI AGENT]"))
