@@ -385,8 +385,11 @@ bool tracking_window::command(std::vector<std::string> cmd)
             }
         }
 
-        if(!unet.forward(std::move(source_images),current_slice->vs))
-            return run->failed(unet.error_msg);
+        {
+            tipl::progress p("running segmentation inference",true);
+            if(!unet.forward(std::move(source_images),current_slice->vs))
+                return run->failed(unet.error_msg);
+        }
 
         /**
         {
@@ -399,6 +402,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         }
         */
         {
+            tipl::progress p("creating segmentation regions",true);
             const auto& unet_label = unet.data.label;
             std::vector<std::vector<tipl::vector<3,short> > > regions(unet.data.cur_count-1);
             std::vector<size_t> count(regions.size());
