@@ -869,9 +869,14 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
                       "the named pipe.";
     }
 
+    auto model = ui->ai_model_selector->currentText();
+    if(model.startsWith("default",Qt::CaseInsensitive))
+        model.clear();
     QStringList args{"exec"};
     if(codex)
     {
+        if(!model.isEmpty())
+            args << "--model" << model;
         if(session.isEmpty())
             args << "--json" << "--skip-git-repo-check";
         else
@@ -883,10 +888,11 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
         args = {"-p","--resume",session,prompt};
 
     tipl::out() << ai_log(session.isEmpty() ?
-        QString("starting new %1 chat executable=%2 prompt_chars=%3").
-        arg(provider,executable).arg(text.size()) :
-        QString("resuming %1 session agent=%2 session=%3 executable=%4 prompt_chars=%5").
-        arg(provider).arg(agent).arg(session).arg(executable).arg(text.size()));
+        QString("starting new %1 chat executable=%2 model=%3 prompt_chars=%4").
+        arg(provider,executable,model.isEmpty() ? QString("default") : model).arg(text.size()) :
+        QString("resuming %1 session agent=%2 session=%3 executable=%4 model=%5 prompt_chars=%6").
+        arg(provider).arg(agent).arg(session).arg(executable).
+        arg(model.isEmpty() ? QString("default") : model).arg(text.size()));
     process->start(executable,args);
 }
 
