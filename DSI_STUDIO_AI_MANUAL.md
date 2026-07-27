@@ -17,6 +17,8 @@ do not read the entire inventory.
   the provider's exact resumable initiating-chat thread ID in canonical UUID
   form (Codex: `thread.started.thread_id`), never a friendly label, so DSI
   Studio can return prompts to and resume that chat.
+- For a new Codex chat launched by DSI Studio, its task prompt supplies the
+  exact session value. Use it in every request; never invent a substitute.
 - For an externally initiated Codex Desktop chat, a task UUID may be visible
   in injected runtime context or a task-specific path. Use it only when
   explicitly present; never guess or generate a session ID.
