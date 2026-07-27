@@ -387,10 +387,7 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
         return;
 
     auto agent_name = info.agent_name;
-    auto default_title = agent_name.isEmpty() ?
-                         session : agent_name+"@"+session;
-    QString project_title = info.project_titles.isEmpty() ?
-                            default_title : info.project_titles;
+    QString project_title = info.project_titles.isEmpty() ? (agent_name.isEmpty() ? session : agent_name+"@"+session) : info.project_titles;
 
     auto* item = info.project_items;
     if(!item)
