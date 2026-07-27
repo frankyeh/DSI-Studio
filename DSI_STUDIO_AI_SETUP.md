@@ -57,7 +57,8 @@ $DsiSession = '<initiating-chat-session-id>'
 one complete request, read until DSI Studio closes the connection, then close
 the client. Do **not** run `dsi_agent.ps1`, `dsi_studio.exe`, or another
 existing wrapper merely because it is present. They are fallbacks only after
-direct pipe access is unavailable or a direct connection fails.
+direct pipe access is unavailable or a direct connection fails and the user
+approves using one.
 
 If the runtime needs PowerShell, this is still a direct pipe client; it does
 not launch DSI Studio:
@@ -170,7 +171,7 @@ if($Chat)
     $request.chat = $Chat
 }
 
-if($request.request -eq 'LOG')
+if($request.request -in @('LOG','CHAT'))
 {
     if(!$Chat -and $Command.Count)
     {
@@ -224,21 +225,22 @@ Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
 # Incremental diagnostics and final user-facing reply.
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;request='LOG'}
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
-             request='LOG';chat='Task completed.'}
+             request='CHAT';chat='Task completed.'}
 ```
 
 Always use the numeric window ID returned by the latest `LIST`; never use a
 window type, title, filename, guessed ID, or stale ID as `window`.
 
 JSON fields are `agent`, `session`, `cwd`, `request`, `window`, `command`, and
-optional `chat`. Requests are `LIST`, `CMD`, or `LOG`; send one absolute path
+optional `chat`. Requests are `LIST`, `CMD`, `LOG`, or `CHAT`; send one absolute path
 as raw pipe text to open a file. Keep every command parameter as one array
 element.
 
-`LIST` and `LOG` replies begin with `OKAY`. Diagnostic `LOG` returns at most
+`LIST`, `LOG`, and `CHAT` replies begin with `OKAY`. `CHAT` returns no console
+history. Diagnostic `LOG` returns at most
 4096 new console characters since the prior `LOG` or first request. Every
 `LOG` advances the cursor. The console is global, so concurrent agents may see
-each other's new DSI output. Final `LOG` with `chat` returns no console history.
+each other's new DSI output.
 `[AI AGENT]` trace lines are omitted. `[AI REQUEST]` groups and closing `⏱`
 lines report synchronous DSI-side request handling, not agent runtime or
 asynchronous completion.
@@ -297,8 +299,8 @@ path into fields, or substitute `add_image`. Refresh `LIST` afterward.
 
 ## Required behavior
 
-1. Use a direct local named-pipe client. Use an executable wrapper only after
-   direct pipe access is unavailable or fails. Use GUI commands. **Do not use `run_cli` unless the user explicitly says to
+1. Use a direct local named-pipe client. If it is unavailable or fails, ask
+   before using an executable wrapper. Use GUI commands. **Do not use `run_cli` unless the user explicitly says to
    run the CLI.** Never infer CLI permission from a requested outcome.
 2. Call `LIST` first and after windows open or close.
 3. Use only numeric IDs returned by the latest `LIST`.
@@ -306,14 +308,21 @@ path into fields, or substitute `add_image`. Refresh `LIST` afterward.
    `list_param`, `list_atlas`, `list_unet`, and `list_auto_tract`.
 5. Treat `okay:true` as acceptance. Poll the relevant list command for
    asynchronous completion; use `LOG` only when diagnostics are needed.
-6. On `window not found`, refresh `LIST` once and do not repeat the stale ID.
+   If a response says it is loading, first send `CHAT` asking whether to keep
+   waiting or stop, then check every 3 seconds unless the user says stop;
+   process every reply.
+   Never automatically repeat a failed, timed-out, unavailable, or unexpected
+   request.
+6. If a required window disappears or returns `window not found`, assume the
+   user closed it. Do not recheck, reopen, or retry it. Stop and send one
+   `CHAT` asking whether to continue or stop; resume only after the reply.
 7. Verify outputs. Ask before destructive operations or overwrites.
 8. Do not answer modal dialogs remotely; tell the user what is required.
 9. Keep the user informed with brief intent-focused `chat` updates at meaningful
    phase changes, attached to requests already needed for the task.
-10. Send the final answer once with the final `LOG`.
+10. Send the final answer once with `CHAT`.
 11. Minimize round trips: one initial `LIST`, only necessary commands, concise
-    verification, and final `LOG`.
+    verification, and final `CHAT`.
 12. When asked to operate DSI Studio, execute the requests. Do not return a
     script or tutorial unless the user asks for one.
 
