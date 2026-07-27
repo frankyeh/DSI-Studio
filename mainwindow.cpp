@@ -824,6 +824,12 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
                 this,"AI Agent",
                 "AI agent ended before creating a new chat. Check the console.");
         }
+        else if(process->property("bootstrap").toBool())
+        {
+            process->deleteLater();
+            start_ai(agent,text,false);
+            return;
+        }
         else
         {
             ai_processes.remove(agent);
@@ -842,8 +848,12 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
         process->deleteLater();
     });
 
-    QString prompt = text;
-    if(session.isEmpty())
+    bool bootstrap = session.isEmpty() && codex;
+    bool initial_task = !add_history && ai_projects[agent].size() == 1;
+    QString prompt = bootstrap ?
+        "Initialize this Codex session and exit immediately. Do not read files, "
+        "use tools, or reply to the user." : text;
+    if((session.isEmpty() && !bootstrap) || initial_task)
     {
         QDir app(QApplication::applicationDirPath());
         prompt +=
@@ -860,13 +870,14 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
             "Attach only new user-facing chat and send the final answer once "
             "on the final LOG. Process every returned PROMPT.";
     }
-    else
+    if(!session.isEmpty())
     {
         auto name = agent.section('@',0,0);
         prompt +=
             "\n\n[DSI Studio] Continue through agent "+name+" using session "+
-            session+". Send new user-facing text and the final reply through "
-                      "the named pipe.";
+            session+". Use this exact value as session in every local-server "
+            "request. Send new user-facing text and the final reply through "
+            "the named pipe.";
     }
 
     auto model = ui->ai_model_selector->currentText();
@@ -898,6 +909,7 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
         QString("resuming %1 session agent=%2 session=%3 executable=%4 model=%5 prompt_chars=%6").
         arg(provider).arg(agent).arg(session).arg(executable).
         arg(model.isEmpty() ? QString("default") : model).arg(text.size()));
+    process->setProperty("bootstrap",bootstrap);
     process->start(executable,args);
 }
 
