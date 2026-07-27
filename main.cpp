@@ -596,7 +596,11 @@ int main(int ac, char *av[])
                             w.raise();
                             w.activateWindow();
                         }
-                        clientSocket->write(busy ? "BUSY" : exists ? "OKAY" : "ERROR");
+                        clientSocket->write(
+                            busy ? "BUSY" :
+                                exists ? "OKAY" :
+                                "ERROR\tinvalid request: direct text is only accepted as an existing "
+                                "file path. Read ai/DSI_STUDIO_AI_MANUAL.md and resend the request as JSON.");
                     }
                     clientSocket->flush();
                     clientSocket->waitForBytesWritten(500);
