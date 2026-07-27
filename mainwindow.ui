@@ -264,6 +264,9 @@ QComboBox#ai_model_selector QAbstractItemView {
     selection-background-color: #e5e5e7;
     selection-color: #202124;
 }
+QComboBox#ai_agent_selector QAbstractItemView::item:disabled {
+    color: #9aa0a6;
+}
 QLabel#ai_control_status {
     color: #2e7d32;
     background-color: transparent;
