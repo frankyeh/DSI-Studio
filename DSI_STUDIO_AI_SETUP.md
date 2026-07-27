@@ -27,12 +27,13 @@ is DSI Studio launching Codex with `exec --json` and capturing `thread.started`.
 
 ### Claude Code
 
-Claude Code stores its resume name in `~/.claude/sessions/<pid>.json`. Always
-read the current Claude process's file and send its `name` field as the DSI
-Studio `session` value; DSI Studio uses it for `claude -p --resume <name>`.
-Do not use the JSON `sessionId` field for resume. For example, if
+Claude Code stores its session ID in `~/.claude/sessions/<pid>.json`. Always
+read the current Claude process's file and send its `sessionId` field as the
+DSI Studio `session` value; DSI Studio uses it for
+`claude -p --resume <sessionId>`. Do not use the JSON `name` field. For example, if
 `C:\Users\YEHFC\.claude\sessions\42232.json` contains
-`"name":"test5rer234"`, use `dsi-claude@test5rer234`.
+`"sessionId":"c24d222a-7e8e-4aed-a7ca-18624978eaf9"`, use
+`dsi-claude@c24d222a-7e8e-4aed-a7ca-18624978eaf9`.
 
 ```powershell
 $DsiAgent = 'Codex'
