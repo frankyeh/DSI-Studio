@@ -1815,7 +1815,8 @@ MainWindow::~MainWindow()
     QStringList workdir_list;
     for (int index = 0;index < 10 && index < ui->workDir->count();++index)
         workdir_list << ui->workDir->itemText(index);
-    std::swap(workdir_list[0],workdir_list[ui->workDir->currentIndex()]);
+    if(!workdir_list.isEmpty() && ui->workDir->currentIndex() >= 0)
+        std::swap(workdir_list[0],workdir_list[ui->workDir->currentIndex()]);
     settings.setValue("WORK_PATH", workdir_list);
     delete ui;
 
@@ -1830,9 +1831,10 @@ void MainWindow::updateRecentList(void)
         ui->recentFib->setRowCount(file_list.size());
         for(int index = 0;index < file_list.size();++index)
         {
+            QFileInfo info(file_list[index]);
             ui->recentFib->setRowHeight(index,20);
-            ui->recentFib->setItem(index,0,new QTableWidgetItem(std::filesystem::path(file_list[index].toStdString()).filename().string().c_str()));
-            ui->recentFib->setItem(index,1,new QTableWidgetItem(std::filesystem::path(file_list[index].toStdString()).parent_path().string().c_str()));
+            ui->recentFib->setItem(index,0,new QTableWidgetItem(info.fileName()));
+            ui->recentFib->setItem(index,1,new QTableWidgetItem(info.absolutePath()));
             for(int col = 0;col < 2;++col)
             {
                 auto item = ui->recentFib->item(index,col);
@@ -1848,9 +1850,10 @@ void MainWindow::updateRecentList(void)
         ui->recentSrc->setRowCount(file_list.size());
         for(int index = 0;index < file_list.size();++index)
         {
+            QFileInfo info(file_list[index]);
             ui->recentSrc->setRowHeight(index,20);
-            ui->recentSrc->setItem(index,0,new QTableWidgetItem(std::filesystem::path(file_list[index].toStdString()).filename().string().c_str()));
-            ui->recentSrc->setItem(index,1,new QTableWidgetItem(std::filesystem::path(file_list[index].toStdString()).parent_path().string().c_str()));
+            ui->recentSrc->setItem(index,0,new QTableWidgetItem(info.fileName()));
+            ui->recentSrc->setItem(index,1,new QTableWidgetItem(info.absolutePath()));
             for(int col = 0;col < 2;++col)
             {
                 auto item = ui->recentSrc->item(index,col);
@@ -1892,14 +1895,14 @@ void MainWindow::addSrc(QString filename)
 }
 void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::shape<3>& geo);
 extern QByteArray default_geo,default_state;
-void MainWindow::loadFib(QString filename)
+bool MainWindow::loadFib(QString filename)
 {
     std::shared_ptr<fib_data> new_handle(new fib_data);
     if (!new_handle->load_from_file(tipl::qt::to_path(filename)))
     {
         if(!new_handle->error_msg.empty())
             QMessageBox::critical(this,"ERROR",new_handle->error_msg.c_str());
-        return;
+        return false;
     }
     tracking_windows.push_back(new tracking_window(this,new_handle));
     tracking_windows.back()->setAttribute(Qt::WA_DeleteOnClose);
@@ -1937,6 +1940,7 @@ void MainWindow::loadFib(QString filename)
         if(QFileInfo::exists(dseg_file))
             tracking_windows.back()->command({"open_region",dseg_file.toUtf8().constData()});
     }
+    return true;
 }
 void MainWindow::loadNii(QStringList file_names)
 {
@@ -2501,88 +2505,61 @@ void search_dwi_nii(const std::filesystem::path& dir,std::vector<std::filesystem
 void MainWindow::on_nii2src_sf_clicked()
 {
     QString dir = QFileDialog::getExistingDirectory(
-                                    this,
-                                    "Open directory",
-                                    ui->workDir->currentText());
+        this,"Open directory",ui->workDir->currentText());
     if(dir.isEmpty())
         return;
     add_work_dir(dir);
-    std::vector<std::filesystem::path> dwi_nii_files;
-    search_dwi_nii(tipl::qt::to_path(dir),dwi_nii_files);
-    if(dwi_nii_files.empty())
+
+    std::vector<std::filesystem::path> files;
+    search_dwi_nii(tipl::qt::to_path(dir),files);
+    if(files.empty())
     {
         QMessageBox::critical(this,"ERROR","cannot find nifti data");
         return;
     }
+
+    std::vector<std::pair<std::filesystem::path,std::filesystem::path>> jobs;
+    bool yes_to_all = false,no_to_all = false;
     auto output_dir = tipl::qt::to_path(dir);
 
+    for(const auto& nii : files)
+    {
+        auto src = output_dir/tipl::remove_all_suffix(nii.filename());
+        src += ".sz";
 
-    bool no_to_all = false;
-    bool yes_to_all = false;
-    tipl::progress prog("batch creating src");
-    std::deque<std::filesystem::path> nii_list,src_list;
-    size_t nii_count = 0;
-    std::mutex access_list;
-    bool ended = false;
-    tipl::par_for(8,[&](size_t index)
+        if(std::filesystem::exists(src) && !yes_to_all)
         {
-            if(tipl::is_main_thread())
-            {
-                for(int j = 0;j < dwi_nii_files.size();++j)
-                {
-                    auto nii_name = dwi_nii_files[j];
-                    auto src_name = output_dir/tipl::remove_all_suffix(nii_name.filename());
-                    src_name += ".sz";
-                    std::vector<std::shared_ptr<DwiHeader> > dwi_files;
+            if(no_to_all)
+                continue;
+            auto result = QMessageBox::information(
+                this,QApplication::applicationName(),
+                QString("%1 exists, overwrite?").
+                arg(QString::fromUtf8(src.filename().u8string().c_str())),
+                QMessageBox::Yes|QMessageBox::YesToAll|
+                    QMessageBox::No|QMessageBox::NoToAll|QMessageBox::Cancel);
+            if(result == QMessageBox::Cancel)
+                return;
+            if(result == QMessageBox::YesToAll)
+                yes_to_all = true;
+            if(result == QMessageBox::NoToAll)
+                no_to_all = true;
+            if(result == QMessageBox::No || result == QMessageBox::NoToAll)
+                continue;
+        }
+        jobs.emplace_back(nii,src);
+    }
 
-                    if(std::filesystem::exists(src_name) && !yes_to_all)
-                    {
-                        if(no_to_all)
-                            continue;
-                        int result = QMessageBox::information(this,QApplication::applicationName(),
-                                                              QString("%1 exists, overwrite?").arg(std::filesystem::path(src_name).filename().c_str()),
-                                                              QMessageBox::Yes|QMessageBox::YesToAll|QMessageBox::No|QMessageBox::NoToAll|QMessageBox::Cancel);
-                        if(result == QMessageBox::Cancel)
-                            return;
-                        if(result == QMessageBox::YesToAll)
-                            yes_to_all = true;
-                        if(result == QMessageBox::NoToAll)
-                        {
-                            no_to_all = true;
-                            continue;
-                        }
-                        if(result == QMessageBox::No)
-                            continue;
-                    }
-                    std::lock_guard<std::mutex> lock(access_list);
-                    nii_list.push_back(nii_name);
-                    src_list.push_back(src_name);
-                    ++nii_count;
-                }
-                ended = true;
-            }
-            while(!prog.aborted() && !(ended && nii_count == 0))
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                prog(dwi_nii_files.size()-nii_list.size(),dwi_nii_files.size());
-
-                std::filesystem::path nii_name,src_name;
-                {
-                    std::lock_guard<std::mutex> lock(access_list);
-                    if(!nii_count)
-                        continue;
-                    nii_name = nii_list.front();
-                    src_name = src_list.front();
-                    nii_list.pop_front();
-                    src_list.pop_front();
-                    --nii_count;
-                }
-                tipl::out() << "processing " << nii_name;
-                src_data src;
-                if(!src.load_from_file({nii_name},true) || !src.save_to_file(src_name))
-                    tipl::warning() << src.error_msg;
-            }
-        },8);
+    tipl::progress prog("batch creating src");
+    std::atomic_size_t done = 0;
+    tipl::par_for(jobs.size(),[&](size_t index)
+    {
+        if(!prog(done.fetch_add(1),jobs.size()))
+            return;
+        src_data src;
+        if(!src.load_from_file({jobs[index].first},true) ||
+            !src.save_to_file(jobs[index].second))
+            tipl::warning() << src.error_msg;
+    });
 }
 
 bool dicom2src_and_nii(std::vector<std::filesystem::path> files,bool overwrite)
@@ -2750,7 +2727,8 @@ void MainWindow::on_styles_activated(int)
 
 void MainWindow::on_clear_settings_clicked()
 {
-    QSettings(QSettings::SystemScope,"LabSolver").clear();
+    settings.clear();
+    settings.sync();
     QMessageBox::information(this,QApplication::applicationName(),"Setting Cleared");
 }
 
@@ -2821,8 +2799,8 @@ void MainWindow::open_template(QString name)
     for(auto& each : fib_template_list)
         if(std::filesystem::path(each).stem().u8string() == name.toStdString())
         {
-            loadFib(each.u8string().c_str());
-            tracking_windows.back()->work_path.clear();
+            if(loadFib(each.u8string().c_str()))
+                tracking_windows.back()->work_path.clear();
             return;
         }
 }
