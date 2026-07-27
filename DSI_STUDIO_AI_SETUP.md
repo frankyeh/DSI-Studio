@@ -7,8 +7,13 @@ needed by the request; do not read its entire inventory.
 
 Choose one non-empty agent name and the exact non-empty thread/session ID of
 the initiating chat when the AI conversation starts. Reuse both exactly in
-every request. The agent name must include `Codex`, `Claude`, or `Gemini` and
+every request. The agent name must include `Codex`, `Claude`, or `Ollama` and
 must not contain `@`.
+
+`Ollama` uses the configured local model endpoint through Claude and therefore
+uses Claude's resumable session ID.
+It runs Claude with `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN=ollama`, and
+an empty `ANTHROPIC_API_KEY`.
 
 DSI Studio identifies the conversation as `agent@session`. The request still
 sends `agent` and `session` as separate JSON fields. The session must be the
