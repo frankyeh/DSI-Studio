@@ -378,6 +378,13 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
 
     ai_infos[session].update(agent_name,request["cwd"].toString());
 
+    if(type == "TITLE")
+        return ai_reply(socket,session,
+                        main_window->set_ai_title(
+                            session,request["title"].toString(),
+                            request["replace"].toBool()) ?
+                            "OKAY" : "ERROR\tinvalid title");
+
     auto activity = request;
     activity.remove("chat");
     auto json = QString::fromUtf8(QJsonDocument(activity).toJson(
@@ -436,12 +443,11 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
         return;
 
     auto agent_name = info.agent_name;
+    auto project_title = info.title(session);
     auto* item = info.project_items;
     if(!item)
     {
-        auto project_title = info.title(session);
         item = new QListWidgetItem;
-        item->setText(project_title);
         item->setData(Qt::UserRole,session);
         ui->ai_project_list->insertItem(0,item);
         info.project_items = item;
@@ -450,9 +456,6 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
         auto* title = new QPushButton(row);
         title->setObjectName("ai_project_title");
         title->setFlat(true);
-        title->setText(project_title);
-        title->setToolTip(project_title);
-        title->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
 
         auto* button = new QToolButton(row);
         button->setObjectName("ai_project_menu_button");
@@ -485,6 +488,13 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
         connect(button,&QToolButton::pressed,this,
                 [this,item]{ui->ai_project_list->setCurrentItem(item);});
     }
+
+    auto* title = ui->ai_project_list->itemWidget(item)->
+                  findChild<QPushButton*>("ai_project_title");
+    item->setText(project_title);
+    title->setText(project_title);
+    title->setToolTip(project_title);
+    item->setSizeHint(title->parentWidget()->sizeHint());
 
     auto* current = ui->ai_project_list->currentItem();
     if(!current)
@@ -793,19 +803,46 @@ void MainWindow::refresh_ollama_models()
                 network->deleteLater();
             });
 }
-
-void MainWindow::add_ai_history(const QString& session,const QString& type,const QString& text)
+bool MainWindow::save_ai_entry(const QString& session,const QJsonObject& entry)
 {
-    QJsonObject entry{{"type",type},{"text",text},{"time",QDateTime::currentDateTime().toString(Qt::ISODate)}};
+    if(!settings.value("ai/keep_history",true).toBool())
+        return true;
+    QFile file(ai_project_dir+"/"+QString::fromLatin1(
+                   QUrl::toPercentEncoding(session))+".jsonl");
+    return file.open(QIODevice::WriteOnly|QIODevice::Append) &&
+           file.write(QJsonDocument(entry).toJson(
+                          QJsonDocument::Compact)+'\n') >= 0;
+}
+
+bool MainWindow::set_ai_title(const QString& session,QString title,bool replace)
+{
+    title = title.simplified();
+    auto& info = ai_infos[session];
+    if(title.isEmpty())
+        return false;
+    if((!replace && !info.project_titles.isEmpty()) ||
+        title == info.project_titles)
+        return true;
+
+    QJsonObject entry{{"type","title"},{"text",title},
+                      {"time",QDateTime::currentDateTime().toString(Qt::ISODate)}};
+    if(!save_ai_entry(session,entry))
+        return false;
+
+    info.project_titles = title;
+    show_ai_project(session);
+    return true;
+}
+
+void MainWindow::add_ai_history(const QString& session,const QString& type,
+                                const QString& text)
+{
+    QJsonObject entry{{"type",type},{"text",text},
+                      {"time",QDateTime::currentDateTime().toString(Qt::ISODate)}};
     ai_infos[session].projects.append(entry);
-    if(settings.value("ai/keep_history",true).toBool())
-    {
-        QFile file(ai_project_dir+"/"+QString::fromLatin1(QUrl::toPercentEncoding(session))+".jsonl");
-        if(file.open(QIODevice::WriteOnly|QIODevice::Append))
-            file.write(QJsonDocument(entry).toJson(QJsonDocument::Compact)+'\n');
-        else
-            tipl::warning() << "cannot write ai history to " << ai_project_dir.toStdString();
-    }
+    if(!save_ai_entry(session,entry))
+        tipl::warning() << "cannot write ai history to "
+                        << ai_project_dir.toStdString();
     show_ai_project(session,entry);
 }
 
@@ -1447,38 +1484,13 @@ MainWindow::MainWindow(QWidget *parent) :
         if(!item)
             return;
         auto session = item->data(Qt::UserRole).toString();
-        auto* button = ui->ai_project_list->itemWidget(item)->
-                           findChild<QPushButton*>("ai_project_title");
         bool okay;
         auto title = QInputDialog::getText(
-                         this,"Rename Chat","Chat name:",QLineEdit::Normal,
-                         button->text(),&okay).trimmed();
-        if(!okay || title.isEmpty() || title == button->text())
-            return;
-
-        QJsonObject entry{
-            {"type","title"},{"text",title},
-            {"time",QDateTime::currentDateTime().toString(Qt::ISODate)}
-        };
-        if(settings.value("ai/keep_history",true).toBool())
-        {
-            QFile file(ai_project_dir+"/"+QString::fromLatin1(
-                           QUrl::toPercentEncoding(session))+".jsonl");
-            if(!file.open(QIODevice::WriteOnly|QIODevice::Append) ||
-                file.write(QJsonDocument(entry).
-                           toJson(QJsonDocument::Compact)+'\n') < 0)
-            {
-                QMessageBox::warning(
-                    this,"Rename Chat","The chat name could not be saved.");
-                return;
-            }
-        }
-        ai_infos[session].project_titles = title;
-        item->setText(title);
-        button->setText(title);
-        button->setToolTip(title);
-        item->setSizeHint(
-            QSize(0,button->parentWidget()->sizeHint().height()));
+            this,"Rename Chat","Chat name:",QLineEdit::Normal,
+            ai_infos[session].title(session),&okay);
+        if(okay && !set_ai_title(session,title))
+            QMessageBox::warning(
+                this,"Rename Chat","The chat name could not be saved.");
     });
 
     connect(ai_project_menu->addAction("Details..."),&QAction::triggered,this,[this]
