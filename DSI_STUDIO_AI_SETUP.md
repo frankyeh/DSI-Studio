@@ -308,9 +308,9 @@ path into fields, or substitute `add_image`. Refresh `LIST` afterward.
    `list_param`, `list_atlas`, `list_unet`, and `list_auto_tract`.
 5. Treat `okay:true` as acceptance. Poll the relevant list command for
    asynchronous completion; use `LOG` only when diagnostics are needed.
-   If a response says it is loading, first send `CHAT` asking whether to keep
-   waiting or stop, then check every 3 seconds unless the user says stop;
-   process every reply.
+   If a response says it is loading, first send `CHAT` stating that waiting
+   will continue and the user can interrupt, then check every 3 seconds unless
+   interrupted; process every reply.
    Never automatically repeat a failed, timed-out, unavailable, or unexpected
    request.
 6. If a required window disappears or returns `window not found`, assume the
