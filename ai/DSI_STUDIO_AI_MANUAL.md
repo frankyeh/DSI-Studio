@@ -27,6 +27,9 @@ do not read the entire inventory.
 - For Claude Code, always read `~/.claude/sessions/<pid>.json` and use its
   `sessionId` field—not `name`—as the DSI Studio session. DSI Studio resumes
   it with `claude -p --resume <sessionId>`.
+- After understanding the initiating prompt, give the chat a concise,
+  descriptive name with `TITLE`. Send another `TITLE` later only when the user
+  allows renaming.
 - Every `CMD`, including `list_*`, requires a numeric `window` from the latest
   `LIST`.
 - Use `LIST` to obtain fresh windows, then target only its numeric window ID.
@@ -72,8 +75,10 @@ do not read the entire inventory.
 
 ## Reply formats
 
-- `LIST`, `LOG`, `CHAT`, filename-open replies, and validation errors are text.
+- `LIST`, `LOG`, `CHAT`, `TITLE`, filename-open replies, and validation errors
+  are text.
 - `CHAT` adds user-facing chat and returns `OKAY` without console history.
+- `TITLE` returns `OKAY`, or `ERROR` for an empty or unsavable title.
 - `LIST` lines are `type<TAB>numeric-id<TAB>title`; there is no `.windows`
   property.
 - A `CMD` reply beginning with `[` is a JSON array of
@@ -108,6 +113,15 @@ Parameters shown below are separate JSON array elements.
 | Automatic tracking | `["run_auto_track",exact-tract-name,optional-ROI]` |
 | Rotate 3D view | `["rotate","degrees x y z"]` |
 | Save rendering | `["save_hd_screen",path,"width height"]` |
+
+`TITLE` is a JSON request, not a window command:
+
+```json
+{"agent":"Codex","session":"<uuid>","cwd":"<path>","request":"TITLE","title":"Concise task name"}
+```
+
+Another `TITLE` replaces the current name; send it only after the user permits
+renaming.
 
 `hub open` may download before opening; poll `LIST`. To open a local file when
 only the main window exists, send its absolute path as raw text through the
