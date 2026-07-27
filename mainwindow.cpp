@@ -740,30 +740,16 @@ bool MainWindow::eventFilter(QObject* object,QEvent* event)
 void MainWindow::add_ai_history(const QString& agent,const QString& type,
                                 const QString& text)
 {
-    int repeated = 0;
-    const auto& history = ai_projects[agent];
-    for(int index = history.size()-1;index >= 0;--index)
-    {
-        auto entry = history[index].toObject();
-        if(entry["type"].toString() != type ||
-           entry["text"].toString() != text)
-            break;
-        if(++repeated == 3)
-            return;
-    }
-
-    QJsonObject entry{
-        {"type",type},{"text",text},
-        {"time",QDateTime::currentDateTime().toString(Qt::ISODate)}
-    };
+    QJsonObject entry{{"type",type},{"text",text},{"time",QDateTime::currentDateTime().toString(Qt::ISODate)}};
     ai_projects[agent].append(entry);
-
-    QFile file(ai_project_dir+"/"+QString::fromLatin1(
-                   QUrl::toPercentEncoding(agent))+".jsonl");
-    if(settings.value("ai/keep_history",true).toBool() &&
-       file.open(QIODevice::WriteOnly|QIODevice::Append))
-        file.write(QJsonDocument(entry).toJson(QJsonDocument::Compact)+'\n');
-
+    if(settings.value("ai/keep_history",true).toBool())
+    {
+        QFile file(ai_project_dir+"/"+QString::fromLatin1(QUrl::toPercentEncoding(agent))+".jsonl");
+        if(file.open(QIODevice::WriteOnly|QIODevice::Append))
+            file.write(QJsonDocument(entry).toJson(QJsonDocument::Compact)+'\n');
+        else
+            tipl::warning() << "cannot write ai history to " << ai_project_dir.toStdString();
+    }
     show_ai_project(agent,entry);
 }
 
