@@ -1097,7 +1097,6 @@ MainWindow::MainWindow(QWidget *parent) :
     {
         // find Codex executable and models
         QStringList models;
-        QJsonObject profiles;
         codex_path = QStandardPaths::findExecutable("codex");
         if(codex_path.isEmpty())
         {
@@ -1132,11 +1131,10 @@ MainWindow::MainWindow(QWidget *parent) :
             models.removeDuplicates();
             models.sort(Qt::CaseInsensitive);
         }
-        set_agent("Codex",codex_path,models,profiles);
+        set_agent("Codex",codex_path,models);
     }
     {
         // find Claude executable and models
-        QStringList models;
         claude_path = QStandardPaths::findExecutable("claude");
 #ifdef Q_OS_WIN
         if(claude_path.isEmpty())
@@ -1144,38 +1142,7 @@ MainWindow::MainWindow(QWidget *parent) :
 #endif
         if(!QFileInfo::exists(claude_path))
             claude_path.clear();
-        auto base_url = qEnvironmentVariable("ANTHROPIC_BASE_URL");
-        tipl::out() << ai_log(base_url.isEmpty() ? "Anthropic base URL not set" :
-                              "Anthropic base URL: "+base_url);
-        if(!claude_path.isEmpty())
-        {
-            QString connection = base_url.isEmpty() ? "not configured" : "failed";
-            if(!base_url.isEmpty())
-            {
-                QNetworkAccessManager manager;
-                QNetworkRequest request(QUrl(base_url).resolved(QUrl("/api/tags")));
-                request.setTransferTimeout(3000);
-                auto* reply = manager.get(request);
-                QEventLoop loop;
-                QObject::connect(reply,&QNetworkReply::finished,&loop,&QEventLoop::quit);
-                loop.exec();
-                if(reply->error() == QNetworkReply::NoError)
-                {
-                    connection = "connected";
-                    for(const auto& model : QJsonDocument::fromJson(reply->readAll()).
-                        object()["models"].toArray())
-                        models << model.toObject()["name"].toString();
-                }
-                else
-                    connection = reply->errorString();
-            }
-            tipl::out() << ai_log("Anthropic connection: "+connection);
-            models.removeDuplicates();
-            models.sort(Qt::CaseInsensitive);
-        }
-        else
-            tipl::out() << ai_log("Anthropic connection: not checked (Claude unavailable)");
-        set_agent("Claude",claude_path,models);
+        set_agent("Claude",claude_path,{});
     }
     {
         // find Gemini executable and models
@@ -1189,12 +1156,11 @@ MainWindow::MainWindow(QWidget *parent) :
             models = {"auto","pro","flash","flash-lite"};
         set_agent("Gemini",gemini_path,models);
     }
-    bool codex = !codex_path.isEmpty();
-    bool claude = !claude_path.isEmpty();
-    bool gemini = !gemini_path.isEmpty();
-    if(!codex && (claude || gemini))
-        ui->ai_agent_selector->setCurrentText(claude ? "Claude" : "Gemini");
-    ui->ai_agent_selector->setEnabled(codex || claude || gemini);
+    if(codex_path.isEmpty() && (!claude_path.isEmpty() || !gemini_path.isEmpty()))
+        ui->ai_agent_selector->setCurrentText(
+            claude_path.isEmpty() ? "Gemini" : "Claude");
+    ui->ai_agent_selector->setEnabled(
+        !codex_path.isEmpty() || !claude_path.isEmpty() || !gemini_path.isEmpty());
     auto update_models = [this]
     {
         ui->ai_model_selector->clear();
