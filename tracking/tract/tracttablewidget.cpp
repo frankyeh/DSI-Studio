@@ -487,6 +487,17 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     if(cmd[0] == "list_tract")
     {
         fetch_tracts();
+        if(cmd[1] == "status")
+        {
+
+            tipl::out() << "running\ttracts";
+            tipl::out() << std::count_if(
+                thread_data.begin(),thread_data.end(),
+                [](const auto& thread){return bool(thread);})
+                        << "\t" << rowCount();
+            return run->succeed();
+        }
+
         tipl::out() << "index\trunning\tshown\tname\ttracts\tdeleted\tseeds";
         for(int row = 0;row < rowCount();++row)
             tipl::out() << row << "\t"
