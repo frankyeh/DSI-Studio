@@ -335,7 +335,15 @@ bool tracking_window::command(std::vector<std::string> cmd)
         {
             int index = ui->SliceModality->findText(cmd[2].c_str());
             if(index < 0)
-                return run->failed("cannot find slice: " + cmd[2]);
+            {
+                bool okay;
+                int value = QString::fromStdString(cmd[2]).toInt(&okay);
+                if(okay && value >= 0 && value < ui->SliceModality->count())
+                    index = value;
+            }
+            if(index < 0)
+                return run->failed(
+                    "cannot find slice: use an exact name or index returned by list_slice");
             int previous_index = ui->SliceModality->currentIndex();
             QSignalBlocker blocker(ui->SliceModality);
             ui->SliceModality->setCurrentIndex(index);
@@ -871,6 +879,8 @@ bool tracking_window::command(std::vector<std::string> cmd)
             return run->failed("cannot find index: " + cmd[1]);
         ui->SliceModality->setCurrentIndex(index);
         history.overwrite(cmd[0]);
+        tipl::out() << "index\tname";
+        tipl::out() << index << "\t" << ui->SliceModality->itemText(index).toStdString();
         return run->succeed();
     }
     if(cmd[0] == "set_slice_contrast")
