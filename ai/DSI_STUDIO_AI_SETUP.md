@@ -66,22 +66,28 @@ not launch DSI Studio:
 ```powershell
 function Invoke-Dsi($request)
 {
-    $pipe = [IO.Pipes.NamedPipeClientStream]::new('.','dsi-studio')
-    $pipe.Connect(5000)
-    $utf8 = [Text.UTF8Encoding]::new($false)
-    $writer = [IO.StreamWriter]::new($pipe,$utf8,1024,$true)
-    $writer.AutoFlush = $true
-    if($request -is [string]) { $data = $request }
-    else { $data = $request | ConvertTo-Json -Compress -Depth 8 }
-    $writer.Write($data)
-    $reader = [IO.StreamReader]::new($pipe,$utf8,$false,1024,$true)
-    $reply = $reader.ReadToEnd()
-    foreach($stream in @($reader,$writer,$pipe))
+    $pipe = $writer = $reader = $null
+    try
     {
-        try { $stream.Dispose() }
-        catch [IO.IOException] {}
+        $pipe = [IO.Pipes.NamedPipeClientStream]::new('.','dsi-studio')
+        $pipe.Connect(5000)
+        $utf8 = [Text.UTF8Encoding]::new($false)
+        $writer = [IO.StreamWriter]::new($pipe,$utf8,1024,$true)
+        $writer.AutoFlush = $true
+        if($request -is [string]) { $data = $request }
+        else { $data = $request | ConvertTo-Json -Compress -Depth 4 }
+        $writer.Write($data)
+        $reader = [IO.StreamReader]::new($pipe,$utf8,$false,1024,$true)
+        $reader.ReadToEnd()
     }
-    $reply
+    finally
+    {
+        foreach($stream in @($reader,$writer,$pipe))
+        {
+            try { if($stream) { $stream.Dispose() } }
+            catch [IO.IOException] {}
+        }
+    }
 }
 $DsiAgent = 'Codex'
 $DsiSession = '<initiating-chat-session-id>'
@@ -89,8 +95,9 @@ $DsiSession = '<initiating-chat-session-id>'
 
 The two-argument constructor works in Windows PowerShell 5.1 and defaults to a
 duplex (`InOut`) pipe. DSI Studio closes the server side after each reply, so
-an `IOException` raised only while disposing the completed streams is benign;
-the helper suppresses that cleanup error.
+an `IOException` raised only while disposing completed streams is benign. The
+helper suppresses only cleanup errors; connection, write, and read failures
+still surface.
 
 Reuse this client and the same identity throughout the conversation. Do not
 regenerate it for every request.
@@ -205,7 +212,7 @@ elseif($request.request -ne 'LIST')
     $request.command = $Command
 }
 
-$json = $request | ConvertTo-Json -Compress -Depth 8
+$json = $request | ConvertTo-Json -Compress -Depth 4
 exit (Invoke-DsiStudio $json)
 ```
 
@@ -237,8 +244,10 @@ Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
              request='CMD';window='2';command=@('set_region_name','0','Tumor Core')}
 
-# Incremental diagnostics and final user-facing reply.
+# Use LOG only when targeted list commands cannot diagnose the issue.
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;request='LOG'}
+
+# Send the final user-facing reply once.
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
              request='CHAT';chat='Task completed.'}
 
@@ -275,6 +284,26 @@ Always inspect the entire reply. A queued user prompt may follow any text reply,
 including `CHAT` or `TITLE`, as `PROMPT<TAB><JSON>`, or appear in the last
 command result's `prompt` property. An initial `OKAY` does not mean no `PROMPT`
 follows. Treat every returned prompt as new user input.
+
+## Token efficiency
+
+- Reuse the latest `LIST` until a window opens or closes. Poll only the relevant
+  `list_*` command; do not repeat `LIST` to monitor unchanged windows.
+- Use `LOG` only after failure, unexpected state, or when a targeted list command
+  cannot verify completion. Each call may return up to 4096 characters.
+- Batch independent synchronous commands for the same window into one `CMD`.
+  Do not batch destructive, asynchronous, or output-dependent commands.
+- Attach short progress `chat` to an already-needed `LIST` or `CMD`. Use a
+  standalone `CHAT` only for the final reply, a required user decision, or an
+  unavoidable waiting or blocked update.
+- Send `cwd` in the first request after connecting or restarting DSI Studio,
+  then omit it until the working directory changes.
+- Reuse discovered names and indices until the relevant state changes. Search
+  the manual only for needed commands and never reread the command inventory.
+- Keep requests compact. PowerShell `-Compress -Depth 4` covers the supported
+  request shape, including batched command arrays.
+- Stop after the requested result is verified and the final `CHAT` is sent; do
+  not add redundant summaries, `LIST`, or `LOG` calls.
 
 ## Progress chat
 
@@ -343,8 +372,8 @@ path into fields, or substitute `add_image`. Refresh `LIST` afterward.
 10. After understanding the initiating prompt, send one concise `TITLE`.
     Send another `TITLE` later only with user permission to rename.
 11. Send the final answer once with `CHAT`.
-12. Minimize round trips: one initial `LIST`, only necessary commands, concise
-    verification, and final `CHAT`.
+12. Minimize round trips: reuse the latest `LIST`, batch safe same-window
+    commands, poll only relevant state, and avoid unnecessary `LOG` calls.
 13. When asked to operate DSI Studio, execute the requests. Do not return a
     script or tutorial unless the user asks for one.
 
