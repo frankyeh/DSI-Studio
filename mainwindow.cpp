@@ -381,8 +381,7 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     if(type == "TITLE")
         return ai_reply(socket,session,
                         main_window->set_ai_title(
-                            session,request["title"].toString(),
-                            request["replace"].toBool()) ?
+                            session,request["title"].toString()) ?
                             "OKAY" : "ERROR\tinvalid title");
 
     auto activity = request;
@@ -814,14 +813,13 @@ bool MainWindow::save_ai_entry(const QString& session,const QJsonObject& entry)
                           QJsonDocument::Compact)+'\n') >= 0;
 }
 
-bool MainWindow::set_ai_title(const QString& session,QString title,bool replace)
+bool MainWindow::set_ai_title(const QString& session,QString title)
 {
     title = title.simplified();
     auto& info = ai_infos[session];
     if(title.isEmpty())
         return false;
-    if((!replace && !info.project_titles.isEmpty()) ||
-        title == info.project_titles)
+    if(title == info.project_titles)
         return true;
 
     QJsonObject entry{{"type","title"},{"text",title},
