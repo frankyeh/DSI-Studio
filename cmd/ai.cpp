@@ -124,6 +124,8 @@ std::string ai_log(QString text)
                 '\n',"\n[AI AGENT] ")).toStdString();
 }
 
+QRegularExpression ansi_escape(QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
+
 QString ai_window_status(QWidget* window,bool& busy,int& jobs)
 {
     busy = window->property("busy").toBool();
@@ -324,8 +326,8 @@ void ai_request_command(QLocalSocket* socket,const QString& session,
 
         target->setProperty("command",QVariant());
 
-        output.remove(QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
-        error.remove(QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
+        output.remove(ansi_escape);
+        error.remove(ansi_escape);
         if(!okay)
             error = (error.isEmpty() ? "command failed" : error) +
                     ". Read ai/DSI_STUDIO_AI_MANUAL.md and retry.";
@@ -371,7 +373,7 @@ void ai_request_log(QLocalSocket* socket,const QString& session,
             auto text = console.history.mid(qsizetype(begin-first));
             if(capped)
                 text.remove(0,text.indexOf('\n')+1);
-            text.remove(QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
+            text.remove(ansi_escape);
             QStringList lines;
             for(const auto& line : text.split('\n'))
                 if(!line.contains("[AI AGENT]"))
