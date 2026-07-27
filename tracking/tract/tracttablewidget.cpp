@@ -489,8 +489,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         fetch_tracts();
         if(cmd[1] == "status")
         {
-
-            tipl::out() << "running\ttracts";
+            tipl::out() << "running\tbundles";
             tipl::out() << std::count_if(
                 thread_data.begin(),thread_data.end(),
                 [](const auto& thread){return bool(thread);})
