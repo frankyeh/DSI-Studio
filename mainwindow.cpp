@@ -67,9 +67,10 @@ extern MainWindow* main_window;
 std::unordered_map<QString,ai_info> ai_infos;
 
 struct ai_launch{
-    QString session,text,name,executable,model,profile,backend,prompt;
+    QString session,text,name,executable,model,profile,prompt;
     QJsonObject model_setting;
     QProcess* process = nullptr;
+    ai_model_provider model_provider = ai_model_provider::Native;
     bool new_session = false,bootstrap = false;
 };
 
@@ -77,7 +78,6 @@ ai_provider ai_info::identify_provider(const QString& name)
 {
     return name.contains("codex",Qt::CaseInsensitive) ? ai_provider::Codex :
            name.contains("claude",Qt::CaseInsensitive) ? ai_provider::Claude :
-           name.contains("ollama",Qt::CaseInsensitive) ? ai_provider::Ollama :
            ai_provider::Unknown;
 }
 QString ai_info::details(const QString& session) const
@@ -351,7 +351,7 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
         return ai_reply(socket,{},"ERROR\tinvalid agent: '@' is reserved as the agent/session separator");
     auto provider = ai_info::identify_provider(agent_name);
     if(provider == ai_provider::Unknown)
-        return ai_reply(socket,{},"ERROR\tinvalid agent: include Codex, Claude, or Ollama in the agent name");
+        return ai_reply(socket,{},"ERROR\tinvalid agent: include Codex or Claude in the agent name");
     if(session.isEmpty())
         return ai_reply(socket,{},"ERROR\tmissing session: provide the initiating-chat session ID and reuse it for the entire conversation");
     if(QUuid(session).toString(QUuid::WithoutBraces).compare(session,Qt::CaseInsensitive))
@@ -703,30 +703,36 @@ void MainWindow::refresh_codex_models(const QString& path)
 }
 void MainWindow::refresh_ollama_models()
 {
-    auto index = int(ai_provider::Ollama);
-    auto claude = ui->ai_agent_selector->itemData(
-                                           int(ai_provider::Claude),
-                                           Qt::UserRole+1).toString();
-
-    auto set_models = [this,index](const QString& path,QStringList models)
+    auto index = int(ai_provider::Claude);
+    auto set_models = [this,index](QStringList ollama_models)
     {
+        auto models = ui->ai_agent_selector->itemData(index).toStringList();
+        auto profiles = ui->ai_agent_selector->itemData(
+                            index,Qt::UserRole+2).toJsonObject();
+        for(auto i = models.size();i--;)
+            if(profiles[models[i]].toObject()["provider"].toInt() ==
+               int(ai_model_provider::Ollama))
+                profiles.remove(models.takeAt(i));
+        for(const auto& model : ollama_models)
+        {
+            models << model;
+            profiles[model] =
+                QJsonObject{{"provider",int(ai_model_provider::Ollama)}};
+        }
         models.removeDuplicates();
         models.sort(Qt::CaseInsensitive);
-
-        auto* agents = qobject_cast<QStandardItemModel*>(
-            ui->ai_agent_selector->model());
-        auto* item = agents->item(index);
-        item->setText("Ollama"+QString(path.isEmpty() ? " (not found)" : ""));
-        item->setEnabled(!path.isEmpty());
-        ui->ai_agent_selector->setItemData(index,path,Qt::UserRole+1);
         ui->ai_agent_selector->setItemData(index,models);
+        ui->ai_agent_selector->setItemData(
+            index,QVariant::fromValue(profiles),Qt::UserRole+2);
 
         if(ui->ai_agent_selector->currentIndex() == index)
         {
             auto selected = ui->ai_model_selector->currentText();
             ui->ai_model_selector->clear();
             ui->ai_model_selector->addItem("default");
-            ui->ai_model_selector->addItems(models);
+            for(const auto& model : models)
+                ui->ai_model_selector->addItem(
+                    model,QVariant::fromValue(profiles[model].toObject()));
             auto selected_index = ui->ai_model_selector->findText(selected);
             if(selected_index < 0)
                 selected_index = ui->ai_model_selector->findText(
@@ -738,8 +744,9 @@ void MainWindow::refresh_ollama_models()
 
     auto host = settings.value("ai/ollama_host","localhost").
                 toString().trimmed();
-    if(claude.isEmpty() || host.isEmpty())
-        return set_models({},{});
+    if(ui->ai_agent_selector->itemData(
+           index,Qt::UserRole+1).toString().isEmpty() || host.isEmpty())
+        return set_models({});
 
     if(!host.contains("://"))
         host = "http://"+host;
@@ -766,7 +773,7 @@ void MainWindow::refresh_ollama_models()
 
                 tipl::out() << ai_log("Ollama "+url.toString()+": "+
                                       (okay ? "connected" : reply->errorString()));
-                set_models(okay ? claude : QString(),models);
+                set_models(okay ? models : QStringList());
                 reply->deleteLater();
                 network->deleteLater();
             });
@@ -897,7 +904,16 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
     launch.model = launch.model_setting["model"].toString().trimmed();
     auto model_info = launch.model_setting["info"].toObject();
     launch.profile = model_info["profile"].toString();
-    launch.backend = model_info["provider"].toString();
+    launch.model_provider =
+        ai_model_provider(model_info["provider"].toInt());
+    if(provider == ai_provider::Claude &&
+       launch.model_provider == ai_model_provider::Ollama &&
+       settings.value("ai/ollama_host","localhost").toString().trimmed().isEmpty())
+    {
+        QMessageBox::warning(
+            this,"AI Agent","Set the Ollama host/IP in AI Settings first.");
+        return launch;
+    }
 
     if(launch.model.startsWith("default",Qt::CaseInsensitive))
         launch.model.clear();
@@ -1077,18 +1093,21 @@ void MainWindow::run_ai(const ai_launch& launch,QStringList args)
     launch.process->start(launch.executable,args);
 
 }
-void MainWindow::start_claude_process(const ai_launch& launch)
+void MainWindow::start_claude(QString session,const QString& text,bool add_history)
 {
+    auto launch = prepare_ai(ai_provider::Claude,session,text,add_history);
+    if(!launch.process)
+        return;
     if(launch.session.isEmpty())
     {
         add_ai_history(launch.session,"activity","Cannot start AI agent: missing session ID.");
         return;
     }
 
-    auto host = settings.value(
-                            "ai/ollama_host","localhost").toString().trimmed();
-    if(!host.isEmpty())
+    if(launch.model_provider == ai_model_provider::Ollama)
     {
+        auto host = settings.value(
+            "ai/ollama_host","localhost").toString().trimmed();
         if(!host.contains("://"))
             host = "http://"+host;
         QUrl url(host);
@@ -1172,20 +1191,6 @@ void MainWindow::start_codex(QString session,const QString& text,bool add_histor
         args << "--model" << launch.model;
         if(!launch.profile.isEmpty())
             args << "--profile" << launch.profile;
-        auto host = settings.value(
-            "ai/ollama_host","localhost").toString().trimmed();
-        if(!host.isEmpty() &&
-           launch.backend.contains("ollama",Qt::CaseInsensitive))
-        {
-            if(!host.contains("://"))
-                host = "http://"+host;
-            QUrl url(host);
-            url.setPort(settings.value("ai/ollama_port",11434).toInt());
-            url.setPath("/v1");
-            args << "--config" <<
-                QString("model_providers.%1.base_url=\"%2\"").
-                arg(launch.backend,url.toString());
-        }
     }
     if(launch.session.isEmpty())
         args << "--json" << "--skip-git-repo-check";
@@ -1194,18 +1199,6 @@ void MainWindow::start_codex(QString session,const QString& text,bool add_histor
              << "--skip-git-repo-check";
     args << launch.prompt;
     run_ai(launch,args);
-}
-void MainWindow::start_claude(QString session,const QString& text,bool add_history)
-{
-    auto launch = prepare_ai(ai_provider::Claude,session,text,add_history);
-    if(launch.process)
-        start_claude_process(launch);
-}
-void MainWindow::start_ollama(QString session,const QString& text,bool add_history)
-{
-    auto launch = prepare_ai(ai_provider::Ollama,session,text,add_history);
-    if(launch.process)
-        start_claude_process(launch);
 }
 void MainWindow::start_ai(QString session,const QString& text,bool add_history)
 {
@@ -1218,8 +1211,6 @@ void MainWindow::start_ai(QString session,const QString& text,bool add_history)
         return start_codex(session,text,add_history);
     case ai_provider::Claude:
         return start_claude(session,text,add_history);
-    case ai_provider::Ollama:
-        return start_ollama(session,text,add_history);
     default:
         QMessageBox::warning(this,"AI Agent","Unsupported AI provider.");
     }
@@ -1331,7 +1322,7 @@ MainWindow::MainWindow(QWidget *parent) :
             tipl::out() << ai_log(agent+" models: "+
                                   (models.isEmpty() ? "none detected" : models.join(", ")));
     };
-    QString codex_path,claude_path,ollama_path;
+    QString codex_path,claude_path;
     {
         // find Codex executable and models
         QStringList models;
@@ -1360,18 +1351,14 @@ MainWindow::MainWindow(QWidget *parent) :
         if(!QFileInfo::exists(claude_path))
             claude_path.clear();
         set_agent(ai_provider::Claude,claude_path,{});
-    }
-    {
-        set_agent(ai_provider::Ollama,{},{});
         refresh_ollama_models();
     }
 
-    if(codex_path.isEmpty() && (!claude_path.isEmpty() || !ollama_path.isEmpty()))
-        ui->ai_agent_selector->setCurrentIndex(int(
-            claude_path.isEmpty() ? ai_provider::Ollama : ai_provider::Claude));
+    if(codex_path.isEmpty() && !claude_path.isEmpty())
+        ui->ai_agent_selector->setCurrentIndex(int(ai_provider::Claude));
 
     ui->ai_agent_selector->setEnabled(
-        !codex_path.isEmpty() || !claude_path.isEmpty() || !ollama_path.isEmpty());
+        !codex_path.isEmpty() || !claude_path.isEmpty());
     auto update_models = [this]
     {
         ui->ai_model_selector->clear();
@@ -1392,7 +1379,8 @@ MainWindow::MainWindow(QWidget *parent) :
     auto default_index = default_agent.toInt(&okay);
     if(!okay)
         default_index = int(ai_info::identify_provider(default_agent.toString()));
-    if(default_index >= 0)
+    if(default_index >= 0 &&
+       default_index < ui->ai_agent_selector->count())
         ui->ai_agent_selector->setCurrentIndex(default_index);
 
     ui->ai_model_selector->setCurrentText(
