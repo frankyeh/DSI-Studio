@@ -933,14 +933,25 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     auto* agents = qobject_cast<QStandardItemModel*>(
                        ui->ai_agent_selector->model());
-    auto set_models = [&](const QString& agent,const QStringList& models)
+    auto set_agent = [&](const QString& agent,const QString& path,
+                         const QStringList& models)
     {
-        ui->ai_agent_selector->setItemData(
-            ui->ai_agent_selector->findText(agent),models);
+        auto index = ui->ai_agent_selector->findText(agent);
+        auto* item = agents->item(index);
+        item->setText(agent+(path.isEmpty() ? " (not found)" : ""));
+        item->setEnabled(!path.isEmpty());
+        ui->ai_agent_selector->setItemData(index,path,Qt::UserRole+1);
+        ui->ai_agent_selector->setItemData(index,models);
+        tipl::out() << ai_log(path.isEmpty() ? agent+" not found" :
+                              agent+": "+path);
+        if(!path.isEmpty())
+            tipl::out() << ai_log(agent+" models: "+
+                                  (models.isEmpty() ? "none detected" : models.join(", ")));
     };
     QString codex_path,claude_path,gemini_path;
     {
-        // find Codex executable
+        // find Codex executable and models
+        QStringList models;
         codex_path = QStandardPaths::findExecutable("codex");
         if(codex_path.isEmpty())
         {
@@ -953,11 +964,43 @@ MainWindow::MainWindow(QWidget *parent) :
         }
         if(!QFileInfo::exists(codex_path))
             codex_path.clear();
+        if(!codex_path.isEmpty())
+        {
+            QProcess process;
+            process.start(codex_path,{"debug","models"});
+            if(process.waitForFinished(5000))
+            {
+                auto doc = QJsonDocument::fromJson(process.readAllStandardOutput());
+                auto list = doc.isArray() ? doc.array() : doc.object()["models"].toArray();
+                for(const auto& value : list)
+                {
+                    auto object = value.toObject();
+                    auto model = object["slug"].toString();
+                    if(model.isEmpty()) model = object["model"].toString();
+                    if(model.isEmpty()) model = object["id"].toString();
+                    if(!model.isEmpty()) models << model;
+                }
+            }
+            else
+                process.kill();
+            QDir dir(qEnvironmentVariable("CODEX_HOME",QDir::homePath()+"/.codex"));
+            QRegularExpression regex(R"((?:^|\n)\s*model\s*=\s*["']([^"']+)["'])");
+            for(const auto& name : dir.entryList({"config.toml","*.config.toml"},QDir::Files))
+            {
+                QFile file(dir.filePath(name));
+                if(file.open(QIODevice::ReadOnly))
+                    for(auto matches = regex.globalMatch(QString::fromUtf8(file.readAll()));
+                        matches.hasNext();)
+                        models << matches.next().captured(1);
+            }
+            models.removeDuplicates();
+            models.sort(Qt::CaseInsensitive);
+        }
+        set_agent("Codex",codex_path,models);
     }
-    ui->ai_agent_selector->setItemData(
-        ui->ai_agent_selector->findText("Codex"),codex_path,Qt::UserRole+1);
     {
-        // find Claude executable
+        // find Claude executable and models
+        QStringList models;
         claude_path = QStandardPaths::findExecutable("claude");
 #ifdef Q_OS_WIN
         if(claude_path.isEmpty())
@@ -965,107 +1008,54 @@ MainWindow::MainWindow(QWidget *parent) :
 #endif
         if(!QFileInfo::exists(claude_path))
             claude_path.clear();
+        auto base_url = qEnvironmentVariable("ANTHROPIC_BASE_URL");
+        tipl::out() << ai_log(base_url.isEmpty() ? "Anthropic base URL not set" :
+                              "Anthropic base URL: "+base_url);
+        if(!claude_path.isEmpty())
+        {
+            QString connection = base_url.isEmpty() ? "not configured" : "failed";
+            if(!base_url.isEmpty())
+            {
+                QNetworkAccessManager manager;
+                QNetworkRequest request(QUrl(base_url).resolved(QUrl("/api/tags")));
+                request.setTransferTimeout(3000);
+                auto* reply = manager.get(request);
+                QEventLoop loop;
+                QObject::connect(reply,&QNetworkReply::finished,&loop,&QEventLoop::quit);
+                loop.exec();
+                if(reply->error() == QNetworkReply::NoError)
+                {
+                    connection = "connected";
+                    for(const auto& model : QJsonDocument::fromJson(reply->readAll()).
+                        object()["models"].toArray())
+                        models << model.toObject()["name"].toString();
+                }
+                else
+                    connection = reply->errorString();
+            }
+            tipl::out() << ai_log("Anthropic connection: "+connection);
+            models.removeDuplicates();
+            models.sort(Qt::CaseInsensitive);
+        }
+        else
+            tipl::out() << ai_log("Anthropic connection: not checked (Claude unavailable)");
+        set_agent("Claude",claude_path,models);
     }
     {
-        // find Gemini executable
+        // find Gemini executable and models
+        QStringList models;
         gemini_path = QStandardPaths::findExecutable("gemini");
 #ifdef Q_OS_WIN
         if(gemini_path.isEmpty())
             gemini_path = QStandardPaths::findExecutable("gemini.cmd");
 #endif
+        if(!gemini_path.isEmpty())
+            models = {"auto","pro","flash","flash-lite"};
+        set_agent("Gemini",gemini_path,models);
     }
-    ui->ai_agent_selector->setItemData(
-        ui->ai_agent_selector->findText("Gemini"),gemini_path,Qt::UserRole+1);
     bool codex = !codex_path.isEmpty();
     bool claude = !claude_path.isEmpty();
     bool gemini = !gemini_path.isEmpty();
-    tipl::out() << ai_log(codex_path.isEmpty() ? "Codex not found" :
-                          "Codex: "+codex_path);
-    if(!codex_path.isEmpty())
-    {
-        QStringList models;
-        QProcess process;
-        process.start(codex_path,{"debug","models"});
-        if(process.waitForFinished(5000))
-        {
-            auto doc = QJsonDocument::fromJson(process.readAllStandardOutput());
-            auto list = doc.isArray() ? doc.array() : doc.object()["models"].toArray();
-            for(const auto& value : list)
-            {
-                auto object = value.toObject();
-                auto model = object["slug"].toString();
-                if(model.isEmpty()) model = object["model"].toString();
-                if(model.isEmpty()) model = object["id"].toString();
-                if(!model.isEmpty()) models << model;
-            }
-        }
-        else
-            process.kill();
-        QDir dir(qEnvironmentVariable("CODEX_HOME",QDir::homePath()+"/.codex"));
-        QRegularExpression regex(R"((?:^|\n)\s*model\s*=\s*["']([^"']+)["'])");
-        for(const auto& name : dir.entryList({"config.toml","*.config.toml"},QDir::Files))
-        {
-            QFile file(dir.filePath(name));
-            if(file.open(QIODevice::ReadOnly))
-                for(auto matches = regex.globalMatch(QString::fromUtf8(file.readAll()));
-                    matches.hasNext();)
-                    models << matches.next().captured(1);
-        }
-        models.removeDuplicates();
-        models.sort(Qt::CaseInsensitive);
-        set_models("Codex",models);
-        tipl::out() << ai_log("Codex models: "+
-                              (models.isEmpty() ? "none detected" : models.join(", ")));
-    }
-    tipl::out() << ai_log(claude_path.isEmpty() ? "Claude not found" :
-                          "Claude: "+claude_path);
-    auto base_url = qEnvironmentVariable("ANTHROPIC_BASE_URL");
-    tipl::out() << ai_log(base_url.isEmpty() ? "Anthropic base URL not set" :
-                          "Anthropic base URL: "+base_url);
-    if(!claude_path.isEmpty())
-    {
-        QStringList models;
-        QString connection = base_url.isEmpty() ? "not configured" : "failed";
-        if(!base_url.isEmpty())
-        {
-            QNetworkAccessManager manager;
-            QNetworkRequest request(QUrl(base_url).resolved(QUrl("/api/tags")));
-            request.setTransferTimeout(3000);
-            auto* reply = manager.get(request);
-            QEventLoop loop;
-            QObject::connect(reply,&QNetworkReply::finished,&loop,&QEventLoop::quit);
-            loop.exec();
-            if(reply->error() == QNetworkReply::NoError)
-            {
-                connection = "connected";
-                for(const auto& model : QJsonDocument::fromJson(reply->readAll()).
-                    object()["models"].toArray())
-                    models << model.toObject()["name"].toString();
-            }
-            else
-                connection = reply->errorString();
-        }
-        tipl::out() << ai_log("Anthropic connection: "+connection);
-        models.removeDuplicates();
-        models.sort(Qt::CaseInsensitive);
-        set_models("Claude",models);
-        tipl::out() << ai_log("Claude models: "+
-                              (models.isEmpty() ? "none detected" : models.join(", ")));
-    }
-    else
-        tipl::out() << ai_log("Anthropic connection: not checked (Claude unavailable)");
-    tipl::out() << ai_log(gemini_path.isEmpty() ? "Gemini not found" :
-                          "Gemini: "+gemini_path);
-    if(!gemini_path.isEmpty())
-    {
-        QStringList models{"auto","pro","flash","flash-lite"};
-        set_models("Gemini",models);
-        tipl::out() << ai_log("Gemini model aliases: "+models.join(", "));
-    }
-    for(int i = 0;i < ui->ai_agent_selector->count();++i)
-        agents->item(i)->setEnabled(ui->ai_agent_selector->itemText(i) == "Codex" ?
-                                    codex : ui->ai_agent_selector->itemText(i) == "Claude" ?
-                                    claude : gemini);
     if(!codex && (claude || gemini))
         ui->ai_agent_selector->setCurrentText(claude ? "Claude" : "Gemini");
     ui->ai_agent_selector->setEnabled(codex || claude || gemini);
