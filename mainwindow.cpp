@@ -66,6 +66,77 @@ QString access_token;
 extern MainWindow* main_window;
 std::unordered_map<QString,ai_info> ai_infos;
 
+ai_provider ai_info::identify_provider(const QString& name)
+{
+    return name.contains("codex",Qt::CaseInsensitive) ? ai_provider::Codex :
+           name.contains("claude",Qt::CaseInsensitive) ? ai_provider::Claude :
+           name.contains("ollama",Qt::CaseInsensitive) ? ai_provider::Ollama :
+           ai_provider::Unknown;
+}
+QString ai_info::details(const QString& session) const
+{
+    int user = 0,assistant = 0,activity = 0;
+    for(const auto& value : projects)
+    {
+        auto type = value.toObject()["type"].toString();
+        user += type == "user";
+        assistant += type == "assistant";
+        activity += type == "request" || type == "activity";
+    }
+    auto time = [](const QJsonValue& value) {
+        return QDateTime::fromString(value.toString(),Qt::ISODate).toString(
+                   "yyyy-MM-dd HH:mm:ss");};
+    return QString("<b>%1</b><br><br>Agent: %2<br>Session: %3<br>Status: %4<br>"
+        "Messages: %5 (%6 you, %7 AI)<br>Activities: %8<br>"
+        "Created: %9<br>Updated: %10<br>Working folder: %11")
+        .arg(title(session).toHtmlEscaped(),
+             (agent_name.isEmpty() ? QString("Not available") : agent_name).toHtmlEscaped(),
+             session.toHtmlEscaped(),processes ? "Working" : "Idle")
+        .arg(user+assistant).arg(user).arg(assistant).arg(activity)
+        .arg(time(projects.first().toObject()["time"]),
+             time(projects.last().toObject()["time"]),
+             (work_dirs.isEmpty() ? QString("Not available") : work_dirs).toHtmlEscaped());
+}
+void ai_info::update(const QString& name,const QString& cwd)
+{
+    if(!name.isEmpty()) set_provider(identify_provider(name),name);
+    if(QDir(cwd).exists()) work_dirs = cwd;
+}
+void ai_info::set_provider(ai_provider value,const QString& name)
+{
+    provider = value; agent_name = name;
+}
+void ai_info::set_process(QProcess* process)
+{
+    processes = process;
+    if(process) work_dirs = process->workingDirectory();
+}
+QString ai_info::take_prompts(void)
+{
+    QStringList result;
+    for(const auto& prompt : prompts) result << prompt.toString();
+    prompts = {}; return result.join("\n\n");
+}
+QByteArray ai_info::prepare_reply(QByteArray reply,QJsonArray* results) const
+{
+    if(results)
+    {
+        if(!prompts.isEmpty())
+        {
+            auto result = results->last().toObject();
+            result["prompt"] = prompts;
+            results->replace(results->size()-1,result);
+        }
+        return QJsonDocument(*results).toJson(QJsonDocument::Compact);
+    }
+    if(prompts.isEmpty())
+        return reply;
+    auto payload = "PROMPT\t" +
+                   QJsonDocument(prompts).toJson(QJsonDocument::Compact) + '\n';
+    auto pos = reply.indexOf('\n');
+    return pos < 0 ? reply.append('\n').append(payload) :
+                     reply.insert(pos+1,payload);
+}
 std::string ai_log(QString text)
 {
     return ("[AI AGENT] "+text.remove('\r').replace(
@@ -75,32 +146,13 @@ std::string ai_log(QString text)
 void ai_reply(QLocalSocket* socket,const QString& session,
                       QByteArray reply,QJsonArray* results = nullptr)
 {
-    auto& prompts = ai_infos[session].prompts;
-    if(results)
-    {
-        if(!prompts.isEmpty())
-        {
-            auto result = results->last().toObject();
-            result["prompt"] = prompts;
-            results->replace(results->size()-1,result);
-        }
-        reply = QJsonDocument(*results).toJson(QJsonDocument::Compact);
-    }
-    else if(!prompts.isEmpty())
-    {
-        auto payload = "PROMPT\t" +
-                       QJsonDocument(prompts).toJson(QJsonDocument::Compact) + '\n';
-        int pos = reply.indexOf('\n');
-        if(pos < 0)
-            reply.append('\n').append(payload);
-        else
-            reply.insert(pos+1,payload);
-    }
+    auto& info = ai_infos[session];
+    reply = info.prepare_reply(reply,results);
     auto written = socket->write(reply);
     tipl::out() << ai_log(QString("local reply session=%1 bytes=%2 queued=%3")
                           .arg(session).arg(reply.size()).arg(written));
     if(written == reply.size())
-        prompts = {};
+        info.prompts = {};
 }
 
 void ai_request_list(QLocalSocket* socket,const QString& session)
@@ -289,18 +341,15 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
         return ai_reply(socket,{},"ERROR\tmissing agent: provide a provider-tagged agent name and reuse it for the entire conversation");
     if(agent_name.contains('@'))
         return ai_reply(socket,{},"ERROR\tinvalid agent: '@' is reserved as the agent/session separator");
-    auto provider = agent_name.contains("codex",Qt::CaseInsensitive) ? QString("Codex") :
-                    agent_name.contains("claude",Qt::CaseInsensitive) ? QString("Claude") :
-                    agent_name.contains("ollama",Qt::CaseInsensitive) ? QString("Ollama") : QString();
-    if(provider.isEmpty())
+    auto provider = ai_info::identify_provider(agent_name);
+    if(provider == ai_provider::Unknown)
         return ai_reply(socket,{},"ERROR\tinvalid agent: include Codex, Claude, or Ollama in the agent name");
     if(session.isEmpty())
         return ai_reply(socket,{},"ERROR\tmissing session: provide the initiating-chat session ID and reuse it for the entire conversation");
     if(QUuid(session).toString(QUuid::WithoutBraces).compare(session,Qt::CaseInsensitive))
         return ai_reply(socket,{},"ERROR\tinvalid session: read DSI_STUDIO_AI_SETUP.md and obtain the correct resumable provider thread ID");
 
-    auto index = main_window->ui->ai_agent_selector->findText(
-        provider,Qt::MatchStartsWith);
+    auto index = int(provider);
     if(index >= 0 && main_window->ui->ai_agent_selector->model()->flags(
            main_window->ui->ai_agent_selector->model()->index(index,0)).testFlag(
            Qt::ItemIsEnabled))
@@ -319,11 +368,7 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
         p = tipl::progress(msg.remove('\r').replace('\n',' ').toStdString());
     }
 
-    ai_infos[session].agent_name = agent_name;
-
-    auto cwd = request["cwd"].toString();
-    if(QDir(cwd).exists())
-        ai_infos[session].work_dirs = cwd;
+    ai_infos[session].update(agent_name,request["cwd"].toString());
 
     auto activity = request;
     activity.remove("chat");
@@ -364,11 +409,7 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
 
 void MainWindow::select_agent_model(const ai_info& info)
 {
-    auto agent_name = info.agent_name;
-    auto index = ui->ai_agent_selector->findText(
-        agent_name.contains("codex",Qt::CaseInsensitive) ? "Codex" :
-            agent_name.contains("ollama",Qt::CaseInsensitive) ? "Ollama" : "Claude",
-        Qt::MatchStartsWith);
+    auto index = int(info.provider);
     if(index >= 0)
         ui->ai_agent_selector->setCurrentIndex(index);
 
@@ -387,7 +428,7 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
         return;
 
     auto agent_name = info.agent_name;
-    QString project_title = info.project_titles.isEmpty() ? (agent_name.isEmpty() ? session : agent_name+"@"+session) : info.project_titles;
+    auto project_title = info.title(session);
 
     auto* item = info.project_items;
     if(!item)
@@ -630,8 +671,7 @@ void MainWindow::refresh_codex_models(const QString& path)
 
         models.removeDuplicates();
         models.sort(Qt::CaseInsensitive);
-        auto index = ui->ai_agent_selector->findText(
-            "Codex",Qt::MatchStartsWith);
+        auto index = int(ai_provider::Codex);
         ui->ai_agent_selector->setItemData(index,models);
         if(ui->ai_agent_selector->currentIndex() == index)
         {
@@ -651,10 +691,9 @@ void MainWindow::refresh_codex_models(const QString& path)
 }
 void MainWindow::refresh_ollama_models()
 {
-    auto index = ui->ai_agent_selector->findText(
-        "Ollama",Qt::MatchStartsWith);
+    auto index = int(ai_provider::Ollama);
     auto claude = ui->ai_agent_selector->itemData(
-                                           ui->ai_agent_selector->findText("Claude",Qt::MatchStartsWith),
+                                           int(ai_provider::Claude),
                                            Qt::UserRole+1).toString();
 
     auto set_models = [this,index](const QString& path,QStringList models)
@@ -803,7 +842,7 @@ void MainWindow::on_ai_quick_settings_clicked()
     settings.setValue("ai/ollama_host",host.text().trimmed());
     settings.setValue("ai/ollama_port",port.value());
     settings.setValue("ai/keep_history",history.isChecked());
-    settings.setValue("ai/default_agent",agent.currentText());
+    settings.setValue("ai/default_agent",agent.currentData().toInt());
     settings.setValue("ai/default_model",model.currentText());
     ui->ai_agent_selector->setCurrentIndex(agent.currentData().toInt());
     ui->ai_model_selector->setCurrentText(model.currentText());
@@ -813,14 +852,17 @@ void MainWindow::on_ai_quick_settings_clicked()
 
 void MainWindow::start_ai(QString session,const QString& text,bool add_history)
 {
-    auto provider = session.isEmpty() ? QString() :
-                    ai_infos[session].agent_name;
-    if(provider.isEmpty())
-        provider = ui->ai_agent_selector->currentText();
-    bool codex = provider.contains("codex",Qt::CaseInsensitive);
-    bool ollama = provider.contains("ollama",Qt::CaseInsensitive);
-    bool claude = ollama || provider.contains("claude",Qt::CaseInsensitive);
-    auto executable = ui->ai_agent_selector->itemData(ui->ai_agent_selector->findText(codex ? "Codex" : "Claude",Qt::MatchStartsWith),Qt::UserRole+1).toString();
+    auto provider = session.isEmpty() ?
+        ai_provider(ui->ai_agent_selector->currentIndex()) :
+        ai_infos[session].provider;
+    bool codex = provider == ai_provider::Codex;
+    bool ollama = provider == ai_provider::Ollama;
+    bool claude = provider == ai_provider::Claude || ollama;
+    auto provider_name = ui->ai_agent_selector->itemText(int(provider)).
+                         section(' ',0,0);
+    auto executable = ui->ai_agent_selector->itemData(
+        int(codex ? ai_provider::Codex : ai_provider::Claude),
+        Qt::UserRole+1).toString();
     if(!codex && !claude)
     {
         QMessageBox::warning(this,"AI Agent","Only Codex and Claude-based sessions are supported.");
@@ -844,7 +886,7 @@ void MainWindow::start_ai(QString session,const QString& text,bool add_history)
     if(session.isEmpty() && claude)
     {
         session = QUuid::createUuid().toString(QUuid::WithoutBraces);
-        ai_infos[session].agent_name = ollama ? "Ollama" : "Claude";
+        ai_infos[session].set_provider(provider,provider_name);
     }
 
     auto cwd = ai_infos[session].work_dirs;
@@ -867,7 +909,7 @@ void MainWindow::start_ai(QString session,const QString& text,bool add_history)
     auto model = model_setting["model"].toString();
     auto model_info = model_setting["info"].toObject();
     auto profile = model_info["profile"].toString();
-    auto model_provider = model_info["provider"].toString();
+    auto model_backend = model_info["provider"].toString();
 
     if(model.startsWith("default",Qt::CaseInsensitive))
         model.clear();
@@ -882,7 +924,7 @@ void MainWindow::start_ai(QString session,const QString& text,bool add_history)
 
     if(!session.isEmpty())
     {
-        ai_infos[session].processes = process;
+        ai_infos[session].set_process(process);
         if(add_history)
             add_ai_history(session,"user",text);
     }
@@ -917,9 +959,9 @@ void MainWindow::start_ai(QString session,const QString& text,bool add_history)
             {
                 session = started_session;
                 process->setObjectName(session);
-                ai_infos[session].agent_name = "Codex";
-                ai_infos[session].work_dirs = process->workingDirectory();
-                ai_infos[session].processes = process;
+                ai_infos[session].set_provider(
+                    ai_provider::Codex,provider_name);
+                ai_infos[session].set_process(process);
             }
             ai_infos[session].model_settings = model_setting;
             if(started_new_session)
@@ -975,7 +1017,7 @@ void MainWindow::start_ai(QString session,const QString& text,bool add_history)
         }
         else
         {
-            ai_infos[session].processes = nullptr;
+            ai_infos[session].set_process(nullptr);
             ai_infos[session].prompts.append(text);
             add_ai_history(session,"activity",
                            "Cannot start AI agent: "+
@@ -1016,15 +1058,12 @@ void MainWindow::start_ai(QString session,const QString& text,bool add_history)
         }
         else
         {
-            ai_infos[session].processes = nullptr;
-            QStringList pending;
-            for(const auto& prompt : ai_infos[session].prompts)
-                pending << prompt.toString();
-            ai_infos[session].prompts = {};
+            ai_infos[session].set_process(nullptr);
+            auto pending = ai_infos[session].take_prompts();
             if(!pending.isEmpty())
             {
                 process->deleteLater();
-                start_ai(session,pending.join("\n\n"),false);
+                start_ai(session,pending,false);
                 return;
             }
             show_ai_project(session);
@@ -1076,7 +1115,7 @@ void MainWindow::start_ai(QString session,const QString& text,bool add_history)
             if(!profile.isEmpty())
                 args << "--profile" << profile;
             auto host = settings.value("ai/ollama_host","localhost").toString().trimmed();
-            if(!host.isEmpty() && model_provider.contains("ollama",Qt::CaseInsensitive))
+            if(!host.isEmpty() && model_backend.contains("ollama",Qt::CaseInsensitive))
             {
                 if(!host.contains("://"))
                     host = "http://"+host;
@@ -1084,7 +1123,7 @@ void MainWindow::start_ai(QString session,const QString& text,bool add_history)
                 url.setPort(settings.value("ai/ollama_port",11434).toInt());
                 url.setPath("/v1");
                 args << "--config" << QString("model_providers.%1.base_url=\"%2\"").
-                    arg(model_provider,url.toString());
+                    arg(model_backend,url.toString());
             }
         }
         if(session.isEmpty())
@@ -1124,9 +1163,9 @@ void MainWindow::start_ai(QString session,const QString& text,bool add_history)
 
     tipl::out() << ai_log(session.isEmpty() ?
         QString("starting new %1 chat executable=%2 model=%3 prompt_chars=%4").
-        arg(provider,executable,model.isEmpty() ? QString("default") : model).arg(text.size()) :
+        arg(provider_name,executable,model.isEmpty() ? QString("default") : model).arg(text.size()) :
         QString("resuming %1 session agent=%2 session=%3 executable=%4 model=%5 prompt_chars=%6").
-        arg(provider).arg(ai_infos[session].agent_name).arg(session).arg(executable).
+        arg(provider_name).arg(ai_infos[session].agent_name).arg(session).arg(executable).
         arg(model.isEmpty() ? QString("default") : model).arg(text.size()));
     process->setProperty("bootstrap",bootstrap);
     process->start(executable,args);
@@ -1139,12 +1178,8 @@ void MainWindow::on_ai_send_message_clicked()
         return;
     auto* item = ui->ai_project_list->currentItem();
     auto session = item ? item->data(Qt::UserRole).toString() : QString();
-    auto name = session.isEmpty() ? QString() :
-                ai_infos[session].agent_name;
-    bool resumable = name.contains("codex",Qt::CaseInsensitive) ||
-                     name.contains("claude",Qt::CaseInsensitive) ||
-                     name.contains("ollama",Qt::CaseInsensitive);
-    if(!session.isEmpty() && (ai_infos[session].processes || !resumable))
+    if(!session.isEmpty() && (ai_infos[session].processes ||
+                              ai_infos[session].provider == ai_provider::Unknown))
     {
         ai_infos[session].prompts.append(text);
         add_ai_history(session,"user",text);
@@ -1225,10 +1260,11 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     auto* agents = qobject_cast<QStandardItemModel*>(
                        ui->ai_agent_selector->model());
-    auto set_agent = [&](const QString& agent,const QString& path,
-                         const QStringList& models,QJsonObject profiles = {})
+    auto set_agent = [&](ai_provider provider,const QString& path,
+                          const QStringList& models,QJsonObject profiles = {})
     {
-        auto index = ui->ai_agent_selector->findText(agent);
+        auto index = int(provider);
+        auto agent = ui->ai_agent_selector->itemText(index);
         auto* item = agents->item(index);
         item->setText(agent+(path.isEmpty() ? " (not found)" : ""));
         item->setEnabled(!path.isEmpty());
@@ -1257,7 +1293,7 @@ MainWindow::MainWindow(QWidget *parent) :
         }
         if(!QFileInfo::exists(codex_path))
             codex_path.clear();
-        set_agent("Codex",codex_path,{});
+        set_agent(ai_provider::Codex,codex_path,{});
         refresh_codex_models(codex_path);
     }
     {
@@ -1269,16 +1305,16 @@ MainWindow::MainWindow(QWidget *parent) :
 #endif
         if(!QFileInfo::exists(claude_path))
             claude_path.clear();
-        set_agent("Claude",claude_path,{"sonnet","opus"});
+        set_agent(ai_provider::Claude,claude_path,{"sonnet","opus"});
     }
     {
-        set_agent("Ollama",{},{});
+        set_agent(ai_provider::Ollama,{},{});
         refresh_ollama_models();
     }
 
     if(codex_path.isEmpty() && (!claude_path.isEmpty() || !ollama_path.isEmpty()))
-        ui->ai_agent_selector->setCurrentText(
-            claude_path.isEmpty() ? "Ollama" : "Claude");
+        ui->ai_agent_selector->setCurrentIndex(int(
+            claude_path.isEmpty() ? ai_provider::Ollama : ai_provider::Claude));
 
     ui->ai_agent_selector->setEnabled(
         !codex_path.isEmpty() || !claude_path.isEmpty() || !ollama_path.isEmpty());
@@ -1296,9 +1332,12 @@ MainWindow::MainWindow(QWidget *parent) :
             [update_models] { update_models(); });
     update_models();
 
-    auto default_agent = settings.value("ai/default_agent",ui->ai_agent_selector->currentText()).toString();
-    auto default_index = ui->ai_agent_selector->findText(
-        default_agent,Qt::MatchStartsWith);
+    auto default_agent = settings.value(
+        "ai/default_agent",ui->ai_agent_selector->currentIndex());
+    bool okay;
+    auto default_index = default_agent.toInt(&okay);
+    if(!okay)
+        default_index = int(ai_info::identify_provider(default_agent.toString()));
     if(default_index >= 0)
         ui->ai_agent_selector->setCurrentIndex(default_index);
 
@@ -1370,39 +1409,8 @@ MainWindow::MainWindow(QWidget *parent) :
         if(!item)
             return;
         auto session = item->data(Qt::UserRole).toString();
-        const auto& history = ai_infos[session].projects;
-        int user = 0,assistant = 0,activity = 0;
-        for(const auto& value : history)
-        {
-            auto type = value.toObject()["type"].toString();
-            user += type == "user";
-            assistant += type == "assistant";
-            activity += type == "request" || type == "activity";
-        }
-        auto time = [](const QJsonValue& value)
-        {
-            return QDateTime::fromString(value.toString(),Qt::ISODate).
-                    toString("yyyy-MM-dd HH:mm:ss");
-        };
-        auto text = QString(
-            "<b>%1</b><br><br>"
-            "Agent: %2<br>Session: %3<br>Status: %4<br>"
-            "Messages: %5 (%6 you, %7 AI)<br>Activities: %8<br>"
-            "Created: %9<br>Updated: %10<br>Working folder: %11")
-            .arg((ai_infos[session].project_titles.isEmpty() ?
-                  item->text() : ai_infos[session].project_titles).toHtmlEscaped(),
-                 (ai_infos[session].agent_name.isEmpty() ?
-                  QString("Not available") :
-                  ai_infos[session].agent_name).toHtmlEscaped(),
-                 session.toHtmlEscaped(),
-                 ai_infos[session].processes ? "Working" : "Idle")
-            .arg(user+assistant).arg(user).arg(assistant).arg(activity)
-            .arg(time(history.first().toObject()["time"]),
-                 time(history.last().toObject()["time"]),
-                 (ai_infos[session].work_dirs.isEmpty() ?
-                  QString("Not available") :
-                  ai_infos[session].work_dirs).toHtmlEscaped());
-        QMessageBox::information(this,"Chat Details",text);
+        QMessageBox::information(
+            this,"Chat Details",ai_infos[session].details(session));
     });
     ai_project_menu->addSeparator();
 
@@ -1497,14 +1505,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
         if(loaded_history.isEmpty() || session.isEmpty())
             continue;
-        if(!agent_name.isEmpty())
-            ai_infos[session].agent_name = agent_name;
+        auto& ai = ai_infos[session];
+        ai.update(agent_name,cwd);
         if(!project_title.isEmpty())
-            ai_infos[session].project_titles = project_title;
-        if(!cwd.isEmpty())
-            ai_infos[session].work_dirs = cwd;
+            ai.project_titles = project_title;
         for(const auto& entry : loaded_history)
-            ai_infos[session].projects.append(entry);
+            ai.projects.append(entry);
         show_ai_project(session);
     }
 
