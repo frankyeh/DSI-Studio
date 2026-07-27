@@ -362,6 +362,23 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     ai_reply(socket,session,"ERROR\tunknown request");
 }
 
+void MainWindow::set_agent_model(const ai_info& info)
+{
+    auto agent_name = info.agent_name;
+    auto index = ui->ai_agent_selector->findText(
+        agent_name.contains("codex",Qt::CaseInsensitive) ? "Codex" :
+            agent_name.contains("ollama",Qt::CaseInsensitive) ? "Ollama" : "Claude",
+        Qt::MatchStartsWith);
+    if(index >= 0)
+        ui->ai_agent_selector->setCurrentIndex(index);
+
+    auto saved_model = info.model_settings.value("model").toString();
+    if(saved_model.isEmpty())
+        saved_model = settings.value("ai/default_model","default").toString();
+    if(ui->ai_model_selector->findText(saved_model) < 0)
+        saved_model = "default";
+    ui->ai_model_selector->setCurrentText(saved_model);
+}
 void MainWindow::show_ai_project(const QString& session,QJsonObject added)
 {
     auto& info = ai_infos[session];
@@ -436,21 +453,6 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
     }
     if(ui->ai_project_list->currentItem() != item)
         return;
-
-    auto index = ui->ai_agent_selector->findText(
-        agent_name.contains("codex",Qt::CaseInsensitive) ? "Codex" :
-        agent_name.contains("ollama",Qt::CaseInsensitive) ? "Ollama" : "Claude",
-        Qt::MatchStartsWith);
-    if(index >= 0)
-        ui->ai_agent_selector->setCurrentIndex(index);
-
-    auto saved_model = info.model_settings.value("model").toString();
-    if(saved_model.isEmpty())
-        saved_model = settings.value("ai/default_model","default").toString();
-    if(ui->ai_model_selector->findText(saved_model) < 0)
-        saved_model = "default";
-    ui->ai_model_selector->setCurrentText(saved_model);
-
 
     auto request_content = [](const QJsonObject& entry,bool compact = false)
     {
