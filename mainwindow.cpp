@@ -8,11 +8,13 @@
 #include <QDragEnterEvent>
 #include <QMimeData>
 #include <QAction>
+#include <QTextStream>
 #include <QHeaderView>
 #include <QStyleFactory>
 #include <QNetworkInterface>
 #include <QSysInfo>
 #include <QStandardPaths>
+#include <QNetworkProxy>
 #include <QShortcut>
 #include <QProcess>
 #include <QProcessEnvironment>
@@ -440,6 +442,11 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
     if(index >= 0)
         ui->ai_agent_selector->setCurrentIndex(index);
 
+    auto saved_model = ai_model_settings.value(agent)["model"].toString();
+    if(!saved_model.isEmpty())
+        ui->ai_model_selector->setCurrentText(saved_model);
+
+
     auto request_content = [](const QJsonObject& entry,bool compact = false)
     {
         auto summary = entry["_summary"].toString();
@@ -757,6 +764,29 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
     if(!QDir(cwd).exists())
         cwd = QApplication::applicationDirPath();
 
+
+    QJsonObject model_setting;
+    if(!add_history && !agent.isEmpty())
+        model_setting = ai_model_settings.value(agent);
+
+    if(model_setting.isEmpty())
+    {
+        model_setting["model"] = ui->ai_model_selector->currentText();
+        model_setting["info"] = ui->ai_model_selector->currentData().toJsonObject();
+    }
+
+    auto model = model_setting["model"].toString();
+    auto model_info = model_setting["info"].toObject();
+    auto profile = model_info["profile"].toString();
+    auto model_provider = model_info["provider"].toString();
+
+    if(model.startsWith("default",Qt::CaseInsensitive))
+        model.clear();
+
+    if(!agent.isEmpty())
+        ai_model_settings[agent] = model_setting;
+
+
     auto* process = new QProcess(this);
     process->setObjectName(agent);
     process->setWorkingDirectory(cwd);
@@ -806,6 +836,7 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
                 ai_processes[agent] = process;
             }
             ai_sessions[agent] = session;
+            ai_model_settings[agent] = model_setting;
             if(new_agent)
             {
                 add_ai_history(agent,"user",text);
@@ -948,10 +979,6 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
             "the named pipe.";
     }
 
-    auto model = ui->ai_model_selector->currentText();
-    auto model_info = ui->ai_model_selector->currentData().toJsonObject();
-    auto profile = model_info["profile"].toString();
-    auto model_provider = model_info["provider"].toString();
     if(model.startsWith("default",Qt::CaseInsensitive))
         model.clear();
     QStringList args{"exec"};
@@ -1346,6 +1373,7 @@ MainWindow::MainWindow(QWidget *parent) :
         ai_project_titles.remove(agent);
         ai_sessions.remove(agent);
         ai_work_dirs.remove(agent);
+        ai_model_settings.remove(agent);
         ai_prompts.erase(agent);
         ai_log_positions.remove(agent);
         ui->ai_project_list->setCurrentItem(nullptr);
@@ -1446,6 +1474,8 @@ MainWindow::MainWindow(QWidget *parent) :
             ui->workDir->addItem(each);
             tipl::qt::working_dirs << QUrl::fromLocalFile(each);
         }
+    if(!ui->workDir->count())
+        ui->workDir->addItem(QDir::currentPath());
 
     for(auto& each : fib_template_list)
     {
@@ -1676,6 +1706,8 @@ void MainWindow::login(void)
 }
 void MainWindow::openFile(QStringList file_names)
 {
+    if(file_names.isEmpty() || file_names[0].isEmpty())
+        return;
     QString file_name = file_names[0];
     if(!QFileInfo::exists(file_name))
     {
@@ -1694,7 +1726,8 @@ void MainWindow::openFile(QStringList file_names)
                 QMessageBox::critical(this,"ERROR","invalid command csv file");
                 return;
             }
-            loadFib(QString::fromStdString(tipl::split(lines[0],',')[1]));
+            if(!loadFib(QString::fromStdString(tipl::split(lines[0],',')[1])))
+                return;
             if(!tracking_windows.empty())
             {
                 for(size_t i = 1;i < lines.size();++i)
@@ -1715,9 +1748,9 @@ void MainWindow::openFile(QStringList file_names)
             file_list << QFileInfo(file_name).dir().entryList(QStringList("*fib.gz"),QDir::Files|QDir::NoSymLinks);
             if(file_list.size() == 1)
             {
-                loadFib(QFileInfo(file_name).absolutePath() + "/" + file_list[0]);
-                for(const auto& each:file_names)
-                    tracking_windows.back()->command({"open_tract",each.toStdString()});
+                if(loadFib(QFileInfo(file_name).absolutePath() + "/" + file_list[0]))
+                    for(const auto& each:file_names)
+                        tracking_windows.back()->command({"open_tract",each.toStdString()});
             }
             else
                 loadFib(file_name);
@@ -1786,14 +1819,14 @@ void MainWindow::dropEvent(QDropEvent *event)
 
 void MainWindow::open_fib_at(int row,int)
 {
-    loadFib(ui->recentFib->item(row,1)->text() + "/" +
-            ui->recentFib->item(row,0)->text());
+    if(auto* item = ui->recentFib->item(row,0))
+        loadFib(item->data(Qt::UserRole).toString());
 }
 
 void MainWindow::open_src_at(int row,int)
 {
-    loadSrc(QStringList() << (ui->recentSrc->item(row,1)->text() + "/" +
-            ui->recentSrc->item(row,0)->text()));
+    if(auto* item = ui->recentSrc->item(row,0))
+        loadSrc({item->data(Qt::UserRole).toString()});
 }
 
 
@@ -1815,58 +1848,44 @@ MainWindow::~MainWindow()
     QStringList workdir_list;
     for (int index = 0;index < 10 && index < ui->workDir->count();++index)
         workdir_list << ui->workDir->itemText(index);
-    if(!workdir_list.isEmpty() && ui->workDir->currentIndex() >= 0)
-        std::swap(workdir_list[0],workdir_list[ui->workDir->currentIndex()]);
+    auto current = ui->workDir->currentIndex();
+    if(current > 0 && current < workdir_list.size())
+        workdir_list.move(current,0);
     settings.setValue("WORK_PATH", workdir_list);
     delete ui;
 
 }
 
 
-void MainWindow::updateRecentList(void)
+void MainWindow::updateRecentList()
 {
+    auto update = [this](QTableWidget* table,const char* key)
     {
-        QStringList file_list = settings.value("recentFibFileList").toStringList();
-        ui->recentFib->clear();
-        ui->recentFib->setRowCount(file_list.size());
-        for(int index = 0;index < file_list.size();++index)
+        auto files = settings.value(key).toStringList();
+        table->clearContents();
+        table->setRowCount(files.size());
+
+        for(int row = 0;row < files.size();++row)
         {
-            QFileInfo info(file_list[index]);
-            ui->recentFib->setRowHeight(index,20);
-            ui->recentFib->setItem(index,0,new QTableWidgetItem(info.fileName()));
-            ui->recentFib->setItem(index,1,new QTableWidgetItem(info.absolutePath()));
+            QFileInfo info(files[row]);
+            table->setRowHeight(row,20);
+            table->setItem(row,0,new QTableWidgetItem(info.fileName()));
+            table->setItem(row,1,new QTableWidgetItem(info.absolutePath()));
+
             for(int col = 0;col < 2;++col)
             {
-                auto item = ui->recentFib->item(index,col);
+                auto* item = table->item(row,col);
                 item->setFlags(item->flags() & ~Qt::ItemIsEditable);
-                if(!QFileInfo::exists(file_list[index]))
+                item->setData(Qt::UserRole,files[row]);
+                if(!info.exists())
                     item->setForeground(Qt::gray);
             }
         }
-    }
-    {
-        QStringList file_list = settings.value("recentSrcFileList").toStringList();
-        ui->recentSrc->clear();
-        ui->recentSrc->setRowCount(file_list.size());
-        for(int index = 0;index < file_list.size();++index)
-        {
-            QFileInfo info(file_list[index]);
-            ui->recentSrc->setRowHeight(index,20);
-            ui->recentSrc->setItem(index,0,new QTableWidgetItem(info.fileName()));
-            ui->recentSrc->setItem(index,1,new QTableWidgetItem(info.absolutePath()));
-            for(int col = 0;col < 2;++col)
-            {
-                auto item = ui->recentSrc->item(index,col);
-                item->setFlags(item->flags() & ~Qt::ItemIsEditable);
-                if(!QFileInfo::exists(file_list[index]))
-                    item->setForeground(Qt::gray);
-            }
-        }
-    }
-    QStringList header;
-    header << "File Name" << "Directory";
-    ui->recentFib->setHorizontalHeaderLabels(header);
-    ui->recentSrc->setHorizontalHeaderLabels(header);
+        table->setHorizontalHeaderLabels({"File Name","Directory"});
+    };
+
+    update(ui->recentFib,"recentFibFileList");
+    update(ui->recentSrc,"recentSrcFileList");
 }
 
 
@@ -1995,7 +2014,7 @@ void MainWindow::openRecentSrcFile(void)
 
 void MainWindow::open_DWI(QStringList filenames)
 {
-    if ( filenames.isEmpty() )
+    if(filenames.isEmpty() || filenames[0].isEmpty())
         return;
     tipl::progress prog("[Step T1][Open Source Images]");
     add_work_dir(QFileInfo(filenames[0]).absolutePath());
@@ -2361,79 +2380,85 @@ void MainWindow::on_FIB_qc_clicked()
 
 void MainWindow::on_parse_network_measures_clicked()
 {
-    QStringList filename = QFileDialog::getOpenFileNames(
-            this,"Open Network Measures",ui->workDir->currentText(),
-            "Text files (*.txt);;All files (*)" );
-    if(filename.isEmpty())
+    auto files = QFileDialog::getOpenFileNames(
+        this,"Open Network Measures",ui->workDir->currentText(),
+        "Text files (*.txt);;All files (*)");
+    if(files.isEmpty())
         return;
-    std::ofstream out((filename[0]+".collected.txt").toStdString());
-    out << "Field\t";
-    for(int i = 0;i < filename.size();++i)
-        out << QFileInfo(filename[i]).baseName().toStdString() << "\t";
-    out << std::endl;
 
-    std::vector<std::string> line_output;
-    for(int i = 0;i < filename.size();++i)
+    QStringList fields;
+    QMap<QString,QStringList> values;
+
+    auto add = [&](const QString& field,const QString& value,int column)
     {
-        std::ifstream in(filename[i].toStdString());
-        std::vector<std::string> node_list;
-        // global measures
-        size_t line_index = 0;
-        while(in)
+        if(!values.contains(field))
         {
-            std::string t1,t2;
-            if(!(in >> t1))
-                break;
-            if(t1 == "network_measures")
-            {
-                std::string nodes;
-                std::getline(in,nodes);
-                std::istringstream nodestream(nodes);
-                std::copy(std::istream_iterator<std::string>(nodestream),
-                          std::istream_iterator<std::string>(),std::back_inserter(node_list));
-                break;
-            }
-            if(!(in >> t2))
-                break;
-            if(i == 0)
-            {
-                line_output.push_back(t1);
-                line_output.back() += "\t";
-            }
-            line_output[line_index] += t2;
-            line_output[line_index] += "\t";
-            ++line_index;
+            QStringList row;
+            row.fill({},files.size());
+            values[field] = row;
+            fields << field;
         }
-        // nodal measures
+        values[field][column] = value;
+    };
+
+    for(int column = 0;column < files.size();++column)
+    {
+        std::ifstream in(tipl::qt::to_path(files[column]));
+        std::vector<std::string> nodes;
+        std::string name,value;
+
+        while(in >> name)
+        {
+            if(name == "network_measures")
+            {
+                std::string line;
+                std::getline(in,line);
+                std::istringstream stream(line);
+                nodes.assign(std::istream_iterator<std::string>(stream),{});
+                break;
+            }
+            if(!(in >> value))
+                break;
+            add(QString::fromStdString(name),
+                QString::fromStdString(value),column);
+        }
+
         std::string line;
         while(std::getline(in,line))
         {
-            std::istringstream in2(line);
-            std::string t1;
-            in2 >> t1;
-            if(t1.empty() || t1[0] == '#' || t1[0] == ' ')
+            std::istringstream stream(line);
+            if(!(stream >> name) || name.empty() || name[0] == '#')
                 continue;
-            for(size_t k = 0;k < node_list.size();++k,++line_index)
+
+            for(const auto& node : nodes)
             {
-                std::string t2;
-                in2 >> t2;
-                if(i==0)
-                {
-                    line_output.push_back(t1);
-                    line_output.back() += "_";
-                    line_output.back() += node_list[k];
-                    line_output.back() += "\t";
-                }
-                line_output[line_index] += t2;
-                line_output[line_index] += "\t";
+                value.clear();
+                stream >> value;
+                add(QString::fromStdString(name+"_"+node),
+                    QString::fromStdString(value),column);
             }
         }
     }
-    for(size_t i = 0;i < line_output.size();++i)
-        out << line_output[i] << std::endl;
 
-    QMessageBox::information(this,QApplication::applicationName(),QString("File saved to")+filename[0]+".collected.txt");
+    auto output = files[0]+".collected.txt";
+    QFile file(output);
+    if(!file.open(QIODevice::WriteOnly|QIODevice::Text))
+    {
+        QMessageBox::critical(this,"ERROR","cannot write "+output);
+        return;
+    }
 
+    QTextStream out(&file);
+    out << "Field";
+    for(const auto& input : files)
+        out << '\t' << QFileInfo(input).baseName();
+    out << '\n';
+
+    for(const auto& field : fields)
+        out << field << '\t' << values[field].join('\t') << '\n';
+
+    QMessageBox::information(
+        this,QApplication::applicationName(),"File saved to "+output);
 }
 
 void MainWindow::on_auto_track_clicked()
@@ -2773,7 +2798,8 @@ void MainWindow::on_clear_src_history_clicked()
 
 void MainWindow::on_open_selected_src_clicked()
 {
-     open_src_at(ui->recentSrc->currentRow(),0);
+    if(ui->recentSrc->currentRow() >= 0)
+        open_src_at(ui->recentSrc->currentRow(),0);
 }
 
 void MainWindow::on_clear_fib_history_clicked()
@@ -2785,7 +2811,8 @@ void MainWindow::on_clear_fib_history_clicked()
 
 void MainWindow::on_open_selected_fib_clicked()
 {
-    open_fib_at(ui->recentFib->currentRow(),0);
+    if(ui->recentFib->currentRow() >= 0)
+        open_fib_at(ui->recentFib->currentRow(),0);
 }
 
 
