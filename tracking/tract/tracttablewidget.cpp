@@ -452,7 +452,9 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
 {
     if(cmd[0] == "run_tracking" &&
         (cmd.size() == 2 ||
-         (cmd.size() == 3 && cmd[2].find(':') != std::string::npos)))
+         (cmd.size() == 3 &&
+          (cmd[2].empty() ||
+           cmd[2].find(':') != std::string::npos))))
     {
         auto roi = cmd.size() == 3 ? " " + cmd[2] : "";
         cmd.resize(3);
@@ -584,13 +586,14 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "run_tracking")
     {
-        // cmd[1]: tract name
-        // cmd[2]: parameter id [space] region_id1:type1&region_id2:type2
-        // cmd[3]: only used in autotrack, specify tolerance distance
+        // cmd[1]: new tract-bundle name
+        // cmd[2]: internal parameter ID [space] optional region settings
+        // cmd[3]: internal auto-track tolerance
         if(!cur_tracking_window.handle->trackable)
             return run->failed("the data are not trackable");
-
-        std::string& tract_name = cmd[1];
+        if(cmd[1].empty())
+            return run->failed("missing tract-bundle name");
+        std::string& bundle_name = cmd[1];
         std::string param_id,roi_settings;
         std::istringstream(cmd[2]) >> param_id >> roi_settings;
 
@@ -598,8 +601,8 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         if(!new_thread->param.set_code(param_id))
             return run->failed("invalid parameter id");
         if(cmd.size() >= 4) // has auto track
-            new_thread->roi_mgr->set_auto_track(tract_name,QString(cmd[3].c_str()).toFloat());
-        addNewTracts(tract_name.c_str(),false);
+            new_thread->roi_mgr->set_auto_track(bundle_name,QString(cmd[3].c_str()).toFloat());
+        addNewTracts(bundle_name.c_str(),false);
         thread_data.back() = new_thread;
         if(!cur_tracking_window.regionWidget->set_roi(roi_settings,new_thread->roi_mgr))
             return run->failed(cur_tracking_window.regionWidget->error_msg);
@@ -611,7 +614,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         timer->start(500);
         timer_update->start(100);
         cur_tracking_window.history.has_other_thread = true;
-        cur_tracking_window.history.default_stem2 = tract_name;
+        cur_tracking_window.history.default_stem2 = bundle_name;
         return true;
     }
     if(cmd[0] == "open_tract" || cmd[0] == "open_mni_tract")
