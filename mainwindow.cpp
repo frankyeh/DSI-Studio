@@ -985,6 +985,8 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
             QString::number(exit_status == QProcess::CrashExit));
         auto error = (process->property("stderr").toByteArray()+
                       process->readAllStandardError()).trimmed();
+        auto output = (process->property("stdout").toByteArray()+
+                       process->readAllStandardOutput()).trimmed();
         if(exit_code || exit_status == QProcess::CrashExit)
             tipl::out() << ai_log("process failed session="+session+
                 " exit="+QString::number(exit_code)+" error="+
@@ -1007,15 +1009,29 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
         }
         else
         {
-            ai_infos[session].set_process(nullptr);
-            auto pending = ai_infos[session].take_prompts();
-            if(!pending.isEmpty())
+            auto& info = ai_infos[session];
+            info.set_process(nullptr);
+
+            if(auto pending = info.take_prompts(); !pending.isEmpty())
             {
                 process->deleteLater();
                 start_ai(session,pending,false);
                 return;
             }
-            show_ai_project(session);
+
+            auto history_size = process->property("history_size");
+            bool no_reply = history_size.isValid() && info.projects.size() == history_size.toInt();
+            if(no_reply && !output.isEmpty())
+                add_ai_history(session,"assistant",QString::fromUtf8(output));
+
+            QString ended = "AI agent ended";
+            if(exit_code || exit_status == QProcess::CrashExit)
+                ended += " with exit code "+QString::number(exit_code) + " " + QString::fromUtf8(error);
+            else
+                if(no_reply && output.isEmpty())
+                    ended += " without a reply";
+
+            add_ai_history(session,"activity",ended+".");
         }
         process->deleteLater();
     });
@@ -1058,7 +1074,7 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
 
 void MainWindow::run_ai(const ai_launch& launch,QStringList args)
 {
-    tipl::out() << ai_log(launch.session.isEmpty() ?
+    tipl::out() << ai_log(launch.new_session ?
         QString("starting new %1 chat executable=%2 model=%3 prompt_chars=%4").
         arg(launch.name,launch.executable,
             launch.model.isEmpty() ? QString("default") : launch.model).
@@ -1073,8 +1089,16 @@ void MainWindow::run_ai(const ai_launch& launch,QStringList args)
 }
 void MainWindow::start_claude_process(const ai_launch& launch)
 {
+    launch.process->setProperty(
+        "history_size",ai_infos[launch.session].projects.size());
+
     connect(launch.process,&QProcess::readyReadStandardOutput,launch.process,
-            [process = launch.process]{process->readAllStandardOutput();});
+            [process = launch.process]
+    {
+        auto output = process->property("stdout").toByteArray()+
+                              process->readAllStandardOutput();
+        process->setProperty("stdout",output.right(64*1024));
+    });
     QStringList args{"-p",launch.new_session ? "--session-id" : "--resume",
                      launch.session};
     if(!launch.model.isEmpty())
