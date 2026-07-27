@@ -663,13 +663,13 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
     if(!agent.isEmpty() && claude && session.isEmpty())
     {
         QMessageBox::warning(this,"AI Agent",
-            "Claude resume requires the name field from its session file.");
+            "Claude resume requires the sessionId field from its session file.");
         return;
     }
     if(agent.isEmpty() && claude)
     {
         QMessageBox::warning(this,"AI Agent",
-            "Start Claude Code first, then connect it with its session-file name.");
+            "Start Claude Code first, then connect it with its sessionId.");
         return;
     }
     if(!agent.isEmpty() && session.isEmpty())
