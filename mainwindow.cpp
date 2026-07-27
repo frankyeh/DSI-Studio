@@ -419,13 +419,10 @@ void MainWindow::select_agent_model(const ai_info& info)
     auto index = int(info.provider);
     if(index >= 0)
         ui->ai_agent_selector->setCurrentIndex(index);
-
-    auto saved_model = info.model_settings.value("model").toString();
-    if(saved_model.isEmpty())
-        saved_model = settings.value("ai/default_model","default").toString();
-    if(ui->ai_model_selector->findText(saved_model) < 0)
-        saved_model = "default";
-    ui->ai_model_selector->setCurrentText(saved_model);
+    auto model = info.model_settings.value("model").toString();
+    if(model.isEmpty() || ui->ai_model_selector->findText(model) < 0)
+        model = "default";
+    ui->ai_model_selector->setCurrentText(model);
 }
 void MainWindow::show_ai_project(const QString& session,QJsonObject added)
 {
@@ -886,7 +883,7 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
         cwd = QApplication::applicationDirPath();
 
 
-    if(!add_history && !session.isEmpty())
+    if(!session.isEmpty())
         launch.model_setting = ai_infos[session].model_settings;
 
     if(launch.model_setting.isEmpty())
@@ -896,7 +893,7 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
             ui->ai_model_selector->currentData().toJsonObject();
     }
 
-    launch.model = launch.model_setting["model"].toString();
+    launch.model = launch.model_setting["model"].toString().trimmed();
     auto model_info = launch.model_setting["info"].toObject();
     launch.profile = model_info["profile"].toString();
     launch.backend = model_info["provider"].toString();
@@ -1089,16 +1086,41 @@ void MainWindow::run_ai(const ai_launch& launch,QStringList args)
 }
 void MainWindow::start_claude_process(const ai_launch& launch)
 {
+    auto host = settings.value(
+                            "ai/ollama_host","localhost").toString().trimmed();
+    if(!host.isEmpty())
+    {
+        if(!host.contains("://"))
+            host = "http://"+host;
+        QUrl url(host);
+        url.setPort(settings.value("ai/ollama_port",11434).toInt());
+
+        auto env = QProcessEnvironment::systemEnvironment();
+        env.insert("ANTHROPIC_BASE_URL",url.toString());
+        env.insert("ANTHROPIC_AUTH_TOKEN","ollama");
+        env.insert("ANTHROPIC_API_KEY","");
+
+        if(!launch.model.isEmpty())
+            for(auto name : {"ANTHROPIC_DEFAULT_HAIKU_MODEL",
+                              "ANTHROPIC_DEFAULT_SONNET_MODEL",
+                              "ANTHROPIC_DEFAULT_OPUS_MODEL",
+                              "CLAUDE_CODE_SUBAGENT_MODEL"})
+                env.insert(name,launch.model);
+
+        launch.process->setProcessEnvironment(env);
+    }
+
     launch.process->setProperty(
         "history_size",ai_infos[launch.session].projects.size());
 
-    connect(launch.process,&QProcess::readyReadStandardOutput,launch.process,
-            [process = launch.process]
-    {
-        auto output = process->property("stdout").toByteArray()+
+    connect(launch.process,&QProcess::readyReadStandardOutput,
+            launch.process,[process = launch.process]
+            {
+                auto output = process->property("stdout").toByteArray()+
                               process->readAllStandardOutput();
-        process->setProperty("stdout",output.right(64*1024));
-    });
+                process->setProperty("stdout",output.right(64*1024));
+            });
+
     QStringList args{"-p",launch.new_session ? "--session-id" : "--resume",
                      launch.session};
     if(!launch.model.isEmpty())
@@ -1183,33 +1205,9 @@ void MainWindow::start_claude(QString session,const QString& text,bool add_histo
 }
 void MainWindow::start_ollama(QString session,const QString& text,bool add_history)
 {
-    auto host = settings.value(
-        "ai/ollama_host","localhost").toString().trimmed();
-    if(host.isEmpty())
-    {
-        QMessageBox::warning(
-            this,"AI Agent","Set the Ollama host/IP in AI Settings first.");
-        return;
-    }
     auto launch = prepare_ai(ai_provider::Ollama,session,text,add_history);
-    if(!launch.process)
-        return;
-    if(!host.contains("://"))
-        host = "http://"+host;
-    QUrl url(host);
-    url.setPort(settings.value("ai/ollama_port",11434).toInt());
-    auto env = QProcessEnvironment::systemEnvironment();
-    env.insert("ANTHROPIC_BASE_URL",url.toString());
-    env.insert("ANTHROPIC_AUTH_TOKEN","ollama");
-    env.insert("ANTHROPIC_API_KEY","");
-    if(!launch.model.isEmpty())
-        for(auto name : {"ANTHROPIC_DEFAULT_HAIKU_MODEL",
-                          "ANTHROPIC_DEFAULT_SONNET_MODEL",
-                          "ANTHROPIC_DEFAULT_OPUS_MODEL",
-                          "CLAUDE_CODE_SUBAGENT_MODEL"})
-            env.insert(name,launch.model);
-    launch.process->setProcessEnvironment(env);
-    start_claude_process(launch);
+    if(launch.process)
+        start_claude_process(launch);
 }
 void MainWindow::start_ai(QString session,const QString& text,bool add_history)
 {
@@ -1363,7 +1361,7 @@ MainWindow::MainWindow(QWidget *parent) :
 #endif
         if(!QFileInfo::exists(claude_path))
             claude_path.clear();
-        set_agent(ai_provider::Claude,claude_path,{"sonnet","opus"});
+        set_agent(ai_provider::Claude,claude_path,{});
     }
     {
         set_agent(ai_provider::Ollama,{},{});
