@@ -66,8 +66,7 @@ not launch DSI Studio:
 ```powershell
 function Invoke-Dsi($request)
 {
-    $pipe = [IO.Pipes.NamedPipeClientStream]::new(
-        '.','dsi-studio',[IO.Pipes.PipeDirection]::InOut)
+    $pipe = [IO.Pipes.NamedPipeClientStream]::new('.','dsi-studio')
     $pipe.Connect(5000)
     $utf8 = [Text.UTF8Encoding]::new($false)
     $writer = [IO.StreamWriter]::new($pipe,$utf8,1024,$true)
@@ -77,14 +76,21 @@ function Invoke-Dsi($request)
     $writer.Write($data)
     $reader = [IO.StreamReader]::new($pipe,$utf8,$false,1024,$true)
     $reply = $reader.ReadToEnd()
-    $reader.Dispose()
-    $writer.Dispose()
-    $pipe.Dispose()
+    foreach($stream in @($reader,$writer,$pipe))
+    {
+        try { $stream.Dispose() }
+        catch [IO.IOException] {}
+    }
     $reply
 }
 $DsiAgent = 'Codex'
 $DsiSession = '<initiating-chat-session-id>'
 ```
+
+The two-argument constructor works in Windows PowerShell 5.1 and defaults to a
+duplex (`InOut`) pipe. DSI Studio closes the server side after each reply, so
+an `IOException` raised only while disposing the completed streams is benign;
+the helper suppresses that cleanup error.
 
 Reuse this client and the same identity throughout the conversation. Do not
 regenerate it for every request.
@@ -241,8 +247,10 @@ Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
              request='TITLE';title='Concise task name'}
 ```
 
-Always use the numeric window ID returned by the latest `LIST`; never use a
-window type, title, filename, guessed ID, or stale ID as `window`.
+`LIST` is a top-level request and does not use a `window` field. Every `CMD`,
+including every `list_*` command, requires the numeric window ID returned by
+the latest `LIST`; never use a window type, title, filename, guessed ID, or
+stale ID as `window`.
 
 JSON fields are `agent`, `session`, `cwd`, `request`, `window`, `command`,
 `chat`, and `title`. Requests are `LIST`, `CMD`, `LOG`, `CHAT`, or
@@ -250,10 +258,10 @@ JSON fields are `agent`, `session`, `cwd`, `request`, `window`, `command`,
 command parameter as one array element.
 
 `LIST`, `LOG`, `CHAT`, and successful `TITLE` replies begin with `OKAY`.
-`CHAT` and `TITLE` return no console history. Diagnostic `LOG` returns at most
-4096 new console characters since the prior `LOG` or first request. Every
-`LOG` advances the cursor. The console is global, so concurrent agents may see
-each other's new DSI output.
+`CHAT` and `TITLE` return no console history, but either may append a queued
+`PROMPT`. Diagnostic `LOG` returns at most 4096 new console characters since
+the prior `LOG` or first request. Every `LOG` advances the cursor. The console
+is global, so concurrent agents may see each other's new DSI output.
 `[AI AGENT]` trace lines are omitted. `[AI REQUEST]` groups and closing `⏱`
 lines report synchronous DSI-side request handling, not agent runtime or
 asynchronous completion.
@@ -263,12 +271,10 @@ beginning with `[` is a JSON array of `{index,okay,output,error?}` objects.
 List-command data remains text inside each result's `output`; do not invent
 properties such as `.windows` or `.tracks`.
 
-Every `CMD`, including every `list_*` command, requires the numeric `window`
-from the latest `LIST`. Use the `main` window ID for `list_recent_fib` and
-`list_recent_src`; use a `tracking` window ID for `list_tract`.
-
-A queued user prompt may follow a text reply as `PROMPT<TAB><JSON>` or appear
-in the last command result's `prompt` property. Treat it as new user input.
+Always inspect the entire reply. A queued user prompt may follow any text reply,
+including `CHAT` or `TITLE`, as `PROMPT<TAB><JSON>`, or appear in the last
+command result's `prompt` property. An initial `OKAY` does not mean no `PROMPT`
+follows. Treat every returned prompt as new user input.
 
 ## Progress chat
 
@@ -315,8 +321,9 @@ path into fields, or substitute `add_image`. Refresh `LIST` afterward.
 1. Use a direct local named-pipe client. If it is unavailable or fails, ask
    before using an executable wrapper. Use GUI commands. **Do not use `run_cli` unless the user explicitly says to
    run the CLI.** Never infer CLI permission from a requested outcome.
-2. Call `LIST` first and after windows open or close.
-3. Use only numeric IDs returned by the latest `LIST`.
+2. Call the top-level `LIST` request first and after windows open or close; it
+   does not use a `window` field.
+3. Use only numeric IDs returned by the latest `LIST` for `CMD` requests.
 4. Discover values with `list_slice`, `list_region`, `list_tract`,
    `list_param`, `list_atlas`, `list_unet`, and `list_auto_tract`.
 5. Treat `okay:true` as acceptance. Poll the relevant list command for
@@ -342,5 +349,5 @@ path into fields, or substitute `add_image`. Refresh `LIST` afterward.
     script or tutorial unless the user asks for one.
 
 If DSI Studio resumes an agent, reconnect with the exact same agent and
-session strings. Process every returned `PROMPT` and exit naturally when none
-remains.
+session strings. Inspect every complete reply, process every returned `PROMPT`,
+and exit naturally when none remains.
