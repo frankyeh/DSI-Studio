@@ -198,7 +198,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "list_slice")
     {
-        tipl::out() << "index\tcurrent\tname\tready\trunning\tdownloaded\tregistered";
+        tipl::out() << "index\tcurrent\tname\tready\tregistering\tdownloaded\tregistered";
         for(int index = 0;index < ui->SliceModality->count();++index)
         {
             auto& slice = slices[index];
@@ -206,13 +206,13 @@ bool tracking_window::command(std::vector<std::string> cmd)
             auto source = custom ? custom->source_file_name : std::filesystem::path();
             if(tipl::begins_with(source.u8string(),"http"))
                 source = handle->fib_file_name.parent_path()/source.filename();
-            bool ready = slice->view->image_ready();
+            bool ready = !custom || slice->view->image_ready();
             bool running = custom && custom->running;
             tipl::out() << index << "\t" << (index == ui->SliceModality->currentIndex()) << "\t"
                         << ui->SliceModality->itemText(index).toStdString() << "\t"
                         << ready << "\t" << running << "\t"
                         << (!custom || std::filesystem::exists(source)) << "\t"
-                        << (!custom || (ready && !running));
+                        << (slice->is_diffusion_space || (ready && !running));
         }
         return run->succeed();
     }
@@ -965,8 +965,21 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "list_param")
     {
-        tipl::out() << cmd[1] << ": "
-                    << (*this)[cmd[1].c_str()].toString().toStdString();
+        auto params = renderWidget->treemodel->getParamList();
+        if(cmd[1].empty())
+        {
+            tipl::out() << "id";
+            for(const auto& id : params)
+                tipl::out() << id.toStdString();
+        }
+        else
+        {
+            auto id = QString::fromStdString(cmd[1]);
+            if(!params.contains(id))
+                return run->failed("invalid parameter: "+cmd[1]);
+            tipl::out() << cmd[1] << "\t"
+                        << renderWidget->getData(id).toString().toStdString();
+        }
         return run->succeed();
     }
     if(cmd[0] == "set_param" || cmd[0] == "set_params")
