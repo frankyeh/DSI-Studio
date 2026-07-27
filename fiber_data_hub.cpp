@@ -243,7 +243,16 @@ bool FiberDataHub::command(const std::vector<std::string>& cmd)
         return on_github_open_file_clicked(),true;
     if(cmd[1] == "download" && cmd.size() == 6)
     {
-        ui->download_dir->setText(QString::fromUtf8(cmd[5]));
+        QDir dir(QString::fromUtf8(cmd[5]));
+        if(!dir.exists())
+        {
+            if(!dir.mkpath("."))
+                return fail("cannot create download directory");
+            tipl::out() << "directory_created\t"
+                        << QDir::fromNativeSeparators(
+                               dir.absolutePath()).toStdString();
+        }
+        ui->download_dir->setText(dir.path());
         ui->download_overwrite->setChecked(false);
         return on_github_download_clicked(),true;
     }
