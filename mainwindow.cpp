@@ -446,7 +446,6 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
         info.project_items = item;
 
         auto* row = new QWidget;
-        item->setSizeHint(row->sizeHint());
         auto* title = new QPushButton(row);
         title->setObjectName("ai_project_title");
         title->setFlat(true);
@@ -476,6 +475,8 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
             row->setStyleSheet(row->styleSheet().isEmpty() ?
                 "background:#ffe082;border-radius:5px;" : "");
         });
+
+        item->setSizeHint(row->sizeHint());
 
         connect(title,&QPushButton::clicked,this,
                 [this,item]{ui->ai_project_list->setCurrentItem(item);});
@@ -958,9 +959,10 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
             for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
                 button->setEnabled(true);
             ui->ai_chat_input->setPlainText(text);
-            QMessageBox::warning(this,"AI Agent",
-                                 "Cannot start AI agent: "+
-                                 process->errorString());
+
+            auto message = "Cannot start AI agent: "+process->errorString();
+            ui->ai_chat_history->setPlainText(message);
+            QMessageBox::warning(this,"AI Agent",message);
         }
         else
         {
