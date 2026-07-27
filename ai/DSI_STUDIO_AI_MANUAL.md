@@ -143,6 +143,8 @@ Each following line reports a window:
 Global `busy` can be `1` while all window rows are `0` when TIPL reports work
 that cannot be reliably assigned to one window. Reuse the numeric IDs until a
 window opens or closes, but call `LIST` while waiting to obtain current activity.
+Silent `LIST` requests without `chat` are not written to AI history or console,
+so they are preferred for polling.
 
 ### CMD
 
@@ -252,9 +254,9 @@ repository and tag.
 
 `hub open` downloads the selected file to DSI Studio's temporary cache and then
 opens it. `hub download` saves the selected file to the supplied persistent
-directory and does not open it. In the current implementation, the download
-directory must already exist; create and verify it before calling
-`hub download`.
+directory and does not open it. If the directory does not exist, DSI Studio
+creates it and reports `directory_created`. A successful reply is returned only
+after the downloaded data have been written to disk.
 
 ### Brain segmentation
 
@@ -382,15 +384,18 @@ default.
   terminate the current work or tell me to proceed right away.` Do not start the
   substantial operation unless a returned `PROMPT` explicitly says to proceed
   immediately.
-- Wait without model work between checks. Poll only `LIST` after 4 seconds, then
-  8, 16, and 32 seconds; while the state remains unchanged, continue every 32
-  seconds. Reset the interval to 4 seconds when `status`, `level`, a window's
-  `busy`, or `tracking-jobs` changes.
+- Poll only `LIST` after 4 seconds. While structural state remains unchanged,
+  double the interval to 8, 16, 32, 64, 128, 256, 512, and 900 seconds, then
+  continue every 900 seconds. Reset to 4 seconds when global `busy` or `level`,
+  the status phase, any window's `busy`, or any `tracking-jobs` value changes.
+  Do not reset for changing numerical progress such as `(3/100)`.
+- Use a local sleep or timer between checks. Waiting should perform no model
+  reasoning and consume no task tokens. Silent `LIST` polls omit `chat` and are
+  not stored in AI history or console. Do not send repeated `CHAT`, call `LOG`,
+  request detailed lists, or narrate unchanged polling.
 - Inspect every complete `LIST` reply for `PROMPT`. User instructions override
-  waiting. Do not send repeated `CHAT`, call `LOG`, request detailed lists, or
-  narrate unchanged polls.
-- When global `busy` becomes `0`, continue the pending operation without another
-  status message unless the next phase itself warrants one.
+  waiting. When global `busy` becomes `0`, continue the pending operation without
+  another status message unless the next phase itself warrants one.
 
 Never automatically repeat a failed, timed-out, unavailable, or unexpected
 operation.
@@ -403,8 +408,9 @@ operation.
   replacing the session ID.
 - Retain window IDs until windows change; poll compact top-level `LIST` only
   while waiting for global or per-window activity to change.
-- During waiting, sleep between the 4/8/16/32-second checks; do not use model
-  reasoning, chat, `LOG`, or detailed discovery while state is unchanged.
+- During waiting, use silent `LIST` with exponential backoff up to 900 seconds;
+  do not use model reasoning, chat, `LOG`, or detailed discovery while state is
+  unchanged.
 - Use the `tracking-jobs` column instead of `list_tract status` when only
   completion is needed.
 - Use parameterless `list_param` once, then query only needed IDs.
