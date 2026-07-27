@@ -17,6 +17,12 @@ provider's exact resumable thread ID (for Codex, the `thread_id` from
 request-local GUID. An agent initiating a DSI connection must provide it in
 its first request; otherwise DSI Studio cannot later resume the correct chat.
 
+### Codex launched by DSI Studio
+
+DSI Studio creates the thread, then resumes it with the exact thread ID in the
+task prompt. Use that supplied value as `session` in every request; never
+replace it with a generated ID.
+
 ### Codex Desktop fallback
 
 Codex Desktop may expose a task UUID indirectly in its injected runtime context
