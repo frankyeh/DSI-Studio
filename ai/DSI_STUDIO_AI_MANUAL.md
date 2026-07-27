@@ -1,95 +1,170 @@
 # DSI Studio AI Command Manual
 
 Read `DSI_STUDIO_AI_SETUP.md` completely. Read the operating rules and common
-syntax below, then search this manual only for commands needed by the request;
-do not read the entire inventory.
+syntax below, then search this manual only for commands needed by the request.
+Do not reread the entire file for each action.
 
 ## Operating rules
 
 - Each named-pipe connection sends exactly one request and then closes.
-- Use a native local client for `\\\\.\\pipe\\dsi-studio` first. Do not run
-  `dsi_agent.ps1`, `dsi_studio.exe`, or another wrapper merely because it is
-  available. If direct access is unavailable or fails, report the condition
-  and ask before using a wrapper.
-- Send separate non-empty `agent` and `session` strings and reuse the exact
-  pair. `agent` must include `Codex` or `Claude` and must not contain `@`.
-  `session` is the unique conversation key; the agent name is stored
-  separately, and `agent@session` is only a display/wrapper form. Use the
-  agent's exact resumable initiating-chat UUID (Codex:
-  `thread.started.thread_id`), never a friendly label.
-- Ollama is only a Claude Code model provider. It uses the configured local
-  endpoint and Claude's resumable session ID.
-- For a new Codex chat launched by DSI Studio, its task prompt supplies the
-  exact session value. Use it in every request; never invent a substitute.
-- For an externally initiated Codex Desktop chat, a task UUID may be visible
-  in injected runtime context or a task-specific path. Use it only when
-  explicitly present; never guess or generate a session ID.
-- For Claude Code, always read `~/.claude/sessions/<pid>.json` and use its
-  `sessionId` field—not `name`—as the DSI Studio session. DSI Studio resumes
-  it with `claude -p --resume <sessionId>`.
-- After understanding the initiating prompt, give the chat a concise,
-  descriptive name with `TITLE`. Send another `TITLE` later only when the user
-  allows renaming.
-- Every `CMD`, including `list_*`, requires a numeric `window` from the latest
-  `LIST`.
-- Use `LIST` to obtain fresh windows, then target only its numeric window ID.
-  Never send `main`, `tracking`, `image`, a title, or a filename as `window`.
+- Send JSON for every AI request. Raw non-JSON text is reserved for one existing
+  local file path. If DSI Studio rejects direct text, reread this manual and
+  resend a valid JSON request.
+- Use a native client for `\\.\pipe\dsi-studio` first. Do not use
+  `dsi_agent.ps1`, `dsi_studio.exe`, or another wrapper unless direct access is
+  unavailable or fails and the user approves the fallback.
+- Send separate non-empty `agent` and `session` fields and reuse the exact pair.
+  `agent` must include `Codex` or `Claude` and must not contain `@`.
+- For a new Codex chat launched by DSI Studio, process the initiating task in
+  the first run. There is no bootstrap run and DSI Studio does not launch the
+  same task twice. Use `CODEX_THREAD_ID` as `session` immediately; do not wait
+  for a second launch or generate another ID.
+- DSI Studio also reads `thread.started.thread_id` to store and later resume the
+  same Codex thread with `codex exec resume`.
+- For an externally initiated Codex Desktop chat, use a task UUID only when it
+  is explicitly present in runtime context. Never guess or scan for one.
+- For Claude Code, read `~/.claude/sessions/<pid>.json` and use `sessionId`, not
+  `name`. DSI Studio resumes it with `claude -p --resume <sessionId>`.
+- Ollama is a model provider, not an agent identity.
+- After understanding the initiating prompt, send one concise `TITLE`. Send a
+  later `TITLE` only when the user permits renaming.
+- Call top-level `LIST` first. It does not use a window ID.
+- Every `CMD`, including every `list_*` command, requires a numeric `window`
+  returned by the latest `LIST`. Never use a type, title, filename, guessed ID,
+  or stale ID.
+- Use GUI commands. Do not use `run_cli` unless the user explicitly requests
+  CLI execution.
+- Discover names, indices, and parameter IDs before mutation. Never guess them.
+- `okay:true` means the handler accepted the command; asynchronous work may
+  still be running.
+- Poll the relevant list command after an asynchronous operation. Use `LOG`
+  only for failures or states that targeted discovery cannot explain.
 - If a required window disappears or returns `window not found`, assume the
-  user closed it. Do not check, reopen, or retry it. Stop work and send one
-  `CHAT` asking the user whether to continue or stop; resume only after
-  their reply.
-- Poll an accepted asynchronous operation. If a response says it is loading,
-  first send `CHAT` stating that waiting will continue and the user can
-  interrupt, then check every 3 seconds unless interrupted; process every
-  reply. Loading will usually finish. Never automatically repeat a failed,
-  timed-out, unavailable, or unexpected request.
-- In DSI Studio, FIB means `.fz`; never substitute `.sz`, which is an SRC file.
-- Use GUI control. **Do not use `run_cli` unless the user explicitly says to
-  run the CLI.** Never infer CLI permission from a requested outcome.
-- Commands and every parameter are JSON strings. Never guess names or indices.
-- Attach a brief intent/status `chat` to an already-needed request at task
-  start and meaningful phase changes. Activity shows what ran; chat tells the
-  user why. Do not send repetitive updates or status-only requests.
-- Use list commands before mutation and after completion.
-- `okay:true` means the handler accepted the command, not necessarily that
-  asynchronous work finished.
+  user closed it. Do not reopen or retry it. Ask whether to continue.
 - Confirm destructive actions and overwrites. Verify every output file.
-- Do not use TumorSynth until its current model bug is fixed.
-- Native structural images align reliably with native-space GQI `.fz` data.
+- Do not answer modal dialogs remotely; tell the user what action is required.
+- Attach concise progress `chat` to an already-needed request. Avoid separate
+  status-only requests except for a required decision, blocked/waiting state,
+  or the final reply.
+- Inspect every complete reply. A queued `PROMPT` may follow `LIST`, `LOG`,
+  `CHAT`, `TITLE`, or appear in the last `CMD` result.
 
 ## Discovery
 
 | Need | Command |
 |---|---|
-| Windows | JSON `LIST` request |
-| Recent FIB (`.fz`) files | Main: `list_recent_fib` |
-| Recent SRC (`.sz`) files | Main: `list_recent_src` |
-| Slices | `list_slice` |
-| Regions and ROI/ROA type, color, resolution | `list_region` |
-| Tracts and visible/deleted counts | Tracking: `list_tract` |
-| One GUI parameter | `list_param`, exact parameter ID |
-| Atlases | `list_atlas` |
-| Segmentation models and descriptions | `list_unet` |
-| Automatic tract names | `list_auto_tract` |
-| Console/errors | JSON `LOG` request |
+| Windows | Top-level JSON `LIST` |
+| Recent FIB files | Main: `list_recent_fib` |
+| Recent SRC files | Main: `list_recent_src` |
+| Slices/readiness/registration | Tracking: `list_slice` |
+| Regions | Tracking: `list_region` |
+| Full tract details | Tracking: `list_tract` |
+| Compact tract polling | Tracking: `list_tract status` |
+| Valid parameter IDs | Tracking: `list_param` |
+| One parameter value | Tracking: `list_param <id>` |
+| Atlases | Tracking: `list_atlas` |
+| Segmentation models | Tracking: `list_unet` |
+| Automatic tract names | Tracking: `list_auto_tract` |
+| Incremental diagnostics | Top-level JSON `LOG` |
+
+`list_slice` fields are:
+
+```text
+index current name ready registering downloaded registered
+```
+
+Built-in/native volumes report `ready=1`. For custom volumes,
+`registering=1` means registration is still running; `registered=0` does not
+mean the image is broken.
+
+`list_tract status` returns only:
+
+```text
+running bundles
+```
+
+Use it while tracking is active. Request full `list_tract` after completion
+only when bundle details are needed.
+
+`list_param` without an ID lists all valid IDs. Query only needed values after
+that discovery call.
+
+## Request formats
+
+### LIST
+
+```json
+{"agent":"Codex","session":"<uuid>","cwd":"<path>","request":"LIST"}
+```
+
+### CMD
+
+A single command:
+
+```json
+{"agent":"Codex","session":"<uuid>","request":"CMD","window":"2","command":["list_region"]}
+```
+
+A safe same-window batch:
+
+```json
+{"agent":"Codex","session":"<uuid>","request":"CMD","window":"2","command":[["list_param"],["list_slice"]]}
+```
+
+Do not batch destructive, asynchronous, output-dependent, or modal-opening
+commands.
+
+### LOG
+
+```json
+{"agent":"Codex","session":"<uuid>","request":"LOG"}
+```
+
+`LOG` returns at most 4096 new console characters and advances the session's
+cursor. AI-facing `LOG` and `CMD` text has ANSI escape sequences removed.
+
+### CHAT
+
+```json
+{"agent":"Codex","session":"<uuid>","request":"CHAT","chat":"Task completed."}
+```
+
+Send the final answer once with `CHAT`.
+
+### TITLE
+
+```json
+{"agent":"Codex","session":"<uuid>","request":"TITLE","title":"Concise task name"}
+```
+
+Another `TITLE` replaces the current title. Send it later only when the user
+permits renaming.
+
+### Open one local file
+
+Send one absolute path as raw pipe text. Raw text is accepted only when it
+resolves to an existing file.
 
 ## Reply formats
 
-- `LIST`, `LOG`, `CHAT`, `TITLE`, filename-open replies, and validation errors
-  are text.
-- `CHAT` adds user-facing chat and returns `OKAY` without console history.
-- `TITLE` returns `OKAY`, or `ERROR` for an empty or unsavable title.
-- `LIST` lines are `type<TAB>numeric-id<TAB>title`; there is no `.windows`
-  property.
-- A `CMD` reply beginning with `[` is a JSON array of
-  `{index,okay,output,error?}`. The direct client returns raw output; parse
-  only that reply as JSON when needed.
-- List-command results remain tab-separated text in `result[0].output`; there
-  are no `.tracks`, `.regions`, or similar properties.
+- `LIST`, `LOG`, `CHAT`, `TITLE`, file-open replies, and validation errors are
+  text.
+- `LIST` begins with `OKAY`; following lines are
+  `type<TAB>numeric-id<TAB>title`.
+- A `CMD` reply is a JSON array of
+  `{index,okay,output,error?}` objects.
+- List-command data remains tab-separated text inside `output`; do not invent
+  properties such as `.windows`, `.tracks`, or `.regions`.
+- `CHAT` and `TITLE` return no console history, but either may append a queued
+  `PROMPT` after `OKAY`.
+- `CMD` may attach `prompt` to its last result object.
+- Paths returned by `LIST`, `list_recent_fib`, and `list_recent_src` use `/` as
+  the canonical separator. Windows accepts these paths; compare them without
+  converting back to `\`.
 
-## Common syntax
+## Common command syntax
 
-Parameters shown below are separate JSON array elements.
+Every command and parameter is a separate JSON string.
 
 | Task | Command array |
 |---|---|
@@ -98,421 +173,89 @@ Parameters shown below are separate JSON array elements.
 | Hub files | `["hub","files",repo,tag,filter,offset,limit]` |
 | Open Hub file | `["hub","open",repo,tag,file]` |
 | Download Hub file | `["hub","download",repo,tag,file,directory]` |
-| Open local images together | Main only: one flat `["open_image",full-path1,full-path2,...]` |
-| Run CLI action—explicit user request only | `["run_cli","--action=rec --loop=C:\\data\\*.sz --method=4"]` |
-| Select slice | `["set_slice",zero-based-index]` |
+| Open images together | Main: `["open_image",path1,path2,...]` |
+| Select slice | `["set_slice",index]` |
+| Select slice by name | `["set_slice_by_name",name]` |
 | Move slices | `["move_slice","x y z"]` |
-| Segment a slice | `["segment_brain",exact-model,exact-slice]` |
-| Add atlas region | `["add_region_from_atlas",exact-region]` |
-| Set region metadata | `["set_region_name",index,name]`, `set_region_type`, `set_region_color` |
+| Segment a slice | `["segment_brain",model,slice]` |
+| Add atlas region | `["add_region_from_atlas",region]` |
+| Set region name | `["set_region_name",index,name]` |
+| Set region type | `["set_region_type",index,type]` |
+| Set region color | `["set_region_color",index,color]` |
 | Show only regions | `["show_only_regions","0&2&5"]` |
 | Show only tracts | `["show_only_tracts","0&2&5"]` |
-| Set parameter | `["set_param",parameter-id,value]` |
+| List parameter IDs | `["list_param"]` |
+| Read parameter | `["list_param",id]` |
+| Set parameter | `["set_param",id,value]` |
 | Set parameters | `["set_params","id=value&id=value"]` |
 | Start tracking | `["run_tracking",name,optional-settings-or-ROI,optional-tolerance]` |
-| Automatic tracking | `["run_auto_track",exact-tract-name,optional-ROI]` |
+| Compact tracking poll | `["list_tract","status"]` |
+| Automatic tracking | `["run_auto_track",tract,optional-ROI]` |
 | Rotate 3D view | `["rotate","degrees x y z"]` |
 | Save rendering | `["save_hd_screen",path,"width height"]` |
+| Run CLI, explicit request only | `["run_cli","--action=rec --loop=C:\\data\\*.sz --method=4"]` |
 
-`TITLE` is a JSON request, not a window command:
+## File and window workflows
 
-```json
-{"agent":"Codex","session":"<uuid>","cwd":"<path>","request":"TITLE","title":"Concise task name"}
-```
+To open one `.fz`, `.sz`, or image when only the main window exists, send its
+absolute path as raw pipe text, then call `LIST` to obtain the new numeric
+window ID. `open_fib` requires an existing tracking window and cannot create
+the first one.
 
-Another `TITLE` replaces the current name; send it only after the user permits
-renaming.
+In DSI Studio, FIB means `.fz`; `.sz` is an SRC file.
 
-`hub open` may download before opening; poll `LIST`. To open a local file when
-only the main window exists, send its absolute path as raw text through the
-same direct named-pipe client, then poll `LIST`. Do not send the path as a
-main-window `CMD`; `open_fib` requires an existing tracking window.
+To open multiple images in one image window, send one flat `open_image` command
+to the numeric main-window ID. Do not send separate commands, target an image
+window, split a path into fields, or substitute `add_image`.
 
-Most Hub FIB (`.fz`) files already contain an HTTP reference to their native
-T1w slice. After opening the FIB, use `list_slice`, then `set_slice` to that
-T1w entry; DSI Studio downloads and loads it automatically. Do not separately
-find or `hub download` the T1w file.
+After a window opens or closes, refresh `LIST`. Otherwise reuse the latest
+window IDs.
 
-For multiple images, send **exactly one flat `open_image` command** to the
-**main window**. Each complete absolute filepath is one array element. The
-first image is displayed and the remaining paths are retained for batch
-processing:
+Most Hub FIB files contain an HTTP reference to their native T1w. After opening
+the FIB, use `list_slice`, then select the returned T1w entry. DSI Studio will
+download and load it automatically.
 
-```text
-["open_image","C:\\data\\t1w1.nii.gz","C:\\data\\t1w2.nii.gz","C:\\data\\t1w3.nii.gz"]
-```
+## Asynchronous work
 
-Never send three separate `open_image` commands or a batch such as
-`[["open_image",file1],["open_image",file2],["open_image",file3]]`. Never
-target an `image` window, split `C:\data\` and `file.nii.gz` into separate
-fields, or substitute `add_image`. `add_image` modifies the current image but
-does not populate the retained file list, so the later save prompt will not
-appear.
+Tracking is asynchronous. Use `list_tract status` until `running=0`, then call
+full `list_tract` only when details are needed.
 
-Refresh `LIST`, target the new `image` window, and send processing commands
-such as `["smoothing_filter"]`. Saving over the first original with
-`["save","C:\\data\\t1w1.nii.gz"]` opens the existing confirmation:
-`Applying processing to other images and save them?`
+Segmentation is complete when `list_region` shows the expected output.
 
-This is a human-confirmed destructive workflow. Obtain overwrite permission
-before `save`, do not answer the modal remotely, and do not batch `save` with
-other commands. If the user selects **Yes**, DSI Studio replays smoothing and
-saving for the remaining files, mapping each output to its original filename.
-If the user selects **No**, only the first image is saved. Verify all expected
-files after the dialog closes.
+Slice loading/registration is complete when `list_slice` reports the expected
+`ready`, `registering`, and `registered` state.
 
-Do not use `run_cli` unless the user explicitly requested CLI execution.
-When explicitly authorized, it takes one complete DSI Studio argument string,
-requires `--action`, and is not a shell. Prefer one wildcard loop over repeated
-commands:
+If a response says loading is in progress, attach one concise waiting update to
+the next required request and poll the relevant list command. Never repeat a
+failed, timed-out, unavailable, or unexpected operation automatically.
 
-```text
-["run_cli","--action=rec --loop=C:\\data\\*.sz --method=4"]
-```
+## Token efficiency
 
-Use an absolute wildcard unless DSI Studio's current directory is the data
-directory; there `--loop=*.sz` is sufficient. Wildcards in other CLI arguments
-are expanded for each matched loop file. Verify all expected outputs.
+- Process a new Codex task in its first run. Never create or wait for a bootstrap
+  run.
+- Use `CODEX_THREAD_ID` immediately instead of spending requests discovering or
+  replacing the session ID.
+- Reuse `LIST` until windows change.
+- Use parameterless `list_param` once, then query only needed IDs.
+- Poll with `list_tract status`, not full `list_tract`.
+- Poll targeted state rather than `LOG`.
+- Batch safe independent synchronous commands for one window.
+- Attach progress chat to an existing request.
+- Send `cwd` once and omit it until it changes.
+- Reuse discovered names and indices until relevant state changes.
+- Stop after verification and one final `CHAT`.
 
-With `segment_brain`, use exact values returned by `list_unet` and
-`list_slice`. Use ampersand-joined indices for `show_only_regions` and
-`show_only_tracts`. Region types are `0=ROI`, `1=ROA`, `2=End`, `3=Seed`,
-`4=Terminative`, `5=NotEnd`, and `6=Limiting`; colors are unsigned packed Qt
-ARGB integers.
+## Safety and verification
 
-Tracking is asynchronous. Poll `list_tract` until `running=0`. Segmentation is
-complete when `list_region` shows the expected output. For rendering/export,
-verify the created file and inspect it when possible.
+Region types are `0=ROI`, `1=ROA`, `2=End`, `3=Seed`, `4=Terminative`,
+`5=NotEnd`, and `6=Limiting`. Colors are unsigned packed Qt ARGB integers.
 
-Minimize round trips: use one initial `LIST`, batch independent synchronous
-commands for one window, verify concisely, and send the final reply with
-`CHAT`. Use `LOG` only for incremental diagnostics because it returns console
-history and advances the agent's cursor.
-`[AI REQUEST] ... ⏱` reports synchronous DSI-side request handling time, not
-agent runtime or asynchronous completion.
+Do not use TumorSynth until its current model bug is fixed.
 
-## Command inventory
+Obtain permission before overwriting files. Do not answer confirmation dialogs
+remotely. Verify expected output paths, files, tract bundles, regions, and
+renderings after completion.
 
-`Parameters` is the number of fields after the command name. Dynamic commands
-and GUI-dependent parameters should be discovered with the list commands
-above. `Destructive` commands require confirmation unless the user's request
-already grants it.
-
-| Scope | Command | Parameters | Risk | Completion |
-|---|---|---:|---|---|
-| `atlas` | `add_region_from_atlas` | `1` | Computation | Synchronous extraction; verify `list_region`. |
-| `atlas` | `list_atlas` | `0` | Read-only | Immediate list. |
-| `auto` | `enable_auto_tract` | `0` | Computation | Synchronous atlas load. |
-| `auto` | `list_auto_tract` | `0` | Read-only | Synchronous list. |
-| `auto` | `run_auto_track` | `1-2` | Computation | Asynchronous; `"okay":true` means started only. |
-| `auto` | `run_tracking` | `1-3` | Computation | Asynchronous; poll `list_tract` until `running=0` and inspect `LOG`. |
-| `device` | `copy_device` | `0-1` | GUI-state change | Immediate. |
-| `device` | `delete_all_devices` | `0` | Destructive | Immediate. |
-| `device` | `delete_device` | `0-1` | Destructive | Immediate. |
-| `device` | `move_device` | `1-2` | GUI-state change | Immediate. |
-| `device` | `new_device` | `0-1` | GUI-state change | Immediate; anisotropic data may open a modal warning. |
-| `device` | `pull_device` | `0-1` | GUI-state change | Immediate. |
-| `device` | `push_device` | `0-1` | GUI-state change | Immediate. |
-| `device` | `save_all_devices` | `1` | File creation | Synchronous; verify output. |
-| `device` | `set_acpc` | `0` | Computation | Synchronous mapping; requires MNI mapping. |
-| `image-core` | `brain_extraction` | `1` | Computation | Synchronous download/inference; likely to exceed timeout. |
-| `image-core` | `change_type` | `1` | Computation | Synchronous. |
-| `image-core` | `deface` | `1` | Computation | Synchronous download/inference; likely to exceed timeout. |
-| `image-core` | `save` | `1` | File creation | Synchronous for one image; a multi-file session may open an apply-to-other-images modal. |
-| `image-core` | `save_mini` | `1` | File creation | Synchronous; only meaningful for a MAT/FIB/SRC-backed image. |
-| `image-core` | `segmentation` | `1` | Computation | Synchronous download/inference; likely to exceed timeout. |
-| `image-mat` | `mat_add_float` | `1` | Destructive | Synchronous. |
-| `image-mat` | `mat_add_int` | `1` | Destructive | Synchronous. |
-| `image-mat` | `mat_add_int64` | `1` | Destructive | Synchronous. |
-| `image-mat` | `mat_add_short` | `1` | Destructive | Synchronous. |
-| `image-mat` | `mat_add_string` | `1` | Destructive | Synchronous. |
-| `image-mat` | `mat_remove` | `1` | Destructive | Synchronous. |
-| `image-mat` | `mat_resize` | `1` | Destructive | Synchronous. |
-| `image-mat` | `mat_set_name` | `1` | Destructive | Synchronous. |
-| `image-mat` | `mat_set_value` | `1` | Destructive | Synchronous. |
-| `image-transform` | `add_image` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `add_value` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `apply_to_image` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `bias_field_correction` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `concatenate_image` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `crop_to_fit` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `downsampling` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `equation` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `flip_x` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `flip_y` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `flip_z` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `gaussian_filter` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `header_flip_x` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `header_flip_y` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `header_flip_z` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `header_swap_xy` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `header_swap_xz` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `header_swap_yz` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `histogram_sharpening` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `lower_threshold` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `max_image` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `mean_filter` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `min_image` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `minus_image` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `morphology_closing` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `morphology_defragment` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `morphology_defragment_by_size` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `morphology_dilation` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `morphology_edge` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `morphology_edge_xy` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `morphology_edge_xz` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `morphology_erosion` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `morphology_fill_holes` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `morphology_fill_holes_by_slice` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `morphology_negate` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `morphology_opening` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `morphology_smoothing` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `multiply_image` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `multiply_value` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `normalize` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `normalize_otsu_median` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `otsu_threshold` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `refine_label` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `regrid` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `reshape` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `resize` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `resize_at_center` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `rotate_to_image` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `select_value` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `set_mni` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `set_transformation` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `set_translocation` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `smoothing_filter` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `sobel_filter` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `swap_xy` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `swap_xz` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `swap_yz` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `threshold` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `transform` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `translocate` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `upper_threshold` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `upsampling` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `image-transform` | `warp_to_image` | `0-1` | Computation | Synchronous; registration/filtering may exceed timeout. |
-| `main` | `list_recent_fib` | `0` | Read-only | Immediate `.fz` list. |
-| `main` | `list_recent_src` | `0` | Read-only | Immediate `.sz` list. |
-| `main` | `open_image` | `1+` | GUI-state change | Main-window only; send one flat command containing all complete paths. |
-| `main` | `run_cli` | `1` | Explicit CLI request only | Synchronous CLI action on GUI thread; verify outputs. |
-| `main` | `hub download` | `4` | File creation | Deferred file write; verify path and stable size. |
-| `main` | `hub files` | `2-5` | GUI-state change | If loading, send `CHAT`, then check every 3 seconds. |
-| `main` | `hub help` | `0` | Read-only | Immediate. |
-| `main` | `hub open` | `3` | File creation | Deferred: handler may schedule the open after a successful result; poll with JSON `LIST`. |
-| `main` | `hub repos` | `0` | GUI-state change | If loading, send `CHAT`, then check every 3 seconds. |
-| `main` | `hub tags` | `1` | GUI-state change | If loading, send `CHAT`, then check every 3 seconds. |
-| `parameters` | `list_param` | `1` | Read-only | Immediate. |
-| `parameters` | `set_param` | `2` | GUI-state change | Immediate state mutation. |
-| `parameters` | `set_params` | `1` | GUI-state change | Applies multiple values, then requests one redraw. |
-| `region-action` | `region_action_1st_ex_all` | `1` | Destructive | Synchronous; refresh `list_region`. |
-| `region-action` | `region_action_all_ex_1st` | `1` | Destructive | Synchronous; refresh `list_region`. |
-| `region-action` | `region_action_all_inter_1st` | `1` | Destructive | Synchronous; refresh `list_region`. |
-| `region-action` | `region_action_all_to_1st` | `1` | Destructive | Synchronous; refresh `list_region`. |
-| `region-action` | `region_action_closing` | `0-1` | Destructive | Synchronous. |
-| `region-action` | `region_action_defragment` | `0-1` | Destructive | Synchronous. |
-| `region-action` | `region_action_dilation` | `0-1` | Destructive | Synchronous. |
-| `region-action` | `region_action_dilation_by_threshold` | `2` | Destructive | Synchronous computation. |
-| `region-action` | `region_action_dilation_by_voxel` | `2` | Destructive | Synchronous computation. |
-| `region-action` | `region_action_erosion` | `0-1` | Destructive | Synchronous. |
-| `region-action` | `region_action_erosion_by_threshold` | `2` | Destructive | Synchronous computation. |
-| `region-action` | `region_action_flipx` | `0-1` | Destructive | Synchronous. |
-| `region-action` | `region_action_flipy` | `0-1` | Destructive | Synchronous. |
-| `region-action` | `region_action_flipz` | `0-1` | Destructive | Synchronous. |
-| `region-action` | `region_action_negate` | `0-1` | Destructive | Synchronous. |
-| `region-action` | `region_action_opening` | `0-1` | Destructive | Synchronous. |
-| `region-action` | `region_action_refine_all` | `1` | Destructive | Synchronous; refresh `list_region`. |
-| `region-action` | `region_action_separate` | `1` | Destructive | Synchronous; refresh `list_region`. |
-| `region-action` | `region_action_shiftnx` | `0-1` | Destructive | Synchronous. |
-| `region-action` | `region_action_shiftny` | `0-1` | Destructive | Synchronous. |
-| `region-action` | `region_action_shiftnz` | `0-1` | Destructive | Synchronous. |
-| `region-action` | `region_action_shiftx` | `0-1` | Destructive | Synchronous. |
-| `region-action` | `region_action_shifty` | `0-1` | Destructive | Synchronous. |
-| `region-action` | `region_action_shiftz` | `0-1` | Destructive | Synchronous. |
-| `region-action` | `region_action_smoothing` | `0-1` | Destructive | Synchronous. |
-| `region-action` | `region_action_sort_name` | `1` | GUI-state change | Synchronous; refresh `list_region`. |
-| `region-action` | `region_action_sort_size` | `1` | GUI-state change | Synchronous; refresh `list_region`. |
-| `region-action` | `region_action_sort_x` | `1` | GUI-state change | Synchronous; refresh `list_region`. |
-| `region-action` | `region_action_sort_y` | `1` | GUI-state change | Synchronous; refresh `list_region`. |
-| `region-action` | `region_action_sort_z` | `1` | GUI-state change | Synchronous; refresh `list_region`. |
-| `region-action` | `region_action_threshold` | `2` | Destructive | Synchronous computation. |
-| `region-action` | `region_action_threshold_current` | `2` | Destructive | Synchronous computation. |
-| `region-create` | `list_region` | `0` | Read-only | Immediate. |
-| `region-create` | `new_region` | `0` | GUI-state change | Immediate. |
-| `region-create` | `new_region_from_mni` | `1` | Computation | Synchronous. |
-| `region-create` | `new_region_from_sphere` | `1` | Computation | Synchronous. |
-| `region-create` | `new_region_from_threshold` | `1` | Computation | Synchronous computation. |
-| `region-create` | `new_region_whole_brain_seed` | `0-1` | Computation | Synchronous computation. |
-| `region-io` | `load_region_color` | `1` | GUI-state change | Synchronous; verify save output. |
-| `region-io` | `open_mni_region` | `1` | GUI-state change | Synchronous file load. |
-| `region-io` | `open_region` | `1` | GUI-state change | Synchronous file load. |
-| `region-io` | `save_4d_region` | `1` | File creation | Synchronous; verify outputs. |
-| `region-io` | `save_all_regions` | `1` | File creation | Synchronous; verify outputs. |
-| `region-io` | `save_all_regions_to_folder` | `1` | File creation | Synchronous; verify outputs. |
-| `region-io` | `save_region` | `1-2` | File creation | Synchronous; verify output. |
-| `region-io` | `save_region_color` | `1` | File creation | Synchronous; verify save output. |
-| `region-io` | `save_region_info` | `1-2` | File creation | Synchronous; verify output. |
-| `region-manage` | `check_all_regions` | `0` | GUI-state change | Immediate. |
-| `region-manage` | `check_region` | `1-2` | GUI-state change | Immediate; refresh `list_region`. |
-| `region-manage` | `show_only_regions` | `1` | GUI-state change | Immediate exact visibility selection; refresh `list_region`. |
-| `region-manage` | `copy_region` | `0-1` | GUI-state change | Immediate; refresh list. |
-| `region-manage` | `delete_all_regions` | `0` | Destructive | Immediate. |
-| `region-manage` | `delete_region` | `0-1` | Destructive | Immediate. |
-| `region-manage` | `merge_regions` | `0-1` | Destructive | Synchronous. |
-| `region-manage` | `move_down_region` | `1` | GUI-state change | Immediate; refresh `list_region`. |
-| `region-manage` | `move_region` | `1-2` | GUI-state change | Immediate. |
-| `region-manage` | `move_slice_to_region` | `0-1` | GUI-state change | Immediate. |
-| `region-manage` | `move_up_region` | `1` | GUI-state change | Immediate; refresh `list_region`. |
-| `region-manage` | `set_region_color` | `2` | GUI-state change | Immediate indexed unsigned ARGB update; refresh `list_region`. |
-| `region-manage` | `set_region_name` | `2` | GUI-state change | Immediate; refresh `list_region`. |
-| `region-manage` | `set_region_type` | `2` | GUI-state change | Immediate; refresh `list_region`. |
-| `region-manage` | `uncheck_all_regions` | `0` | GUI-state change | Immediate. |
-| `region-stats` | `save_device_statistics` | `0-1` | File creation | Synchronous computation; verify file when path supplied. |
-| `region-stats` | `save_region_statistics` | `0-1` | File creation | Synchronous computation; verify file when path supplied. |
-| `region-stats` | `save_t2r` | `0-1` | File creation | Synchronous computation; verify file when path supplied. |
-| `region-stats` | `save_tract_recognition` | `0-2` | File creation | Synchronous computation; verify file when path supplied. |
-| `region-stats` | `save_tract_statistics` | `0-2` | File creation | Synchronous computation; verify file when path supplied. |
-| `region-stats` | `show_device_statistics` | `0-1` | Computation | Synchronous computation; verify file when path supplied. |
-| `region-stats` | `show_region_statistics` | `0-1` | Computation | Synchronous computation; verify file when path supplied. |
-| `region-stats` | `show_t2r` | `0-1` | Computation | Synchronous computation; verify file when path supplied. |
-| `region-stats` | `show_tract_recognition` | `0-2` | Computation | Synchronous computation; verify file when path supplied. |
-| `region-stats` | `show_tract_statistics` | `0-2` | Computation | Synchronous computation; verify file when path supplied. |
-| `render` | `open_camera` | `1` | GUI-state change | Immediate redraw. |
-| `render` | `restore_camera1` | `0` | GUI-state change | Immediate redraw. |
-| `render` | `restore_camera2` | `0` | GUI-state change | Immediate redraw. |
-| `render` | `restore_camera3` | `0` | GUI-state change | Immediate redraw. |
-| `render` | `restore_camera4` | `0` | GUI-state change | Immediate redraw. |
-| `render` | `rotate` | `1` | GUI-state change | Immediate redraw. |
-| `render` | `save_3view_screen` | `1` | File creation | Synchronous; verify image. |
-| `render` | `save_camera` | `1` | File creation | Synchronous; verify output. |
-| `render` | `save_h3view_screen` | `1` | File creation | Synchronous; verify image. |
-| `render` | `save_hd_screen` | `2` | File creation | Synchronous; verify image dimensions. |
-| `render` | `save_rotation_video` | `1` | File creation | Broken; never use as proof of file creation. |
-| `render` | `save_screen` | `1` | File creation | Synchronous; verify image. |
-| `render` | `save_v3view_screen` | `1` | File creation | Synchronous; verify image. |
-| `render` | `set_camera` | `1` | GUI-state change | Immediate redraw. |
-| `render` | `set_stereoscopic` | `0` | GUI-state change | Immediate redraw. |
-| `render` | `set_view` | `1` | GUI-state change | Immediate redraw. |
-| `render` | `set_zoom` | `1` | GUI-state change | Immediate redraw. |
-| `render` | `store_camera1` | `0` | GUI-state change | State is stored immediately, but the modal must be dismissed. |
-| `render` | `store_camera2` | `0` | GUI-state change | State is stored immediately, but the modal must be dismissed. |
-| `render` | `store_camera3` | `0` | GUI-state change | State is stored immediately, but the modal must be dismissed. |
-| `render` | `store_camera4` | `0` | GUI-state change | State is stored immediately, but the modal must be dismissed. |
-| `slice` | `add_mni_slice` | `1` | Computation | Load may start asynchronous registration; poll `list_slice` and `LOG`. |
-| `slice` | `add_slice` | `1` | Computation | Load may start asynchronous registration; poll `list_slice` and `LOG`. |
-| `slice` | `delete_slice` | `0-1` | Destructive | Immediate. |
-| `slice` | `enable_slice` | `0-1` | GUI-state change | Immediate redraw. |
-| `slice` | `list_slice` | `0` | Read-only | Immediate. |
-| `slice` | `move_slice` | `0-1` | GUI-state change | Immediate redraw. |
-| `slice` | `open_slice_mapping` | `1-2` | GUI-state change | Synchronous; verify file for save commands. |
-| `slice` | `save_roi_screen` | `1` | File creation | Synchronous; verify output. |
-| `slice` | `save_slice_image` | `2` | File creation | Synchronous; verify output. |
-| `slice` | `save_slice_mapping` | `1-2` | File creation | Synchronous; verify file for save commands. |
-| `slice` | `save_slice_mni_image` | `2` | File creation | Synchronous; verify output. |
-| `slice` | `save_slice_volume` | `1-2` | File creation | Synchronous; verify file for save commands. |
-| `slice` | `set_roi_view` | `1` | GUI-state change | Immediate; an invalid integer silently changes nothing. |
-| `slice` | `set_slice` | `0-1` | GUI-state change | Selection is immediate; derived data may remain asynchronous. |
-| `slice` | `set_slice_by_name` | `1` | GUI-state change | Immediate. |
-| `slice` | `set_slice_contrast` | `0-2` | GUI-state change | Immediate redraw. |
-| `slice` | `set_slice_dir_color` | `0-2` | GUI-state change | Immediate redraw. |
-| `slice` | `set_slice_overlay` | `0-2` | GUI-state change | Immediate redraw. |
-| `slice` | `set_slice_stay` | `0-2` | GUI-state change | Immediate redraw. |
-| `slice` | `skull_strip_slice` | `0-1` | Computation | Synchronous computation; may time out. |
-| `surface` | `add_surface` | `0-2` | Computation | Synchronous computation; may exceed client timeout. |
-| `surface` | `add_surface_anterior` | `0-2` | Computation | Synchronous computation; may exceed client timeout. |
-| `surface` | `add_surface_anterior_lower` | `0-2` | Computation | Synchronous computation; may exceed client timeout. |
-| `surface` | `add_surface_left` | `0-2` | Computation | Synchronous computation; may exceed client timeout. |
-| `surface` | `add_surface_left_anterior_lower` | `0-2` | Computation | Synchronous computation; may exceed client timeout. |
-| `surface` | `add_surface_left_lower` | `0-2` | Computation | Synchronous computation; may exceed client timeout. |
-| `surface` | `add_surface_left_posterior_lower` | `0-2` | Computation | Synchronous computation; may exceed client timeout. |
-| `surface` | `add_surface_lower` | `0-2` | Computation | Synchronous computation; may exceed client timeout. |
-| `surface` | `add_surface_posterior` | `0-2` | Computation | Synchronous computation; may exceed client timeout. |
-| `surface` | `add_surface_posterior_lower` | `0-2` | Computation | Synchronous computation; may exceed client timeout. |
-| `surface` | `add_surface_right` | `0-2` | Computation | Synchronous computation; may exceed client timeout. |
-| `surface` | `add_surface_right_anterior_lower` | `0-2` | Computation | Synchronous computation; may exceed client timeout. |
-| `surface` | `add_surface_right_lower` | `0-2` | Computation | Synchronous computation; may exceed client timeout. |
-| `surface` | `add_surface_upper` | `0-2` | Computation | Synchronous computation; may exceed client timeout. |
-| `tracking-files` | `correct_bias_field` | `0` | Computation | Synchronous computation; may exceed client timeout. |
-| `tracking-files` | `open_fib` | `1` | GUI-state change | Synchronous load; then refresh `LIST`. |
-| `tracking-files` | `open_mapping` | `1` | GUI-state change | Synchronous file load. |
-| `tracking-files` | `save_fib_as` | `1` | File creation | Synchronous; verify the output file. |
-| `tracking-files2` | `load_rendering_setting` | `1` | GUI-state change | Synchronous. |
-| `tracking-files2` | `load_setting` | `1` | GUI-state change | Synchronous. |
-| `tracking-files2` | `load_tracking_setting` | `1` | GUI-state change | Synchronous. |
-| `tracking-files2` | `load_workspace` | `1` | Destructive | Synchronous file load. |
-| `tracking-files2` | `presentation_mode` | `0` | GUI-state change | Immediate. |
-| `tracking-files2` | `restore_rendering` | `0` | GUI-state change | Immediate. |
-| `tracking-files2` | `restore_tracking` | `0` | GUI-state change | Immediate. |
-| `tracking-files2` | `save_rendering_setting` | `1` | File creation | Synchronous; verify file. |
-| `tracking-files2` | `save_setting` | `1` | File creation | Synchronous; verify file. |
-| `tracking-files2` | `save_tracking_setting` | `1` | File creation | Synchronous; verify file. |
-| `tracking-files2` | `save_workspace` | `1` | File creation | Synchronous and potentially large; verify directory contents. |
-| `tract-color` | `color_all_cluster` | `0` | GUI-state change | Immediate redraw. |
-| `tract-color` | `load_cluster_color` | `1` | GUI-state change | Synchronous. |
-| `tract-color` | `load_cluster_values` | `1` | GUI-state change | Synchronous. |
-| `tract-color` | `load_tract_color` | `1-2` | GUI-state change | Synchronous. |
-| `tract-color` | `load_tract_values` | `1-2` | GUI-state change | Synchronous. |
-| `tract-color` | `save_cluster_color` | `1` | File creation | Synchronous. |
-| `tract-color` | `save_tract_color` | `1-2` | File creation | Synchronous. |
-| `tract-color` | `select_cluster_color` | `1-2` | GUI-state change | Immediate redraw. |
-| `tract-discovery` | `list_tract` | `0` | Read-only | Immediate snapshot. |
-| `tract-discovery` | `load_tract_atlas` | `0-1` | Computation | Synchronous mapping/computation; may time out. |
-| `tract-discovery` | `open_mni_tract` | `1-2` | GUI-state change | Synchronous file load. |
-| `tract-discovery` | `open_tract` | `1-2` | GUI-state change | Synchronous file load. |
-| `tract-discovery` | `open_tract_name` | `1` | GUI-state change | Immediate. |
-| `tract-discovery` | `set_dt_index` | `2` | GUI-state change | Immediate. |
-| `tract-edit` | `cut_tract_by_x` | `0-1` | Destructive | Synchronous parallel edit. |
-| `tract-edit` | `cut_tract_by_x2` | `0-1` | Destructive | Synchronous parallel edit. |
-| `tract-edit` | `cut_tract_by_y` | `0-1` | Destructive | Synchronous parallel edit. |
-| `tract-edit` | `cut_tract_by_y2` | `0-1` | Destructive | Synchronous parallel edit. |
-| `tract-edit` | `cut_tract_by_z` | `0-1` | Destructive | Synchronous parallel edit. |
-| `tract-edit` | `cut_tract_by_z2` | `0-1` | Destructive | Synchronous parallel edit. |
-| `tract-edit` | `cut_tract_end_portion` | `0-1` | Destructive | Synchronous. |
-| `tract-edit` | `cut_tract_lps_end` | `0-1` | Destructive | Synchronous. |
-| `tract-edit` | `cut_tract_rai_end` | `0-1` | Destructive | Synchronous. |
-| `tract-edit` | `delete_branch` | `0` | Destructive | Synchronous parallel edit. |
-| `tract-edit` | `flip_tract_x` | `0-1` | Destructive | Synchronous. |
-| `tract-edit` | `flip_tract_y` | `0-1` | Destructive | Synchronous. |
-| `tract-edit` | `flip_tract_z` | `0-1` | Destructive | Synchronous. |
-| `tract-edit` | `redo_tract` | `0` | GUI-state change | Synchronous parallel edit. |
-| `tract-edit` | `trim_tract` | `0` | Destructive | Synchronous parallel edit. |
-| `tract-edit` | `undo_tract` | `0` | GUI-state change | Synchronous parallel edit. |
-| `tract-io` | `endpoint_to_region` | `0-1` | Computation | Synchronous; refresh `list_region`. |
-| `tract-io` | `save_all_tracts` | `1` | File creation | Synchronous; verify output(s). |
-| `tract-io` | `save_all_tracts_to_folder` | `1` | File creation | Synchronous; verify output(s). |
-| `tract-io` | `save_mni_tract` | `1-2` | File creation | Synchronous; verify output. |
-| `tract-io` | `save_mni_tract_endpoint` | `1-2` | File creation | Synchronous; verify output. |
-| `tract-io` | `save_slice_tract` | `1-2` | File creation | Synchronous; verify output. |
-| `tract-io` | `save_slice_tract_endpoint` | `1-2` | File creation | Synchronous; verify output. |
-| `tract-io` | `save_tdi` | `1-2` | File creation | Synchronous; verify output. |
-| `tract-io` | `save_tdi2` | `1-2` | File creation | Synchronous; verify output. |
-| `tract-io` | `save_template_tract` | `1-2` | File creation | Synchronous; verify output. |
-| `tract-io` | `save_tract` | `1-2` | File creation | Synchronous; verify output. |
-| `tract-io` | `save_tract_endpoint` | `1-2` | File creation | Synchronous; verify output. |
-| `tract-io` | `save_tract_values` | `2-3` | File creation | Synchronous; verify output. |
-| `tract-io` | `tract_to_region` | `0-1` | Computation | Synchronous; refresh `list_region`. |
-| `tract-manage` | `check_tract` | `2` | GUI-state change | Immediate. |
-| `tract-manage` | `show_only_tracts` | `1` | GUI-state change | Immediate exact visibility selection. |
-| `tract-manage` | `check_uncheck_all_tract` | `0-1` | GUI-state change | Immediate. |
-| `tract-manage` | `copy_tract` | `0-1` | GUI-state change | Synchronous. |
-| `tract-manage` | `delete_all_tracts` | `0` | Destructive | Immediate. |
-| `tract-manage` | `delete_tract` | `0-1` | Destructive | Synchronous. |
-| `tract-manage` | `filter_tract` | `0-1` | Destructive | Synchronous. |
-| `tract-manage` | `update_tract` | `0-1` | GUI-state change | Immediate. |
-| `tract-process` | `cluster_tract_by_em` | `1-2` | Destructive | Synchronous computation; refresh list. |
-| `tract-process` | `cluster_tract_by_hy` | `1-2` | Destructive | Synchronous computation; refresh list. |
-| `tract-process` | `cluster_tract_by_km` | `1-2` | Destructive | Synchronous computation; refresh list. |
-| `tract-process` | `cluster_tract_by_label` | `1-2` | Destructive | Synchronous computation; refresh list. |
-| `tract-process` | `delete_repeated_tract` | `0-1` | Destructive | Synchronous computation. |
-| `tract-process` | `delete_tract_by_length` | `0-1` | Destructive | Synchronous computation. |
-| `tract-process` | `merge_all_tracts` | `0` | Destructive | Synchronous; refresh list. |
-| `tract-process` | `merge_tract_by_name` | `0` | Destructive | Synchronous; refresh list. |
-| `tract-process` | `recognize_and_cluster_tract` | `1-2` | Destructive | Synchronous computation; refresh list. |
-| `tract-process` | `recognize_and_rename_tract` | `0` | Destructive | Synchronous; refresh list. |
-| `tract-process` | `reconnect_tract` | `1-2` | Destructive | Synchronous computation. |
-| `tract-process` | `resample_tract` | `0-1` | Destructive | Synchronous computation. |
-| `tract-process` | `separate_deleted_tract` | `1` | Destructive | Synchronous computation. |
-| `tract-process` | `sort_tract_by_name` | `0` | GUI-state change | Synchronous; refresh list. |
-| `unet` | `list_unet` | `0` | Read-only | Immediate after model-menu refresh. |
-| `unet` | `segment_brain` | `0 or 2` | Computation | With an explicit model, exact slice name is required; waits for slice registration/readiness, then runs synchronously. Verify with `list_region`. |
+If DSI Studio resumes an agent, reconnect using the exact same `agent` and
+`session`, inspect every reply for `PROMPT`, and exit naturally when none
+remains.
