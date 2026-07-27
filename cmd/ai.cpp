@@ -123,7 +123,6 @@ std::string ai_log(QString text)
     return ("[AI AGENT] "+text.remove('\r').replace(
                 '\n',"\n[AI AGENT] ")).toStdString();
 }
-const QRegularExpression ansi_escape(QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
 
 QString ai_window_status(QWidget* window,bool& busy,int& jobs)
 {
@@ -135,10 +134,11 @@ QString ai_window_status(QWidget* window,bool& busy,int& jobs)
 
     if(auto* w = qobject_cast<tracking_window*>(window))
     {
-        jobs = int(std::count_if(
-            w->tractWidget->thread_data.begin(),
-            w->tractWidget->thread_data.end(),
-            [](const auto& thread){return bool(thread);}));
+        if(w->tractWidget)
+            jobs = int(std::count_if(
+                w->tractWidget->thread_data.begin(),
+                w->tractWidget->thread_data.end(),
+                [](const auto& thread){return bool(thread);}));
 
         busy |= jobs || w->history.running_commands ||
                 std::any_of(w->slices.begin(),w->slices.end(),
@@ -252,6 +252,10 @@ void ai_request_command(QLocalSocket* socket,const QString& session,
     if(!target)
         return fail("window not found");
 
+    for(auto* window : QApplication::allWidgets())
+        if(window->property("busy").toBool())
+            return fail("another CMD is running; use LIST");
+
     auto run = [&](const std::vector<std::string>& cmd,QString& output,QString& error)
     {
         if(cmd.empty() || cmd[0].empty())
@@ -314,14 +318,14 @@ void ai_request_command(QLocalSocket* socket,const QString& session,
             for(const auto& value : args)
                 cmd.push_back(value.toString().toUtf8().toStdString());
 
-        target->setProperty("command",error.isEmpty() ? QString::fromStdString(cmd[0]) : QString());
+        target->setProperty("command",cmd.empty() ? QString() : QString::fromStdString(cmd[0]));
 
         bool okay = error.isEmpty() && run(cmd,output,error);
 
         target->setProperty("command",QVariant());
 
-        output.remove(ansi_escape);
-        error.remove(ansi_escape);
+        output.remove(QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
+        error.remove(QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
         if(!okay)
             error = (error.isEmpty() ? "command failed" : error) +
                     ". Read ai/DSI_STUDIO_AI_MANUAL.md and retry.";
@@ -367,7 +371,7 @@ void ai_request_log(QLocalSocket* socket,const QString& session,
             auto text = console.history.mid(qsizetype(begin-first));
             if(capped)
                 text.remove(0,text.indexOf('\n')+1);
-            text.remove(ansi_escape);
+            text.remove(QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
             QStringList lines;
             for(const auto& line : text.split('\n'))
                 if(!line.contains("[AI AGENT]"))
