@@ -12,8 +12,16 @@ do not read the entire inventory.
   unavailable.
 - Send separate non-empty `agent` and `session` strings and reuse the exact
   pair. `agent` must include `Codex`, `Claude`, or `Gemini` and must not
-  contain `@`; DSI Studio identifies it as `agent@session`. Use the real
-  initiating-chat session ID so DSI Studio can return prompts to that chat.
+  contain `@`; DSI Studio identifies it as `agent@session`. `session` must be
+  the provider's exact resumable initiating-chat thread ID (Codex:
+  `thread.started.thread_id`), never a friendly label, so DSI Studio can
+  return prompts to and resume that chat.
+- For an externally initiated Codex Desktop chat, a task UUID may be visible
+  in injected runtime context or a task-specific path. Use it only when
+  explicitly present; never guess or generate a session ID.
+- For Claude Code, always read `~/.claude/sessions/<pid>.json` and use its
+  `name` field—not `sessionId`—as the DSI Studio session. DSI Studio resumes
+  it with `claude -p --resume <name>`.
 - Every `CMD`, including `list_*`, requires a numeric `window` from the latest
   `LIST`.
 - Use `LIST` to obtain fresh windows, then target only its numeric window ID.
