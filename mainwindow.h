@@ -73,6 +73,7 @@ private:
     void start_ai(const QString&,const QString&,bool);
 private slots:
 
+    void on_ai_quick_settings_clicked();
     void on_ai_new_chat_clicked();
     void on_ai_send_message_clicked();
     void on_averagefib_clicked();
