@@ -1081,6 +1081,12 @@ void MainWindow::run_ai(const ai_launch& launch,QStringList args)
 }
 void MainWindow::start_claude_process(const ai_launch& launch)
 {
+    if(launch.session.isEmpty())
+    {
+        add_ai_history(launch.session,"activity","Cannot start AI agent: missing session ID.");
+        return;
+    }
+
     auto host = settings.value(
                             "ai/ollama_host","localhost").toString().trimmed();
     if(!host.isEmpty())
@@ -1116,8 +1122,7 @@ void MainWindow::start_claude_process(const ai_launch& launch)
                 process->setProperty("stdout",output.right(64*1024));
             });
 
-    QStringList args{"-p",launch.new_session ? "--session-id" : "--resume",
-                     launch.session};
+    QStringList args{"-p",launch.new_session ? "--session-id" : "--resume",launch.session};
     if(!launch.model.isEmpty())
         args << "--model" << launch.model;
     args << launch.prompt;
