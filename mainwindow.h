@@ -58,7 +58,7 @@ public:
     bool command(const std::vector<std::string>& cmd);
 public:
     void open_DWI(QStringList files);
-    void loadFib(QString Filename);
+    bool loadFib(QString Filename);
     void loadNii(QStringList Filename);
     void loadSrc(QStringList filenames);
     void open_template(QString name);
