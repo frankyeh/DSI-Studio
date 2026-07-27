@@ -7,15 +7,16 @@ do not read the entire inventory.
 ## Operating rules
 
 - Each named-pipe connection sends exactly one request and then closes.
-- Prefer a native local client for `\\\\.\\pipe\\dsi-studio` when available.
-  Use the generated PowerShell client only when direct named-pipe access is
-  unavailable.
+- Use a native local client for `\\\\.\\pipe\\dsi-studio` first. Do not run
+  `dsi_agent.ps1`, `dsi_studio.exe`, or another wrapper merely because it is
+  available. Use one only after direct named-pipe access is unavailable or
+  fails.
 - Send separate non-empty `agent` and `session` strings and reuse the exact
   pair. `agent` must include `Codex`, `Claude`, or `Gemini` and must not
   contain `@`; DSI Studio identifies it as `agent@session`. `session` must be
-  the provider's exact resumable initiating-chat thread ID (Codex:
-  `thread.started.thread_id`), never a friendly label, so DSI Studio can
-  return prompts to and resume that chat.
+  the provider's exact resumable initiating-chat thread ID in canonical UUID
+  form (Codex: `thread.started.thread_id`), never a friendly label, so DSI
+  Studio can return prompts to and resume that chat.
 - For an externally initiated Codex Desktop chat, a task UUID may be visible
   in injected runtime context or a task-specific path. Use it only when
   explicitly present; never guess or generate a session ID.
@@ -62,8 +63,8 @@ do not read the entire inventory.
 - `LIST` lines are `type<TAB>numeric-id<TAB>title`; there is no `.windows`
   property.
 - A `CMD` reply beginning with `[` is a JSON array of
-  `{index,okay,output,error?}`. The generated PowerShell client returns raw
-  output; parse only that reply as JSON when needed.
+  `{index,okay,output,error?}`. The direct client returns raw output; parse
+  only that reply as JSON when needed.
 - List-command results remain tab-separated text in `result[0].output`; there
   are no `.tracks`, `.regions`, or similar properties.
 
@@ -95,10 +96,9 @@ Parameters shown below are separate JSON array elements.
 | Save rendering | `["save_hd_screen",path,"width height"]` |
 
 `hub open` may download before opening; poll `LIST`. To open a local file when
-only the main window exists, run
-`.\<client.ps1> agent@session OPEN <absolute-path>`, then poll `LIST`. Do not
-send the path as a main-window `CMD`; `open_fib` requires an existing tracking
-window.
+only the main window exists, send its absolute path as raw text through the
+same direct named-pipe client, then poll `LIST`. Do not send the path as a
+main-window `CMD`; `open_fib` requires an existing tracking window.
 
 For multiple images, send **exactly one flat `open_image` command** to the
 **main window**. Each complete absolute filepath is one array element. The
