@@ -5,17 +5,18 @@ needed by the request; do not read its entire inventory.
 
 ## Identity
 
-Choose one non-empty agent name and one non-empty session name when the AI
-conversation starts. Reuse both strings exactly in every request. The agent
-name must not contain `@`, which DSI Studio reserves as the separator.
+Choose one non-empty agent name and the initiating chat's non-empty session ID
+when the AI conversation starts. Reuse both exactly in every request. The agent
+name must include `Codex`, `Claude`, or `Gemini` and must not contain `@`.
 
 DSI Studio identifies the conversation as `agent@session`. The request still
-sends `agent` and `session` as separate JSON fields. Both may be arbitrary
-names; no provider-specific prefix is required.
+sends `agent` and `session` as separate JSON fields. The session must be the
+real initiating-chat/session ID, never a request-local GUID, so a prompt sent
+from DSI Studio reaches the correct agent conversation.
 
 ```powershell
-$DsiAgent = '<agent name>'
-$DsiSession = '<session name>'
+$DsiAgent = 'Codex'
+$DsiSession = '<initiating-chat-session-id>'
 ```
 
 ## Connection priority
@@ -139,7 +140,7 @@ policy. Invoke the same file with:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\dsi_agent.ps1 `
-    myagent@session1 LIST
+    Codex@your-session-id LIST
 ```
 
 ## Requests
@@ -147,18 +148,18 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\dsi_agent.ps1 `
 ```powershell
 # Discover windows.
 .\dsi_agent.ps1 -Chat "Connecting and checking open windows." `
-    myagent@session1 LIST
+    Codex@your-session-id LIST
 
 # Use a numeric ID returned by LIST.
 .\dsi_agent.ps1 -Chat "Inspecting current regions before editing." `
-    myagent@session1 2 list_region
+    Codex@your-session-id 2 list_region
 
 # Parameters containing spaces remain one quoted argument.
-.\dsi_agent.ps1 myagent@session1 2 set_region_name 0 "Tumor Core"
+.\dsi_agent.ps1 Codex@your-session-id 2 set_region_name 0 "Tumor Core"
 
 # Incremental diagnostics and final user-facing reply.
-.\dsi_agent.ps1 myagent@session1 LOG
-.\dsi_agent.ps1 -Chat "Task completed." myagent@session1 LOG
+.\dsi_agent.ps1 Codex@your-session-id LOG
+.\dsi_agent.ps1 -Chat "Task completed." Codex@your-session-id LOG
 ```
 
 Always use the numeric window ID returned by the latest `LIST`; never use a
@@ -207,8 +208,8 @@ every polling request, or create a separate request only to report status.
 When only the main window exists, send one absolute filename:
 
 ```powershell
-.\dsi_agent.ps1 myagent@session1 OPEN 'C:\data\subject.fz'
-.\dsi_agent.ps1 myagent@session1 LIST
+.\dsi_agent.ps1 Codex@your-session-id OPEN 'C:\data\subject.fz'
+.\dsi_agent.ps1 Codex@your-session-id LIST
 ```
 
 Poll `LIST` for the new numeric `tracking` or `image` window ID. `open_fib`
@@ -221,7 +222,7 @@ To open multiple images in one O1 window, send one flat command to the numeric
 main-window ID:
 
 ```powershell
-.\dsi_agent.ps1 myagent@session1 1 open_image `
+.\dsi_agent.ps1 Codex@your-session-id 1 open_image `
     'C:\data\a.nii.gz' 'C:\data\b.nii.gz'
 ```
 
