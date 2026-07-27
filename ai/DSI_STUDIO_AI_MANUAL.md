@@ -250,6 +250,12 @@ and `hub download`, pass either the exact filename or the numeric index from
 that same `hub files` result. Indices apply only to the currently selected
 repository and tag.
 
+`hub open` downloads the selected file to DSI Studio's temporary cache and then
+opens it. `hub download` saves the selected file to the supplied persistent
+directory and does not open it. In the current implementation, the download
+directory must already exist; create and verify it before calling
+`hub download`.
+
 ### Brain segmentation
 
 Use `list_unet` to obtain an available model and `list_slice` to obtain the
@@ -318,6 +324,13 @@ absolute path as raw pipe text, then call `LIST` to obtain the new numeric
 window ID. `open_fib` requires an existing tracking window and cannot create
 the first one.
 
+Use exactly one open mechanism for a file. Raw path transport and `hub open`
+each open the file and create its window. After either request, call `LIST` and
+use the newly added numeric ID. Do not repeat the open request or then call
+`open_fib` for the same file; that intentionally creates another tracking
+window. One open request should create one window, so duplicate windows usually
+indicate that the file was opened more than once.
+
 In DSI Studio, FIB means `.fz`; `.sz` is an SRC file.
 
 To open multiple images in one image window, send one flat `open_image` command
@@ -327,10 +340,14 @@ window, split a path into fields, or substitute `add_image`.
 After a window opens or closes, refresh `LIST`. Otherwise retain the IDs while
 using later `LIST` replies for current busy state.
 
-Most Hub FIB files contain an HTTP reference to their native T1w. After opening
-the FIB, call `list_slice`. Pass the returned T1w name or index directly to
-`segment_brain`, or use `set_slice <index>` first when download and registration
-should be observed separately.
+Most Hub FIB files contain an HTTP reference to their native T1w. Opening the
+FIB alone does not download the T1w. First call `list_slice` on the new tracking
+window. Then either pass the returned T1w name or index directly to
+`segment_brain`, which selects and loads it automatically, or call
+`set_slice <index>` to start the download and registration separately. In the
+second workflow, poll `LIST` until the tracking window is idle, then confirm
+`downloaded=1`, `ready=1`, and `registering=0` with `list_slice` before using the
+slice.
 
 ## Asynchronous and long-running work
 
