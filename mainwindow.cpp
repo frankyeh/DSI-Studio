@@ -737,8 +737,7 @@ bool MainWindow::eventFilter(QObject* object,QEvent* event)
     return QMainWindow::eventFilter(object,event);
 }
 
-void MainWindow::add_ai_history(const QString& agent,const QString& type,
-                                const QString& text)
+void MainWindow::add_ai_history(const QString& agent,const QString& type,const QString& text)
 {
     QJsonObject entry{{"type",type},{"text",text},{"time",QDateTime::currentDateTime().toString(Qt::ISODate)}};
     ai_projects[agent].append(entry);
