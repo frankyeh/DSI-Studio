@@ -102,6 +102,11 @@ only the main window exists, send its absolute path as raw text through the
 same direct named-pipe client, then poll `LIST`. Do not send the path as a
 main-window `CMD`; `open_fib` requires an existing tracking window.
 
+Most Hub FIB (`.fz`) files already contain an HTTP reference to their native
+T1w slice. After opening the FIB, use `list_slice`, then `set_slice` to that
+T1w entry; DSI Studio downloads and loads it automatically. Do not separately
+find or `hub download` the T1w file.
+
 For multiple images, send **exactly one flat `open_image` command** to the
 **main window**. Each complete absolute filepath is one array element. The
 first image is displayed and the remaining paths are retained for batch
