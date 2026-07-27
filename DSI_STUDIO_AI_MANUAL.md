@@ -11,8 +11,9 @@ do not read the entire inventory.
   Use the generated PowerShell client only when direct named-pipe access is
   unavailable.
 - Send separate non-empty `agent` and `session` strings and reuse the exact
-  pair. `agent` must not contain `@`; DSI Studio identifies it as
-  `agent@session`.
+  pair. `agent` must include `Codex`, `Claude`, or `Gemini` and must not
+  contain `@`; DSI Studio identifies it as `agent@session`. Use the real
+  initiating-chat session ID so DSI Studio can return prompts to that chat.
 - Every `CMD`, including `list_*`, requires a numeric `window` from the latest
   `LIST`.
 - Use `LIST` to obtain fresh windows, then target only its numeric window ID.
