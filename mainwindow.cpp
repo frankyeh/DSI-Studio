@@ -693,25 +693,19 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
             buffer.remove(0,pos+1);
             if(event["type"] == "turn.completed")
             {
-                auto usage = event["usage"].toObject();
-                auto agent = process->objectName();
-                if(!agent.isEmpty() && !usage.isEmpty())
-                    add_ai_history(agent,"activity",
-                        QString("Tokens: %1 input (%2 cached), %3 output")
-                        .arg(usage["input_tokens"].toInt())
-                        .arg(usage["cached_input_tokens"].toInt())
-                        .arg(usage["output_tokens"].toInt()));
                 continue;
             }
             if(event["type"] != "thread.started")
                 continue;
 
             auto session = event["thread_id"].toString();
+            if(session.isEmpty())
+                continue;
             auto agent = process->objectName();
             bool new_agent = agent.isEmpty();
             if(agent.isEmpty())
             {
-                agent = "agent@"+session;
+                agent = "Codex@"+session;
                 process->setObjectName(agent);
                 ai_work_dirs[agent] = process->workingDirectory();
                 ai_processes[agent] = process;
