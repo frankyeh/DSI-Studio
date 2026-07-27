@@ -452,6 +452,7 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
         title->setFlat(true);
         title->setText(project_title);
         title->setToolTip(project_title);
+        title->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Preferred);
 
         auto* button = new QToolButton(row);
         button->setObjectName("ai_project_menu_button");
@@ -477,7 +478,7 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
                 "background:#ffe082;border-radius:5px;" : "");
         });
 
-        item->setSizeHint(row->sizeHint());
+        item->setSizeHint(QSize(0,row->sizeHint().height()));
 
         connect(title,&QPushButton::clicked,this,
                 [this,item]{ui->ai_project_list->setCurrentItem(item);});
@@ -1476,7 +1477,8 @@ MainWindow::MainWindow(QWidget *parent) :
         item->setText(title);
         button->setText(title);
         button->setToolTip(title);
-        item->setSizeHint(button->parentWidget()->sizeHint());
+        item->setSizeHint(
+            QSize(0,button->parentWidget()->sizeHint().height()));
     });
 
     connect(ai_project_menu->addAction("Details..."),&QAction::triggered,this,[this]
