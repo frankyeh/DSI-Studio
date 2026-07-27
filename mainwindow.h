@@ -61,7 +61,6 @@ public:
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    bool eventFilter(QObject*,QEvent*) override;
     void closeEvent(QCloseEvent *event) override;
     Ui::MainWindow *ui;
     void addFib(QString Filename);
