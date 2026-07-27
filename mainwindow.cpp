@@ -870,13 +870,18 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
     }
 
     auto model = ui->ai_model_selector->currentText();
+    auto profile = ui->ai_model_selector->currentData().toString();
     if(model.startsWith("default",Qt::CaseInsensitive))
         model.clear();
     QStringList args{"exec"};
     if(codex)
     {
         if(!model.isEmpty())
+        {
             args << "--model" << model;
+            if(!profile.isEmpty())
+                args << "--profile" << profile;
+        }
         if(session.isEmpty())
             args << "--json" << "--skip-git-repo-check";
         else
@@ -988,7 +993,7 @@ MainWindow::MainWindow(QWidget *parent) :
     auto* agents = qobject_cast<QStandardItemModel*>(
                        ui->ai_agent_selector->model());
     auto set_agent = [&](const QString& agent,const QString& path,
-                         const QStringList& models)
+                         const QStringList& models,QJsonObject profiles = {})
     {
         auto index = ui->ai_agent_selector->findText(agent);
         auto* item = agents->item(index);
@@ -996,6 +1001,7 @@ MainWindow::MainWindow(QWidget *parent) :
         item->setEnabled(!path.isEmpty());
         ui->ai_agent_selector->setItemData(index,path,Qt::UserRole+1);
         ui->ai_agent_selector->setItemData(index,models);
+        ui->ai_agent_selector->setItemData(index,profiles,Qt::UserRole+2);
         tipl::out() << ai_log(path.isEmpty() ? agent+" not found" :
                               agent+": "+path);
         if(!path.isEmpty())
@@ -1006,6 +1012,7 @@ MainWindow::MainWindow(QWidget *parent) :
     {
         // find Codex executable and models
         QStringList models;
+        QJsonObject profiles;
         codex_path = QStandardPaths::findExecutable("codex");
         if(codex_path.isEmpty())
         {
@@ -1045,12 +1052,17 @@ MainWindow::MainWindow(QWidget *parent) :
                 if(file.open(QIODevice::ReadOnly))
                     for(auto matches = regex.globalMatch(QString::fromUtf8(file.readAll()));
                         matches.hasNext();)
-                        models << matches.next().captured(1);
+                    {
+                        auto model = matches.next().captured(1);
+                        models << model;
+                        if(name != "config.toml")
+                            profiles[model] = name.chopped(12);
+                    }
             }
             models.removeDuplicates();
             models.sort(Qt::CaseInsensitive);
         }
-        set_agent("Codex",codex_path,models);
+        set_agent("Codex",codex_path,models,profiles);
     }
     {
         // find Claude executable and models
@@ -1117,8 +1129,10 @@ MainWindow::MainWindow(QWidget *parent) :
     {
         ui->ai_model_selector->clear();
         ui->ai_model_selector->addItem("default");
-        ui->ai_model_selector->addItems(
-            ui->ai_agent_selector->currentData().toStringList());
+        auto profiles = ui->ai_agent_selector->currentData(Qt::UserRole+2).
+                        toJsonObject();
+        for(const auto& model : ui->ai_agent_selector->currentData().toStringList())
+            ui->ai_model_selector->addItem(model,profiles[model].toString());
     };
     connect(ui->ai_agent_selector,&QComboBox::currentTextChanged,this,
             [update_models] { update_models(); });
