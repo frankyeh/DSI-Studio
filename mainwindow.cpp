@@ -201,7 +201,7 @@ void ai_request_command(QLocalSocket* socket,const QString& session,
     auto id = request["window"].toVariant().toString();
     auto commands = request["command"].toArray();
     if(id.isEmpty() || commands.isEmpty())
-        return fail("invalid CMD. Read DSI_STUDIO_AI_MANUAL.md and retry.");
+        return fail("invalid CMD. Read ai/DSI_STUDIO_AI_MANUAL.md before retry.");
     if(commands[0].isString())
     {
         QJsonArray batch;
@@ -280,7 +280,7 @@ void ai_request_command(QLocalSocket* socket,const QString& session,
         bool okay = error.isEmpty() && run(cmd,output,error);
         if(!okay)
             error = (error.isEmpty() ? "command failed" : error) +
-                    ". Read DSI_STUDIO_AI_MANUAL.md and retry.";
+                    ". Read ai/DSI_STUDIO_AI_MANUAL.md and retry.";
 
         result["okay"] = okay;
         result["output"] = output;
@@ -1076,10 +1076,10 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
         prompt +=
             "\n\n[DSI Studio] Read \""+
             QDir::toNativeSeparators(
-                app.filePath("DSI_STUDIO_AI_SETUP.md"))+
+                app.filePath("ai/DSI_STUDIO_AI_SETUP.md"))+
             "\" completely. In \""+
             QDir::toNativeSeparators(
-                app.filePath("DSI_STUDIO_AI_MANUAL.md"))+
+                app.filePath("ai/DSI_STUDIO_AI_MANUAL.md"))+
             "\", read the operating rules and common syntax, then search the "
             "command inventory only for commands relevant to this request. "
             "Use the local server and keep the generated identity. Use GUI "
