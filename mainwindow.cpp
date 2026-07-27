@@ -435,11 +435,10 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
         return;
 
     auto agent_name = info.agent_name;
-    auto project_title = info.title(session);
-
     auto* item = info.project_items;
     if(!item)
     {
+        auto project_title = info.title(session);
         item = new QListWidgetItem;
         item->setText(project_title);
         item->setData(Qt::UserRole,session);
@@ -447,6 +446,7 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
         info.project_items = item;
 
         auto* row = new QWidget;
+        item->setSizeHint(row->sizeHint());
         auto* title = new QPushButton(row);
         title->setObjectName("ai_project_title");
         title->setFlat(true);
@@ -483,21 +483,27 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
                 [this,item]{ui->ai_project_list->setCurrentItem(item);});
     }
 
-    auto* row = ui->ai_project_list->itemWidget(item);
-    item->setSizeHint(row->sizeHint());
-    if(!added.isEmpty() && added["type"].toString() != "user")
-    {
-        row->setStyleSheet("background:#ffe082;border-radius:5px;");
-        row->findChild<QTimer*>("ai_chat_blink")->start();
-    }
-
-    if(!ui->ai_project_list->currentItem())
+    auto* current = ui->ai_project_list->currentItem();
+    if(!current)
     {
         ui->ai_project_list->setCurrentItem(item);
         return;
     }
-    if(ui->ai_project_list->currentItem() != item)
+
+    bool visible = current == item &&
+                   ui->tabWidget->currentWidget() == ui->tab_8;
+    const auto added_type = added["type"].toString();
+
+    if(!added_type.isEmpty() && added_type != "user" && !visible)
+    {
+        auto* row = ui->ai_project_list->itemWidget(item);
+        row->setStyleSheet("background:#ffe082;border-radius:5px;");
+        row->findChild<QTimer*>("ai_chat_blink")->start();
+    }
+
+    if(current != item)
         return;
+
 
     auto request_content = [](const QJsonObject& entry,bool compact = false)
     {
@@ -549,10 +555,10 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
 
         content = content.toHtmlEscaped().replace('\n',"<br>");
         if(!activity.isEmpty())
-            content = QString("<span style=\"font-weight:600;\">%1</span>"
-                              " <span style=\"color:#80868b;font-size:9pt;\">"
-                              "&mdash; %2</span>")
-                      .arg(content,activity.toHtmlEscaped().replace('\n',"<br>"));
+            content = QString(
+                          "<span style=\"color:#80868b;font-size:9pt;\">"
+                          "Action: %1</span><br>%2")
+                          .arg(activity.toHtmlEscaped().replace('\n',"<br>"),content);
         if(request)
             content = "<span style=\"color:#5f6368;\">"+content+"</span>";
         auto color = request ? "#f1f3f4" : user ? "#e8f0fe" : "#e8f5e9";
@@ -579,11 +585,11 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
                          cell+"<td width=\"20%\"></td>"));
     };
 
-    bool paired = !added.isEmpty() && added["type"] == "assistant" &&
-                  history.size() > 1 &&
-                  history[history.size()-2].toObject()["type"] == "request";
+    const bool paired = added_type == "assistant" && history.size() > 1 &&
+            history[history.size()-2].toObject()["type"] == "request";
+    const bool rebuild = added_type.isEmpty() || added_type == "request" || paired;
 
-    if(added.isEmpty() || paired || added["type"] == "request")
+    if(rebuild)
     {
         auto standalone_request = [&](int index)
         {
@@ -765,19 +771,6 @@ void MainWindow::refresh_ollama_models()
                 reply->deleteLater();
                 network->deleteLater();
             });
-}
-
-
-bool MainWindow::eventFilter(QObject* object,QEvent* event)
-{
-    auto type = event->type();
-    auto* widget = qobject_cast<QWidget*>(object);
-    if((type == QEvent::MouseButtonRelease || type == QEvent::KeyRelease ||
-        type == QEvent::Wheel) && widget &&
-       ui->tabWidget->currentWidget() == ui->tab_8 &&
-       (widget == ui->tab_8 || ui->tab_8->isAncestorOf(widget)))
-        QTimer::singleShot(0,this,&MainWindow::stop_ai_blink);
-    return QMainWindow::eventFilter(object,event);
 }
 
 void MainWindow::add_ai_history(const QString& session,const QString& type,const QString& text)
@@ -1382,7 +1375,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->ai_model_selector->setCurrentText(
         settings.value("ai/default_model",ui->ai_model_selector->currentText()).toString());
-    qApp->installEventFilter(this);
+
+
     connect(ui->tabWidget,&QTabWidget::currentChanged,this,[this]
     {
         if(ui->tabWidget->currentWidget() == ui->tab_8)
@@ -1439,7 +1433,10 @@ MainWindow::MainWindow(QWidget *parent) :
             }
         }
         ai_infos[session].project_titles = title;
-        show_ai_project(session);
+        item->setText(title);
+        button->setText(title);
+        button->setToolTip(title);
+        item->setSizeHint(button->parentWidget()->sizeHint());
     });
 
     connect(ai_project_menu->addAction("Details..."),&QAction::triggered,this,[this]
@@ -1494,6 +1491,7 @@ MainWindow::MainWindow(QWidget *parent) :
                     setStyleSheet(i == item ? "background:#dce9f9;" : "");
         if(item)
         {
+            stop_ai_blink();
             auto session = item->data(Qt::UserRole).toString();
             select_agent_model(ai_infos[session]);
             show_ai_project(session);
