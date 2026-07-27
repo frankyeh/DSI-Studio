@@ -938,7 +938,7 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->ai_agent_selector->setItemData(
             ui->ai_agent_selector->findText(agent),models);
     };
-    QString codex_path,claude_path;
+    QString codex_path,claude_path,gemini_path;
     {
         // find Codex executable
         codex_path = QStandardPaths::findExecutable("codex");
@@ -966,8 +966,19 @@ MainWindow::MainWindow(QWidget *parent) :
         if(!QFileInfo::exists(claude_path))
             claude_path.clear();
     }
+    {
+        // find Gemini executable
+        gemini_path = QStandardPaths::findExecutable("gemini");
+#ifdef Q_OS_WIN
+        if(gemini_path.isEmpty())
+            gemini_path = QStandardPaths::findExecutable("gemini.cmd");
+#endif
+    }
+    ui->ai_agent_selector->setItemData(
+        ui->ai_agent_selector->findText("Gemini"),gemini_path,Qt::UserRole+1);
     bool codex = !codex_path.isEmpty();
     bool claude = !claude_path.isEmpty();
+    bool gemini = !gemini_path.isEmpty();
     tipl::out() << ai_log(codex_path.isEmpty() ? "Codex not found" :
                           "Codex: "+codex_path);
     if(!codex_path.isEmpty())
@@ -1043,12 +1054,21 @@ MainWindow::MainWindow(QWidget *parent) :
     }
     else
         tipl::out() << ai_log("Anthropic connection: not checked (Claude unavailable)");
+    tipl::out() << ai_log(gemini_path.isEmpty() ? "Gemini not found" :
+                          "Gemini: "+gemini_path);
+    if(!gemini_path.isEmpty())
+    {
+        QStringList models{"auto","pro","flash","flash-lite"};
+        set_models("Gemini",models);
+        tipl::out() << ai_log("Gemini model aliases: "+models.join(", "));
+    }
     for(int i = 0;i < ui->ai_agent_selector->count();++i)
         agents->item(i)->setEnabled(ui->ai_agent_selector->itemText(i) == "Codex" ?
-                                    codex : claude);
-    if(!codex && claude)
-        ui->ai_agent_selector->setCurrentText("Claude");
-    ui->ai_agent_selector->setEnabled(codex || claude);
+                                    codex : ui->ai_agent_selector->itemText(i) == "Claude" ?
+                                    claude : gemini);
+    if(!codex && (claude || gemini))
+        ui->ai_agent_selector->setCurrentText(claude ? "Claude" : "Gemini");
+    ui->ai_agent_selector->setEnabled(codex || claude || gemini);
     auto update_models = [this]
     {
         ui->ai_model_selector->clear();
