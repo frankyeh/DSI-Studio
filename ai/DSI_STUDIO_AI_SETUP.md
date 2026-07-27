@@ -243,7 +243,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\dsi_agent.ps1 `
 ## Requests
 
 ```powershell
-# Discover windows.
+# Discover windows and obtain global/per-window status.
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
              request='LIST';chat='Connecting and checking open windows.'}
 
@@ -257,15 +257,18 @@ Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;request='CMD';window='2';
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;request='CMD';window='2';
              command=@('list_param','fa_threshold')}
 
-# Poll tracking compactly; request the full tract list only when needed.
+# Poll global/per-window activity, including active tracking jobs.
+Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;request='LIST'}
+
+# Request targeted tract details only when needed.
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;request='CMD';window='2';
-             command=@('list_tract','status')}
+             command=@('list_tract')}
 
 # Command parameters stay separate array elements.
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
              request='CMD';window='2';command=@('set_region_name','0','Tumor Core')}
 
-# Use LOG only when targeted list commands cannot diagnose the issue.
+# Use LOG only when LIST and targeted commands cannot diagnose the issue.
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;request='LOG'}
 
 # Send the final user-facing reply once.
@@ -277,15 +280,34 @@ Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
              request='TITLE';title='Concise task name'}
 ```
 
-`LIST` is a top-level request and does not use a `window` field. Every `CMD`,
-including every `list_*` command, requires the numeric window ID returned by
-the latest `LIST`; never use a window type, title, filename, guessed ID, or
+`LIST` is a top-level request and does not use a `window` field. Its first line
+is:
+
+```text
+OKAY<TAB>busy<TAB>level<TAB>status
+```
+
+Each following window line is:
+
+```text
+type<TAB>numeric-id<TAB>busy<TAB>tracking-jobs<TAB>title
+```
+
+The global `busy` value is true when TIPL progress or any supported window is
+busy. `level` is the TIPL nesting depth excluding the persistent application
+root; it is `1` when only asynchronous work such as fiber tracking is active.
+Each window row independently reports whether that window is busy and how many
+tracking bundles are active there. Global busy may be true while all window
+rows are idle when TIPL cannot associate an operation with one window.
+
+Every `CMD`, including every `list_*` command, requires a numeric window ID
+returned by `LIST`; never use a window type, title, filename, guessed ID, or
 stale ID as `window`.
 
 JSON fields are `agent`, `session`, `cwd`, `request`, `window`, `command`,
 `chat`, and `title`. Requests are `LIST`, `CMD`, `LOG`, `CHAT`, or
 `TITLE`; send one absolute path as raw pipe text to open a file. Keep every
-command parameter as one array element.
+command parameter as one array element and never send an empty command array.
 
 `LIST`, `LOG`, `CHAT`, and successful `TITLE` replies begin with `OKAY`.
 `CHAT` and `TITLE` return no console history, but either may append a queued
@@ -302,26 +324,27 @@ List-command data remains text inside each result's `output`; do not invent
 properties such as `.windows` or `.tracks`.
 
 Always inspect the entire reply. A queued user prompt may follow any text reply,
-including `CHAT` or `TITLE`, as `PROMPT<TAB><JSON>`, or appear in the last
-command result's `prompt` property. An initial `OKAY` does not mean no `PROMPT`
-follows. Treat every returned prompt as new user input.
+including `LIST`, `CHAT`, or `TITLE`, as `PROMPT<TAB><JSON>`, or appear in the
+last command result's `prompt` property. An initial `OKAY` does not mean no
+`PROMPT` follows. Treat every returned prompt as new user input.
 
 ## Token efficiency
 
-- Reuse the latest `LIST` until a window opens or closes. Poll only the relevant
-  `list_*` command; do not repeat `LIST` to monitor unchanged windows.
-- Use `list_tract status` while tracking is running. It returns only running-job
-  and bundle counts; request full `list_tract` after completion when details are
-  needed.
+- Retain numeric window IDs until a window opens or closes. Poll compact `LIST`
+  only while waiting for global or per-window activity to change.
+- Use each tracking row's `tracking-jobs` count to detect tracking completion.
+  Request full `list_tract` only after completion when details are needed.
 - Call `list_param` without an ID once to discover valid IDs, then query only
   the needed parameter values.
-- Use `LOG` only after failure, unexpected state, or when a targeted list command
-  cannot verify completion. Each call may return up to 4096 characters.
+- Use `LOG` only after failure, unexpected state, or when `LIST` and a targeted
+  list command cannot verify completion. Each call may return up to 4096
+  characters.
 - Batch independent synchronous commands for the same window into one `CMD`.
-  Do not batch destructive, asynchronous, or output-dependent commands.
-- Attach short progress `chat` to an already-needed `LIST` or `CMD`. Use a
-  standalone `CHAT` only for the final reply, a required user decision, or an
-  unavoidable waiting or blocked update.
+  Do not batch destructive, asynchronous, output-dependent, or modal-opening
+  commands.
+- Attach short progress `chat` to an already-needed request. Do not attach chat
+  to every `LIST` poll. Use a standalone `CHAT` only for the final reply, a
+  required user decision, or an unavoidable waiting or blocked update.
 - Send `cwd` in the first request after connecting or restarting DSI Studio,
   then omit it until the working directory changes.
 - Reuse discovered names and indices until the relevant state changes. Search
@@ -380,18 +403,18 @@ path into fields, or substitute `add_image`. Refresh `LIST` afterward.
    before using an executable wrapper. Use GUI commands. **Do not use `run_cli`
    unless the user explicitly says to run the CLI.** Never infer CLI permission
    from a requested outcome.
-3. Call the top-level `LIST` request first and after windows open or close; it
-   does not use a `window` field.
-4. Use only numeric IDs returned by the latest `LIST` for `CMD` requests.
-5. Discover values with `list_slice`, `list_region`, `list_tract`,
-   `list_param`, `list_atlas`, `list_unet`, and `list_auto_tract`. Use
-   `list_tract status` for compact polling and parameterless `list_param` to
-   discover valid IDs.
-6. Treat `okay:true` as acceptance. Poll the relevant list command for
-   asynchronous completion; use `LOG` only when diagnostics are needed.
-   If a response says it is loading, first send `CHAT` stating that waiting
-   will continue and the user can interrupt, then check every 3 seconds unless
-   interrupted; process every reply.
+3. Call top-level `LIST` first, after windows open or close, and while waiting
+   for global or per-window activity to change. It does not use a `window`
+   field.
+4. Use only numeric IDs returned by `LIST` for `CMD` requests.
+5. Use `LIST` for compact busy/progress and tracking-job polling. Discover
+   detailed values with `list_slice`, `list_region`, `list_tract`, `list_param`,
+   `list_atlas`, `list_unet`, and `list_auto_tract` only when needed.
+6. Treat `okay:true` as acceptance. Poll `LIST` for long-running and
+   asynchronous activity, then use a targeted list command to verify detailed
+   output. Use `LOG` only when diagnostics are needed. If an operation is still
+   active, state once that waiting will continue and the user can interrupt,
+   then check about every 3 seconds unless interrupted; process every reply.
    Never automatically repeat a failed, timed-out, unavailable, or unexpected
    request.
 7. If a required window disappears or returns `window not found`, assume the
@@ -404,8 +427,8 @@ path into fields, or substitute `add_image`. Refresh `LIST` afterward.
 11. After understanding the initiating prompt, send one concise `TITLE`.
     Send another `TITLE` later only with user permission to rename.
 12. Send the final answer once with `CHAT`.
-13. Minimize round trips: reuse the latest `LIST`, batch safe same-window
-    commands, poll only relevant state, and avoid unnecessary `LOG` calls.
+13. Minimize round trips: retain window IDs, use compact `LIST` status, batch
+    safe same-window commands, and avoid unnecessary detailed or `LOG` calls.
 14. When asked to operate DSI Studio, execute the requests. Do not return a
     script or tutorial unless the user asks for one.
 
