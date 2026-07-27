@@ -40,6 +40,8 @@ public:
     void add_ai_history(const QString&,const QString&,const QString&);
     void show_ai_project(const QString&,QJsonObject = {});
     void stop_ai_blink();
+    void refresh_ollama_models();
+    void refresh_codex_models(const QString&);
 public:
     QNetworkAccessManager manager;
     QSharedPointer<QNetworkReply> get(QUrl url);
