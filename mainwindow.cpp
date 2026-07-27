@@ -362,7 +362,7 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     ai_reply(socket,session,"ERROR\tunknown request");
 }
 
-void MainWindow::set_agent_model(const ai_info& info)
+void MainWindow::select_agent_model(const ai_info& info)
 {
     auto agent_name = info.agent_name;
     auto index = ui->ai_agent_selector->findText(
@@ -537,20 +537,19 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
     bool paired = !added.isEmpty() && added["type"] == "assistant" &&
                   history.size() > 1 &&
                   history[history.size()-2].toObject()["type"] == "request";
-    auto standalone_request = [&](int index)
+
+    if(added.isEmpty() || paired || added["type"] == "request")
     {
-        return history[index].toObject()["type"] == "request" &&
-               (index+1 == history.size() ||
-                history[index+1].toObject()["type"] != "assistant");
-    };
-    auto request_window = [](const QJsonObject& entry)
-    {
-        return QJsonDocument::fromJson(entry["text"].toString().toUtf8()).
-               object()["window"].toVariant().toString();
-    };
-    bool working = info.processes;
-    if(added.isEmpty() || working || paired || added["type"] == "request")
-    {
+        auto standalone_request = [&](int index)
+        {
+            return history[index].toObject()["type"] == "request" &&
+                   (index+1 == history.size() || history[index+1].toObject()["type"] != "assistant");
+        };
+        auto request_window = [](const QJsonObject& entry)
+        {
+            return QJsonDocument::fromJson(entry["text"].toString().toUtf8()).object()["window"].toVariant().toString();
+        };
+
         ui->ai_chat_history->clear();
         for(int index = 0;index < history.size();++index)
         {
@@ -588,7 +587,7 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
     else
         append(added);
 
-    if(working)
+    if(info.processes)
         append(QJsonObject{{"type","assistant"},
                            {"text","● AI agent is working…"}});
 
@@ -1450,7 +1449,11 @@ MainWindow::MainWindow(QWidget *parent) :
                     findChild<QPushButton*>("ai_project_title")->
                     setStyleSheet(i == item ? "background:#dce9f9;" : "");
         if(item)
-            show_ai_project(item->data(Qt::UserRole).toString());
+        {
+            auto session = item->data(Qt::UserRole).toString();
+            select_agent_model(ai_infos[session]);
+            show_ai_project(session);
+        }
         else
             ui->ai_chat_history->clear();
     });
