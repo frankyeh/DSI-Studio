@@ -442,9 +442,15 @@ void MainWindow::show_ai_project(const QString& agent,QJsonObject added)
     if(index >= 0)
         ui->ai_agent_selector->setCurrentIndex(index);
 
-    auto saved_model = ai_model_settings.value(agent)["model"].toString();
-    if(!saved_model.isEmpty())
-        ui->ai_model_selector->setCurrentText(saved_model);
+    auto saved_model = ai_model_settings.value(agent).value("model").toString();
+    if(saved_model.isEmpty())
+        saved_model = settings.value(
+                                  "ai/default_model","default").toString();
+
+    if(ui->ai_model_selector->findText(saved_model) < 0)
+        saved_model = "default";
+
+    ui->ai_model_selector->setCurrentText(saved_model);
 
 
     auto request_content = [](const QJsonObject& entry,bool compact = false)
@@ -669,9 +675,16 @@ void MainWindow::refresh_ollama_models()
 
         if(ui->ai_agent_selector->currentIndex() == index)
         {
+            auto selected = ui->ai_model_selector->currentText();
             ui->ai_model_selector->clear();
             ui->ai_model_selector->addItem("default");
             ui->ai_model_selector->addItems(models);
+            auto selected_index = ui->ai_model_selector->findText(selected);
+            if(selected_index < 0)
+                selected_index = ui->ai_model_selector->findText(
+                    settings.value("ai/default_model","default").toString());
+            ui->ai_model_selector->setCurrentIndex(
+                selected_index < 0 ? 0 : selected_index);
         }
     };
 
@@ -816,8 +829,7 @@ void MainWindow::on_ai_quick_settings_clicked()
     refresh_ollama_models();
 }
 
-void MainWindow::start_ai(const QString& agent,const QString& text,
-                             bool add_history)
+void MainWindow::start_ai(QString agent,const QString& text,bool add_history)
 {
     auto provider = agent.section('@',0,0);
     if(provider.isEmpty())
@@ -825,9 +837,7 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
     bool codex = provider.contains("codex",Qt::CaseInsensitive);
     bool ollama = provider.contains("ollama",Qt::CaseInsensitive);
     bool claude = ollama || provider.contains("claude",Qt::CaseInsensitive);
-    auto executable = ui->ai_agent_selector->itemData(
-        ui->ai_agent_selector->findText(codex ? "Codex" : "Claude",
-                                         Qt::MatchStartsWith),Qt::UserRole+1).toString();
+    auto executable = ui->ai_agent_selector->itemData(ui->ai_agent_selector->findText(codex ? "Codex" : "Claude",Qt::MatchStartsWith),Qt::UserRole+1).toString();
     if(!codex && !claude)
     {
         QMessageBox::warning(this,"AI Agent","Only Codex and Claude-based sessions are supported.");
@@ -837,8 +847,7 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
     {
         if(!add_history && !agent.isEmpty())
             ai_prompts[agent].append(text);
-        QMessageBox::warning(this,"AI Agent",
-                             "AI agent is not installed or cannot be located.");
+        QMessageBox::warning(this,"AI Agent","AI agent is not installed or cannot be located.");
         return;
     }
     if(ollama && settings.value("ai/ollama_host","localhost").toString().trimmed().isEmpty())
@@ -848,24 +857,20 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
     }
 
     auto session = ai_sessions.value(agent,agent.section('@',1));
-    if(!agent.isEmpty() && claude && session.isEmpty())
-    {
-        QMessageBox::warning(this,"AI Agent",
-            "Claude resume requires the sessionId field from its session file.");
-        return;
-    }
+    bool new_session = session.isEmpty();
+
     if(agent.isEmpty() && claude)
     {
-        QMessageBox::warning(this,"AI Agent",
-            "Start Claude Code first, then connect it with its sessionId.");
-        return;
+        session = QUuid::createUuid().toString(QUuid::WithoutBraces);
+        agent = QString(ollama ? "Ollama" : "Claude")+"@"+session;
+        ai_sessions[agent] = session;
     }
+
     if(!agent.isEmpty() && session.isEmpty())
     {
         if(!add_history)
             ai_prompts[agent].append(text);
-        QMessageBox::warning(this,"AI Agent",
-                             "This project has no AI agent session.");
+        QMessageBox::warning(this,"AI Agent","This project has no AI agent session.");
         return;
     }
 
@@ -1054,12 +1059,12 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
         process->deleteLater();
     });
 
-    bool bootstrap = session.isEmpty() && codex;
+    bool bootstrap = new_session && codex;
     bool initial_task = !add_history && ai_projects[agent].size() == 1;
     QString prompt = bootstrap ?
         "Initialize this Codex session and exit immediately. Do not read files, "
         "use tools, or reply to the user." : text;
-    if((session.isEmpty() && !bootstrap) || initial_task)
+    if((new_session && !bootstrap) || initial_task)
     {
         QDir app(QApplication::applicationDirPath());
         prompt +=
@@ -1117,7 +1122,7 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
     }
     else
     {
-        args = {"-p","--resume",session};
+        args = {"-p",new_session ? "--session-id" : "--resume",session};
         if(!model.isEmpty())
             args << "--model" << model;
         args << prompt;
@@ -1134,6 +1139,12 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
         env.insert("ANTHROPIC_BASE_URL",url.toString());
         env.insert("ANTHROPIC_AUTH_TOKEN","ollama");
         env.insert("ANTHROPIC_API_KEY","");
+        if(!model.isEmpty())
+            for(auto name : {"ANTHROPIC_DEFAULT_HAIKU_MODEL",
+                              "ANTHROPIC_DEFAULT_SONNET_MODEL",
+                              "ANTHROPIC_DEFAULT_OPUS_MODEL",
+                              "CLAUDE_CODE_SUBAGENT_MODEL"})
+                env.insert(name,model);
         process->setProcessEnvironment(env);
     }
 
@@ -1283,15 +1294,17 @@ MainWindow::MainWindow(QWidget *parent) :
 #endif
         if(!QFileInfo::exists(claude_path))
             claude_path.clear();
-        set_agent("Claude",claude_path,{});
+        set_agent("Claude",claude_path,{"sonnet","opus"});
     }
     {
         set_agent("Ollama",{},{});
         refresh_ollama_models();
     }
+
     if(codex_path.isEmpty() && (!claude_path.isEmpty() || !ollama_path.isEmpty()))
         ui->ai_agent_selector->setCurrentText(
             claude_path.isEmpty() ? "Ollama" : "Claude");
+
     ui->ai_agent_selector->setEnabled(
         !codex_path.isEmpty() || !claude_path.isEmpty() || !ollama_path.isEmpty());
     auto update_models = [this]
@@ -1307,8 +1320,13 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->ai_agent_selector,&QComboBox::currentTextChanged,this,
             [update_models] { update_models(); });
     update_models();
-    ui->ai_agent_selector->setCurrentText(
-        settings.value("ai/default_agent",ui->ai_agent_selector->currentText()).toString());
+
+    auto default_agent = settings.value("ai/default_agent",ui->ai_agent_selector->currentText()).toString();
+    auto default_index = ui->ai_agent_selector->findText(
+        default_agent,Qt::MatchStartsWith);
+    if(default_index >= 0)
+        ui->ai_agent_selector->setCurrentIndex(default_index);
+
     ui->ai_model_selector->setCurrentText(
         settings.value("ai/default_model",ui->ai_model_selector->currentText()).toString());
     qApp->installEventFilter(this);
