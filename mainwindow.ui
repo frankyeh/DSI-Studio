@@ -537,7 +537,7 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
                  </property>
                  <item>
                   <property name="text">
-                   <string>Default model</string>
+                   <string>default</string>
                   </property>
                  </item>
                 </widget>
