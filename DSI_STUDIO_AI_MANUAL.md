@@ -9,8 +9,8 @@ do not read the entire inventory.
 - Each named-pipe connection sends exactly one request and then closes.
 - Use a native local client for `\\\\.\\pipe\\dsi-studio` first. Do not run
   `dsi_agent.ps1`, `dsi_studio.exe`, or another wrapper merely because it is
-  available. Use one only after direct named-pipe access is unavailable or
-  fails.
+  available. If direct access is unavailable or fails, report the condition
+  and ask before using a wrapper.
 - Send separate non-empty `agent` and `session` strings and reuse the exact
   pair. `agent` must include `Codex` or `Claude` and must not contain `@`.
   `session` is the unique conversation key; the agent name is stored
@@ -31,6 +31,15 @@ do not read the entire inventory.
   `LIST`.
 - Use `LIST` to obtain fresh windows, then target only its numeric window ID.
   Never send `main`, `tracking`, `image`, a title, or a filename as `window`.
+- If a required window disappears or returns `window not found`, assume the
+  user closed it. Do not check, reopen, or retry it. Stop work and send one
+  `CHAT` asking the user whether to continue or stop; resume only after
+  their reply.
+- Poll an accepted asynchronous operation. If a response says it is loading,
+  first send `CHAT` stating that waiting will continue and the user can
+  interrupt, then check every 3 seconds unless interrupted; process every
+  reply. Loading will usually finish. Never automatically repeat a failed,
+  timed-out, unavailable, or unexpected request.
 - In DSI Studio, FIB means `.fz`; never substitute `.sz`, which is an SRC file.
 - Use GUI control. **Do not use `run_cli` unless the user explicitly says to
   run the CLI.** Never infer CLI permission from a requested outcome.
@@ -63,7 +72,8 @@ do not read the entire inventory.
 
 ## Reply formats
 
-- `LIST`, `LOG`, filename-open replies, and validation errors are text.
+- `LIST`, `LOG`, `CHAT`, filename-open replies, and validation errors are text.
+- `CHAT` adds user-facing chat and returns `OKAY` without console history.
 - `LIST` lines are `type<TAB>numeric-id<TAB>title`; there is no `.windows`
   property.
 - A `CMD` reply beginning with `[` is a JSON array of
@@ -162,8 +172,8 @@ verify the created file and inspect it when possible.
 
 Minimize round trips: use one initial `LIST`, batch independent synchronous
 commands for one window, verify concisely, and send the final reply with
-`LOG`. Diagnostic `LOG` is incremental and capped; final `LOG` returns no
-console history but still advances the agent's cursor.
+`CHAT`. Use `LOG` only for incremental diagnostics because it returns console
+history and advances the agent's cursor.
 `[AI REQUEST] ... ⏱` reports synchronous DSI-side request handling time, not
 agent runtime or asynchronous completion.
 
@@ -274,11 +284,11 @@ already grants it.
 | `main` | `open_image` | `1+` | GUI-state change | Main-window only; send one flat command containing all complete paths. |
 | `main` | `run_cli` | `1` | Explicit CLI request only | Synchronous CLI action on GUI thread; verify outputs. |
 | `main` | `hub download` | `4` | File creation | Deferred file write; verify path and stable size. |
-| `main` | `hub files` | `2-5` | GUI-state change | Immediate filtered/paginated list; retry if Hub data is loading. |
+| `main` | `hub files` | `2-5` | GUI-state change | If loading, send `CHAT`, then check every 3 seconds. |
 | `main` | `hub help` | `0` | Read-only | Immediate. |
 | `main` | `hub open` | `3` | File creation | Deferred: handler may schedule the open after a successful result; poll with JSON `LIST`. |
-| `main` | `hub repos` | `0` | GUI-state change | Immediate unless Hub initialization itself is still loading. |
-| `main` | `hub tags` | `1` | GUI-state change | Immediate list; retry if output says loading. |
+| `main` | `hub repos` | `0` | GUI-state change | If loading, send `CHAT`, then check every 3 seconds. |
+| `main` | `hub tags` | `1` | GUI-state change | If loading, send `CHAT`, then check every 3 seconds. |
 | `parameters` | `list_param` | `1` | Read-only | Immediate. |
 | `parameters` | `set_param` | `2` | GUI-state change | Immediate state mutation. |
 | `parameters` | `set_params` | `1` | GUI-state change | Applies multiple values, then requests one redraw. |
