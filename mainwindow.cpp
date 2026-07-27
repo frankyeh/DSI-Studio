@@ -201,7 +201,7 @@ void ai_request_command(QLocalSocket* socket,const QString& session,
     auto id = request["window"].toVariant().toString();
     auto commands = request["command"].toArray();
     if(id.isEmpty() || commands.isEmpty())
-        return fail("invalid command");
+        return fail("invalid CMD. Read DSI_STUDIO_AI_MANUAL.md and retry.");
     if(commands[0].isString())
     {
         QJsonArray batch;
@@ -278,8 +278,9 @@ void ai_request_command(QLocalSocket* socket,const QString& session,
                 cmd.push_back(value.toString().toUtf8().toStdString());
 
         bool okay = error.isEmpty() && run(cmd,output,error);
-        if(!okay && error.isEmpty())
-            error = "command failed";
+        if(!okay)
+            error = (error.isEmpty() ? "command failed" : error) +
+                    ". Read DSI_STUDIO_AI_MANUAL.md and retry.";
 
         result["okay"] = okay;
         result["output"] = output;
@@ -1072,10 +1073,7 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
 void MainWindow::run_ai(const ai_launch& launch,QStringList args)
 {
     launch.process->setProperty("bootstrap",launch.bootstrap);
-    tipl::out() << ai_log("start " + launch.executable + " with parameters:");
-    for(const auto& each : args)
-        if(!each.trimmed().isEmpty())
-            tipl::out() << ai_log("arg: " + each);
+    tipl::out() << ai_log("start " + launch.executable + " with args: " + args.join(" ").remove("\n"));
     launch.process->start(launch.executable,args);
 
 }
