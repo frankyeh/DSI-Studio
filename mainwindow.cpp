@@ -379,14 +379,19 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
     if(!item)
     {
         item = new QListWidgetItem;
+        item->setText(project_title);
         item->setData(Qt::UserRole,session);
+
         ui->ai_project_list->insertItem(0,item);
         info.project_items = item;
 
         auto* row = new QWidget;
+        item->setSizeHint(row->sizeHint());
         auto* title = new QPushButton(row);
         title->setObjectName("ai_project_title");
         title->setFlat(true);
+        title->setText(project_title);
+        title->setToolTip(project_title);
 
         auto* button = new QToolButton(row);
         button->setObjectName("ai_project_menu_button");
@@ -417,16 +422,9 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
         connect(button,&QToolButton::pressed,this,
                 [this,item]{ui->ai_project_list->setCurrentItem(item);});
     }
-
-    item->setText(project_title);
-    auto* row = ui->ai_project_list->itemWidget(item);
-    auto* title = row->findChild<QPushButton*>("ai_project_title");
-    title->setText(project_title);
-    title->setToolTip(project_title);
-    item->setSizeHint(row->sizeHint());
-
     if(!added.isEmpty() && added["type"].toString() != "user")
     {
+        auto row = ui->ai_project_list->itemWidget(item);
         row->setStyleSheet("background:#ffe082;border-radius:5px;");
         row->findChild<QTimer*>("ai_chat_blink")->start();
     }
@@ -987,7 +985,6 @@ void MainWindow::start_ai(QString session,const QString& text,bool add_history)
             add_ai_history(session,"activity",
                            "Cannot start AI agent: "+
                            process->errorString());
-            show_ai_project(session);
         }
         process->deleteLater();
     });
@@ -1369,7 +1366,9 @@ MainWindow::MainWindow(QWidget *parent) :
             }
         }
         ai_infos[session].project_titles = title;
-        show_ai_project(session);
+        item->setText(title);
+        button->setText(title);
+        button->setToolTip(title);
     });
 
     connect(ai_project_menu->addAction("Details..."),&QAction::triggered,this,[this]
