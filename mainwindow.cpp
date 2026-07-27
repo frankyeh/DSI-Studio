@@ -706,46 +706,57 @@ void MainWindow::refresh_ollama_models()
     auto index = int(ai_provider::Claude);
     auto set_models = [this,index](QStringList ollama_models)
     {
-        auto models = ui->ai_agent_selector->itemData(index).toStringList();
-        auto profiles = ui->ai_agent_selector->itemData(
-                            index,Qt::UserRole+2).toJsonObject();
-        for(auto i = models.size();i--;)
-            if(profiles[models[i]].toObject()["provider"].toInt() ==
-               int(ai_model_provider::Ollama))
-                profiles.remove(models.takeAt(i));
-        for(const auto& model : ollama_models)
+        for(auto index : {int(ai_provider::Codex),int(ai_provider::Claude)})
         {
-            models << model;
-            profiles[model] =
-                QJsonObject{{"provider",int(ai_model_provider::Ollama)}};
-        }
-        models.removeDuplicates();
-        models.sort(Qt::CaseInsensitive);
-        ui->ai_agent_selector->setItemData(index,models);
-        ui->ai_agent_selector->setItemData(
-            index,QVariant::fromValue(profiles),Qt::UserRole+2);
+            if(ui->ai_agent_selector->itemData(index,Qt::UserRole+1).toString().isEmpty())
+                continue;
 
-        if(ui->ai_agent_selector->currentIndex() == index)
-        {
-            auto selected = ui->ai_model_selector->currentText();
-            ui->ai_model_selector->clear();
-            ui->ai_model_selector->addItem("default");
-            for(const auto& model : models)
-                ui->ai_model_selector->addItem(
-                    model,QVariant::fromValue(profiles[model].toObject()));
-            auto selected_index = ui->ai_model_selector->findText(selected);
-            if(selected_index < 0)
-                selected_index = ui->ai_model_selector->findText(
-                    settings.value("ai/default_model","default").toString());
-            ui->ai_model_selector->setCurrentIndex(
-                selected_index < 0 ? 0 : selected_index);
+            auto models = ui->ai_agent_selector->itemData(index).toStringList();
+            auto profiles = ui->ai_agent_selector->itemData(
+                                                     index,Qt::UserRole+2).toJsonObject();
+
+            for(auto i = models.size();i--;)
+                if(profiles[models[i]].toObject()["provider"].toInt() ==
+                    int(ai_model_provider::Ollama))
+                    profiles.remove(models.takeAt(i));
+
+            for(const auto& model : ollama_models)
+            {
+                models << model;
+                profiles[model] =
+                    QJsonObject{{"provider",int(ai_model_provider::Ollama)}};
+            }
+
+            models.removeDuplicates();
+            models.sort(Qt::CaseInsensitive);
+            ui->ai_agent_selector->setItemData(index,models);
+            ui->ai_agent_selector->setItemData(
+                index,QVariant::fromValue(profiles),Qt::UserRole+2);
+
+            if(ui->ai_agent_selector->currentIndex() == index)
+            {
+                auto selected = ui->ai_model_selector->currentText();
+                ui->ai_model_selector->clear();
+                ui->ai_model_selector->addItem("default");
+
+                for(const auto& model : models)
+                    ui->ai_model_selector->addItem(
+                        model,QVariant::fromValue(profiles[model].toObject()));
+
+                auto selected_index =
+                    ui->ai_model_selector->findText(selected);
+                if(selected_index < 0)
+                    selected_index = ui->ai_model_selector->findText(
+                        settings.value("ai/default_model").toString());
+                ui->ai_model_selector->setCurrentIndex(
+                    std::max(0,selected_index));
+            }
         }
     };
 
     auto host = settings.value("ai/ollama_host","localhost").
                 toString().trimmed();
-    if(ui->ai_agent_selector->itemData(
-           index,Qt::UserRole+1).toString().isEmpty() || host.isEmpty())
+    if(host.isEmpty())
         return set_models({});
 
     if(!host.contains("://"))
@@ -906,9 +917,9 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
     launch.profile = model_info["profile"].toString();
     launch.model_provider =
         ai_model_provider(model_info["provider"].toInt());
-    if(provider == ai_provider::Claude &&
-       launch.model_provider == ai_model_provider::Ollama &&
-       settings.value("ai/ollama_host","localhost").toString().trimmed().isEmpty())
+
+    if(launch.model_provider == ai_model_provider::Ollama &&
+        settings.value("ai/ollama_host","localhost").toString().trimmed().isEmpty())
     {
         QMessageBox::warning(
             this,"AI Agent","Set the Ollama host/IP in AI Settings first.");
@@ -1186,6 +1197,22 @@ void MainWindow::start_codex(QString session,const QString& text,bool add_histor
     });
 
     QStringList args{"exec"};
+    if(launch.model_provider == ai_model_provider::Ollama)
+    {
+        auto host = settings.value("ai/ollama_host","localhost").toString().trimmed();
+        if(!host.contains("://"))
+            host = "http://"+host;
+
+        QUrl url(host);
+        url.setPort(settings.value("ai/ollama_port",11434).toInt());
+        url.setPath("/v1");
+
+        auto env = QProcessEnvironment::systemEnvironment();
+        env.insert("CODEX_OSS_BASE_URL",url.toString());
+        launch.process->setProcessEnvironment(env);
+
+        args << "--oss" << "--local-provider=ollama";
+    }
     if(!launch.model.isEmpty())
     {
         args << "--model" << launch.model;
