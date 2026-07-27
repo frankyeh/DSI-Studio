@@ -24,9 +24,16 @@ its first request; otherwise DSI Studio cannot later resume the correct chat.
 
 ### Codex launched by DSI Studio
 
-DSI Studio creates the thread, then resumes it with the exact thread ID in the
-task prompt. Use that supplied value as `session` in every request; never
-replace it with a generated ID.
+DSI Studio starts a new Codex chat once with `codex exec --json` and the actual
+user task. There is no initialization/bootstrap run and DSI Studio does not
+launch the same task again. Process the initiating prompt immediately.
+
+For this first run, read `CODEX_THREAD_ID` from the Codex environment and use
+that exact UUID as `session` in the first and every subsequent local-server
+request. DSI Studio also captures the same value from
+`thread.started.thread_id` so it can resume later with `codex exec resume`.
+Never send an empty, guessed, or generated session ID, and do not wait for a
+second launch before contacting DSI Studio.
 
 ### Codex Desktop fallback
 
@@ -34,7 +41,8 @@ Codex Desktop may expose a task UUID indirectly in its injected runtime context
 or a task-specific path, for example `...\visualizations\...\019f...`. If a
 UUID is explicitly present there, use it as the Codex session ID. Do not guess,
 generate, or scan for an ID. This is a best-effort fallback; the reliable route
-is DSI Studio launching Codex with `exec --json` and capturing `thread.started`.
+is DSI Studio launching Codex with `exec --json`, using `CODEX_THREAD_ID`, and
+capturing `thread.started`.
 
 ### Claude Code
 
@@ -48,8 +56,11 @@ DSI Studio `session` value; DSI Studio uses it for
 
 ```powershell
 $DsiAgent = 'Codex'
-$DsiSession = '<initiating-chat-session-id>'
+$DsiSession = $env:CODEX_THREAD_ID
 ```
+
+For Claude or an externally initiated/resumed agent, set `$DsiSession` to the
+exact initiating-chat session ID obtained as described above.
 
 ## Direct named-pipe connection
 
@@ -90,7 +101,7 @@ function Invoke-Dsi($request)
     }
 }
 $DsiAgent = 'Codex'
-$DsiSession = '<initiating-chat-session-id>'
+$DsiSession = $env:CODEX_THREAD_ID
 ```
 
 The two-argument constructor works in Windows PowerShell 5.1 and defaults to a
@@ -240,6 +251,16 @@ Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
              request='CMD';window='2';command=@('list_region')}
 
+# Discover parameter IDs, then query one value.
+Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;request='CMD';window='2';
+             command=@('list_param')}
+Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;request='CMD';window='2';
+             command=@('list_param','fa_threshold')}
+
+# Poll tracking compactly; request the full tract list only when needed.
+Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;request='CMD';window='2';
+             command=@('list_tract','status')}
+
 # Command parameters stay separate array elements.
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
              request='CMD';window='2';command=@('set_region_name','0','Tumor Core')}
@@ -289,6 +310,11 @@ follows. Treat every returned prompt as new user input.
 
 - Reuse the latest `LIST` until a window opens or closes. Poll only the relevant
   `list_*` command; do not repeat `LIST` to monitor unchanged windows.
+- Use `list_tract status` while tracking is running. It returns only running-job
+  and bundle counts; request full `list_tract` after completion when details are
+  needed.
+- Call `list_param` without an ID once to discover valid IDs, then query only
+  the needed parameter values.
 - Use `LOG` only after failure, unexpected state, or when a targeted list command
   cannot verify completion. Each call may return up to 4096 characters.
 - Batch independent synchronous commands for the same window into one `CMD`.
@@ -347,34 +373,40 @@ path into fields, or substitute `add_image`. Refresh `LIST` afterward.
 
 ## Required behavior
 
-1. Use a direct local named-pipe client. If it is unavailable or fails, ask
-   before using an executable wrapper. Use GUI commands. **Do not use `run_cli` unless the user explicitly says to
-   run the CLI.** Never infer CLI permission from a requested outcome.
-2. Call the top-level `LIST` request first and after windows open or close; it
+1. For a new Codex chat launched by DSI Studio, process the initiating task in
+   the first run, use `CODEX_THREAD_ID` as `session`, and do not wait for or
+   trigger a bootstrap/resume run.
+2. Use a direct local named-pipe client. If it is unavailable or fails, ask
+   before using an executable wrapper. Use GUI commands. **Do not use `run_cli`
+   unless the user explicitly says to run the CLI.** Never infer CLI permission
+   from a requested outcome.
+3. Call the top-level `LIST` request first and after windows open or close; it
    does not use a `window` field.
-3. Use only numeric IDs returned by the latest `LIST` for `CMD` requests.
-4. Discover values with `list_slice`, `list_region`, `list_tract`,
-   `list_param`, `list_atlas`, `list_unet`, and `list_auto_tract`.
-5. Treat `okay:true` as acceptance. Poll the relevant list command for
+4. Use only numeric IDs returned by the latest `LIST` for `CMD` requests.
+5. Discover values with `list_slice`, `list_region`, `list_tract`,
+   `list_param`, `list_atlas`, `list_unet`, and `list_auto_tract`. Use
+   `list_tract status` for compact polling and parameterless `list_param` to
+   discover valid IDs.
+6. Treat `okay:true` as acceptance. Poll the relevant list command for
    asynchronous completion; use `LOG` only when diagnostics are needed.
    If a response says it is loading, first send `CHAT` stating that waiting
    will continue and the user can interrupt, then check every 3 seconds unless
    interrupted; process every reply.
    Never automatically repeat a failed, timed-out, unavailable, or unexpected
    request.
-6. If a required window disappears or returns `window not found`, assume the
+7. If a required window disappears or returns `window not found`, assume the
    user closed it. Do not recheck, reopen, or retry it. Stop and send one
    `CHAT` asking whether to continue or stop; resume only after the reply.
-7. Verify outputs. Ask before destructive operations or overwrites.
-8. Do not answer modal dialogs remotely; tell the user what is required.
-9. Keep the user informed with brief intent-focused `chat` updates at meaningful
-   phase changes, attached to requests already needed for the task.
-10. After understanding the initiating prompt, send one concise `TITLE`.
+8. Verify outputs. Ask before destructive operations or overwrites.
+9. Do not answer modal dialogs remotely; tell the user what is required.
+10. Keep the user informed with brief intent-focused `chat` updates at meaningful
+    phase changes, attached to requests already needed for the task.
+11. After understanding the initiating prompt, send one concise `TITLE`.
     Send another `TITLE` later only with user permission to rename.
-11. Send the final answer once with `CHAT`.
-12. Minimize round trips: reuse the latest `LIST`, batch safe same-window
+12. Send the final answer once with `CHAT`.
+13. Minimize round trips: reuse the latest `LIST`, batch safe same-window
     commands, poll only relevant state, and avoid unnecessary `LOG` calls.
-13. When asked to operate DSI Studio, execute the requests. Do not return a
+14. When asked to operate DSI Studio, execute the requests. Do not return a
     script or tutorial unless the user asks for one.
 
 If DSI Studio resumes an agent, reconnect with the exact same agent and
