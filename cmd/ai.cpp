@@ -184,7 +184,7 @@ void ai_request_list(QLocalSocket* socket,const QString& session)
         const auto& prog = tipl::status_list.back();
         status = QString::fromStdString(prog.status).section('\n',0,0).replace('\t',' ');
         if(!prog.at.empty())
-            status += " " + QString::fromStdString(prog.at);
+            status += " " + QString::fromStdString(prog.at).section('\n',0,0).replace('\t',' ');
     }
 
     QStringList result;
@@ -436,11 +436,15 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
                             session,request["title"].toString()) ?
                             "OKAY" : "ERROR\tinvalid title");
 
+    auto chat = request["chat"].toString().trimmed();
     auto activity = request;
     activity.remove("chat");
     auto json = QString::fromUtf8(QJsonDocument(activity).toJson(
                                       QJsonDocument::Compact));
-    tipl::out() << ai_log(json);
+
+    if(type != "LIST" || !chat.isEmpty())
+        tipl::out() << ai_log(json);
+
     if(type == "CMD")
         for(auto* window : QApplication::allWidgets())
             if(window->property("remote_id").toString() ==
@@ -458,9 +462,10 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
             }
     json = QString::fromUtf8(QJsonDocument(activity).toJson(
                                  QJsonDocument::Compact));
-    main_window->add_ai_history(session,"request",json);
 
-    auto chat = request["chat"].toString().trimmed();
+    if(type != "LIST" || !chat.isEmpty())
+        main_window->add_ai_history(session,"request",json);
+
     if(!chat.isEmpty())
         main_window->add_ai_history(session,"assistant",chat);
 
