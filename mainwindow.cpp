@@ -283,6 +283,8 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
         return ai_reply(socket,{},"ERROR\tinvalid agent: include Codex, Claude, or Gemini in the agent name");
     if(session.isEmpty())
         return ai_reply(socket,{},"ERROR\tmissing session: provide the initiating-chat session ID and reuse it for the entire conversation");
+    if(QUuid(session).toString(QUuid::WithoutBraces).compare(session,Qt::CaseInsensitive))
+        return ai_reply(socket,{},"ERROR\tinvalid session: read DSI_STUDIO_AI_SETUP.md and obtain the correct resumable provider thread ID");
 
     auto index = main_window->ui->ai_agent_selector->findText(
         provider,Qt::MatchStartsWith);
