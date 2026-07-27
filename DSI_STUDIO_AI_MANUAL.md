@@ -12,11 +12,13 @@ do not read the entire inventory.
   available. Use one only after direct named-pipe access is unavailable or
   fails.
 - Send separate non-empty `agent` and `session` strings and reuse the exact
-  pair. `agent` must include `Codex`, `Claude`, or `Gemini` and must not
+  pair. `agent` must include `Codex`, `Claude`, or `Ollama` and must not
   contain `@`; DSI Studio identifies it as `agent@session`. `session` must be
   the provider's exact resumable initiating-chat thread ID in canonical UUID
   form (Codex: `thread.started.thread_id`), never a friendly label, so DSI
   Studio can return prompts to and resume that chat.
+- `Ollama` runs through Claude with the configured local endpoint and uses its
+  Claude session ID.
 - For a new Codex chat launched by DSI Studio, its task prompt supplies the
   exact session value. Use it in every request; never invent a substitute.
 - For an externally initiated Codex Desktop chat, a task UUID may be visible
