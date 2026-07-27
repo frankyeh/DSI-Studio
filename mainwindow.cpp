@@ -1071,18 +1071,13 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
 
 void MainWindow::run_ai(const ai_launch& launch,QStringList args)
 {
-    tipl::out() << ai_log(launch.new_session ?
-        QString("starting new %1 chat executable=%2 model=%3 prompt_chars=%4").
-        arg(launch.name,launch.executable,
-            launch.model.isEmpty() ? QString("default") : launch.model).
-        arg(launch.text.size()) :
-        QString("resuming %1 session agent=%2 session=%3 executable=%4 model=%5 prompt_chars=%6").
-        arg(launch.name).arg(ai_infos[launch.session].agent_name).
-        arg(launch.session,launch.executable,
-            launch.model.isEmpty() ? QString("default") : launch.model).
-        arg(launch.text.size()));
     launch.process->setProperty("bootstrap",launch.bootstrap);
+    tipl::out() << ai_log("start " + launch.executable + " with parameters:");
+    for(const auto& each : args)
+        if(!each.trimmed().isEmpty())
+            tipl::out() << ai_log("arg: " + each);
     launch.process->start(launch.executable,args);
+
 }
 void MainWindow::start_claude_process(const ai_launch& launch)
 {
