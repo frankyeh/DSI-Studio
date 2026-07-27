@@ -57,10 +57,10 @@ Do not reread the entire file for each action.
 | Recent FIB files | Main: `list_recent_fib` |
 | Recent SRC files | Main: `list_recent_src` |
 | Slices/readiness/registration | Tracking: `list_slice` |
-| Regions | Tracking: `list_region` |
-| Full tract details | Tracking: `list_tract` |
-| Compact tract polling | Tracking: `list_tract status` |
-| Valid parameter IDs | Tracking: `list_param` |
+| Regions and ROI types | Tracking: `list_region` |
+| Full tract-bundle details | Tracking: `list_tract` |
+| Compact tracking polling | Tracking: `list_tract status` |
+| Valid tracking/GUI parameter IDs | Tracking: `list_param` |
 | One parameter value | Tracking: `list_param <id>` |
 | Atlases | Tracking: `list_atlas` |
 | Segmentation models | Tracking: `list_unet` |
@@ -87,7 +87,8 @@ Use it while tracking is active. Request full `list_tract` after completion
 only when bundle details are needed.
 
 `list_param` without an ID lists all valid IDs. Query only needed values after
-that discovery call.
+that discovery call. Change tracking behavior with `set_param` or `set_params`
+before starting tracking.
 
 ## Request formats
 
@@ -188,9 +189,10 @@ Every command and parameter is a separate JSON string.
 | Read parameter | `["list_param",id]` |
 | Set parameter | `["set_param",id,value]` |
 | Set parameters | `["set_params","id=value&id=value"]` |
-| Start tracking | `["run_tracking",name,optional-settings-or-ROI,optional-tolerance]` |
+| Start tracking | `["run_tracking",bundle-name]` |
+| Start tracking with regions | `["run_tracking",bundle-name,"region-index:type&region-index:type"]` |
 | Compact tracking poll | `["list_tract","status"]` |
-| Automatic tracking | `["run_auto_track",tract,optional-ROI]` |
+| Automatic tracking | `["run_auto_track",tract-name,optional-ROI]` |
 | Rotate 3D view | `["rotate","degrees x y z"]` |
 | Save rendering | `["save_hd_screen",path,"width height"]` |
 | Run CLI, explicit request only | `["run_cli","--action=rec --loop=C:\\data\\*.sz --method=4"]` |
@@ -199,6 +201,38 @@ Every command and parameter is a separate JSON string.
 and `hub download`, pass either the exact filename or the numeric index from
 that same `hub files` result. Indices apply only to the currently selected
 repository and tag.
+
+### Fiber tracking
+
+`run_tracking` has no tracking-method argument. DSI Studio uses its tracking
+algorithm with the directional information already stored in the loaded FIB
+and the current tracking parameters. GQI, DTI, and Q-ball describe how the
+FIB's directional information was reconstructed; do not pass them to
+`run_tracking`.
+
+The required `bundle-name` is only the label assigned to the new tract bundle.
+For example:
+
+```text
+["run_tracking","Whole Brain"]
+```
+
+This starts tracking using the current settings. To change settings, first use
+`list_param` to discover valid IDs, then use `set_param` or `set_params`.
+
+To apply regions, call `list_region` and construct the optional third argument
+from returned region indices and types:
+
+```text
+["run_tracking","Corticospinal Tract","0:3&1:0&2:1"]
+```
+
+Here each item is `region-index:type`. Do not pass a tracking method, FIB
+reconstruction method, or tract name from an atlas in this field.
+
+The fourth internal `run_tracking` parameter is reserved for automatic
+tracking tolerance. Agents should use `run_auto_track` rather than supplying
+that parameter directly.
 
 ## File and window workflows
 
@@ -222,8 +256,9 @@ download and load it automatically.
 
 ## Asynchronous work
 
-Tracking is asynchronous. Use `list_tract status` until `running=0`, then call
-full `list_tract` only when details are needed.
+Tracking is asynchronous. A successful `run_tracking` reply means tracking was
+started. Use `list_tract status` until `running=0`, then call full `list_tract`
+only when bundle details are needed.
 
 Segmentation is complete when `list_region` shows the expected output.
 
