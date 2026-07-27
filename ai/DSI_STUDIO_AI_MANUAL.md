@@ -28,17 +28,19 @@ Do not reread the entire file for each action.
 - Ollama is a model provider, not an agent identity.
 - After understanding the initiating prompt, send one concise `TITLE`. Send a
   later `TITLE` only when the user permits renaming.
-- Call top-level `LIST` first. It does not use a window ID.
+- Call top-level `LIST` first. It returns global activity plus every window's
+  numeric ID and busy state; it does not use a window ID.
 - Every `CMD`, including every `list_*` command, requires a numeric `window`
-  returned by the latest `LIST`. Never use a type, title, filename, guessed ID,
-  or stale ID.
+  returned by `LIST`. Never use a type, title, filename, guessed ID, or stale ID.
 - Use GUI commands. Do not use `run_cli` unless the user explicitly requests
   CLI execution.
 - Discover names, indices, and parameter IDs before mutation. Never guess them.
 - `okay:true` means the handler accepted the command; asynchronous work may
   still be running.
-- Poll the relevant list command after an asynchronous operation. Use `LOG`
-  only for failures or states that targeted discovery cannot explain.
+- Poll top-level `LIST` for global and per-window activity. Use the relevant
+  `list_*` command only when detailed state or output verification is needed.
+- Use `LOG` only for failures or states that `LIST` and targeted discovery
+  cannot explain.
 - If a required window disappears or returns `window not found`, assume the
   user closed it. Do not reopen or retry it. Ask whether to continue.
 - Confirm destructive actions and overwrites. Verify every output file.
@@ -53,13 +55,13 @@ Do not reread the entire file for each action.
 
 | Need | Command |
 |---|---|
-| Windows | Top-level JSON `LIST` |
+| Global and per-window activity | Top-level JSON `LIST` |
 | Recent FIB files | Main: `list_recent_fib` |
 | Recent SRC files | Main: `list_recent_src` |
 | Slices/readiness/registration | Tracking: `list_slice` |
 | Regions and ROI types | Tracking: `list_region` |
 | Full tract-bundle details | Tracking: `list_tract` |
-| Compact tracking polling | Tracking: `list_tract status` |
+| Targeted tract polling | Tracking: `list_tract status` |
 | Valid tracking/GUI parameter IDs | Tracking: `list_param` |
 | One parameter value | Tracking: `list_param <id>` |
 | Atlases | Tracking: `list_atlas` |
@@ -83,8 +85,9 @@ mean the image is broken.
 running bundles
 ```
 
-Use it while tracking is active. Request full `list_tract` after completion
-only when bundle details are needed.
+`LIST` already reports the active tracking-job count for every tracking window.
+Use `list_tract status` only when a targeted tracking-window reply is useful;
+request full `list_tract` after completion when bundle details are needed.
 
 `list_param` without an ID lists all valid IDs. Query only needed values after
 that discovery call. Change tracking behavior with `set_param` or `set_params`
@@ -97,6 +100,45 @@ before starting tracking.
 ```json
 {"agent":"Codex","session":"<uuid>","cwd":"<path>","request":"LIST"}
 ```
+
+The reply is compact tab-separated text:
+
+```text
+OKAY<TAB>busy<TAB>level<TAB>status
+type<TAB>id<TAB>busy<TAB>tracking-jobs<TAB>title
+...
+```
+
+Example:
+
+```text
+OKAY	1	2	segment_brain (3/5)
+main	1	0	0	DSI Studio
+tracking	2	1	0	C:/data/a.fz
+tracking	3	1	2	C:/data/b.fz
+tracking	4	0	0	C:/data/c.fz
+```
+
+The first line reports application-wide state:
+
+- `busy=1` when a TIPL operation or any supported window is busy.
+- `level` is the active TIPL nesting depth, excluding the persistent application
+  root. It is `1` when only asynchronous work such as fiber tracking is active.
+- `status` is the deepest available TIPL status. When asynchronous tracking is
+  the only known activity, it is `fiber tracking`.
+
+Each following line reports a window:
+
+- `type` is `main`, `tracking`, or `image`.
+- `id` is the numeric value required by `CMD`.
+- `busy=1` indicates an active AI command, command sequence, fiber tracking, or
+  custom-slice registration associated with that window.
+- `tracking-jobs` is the number of active tracking bundles in that window.
+- `title` is the normalized window title/path.
+
+Global `busy` can be `1` while all window rows are `0` when TIPL reports work
+that cannot be reliably assigned to one window. Reuse the numeric IDs until a
+window opens or closes, but call `LIST` while waiting to obtain current activity.
 
 ### CMD
 
@@ -113,7 +155,7 @@ A safe same-window batch:
 ```
 
 Do not batch destructive, asynchronous, output-dependent, or modal-opening
-commands.
+commands. Do not send an empty command array.
 
 ### LOG
 
@@ -150,8 +192,9 @@ resolves to an existing file.
 
 - `LIST`, `LOG`, `CHAT`, `TITLE`, file-open replies, and validation errors are
   text.
-- `LIST` begins with `OKAY`; following lines are
-  `type<TAB>numeric-id<TAB>title`.
+- `LIST` begins with
+  `OKAY<TAB>busy<TAB>level<TAB>status`; each following line is
+  `type<TAB>numeric-id<TAB>busy<TAB>tracking-jobs<TAB>title`.
 - A `CMD` reply is a JSON array of
   `{index,okay,output,error?}` objects.
 - List-command data remains tab-separated text inside `output`; do not invent
@@ -192,7 +235,7 @@ Every command and parameter is a separate JSON string.
 | Set parameters | `["set_params","id=value&id=value"]` |
 | Start tracking | `["run_tracking",bundle-name]` |
 | Start tracking with regions | `["run_tracking",bundle-name,"region-index:type&region-index:type"]` |
-| Compact tracking poll | `["list_tract","status"]` |
+| Targeted tracking poll | `["list_tract","status"]` |
 | Automatic tracking | `["run_auto_track",tract-name,optional-ROI]` |
 | Rotate 3D view | `["rotate","degrees x y z"]` |
 | Save rendering | `["save_hd_screen",path,"width height"]` |
@@ -223,11 +266,14 @@ The command internally selects the requested slice. If that slice references a
 remote image, selection triggers its download and loading. DSI Studio waits for
 custom-slice registration before running segmentation, so a separate
 `set_slice_by_name` call is not required. To preload and inspect the state
-separately, use `set_slice <index>` and poll `list_slice` until `downloaded=1`,
-`ready=1`, and `registering=0` before calling `segment_brain`.
+separately, use `set_slice <index>` and poll `LIST` until the target tracking
+window is no longer busy, then confirm detailed slice fields with `list_slice`.
 
-A successful `segment_brain` reply means inference and region creation have
-finished. Verify the expected results with `list_region`.
+`segment_brain` is synchronous. Its `CMD` reply arrives after inference and
+region creation finish. While it runs, poll `LIST`; when DSI Studio can process
+Qt events, `level` and `status` report its current TIPL progress. A delayed
+`LIST` reply alone does not prove that the operation failed. Verify successful
+output with `list_region`.
 
 ### Fiber tracking
 
@@ -274,29 +320,32 @@ To open multiple images in one image window, send one flat `open_image` command
 to the numeric main-window ID. Do not send separate commands, target an image
 window, split a path into fields, or substitute `add_image`.
 
-After a window opens or closes, refresh `LIST`. Otherwise reuse the latest
-window IDs.
+After a window opens or closes, refresh `LIST`. Otherwise retain the IDs while
+using later `LIST` replies for current busy state.
 
 Most Hub FIB files contain an HTTP reference to their native T1w. After opening
 the FIB, call `list_slice`. Pass the returned T1w name or index directly to
 `segment_brain`, or use `set_slice <index>` first when download and registration
 should be observed separately.
 
-## Asynchronous work
+## Asynchronous and long-running work
 
-Tracking is asynchronous. A successful `run_tracking` reply means tracking was
-started. Use `list_tract status` until `running=0`, then call full `list_tract`
-only when bundle details are needed.
+Fiber tracking is asynchronous. A successful `run_tracking` reply means
+tracking started. Poll `LIST`; the target row's `tracking-jobs` reaches zero
+when no active tracking bundle remains. Call full `list_tract` afterward only
+when bundle details are needed.
 
-`segment_brain` is synchronous. A successful reply means segmentation has
-completed; use `list_region` to verify the created regions.
+For a synchronous long-running command, the target window has `busy=1`, and the
+global `level`/`status` describe available TIPL progress. Do not repeat the
+operation because its original `CMD` connection is still pending. Use `LIST`
+for status and process every returned `PROMPT`.
 
-Slice loading/registration is complete when `list_slice` reports the expected
-`ready`, `registering`, and `registered` state.
+Slice loading and registration make the tracking-window row busy. When it
+becomes idle, use `list_slice` if exact `downloaded`, `ready`, `registering`, or
+`registered` fields must be verified.
 
-If a response says loading is in progress, attach one concise waiting update to
-the next required request and poll the relevant list command. Never repeat a
-failed, timed-out, unavailable, or unexpected operation automatically.
+Never automatically repeat a failed, timed-out, unavailable, or unexpected
+operation.
 
 ## Token efficiency
 
@@ -304,12 +353,15 @@ failed, timed-out, unavailable, or unexpected operation automatically.
   run.
 - Use `CODEX_THREAD_ID` immediately instead of spending requests discovering or
   replacing the session ID.
-- Reuse `LIST` until windows change.
+- Retain window IDs until windows change; poll compact top-level `LIST` only
+  while waiting for global or per-window activity to change.
+- Use the `tracking-jobs` column instead of `list_tract status` when only
+  completion is needed.
 - Use parameterless `list_param` once, then query only needed IDs.
-- Poll with `list_tract status`, not full `list_tract`.
-- Poll targeted state rather than `LOG`.
+- Poll targeted detailed state rather than `LOG`.
 - Batch safe independent synchronous commands for one window.
-- Attach progress chat to an existing request.
+- Attach progress chat to an existing request, but do not attach chat to every
+  status poll.
 - Send `cwd` once and omit it until it changes.
 - Reuse discovered names and indices until relevant state changes.
 - Stop after verification and one final `CHAT`.
