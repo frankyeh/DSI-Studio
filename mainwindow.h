@@ -42,7 +42,7 @@ public:
     QString ai_project_dir;
     QMenu* ai_project_menu = nullptr;
     void add_ai_history(const QString&,const QString&,const QString&);
-    void set_agent_model(const ai_info& info);
+    void select_agent_model(const ai_info& info);
     void show_ai_project(const QString&,QJsonObject = {});
     void stop_ai_blink();
     void refresh_ollama_models();
