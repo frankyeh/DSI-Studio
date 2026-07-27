@@ -637,9 +637,20 @@ void MainWindow::on_ai_new_chat_clicked()
 void MainWindow::start_ai(const QString& agent,const QString& text,
                              bool add_history)
 {
-    auto codex = ui->ai_agent_selector->itemData(
-        ui->ai_agent_selector->findText("Codex"),Qt::UserRole+1).toString();
-    if(codex.isEmpty())
+    auto provider = agent.section('@',0,0);
+    if(provider.isEmpty())
+        provider = ui->ai_agent_selector->currentText();
+    bool codex = provider.contains("codex",Qt::CaseInsensitive);
+    bool claude = provider.contains("claude",Qt::CaseInsensitive);
+    auto executable = ui->ai_agent_selector->itemData(
+        ui->ai_agent_selector->findText(codex ? "Codex" : "Claude",
+                                         Qt::MatchStartsWith),Qt::UserRole+1).toString();
+    if(!codex && !claude)
+    {
+        QMessageBox::warning(this,"AI Agent","Only Codex and Claude resume are supported.");
+        return;
+    }
+    if(executable.isEmpty())
     {
         if(!add_history && !agent.isEmpty())
             ai_prompts[agent].append(text);
@@ -649,6 +660,18 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
     }
 
     auto session = ai_sessions.value(agent,agent.section('@',1));
+    if(!agent.isEmpty() && claude && session.isEmpty())
+    {
+        QMessageBox::warning(this,"AI Agent",
+            "Claude resume requires the name field from its session file.");
+        return;
+    }
+    if(agent.isEmpty() && claude)
+    {
+        QMessageBox::warning(this,"AI Agent",
+            "Start Claude Code first, then connect it with its session-file name.");
+        return;
+    }
     if(!agent.isEmpty() && session.isEmpty())
     {
         if(!add_history)
@@ -684,6 +707,8 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
     connect(process,&QProcess::readyReadStandardOutput,this,[=]
     {
         auto output = process->readAllStandardOutput();
+        if(!codex)
+            return;
         auto buffer =
             process->property("stdout_buffer").toByteArray()+output;
         for(int pos;(pos = buffer.indexOf('\n')) >= 0;)
@@ -843,19 +868,24 @@ void MainWindow::start_ai(const QString& agent,const QString& text,
     }
 
     QStringList args{"exec"};
-    if(session.isEmpty())
-        args << "--json" << "--skip-git-repo-check";
+    if(codex)
+    {
+        if(session.isEmpty())
+            args << "--json" << "--skip-git-repo-check";
+        else
+            args << "resume" << session << "--json"
+                 << "--skip-git-repo-check";
+        args << prompt;
+    }
     else
-        args << "resume" << session << "--json"
-             << "--skip-git-repo-check";
-    args << prompt;
+        args = {"-p","--resume",session,prompt};
 
     tipl::out() << ai_log(session.isEmpty() ?
-        QString("starting new Codex chat executable=%1 prompt_chars=%2").
-        arg(codex).arg(text.size()) :
-        QString("resuming Codex session agent=%1 session=%2 executable=%3 prompt_chars=%4").
-        arg(agent,session,codex).arg(text.size()));
-    process->start(codex,args);
+        QString("starting new %1 chat executable=%2 prompt_chars=%3").
+        arg(provider,executable).arg(text.size()) :
+        QString("resuming %1 session agent=%2 session=%3 executable=%4 prompt_chars=%5").
+        arg(provider).arg(agent).arg(session).arg(executable).arg(text.size()));
+    process->start(executable,args);
 }
 
 void MainWindow::on_ai_send_message_clicked()
@@ -865,8 +895,10 @@ void MainWindow::on_ai_send_message_clicked()
         return;
     auto* item = ui->ai_project_list->currentItem();
     auto agent = item ? item->data(Qt::UserRole).toString() : QString();
-    bool codex = agent.section('@',0,0).contains("codex",Qt::CaseInsensitive);
-    if(!agent.isEmpty() && (ai_processes.contains(agent) || !codex))
+    auto name = agent.section('@',0,0);
+    bool resumable = name.contains("codex",Qt::CaseInsensitive) ||
+                     name.contains("claude",Qt::CaseInsensitive);
+    if(!agent.isEmpty() && (ai_processes.contains(agent) || !resumable))
     {
         ai_prompts[agent].append(text);
         add_ai_history(agent,"user",text);
