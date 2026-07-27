@@ -178,6 +178,15 @@ if($request.request -in @('LOG','CHAT'))
         $request.chat = $Command -join ' '
     }
 }
+elseif($request.request -eq 'TITLE')
+{
+    if(!$Command.Count)
+    {
+        Write-Error 'Usage: <client.ps1> agent@session TITLE <title>'
+        exit 2
+    }
+    $request.title = $Command -join ' '
+}
 elseif($request.request -ne 'LIST')
 {
     if($Target -notmatch '^\d+$' -or !$Command.Count)
@@ -226,18 +235,22 @@ Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;request='LOG'}
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
              request='CHAT';chat='Task completed.'}
+
+# Name the chat after understanding the initiating prompt.
+Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
+             request='TITLE';title='Concise task name'}
 ```
 
 Always use the numeric window ID returned by the latest `LIST`; never use a
 window type, title, filename, guessed ID, or stale ID as `window`.
 
-JSON fields are `agent`, `session`, `cwd`, `request`, `window`, `command`, and
-optional `chat`. Requests are `LIST`, `CMD`, `LOG`, or `CHAT`; send one absolute path
-as raw pipe text to open a file. Keep every command parameter as one array
-element.
+JSON fields are `agent`, `session`, `cwd`, `request`, `window`, `command`,
+`chat`, and `title`. Requests are `LIST`, `CMD`, `LOG`, `CHAT`, or
+`TITLE`; send one absolute path as raw pipe text to open a file. Keep every
+command parameter as one array element.
 
-`LIST`, `LOG`, and `CHAT` replies begin with `OKAY`. `CHAT` returns no console
-history. Diagnostic `LOG` returns at most
+`LIST`, `LOG`, `CHAT`, and successful `TITLE` replies begin with `OKAY`.
+`CHAT` and `TITLE` return no console history. Diagnostic `LOG` returns at most
 4096 new console characters since the prior `LOG` or first request. Every
 `LOG` advances the cursor. The console is global, so concurrent agents may see
 each other's new DSI output.
@@ -320,10 +333,12 @@ path into fields, or substitute `add_image`. Refresh `LIST` afterward.
 8. Do not answer modal dialogs remotely; tell the user what is required.
 9. Keep the user informed with brief intent-focused `chat` updates at meaningful
    phase changes, attached to requests already needed for the task.
-10. Send the final answer once with `CHAT`.
-11. Minimize round trips: one initial `LIST`, only necessary commands, concise
+10. After understanding the initiating prompt, send one concise `TITLE`.
+    Send another `TITLE` later only with user permission to rename.
+11. Send the final answer once with `CHAT`.
+12. Minimize round trips: one initial `LIST`, only necessary commands, concise
     verification, and final `CHAT`.
-12. When asked to operate DSI Studio, execute the requests. Do not return a
+13. When asked to operate DSI Studio, execute the requests. Do not return a
     script or tutorial unless the user asks for one.
 
 If DSI Studio resumes an agent, reconnect with the exact same agent and
