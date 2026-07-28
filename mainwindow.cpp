@@ -813,22 +813,6 @@ void MainWindow::on_workDir_currentTextChanged(const QString &arg1)
         QDir::setCurrent(arg1);
 }
 
-bool MainWindow::load_db(std::shared_ptr<group_connectometry_analysis>& database,QString& filename)
-{
-    filename = tipl::qt::open_image_file(this,ui->workDir->currentText(),"Database (*.dz *db.fz *db?fib.gz);;All files (*)");
-    if (filename.isEmpty())
-        return false;
-    add_work_dir(QFileInfo(filename).absolutePath());
-    database = std::make_shared<group_connectometry_analysis>();
-    tipl::progress prog_("reading connectometry db");
-    if(!database->load_database(filename.toStdString().c_str()))
-    {
-        QMessageBox::critical(this,"ERROR",database->error_msg.c_str());
-        return false;
-    }
-    return true;
-}
-
 bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4>& trans);
 
 void MainWindow::on_linear_reg_clicked()
@@ -1108,6 +1092,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
     auto fail = [&](const std::string& msg){error_msg = msg;return false;};
     if(cmd.empty())
         return fail("empty command");
+    if(cmd.size() > 2)
+        return fail("too many arguments");
 
     if(cmd[0] == "list_recent_fib")
     {
@@ -1127,25 +1113,45 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         return true;
     }
 
-    if(cmd[0] == "set_work_dir")
+    if(cmd[0] == "reset_settings")
     {
         if(cmd.size() != 1)
-            return fail("set_work_dir takes no arguments");
-        auto dir = QFileDialog::getExistingDirectory(
+            return fail("reset_settings takes no arguments");
+        settings.clear();
+        settings.sync();
+        QMessageBox::information(
+            this,QApplication::applicationName(),"Setting Cleared");
+        return true;
+    }
+
+    if(cmd[0] == "set_work_dir")
+    {
+        QString dir;
+        if(cmd.size() == 2)
+            dir = QString::fromUtf8(cmd[1]);
+        else
+        {
+            dir = QFileDialog::getExistingDirectory(
                        this,"Browse Directory",ui->workDir->currentText());
-        if(!dir.isEmpty())
-            add_work_dir(dir);
+            if(dir.isEmpty())
+                return true;
+        }
+        add_work_dir(dir);
         return true;
     }
 
     if(cmd[0] == "rename_dicom")
     {
-        if(cmd.size() != 1)
-            return fail("rename_dicom takes no arguments");
-        auto files = QFileDialog::getOpenFileNames(
+        QStringList files;
+        if(cmd.size() == 2)
+            files = QString::fromUtf8(cmd[1]).split("&");
+        else
+        {
+            files = QFileDialog::getOpenFileNames(
                          this,"Open DICOM files",work_dir(),"All files (*)");
-        if(files.isEmpty())
-            return true;
+            if(files.isEmpty())
+                return true;
+        }
         add_work_dir(QFileInfo(files[0]).absolutePath());
         tipl::progress prog("Rename DICOM Files");
         for(int index = 0;prog(index,files.size());++index)
@@ -1158,12 +1164,16 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
 
     if(cmd[0] == "rename_dicom_dir")
     {
-        if(cmd.size() != 1)
-            return fail("rename_dicom_dir takes no arguments");
-        auto dir = QFileDialog::getExistingDirectory(
+        QString dir;
+        if(cmd.size() == 2)
+            dir = QString::fromUtf8(cmd[1]);
+        else
+        {
+            dir = QFileDialog::getExistingDirectory(
                        this,"Browse Directory",work_dir());
-        if(dir.isEmpty())
-            return true;
+            if(dir.isEmpty())
+                return true;
+        }
         add_work_dir(dir);
         rename_dicom_at_dir(tipl::qt::to_path(dir),tipl::qt::to_path(dir));
         QMessageBox::information(
@@ -1173,12 +1183,16 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
 
     if(cmd[0] == "convert_dicom_dir")
     {
-        if(cmd.size() != 1)
-            return fail("convert_dicom_dir takes no arguments");
-        auto dir = QFileDialog::getExistingDirectory(
+        QString dir;
+        if(cmd.size() == 2)
+            dir = QString::fromUtf8(cmd[1]);
+        else
+        {
+            dir = QFileDialog::getExistingDirectory(
                        this,"Open directory",work_dir());
-        if(dir.isEmpty())
-            return true;
+            if(dir.isEmpty())
+                return true;
+        }
         add_work_dir(dir);
         return dicom2src_and_nii(tipl::qt::to_path(dir),false) ||
                fail("DICOM conversion failed");
@@ -1186,12 +1200,16 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
 
     if(cmd[0] == "bids_to_src")
     {
-        if(cmd.size() != 1)
-            return fail("bids_to_src takes no arguments");
-        auto dir = QFileDialog::getExistingDirectory(
+        QString dir;
+        if(cmd.size() == 2)
+            dir = QString::fromUtf8(cmd[1]);
+        else
+        {
+            dir = QFileDialog::getExistingDirectory(
                        this,"Open BIDS Folder",work_dir());
-        if(dir.isEmpty())
-            return true;
+            if(dir.isEmpty())
+                return true;
+        }
         auto output_dir = QFileDialog::getExistingDirectory(
                               this,"Please Specify the Output Folder",
                               QDir(dir).path()+"/derivatives");
@@ -1212,12 +1230,16 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
 
     if(cmd[0] == "nifti_dir_to_src")
     {
-        if(cmd.size() != 1)
-            return fail("nifti_dir_to_src takes no arguments");
-        auto dir = QFileDialog::getExistingDirectory(
+        QString dir;
+        if(cmd.size() == 2)
+            dir = QString::fromUtf8(cmd[1]);
+        else
+        {
+            dir = QFileDialog::getExistingDirectory(
                        this,"Open directory",work_dir());
-        if(dir.isEmpty())
-            return true;
+            if(dir.isEmpty())
+                return true;
+        }
         add_work_dir(dir);
 
         std::vector<std::filesystem::path> files;
@@ -1265,13 +1287,17 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
 
     if(cmd[0] == "collect_network_measures")
     {
-        if(cmd.size() != 1)
-            return fail("collect_network_measures takes no arguments");
-        auto files = QFileDialog::getOpenFileNames(
+        QStringList files;
+        if(cmd.size() == 2)
+            files = QString::fromUtf8(cmd[1]).split("&");
+        else
+        {
+            auto files = QFileDialog::getOpenFileNames(
                          this,"Open Network Measures",work_dir(),
                          "Text files (*.txt);;All files (*)");
-        if(files.isEmpty())
-            return true;
+            if(files.isEmpty())
+                return true;
+        }
 
         QStringList fields;
         QMap<QString,QStringList> values;
@@ -1345,26 +1371,19 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         return true;
     }
 
-    if(cmd[0] == "reset_settings")
-    {
-        if(cmd.size() != 1)
-            return fail("reset_settings takes no arguments");
-        settings.clear();
-        settings.sync();
-        QMessageBox::information(
-            this,QApplication::applicationName(),"Setting Cleared");
-        return true;
-    }
-
     if(cmd[0] == "open_src")
     {
-        if(cmd.size() != 1)
-            return fail("open_src takes no arguments");
-        auto files = tipl::qt::open_image_files(
+        QStringList files;
+        if(cmd.size() == 2)
+            files = QString::fromUtf8(cmd[1]).split("&");
+        else
+        {
+            files = tipl::qt::open_image_files(
                          this,ui->workDir->currentText(),
                          "Src files (*.sz *src.gz);;Histology images (*.jpg *.tif);;All files (*)");
-        if(files.isEmpty())
-            return true;
+            if(files.isEmpty())
+                return true;
+        }
         add_work_dir(QFileInfo(files[0]).absolutePath());
         loadSrc(files);
         return true;
@@ -1374,39 +1393,48 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
        cmd[0] == "open_dwi_dicom" ||
        cmd[0] == "open_dwi_2dseq")
     {
-        if(cmd.size() != 1)
-            return fail(cmd[0]+" takes no arguments");
         QStringList files;
-        if(cmd[0] == "open_dwi_nifti")
-            files << tipl::qt::open_image_file(
-                         this,work_dir(),
-                         "NIFTI files (*.nii *.nii.gz);;All files (*)");
+        if(cmd.size() == 2)
+            files = QString::fromUtf8(cmd[1]).split("&");
         else
-            files = tipl::qt::open_image_files(
-                        this,work_dir(),cmd[0] == "open_dwi_dicom" ?
-                        "DICOM files (*.dcm);;All files (*)" :
-                        "2dseq files (2dseq);;FDF files (*.fdf);;NRRD Files (*.nrrd);;All files (*)");
+        {
+            if(cmd[0] == "open_dwi_nifti")
+                files << tipl::qt::open_image_file(
+                             this,work_dir(),
+                             "NIFTI files (*.nii *.nii.gz);;All files (*)");
+            else
+                files = tipl::qt::open_image_files(
+                            this,work_dir(),cmd[0] == "open_dwi_dicom" ?
+                            "DICOM files (*.dcm);;All files (*)" :
+                            "2dseq files (2dseq);;FDF files (*.fdf);;NRRD Files (*.nrrd);;All files (*)");
+        }
         open_DWI(files);
         return true;
     }
 
     if(cmd[0] == "open_src_dir")
     {
-        if(cmd.size() != 1)
-            return fail("open_src_dir takes no arguments");
-        auto dir = QFileDialog::getExistingDirectory(
-                       this,"Open directory",work_dir());
-        if(dir.isEmpty())
-            return true;
+        QString dir;
+        if(cmd.size() == 2)
+            dir = QString::fromUtf8(cmd[1]);
+        else
+        {
+            auto dir = QFileDialog::getExistingDirectory(
+                           this,"Open directory",work_dir());
+            if(dir.isEmpty())
+                return true;
+        }
         add_work_dir(dir);
         loadSrc(search_files(dir,"*src.gz") << search_files(dir,"*.sz"));
         return true;
     }
 
-    if(cmd[0] == "open_fib")
+    if(cmd[0] == "open_fib" || cmd[0] == "open_structural_tracking")
     {
         QString file;
-        if(cmd.size() == 1)
+        if(cmd.size() == 2)
+            file = QString::fromUtf8(cmd[1]);
+        else
         {
             auto filter = cmd[0] == "open_fib" ?
                           "Fib files (*.fz *fib.gz *.dz);;All files (*)" :
@@ -1417,22 +1445,22 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
                 return true;
             add_work_dir(QFileInfo(file).absolutePath());
         }
-        else
-        {
-            if(cmd.size() >= 2)
-                file = QString::fromUtf8(cmd[1].c_str());
-        }
         return loadFib(file);
     }
 
     if(cmd[0] == "open_template")
     {
-        if(cmd.size() != 1)
-            return fail("open_template takes no arguments");
-        auto* item = ui->template_list->currentItem();
-        if(!item)
-            return fail("no template selected");
-        open_template(item->text());
+        QString template_name;
+        if(cmd.size() == 2)
+            template_name = QString::fromUtf8(cmd[1]);
+        else
+        {
+            auto* item = ui->template_list->currentItem();
+            if(!item)
+                return true;
+            template_name = item->text();
+        }
+        open_template(template_name);
         return true;
     }
 
@@ -1448,12 +1476,27 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
 
     if(cmd[0] == "open_db" || cmd[0] == "open_connectometry")
     {
-        if(cmd.size() != 1)
-            return fail(cmd[0]+" takes no arguments");
         QString file;
+        if(cmd.size() == 2)
+            file = QString::fromUtf8(cmd[1]);
+        else
+        {
+            file = tipl::qt::open_image_file(this,ui->workDir->currentText(),"Database (*.dz *db.fz *db?fib.gz);;All files (*)");
+            if (file.isEmpty())
+                return true;
+        }
         std::shared_ptr<group_connectometry_analysis> database;
-        if(!load_db(database,file))
-            return true;
+        {
+            add_work_dir(QFileInfo(file).absolutePath());
+            database = std::make_shared<group_connectometry_analysis>();
+            tipl::progress prog_("reading connectometry db");
+            if(!database->load_database(file.toStdString().c_str()))
+            {
+                QMessageBox::critical(this,"ERROR",database->error_msg.c_str());
+                return false;
+            }
+        }
+
         if(cmd[0] == "open_db")
         {
             auto* window = new db_window(this,database);
@@ -1525,18 +1568,22 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
 
     if(cmd[0] == "qc_nii" || cmd[0] == "qc_src" || cmd[0] == "qc_fib")
     {
-        if(cmd.size() != 1)
-            return fail(cmd[0]+" takes no arguments");
         bool nii = cmd[0] == "qc_nii",src = cmd[0] == "qc_src";
-        auto filenames = tipl::qt::open_image_files(
+        QStringList filenames;
+        if(cmd.size() == 2)
+            filenames = QString::fromUtf8(cmd[1]).split("&");
+        else
+        {
+            filenames = tipl::qt::open_image_files(
                              this,work_dir(),nii ?
                              "NIFTI files (*.nii *nii.gz);;All files (*)" : src ?
                              "Src files (*.sz *src.gz);;All files (*)" :
                              "Fib files (*.fz *fib.gz);;All files (*)");
-        if(filenames.isEmpty())
-            return true;
+            if(filenames.isEmpty())
+                return true;
+        }
         std::vector<std::filesystem::path> files;
-        files.reserve(filenames.size());
+        files.reserve(files.size());
         for(const auto& file : filenames)
             files.push_back(tipl::qt::to_path(file));
         tipl::progress prog(nii ? "checking NIFTI files" :
@@ -1563,30 +1610,29 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
 
     if(cmd[0] == "open_image")
     {
-        if(cmd.size() == 1)
+        QStringList files;
+        if(cmd.size() == 2)
+            files = QString::fromUtf8(cmd[1]).split("&");
+        else
         {
-            auto files = tipl::qt::open_image_files(
-                             this,ui->workDir->currentText(),
-                             "image files (*.nii *nii.gz *.dcm *.nhdr *.nrrd 2dseq);;All files (*)");
+            files = tipl::qt::open_image_files(
+                this,ui->workDir->currentText(),
+                "image files (*.nii *nii.gz *.dcm *.nhdr *.nrrd 2dseq);;All files (*)");
             if(files.isEmpty())
                 return true;
-            add_work_dir(QFileInfo(files[0]).absolutePath());
-            auto* window = new view_image(this);
-            window->setAttribute(Qt::WA_DeleteOnClose);
-            if(!window->open(files))
-                return QMessageBox::critical(
-                           this,"ERROR",window->error_msg.c_str()),
-                       delete window,false;
-            window->show();
-            return true;
         }
-        QStringList files;
-        for(size_t i = 1;i < cmd.size();++i)
-            files << QString::fromUtf8(cmd[i]);
-        loadNii(files);
+        add_work_dir(QFileInfo(files[0]).absolutePath());
+        auto* window = new view_image(this);
+        window->setAttribute(Qt::WA_DeleteOnClose);
+        if(!window->open(files))
+        {
+            if(cmd.size() == 2)
+                return fail(window->error_msg.c_str());
+            return QMessageBox::critical(this,"ERROR",window->error_msg.c_str()),delete window,false;
+        }
+        window->show();
         return true;
     }
-
     if(cmd[0] == "open_ai")
     {
         if(cmd.size() != 1)
