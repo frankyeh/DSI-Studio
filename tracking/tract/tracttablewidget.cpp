@@ -511,22 +511,18 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
                         << item(row,3)->text().toStdString();
         return run->succeed();
     }
-    const std::array<const char*,4> tract_actions{
-        "delete_branch","undo_tract","redo_tract","trim_tract"};
-    auto tract_action = std::find_if(tract_actions.begin(),tract_actions.end(),
-        [&](const char* action){return cmd[0] == action;});
-    if(tract_action != tract_actions.end())
+    if(cmd[0] == "delete_branch" || cmd[0] == "undo_tract" || cmd[0] == "redo_tract" || cmd[0] == "trim_tract")
     {
-        auto action = std::distance(tract_actions.begin(),tract_action);
         return for_each_bundle([&](unsigned int index)
         {
-            switch(action)
+            switch(cmd[0][0])
             {
-            case 0: return tract_models[index]->delete_branch();
-            case 1: return tract_models[index]->undo();
-            case 2: return tract_models[index]->redo();
-            default:return tract_models[index]->trim();
+            case 'd': return tract_models[index]->delete_branch();
+            case 'u': return tract_models[index]->undo();
+            case 'r': return tract_models[index]->redo();
+            case 't': return tract_models[index]->trim();
             }
+            return false;
         },cmd[1]);
     }
 
