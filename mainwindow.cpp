@@ -202,7 +202,7 @@ MainWindow::MainWindow(QWidget *parent) :
                             toString().trimmed();
                 if(!host.contains("://"))
                     host.prepend("http://");
-                name += QString("/Ollama@") + QUrl(host).host();
+                name += "/Ollama(" + QUrl(host).host() + ")";
             }
             ui->ai_agent_selector->setItemText(index,name);
         };
