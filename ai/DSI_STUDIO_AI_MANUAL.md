@@ -14,7 +14,10 @@ Do not reread the entire file for each action.
   `dsi_agent.ps1`, `dsi_studio.exe`, or another wrapper unless direct access is
   unavailable or fails and the user approves the fallback.
 - Send separate non-empty `agent` and `session` fields and reuse the exact pair.
-  `agent` must include `Codex` or `Claude` and must not contain `@`.
+  `agent` must include `Codex` or `Claude`. Native identities are `Codex` or
+  `Claude`; Ollama-backed identities include the provider and host, for example
+  `Codex/Ollama@192.168.1.14` or `Claude/Ollama@192.168.1.14`. The `@` in
+  `Ollama@host` is valid and part of the agent name. Do not shorten or alter it.
 - For a new Codex chat launched by DSI Studio, process the initiating task in
   the first run. There is no bootstrap run and DSI Studio does not launch the
   same task twice. Use `CODEX_THREAD_ID` as `session` immediately; do not wait
@@ -25,7 +28,9 @@ Do not reread the entire file for each action.
   is explicitly present in runtime context. Never guess or scan for one.
 - For Claude Code, read `~/.claude/sessions/<pid>.json` and use `sessionId`, not
   `name`. DSI Studio resumes it with `claude -p --resume <sessionId>`.
-- Ollama is a model provider, not an agent identity.
+- Ollama remains a model provider, while DSI Studio encodes the provider and
+  host in the full agent identity. The `Codex/` or `Claude/` prefix identifies
+  the execution frontend. The host excludes the URL scheme and port.
 - After understanding the initiating prompt, send one concise `TITLE`. Send a
   later `TITLE` only when the user permits renaming.
 - Call top-level `LIST` first. It returns global activity plus every window's
@@ -128,8 +133,16 @@ before starting tracking.
 
 ### LIST
 
+Native-model example:
+
 ```json
 {"agent":"Codex","session":"<uuid>","cwd":"C:/work","request":"LIST"}
+```
+
+Ollama-backed example:
+
+```json
+{"agent":"Codex/Ollama@192.168.1.14","session":"<uuid>","cwd":"C:/work","request":"LIST"}
 ```
 
 The reply is compact tab-separated text:
