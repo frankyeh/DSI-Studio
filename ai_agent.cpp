@@ -272,6 +272,7 @@ AIAgent::AIAgent(MainWindow* parent):
 
         QFile::remove(ai_project_dir+"/"+QString::fromLatin1(
                           QUrl::toPercentEncoding(session))+".jsonl");
+        settings.remove("ai/title/"+session);
         ai_infos.erase(session);
         ai_log_positions.remove(session);
         ui->ai_project_list->setCurrentItem(nullptr);
@@ -319,7 +320,7 @@ AIAgent::AIAgent(MainWindow* parent):
             continue;
 
         QJsonArray loaded_history;
-        QString project_title,cwd,agent_name;
+        QString cwd,agent_name;
         QJsonObject model_settings;
         while(!file.atEnd())
         {
@@ -327,11 +328,6 @@ AIAgent::AIAgent(MainWindow* parent):
             if(!doc.isObject())
                 continue;
             auto entry = doc.object();
-            if(entry["type"] == "title")
-            {
-                project_title = entry["text"].toString();
-                continue;
-            }
             if(loaded_history.isEmpty())
             {
                 agent_name = entry["agent"].toString();
@@ -351,8 +347,7 @@ AIAgent::AIAgent(MainWindow* parent):
         auto& ai = ai_infos[session];
         ai.update(agent_name,cwd);
         ai.model_settings = model_settings;
-        if(!project_title.isEmpty())
-            ai.project_titles = project_title;
+        ai.project_titles = settings.value("ai/title/"+session).toString();
         for(const auto& entry : loaded_history)
             ai.projects.append(entry);
         show_ai_project(session);
@@ -653,10 +648,12 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
 
     if(type == "TITLE")
     {
-        record_chat();
-        return reply_text(session,set_ai_title(
-                              session,request["title"].toString()) ?
-                              "OKAY" : "ERROR\tinvalid title");
+        auto title = request["title"].toString().simplified();
+        if(title.isEmpty())
+            return reply_text(session,"ERROR\tmissing title");
+        ai_log(agent_name+" ["+type+"]: "+title);
+        return reply_text(session,set_ai_title(session,title) ?
+                              "OKAY" : "ERROR\tcannot save title");
     }
 
     if(type == "CHAT")
@@ -1174,9 +1171,9 @@ bool AIAgent::set_ai_title(const QString& session,QString title)
     if(title == info.project_titles)
         return true;
 
-    QJsonObject entry{{"type","title"},{"text",title},
-                      {"time",QDateTime::currentDateTime().toString(Qt::ISODate)}};
-    if(!save_ai_entry(session,entry))
+    settings.setValue("ai/title/"+session,title);
+    settings.sync();
+    if(settings.status() != QSettings::NoError)
         return false;
 
     info.project_titles = title;
