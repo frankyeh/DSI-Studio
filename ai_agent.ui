@@ -85,8 +85,7 @@ QPushButton#ai_send_message:hover {
 QPushButton#ai_send_message:pressed {
     background-color: #000000;
 }
-QComboBox#ai_agent_selector,
-QComboBox#ai_model_selector {
+QWidget#tab_8 QComboBox {
     color: #202124;
     background-color: #f7f7f8;
     border: 1px solid #d9d9dc;
@@ -94,29 +93,52 @@ QComboBox#ai_model_selector {
     padding: 4px 24px 4px 8px;
     min-height: 22px;
 }
-QComboBox#ai_agent_selector:hover,
-QComboBox#ai_model_selector:hover {
+QWidget#tab_8 QComboBox:hover {
     background-color: #eeeeef;
     border-color: #c8c8cc;
 }
-QComboBox#ai_agent_selector:focus,
-QComboBox#ai_model_selector:focus {
+QWidget#tab_8 QComboBox:focus {
     border-color: #8a8a8f;
 }
-QComboBox#ai_agent_selector::drop-down,
-QComboBox#ai_model_selector::drop-down {
+QWidget#tab_8 QComboBox::drop-down {
     border: 0;
     width: 22px;
 }
-QComboBox#ai_agent_selector QAbstractItemView,
-QComboBox#ai_model_selector QAbstractItemView {
+QWidget#tab_8 QComboBox QAbstractItemView {
     background-color: #ffffff;
-    border: 1px solid #d9d9dc;
+    border: 0;
+    outline: 0;
+    padding: 2px;
     selection-background-color: #e5e5e7;
     selection-color: #202124;
 }
+QWidget#tab_8 QComboBox QAbstractItemView::item {
+    border: 0;
+    min-height: 24px;
+    padding: 3px 8px;
+}
 QComboBox#ai_agent_selector QAbstractItemView::item:disabled {
     color: #9aa0a6;
+}
+QWidget#tab_8 QComboBox QScrollBar:vertical {
+    background: transparent;
+    border: 0;
+    width: 8px;
+    margin: 0;
+}
+QWidget#tab_8 QComboBox QScrollBar::handle:vertical {
+    background: #c7c7ca;
+    border: 0;
+    border-radius: 4px;
+    min-height: 24px;
+}
+QWidget#tab_8 QComboBox QScrollBar::add-line:vertical,
+QWidget#tab_8 QComboBox QScrollBar::sub-line:vertical {
+    height: 0;
+}
+QWidget#tab_8 QComboBox QScrollBar::add-page:vertical,
+QWidget#tab_8 QComboBox QScrollBar::sub-page:vertical {
+    background: transparent;
 }
 QTextBrowser#ai_chat_history QScrollBar:vertical {
     background: transparent;
@@ -349,15 +371,18 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
                <widget class="QComboBox" name="ai_agent_selector">
                 <property name="minimumSize">
                  <size>
-                  <width>120</width>
+                  <width>220</width>
                   <height>32</height>
                  </size>
                 </property>
                 <property name="maximumSize">
                  <size>
-                  <width>160</width>
+                  <width>360</width>
                   <height>16777215</height>
                  </size>
+                </property>
+                <property name="sizeAdjustPolicy">
+                 <enum>QComboBox::AdjustToContents</enum>
                 </property>
                 <item>
                  <property name="text">
