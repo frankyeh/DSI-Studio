@@ -42,12 +42,19 @@ This file contains tract and automatic-tracking commands confirmed in the curren
 | `undo_tract` | `["undo_tract"]` | Undo the latest supported tract edit in every checked bundle. |
 | `redo_tract` | `["redo_tract"]` | Redo the latest supported tract edit in every checked bundle. |
 | `trim_tract` | `["trim_tract"]` | Trim every checked tract bundle. |
+| `cut_tract_end_portion` | `["cut_tract_end_portion","0"]` | Apply `cut_end_portion(0.25,0.75)` to tract bundle 0. |
+| `cut_tract_lps_end` | `["cut_tract_lps_end","0"]` | Apply `cut_end_portion(0.25,1.0)` to tract bundle 0. |
+| `cut_tract_rai_end` | `["cut_tract_rai_end","0"]` | Apply `cut_end_portion(0.0,0.75)` to tract bundle 0. |
+| `flip_tract_x` | `["flip_tract_x","0"]` | Flip tract bundle 0 along X. |
+| `flip_tract_y` | `["flip_tract_y","0"]` | Flip tract bundle 0 along Y. |
+| `flip_tract_z` | `["flip_tract_z","0"]` | Flip tract bundle 0 along Z. |
 | `cut_tract_by_x` | `["cut_tract_by_x","80"]` | Cut every checked bundle at X slice 80 and retain the default side. |
 | `cut_tract_by_x2` | `["cut_tract_by_x2","80"]` | Cut every checked bundle at X slice 80 and retain the opposite side. |
 | `cut_tract_by_y` | `["cut_tract_by_y","100"]` | Cut every checked bundle at Y slice 100 and retain the default side. |
 | `cut_tract_by_y2` | `["cut_tract_by_y2","100"]` | Cut every checked bundle at Y slice 100 and retain the opposite side. |
 | `cut_tract_by_z` | `["cut_tract_by_z","80"]` | Cut every checked bundle at Z slice 80 and retain the default side. |
 | `cut_tract_by_z2` | `["cut_tract_by_z2","80"]` | Cut every checked bundle at Z slice 80 and retain the opposite side. |
+| `set_dt_index` | `["set_dt_index","qa&iso","0"]` | Set differential metrics `m1&m2` and calculation type; creates the `dT_metrics` slice the first time. |
 | `filter_tract` | `["filter_tract","0:3&1:0"]` | Filter tracks using ROI/ROA/End settings. |
 | `check_tract` | `["check_tract","0","1"]` | Set one tract's checked state. |
 | `check_uncheck_all_tract` | `["check_uncheck_all_tract","1"]` | Check/uncheck all tracts; explicit `1` or `0` is preferred. |
@@ -81,6 +88,7 @@ This file contains tract and automatic-tracking commands confirmed in the curren
 - Fiber tracking is asynchronous. A successful reply means tracking started; poll top-level `LIST`.
 - `list_tract` takes no required parameter. The optional literal `"status"` returns compact status.
 - `trim_tract`, `delete_branch`, `undo_tract`, `redo_tract`, `cut_tract_by_*`, `delete_repeated_tract`, `resample_tract`, and `delete_tract_by_length` operate on checked bundles.
+- `cut_tract_end_portion`, `cut_tract_lps_end`, `cut_tract_rai_end`, and `flip_tract_*` operate on one selected tract index.
 - Clustering commands delete the original bundle and replace it with newly created cluster bundles.
 - Confirm destructive operations such as deleting, trimming, cutting, clustering, reconnecting, and merging.
 - `save_mni_tract_endpoint` and `save_slice_tract_endpoint` remain without examples because the current source executes their transformed export branch and then calls native `save_end_points()` on the same output path. Verify or fix that fallthrough before relying on transformed endpoint files.
