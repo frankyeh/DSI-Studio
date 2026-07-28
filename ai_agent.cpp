@@ -331,15 +331,10 @@ AIAgent::AIAgent(MainWindow* parent):
             if(loaded_history.isEmpty())
             {
                 agent_name = entry["agent"].toString();
+                cwd = entry["work_dir"].toString();
                 model_settings = entry["model_settings"].toObject();
             }
             loaded_history.append(entry);
-            if(entry["type"] != "request")
-                continue;
-            auto request = QJsonDocument::fromJson(
-                               entry["text"].toString().toUtf8()).object();
-            if(QDir(request["cwd"].toString()).exists())
-                cwd = request["cwd"].toString();
         }
 
         if(loaded_history.isEmpty() || session.isEmpty())
@@ -448,15 +443,12 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
     }
 
     auto chat = request["chat"].toString().trimmed();
-    auto log_chat = [&]
-    {
-        ai_log(agent_name+" ["+type+"]: "+chat);
-    };
     auto record_chat = [&]
     {
-        log_chat();
-        if(!chat.isEmpty())
-            add_ai_history(session,"assistant",chat);
+        if(chat.isEmpty())
+            return;
+        ai_log(agent_name+" ["+type+"]: "+chat);
+        add_ai_history(session,"assistant",chat);
     };
     auto record_request = [&](QJsonObject activity)
     {
@@ -464,12 +456,6 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         add_ai_history(session,"request",QString::fromUtf8(
             QJsonDocument(activity).toJson(QJsonDocument::Compact)));
     };
-    auto record_request_chat = [&](QJsonObject activity)
-    {
-        record_request(activity);
-        record_chat();
-    };
-
     if(type == "TITLE")
     {
         auto title = request["title"].toString().simplified();
@@ -501,18 +487,17 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         auto id = request["window"].toVariant().toString();
         auto windows = QApplication::allWidgets();
         QWidget* target = nullptr;
+        QString target_type,target_title;
         for(auto* window : windows)
             if(window->property("remote_id").toString() == id)
             {
                 target = window;
-                auto target_type =
+                target_type =
                     qobject_cast<MainWindow*>(window) ? "main" :
                         qobject_cast<tracking_window*>(window) ? "tracking" :
                         qobject_cast<view_image*>(window) ? "image" : "unknown";
-                activity["_target_type"] = target_type;
                 if(target_type != QString("main"))
-                    activity["_target_title"] =
-                        QFileInfo(window->windowTitle()).fileName();
+                    target_title = QFileInfo(window->windowTitle()).fileName();
                 break;
             }
 
@@ -528,20 +513,14 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
             names << name;
         }
         auto compact = names.join(", ");
-        auto target_type = activity["_target_type"].toString();
         auto destination = target_type.isEmpty() ?
             "window "+id : target_type+" window";
-        auto target_title = activity["_target_title"].toString();
         activity["_compact"] = compact;
         activity["_summary"] =
             (compact.isEmpty() ? "unknown" : compact)+" \u2192 "+
             destination+(target_title.isEmpty() ? "" : " "+target_title);
         record_request(activity);
-        log_chat();
-        if(!chat.isEmpty())
-            add_ai_history(
-                session,QJsonObject{{"type","assistant"},{"text",chat},
-                                    {"activity",activity["_summary"].toString()}});
+        record_chat();
 
         auto fail = [&](const QString& error)
         {
@@ -660,11 +639,10 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
 
     if(type == "CHAT")
     {
-        auto activity = request;
-        activity["_summary"] = type+" request";
-        record_request_chat(activity);
-        return reply_text(session,chat.isEmpty() ?
-                              "ERROR\tmissing chat" : "OKAY");
+        if(chat.isEmpty())
+            return reply_text(session,"ERROR\tmissing chat");
+        record_chat();
+        return reply_text(session,"OKAY");
     }
 
     if(type == "LIST")
@@ -746,9 +724,8 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
 
     if(type == "LOG")
     {
-        auto activity = request;
-        activity["_summary"] = "read new console output";
-        record_request_chat(activity);
+        if(!chat.isEmpty())
+            record_chat();
         QByteArray output;
         {
             std::lock_guard<std::mutex> lock(console.edit_buf);
@@ -776,8 +753,6 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
                               QByteArray("OKAY\n"+output) : QByteArray("OKAY"));
     }
 
-    request["_summary"] = type+" request";
-    record_request_chat(request);
     reply_text(session,"ERROR\tunknown request");
 }
 
@@ -919,12 +894,11 @@ void AIAgent::show_ai_project(const QString& session,QJsonObject added_entry)
                toString("MM/dd HH:mm:ss");
     };
 
-    auto append = [&](const QJsonObject& entry)
+    auto append = [&](const QJsonObject& entry,const QString& activity)
     {
         auto type = entry["type"].toString();
         bool user = type == "user",request = type == "request";
         auto content = request ? request_content(entry).full : entry["text"].toString();
-        auto activity = entry["activity"].toString();
         if(content.trimmed().isEmpty())
             return;
 
@@ -1002,15 +976,19 @@ void AIAgent::show_ai_project(const QString& session,QJsonObject added_entry)
                     combined["_summary"] = activities.join(", ")+" \u2192 "+target;
                     combined["_end_time"] = history[end].toObject()["time"];
                 }
-                append(combined);
+                append(combined,{});
                 index = end;
                 continue;
             }
-            append(entry);
+            auto activity = type == "assistant" && index &&
+                            history[index-1].toObject()["type"] == "request" ?
+                            request_content(history[index-1].toObject()).full :
+                            QString();
+            append(entry,activity);
         }
     }
     else
-        append(added_entry);
+        append(added_entry,{});
 
     ui->ai_chat_history->ensureCursorVisible();
     QTimer::singleShot(0,ui->ai_chat_history,[this]
@@ -1195,6 +1173,7 @@ void AIAgent::add_ai_history(const QString& session,QJsonObject entry)
     if(info.projects.isEmpty())
     {
         entry["agent"] = info.agent_name;
+        entry["work_dir"] = info.work_dirs;
         entry["model_settings"] = info.model_settings;
     }
     entry["time"] = QDateTime::currentDateTime().toString(Qt::ISODate);
