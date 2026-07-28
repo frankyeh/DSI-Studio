@@ -49,15 +49,38 @@ Do not reread the entire file for each action.
   cannot explain.
 - User-facing text uses the top-level `chat` field. A standalone message uses
   top-level request `CHAT`, not a `CMD` command.
+- Users prefer brief updates rather than unexplained silence. Before a meaningful
+  action, briefly state what the current evidence indicates and what you are
+  about to do. Keep it to one or two short sentences.
+- Do not expose private chain-of-thought or narrate every low-level operation.
+  Communicate conclusions, intended actions, important findings, and blockers.
+- A `LIST`, `LOG`, or `CMD` request may include a top-level `chat` field. Attach
+  the update to an already-needed request whenever possible; omit `chat` from
+  silent polling requests.
 - If a required window disappears or returns `window not found`, assume the
   user closed it. Do not reopen or retry it. Ask whether to continue.
 - Confirm destructive actions and overwrites. Verify every output file.
 - Do not answer modal dialogs remotely; tell the user what action is required.
-- Attach concise progress `chat` to an already-needed request. Avoid separate
-  status-only requests except for a required decision, blocked/waiting state,
-  or the final reply.
+- Avoid separate status-only messages except for a required decision,
+  blocked/waiting state, important phase change, or the final reply.
 - Inspect every complete reply. A queued `PROMPT` may follow `LIST`, `LOG`,
   `CHAT`, `TITLE`, or appear in the last `CMD` result.
+
+## User-facing progress updates
+
+Use short progress messages at useful transitions so the user knows what the
+agent has concluded and what will happen next. Good examples are:
+
+```text
+I found the T1w slice. I am starting SynthSeg now.
+The segmentation is still running. I will verify the created regions next.
+Tracking has finished with 10,000 tracts. I am saving the selected bundle.
+```
+
+Attach the message as the top-level `chat` field of the `LIST` or `CMD` that the
+agent already needs. Do not send repetitive updates while nothing has changed.
+Use standalone `CHAT` when no other request is needed, especially for a final
+answer, required decision, or blocked/waiting update.
 
 ## Discovery
 
@@ -158,6 +181,15 @@ A single command:
 {"agent":"Codex","session":"<uuid>","request":"CMD","window":"2","command":["list_region"]}
 ```
 
+A command with a brief user-facing update:
+
+```json
+{"agent":"Codex","session":"<uuid>","request":"CMD","window":"2","command":["segment_brain","SynthSeg V2","7"],"chat":"I found the T1w slice. I am starting SynthSeg now."}
+```
+
+The top-level `chat` field is recorded as an assistant message; it is not part
+of the command array and does not change command execution.
+
 All command elements must be strings:
 
 ```json
@@ -195,9 +227,10 @@ an invented top-level `log` field.
 ```
 
 `CHAT` is a standalone top-level request. It uses no `window` or `command`
-field. A non-empty message returns `OKAY`. Use it for the final answer, a
-required user decision, or one blocked/waiting update. Do not send
-`["chat","..."]` as a `CMD`, and do not use `LOG` to publish text.
+field. A non-empty message returns `OKAY`. Use it when no other request is
+needed, especially for the final answer, a required user decision, or a
+blocked/waiting update. Do not send `["chat","..."]` as a `CMD`, and do not use
+`LOG` to publish text.
 
 ### TITLE
 
@@ -329,9 +362,12 @@ custom-slice registration before segmentation, so a separate
 use `set_slice <index>`, poll `LIST` until the tracking window is idle, then
 confirm detailed fields with `list_slice`.
 
-`segment_brain` is synchronous. Its `CMD` reply arrives after inference and
-region creation finish. While it runs, poll `LIST`; a delayed `LIST` reply alone
-does not prove failure. Verify successful output with `list_region`.
+`segment_brain` is synchronous. Its `CMD` reply normally arrives after inference
+and region creation finish. A client or named-pipe helper may time out first,
+especially with a large model. Such a transport timeout does not cancel the
+running DSI Studio routine. Do not repeat the command. Poll `LIST`; while the
+window remains busy, continue waiting. When it becomes idle, verify successful
+output with `list_region`.
 
 ### Region commands
 
@@ -444,7 +480,7 @@ JSON strings even when they represent numbers.
 | `open_tract` |  | Open one tract file. |
 | `open_tracts` |  | Open multiple tract files. |
 | `open_tract_dir` |  | Open tract files from a directory. |
-| `save_tract` |  | Save the selected tract. |
+| `save_tract` | `["save_tract","C:/output/whole_brain.tt.gz","0"]` | Save one completed tract bundle by index; tracking results remain in memory until explicitly saved. |
 | `save_mni_tract` |  | Save the selected tract in MNI coordinates. |
 | `save_template_tract` |  | Save the selected tract in template space. |
 | `save_slice_tract` |  | Save the selected tract in current slice space. |
@@ -497,7 +533,8 @@ tolerance; agents should use `run_auto_track` instead.
 Fiber tracking is asynchronous. A successful reply means tracking started.
 Poll top-level `LIST`; the target row's `tracking-jobs` reaches zero when no
 active tracking bundle remains. Request full `list_tract` afterward only when
-bundle details are needed.
+bundle details are needed. Tracking results remain in memory until an explicit
+save command such as `save_tract` or `save_all_tracts_to_folder` succeeds.
 
 ### Device commands
 
@@ -507,7 +544,7 @@ bundle details are needed.
 | `move_device` |  | Move a device to a specified location. |
 | `push_device` |  | Push the selected device along its axis. |
 | `pull_device` |  | Pull the selected device along its axis. |
-| `copy_device` |  | Duplicate the selected device. |
+| `copy_device` |  | Duplicate selected device. |
 | `set_acpc` |  | Set AC, PC, and interhemispheric reference points. |
 | `delete_device` |  | Delete one device. |
 | `delete_all_devices` |  | Delete all devices. |
@@ -661,10 +698,22 @@ tracking started. Poll `LIST`; the target row's `tracking-jobs` reaches zero
 when no active tracking bundle remains. Call full `list_tract` afterward only
 when bundle details are needed.
 
-For a synchronous long-running command, the target window has `busy=1`, and the
-global `level`/`status` describe available TIPL progress. Do not repeat the
-operation because its original `CMD` connection is still pending. Use `LIST`
-for status and process every returned `PROMPT`.
+A synchronous command such as `segment_brain` holds its original `CMD`
+connection until the operation finishes. A local pipe client or helper may
+report a timeout after about 10 seconds even though DSI Studio continues the
+inference successfully. The timeout describes the client connection, not the
+state of the DSI Studio routine, and it does not cancel the routine.
+
+After a timeout, do not resend the command. Send one concise update, then use
+`LIST` to inspect `busy`, `level`, and `status`. If the target remains busy,
+wait. When it becomes idle, verify the expected result with the relevant
+command, such as `list_region` after segmentation. The original final `CMD`
+reply may be unavailable if the client disconnected before completion.
+
+For any synchronous long-running command, the target window has `busy=1`, and
+the global `level`/`status` describe available TIPL progress. Do not repeat the
+operation because its original `CMD` connection may still be pending. Use
+`LIST` for status and process every returned `PROMPT`.
 
 Slice loading and registration make the tracking-window row busy. When it
 becomes idle, use `list_slice` if exact `downloaded`, `ready`, `registering`, or
@@ -719,8 +768,8 @@ operation.
 - Use parameterless `list_param` once, then query only needed IDs.
 - Poll targeted detailed state rather than `LOG`.
 - Batch only safe independent synchronous commands for one window.
-- Attach progress `chat` to an existing request, but do not attach chat to every
-  status poll.
+- Attach useful progress `chat` to an existing request, but do not attach chat
+  to every status poll.
 - Send `cwd` once and omit it until it changes.
 - Reuse discovered names and indices until relevant state changes.
 - Stop after verification and one final `CHAT`.
