@@ -108,7 +108,7 @@ An optional `chat` may accompany any request. Attach an update directly to
 ### LIST
 
 ```json
-{"agent":"Codex","session":"<uuid>","cwd":"C:/work","request":"LIST"}
+{"agent":"Codex","session":"<uuid>","request":"LIST"}
 ```
 
 The first line reports application-wide activity. Following lines contain:
