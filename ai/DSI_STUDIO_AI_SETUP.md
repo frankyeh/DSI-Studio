@@ -39,16 +39,9 @@ Claude/Ollama(192.168.1.14)
 
 The parenthesized host is part of the agent name. Do not shorten it.
 
-For Codex launched by DSI Studio, use `CODEX_THREAD_ID` immediately as the
-session. DSI Studio also reads `thread.started.thread_id` for later resume.
-
-For Claude Code, use the current process's `sessionId` from:
-
-```text
-~/.claude/sessions/<pid>.json
-```
-
-Do not use the friendly `name` field.
+Use the resumable session UUID assigned by the current agent runtime. Do not use
+a friendly name, process ID, or newly generated substitute. Reuse the exact
+agent and session values in every request.
 
 The optional wrapper identity is:
 
@@ -101,10 +94,8 @@ function Invoke-Dsi($request)
     }
 }
 
-$DsiAgent = 'Codex'
-# Ollama example:
-# $DsiAgent = 'Codex/Ollama(192.168.1.14)'
-$DsiSession = $env:CODEX_THREAD_ID
+$DsiAgent = '<agent-name>'
+$DsiSession = '<resumable-session-uuid>'
 ```
 
 Use the wrapper or executable fallback only when direct pipe access cannot run
