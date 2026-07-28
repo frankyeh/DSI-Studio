@@ -8,12 +8,11 @@ This file contains the complete main-window, Hub, tracking-file, workspace, sett
 |---|---|---|
 | `list_recent_fib` | `["list_recent_fib"]` | List recently opened FIB/FZ files from the main window. |
 | `list_recent_src` | `["list_recent_src"]` | List recently opened SRC/SZ files from the main window. |
-| `hub repos` | `["hub","repos"]` | List Fiber Data Hub repositories. |
-| `hub tags` | `["hub","tags","<repo>"]` | List tags/releases for one repository. |
-| `hub files` | `["hub","files","<repo>","<tag>","","0","20"]` | List files with index, name, size, and download state. |
-| `hub open` | `["hub","open","<repo>","<tag>","0"]` | Download one Hub file to temporary cache and open it. |
-| `hub download` | `["hub","download","<repo>","<tag>","0","C:/data"]` | Download one Hub file to a persistent directory without opening it. |
-| `hub help` |  | Show Hub subcommand syntax. |
+| `hub_repo` | `["hub_repo"]` | List Fiber Data Hub repository indices and exact `owner/repository` identifiers. |
+| `hub_tags` | `["hub_tags","<repo>"]` | Select an exact repository returned by `hub_repo` and list its release tags. Repository metadata may still be loading; retry the same command when instructed. |
+| `hub_files` | `["hub_files","<repo>","<tag>","","0","20"]` | List file row indices, names, sizes, and temporary-cache status. Optional filter, offset, and limit follow the tag. |
+| `hub_open` | `["hub_open","<repo>","<tag>","0"]` | Select an exact filename or row index returned by `hub_files`, download it to temporary cache when needed, and open it using the Hub-selected file mode. |
+| `hub_download` | `["hub_download","<repo>","<tag>","0","C:/data"]` | Download an exact filename or `hub_files` row index to a persistent directory. The directory is created when needed, and existing files are skipped. |
 | `open_image` | `["open_image","C:/data/subject.fz"]` | Main-window file router; can open FIB/FZ, SRC/SZ, and ordinary images according to extension. |
 | `run_cli` | `["run_cli","--action=rec --loop=C:\\data\\*.sz --method=4"]` | Run CLI only when the user explicitly requests CLI execution. |
 | `open_fib` | `["open_fib","C:/data/subject.fz"]` | Open another FIB from an existing tracking window; cannot create the first tracking window. |
@@ -35,6 +34,24 @@ This file contains the complete main-window, Hub, tracking-file, workspace, sett
 | `set_param` | `["set_param","step_size","1.0"]` | Set one discovered parameter ID to a string value. |
 | `set_params` | `["set_params","step_size=1.0&min_length=20"]` | Set multiple `id=value` entries separated by `&`. |
 
+## Fiber Data Hub workflow
+
+All Hub commands are separate top-level command names. The old `[`"hub"`,`"files"`,...]` form is no longer accepted.
+
+```json
+["hub_repo"]
+["hub_tags","<repo>"]
+["hub_files","<repo>","<tag>",".fz","0","20"]
+["hub_open","<repo>","<tag>","<exact-filename-or-returned-index>"]
+```
+
+- Use the exact `owner/repository` string returned by `hub_repo`.
+- Use the exact tag returned by `hub_tags`.
+- `hub_files` performs a case-insensitive substring filter, then applies offset and limit. Its first column remains the actual file-table row index; do not replace it with the filtered result's ordinal position.
+- `hub_open` and `hub_download` accept either the exact filename or the numeric row index returned by `hub_files`.
+- `hub_download` requires exactly five elements, including the destination directory.
+- Hub opening and downloading use GUI-backed network routines. Verify the new window or destination file rather than relying only on `okay:true`.
+
 ## `list_param` domains
 
 Use a domain to retrieve only the relevant current values:
@@ -54,6 +71,7 @@ For example, `["list_param","tracking"]` returns all parameters from `Tracking`,
 
 ## Important routing notes
 
+- All `hub_*` commands target the **main** window.
 - `open_image` targets the **main** window and routes files by extension.
 - `open_fib` targets an existing **tracking** window and opens another FIB/FZ.
 - Use top-level `LIST` to obtain the correct numeric window ID before every `CMD`.
