@@ -1,3 +1,4 @@
+#include <array>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QClipboard>
@@ -510,25 +511,23 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
                         << item(row,3)->text().toStdString();
         return run->succeed();
     }
-    if(cmd[0] == "delete_branch")
+    const std::array<const char*,4> tract_actions{
+        "delete_branch","undo_tract","redo_tract","trim_tract"};
+    auto tract_action = std::find_if(tract_actions.begin(),tract_actions.end(),
+        [&](const char* action){return cmd[0] == action;});
+    if(tract_action != tract_actions.end())
     {
-        for_each_bundle(cmd[0].c_str(), [&](unsigned int index){return tract_models[index]->delete_branch();});
-        return true;
-    }
-    if(cmd[0] == "undo_tract")
-    {
-        for_each_bundle(cmd[0].c_str(),[&](unsigned int index){return tract_models[index]->undo();});
-        return true;
-    }
-    if(cmd[0] == "redo_tract")
-    {
-        for_each_bundle(cmd[0].c_str(),[&](unsigned int index){return tract_models[index]->redo();});
-        return true;
-    }
-    if(cmd[0] == "trim_tract")
-    {
-        for_each_bundle(cmd[0].c_str(),[&](unsigned int index){return tract_models[index]->trim();});
-        return true;
+        auto action = std::distance(tract_actions.begin(),tract_action);
+        return for_each_bundle([&](unsigned int index)
+        {
+            switch(action)
+            {
+            case 0: return tract_models[index]->delete_branch();
+            case 1: return tract_models[index]->undo();
+            case 2: return tract_models[index]->redo();
+            default:return tract_models[index]->trim();
+            }
+        },cmd[1]);
     }
 
     if(cmd[0] == "cut_tract_end_portion" || cmd[0] == "cut_tract_lps_end" || cmd[0] == "cut_tract_rai_end")
@@ -557,7 +556,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             cmd[0].pop_back();
         auto dim = cmd[0].back()-'x';
         unsigned int slice_pos = run->from_cmd(1,cur_tracking_window.current_slice->slice_pos[dim]);
-        for_each_bundle(cmd[0].c_str(),[&](unsigned int index)
+        for_each_bundle([&](unsigned int index)
         {
             tract_models[index]->cut_by_slice(dim,slice_pos,!other_side,
                 (cur_tracking_window.current_slice->is_diffusion_space ? nullptr:&cur_tracking_window.current_slice->to_slice));
@@ -912,7 +911,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         if(!cur_tracking_window.regionWidget->set_roi(run->from_cmd(1,
                     cur_tracking_window.regionWidget->get_roi_settings()),roi_mgr))
             return run->failed(cur_tracking_window.regionWidget->error_msg);
-        for_each_bundle("filter by roi",[&](unsigned int index)
+        for_each_bundle([&](unsigned int index)
         {
             return tract_models[index]->filter_by_roi(roi_mgr);
         });
@@ -1218,7 +1217,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         else
             distance = QString::fromStdString(cmd[1]).toFloat();
 
-        for_each_bundle(cmd[0].c_str(),[&](unsigned int index)
+        for_each_bundle([&](unsigned int index)
         {
             return tract_models[index]->delete_repeated(distance);
         });
@@ -1242,7 +1241,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         else
             new_step = QString::fromStdString(cmd[1]).toFloat();
 
-        for_each_bundle(cmd[0].c_str(),[&](unsigned int index)
+        for_each_bundle([&](unsigned int index)
         {
             tract_models[index]->resample(new_step);
             return true;
@@ -1266,7 +1265,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         else
             threshold = QString::fromStdString(cmd[1]).toFloat();
 
-        for_each_bundle(cmd[0].c_str(),[&](unsigned int index)
+        for_each_bundle([&](unsigned int index)
         {
             return tract_models[index]->delete_by_length(threshold);
         });
@@ -1541,7 +1540,7 @@ void TractTableWidget::edit_tracts(void)
     if(edit_option == paint)
         color = QColorDialog::getColor(Qt::red,this,"Select color",QColorDialog::ShowAlphaChannel).rgb();
     auto angle = cur_tracking_window.glWidget->angular_selection ? cur_tracking_window["tract_sel_angle"].toFloat():0.0;
-    for_each_bundle("editing tracts",[&](unsigned int index)
+    for_each_bundle([&](unsigned int index)
     {
         switch(edit_option)
         {
