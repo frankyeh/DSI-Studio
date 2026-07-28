@@ -31,13 +31,30 @@ This file contains the complete main-window, Hub, tracking-file, workspace, sett
 | `restore_rendering` | `["restore_rendering"]` | Restore rendering, visibility, and color defaults. |
 | `restore_tracking` | `["restore_tracking"]` | Restore tracking defaults and data-dependent length/tolerance values. |
 | `presentation_mode` | `["presentation_mode"]` | Hide editing docks for presentation-oriented display. |
-| `list_param` | `["list_param"]` | List all valid rendering/tracking parameter IDs; add one ID to query its current value. |
+| `list_param` | `["list_param","tracking"]` | List the current values for one parameter domain; omit the argument or use `all` for every domain, or provide one parameter ID. |
 | `set_param` | `["set_param","step_size","1.0"]` | Set one discovered parameter ID to a string value. |
 | `set_params` | `["set_params","step_size=1.0&min_length=20"]` | Set multiple `id=value` entries separated by `&`. |
+
+## `list_param` domains
+
+Use a domain to retrieve only the relevant current values:
+
+- `tracking`
+- `region_window`
+- `background_rendering`
+- `slice_rendering`
+- `tract_rendering`
+- `region_rendering`
+- `surface_rendering`
+- `device_rendering`
+- `label_rendering`
+- `odf_rendering`
+
+For example, `["list_param","tracking"]` returns all parameters from `Tracking`, `Tracking_dT`, and `Tracking_adv`. Domain names are case-insensitive, and `-` is normalized to `_`.
 
 ## Important routing notes
 
 - `open_image` targets the **main** window and routes files by extension.
 - `open_fib` targets an existing **tracking** window and opens another FIB/FZ.
 - Use top-level `LIST` to obtain the correct numeric window ID before every `CMD`.
-- Use `list_param` before `set_param` or `set_params`; do not guess parameter IDs.
+- Use the appropriate `list_param` domain before `set_param` or `set_params`; do not guess parameter IDs.
