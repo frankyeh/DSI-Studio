@@ -223,6 +223,11 @@ index, running state, shown state, name, tract count, deleted count, and seeds.
 The optional literal string `"status"` returns only running-job and bundle
 counts. A numeric tract index is **not** required for `list_tract`.
 
+In the compact status output, `running=0` means no tracking job is still active:
+fiber tracking is complete. A value greater than zero means one or more tracking
+jobs are still running. Poll `list_tract status` until `running=0` before treating
+the tracking operation as finished or starting a dependent step.
+
 If a client reports `need-param1` for `["list_tract"]`, the request was likely
 sent through an incompatible wrapper or malformed command interface. Send the
 standard JSON `CMD` array directly to a tracking window.
@@ -252,7 +257,9 @@ Typical sequence:
 ```
 
 Do not resend `run_tracking` merely because a client timeout occurred. Poll
-`LIST`; fiber tracking is asynchronous after the command is accepted.
+`LIST`; fiber tracking is asynchronous after the command is accepted. Use
+`["list_tract","status"]` for definitive tracking completion: `running=0` means
+the tracking job has completed.
 
 ## Discovery quick reference
 
@@ -266,7 +273,7 @@ Do not resend `run_tracking` merely because a client timeout occurred. Poll
 | Segmentation model IDs | `["list_unet"]` | tracking |
 | Regions and ROI types | `["list_region"]` | tracking |
 | Full tract table | `["list_tract"]` | tracking |
-| Compact tract status | `["list_tract","status"]` | tracking |
+| Tracking completion (`running=0`) | `["list_tract","status"]` | tracking |
 | Parameter IDs and values by domain | `["list_param"]` | tracking |
 | Tracking parameters and current values | `["list_param","tracking"]` | tracking |
 | One parameter value | `["list_param","fa_threshold"]` | tracking |
@@ -285,6 +292,7 @@ Do not resend `run_tracking` merely because a client timeout occurred. Poll
 - Do not answer modal dialogs remotely; tell the user what must be selected.
 - `okay:true` means the command was accepted; asynchronous work may still be active.
 - A client timeout does not prove failure; verify application state before retrying a long command.
+- For fiber tracking, `list_tract status` with `running=0` is the completion signal.
 - A disappeared window or `window not found` means the user likely closed it. Do not reopen it automatically.
 - Do not expose private chain-of-thought. Report conclusions, actions, progress, and blockers.
 
