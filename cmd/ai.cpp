@@ -399,8 +399,6 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
 
     if(agent_name.isEmpty())
         return ai_reply(socket,{},"ERROR\tmissing agent: provide a provider-tagged agent name and reuse it for the entire conversation");
-    if(agent_name.contains('@'))
-        return ai_reply(socket,{},"ERROR\tinvalid agent: '@' is reserved as the agent/session separator");
     auto provider = ai_info::identify_provider(agent_name);
     if(provider == ai_provider::Unknown)
         return ai_reply(socket,{},"ERROR\tinvalid agent: include Codex or Claude in the agent name");
@@ -977,8 +975,7 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
     launch.session = session;
     launch.text = text;
     launch.new_session = session.isEmpty();
-    launch.name = ui->ai_agent_selector->itemText(int(provider)).
-                  section(' ',0,0);
+    launch.name = provider == ai_provider::Codex ? "Codex" : "Claude";
     launch.executable = ui->ai_agent_selector->itemData(
         int(provider == ai_provider::Codex ?
             ai_provider::Codex : ai_provider::Claude),
@@ -1020,9 +1017,15 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
     launch.model = launch.model_setting["model"].toString().trimmed();
     auto model_info = launch.model_setting["info"].toObject();
     launch.profile = model_info["profile"].toString();
-    launch.model_provider =
-        ai_model_provider(model_info["provider"].toInt());
-
+    launch.model_provider = ai_model_provider(model_info["provider"].toInt());
+    if(launch.model_provider == ai_model_provider::Ollama)
+    {
+        auto host = settings.value("ai/ollama_host","localhost").
+                    toString().trimmed();
+        if(!host.contains("://"))
+            host.prepend("http://");
+        launch.name += "/Ollama@" + QUrl(host).host();
+    }
     if(launch.model_provider == ai_model_provider::Ollama &&
         settings.value("ai/ollama_host","localhost").toString().trimmed().isEmpty())
     {
