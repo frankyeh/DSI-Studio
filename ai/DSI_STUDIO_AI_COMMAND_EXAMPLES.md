@@ -69,6 +69,26 @@ Use these with the standard top-level `CMD` request. Every command name and para
 | `filter_tract` | `["filter_tract","0:3&1:0"]` | Filters the current or checked tract bundle(s) using explicit `region-index:type` settings. Discover region indices and types with `list_region` first. |
 | `update_tract` | `["update_tract"]` | Refreshes visible/deleted counts for every tract bundle, marks every tract rendering for update, and redraws the tract display. |
 
+## Fifteen more source-verified region examples
+
+| Command | Common example | Important behavior |
+|---|---|---|
+| `move_up_region` | `["move_up_region","3"]` | Swaps region row `3` with the preceding row. It fails when the selected region is already first; omit the index to use the current row. |
+| `move_down_region` | `["move_down_region","3"]` | Swaps region row `3` with the following row. It fails when the selected region is already last; omit the index to use the current row. |
+| `move_region` | `["move_region","80 100 80","3"]` | Moves the selected region so its center of mass reaches the supplied `x y z` location in that region's voxel space. The optional third element selects the region index. |
+| `add_region_from_atlas` | `["add_region_from_atlas","0 2 5&6"]` | Uses `template-id atlas-id label-id-list`. Label IDs are separated by `&`; omit the label list to add every region in that atlas. Discover IDs with `list_atlas`. |
+| `delete_region` | `["delete_region","3"]` | Permanently removes one region row and mask. Omit the index to delete the current region; confirm destructive actions first. |
+| `delete_all_regions` | `["delete_all_regions"]` | Permanently removes every region and resets the generated-color counter. Confirm this destructive action first. |
+| `move_slice_to_region` | `["move_slice_to_region","3"]` | Moves the current slice position to the selected region's center. An empty region returns canceled; omit the index to use the current region. |
+| `save_4d_region` | `["save_4d_region","C:/output/regions_4d.nii.gz"]` | Saves each checked region as a separate volume in one 4D NIfTI and writes the companion label file. At least one region must be checked. |
+| `save_region_statistics` | `["save_region_statistics","C:/output/region_stat.txt"]` | Computes statistics for all checked regions and writes them directly to the supplied text file. It fails when no regions are checked. |
+| `save_tract_statistics` | `["save_tract_statistics","C:/output/tract_stat.txt"]` | Computes statistics for all checked tract bundles and writes them to the supplied file. It fails when no tracts are checked. |
+| `save_device_statistics` | `["save_device_statistics","C:/output/device_stat.txt"]` | Computes statistics for all loaded devices and writes them to the supplied file. It fails when no devices exist. |
+| `save_t2r` | `["save_t2r","C:/output/tract_to_region.txt"]` | Calculates tract-to-region connectivity for every checked tract against checked regions. Both checked tracts and checked regions are required. |
+| `save_tract_recognition` | `["save_tract_recognition","C:/output/tract_names.txt","0"]` | Recognizes one tract bundle against the asymmetric tract atlas and writes percentage/name pairs. The optional third element is the tract index and defaults to the current tract. |
+| `show_region_statistics` | `["show_region_statistics"]` | Computes checked-region statistics and opens the result dialog. Because it is modal, prefer `save_region_statistics` for unattended agent operation. |
+| `show_t2r` | `["show_t2r"]` | Computes tract-to-region connectivity and opens the result dialog. Because it is modal, prefer `save_t2r` for unattended agent operation. |
+
 ## Brief `chat` with `CMD`
 
 ```json
