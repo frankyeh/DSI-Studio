@@ -30,7 +30,7 @@ only as parameters of the documented commands below.
 | `open_src_dir` | `["open_src_dir","C:/src"]` | Search the supplied directory for `*src.gz` and `.sz` files and load them. |
 | `open_fib` | `["open_fib","C:/data/subject.fz"]` | Open the supplied `.fz`, `*fib.gz`, or `.dz` file and create a tracking window. Without a parameter, open a FIB picker. |
 | `open_structural_tracking` | `["open_structural_tracking","C:/data/T1w.nii.gz"]` | Pass the supplied NIfTI or 2dseq structural image to `loadFib`. Without a parameter, open a structural-image picker. |
-| `open_template` | `["open_template","HCP1065"]` | Open the supplied built-in template name. Without a parameter, open the template currently selected in the main-window list. |
+| `open_template` | `["open_template","<template-name>"]` | Open the supplied built-in template name. Without a parameter, open the template currently selected in the main-window list. |
 | `create_db` | `["create_db"]` | Open the connectometry database-creation dialog. Takes no arguments. |
 | `create_average` | `["create_average"]` | Open the average-database creation dialog. Takes no arguments. |
 | `open_db` | `["open_db","C:/data/group.db.fz"]` | Load the supplied connectometry database and create a database window. Without a parameter, open a database picker. |
@@ -48,7 +48,8 @@ only as parameters of the documented commands below.
 | `open_image` | `["open_image","C:/data/T1w.nii.gz&C:/data/T2w.nii.gz"]` | Open one or more ordinary image paths in a `view_image` window. Multiple files use one `&`-separated parameter. Without a parameter, open an image picker. Do not use this command for the FIB tracking interface. |
 | `open_ai` | `["open_ai"]` | Show, raise, and activate the AI Agent window. Takes no arguments. |
 | `open_hub` | `["open_hub"]` | Show, raise, and activate the Fiber Data Hub without running a query. Takes no arguments. |
-| `hub_*` | `["hub_repo"]` | Show the Fiber Data Hub and delegate the full command array to its command router. See the workflow below. |
+| `hub_repo` | `["hub_repo"]` | Show the Fiber Data Hub and delegate this one-element command to its command router. |
+| `hub_*` with parameters | — | The current main-window router rejects command arrays with more than two elements before Hub delegation. Parameterized Hub commands therefore require a router revision before they can be used through `CMD`. |
 
 ## File-list parameter format
 
@@ -64,26 +65,21 @@ Join the paths with `&`:
 Do not submit each path as a separate command-array element because the
 main-window router rejects more than one parameter.
 
-## Fiber Data Hub workflow
+## Fiber Data Hub routing limitation
 
-All Hub queries are separate main-window command names. The old
-`["hub","files",...]` form is not accepted. `open_hub` only opens the Hub
-window.
+The source delegates `open_hub` and names beginning with `hub_` to the Fiber Data
+Hub, but the main-window router first rejects arrays containing more than one
+parameter. Consequently, `hub_repo` works because it has one element, while
+forms such as these are currently blocked before Hub delegation:
 
 ```json
-["hub_repo"]
 ["hub_tags","<repo>"]
 ["hub_files","<repo>","<tag>",".fz","0","20"]
-["hub_open","<repo>","<tag>","<exact-filename-or-returned-index>"]
+["hub_open","<repo>","<tag>","<filename-or-index>"]
 ```
 
-- Use the exact `owner/repository` string returned by `hub_repo`.
-- Use the exact tag returned by `hub_tags`.
-- `hub_files` filters before applying offset and limit. Its first column remains
-  the actual file-table row index.
-- `hub_open` and `hub_download` accept the exact filename or returned row index.
-- `hub_download` requires its documented destination-directory parameter.
-- Verify the created window or destination file after GUI-backed network work.
+Do not claim that a parameterized Hub command is available through `CMD` until
+the main-window argument limit is revised.
 
 ## Important routing and response notes
 
@@ -105,6 +101,10 @@ window.
 
 - `bids_to_src` always asks the local user to select an output directory, even
   when the input BIDS path is supplied.
+- The no-parameter branches of `collect_network_measures` and `open_src_dir`
+  currently shadow their outer variables, so their picker-selected values are
+  not propagated correctly. Use an explicit command parameter for these two
+  commands until the source is corrected.
 - Picker-based commands require local GUI interaction and their cancellation may
   return without an immediate error.
 - Verify opened windows and generated files rather than relying only on the lack
