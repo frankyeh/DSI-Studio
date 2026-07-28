@@ -416,6 +416,7 @@ tract completion. `status=done` is the definitive completion signal.
 - Ollama-backed identities include the host, for example `Codex/Ollama(192.168.1.14)`.
 - Inspect `LIST` before substantial loading, registration, segmentation, reconstruction, or tracking.
 - Discover names, indices, internal model IDs, and parameter IDs rather than guessing.
+- For `run_auto_track`, call `list_auto_tract` first and use an exact internal atlas label such as `ProjectionBrainstem_CorticospinalTractL`, not human-readable shorthand such as `Corticospinal Tract`.
 - Main-window GUI picker commands require local user interaction; do not claim completion from `okay:true` alone.
 - Confirm `clear_recent_src` and `clear_recent_fib` because they erase saved history immediately without another prompt.
 - Confirm other destructive actions and overwrites.
