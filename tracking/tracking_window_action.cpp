@@ -198,21 +198,16 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "list_slice")
     {
-        tipl::out() << "index\tcurrent\tname\tready\tregistering\tdownloaded\tregistered";
+        tipl::out() << "index\tcurrent\tname\tstatus";
         for(int index = 0;index < ui->SliceModality->count();++index)
         {
             auto& slice = slices[index];
             auto custom = std::dynamic_pointer_cast<CustomSliceModel>(slice);
-            auto source = custom ? custom->source_file_name : std::filesystem::path();
-            if(tipl::begins_with(source.u8string(),"http"))
-                source = handle->fib_file_name.parent_path()/source.filename();
-            bool ready = !custom || slice->view->image_ready();
-            bool running = custom && custom->running;
+            auto status = !custom ? "ready" : custom->running ? "registering" :
+                          tipl::begins_with(custom->source_file_name.u8string(),"http") ?
+                          "available" : "ready";
             tipl::out() << index << "\t" << (index == ui->SliceModality->currentIndex()) << "\t"
-                        << ui->SliceModality->itemText(index).toStdString() << "\t"
-                        << ready << "\t" << running << "\t"
-                        << (!custom || std::filesystem::exists(source)) << "\t"
-                        << (slice->is_diffusion_space || (ready && !running));
+                        << ui->SliceModality->itemText(index).toStdString() << "\t" << status;
         }
         return run->succeed();
     }
