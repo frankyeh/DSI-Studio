@@ -102,19 +102,15 @@ private slots:
     void on_ai_quick_settings_clicked();
     void on_ai_new_chat_clicked();
     void on_ai_send_message_clicked();
-    void on_averagefib_clicked();
-    void on_vbc_clicked();
     void on_RenameDICOMDir_clicked();
     void on_RenameDICOM_clicked();
     void openRecentFibFile();
     void openRecentSrcFile();
     void open_fib_at(int,int);
     void open_src_at(int,int);
-    void on_batch_reconstruction_clicked();
     void on_workDir_currentTextChanged(const QString &arg1);
 
     void on_linear_reg_clicked();
-    void on_SRC_qc_clicked();
     void on_parse_network_measures_clicked();
     void on_nii2src_bids_clicked();
     void on_nii2src_sf_clicked();
@@ -126,11 +122,6 @@ private slots:
     void on_template_list_itemDoubleClicked(QListWidgetItem *item);
     void on_open_selected_src_clicked();
     void on_recentSrc_cellClicked(int row, int column);
-    void on_OpenDWI_NIFTI_clicked();
-    void on_OpenDWI_DICOM_clicked();
-    void on_OpenDWI_2dseq_clicked();
-    void on_NII_qc_clicked();
-    void on_FIB_qc_clicked();
 };
 
 #endif // MAINWINDOW_H
