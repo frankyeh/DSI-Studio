@@ -58,6 +58,8 @@ private:
     FiberDataHub* fiber_data_hub = nullptr;
     void login(void);
 private slots:
+    void openRecentFibFile();
+    void openRecentSrcFile();
     void open_fib_at(int,int);
     void open_src_at(int,int);
     void on_workDir_currentTextChanged(const QString &arg1);
