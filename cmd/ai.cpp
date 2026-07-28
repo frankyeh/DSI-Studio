@@ -763,6 +763,7 @@ void MainWindow::refresh_codex_models(const QString& path)
             ui->ai_model_selector->addItem("default");
             ui->ai_model_selector->addItems(models);
         }
+        refresh_ollama_models();
         process->deleteLater();
     });
 
