@@ -5,43 +5,19 @@
 #include <QSettings>
 #include <memory>
 #include <QListWidgetItem>
-#include <QFile>
 #include <QNetworkAccessManager>
-#include <QNetworkRequest>
 #include <QNetworkReply>
-#include <QJsonArray>
-#include <QJsonObject>
-#include <QMenu>
-#include <QMap>
 #include <string>
-#include <unordered_map>
 
 
 namespace Ui {
     class MainWindow;
 }
 class group_connectometry_analysis;
+class AIAgent;
+class QByteArray;
 class FiberDataHub;
-class QProcess;
-struct ai_launch;
-
-enum class ai_provider {Unknown = -1,Codex = 0,Claude = 1};
-enum class ai_model_provider {Native,Ollama};
-enum class ai_input {User,Pending};
-struct ai_info{
-    QString agent_name,work_dirs,project_titles;
-    ai_provider provider = ai_provider::Unknown;
-    QProcess* processes = nullptr;
-    QJsonArray projects,prompts;
-    QListWidgetItem* project_items = nullptr;
-    QJsonObject model_settings;
-    static ai_provider identify_provider(const QString&);
-    QString title(const QString& session) const {return project_titles.isEmpty() ? (agent_name.isEmpty() ? session : agent_name+"@"+session) : project_titles;} QString details(const QString&) const;
-    void update(const QString&,const QString&); void set_provider(ai_provider,const QString&); void set_process(QProcess*);
-};
-extern std::unordered_map<QString,ai_info> ai_infos;
-extern QMap<QString,quint64> ai_log_positions;
-void ai_log(QString);
+class QLocalSocket;
 
 class MainWindow : public QMainWindow
 {
@@ -50,18 +26,6 @@ class MainWindow : public QMainWindow
     void updateRecentList(void);
     QSettings settings;
 
-public:
-    QString ai_project_dir;
-    QMenu* ai_project_menu = nullptr;
-    void add_ai_history(const QString&,QJsonObject);
-    void add_ai_history(const QString&,const QString&,const QString&);
-    bool save_ai_entry(const QString&,const QJsonObject&);
-    bool set_ai_title(const QString&,QString);
-    void show_ai_project(const QString&);
-    void show_ai_project(const QString&,QJsonObject);
-    void stop_ai_blink();
-    void refresh_ollama_models();
-    void refresh_codex_models(const QString&);
 public:
     QNetworkAccessManager manager;
     QSharedPointer<QNetworkReply> get(QUrl url);
@@ -78,6 +42,7 @@ public:
     void openFile(QStringList file_name);
     std::string error_msg;
     bool command(const std::vector<std::string>& cmd);
+    void ai_command(QLocalSocket*,const QByteArray&);
 public:
     void open_DWI(QStringList files);
     bool loadFib(QString Filename);
@@ -90,18 +55,10 @@ public:
     QString work_dir(void) const;
 private:
     QStringList info;
+    AIAgent* ai_agent = nullptr;
     FiberDataHub* fiber_data_hub = nullptr;
     void login(void);
-    void start_ai(QString,const QString&,ai_input);
-    void start_codex(QString,const QString&,ai_input);
-    void start_claude(QString,const QString&,ai_input);
-    ai_launch prepare_ai(ai_provider,QString,const QString&,ai_input);
-    void run_ai(const ai_launch&,QStringList);
 private slots:
-
-    void on_ai_quick_settings_clicked();
-    void on_ai_new_chat_clicked();
-    void on_ai_send_message_clicked();
     void on_RenameDICOMDir_clicked();
     void on_RenameDICOM_clicked();
     void openRecentFibFile();

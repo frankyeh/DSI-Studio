@@ -468,8 +468,6 @@ int gpu_count = 0;
 extern console_stream console;
 MainWindow* main_window = nullptr;
 
-void ai_command(QLocalSocket*,const QByteArray&);
-
 int main(int ac, char *av[])
 {
     if(ac == 2)
@@ -579,7 +577,7 @@ int main(int ac, char *av[])
                     clientSocket->waitForReadyRead(500);
                     auto request = clientSocket->readAll();
                     if(request.trimmed().startsWith('{'))
-                        ai_command(clientSocket,request);
+                        w.ai_command(clientSocket,request);
                     else
                     {
                         auto file_name = QString::fromUtf8(request).trimmed();

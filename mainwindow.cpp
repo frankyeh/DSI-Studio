@@ -1,8 +1,5 @@
 #include <QFileDialog>
-#include <QDateTime>
 #include <QDir>
-#include <QInputDialog>
-#include <QMenu>
 #include <QUrl>
 #include <QMessageBox>
 #include <QDragEnterEvent>
@@ -12,24 +9,22 @@
 #include <QHeaderView>
 #include <QStyleFactory>
 #include <QNetworkInterface>
+#include <QNetworkRequest>
 #include <QSysInfo>
 #include <QStandardPaths>
-#include <QShortcut>
-#include <QStandardItemModel>
 #include <QDialog>
 #include <QLineEdit>
-#include <QComboBox>
 #include <QUuid>
 #include <QEvent>
 
 #include <QJsonDocument>
-#include <QJsonArray>
 #include <QMap>
 #include <QJsonObject>
 
 #include <filesystem>
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "ai_agent.hpp"
 #include "regtoolbox.h"
 #include "reconstruction/reconstruction_window.h"
 #include "tracking/tracking_window.h"
@@ -120,270 +115,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     setAcceptDrops(true);
     ui->setupUi(this);
-    auto* agents = qobject_cast<QStandardItemModel*>(
-                       ui->ai_agent_selector->model());
-    auto set_agent = [&](ai_provider provider,const QString& path,
-                          const QStringList& models,QJsonObject profiles = {})
-    {
-        auto index = int(provider);
-        auto agent = ui->ai_agent_selector->itemText(index);
-        auto* item = agents->item(index);
-        item->setText(agent+(path.isEmpty() ? " (not found)" : ""));
-        item->setEnabled(!path.isEmpty());
-        ui->ai_agent_selector->setItemData(index,path,Qt::UserRole+1);
-        ui->ai_agent_selector->setItemData(index,models);
-        ui->ai_agent_selector->setItemData(index,QVariant::fromValue(profiles),Qt::UserRole+2);
-        ai_log(path.isEmpty() ? agent+" not found" : agent+": "+path);
-        if(!path.isEmpty())
-            ai_log(agent+" models: "+(models.isEmpty() ? "none detected" : models.join(", ")));
-    };
-    QString codex_path,claude_path;
-    {
-        // find Codex executable and models
-        codex_path = QStandardPaths::findExecutable("codex");
-        if(codex_path.isEmpty())
-        {
-            QDir dir(QStandardPaths::writableLocation(
-                         QStandardPaths::GenericDataLocation)+"/OpenAI/Codex/bin");
-            for(const auto& name : dir.entryList(
-                    QDir::Dirs|QDir::NoDotAndDotDot,QDir::Time))
-                if(QFileInfo::exists(codex_path = dir.filePath(name+"/codex.exe")))
-                    break;
-        }
-        if(!QFileInfo::exists(codex_path))
-            codex_path.clear();
-        set_agent(ai_provider::Codex,codex_path,{});
-        refresh_codex_models(codex_path);
-    }
-    {
-        // find Claude executable and models
-        claude_path = QStandardPaths::findExecutable("claude");
-#ifdef Q_OS_WIN
-        if(claude_path.isEmpty())
-            claude_path = QDir::homePath()+"/.local/bin/claude.exe";
-#endif
-        if(!QFileInfo::exists(claude_path))
-            claude_path.clear();
-        set_agent(ai_provider::Claude,claude_path,{});
-        refresh_ollama_models();
-    }
-
-    if(codex_path.isEmpty() && !claude_path.isEmpty())
-        ui->ai_agent_selector->setCurrentIndex(int(ai_provider::Claude));
-
-    ui->ai_agent_selector->setEnabled(
-        !codex_path.isEmpty() || !claude_path.isEmpty());
-    auto update_models = [this]
-    {
-        ui->ai_model_selector->clear();
-        ui->ai_model_selector->addItem("default");
-        auto profiles = ui->ai_agent_selector->currentData(Qt::UserRole+2).
-                        toJsonObject();
-        for(const auto& model : ui->ai_agent_selector->currentData().toStringList())
-            ui->ai_model_selector->addItem(model,
-                QVariant::fromValue(profiles[model].toObject()));
-    };
-    connect(ui->ai_agent_selector,QOverload<int>::of(&QComboBox::currentIndexChanged),this,
-            [update_models] { update_models(); });
-    update_models();
-
-    {
-        auto update_agent_name = [this]
-        {
-            auto index = ui->ai_agent_selector->currentIndex();
-            QString name = index == int(ai_provider::Codex) ? "Codex" : "Claude";
-            if(ui->ai_model_selector->currentData().toJsonObject()["provider"].toInt() ==
-                int(ai_model_provider::Ollama))
-            {
-                auto host = settings.value("ai/ollama_host","localhost").
-                            toString().trimmed();
-                if(!host.contains("://"))
-                    host.prepend("http://");
-                name += "/Ollama(" + QUrl(host).host() + ")";
-            }
-            ui->ai_agent_selector->setItemText(index,name);
-        };
-        connect(ui->ai_model_selector,&QComboBox::currentTextChanged,
-                this,[update_agent_name]{update_agent_name();});
-        update_agent_name();
-    }
-
-
-    auto default_agent = settings.value(
-        "ai/default_agent",ui->ai_agent_selector->currentIndex());
-    bool okay;
-    auto default_index = default_agent.toInt(&okay);
-    if(!okay)
-        default_index = int(ai_info::identify_provider(default_agent.toString()));
-    if(default_index >= 0 &&
-       default_index < ui->ai_agent_selector->count())
-        ui->ai_agent_selector->setCurrentIndex(default_index);
-
-
-
-    ui->ai_model_selector->setCurrentText(
-        settings.value("ai/default_model",ui->ai_model_selector->currentText()).toString());
-
-
-    connect(ui->tabWidget,&QTabWidget::currentChanged,this,[this]
-    {
-        if(ui->tabWidget->currentWidget() == ui->tab_8)
-            stop_ai_blink();
-    });
-    auto* send = new QShortcut(QKeySequence(Qt::CTRL|Qt::Key_Return),
-                               ui->ai_chat_input);
-    send->setContext(Qt::WidgetShortcut);
-    connect(send,&QShortcut::activated,
-            ui->ai_send_message,&QPushButton::click);
-
-    ai_project_dir = QStandardPaths::writableLocation(
-                         QStandardPaths::AppLocalDataLocation)+"/ai_projects";
-    QDir dir(ai_project_dir);
-    dir.mkpath(".");
-
-    ai_project_menu = new QMenu(this);
-    ai_project_menu->setStyleSheet(
-        "QMenu{background:#fff;border:1px solid #d9d9dc;padding:4px;}"
-        "QMenu::item{padding:6px 24px 6px 10px;border-radius:4px;}"
-        "QMenu::item:selected{background:#e9e9eb;}"
-        "QMenu::item:disabled{color:#9a9a9e;}"
-        "QMenu::separator{height:1px;background:#dedee1;margin:4px;}");
-    connect(ai_project_menu->addAction("Rename"),&QAction::triggered,this,[this]
-    {
-        auto* item = ui->ai_project_list->currentItem();
-        if(!item)
-            return;
-        auto session = item->data(Qt::UserRole).toString();
-        bool okay;
-        auto title = QInputDialog::getText(
-            this,"Rename Chat","Chat name:",QLineEdit::Normal,
-            ai_infos[session].title(session),&okay);
-        if(okay && !set_ai_title(session,title))
-            QMessageBox::warning(
-                this,"Rename Chat","The chat name could not be saved.");
-    });
-
-    connect(ai_project_menu->addAction("Details..."),&QAction::triggered,this,[this]
-    {
-        auto* item = ui->ai_project_list->currentItem();
-        if(!item)
-            return;
-        auto session = item->data(Qt::UserRole).toString();
-        QMessageBox::information(
-            this,"Chat Details",ai_infos[session].details(session));
-    });
-    ai_project_menu->addSeparator();
-
-    connect(ai_project_menu->addAction("Remove"),&QAction::triggered,this,[this]
-    {
-        auto* item = ui->ai_project_list->currentItem();
-        if(!item)
-            return;
-        auto session = item->data(Qt::UserRole).toString();
-        if(ai_infos[session].processes)
-        {
-            QMessageBox::information(this,"Remove Project","Wait for the AI agent to finish first.");
-            return;
-        }
-        if(QMessageBox::question(this,"Remove Project","Remove this project and its saved history?") != QMessageBox::Yes)
-            return;
-
-        QFile::remove(ai_project_dir+"/"+QString::fromLatin1(
-                          QUrl::toPercentEncoding(session))+".jsonl");
-        auto agent_name = ai_infos[session].agent_name;
-        if(!agent_name.isEmpty())
-            QFile::remove(ai_project_dir+"/"+QString::fromLatin1(
-                QUrl::toPercentEncoding(agent_name+"@"+session))+".jsonl");
-        ai_infos.erase(session);
-        ai_log_positions.remove(session);
-        ui->ai_project_list->setCurrentItem(nullptr);
-        delete item;
-
-        if(ui->ai_project_list->count())
-            ui->ai_project_list->setCurrentRow(0);
-        else
-            ui->ai_chat_history->clear();
-    });
-
-    connect(ui->ai_project_list,&QListWidget::currentItemChanged,this,
-            [this](QListWidgetItem* item,QListWidgetItem* previous)
-    {
-        for(auto* i : {previous,item})
-            if(i)
-                ui->ai_project_list->itemWidget(i)->
-                    findChild<QPushButton*>("ai_project_title")->
-                    setStyleSheet(i == item ? "background:#dce9f9;" : "");
-        if(item)
-        {
-            stop_ai_blink();
-            auto session = item->data(Qt::UserRole).toString();
-            const auto& info = ai_infos[session];
-            auto index = int(info.provider);
-            if(index >= 0)
-                ui->ai_agent_selector->setCurrentIndex(index);
-            auto model = info.model_settings.value("model").toString();
-            if(model.isEmpty() || ui->ai_model_selector->findText(model) < 0)
-                model = "default";
-            ui->ai_model_selector->setCurrentText(model);
-            show_ai_project(session);
-        }
-        else
-            ui->ai_chat_history->clear();
-    });
-
-    for(const auto& info : dir.entryInfoList(
-            {"*.jsonl"},QDir::Files,QDir::Time|QDir::Reversed))
-    {
-        auto legacy_key = QUrl::fromPercentEncoding(
-                              info.completeBaseName().toLatin1());
-        auto session = legacy_key.section('@',-1);
-        auto agent_name = legacy_key.contains('@') ?
-                          legacy_key.section('@',0,0) : QString();
-        QFile file(info.filePath());
-        if(!file.open(QIODevice::ReadOnly))
-            continue;
-
-        QJsonArray loaded_history;
-        QString project_title,cwd;
-        while(!file.atEnd())
-        {
-            auto doc = QJsonDocument::fromJson(file.readLine());
-            if(doc.isObject())
-            {
-                auto entry = doc.object();
-                if(entry["type"] == "title")
-                {
-                    project_title = entry["text"].toString();
-                    continue;
-                }
-                loaded_history.append(entry);
-                if(entry["type"] == "request")
-                {
-                    auto request = QJsonDocument::fromJson(
-                                       entry["text"].toString().toUtf8()).object();
-                    if(!request["session"].toString().isEmpty())
-                        session = request["session"].toString();
-                    if(!request["agent"].toString().isEmpty())
-                        agent_name = request["agent"].toString();
-                    if(QDir(request["cwd"].toString()).exists())
-                        cwd = request["cwd"].toString();
-                }
-            }
-        }
-
-        if(loaded_history.isEmpty() || session.isEmpty())
-            continue;
-        auto& ai = ai_infos[session];
-        ai.update(agent_name,cwd);
-        if(!project_title.isEmpty())
-            ai.project_titles = project_title;
-        for(const auto& entry : loaded_history)
-            ai.projects.append(entry);
-        show_ai_project(session);
-    }
-
-    if(ui->ai_project_list->count())
-        ui->ai_project_list->setCurrentRow(0);
+    ai_agent = new AIAgent(this);
 
     ui->styles->addItems(QStringList("default") << QStyleFactory::keys());
     ui->styles->setCurrentText(settings.value("styles","Fusion").toString());
@@ -1574,6 +1306,11 @@ QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
                                          });
 }
 
+void MainWindow::ai_command(QLocalSocket* socket,const QByteArray& data)
+{
+    ai_agent->command(socket,data);
+}
+
 int run_action_with_wildcard(tipl::program_option<tipl::out>&);
 bool MainWindow::command(const std::vector<std::string>& cmd)
 {
@@ -1832,6 +1569,16 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         for(size_t i = 1;i < cmd.size();++i)
             files << QString::fromUtf8(cmd[i]);
         loadNii(files);
+        return true;
+    }
+
+    if(cmd[0] == "open_ai")
+    {
+        if(cmd.size() != 1)
+            return fail("open_ai takes no arguments");
+        ai_agent->showNormal();
+        ai_agent->raise();
+        ai_agent->activateWindow();
         return true;
     }
 
