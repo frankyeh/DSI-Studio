@@ -12,9 +12,9 @@ are accepted only by the window type that implements them.
 
 | Window type | What it represents | Common valid commands | File-opening role |
 |---|---|---|---|
-| **main** | Main DSI Studio window | `list_recent_fib`, `list_recent_src`, `open_image`, `hub ...`, `run_cli` | Use `open_image` to open one or more local paths through the main-window file router. For `.fz` or `*fib.gz`, this creates a tracking window. |
+| **main** | Main DSI Studio window | `list_recent_fib`, `list_recent_src`, `open_image`, `hub ...`, `run_cli` | `open_image` is primarily for opening NIfTI and other image files for image viewing, modification, and editing. Do not use it to open `.fz` when the fiber-tracking interface is needed. |
 | **image** | General image viewer | Image-viewer inspection and display commands | Used for NIfTI, DICOM, NRRD, and other ordinary image data opened by the main window. |
-| **tracking** | A loaded FIB/FZ tracking window | `list_slice`, `list_region`, `list_tract`, `run_tracking`, tract/region/slice/device/rendering commands | `open_fib` is a **tracking-window command** that opens another FIB after a tracking window already exists. It is not the command for creating the first tracking window. |
+| **tracking** | A loaded FIB/FZ tracking window | `list_slice`, `list_region`, `list_tract`, `run_tracking`, `open_fib`, tract/region/slice/device/rendering commands | Use `open_fib` to open `.fz` or `*fib.gz` in the fiber-tracking interface. It is a tracking-window command and therefore requires an existing tracking window. |
 
 Always call top-level `LIST` first and use the returned numeric ID. Never use a
 window title, filename, type name, guessed number, or stale number as `window`.
@@ -33,21 +33,23 @@ C:\data\subject.fz
 
 DSI Studio routes the file by extension. `.fz` and `*fib.gz` open as tracking
 data; `.sz` and `*src.gz` open reconstruction; ordinary image formats open an
-image window. Raw text is reserved for one local file path.
+image window. Raw text is reserved for one local file path. Use this route to
+create the first tracking window when no tracking window is currently open.
 
-### 2. Main-window `open_image` — JSON/CMD route
+### 2. Main-window `open_image` — NIfTI/image editing route
 
 Target the **main** window:
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"1","command":["open_image","C:/data/subject.fz"]}
+{"agent":"Codex","session":"<uuid>","request":"CMD","window":"1","command":["open_image","C:/data/T1w.nii.gz"]}
 ```
 
-Despite its name, `open_image` uses the main-window file-opening router. It can
-therefore open `.fz`/`*fib.gz` as tracking data as well as ordinary image files.
-It may also receive multiple image paths when those files should open together.
+`open_image` is primarily for opening NIfTI and other ordinary image files in an
+image window for viewing, modification, and editing. It may receive multiple
+image paths when those files should open together. Do not use `open_image` for
+`.fz` when the fiber-tracking interface is required.
 
-### 3. Tracking-window `open_fib` — open another FIB
+### 3. Tracking-window `open_fib` — fiber-tracking interface
 
 Target an existing **tracking** window:
 
@@ -55,9 +57,10 @@ Target an existing **tracking** window:
 {"agent":"Codex","session":"<uuid>","request":"CMD","window":"2","command":["open_fib","C:/data/second_subject.fz"]}
 ```
 
-`open_fib` creates another tracking window from an already existing tracking
-window. It cannot create the first tracking window because no tracking-window
-handler exists yet.
+Use `open_fib` to open `.fz` or `*fib.gz` in a new fiber-tracking window. Because
+`open_fib` is handled by a tracking window, create the first tracking window by
+sending its absolute path as raw pipe text, then use `open_fib` for additional
+FIB/FZ files.
 
 ## Recommended request sequence
 
