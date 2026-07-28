@@ -42,6 +42,33 @@ Use these with the standard top-level `CMD` request. Every command name and para
 | `tract_to_region` | `["tract_to_region","0"]` | Converts all trajectories of one tract bundle into a voxel region in the current slice space. Omit the index to use the current tract bundle. |
 | `endpoint_to_region` | `["endpoint_to_region","0"]` | Converts one tract bundle's two endpoint sets into two new regions named with `endpoints1` and `endpoints2`. |
 
+## Twenty-two more source-verified examples
+
+| Command | Common example | Important behavior |
+|---|---|---|
+| `correct_bias_field` | `["correct_bias_field"]` | Runs the FIB-side bias-field correction. It fails with `cannot find iso` when the required isotropic image is unavailable. |
+| `save_rendering_setting` | `["save_rendering_setting","C:/work/rendering.ini"]` | Saves the ROI, rendering, slice, tract, region, surface, device, label, and ODF parameter groups, but not tracking parameter groups. |
+| `load_rendering_setting` | `["load_rendering_setting","C:/work/rendering.ini"]` | Loads only recognized rendering-related keys present in the INI file. The file must already exist. |
+| `restore_rendering` | `["restore_rendering"]` | Restores rendering, visibility, color, region-graph, and ODF defaults, then refreshes tract and region color maps. |
+| `presentation_mode` | `["presentation_mode"]` | Hides the ROI dock and also hides the region dock when no regions exist. It does not toggle back to the prior layout. |
+| `set_slice_dir_color` | `["set_slice_dir_color","7","1"]` | Sets directional coloring for one slice index. Use `list_slice` first; requesting the existing state returns a canceled result. |
+| `set_slice_stay` | `["set_slice_stay","7","1"]` | Adds or removes one slice from the persistent/stay slice list. Use `1` to keep it displayed and `0` to remove it. |
+| `add_slice` | `["add_slice","C:/data/T1w.nii.gz"]` | Adds a custom image slice. One command element may contain comma-separated source files for a multi-file image; loading can start registration asynchronously. |
+| `add_mni_slice` | `["add_mni_slice","C:/data/atlas.nii.gz"]` | Adds a custom slice interpreted in MNI space. DSI Studio first requires a working subject-to-MNI mapping. |
+| `skull_strip_slice` | `["skull_strip_slice","7"]` | Applies the template mask to a custom slice after Gaussian smoothing. Built-in slices are rejected/canceled; discover the custom index with `list_slice`. |
+| `save_slice_mapping` | `["save_slice_mapping","C:/output/T1w.linear_reg.txt","7"]` | Saves the registration mapping for a custom slice. The file path is the second element and the slice index is the third. |
+| `open_slice_mapping` | `["open_slice_mapping","C:/output/T1w.linear_reg.txt","7"]` | Stops any running registration for the selected custom slice, then loads the supplied mapping file. Built-in slices are rejected. |
+| `save_slice_volume` | `["save_slice_volume","C:/output/T1w.nii.gz","7"]` | Saves the bound volume of one custom slice as NIfTI. The slice index is the optional third element and defaults to the current slice. |
+| `delete_slice` | `["delete_slice","7"]` | Deletes one custom slice and its texture/table entry. Built-in slices cannot be deleted; use only an index returned by `list_slice`. |
+| `enable_auto_tract` | `["enable_auto_tract"]` | Loads the symmetric tract atlas, populates the automatic-tract selectors, and exposes the tracking controls. It can fail when the tract atlas cannot be loaded. |
+| `open_mni_tract` | `["open_mni_tract","C:/data/cst_mni.tt.gz"]` | Loads a tract file interpreted in MNI space and maps it into the current subject. MNI mapping must be available. |
+| `save_mni_tract` | `["save_mni_tract","C:/output/cst_mni.tt.gz","0"]` | Saves one bundle in MNI coordinates. The optional third element is the tract index; MNI mapping must be available. |
+| `save_template_tract` | `["save_template_tract","C:/output/cst_template.tt.gz","0"]` | Saves one bundle in the loaded template space. The optional third element selects the tract index. |
+| `save_slice_tract` | `["save_slice_tract","C:/output/cst_T1w.tt.gz","0"]` | Transforms and saves one bundle in the current slice's coordinate space and dimensions. |
+| `save_all_tracts` | `["save_all_tracts","C:/output/checked_tracts.tt.gz"]` | Saves all checked bundles together in one tract file. Unchecked bundles are excluded. |
+| `filter_tract` | `["filter_tract","0:3&1:0"]` | Filters the current or checked tract bundle(s) using explicit `region-index:type` settings. Discover region indices and types with `list_region` first. |
+| `update_tract` | `["update_tract"]` | Refreshes visible/deleted counts for every tract bundle, marks every tract rendering for update, and redraws the tract display. |
+
 ## Brief `chat` with `CMD`
 
 ```json
