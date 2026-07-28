@@ -96,6 +96,9 @@ image editing or batch processing.
 
 ## Request formats
 
+Only `CMD` and `CHAT` accept the `chat` field. Attach an update directly to
+`CMD` when it describes that command; use standalone `CHAT` otherwise.
+
 ### LIST
 
 ```json
