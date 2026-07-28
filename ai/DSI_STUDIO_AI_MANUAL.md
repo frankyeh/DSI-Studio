@@ -13,8 +13,8 @@ are accepted only by the window type that implements them.
 | Window type | What it represents | Common valid commands | File-opening role |
 |---|---|---|---|
 | **main** | Main DSI Studio window | `list_recent_fib`, `list_recent_src`, `open_image`, `hub ...`, `run_cli` | `open_image` is primarily for opening NIfTI and other image files for image viewing, modification, and editing. Do not use it to open `.fz` when the fiber-tracking interface is needed. |
-| **image** | General image viewer | Image-viewer inspection and display commands | Used for NIfTI, DICOM, NRRD, and other ordinary image data opened by the main window. |
-| **tracking** | A loaded FIB/FZ tracking window | `list_slice`, `list_region`, `list_tract`, `run_tracking`, `open_fib`, tract/region/slice/device/rendering commands | Use `open_fib` to open `.fz` or `*fib.gz` in the fiber-tracking interface. It is a tracking-window command and therefore requires an existing tracking window. |
+| **image** | General image viewer | Image inspection, editing, and `segmentation` commands | Used mainly for standalone NIfTI editing and batch image processing, not as the default T1w-segmentation route when a related FIB is already open. |
+| **tracking** | A loaded FIB/FZ tracking window | `list_slice`, `set_slice`, `list_unet`, `segment_brain`, `list_region`, `list_tract`, `run_tracking`, `open_fib`, tract/region/slice/device/rendering commands | Use `open_fib` to open `.fz` or `*fib.gz` in the fiber-tracking interface. For a FIB workflow, segment its T1w in this tracking window rather than opening a separate image window. |
 
 Always call top-level `LIST` first and use the returned numeric ID. Never use a
 window title, filename, type name, guessed number, or stale number as `window`.
@@ -62,6 +62,11 @@ image window for viewing, modification, and editing. It may receive multiple
 image paths when those files should open together. Do not use `open_image` for
 `.fz` when the fiber-tracking interface is required.
 
+After opening a related FIB, do not open its T1w again in an image window merely
+to segment it. Use tracking-window `segment_brain` so the generated regions stay
+in the fiber-tracking workflow. Use the image-window route mainly for standalone
+image editing or batch processing.
+
 ## Recommended request sequence
 
 1. Send one concise `TITLE` after understanding the task.
@@ -69,7 +74,7 @@ image paths when those files should open together. Do not use `open_image` for
 3. Choose the numeric ID for the correct window type.
 4. Run discovery commands before mutation.
 5. Use `LIST` for routine polling and targeted `list_*` commands for detail.
-6. Verify output files and report the result with `chat` or standalone `CHAT`.
+6. Verify output files or created objects before reporting completion.
 
 ## Request formats
 
@@ -99,7 +104,7 @@ Every command name and parameter must be a JSON string. Use `"7"`, not numeric
 A meaningful command should normally include a useful progress update:
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"2","command":["segment_brain","SynthSeg V2","7"],"chat":"I verified that the T1w slice is ready. I am starting SynthSeg now."}
+{"agent":"Codex","session":"<uuid>","request":"CMD","window":"2","command":["segment_brain","human_synthseg","7"],"chat":"I verified that the T1w slice is ready. I am starting SynthSeg now."}
 ```
 
 The top-level `chat` field is shown to the user and does not change the command.
@@ -128,6 +133,76 @@ Use standalone `CHAT` when no other request is needed.
 Use `LOG` only when `LIST` and targeted discovery cannot explain a failure.
 
 ## Critical command syntax
+
+### T1w segmentation: prefer the tracking window for FIB workflows
+
+T1w segmentation is available in both the **tracking** window and the **image**
+window, but they serve different workflows.
+
+When an `.fz`/FIB is already open, the normal and most common route is to segment
+the T1w directly in that **tracking window**. Do not call main-window
+`open_image` to create a separate image window for the same T1w. Keeping the
+segmentation in the FIB workflow makes the resulting regions available in the
+tracking interface.
+
+Use this robust sequence on the tracking-window ID:
+
+```json
+["list_slice"]
+["set_slice","<T1w-slice-index>"]
+["list_slice"]
+["list_unet"]
+["segment_brain","<model-ID>","<T1w-slice-index>"]
+```
+
+`set_slice` may start slice loading or registration asynchronously and return
+before it is finished. Poll `list_slice` and proceed only when the selected row
+reports `ready=1`, `registering=0`, and `registered=1`.
+
+`list_unet` returns these columns:
+
+```text
+index    available    model    name    description
+```
+
+The second `segment_brain` element must be the internal ID from the **`model`**
+column, such as `human_synthseg`, not the display text from the **`name`** column,
+such as `SynthSeg V2`. Use only a row with `available=1`.
+
+The optional third element selects the slice by its exact name or quoted numeric
+index from `list_slice`. Supplying it causes `segment_brain` to select that slice;
+prechecking readiness with `list_slice` still avoids waiting or failure during
+segmentation.
+
+Segmentation inference may outlast the named-pipe client's wait time. A client
+timeout does not prove that `segment_brain` failed. Do not immediately resend the
+command. Poll top-level `LIST`, then use `list_slice` and `list_region` to verify
+that processing finished and segmentation regions were created.
+
+Use the image-window `segmentation` command mainly when processing a standalone
+NIfTI image or applying an image-processing workflow to multiple files. Open a
+T1w with `open_image` for this route only when the task is explicitly image
+editing or batch processing, rather than work on an already-open FIB.
+
+### Fiber Data Hub: `hub open` must target the intended FIB file
+
+First list the release files and use the exact first-column index belonging to
+the desired `.fz` or `*fib.gz` file:
+
+```json
+["hub","files","<repo>","<tag>",".fz"]
+["hub","open","<repo>","<tag>","<exact-FIB-index>"]
+```
+
+`hub open` also accepts the exact filename, but a numeric value must be the actual
+row index returned by `hub files`, not an ordinal guessed from the filtered
+results. Verify that the selected row is an `.fz` or `*fib.gz` asset when a
+fiber-tracking window is expected. A valid index for a non-FIB asset may be
+accepted but will not produce the intended tracking-window result.
+
+After `hub open`, call top-level `LIST` and verify that a new `tracking` window
+appeared. Do not treat an accepted request without a new tracking window as a
+successful FIB open.
 
 ### `list_tract` does not require a numeric parameter
 
@@ -184,17 +259,18 @@ Do not resend `run_tracking` merely because a client timeout occurred. Poll
 | Need | Command | Window |
 |---|---|---|
 | Open windows and activity | top-level `LIST` | none |
+| Hub release files and exact indices | `["hub","files","<repo>","<tag>"]` | main |
 | Recent FIB/FZ paths | `["list_recent_fib"]` | main |
 | Recent SRC/SZ paths | `["list_recent_src"]` | main |
 | Slice names and readiness | `["list_slice"]` | tracking |
+| Segmentation model IDs | `["list_unet"]` | tracking |
 | Regions and ROI types | `["list_region"]` | tracking |
 | Full tract table | `["list_tract"]` | tracking |
 | Compact tract status | `["list_tract","status"]` | tracking |
-| Parameter IDs | `["list_param"]` | tracking |
+| Parameter IDs and values by domain | `["list_param"]` | tracking |
 | Tracking parameters and current values | `["list_param","tracking"]` | tracking |
 | One parameter value | `["list_param","fa_threshold"]` | tracking |
 | Atlases | `["list_atlas"]` | tracking |
-| Segmentation models | `["list_unet"]` | tracking |
 | AutoTrack names | `["list_auto_tract"]` | tracking |
 
 ## Operational rules
@@ -204,10 +280,11 @@ Do not resend `run_tracking` merely because a client timeout occurred. Poll
 - Native identities are `Codex` and `Claude`.
 - Ollama-backed identities include the host, for example `Codex/Ollama(192.168.1.14)`.
 - Inspect `LIST` before substantial loading, registration, segmentation, reconstruction, or tracking.
-- Discover names, indices, and parameter IDs rather than guessing.
+- Discover names, indices, internal model IDs, and parameter IDs rather than guessing.
 - Confirm destructive actions and overwrites.
 - Do not answer modal dialogs remotely; tell the user what must be selected.
 - `okay:true` means the command was accepted; asynchronous work may still be active.
+- A client timeout does not prove failure; verify application state before retrying a long command.
 - A disappeared window or `window not found` means the user likely closed it. Do not reopen it automatically.
 - Do not expose private chain-of-thought. Report conclusions, actions, progress, and blockers.
 
