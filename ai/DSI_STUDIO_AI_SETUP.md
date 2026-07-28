@@ -206,7 +206,28 @@ Invoke-Dsi @{
 
 Do not use `open_fib` to create the first tracking window.
 
-## Tract commands that commonly cause confusion
+## Slice and tract status that commonly cause confusion
+
+### `list_slice`
+
+```powershell
+command=@('list_slice')
+```
+
+The reply columns are:
+
+```text
+index    current    name    status
+```
+
+Use the `status` word directly:
+
+- `available` — the URL-backed slice is listed but has not yet been loaded locally.
+- `registering` — registration is still running; poll again.
+- `ready` — the slice is ready for a dependent operation.
+
+The `current` column is only a `1`/`0` selected-state flag. After `set_slice`,
+poll until the selected row reports `ready`.
 
 ### `list_tract`
 
@@ -216,11 +237,30 @@ Full details require no parameter:
 command=@('list_tract')
 ```
 
+The full reply uses these columns:
+
+```text
+index    status    shown    name    tracts    deleted    seeds
+```
+
+Each bundle's `status` is `running` or `done`. The `shown` field is a separate
+`1`/`0` visibility flag.
+
 Compact status uses the literal string `status`:
 
 ```powershell
 command=@('list_tract','status')
 ```
+
+The compact reply uses:
+
+```text
+status    bundles
+```
+
+`status=running` means at least one tracking thread is active. `status=done`
+means tracking is complete. `bundles` is the total number of tract rows, not the
+number of running jobs.
 
 A numeric tract index is not required. If `["list_tract"]` produces
 `need-param1`, the command was likely sent through a malformed or incompatible
@@ -239,8 +279,13 @@ form uses current tracking parameters and checked regions.
 
 ## Polling and progress
 
-Use top-level `LIST` for routine status polling. Do not repeatedly resend a
-long-running command after a client timeout.
+Use top-level `LIST` for routine application status. Use targeted commands for
+definitive state:
+
+- Poll `list_slice` until the selected slice reports `status=ready`.
+- Poll `list_tract status` until it reports `status=done`.
+
+Do not repeatedly resend a long-running command after a client timeout.
 
 Attach a useful top-level `chat` message to meaningful commands:
 
