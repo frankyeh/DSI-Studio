@@ -491,18 +491,18 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         fetch_tracts();
         if(cmd[1] == "status")
         {
-            tipl::out() << "running\tbundles";
-            tipl::out() << std::count_if(
+            tipl::out() << "status\tbundles";
+            tipl::out() << (std::any_of(
                 thread_data.begin(),thread_data.end(),
-                [](const auto& thread){return bool(thread);})
+                [](const auto& thread){return bool(thread);}) ? "running" : "done")
                         << "\t" << rowCount();
             return run->succeed();
         }
 
-        tipl::out() << "index\trunning\tshown\tname\ttracts\tdeleted\tseeds";
+        tipl::out() << "index\tstatus\tshown\tname\ttracts\tdeleted\tseeds";
         for(int row = 0;row < rowCount();++row)
             tipl::out() << row << "\t"
-                        << bool(thread_data[row]) << "\t"
+                        << (thread_data[row] ? "running" : "done") << "\t"
                         << (item(row,0)->checkState() == Qt::Checked) << "\t"
                         << item(row,0)->text().toStdString() << "\t"
                         << item(row,1)->text().toStdString() << "\t"
