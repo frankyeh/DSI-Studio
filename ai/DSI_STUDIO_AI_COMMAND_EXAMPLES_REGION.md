@@ -82,3 +82,41 @@ This file contains the complete region inventory preserved from the previous man
 - Discover indices and roles with `list_region` before mutation.
 - Confirm deletion, merging, overwrite, and mask-replacement operations.
 - Modal `show_*` commands block for user interaction; prefer the corresponding `save_*` command for unattended work.
+
+## Region Window parameter reference
+
+These are the `ROI` parameters from the embedded `:/data/options.txt` resource. The source tree labels the `ROI` root as **Region Window**, so these parameters belong here rather than in the rendering reference.
+
+Use:
+
+```json
+["list_param","roi_zoom"]
+["set_param","roi_zoom","5.0"]
+["set_params","roi_zoom=5.0&roi_opacity=0.8&roi_draw_edge=1"]
+```
+
+Every value remains a JSON string. Enum values are zero-based indices.
+
+| Parameter ID | UI setting | Accepted value | Default |
+|---|---|---|---|
+| `orientation_convention` | Orientation Convention | `0`=Radiology; `1`=Neurology | `0` (Radiology) |
+| `roi_zoom` | Zoom | float `0.2–40`; step `0.5` | `5.0` |
+| `roi_draw_edge` | Draw Edge | `0`=Off; `1`=On | `0` (Off) |
+| `roi_composition` | Composition | `0`=SourceAtop; `1`=DestinationAtop; `2`=Xor; `3`=Plus; `4`=Multiply; `5`=Screen; `6`=Overlay; `7`=Darken; `8`=Lighten; `9`=ColorDodge; `10`=ColorBun; `11`=HardLight; `12`=SoftLight; `13`=Difference; `14`=Exclusion | `0` (SourceAtop) |
+| `roi_opacity` | Opacity | float `0–1`; step `0.1` | `1` |
+| `roi_edge_width` | Edge Width | integer `1–5`; step `1` | `1` |
+| `roi_track` | Show Tracts | `0`=Off; `1`=On | `1` (On) |
+| `roi_track_count` | Visible Tracts Count | integer `1000–500000`; step `1000` | `5000` |
+| `roi_fiber` | Fiber Direction | `0`=Off; `1`=On; `2`=1st; `3`=2nd | `1` (On) |
+| `roi_fiber_color` | Fiber Color | `0`=RGB; `1`=red; `2`=green; `3`=blue | `0` (RGB) |
+| `roi_fiber_width` | Fiber Width | float `0.1–1`; step `0.1` | `0.2` |
+| `roi_fiber_length` | Fiber Length | float `0.1–4`; step `0.1` | `2.0` |
+| `roi_fiber_antialiasing` | Fiber Antialiasing | `0`=Off; `1`=On | `0` (Off) |
+| `roi_label` | "R" label | `0`=Off; `1`=On | `1` (On) |
+| `roi_position` | Position Line | `0`=Off; `1`=On | `1` (On) |
+| `roi_ruler` | Ruler | `0`=Off; `1`=On | `1` (On) |
+| `roi_tic` | Ruler Tic | integer `1–8`; step `1` | `2` |
+| `roi_layout` | Slice Layout | `0`=Single Slice; `1`=3 Slices; `2`=Mosaic; `3`=Mosaic 2; `4`=Mosaic 3; `5`=Mosaic 4; `6`=Mosaic 5; `7`=Mosaic 6; `8`=Mosaic 7; `9`=Mosaic 8; `10`=Mosaic 9; `11`=Mosaic 10 | `0` (Single Slice) |
+| `roi_mosaic_column` | Mosaic Column Number | integer `0–30`; step `5` | `0` |
+| `roi_mosaic_skip_row` | Mosaic Skip Row | integer `0–10`; step `1` | `1` |
+| `roi_format` | Default Output Format | `0`=nii.gz; `1`=mat; `2`=txt | `0` (nii.gz) |
