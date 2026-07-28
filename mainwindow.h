@@ -27,6 +27,7 @@ struct ai_launch;
 
 enum class ai_provider {Unknown = -1,Codex = 0,Claude = 1};
 enum class ai_model_provider {Native,Ollama};
+enum class ai_input {User,Pending};
 struct ai_info{
     QString agent_name,work_dirs,project_titles;
     ai_provider provider = ai_provider::Unknown;
@@ -36,8 +37,7 @@ struct ai_info{
     QJsonObject model_settings;
     static ai_provider identify_provider(const QString&);
     QString title(const QString& session) const {return project_titles.isEmpty() ? (agent_name.isEmpty() ? session : agent_name+"@"+session) : project_titles;} QString details(const QString&) const;
-    void update(const QString&,const QString& = {}); void set_provider(ai_provider,const QString&); void set_process(QProcess*);
-    QString take_prompts(void); QByteArray prepare_reply(QByteArray,QJsonArray*) const;
+    void update(const QString&,const QString&); void set_provider(ai_provider,const QString&); void set_process(QProcess*);
 };
 extern std::unordered_map<QString,ai_info> ai_infos;
 extern QMap<QString,quint64> ai_log_positions;
@@ -53,11 +53,12 @@ class MainWindow : public QMainWindow
 public:
     QString ai_project_dir;
     QMenu* ai_project_menu = nullptr;
+    void add_ai_history(const QString&,QJsonObject);
     void add_ai_history(const QString&,const QString&,const QString&);
     bool save_ai_entry(const QString&,const QJsonObject&);
     bool set_ai_title(const QString&,QString);
-    void select_agent_model(const ai_info& info);
-    void show_ai_project(const QString&,QJsonObject = {});
+    void show_ai_project(const QString&);
+    void show_ai_project(const QString&,QJsonObject);
     void stop_ai_blink();
     void refresh_ollama_models();
     void refresh_codex_models(const QString&);
@@ -91,10 +92,10 @@ private:
     QStringList info;
     FiberDataHub* fiber_data_hub = nullptr;
     void login(void);
-    void start_ai(QString,const QString&,bool);
-    void start_codex(QString,const QString&,bool);
-    void start_claude(QString,const QString&,bool);
-    ai_launch prepare_ai(ai_provider,QString,const QString&,bool);
+    void start_ai(QString,const QString&,ai_input);
+    void start_codex(QString,const QString&,ai_input);
+    void start_claude(QString,const QString&,ai_input);
+    ai_launch prepare_ai(ai_provider,QString,const QString&,ai_input);
     void run_ai(const ai_launch&,QStringList);
 private slots:
 
