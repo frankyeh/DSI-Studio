@@ -1037,34 +1037,6 @@ void MainWindow::open_DWI(QStringList filenames)
         dp->close();
 }
 
-void MainWindow::on_Reconstruction_clicked()
-{
-    QStringList filenames = tipl::qt::open_image_files(this,ui->workDir->currentText(),
-                                            "Src files (*.sz *src.gz);;Histology images (*.jpg *.tif);;All files (*)" );
-    if (filenames.isEmpty())
-        return;
-    add_work_dir(QFileInfo(filenames[0]).absolutePath());
-    loadSrc(filenames);
-}
-
-void MainWindow::on_FiberTracking_clicked()
-{
-    QString filename = tipl::qt::open_image_file(this,ui->workDir->currentText(),"Fib files (*.fz *fib.gz *.dz);;All files (*)");
-    if (filename.isEmpty())
-        return;
-    add_work_dir(QFileInfo(filename).absolutePath());
-    loadFib(filename);
-}
-
-void MainWindow::on_T1WFiberTracking_clicked()
-{
-    QString filename = tipl::qt::open_image_file(this,ui->workDir->currentText(),"Image files (*nii.gz *.nii 2dseq);;All files (*)");
-    if (filename.isEmpty())
-        return;
-    add_work_dir(QFileInfo(filename).absolutePath());
-    loadFib(filename);
-}
-
 std::filesystem::path rename_dicom(const std::filesystem::path& file_name,std::filesystem::path output);
 void MainWindow::on_RenameDICOM_clicked()
 {
@@ -1101,16 +1073,6 @@ QString MainWindow::work_dir() const
 }
 
 
-
-void MainWindow::on_browseDir_clicked()
-{
-    QString filename =
-        QFileDialog::getExistingDirectory(this,"Browse Directory",
-                                          ui->workDir->currentText());
-    if ( filename.isEmpty() )
-        return;
-    add_work_dir(filename);
-}
 
 std::vector<std::filesystem::path> rename_dicom_at_dir(std::filesystem::path path,
                                                        std::filesystem::path output);
@@ -1159,24 +1121,6 @@ void MainWindow::on_batch_reconstruction_clicked()
 
 
 
-void MainWindow::on_view_image_clicked()
-{
-    QStringList filename = tipl::qt::open_image_files(this,ui->workDir->currentText(),
-                                           "image files (*.nii *nii.gz *.dcm *.nhdr *.nrrd 2dseq);;All files (*)");
-    if(filename.isEmpty())
-        return;
-    add_work_dir(QFileInfo(filename[0]).absolutePath());
-    view_image* dialog = new view_image(this);
-    dialog->setAttribute(Qt::WA_DeleteOnClose);
-    if(!dialog->open(filename))
-    {
-        QMessageBox::critical(this,"ERROR",dialog->error_msg.c_str());
-        delete dialog;
-        return;
-    }
-    dialog->show();
-}
-
 void MainWindow::on_workDir_currentTextChanged(const QString &arg1)
 {
     if(!arg1.isEmpty())
@@ -1198,30 +1142,6 @@ bool MainWindow::load_db(std::shared_ptr<group_connectometry_analysis>& database
     }
     return true;
 }
-
-void MainWindow::on_open_db_clicked()
-{
-    QString filename;
-    std::shared_ptr<group_connectometry_analysis> database;
-    if(!load_db(database,filename))
-        return;
-    db_window* db = new db_window(this,database);
-    db->setWindowTitle(filename);
-    db->setAttribute(Qt::WA_DeleteOnClose);
-    db->show();
-}
-
-void MainWindow::on_group_connectometry_clicked()
-{
-    QString filename;
-    std::shared_ptr<group_connectometry_analysis> database;
-    if(!load_db(database,filename))
-        return;
-    group_connectometry* group_cnt = new group_connectometry(this,database,filename);
-    group_cnt->setAttribute(Qt::WA_DeleteOnClose);
-    group_cnt->show();
-}
-
 
 bool load_image_from_files(QStringList filenames,tipl::image<3>& ref,tipl::vector<3>& vs,tipl::matrix<4,4>& trans);
 
@@ -1252,13 +1172,6 @@ void MainWindow::on_linear_reg_clicked()
 
     if(manual->exec() != QDialog::Accepted)
         return;
-}
-
-void MainWindow::on_nonlinear_reg_clicked()
-{
-    RegToolBox* rt = new RegToolBox(this);
-    rt->setAttribute(Qt::WA_DeleteOnClose);
-    rt->showNormal();
 }
 
 std::string quality_check_src_files(const std::vector<std::filesystem::path>& file_list,
@@ -1388,15 +1301,6 @@ void MainWindow::on_parse_network_measures_clicked()
     QMessageBox::information(
         this,QApplication::applicationName(),"File saved to "+output);
 }
-
-void MainWindow::on_auto_track_clicked()
-{
-    auto_track* at = new auto_track(this);
-    at->setAttribute(Qt::WA_DeleteOnClose);
-    at->showNormal();
-}
-
-
 
 bool get_pe_dir(const std::string& nii_name,size_t& pe_dir,bool& is_neg)
 {
@@ -1654,14 +1558,6 @@ void MainWindow::on_dicom2nii_clicked()
 
 
 
-void MainWindow::on_xnat_download_clicked()
-{
-    auto* xnat = new xnat_dialog(this);
-    xnat->setAttribute(Qt::WA_DeleteOnClose);
-    xnat->showNormal();
-}
-
-
 void MainWindow::on_styles_activated(int)
 {
     if(ui->styles->currentText() != settings.value("styles","Fusion").toString())
@@ -1679,27 +1575,6 @@ void MainWindow::on_clear_settings_clicked()
 }
 
 
-void MainWindow::on_console_clicked()
-{
-    static Console* con(0);
-    if(!con)
-        con = new Console(this);
-    con->showNormal();
-}
-
-void MainWindow::on_fiber_data_hub_clicked()
-{
-    if(!fiber_data_hub)
-        fiber_data_hub = new FiberDataHub(this);
-    fiber_data_hub->showNormal();
-    fiber_data_hub->raise();
-    fiber_data_hub->activateWindow();
-}
-
-
-
-
-
 void MainWindow::on_recentFib_cellClicked(int row, int column)
 {
     ui->open_selected_fib->setEnabled(true);
@@ -1710,24 +1585,10 @@ void MainWindow::on_recentSrc_cellClicked(int row, int column)
     ui->open_selected_src->setEnabled(true);
 }
 
-void MainWindow::on_clear_src_history_clicked()
-{
-    ui->recentSrc->setRowCount(0);
-    ui->open_selected_src->setEnabled(false);
-    settings.setValue("recentSrcFileList", QStringList());
-}
-
 void MainWindow::on_open_selected_src_clicked()
 {
     if(ui->recentSrc->currentRow() >= 0)
         open_src_at(ui->recentSrc->currentRow(),0);
-}
-
-void MainWindow::on_clear_fib_history_clicked()
-{
-    ui->recentFib->setRowCount(0);
-    ui->open_selected_fib->setEnabled(false);
-    settings.setValue("recentFibFileList", QStringList());
 }
 
 void MainWindow::on_open_selected_fib_clicked()
@@ -1752,14 +1613,6 @@ void MainWindow::open_template(QString name)
             return;
         }
 }
-
-
-void MainWindow::on_TemplateFiberTracking_clicked()
-{
-    if(ui->template_list->currentRow() >= 0)
-        open_template(ui->template_list->item(ui->template_list->currentRow())->text());
-}
-
 
 
 void MainWindow::on_OpenDWI_NIFTI_clicked()
@@ -1824,6 +1677,134 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         return true;
     }
 
+    if(cmd[0] == "set_work_dir")
+    {
+        if(cmd.size() != 1)
+            return fail("set_work_dir takes no arguments");
+        auto dir = QFileDialog::getExistingDirectory(
+                       this,"Browse Directory",ui->workDir->currentText());
+        if(!dir.isEmpty())
+            add_work_dir(dir);
+        return true;
+    }
+
+    if(cmd[0] == "open_src")
+    {
+        if(cmd.size() != 1)
+            return fail("open_src takes no arguments");
+        auto files = tipl::qt::open_image_files(
+                         this,ui->workDir->currentText(),
+                         "Src files (*.sz *src.gz);;Histology images (*.jpg *.tif);;All files (*)");
+        if(files.isEmpty())
+            return true;
+        add_work_dir(QFileInfo(files[0]).absolutePath());
+        loadSrc(files);
+        return true;
+    }
+
+    if(cmd[0] == "open_fib" || cmd[0] == "open_structural_tracking")
+    {
+        if(cmd.size() != 1)
+            return fail(cmd[0]+" takes no arguments");
+        auto filter = cmd[0] == "open_fib" ?
+                      "Fib files (*.fz *fib.gz *.dz);;All files (*)" :
+                      "Image files (*nii.gz *.nii 2dseq);;All files (*)";
+        auto file = tipl::qt::open_image_file(
+                        this,ui->workDir->currentText(),filter);
+        if(file.isEmpty())
+            return true;
+        add_work_dir(QFileInfo(file).absolutePath());
+        return loadFib(file);
+    }
+
+    if(cmd[0] == "open_template")
+    {
+        if(cmd.size() != 1)
+            return fail("open_template takes no arguments");
+        auto* item = ui->template_list->currentItem();
+        if(!item)
+            return fail("no template selected");
+        open_template(item->text());
+        return true;
+    }
+
+    if(cmd[0] == "open_db" || cmd[0] == "open_connectometry")
+    {
+        if(cmd.size() != 1)
+            return fail(cmd[0]+" takes no arguments");
+        QString file;
+        std::shared_ptr<group_connectometry_analysis> database;
+        if(!load_db(database,file))
+            return true;
+        if(cmd[0] == "open_db")
+        {
+            auto* window = new db_window(this,database);
+            window->setWindowTitle(file);
+            window->setAttribute(Qt::WA_DeleteOnClose);
+            window->show();
+        }
+        else
+        {
+            auto* window = new group_connectometry(this,database,file);
+            window->setAttribute(Qt::WA_DeleteOnClose);
+            window->show();
+        }
+        return true;
+    }
+
+    if(cmd[0] == "open_auto_track")
+    {
+        if(cmd.size() != 1)
+            return fail("open_auto_track takes no arguments");
+        auto* window = new auto_track(this);
+        window->setAttribute(Qt::WA_DeleteOnClose);
+        window->showNormal();
+        return true;
+    }
+
+    if(cmd[0] == "open_nonlinear_registration")
+    {
+        if(cmd.size() != 1)
+            return fail("open_nonlinear_registration takes no arguments");
+        auto* window = new RegToolBox(this);
+        window->setAttribute(Qt::WA_DeleteOnClose);
+        window->showNormal();
+        return true;
+    }
+
+    if(cmd[0] == "open_xnat")
+    {
+        if(cmd.size() != 1)
+            return fail("open_xnat takes no arguments");
+        auto* window = new xnat_dialog(this);
+        window->setAttribute(Qt::WA_DeleteOnClose);
+        window->showNormal();
+        return true;
+    }
+
+    if(cmd[0] == "open_console")
+    {
+        if(cmd.size() != 1)
+            return fail("open_console takes no arguments");
+        static Console* console = nullptr;
+        if(!console)
+            console = new Console(this);
+        console->showNormal();
+        return true;
+    }
+
+    if(cmd[0] == "clear_recent_src" || cmd[0] == "clear_recent_fib")
+    {
+        if(cmd.size() != 1)
+            return fail(cmd[0]+" takes no arguments");
+        bool src = cmd[0] == "clear_recent_src";
+        (src ? ui->recentSrc : ui->recentFib)->setRowCount(0);
+        (src ? ui->open_selected_src : ui->open_selected_fib)->setEnabled(false);
+        settings.setValue(src ? "recentSrcFileList" : "recentFibFileList",
+                          QStringList());
+        return true;
+    }
+
     if(cmd[0] == "run_cli")
     {
         if(cmd.size() != 2)
@@ -1839,8 +1820,23 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
 
     if(cmd[0] == "open_image")
     {
-        if(cmd.size() < 2)
-            return fail("usage: open_image <file1> [file2...]");
+        if(cmd.size() == 1)
+        {
+            auto files = tipl::qt::open_image_files(
+                             this,ui->workDir->currentText(),
+                             "image files (*.nii *nii.gz *.dcm *.nhdr *.nrrd 2dseq);;All files (*)");
+            if(files.isEmpty())
+                return true;
+            add_work_dir(QFileInfo(files[0]).absolutePath());
+            auto* window = new view_image(this);
+            window->setAttribute(Qt::WA_DeleteOnClose);
+            if(!window->open(files))
+                return QMessageBox::critical(
+                           this,"ERROR",window->error_msg.c_str()),
+                       delete window,false;
+            window->show();
+            return true;
+        }
         QStringList files;
         for(size_t i = 1;i < cmd.size();++i)
             files << QString::fromUtf8(cmd[i]);
@@ -1848,9 +1844,17 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         return true;
     }
 
-    if(tipl::begins_with(cmd[0],"hub_"))
+    if(cmd[0] == "open_hub" || tipl::begins_with(cmd[0],"hub_"))
     {
-        on_fiber_data_hub_clicked();
+        if(cmd[0] == "open_hub" && cmd.size() != 1)
+            return fail("open_hub takes no arguments");
+        if(!fiber_data_hub)
+            fiber_data_hub = new FiberDataHub(this);
+        fiber_data_hub->showNormal();
+        fiber_data_hub->raise();
+        fiber_data_hub->activateWindow();
+        if(cmd[0] == "open_hub")
+            return true;
         if(!fiber_data_hub->command(cmd))
             return fail(fiber_data_hub->error_msg);
         return true;
