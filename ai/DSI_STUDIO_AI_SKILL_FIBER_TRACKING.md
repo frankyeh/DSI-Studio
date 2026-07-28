@@ -110,12 +110,12 @@ human-readable shorthand such as `Corticospinal Tract`.
 Recommended dense AutoTrack sampling:
 
 ```text
-tract limit: 10,000
-seed limit: 10,000,000
+tract limit: 50,000
+seed limit: 50,000,000
 ```
 
 The seed limit prevents difficult, low-yield pathways from running indefinitely.
-If it is reached first, fewer than 10,000 tracts may be produced. Adjust
+If it is reached first, fewer than 50,000 tracts may be produced. Adjust
 AutoTrack tolerance cautiously: larger values accept more variation and false
 positives; smaller values may reject distorted or variable anatomy.
 
@@ -124,21 +124,21 @@ positives; smaller values may reject distorted or variable anatomy.
 Topology-informed pruning removes isolated, noisy trajectories and works best
 on dense bundles.
 
-- About 10,000 tracts usually benefits from **2–3 total TIP iterations**.
 - Bundles below 1,000 tracts are generally unsuitable for TIP.
 - AutoTrack applies its configured `tip_iteration` automatically.
 - `trim_tract` applies one additional iteration to **every checked bundle**.
 
-If automatic TIP was disabled, uncheck every non-target bundle and apply:
+Recommended cleanup:
 
-```json
-["trim_tract"]
-["trim_tract"]
-```
-
-Inspect after each iteration. Use a third only if isolated noise remains and the
-valid tract core is preserved. Do not add manual rounds when AutoTrack already
-performed the intended total.
+1. Set the limits and disable automatic TIP, then run AutoTrack:
+   `["set_params","max_tract_count=50000&max_seed_count=50000000&tip_iteration=0"]`.
+2. Uncheck every non-target bundle.
+3. Apply `["trim_tract"]` four or five times, inspecting the result after each
+   round.
+4. Run `["delete_repeated_tract","1"]`; `1` voxel is the default distance.
+5. Apply secondary `["trim_tract"]` rounds one at a time until approximately
+   10,000 clean trajectories remain. Stop earlier if the valid tract core
+   deteriorates.
 
 ## Result Cleanup and Visualization
 
@@ -146,15 +146,14 @@ After tracking finishes:
 
 1. Poll `["list_tract","status"]` until `status=done`.
 2. Use `list_tract` to identify the target and whole-brain bundle indices.
-3. Keep only the target checked before any checked-bundle operation.
-4. Run `["delete_repeated_tract","1.0"]` to remove trajectories repeated within
-   one voxel and reduce rendering load.
-5. Run `["color_all_cluster"]` to assign distinct bundle colors.
-6. Hide the whole-brain bundle with
+3. Complete the TIP and repeated-tract cleanup above with only the target
+   checked.
+4. Run `["color_all_cluster"]` to assign distinct bundle colors.
+5. Hide the whole-brain bundle with
    `["check_tract","<whole-brain-index>","0"]`.
-7. Display one mapped bundle with
+6. Display one mapped bundle with
    `["show_only_tracts","<target-index>"]`.
-8. Add anatomical context using the subject-mapped built-in white-matter
+7. Add anatomical context using the subject-mapped built-in white-matter
    isosurface: `["add_surface","0","25"]`.
 
 Choose a useful inspection view for each bundle rather than reusing one camera.
