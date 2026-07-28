@@ -76,6 +76,16 @@ bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 const std::string& param);
 bool view_image::command(std::vector<std::string> cmds)
 {
+    if(cmds.empty())
+    {
+        error_msg = "empty command";
+        return false;
+    }
+    if(cmds.size() > 2)
+    {
+        error_msg = "too many parameters";
+        return false;
+    }
     cmds.resize(2);
     std::string cmd = cmds[0];
     std::string param1 = cmds[1];
