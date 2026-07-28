@@ -12,7 +12,7 @@ are accepted only by the window type that implements them.
 
 | Window type | What it represents | Common valid commands | File-opening role |
 |---|---|---|---|
-| **main** | Main DSI Studio window | `list_recent_fib`, `list_recent_src`, `set_work_dir`, `open_src`, `open_fib`, `open_structural_tracking`, `open_template`, `open_db`, `open_connectometry`, `open_auto_track`, `open_nonlinear_registration`, `open_xnat`, `open_console`, `clear_recent_src`, `clear_recent_fib`, `open_image`, `open_hub`, `hub_*`, `run_cli` | Main-window `open_fib` takes no path and opens a picker. Main-window `open_image` accepts explicit image paths or no path for a picker. |
+| **main** | Main DSI Studio window | `list_recent_fib`, `list_recent_src`, `reset_settings`, `set_work_dir`, `rename_dicom`, `rename_dicom_dir`, `convert_dicom_dir`, `bids_to_src`, `nifti_dir_to_src`, `collect_network_measures`, `open_src`, `open_dwi_nifti`, `open_dwi_dicom`, `open_dwi_2dseq`, `open_src_dir`, `open_fib`, `open_structural_tracking`, `open_template`, `create_db`, `create_average`, `open_db`, `open_connectometry`, `open_auto_track`, `open_nonlinear_registration`, `open_xnat`, `open_console`, `clear_recent_src`, `clear_recent_fib`, `qc_nii`, `qc_src`, `qc_fib`, `run_cli`, `open_image`, `open_ai`, `open_hub`, `hub_*` | Main-window opening commands may accept paths as command parameters. Without parameters, many open a local picker. Never send a filesystem path as the complete named-pipe request. |
 | **image** | General image viewer | Image inspection, editing, and `segmentation` commands | Used mainly for standalone NIfTI editing and batch image processing, not as the default T1w-segmentation route when a related FIB is already open. |
 | **tracking** | A loaded FIB/FZ tracking window | `list_slice`, `set_slice`, `list_unet`, `segment_brain`, `list_region`, `list_tract`, `run_tracking`, `open_fib`, tract/region/slice/device/rendering commands | Tracking-window `open_fib` requires an explicit `.fz` or `*fib.gz` path and creates another tracking window. |
 
@@ -35,9 +35,19 @@ SRC/SZ files. Do not substitute guessed names such as `recent_list`.
 Use the documented command interface for file opening. Do not send a filesystem
 path by itself as a named-pipe request.
 
-### 1. Main-window interactive open commands
+### 1. Main-window open commands
 
-These commands take no path and open a local GUI dialog:
+These commands accept an optional path parameter. Without a path, they open a
+local GUI dialog:
+
+```json
+["open_fib","C:/data/subject.fz"]
+["open_structural_tracking","C:/data/T1w.nii.gz"]
+["open_src","C:/data/subject.sz"]
+["open_image","C:/data/T1w.nii.gz"]
+```
+
+Omit the path to use the corresponding local file picker:
 
 ```json
 ["open_fib"]
@@ -46,13 +56,13 @@ These commands take no path and open a local GUI dialog:
 ["open_image"]
 ```
 
-- Main-window `open_fib` selects `.fz`, `*fib.gz`, or `.dz` and creates a tracking window.
-- `open_structural_tracking` selects `.nii.gz`, `.nii`, or `2dseq` and passes it to `loadFib`.
-- `open_src` selects `.sz`, `*src.gz`, `.jpg`, or `.tif` input and creates a reconstruction window.
-- Parameterless `open_image` selects ordinary image data and creates an image window.
+- Main-window `open_fib` opens a supplied `.fz`, `*fib.gz`, or `.dz` path, or opens a FIB picker when no path is supplied.
+- `open_structural_tracking` passes a supplied `.nii.gz`, `.nii`, or `2dseq` image to `loadFib`, or opens a structural-image picker.
+- `open_src` opens one or more supplied `.sz`, `*src.gz`, `.jpg`, or `.tif` inputs, or opens a file picker.
+- `open_image` opens one or more supplied ordinary image paths, or opens an image picker.
 
-These are interactive commands. A local user must operate the file dialog. See
-footnote 1 regarding cancellation and verification.
+Picker-based forms require local user interaction. See footnote 1 regarding
+cancellation and verification.
 
 After a FIB opens, use the
 [fiber-tracking skill](DSI_STUDIO_AI_SKILL_FIBER_TRACKING.md) to choose the
@@ -68,12 +78,11 @@ Target an existing **tracking** window:
 {"agent":"Codex","session":"<uuid>","request":"CMD","window":"2","command":["open_fib","C:/data/second_subject.fz"]}
 ```
 
-This `open_fib` implementation requires the explicit path as a command parameter
-and creates another tracking window. It is a separate command contract from
-main-window `["open_fib"]`.
-
-Never send `["open_fib","<path>"]` to the main window. The main-window command
-takes no path and opens a picker.
+Both main and tracking windows accept `open_fib` with a path, but they are
+different command implementations. Always use the numeric ID for the intended
+window. Main-window `open_fib` opens the supplied FIB as a primary tracking
+window; tracking-window `open_fib` opens an additional FIB from an existing
+tracking window.
 
 ### 3. Main-window `open_image` — explicit image paths
 
@@ -128,6 +137,17 @@ Window `id` is the quoted numeric value required by every `CMD`.
 
 Every command name and parameter must be a JSON string. Use `"7"`, not numeric
 `7`.
+
+For main-window commands that accept multiple files, pass each path as a
+separate JSON string element:
+
+```json
+["open_src","C:/data/a.sz","C:/data/b.sz"]
+["open_image","C:/data/T1w.nii.gz","C:/data/T2w.nii.gz"]
+["qc_fib","C:/data/a.fz","C:/data/b.fz"]
+```
+
+Do not combine multiple paths into one `&`-separated string.
 
 A meaningful command should normally include a useful progress update:
 
@@ -209,26 +229,43 @@ All commands in this table target the numeric **main** window ID.
 
 | Command | Behavior |
 |---|---|
-| `["list_recent_fib"]` | List recent FIB/FZ paths. |
-| `["list_recent_src"]` | List recent SRC/SZ paths. |
-| `["set_work_dir"]` | Open a directory picker and add the selected directory. It does not accept a path argument. |
-| `["open_src"]` | Open the SRC/histology picker and create a reconstruction window. |
-| `["open_fib"]` | Open the FIB picker and create a tracking window. Do not add a path on a main-window target. |
-| `["open_structural_tracking"]` | Select a structural image and pass it to `loadFib`. |
-| `["open_template"]` | Open the template currently selected in the main-window template list. See footnote 2. |
-| `["open_db"]` | Select and load a connectometry database, then open a database window. |
-| `["open_connectometry"]` | Select and load a connectometry database, then open a group-connectometry window. |
-| `["open_auto_track"]` | Open the main AutoTrack window. |
-| `["open_nonlinear_registration"]` | Open the nonlinear-registration toolbox. |
-| `["open_xnat"]` | Open the XNAT dialog. |
-| `["open_console"]` | Show the application console. |
-| `["clear_recent_src"]` | Immediately clear the recent SRC/SZ list and saved setting, without confirmation. |
-| `["clear_recent_fib"]` | Immediately clear the recent FIB/FZ list and saved setting, without confirmation. |
-| `["open_image"]` | Open the image picker. |
-| `["open_image","C:/data/T1w.nii.gz"]` | Open one or more explicit paths in an image window. |
-| `["open_hub"]` | Show, raise, and activate the Fiber Data Hub window without running a Hub query. |
+| `["list_recent_fib"]` | List saved recent FIB/FZ paths. |
+| `["list_recent_src"]` | List saved recent SRC/SZ paths. |
+| `["reset_settings"]` | Clear all application settings. Takes no arguments. |
+| `["set_work_dir","C:/work"]` | Add a work directory. Without a parameter, open a directory picker. |
+| `["rename_dicom","<file1>","<file2>"]` | Rename one or more DICOM files. Without file parameters, open a picker. |
+| `["rename_dicom_dir","<directory>"]` | Rename DICOM files recursively. Without a parameter, open a directory picker. |
+| `["convert_dicom_dir","<directory>"]` | Recursively convert DICOM series to SRC/SZ or NIfTI without overwriting existing output. |
+| `["bids_to_src","<BIDS-directory>"]` | Find BIDS diffusion data, ask the local user for an output directory, and create SRC/SZ files. |
+| `["nifti_dir_to_src","<directory>"]` | Find diffusion NIfTI data and create SRC/SZ files in the directory. |
+| `["collect_network_measures","<file1>","<file2>"]` | Collect network-measure text files into `<first-file>.collected.txt`. |
+| `["open_src","<file1>","<file2>"]` | Open supplied SRC/SZ or histology files. Without parameters, open a picker. |
+| `["open_dwi_nifti","<file1>"]` | Open diffusion NIfTI input through `open_DWI`. |
+| `["open_dwi_dicom","<file1>","<file2>"]` | Open one or more DICOM inputs through `open_DWI`. |
+| `["open_dwi_2dseq","<file1>"]` | Open 2dseq, FDF, or NRRD diffusion input through `open_DWI`. |
+| `["open_src_dir","<directory>"]` | Load `*src.gz` and `.sz` files found in a directory. |
+| `["open_fib","<file>"]` | Open a supplied FIB/FZ/DZ file. Without a parameter, open a FIB picker. |
+| `["open_structural_tracking","<file>"]` | Open a supplied structural image for tracking. Without a parameter, open a picker. |
+| `["open_template","<template-name>"]` | Open an exact built-in template. Invalid names return an error. |
+| `["create_db"]` | Open the database-creation dialog. |
+| `["create_average"]` | Open the average-database creation dialog. |
+| `["open_db","<file>"]` | Load a connectometry database and open a database window. |
+| `["open_connectometry","<file>"]` | Load a connectometry database and open a group-connectometry window. |
+| `["open_auto_track"]` | Open AutoTrack. |
+| `["open_nonlinear_registration"]` | Open nonlinear registration. |
+| `["open_xnat"]` | Open XNAT. |
+| `["open_console"]` | Open the console. |
+| `["clear_recent_src"]` | Immediately clear saved recent SRC/SZ history. |
+| `["clear_recent_fib"]` | Immediately clear saved recent FIB/FZ history. |
+| `["qc_nii","<file1>","<file2>"]` | Run NIfTI quality checks. |
+| `["qc_src","<file1>","<file2>"]` | Run SRC/SZ quality checks. |
+| `["qc_fib","<file1>","<file2>"]` | Run FIB/FZ quality checks. |
+| `["run_cli","<command-line>"]` | Run one CLI command line containing a valid `--action`. |
+| `["open_image","<file1>","<file2>"]` | Open ordinary image files in an image window. |
+| `["open_ai"]` | Show and activate the AI Agent window. |
+| `["open_hub"]` | Show and activate Fiber Data Hub. |
 
-Use the General examples file for `run_cli` and the complete `hub_*` query syntax.
+Use the General examples file for the complete `hub_*` query syntax.
 
 ## Critical command syntax
 
@@ -305,9 +342,10 @@ editing or batch processing, rather than work on an already-open FIB.
 
 ### Fiber Data Hub uses separate `hub_*` commands
 
-All Hub commands target the **main** window. `["open_hub"]` only opens the Hub
+All Hub commands target the **main** window. `['open_hub']` only opens the Hub
 window. The former subcommand form such as `["hub","files",...]` is no longer
-accepted. Use this discovery sequence:
+accepted. Hub commands are routed before regular main-window command handling
+and may use their full documented argument lists. Use this discovery sequence:
 
 ```json
 ["hub_repo"]
@@ -469,9 +507,9 @@ tract completion. `status=done` is the definitive completion signal.
 
 ## Footnotes
 
-1. `set_work_dir`, `open_src`, main-window `open_fib`, `open_structural_tracking`, `open_db`, `open_connectometry`, and parameterless `open_image` use local GUI dialogs. The current command branches may report completion when the user cancels. `open_db` and `open_connectometry` may also report completion when `load_db()` rejects the selected database after showing its own error dialog. Verify the resulting directory or window with the GUI or top-level `LIST`.
-2. `open_template` checks that a template-list item is selected, but then calls a `void` helper. The helper silently returns when the selected text does not match a template stem and does not propagate `loadFib()` failure. Verify that a new tracking window appears.
-3. Explicit-path main-window `open_image` calls the `void` `loadNii()` helper. `loadNii()` deletes the image window and returns silently when `view_image::open()` fails, so verify that an image window appears.
+1. `set_work_dir`, `open_src`, main-window `open_fib`, `open_structural_tracking`, `open_db`, `open_connectometry`, and parameterless `open_image` use local GUI dialogs. The current command branches may report completion when the user cancels. Verify the resulting directory or window with the GUI or top-level `LIST`. Database-loading failures from `open_db` and `open_connectometry` are returned through the `CMD` error field.
+2. `open_template` now returns failure when the supplied name does not match a built-in template or when `loadFib()` fails.
+3. `open_image` now returns the image-window error through the `CMD` response if the supplied files cannot be opened.
 
 ## Complete command inventory and examples
 
