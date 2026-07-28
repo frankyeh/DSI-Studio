@@ -39,9 +39,30 @@ Claude/Ollama(192.168.1.14)
 
 The parenthesized host is part of the agent name. Do not shorten it.
 
-Use the resumable session UUID assigned by the current agent runtime. Do not use
-a friendly name, process ID, or newly generated substitute. Reuse the exact
-agent and session values in every request.
+Use the resumable session UUID assigned by the current agent runtime. The
+discovery method differs by agent:
+
+### Codex
+
+Use the exact UUID of the current Codex task/thread exposed by its injected
+runtime context or task-specific runtime path. When DSI Studio launches Codex
+with JSON output, this is the same `thread_id` reported by `thread.started` and
+captured by DSI Studio for later resume. Codex Desktop may expose it as the UUID
+component of an injected task path such as
+`...\visualizations\YYYY\MM\DD\<uuid>`. Use only an ID explicitly associated
+with the current task; do not scan for, guess, or generate one.
+
+### Claude Code
+
+Read the current Claude process's file:
+
+```text
+~/.claude/sessions/<pid>.json
+```
+
+Use its `sessionId` value, not its friendly `name` or the process ID.
+
+Reuse the exact agent and session values in every request.
 
 The optional wrapper identity is:
 
@@ -95,6 +116,7 @@ function Invoke-Dsi($request)
 }
 
 $DsiAgent = '<agent-name>'
+# Obtain this using the matching Codex or Claude instructions above.
 $DsiSession = '<resumable-session-uuid>'
 ```
 
