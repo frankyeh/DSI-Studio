@@ -470,6 +470,18 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         record_chat();
     };
 
+    if(type == "TITLE")
+    {
+        auto title = request["title"].toString().simplified();
+        if(title.isEmpty())
+            return reply_text(session,"ERROR\tmissing title");
+        ai_log(agent_name+" ["+type+"]: "+title);
+        return reply_text(session,set_ai_title(session,title) ?
+                              "OKAY" : "ERROR\tcannot save title");
+    }
+    if(request.contains("title"))
+        return reply_text(session,"ERROR\ttitle is valid only for TITLE");
+
     if(type == "CMD")
     {
         auto msg = QString("[AI REQUEST] ")+type+" from "+
@@ -644,16 +656,6 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         else
             target->update();
         return reply_results(session,results);
-    }
-
-    if(type == "TITLE")
-    {
-        auto title = request["title"].toString().simplified();
-        if(title.isEmpty())
-            return reply_text(session,"ERROR\tmissing title");
-        ai_log(agent_name+" ["+type+"]: "+title);
-        return reply_text(session,set_ai_title(session,title) ?
-                              "OKAY" : "ERROR\tcannot save title");
     }
 
     if(type == "CHAT")
