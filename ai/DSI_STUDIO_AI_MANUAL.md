@@ -142,6 +142,12 @@ Use standalone `CHAT` when no other request is needed.
 {"agent":"Codex","session":"<uuid>","request":"TITLE","title":"Corticospinal tract analysis"}
 ```
 
+Send one concise title after understanding the initial task and before the
+first `LIST` or `CMD`. The `title` field is required; do not put the title in
+`chat` or `text`, or include it in `CMD`, `CHAT`, `LIST`, or `LOG`. Reuse the
+exact agent and session identity, and rename later only with the user's
+permission.
+
 ### LOG
 
 ```json
