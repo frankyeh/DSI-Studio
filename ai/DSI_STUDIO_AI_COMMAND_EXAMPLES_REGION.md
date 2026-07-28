@@ -2,7 +2,7 @@
 
 Use these with the standard top-level `CMD` request. Every command name and parameter must remain a quoted JSON string.
 
-This file contains the complete region inventory preserved from the previous manual. Blank example cells mean that the previous manual listed the command but did not provide source-verified argument syntax.
+This file contains the complete region inventory confirmed in the current source.
 
 `region_action_<operation>` uses `command[1]` for one region index or an `&`-separated index list. Commands that need an additional threshold or voxel radius use `command[2]`. Do not infer other argument formats from the command name.
 
@@ -10,19 +10,21 @@ This file contains the complete region inventory preserved from the previous man
 |---|---|---|
 | `list_region` | `["list_region"]` | List region index, visibility, name, type, color, dimensions, and resolution. |
 | `list_atlas` | `["list_atlas"]` | List available templates and atlases before atlas-region creation. |
-| `add_region_from_atlas` | `["add_region_from_atlas","0 2 5&6"]` | Add one or more atlas labels; discover valid template, atlas, and label IDs first. |
+| `add_region_from_atlas` | `["add_region_from_atlas","0 2 5&6"]` | Add labels 5 and 6 from atlas 2 of template 0; discover valid template, atlas, and label IDs first. |
+| `add_region_from_atlas` | `["add_region_from_atlas","0 2"]` | Add every label from atlas 2 of template 0. |
 | `set_region_name` | `["set_region_name","0","Tumor Core"]` | Rename a region by quoted index. |
 | `set_region_type` | `["set_region_type","0","3"]` | Set region role: `0=ROI`, `1=ROA`, `2=End`, `3=Seed`, `4=Terminative`, `5=NotEnd`, `6=Limiting`. |
 | `set_region_color` | `["set_region_color","0","4294901760"]` | Set packed Qt ARGB color for a region. |
 | `show_only_regions` | `["show_only_regions","0&3&5"]` | Show only the listed `&`-separated region indices and hide all others. |
 | `new_region` | `["new_region"]` | Create an empty region in current slice space. |
-| `new_region_whole_brain_seed` | `["new_region_whole_brain_seed"]` | Create a whole-brain seed from the current FA/Otsu threshold. |
-| `new_region_from_threshold` | `["new_region_from_threshold","0.6"]` | Create a region by thresholding the current slice. |
+| `new_region_whole_brain_seed` | `["new_region_whole_brain_seed"]` | Create a whole-brain seed using the current `otsu_threshold` parameter multiplied by the FIB FA Otsu threshold. |
+| `new_region_whole_brain_seed` | `["new_region_whole_brain_seed","0.6"]` | Create the whole-brain seed using an explicit Otsu ratio of `0.6`, independent of the current setting. |
+| `new_region_from_threshold` | `["new_region_from_threshold","0.6"]` | Create a region by thresholding the current slice. See footnote 1. |
 | `new_region_from_mni` | `["new_region_from_mni","0 -10 21 5"]` | Create a spherical region from MNI coordinates and voxel radius. |
 | `new_region_from_sphere` | `["new_region_from_sphere","80 100 80 5"]` | Create a spherical region from image-space coordinates and voxel radius. |
 | `open_region` | `["open_region","C:/data/seed.nii.gz"]` | Open one native-space region file; one command may also load a multi-label NIfTI. |
 | `open_mni_region` | `["open_mni_region","C:/data/atlas_roi.nii.gz"]` | Map to MNI space, then load the supplied region file into subject space. |
-| `save_region` | `["save_region","C:/output/seed.nii.gz","0"]` | Save one region; optional index selects the target. |
+| `save_region` | `["save_region","C:/output/seed.nii.gz","0"]` | Save region 0. An unsupported or missing extension is changed by appending `.nii.gz`. |
 | `save_4d_region` | `["save_4d_region","C:/output/regions_4d.nii.gz"]` | Save checked regions as a 4D NIfTI and companion label file. |
 | `save_all_regions` | `["save_all_regions","C:/output/regions.nii.gz"]` | Save checked regions as one 3D label NIfTI. |
 | `save_all_regions_to_folder` | `["save_all_regions_to_folder","C:/output/regions"]` | Save each checked region as a separate file using the current ROI output format. |
@@ -31,14 +33,15 @@ This file contains the complete region inventory preserved from the previous man
 | `save_region_color` | `["save_region_color","C:/output/region_colors.txt"]` | Save one RGBA line for every region in table order. |
 | `delete_region` | `["delete_region","3"]` | Delete one region by index or current selection. |
 | `delete_all_regions` | `["delete_all_regions"]` | Delete all regions. |
-| `copy_region` | `["copy_region","0"]` | Duplicate one region. |
-| `merge_regions` | `["merge_regions","0&1&2"]` | Merge supplied or checked region indices into the first region. |
+| `copy_region` | `["copy_region","0"]` | Duplicate one region and insert the copy immediately after it. |
+| `merge_regions` | `["merge_regions","0&1&2"]` | Merge regions 0, 1, and 2 into region 0 and remove the later rows. |
+| `merge_regions` | `["merge_regions"]` | Merge all currently checked regions into the first checked region; at least two must be checked. |
 | `check_region` | `["check_region","0","1"]` | Set one region's checked/shown state. |
 | `check_all_regions` | `["check_all_regions"]` | Check/show all regions. |
 | `uncheck_all_regions` | `["uncheck_all_regions"]` | Uncheck/hide all regions. |
 | `move_up_region` | `["move_up_region","3"]` | Move one region up in table order. |
 | `move_down_region` | `["move_down_region","3"]` | Move one region down in table order. |
-| `move_region` | `["move_region","80 100 80","3"]` | Move a region center to a specified location in region space. |
+| `move_region` | `["move_region","80 100 80","3"]` | Move region 3 so its center is at the specified location in that region's space. Empty regions return success without moving. |
 | `move_slice_to_region` | `["move_slice_to_region","3"]` | Move slice crosshairs to a region center. |
 | `show_region_statistics` | `["show_region_statistics"]` | Display statistics for checked regions in a modal dialog. |
 | `save_region_statistics` | `["save_region_statistics","C:/output/region_stat.txt"]` | Save statistics for checked regions. |
@@ -82,6 +85,7 @@ This file contains the complete region inventory preserved from the previous man
 - Discover indices and roles with `list_region` before mutation.
 - Confirm deletion, merging, overwrite, and mask-replacement operations.
 - Modal `show_*` commands block for user interaction; prefer the corresponding `save_*` command for unattended work.
+- `add_region_from_atlas` changes the active template ID before adding labels.
 
 ## Region Window parameter reference
 
@@ -120,3 +124,7 @@ Every value remains a JSON string. Enum values are zero-based indices.
 | `roi_mosaic_column` | Mosaic Column Number | integer `0–30`; step `5` | `0` |
 | `roi_mosaic_skip_row` | Mosaic Skip Row | integer `0–10`; step `1` | `1` |
 | `roi_format` | Default Output Format | `0`=nii.gz; `1`=mat; `2`=txt | `0` (nii.gz) |
+
+## Footnotes
+
+1. `new_region_from_threshold` appends a new region before calling `region_action_threshold`. If threshold selection is canceled or the action fails, the newly appended empty region is not removed. For unattended use, always provide a valid explicit threshold and verify the new region with `list_region`.
