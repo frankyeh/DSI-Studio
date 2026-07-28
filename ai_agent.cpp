@@ -1435,18 +1435,18 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
                 "Attach only new user-facing chat and send the final answer once "
                 "through the named pipe. Process every returned PROMPT.";
         }
-        if(launch.new_session && provider == ai_provider::Codex)
-            prompt +=
-                "\n\n[DSI Studio] Use \""+launch.name+
-                "\" as agent and CODEX_THREAD_ID as session in every "
-                "local-server request.";
-        else if(!session.isEmpty())
+        if(!session.isEmpty())
             prompt +=
                 "\n\n[DSI Studio] Continue through agent "+
                 ai_infos[session].agent_name+" using session "+
                 session+". Use this exact value as session in every local-server "
                 "request. Send new user-facing text and the final reply through "
                 "the named pipe.";
+        else if(launch.new_session)
+            prompt +=
+                "\n\n[DSI Studio] Use \""+launch.name+
+                "\" as agent and the current resumable agent session UUID as "
+                "session in every local-server request.";
         launch.prompt = prompt;
     }
     return launch;
