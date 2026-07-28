@@ -18,6 +18,17 @@ open window.
 A `CMD` must use the quoted numeric `window` returned by `LIST`. Never target a
 window using its type, title, filename, or a guessed ID.
 
+Do not invent command names. To discover recent files, target the **main** window
+and use these exact commands:
+
+```json
+["list_recent_fib"]
+["list_recent_src"]
+```
+
+Use `list_recent_fib` for recent FIB/FZ files and `list_recent_src` for recent
+SRC/SZ files. Do not substitute guessed names such as `recent_list`.
+
 ## Identity
 
 Choose one exact nonempty `agent` name and one exact resumable `session` ID.
@@ -151,7 +162,6 @@ or `LOG`, and do not put the title in `chat` or `text`. Keep the same exact
 Invoke-Dsi @{
     agent=$DsiAgent
     session=$DsiSession
-    cwd=(Get-Location).Path
     request='LIST'
 }
 ```
@@ -182,6 +192,32 @@ Every command element must be a string. Use `'7'`, not numeric `7`.
 An optional `chat` may accompany any request. Keep it on `CMD` when reporting
 the command already being sent instead of making a separate `CHAT` request.
 
+Every `CMD` returns a JSON array with one result object per command.
+
+A command that produces text returns:
+
+```json
+[{"index":0,"output":"<command output>"}]
+```
+
+A successful command with no captured text returns:
+
+```json
+[{"index":0,"output":"command completed"}]
+```
+
+A failed command returns an `error` field:
+
+```json
+[{"index":0,"error":"<reason>"}]
+```
+
+The presence of `error` means that command failed. A batch stops after the first
+error. `command completed` means the command handler returned without an
+immediate error; asynchronous or GUI-backed work may still require verification
+with `LIST`, the relevant `list_*` command, or the expected window, object, or
+file.
+
 ### Send a final or standalone message
 
 ```powershell
@@ -195,8 +231,8 @@ Invoke-Dsi @{
 
 ## Opening FIB/FZ files
 
-Do not send a raw filesystem path as the recommended file-opening workflow. Use
-the appropriate `open_fib` command.
+Use the documented `open_fib` command workflow. Do not send a filesystem path by
+itself as the file-opening request.
 
 ### Open the first FIB/FZ
 
@@ -220,7 +256,7 @@ Afterward, call `LIST` and use the new tracking-window ID.
 ### Open an additional FIB/FZ
 
 When a tracking window already exists, target that tracking-window ID and supply
-the explicit path:
+the explicit path as the command parameter:
 
 ```powershell
 Invoke-Dsi @{
@@ -233,8 +269,9 @@ Invoke-Dsi @{
 }
 ```
 
-Do not use `open_image` to open FIB/FZ files. Use `open_image` for ordinary image
-files and image-window workflows.
+Do not send `open_fib` with a path to the main window. Do not use `open_image` to
+open FIB/FZ files. Use `open_image` for ordinary image files and image-window
+workflows.
 
 ## Slice and tract status that commonly cause confusion
 

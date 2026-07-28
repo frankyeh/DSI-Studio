@@ -19,25 +19,23 @@ are accepted only by the window type that implements them.
 Always call top-level `LIST` first and use the returned numeric ID. Never use a
 window title, filename, type name, guessed number, or stale number as `window`.
 
-## Opening files: four distinct routes
+Do not invent command names. To discover recent files, target the numeric
+**main** window ID and use these exact commands:
 
-These routes have different argument contracts and should not be treated as
-aliases.
-
-### 1. Raw absolute path — direct local-file routing
-
-Send one existing absolute path as raw non-JSON pipe text:
-
-```text
-C:\data\subject.fz
+```json
+["list_recent_fib"]
+["list_recent_src"]
 ```
 
-DSI Studio routes the file by extension. `.fz` and `*fib.gz` open as tracking
-data; `.sz` and `*src.gz` open reconstruction; ordinary image formats open an
-image window. Raw text is reserved for one local file path and can create the
-first tracking window without a GUI file dialog.
+Use `list_recent_fib` for recent FIB/FZ files and `list_recent_src` for recent
+SRC/SZ files. Do not substitute guessed names such as `recent_list`.
 
-### 2. Main-window interactive open commands
+## Opening files: documented command routes
+
+Use the documented command interface for file opening. Do not send a filesystem
+path by itself as a named-pipe request.
+
+### 1. Main-window interactive open commands
 
 These commands take no path and open a local GUI dialog:
 
@@ -62,7 +60,7 @@ tracking strategy. A newly opened FIB normally has no regions; do not call
 `list_region` unless the task uses regions or regions were created, loaded, or
 restored.
 
-### 3. Tracking-window `open_fib` — explicit additional FIB
+### 2. Tracking-window `open_fib` — explicit additional FIB
 
 Target an existing **tracking** window:
 
@@ -70,11 +68,14 @@ Target an existing **tracking** window:
 {"agent":"Codex","session":"<uuid>","request":"CMD","window":"2","command":["open_fib","C:/data/second_subject.fz"]}
 ```
 
-This `open_fib` implementation requires the explicit path and creates another
-tracking window. It is a separate command contract from main-window
-`["open_fib"]`.
+This `open_fib` implementation requires the explicit path as a command parameter
+and creates another tracking window. It is a separate command contract from
+main-window `["open_fib"]`.
 
-### 4. Main-window `open_image` — explicit image paths
+Never send `["open_fib","<path>"]` to the main window. The main-window command
+takes no path and opens a picker.
+
+### 3. Main-window `open_image` — explicit image paths
 
 Target the **main** window:
 
@@ -137,6 +138,42 @@ A meaningful command should normally include a useful progress update:
 The top-level `chat` field is shown to the user and does not change the command.
 Silent polling may omit it.
 
+Every `CMD` returns a JSON array with one result object per command.
+
+A command that produces text returns:
+
+```json
+[{"index":0,"output":"<command output>"}]
+```
+
+A successful command with no captured text returns:
+
+```json
+[{"index":0,"output":"command completed"}]
+```
+
+A failed command returns an `error` field:
+
+```json
+[{"index":0,"error":"<reason>"}]
+```
+
+Interpret the fields as follows:
+
+- `index` identifies the command within the submitted batch.
+- `output` contains the command's captured text.
+- `command completed` means the command handler returned without an immediate error and produced no captured text.
+- The presence of `error` means that command failed.
+- A command batch stops after the first error.
+
+A response without `error` does not prove that asynchronous work has finished or
+that a GUI-backed operation created the expected object. Verify the resulting
+window, file, region, tract, slice status, or other documented state before
+reporting completion.
+
+For `list_*` commands, actual rows appear in `output`. If the response is
+`command completed`, the command produced no rows or no textual output.
+
 ### CHAT
 
 ```json
@@ -163,7 +200,8 @@ permission.
 {"agent":"Codex","session":"<uuid>","request":"LOG"}
 ```
 
-Use `LOG` only when `LIST` and targeted discovery cannot explain a failure.
+Use `LOG` only when `LIST`, the direct `CMD` response, and targeted discovery
+cannot explain a failure.
 
 ## Main-window command reference
 
@@ -171,6 +209,8 @@ All commands in this table target the numeric **main** window ID.
 
 | Command | Behavior |
 |---|---|
+| `["list_recent_fib"]` | List recent FIB/FZ paths. |
+| `["list_recent_src"]` | List recent SRC/SZ paths. |
 | `["set_work_dir"]` | Open a directory picker and add the selected directory. It does not accept a path argument. |
 | `["open_src"]` | Open the SRC/histology picker and create a reconstruction window. |
 | `["open_fib"]` | Open the FIB picker and create a tracking window. Do not add a path on a main-window target. |
@@ -188,8 +228,7 @@ All commands in this table target the numeric **main** window ID.
 | `["open_image","C:/data/T1w.nii.gz"]` | Open one or more explicit paths in an image window. |
 | `["open_hub"]` | Show, raise, and activate the Fiber Data Hub window without running a Hub query. |
 
-Use the General examples file for `list_recent_*`, `run_cli`, and the complete
-`hub_*` query syntax.
+Use the General examples file for `run_cli` and the complete `hub_*` query syntax.
 
 ## Critical command syntax
 
@@ -307,7 +346,7 @@ file.
 When opening FIB data, verify that the selected file is `.fz` or `*fib.gz`. After
 `hub_open`, call top-level `LIST` and verify that a new `tracking` window appeared.
 Hub open/download routines are GUI-backed; verify the created window or output
-file rather than treating `okay:true` alone as proof of completion.
+file rather than treating a response without an error as proof of completion.
 
 ### `list_tract` uses `running` or `done`
 
@@ -415,13 +454,13 @@ tract completion. `status=done` is the definitive completion signal.
 - Native identities are `Codex` and `Claude`.
 - Ollama-backed identities include the host, for example `Codex/Ollama(192.168.1.14)`.
 - Inspect `LIST` before substantial loading, registration, segmentation, reconstruction, or tracking.
-- Discover names, indices, internal model IDs, and parameter IDs rather than guessing.
+- Discover exact command names, indices, internal model IDs, and parameter IDs rather than guessing.
 - For `run_auto_track`, call `list_auto_tract` first and use an exact internal atlas label such as `ProjectionBrainstem_CorticospinalTractL`.
-- Main-window GUI picker commands require local user interaction; do not claim completion from `okay:true` alone.
+- Main-window GUI picker commands require local user interaction; do not claim completion from the response alone.
 - Confirm `clear_recent_src` and `clear_recent_fib` because they erase saved history immediately without another prompt.
 - Confirm other destructive actions and overwrites.
 - Do not answer modal dialogs remotely; tell the user what must be selected.
-- `okay:true` means the command was accepted; asynchronous work may still be active.
+- A response without `error` means the command handler returned success; asynchronous work may still be active.
 - A client timeout does not prove failure; verify application state before retrying a long command.
 - For a selected slice, `list_slice` with `status=ready` is the readiness signal.
 - For fiber tracking, `list_tract status` with `status=done` is the completion signal.
@@ -430,9 +469,9 @@ tract completion. `status=done` is the definitive completion signal.
 
 ## Footnotes
 
-1. `set_work_dir`, `open_src`, main-window `open_fib`, `open_structural_tracking`, `open_db`, `open_connectometry`, and parameterless `open_image` use local GUI dialogs. The current command branches return success when the user cancels. `open_db` and `open_connectometry` also return success when `load_db()` rejects the selected database after showing its own error dialog. Verify the resulting directory or window with the GUI or top-level `LIST`.
-2. `open_template` checks that a template-list item is selected, but then calls a `void` helper and returns success. The helper silently returns when the selected text does not match a template stem and does not propagate `loadFib()` failure. Verify that a new tracking window appears.
-3. Explicit-path main-window `open_image` calls the `void` `loadNii()` helper and then returns success. `loadNii()` deletes the image window and returns silently when `view_image::open()` fails, so verify that an image window appears.
+1. `set_work_dir`, `open_src`, main-window `open_fib`, `open_structural_tracking`, `open_db`, `open_connectometry`, and parameterless `open_image` use local GUI dialogs. The current command branches may report completion when the user cancels. `open_db` and `open_connectometry` may also report completion when `load_db()` rejects the selected database after showing its own error dialog. Verify the resulting directory or window with the GUI or top-level `LIST`.
+2. `open_template` checks that a template-list item is selected, but then calls a `void` helper. The helper silently returns when the selected text does not match a template stem and does not propagate `loadFib()` failure. Verify that a new tracking window appears.
+3. Explicit-path main-window `open_image` calls the `void` `loadNii()` helper. `loadNii()` deletes the image window and returns silently when `view_image::open()` fails, so verify that an image window appears.
 
 ## Complete command inventory and examples
 
