@@ -582,9 +582,12 @@ int main(int ac, char *av[])
                         ai_request(clientSocket,request);
                     else
                     {
-                        tipl::out() << "local server file request: " << request;
+                        auto file_name = QString::fromUtf8(request).trimmed();
+                        tipl::out() << "local server file request: "
+                                    << file_name.toStdString();
+
                         bool busy = tipl::progress::is_running();
-                        bool exists = std::filesystem::exists(request.begin());
+                        bool exists = QFileInfo::exists(file_name);
 
                         if(!busy && exists)
                         {
