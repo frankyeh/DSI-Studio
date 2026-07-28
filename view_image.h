@@ -36,7 +36,7 @@ public:
 public:
     std::vector<std::string> command_list;
     std::vector<std::string> param_list;
-    bool command(std::string cmd,std::string param1 = std::string());
+    bool command(std::vector<std::string> cmd);
     void init_image(void);
 private:
     void update_recent_unet(QAction* = nullptr);

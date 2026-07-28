@@ -74,8 +74,11 @@ void view_image::set_4d_buf(const std::vector<unsigned char>& buf)
 bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 const std::string& cmd,
                 const std::string& param);
-bool view_image::command(std::string cmd,std::string param1)
+bool view_image::command(std::vector<std::string> cmds)
 {
+    cmds.resize(2);
+    std::string cmd = cmds[0];
+    std::string param1 = cmds[1];
     if(cur_image->empty())
         return true;
     tipl::out() << std::string(param1.empty() ? cmd : cmd+":"+param1);
@@ -97,7 +100,7 @@ bool view_image::command(std::string cmd,std::string param1)
     }
 
     if((cmd == "normalize" || cmd == "normalize_otsu_median") && cur_image->pixel_type != variant_image::float32)
-        result = command("change_type",std::to_string(int(variant_image::float32)));
+        result = command({"change_type",std::to_string(int(variant_image::float32))});
 
 
     if(cmd == "reshape")
@@ -450,7 +453,7 @@ view_image::view_image(QWidget *parent) :
             if(!okay || values.empty())
                 return;
             std::istringstream in(values);
-            result = command("mat_resize",mat[row].name + " " + values);
+            result = command({"mat_resize",mat[row].name + " " + values});
 
         }
         else
@@ -460,13 +463,13 @@ view_image::view_image(QWidget *parent) :
                 return;
             auto param = mat[row].name + " " + name;
             if(action == new_string)
-                result = command("mat_add_string",param);
+                result = command({"mat_add_string",param});
             if(action == new_float)
-                result = command("mat_add_float",param);
+                result = command({"mat_add_float",param});
             if(action == new_int)
-                result = command("mat_add_int",param);
+                result = command({"mat_add_int",param});
             if(action == new_short)
-                result = command("mat_add_short",param);
+                result = command({"mat_add_short",param});
         }
         if(!result && !mat.error_msg.empty())
             QMessageBox::critical(this,"ERROR",mat.error_msg.c_str());
@@ -1085,7 +1088,7 @@ void view_image::on_actionSave_triggered()
         QMessageBox::information(this,QApplication::applicationName(),"Image Updated");
         return;
     }
-    if(command("save",file_name.u8string()))
+    if(command({"save",file_name.u8string()}))
         QMessageBox::information(this,QApplication::applicationName(),"Saved");
     else
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
@@ -1160,10 +1163,9 @@ void view_image::run_action()
 
     bool result;
     if(action->statusTip().isEmpty())
-        result = command(action->text().toLower().replace(' ','_').toStdString());
+        result = command({action->text().toLower().replace(' ','_').toStdString()});
     else
-        result = command(action->statusTip().toStdString(),
-                         action->data().toString().toStdString());
+        result = command({action->statusTip().toStdString(),action->data().toString().toStdString()});
 
     if(!result)
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
@@ -1190,7 +1192,7 @@ void view_image::run_action2()
     }
     if(value.isEmpty())
         return;
-    if(!command(action->text().remove("...").toLower().replace(' ','_').toStdString(),value.toStdString()))
+    if(!command({action->text().remove("...").toLower().replace(' ','_').toStdString(),value.toStdString()}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 
@@ -1199,7 +1201,7 @@ void view_image::on_type_currentIndexChanged(int index)
 {
     if(cur_image->empty() || no_update)
         return;
-    command("change_type",std::to_string(index));
+    command({"change_type",std::to_string(index)});
     init_image();
 }
 
@@ -1212,7 +1214,7 @@ void view_image::DeleteRowPressed(int row)
 {
     if(ui->info->currentRow() == -1)
         return;
-    if(!command("mat_remove",mat[row].name))
+    if(!command({"mat_remove",mat[row].name}))
         QMessageBox::critical(this,"ERROR",error_msg.c_str());
 }
 void view_image::on_info_cellDoubleClicked(int row, int column)
@@ -1230,7 +1232,7 @@ void view_image::on_info_cellDoubleClicked(int row, int column)
         auto text = QInputDialog::getMultiLineText(this,QApplication::applicationName(),"Input Content",value.c_str(),&okay);
         if(!okay)
             return;
-        command("mat_set_value",mat[row].name+" "+text.toStdString());
+        command({"mat_set_value",mat[row].name+" "+text.toStdString()});
     }
     else
     if(column == 0)
@@ -1240,7 +1242,7 @@ void view_image::on_info_cellDoubleClicked(int row, int column)
                         "Input New Name",QLineEdit::Normal,mat[row].name.c_str(),&okay);
         if(!okay)
             return;
-        command("mat_set_name",mat[row].name+" "+text.toStdString());
+        command({"mat_set_name",mat[row].name+" "+text.toStdString()});
     }
     else
         return;

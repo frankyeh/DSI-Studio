@@ -419,8 +419,7 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         auto written = socket->write(reply);
         ai_log(QString("DSI Studio replied %1@%2 payload: %3")
                    .arg(info.agent_name,session,QString::fromUtf8(reply)));
-        set_ai_status(written == reply.size() ?
-                          activity : "Response could not be sent.",true);
+        set_ai_status(written == reply.size() ?activity : "Response could not be sent.",true);
         if(written == reply.size())
             info.prompts = {};
     };
@@ -584,88 +583,70 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         for(int index = 0;index < commands.size();++index)
         {
             QJsonObject result{{"index",index}};
-            QString output,error;
-            std::vector<std::string> cmd;
+            QString output,error,command_name;
             auto args = commands[index].toArray();
-            if(!commands[index].isArray() ||
-               !std::all_of(args.begin(),args.end(),
-                            [](const auto& value){return value.isString();}))
-                error = "command and parameters must be strings in an array";
-            else
-            {
-                cmd.reserve(size_t(args.size()));
-                for(const auto& value : args)
-                    cmd.push_back(value.toString().toUtf8().toStdString());
-            }
+            std::vector<std::string> cmd;
+            cmd.reserve(size_t(args.size()));
+            for(const auto& value : args)
+                cmd.push_back(value.toString().toUtf8().toStdString());
 
-            auto command_name = cmd.empty() ?
-                                QString() : QString::fromStdString(cmd[0]);
-            target->setProperty("command",command_name);
+            if(!commands[index].isArray() ||
+               !std::all_of(args.begin(),args.end(),[](const auto& value){return value.isString();}))
+                error = "command and parameters must be strings in an array";
+            if(cmd.empty() || cmd[0].empty())
+                error = "empty command";
+
+
             bool okay = false;
             if(error.isEmpty())
             {
-                if(cmd.empty() || cmd[0].empty())
-                    error = "empty command";
-                else
+                command_name = QString::fromStdString(cmd[0]);
+                target->setProperty("command",command_name);
+                set_ai_status("Running command: "+command_name);
                 {
-                    set_ai_status("Running command: "+command_name);
+                    std::lock_guard<std::mutex> lock(console.edit_buf);
+                    console.capture = &output;
+                }
+                try
+                {
+                    auto execute = [&](auto* window)
                     {
-                        std::lock_guard<std::mutex> lock(console.edit_buf);
-                        console.capture = &output;
-                    }
-                    try
-                    {
-                        const std::string* command_error = nullptr;
-                        auto execute = [&](auto* window)
+                        if(!window->command(cmd))
                         {
-                            okay = window->command(cmd);
-                            command_error = &window->error_msg;
-                        };
-                        if(auto* window = qobject_cast<MainWindow*>(target))
-                            execute(window);
-                        else if(auto* window = qobject_cast<tracking_window*>(target))
-                            execute(window);
-                        else if(auto* window = qobject_cast<view_image*>(target))
-                            if(cmd.size() > 2)
-                                error = "too many parameters";
-                            else
-                                okay = window->command(
-                                           cmd[0],cmd.size() == 2 ? cmd[1] : ""),
-                                    command_error = &window->error_msg;
-                        else
-                            error = "unsupported window";
-                        if(command_error)
-                            error = QString::fromStdString(*command_error);
-                    }
-                    catch(const std::exception& e)
-                    {
-                        error = e.what();
-                    }
-                    catch(...)
-                    {
-                        error = "unknown error";
-                    }
-                    {
-                        std::lock_guard<std::mutex> lock(console.edit_buf);
-                        console.capture = nullptr;
-                    }
+                            error = QString::fromUtf8(window->error_msg);
+                            error = (error.isEmpty() ? "command failed" : error) +
+                                    ". Read ai/DSI_STUDIO_AI_MANUAL.md and retry.";
+                        }
+                    };
+                    if(auto* window = qobject_cast<MainWindow*>(target))
+                        execute(window);
+                    else if(auto* window = qobject_cast<tracking_window*>(target))
+                        execute(window);
+                    else if(auto* window = qobject_cast<view_image*>(target))
+                        execute(window);
+                    else
+                        error = "unsupported window";
+
+                }
+                catch(const std::exception& e){error = e.what();}
+                catch(...){error = "unknown error";}
+                {
+                    std::lock_guard<std::mutex> lock(console.edit_buf);
+                    console.capture = nullptr;
                 }
             }
             target->setProperty("command",QVariant());
 
             output.remove(ansi_escape);
             error.remove(ansi_escape);
-            if(!okay)
-                error = (error.isEmpty() ? "command failed" : error) +
-                        ". Read ai/DSI_STUDIO_AI_MANUAL.md and retry.";
-            result["okay"] = okay;
+
             result["output"] = output;
-            if(!okay)
+            if(!error.isEmpty())
                 result["error"] = error;
             results.append(result);
-            if(!command_name.isEmpty())
-                activity = command_name+(okay ? " completed" : " failed");
-            if(!okay)
+
+            activity = command_name + (error.isEmpty() ? QString(":" + error) : QString(" completed"));
+            if(!error.isEmpty())
                 break;
         }
 
