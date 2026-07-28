@@ -72,7 +72,7 @@ All Hub queries are separate top-level command names. The old `["hub","files",..
 - `hub_files` performs a case-insensitive substring filter, then applies offset and limit. Its first column remains the actual file-table row index; do not replace it with the filtered result's ordinal position.
 - `hub_open` and `hub_download` accept either the exact filename or the numeric row index returned by `hub_files`.
 - `hub_download` requires exactly five elements, including the destination directory.
-- Hub opening and downloading use GUI-backed network routines. Verify the new window or destination file rather than relying only on `okay:true`.
+- Hub opening and downloading use GUI-backed network routines. Verify the new window or destination file rather than relying only on a response without an `error` field.
 
 ## `list_param` domains
 
@@ -93,14 +93,14 @@ For example, `["list_param","tracking"]` returns all parameters from `Tracking`,
 
 ## Important routing notes
 
-- The new GUI-opening commands target the **main** window.
+- The GUI-opening commands target the **main** window.
 - Main-window `open_fib` takes no arguments and opens a picker; tracking-window `open_fib` takes a file path.
-- Main-window `open_image` opens ordinary image data in an image window. Use raw-path routing or main-window `open_fib` when a first tracking window is needed.
+- Main-window `open_image` opens ordinary image data in an image window. Use the documented main-window opening command when a first tracking window is needed.
 - Use top-level `LIST` to obtain the correct numeric window ID before every `CMD`.
 - Use the appropriate `list_param` domain before `set_param` or `set_params`; do not guess parameter IDs.
 
 ## Footnotes
 
-1. `set_work_dir`, `open_src`, main-window `open_fib`, `open_structural_tracking`, `open_db`, `open_connectometry`, and parameterless `open_image` require a local GUI file/directory dialog. The current source returns command success when these dialogs are canceled; therefore `okay:true` does not prove that a directory, file, or window was created. Verify the resulting work directory or window with the GUI or top-level `LIST`.
+1. `set_work_dir`, `open_src`, main-window `open_fib`, `open_structural_tracking`, `open_db`, `open_connectometry`, and parameterless `open_image` require a local GUI file/directory dialog. The current source may report command completion when these dialogs are canceled; therefore the response alone does not prove that a directory, file, or window was created. Verify the resulting work directory or window with the GUI or top-level `LIST`.
 2. `open_fib` is intentionally overloaded by window type. Supplying a path to the main-window command fails because it requires exactly one command-array element; omitting the path on a tracking-window target invokes that target's separate contract and may open its own dialog.
 3. Main-window `open_template` verifies that a template-list item is selected, but the helper it calls returns `void`. The command then reports success even when no template stem matches or `loadFib()` fails. Verify that a new tracking window appears.
