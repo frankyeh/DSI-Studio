@@ -59,15 +59,14 @@ Target an existing **tracking** window:
 window. It cannot create the first tracking window because no tracking-window
 handler exists yet.
 
-## Required request sequence
+## Recommended request sequence
 
-1. Send the initial `CHAT` described in setup.
-2. Send one concise `TITLE` after understanding the task.
-3. Send top-level `LIST`.
-4. Choose the numeric ID for the correct window type.
-5. Run discovery commands before mutation.
-6. Use `LIST` for routine polling and targeted `list_*` commands for detail.
-7. Verify output files and report the result with `chat` or standalone `CHAT`.
+1. Send one concise `TITLE` after understanding the task.
+2. Send top-level `LIST`.
+3. Choose the numeric ID for the correct window type.
+4. Run discovery commands before mutation.
+5. Use `LIST` for routine polling and targeted `list_*` commands for detail.
+6. Verify output files and report the result with `chat` or standalone `CHAT`.
 
 ## Request formats
 
