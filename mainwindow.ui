@@ -1238,6 +1238,9 @@ QWidget#tab QScrollBar::sub-page {
                   </item>
                   <item row="1" column="0">
                    <widget class="QPushButton" name="OpenDWI_NIFTI">
+                    <property name="statusTip">
+                     <string>run open_dwi_nifti</string>
+                    </property>
                     <property name="toolTip">
                      <string>Convert one NIFTI file to SRC</string>
                     </property>
@@ -1255,6 +1258,9 @@ QWidget#tab QScrollBar::sub-page {
                   </item>
                   <item row="2" column="0">
                    <widget class="QPushButton" name="OpenDWI_DICOM">
+                    <property name="statusTip">
+                     <string>run open_dwi_dicom</string>
+                    </property>
                     <property name="toolTip">
                      <string>Convert DICOM files to SRC</string>
                     </property>
@@ -1275,6 +1281,9 @@ QWidget#tab QScrollBar::sub-page {
                   </item>
                   <item row="3" column="0">
                    <widget class="QPushButton" name="OpenDWI_2dseq">
+                    <property name="statusTip">
+                     <string>run open_dwi_2dseq</string>
+                    </property>
                     <property name="toolTip">
                      <string>Convert 2dseq or Varian FDF to SRC</string>
                     </property>
@@ -1474,6 +1483,9 @@ QWidget#tab QScrollBar::sub-page {
                        </item>
                        <item>
                         <widget class="QPushButton" name="batch_reconstruction">
+                         <property name="statusTip">
+                          <string>run open_src_dir</string>
+                         </property>
                          <property name="toolTip">
                           <string>Reconstruct a folder of SRC files</string>
                          </property>
@@ -1752,6 +1764,9 @@ QWidget#tab QScrollBar::sub-page {
                   </property>
                   <item>
                    <widget class="QPushButton" name="vbc">
+                    <property name="statusTip">
+                     <string>run create_db</string>
+                    </property>
                     <property name="toolTip">
                      <string>Aggregate FIB files into a database</string>
                     </property>
@@ -2062,6 +2077,9 @@ QLabel#tools_view_image_hint {
              </property>
              <item>
               <widget class="QPushButton" name="NII_qc">
+               <property name="statusTip">
+                <string>run qc_nii</string>
+               </property>
                <property name="toolTip">
                 <string>Select NIFTI files to run quality control</string>
                </property>
@@ -2076,6 +2094,9 @@ QLabel#tools_view_image_hint {
              </item>
              <item>
               <widget class="QPushButton" name="SRC_qc">
+               <property name="statusTip">
+                <string>run qc_src</string>
+               </property>
                <property name="toolTip">
                 <string>Select SRC files to run quality control</string>
                </property>
@@ -2090,6 +2111,9 @@ QLabel#tools_view_image_hint {
              </item>
              <item>
               <widget class="QPushButton" name="FIB_qc">
+               <property name="statusTip">
+                <string>run qc_fib</string>
+               </property>
                <property name="toolTip">
                 <string>Select FIB files to run quality control</string>
                </property>
@@ -2145,6 +2169,9 @@ QLabel#tools_view_image_hint {
              </item>
              <item>
               <widget class="QPushButton" name="averagefib">
+               <property name="statusTip">
+                <string>run create_average</string>
+               </property>
                <property name="toolTip">
                 <string>Select FIB or NIFTI files for averaging</string>
                </property>
