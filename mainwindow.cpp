@@ -1147,8 +1147,6 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
             return fail("reset_settings takes no arguments");
         settings.clear();
         settings.sync();
-        QMessageBox::information(
-            this,QApplication::applicationName(),"Setting Cleared");
         return true;
     }
 
@@ -1383,8 +1381,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         out << '\n';
         for(const auto& field : fields)
             out << field << '\t' << values[field].join('\t') << '\n';
-        QMessageBox::information(
-            this,QApplication::applicationName(),"File saved to "+output);
+        if(cmd.size() == 1)
+            QMessageBox::information(this,QApplication::applicationName(),"File saved to "+output);
         return true;
     }
 
