@@ -83,3 +83,51 @@ This file contains the complete tract and automatic-tracking inventory preserved
 - `list_tract` takes no required parameter. The optional literal `"status"` returns compact status.
 - Confirm destructive operations such as deleting, trimming, cutting, clustering, reconnecting, and merging.
 - Blank examples are inventory preservation only; inspect source before constructing their parameters.
+
+## Tracking parameter reference
+
+These parameters are the `Tracking`, `Tracking_dT`, and `Tracking_adv` groups from the embedded `:/data/options.txt` resource. Use:
+
+```json
+["list_param"]
+["list_param","fa_threshold"]
+["set_param","fa_threshold","0.08"]
+["set_params","fa_threshold=0.08&min_length=20&turning_angle=60"]
+```
+
+Every value remains a JSON string. Enum values are zero-based indices. The metric lists shown for `tracking_index`, `dt_index1`, and `dt_index2` are resource defaults and may be replaced by metrics available in the loaded FIB.
+
+### Basic tracking
+
+| Parameter ID | UI setting | Accepted value | Default |
+|---|---|---|---|
+| `tracking_index` | Tracking Index | `0`=fa; `1`=adc | `0` (fa) |
+| `fa_threshold` | Tracking Threshold (0=random) | float `0–2`; step `0.01` | `0.0` |
+| `turning_angle` | Angular Threshold (0=random) | integer `0–90`; step `5` | `0` |
+| `step_size` | Step Size(mm)(0=random) | float `0.00–10`; step `0.1` | `0` |
+| `min_length` | Min Length(mm) | float `0–800`; step `10` | `30` |
+| `max_length` | Max Length(mm) | float `0–10000`; step `10` | `300` |
+| `max_seed_count` | Max Seeds(0=default) | integer `0–100000000`; step `1000` | `0` |
+| `max_tract_count` | Max Tracts(0=default) | integer `0–100000000`; step `1000` | `0` |
+| `track_voxel_ratio` | Tract-to-Voxel Ratio | float `0–2`; step `0.005` | `1.0` |
+| `tip_iteration` | Topology-Informed Pruning (iteration) | integer `0–100`; step `2` | `4` |
+| `tolerance` | Autotrack tolerance (mm) | float `0–100`; step `10` | `22` |
+
+### Differential tracking
+
+| Parameter ID | UI setting | Accepted value | Default |
+|---|---|---|---|
+| `dt_index1` | Metrics1(m1) | `0`=none; `1`=adc | `0` (none) |
+| `dt_index2` | Metrics2(m2) | `0`=none; `1`=adc | `0` (none) |
+| `dt_threshold_type` | Type | `0`=(m1-m2)÷m1; `1`=(m1-m2)÷m2; `2`=m1-m2; `3`=(m2-m1)÷m1; `4`=(m2-m1)÷m2; `5`=m2-m1; `6`=m1÷max(m1); `7`=m2÷max(m2) | `0` ((m1-m2)÷m1) |
+| `dt_threshold` | Threshold | float `0.0–2.0`; step `0.05` | `0.2` |
+
+### Advanced tracking
+
+| Parameter ID | UI setting | Accepted value | Default |
+|---|---|---|---|
+| `tracking_method` | Tracking Algorithm | `0`=Euler; `1`=RK4; `2`=Voxel tracking | `0` (Euler) |
+| `smoothing` | Smoothing (1=random) | float `-1.5–1`; step `0.1` | `0` |
+| `check_ending` | Check Ending | `0`=Off; `1`=On | `0` (Off) |
+| `otsu_threshold` | Default Otsu | float `0.1–1`; step `0.1` | `0.6` |
+| `track_format` | Output Format | `0`=tt.gz; `1`=trk.gz; `2`=txt | `0` (tt.gz) |
