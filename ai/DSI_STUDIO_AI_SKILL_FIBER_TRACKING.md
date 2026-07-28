@@ -238,6 +238,23 @@ TIP is therefore used mainly with AutoTrack, where a dense initial tract set can
 5. Apply the requested TIP iterations.
 6. Inspect whether valid tract cores remain.
 
+For a dense AutoTrack bundle of approximately 10,000 tracts, **two or three
+total TIP iterations** usually remove noisy isolated trajectories well.
+AutoTrack performs the configured `tip_iteration` automatically. If TIP was
+disabled and manual pruning is needed, check only the target bundle and use:
+
+```json
+["trim_tract"]
+["trim_tract"]
+```
+
+**Important:** `trim_tract` applies one TIP iteration to every checked bundle.
+Uncheck all non-target bundles before each call.
+
+Inspect the bundle after each iteration and use a third `["trim_tract"]` only
+if isolated noise remains. Do not add two or three manual rounds after AutoTrack
+already applied two or three configured iterations.
+
 **Agent rule:** Do not apply TIP aggressively to a sparse bundle. If the tract count is low, increase sampling or review tracking and ROI settings before pruning.
 
 TIP improves bundle coherence but does not prove anatomical validity.
@@ -489,6 +506,12 @@ Important settings include:
 - AutoTrack tolerance;
 - TIP iterations.
 
+Call `list_auto_tract` before `run_auto_track`. Returned names are internal
+atlas labels with underscore separators and hierarchical prefixes. Never guess
+or use human-readable shorthand: use
+`ProjectionBrainstem_CorticospinalTractL`, for example, rather than
+`Corticospinal Tract`.
+
 ### AutoTrack tolerance
 
 A larger tolerance:
@@ -616,7 +639,37 @@ After TIP:
 - check whether most or all tracts were removed;
 - if the bundle disappears, review tract count, sampling, tolerance, threshold, and ROI settings.
 
-### Step 10: Record all parameters
+### Step 10: Prepare a Clear Tract Visualization
+
+After AutoTrack finishes, use `list_tract` to identify the target and
+whole-brain bundle indices.
+
+1. AutoTrack applies the configured `tip_iteration` automatically. If TIP was
+   disabled, follow the two-to-three-round TIP tutorial above. If TIP was
+   already applied, inspect the result before any additional pruning.
+2. With only the intended bundle checked, run
+   `["delete_repeated_tract","1.0"]` to remove trajectories repeated within a
+   one-voxel distance and reduce rendering load.
+3. Run `["color_all_cluster"]` to assign distinct colors to all bundles.
+4. Hide the whole-brain bundle with
+   `["check_tract","<whole-brain-index>","0"]`; do not display it behind the
+   mapped bundles.
+5. Show one mapped bundle at a time with
+   `["show_only_tracts","<target-index>"]`. Add the subject-mapped built-in
+   white-matter isosurface with `["add_surface","0","25"]` to provide anatomical
+   context without displaying whole-brain streamlines.
+6. Choose the view for that bundle rather than reusing one camera for every
+   tract. For the left arcuate fasciculus, inspect from a
+   left-anterior-superior oblique position. Start with a side view using
+   `["set_view","0"]`, then use small rotations such as
+   `["rotate","15 1 0 0"]` and `["rotate","20 0 1 0"]`. Verify orientation and
+   capture several useful oblique views.
+
+TIP and repeated-tract deletion modify checked bundles. Preserve the original
+or obtain user approval before destructive cleanup when it must remain
+recoverable.
+
+### Step 11: Record all parameters
 
 Save or report:
 
@@ -641,7 +694,7 @@ AutoTrack tolerance
 output tract file
 ```
 
-### Step 11: Preserve reproducibility
+### Step 12: Preserve reproducibility
 
 For repeated analyses, use:
 
