@@ -1403,18 +1403,25 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         return true;
     }
 
-    if(cmd[0] == "open_fib" || cmd[0] == "open_structural_tracking")
+    if(cmd[0] == "open_fib")
     {
-        if(cmd.size() != 1)
-            return fail(cmd[0]+" takes no arguments");
-        auto filter = cmd[0] == "open_fib" ?
-                      "Fib files (*.fz *fib.gz *.dz);;All files (*)" :
-                      "Image files (*nii.gz *.nii 2dseq);;All files (*)";
-        auto file = tipl::qt::open_image_file(
-                        this,ui->workDir->currentText(),filter);
-        if(file.isEmpty())
-            return true;
-        add_work_dir(QFileInfo(file).absolutePath());
+        QString file;
+        if(cmd.size() == 1)
+        {
+            auto filter = cmd[0] == "open_fib" ?
+                          "Fib files (*.fz *fib.gz *.dz);;All files (*)" :
+                          "Image files (*nii.gz *.nii 2dseq);;All files (*)";
+            file = tipl::qt::open_image_file(
+                            this,ui->workDir->currentText(),filter);
+            if(file.isEmpty())
+                return true;
+            add_work_dir(QFileInfo(file).absolutePath());
+        }
+        else
+        {
+            if(cmd.size() >= 2)
+                file = QString::fromUtf8(cmd[1].c_str());
+        }
         return loadFib(file);
     }
 
