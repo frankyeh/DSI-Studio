@@ -20,6 +20,7 @@
 #include <QThread>
 #include <QUrlQuery>
 #include <QVBoxLayout>
+#include <QTimer>
 #include <set>
 
 #include "fiber_data_hub.hpp"
@@ -32,12 +33,19 @@
 FiberDataHub::FiberDataHub(MainWindow* parent):
     QMainWindow(parent),main_window(*parent),ui(new Ui::FiberDataHub)
 {
-    ui->setupUi(this);
-    ui->github_release_note->setCurrentIndex(0);
-    ui->github_open_file->setVisible(false);
-    ui->github_open_file_mode->setVisible(false);
-    ui->download_dir->setText(main_window.work_dir());
-    initialize();
+    // Initialize interface
+    {
+        ui->setupUi(this);
+        ui->github_release_note->setCurrentIndex(0);
+        ui->github_open_file->setVisible(false);
+        ui->github_open_file_mode->setVisible(false);
+        ui->download_dir->setText(main_window.work_dir());
+        ui->github_note->setReadOnly(true);
+        ui->github_note->setOpenExternalLinks(true);
+    }
+
+    if(!initialize())
+        QMessageBox::warning(this,"Fiber Data Hub",QString::fromStdString(error_msg));
 }
 
 FiberDataHub::~FiberDataHub()
@@ -45,217 +53,278 @@ FiberDataHub::~FiberDataHub()
     delete ui;
 }
 
-void FiberDataHub::initialize()
+bool FiberDataHub::initialize()
 {
     if(fetch_github)
-        return;
+        return ui->github_repo->count();
+
+    auto fail = [&](const QString& msg)
+    {
+        fetch_github = false;
+        error_msg = msg.toStdString();
+        return false;
+    };
+
     fetch_github = true;
-
-    QString content = settings.value("hub_content").toString();
-
-    QString url = main_window.fiber_data_hub_url();
-    if(!url.isEmpty())
+    try
     {
-        auto reply = main_window.get(url);
+        QString content = settings.value("hub_content").toString();
+        QString url = main_window.fiber_data_hub_url();
 
-        if(content.isEmpty())
+        // Download or update hub content
         {
-            QEventLoop loop;
-            connect(reply.get(),&QNetworkReply::finished,&loop,&QEventLoop::quit);
-            loop.exec();
+            if(url.isEmpty() && content.isEmpty())
+                return fail("Fiber Data Hub URL is unavailable");
 
-            if(reply->error() == QNetworkReply::NoError)
-                settings.setValue("hub_content",content = QString::fromUtf8(reply->readAll()));
+            if(!url.isEmpty())
+            {
+                auto reply = main_window.get(url);
+                if(!reply)
+                    return fail("Fiber Data Hub network request failed");
+
+                if(content.isEmpty())
+                {
+                    QEventLoop loop;
+                    connect(reply.get(),&QNetworkReply::finished,&loop,&QEventLoop::quit);
+                    QTimer::singleShot(30000,&loop,&QEventLoop::quit);
+                    loop.exec();
+
+                    if(!reply->isFinished())
+                        return reply->abort(),fail("Fiber Data Hub network timeout");
+                    if(reply->error() != QNetworkReply::NoError)
+                        return fail("Fiber Data Hub network error: "+reply->errorString());
+
+                    content = QString::fromUtf8(reply->readAll());
+                    if(content.isEmpty())
+                        return fail("Fiber Data Hub returned empty content");
+                    settings.setValue("hub_content",content);
+                }
+                else
+                    connect(reply.get(),&QNetworkReply::finished,this,[this,reply]
+                            {
+                                if(reply->error() == QNetworkReply::NoError)
+                                    settings.setValue("hub_content",QString::fromUtf8(reply->readAll()));
+                            });
+            }
         }
-        else
+
+        // Parse repository list and build hub note
         {
-            connect(reply.get(),&QNetworkReply::finished,this,[this,reply]()
-                    {
-                        if(reply->error() == QNetworkReply::NoError)
-                            settings.setValue("hub_content",QString::fromUtf8(reply->readAll()));
-                    });
+            QString md,line;
+            md.reserve(content.size());
+            ui->github_repo->clear();
+
+            QSignalBlocker block(ui->github_repo);
+            QTextStream in(&content);
+            const QString mark = "](https://github.com/";
+
+            for(bool first = true;in.readLineInto(&line);first = false)
+            {
+                if(first)
+                    continue;
+
+                int p = 0;
+                while(p < line.size() && line[p].isSpace())
+                    ++p;
+                if(line.mid(p).startsWith("<img src"))
+                    continue;
+
+                md += line+"\n";
+                if(!line.startsWith("- "))
+                    continue;
+
+                int m = line.indexOf(mark);
+                if(m < 0)
+                    continue;
+
+                int b = line.lastIndexOf('[',m);
+                int r = m+mark.size();
+                int s = line.indexOf('/',r);
+                int e = s < 0 ? -1 : line.indexOf('/',s+1);
+                if(e < 0 && s >= 0)
+                    e = line.indexOf(')',s+1);
+
+                if(b >= 0 && e > s)
+                    ui->github_repo->addItem(line.mid(b+1,m-b-1),line.mid(r,e-r));
+            }
+
+            if(!ui->github_repo->count())
+                return fail("No Fiber Data Hub repositories found");
+
+            ui->github_note->setMarkdown(md);
+            on_github_repo_currentIndexChanged(0);
         }
+        return true;
     }
-
-    QString md,line;
-    md.reserve(content.size());
-
-    QSignalBlocker block(ui->github_repo);
-    QTextStream in(&content);
-    const QString mark = "](https://github.com/";
-
-    for(bool first = true;in.readLineInto(&line);first = false)
+    catch(const std::exception& e)
     {
-        if(first)
-            continue;
-
-        int p = 0;
-        while(p < line.size() && line[p].isSpace())
-            ++p;
-        if(line.mid(p).startsWith("<img src"))
-            continue;
-
-        md += line + "\n";
-
-        if(!line.startsWith("- "))
-            continue;
-
-        int m = line.indexOf(mark);
-        if(m < 0)
-            continue;
-
-        int b = line.lastIndexOf('[',m);
-        int r = m + mark.size();
-        int s = line.indexOf('/',r);
-        int e = s < 0 ? -1 : line.indexOf('/',s + 1);
-        if(e < 0 && s >= 0)
-            e = line.indexOf(')',s + 1);
-
-        if(b >= 0 && e > s)
-            ui->github_repo->addItem(line.mid(b + 1,m - b - 1),line.mid(r,e - r));
+        return fail("Fiber Data Hub initialization failed: "+QString::fromUtf8(e.what()));
     }
-
-    ui->github_note->setMarkdown(md);
-    ui->github_note->setReadOnly(true);
-    ui->github_note->setOpenExternalLinks(true);
-    on_github_repo_currentIndexChanged(0);
+    catch(...)
+    {
+        return fail("Fiber Data Hub initialization failed");
+    }
 }
-
 bool FiberDataHub::command(const std::vector<std::string>& cmd)
 {
     error_msg.clear();
-    auto fail = [this](std::string error)
-    {
-        error_msg = error;
+    if(cmd.empty() || cmd[0].compare(0,4,"hub_"))
         return false;
-    };
+
     const std::string usage =
-        "hub repos | hub tags <repo> | hub files <repo> <tag> [text] [offset] [limit] | "
-        "hub open <repo> <tag> <file> | hub download <repo> <tag> <file> <dir>";
+        "hub_repo | hub_tags <repo> | hub_files <repo> <tag> [text] [offset] [limit] | "
+        "hub_open <repo> <tag> <file> | hub_download <repo> <tag> <file> <dir>";
 
-    if(cmd.size() < 2 || cmd[1] == "help")
-        return tipl::out() << usage,true;
-    initialize();
-    if(!ui->github_repo->count())
+    auto fail = [&](const std::string& msg){error_msg = msg;return false;};
+    auto arg = [&](size_t i){return QString::fromStdString(cmd[i]);};
+
+    if(!initialize())
+        return false;
+
+    auto* repos = ui->github_repo;
+    auto* tags = ui->github_tags;
+    auto* files = ui->github_release_files;
+
+    auto select_repo = [&]()
     {
-        fetch_github = false;
-        return fail("Fiber Data Hub is not ready; retry");
-    }
-    if(cmd[1] == "repos")
-    {
-        for(int row = 0;row < ui->github_repo->count();++row)
-            tipl::out() << row << "\t" << ui->github_repo->itemData(row).toString().toStdString();
+        if(cmd.size() < 2)
+            return fail(usage);
+        int row = repos->findData(arg(1));
+        if(row < 0)
+            return fail("repository not found");
+        repos->setCurrentIndex(row);
+        on_github_repo_currentIndexChanged(row);
         return true;
-    }
-    if(cmd.size() < 3)
-        return fail(usage);
+    };
 
-    int repo = ui->github_repo->findData(QString::fromUtf8(cmd[2]));
-    if(repo < 0)
-        return fail("repository not found");
-    ui->github_repo->setCurrentIndex(repo);
-    on_github_repo_currentIndexChanged(repo);
-    if(cmd[1] == "tags")
+    auto select_tag = [&]()
     {
-        if(!ui->github_tags->rowCount())
-            return fail("repository data is loading; retry");
-        for(int row = 0;row < ui->github_tags->rowCount();++row)
-            tipl::out() << row << "\t" << ui->github_tags->item(row,0)->text().toStdString();
-        return true;
-    }
-    if(cmd.size() < 4)
-        return fail(usage);
-
-    int tag = -1;
-    for(int row = 0;row < ui->github_tags->rowCount();++row)
-        if(ui->github_tags->item(row,0)->text() == QString::fromUtf8(cmd[3]))
-            tag = row;
-    if(tag < 0)
+        if(cmd.size() < 3)
+            return fail(usage);
+        for(int row = 0;row < tags->rowCount();++row)
+            if(tags->item(row,0)->text() == arg(2))
+            {
+                tags->setCurrentCell(row,0);
+                on_github_tags_itemSelectionChanged();
+                return true;
+            }
         return fail("tag not found or still loading");
-    ui->github_tags->setCurrentCell(tag,0);
-    on_github_tags_itemSelectionChanged();
-    if(cmd[1] == "files")
+    };
+
+    auto select_file = [&]()
     {
-        tipl::out() << "index\tfile\tsize\tdownloaded";
-        QString text = cmd.size() > 4 ? QString::fromUtf8(cmd[4]) : QString();
+        if(cmd.size() < 4)
+            return fail(usage);
+
+        QString value = arg(3);
+        int row = -1;
+        for(int i = 0;i < files->rowCount();++i)
+            if(files->item(i,0)->text() == value)
+            {
+                row = i;
+                break;
+            }
+
+        if(row < 0)
+        {
+            bool ok;
+            int index = value.toInt(&ok);
+            if(ok && index >= 0 && index < files->rowCount())
+                row = index;
+        }
+        if(row < 0)
+            return fail("file not found: use the exact filename or index returned by hub_files");
+
+        files->setCurrentCell(row,0);
+        files->selectRow(row);
+        on_github_release_files_itemSelectionChanged();
+        return true;
+    };
+
+    if(cmd[0] == "hub_repo")
+    {
+        for(int row = 0;row < repos->count();++row)
+            tipl::out() << row << "\t" << repos->itemData(row).toString().toStdString();
+        return true;
+    }
+
+    if(cmd[0] == "hub_tags")
+    {
+        if(!select_repo())
+            return false;
+        if(!tags->rowCount())
+            return fail("repository data is loading; retry");
+        for(int row = 0;row < tags->rowCount();++row)
+            tipl::out() << row << "\t" << tags->item(row,0)->text().toStdString();
+        return true;
+    }
+
+    if(cmd[0] == "hub_files")
+    {
+        if(!select_repo() || !select_tag())
+            return false;
+
         bool ok = true;
-        int offset = cmd.size() > 5 ? QString::fromUtf8(cmd[5]).toInt(&ok) : 0;
+        QString text = cmd.size() > 3 ? arg(3) : QString();
+        int offset = cmd.size() > 4 ? arg(4).toInt(&ok) : 0;
         if(!ok || offset < 0)
             return fail("invalid offset");
-        int limit = cmd.size() > 6 ? QString::fromUtf8(cmd[6]).toInt(&ok) :
-                        ui->github_release_files->rowCount();
+
+        int limit = cmd.size() > 5 ? arg(5).toInt(&ok) : files->rowCount();
         if(!ok || limit < 0)
             return fail("invalid limit");
-        for(int row = 0;row < ui->github_release_files->rowCount() && limit;++row)
+
+        QString path = QStandardPaths::writableLocation(QStandardPaths::TempLocation)+"/"+cur_tag+"/";
+        tipl::out() << "index\tfile\tsize\tdownloaded";
+
+        for(int row = 0;row < files->rowCount() && limit;++row)
         {
-            if(!ui->github_release_files->item(row,0)->text().contains(text,Qt::CaseInsensitive))
+            QString name = files->item(row,0)->text();
+            if(!name.contains(text,Qt::CaseInsensitive))
                 continue;
             if(offset)
             {
                 --offset;
                 continue;
             }
-            tipl::out() << row << "\t"
-                        << ui->github_release_files->item(row,0)->text().toStdString() << "\t"
-                        << ui->github_release_files->item(row,1)->text().toStdString() << "\t"
-                        << QFile::exists(QStandardPaths::writableLocation(QStandardPaths::TempLocation) +
-                                         "/" + cur_tag + "/" +
-                                         ui->github_release_files->item(row,0)->text());
+            tipl::out() << row << "\t" << name.toStdString() << "\t"
+                        << files->item(row,1)->text().toStdString() << "\t"
+                        << QFile::exists(path+name);
             --limit;
         }
         return true;
     }
-    if(cmd.size() < 5)
-        return fail(usage);
 
-
-    QString file_value = QString::fromUtf8(cmd[4]);
-    int file = -1;
-
-    // Prefer an exact filename match.
-    for(int row = 0;row < ui->github_release_files->rowCount();++row)
-        if(ui->github_release_files->item(row,0)->text() == file_value)
-        {
-            file = row;
-            break;
-        }
-
-    // Otherwise accept the numeric index returned by "hub files".
-    if(file < 0)
+    if(cmd[0] == "hub_open")
     {
-        bool okay;
-        int index = file_value.toInt(&okay);
-        if(okay && index >= 0 &&
-            index < ui->github_release_files->rowCount())
-            file = index;
+        if(!select_repo() || !select_tag() || !select_file())
+            return false;
+        on_github_open_file_clicked();
+        return true;
     }
 
-    if(file < 0)
-        return fail(
-            "file not found: use the exact filename or index returned by hub files");
-
-
-    ui->github_release_files->setCurrentCell(file,0);
-    ui->github_release_files->selectRow(file);
-    on_github_release_files_itemSelectionChanged();
-
-    if(cmd[1] == "open")
-        return on_github_open_file_clicked(),true;
-    if(cmd[1] == "download" && cmd.size() == 6)
+    if(cmd[0] == "hub_download")
     {
-        QDir dir(QString::fromUtf8(cmd[5]));
+        if(cmd.size() != 5)
+            return fail(usage);
+        if(!select_repo() || !select_tag() || !select_file())
+            return false;
+
+        QDir dir(arg(4));
         if(!dir.exists())
         {
             if(!dir.mkpath("."))
                 return fail("cannot create download directory");
             tipl::out() << "directory_created\t"
-                        << QDir::fromNativeSeparators(
-                               dir.absolutePath()).toStdString();
+                        << QDir::fromNativeSeparators(dir.absolutePath()).toStdString();
         }
+
         ui->download_dir->setText(dir.path());
         ui->download_overwrite->setChecked(false);
-        return on_github_download_clicked(),true;
+        on_github_download_clicked();
+        return true;
     }
+
     return fail(usage);
 }
 void FiberDataHub::on_github_repo_currentIndexChanged(int index)

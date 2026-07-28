@@ -29,7 +29,7 @@ class FiberDataHub : public QMainWindow
     bool fetch_github = false;
     std::map<QString,QString> notes,dates;
     std::map<QString,QJsonArray> tags,assets;
-    void initialize(void);
+    bool initialize(void);
     void loadTags(QUrl,QString,QJsonArray,int);
     void loadFiles(void);
     void update_rate_limit(QSharedPointer<QNetworkReply>);
