@@ -979,21 +979,70 @@ bool tracking_window::command(std::vector<std::string> cmd)
     }
     if(cmd[0] == "list_param")
     {
-        auto params = renderWidget->treemodel->getParamList();
-        if(cmd[1].empty())
+        struct domain_type
         {
-            tipl::out() << "id";
-            for(const auto& id : params)
-                tipl::out() << id.toStdString();
-        }
-        else
+            const char* name;
+            const char* root_param;
+            const char* groups[3];
+        };
+        static const domain_type domains[] =
+            {
+                {"tracking","",{"Tracking","Tracking_dT","Tracking_adv"}},
+                {"region_window","",{"ROI"}},
+                {"background_rendering","",{"Rendering"}},
+                {"slice_rendering","show_slice",{"Slice"}},
+                {"tract_rendering","show_tract",{"Tract","Tract_color"}},
+                {"region_rendering","show_region",{"Region","Region_color","Region_graph"}},
+                {"surface_rendering","show_surface",{"Surface"}},
+                {"device_rendering","show_device",{"Device"}},
+                {"label_rendering","show_label",{"Label"}},
+                {"odf_rendering","show_odf",{"ODF"}}
+            };
+
+        auto get_params = [&](const domain_type& domain)
         {
-            auto id = QString::fromStdString(cmd[1]);
-            if(!params.contains(id))
-                return run->failed("invalid parameter: "+cmd[1]);
-            tipl::out() << cmd[1] << "\t"
-                        << renderWidget->getData(id).toString().toStdString();
+            QStringList params;
+            if(*domain.root_param)
+                params << domain.root_param;
+            for(auto group : domain.groups)
+                if(group)
+                    params += renderWidget->treemodel->get_param_list(group);
+            return params;
+        };
+
+        auto print = [&](const domain_type& domain)
+        {
+            tipl::out() << std::string("[")+domain.name+"]";
+            tipl::out() << "id\tvalue";
+            for(const auto& id : get_params(domain))
+                tipl::out() << id.toStdString() << "\t"
+                            << renderWidget->getData(id).toString().toStdString();
+        };
+
+        auto id = QString::fromStdString(cmd[1]).trimmed().toLower();
+        id.replace('-','_');
+
+        if(id.isEmpty() || id == "all")
+        {
+            for(const auto& domain : domains)
+                print(domain);
+            return run->succeed();
         }
+
+        for(const auto& domain : domains)
+            if(id == domain.name)
+            {
+                print(domain);
+                return run->succeed();
+            }
+
+        if(!renderWidget->treemodel->getParamList().contains(id))
+            return run->failed(
+                "invalid parameter or domain: "+cmd[1]+
+                "; use list_param without an argument to list all domains");
+
+        tipl::out() << id.toStdString() << "\t"
+                    << renderWidget->getData(id).toString().toStdString();
         return run->succeed();
     }
     if(cmd[0] == "set_param" || cmd[0] == "set_params")
