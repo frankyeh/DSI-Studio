@@ -364,11 +364,15 @@ void AIAgent::showEvent(QShowEvent* event)
 
 void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
 {
+    ai_log("received: "+QString::fromUtf8(data));
     static const QRegularExpression ansi_escape(
         QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
+    QString chat;
     auto write_reply = [&](const QString& session,QByteArray reply)
     {
         auto& info = ai_infos[session];
+        if(!chat.isEmpty())
+            add_ai_history(session,"assistant",chat);
         auto written = socket->write(reply);
         ai_log(QString("DSI Studio replied " + info.agent_name + "@%1").arg(session));
         if(written == reply.size())
@@ -442,20 +446,12 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         ai_infos[session].update(agent_name,request["cwd"].toString());
     }
 
-    auto chat = request["chat"].toString().trimmed();
-    auto record_chat = [&]
-    {
-        if(chat.isEmpty())
-            return;
-        ai_log(agent_name+" ["+type+"]: "+chat);
-        add_ai_history(session,"assistant",chat);
-    };
+    chat = request["chat"].toString().trimmed();
     if(type == "TITLE")
     {
         auto title = request["title"].toString().simplified();
         if(title.isEmpty())
             return reply_text(session,"ERROR\tmissing title");
-        ai_log(agent_name+" ["+type+"]: "+title);
         return reply_text(session,set_ai_title(session,title) ?
                               "OKAY" : "ERROR\tcannot save title");
     }
@@ -514,7 +510,6 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         add_ai_history(session,QJsonObject{
             {"type","request"},{"text",summary},
             {"compact",compact},{"window",id}});
-        record_chat();
 
         auto fail = [&](const QString& error)
         {
@@ -632,17 +627,11 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
     }
 
     if(type == "CHAT")
-    {
-        if(chat.isEmpty())
-            return reply_text(session,"ERROR\tmissing chat");
-        record_chat();
-        return reply_text(session,"OKAY");
-    }
+        return reply_text(session,chat.isEmpty() ?
+                              "ERROR\tmissing chat" : "OKAY");
 
     if(type == "LIST")
     {
-        if(!chat.isEmpty())
-            record_chat();
         static quint64 next_id = 0;
         int level = std::max(0,int(tipl::status_list.size())-1);
         bool global_busy = level != 0;
@@ -718,33 +707,27 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
 
     if(type == "LOG")
     {
-        if(!chat.isEmpty())
-            record_chat();
         QByteArray output;
         {
             std::lock_guard<std::mutex> lock(console.edit_buf);
             auto end = console.total_size;
             auto first = end-quint64(console.history.size());
             auto begin = std::max(ai_log_positions.value(session),first);
-            if(chat.isEmpty())
-            {
-                bool capped = end-begin > 16*1024;
-                if(capped)
-                    begin = end-16*1024;
-                auto text = console.history.mid(qsizetype(begin-first));
-                if(capped)
-                    text.remove(0,text.indexOf('\n')+1);
-                text.remove(ansi_escape);
-                QStringList lines;
-                for(const auto& line : text.split('\n'))
-                    if(!line.contains("[AI AGENT]"))
-                        lines << line;
-                output = lines.join('\n').right(4*1024).toUtf8();
-            }
+            bool capped = end-begin > 16*1024;
+            if(capped)
+                begin = end-16*1024;
+            auto text = console.history.mid(qsizetype(begin-first));
+            if(capped)
+                text.remove(0,text.indexOf('\n')+1);
+            text.remove(ansi_escape);
+            QStringList lines;
+            for(const auto& line : text.split('\n'))
+                if(!line.contains("[AI AGENT]"))
+                    lines << line;
+            output = lines.join('\n').right(4*1024).toUtf8();
             ai_log_positions[session] = end;
         }
-        return reply_text(session,chat.isEmpty() ?
-                              QByteArray("OKAY\n"+output) : QByteArray("OKAY"));
+        return reply_text(session,"OKAY\n"+output);
     }
 
     reply_text(session,"ERROR\tunknown request");
