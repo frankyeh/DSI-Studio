@@ -48,7 +48,7 @@ public:
     bool loadFib(QString Filename);
     void loadNii(QStringList Filename);
     void loadSrc(QStringList filenames);
-    void open_template(QString name);
+    bool open_template(QString name);
     void add_work_dir(QString dir);
     QString fiber_data_hub_url(void) const { return info.value(4); }
     QString work_dir(void) const;
@@ -58,8 +58,6 @@ private:
     FiberDataHub* fiber_data_hub = nullptr;
     void login(void);
 private slots:
-    void openRecentFibFile();
-    void openRecentSrcFile();
     void open_fib_at(int,int);
     void open_src_at(int,int);
     void on_workDir_currentTextChanged(const QString &arg1);
