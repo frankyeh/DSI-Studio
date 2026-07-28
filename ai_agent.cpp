@@ -130,8 +130,7 @@ AIAgent::AIAgent(MainWindow* parent):
             return;
         }
         ai_status_dots = ai_status_dots%3+1;
-        ui->ai_status->setText(
-            "Waiting for agent response"+QString(ai_status_dots,'.'));
+        ui->ai_status->setText(ai_status_waiting+QString(ai_status_dots,'.'));
         ui->ai_status->repaint();
     });
     set_ai_status();
@@ -307,7 +306,8 @@ AIAgent::AIAgent(MainWindow* parent):
             if(i)
                 ui->ai_project_list->itemWidget(i)->
                     findChild<QPushButton*>("ai_project_title")->
-                    setStyleSheet(i == item ? "background:#dce9f9;" : "");
+                    setStyleSheet(i == item ?
+                        "color:#202124;background:#dce9f9;" : "");
         if(item)
         {
             stop_ai_blink();
@@ -382,20 +382,24 @@ void AIAgent::set_ai_status(QString status,bool temporary)
 {
     ai_status_timer->stop();
     ai_status_delay = 0;
-    if(status.isEmpty())
+    if(!status.isEmpty())
+        ai_status_activity = status;
+    if(active_ai_processes && (status.isEmpty() || temporary))
     {
-        if(active_ai_processes)
-        {
-            ai_status_dots = 1;
-            status = "Waiting for agent response.";
-            ai_status_timer->start();
-        }
-        else
-            status = "Nothing is running right now.";
+        ai_status_waiting = ai_status_activity;
+        if(ai_status_waiting.endsWith('.'))
+            ai_status_waiting.chop(1);
+        ai_status_waiting += ", waiting for agent";
+        ai_status_dots = 1;
+        status = ai_status_waiting+".";
+        ai_status_timer->start();
     }
+    else
+    if(status.isEmpty())
+        status = "Current task complete.";
     ui->ai_status->setText(status);
     ui->ai_status->repaint();
-    if(temporary)
+    if(temporary && !active_ai_processes)
     {
         ai_status_delay = 4;
         ai_status_timer->start();
@@ -408,7 +412,7 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
     ai_log("received: "+QString::fromUtf8(data));
     static const QRegularExpression ansi_escape(
         QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
-    QString chat;
+    QString chat,activity = "Agent request handled";
     auto write_reply = [&](const QString& session,QByteArray reply)
     {
         auto& info = ai_infos[session];
@@ -417,7 +421,7 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         auto written = socket->write(reply);
         ai_log(QString("DSI Studio replied " + info.agent_name + "@%1").arg(session));
         set_ai_status(written == reply.size() ?
-                      "Response sent." : "Response could not be sent.",true);
+                      activity : "Response could not be sent.",true);
         if(written == reply.size())
             info.prompts = {};
     };
@@ -460,7 +464,10 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
     auto type = request["request"].toString().toUpper();
     auto session = request["session"].toString().trimmed();
     if(!type.isEmpty())
+    {
+        activity = type+" request completed";
         set_ai_status("Received "+type+" request.");
+    }
 
     // Validate request
     if(agent_name.isEmpty())
@@ -657,6 +664,8 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
             if(!okay)
                 result["error"] = error;
             results.append(result);
+            if(!command_name.isEmpty())
+                activity = command_name+(okay ? " completed" : " failed");
             if(!okay)
                 break;
         }
@@ -841,7 +850,7 @@ void AIAgent::show_ai_project(const QString& session,QJsonObject added_entry)
     // Update project title
     {
         auto* title = row->findChild<QPushButton*>("ai_project_title");
-        item->setText(project_title);
+        item->setText({});
         title->setText(project_title);
         title->setToolTip(project_title);
         item->setSizeHint(QSize(0,row->sizeHint().height()));

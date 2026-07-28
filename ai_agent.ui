@@ -46,15 +46,18 @@ QPushButton#ai_new_chat {
     padding: 8px;
 }
 QWidget#tab_8 QPushButton#ai_project_title {
+    color: #202124;
     background: transparent;
     border: 0;
     padding: 6px 2px;
     text-align: left;
 }
 QWidget#tab_8 QPushButton#ai_project_title:hover {
+    color: #202124;
     background-color: #e9e9eb;
 }
 QWidget#tab_8 QPushButton#ai_project_title:pressed {
+    color: #202124;
     background-color: #dddddf;
 }
 QToolButton#ai_project_menu_button {
@@ -335,7 +338,7 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
                  <string notr="true">color: #5f6368;</string>
                 </property>
                 <property name="text">
-                 <string>Nothing is running right now.</string>
+                 <string>Current task complete.</string>
                 </property>
                 <property name="textInteractionFlags">
                  <set>Qt::TextSelectableByMouse</set>

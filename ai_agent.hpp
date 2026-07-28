@@ -48,6 +48,7 @@ class AIAgent : public QMainWindow
     Ui::AIAgent* ui;
     QSettings settings;
     QString ai_project_dir;
+    QString ai_status_activity,ai_status_waiting;
     QMenu* ai_project_menu = nullptr;
     QTimer* ai_status_timer = nullptr;
     int active_ai_processes = 0,ai_status_delay = 0,ai_status_dots = 0;
