@@ -6,8 +6,8 @@ This file contains tract and automatic-tracking commands confirmed in the curren
 
 | Command | Common example | Important behavior |
 |---|---|---|
-| `list_tract` | `["list_tract"]` | List all tract bundles and full details. |
-| `list_tract status` | `["list_tract","status"]` | Return only targeted tracking status (`running bundles`); use top-level `LIST` for routine polling. |
+| `list_tract` | `["list_tract"]` | List every tract bundle with `index`, readable `status`, shown state, name, tract count, deleted count, and seeds. |
+| `list_tract status` | `["list_tract","status"]` | Return compact `status` and total bundle count. `status=done` means no tracking thread remains active. |
 | `run_tracking` | `["run_tracking","Whole Brain"]` | Start asynchronous tracking with the current tracking parameters and checked region settings; `command[1]` is the mandatory new bundle name. |
 | `run_tracking` | `["run_tracking","CST","0:3&1:0"]` | Start tracking with explicit region settings: region 0 as Seed and region 1 as ROI. The third element uses `index:type` entries separated by `&`. See **ROI settings syntax** and footnote 2. |
 | `list_auto_tract` | `["list_auto_tract"]` | List valid automatic tract names. |
@@ -86,6 +86,35 @@ This file contains tract and automatic-tracking commands confirmed in the curren
 | `reconnect_tract` | `["reconnect_tract","0","4 30"]` | Reconnect trajectories using a maximum distance and angle. |
 | `recognize_and_rename_tract` | `["recognize_and_rename_tract"]` | Recognize each checked bundle and rename it to the top atlas match. |
 
+## `list_tract` output
+
+The full reply columns are:
+
+```text
+index    status    shown    name    tracts    deleted    seeds
+```
+
+Each row's `status` is:
+
+- `running` — that bundle still has an active tracking thread.
+- `done` — no tracking thread remains attached to that bundle.
+
+The compact form returns:
+
+```text
+status    bundles
+running   3
+```
+
+or:
+
+```text
+status    bundles
+done      3
+```
+
+Here, `bundles` is the total number of tract rows, not the number of running jobs. Poll `["list_tract","status"]` until `status` is `done` before starting a dependent operation. The separate `shown` column remains a `1`/`0` visibility state and should not be confused with tracking status.
+
 ## ROI settings syntax
 
 Tracking and filtering accept an `&`-separated list of `region-index:role` entries:
@@ -111,8 +140,8 @@ Use `list_region` immediately before constructing the string. Explicit settings 
 - `run_tracking` requires a nonempty bundle name in `command[1]`.
 - The two-element `run_tracking` form uses the current tracking parameters and the region settings currently checked in the table.
 - The three-element `run_tracking` form is recognized as the convenient explicit-ROI form when its third string is empty or contains `:`; DSI Studio inserts the current tracking parameter code internally.
-- Fiber tracking is asynchronous. A successful reply means tracking started; poll top-level `LIST`.
-- `list_tract` takes no required parameter. The optional literal `"status"` returns compact status.
+- Fiber tracking is asynchronous. A successful reply means tracking started; poll top-level `LIST` for general activity and `["list_tract","status"]` for definitive tract completion.
+- `list_tract` takes no required parameter. The optional literal `"status"` returns compact `status` and total bundle count.
 - `trim_tract`, `delete_branch`, `undo_tract`, `redo_tract`, `cut_tract_by_*`, `delete_repeated_tract`, `resample_tract`, and `delete_tract_by_length` operate on checked bundles.
 - `cut_tract_end_portion`, `cut_tract_lps_end`, `cut_tract_rai_end`, and `flip_tract_*` operate on one selected tract index.
 - Clustering commands delete the original bundle and replace it with newly created cluster bundles.
