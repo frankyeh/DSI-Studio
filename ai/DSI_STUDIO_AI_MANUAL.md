@@ -12,18 +12,19 @@ are accepted only by the window type that implements them.
 
 | Window type | What it represents | Common valid commands | File-opening role |
 |---|---|---|---|
-| **main** | Main DSI Studio window | `list_recent_fib`, `list_recent_src`, `open_image`, `hub_repo`, `hub_tags`, `hub_files`, `hub_open`, `hub_download`, `run_cli` | `open_image` is primarily for opening NIfTI and other image files for image viewing, modification, and editing. Do not use it to open `.fz` when the fiber-tracking interface is needed. |
+| **main** | Main DSI Studio window | `list_recent_fib`, `list_recent_src`, `set_work_dir`, `open_src`, `open_fib`, `open_structural_tracking`, `open_template`, `open_db`, `open_connectometry`, `open_auto_track`, `open_nonlinear_registration`, `open_xnat`, `open_console`, `clear_recent_src`, `clear_recent_fib`, `open_image`, `open_hub`, `hub_*`, `run_cli` | Main-window `open_fib` takes no path and opens a picker. Main-window `open_image` accepts explicit image paths or no path for a picker. |
 | **image** | General image viewer | Image inspection, editing, and `segmentation` commands | Used mainly for standalone NIfTI editing and batch image processing, not as the default T1w-segmentation route when a related FIB is already open. |
-| **tracking** | A loaded FIB/FZ tracking window | `list_slice`, `set_slice`, `list_unet`, `segment_brain`, `list_region`, `list_tract`, `run_tracking`, `open_fib`, tract/region/slice/device/rendering commands | Use `open_fib` to open `.fz` or `*fib.gz` in the fiber-tracking interface. For a FIB workflow, segment its T1w in this tracking window rather than opening a separate image window. |
+| **tracking** | A loaded FIB/FZ tracking window | `list_slice`, `set_slice`, `list_unet`, `segment_brain`, `list_region`, `list_tract`, `run_tracking`, `open_fib`, tract/region/slice/device/rendering commands | Tracking-window `open_fib` requires an explicit `.fz` or `*fib.gz` path and creates another tracking window. |
 
 Always call top-level `LIST` first and use the returned numeric ID. Never use a
 window title, filename, type name, guessed number, or stale number as `window`.
 
-## Opening files: three distinct routes
+## Opening files: four distinct routes
 
-These routes are intentionally different and should not be treated as aliases.
+These routes have different argument contracts and should not be treated as
+aliases.
 
-### 1. Raw absolute path — simplest for one existing local file
+### 1. Raw absolute path — direct local-file routing
 
 Send one existing absolute path as raw non-JSON pipe text:
 
@@ -33,10 +34,29 @@ C:\data\subject.fz
 
 DSI Studio routes the file by extension. `.fz` and `*fib.gz` open as tracking
 data; `.sz` and `*src.gz` open reconstruction; ordinary image formats open an
-image window. Raw text is reserved for one local file path. Use this route to
-create the first tracking window when no tracking window is currently open.
+image window. Raw text is reserved for one local file path and can create the
+first tracking window without a GUI file dialog.
 
-### 2. Tracking-window `open_fib` — fiber-tracking interface
+### 2. Main-window interactive open commands
+
+These commands take no path and open a local GUI dialog:
+
+```json
+["open_fib"]
+["open_structural_tracking"]
+["open_src"]
+["open_image"]
+```
+
+- Main-window `open_fib` selects `.fz`, `*fib.gz`, or `.dz` and creates a tracking window.
+- `open_structural_tracking` selects `.nii.gz`, `.nii`, or `2dseq` and passes it to `loadFib`.
+- `open_src` selects `.sz`, `*src.gz`, `.jpg`, or `.tif` input and creates a reconstruction window.
+- Parameterless `open_image` selects ordinary image data and creates an image window.
+
+These are interactive commands. A local user must operate the file dialog. See
+footnote 1 regarding cancellation and verification.
+
+### 3. Tracking-window `open_fib` — explicit additional FIB
 
 Target an existing **tracking** window:
 
@@ -44,12 +64,11 @@ Target an existing **tracking** window:
 {"agent":"Codex","session":"<uuid>","request":"CMD","window":"2","command":["open_fib","C:/data/second_subject.fz"]}
 ```
 
-Use `open_fib` to open `.fz` or `*fib.gz` in a new fiber-tracking window. Because
-`open_fib` is handled by a tracking window, create the first tracking window by
-sending its absolute path as raw pipe text, then use `open_fib` for additional
-FIB/FZ files.
+This `open_fib` implementation requires the explicit path and creates another
+tracking window. It is a separate command contract from main-window
+`["open_fib"]`.
 
-### 3. Main-window `open_image` — NIfTI/image editing route
+### 4. Main-window `open_image` — explicit image paths
 
 Target the **main** window:
 
@@ -57,10 +76,9 @@ Target the **main** window:
 {"agent":"Codex","session":"<uuid>","request":"CMD","window":"1","command":["open_image","C:/data/T1w.nii.gz"]}
 ```
 
-`open_image` is primarily for opening NIfTI and other ordinary image files in an
-image window for viewing, modification, and editing. It may receive multiple
-image paths when those files should open together. Do not use `open_image` for
-`.fz` when the fiber-tracking interface is required.
+With one or more paths, `open_image` passes the files to a `view_image` window
+for viewing, modification, and editing. Do not use this route for `.fz` when the
+fiber-tracking interface is required. See footnote 3 regarding error reporting.
 
 After opening a related FIB, do not open its T1w again in an image window merely
 to segment it. Use tracking-window `segment_brain` so the generated regions stay
@@ -132,6 +150,32 @@ Use standalone `CHAT` when no other request is needed.
 
 Use `LOG` only when `LIST` and targeted discovery cannot explain a failure.
 
+## Main-window command reference
+
+All commands in this table target the numeric **main** window ID.
+
+| Command | Behavior |
+|---|---|
+| `["set_work_dir"]` | Open a directory picker and add the selected directory. It does not accept a path argument. |
+| `["open_src"]` | Open the SRC/histology picker and create a reconstruction window. |
+| `["open_fib"]` | Open the FIB picker and create a tracking window. Do not add a path on a main-window target. |
+| `["open_structural_tracking"]` | Select a structural image and pass it to `loadFib`. |
+| `["open_template"]` | Open the template currently selected in the main-window template list. See footnote 2. |
+| `["open_db"]` | Select and load a connectometry database, then open a database window. |
+| `["open_connectometry"]` | Select and load a connectometry database, then open a group-connectometry window. |
+| `["open_auto_track"]` | Open the main AutoTrack window. |
+| `["open_nonlinear_registration"]` | Open the nonlinear-registration toolbox. |
+| `["open_xnat"]` | Open the XNAT dialog. |
+| `["open_console"]` | Show the application console. |
+| `["clear_recent_src"]` | Immediately clear the recent SRC/SZ list and saved setting, without confirmation. |
+| `["clear_recent_fib"]` | Immediately clear the recent FIB/FZ list and saved setting, without confirmation. |
+| `["open_image"]` | Open the image picker. |
+| `["open_image","C:/data/T1w.nii.gz"]` | Open one or more explicit paths in an image window. |
+| `["open_hub"]` | Show, raise, and activate the Fiber Data Hub window without running a Hub query. |
+
+Use the General examples file for `list_recent_*`, `run_cli`, and the complete
+`hub_*` query syntax.
+
 ## Critical command syntax
 
 ### T1w segmentation: prefer the tracking window for FIB workflows
@@ -186,8 +230,9 @@ editing or batch processing, rather than work on an already-open FIB.
 
 ### Fiber Data Hub uses separate `hub_*` commands
 
-All Hub commands target the **main** window. The former subcommand form such as
-`["hub","files",...]` is no longer accepted. Use this discovery sequence:
+All Hub commands target the **main** window. `["open_hub"]` only opens the Hub
+window. The former subcommand form such as `["hub","files",...]` is no longer
+accepted. Use this discovery sequence:
 
 ```json
 ["hub_repo"]
@@ -290,11 +335,16 @@ the tracking job has completed.
 | Need | Command | Window |
 |---|---|---|
 | Open windows and activity | top-level `LIST` | none |
+| Recent FIB/FZ paths | `["list_recent_fib"]` | main |
+| Recent SRC/SZ paths | `["list_recent_src"]` | main |
+| Interactive FIB picker | `["open_fib"]` | main |
+| Interactive structural-tracking picker | `["open_structural_tracking"]` | main |
+| Interactive SRC/reconstruction picker | `["open_src"]` | main |
+| Interactive image picker | `["open_image"]` | main |
+| Fiber Data Hub window | `["open_hub"]` | main |
 | Hub repositories | `["hub_repo"]` | main |
 | Hub release tags | `["hub_tags","<repo>"]` | main |
 | Hub release files and exact indices | `["hub_files","<repo>","<tag>"]` | main |
-| Recent FIB/FZ paths | `["list_recent_fib"]` | main |
-| Recent SRC/SZ paths | `["list_recent_src"]` | main |
 | Slice names and readiness | `["list_slice"]` | tracking |
 | Segmentation model IDs | `["list_unet"]` | tracking |
 | Regions and ROI types | `["list_region"]` | tracking |
@@ -314,13 +364,21 @@ the tracking job has completed.
 - Ollama-backed identities include the host, for example `Codex/Ollama(192.168.1.14)`.
 - Inspect `LIST` before substantial loading, registration, segmentation, reconstruction, or tracking.
 - Discover names, indices, internal model IDs, and parameter IDs rather than guessing.
-- Confirm destructive actions and overwrites.
+- Main-window GUI picker commands require local user interaction; do not claim completion from `okay:true` alone.
+- Confirm `clear_recent_src` and `clear_recent_fib` because they erase saved history immediately without another prompt.
+- Confirm other destructive actions and overwrites.
 - Do not answer modal dialogs remotely; tell the user what must be selected.
 - `okay:true` means the command was accepted; asynchronous work may still be active.
 - A client timeout does not prove failure; verify application state before retrying a long command.
 - For fiber tracking, `list_tract status` with `running=0` is the completion signal.
 - A disappeared window or `window not found` means the user likely closed it. Do not reopen it automatically.
 - Do not expose private chain-of-thought. Report conclusions, actions, progress, and blockers.
+
+## Footnotes
+
+1. `set_work_dir`, `open_src`, main-window `open_fib`, `open_structural_tracking`, `open_db`, `open_connectometry`, and parameterless `open_image` use local GUI dialogs. The current command branches return success when the user cancels. `open_db` and `open_connectometry` also return success when `load_db()` rejects the selected database after showing its own error dialog. Verify the resulting directory or window with the GUI or top-level `LIST`.
+2. `open_template` checks that a template-list item is selected, but then calls a `void` helper and returns success. The helper silently returns when the selected text does not match a template stem and does not propagate `loadFib()` failure. Verify that a new tracking window appears.
+3. Explicit-path main-window `open_image` calls the `void` `loadNii()` helper and then returns success. `loadNii()` deletes the image window and returns silently when `view_image::open()` fails, so verify that an image window appears.
 
 ## Complete command inventory and examples
 
