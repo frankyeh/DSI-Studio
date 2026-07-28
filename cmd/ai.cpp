@@ -1024,7 +1024,7 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
                     toString().trimmed();
         if(!host.contains("://"))
             host.prepend("http://");
-        launch.name += "/Ollama@" + QUrl(host).host();
+        launch.name += "/Ollama(" + QUrl(host).host() + ")";
     }
     if(launch.model_provider == ai_model_provider::Ollama &&
         settings.value("ai/ollama_host","localhost").toString().trimmed().isEmpty())
@@ -1185,8 +1185,9 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
     }
     if(launch.new_session && provider == ai_provider::Codex)
         prompt +=
-            "\n\n[DSI Studio] Use the CODEX_THREAD_ID environment variable "
-            "as session in every local-server request.";
+            "\n\n[DSI Studio] Use \""+launch.name+
+            "\" as agent and CODEX_THREAD_ID as session in every "
+            "local-server request.";
     else if(!session.isEmpty())
         prompt +=
             "\n\n[DSI Studio] Continue through agent "+
