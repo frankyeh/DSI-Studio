@@ -307,7 +307,7 @@ file.
 When opening FIB data, verify that the selected file is `.fz` or `*fib.gz`. After
 `hub_open`, call top-level `LIST` and verify that a new `tracking` window appeared.
 Hub open/download routines are GUI-backed; verify the created window or output
-file rather than treating `okay:true` alone as proof of completion.
+file rather than treating a response without an error as proof of completion.
 
 ### `list_tract` uses `running` or `done`
 
@@ -417,11 +417,11 @@ tract completion. `status=done` is the definitive completion signal.
 - Inspect `LIST` before substantial loading, registration, segmentation, reconstruction, or tracking.
 - Discover names, indices, internal model IDs, and parameter IDs rather than guessing.
 - For `run_auto_track`, call `list_auto_tract` first and use an exact internal atlas label such as `ProjectionBrainstem_CorticospinalTractL`.
-- Main-window GUI picker commands require local user interaction; do not claim completion from `okay:true` alone.
+- Main-window GUI picker commands require local user interaction; do not claim completion from a response without an error alone.
 - Confirm `clear_recent_src` and `clear_recent_fib` because they erase saved history immediately without another prompt.
 - Confirm other destructive actions and overwrites.
 - Do not answer modal dialogs remotely; tell the user what must be selected.
-- `okay:true` means the command was accepted; asynchronous work may still be active.
+- A response without `error` means the command handler returned success; asynchronous work may still be active.
 - A client timeout does not prove failure; verify application state before retrying a long command.
 - For a selected slice, `list_slice` with `status=ready` is the readiness signal.
 - For fiber tracking, `list_tract status` with `status=done` is the completion signal.
