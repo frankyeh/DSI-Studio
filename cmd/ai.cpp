@@ -433,9 +433,6 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     auto chat = request["chat"].toString().trimmed();
     auto activity = request;
     activity.remove("chat");
-    auto json = QString::fromUtf8(QJsonDocument(activity).toJson(QJsonDocument::Compact));
-
-    ai_log(json);
 
     if(type == "CMD")
         for(auto* window : QApplication::allWidgets())
@@ -452,11 +449,16 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
                         QFileInfo(window->windowTitle()).fileName();
                 break;
             }
-    json = QString::fromUtf8(QJsonDocument(activity).toJson(
+    auto json = QString::fromUtf8(QJsonDocument(activity).toJson(
                                  QJsonDocument::Compact));
 
     if(type != "LIST" || !chat.isEmpty())
+    {
+        ai_log(agent_name + ":" + chat);
         main_window->add_ai_history(session,"request",json);
+    }
+    else
+        ai_log(agent_name + " sent " + type + " request ");
 
     if(!chat.isEmpty())
         main_window->add_ai_history(session,"assistant",chat);
@@ -1104,7 +1106,7 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
     {
         process->closeWriteChannel();
         auto session = process->objectName();
-        ai_log("Connecting to "+ launch.name + " " +
+        ai_log("connecting to "+ launch.name + "@" +
             (session.isEmpty() ? QString("new") : session)+
             " pid:"+QString::number(process->processId()));
         if(!session.isEmpty())
@@ -1317,7 +1319,6 @@ void MainWindow::start_codex(QString session,const QString& text,bool add_histor
                 for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
                     button->setEnabled(true);
             }
-            ai_log("start " + ai_infos[session].agent_name + " session:"+session);
         }
         process->setProperty("stdout_buffer",buffer);
     });
