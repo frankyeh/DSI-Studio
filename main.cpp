@@ -582,8 +582,7 @@ int main(int ac, char *av[])
                         ai_request(clientSocket,request);
                     else
                     {
-                        tipl::out() << "local server file request bytes="
-                                    << request.size();
+                        tipl::out() << "local server file request: " << request;
                         bool busy = tipl::progress::is_running();
                         bool exists = std::filesystem::exists(request.begin());
 
