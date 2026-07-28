@@ -450,12 +450,6 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         ai_log(agent_name+" ["+type+"]: "+chat);
         add_ai_history(session,"assistant",chat);
     };
-    auto record_request = [&](QJsonObject activity)
-    {
-        activity.remove("chat");
-        add_ai_history(session,"request",QString::fromUtf8(
-            QJsonDocument(activity).toJson(QJsonDocument::Compact)));
-    };
     if(type == "TITLE")
     {
         auto title = request["title"].toString().simplified();
@@ -483,7 +477,6 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
             commands = batch;
         }
 
-        auto activity = request;
         auto id = request["window"].toVariant().toString();
         auto windows = QApplication::allWidgets();
         QWidget* target = nullptr;
@@ -515,11 +508,12 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         auto compact = names.join(", ");
         auto destination = target_type.isEmpty() ?
             "window "+id : target_type+" window";
-        activity["_compact"] = compact;
-        activity["_summary"] =
+        auto summary =
             (compact.isEmpty() ? "unknown" : compact)+" \u2192 "+
             destination+(target_title.isEmpty() ? "" : " "+target_title);
-        record_request(activity);
+        add_ai_history(session,QJsonObject{
+            {"type","request"},{"text",summary},
+            {"compact",compact},{"window",id}});
         record_chat();
 
         auto fail = [&](const QString& error)
@@ -867,21 +861,10 @@ void AIAgent::show_ai_project(const QString& session,QJsonObject added_entry)
     }
 
     struct request_text{QString full,compact;};
-    auto request_detail = [](const QJsonObject& entry)
+    auto request_content = [](const QJsonObject& entry)
     {
-        return QJsonDocument::fromJson(
-                   entry["text"].toString().toUtf8()).object();
-    };
-    auto request_content = [&](const QJsonObject& entry)
-    {
-        auto summary = entry["_summary"].toString();
-        if(!summary.isEmpty())
-            return request_text{summary,summary};
-        auto detail = request_detail(entry);
-        auto full = detail["_summary"].toString();
-        if(full.isEmpty())
-            full = detail["request"].toString().toUpper()+" request";
-        auto compact = detail["_compact"].toString();
+        auto full = entry["text"].toString();
+        auto compact = entry["compact"].toString();
         return request_text{full,compact.isEmpty() ? full : compact};
     };
     auto to_html = [](QString text)
@@ -894,7 +877,8 @@ void AIAgent::show_ai_project(const QString& session,QJsonObject added_entry)
                toString("MM/dd HH:mm:ss");
     };
 
-    auto append = [&](const QJsonObject& entry,const QString& activity)
+    auto append = [&](const QJsonObject& entry,const QString& activity,
+                      const QString& end_time = {})
     {
         auto type = entry["type"].toString();
         bool user = type == "user",request = type == "request";
@@ -915,7 +899,6 @@ void AIAgent::show_ai_project(const QString& session,QJsonObject added_entry)
 
         auto color = request ? "#f1f3f4" : user ? "#e8f0fe" : "#e8f5e9";
         auto time = display_time(entry["time"]);
-        auto end_time = entry["_end_time"].toString();
         if(!end_time.isEmpty())
             time += "\u2013"+display_time(end_time);
         auto cell = QString(
@@ -948,7 +931,7 @@ void AIAgent::show_ai_project(const QString& session,QJsonObject added_entry)
         };
         auto request_window = [&](const QJsonObject& entry)
         {
-            return request_detail(entry)["window"].toVariant().toString();
+            return entry["window"].toVariant().toString();
         };
 
         ui->ai_chat_history->clear();
@@ -973,10 +956,10 @@ void AIAgent::show_ai_project(const QString& session,QJsonObject added_entry)
                 {
                     auto target = content.full;
                     target = target.mid(target.lastIndexOf(" \u2192 ")+3);
-                    combined["_summary"] = activities.join(", ")+" \u2192 "+target;
-                    combined["_end_time"] = history[end].toObject()["time"];
+                    combined["text"] = activities.join(", ")+" \u2192 "+target;
                 }
-                append(combined,{});
+                append(combined,{},end == index ? QString() :
+                       history[end].toObject()["time"].toString());
                 index = end;
                 continue;
             }
