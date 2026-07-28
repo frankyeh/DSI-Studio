@@ -405,13 +405,15 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
         return ai_reply(socket,{},"ERROR\tinvalid agent: include Codex or Claude in the agent name");
     if(session.isEmpty())
         return ai_reply(socket,{},"ERROR\tmissing session: provide the initiating-chat session ID and reuse it for the entire conversation");
-    if(QUuid(session).toString(QUuid::WithoutBraces).compare(session,Qt::CaseInsensitive))
+    if(QUuid(session).toString(QUuid::WithoutBraces).compare(
+            session,Qt::CaseInsensitive))
         return ai_reply(socket,{},"ERROR\tinvalid session: read DSI_STUDIO_AI_SETUP.md and obtain the correct resumable provider thread ID");
 
     auto index = int(provider);
-    if(index >= 0 && main_window->ui->ai_agent_selector->model()->flags(
-           main_window->ui->ai_agent_selector->model()->index(index,0)).testFlag(
-           Qt::ItemIsEnabled))
+    if(index >= 0 &&
+        main_window->ui->ai_agent_selector->model()->flags(
+                                                       main_window->ui->ai_agent_selector->model()->
+                                                       index(index,0)).testFlag(Qt::ItemIsEnabled))
         main_window->ui->ai_agent_selector->setCurrentIndex(index);
 
     if(!ai_log_positions.contains(session))
@@ -420,63 +422,78 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
         ai_log_positions[session] = console.total_size;
     }
 
-    tipl::progress p;
+    ai_infos[session].update(agent_name,request["cwd"].toString());
+    auto chat = request["chat"].toString().trimmed();
+
+    auto record = [&](QJsonObject activity,bool save_request)
+    {
+        activity.remove("chat");
+        if(save_request)
+            main_window->add_ai_history(
+                session,"request",
+                QString::fromUtf8(QJsonDocument(activity).toJson(
+                    QJsonDocument::Compact)));
+
+        if(type != "LIST" || !chat.isEmpty())
+            ai_log(agent_name+" ["+type+"]: "+chat);
+
+        if(!chat.isEmpty())
+            main_window->add_ai_history(session,"assistant",chat);
+    };
+
     if(type == "CMD")
     {
-        auto msg = QString("[AI REQUEST] ")+type+" from "+agent_name+"@"+session;
-        p = tipl::progress(msg.remove('\r').replace('\n',' ').toStdString());
-    }
+        auto msg = QString("[AI REQUEST] ")+type+" from "+
+                   agent_name+"@"+session;
+        tipl::progress p(
+            msg.remove('\r').replace('\n',' ').toStdString());
 
-    ai_infos[session].update(agent_name,request["cwd"].toString());
-
-
-    auto chat = request["chat"].toString().trimmed();
-    auto activity = request;
-    activity.remove("chat");
-
-    if(type == "CMD")
+        auto activity = request;
         for(auto* window : QApplication::allWidgets())
             if(window->property("remote_id").toString() ==
-               request["window"].toVariant().toString())
+                request["window"].toVariant().toString())
             {
-                QString target_type =
+                auto target_type =
                     qobject_cast<MainWindow*>(window) ? "main" :
-                    qobject_cast<tracking_window*>(window) ? "tracking" :
-                    qobject_cast<view_image*>(window) ? "image" : "unknown";
+                        qobject_cast<tracking_window*>(window) ? "tracking" :
+                        qobject_cast<view_image*>(window) ? "image" : "unknown";
                 activity["_target_type"] = target_type;
-                if(target_type != "main")
+                if(target_type != QString("main"))
                     activity["_target_title"] =
                         QFileInfo(window->windowTitle()).fileName();
                 break;
             }
-    auto json = QString::fromUtf8(QJsonDocument(activity).toJson(
-                                 QJsonDocument::Compact));
 
-    if(type != "LIST" || !chat.isEmpty() || type != "TITLE")
-    {
-        main_window->add_ai_history(session,"request",json);
-        ai_log(agent_name + ":" + chat);
+        record(activity,true);
+        return ai_request_command(socket,session,request);
     }
-    else
-        ai_log(agent_name + " sent " + type + " request ");
 
-    if(!chat.isEmpty())
-        main_window->add_ai_history(session,"assistant",chat);
+    if(type == "LIST")
+    {
+        record(request,false);
+        return ai_request_list(socket,session);
+    }
+
+    if(type == "LOG")
+    {
+        record(request,true);
+        return ai_request_log(socket,session,chat.isEmpty());
+    }
+
+    if(type == "CHAT")
+    {
+        record(request,true);
+        return ai_reply(socket,session,chat.isEmpty() ?"ERROR\tmissing chat" : "OKAY");
+    }
 
     if(type == "TITLE")
-        return ai_reply(socket,session,
-                        main_window->set_ai_title(
-                            session,request["title"].toString()) ?
+    {
+        record(request,false);
+        return ai_reply(socket,session,main_window->set_ai_title(session,request["title"].toString()) ?
                             "OKAY" : "ERROR\tinvalid title");
-    if(type == "LIST")
-        return ai_request_list(socket,session);
-    if(type == "LOG")
-        return ai_request_log(socket,session,chat.isEmpty());
-    if(type == "CHAT")
-        return ai_reply(socket,session,
-                        chat.isEmpty() ? "ERROR\tmissing chat" : "OKAY");
-    if(type == "CMD")
-        return ai_request_command(socket,session,request);
+    }
+
+    record(request,true);
     ai_reply(socket,session,"ERROR\tunknown request");
 }
 
