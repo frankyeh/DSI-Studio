@@ -15,6 +15,7 @@ class QLocalSocket;
 class QMenu;
 class QProcess;
 class QShowEvent;
+class QTimer;
 
 namespace Ui {
 class AIAgent;
@@ -48,6 +49,8 @@ class AIAgent : public QMainWindow
     QSettings settings;
     QString ai_project_dir;
     QMenu* ai_project_menu = nullptr;
+    QTimer* ai_status_timer = nullptr;
+    int active_ai_processes = 0,ai_status_delay = 0,ai_status_dots = 0;
     std::unordered_map<QString,ai_info> ai_infos;
     QMap<QString,quint64> ai_log_positions;
 
@@ -55,6 +58,7 @@ class AIAgent : public QMainWindow
     void add_ai_history(const QString&,const QString&,const QString&);
     bool save_ai_entry(const QString&,const QJsonObject&);
     bool set_ai_title(const QString&,QString);
+    void set_ai_status(QString = {},bool = false);
     void show_ai_project(const QString&);
     void show_ai_project(const QString&,QJsonObject);
     void stop_ai_blink();

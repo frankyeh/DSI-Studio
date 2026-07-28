@@ -323,18 +323,24 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
                 </property>
                </widget>
               </item>
-              <item row="1" column="1">
-               <spacer name="ai_composer_status_spacer">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
+              <item row="1" column="0" colspan="3">
+               <widget class="QLabel" name="ai_status">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
                 </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
+                <property name="styleSheet">
+                 <string notr="true">color: #5f6368;</string>
                 </property>
-               </spacer>
+                <property name="text">
+                 <string>Nothing is running right now.</string>
+                </property>
+                <property name="textInteractionFlags">
+                 <set>Qt::TextSelectableByMouse</set>
+                </property>
+               </widget>
               </item>
               <item row="1" column="3">
                <widget class="QComboBox" name="ai_agent_selector">

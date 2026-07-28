@@ -17,7 +17,6 @@
 #include <QLocalSocket>
 #include <QMessageBox>
 #include <QMenu>
-#include <QMovie>
 #include <QNetworkAccessManager>
 #include <QNetworkProxy>
 #include <QNetworkReply>
@@ -120,6 +119,23 @@ AIAgent::AIAgent(MainWindow* parent):
     QMainWindow(parent),main_window(*parent),ui(new Ui::AIAgent)
 {
     ui->setupUi(this);
+    ai_status_timer = new QTimer(this);
+    ai_status_timer->setInterval(500);
+    connect(ai_status_timer,&QTimer::timeout,this,[this]
+    {
+        if(ai_status_delay)
+        {
+            if(!--ai_status_delay)
+                set_ai_status();
+            return;
+        }
+        ai_status_dots = ai_status_dots%3+1;
+        ui->ai_status->setText(
+            "Waiting for agent response"+QString(ai_status_dots,'.'));
+        ui->ai_status->repaint();
+    });
+    set_ai_status();
+
     auto* agents = qobject_cast<QStandardItemModel*>(
                        ui->ai_agent_selector->model());
     auto set_agent = [&](ai_provider provider,const QString& path,
@@ -362,8 +378,33 @@ void AIAgent::showEvent(QShowEvent* event)
     stop_ai_blink();
 }
 
+void AIAgent::set_ai_status(QString status,bool temporary)
+{
+    ai_status_timer->stop();
+    ai_status_delay = 0;
+    if(status.isEmpty())
+    {
+        if(active_ai_processes)
+        {
+            ai_status_dots = 1;
+            status = "Waiting for agent response.";
+            ai_status_timer->start();
+        }
+        else
+            status = "Nothing is running right now.";
+    }
+    ui->ai_status->setText(status);
+    ui->ai_status->repaint();
+    if(temporary)
+    {
+        ai_status_delay = 4;
+        ai_status_timer->start();
+    }
+}
+
 void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
 {
+    set_ai_status("Received agent request.");
     ai_log("received: "+QString::fromUtf8(data));
     static const QRegularExpression ansi_escape(
         QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
@@ -375,6 +416,8 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
             add_ai_history(session,"assistant",chat);
         auto written = socket->write(reply);
         ai_log(QString("DSI Studio replied " + info.agent_name + "@%1").arg(session));
+        set_ai_status(written == reply.size() ?
+                      "Response sent." : "Response could not be sent.",true);
         if(written == reply.size())
             info.prompts = {};
     };
@@ -416,6 +459,8 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
     auto agent_name = request["agent"].toString().trimmed();
     auto type = request["request"].toString().toUpper();
     auto session = request["session"].toString().trimmed();
+    if(!type.isEmpty())
+        set_ai_status("Received "+type+" request.");
 
     // Validate request
     if(agent_name.isEmpty())
@@ -547,8 +592,9 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
                     cmd.push_back(value.toString().toUtf8().toStdString());
             }
 
-            target->setProperty("command",cmd.empty() ?
-                                QString() : QString::fromStdString(cmd[0]));
+            auto command_name = cmd.empty() ?
+                                QString() : QString::fromStdString(cmd[0]);
+            target->setProperty("command",command_name);
             bool okay = false;
             if(error.isEmpty())
             {
@@ -556,6 +602,7 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
                     error = "empty command";
                 else
                 {
+                    set_ai_status("Running command: "+command_name);
                     {
                         std::lock_guard<std::mutex> lock(console.edit_buf);
                         console.capture = &output;
@@ -818,30 +865,6 @@ void AIAgent::show_ai_project(const QString& session,QJsonObject added_entry)
 
     if(current != item)
         return;
-
-    // show running gif
-    {
-        auto* running =
-            ui->ai_chat_composer->findChild<QLabel*>("ai_running");
-        if(!running)
-        {
-            running = new QLabel(ui->ai_chat_composer);
-            running->setObjectName("ai_running");
-            running->setFixedSize(24,24);
-
-            auto* movie = new QMovie(
-                ":/icons/icons/ajax-loader.gif",{},running);
-            movie->setScaledSize(QSize(20,20));
-            running->setMovie(movie);
-            ui->ai_chat_composer_layout->addWidget(running,1,2);
-        }
-
-        running->setVisible(info.processes);
-        if(info.processes)
-            running->movie()->start();
-        else
-            running->movie()->stop();
-    }
 
     struct request_text{QString full,compact;};
     auto request_content = [](const QJsonObject& entry)
@@ -1156,11 +1179,7 @@ void AIAgent::on_ai_new_chat_clicked()
     ui->ai_chat_history->clear();
     ui->ai_chat_input->clear();
     ui->ai_chat_input->setFocus();
-    if(auto* running = ui->ai_chat_composer->findChild<QLabel*>("ai_running"))
-    {
-        running->hide();
-        running->movie()->stop();
-    }
+    set_ai_status();
 }
 
 void AIAgent::on_ai_quick_settings_clicked()
@@ -1233,6 +1252,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
         {
             if(input == ai_input::Pending && !session.isEmpty())
                 ai_infos[session].prompts.append(text);
+            set_ai_status("AI agent is unavailable.",true);
             QMessageBox::warning(
                 this,"AI Agent","AI agent is not installed or cannot be located.");
             return launch;
@@ -1276,6 +1296,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
             launch.name += "/Ollama("+launch.model_url.host()+")";
             if(!configured)
             {
+                set_ai_status("Ollama is not configured.",true);
                 QMessageBox::warning(
                     this,"AI Agent","Set the Ollama host/IP in AI Settings first.");
                 return launch;
@@ -1318,11 +1339,13 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
 
     connect(process,&QProcess::started,this,[=]
     {
+        ++active_ai_processes;
         process->closeWriteChannel();
         auto session = process->objectName();
         ai_log("connecting to "+ launch.name + "@" +
             (session.isEmpty() ? QString("new") : session)+
             " pid:"+QString::number(process->processId()));
+        set_ai_status();
         if(!session.isEmpty())
             show_ai_project(session);
     });
@@ -1335,6 +1358,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
 
         auto session = process->objectName();
         ai_log(launch.name + " error:"+process->errorString());
+        set_ai_status("Could not start "+launch.name+".",true);
 
         if(session.isEmpty())
         {
@@ -1360,6 +1384,8 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
             QOverload<int,QProcess::ExitStatus>::of(&QProcess::finished),
             this,[=](int exit_code,QProcess::ExitStatus exit_status)
     {
+        active_ai_processes = std::max(0,active_ai_processes-1);
+        set_ai_status(launch.name+" finished.",true);
         auto session = process->objectName();
         ai_log(launch.name + " finished session ");
         auto error = (process->property("stderr").toByteArray()+
@@ -1455,6 +1481,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
 void AIAgent::run_ai(const ai_launch& launch,QStringList args)
 {
     ai_log("start " + launch.executable + " args: " + args.join(" ").remove("\n"));
+    set_ai_status("Starting "+launch.name+"...");
     launch.process->start(launch.executable,args);
 }
 void AIAgent::start_claude(QString session,const QString& text,ai_input input)
@@ -1530,6 +1557,7 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
                 info.set_provider(ai_provider::Codex,launch.name);
                 info.set_process(process);
                 add_ai_history(session,"user",text);
+                set_ai_status("Agent session ready.",true);
                 for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
                     button->setEnabled(true);
             }
@@ -1575,6 +1603,7 @@ void AIAgent::start_ai(QString session,const QString& text,ai_input input)
     case ai_provider::Claude:
         return start_claude(session,text,input);
     default:
+        set_ai_status("Unsupported AI provider.",true);
         QMessageBox::warning(this,"AI Agent","Unsupported AI provider.");
     }
 }
@@ -1594,6 +1623,7 @@ void AIAgent::on_ai_send_message_clicked()
             info.prompts.append(text);
             add_ai_history(session,"user",text);
             ui->ai_chat_input->clear();
+            set_ai_status("Message queued for the AI agent.",true);
             return;
         }
     }
