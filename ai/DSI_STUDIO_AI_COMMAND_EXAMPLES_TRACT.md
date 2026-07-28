@@ -11,8 +11,8 @@ This file contains tract and automatic-tracking commands confirmed in the curren
 | `run_tracking` | `["run_tracking","Whole Brain"]` | Start asynchronous tracking with the current tracking parameters and checked region settings; `command[1]` is the mandatory new bundle name. |
 | `run_tracking` | `["run_tracking","CST","0:3&1:0"]` | Start tracking with explicit region settings: region 0 as Seed and region 1 as ROI. The third element uses `index:type` entries separated by `&`. See **ROI settings syntax** and footnote 2. |
 | `list_auto_tract` | `["list_auto_tract"]` | List valid automatic tract names. |
-| `run_auto_track` | `["run_auto_track","Corticospinal Tract"]` | Run automatic tracking for a discovered tract name. |
-| `run_auto_track` | `["run_auto_track","Corticospinal Tract","0:0&1:1"]` | Run automatic tracking while also applying explicit region 0 as ROI and region 1 as ROA. See **ROI settings syntax** and footnote 2. |
+| `run_auto_track` | `["run_auto_track","ProjectionBrainstem_CorticospinalTractL"]` | Run automatic tracking using an exact name from `list_auto_tract`. Atlas labels have underscore-separated hierarchical prefixes such as `Association_*`, `ProjectionBrainstem_*`, and `Commissure_*`; never guess or invent names. |
+| `run_auto_track` | `["run_auto_track","ProjectionBrainstem_CorticospinalTractL","0:0&1:1"]` | Run automatic tracking while also applying explicit region 0 as ROI and region 1 as ROA. Use an exact name from `list_auto_tract`; see **ROI settings syntax** and footnote 2. |
 | `show_only_tracts` | `["show_only_tracts","0&2&5"]` | Show only listed `&`-separated tract indices and hide all others. |
 | `enable_auto_tract` | `["enable_auto_tract"]` | Load the symmetric tract atlas and enable automatic-tract controls. |
 | `open_tract` | `["open_tract","C:/output/cst.tt.gz"]` | Open one native-space tract file and show each loaded bundle. Open multiple files by sending one command per path. |
@@ -45,7 +45,7 @@ This file contains tract and automatic-tracking commands confirmed in the curren
 | `delete_branch` | `["delete_branch"]` | Delete branch-like portions from every checked bundle. |
 | `undo_tract` | `["undo_tract"]` | Undo the latest supported tract edit in every checked bundle. |
 | `redo_tract` | `["redo_tract"]` | Redo the latest supported tract edit in every checked bundle. |
-| `trim_tract` | `["trim_tract"]` | Trim every checked tract bundle. |
+| `trim_tract` | `["trim_tract"]` | Apply one TIP iteration to every checked bundle. A dense bundle of about 10,000 tracts usually benefits from 2–3 total rounds; bundles below 1,000 tracts are generally unsuitable for TIP. AutoTrack already applies its configured `tip_iteration`, so do not add manual rounds without checking the result. |
 | `cut_tract_end_portion` | `["cut_tract_end_portion","0"]` | Apply `cut_end_portion(0.25,0.75)` to tract bundle 0. |
 | `cut_tract_lps_end` | `["cut_tract_lps_end","0"]` | Apply `cut_end_portion(0.25,1.0)` to tract bundle 0. |
 | `cut_tract_rai_end` | `["cut_tract_rai_end","0"]` | Apply `cut_end_portion(0.0,0.75)` to tract bundle 0. |
