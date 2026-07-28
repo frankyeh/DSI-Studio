@@ -166,6 +166,8 @@ Invoke-Dsi @{
 ```
 
 Every command element must be a string. Use `'7'`, not numeric `7`.
+Only `CMD` and `CHAT` accept `chat`; keep it on `CMD` when reporting the command
+already being sent instead of making a separate `CHAT` request.
 
 ### Send a final or standalone message
 
