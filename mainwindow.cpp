@@ -194,7 +194,7 @@ MainWindow::MainWindow(QWidget *parent) :
         auto update_agent_name = [this]
         {
             auto index = ui->ai_agent_selector->currentIndex();
-            auto name = index == int(ai_provider::Codex) ? "Codex" : "Claude";
+            QString name = index == int(ai_provider::Codex) ? "Codex" : "Claude";
             if(ui->ai_model_selector->currentData().toJsonObject()["provider"].toInt() ==
                 int(ai_model_provider::Ollama))
             {
