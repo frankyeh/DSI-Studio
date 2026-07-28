@@ -2,15 +2,15 @@
 
 Use these commands with a numeric **image-window** ID returned by top-level `LIST`. Every command name and parameter must remain a quoted JSON string.
 
-The image-window dispatcher accepts only a command name and at most one string parameter. The examples below were checked against `view_image::command()`, `variant_image::command()`, and TIPL `command()` source. Blank examples remain intentionally unresolved for a later source pass.
+The image-window dispatcher accepts only a command name and at most one string parameter. The examples below were checked against `view_image::command()`, `variant_image::command()`, and TIPL `command()` source.
 
 | Command | Common example | Important behavior |
 |---|---|---|
 | `change_type` | `["change_type","3"]` | Change voxel type: `0`=uint8, `1`=uint16, `2`=uint32, `3`=float32. |
 | `bias_field_correction` | `["bias_field_correction"]` | Iteratively estimate and remove the bias field using the positive-value mask. |
-| `brain_extraction` |  | Requires an exact downloadable model identifier; verify model naming separately. |
-| `segmentation` |  | Requires an exact downloadable model identifier and replaces the image with labels. |
-| `deface` |  | Requires an exact downloadable model identifier; verify model naming separately. |
+| `brain_extraction` | `["brain_extraction","<model-ID>"]` | Run the model whose `.nz` filename stem exactly matches `<model-ID>`, then multiply the image by its foreground probability. See footnote 1. |
+| `segmentation` | `["segmentation","<model-ID>"]` | Run the exact model ID and replace the current image with its label output; the image becomes uint8 label data. See footnote 1. |
+| `deface` | `["deface","<model-ID>"]` | Run the exact model ID and suppress voxels in the generated facial mask while preserving nearby brain tissue. See footnote 1. |
 | `rotate_to_image` | `["rotate_to_image","C:/data/template.nii.gz"]` | Rigidly register the current image to the supplied NIfTI using mutual information, then resample it into target space. |
 | `warp_to_image` | `["warp_to_image","C:/data/template.nii.gz"]` | Affine-register using correlation, continue with nonlinear registration, then resample the current image into target space. |
 | `apply_to_image` | `["apply_to_image","C:/data/other.nii.gz"]` | Load another image and apply the mapping created by the preceding `rotate_to_image` or `warp_to_image`; fails when no mapping exists. |
@@ -83,4 +83,7 @@ The image-window dispatcher accepts only a command name and at most one string p
 - `rotate_to_image` and `warp_to_image` replace the current image with its registered/resampled result and retain the mapping for a later `apply_to_image` command.
 - Commands ending in `_image` or `_label` require an existing file and map it into the current image space using linear interpolation for images or majority interpolation for labels.
 - `save` can show a modal prompt when the image window was opened with additional batch files. Avoid unattended batch saves unless this workflow is expected.
-- Only `brain_extraction`, `segmentation`, and `deface` remain blank because their exact downloadable model identifiers are maintained outside this source file.
+
+## Footnotes
+
+1. The model catalog is loaded at startup from the packaged `unet/README.md`, not from this repository. Each image-window model action stores `std::filesystem::path(model_url).stem()` as its command argument, and `download_unet_model()` requires an exact match to the downloaded `.nz` filename stem. A tracking window's `["list_unet"]` reports this value in its `model` column. The image window currently has no equivalent model-list command, so discover the ID from `list_unet` when a tracking window is available or from the packaged model catalog.
