@@ -89,6 +89,27 @@ Use these with the standard top-level `CMD` request. Every command name and para
 | `show_region_statistics` | `["show_region_statistics"]` | Computes checked-region statistics and opens the result dialog. Because it is modal, prefer `save_region_statistics` for unattended agent operation. |
 | `show_t2r` | `["show_t2r"]` | Computes tract-to-region connectivity and opens the result dialog. Because it is modal, prefer `save_t2r` for unattended agent operation. |
 
+## Sixteen more source-verified tract examples
+
+| Command | Common example | Important behavior |
+|---|---|---|
+| `copy_tract` | `["copy_tract","0"]` | Duplicates one tract bundle as `<original-name>_copy`. Omit the index to copy the current tract. |
+| `delete_tract` | `["delete_tract","0"]` | Permanently removes one tract bundle row. Omit the index to delete the current tract; confirm destructive actions first. |
+| `delete_all_tracts` | `["delete_all_tracts"]` | Permanently removes every tract model, renderer, and tracking-thread entry. Confirm this destructive action first. |
+| `save_tract_color` | `["save_tract_color","C:/output/cst_color.txt","0"]` | Saves per-trajectory colors for one tract bundle. The optional third element is the tract index. |
+| `load_tract_color` | `["load_tract_color","C:/output/cst_color.txt","0"]` | Loads per-trajectory colors for one bundle and switches `tract_color_style` to manually assigned colors. |
+| `load_tract_values` | `["load_tract_values","C:/output/cst_values.txt","0"]` | Loads one floating-point value per visible trajectory. The value count must exactly match the bundle's visible tract count. |
+| `save_cluster_color` | `["save_cluster_color","C:/output/bundle_colors.txt"]` | Writes one `R G B` line for each checked bundle, in tract-table order. Empty bundles write `0 0 0`. |
+| `load_cluster_color` | `["load_cluster_color","C:/output/bundle_colors.txt"]` | Assigns one `R G B` line to each checked bundle, in tract-table order, and switches to manually assigned colors. |
+| `load_cluster_values` | `["load_cluster_values","C:/output/bundle_values.txt"]` | Loads one floating-point value per checked bundle. The number of values must exactly match the checked-bundle count. |
+| `cluster_tract_by_km` | `["cluster_tract_by_km","0","10 0"]` | Replaces tract `0` with k-means clusters. The third element supplies `maximum-cluster-count detail`; k-means ignores the detail value. |
+| `cluster_tract_by_em` | `["cluster_tract_by_em","0","10 0"]` | Replaces tract `0` with expectation-maximization clusters. The third element supplies `maximum-cluster-count detail`; EM ignores the detail value. |
+| `cluster_tract_by_hy` | `["cluster_tract_by_hy","0","50 1.0"]` | Replaces tract `0` with hierarchical clusters using maximum group count `50` and detail `1.0` mm; an additional `others` bundle is created with its trajectories marked deleted. |
+| `delete_repeated_tract` | `["delete_repeated_tract","1.0"]` | Deletes repeated trajectories using a distance threshold in voxels. Supplying the threshold avoids the modal input dialog. |
+| `resample_tract` | `["resample_tract","0.5"]` | Resamples trajectories at a new step size measured in voxels. Supplying the value avoids the modal input dialog. |
+| `delete_tract_by_length` | `["delete_tract_by_length","20"]` | Deletes trajectories shorter than the supplied threshold in millimeters. Supplying the threshold avoids the modal input dialog. |
+| `reconnect_tract` | `["reconnect_tract","0","4 30"]` | Reconnects tract `0` using maximum bridging distance `4` voxels and angle `30` degrees. Distance must be greater than `2` and angle must be positive. |
+
 ## Brief `chat` with `CMD`
 
 ```json
