@@ -41,7 +41,7 @@ struct ai_info{
 };
 extern std::unordered_map<QString,ai_info> ai_infos;
 extern QMap<QString,quint64> ai_log_positions;
-std::string ai_log(QString);
+void ai_log(QString);
 
 class MainWindow : public QMainWindow
 {

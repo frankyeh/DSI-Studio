@@ -120,10 +120,10 @@ QByteArray ai_info::prepare_reply(QByteArray reply,QJsonArray* results) const
     return pos < 0 ? reply.append('\n').append(payload) :
                      reply.insert(pos+1,payload);
 }
-std::string ai_log(QString text)
+
+void ai_log(QString text)
 {
-    return ("[AI AGENT] "+text.remove('\r').replace(
-                '\n',"\n[AI AGENT] ")).toStdString();
+    tipl::out() << ("[AI AGENT] "+text.remove('\r').replace('\n',"\n[AI AGENT] ")).toStdString();
 }
 
 QRegularExpression ansi_escape(QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
@@ -166,8 +166,7 @@ void ai_reply(QLocalSocket* socket,const QString& session,
     auto& info = ai_infos[session];
     reply = info.prepare_reply(reply,results);
     auto written = socket->write(reply);
-    tipl::out() << ai_log(QString("local reply session=%1 bytes=%2 queued=%3")
-                          .arg(session).arg(reply.size()).arg(written));
+    ai_log(QString("DSI Studio replied " + info.agent_name + "@%1").arg(session));
     if(written == reply.size())
         info.prompts = {};
 }
@@ -434,10 +433,9 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     auto chat = request["chat"].toString().trimmed();
     auto activity = request;
     activity.remove("chat");
-    auto json = QString::fromUtf8(QJsonDocument(activity).toJson(
-                                      QJsonDocument::Compact));
+    auto json = QString::fromUtf8(QJsonDocument(activity).toJson(QJsonDocument::Compact));
 
-    tipl::out() << ai_log(json);
+    ai_log(json);
 
     if(type == "CMD")
         for(auto* window : QApplication::allWidgets())
@@ -885,9 +883,7 @@ void MainWindow::refresh_ollama_models()
                          QJsonDocument::fromJson(reply->readAll()).
                          object()["models"].toArray())
                         models << value.toObject()["name"].toString();
-
-                tipl::out() << ai_log("Ollama "+url.toString()+": "+
-                                      (okay ? "connected" : reply->errorString()));
+                ai_log("Ollama "+url.toString()+" "+ (okay ? "connected" : reply->errorString()));
                 set_models(okay ? models : QStringList());
                 reply->deleteLater();
                 network->deleteLater();
@@ -1108,7 +1104,7 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
     {
         process->closeWriteChannel();
         auto session = process->objectName();
-        tipl::out() << ai_log("started session:"+
+        ai_log("Connecting to "+ launch.name + " " +
             (session.isEmpty() ? QString("new") : session)+
             " pid:"+QString::number(process->processId()));
         if(!session.isEmpty())
@@ -1122,8 +1118,7 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
             return;
 
         auto session = process->objectName();
-        tipl::out() << ai_log("start failed session:"+session+
-                              " error:"+process->errorString());
+        ai_log(launch.name + " error:"+process->errorString());
 
         if(session.isEmpty())
         {
@@ -1151,17 +1146,13 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
             this,[=](int exit_code,QProcess::ExitStatus exit_status)
     {
         auto session = process->objectName();
-        tipl::out() << ai_log("finished session:"+session+
-            " exit:"+QString::number(exit_code)+" crashed:"+
-            QString::number(exit_status == QProcess::CrashExit));
+        ai_log(launch.name + " finished session ");
         auto error = (process->property("stderr").toByteArray()+
                       process->readAllStandardError()).trimmed();
         auto output = (process->property("stdout").toByteArray()+
                        process->readAllStandardOutput()).trimmed();
         if(exit_code || exit_status == QProcess::CrashExit)
-            tipl::out() << ai_log("process failed session:"+session+
-                " exit:"+QString::number(exit_code)+" error:"+
-                QString::fromUtf8(error));
+            ai_log("error code:"+QString::number(exit_code)+" "+QString::fromUtf8(error));
 
         if(session.isEmpty())
         {
@@ -1190,8 +1181,7 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
                 add_ai_history(session,"assistant",QString::fromUtf8(output));
 
             if(exit_code || exit_status == QProcess::CrashExit)
-                add_ai_history(session,"activity","AI agent failed with exit code "+
-                        QString::number(exit_code)+" "+QString::fromUtf8(error));
+                add_ai_history(session,"activity","AI agent failed.");
             else if(no_reply && output.isEmpty())
                 add_ai_history(session,"activity","No reply from AI agent.");
             else
@@ -1238,7 +1228,7 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
 
 void MainWindow::run_ai(const ai_launch& launch,QStringList args)
 {
-    tipl::out() << ai_log("start " + launch.executable + " with args: " + args.join(" ").remove("\n"));
+    ai_log("start " + launch.executable + " args: " + args.join(" ").remove("\n"));
     launch.process->start(launch.executable,args);
 
 }
@@ -1327,9 +1317,7 @@ void MainWindow::start_codex(QString session,const QString& text,bool add_histor
                 for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
                     button->setEnabled(true);
             }
-            tipl::out() << ai_log("session agent:"+
-                                  ai_infos[session].agent_name+
-                                  " session:"+session);
+            ai_log("start " + ai_infos[session].agent_name + " session:"+session);
         }
         process->setProperty("stdout_buffer",buffer);
     });

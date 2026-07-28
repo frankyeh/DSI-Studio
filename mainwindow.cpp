@@ -133,11 +133,9 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->ai_agent_selector->setItemData(index,path,Qt::UserRole+1);
         ui->ai_agent_selector->setItemData(index,models);
         ui->ai_agent_selector->setItemData(index,QVariant::fromValue(profiles),Qt::UserRole+2);
-        tipl::out() << ai_log(path.isEmpty() ? agent+" not found" :
-                              agent+": "+path);
+        ai_log(path.isEmpty() ? agent+" not found" : agent+": "+path);
         if(!path.isEmpty())
-            tipl::out() << ai_log(agent+" models: "+
-                                  (models.isEmpty() ? "none detected" : models.join(", ")));
+            ai_log(agent+" models: "+(models.isEmpty() ? "none detected" : models.join(", ")));
     };
     QString codex_path,claude_path;
     {
