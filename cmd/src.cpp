@@ -3,6 +3,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonValue>
+#include <atomic>
 #include <iostream>
 #include <filesystem>
 #include <iterator>
@@ -15,7 +16,7 @@ bool load_bval_bvec(size_t dwi_size,
                     const std::filesystem::path& bvec_file_name,std::vector<double>& bvec_,bool flip_by = true);
 bool parse_dwi(const std::vector<std::filesystem::path>& file_list,
                     std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg);
-void dicom2src_and_nii(const std::filesystem::path& dir,bool overwrite);
+bool dicom2src_and_nii(const std::filesystem::path& dir,bool overwrite);
 bool find_readme(const std::filesystem::path& file,std::filesystem::path& intro_file_name)
 {
     auto path = file.parent_path();
@@ -246,43 +247,55 @@ bool nii2src(const std::vector<std::filesystem::path>& dwi_nii_files,
              const std::filesystem::path& output_dir,
              bool is_bids,
              bool overwrite,
-             bool topup_eddy)
+             bool topup_eddy,
+             const char* progress_name = "convert nifti to src files")
 {
-    tipl::progress prog("convert nifti to src files");
-    for(size_t i = 0;prog(i,dwi_nii_files.size());++i)
+    tipl::progress prog(progress_name);
+    if(!is_bids)
     {
-        if(is_bids)
+        std::atomic_size_t done = 0;
+        std::atomic_bool result = true;
+        tipl::par_for(dwi_nii_files.size(),[&](size_t i)
         {
-            std::vector<std::filesystem::path> dwi_list{dwi_nii_files[i]};
-            while(i+1 < dwi_nii_files.size() &&
-                   dwi_nii_files[i+1].parent_path() == dwi_list.front().parent_path())
-                dwi_list.push_back(dwi_nii_files[++i]);
-
-            std::string error_msg;
-            if(!handle_bids_folder(dwi_list,output_dir,overwrite,topup_eddy,error_msg))
+            if(!prog(done.fetch_add(1),dwi_nii_files.size()))
             {
-                tipl::error() << error_msg;
-                return false;
+                result = false;
+                return;
             }
-        }
-        else
-        {
             auto src_name = tipl::remove_all_suffix(dwi_nii_files[i]);
             if(!output_dir.empty())
-                src_name = output_dir/tipl::remove_all_suffix(dwi_nii_files[i].filename());
+                src_name = output_dir/tipl::remove_all_suffix(
+                               dwi_nii_files[i].filename());
             src_name += ".sz";
             if(!overwrite && std::filesystem::exists(src_name))
-                tipl::out() << "skipping " << src_name << " already exists";
-            else
             {
-                src_data src;
-                if(!src.load_from_file(std::vector<std::filesystem::path>({dwi_nii_files[i]}),true) ||
-                   !src.save_to_file(src_name))
-                {
-                    tipl::error() << src.error_msg;
-                    return false;
-                }
+                tipl::out() << "skipping " << src_name << " already exists";
+                return;
             }
+            src_data src;
+            if(!src.load_from_file({dwi_nii_files[i]},true) ||
+               !src.save_to_file(src_name))
+            {
+                tipl::warning() << src.error_msg;
+                result = false;
+            }
+        });
+        return result;
+    }
+
+    for(size_t i = 0;prog(i,dwi_nii_files.size());++i)
+    {
+        std::vector<std::filesystem::path> dwi_list{dwi_nii_files[i]};
+        while(i+1 < dwi_nii_files.size() &&
+              dwi_nii_files[i+1].parent_path() == dwi_list.front().parent_path())
+            dwi_list.push_back(dwi_nii_files[++i]);
+
+        std::string error_msg;
+        if(!handle_bids_folder(
+                dwi_list,output_dir,overwrite,topup_eddy,error_msg))
+        {
+            tipl::error() << error_msg;
+            return false;
         }
     }
     return true;
@@ -339,8 +352,7 @@ int src(tipl::program_option<tipl::out>& po)
         }
 
         tipl::out() << "cannot find NIFTI files...try looking for DICOM files in directory " << source.c_str() << std::endl;
-        dicom2src_and_nii(source,po.get("overwrite",0));
-        return 0;
+        return dicom2src_and_nii(source,po.get("overwrite",0)) ? 0 : 1;
     }
     else
         file_list = po.get_files("source");

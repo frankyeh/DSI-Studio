@@ -59,8 +59,6 @@ private:
     FiberDataHub* fiber_data_hub = nullptr;
     void login(void);
 private slots:
-    void on_RenameDICOMDir_clicked();
-    void on_RenameDICOM_clicked();
     void openRecentFibFile();
     void openRecentSrcFile();
     void open_fib_at(int,int);
@@ -68,12 +66,7 @@ private slots:
     void on_workDir_currentTextChanged(const QString &arg1);
 
     void on_linear_reg_clicked();
-    void on_parse_network_measures_clicked();
-    void on_nii2src_bids_clicked();
-    void on_nii2src_sf_clicked();
-    void on_dicom2nii_clicked();
     void on_styles_activated(int index);
-    void on_clear_settings_clicked();
     void on_recentFib_cellClicked(int row, int column);
     void on_open_selected_fib_clicked();
     void on_template_list_itemDoubleClicked(QListWidgetItem *item);

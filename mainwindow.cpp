@@ -777,21 +777,6 @@ void MainWindow::open_DWI(QStringList filenames)
 }
 
 std::filesystem::path rename_dicom(const std::filesystem::path& file_name,std::filesystem::path output);
-void MainWindow::on_RenameDICOM_clicked()
-{
-    QStringList filenames = QFileDialog::getOpenFileNames(
-                                this,
-                                "Open DICOM files",
-                                ui->workDir->currentText(),
-                                "All files (*)" );
-    if ( filenames.isEmpty() )
-        return;
-    add_work_dir(QFileInfo(filenames[0]).absolutePath());
-    tipl::progress prog("Rename DICOM Files");
-    for (unsigned int index = 0;prog(index,filenames.size());++index)
-        rename_dicom(tipl::qt::to_path(filenames[index]),tipl::qt::to_path(filenames[index]).parent_path());
-}
-
 
 void MainWindow::add_work_dir(QString dir)
 {
@@ -815,17 +800,6 @@ QString MainWindow::work_dir() const
 
 std::vector<std::filesystem::path> rename_dicom_at_dir(std::filesystem::path path,
                                                        std::filesystem::path output);
-void MainWindow::on_RenameDICOMDir_clicked()
-{
-    QString path =
-        QFileDialog::getExistingDirectory(this,"Browse Directory",
-                                          ui->workDir->currentText());
-    if ( path.isEmpty() )
-        return;
-    add_work_dir(path);
-    rename_dicom_at_dir(tipl::qt::to_path(path),tipl::qt::to_path(path));
-    QMessageBox::information(this,QApplication::applicationName(),"renaming complete");
-}
 
 bool parse_dwi(const std::vector<std::filesystem::path>& file_list,
                std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg);
@@ -891,89 +865,6 @@ std::string quality_check_src_files(const std::vector<std::filesystem::path>& fi
 std::string quality_check_fib_files(const std::vector<std::filesystem::path>& file_list);
 std::string quality_check_nii_files(const std::vector<std::filesystem::path>& file_list);
 
-void MainWindow::on_parse_network_measures_clicked()
-{
-    auto files = QFileDialog::getOpenFileNames(
-        this,"Open Network Measures",ui->workDir->currentText(),
-        "Text files (*.txt);;All files (*)");
-    if(files.isEmpty())
-        return;
-
-    QStringList fields;
-    QMap<QString,QStringList> values;
-
-    auto add = [&](const QString& field,const QString& value,int column)
-    {
-        if(!values.contains(field))
-        {
-            QStringList row;
-            row.fill({},files.size());
-            values[field] = row;
-            fields << field;
-        }
-        values[field][column] = value;
-    };
-
-    for(int column = 0;column < files.size();++column)
-    {
-        std::ifstream in(tipl::qt::to_path(files[column]));
-        std::vector<std::string> nodes;
-        std::string name,value;
-
-        while(in >> name)
-        {
-            if(name == "network_measures")
-            {
-                std::string line;
-                std::getline(in,line);
-                std::istringstream stream(line);
-                nodes.assign(std::istream_iterator<std::string>(stream),{});
-                break;
-            }
-            if(!(in >> value))
-                break;
-            add(QString::fromStdString(name),
-                QString::fromStdString(value),column);
-        }
-
-        std::string line;
-        while(std::getline(in,line))
-        {
-            std::istringstream stream(line);
-            if(!(stream >> name) || name.empty() || name[0] == '#')
-                continue;
-
-            for(const auto& node : nodes)
-            {
-                value.clear();
-                stream >> value;
-                add(QString::fromStdString(name+"_"+node),
-                    QString::fromStdString(value),column);
-            }
-        }
-    }
-
-    auto output = files[0]+".collected.txt";
-    QFile file(output);
-    if(!file.open(QIODevice::WriteOnly|QIODevice::Text))
-    {
-        QMessageBox::critical(this,"ERROR","cannot write "+output);
-        return;
-    }
-
-    QTextStream out(&file);
-    out << "Field";
-    for(const auto& input : files)
-        out << '\t' << QFileInfo(input).baseName();
-    out << '\n';
-
-    for(const auto& field : fields)
-        out << field << '\t' << values[field].join('\t') << '\n';
-
-    QMessageBox::information(
-        this,QApplication::applicationName(),"File saved to "+output);
-}
-
 bool get_pe_dir(const std::string& nii_name,size_t& pe_dir,bool& is_neg)
 {
     QFile file(QString::fromUtf8(
@@ -998,91 +889,9 @@ bool nii2src(const std::vector<std::filesystem::path>& dwi_nii_files,
              const std::filesystem::path& output_dir,
              bool is_bids,
              bool overwrite,
-             bool topup_eddy);
-void MainWindow::on_nii2src_bids_clicked()
-{
-    QString dir = QFileDialog::getExistingDirectory(
-                                    this,
-                                    "Open BIDS Folder",
-                                    ui->workDir->currentText());
-    if(dir.isEmpty())
-        return;
-    QString output_dir = QFileDialog::getExistingDirectory(
-                                    this,
-                                    "Please Specify the Output Folder",
-                                    QDir(dir).path()+"/derivatives");
-    if(output_dir.isEmpty())
-        return;
-    add_work_dir(dir);
-    auto dwi_nii_files = search_dwi_nii_bids(tipl::qt::to_path(dir));
-    if(dwi_nii_files.empty())
-    {
-        QMessageBox::critical(this,"ERROR","cannot find bids nifti data");
-        return;
-    }
-    std::sort(dwi_nii_files.begin(),dwi_nii_files.end());
-    nii2src(dwi_nii_files,tipl::qt::to_path(output_dir),true,true,false);
-}
+             bool topup_eddy,
+             const char* progress_name = "convert nifti to src files");
 void search_dwi_nii(const std::filesystem::path& dir,std::vector<std::filesystem::path>& dwi_nii_files);
-void MainWindow::on_nii2src_sf_clicked()
-{
-    QString dir = QFileDialog::getExistingDirectory(
-        this,"Open directory",ui->workDir->currentText());
-    if(dir.isEmpty())
-        return;
-    add_work_dir(dir);
-
-    std::vector<std::filesystem::path> files;
-    search_dwi_nii(tipl::qt::to_path(dir),files);
-    if(files.empty())
-    {
-        QMessageBox::critical(this,"ERROR","cannot find nifti data");
-        return;
-    }
-
-    std::vector<std::pair<std::filesystem::path,std::filesystem::path>> jobs;
-    bool yes_to_all = false,no_to_all = false;
-    auto output_dir = tipl::qt::to_path(dir);
-
-    for(const auto& nii : files)
-    {
-        auto src = output_dir/tipl::remove_all_suffix(nii.filename());
-        src += ".sz";
-
-        if(std::filesystem::exists(src) && !yes_to_all)
-        {
-            if(no_to_all)
-                continue;
-            auto result = QMessageBox::information(
-                this,QApplication::applicationName(),
-                QString("%1 exists, overwrite?").
-                arg(QString::fromUtf8(src.filename().u8string().c_str())),
-                QMessageBox::Yes|QMessageBox::YesToAll|
-                    QMessageBox::No|QMessageBox::NoToAll|QMessageBox::Cancel);
-            if(result == QMessageBox::Cancel)
-                return;
-            if(result == QMessageBox::YesToAll)
-                yes_to_all = true;
-            if(result == QMessageBox::NoToAll)
-                no_to_all = true;
-            if(result == QMessageBox::No || result == QMessageBox::NoToAll)
-                continue;
-        }
-        jobs.emplace_back(nii,src);
-    }
-
-    tipl::progress prog("batch creating src");
-    std::atomic_size_t done = 0;
-    tipl::par_for(jobs.size(),[&](size_t index)
-    {
-        if(!prog(done.fetch_add(1),jobs.size()))
-            return;
-        src_data src;
-        if(!src.load_from_file({jobs[index].first},true) ||
-            !src.save_to_file(jobs[index].second))
-            tipl::warning() << src.error_msg;
-    });
-}
 
 bool dicom2src_and_nii(std::vector<std::filesystem::path> files,bool overwrite)
 {
@@ -1187,10 +996,11 @@ bool dicom2src_and_nii(std::vector<std::filesystem::path> files,bool overwrite)
     return true;
 }
 
-void dicom2src_and_nii(const std::filesystem::path& dir,bool overwrite)
+bool dicom2src_and_nii(const std::filesystem::path& dir,bool overwrite)
 {
     tipl::progress prog("convert DICOM to SRC or nifti files");
     std::vector<std::filesystem::path> pending{dir};
+    bool result = true;
     for(size_t p = 0,done = 0,total = 0;p < pending.size();++p)
     {
         auto dir_list = tipl::search_dirs(pending[p],std::string());
@@ -1199,32 +1009,20 @@ void dicom2src_and_nii(const std::filesystem::path& dir,bool overwrite)
         for(size_t i = 0;i < dir_list.size();++i,++done)
         {
             if(!prog(done,total))
-                return;
+                return false;
             auto dicom_file_list = tipl::search_files(dir_list[i],"*.dcm");
             if(dicom_file_list.empty())
                 continue;
             has_dicom = true;
             while(i+1 < dir_list.size() && std::filesystem::exists(dir_list[i+1]/dicom_file_list.front().filename()))
                 tipl::search_files(dir_list[++i],"*.dcm",dicom_file_list),++done;
-            dicom2src_and_nii(dicom_file_list,overwrite);
+            if(!dicom2src_and_nii(dicom_file_list,overwrite))
+                result = false;
         }
         if(!has_dicom)
             pending.insert(pending.end(),dir_list.begin(),dir_list.end());
     }
-}
-
-
-
-void MainWindow::on_dicom2nii_clicked()
-{
-    QString dir = QFileDialog::getExistingDirectory(
-                                this,
-                                "Open directory",
-                                ui->workDir->currentText());
-    if(dir.isEmpty())
-        return;
-    add_work_dir(dir);
-    dicom2src_and_nii(tipl::qt::to_path(dir),false);
+    return result;
 }
 
 
@@ -1238,14 +1036,6 @@ void MainWindow::on_styles_activated(int)
         QMessageBox::information(this,QApplication::applicationName(),"You will need to restart DSI Studio to see the change");
     }
 }
-
-void MainWindow::on_clear_settings_clicked()
-{
-    settings.clear();
-    settings.sync();
-    QMessageBox::information(this,QApplication::applicationName(),"Setting Cleared");
-}
-
 
 void MainWindow::on_recentFib_cellClicked(int row, int column)
 {
@@ -1345,6 +1135,224 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
                        this,"Browse Directory",ui->workDir->currentText());
         if(!dir.isEmpty())
             add_work_dir(dir);
+        return true;
+    }
+
+    if(cmd[0] == "rename_dicom")
+    {
+        if(cmd.size() != 1)
+            return fail("rename_dicom takes no arguments");
+        auto files = QFileDialog::getOpenFileNames(
+                         this,"Open DICOM files",work_dir(),"All files (*)");
+        if(files.isEmpty())
+            return true;
+        add_work_dir(QFileInfo(files[0]).absolutePath());
+        tipl::progress prog("Rename DICOM Files");
+        for(int index = 0;prog(index,files.size());++index)
+        {
+            auto file = tipl::qt::to_path(files[index]);
+            rename_dicom(file,file.parent_path());
+        }
+        return true;
+    }
+
+    if(cmd[0] == "rename_dicom_dir")
+    {
+        if(cmd.size() != 1)
+            return fail("rename_dicom_dir takes no arguments");
+        auto dir = QFileDialog::getExistingDirectory(
+                       this,"Browse Directory",work_dir());
+        if(dir.isEmpty())
+            return true;
+        add_work_dir(dir);
+        rename_dicom_at_dir(tipl::qt::to_path(dir),tipl::qt::to_path(dir));
+        QMessageBox::information(
+            this,QApplication::applicationName(),"renaming complete");
+        return true;
+    }
+
+    if(cmd[0] == "convert_dicom_dir")
+    {
+        if(cmd.size() != 1)
+            return fail("convert_dicom_dir takes no arguments");
+        auto dir = QFileDialog::getExistingDirectory(
+                       this,"Open directory",work_dir());
+        if(dir.isEmpty())
+            return true;
+        add_work_dir(dir);
+        return dicom2src_and_nii(tipl::qt::to_path(dir),false) ||
+               fail("DICOM conversion failed");
+    }
+
+    if(cmd[0] == "bids_to_src")
+    {
+        if(cmd.size() != 1)
+            return fail("bids_to_src takes no arguments");
+        auto dir = QFileDialog::getExistingDirectory(
+                       this,"Open BIDS Folder",work_dir());
+        if(dir.isEmpty())
+            return true;
+        auto output_dir = QFileDialog::getExistingDirectory(
+                              this,"Please Specify the Output Folder",
+                              QDir(dir).path()+"/derivatives");
+        if(output_dir.isEmpty())
+            return true;
+        add_work_dir(dir);
+        auto files = search_dwi_nii_bids(tipl::qt::to_path(dir));
+        if(files.empty())
+        {
+            std::string message("cannot find bids nifti data");
+            return QMessageBox::critical(
+                       this,"ERROR",message.c_str()),fail(message);
+        }
+        std::sort(files.begin(),files.end());
+        return nii2src(files,tipl::qt::to_path(output_dir),true,true,false) ||
+               fail("BIDS to SRC conversion failed");
+    }
+
+    if(cmd[0] == "nifti_dir_to_src")
+    {
+        if(cmd.size() != 1)
+            return fail("nifti_dir_to_src takes no arguments");
+        auto dir = QFileDialog::getExistingDirectory(
+                       this,"Open directory",work_dir());
+        if(dir.isEmpty())
+            return true;
+        add_work_dir(dir);
+
+        std::vector<std::filesystem::path> files;
+        search_dwi_nii(tipl::qt::to_path(dir),files);
+        if(files.empty())
+        {
+            std::string message("cannot find nifti data");
+            return QMessageBox::critical(
+                       this,"ERROR",message.c_str()),fail(message);
+        }
+
+        std::vector<std::filesystem::path> selected;
+        selected.reserve(files.size());
+        bool yes_to_all = false,no_to_all = false;
+        auto output_dir = tipl::qt::to_path(dir);
+        for(const auto& nii : files)
+        {
+            auto src = output_dir/tipl::remove_all_suffix(nii.filename());
+            src += ".sz";
+            if(std::filesystem::exists(src) && !yes_to_all)
+            {
+                if(no_to_all)
+                    continue;
+                auto result = QMessageBox::information(
+                    this,QApplication::applicationName(),
+                    QString("%1 exists, overwrite?").arg(
+                        QString::fromUtf8(src.filename().u8string().c_str())),
+                    QMessageBox::Yes|QMessageBox::YesToAll|
+                    QMessageBox::No|QMessageBox::NoToAll|QMessageBox::Cancel);
+                if(result == QMessageBox::Cancel)
+                    return true;
+                if(result == QMessageBox::YesToAll)
+                    yes_to_all = true;
+                if(result == QMessageBox::NoToAll)
+                    no_to_all = true;
+                if(result == QMessageBox::No || result == QMessageBox::NoToAll)
+                    continue;
+            }
+            selected.push_back(nii);
+        }
+        return nii2src(selected,output_dir,false,true,false,
+                       "batch creating src") ||
+               fail("NIfTI to SRC conversion failed");
+    }
+
+    if(cmd[0] == "collect_network_measures")
+    {
+        if(cmd.size() != 1)
+            return fail("collect_network_measures takes no arguments");
+        auto files = QFileDialog::getOpenFileNames(
+                         this,"Open Network Measures",work_dir(),
+                         "Text files (*.txt);;All files (*)");
+        if(files.isEmpty())
+            return true;
+
+        QStringList fields;
+        QMap<QString,QStringList> values;
+        auto add = [&](const QString& field,const QString& value,int column)
+        {
+            if(!values.contains(field))
+            {
+                QStringList row;
+                row.fill({},files.size());
+                values[field] = row;
+                fields << field;
+            }
+            values[field][column] = value;
+        };
+
+        for(int column = 0;column < files.size();++column)
+        {
+            std::ifstream in(tipl::qt::to_path(files[column]));
+            std::vector<std::string> nodes;
+            std::string name,value;
+            while(in >> name)
+            {
+                if(name == "network_measures")
+                {
+                    std::string line;
+                    std::getline(in,line);
+                    std::istringstream stream(line);
+                    nodes.assign(std::istream_iterator<std::string>(stream),{});
+                    break;
+                }
+                if(!(in >> value))
+                    break;
+                add(QString::fromStdString(name),
+                    QString::fromStdString(value),column);
+            }
+
+            std::string line;
+            while(std::getline(in,line))
+            {
+                std::istringstream stream(line);
+                if(!(stream >> name) || name.empty() || name[0] == '#')
+                    continue;
+                for(const auto& node : nodes)
+                {
+                    value.clear();
+                    stream >> value;
+                    add(QString::fromStdString(name+"_"+node),
+                        QString::fromStdString(value),column);
+                }
+            }
+        }
+
+        auto output = files[0]+".collected.txt";
+        QFile file(output);
+        if(!file.open(QIODevice::WriteOnly|QIODevice::Text))
+        {
+            auto message = "cannot write "+output;
+            return QMessageBox::critical(
+                       this,"ERROR",message),fail(message.toStdString());
+        }
+
+        QTextStream out(&file);
+        out << "Field";
+        for(const auto& input : files)
+            out << '\t' << QFileInfo(input).baseName();
+        out << '\n';
+        for(const auto& field : fields)
+            out << field << '\t' << values[field].join('\t') << '\n';
+        QMessageBox::information(
+            this,QApplication::applicationName(),"File saved to "+output);
+        return true;
+    }
+
+    if(cmd[0] == "reset_settings")
+    {
+        if(cmd.size() != 1)
+            return fail("reset_settings takes no arguments");
+        settings.clear();
+        settings.sync();
+        QMessageBox::information(
+            this,QApplication::applicationName(),"Setting Cleared");
         return true;
     }
 

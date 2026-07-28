@@ -870,6 +870,9 @@ QWidget#tab QScrollBar::sub-page {
                     <property name="toolTip">
                      <string>Organize DICOM file names</string>
                     </property>
+                    <property name="statusTip">
+                     <string>run rename_dicom</string>
+                    </property>
                     <property name="text">
                      <string>Step B1a: Rename DICOM files</string>
                     </property>
@@ -883,6 +886,9 @@ QWidget#tab QScrollBar::sub-page {
                    <widget class="QPushButton" name="RenameDICOMDir">
                     <property name="toolTip">
                      <string>Rename DICOM files across folders</string>
+                    </property>
+                    <property name="statusTip">
+                     <string>run rename_dicom_dir</string>
                     </property>
                     <property name="text">
                      <string>Step B1b: Rename DICOM folders</string>
@@ -898,6 +904,9 @@ QWidget#tab QScrollBar::sub-page {
                     <property name="toolTip">
                      <string>Convert a DICOM folder to SRC</string>
                     </property>
+                    <property name="statusTip">
+                     <string>run convert_dicom_dir</string>
+                    </property>
                     <property name="text">
                      <string>Step B1c: DICOM folder → SRC</string>
                     </property>
@@ -912,6 +921,9 @@ QWidget#tab QScrollBar::sub-page {
                     <property name="toolTip">
                      <string>Convert a BIDS folder to SRC files</string>
                     </property>
+                    <property name="statusTip">
+                     <string>run bids_to_src</string>
+                    </property>
                     <property name="text">
                      <string>Step B2a: BIDS NIFTI → SRC</string>
                     </property>
@@ -925,6 +937,9 @@ QWidget#tab QScrollBar::sub-page {
                    <widget class="QPushButton" name="nii2src_sf">
                     <property name="toolTip">
                      <string>Convert a folder of NIFTI files to SRC</string>
+                    </property>
+                    <property name="statusTip">
+                     <string>run nifti_dir_to_src</string>
                     </property>
                     <property name="text">
                      <string>Step B2b: NIFTI folder → SRC</string>
@@ -1755,10 +1770,13 @@ QLabel#tools_view_image_hint {
              </item>
              <item>
               <widget class="QPushButton" name="parse_network_measures">
-               <property name="toolTip">
-                <string>Parse network-measure text files into one data sheet</string>
-               </property>
-               <property name="text">
+                <property name="toolTip">
+                 <string>Parse network-measure text files into one data sheet</string>
+                </property>
+                <property name="statusTip">
+                 <string>run collect_network_measures</string>
+                </property>
+                <property name="text">
                 <string>Parse network measures...</string>
                </property>
                <property name="icon">
@@ -1807,6 +1825,9 @@ QLabel#tools_view_image_hint {
                 <widget class="QPushButton" name="clear_settings">
                  <property name="toolTip">
                   <string>Reset DSI Studio settings</string>
+                 </property>
+                 <property name="statusTip">
+                  <string>run reset_settings</string>
                  </property>
                  <property name="text">
                   <string>Reset</string>
