@@ -591,10 +591,17 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
                 cmd.push_back(value.toString().toUtf8().toStdString());
 
             if(!commands[index].isArray() ||
-               !std::all_of(args.begin(),args.end(),[](const auto& value){return value.isString();}))
+                !std::all_of(args.begin(),args.end(),
+                             [](const auto& value){return value.isString();}))
                 error = "command and parameters must be strings in an array";
-            if(cmd.empty() || cmd[0].empty())
-                error = "empty command";
+            else
+            {
+                cmd.reserve(size_t(args.size()));
+                for(const auto& value : args)
+                    cmd.push_back(value.toString().toUtf8().toStdString());
+                if(cmd.empty() || cmd[0].empty())
+                    error = "empty command";
+            }
 
 
             bool okay = false;
@@ -640,12 +647,15 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
             output.remove(ansi_escape);
             error.remove(ansi_escape);
 
-            result["output"] = output;
+            if(output.isEmpty())
+                result["output"] = "command completed";
+            else
+                result["output"] = output;
             if(!error.isEmpty())
                 result["error"] = error;
             results.append(result);
 
-            activity = command_name + (error.isEmpty() ? QString(":" + error) : QString(" completed"));
+            activity = command_name + (!error.isEmpty() ? QString(":" + error) : QString(" completed"));
             if(!error.isEmpty())
                 break;
         }
