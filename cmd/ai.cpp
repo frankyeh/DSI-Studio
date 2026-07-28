@@ -647,6 +647,13 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
             return;
 
         content = content.toHtmlEscaped().replace('\n',"<br>");
+
+        if(!activity.isEmpty())
+            content +=
+                "<br><span style=\"color:#5f6368;font-size:9pt;\">" +
+                activity.toHtmlEscaped().replace('\n',"<br>") +
+                "</span>";
+
         if(request)
             content = "<span style=\"color:#5f6368;\">"+content+"</span>";
 
@@ -718,9 +725,19 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
                 index = end;
                 continue;
             }
-            auto activity = type == "assistant" && index &&
-                            history[index-1].toObject()["type"] == "request" ?
-                            request_content(history[index-1].toObject()) : QString();
+            QString activity;
+            if(type == "assistant" && index)
+            {
+                auto previous = history[index-1].toObject();
+                if(previous["type"] == "request")
+                {
+                    auto request = QJsonDocument::fromJson(
+                                       previous["text"].toString().toUtf8()).object();
+                    if(request["request"].toString().compare(
+                            "CMD",Qt::CaseInsensitive) == 0)
+                        activity = request_content(previous);
+                }
+            }
             append(entry,activity);
         }
     }
@@ -1091,9 +1108,9 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
     {
         process->closeWriteChannel();
         auto session = process->objectName();
-        tipl::out() << ai_log("started session="+
+        tipl::out() << ai_log("started session:"+
             (session.isEmpty() ? QString("new") : session)+
-            " pid="+QString::number(process->processId()));
+            " pid:"+QString::number(process->processId()));
         if(!session.isEmpty())
             show_ai_project(session);
     });
@@ -1105,8 +1122,8 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
             return;
 
         auto session = process->objectName();
-        tipl::out() << ai_log("start failed session="+session+
-                              " error="+process->errorString());
+        tipl::out() << ai_log("start failed session:"+session+
+                              " error:"+process->errorString());
 
         if(session.isEmpty())
         {
@@ -1134,16 +1151,16 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
             this,[=](int exit_code,QProcess::ExitStatus exit_status)
     {
         auto session = process->objectName();
-        tipl::out() << ai_log("finished session="+session+
-            " exit="+QString::number(exit_code)+" crashed="+
+        tipl::out() << ai_log("finished session:"+session+
+            " exit:"+QString::number(exit_code)+" crashed:"+
             QString::number(exit_status == QProcess::CrashExit));
         auto error = (process->property("stderr").toByteArray()+
                       process->readAllStandardError()).trimmed();
         auto output = (process->property("stdout").toByteArray()+
                        process->readAllStandardOutput()).trimmed();
         if(exit_code || exit_status == QProcess::CrashExit)
-            tipl::out() << ai_log("process failed session="+session+
-                " exit="+QString::number(exit_code)+" error="+
+            tipl::out() << ai_log("process failed session:"+session+
+                " exit:"+QString::number(exit_code)+" error:"+
                 QString::fromUtf8(error));
 
         if(session.isEmpty())
@@ -1310,9 +1327,9 @@ void MainWindow::start_codex(QString session,const QString& text,bool add_histor
                 for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
                     button->setEnabled(true);
             }
-            tipl::out() << ai_log("session agent="+
+            tipl::out() << ai_log("session agent:"+
                                   ai_infos[session].agent_name+
-                                  " session="+session);
+                                  " session:"+session);
         }
         process->setProperty("stdout_buffer",buffer);
     });
