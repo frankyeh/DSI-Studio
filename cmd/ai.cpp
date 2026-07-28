@@ -430,11 +430,6 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
 
     ai_infos[session].update(agent_name,request["cwd"].toString());
 
-    if(type == "TITLE")
-        return ai_reply(socket,session,
-                        main_window->set_ai_title(
-                            session,request["title"].toString()) ?
-                            "OKAY" : "ERROR\tinvalid title");
 
     auto chat = request["chat"].toString().trimmed();
     auto activity = request;
@@ -442,8 +437,7 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     auto json = QString::fromUtf8(QJsonDocument(activity).toJson(
                                       QJsonDocument::Compact));
 
-    if(type != "LIST" || !chat.isEmpty())
-        tipl::out() << ai_log(json);
+    tipl::out() << ai_log(json);
 
     if(type == "CMD")
         for(auto* window : QApplication::allWidgets())
@@ -469,6 +463,11 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     if(!chat.isEmpty())
         main_window->add_ai_history(session,"assistant",chat);
 
+    if(type == "TITLE")
+        return ai_reply(socket,session,
+                        main_window->set_ai_title(
+                            session,request["title"].toString()) ?
+                            "OKAY" : "ERROR\tinvalid title");
     if(type == "LIST")
         return ai_request_list(socket,session);
     if(type == "LOG")
@@ -649,10 +648,7 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
 
         content = content.toHtmlEscaped().replace('\n',"<br>");
         if(!activity.isEmpty())
-            content = QString(
-                          "<span style=\"color:#80868b;font-size:9pt;\">"
-                          "Action: %1</span><br>%2")
-                          .arg(activity.toHtmlEscaped().replace('\n',"<br>"),content);
+            content = QString("<span style=\"color:#80868b;font-size:9pt;\"><br>%1").arg(content);
         if(request)
             content = "<span style=\"color:#5f6368;\">"+content+"</span>";
         auto color = request ? "#f1f3f4" : user ? "#e8f0fe" : "#e8f5e9";
