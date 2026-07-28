@@ -20,8 +20,8 @@ This file contains the complete slice and segmentation inventory preserved from 
 | `add_mni_slice` | `["add_mni_slice","C:/data/atlas.nii.gz"]` | Add a custom slice interpreted in MNI space; mapping is required. |
 | `skull_strip_slice` | `["skull_strip_slice","7"]` | Apply the template mask to a custom slice; built-in slices are rejected. |
 | `save_roi_screen` | `["save_roi_screen","C:/output/roi_view.png"]` | Save the current 2D ROI/slice scene. |
-| `save_slice_image` |  | Export a named slice/data map in its current space; verify the data-map identifier in source before use. |
-| `save_slice_mni_image` |  | Export a named slice/data map in MNI space; verify the data-map identifier in source before use. |
+| `save_slice_image` | `["save_slice_image","C:/output/qa.nii.gz","qa"]` | Export the named metric/data map in current subject space; arguments are output path then data-map name. |
+| `save_slice_mni_image` | `["save_slice_mni_image","C:/output/qa_mni.nii.gz","qa"]` | Export the named metric/data map in template/MNI space; a valid subject-to-template mapping is required. |
 | `save_slice_mapping` | `["save_slice_mapping","C:/output/T1w.linear_reg.txt","7"]` | Save registration mapping for a custom slice. |
 | `open_slice_mapping` | `["open_slice_mapping","C:/output/T1w.linear_reg.txt","7"]` | Stop registration and load a mapping for a custom slice. |
 | `save_slice_volume` | `["save_slice_volume","C:/output/T1w.nii.gz","7"]` | Save the bound custom-slice volume as NIfTI. |
@@ -32,5 +32,6 @@ This file contains the complete slice and segmentation inventory preserved from 
 ## Source-confirmed cautions
 
 - `segment_brain` is synchronous; a client timeout does not prove inference stopped.
-- Use `list_slice` to discover indices and readiness before mutation.
-- `save_slice_image` and `save_slice_mni_image` use a data-map identifier rather than an ordinary slice row; do not guess it.
+- Use `list_slice` to discover the exact data-map name before export.
+- `save_slice_image` and `save_slice_mni_image` use `command[1]` as the output filename and `command[2]` as the metric/data-map name, not a slice-row index.
+- The export source also supports special data names such as `fiber`, `dirs`, `dir0` through the available fiber count, `odfs`, and `color`; use these only when the loaded data supports them.
