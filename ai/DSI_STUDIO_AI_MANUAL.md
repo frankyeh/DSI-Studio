@@ -22,9 +22,8 @@ reread the entire file for every action.
 - Send one concise `TITLE` after understanding the initiating prompt.
 - Call top-level `LIST` first. It returns global activity plus every supported
   window's numeric ID and busy state; it does not use a window ID.
-- Before loading, registration, reconstruction, segmentation, batch processing,
-  fiber tracking, or other substantial work, inspect `LIST` and follow the wait
-  etiquette when DSI Studio is busy.
+- Before substantial work, inspect `LIST` and follow the wait etiquette when
+  DSI Studio is busy.
 - Every `CMD`, including every `list_*` command, requires a numeric `window`
   returned by `LIST`.
 - Every command name and parameter inside `command` must be a JSON string.
@@ -34,8 +33,8 @@ reread the entire file for every action.
 - Discover names, indices, and parameter IDs before mutation. Never guess them.
 - `okay:true` means the handler accepted the command; asynchronous work may
   still be running.
-- Poll top-level `LIST` for global and per-window activity. Use a targeted
-  `list_*` command only when detailed verification is needed.
+- Poll top-level `LIST` for activity. Use targeted `list_*` commands only for
+  detailed verification.
 - Use `LOG` only for failures or states that `LIST` and targeted discovery
   cannot explain.
 - User-facing text uses the top-level `chat` field. A standalone message uses
@@ -61,21 +60,8 @@ OKAY<TAB>busy<TAB>level<TAB>status
 type<TAB>id<TAB>busy<TAB>tracking-jobs<TAB>title
 ```
 
-Example reply:
-
-```text
-OKAY	1	2	segment_brain (3/5)
-main	1	0	0	DSI Studio
-tracking	2	1	0	C:/data/subject.fz
-tracking	3	1	2	C:/data/group.fz
-```
-
-- Global `busy=1` means a TIPL operation or a supported window is busy.
-- `level` is the TIPL nesting depth excluding the persistent application root.
-- Each window row reports `type`, numeric `id`, `busy`, `tracking-jobs`, and
-  normalized title/path.
-- Silent `LIST` requests without `chat` are not written to AI history or console
-  and are preferred for polling.
+Silent `LIST` requests without `chat` are not written to AI history or console
+and are preferred for polling.
 
 ### LOG
 
@@ -120,20 +106,13 @@ All command elements must be strings:
 
 Use `"7"`, not `7`.
 
-A safe same-window batch:
-
-```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"2","command":[["list_param"],["list_slice"]]}
-```
-
 Do not batch destructive, asynchronous, output-dependent, or modal-opening
 commands. Do not send an empty command array.
 
 ## Command examples and inventory
 
-Wrap each example array below in the standard `CMD` request shown above. Blank
-example cells mark source commands without a documented recommended example.
-Every command name and parameter remains a quoted JSON string.
+Blank example cells mark source commands without a documented recommended
+example. Every command name and parameter remains a quoted JSON string.
 
 ### Main-window and Hub commands
 
@@ -179,9 +158,9 @@ Every command name and parameter remains a quoted JSON string.
 | `set_slice_by_name` | `["set_slice_by_name","T1w"]` |
 | `move_slice` | `["move_slice","80 100 80"]` |
 | `list_unet` | `["list_unet"]` |
-| `segment_brain` current slice | `["segment_brain","<model from list_unet>"]` |
-| `segment_brain` by name | `["segment_brain","<model from list_unet>","T1w"]` |
-| `segment_brain` by index | `["segment_brain","<model from list_unet>","7"]` |
+| `segment_brain current slice` | `["segment_brain","<model from list_unet>"]` |
+| `segment_brain by name` | `["segment_brain","<model from list_unet>","T1w"]` |
+| `segment_brain by index` | `["segment_brain","<model from list_unet>","7"]` |
 | `enable_slice` |  |
 | `set_slice_contrast` |  |
 | `set_slice_dir_color` |  |
@@ -200,6 +179,10 @@ Every command name and parameter remains a quoted JSON string.
 
 ### Region commands
 
+`region_action_<operation>` uses `command[1]` for one region index or an
+`&`-separated index list. `command[2]` supplies the extra value for threshold
+and voxel-dilation operations.
+
 | Command | Common example |
 |---|---|
 | `list_region` | `["list_region"]` |
@@ -210,43 +193,79 @@ Every command name and parameter remains a quoted JSON string.
 | `set_region_color` | `["set_region_color","0","4294901760"]` |
 | `show_only_regions` | `["show_only_regions","0&2&5"]` |
 | `new_region` |  |
+| `new_region_whole_brain_seed` |  |
+| `new_region_from_threshold` |  |
+| `new_region_from_mni` |  |
+| `new_region_from_sphere` |  |
 | `open_region` |  |
-| `open_regions` |  |
+| `open_mni_region` |  |
 | `save_region` |  |
-| `save_region_as` |  |
+| `save_4d_region` |  |
 | `save_all_regions` |  |
 | `save_all_regions_to_folder` |  |
+| `save_region_info` |  |
+| `load_region_color` |  |
+| `save_region_color` |  |
 | `delete_region` |  |
 | `delete_all_regions` |  |
 | `copy_region` |  |
-| `merge_region` |  |
-| `merge_all_regions` |  |
-| `add_region_from_threshold` |  |
-| `add_region_from_tract` |  |
-| `add_region_from_endpoints` |  |
+| `merge_regions` |  |
 | `check_region` |  |
-| `check_uncheck_all_region` |  |
+| `check_all_regions` |  |
+| `uncheck_all_regions` |  |
+| `move_up_region` |  |
+| `move_down_region` |  |
 | `move_region` |  |
-| `shift_region` |  |
-| `flip_region` |  |
-| `sort_region` |  |
-| `separate_region` |  |
-| `smooth_region` |  |
-| `erode_region` |  |
-| `dilate_region` |  |
-| `defragment_region` |  |
-| `negate_region` |  |
-| `threshold_region` |  |
-
-Region types are `0=ROI`, `1=ROA`, `2=End`, `3=Seed`, `4=Terminative`,
-`5=NotEnd`, and `6=Limiting`.
+| `move_slice_to_region` |  |
+| `show_device_statistics` |  |
+| `save_device_statistics` |  |
+| `show_region_statistics` |  |
+| `save_region_statistics` |  |
+| `show_t2r` |  |
+| `save_t2r` |  |
+| `show_tract_statistics` |  |
+| `save_tract_statistics` |  |
+| `show_tract_recognition` |  |
+| `save_tract_recognition` |  |
+| `region_action_shiftx` |  |
+| `region_action_shiftnx` |  |
+| `region_action_shifty` |  |
+| `region_action_shiftny` |  |
+| `region_action_shiftz` |  |
+| `region_action_shiftnz` |  |
+| `region_action_flipx` |  |
+| `region_action_flipy` |  |
+| `region_action_flipz` |  |
+| `region_action_smoothing` |  |
+| `region_action_erosion` |  |
+| `region_action_dilation` |  |
+| `region_action_opening` |  |
+| `region_action_closing` |  |
+| `region_action_defragment` |  |
+| `region_action_negate` |  |
+| `region_action_dilation_by_voxel` |  |
+| `region_action_threshold` |  |
+| `region_action_threshold_current` |  |
+| `region_action_dilation_by_threshold` |  |
+| `region_action_erosion_by_threshold` |  |
+| `region_action_separate` |  |
+| `region_action_sort_name` |  |
+| `region_action_sort_x` |  |
+| `region_action_sort_y` |  |
+| `region_action_sort_z` |  |
+| `region_action_sort_size` |  |
+| `region_action_1st_ex_all` |  |
+| `region_action_all_ex_1st` |  |
+| `region_action_all_inter_1st` |  |
+| `region_action_all_to_1st` |  |
+| `region_action_refine_all` |  |
 
 ### Tracking parameter commands
 
 | Command | Common example |
 |---|---|
-| `list_param` all IDs | `["list_param"]` |
-| `list_param` one ID | `["list_param","step_size"]` |
+| `list_param all IDs` | `["list_param"]` |
+| `list_param one ID` | `["list_param","step_size"]` |
 | `set_param` | `["set_param","step_size","1.0"]` |
 | `set_params` | `["set_params","step_size=1.0&min_length=20"]` |
 
@@ -257,7 +276,7 @@ Region types are `0=ROI`, `1=ROA`, `2=End`, `3=Seed`, `4=Terminative`,
 | `list_tract` | `["list_tract"]` |
 | `list_tract status` | `["list_tract","status"]` |
 | `run_tracking` | `["run_tracking","Whole Brain"]` |
-| `run_tracking` with regions | `["run_tracking","Corticospinal Tract","0:3&1:0&2:1"]` |
+| `run_tracking with regions` | `["run_tracking","Corticospinal Tract","0:3&1:0&2:1"]` |
 | `list_auto_tract` | `["list_auto_tract"]` |
 | `run_auto_track` | `["run_auto_track","Corticospinal Tract"]` |
 | `show_only_tracts` | `["show_only_tracts","0&2&5"]` |
@@ -361,7 +380,9 @@ DSI Studio handles these commands directly before delegating to TIPL:
 | `warp_to_image` |  |
 | `apply_to_image` |  |
 
-TIPL `cmd.hpp` supplies the following generic image commands:
+### TIPL generic image commands
+
+TIPL `cmd.hpp` supplies these commands:
 
 | Command | Common example |
 |---|---|
@@ -460,21 +481,15 @@ Loading, registration, reconstruction, segmentation, batch processing, and
 fiber tracking should not be stacked by default.
 
 - When `busy=0`, proceed.
-- When activity was started by this agent, send one concise `CHAT` saying what
-  is running and that the user may interrupt or terminate it, then wait.
-- When activity predates the intended operation or appears to belong to the
-  user or another agent, send one concise `CHAT`: `DSI Studio is busy with
-  <status>. I will wait by default. You may terminate the current work or tell
-  me to proceed right away.` Do not proceed without explicit instruction.
+- When activity was started by this agent, send one concise `CHAT`, then wait.
+- When activity appears to belong to the user or another agent, send one concise
+  `CHAT` saying DSI Studio is busy and that you will wait unless instructed to
+  proceed immediately.
 - Poll only silent `LIST` after 4 seconds. While structural state is unchanged,
   double the interval to 8, 16, 32, 64, 128, 256, 512, and 900 seconds, then
   continue every 900 seconds.
-- Reset to 4 seconds when global `busy` or `level`, the status phase, any
-  window's `busy`, or any `tracking-jobs` value changes. Do not reset for only
-  numerical progress such as `(3/100)`.
-- Use a local sleep or timer between checks. Waiting should perform no model
-  reasoning and consume no task tokens. Do not send repeated `CHAT`, call
-  `LOG`, request detailed lists, or narrate unchanged polling.
+- Reset to 4 seconds only for structural state changes, not numerical progress.
+- Waiting should perform no model reasoning and consume no task tokens.
 - Inspect every complete reply for `PROMPT`. User instructions override waiting.
 
 Never automatically repeat a failed, timed-out, unavailable, or unexpected
@@ -489,8 +504,7 @@ operation.
 - Call parameterless `list_param` once, then query only needed IDs.
 - Use `LOG` only for diagnostics.
 - Batch only safe independent synchronous commands for one window.
-- Attach short progress `chat` to an already-needed request; do not attach it to
-  every `LIST` poll.
+- Attach short progress `chat` to an already-needed request.
 - Send `cwd` once and omit it until it changes.
 - Stop after verification and one final `CHAT`.
 
