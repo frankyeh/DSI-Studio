@@ -111,22 +111,6 @@ Use the wrapper or executable fallback only when direct pipe access cannot run
 or connect and the user approves the fallback. Do not create or modify GitHub
 Actions to edit or operate these instructions.
 
-## Required first request
-
-As soon as identity and the pipe client are ready, send this before continuing:
-
-```powershell
-Invoke-Dsi @{
-    agent=$DsiAgent
-    session=$DsiSession
-    cwd=(Get-Location).Path
-    request='CHAT'
-    chat='I am reading the DSI Studio instructions and identifying the commands needed for this task.'
-}
-```
-
-Read the complete reply and process any returned `PROMPT`.
-
 ## Basic requests
 
 ### Discover windows
