@@ -647,8 +647,6 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
             return;
 
         content = content.toHtmlEscaped().replace('\n',"<br>");
-        if(!activity.isEmpty())
-            content.prepend("<br>");
         if(request)
             content = "<span style=\"color:#5f6368;\">"+content+"</span>";
 
