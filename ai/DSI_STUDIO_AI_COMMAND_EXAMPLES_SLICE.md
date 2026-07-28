@@ -1,4 +1,4 @@
-# DSI Studio AI Slice and Parameter Command Examples
+# DSI Studio AI Slice Command Examples
 
 Use these with the standard top-level `CMD` request. Every command name and parameter must remain a quoted JSON string.
 
@@ -32,6 +32,8 @@ Use these with the standard top-level `CMD` request. Every command name and para
 | `list_param` | `["list_param","tract_style"]` | Returns one parameter value; omit the ID to list every valid parameter ID. |
 | `set_param` | `["set_param","tract_style","1"]` | Sets one parameter and refreshes rendering. Use IDs returned by `list_param`. |
 | `set_params` | `["set_params","tract_style=1&tract_alpha=0.8"]` | Sets multiple `id=value` pairs separated by `&`, then refreshes once. |
+| `set_region_name` | `["set_region_name","0","Tumor Core"]` | Renames region row `0`. The index must be valid and the new name cannot be empty. |
+| `set_region_type` | `["set_region_type","0","3"]` | Sets region row `0` to type `3` (`Seed`). Valid types are `0` ROI, `1` ROA, `2` End, `3` Seed, `4` Terminative, `5` NotEnd, and `6` Limiting. |
 
 ## Source-confirmed cautions
 
