@@ -89,13 +89,13 @@ This file contains the complete tract and automatic-tracking inventory preserved
 These parameters are the `Tracking`, `Tracking_dT`, and `Tracking_adv` groups from the embedded `:/data/options.txt` resource. Use:
 
 ```json
-["list_param"]
+["list_param","tracking"]
 ["list_param","fa_threshold"]
 ["set_param","fa_threshold","0.08"]
 ["set_params","fa_threshold=0.08&min_length=20&turning_angle=60"]
 ```
 
-Every value remains a JSON string. Enum values are zero-based indices. The metric lists shown for `tracking_index`, `dt_index1`, and `dt_index2` are resource defaults and may be replaced by metrics available in the loaded FIB.
+`["list_param","tracking"]` returns every current tracking parameter and value from all three tracking groups. Use a single parameter ID only when one value is needed. Every value remains a JSON string. Enum values are zero-based indices. The metric lists shown for `tracking_index`, `dt_index1`, and `dt_index2` are resource defaults and may be replaced by metrics available in the loaded FIB.
 
 ### Basic tracking
 
