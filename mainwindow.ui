@@ -110,6 +110,9 @@
       </item>
       <item>
        <widget class="QPushButton" name="browseDir">
+        <property name="statusTip">
+         <string>run set_work_dir</string>
+        </property>
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -133,6 +136,9 @@
       </item>
       <item>
        <widget class="QPushButton" name="fiber_data_hub">
+        <property name="statusTip">
+         <string>run open_hub</string>
+        </property>
         <property name="text">
          <string>Fiber Data Hub</string>
         </property>
@@ -144,6 +150,9 @@
       </item>
       <item>
        <widget class="QPushButton" name="console">
+        <property name="statusTip">
+         <string>run open_console</string>
+        </property>
         <property name="text">
          <string>Console...</string>
         </property>
@@ -912,6 +921,9 @@ QWidget#tab QScrollBar::sub-page {
                  </item>
                  <item>
                   <widget class="QPushButton" name="clear_src_history">
+                   <property name="statusTip">
+                    <string>run clear_recent_src</string>
+                   </property>
                    <property name="text">
                     <string>Clear</string>
                    </property>
@@ -1024,6 +1036,9 @@ QWidget#tab QScrollBar::sub-page {
                  </item>
                  <item>
                   <widget class="QPushButton" name="clear_fib_history">
+                   <property name="statusTip">
+                    <string>run clear_recent_fib</string>
+                   </property>
                    <property name="text">
                     <string>Clear</string>
                    </property>
@@ -1442,6 +1457,9 @@ QWidget#tab QScrollBar::sub-page {
                        </property>
                        <item>
                         <widget class="QPushButton" name="Reconstruction">
+                         <property name="statusTip">
+                          <string>run open_src</string>
+                         </property>
                          <property name="toolTip">
                           <string>Reconstruct one or more SRC files</string>
                          </property>
@@ -1532,6 +1550,9 @@ QWidget#tab QScrollBar::sub-page {
                        </property>
                        <item>
                         <widget class="QPushButton" name="FiberTracking">
+                         <property name="statusTip">
+                          <string>run open_fib</string>
+                         </property>
                          <property name="toolTip">
                           <string>Open a FIB file for tractography</string>
                          </property>
@@ -1546,6 +1567,9 @@ QWidget#tab QScrollBar::sub-page {
                        </item>
                        <item>
                         <widget class="QPushButton" name="T1WFiberTracking">
+                         <property name="statusTip">
+                          <string>run open_structural_tracking</string>
+                         </property>
                          <property name="toolTip">
                           <string>Open structural images with an aligned tractography atlas</string>
                          </property>
@@ -1560,6 +1584,9 @@ QWidget#tab QScrollBar::sub-page {
                        </item>
                        <item>
                         <widget class="QPushButton" name="auto_track">
+                         <property name="statusTip">
+                          <string>run open_auto_track</string>
+                         </property>
                          <property name="toolTip">
                           <string>Run automatic tracking on selected FIB files</string>
                          </property>
@@ -1646,6 +1673,9 @@ QWidget#tab QScrollBar::sub-page {
                   </item>
                   <item>
                    <widget class="QPushButton" name="TemplateFiberTracking">
+                    <property name="statusTip">
+                     <string>run open_template</string>
+                    </property>
                     <property name="toolTip">
                      <string>Open the selected population-averaged FIB template</string>
                     </property>
@@ -1736,6 +1766,9 @@ QWidget#tab QScrollBar::sub-page {
                   </item>
                   <item>
                    <widget class="QPushButton" name="open_db">
+                    <property name="statusTip">
+                     <string>run open_db</string>
+                    </property>
                     <property name="toolTip">
                      <string>Manage subjects and longitudinal changes</string>
                     </property>
@@ -1750,6 +1783,9 @@ QWidget#tab QScrollBar::sub-page {
                   </item>
                   <item>
                    <widget class="QPushButton" name="group_connectometry">
+                    <property name="statusTip">
+                     <string>run open_connectometry</string>
+                    </property>
                     <property name="toolTip">
                      <string>Run correlational tractography and connectometry analysis</string>
                     </property>
@@ -1912,6 +1948,9 @@ QLabel#tools_view_image_hint {
            </property>
            <item>
             <widget class="QPushButton" name="view_image">
+             <property name="statusTip">
+              <string>run open_image</string>
+             </property>
              <property name="toolTip">
               <string>Open NIFTI, DICOM, 2dseq, or Varian files</string>
              </property>
@@ -1982,6 +2021,9 @@ QLabel#tools_view_image_hint {
              </item>
              <item>
               <widget class="QPushButton" name="nonlinear_reg">
+               <property name="statusTip">
+                <string>run open_nonlinear_registration</string>
+               </property>
                <property name="toolTip">
                 <string>Perform nonlinear image registration</string>
                </property>
@@ -2086,6 +2128,9 @@ QLabel#tools_view_image_hint {
              </property>
              <item>
               <widget class="QPushButton" name="xnat_download">
+               <property name="statusTip">
+                <string>run open_xnat</string>
+               </property>
                <property name="toolTip">
                 <string>Connect to an XNAT server to download and process data</string>
                </property>
