@@ -11,7 +11,7 @@ This file contains the complete slice and segmentation inventory preserved from 
 | `set_slice_by_name` | `["set_slice_by_name","T1w"]` | Select a slice by exact displayed name. |
 | `move_slice` | `["move_slice","80 100 80"]` | Move the shared crosshair to voxel coordinates in current slice space. |
 | `enable_slice` | `["enable_slice","1 1 0"]` | Set sagittal, coronal, and axial visibility in that order. |
-| `set_slice_contrast` | `["set_slice_contrast","0 1"]` | Set the current slice minimum and maximum display values. |
+| `set_slice_contrast` | `["set_slice_contrast","0 1"]` | Set the current slice minimum and maximum display values. An optional third string sets packed Qt minimum and maximum colors. |
 | `set_slice_dir_color` | `["set_slice_dir_color","7","1"]` | Enable or disable directional coloring for one slice index. |
 | `set_slice_overlay` | `["set_slice_overlay","7","1"]` | Enable or disable overlay mode for one slice index. |
 | `set_slice_stay` | `["set_slice_stay","7","1"]` | Add or remove one slice from the persistent display list. |
@@ -26,8 +26,8 @@ This file contains the complete slice and segmentation inventory preserved from 
 | `open_slice_mapping` | `["open_slice_mapping","C:/output/T1w.linear_reg.txt","7"]` | Stop registration and load a mapping for a custom slice. |
 | `save_slice_volume` | `["save_slice_volume","C:/output/T1w.nii.gz","7"]` | Save the bound custom-slice volume as NIfTI. |
 | `delete_slice` | `["delete_slice","7"]` | Delete one custom slice; built-in slices cannot be deleted. |
-| `list_unet` | `["list_unet"]` | List segmentation model index, availability, identifier, name, and description. |
-| `segment_brain` | `["segment_brain","SynthSeg V2","7"]` | Run the named model on a slice index or exact slice name and create label regions. |
+| `list_unet` | `["list_unet"]` | List segmentation model index, availability, internal model ID, display name, and description. |
+| `segment_brain` | `["segment_brain","<model-ID-from-list_unet>","7"]` | Run an available model using the exact `model` column value, on a slice index or exact slice name, and create label regions. See footnote 1. |
 
 ## Source-confirmed cautions
 
@@ -35,3 +35,7 @@ This file contains the complete slice and segmentation inventory preserved from 
 - Use `list_slice` to discover the exact data-map name before export.
 - `save_slice_image` and `save_slice_mni_image` use `command[1]` as the output filename and `command[2]` as the metric/data-map name, not a slice-row index.
 - The export source also supports special data names such as `fiber`, `dirs`, `dir0` through the available fiber count, `odfs`, and `color`; use these only when the loaded data supports them.
+
+## Footnotes
+
+1. The earlier example used the display name `SynthSeg V2`. The source passes `command[1]` directly to `download_unet_model()`, which matches the `.nz` filename stem. Therefore the correct argument is the internal value in the `model` column returned by `list_unet`, not the human-readable `name` column.
