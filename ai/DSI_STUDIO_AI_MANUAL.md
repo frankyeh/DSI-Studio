@@ -56,6 +56,12 @@ These commands take no path and open a local GUI dialog:
 These are interactive commands. A local user must operate the file dialog. See
 footnote 1 regarding cancellation and verification.
 
+After a FIB opens, use the
+[fiber-tracking skill](DSI_STUDIO_AI_SKILL_FIBER_TRACKING.md) to choose the
+tracking strategy. A newly opened FIB normally has no regions; do not call
+`list_region` unless the task uses regions or regions were created, loaded, or
+restored.
+
 ### 3. Tracking-window `open_fib` — explicit additional FIB
 
 Target an existing **tracking** window:
@@ -354,18 +360,23 @@ Minimum form:
 The second command element is mandatory and becomes the new tract-bundle name.
 An empty name fails with `missing tract-bundle name`. With the two-element form,
 DSI Studio uses the current tracking parameters and checked region settings.
+Follow the [fiber-tracking skill](DSI_STUDIO_AI_SKILL_FIBER_TRACKING.md) when
+choosing tracking strategy, parameters, region roles, and quality control.
 Before running, use `["list_param","tracking"]` to show all tracking parameters
 and their current values. Review these values before changing them or starting
 tracking.
 
-Typical sequence:
+Typical sequence without region constraints:
 
 ```json
-["list_region"]
 ["list_param","tracking"]
-["set_params","fa_threshold=0.08&min_length=20"]
 ["run_tracking","CST"]
 ```
+
+Use `list_region` only for a region-based workflow after regions were created,
+loaded, segmented, or restored. Do not use it as a routine step after opening a
+FIB because the initial region list is normally empty. Change tracking
+parameters only for a documented reason.
 
 Do not resend `run_tracking` merely because a client timeout occurred. Poll
 `LIST` for general application activity and `["list_tract","status"]` for
