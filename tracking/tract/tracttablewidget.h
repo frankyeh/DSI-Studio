@@ -1,5 +1,7 @@
 #ifndef TRACTTABLEWIDGET_H
 #define TRACTTABLEWIDGET_H
+#include <algorithm>
+#include <string>
 #include <vector>
 #include <QApplication>
 #include <QItemDelegate>
@@ -58,35 +60,43 @@ public:
         emit show_tracts();
     }
     template<typename fun_type>
-    void for_each_bundle(const char* prog_name,fun_type&& fun,bool silence = false)
+    bool for_each_bundle(fun_type&& fun,const std::string& indices = {})
     {
-        std::vector<unsigned int> checked_index;
-        std::vector<bool> changed;
-        for(unsigned int index = 0;index < tract_models.size();++index)
-            if(item(int(index),0)->checkState() == Qt::Checked)
+        std::vector<unsigned int> selected;
+        if(indices.empty())
+            for(unsigned int index = 0;index < tract_models.size();++index)
+                if(item(int(index),0)->checkState() == Qt::Checked)
+                    selected.push_back(index);
+        else
+            for(const auto& text : QString::fromStdString(indices).split('&'))
             {
-                checked_index.push_back(index);
-                changed.push_back(false);
+                bool okay;
+                auto index = text.toUInt(&okay);
+                if(!okay || index >= tract_models.size())
+                    return error_msg = "invalid tract index: "+text.toStdString(),false;
+                if(std::find(selected.begin(),selected.end(),index) == selected.end())
+                    selected.push_back(index);
             }
 
+        std::vector<unsigned char> changed(selected.size());
         {
-            tipl::par_for(checked_index.size(),[&](unsigned int i)
+            tipl::par_for(selected.size(),[&](unsigned int i)
             {
-                auto lock = tract_rendering[checked_index[i]]->start_writing();
-                if(fun(checked_index[i]))
+                auto lock = tract_rendering[selected[i]]->start_writing();
+                if(fun(selected[i]))
                 {
                     changed[i] = true;
-                    tract_rendering[checked_index[i]]->need_update = true;
+                    tract_rendering[selected[i]]->need_update = true;
                 }
             });
         }
-        for(unsigned int i = 0;i < checked_index.size();++i)
+        for(unsigned int i = 0;i < selected.size();++i)
             if(changed[i])
             {
-                item(int(checked_index[i]),1)->setText(QString::number(tract_models[checked_index[i]]->get_visible_track_count()));
-                item(int(checked_index[i]),2)->setText(QString::number(tract_models[checked_index[i]]->get_deleted_track_count()));
+                item(int(selected[i]),1)->setText(QString::number(tract_models[selected[i]]->get_visible_track_count()));
+                item(int(selected[i]),2)->setText(QString::number(tract_models[selected[i]]->get_deleted_track_count()));
             }
-        //emit show_tracts();
+        return true;
     }
 public:
     unsigned int render_time = 200;
