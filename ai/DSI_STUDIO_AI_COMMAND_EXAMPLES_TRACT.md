@@ -8,15 +8,19 @@ This file contains tract and automatic-tracking commands confirmed in the curren
 |---|---|---|
 | `list_tract` | `["list_tract"]` | List all tract bundles and full details. |
 | `list_tract status` | `["list_tract","status"]` | Return only targeted tracking status (`running bundles`); use top-level `LIST` for routine polling. |
-| `run_tracking` | `["run_tracking","Whole Brain"]` | Start asynchronous tracking; `command[1]` is the mandatory new bundle name. |
+| `run_tracking` | `["run_tracking","Whole Brain"]` | Start asynchronous tracking with the current tracking parameters and checked region settings; `command[1]` is the mandatory new bundle name. |
+| `run_tracking` | `["run_tracking","CST","0:3&1:0"]` | Start tracking with explicit region settings: region 0 as Seed and region 1 as ROI. The third element uses `index:type` entries separated by `&`. See **ROI settings syntax** and footnote 2. |
 | `list_auto_tract` | `["list_auto_tract"]` | List valid automatic tract names. |
 | `run_auto_track` | `["run_auto_track","Corticospinal Tract"]` | Run automatic tracking for a discovered tract name. |
+| `run_auto_track` | `["run_auto_track","Corticospinal Tract","0:0&1:1"]` | Run automatic tracking while also applying explicit region 0 as ROI and region 1 as ROA. See **ROI settings syntax** and footnote 2. |
 | `show_only_tracts` | `["show_only_tracts","0&2&5"]` | Show only listed `&`-separated tract indices and hide all others. |
 | `enable_auto_tract` | `["enable_auto_tract"]` | Load the symmetric tract atlas and enable automatic-tract controls. |
-| `open_tract` | `["open_tract","C:/output/cst.tt.gz"]` | Open one native-space tract file. Open multiple files by sending one command per path. |
+| `open_tract` | `["open_tract","C:/output/cst.tt.gz"]` | Open one native-space tract file and show each loaded bundle. Open multiple files by sending one command per path. |
+| `open_tract` | `["open_tract","C:/output/all_bundles.tt.gz","0"]` | Open the tract file with newly loaded bundles unchecked/hidden. The source tests only whether the third element is empty; any nonempty string has this effect. |
 | `open_mni_tract` | `["open_mni_tract","C:/data/cst_mni.tt.gz"]` | Open an MNI-space tract and map it into the current subject. |
 | `open_tract_name` | `["open_tract_name","C:/data/tract_names.txt"]` | Load whitespace-separated names and apply them in reverse order to the most recently listed tract rows. |
-| `load_tract_atlas` | `["load_tract_atlas","Corticospinal_Tract"]` | Load a named population tract-atlas bundle; omit the name only for interactive/all-bundle use. |
+| `load_tract_atlas` | `["load_tract_atlas","Corticospinal_Tract"]` | Load one named population tract-atlas bundle. |
+| `load_tract_atlas` | `["load_tract_atlas"]` | Load every tract name from the asymmetric tract atlas; this may create many bundles. |
 | `save_tract` | `["save_tract","C:/output/cst.tt.gz","0"]` | Save one completed tract bundle by index. |
 | `save_mni_tract` | `["save_mni_tract","C:/output/cst_mni.tt.gz","0"]` | Save one tract in MNI coordinates. |
 | `save_template_tract` | `["save_template_tract","C:/output/cst_template.tt.gz","0"]` | Save one tract in loaded template space. |
@@ -55,7 +59,7 @@ This file contains tract and automatic-tracking commands confirmed in the curren
 | `cut_tract_by_z` | `["cut_tract_by_z","80"]` | Cut every checked bundle at Z slice 80 and retain the default side. |
 | `cut_tract_by_z2` | `["cut_tract_by_z2","80"]` | Cut every checked bundle at Z slice 80 and retain the opposite side. |
 | `set_dt_index` | `["set_dt_index","qa&iso","0"]` | Set differential metrics `m1&m2` and calculation type; creates the `dT_metrics` slice the first time. |
-| `filter_tract` | `["filter_tract","0:3&1:0"]` | Filter tracks using ROI/ROA/End settings. |
+| `filter_tract` | `["filter_tract","0:3&1:0"]` | Filter every checked tract using region 0 as Seed and region 1 as ROI. The argument uses the same `index:type` encoding as tracking. |
 | `check_tract` | `["check_tract","0","1"]` | Set one tract's checked state. |
 | `check_uncheck_all_tract` | `["check_uncheck_all_tract","1"]` | Check/uncheck all tracts; explicit `1` or `0` is preferred. |
 | `select_cluster_color` | `["select_cluster_color","0","4294901760"]` | Set one bundle to a packed Qt ARGB color and switch to assigned coloring. |
@@ -82,9 +86,31 @@ This file contains tract and automatic-tracking commands confirmed in the curren
 | `reconnect_tract` | `["reconnect_tract","0","4 30"]` | Reconnect trajectories using a maximum distance and angle. |
 | `recognize_and_rename_tract` | `["recognize_and_rename_tract"]` | Recognize each checked bundle and rename it to the top atlas match. |
 
+## ROI settings syntax
+
+Tracking and filtering accept an `&`-separated list of `region-index:role` entries:
+
+```text
+0:3&1:0&2:1
+```
+
+This means region 0 is a Seed, region 1 is an ROI, and region 2 is an ROA. Role values are:
+
+- `0` = ROI
+- `1` = ROA
+- `2` = End
+- `3` = Seed
+- `4` = Terminative
+- `5` = NotEnd
+- `6` = Limiting
+
+Use `list_region` immediately before constructing the string. Explicit settings use the supplied rows and roles directly; they do not require those rows to be checked in the table.
+
 ## Tracking workflow notes
 
 - `run_tracking` requires a nonempty bundle name in `command[1]`.
+- The two-element `run_tracking` form uses the current tracking parameters and the region settings currently checked in the table.
+- The three-element `run_tracking` form is recognized as the convenient explicit-ROI form when its third string is empty or contains `:`; DSI Studio inserts the current tracking parameter code internally.
 - Fiber tracking is asynchronous. A successful reply means tracking started; poll top-level `LIST`.
 - `list_tract` takes no required parameter. The optional literal `"status"` returns compact status.
 - `trim_tract`, `delete_branch`, `undo_tract`, `redo_tract`, `cut_tract_by_*`, `delete_repeated_tract`, `resample_tract`, and `delete_tract_by_length` operate on checked bundles.
@@ -144,3 +170,4 @@ These parameters are the `Tracking`, `Tracking_dT`, and `Tracking_adv` groups fr
 ## Footnotes
 
 1. The current transformed-endpoint implementation should not be relied on. `save_slice_tract_endpoint` first writes transformed endpoints and then falls through to native `save_end_points()` on the same path. `save_mni_tract_endpoint` calls `sub2mni()` on a temporary point but appends the original native `points1` coordinates to the output buffer, then also falls through to native `save_end_points()`. The command names are preserved here, but examples remain blank until those branches are fixed.
+2. `run_tracking` creates and appends the new tract bundle and assigns its thread object before validating explicit ROI settings. If an `index:type` entry is invalid, the command returns failure without removing that newly appended bundle/thread entry. Validate every region index and role with `list_region` before sending the command.
