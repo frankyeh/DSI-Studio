@@ -246,6 +246,20 @@ TIP improves bundle coherence but does not prove anatomical validity.
 
 # ROI Principles
 
+## Prefer Segmentation-Derived Regions
+
+Whenever possible, derive Seed, ROI, ROA, End, and Terminative regions from
+anatomical segmentation rather than drawing them from scratch. Prefer
+segmentation of an aligned T1w image in the tracking window. Segmented labels
+can be selected and manually merged to create most anatomical region sets, then
+assigned the required tracking roles.
+
+If no T1w image is available, segment the isotropic diffusion image (`iso`).
+Many brain-segmentation models are modality agnostic and can work with either
+T1w or `iso`, but always inspect the label boundaries and registration before
+using them for tracking. Do not assume successful inference means anatomically
+valid regions.
+
 ## 10. ROI Types Have Different Functions
 
 An agent must distinguish ROI roles. Regions are not interchangeable.
@@ -512,6 +526,7 @@ Classify the task as:
 Confirm:
 
 - a valid `.fib.gz` or `.fz` file is loaded;
+- an aligned T1w image is available, or use `iso` for segmentation;
 - reconstruction space;
 - voxel size;
 - tracking index;
@@ -538,6 +553,10 @@ Begin with DSI Studio default settings for:
 Change one parameter at a time and document the reason.
 
 ### Step 5: Define ROI logic
+
+Prefer T1w-based segmentation, or `iso` segmentation when T1w is unavailable.
+Select and merge anatomical labels to form the needed region sets before
+assigning each tracking role.
 
 For every region, record:
 
@@ -682,8 +701,10 @@ Before running tractography, identify whether the task is whole-brain,
 named-tract, ROI-based, endpoint connectivity, or connectome analysis.
 
 Inspect whole-brain tracking first. Start with default tracking parameters.
-Define every region explicitly as seed, ROI, ROA, endpoint, or terminative
-region and state its anatomical role.
+Prefer T1w-based segmentation for regions, or `iso` segmentation when T1w is
+unavailable. Merge anatomical labels as needed, then define every region
+explicitly as seed, ROI, ROA, endpoint, or terminative region and state its
+anatomical role.
 
 For AutoTrack, use a tract limit of 10,000 and a seed limit of approximately
 10,000,000. Difficult tracts may have a very low seed-to-tract yield, so the
