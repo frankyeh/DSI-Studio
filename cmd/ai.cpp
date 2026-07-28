@@ -452,10 +452,10 @@ void ai_request(QLocalSocket* socket,const QByteArray& data)
     auto json = QString::fromUtf8(QJsonDocument(activity).toJson(
                                  QJsonDocument::Compact));
 
-    if(type != "LIST" || !chat.isEmpty())
+    if(type != "LIST" || !chat.isEmpty() || type != "TITLE")
     {
-        ai_log(agent_name + ":" + chat);
         main_window->add_ai_history(session,"request",json);
+        ai_log(agent_name + ":" + chat);
     }
     else
         ai_log(agent_name + " sent " + type + " request ");
