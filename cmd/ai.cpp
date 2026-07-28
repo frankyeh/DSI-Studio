@@ -648,9 +648,10 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
 
         content = content.toHtmlEscaped().replace('\n',"<br>");
         if(!activity.isEmpty())
-            content = QString("<span style=\"color:#80868b;font-size:9pt;\"><br>%1").arg(content);
+            content.prepend("<br>");
         if(request)
             content = "<span style=\"color:#5f6368;\">"+content+"</span>";
+
         auto color = request ? "#f1f3f4" : user ? "#e8f0fe" : "#e8f5e9";
         auto time = QDateTime::fromString(entry["time"].toString(),Qt::ISODate).
                     toString("MM/dd HH:mm:ss");
