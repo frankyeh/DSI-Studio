@@ -163,13 +163,15 @@ Minimum form:
 The second command element is mandatory and becomes the new tract-bundle name.
 An empty name fails with `missing tract-bundle name`. With the two-element form,
 DSI Studio uses the current tracking parameters and checked region settings.
-Discover and set parameters before tracking when needed.
+Before running, use `["list_param","tracking"]` to show all tracking parameters
+and their current values. Review these values before changing them or starting
+tracking.
 
 Typical sequence:
 
 ```json
 ["list_region"]
-["list_param"]
+["list_param","tracking"]
 ["set_params","fa_threshold=0.08&min_length=20"]
 ["run_tracking","CST"]
 ```
@@ -189,6 +191,7 @@ Do not resend `run_tracking` merely because a client timeout occurred. Poll
 | Full tract table | `["list_tract"]` | tracking |
 | Compact tract status | `["list_tract","status"]` | tracking |
 | Parameter IDs | `["list_param"]` | tracking |
+| Tracking parameters and current values | `["list_param","tracking"]` | tracking |
 | One parameter value | `["list_param","fa_threshold"]` | tracking |
 | Atlases | `["list_atlas"]` | tracking |
 | Segmentation models | `["list_unet"]` | tracking |
