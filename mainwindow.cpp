@@ -277,7 +277,10 @@ MainWindow::MainWindow(QWidget *parent) :
                 continue;
             std::string command_name = tip.mid(4).trimmed().toStdString();
             connect(button,&QPushButton::clicked,this,[this,command_name]
-                    {command({command_name});});
+            {
+                if(!command({command_name}) && !error_msg.empty())
+                    QMessageBox::critical(this,"ERROR",QString::fromStdString(error_msg));
+            });
         }
     }
 }
@@ -1049,15 +1052,17 @@ void MainWindow::on_template_list_itemDoubleClicked(QListWidgetItem *item)
     open_template(item->text());
 }
 
-void MainWindow::open_template(QString name)
+bool MainWindow::open_template(QString name)
 {
     for(auto& each : fib_template_list)
         if(std::filesystem::path(each).stem().u8string() == name.toStdString())
         {
-            if(loadFib(each.u8string().c_str()))
-                tracking_windows.back()->work_path.clear();
-            return;
+            if(!loadFib(each.u8string().c_str()))
+                return false;
+            tracking_windows.back()->work_path.clear();
+            return true;
         }
+    return error_msg = name.toStdString() + " not a valid template",false;
 }
 
 
@@ -1092,8 +1097,31 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
     auto fail = [&](const std::string& msg){error_msg = msg;return false;};
     if(cmd.empty())
         return fail("empty command");
-    if(cmd.size() > 2)
-        return fail("too many arguments");
+
+    if(cmd[0] == "open_hub" || tipl::begins_with(cmd[0],"hub_"))
+    {
+        if(cmd[0] == "open_hub" && cmd.size() != 1)
+            return fail("open_hub takes no arguments");
+        if(!fiber_data_hub)
+            fiber_data_hub = new FiberDataHub(this);
+        fiber_data_hub->showNormal();
+        fiber_data_hub->raise();
+        fiber_data_hub->activateWindow();
+        if(cmd[0] == "open_hub")
+            return true;
+        if(!fiber_data_hub->command(cmd))
+            return fail(fiber_data_hub->error_msg);
+        return true;
+    }
+
+
+    auto get_files = [&](size_t begin = 1)
+    {
+        QStringList files;
+        for(size_t i = begin;i < cmd.size();++i)
+            files << QString::fromUtf8(cmd[i].c_str());
+        return files;
+    };
 
     if(cmd[0] == "list_recent_fib")
     {
@@ -1143,8 +1171,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
     if(cmd[0] == "rename_dicom")
     {
         QStringList files;
-        if(cmd.size() == 2)
-            files = QString::fromUtf8(cmd[1]).split("&");
+        if(cmd.size() >= 2)
+            files = get_files();
         else
         {
             files = QFileDialog::getOpenFileNames(
@@ -1176,8 +1204,6 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         }
         add_work_dir(dir);
         rename_dicom_at_dir(tipl::qt::to_path(dir),tipl::qt::to_path(dir));
-        QMessageBox::information(
-            this,QApplication::applicationName(),"renaming complete");
         return true;
     }
 
@@ -1220,8 +1246,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         if(files.empty())
         {
             std::string message("cannot find bids nifti data");
-            return QMessageBox::critical(
-                       this,"ERROR",message.c_str()),fail(message);
+            return fail(message);
         }
         std::sort(files.begin(),files.end());
         return nii2src(files,tipl::qt::to_path(output_dir),true,true,false) ||
@@ -1245,11 +1270,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         std::vector<std::filesystem::path> files;
         search_dwi_nii(tipl::qt::to_path(dir),files);
         if(files.empty())
-        {
-            std::string message("cannot find nifti data");
-            return QMessageBox::critical(
-                       this,"ERROR",message.c_str()),fail(message);
-        }
+            return fail("cannot find nifti data");
 
         std::vector<std::filesystem::path> selected;
         selected.reserve(files.size());
@@ -1288,11 +1309,11 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
     if(cmd[0] == "collect_network_measures")
     {
         QStringList files;
-        if(cmd.size() == 2)
-            files = QString::fromUtf8(cmd[1]).split("&");
+        if(cmd.size() >= 2)
+            files = get_files();
         else
         {
-            auto files = QFileDialog::getOpenFileNames(
+            files = QFileDialog::getOpenFileNames(
                          this,"Open Network Measures",work_dir(),
                          "Text files (*.txt);;All files (*)");
             if(files.isEmpty())
@@ -1353,11 +1374,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         auto output = files[0]+".collected.txt";
         QFile file(output);
         if(!file.open(QIODevice::WriteOnly|QIODevice::Text))
-        {
-            auto message = "cannot write "+output;
-            return QMessageBox::critical(
-                       this,"ERROR",message),fail(message.toStdString());
-        }
+            return fail("cannot write "+output.toStdString());
 
         QTextStream out(&file);
         out << "Field";
@@ -1374,8 +1391,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
     if(cmd[0] == "open_src")
     {
         QStringList files;
-        if(cmd.size() == 2)
-            files = QString::fromUtf8(cmd[1]).split("&");
+        if(cmd.size() >= 2)
+            files = get_files();
         else
         {
             files = tipl::qt::open_image_files(
@@ -1394,8 +1411,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
        cmd[0] == "open_dwi_2dseq")
     {
         QStringList files;
-        if(cmd.size() == 2)
-            files = QString::fromUtf8(cmd[1]).split("&");
+        if(cmd.size() >= 2)
+            files = get_files();
         else
         {
             if(cmd[0] == "open_dwi_nifti")
@@ -1419,7 +1436,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
             dir = QString::fromUtf8(cmd[1]);
         else
         {
-            auto dir = QFileDialog::getExistingDirectory(
+            dir = QFileDialog::getExistingDirectory(
                            this,"Open directory",work_dir());
             if(dir.isEmpty())
                 return true;
@@ -1460,8 +1477,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
                 return true;
             template_name = item->text();
         }
-        open_template(template_name);
-        return true;
+        return open_template(template_name);
     }
 
     if(cmd[0] == "create_db" || cmd[0] == "create_average")
@@ -1491,10 +1507,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
             database = std::make_shared<group_connectometry_analysis>();
             tipl::progress prog_("reading connectometry db");
             if(!database->load_database(file.toStdString().c_str()))
-            {
-                QMessageBox::critical(this,"ERROR",database->error_msg.c_str());
-                return false;
-            }
+                return fail(database->error_msg);
         }
 
         if(cmd[0] == "open_db")
@@ -1570,8 +1583,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
     {
         bool nii = cmd[0] == "qc_nii",src = cmd[0] == "qc_src";
         QStringList filenames;
-        if(cmd.size() == 2)
-            filenames = QString::fromUtf8(cmd[1]).split("&");
+        if(cmd.size() >= 2)
+            filenames = get_files();
         else
         {
             filenames = tipl::qt::open_image_files(
@@ -1583,7 +1596,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
                 return true;
         }
         std::vector<std::filesystem::path> files;
-        files.reserve(files.size());
+        files.reserve(filenames.size());
         for(const auto& file : filenames)
             files.push_back(tipl::qt::to_path(file));
         tipl::progress prog(nii ? "checking NIFTI files" :
@@ -1611,8 +1624,8 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
     if(cmd[0] == "open_image")
     {
         QStringList files;
-        if(cmd.size() == 2)
-            files = QString::fromUtf8(cmd[1]).split("&");
+        if(cmd.size() >= 2)
+            files = get_files();
         else
         {
             files = tipl::qt::open_image_files(
@@ -1626,9 +1639,9 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         window->setAttribute(Qt::WA_DeleteOnClose);
         if(!window->open(files))
         {
-            if(cmd.size() == 2)
-                return fail(window->error_msg.c_str());
-            return QMessageBox::critical(this,"ERROR",window->error_msg.c_str()),delete window,false;
+            auto message = window->error_msg;
+            delete window;
+            return fail(message);
         }
         window->show();
         return true;
@@ -1642,22 +1655,5 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         ai_agent->activateWindow();
         return true;
     }
-
-    if(cmd[0] == "open_hub" || tipl::begins_with(cmd[0],"hub_"))
-    {
-        if(cmd[0] == "open_hub" && cmd.size() != 1)
-            return fail("open_hub takes no arguments");
-        if(!fiber_data_hub)
-            fiber_data_hub = new FiberDataHub(this);
-        fiber_data_hub->showNormal();
-        fiber_data_hub->raise();
-        fiber_data_hub->activateWindow();
-        if(cmd[0] == "open_hub")
-            return true;
-        if(!fiber_data_hub->command(cmd))
-            return fail(fiber_data_hub->error_msg);
-        return true;
-    }
-
     return fail("unknown command: "+cmd[0]);
 }
