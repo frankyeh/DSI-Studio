@@ -26,6 +26,7 @@ This file contains rendering, camera, surface, and display commands confirmed in
 | `save_v3view_screen` | `["save_v3view_screen","C:/output/tracts_v3view.png"]` | Save four directional views in a vertical image. |
 | `save_rotation_video` | `["save_rotation_video","C:/output/rotation.avi"]` | Currently broken: the handler returns immediately after validating the filename, so the AVI-writing block is unreachable. |
 | `add_surface` | `["add_surface","7","0.6"]` | Create a surface from slice index 7 using threshold `0.6`; omission of the threshold opens a dialog. |
+| `add_surface` | `["add_surface","0","25"]` | For a built-in slice, map the built-in ICBM152 white-matter image to subject space and create a whole-brain white-matter isosurface at threshold `25`. |
 | `add_surface_left` | `["add_surface_left","7","0.6"]` | Create a surface after retaining the source portion on the left side of the current X slice position. |
 | `add_surface_right` | `["add_surface_right","7","0.6"]` | Create a surface after retaining the source portion on the right side of the current X slice position. |
 | `add_surface_upper` | `["add_surface_upper","7","0.6"]` | Create a surface after retaining the source portion above the current Z slice position. |
