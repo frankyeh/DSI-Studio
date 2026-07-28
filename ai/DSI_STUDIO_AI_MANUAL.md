@@ -12,7 +12,7 @@ are accepted only by the window type that implements them.
 
 | Window type | What it represents | Common valid commands | File-opening role |
 |---|---|---|---|
-| **main** | Main DSI Studio window | `list_recent_fib`, `list_recent_src`, `open_image`, `hub ...`, `run_cli` | `open_image` is primarily for opening NIfTI and other image files for image viewing, modification, and editing. Do not use it to open `.fz` when the fiber-tracking interface is needed. |
+| **main** | Main DSI Studio window | `list_recent_fib`, `list_recent_src`, `open_image`, `hub_repo`, `hub_tags`, `hub_files`, `hub_open`, `hub_download`, `run_cli` | `open_image` is primarily for opening NIfTI and other image files for image viewing, modification, and editing. Do not use it to open `.fz` when the fiber-tracking interface is needed. |
 | **image** | General image viewer | Image inspection, editing, and `segmentation` commands | Used mainly for standalone NIfTI editing and batch image processing, not as the default T1w-segmentation route when a related FIB is already open. |
 | **tracking** | A loaded FIB/FZ tracking window | `list_slice`, `set_slice`, `list_unet`, `segment_brain`, `list_region`, `list_tract`, `run_tracking`, `open_fib`, tract/region/slice/device/rendering commands | Use `open_fib` to open `.fz` or `*fib.gz` in the fiber-tracking interface. For a FIB workflow, segment its T1w in this tracking window rather than opening a separate image window. |
 
@@ -184,25 +184,49 @@ NIfTI image or applying an image-processing workflow to multiple files. Open a
 T1w with `open_image` for this route only when the task is explicitly image
 editing or batch processing, rather than work on an already-open FIB.
 
-### Fiber Data Hub: `hub open` must target the intended FIB file
+### Fiber Data Hub uses separate `hub_*` commands
 
-First list the release files and use the exact first-column index belonging to
-the desired `.fz` or `*fib.gz` file:
+All Hub commands target the **main** window. The former subcommand form such as
+`["hub","files",...]` is no longer accepted. Use this discovery sequence:
 
 ```json
-["hub","files","<repo>","<tag>",".fz"]
-["hub","open","<repo>","<tag>","<exact-FIB-index>"]
+["hub_repo"]
+["hub_tags","<repo>"]
+["hub_files","<repo>","<tag>",".fz","0","20"]
+["hub_open","<repo>","<tag>","<exact-FIB-filename-or-returned-index>"]
 ```
 
-`hub open` also accepts the exact filename, but a numeric value must be the actual
-row index returned by `hub files`, not an ordinal guessed from the filtered
-results. Verify that the selected row is an `.fz` or `*fib.gz` asset when a
-fiber-tracking window is expected. A valid index for a non-FIB asset may be
-accepted but will not produce the intended tracking-window result.
+`hub_repo` lists an index and the exact `owner/repository` identifier. Pass that
+exact identifier to `hub_tags`. The release list may still be loading; when
+`hub_tags` reports `repository data is loading; retry`, repeat the same command
+after the metadata finishes loading.
 
-After `hub open`, call top-level `LIST` and verify that a new `tracking` window
-appeared. Do not treat an accepted request without a new tracking window as a
-successful FIB open.
+`hub_files` syntax is:
+
+```json
+["hub_files","<repo>","<tag>","<optional-text>","<offset>","<limit>"]
+```
+
+The text filter is a case-insensitive substring match. Filtering occurs before
+offset and limit are applied. The first output column remains the actual row
+index in the full file table, not the ordinal position within the filtered
+results. Use that returned index or the exact filename for `hub_open` and
+`hub_download`.
+
+To persist a file without opening it:
+
+```json
+["hub_download","<repo>","<tag>","<exact-filename-or-returned-index>","C:/data"]
+```
+
+`hub_download` requires exactly five elements. It creates the destination
+directory when needed, disables overwrite, and skips an existing destination
+file.
+
+When opening FIB data, verify that the selected file is `.fz` or `*fib.gz`. After
+`hub_open`, call top-level `LIST` and verify that a new `tracking` window appeared.
+Hub open/download routines are GUI-backed; verify the created window or output
+file rather than treating `okay:true` alone as proof of completion.
 
 ### `list_tract` does not require a numeric parameter
 
@@ -266,7 +290,9 @@ the tracking job has completed.
 | Need | Command | Window |
 |---|---|---|
 | Open windows and activity | top-level `LIST` | none |
-| Hub release files and exact indices | `["hub","files","<repo>","<tag>"]` | main |
+| Hub repositories | `["hub_repo"]` | main |
+| Hub release tags | `["hub_tags","<repo>"]` | main |
+| Hub release files and exact indices | `["hub_files","<repo>","<tag>"]` | main |
 | Recent FIB/FZ paths | `["list_recent_fib"]` | main |
 | Recent SRC/SZ paths | `["list_recent_src"]` | main |
 | Slice names and readiness | `["list_slice"]` | tracking |
