@@ -72,7 +72,6 @@ tracking	3	1	2	C:/data/group.fz
 
 - Global `busy=1` means a TIPL operation or a supported window is busy.
 - `level` is the TIPL nesting depth excluding the persistent application root.
-  It is `1` when only asynchronous work such as fiber tracking is active.
 - Each window row reports `type`, numeric `id`, `busy`, `tracking-jobs`, and
   normalized title/path.
 - Silent `LIST` requests without `chat` are not written to AI history or console
@@ -84,9 +83,8 @@ tracking	3	1	2	C:/data/group.fz
 {"agent":"Codex","session":"<uuid>","request":"LOG"}
 ```
 
-`LOG` reads new DSI Studio console output. It returns at most 4096 new console
-characters and advances the session cursor. It does not publish a message to
-the user.
+`LOG` reads new DSI Studio console output. It does not publish a message to the
+user.
 
 ### CHAT
 
@@ -95,8 +93,6 @@ the user.
 ```
 
 `CHAT` is a standalone top-level request. It uses no `window` or `command` field.
-A non-empty message returns `OKAY`. Use it for the final answer, a required user
-decision, or one blocked/waiting update.
 
 ### TITLE
 
@@ -104,11 +100,7 @@ decision, or one blocked/waiting update.
 {"agent":"Codex","session":"<uuid>","request":"TITLE","title":"Segment T1w image"}
 ```
 
-A later `TITLE` replaces the current title; send it only when renaming is useful.
-
 ### Open one local file
-
-Send one existing absolute path as raw pipe text:
 
 ```text
 C:\data\subject.fz
@@ -116,13 +108,11 @@ C:\data\subject.fz
 
 ## CMD format
 
-Use the numeric window ID returned by `LIST`:
-
 ```json
 {"agent":"Codex","session":"<uuid>","request":"CMD","window":"2","command":["list_slice"]}
 ```
 
-All command elements must be strings. For example, select slice index 7 with:
+All command elements must be strings:
 
 ```json
 {"agent":"Codex","session":"<uuid>","request":"CMD","window":"2","command":["set_slice","7"]}
@@ -141,15 +131,13 @@ commands. Do not send an empty command array.
 
 ## Command examples and inventory
 
-Wrap each example array below in the standard `CMD` request shown above. Replace
-values in angle brackets with values returned by the corresponding discovery
-command. Every parameter remains a quoted JSON string. Blank example cells mark
-source commands that are listed for discovery but do not yet have a documented
-recommended example.
+Wrap each example array below in the standard `CMD` request shown above. Blank
+example cells mark source commands without a documented recommended example.
+Every command name and parameter remains a quoted JSON string.
 
 ### Main-window and Hub commands
 
-| Task or command | Common example |
+| Command | Common example |
 |---|---|
 | `list_recent_fib` | `["list_recent_fib"]` |
 | `list_recent_src` | `["list_recent_src"]` |
@@ -161,11 +149,6 @@ recommended example.
 | `hub help` |  |
 | `open_image` | `["open_image","C:/data/T1w.nii.gz","C:/data/T2w.nii.gz"]` |
 | `run_cli` | `["run_cli","--action=rec --loop=C:\\data\\*.sz --method=4"]` |
-
-`hub files` returns `index`, `file`, `size`, and `downloaded`. Use a returned
-filename or quoted index for `hub open` and `hub download`. If the download
-directory does not exist, DSI Studio creates it and reports `directory_created`.
-A successful reply is returned only after the data have been written to disk.
 
 ### Tracking-window file, workspace, and setting commands
 
@@ -189,7 +172,7 @@ A successful reply is returned only after the data have been written to disk.
 
 ### Slice and segmentation commands
 
-| Task or command | Common example |
+| Command | Common example |
 |---|---|
 | `list_slice` | `["list_slice"]` |
 | `set_slice` | `["set_slice","7"]` |
@@ -215,20 +198,9 @@ A successful reply is returned only after the data have been written to disk.
 | `save_slice_volume` |  |
 | `delete_slice` |  |
 
-`list_slice` returns:
-
-```text
-index current name ready registering downloaded registered
-```
-
-For custom volumes, `registering=1` means registration is still running.
-`segment_brain` first tries an exact slice name and then a quoted numeric index.
-It waits for custom-slice registration and returns after inference and region
-creation finish. Verify the result with `list_region`.
-
 ### Region commands
 
-| Task or command | Common example |
+| Command | Common example |
 |---|---|
 | `list_region` | `["list_region"]` |
 | `list_atlas` | `["list_atlas"]` |
@@ -267,23 +239,20 @@ creation finish. Verify the result with `list_region`.
 | `threshold_region` |  |
 
 Region types are `0=ROI`, `1=ROA`, `2=End`, `3=Seed`, `4=Terminative`,
-`5=NotEnd`, and `6=Limiting`. Colors are unsigned packed Qt ARGB integers.
+`5=NotEnd`, and `6=Limiting`.
 
 ### Tracking parameter commands
 
-| Task or command | Common example |
+| Command | Common example |
 |---|---|
 | `list_param` all IDs | `["list_param"]` |
 | `list_param` one ID | `["list_param","step_size"]` |
 | `set_param` | `["set_param","step_size","1.0"]` |
 | `set_params` | `["set_params","step_size=1.0&min_length=20"]` |
 
-Call parameterless `list_param` first and use only IDs it returns. Values are
-strings even when they represent numbers.
-
 ### Fiber tracking and tract commands
 
-| Task or command | Common example |
+| Command | Common example |
 |---|---|
 | `list_tract` | `["list_tract"]` |
 | `list_tract status` | `["list_tract","status"]` |
@@ -335,16 +304,6 @@ strings even when they represent numbers.
 | `set_tract_color_style` |  |
 | `set_tract_visible` |  |
 
-`run_tracking` uses the current tracking settings and the directional
-information stored in the loaded FIB. Its required second element is the new
-bundle label, not a reconstruction or tracking-method name. Each optional ROI
-item is `region-index:type`.
-
-Fiber tracking is asynchronous. A successful reply means tracking started.
-Poll top-level `LIST`; the target window's `tracking-jobs` reaches zero when no
-active tracking bundle remains. Request full `list_tract` afterward only when
-bundle details are needed.
-
 ### Device commands
 
 | Command | Common example |
@@ -361,7 +320,7 @@ bundle details are needed.
 
 ### Rendering, camera, and surface commands
 
-| Task or command | Common example |
+| Command | Common example |
 |---|---|
 | `rotate` | `["rotate","15 1 0 0"]` |
 | `save_hd_screen` | `["save_hd_screen","C:/output/tracts.png","1920 1080"]` |
@@ -389,6 +348,8 @@ bundle details are needed.
 
 ### Image-window commands
 
+DSI Studio handles these commands directly before delegating to TIPL:
+
 | Command | Common example |
 |---|---|
 | `change_type` |  |
@@ -400,8 +361,70 @@ bundle details are needed.
 | `warp_to_image` |  |
 | `apply_to_image` |  |
 
-Other generic image operations are delegated to TIPL's image-command handler
-and are not enumerated by literal DSI Studio `cmd[0]` comparisons.
+TIPL `cmd.hpp` supplies the following generic image commands:
+
+| Command | Common example |
+|---|---|
+| `morphology_defragment` |  |
+| `morphology_fill_holes` |  |
+| `morphology_fill_holes_by_slice` |  |
+| `morphology_defragment_by_size` |  |
+| `morphology_dilation` |  |
+| `morphology_erosion` |  |
+| `morphology_opening` |  |
+| `morphology_closing` |  |
+| `morphology_edge` |  |
+| `morphology_edge_xy` |  |
+| `morphology_edge_xz` |  |
+| `morphology_smoothing` |  |
+| `sobel_filter` |  |
+| `gaussian_filter` |  |
+| `mean_filter` |  |
+| `smoothing_filter` |  |
+| `normalize` |  |
+| `normalize_otsu_median` |  |
+| `flip_x` |  |
+| `flip_y` |  |
+| `flip_z` |  |
+| `select_value` |  |
+| `add_value` |  |
+| `multiply_value` |  |
+| `lower_threshold` |  |
+| `upper_threshold` |  |
+| `threshold` |  |
+| `otsu_threshold` |  |
+| `equation` |  |
+| `set_transformation` |  |
+| `set_translocation` |  |
+| `set_mni` |  |
+| `upsampling` |  |
+| `downsampling` |  |
+| `header_flip_x` |  |
+| `header_flip_y` |  |
+| `header_flip_z` |  |
+| `header_swap_xy` |  |
+| `header_swap_xz` |  |
+| `header_swap_yz` |  |
+| `swap_xy` |  |
+| `swap_xz` |  |
+| `swap_yz` |  |
+| `crop_to_fit` |  |
+| `transform` |  |
+| `translocate` |  |
+| `resize` |  |
+| `resize_at_center` |  |
+| `reshape` |  |
+| `regrid` |  |
+| `concatenate_image` |  |
+| `refine_label` |  |
+| `load_image` |  |
+| `multiply_image` |  |
+| `add_image` |  |
+| `minus_image` |  |
+| `max_image` |  |
+| `min_image` |  |
+| `save` |  |
+| `open` |  |
 
 ## Reply formats
 
