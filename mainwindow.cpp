@@ -186,9 +186,31 @@ MainWindow::MainWindow(QWidget *parent) :
             ui->ai_model_selector->addItem(model,
                 QVariant::fromValue(profiles[model].toObject()));
     };
-    connect(ui->ai_agent_selector,&QComboBox::currentTextChanged,this,
+    connect(ui->ai_agent_selector,QOverload<int>::of(&QComboBox::currentIndexChanged),this,
             [update_models] { update_models(); });
     update_models();
+
+    {
+        auto update_agent_name = [this]
+        {
+            auto index = ui->ai_agent_selector->currentIndex();
+            auto name = index == int(ai_provider::Codex) ? "Codex" : "Claude";
+            if(ui->ai_model_selector->currentData().toJsonObject()["provider"].toInt() ==
+                int(ai_model_provider::Ollama))
+            {
+                auto host = settings.value("ai/ollama_host","localhost").
+                            toString().trimmed();
+                if(!host.contains("://"))
+                    host.prepend("http://");
+                name += QString("/Ollama@") + QUrl(host).host();
+            }
+            ui->ai_agent_selector->setItemText(index,name);
+        };
+        connect(ui->ai_model_selector,&QComboBox::currentTextChanged,
+                this,[update_agent_name]{update_agent_name();});
+        update_agent_name();
+    }
+
 
     auto default_agent = settings.value(
         "ai/default_agent",ui->ai_agent_selector->currentIndex());
@@ -199,6 +221,8 @@ MainWindow::MainWindow(QWidget *parent) :
     if(default_index >= 0 &&
        default_index < ui->ai_agent_selector->count())
         ui->ai_agent_selector->setCurrentIndex(default_index);
+
+
 
     ui->ai_model_selector->setCurrentText(
         settings.value("ai/default_model",ui->ai_model_selector->currentText()).toString());
