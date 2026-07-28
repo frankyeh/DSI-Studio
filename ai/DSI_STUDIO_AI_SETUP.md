@@ -1,6 +1,10 @@
 # DSI Studio AI Setup
 
-Read this file completely. Search `DSI_STUDIO_AI_MANUAL.md` only for commands
+Read the **Identity** and **Direct named-pipe connection** sections first. As
+soon as the exact agent/session identity and a working pipe client are ready,
+send the required first `CHAT` shown below **before continuing this file,
+reading `DSI_STUDIO_AI_MANUAL.md`, or trying any other example**. Then read the
+rest of this file completely. Search `DSI_STUDIO_AI_MANUAL.md` only for commands
 needed by the request; do not read its entire inventory.
 
 ## Identity
@@ -113,6 +117,27 @@ $DsiAgent = 'Codex'
 # Ollama example: $DsiAgent = 'Codex/Ollama(192.168.1.14)'
 $DsiSession = $env:CODEX_THREAD_ID
 ```
+
+## Send the first CHAT immediately
+
+Once `$DsiAgent`, `$DsiSession`, and `Invoke-Dsi` are available, this must be
+the first local-server request. Send it right away, before continuing this
+setup file, opening `DSI_STUDIO_AI_MANUAL.md`, or running any other example.
+Replace the placeholders with the exact current identity and working directory:
+
+```json
+{"agent":"<exact-agent-name>","session":"<exact-session-uuid>","cwd":"<current-working-directory>","request":"CHAT","chat":"I am reading the DSI Studio instructions and identifying the commands needed for this task."}
+```
+
+With the PowerShell helper above:
+
+```powershell
+Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
+             request='CHAT';chat='I am reading the DSI Studio instructions and identifying the commands needed for this task.'}
+```
+
+Read the complete reply and process any returned `PROMPT`; then continue with
+the remaining setup instructions.
 
 The two-argument constructor works in Windows PowerShell 5.1 and defaults to a
 duplex (`InOut`) pipe. DSI Studio closes the server side after each reply, so
@@ -257,6 +282,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\dsi_agent.ps1 `
 
 ## Requests
 
+The required first `CHAT` above must already have been sent. The following are
+subsequent request examples.
+
 ```powershell
 # Discover windows and obtain global/per-window status.
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
@@ -264,24 +292,26 @@ Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
 
 # Use a numeric ID returned by LIST.
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
-             request='CMD';window='2';command=@('list_region')}
+             request='CMD';window='2';command=@('list_region');
+             chat='Checking available regions.'}
 
 # Discover parameter IDs, then query one value.
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;request='CMD';window='2';
-             command=@('list_param')}
+             command=@('list_param');chat='Checking available parameters.'}
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;request='CMD';window='2';
-             command=@('list_param','fa_threshold')}
+             command=@('list_param','fa_threshold');chat='Checking the FA threshold.'}
 
 # Poll global/per-window activity, including active tracking jobs.
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;request='LIST'}
 
 # Request targeted tract details only when needed.
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;request='CMD';window='2';
-             command=@('list_tract')}
+             command=@('list_tract');chat='Checking current tract results.'}
 
 # Command parameters stay separate array elements.
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
-             request='CMD';window='2';command=@('set_region_name','0','Tumor Core')}
+             request='CMD';window='2';command=@('set_region_name','0','Tumor Core');
+             chat='Renaming the selected region.'}
 
 # Use LOG only when LIST and targeted commands cannot diagnose the issue.
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;request='LOG'}
@@ -387,9 +417,10 @@ fiber tracking, or another substantial CPU/GPU operation, call `LIST`.
 - Batch independent synchronous commands for the same window into one `CMD`.
   Do not batch destructive, asynchronous, output-dependent, or modal-opening
   commands.
-- Attach short progress `chat` to an already-needed request. Do not attach chat
-  to every `LIST` poll. Use a standalone `CHAT` only for the final reply, a
-  required user decision, or the one initial waiting/blocked update.
+- Except for the required first setup `CHAT`, attach short progress `chat` to an
+  already-needed request. Do not attach chat to every `LIST` poll. Use another
+  standalone `CHAT` only for the final reply, a required user decision, or the
+  first waiting/blocked update.
 - Send `cwd` in the first request after connecting or restarting DSI Studio,
   then omit it until the working directory changes.
 - Reuse discovered names and indices until the relevant state changes. Search
@@ -401,9 +432,14 @@ fiber tracking, or another substantial CPU/GPU operation, call `LIST`.
 
 ## Progress chat
 
+The first progress update is mandatory: immediately after establishing the
+identity and pipe client, send the standalone `CHAT` shown above before reading
+the rest of this setup file, the manual, or other examples.
+
 DSI Studio's activity history shows which commands ran but cannot explain why
-the agent ran them. Attach a short `chat` update to the next necessary JSON
-request so the user can follow the agent's intent in the AI Agents tab.
+the agent ran them. After the first update, attach a short `chat` update to the
+next necessary JSON request so the user can follow the agent's intent in the AI
+Agents tab.
 
 Send one concise sentence at task start, before each meaningful phase, when
 first entering a wait, when blocked, and at completion. For pre-existing busy
@@ -416,11 +452,14 @@ polling request, or create a separate request only to report unchanged status.
 
 ## Opening local files
 
-When only the main window exists, send one absolute filename:
+When only the main window exists, announce the intent with `LIST`, then send one
+absolute filename:
 
 ```powershell
+Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
+             request='LIST';chat='Opening subject.fz for this task.'}
 Invoke-Dsi (Resolve-Path -LiteralPath 'C:\data\subject.fz').Path
-Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;request='LIST'}
+Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;request='LIST'}
 ```
 
 Poll `LIST` for the new numeric `tracking` or `image` window ID. `open_fib`
@@ -435,7 +474,8 @@ main-window ID:
 ```powershell
 Invoke-Dsi @{agent=$DsiAgent;session=$DsiSession;cwd=(Get-Location).Path;
              request='CMD';window='1';
-             command=@('open_image','C:\data\a.nii.gz','C:\data\b.nii.gz')}
+             command=@('open_image','C:\data\a.nii.gz','C:\data\b.nii.gz');
+             chat='Opening the selected images in one window.'}
 ```
 
 Do not send separate `open_image` commands, target an image window, split a
@@ -450,36 +490,40 @@ path into fields, or substitute `add_image`. Refresh `LIST` afterward.
    before using an executable wrapper. Use GUI commands. **Do not use `run_cli`
    unless the user explicitly says to run the CLI.** Never infer CLI permission
    from a requested outcome.
-3. Call top-level `LIST` first, after windows open or close, before substantial
-   work, and while waiting for global or per-window activity to change. It does
-   not use a `window` field.
-4. Use only numeric IDs returned by `LIST` for `CMD` requests.
-5. Use `LIST` for compact busy/progress and tracking-job polling. Discover
+3. Immediately after the exact identity and pipe client are ready, send the
+   required standalone `CHAT` before continuing this setup file, reading the
+   manual, or running any other example. Inspect its complete reply for
+   `PROMPT`.
+4. After the required first `CHAT`, call top-level `LIST` before any `CMD`,
+   after windows open or close, before substantial work, and while waiting for
+   global or per-window activity to change. It does not use a `window` field.
+5. Use only numeric IDs returned by `LIST` for `CMD` requests.
+6. Use `LIST` for compact busy/progress and tracking-job polling. Discover
    detailed values with `list_slice`, `list_region`, `list_tract`, `list_param`,
    `list_atlas`, `list_unet`, and `list_auto_tract` only when needed.
-6. Do not stack substantial work on an already busy DSI Studio by default. Send
+7. Do not stack substantial work on an already busy DSI Studio by default. Send
    one waiting `CHAT`. For pre-existing activity, state that the user may
    terminate it or explicitly request immediate execution. Without that direct
    instruction, wait for global `busy=0` using `LIST` after 4, 8, 16, and 32
    seconds, then every 32 seconds. Reset to 4 seconds when state changes. Sleep
    without model reasoning between checks and inspect every reply for `PROMPT`.
-7. Treat `okay:true` as acceptance. Poll `LIST` for long-running and
+8. Treat `okay:true` as acceptance. Poll `LIST` for long-running and
    asynchronous activity, then use a targeted list command to verify detailed
    output. Use `LOG` only when diagnostics are needed. Never automatically
    repeat a failed, timed-out, unavailable, or unexpected request.
-8. If a required window disappears or returns `window not found`, assume the
+9. If a required window disappears or returns `window not found`, assume the
    user closed it. Do not recheck, reopen, or retry it. Stop and send one
    `CHAT` asking whether to continue or stop; resume only after the reply.
-9. Verify outputs. Ask before destructive operations or overwrites.
-10. Do not answer modal dialogs remotely; tell the user what is required.
-11. Keep the user informed with brief intent-focused `chat` updates at meaningful
+10. Verify outputs. Ask before destructive operations or overwrites.
+11. Do not answer modal dialogs remotely; tell the user what is required.
+12. Keep the user informed with brief intent-focused `chat` updates at meaningful
     phase changes, attached to requests already needed for the task.
-12. After understanding the initiating prompt, send one concise `TITLE`.
+13. After understanding the initiating prompt, send one concise `TITLE`.
     Send another `TITLE` later only with user permission to rename.
-13. Send the final answer once with `CHAT`.
-14. Minimize round trips: retain window IDs, use compact `LIST` status, batch
+14. Send the final answer once with `CHAT`.
+15. Minimize round trips: retain window IDs, use compact `LIST` status, batch
     safe same-window commands, and avoid unnecessary detailed or `LOG` calls.
-15. When asked to operate DSI Studio, execute the requests. Do not return a
+16. When asked to operate DSI Studio, execute the requests. Do not return a
     script or tutorial unless the user asks for one.
 
 If DSI Studio resumes an agent, reconnect with the exact same agent and
