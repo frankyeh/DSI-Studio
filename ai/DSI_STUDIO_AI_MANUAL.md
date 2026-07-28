@@ -139,43 +139,81 @@ A safe same-window batch:
 Do not batch destructive, asynchronous, output-dependent, or modal-opening
 commands. Do not send an empty command array.
 
-## Command examples
+## Command examples and inventory
 
 Wrap each example array below in the standard `CMD` request shown above. Replace
 values in angle brackets with values returned by the corresponding discovery
-command. Every parameter remains a quoted JSON string.
+command. Every parameter remains a quoted JSON string. Blank example cells mark
+source commands that are listed for discovery but do not yet have a documented
+recommended example.
 
 ### Main-window and Hub commands
 
-| Task | Common example |
+| Task or command | Common example |
 |---|---|
-| List recent FIB files | `["list_recent_fib"]` |
-| List recent SRC files | `["list_recent_src"]` |
-| List Hub repositories | `["hub","repos"]` |
-| List repository tags | `["hub","tags","<repo from hub repos>"]` |
-| List first 20 Hub files | `["hub","files","<repo>","<tag>","","0","20"]` |
-| Open one Hub file | `["hub","open","<repo>","<tag>","0"]` |
-| Download one Hub file | `["hub","download","<repo>","<tag>","0","C:/data"]` |
-| Open images together | `["open_image","C:/data/T1w.nii.gz","C:/data/T2w.nii.gz"]` |
-| Run CLI, explicit request only | `["run_cli","--action=rec --loop=C:\\data\\*.sz --method=4"]` |
+| `list_recent_fib` | `["list_recent_fib"]` |
+| `list_recent_src` | `["list_recent_src"]` |
+| `hub repos` | `["hub","repos"]` |
+| `hub tags` | `["hub","tags","<repo from hub repos>"]` |
+| `hub files` | `["hub","files","<repo>","<tag>","","0","20"]` |
+| `hub open` | `["hub","open","<repo>","<tag>","0"]` |
+| `hub download` | `["hub","download","<repo>","<tag>","0","C:/data"]` |
+| `hub help` |  |
+| `open_image` | `["open_image","C:/data/T1w.nii.gz","C:/data/T2w.nii.gz"]` |
+| `run_cli` | `["run_cli","--action=rec --loop=C:\\data\\*.sz --method=4"]` |
 
 `hub files` returns `index`, `file`, `size`, and `downloaded`. Use a returned
 filename or quoted index for `hub open` and `hub download`. If the download
 directory does not exist, DSI Studio creates it and reports `directory_created`.
 A successful reply is returned only after the data have been written to disk.
 
+### Tracking-window file, workspace, and setting commands
+
+| Command | Common example |
+|---|---|
+| `open_fib` |  |
+| `correct_bias_field` |  |
+| `save_fib_as` |  |
+| `open_mapping` |  |
+| `save_workspace` |  |
+| `load_workspace` |  |
+| `save_setting` |  |
+| `save_rendering_setting` |  |
+| `save_tracking_setting` |  |
+| `load_setting` |  |
+| `load_rendering_setting` |  |
+| `load_tracking_setting` |  |
+| `restore_rendering` |  |
+| `restore_tracking` |  |
+| `presentation_mode` |  |
+
 ### Slice and segmentation commands
 
-| Task | Common example |
+| Task or command | Common example |
 |---|---|
-| List slices and readiness | `["list_slice"]` |
-| Select slice by index | `["set_slice","7"]` |
-| Select slice by name | `["set_slice_by_name","T1w"]` |
-| Move slice position | `["move_slice","80 100 80"]` |
-| List segmentation models | `["list_unet"]` |
-| Segment current slice | `["segment_brain","<model from list_unet>"]` |
-| Segment T1w by name | `["segment_brain","<model from list_unet>","T1w"]` |
-| Segment slice by index | `["segment_brain","<model from list_unet>","7"]` |
+| `list_slice` | `["list_slice"]` |
+| `set_slice` | `["set_slice","7"]` |
+| `set_slice_by_name` | `["set_slice_by_name","T1w"]` |
+| `move_slice` | `["move_slice","80 100 80"]` |
+| `list_unet` | `["list_unet"]` |
+| `segment_brain` current slice | `["segment_brain","<model from list_unet>"]` |
+| `segment_brain` by name | `["segment_brain","<model from list_unet>","T1w"]` |
+| `segment_brain` by index | `["segment_brain","<model from list_unet>","7"]` |
+| `enable_slice` |  |
+| `set_slice_contrast` |  |
+| `set_slice_dir_color` |  |
+| `set_slice_overlay` |  |
+| `set_slice_stay` |  |
+| `add_slice` |  |
+| `add_mni_slice` |  |
+| `skull_strip_slice` |  |
+| `save_roi_screen` |  |
+| `save_slice_image` |  |
+| `save_slice_mni_image` |  |
+| `save_slice_mapping` |  |
+| `open_slice_mapping` |  |
+| `save_slice_volume` |  |
+| `delete_slice` |  |
 
 `list_slice` returns:
 
@@ -190,42 +228,112 @@ creation finish. Verify the result with `list_region`.
 
 ### Region commands
 
-| Task | Common example |
+| Task or command | Common example |
 |---|---|
-| List regions | `["list_region"]` |
-| List atlases | `["list_atlas"]` |
-| Add an atlas region | `["add_region_from_atlas","<region returned by atlas selection>"]` |
-| Rename region 0 | `["set_region_name","0","Left CST seed"]` |
-| Set region 0 as Seed | `["set_region_type","0","3"]` |
-| Set region 0 color | `["set_region_color","0","4294901760"]` |
-| Show only regions 0, 2, and 5 | `["show_only_regions","0&2&5"]` |
+| `list_region` | `["list_region"]` |
+| `list_atlas` | `["list_atlas"]` |
+| `add_region_from_atlas` | `["add_region_from_atlas","<region returned by atlas selection>"]` |
+| `set_region_name` | `["set_region_name","0","Left CST seed"]` |
+| `set_region_type` | `["set_region_type","0","3"]` |
+| `set_region_color` | `["set_region_color","0","4294901760"]` |
+| `show_only_regions` | `["show_only_regions","0&2&5"]` |
+| `new_region` |  |
+| `open_region` |  |
+| `open_regions` |  |
+| `save_region` |  |
+| `save_region_as` |  |
+| `save_all_regions` |  |
+| `save_all_regions_to_folder` |  |
+| `delete_region` |  |
+| `delete_all_regions` |  |
+| `copy_region` |  |
+| `merge_region` |  |
+| `merge_all_regions` |  |
+| `add_region_from_threshold` |  |
+| `add_region_from_tract` |  |
+| `add_region_from_endpoints` |  |
+| `check_region` |  |
+| `check_uncheck_all_region` |  |
+| `move_region` |  |
+| `shift_region` |  |
+| `flip_region` |  |
+| `sort_region` |  |
+| `separate_region` |  |
+| `smooth_region` |  |
+| `erode_region` |  |
+| `dilate_region` |  |
+| `defragment_region` |  |
+| `negate_region` |  |
+| `threshold_region` |  |
 
 Region types are `0=ROI`, `1=ROA`, `2=End`, `3=Seed`, `4=Terminative`,
 `5=NotEnd`, and `6=Limiting`. Colors are unsigned packed Qt ARGB integers.
 
 ### Tracking parameter commands
 
-| Task | Common example |
+| Task or command | Common example |
 |---|---|
-| List valid parameter IDs | `["list_param"]` |
-| Read step size | `["list_param","step_size"]` |
-| Set step size | `["set_param","step_size","1.0"]` |
-| Set several parameters | `["set_params","step_size=1.0&min_length=20"]` |
+| `list_param` all IDs | `["list_param"]` |
+| `list_param` one ID | `["list_param","step_size"]` |
+| `set_param` | `["set_param","step_size","1.0"]` |
+| `set_params` | `["set_params","step_size=1.0&min_length=20"]` |
 
 Call parameterless `list_param` first and use only IDs it returns. Values are
 strings even when they represent numbers.
 
-### Fiber tracking commands
+### Fiber tracking and tract commands
 
-| Task | Common example |
+| Task or command | Common example |
 |---|---|
-| List tract bundles | `["list_tract"]` |
-| Check tracking status | `["list_tract","status"]` |
-| Start whole-brain tracking | `["run_tracking","Whole Brain"]` |
-| Track using regions | `["run_tracking","Corticospinal Tract","0:3&1:0&2:1"]` |
-| List automatic tract names | `["list_auto_tract"]` |
-| Run automatic CST tracking | `["run_auto_track","Corticospinal Tract"]` |
-| Show only tracts 0, 2, and 5 | `["show_only_tracts","0&2&5"]` |
+| `list_tract` | `["list_tract"]` |
+| `list_tract status` | `["list_tract","status"]` |
+| `run_tracking` | `["run_tracking","Whole Brain"]` |
+| `run_tracking` with regions | `["run_tracking","Corticospinal Tract","0:3&1:0&2:1"]` |
+| `list_auto_tract` | `["list_auto_tract"]` |
+| `run_auto_track` | `["run_auto_track","Corticospinal Tract"]` |
+| `show_only_tracts` | `["show_only_tracts","0&2&5"]` |
+| `enable_auto_tract` |  |
+| `open_tract` |  |
+| `open_tracts` |  |
+| `open_tract_dir` |  |
+| `save_tract` |  |
+| `save_mni_tract` |  |
+| `save_template_tract` |  |
+| `save_slice_tract` |  |
+| `save_tract_endpoint` |  |
+| `save_mni_tract_endpoint` |  |
+| `save_slice_tract_endpoint` |  |
+| `save_all_tracts` |  |
+| `save_all_tracts_to_folder` |  |
+| `save_all_tracts_to_dir` |  |
+| `save_tdi` |  |
+| `save_tdi2` |  |
+| `save_tract_values` |  |
+| `tract_to_region` |  |
+| `endpoint_to_region` |  |
+| `update_tract` |  |
+| `delete_tract` |  |
+| `delete_all_tracts` |  |
+| `copy_tract` |  |
+| `rename_tract` |  |
+| `merge_tract` |  |
+| `merge_all_tracts` |  |
+| `merge_tract_by_name` |  |
+| `sort_tract_by_name` |  |
+| `trim_tract` |  |
+| `trim_all_tracts` |  |
+| `cut_tract` |  |
+| `cut_by_slice` |  |
+| `filter_tract` |  |
+| `remove_repeated_tracts` |  |
+| `recognize_tract` |  |
+| `cluster_tract` |  |
+| `cluster_all_tracts` |  |
+| `check_tract` |  |
+| `check_uncheck_all_tract` |  |
+| `set_tract_color` |  |
+| `set_tract_color_style` |  |
+| `set_tract_visible` |  |
 
 `run_tracking` uses the current tracking settings and the directional
 information stored in the loaded FIB. Its required second element is the new
@@ -237,12 +345,63 @@ Poll top-level `LIST`; the target window's `tracking-jobs` reaches zero when no
 active tracking bundle remains. Request full `list_tract` afterward only when
 bundle details are needed.
 
-### Rendering commands
+### Device commands
 
-| Task | Common example |
+| Command | Common example |
 |---|---|
-| Rotate the 3D view | `["rotate","15 1 0 0"]` |
-| Save an HD rendering | `["save_hd_screen","C:/output/tracts.png","1920 1080"]` |
+| `new_device` |  |
+| `move_device` |  |
+| `push_device` |  |
+| `pull_device` |  |
+| `copy_device` |  |
+| `set_acpc` |  |
+| `delete_device` |  |
+| `delete_all_devices` |  |
+| `save_all_devices` |  |
+
+### Rendering, camera, and surface commands
+
+| Task or command | Common example |
+|---|---|
+| `rotate` | `["rotate","15 1 0 0"]` |
+| `save_hd_screen` | `["save_hd_screen","C:/output/tracts.png","1920 1080"]` |
+| `set_view` |  |
+| `set_zoom` |  |
+| `set_camera` |  |
+| `get_camera` |  |
+| `open_camera` |  |
+| `save_camera` |  |
+| `store_camera` |  |
+| `store_camera1` |  |
+| `store_camera2` |  |
+| `restore_camera` |  |
+| `restore_camera1` |  |
+| `restore_camera2` |  |
+| `save_screen` |  |
+| `add_surface` |  |
+| `delete_surface` |  |
+| `load_surface` |  |
+| `save_surface` |  |
+| `set_surface_color` |  |
+| `set_surface_alpha` |  |
+| `set_surface_visible` |  |
+| `set_device_color` |  |
+
+### Image-window commands
+
+| Command | Common example |
+|---|---|
+| `change_type` |  |
+| `bias_field_correction` |  |
+| `brain_extraction` |  |
+| `segmentation` |  |
+| `deface` |  |
+| `rotate_to_image` |  |
+| `warp_to_image` |  |
+| `apply_to_image` |  |
+
+Other generic image operations are delegated to TIPL's image-command handler
+and are not enumerated by literal DSI Studio `cmd[0]` comparisons.
 
 ## Reply formats
 
