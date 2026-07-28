@@ -36,20 +36,7 @@ data; `.sz` and `*src.gz` open reconstruction; ordinary image formats open an
 image window. Raw text is reserved for one local file path. Use this route to
 create the first tracking window when no tracking window is currently open.
 
-### 2. Main-window `open_image` — NIfTI/image editing route
-
-Target the **main** window:
-
-```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"1","command":["open_image","C:/data/T1w.nii.gz"]}
-```
-
-`open_image` is primarily for opening NIfTI and other ordinary image files in an
-image window for viewing, modification, and editing. It may receive multiple
-image paths when those files should open together. Do not use `open_image` for
-`.fz` when the fiber-tracking interface is required.
-
-### 3. Tracking-window `open_fib` — fiber-tracking interface
+### 2. Tracking-window `open_fib` — fiber-tracking interface
 
 Target an existing **tracking** window:
 
@@ -61,6 +48,19 @@ Use `open_fib` to open `.fz` or `*fib.gz` in a new fiber-tracking window. Becaus
 `open_fib` is handled by a tracking window, create the first tracking window by
 sending its absolute path as raw pipe text, then use `open_fib` for additional
 FIB/FZ files.
+
+### 3. Main-window `open_image` — NIfTI/image editing route
+
+Target the **main** window:
+
+```json
+{"agent":"Codex","session":"<uuid>","request":"CMD","window":"1","command":["open_image","C:/data/T1w.nii.gz"]}
+```
+
+`open_image` is primarily for opening NIfTI and other ordinary image files in an
+image window for viewing, modification, and editing. It may receive multiple
+image paths when those files should open together. Do not use `open_image` for
+`.fz` when the fiber-tracking interface is required.
 
 ## Recommended request sequence
 
