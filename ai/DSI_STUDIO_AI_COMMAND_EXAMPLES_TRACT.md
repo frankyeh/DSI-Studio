@@ -42,10 +42,10 @@ This file contains tract and automatic-tracking commands confirmed in the curren
 | `merge_all_tracts` | `["merge_all_tracts"]` | Merge all checked tract bundles into the first checked row. |
 | `merge_tract_by_name` | `["merge_tract_by_name"]` | Merge tract bundles sharing an identical name. |
 | `sort_tract_by_name` | `["sort_tract_by_name"]` | Sort tract bundles by name. |
-| `delete_branch` | `["delete_branch"]` | Delete branch-like portions from every checked bundle. |
-| `undo_tract` | `["undo_tract"]` | Undo the latest supported tract edit in every checked bundle. |
-| `redo_tract` | `["redo_tract"]` | Redo the latest supported tract edit in every checked bundle. |
-| `trim_tract` | `["trim_tract"]` | Apply one TIP iteration to every checked bundle; bundles below 1,000 tracts are generally unsuitable. Start near 50,000, run `["trim_tract"]` 4–5 times, run `["delete_repeated_tract","1"]`, then repeat `["trim_tract"]` until about 10,000 remain. |
+| `delete_branch` | `["delete_branch","0&2"]` | Delete branch-like portions from tract bundles 0 and 2. Omit the index list to edit every checked bundle. |
+| `undo_tract` | `["undo_tract","0&2"]` | Undo the latest supported tract edit in tract bundles 0 and 2. Omit the index list to use checked bundles. |
+| `redo_tract` | `["redo_tract","0&2"]` | Redo the latest supported tract edit in tract bundles 0 and 2. Omit the index list to use checked bundles. |
+| `trim_tract` | `["trim_tract","0"]` | Apply one TIP iteration to tract bundle 0. Omit the index list to use every checked bundle; bundles below 1,000 tracts are generally unsuitable. Start near 50,000, trim 4–5 times, run `["delete_repeated_tract","1"]`, then repeat trimming until about 10,000 remain. |
 | `cut_tract_end_portion` | `["cut_tract_end_portion","0"]` | Apply `cut_end_portion(0.25,0.75)` to tract bundle 0. |
 | `cut_tract_lps_end` | `["cut_tract_lps_end","0"]` | Apply `cut_end_portion(0.25,1.0)` to tract bundle 0. |
 | `cut_tract_rai_end` | `["cut_tract_rai_end","0"]` | Apply `cut_end_portion(0.0,0.75)` to tract bundle 0. |
@@ -115,6 +115,23 @@ done      3
 
 Here, `bundles` is the total number of tract rows, not the number of running jobs. Poll `["list_tract","status"]` until `status` is `done` before starting a dependent operation. The separate `shown` column remains a `1`/`0` visibility state and should not be confused with tracking status.
 
+## Tract-index selection for edit commands
+
+Call `["list_tract"]` immediately before an indexed edit and use values from its `index` column.
+
+These four commands accept an optional second string containing one tract index or multiple `&`-separated indices:
+
+```json
+["delete_branch","0&2&5"]
+["undo_tract","0&2&5"]
+["redo_tract","0&2&5"]
+["trim_tract","0&2&5"]
+```
+
+When this string is present, the command edits those bundle indices directly, regardless of their checked state. When it is omitted or empty, the command edits every checked bundle, preserving the original GUI behavior. Duplicate indices are applied only once. A nonnumeric or out-of-range value fails with `invalid tract index: <value>`.
+
+Do not assume every checked-bundle command accepts this index-list argument. `cut_tract_by_*`, `filter_tract`, `delete_repeated_tract`, `resample_tract`, and `delete_tract_by_length` currently use their second element for another parameter and still operate on checked bundles.
+
 ## ROI settings syntax
 
 Tracking and filtering accept an `&`-separated list of `region-index:role` entries:
@@ -142,7 +159,8 @@ Use `list_region` immediately before constructing the string. Explicit settings 
 - The three-element `run_tracking` form is recognized as the convenient explicit-ROI form when its third string is empty or contains `:`; DSI Studio inserts the current tracking parameter code internally.
 - Fiber tracking is asynchronous. A successful reply means tracking started; poll top-level `LIST` for general activity and `["list_tract","status"]` for definitive tract completion.
 - `list_tract` takes no required parameter. The optional literal `"status"` returns compact `status` and total bundle count.
-- `trim_tract`, `delete_branch`, `undo_tract`, `redo_tract`, `cut_tract_by_*`, `delete_repeated_tract`, `resample_tract`, and `delete_tract_by_length` operate on checked bundles.
+- `trim_tract`, `delete_branch`, `undo_tract`, and `redo_tract` accept an optional `&`-separated tract-index list; without it they operate on checked bundles.
+- `cut_tract_by_*`, `filter_tract`, `delete_repeated_tract`, `resample_tract`, and `delete_tract_by_length` operate on checked bundles.
 - `cut_tract_end_portion`, `cut_tract_lps_end`, `cut_tract_rai_end`, and `flip_tract_*` operate on one selected tract index.
 - Clustering commands delete the original bundle and replace it with newly created cluster bundles.
 - Confirm destructive operations such as deleting, trimming, cutting, clustering, reconnecting, and merging.
