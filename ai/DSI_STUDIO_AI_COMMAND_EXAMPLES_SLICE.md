@@ -2,11 +2,11 @@
 
 Use these with the standard top-level `CMD` request. Every command name and parameter must remain a quoted JSON string.
 
-This file contains the complete slice and segmentation inventory preserved from the previous manual. Blank example cells mean that the prior manual did not provide source-verified argument syntax.
+This file contains the complete slice and segmentation inventory confirmed in the current source.
 
 | Command | Common example | Important behavior |
 |---|---|---|
-| `list_slice` | `["list_slice"]` | List slice indices, names, readiness, registration, and download state. |
+| `list_slice` | `["list_slice"]` | List `index`, `current`, `name`, and one readable `status`: `available`, `registering`, or `ready`. |
 | `set_slice` | `["set_slice","7"]` | Select a slice by numeric index, loading/registering it when needed. |
 | `set_slice_by_name` | `["set_slice_by_name","T1w"]` | Select a slice by exact displayed name. |
 | `move_slice` | `["move_slice","80 100 80"]` | Move the shared crosshair to voxel coordinates in current slice space. |
@@ -29,8 +29,25 @@ This file contains the complete slice and segmentation inventory preserved from 
 | `list_unet` | `["list_unet"]` | List segmentation model index, availability, internal model ID, display name, and description. |
 | `segment_brain` | `["segment_brain","<model-ID-from-list_unet>","7"]` | Run an available model using the exact `model` column value, on a slice index or exact slice name, and create label regions. See footnote 1. |
 
+## `list_slice` output
+
+The reply columns are:
+
+```text
+index    current    name    status
+```
+
+Interpret `status` directly:
+
+- `available` — a URL-backed custom slice is listed but has not yet been loaded locally. Select it with `set_slice`; DSI Studio will download and register it when needed.
+- `registering` — custom-slice registration is still running. Poll `list_slice` again and do not start a dependent operation.
+- `ready` — the slice is local or built in and is not registering. It is ready for segmentation, display, or export.
+
+The `current` column only identifies the selected slice (`1` or `0`); it does not indicate readiness. After `set_slice`, poll until that selected row reports `ready`.
+
 ## Source-confirmed cautions
 
+- `set_slice` may return before loading or registration finishes; use the `status` column rather than interpreting several boolean columns.
 - `segment_brain` is synchronous; a client timeout does not prove inference stopped.
 - Use `list_slice` to discover the exact data-map name before export.
 - `save_slice_image` and `save_slice_mni_image` use `command[1]` as the output filename and `command[2]` as the metric/data-map name, not a slice-row index.
