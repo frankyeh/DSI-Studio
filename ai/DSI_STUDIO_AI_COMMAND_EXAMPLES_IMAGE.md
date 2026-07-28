@@ -11,9 +11,9 @@ The image-window dispatcher accepts only a command name and at most one string p
 | `brain_extraction` |  | Requires an exact downloadable model identifier; verify model naming separately. |
 | `segmentation` |  | Requires an exact downloadable model identifier and replaces the image with labels. |
 | `deface` |  | Requires an exact downloadable model identifier; verify model naming separately. |
-| `rotate_to_image` |  | Rigidly register to another image; leave unresolved until registration workflow is fully documented. |
-| `warp_to_image` |  | Affine/nonlinear register to another image; leave unresolved until registration workflow is fully documented. |
-| `apply_to_image` |  | Applies the previously calculated mapping to another image; requires prior registration. |
+| `rotate_to_image` | `["rotate_to_image","C:/data/template.nii.gz"]` | Rigidly register the current image to the supplied NIfTI using mutual information, then resample it into target space. |
+| `warp_to_image` | `["warp_to_image","C:/data/template.nii.gz"]` | Affine-register using correlation, continue with nonlinear registration, then resample the current image into target space. |
+| `apply_to_image` | `["apply_to_image","C:/data/other.nii.gz"]` | Load another image and apply the mapping created by the preceding `rotate_to_image` or `warp_to_image`; fails when no mapping exists. |
 | `morphology_defragment` | `["morphology_defragment"]` | Keep the principal connected component. Floating images are first converted to a positive-value mask and then preserved by that mask. |
 | `morphology_fill_holes` | `["morphology_fill_holes"]` | Fill enclosed holes in 3D. |
 | `morphology_fill_holes_by_slice` | `["morphology_fill_holes_by_slice"]` | Fill holes independently by slice. |
@@ -42,7 +42,7 @@ The image-window dispatcher accepts only a command name and at most one string p
 | `upper_threshold` | `["upper_threshold","1000"]` | Clamp values above the supplied threshold. |
 | `threshold` | `["threshold","0.5"]` | Replace values greater than the threshold with `1` and all others with `0`. |
 | `otsu_threshold` | `["otsu_threshold","1.0"]` | Binarize at `Otsu threshold × supplied ratio`. |
-| `equation` |  | TIPL expression parser; leave blank until supported functions and precedence are fully documented. |
+| `equation` | `["equation","x*2"]` | Multiply the current image by two using TIPL's expression parser. Operators include `+`, `-`, `*`, `/`, `>`, `<`, and `=`; multiplication and division are evaluated first. |
 | `set_transformation` | `["set_transformation","1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"]` | Replace the 4×4 image transformation using 16 floats and recalculate voxel size. |
 | `set_translocation` | `["set_translocation","0 0 0"]` | Set transformation translation entries `T[3]`, `T[7]`, and `T[11]`. |
 | `set_mni` | `["set_mni","1"]` | Set the MNI-space flag from the first character: `1`=true; other nonempty values=false. |
@@ -58,7 +58,7 @@ The image-window dispatcher accepts only a command name and at most one string p
 | `swap_xz` | `["swap_xz"]` | Swap voxel X/Z axes and voxel sizes. |
 | `swap_yz` | `["swap_yz"]` | Swap voxel Y/Z axes and voxel sizes. |
 | `crop_to_fit` | `["crop_to_fit","2"]` | Crop around the principal positive-value component with a 2-voxel margin in all axes; one or three margins are accepted. |
-| `transform` |  | Requires a 12-value target transformation and may recurse through flip/regrid/translocation; leave for a dedicated source pass. |
+| `transform` | `["transform","1 0 0 0 0 1 0 0 0 0 1 0"]` | Resample/reorient to a target transformation supplied as its first 12 matrix values. The handler resolves axis flips, voxel-size changes, and translation as needed. |
 | `translocate` | `["translocate","1 0 0"]` | Shift image data by voxel offsets and update transformation translation; fractional shifts use interpolation. |
 | `resize` | `["resize","256 256 160"]` | Resize the canvas from the origin and copy overlapping data without changing the transformation. |
 | `resize_at_center` | `["resize_at_center","256 256 160"]` | Resize the canvas around the image center. |
@@ -80,6 +80,7 @@ The image-window dispatcher accepts only a command name and at most one string p
 - Image-window `CMD` accepts no more than two command-array elements: the command name and one parameter string. Combine numeric components inside that one string.
 - Parameterless morphology, filter, flip, up/downsampling, and header/swap commands are real commands; do not add a dummy value.
 - `flip_*` changes voxel data, while `header_flip_*` changes metadata only. Pair them only when that combined spatial change is intended.
+- `rotate_to_image` and `warp_to_image` replace the current image with its registered/resampled result and retain the mapping for a later `apply_to_image` command.
 - Commands ending in `_image` or `_label` require an existing file and map it into the current image space using linear interpolation for images or majority interpolation for labels.
 - `save` can show a modal prompt when the image window was opened with additional batch files. Avoid unattended batch saves unless this workflow is expected.
-- Model-dependent segmentation and registration commands remain blank intentionally until their exact model/file workflow is checked separately.
+- Only `brain_extraction`, `segmentation`, and `deface` remain blank because their exact downloadable model identifiers are maintained outside this source file.
