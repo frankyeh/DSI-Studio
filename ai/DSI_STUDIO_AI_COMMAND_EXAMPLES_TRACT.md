@@ -22,8 +22,8 @@ This file contains tract and automatic-tracking commands confirmed in the curren
 | `save_template_tract` | `["save_template_tract","C:/output/cst_template.tt.gz","0"]` | Save one tract in loaded template space. |
 | `save_slice_tract` | `["save_slice_tract","C:/output/cst_T1w.tt.gz","0"]` | Save one tract in current slice space. |
 | `save_tract_endpoint` | `["save_tract_endpoint","C:/output/cst_endpoints.txt","0"]` | Save native-space endpoints for one tract bundle index. |
-| `save_mni_tract_endpoint` |  | Save endpoints in MNI coordinates. |
-| `save_slice_tract_endpoint` |  | Save endpoints in current slice space. |
+| `save_mni_tract_endpoint` |  | Intended to save endpoints in MNI coordinates. See footnote 1. |
+| `save_slice_tract_endpoint` |  | Intended to save endpoints in current slice space. See footnote 1. |
 | `save_all_tracts` | `["save_all_tracts","C:/output/checked_tracts.tt.gz"]` | Save all checked tracts together. |
 | `save_all_tracts_to_folder` | `["save_all_tracts_to_folder","C:/output/tracts"]` | Save checked tracts as separate files in a folder. |
 | `save_tdi` | `["save_tdi","C:/output/cst_tdi.nii.gz","0"]` | Save tract-density imaging output in current slice space. |
@@ -91,7 +91,6 @@ This file contains tract and automatic-tracking commands confirmed in the curren
 - `cut_tract_end_portion`, `cut_tract_lps_end`, `cut_tract_rai_end`, and `flip_tract_*` operate on one selected tract index.
 - Clustering commands delete the original bundle and replace it with newly created cluster bundles.
 - Confirm destructive operations such as deleting, trimming, cutting, clustering, reconnecting, and merging.
-- `save_mni_tract_endpoint` and `save_slice_tract_endpoint` remain without examples because the current source executes their transformed export branch and then calls native `save_end_points()` on the same output path. Verify or fix that fallthrough before relying on transformed endpoint files.
 - The removed generic names (`open_tracts`, `open_tract_dir`, `save_all_tracts_to_dir`, `rename_tract`, `merge_tract`, `trim_all_tracts`, `cut_tract`, `cut_by_slice`, `remove_repeated_tracts`, `recognize_tract`, `cluster_tract`, `cluster_all_tracts`, `set_tract_color`, `set_tract_color_style`, and `set_tract_visible`) had no command handler in the current dispatch chain. Use the exact commands documented above.
 
 ## Tracking parameter reference
@@ -141,3 +140,7 @@ These parameters are the `Tracking`, `Tracking_dT`, and `Tracking_adv` groups fr
 | `check_ending` | Check Ending | `0`=Off; `1`=On | `0` (Off) |
 | `otsu_threshold` | Default Otsu | float `0.1–1`; step `0.1` | `0.6` |
 | `track_format` | Output Format | `0`=tt.gz; `1`=trk.gz; `2`=txt | `0` (tt.gz) |
+
+## Footnotes
+
+1. The current transformed-endpoint implementation should not be relied on. `save_slice_tract_endpoint` first writes transformed endpoints and then falls through to native `save_end_points()` on the same path. `save_mni_tract_endpoint` calls `sub2mni()` on a temporary point but appends the original native `points1` coordinates to the output buffer, then also falls through to native `save_end_points()`. The command names are preserved here, but examples remain blank until those branches are fixed.
