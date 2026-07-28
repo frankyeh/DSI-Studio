@@ -21,6 +21,8 @@
 #include <QScrollBar>
 #include <QSpinBox>
 #include <QTextFrame>
+#include <QLabel>
+#include <QMovie>
 #include <QTimer>
 #include <QToolButton>
 #include <QUuid>
@@ -573,6 +575,22 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
     if(current != item)
         return;
 
+    // show running gif
+    {
+        auto* running = ui->ai_chat_composer->findChild<QLabel*>("ai_running");
+        if(!running)
+        {
+            running = new QLabel(ui->ai_chat_composer);
+            running->setObjectName("ai_running");
+            running->setFixedSize(24,24);
+
+            auto* movie = new QMovie(":/icons/icons/ajax-loader.gif",{},running);
+            movie->setScaledSize(QSize(20,20));
+            running->setMovie(movie);
+            // Directly left of ai_agent_selector at row 1, column 3.
+            ui->ai_chat_composer_layout->addWidget(running,1,2);
+        }
+    }
 
     auto request_content = [](const QJsonObject& entry,bool compact = false)
     {
@@ -706,10 +724,6 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
     }
     else
         append(added);
-
-    if(info.processes)
-        append(QJsonObject{{"type","assistant"},
-                           {"text","● AI agent is working…"}});
 
     ui->ai_chat_history->ensureCursorVisible();
     QTimer::singleShot(0,ui->ai_chat_history,[this]
@@ -1151,14 +1165,13 @@ ai_launch MainWindow::prepare_ai(ai_provider provider,QString session,
             if(no_reply && !output.isEmpty())
                 add_ai_history(session,"assistant",QString::fromUtf8(output));
 
-            QString ended = "AI agent ended";
             if(exit_code || exit_status == QProcess::CrashExit)
-                ended += " with exit code "+QString::number(exit_code) + " " + QString::fromUtf8(error);
+                add_ai_history(session,"activity","AI agent failed with exit code "+
+                        QString::number(exit_code)+" "+QString::fromUtf8(error));
+            else if(no_reply && output.isEmpty())
+                add_ai_history(session,"activity","No reply from AI agent.");
             else
-                if(no_reply && output.isEmpty())
-                    ended += " without a reply";
-
-            add_ai_history(session,"activity",ended+".");
+                show_ai_project(session);
         }
         process->deleteLater();
     });
