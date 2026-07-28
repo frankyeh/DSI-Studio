@@ -113,6 +113,25 @@ Actions to edit or operate these instructions.
 
 ## Basic requests
 
+### Name the chat
+
+After understanding the user's initial prompt, send one concise `TITLE` before
+the first `LIST` or `CMD`:
+
+```powershell
+Invoke-Dsi @{
+    agent=$DsiAgent
+    session=$DsiSession
+    request='TITLE'
+    title='Corticospinal tract analysis'
+}
+```
+
+Use the required `title` field only with `TITLE`, not with `CMD`, `CHAT`, `LIST`,
+or `LOG`, and do not put the title in `chat` or `text`. Keep the same exact
+`agent` and `session`; `TITLE` changes only the displayed chat name. Send another
+`TITLE` later only when the user permits renaming.
+
 ### Discover windows
 
 ```powershell
