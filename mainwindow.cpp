@@ -317,7 +317,14 @@ MainWindow::MainWindow(QWidget *parent) :
         {
             stop_ai_blink();
             auto session = item->data(Qt::UserRole).toString();
-            select_agent_model(ai_infos[session]);
+            const auto& info = ai_infos[session];
+            auto index = int(info.provider);
+            if(index >= 0)
+                ui->ai_agent_selector->setCurrentIndex(index);
+            auto model = info.model_settings.value("model").toString();
+            if(model.isEmpty() || ui->ai_model_selector->findText(model) < 0)
+                model = "default";
+            ui->ai_model_selector->setCurrentText(model);
             show_ai_project(session);
         }
         else
