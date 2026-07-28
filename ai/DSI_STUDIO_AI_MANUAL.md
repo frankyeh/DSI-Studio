@@ -178,6 +178,28 @@ Use the General examples file for `list_recent_*`, `run_cli`, and the complete
 
 ## Critical command syntax
 
+### `list_slice` uses one readable status column
+
+```json
+["list_slice"]
+```
+
+The reply columns are:
+
+```text
+index    current    name    status
+```
+
+Interpret `status` directly:
+
+- `available` — a URL-backed custom slice is listed but has not yet been loaded locally. Select it with `set_slice`.
+- `registering` — registration is still running. Poll `list_slice` again.
+- `ready` — the slice is local or built in and is not registering. It is ready for a dependent operation.
+
+The `current` column is only the selected-state flag (`1` or `0`). It does not
+mean the slice is ready. After `set_slice`, poll until the selected row reports
+`ready`.
+
 ### T1w segmentation: prefer the tracking window for FIB workflows
 
 T1w segmentation is available in both the **tracking** window and the **image**
@@ -200,8 +222,8 @@ Use this robust sequence on the tracking-window ID:
 ```
 
 `set_slice` may start slice loading or registration asynchronously and return
-before it is finished. Poll `list_slice` and proceed only when the selected row
-reports `ready=1`, `registering=0`, and `registered=1`.
+before it is finished. Poll `list_slice` and proceed only when the selected row's
+`status` is `ready`. Do not proceed while it is `available` or `registering`.
 
 `list_unet` returns these columns:
 
@@ -215,8 +237,7 @@ such as `SynthSeg V2`. Use only a row with `available=1`.
 
 The optional third element selects the slice by its exact name or quoted numeric
 index from `list_slice`. Supplying it causes `segment_brain` to select that slice;
-prechecking readiness with `list_slice` still avoids waiting or failure during
-segmentation.
+prechecking `status=ready` still avoids waiting or failure during segmentation.
 
 Segmentation inference may outlast the named-pipe client's wait time. A client
 timeout does not prove that `segment_brain` failed. Do not immediately resend the
@@ -273,7 +294,7 @@ When opening FIB data, verify that the selected file is `.fz` or `*fib.gz`. Afte
 Hub open/download routines are GUI-backed; verify the created window or output
 file rather than treating `okay:true` alone as proof of completion.
 
-### `list_tract` does not require a numeric parameter
+### `list_tract` uses `running` or `done`
 
 Full tract table:
 
@@ -281,25 +302,37 @@ Full tract table:
 ["list_tract"]
 ```
 
+The full reply columns are:
+
+```text
+index    status    shown    name    tracts    deleted    seeds
+```
+
+Each row reports `status=running` while its tracking thread is active and
+`status=done` after that thread has finished. The `shown` column remains a
+separate `1`/`0` visibility flag.
+
 Compact tracking status:
 
 ```json
 ["list_tract","status"]
 ```
 
-`list_tract` without a second element is valid and returns every bundle with
-index, running state, shown state, name, tract count, deleted count, and seeds.
-The optional literal string `"status"` returns only running-job and bundle
-counts. A numeric tract index is **not** required for `list_tract`.
+The compact reply columns are:
 
-In the compact status output, `running=0` means no tracking job is still active:
-fiber tracking is complete. A value greater than zero means one or more tracking
-jobs are still running. Poll `list_tract status` until `running=0` before treating
-the tracking operation as finished or starting a dependent step.
+```text
+status    bundles
+```
 
-If a client reports `need-param1` for `["list_tract"]`, the request was likely
-sent through an incompatible wrapper or malformed command interface. Send the
-standard JSON `CMD` array directly to a tracking window.
+`status=running` means at least one tracking thread is active. `status=done`
+means no tracking thread remains active and tracking is complete. `bundles` is
+the total number of tract rows, not a running-job count. Poll until
+`status=done` before starting a dependent step.
+
+`list_tract` does not require a numeric tract index. If `["list_tract"]` reports
+`need-param1`, the request was likely sent through an incompatible wrapper or a
+malformed command interface. Send the standard JSON `CMD` array directly to a
+tracking window.
 
 ### `run_tracking` requires a new bundle name
 
@@ -326,9 +359,8 @@ Typical sequence:
 ```
 
 Do not resend `run_tracking` merely because a client timeout occurred. Poll
-`LIST`; fiber tracking is asynchronous after the command is accepted. Use
-`["list_tract","status"]` for definitive tracking completion: `running=0` means
-the tracking job has completed.
+`LIST` for general application activity and `["list_tract","status"]` for
+tract completion. `status=done` is the definitive completion signal.
 
 ## Discovery quick reference
 
@@ -345,11 +377,11 @@ the tracking job has completed.
 | Hub repositories | `["hub_repo"]` | main |
 | Hub release tags | `["hub_tags","<repo>"]` | main |
 | Hub release files and exact indices | `["hub_files","<repo>","<tag>"]` | main |
-| Slice names and readiness | `["list_slice"]` | tracking |
+| Slice names and `available`/`registering`/`ready` status | `["list_slice"]` | tracking |
 | Segmentation model IDs | `["list_unet"]` | tracking |
 | Regions and ROI types | `["list_region"]` | tracking |
-| Full tract table | `["list_tract"]` | tracking |
-| Tracking completion (`running=0`) | `["list_tract","status"]` | tracking |
+| Full tract table with per-bundle `running`/`done` status | `["list_tract"]` | tracking |
+| Tracking completion (`status=done`) | `["list_tract","status"]` | tracking |
 | Parameter IDs and values by domain | `["list_param"]` | tracking |
 | Tracking parameters and current values | `["list_param","tracking"]` | tracking |
 | One parameter value | `["list_param","fa_threshold"]` | tracking |
@@ -370,7 +402,8 @@ the tracking job has completed.
 - Do not answer modal dialogs remotely; tell the user what must be selected.
 - `okay:true` means the command was accepted; asynchronous work may still be active.
 - A client timeout does not prove failure; verify application state before retrying a long command.
-- For fiber tracking, `list_tract status` with `running=0` is the completion signal.
+- For a selected slice, `list_slice` with `status=ready` is the readiness signal.
+- For fiber tracking, `list_tract status` with `status=done` is the completion signal.
 - A disappeared window or `window not found` means the user likely closed it. Do not reopen it automatically.
 - Do not expose private chain-of-thought. Report conclusions, actions, progress, and blockers.
 
