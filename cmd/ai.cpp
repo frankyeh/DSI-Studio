@@ -577,19 +577,26 @@ void MainWindow::show_ai_project(const QString& session,QJsonObject added)
 
     // show running gif
     {
-        auto* running = ui->ai_chat_composer->findChild<QLabel*>("ai_running");
+        auto* running =
+            ui->ai_chat_composer->findChild<QLabel*>("ai_running");
         if(!running)
         {
             running = new QLabel(ui->ai_chat_composer);
             running->setObjectName("ai_running");
             running->setFixedSize(24,24);
 
-            auto* movie = new QMovie(":/icons/icons/ajax-loader.gif",{},running);
+            auto* movie = new QMovie(
+                ":/icons/icons/ajax-loader.gif",{},running);
             movie->setScaledSize(QSize(20,20));
             running->setMovie(movie);
-            // Directly left of ai_agent_selector at row 1, column 3.
             ui->ai_chat_composer_layout->addWidget(running,1,2);
         }
+
+        running->setVisible(info.processes);
+        if(info.processes)
+            running->movie()->start();
+        else
+            running->movie()->stop();
     }
 
     auto request_content = [](const QJsonObject& entry,bool compact = false)
