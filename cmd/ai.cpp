@@ -933,6 +933,11 @@ void MainWindow::on_ai_new_chat_clicked()
     ui->ai_chat_history->clear();
     ui->ai_chat_input->clear();
     ui->ai_chat_input->setFocus();
+    if(auto* running = ui->ai_chat_composer->findChild<QLabel*>("ai_running"))
+    {
+        running->hide();
+        running->movie()->stop();
+    }
 }
 
 void MainWindow::on_ai_quick_settings_clicked()
