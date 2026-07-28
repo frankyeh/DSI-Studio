@@ -1792,25 +1792,32 @@ int run_action_with_wildcard(tipl::program_option<tipl::out>&);
 bool MainWindow::command(const std::vector<std::string>& cmd)
 {
     error_msg.clear();
-    auto fail = [this](std::string error)
-    {
-        error_msg = error;
-        return false;
-    };
-    const std::string usage =
-        "list_recent_fib | list_recent_src | open_image <file1> [file2...] | run_cli <command line> | hub repos | hub tags <repo> | "
-        "hub files <repo> <tag> [text] [offset] [limit] | hub open <repo> <tag> <file> | "
-        "hub download <repo> <tag> <file> <dir>";
+    auto fail = [&](const std::string& msg){error_msg = msg;return false;};
+    if(cmd.empty())
+        return fail("empty command");
 
-    if(cmd.size() == 1 && tipl::begins_with(cmd[0],"list_recent"))
+    if(cmd[0] == "list_recent_fib")
     {
-        for(const auto& file : settings.value(tipl::ends_with(cmd[0],"fib") ? "recentFibFileList" : "recentSrcFileList").toStringList())
+        if(cmd.size() != 1)
+            return fail("list_recent_fib takes no arguments");
+        for(const auto& file : settings.value("recentFibFileList").toStringList())
             tipl::out() << QDir::fromNativeSeparators(file).toStdString();
         return true;
     }
 
-    if(cmd.size() == 2 && cmd[0] == "run_cli")
+    if(cmd[0] == "list_recent_src")
     {
+        if(cmd.size() != 1)
+            return fail("list_recent_src takes no arguments");
+        for(const auto& file : settings.value("recentSrcFileList").toStringList())
+            tipl::out() << QDir::fromNativeSeparators(file).toStdString();
+        return true;
+    }
+
+    if(cmd[0] == "run_cli")
+    {
+        if(cmd.size() != 2)
+            return fail("usage: run_cli <command line>");
         tipl::program_option<tipl::out> po;
         if(!po.parse(cmd[1]) || !po.check("action"))
             return fail(po.error_msg);
@@ -1819,18 +1826,25 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         po.check_end_param<tipl::warning>();
         return true;
     }
-    if(cmd.size() > 1 && cmd[0] == "open_image")
+
+    if(cmd[0] == "open_image")
     {
+        if(cmd.size() < 2)
+            return fail("usage: open_image <file1> [file2...]");
         QStringList files;
         for(size_t i = 1;i < cmd.size();++i)
             files << QString::fromUtf8(cmd[i]);
         loadNii(files);
         return true;
     }
-    if(cmd.empty() || cmd[0] != "hub")
-        return fail(usage);
-    on_fiber_data_hub_clicked();
-    if(!fiber_data_hub->command(cmd))
-        return fail(fiber_data_hub->error_msg);
-    return true;
+
+    if(tipl::begins_with(cmd[0],"hub_"))
+    {
+        on_fiber_data_hub_clicked();
+        if(!fiber_data_hub->command(cmd))
+            return fail(fiber_data_hub->error_msg);
+        return true;
+    }
+
+    return fail("unknown command: "+cmd[0]);
 }
