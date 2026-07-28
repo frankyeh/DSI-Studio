@@ -36,7 +36,7 @@ This file contains the complete main-window, Hub, tracking-file, workspace, sett
 
 ## Fiber Data Hub workflow
 
-All Hub commands are separate top-level command names. The old `[`"hub"`,`"files"`,...]` form is no longer accepted.
+All Hub commands are separate top-level command names. The old `["hub","files",...]` form is no longer accepted.
 
 ```json
 ["hub_repo"]
