@@ -1,8 +1,9 @@
 # DSI Studio AI Command Manual
 
 Read `DSI_STUDIO_AI_SETUP.md` first. This manual is intentionally concise so an
-agent can read it without losing the end of the file to output truncation. Full
-source-verified examples are divided by topic and linked near the end.
+agent can read it without losing the end of the file to output truncation. The
+complete command inventory and source-verified examples are divided by topic and
+linked near the end.
 
 ## Command routing reference — read this first
 
@@ -13,7 +14,7 @@ are accepted only by the window type that implements them.
 |---|---|---|---|
 | **main** | Main DSI Studio window | `list_recent_fib`, `list_recent_src`, `open_image`, `hub ...`, `run_cli` | Use `open_image` to open one or more local paths through the main-window file router. For `.fz` or `*fib.gz`, this creates a tracking window. |
 | **image** | General image viewer | Image-viewer inspection and display commands | Used for NIfTI, DICOM, NRRD, and other ordinary image data opened by the main window. |
-| **tracking** | A loaded FIB/FZ tracking window | `list_slice`, `list_region`, `list_tract`, `run_tracking`, tract/region/slice/device commands | `open_fib` is a **tracking-window command** that opens another FIB after a tracking window already exists. It is not the command for creating the first tracking window. |
+| **tracking** | A loaded FIB/FZ tracking window | `list_slice`, `list_region`, `list_tract`, `run_tracking`, tract/region/slice/device/rendering commands | `open_fib` is a **tracking-window command** that opens another FIB after a tracking window already exists. It is not the command for creating the first tracking window. |
 
 Always call top-level `LIST` first and use the returned numeric ID. Never use a
 window title, filename, type name, guessed number, or stale number as `window`.
@@ -205,16 +206,20 @@ Do not resend `run_tracking` merely because a client timeout occurred. Poll
 - A disappeared window or `window not found` means the user likely closed it. Do not reopen it automatically.
 - Do not expose private chain-of-thought. Report conclusions, actions, progress, and blockers.
 
-## Source-verified command examples
+## Complete command inventory and examples
 
 The complete inventory is split into smaller files so agents can retrieve only
 the relevant section without truncation:
 
-- [General, workspace, FIB, mapping, and settings](DSI_STUDIO_AI_COMMAND_EXAMPLES_GENERAL.md)
-- [Slice, segmentation, AutoTrack, and parameters](DSI_STUDIO_AI_COMMAND_EXAMPLES_SLICE.md)
+- [Main window, Hub, FIB, workspace, settings, and parameters](DSI_STUDIO_AI_COMMAND_EXAMPLES_GENERAL.md)
+- [Slices and segmentation](DSI_STUDIO_AI_COMMAND_EXAMPLES_SLICE.md)
 - [Regions and tract-to-region analysis](DSI_STUDIO_AI_COMMAND_EXAMPLES_REGION.md)
-- [Tracts, clustering, recognition, and TDI](DSI_STUDIO_AI_COMMAND_EXAMPLES_TRACT.md)
+- [Tracts, tracking, AutoTrack, clustering, recognition, and TDI](DSI_STUDIO_AI_COMMAND_EXAMPLES_TRACT.md)
 - [Devices and AC-PC locators](DSI_STUDIO_AI_COMMAND_EXAMPLES_DEVICE.md)
+- [Rendering, camera, surfaces, and display](DSI_STUDIO_AI_COMMAND_EXAMPLES_RENDERING.md)
+- [Image-window and TIPL generic image operations](DSI_STUDIO_AI_COMMAND_EXAMPLES_IMAGE.md)
 
-Search the appropriate topic file for the exact command. Do not request or
-print the entire command inventory when only one command family is needed.
+Rows with examples provide recommended or source-verified syntax. Blank example
+cells preserve commands from the previous complete manual without inventing
+parameters. Search the appropriate topic file for the exact command and inspect
+current source before using any blank-example command.
