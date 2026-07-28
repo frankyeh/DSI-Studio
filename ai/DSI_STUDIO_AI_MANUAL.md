@@ -1,110 +1,34 @@
 # DSI Studio AI Command Manual
 
-Read `DSI_STUDIO_AI_SETUP.md` first. This manual is intentionally concise so an
-agent can read it without losing the end of the file to output truncation. The
-complete command inventory and source-verified examples are divided by topic and
-linked near the end.
+Read `DSI_STUDIO_AI_SETUP.md` first. Use this file for the protocol and critical
+routing rules. Use the topic-specific command inventories for complete syntax.
 
-## Command routing reference — read this first
+## Command routing
 
-A `CMD` must target a numeric window ID returned by top-level `LIST`. Commands
-are accepted only by the window type that implements them.
+A `CMD` must target the quoted numeric window ID returned by top-level `LIST`.
+Never use a window title, filename, type name, guessed number, or stale number.
 
-| Window type | What it represents | Common valid commands | File-opening role |
-|---|---|---|---|
-| **main** | Main DSI Studio window | `list_recent_fib`, `list_recent_src`, `set_work_dir`, `open_src`, `open_fib`, `open_structural_tracking`, `open_template`, `open_db`, `open_connectometry`, `open_auto_track`, `open_nonlinear_registration`, `open_xnat`, `open_console`, `clear_recent_src`, `clear_recent_fib`, `open_image`, `open_hub`, `hub_*`, `run_cli` | Main-window `open_fib` takes no path and opens a picker. Main-window `open_image` accepts explicit image paths or no path for a picker. |
-| **image** | General image viewer | Image inspection, editing, and `segmentation` commands | Used mainly for standalone NIfTI editing and batch image processing, not as the default T1w-segmentation route when a related FIB is already open. |
-| **tracking** | A loaded FIB/FZ tracking window | `list_slice`, `set_slice`, `list_unet`, `segment_brain`, `list_region`, `list_tract`, `run_tracking`, `open_fib`, tract/region/slice/device/rendering commands | Tracking-window `open_fib` requires an explicit `.fz` or `*fib.gz` path and creates another tracking window. |
+| Window type | Use it for |
+|---|---|
+| **main** | Recent files, file opening, reconstruction, DICOM/BIDS conversion, QC, databases, Hub, AI, and main tools |
+| **image** | General image viewing, editing, and image-window segmentation |
+| **tracking** | FIB/FZ slices, regions, tracts, tracking, devices, parameters, and rendering |
 
-Always call top-level `LIST` first and use the returned numeric ID. Never use a
-window title, filename, type name, guessed number, or stale number as `window`.
+Call `LIST` before every substantial operation and again after a command that
+may create or close a window.
 
-Do not invent command names. To discover recent files, target the numeric
-**main** window ID and use these exact commands:
+## Exact recent-file commands
+
+Target the numeric **main** window ID:
 
 ```json
 ["list_recent_fib"]
 ["list_recent_src"]
 ```
 
-Use `list_recent_fib` for recent FIB/FZ files and `list_recent_src` for recent
-SRC/SZ files. Do not substitute guessed names such as `recent_list`.
-
-## Opening files: documented command routes
-
-Use the documented command interface for file opening. Do not send a filesystem
-path by itself as a named-pipe request.
-
-### 1. Main-window interactive open commands
-
-These commands take no path and open a local GUI dialog:
-
-```json
-["open_fib"]
-["open_structural_tracking"]
-["open_src"]
-["open_image"]
-```
-
-- Main-window `open_fib` selects `.fz`, `*fib.gz`, or `.dz` and creates a tracking window.
-- `open_structural_tracking` selects `.nii.gz`, `.nii`, or `2dseq` and passes it to `loadFib`.
-- `open_src` selects `.sz`, `*src.gz`, `.jpg`, or `.tif` input and creates a reconstruction window.
-- Parameterless `open_image` selects ordinary image data and creates an image window.
-
-These are interactive commands. A local user must operate the file dialog. See
-footnote 1 regarding cancellation and verification.
-
-After a FIB opens, use the
-[fiber-tracking skill](DSI_STUDIO_AI_SKILL_FIBER_TRACKING.md) to choose the
-tracking strategy. A newly opened FIB normally has no regions; do not call
-`list_region` unless the task uses regions or regions were created, loaded, or
-restored.
-
-### 2. Tracking-window `open_fib` — explicit additional FIB
-
-Target an existing **tracking** window:
-
-```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"2","command":["open_fib","C:/data/second_subject.fz"]}
-```
-
-This `open_fib` implementation requires the explicit path as a command parameter
-and creates another tracking window. It is a separate command contract from
-main-window `["open_fib"]`.
-
-Never send `["open_fib","<path>"]` to the main window. The main-window command
-takes no path and opens a picker.
-
-### 3. Main-window `open_image` — explicit image paths
-
-Target the **main** window:
-
-```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"1","command":["open_image","C:/data/T1w.nii.gz"]}
-```
-
-With one or more paths, `open_image` passes the files to a `view_image` window
-for viewing, modification, and editing. Do not use this route for `.fz` when the
-fiber-tracking interface is required. See footnote 3 regarding error reporting.
-
-After opening a related FIB, do not open its T1w again in an image window merely
-to segment it. Use tracking-window `segment_brain` so the generated regions stay
-in the fiber-tracking workflow. Use the image-window route mainly for standalone
-image editing or batch processing.
-
-## Recommended request sequence
-
-1. Send one concise `TITLE` after understanding the task.
-2. Send top-level `LIST`.
-3. Choose the numeric ID for the correct window type.
-4. Run discovery commands before mutation.
-5. Use `LIST` for routine polling and targeted `list_*` commands for detail.
-6. Verify output files or created objects before reporting completion.
+Use these exact names. Do not invent aliases such as `recent_list`.
 
 ## Request formats
-
-An optional `chat` may accompany any request. Attach an update directly to
-`CMD` when it describes that command; use standalone `CHAT` otherwise.
 
 ### LIST
 
@@ -112,13 +36,8 @@ An optional `chat` may accompany any request. Attach an update directly to
 {"agent":"Codex","session":"<uuid>","request":"LIST"}
 ```
 
-The first line reports application-wide activity. Following lines contain:
-
-```text
-type    id    busy    tracking-jobs    title
-```
-
-Window `id` is the quoted numeric value required by every `CMD`.
+The reply begins with application activity, followed by rows containing window
+type, numeric ID, busy state, tracking jobs, and title.
 
 ### CMD
 
@@ -126,61 +45,19 @@ Window `id` is the quoted numeric value required by every `CMD`.
 {"agent":"Codex","session":"<uuid>","request":"CMD","window":"2","command":["list_region"]}
 ```
 
-Every command name and parameter must be a JSON string. Use `"7"`, not numeric
-`7`.
+Every command name and parameter must be a JSON string.
 
-A meaningful command should normally include a useful progress update:
-
-```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"2","command":["segment_brain","human_synthseg","7"],"chat":"I verified that the T1w slice is ready. I am starting SynthSeg now."}
-```
-
-The top-level `chat` field is shown to the user and does not change the command.
-Silent polling may omit it.
-
-Every `CMD` returns a JSON array with one result object per command.
-
-A command that produces text returns:
+A command may include a top-level progress message:
 
 ```json
-[{"index":0,"output":"<command output>"}]
+{"agent":"Codex","session":"<uuid>","request":"CMD","window":"2","command":["segment_brain","human_synthseg","7"],"chat":"Starting SynthSeg after verifying the selected T1w slice."}
 ```
-
-A successful command with no captured text returns:
-
-```json
-[{"index":0,"output":"command completed"}]
-```
-
-A failed command returns an `error` field:
-
-```json
-[{"index":0,"error":"<reason>"}]
-```
-
-Interpret the fields as follows:
-
-- `index` identifies the command within the submitted batch.
-- `output` contains the command's captured text.
-- `command completed` means the command handler returned without an immediate error and produced no captured text.
-- The presence of `error` means that command failed.
-- A command batch stops after the first error.
-
-A response without `error` does not prove that asynchronous work has finished or
-that a GUI-backed operation created the expected object. Verify the resulting
-window, file, region, tract, slice status, or other documented state before
-reporting completion.
-
-For `list_*` commands, actual rows appear in `output`. If the response is
-`command completed`, the command produced no rows or no textual output.
 
 ### CHAT
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"CHAT","chat":"Tracking completed and the output file was verified."}
+{"agent":"Codex","session":"<uuid>","request":"CHAT","chat":"Tracking completed and the output was verified."}
 ```
-
-Use standalone `CHAT` when no other request is needed.
 
 ### TITLE
 
@@ -188,11 +65,8 @@ Use standalone `CHAT` when no other request is needed.
 {"agent":"Codex","session":"<uuid>","request":"TITLE","title":"Corticospinal tract analysis"}
 ```
 
-Send one concise title after understanding the initial task and before the
-first `LIST` or `CMD`. The `title` field is required; do not put the title in
-`chat` or `text`, or include it in `CMD`, `CHAT`, `LIST`, or `LOG`. Reuse the
-exact agent and session identity, and rename later only with the user's
-permission.
+Send one concise title after understanding the task and before the first `LIST`
+or `CMD`.
 
 ### LOG
 
@@ -200,283 +74,193 @@ permission.
 {"agent":"Codex","session":"<uuid>","request":"LOG"}
 ```
 
-Use `LOG` only when `LIST`, the direct `CMD` response, and targeted discovery
-cannot explain a failure.
+Use `LOG` only when `LIST`, the direct `CMD` response, and targeted discovery do
+not explain a failure.
 
-## Main-window command reference
+## CMD response format
 
-All commands in this table target the numeric **main** window ID.
+Every `CMD` returns a JSON array with one result object per command.
 
-| Command | Behavior |
-|---|---|
-| `["list_recent_fib"]` | List recent FIB/FZ paths. |
-| `["list_recent_src"]` | List recent SRC/SZ paths. |
-| `["set_work_dir"]` | Open a directory picker and add the selected directory. It does not accept a path argument. |
-| `["open_src"]` | Open the SRC/histology picker and create a reconstruction window. |
-| `["open_fib"]` | Open the FIB picker and create a tracking window. Do not add a path on a main-window target. |
-| `["open_structural_tracking"]` | Select a structural image and pass it to `loadFib`. |
-| `["open_template"]` | Open the template currently selected in the main-window template list. See footnote 2. |
-| `["open_db"]` | Select and load a connectometry database, then open a database window. |
-| `["open_connectometry"]` | Select and load a connectometry database, then open a group-connectometry window. |
-| `["open_auto_track"]` | Open the main AutoTrack window. |
-| `["open_nonlinear_registration"]` | Open the nonlinear-registration toolbox. |
-| `["open_xnat"]` | Open the XNAT dialog. |
-| `["open_console"]` | Show the application console. |
-| `["clear_recent_src"]` | Immediately clear the recent SRC/SZ list and saved setting, without confirmation. |
-| `["clear_recent_fib"]` | Immediately clear the recent FIB/FZ list and saved setting, without confirmation. |
-| `["open_image"]` | Open the image picker. |
-| `["open_image","C:/data/T1w.nii.gz"]` | Open one or more explicit paths in an image window. |
-| `["open_hub"]` | Show, raise, and activate the Fiber Data Hub window without running a Hub query. |
-
-Use the General examples file for `run_cli` and the complete `hub_*` query syntax.
-
-## Critical command syntax
-
-### `list_slice` uses one readable status column
+Command with captured text:
 
 ```json
-["list_slice"]
+[{"index":0,"output":"<command output>"}]
 ```
 
-The reply columns are:
-
-```text
-index    current    name    status
-```
-
-Interpret `status` directly:
-
-- `available` — a URL-backed custom slice is listed but has not yet been loaded locally. Select it with `set_slice`.
-- `registering` — registration is still running. Poll `list_slice` again.
-- `ready` — the slice is local or built in and is not registering. It is ready for a dependent operation.
-
-The `current` column is only the selected-state flag (`1` or `0`). It does not
-mean the slice is ready. After `set_slice`, poll until the selected row reports
-`ready`.
-
-### T1w segmentation: prefer the tracking window for FIB workflows
-
-T1w segmentation is available in both the **tracking** window and the **image**
-window, but they serve different workflows.
-
-When an `.fz`/FIB is already open, the normal and most common route is to segment
-the T1w directly in that **tracking window**. Do not call main-window
-`open_image` to create a separate image window for the same T1w. Keeping the
-segmentation in the FIB workflow makes the resulting regions available in the
-tracking interface.
-
-Use this robust sequence on the tracking-window ID:
+Successful command with no captured text:
 
 ```json
-["list_slice"]
-["set_slice","<T1w-slice-index>"]
-["list_slice"]
-["list_unet"]
-["segment_brain","<model-ID>","<T1w-slice-index>"]
+[{"index":0,"output":"command completed"}]
 ```
 
-`set_slice` may start slice loading or registration asynchronously and return
-before it is finished. Poll `list_slice` and proceed only when the selected row's
-`status` is `ready`. Do not proceed while it is `available` or `registering`.
-
-`list_unet` returns these columns:
-
-```text
-index    available    model    name    description
-```
-
-The second `segment_brain` element must be the internal ID from the **`model`**
-column, such as `human_synthseg`, not the display text from the **`name`** column,
-such as `SynthSeg V2`. Use only a row with `available=1`.
-
-The optional third element selects the slice by its exact name or quoted numeric
-index from `list_slice`. Supplying it causes `segment_brain` to select that slice;
-prechecking `status=ready` still avoids waiting or failure during segmentation.
-
-Segmentation inference may outlast the named-pipe client's wait time. A client
-timeout does not prove that `segment_brain` failed. Do not immediately resend the
-command. Poll top-level `LIST`, then use `list_slice` and `list_region` to verify
-that processing finished and segmentation regions were created.
-
-Use the image-window `segmentation` command mainly when processing a standalone
-NIfTI image or applying an image-processing workflow to multiple files. Open a
-T1w with `open_image` for this route only when the task is explicitly image
-editing or batch processing, rather than work on an already-open FIB.
-
-### Fiber Data Hub uses separate `hub_*` commands
-
-All Hub commands target the **main** window. `["open_hub"]` only opens the Hub
-window. The former subcommand form such as `["hub","files",...]` is no longer
-accepted. Use this discovery sequence:
+Failed command:
 
 ```json
+[{"index":0,"error":"<reason>"}]
+```
+
+The presence of `error` means that command failed. A batch stops after the first
+error. A response without `error` does not prove that asynchronous or GUI-backed
+work finished; verify the resulting state.
+
+## Main-window file opening
+
+Use documented commands. Never send a filesystem path by itself as a named-pipe
+request.
+
+The current main-window router accepts an optional path parameter for these
+commands:
+
+```json
+["open_fib","C:/data/subject.fz"]
+["open_structural_tracking","C:/data/T1w.nii.gz"]
+["open_src","C:/data/subject.sz"]
+["open_image","C:/data/T1w.nii.gz"]
+["open_db","C:/data/group.db.fz"]
+["open_connectometry","C:/data/group.db.fz"]
+```
+
+Omitting the path opens the corresponding local picker. Picker cancellation may
+return without an immediate error, so verify the resulting window.
+
+Main-window `open_fib` now supports either an explicit FIB/FZ path or no path for
+the picker. Tracking-window `open_fib` remains a separate command implemented by
+the tracking window.
+
+Do not use `open_image` for FIB/FZ tracking data.
+
+## Multiple-file commands
+
+The latest main-window router accepts one command-array element per file:
+
+```json
+["open_src","C:/data/a.sz","C:/data/b.sz"]
+["open_dwi_dicom","C:/dicom/a.dcm","C:/dicom/b.dcm"]
+["open_image","C:/data/T1w.nii.gz","C:/data/T2w.nii.gz"]
+["qc_fib","C:/data/a.fz","C:/data/b.fz"]
+["rename_dicom","C:/dicom/a.dcm","C:/dicom/b.dcm"]
+```
+
+Do not combine paths into one `&`-separated parameter.
+
+## Main-window discovery and utility commands
+
+Common commands include:
+
+```json
+["list_recent_fib"]
+["list_recent_src"]
+["set_work_dir","C:/work"]
+["reset_settings"]
+["open_console"]
+["open_ai"]
+["open_auto_track"]
+["open_nonlinear_registration"]
+["open_xnat"]
+["clear_recent_fib"]
+["clear_recent_src"]
+```
+
+Confirm `reset_settings`, `clear_recent_fib`, and `clear_recent_src` before use
+because they immediately modify saved application state.
+
+## DICOM, BIDS, reconstruction, and QC
+
+Current main-window commands include:
+
+```json
+["rename_dicom","<file1>","<file2>"]
+["rename_dicom_dir","<directory>"]
+["convert_dicom_dir","<directory>"]
+["bids_to_src","<BIDS-directory>"]
+["nifti_dir_to_src","<directory>"]
+["collect_network_measures","<file1>","<file2>"]
+["open_dwi_nifti","<file1>","<file2>"]
+["open_dwi_dicom","<file1>","<file2>"]
+["open_dwi_2dseq","<file1>","<file2>"]
+["open_src_dir","<directory>"]
+["qc_nii","<file1>","<file2>"]
+["qc_src","<file1>","<file2>"]
+["qc_fib","<file1>","<file2>"]
+```
+
+`bids_to_src` still asks the local user to choose an output directory. Commands
+without explicit inputs may open local pickers.
+
+## Templates and databases
+
+```json
+["open_template","<exact-template-name>"]
+["create_db"]
+["create_average"]
+["open_db","<database-path>"]
+["open_connectometry","<database-path>"]
+```
+
+Invalid template names, template loading failures, and database loading failures
+are returned through `error`.
+
+## Fiber Data Hub
+
+Hub commands are routed before the regular main-window command handling and may
+use their full argument lists:
+
+```json
+["open_hub"]
 ["hub_repo"]
 ["hub_tags","<repo>"]
 ["hub_files","<repo>","<tag>",".fz","0","20"]
-["hub_open","<repo>","<tag>","<exact-FIB-filename-or-returned-index>"]
-```
-
-`hub_repo` lists an index and the exact `owner/repository` identifier. Pass that
-exact identifier to `hub_tags`. The release list may still be loading; when
-`hub_tags` reports `repository data is loading; retry`, repeat the same command
-after the metadata finishes loading.
-
-`hub_files` syntax is:
-
-```json
-["hub_files","<repo>","<tag>","<optional-text>","<offset>","<limit>"]
-```
-
-The text filter is a case-insensitive substring match. Filtering occurs before
-offset and limit are applied. The first output column remains the actual row
-index in the full file table, not the ordinal position within the filtered
-results. Use that returned index or the exact filename for `hub_open` and
-`hub_download`.
-
-To persist a file without opening it:
-
-```json
+["hub_open","<repo>","<tag>","<exact-filename-or-returned-index>"]
 ["hub_download","<repo>","<tag>","<exact-filename-or-returned-index>","C:/data"]
 ```
 
-`hub_download` requires exactly five elements. It creates the destination
-directory when needed, disables overwrite, and skips an existing destination
-file.
+Use exact repository names, tags, filenames, and row indices returned by the Hub
+commands. Verify the created window or downloaded file.
 
-When opening FIB data, verify that the selected file is `.fz` or `*fib.gz`. After
-`hub_open`, call top-level `LIST` and verify that a new `tracking` window appeared.
-Hub open/download routines are GUI-backed; verify the created window or output
-file rather than treating a response without an error as proof of completion.
+## Tracking-window critical syntax
 
-### `list_tract` uses `running` or `done`
-
-Full tract table:
+### Slice readiness
 
 ```json
-["list_tract"]
+["list_slice"]
 ```
 
-The full reply columns are:
+Proceed only when the selected row reports `status=ready`. Do not proceed while
+it reports `available` or `registering`.
 
-```text
-index    status    shown    name    tracts    deleted    seeds
-```
-
-Each row reports `status=running` while its tracking thread is active and
-`status=done` after that thread has finished. The `shown` column remains a
-separate `1`/`0` visibility flag.
-
-Compact tracking status:
+### Segmentation
 
 ```json
-["list_tract","status"]
+["list_slice"]
+["set_slice","<slice-index>"]
+["list_slice"]
+["list_unet"]
+["segment_brain","<model-ID>","<slice-index>"]
 ```
 
-The compact reply columns are:
+Use the internal model ID returned by `list_unet`, not its display name.
 
-```text
-status    bundles
-```
-
-`status=running` means at least one tracking thread is active. `status=done`
-means no tracking thread remains active and tracking is complete. `bundles` is
-the total number of tract rows, not a running-job count. Poll until
-`status=done` before starting a dependent step.
-
-`list_tract` does not require a numeric tract index. If `["list_tract"]` reports
-`need-param1`, the request was likely sent through an incompatible wrapper or a
-malformed command interface. Send the standard JSON `CMD` array directly to a
-tracking window.
-
-### `run_tracking` requires a new bundle name
-
-Minimum form:
-
-```json
-["run_tracking","CST"]
-```
-
-The second command element is mandatory and becomes the new tract-bundle name.
-An empty name fails with `missing tract-bundle name`. With the two-element form,
-DSI Studio uses the current tracking parameters and checked region settings.
-Follow the [fiber-tracking skill](DSI_STUDIO_AI_SKILL_FIBER_TRACKING.md) when
-choosing tracking strategy, parameters, region roles, and quality control.
-Before running, use `["list_param","tracking"]` to show all tracking parameters
-and their current values. Review these values before changing them or starting
-tracking.
-
-Typical sequence without region constraints:
+### Tracking
 
 ```json
 ["list_param","tracking"]
 ["run_tracking","CST"]
+["list_tract","status"]
 ```
 
-Use `list_region` only for a region-based workflow after regions were created,
-loaded, segmented, or restored. Do not use it as a routine step after opening a
-FIB because the initial region list is normally empty. Change tracking
-parameters only for a documented reason.
-
-Do not resend `run_tracking` merely because a client timeout occurred. Poll
-`LIST` for general application activity and `["list_tract","status"]` for
-tract completion. `status=done` is the definitive completion signal.
-
-## Discovery quick reference
-
-| Need | Command | Window |
-|---|---|---|
-| Open windows and activity | top-level `LIST` | none |
-| Recent FIB/FZ paths | `["list_recent_fib"]` | main |
-| Recent SRC/SZ paths | `["list_recent_src"]` | main |
-| Interactive FIB picker | `["open_fib"]` | main |
-| Interactive structural-tracking picker | `["open_structural_tracking"]` | main |
-| Interactive SRC/reconstruction picker | `["open_src"]` | main |
-| Interactive image picker | `["open_image"]` | main |
-| Fiber Data Hub window | `["open_hub"]` | main |
-| Hub repositories | `["hub_repo"]` | main |
-| Hub release tags | `["hub_tags","<repo>"]` | main |
-| Hub release files and exact indices | `["hub_files","<repo>","<tag>"]` | main |
-| Slice names and `available`/`registering`/`ready` status | `["list_slice"]` | tracking |
-| Segmentation model IDs | `["list_unet"]` | tracking |
-| Regions and ROI types | `["list_region"]` | tracking |
-| Full tract table with per-bundle `running`/`done` status | `["list_tract"]` | tracking |
-| Tracking completion (`status=done`) | `["list_tract","status"]` | tracking |
-| Parameter IDs and values by domain | `["list_param"]` | tracking |
-| Tracking parameters and current values | `["list_param","tracking"]` | tracking |
-| One parameter value | `["list_param","fa_threshold"]` | tracking |
-| Atlases | `["list_atlas"]` | tracking |
-| AutoTrack names | `["list_auto_tract"]` | tracking |
+`run_tracking` requires a new bundle name. Poll until `list_tract status` reports
+`status=done`.
 
 ## Operational rules
 
-- Each named-pipe connection sends one request, reads the complete reply, and closes.
-- Reuse the exact nonempty `agent` and `session` values for the conversation.
-- Native identities are `Codex` and `Claude`.
-- Ollama-backed identities include the host, for example `Codex/Ollama(192.168.1.14)`.
-- Inspect `LIST` before substantial loading, registration, segmentation, reconstruction, or tracking.
-- Discover exact command names, indices, internal model IDs, and parameter IDs rather than guessing.
-- For `run_auto_track`, call `list_auto_tract` first and use an exact internal atlas label such as `ProjectionBrainstem_CorticospinalTractL`.
-- Main-window GUI picker commands require local user interaction; do not claim completion from the response alone.
-- Confirm `clear_recent_src` and `clear_recent_fib` because they erase saved history immediately without another prompt.
-- Confirm other destructive actions and overwrites.
-- Do not answer modal dialogs remotely; tell the user what must be selected.
-- A response without `error` means the command handler returned success; asynchronous work may still be active.
-- A client timeout does not prove failure; verify application state before retrying a long command.
-- For a selected slice, `list_slice` with `status=ready` is the readiness signal.
-- For fiber tracking, `list_tract status` with `status=done` is the completion signal.
-- A disappeared window or `window not found` means the user likely closed it. Do not reopen it automatically.
-- Do not expose private chain-of-thought. Report conclusions, actions, progress, and blockers.
-
-## Footnotes
-
-1. `set_work_dir`, `open_src`, main-window `open_fib`, `open_structural_tracking`, `open_db`, `open_connectometry`, and parameterless `open_image` use local GUI dialogs. The current command branches may report completion when the user cancels. `open_db` and `open_connectometry` may also report completion when `load_db()` rejects the selected database after showing its own error dialog. Verify the resulting directory or window with the GUI or top-level `LIST`.
-2. `open_template` checks that a template-list item is selected, but then calls a `void` helper. The helper silently returns when the selected text does not match a template stem and does not propagate `loadFib()` failure. Verify that a new tracking window appears.
-3. Explicit-path main-window `open_image` calls the `void` `loadNii()` helper. `loadNii()` deletes the image window and returns silently when `view_image::open()` fails, so verify that an image window appears.
+- Reuse the exact nonempty `agent` and `session` values.
+- Discover names, indices, model IDs, and parameter IDs instead of guessing.
+- Do not repeatedly resend a long-running command after a client timeout.
+- Do not answer modal dialogs remotely; tell the local user what must be selected.
+- Verify windows, files, regions, tracts, and status commands before reporting completion.
+- Do not expose private chain-of-thought. Report actions, conclusions, progress, and blockers.
 
 ## Complete command inventory and examples
-
-The complete inventory is split into smaller files so agents can retrieve only
-the relevant section without truncation:
 
 - [Main window, Hub, FIB, workspace, settings, and parameters](DSI_STUDIO_AI_COMMAND_EXAMPLES_GENERAL.md)
 - [Slices and segmentation](DSI_STUDIO_AI_COMMAND_EXAMPLES_SLICE.md)
@@ -485,8 +269,3 @@ the relevant section without truncation:
 - [Devices and AC-PC locators](DSI_STUDIO_AI_COMMAND_EXAMPLES_DEVICE.md)
 - [Rendering, camera, surfaces, and display](DSI_STUDIO_AI_COMMAND_EXAMPLES_RENDERING.md)
 - [Image-window and TIPL generic image operations](DSI_STUDIO_AI_COMMAND_EXAMPLES_IMAGE.md)
-
-Rows with examples provide recommended or source-verified syntax. Blank example
-cells preserve commands from the previous complete manual without inventing
-parameters. Search the appropriate topic file for the exact command and inspect
-current source before using any blank-example command.
