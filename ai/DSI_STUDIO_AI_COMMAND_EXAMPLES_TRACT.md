@@ -21,7 +21,7 @@ This file contains the complete tract and automatic-tracking inventory preserved
 | `save_mni_tract` | `["save_mni_tract","C:/output/cst_mni.tt.gz","0"]` | Save one tract in MNI coordinates. |
 | `save_template_tract` | `["save_template_tract","C:/output/cst_template.tt.gz","0"]` | Save one tract in loaded template space. |
 | `save_slice_tract` | `["save_slice_tract","C:/output/cst_T1w.tt.gz","0"]` | Save one tract in current slice space. |
-| `save_tract_endpoint` |  | Save selected tract endpoints. |
+| `save_tract_endpoint` | `["save_tract_endpoint","C:/output/cst_endpoints.txt","0"]` | Save native-space endpoints for one tract bundle index. |
 | `save_mni_tract_endpoint` |  | Save endpoints in MNI coordinates. |
 | `save_slice_tract_endpoint` |  | Save endpoints in current slice space. |
 | `save_all_tracts` | `["save_all_tracts","C:/output/checked_tracts.tt.gz"]` | Save all checked tracts together. |
@@ -29,7 +29,7 @@ This file contains the complete tract and automatic-tracking inventory preserved
 | `save_all_tracts_to_dir` |  | Save checked tracts to a specified directory. |
 | `save_tdi` | `["save_tdi","C:/output/cst_tdi.nii.gz","0"]` | Save tract-density imaging output in current slice space. |
 | `save_tdi2` | `["save_tdi2","C:/output/cst_tdi_2x.nii.gz","0"]` | Save the alternate two-times-resolution tract-density output. |
-| `save_tract_values` |  | Save values sampled along tract(s). |
+| `save_tract_values` | `["save_tract_values","C:/output/cst_qa.txt","0","qa"]` | Save the named metric along one tract bundle; arguments are filename, tract index, and metric name. |
 | `tract_to_region` | `["tract_to_region","0"]` | Convert tract trajectories to a region. |
 | `endpoint_to_region` | `["endpoint_to_region","0"]` | Convert tract endpoints to region(s). |
 | `update_tract` | `["update_tract"]` | Refresh counts and rendering for tract bundles. |
@@ -41,7 +41,7 @@ This file contains the complete tract and automatic-tracking inventory preserved
 | `merge_all_tracts` | `["merge_all_tracts"]` | Merge all checked tract bundles into the first checked row. |
 | `merge_tract_by_name` | `["merge_tract_by_name"]` | Merge tract bundles sharing an identical name. |
 | `sort_tract_by_name` | `["sort_tract_by_name"]` | Sort tract bundles by name. |
-| `trim_tract` |  | Trim the selected tract. |
+| `trim_tract` | `["trim_tract"]` | Trim every checked tract bundle. |
 | `trim_all_tracts` |  | Trim all checked tracts. |
 | `cut_tract` |  | Cut selected tract trajectories. |
 | `cut_by_slice` |  | Cut tracts using the current slice plane. |
@@ -55,9 +55,9 @@ This file contains the complete tract and automatic-tracking inventory preserved
 | `set_tract_color` |  | Set tract color. |
 | `set_tract_color_style` |  | Set tract coloring style. |
 | `set_tract_visible` |  | Set tract visibility. |
-| `show_tract_statistics` |  | Display statistics for checked tracts in a modal dialog. |
+| `show_tract_statistics` | `["show_tract_statistics"]` | Display statistics for checked tracts in a modal dialog. |
 | `save_tract_statistics` | `["save_tract_statistics","C:/output/tract_stat.txt"]` | Save statistics for checked tracts. |
-| `show_tract_recognition` |  | Display recognition scores for a tract in a modal dialog. |
+| `show_tract_recognition` | `["show_tract_recognition","","0"]` | Recognize tract index 0 and display ranked atlas matches in a modal dialog; at least one tract must be checked. |
 | `save_tract_recognition` | `["save_tract_recognition","C:/output/tract_names.txt","0"]` | Save tract-recognition scores. |
 | `save_tract_color` | `["save_tract_color","C:/output/cst_color.txt","0"]` | Save per-trajectory colors for one tract bundle. |
 | `load_tract_color` | `["load_tract_color","C:/output/cst_color.txt","0"]` | Load per-trajectory colors and switch to manual tract coloring. |
@@ -82,6 +82,7 @@ This file contains the complete tract and automatic-tracking inventory preserved
 - Fiber tracking is asynchronous. A successful reply means tracking started; poll top-level `LIST`.
 - `list_tract` takes no required parameter. The optional literal `"status"` returns compact status.
 - Confirm destructive operations such as deleting, trimming, cutting, clustering, reconnecting, and merging.
+- `save_mni_tract_endpoint` and `save_slice_tract_endpoint` remain without examples because the current source executes their transformed export branch and then calls native `save_end_points()` on the same output path. Verify or fix that fallthrough before relying on transformed endpoint files.
 - Blank examples are inventory preservation only; inspect source before constructing their parameters.
 
 ## Tracking parameter reference
