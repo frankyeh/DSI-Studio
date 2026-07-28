@@ -11,8 +11,7 @@ every request. The agent name must include `Codex` or `Claude`.
 
 Native models use `Codex` or `Claude`. For an Ollama-backed model, DSI Studio
 includes the model provider and host in the agent name, for example
-`Codex/Ollama@192.168.1.14` or `Claude/Ollama@192.168.1.14`. The `@` in
-`Ollama@host` is valid and is part of the agent name. Reuse the exact full
+`Codex/Ollama(192.168.1.14)` or `Claude/Ollama(192.168.1.14)`. The parenthesized host is part of the agent name. Reuse the exact full
 name; do not shorten it to `Codex` or `Claude`.
 
 Ollama remains the model provider, while the `Codex/` or `Claude/` prefix
@@ -20,10 +19,9 @@ identifies the execution frontend. DSI Studio derives the host from the
 configured Ollama URL and omits its scheme and port from the agent name.
 
 DSI Studio uses `session` as the unique conversation key and stores the agent
-name separately. Requests send both as separate JSON fields. The optional
-combined wrapper form is `<full-agent>@<session>` and must be split at the
-final `@`; an Ollama identity therefore looks like
-`Codex/Ollama@192.168.1.14@<session>`.
+name separately. Requests send both as separate JSON fields. The optional combined wrapper form is `<agent>@<session>` and is split at
+its single `@`; an Ollama identity therefore looks like
+`Codex/Ollama(192.168.1.14)@<session>`.
 
 The session must be the agent's exact resumable thread ID (for Codex, the
 `thread_id` from `thread.started`) in canonical UUID form, never a friendly
@@ -62,11 +60,11 @@ DSI Studio `session` value; DSI Studio uses it for
 example, if `C:\Users\YEHFC\.claude\sessions\42232.json` contains
 `"sessionId":"c24d222a-7e8e-4aed-a7ca-18624978eaf9"`, use that UUID as
 `$DsiSession`. Set `$DsiAgent` to `Claude`, or to the exact provider-tagged
-name such as `Claude/Ollama@192.168.1.14` for an Ollama-backed launch.
+name such as `Claude/Ollama(192.168.1.14)` for an Ollama-backed launch.
 
 ```powershell
 $DsiAgent = 'Codex'
-# Ollama example: $DsiAgent = 'Codex/Ollama@192.168.1.14'
+# Ollama example: $DsiAgent = 'Codex/Ollama(192.168.1.14)'
 $DsiSession = $env:CODEX_THREAD_ID
 ```
 
@@ -112,7 +110,7 @@ function Invoke-Dsi($request)
     }
 }
 $DsiAgent = 'Codex'
-# Ollama example: $DsiAgent = 'Codex/Ollama@192.168.1.14'
+# Ollama example: $DsiAgent = 'Codex/Ollama(192.168.1.14)'
 $DsiSession = $env:CODEX_THREAD_ID
 ```
 
@@ -148,10 +146,10 @@ param(
     [string]$Chat
 )
 
-$separator = $Identity.LastIndexOf('@')
+$separator = $Identity.IndexOf('@')
 if($separator -lt 1 -or $separator -eq $Identity.Length-1)
 {
-    Write-Error 'Identity must end with @session; the agent may contain Ollama@host.'
+    Write-Error 'Identity must be agent@session.'
     exit 2
 }
 $agent = $Identity.Substring(0,$separator)
@@ -239,12 +237,11 @@ $json = $request | ConvertTo-Json -Compress -Depth 4
 exit (Invoke-DsiStudio $json)
 ```
 
-Use the same `<full-agent>@<session>` identity for the entire conversation.
-Because an Ollama agent already contains `@host`, the wrapper separates the
-session at the final `@`. Each script invocation sends exactly one request
-through `dsi_studio.exe` and exits. Use the same generated script for all
-requests; do not regenerate it per request or create additional PowerShell,
-Python, or batch clients.
+Use the same `agent@session` identity for the entire conversation. The agent
+name contains no `@`, so the wrapper separates agent and session at the first
+`@`. Each script invocation sends exactly one request through `dsi_studio.exe`
+and exits. Use the same generated script for all requests; do not regenerate it
+per request or create additional PowerShell, Python, or batch clients.
 
 If Windows blocks direct script execution, do not change the user's execution
 policy. Invoke the same file with:
@@ -253,9 +250,9 @@ policy. Invoke the same file with:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\dsi_agent.ps1 `
     Codex@your-session-id LIST
 
-# Ollama-backed Codex; quote the combined identity.
+# Ollama-backed Codex.
 powershell -NoProfile -ExecutionPolicy Bypass -File .\dsi_agent.ps1 `
-    'Codex/Ollama@192.168.1.14@your-session-id' LIST
+    'Codex/Ollama(192.168.1.14)@your-session-id' LIST
 ```
 
 ## Requests

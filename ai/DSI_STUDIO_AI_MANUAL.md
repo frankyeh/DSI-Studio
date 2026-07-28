@@ -16,8 +16,7 @@ Do not reread the entire file for each action.
 - Send separate non-empty `agent` and `session` fields and reuse the exact pair.
   `agent` must include `Codex` or `Claude`. Native identities are `Codex` or
   `Claude`; Ollama-backed identities include the provider and host, for example
-  `Codex/Ollama@192.168.1.14` or `Claude/Ollama@192.168.1.14`. The `@` in
-  `Ollama@host` is valid and part of the agent name. Do not shorten or alter it.
+  `Codex/Ollama(192.168.1.14)` or `Claude/Ollama(192.168.1.14)`. The parenthesized host is part of the agent name. Do not shorten or alter it.
 - For a new Codex chat launched by DSI Studio, process the initiating task in
   the first run. There is no bootstrap run and DSI Studio does not launch the
   same task twice. Use `CODEX_THREAD_ID` as `session` immediately; do not wait
@@ -142,7 +141,7 @@ Native-model example:
 Ollama-backed example:
 
 ```json
-{"agent":"Codex/Ollama@192.168.1.14","session":"<uuid>","cwd":"C:/work","request":"LIST"}
+{"agent":"Codex/Ollama(192.168.1.14)","session":"<uuid>","cwd":"C:/work","request":"LIST"}
 ```
 
 The reply is compact tab-separated text:
