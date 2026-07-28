@@ -1095,38 +1095,11 @@ void MainWindow::on_RenameDICOMDir_clicked()
     QMessageBox::information(this,QApplication::applicationName(),"renaming complete");
 }
 
-void MainWindow::on_vbc_clicked()
-{
-    CreateDBDialog* new_mdi = new CreateDBDialog(this,true);
-    new_mdi->setAttribute(Qt::WA_DeleteOnClose);
-    new_mdi->show();
-}
-
-void MainWindow::on_averagefib_clicked()
-{
-    CreateDBDialog* new_mdi = new CreateDBDialog(this,false);
-    new_mdi->setAttribute(Qt::WA_DeleteOnClose);
-    new_mdi->show();
-}
-
 bool parse_dwi(const std::vector<std::filesystem::path>& file_list,
                std::vector<std::shared_ptr<DwiHeader> >& dwi_files,std::string& error_msg);
 std::filesystem::path get_dicom_output_name(const std::filesystem::path& file_name,
                                             const std::string& file_extension, bool add_path);
 QStringList search_files(QString dir,QString filter);
-void MainWindow::on_batch_reconstruction_clicked()
-{
-    QString dir = QFileDialog::getExistingDirectory(
-                                this,
-                                "Open directory",
-                                ui->workDir->currentText());
-    if(dir.isEmpty())
-        return;
-    add_work_dir(dir);
-    loadSrc(search_files(dir,"*src.gz") << search_files(dir,"*.sz"));
-}
-
-
 
 void MainWindow::on_workDir_currentTextChanged(const QString &arg1)
 {
@@ -1185,46 +1158,6 @@ std::string quality_check_src_files(const std::vector<std::filesystem::path>& fi
                                     bool check_btable,bool use_template,unsigned int template_id);
 std::string quality_check_fib_files(const std::vector<std::filesystem::path>& file_list);
 std::string quality_check_nii_files(const std::vector<std::filesystem::path>& file_list);
-
-void MainWindow::on_SRC_qc_clicked()
-{
-    QStringList filenames = tipl::qt::open_image_files(this,ui->workDir->currentText(),"Src files (*.sz *src.gz);;All files (*)" );
-    if (filenames.isEmpty())
-        return;
-    std::vector<std::filesystem::path> files;
-    for(const auto& each : filenames)
-        files.push_back(tipl::qt::to_path(each));
-    tipl::progress prog("checking SRC files");
-    show_info_dialog("SRC report",quality_check_src_files(files,false,false,0));
-}
-
-
-void MainWindow::on_NII_qc_clicked()
-{
-    auto filenames = tipl::qt::open_image_files(this,ui->workDir->currentText(),"NIFTI files (*.nii *nii.gz);;All files (*)");
-    if (filenames.isEmpty())
-        return;
-    std::vector<std::filesystem::path> files;
-    for(const auto& each : filenames)
-        files.push_back(tipl::qt::to_path(each));
-    tipl::progress prog("checking NIFTI files");
-    show_info_dialog("NIFTI report",quality_check_nii_files(files));
-}
-
-
-
-void MainWindow::on_FIB_qc_clicked()
-{
-    auto filenames = tipl::qt::open_image_files(this,ui->workDir->currentText(),"Fib files (*.fz *fib.gz);;All files (*)");
-
-    if (filenames.isEmpty())
-        return;
-    std::vector<std::filesystem::path> files;
-    for(const auto& each : filenames)
-        files.push_back(tipl::qt::to_path(each));
-    tipl::progress prog("checking FIB files");
-    show_info_dialog("FIB report",quality_check_fib_files(files));
-}
 
 void MainWindow::on_parse_network_measures_clicked()
 {
@@ -1622,23 +1555,6 @@ void MainWindow::open_template(QString name)
 }
 
 
-void MainWindow::on_OpenDWI_NIFTI_clicked()
-{
-    open_DWI(QStringList() << tipl::qt::open_image_file(this,ui->workDir->currentText(),"NIFTI files (*.nii *.nii.gz);;All files (*)" ));
-}
-
-
-void MainWindow::on_OpenDWI_DICOM_clicked()
-{
-    open_DWI(tipl::qt::open_image_files(this,ui->workDir->currentText(),"DICOM files (*.dcm);;All files (*)" ));
-}
-
-
-void MainWindow::on_OpenDWI_2dseq_clicked()
-{
-    open_DWI(tipl::qt::open_image_files(this,ui->workDir->currentText(),"2dseq files (2dseq);;FDF files (*.fdf);;NRRD Files (*.nrrd);;All files (*)" ));
-}
-
 QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
 {
     QNetworkRequest request;
@@ -1709,6 +1625,39 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         return true;
     }
 
+    if(cmd[0] == "open_dwi_nifti" ||
+       cmd[0] == "open_dwi_dicom" ||
+       cmd[0] == "open_dwi_2dseq")
+    {
+        if(cmd.size() != 1)
+            return fail(cmd[0]+" takes no arguments");
+        QStringList files;
+        if(cmd[0] == "open_dwi_nifti")
+            files << tipl::qt::open_image_file(
+                         this,work_dir(),
+                         "NIFTI files (*.nii *.nii.gz);;All files (*)");
+        else
+            files = tipl::qt::open_image_files(
+                        this,work_dir(),cmd[0] == "open_dwi_dicom" ?
+                        "DICOM files (*.dcm);;All files (*)" :
+                        "2dseq files (2dseq);;FDF files (*.fdf);;NRRD Files (*.nrrd);;All files (*)");
+        open_DWI(files);
+        return true;
+    }
+
+    if(cmd[0] == "open_src_dir")
+    {
+        if(cmd.size() != 1)
+            return fail("open_src_dir takes no arguments");
+        auto dir = QFileDialog::getExistingDirectory(
+                       this,"Open directory",work_dir());
+        if(dir.isEmpty())
+            return true;
+        add_work_dir(dir);
+        loadSrc(search_files(dir,"*src.gz") << search_files(dir,"*.sz"));
+        return true;
+    }
+
     if(cmd[0] == "open_fib" || cmd[0] == "open_structural_tracking")
     {
         if(cmd.size() != 1)
@@ -1732,6 +1681,16 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         if(!item)
             return fail("no template selected");
         open_template(item->text());
+        return true;
+    }
+
+    if(cmd[0] == "create_db" || cmd[0] == "create_average")
+    {
+        if(cmd.size() != 1)
+            return fail(cmd[0]+" takes no arguments");
+        auto* window = new CreateDBDialog(this,cmd[0] == "create_db");
+        window->setAttribute(Qt::WA_DeleteOnClose);
+        window->show();
         return true;
     }
 
@@ -1809,6 +1768,31 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         (src ? ui->open_selected_src : ui->open_selected_fib)->setEnabled(false);
         settings.setValue(src ? "recentSrcFileList" : "recentFibFileList",
                           QStringList());
+        return true;
+    }
+
+    if(cmd[0] == "qc_nii" || cmd[0] == "qc_src" || cmd[0] == "qc_fib")
+    {
+        if(cmd.size() != 1)
+            return fail(cmd[0]+" takes no arguments");
+        bool nii = cmd[0] == "qc_nii",src = cmd[0] == "qc_src";
+        auto filenames = tipl::qt::open_image_files(
+                             this,work_dir(),nii ?
+                             "NIFTI files (*.nii *nii.gz);;All files (*)" : src ?
+                             "Src files (*.sz *src.gz);;All files (*)" :
+                             "Fib files (*.fz *fib.gz);;All files (*)");
+        if(filenames.isEmpty())
+            return true;
+        std::vector<std::filesystem::path> files;
+        files.reserve(filenames.size());
+        for(const auto& file : filenames)
+            files.push_back(tipl::qt::to_path(file));
+        tipl::progress prog(nii ? "checking NIFTI files" :
+                            src ? "checking SRC files" : "checking FIB files");
+        show_info_dialog(nii ? "NIFTI report" : src ? "SRC report" : "FIB report",
+                         nii ? quality_check_nii_files(files) :
+                         src ? quality_check_src_files(files,false,false,0) :
+                               quality_check_fib_files(files));
         return true;
     }
 
