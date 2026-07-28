@@ -20,15 +20,15 @@ This file contains the complete region inventory preserved from the previous man
 | `new_region_from_threshold` | `["new_region_from_threshold","0.6"]` | Create a region by thresholding the current slice. |
 | `new_region_from_mni` | `["new_region_from_mni","0 -10 21 5"]` | Create a spherical region from MNI coordinates and voxel radius. |
 | `new_region_from_sphere` | `["new_region_from_sphere","80 100 80 5"]` | Create a spherical region from image-space coordinates and voxel radius. |
-| `open_region` |  | Open one or more region files in native space. |
-| `open_mni_region` |  | Open region file(s) and map them from MNI space. |
+| `open_region` | `["open_region","C:/data/seed.nii.gz"]` | Open one native-space region file; one command may also load a multi-label NIfTI. |
+| `open_mni_region` | `["open_mni_region","C:/data/atlas_roi.nii.gz"]` | Map to MNI space, then load the supplied region file into subject space. |
 | `save_region` | `["save_region","C:/output/seed.nii.gz","0"]` | Save one region; optional index selects the target. |
 | `save_4d_region` | `["save_4d_region","C:/output/regions_4d.nii.gz"]` | Save checked regions as a 4D NIfTI and companion label file. |
 | `save_all_regions` | `["save_all_regions","C:/output/regions.nii.gz"]` | Save checked regions as one 3D label NIfTI. |
-| `save_all_regions_to_folder` |  | Save each checked region as a separate file in a folder. |
-| `save_region_info` |  | Save voxel coordinates, directions, and quantitative values for one region. |
-| `load_region_color` |  | Load RGB/RGBA colors for regions from a text file. |
-| `save_region_color` |  | Save region colors to a text file. |
+| `save_all_regions_to_folder` | `["save_all_regions_to_folder","C:/output/regions"]` | Save each checked region as a separate file using the current ROI output format. |
+| `save_region_info` | `["save_region_info","C:/output/seed_info.txt","0"]` | Save coordinates, fiber directions, and quantitative values for one region index. |
+| `load_region_color` | `["load_region_color","C:/data/region_colors.txt"]` | Load RGB or RGBA values in region-table order. |
+| `save_region_color` | `["save_region_color","C:/output/region_colors.txt"]` | Save one RGBA line for every region in table order. |
 | `delete_region` | `["delete_region","3"]` | Delete one region by index or current selection. |
 | `delete_all_regions` | `["delete_all_regions"]` | Delete all regions. |
 | `copy_region` | `["copy_region","0"]` | Duplicate one region. |
@@ -44,38 +44,38 @@ This file contains the complete region inventory preserved from the previous man
 | `save_region_statistics` | `["save_region_statistics","C:/output/region_stat.txt"]` | Save statistics for checked regions. |
 | `show_t2r` | `["show_t2r"]` | Display tract-to-region connectivity for checked tracts and regions. |
 | `save_t2r` | `["save_t2r","C:/output/tract_to_region.txt"]` | Save tract-to-region connectivity to a text file. |
-| `region_action_shiftx` |  | Shift selected region(s) +1 voxel in X. |
-| `region_action_shiftnx` |  | Shift selected region(s) -1 voxel in X. |
-| `region_action_shifty` |  | Shift selected region(s) +1 voxel in Y. |
-| `region_action_shiftny` |  | Shift selected region(s) -1 voxel in Y. |
-| `region_action_shiftz` |  | Shift selected region(s) +1 voxel in Z. |
-| `region_action_shiftnz` |  | Shift selected region(s) -1 voxel in Z. |
-| `region_action_flipx` |  | Flip selected region(s) along X. |
-| `region_action_flipy` |  | Flip selected region(s) along Y. |
-| `region_action_flipz` |  | Flip selected region(s) along Z. |
-| `region_action_smoothing` |  | Morphologically smooth selected region(s). |
-| `region_action_erosion` |  | Erode selected region(s). |
-| `region_action_dilation` |  | Dilate selected region(s). |
-| `region_action_opening` |  | Apply morphological opening. |
-| `region_action_closing` |  | Apply morphological closing. |
-| `region_action_defragment` |  | Keep the principal connected component. |
-| `region_action_negate` |  | Invert selected region mask(s). |
-| `region_action_dilation_by_voxel` |  | Dilate by voxel radius; `command[2]` is the radius. |
-| `region_action_threshold` |  | Replace selected region(s) with a thresholded current-slice mask; `command[2]` is threshold. |
-| `region_action_threshold_current` |  | Threshold only voxels already inside selected region(s). |
-| `region_action_dilation_by_threshold` |  | Grow selected region(s) using current-slice intensity threshold. |
-| `region_action_erosion_by_threshold` |  | Shrink selected region(s) using current-slice intensity threshold. |
-| `region_action_separate` |  | Split one region into connected components. |
-| `region_action_sort_name` |  | Sort selected/checked regions by name; repeating reverses order. |
-| `region_action_sort_x` |  | Sort selected/checked regions by X position. |
-| `region_action_sort_y` |  | Sort selected/checked regions by Y position. |
-| `region_action_sort_z` |  | Sort selected/checked regions by Z position. |
-| `region_action_sort_size` |  | Sort selected/checked regions by volume. |
-| `region_action_1st_ex_all` |  | Subtract every later region from the first. |
-| `region_action_all_ex_1st` |  | Subtract the first region from every later region. |
-| `region_action_all_inter_1st` |  | Intersect every later region with the first. |
-| `region_action_all_to_1st` |  | Assign/fill later labels within the first region. |
-| `region_action_refine_all` |  | Refine all supplied region labels using the current slice. |
+| `region_action_shiftx` | `["region_action_shiftx","0"]` | Shift region 0 by +1 voxel in X. |
+| `region_action_shiftnx` | `["region_action_shiftnx","0"]` | Shift region 0 by -1 voxel in X. |
+| `region_action_shifty` | `["region_action_shifty","0"]` | Shift region 0 by +1 voxel in Y. |
+| `region_action_shiftny` | `["region_action_shiftny","0"]` | Shift region 0 by -1 voxel in Y. |
+| `region_action_shiftz` | `["region_action_shiftz","0"]` | Shift region 0 by +1 voxel in Z. |
+| `region_action_shiftnz` | `["region_action_shiftnz","0"]` | Shift region 0 by -1 voxel in Z. |
+| `region_action_flipx` | `["region_action_flipx","0"]` | Flip region 0 along X. |
+| `region_action_flipy` | `["region_action_flipy","0"]` | Flip region 0 along Y. |
+| `region_action_flipz` | `["region_action_flipz","0"]` | Flip region 0 along Z. |
+| `region_action_smoothing` | `["region_action_smoothing","0"]` | Morphologically smooth region 0. |
+| `region_action_erosion` | `["region_action_erosion","0"]` | Erode region 0. |
+| `region_action_dilation` | `["region_action_dilation","0"]` | Dilate region 0. |
+| `region_action_opening` | `["region_action_opening","0"]` | Apply morphological opening to region 0. |
+| `region_action_closing` | `["region_action_closing","0"]` | Apply morphological closing to region 0. |
+| `region_action_defragment` | `["region_action_defragment","0"]` | Keep the principal connected component of region 0. |
+| `region_action_negate` | `["region_action_negate","0"]` | Invert the mask of region 0. |
+| `region_action_dilation_by_voxel` | `["region_action_dilation_by_voxel","0","2"]` | Dilate region 0 by a radius of 2 voxels. |
+| `region_action_threshold` | `["region_action_threshold","0","0.6"]` | Replace region 0 with the current-slice mask above `0.6`; a negative threshold selects the low-pass side. |
+| `region_action_threshold_current` | `["region_action_threshold_current","0","0.6"]` | Retain only existing region-0 voxels above `0.6`. |
+| `region_action_dilation_by_threshold` | `["region_action_dilation_by_threshold","0","0.6"]` | Grow region 0 using the current slice and threshold `0.6`. |
+| `region_action_erosion_by_threshold` | `["region_action_erosion_by_threshold","0","0.6"]` | Shrink region 0 using the current slice and threshold `0.6`. |
+| `region_action_separate` | `["region_action_separate","0"]` | Split region 0 into connected-component regions. |
+| `region_action_sort_name` | `["region_action_sort_name","0&1&2"]` | Sort the supplied rows by name; repeating the same sort reverses the order. |
+| `region_action_sort_x` | `["region_action_sort_x","0&1&2"]` | Sort the supplied rows by X position. |
+| `region_action_sort_y` | `["region_action_sort_y","0&1&2"]` | Sort the supplied rows by Y position. |
+| `region_action_sort_z` | `["region_action_sort_z","0&1&2"]` | Sort the supplied rows by Z position. |
+| `region_action_sort_size` | `["region_action_sort_size","0&1&2"]` | Sort the supplied rows by region volume. |
+| `region_action_1st_ex_all` | `["region_action_1st_ex_all","0&1&2"]` | Subtract regions 1 and 2 from region 0. |
+| `region_action_all_ex_1st` | `["region_action_all_ex_1st","0&1&2"]` | Subtract region 0 from regions 1 and 2. |
+| `region_action_all_inter_1st` | `["region_action_all_inter_1st","0&1&2"]` | Intersect regions 1 and 2 with region 0. |
+| `region_action_all_to_1st` | `["region_action_all_to_1st","0&1&2"]` | Assign and smooth later labels within the first region. |
+| `region_action_refine_all` | `["region_action_refine_all","0&1&2"]` | Refine all supplied labels using the current slice intensity image. |
 
 ## Safety notes
 
