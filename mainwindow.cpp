@@ -140,7 +140,6 @@ MainWindow::MainWindow(QWidget *parent) :
     QString codex_path,claude_path;
     {
         // find Codex executable and models
-        QStringList models;
         codex_path = QStandardPaths::findExecutable("codex");
         if(codex_path.isEmpty())
         {
@@ -530,7 +529,18 @@ MainWindow::MainWindow(QWidget *parent) :
         }
     }
 
-
+    // Connect command buttons
+    {
+        for(auto* button : findChildren<QPushButton*>())
+        {
+            QString tip = button->statusTip();
+            if(!tip.startsWith("run "))
+                continue;
+            std::string command_name = tip.mid(4).trimmed().toStdString();
+            connect(button,&QPushButton::clicked,this,[this,command_name]
+                    {command({command_name});});
+        }
+    }
 }
 
 extern const char* version_string;
