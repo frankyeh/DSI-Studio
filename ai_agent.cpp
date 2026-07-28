@@ -86,10 +86,9 @@ QString ai_info::details(const QString& session) const
              time(projects.last().toObject()["time"]),
              (work_dirs.isEmpty() ? QString("Not available") : work_dirs).toHtmlEscaped());
 }
-void ai_info::update(const QString& name,const QString& cwd)
+void ai_info::set_agent_name(const QString& name)
 {
     if(!name.isEmpty()) set_provider(identify_provider(name),name);
-    if(QDir(cwd).exists()) work_dirs = cwd;
 }
 void ai_info::set_provider(ai_provider value,const QString& name)
 {
@@ -336,7 +335,7 @@ AIAgent::AIAgent(MainWindow* parent):
             continue;
 
         QJsonArray loaded_history;
-        QString cwd,agent_name;
+        QString agent_name;
         QJsonObject model_settings;
         while(!file.atEnd())
         {
@@ -347,7 +346,6 @@ AIAgent::AIAgent(MainWindow* parent):
             if(loaded_history.isEmpty())
             {
                 agent_name = entry["agent"].toString();
-                cwd = entry["work_dir"].toString();
                 model_settings = entry["model_settings"].toObject();
             }
             loaded_history.append(entry);
@@ -356,7 +354,7 @@ AIAgent::AIAgent(MainWindow* parent):
         if(loaded_history.isEmpty() || session.isEmpty())
             continue;
         auto& ai = ai_infos[session];
-        ai.update(agent_name,cwd);
+        ai.set_agent_name(agent_name);
         ai.model_settings = model_settings;
         ai.project_titles = settings.value("ai/title/"+session).toString();
         for(const auto& entry : loaded_history)
@@ -419,9 +417,10 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         if(!chat.isEmpty())
             add_ai_history(session,"assistant",chat);
         auto written = socket->write(reply);
-        ai_log(QString("DSI Studio replied " + info.agent_name + "@%1").arg(session));
+        ai_log(QString("DSI Studio replied %1@%2 payload: %3")
+                   .arg(info.agent_name,session,QString::fromUtf8(reply)));
         set_ai_status(written == reply.size() ?
-                      activity : "Response could not be sent.",true);
+                          activity : "Response could not be sent.",true);
         if(written == reply.size())
             info.prompts = {};
     };
@@ -495,7 +494,7 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
             std::lock_guard<std::mutex> lock(console.edit_buf);
             ai_log_positions[session] = console.total_size;
         }
-        ai_infos[session].update(agent_name,request["cwd"].toString());
+        ai_infos[session].set_agent_name(agent_name);
     }
 
     chat = request["chat"].toString().trimmed();
@@ -1249,7 +1248,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
                                  const QString& text,ai_input input)
 {
     ai_launch launch;
-    QString cwd;
+
     // Resolve agent and session
     {
         launch.session = session;
@@ -1274,12 +1273,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
             launch.session = session;
         }
 
-        if(!session.isEmpty())
-            cwd = ai_infos[session].work_dirs;
-        if(!QDir(cwd).exists())
-            cwd = main_window.work_dir();
-        if(!QDir(cwd).exists())
-            cwd = QApplication::applicationDirPath();
+
     }
 
     // Resolve model
@@ -1325,7 +1319,17 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
     auto* process = new QProcess(this);
     launch.process = process;
     process->setObjectName(session);
-    process->setWorkingDirectory(cwd);
+    {
+        QString cwd;
+        if(!session.isEmpty())
+            cwd = ai_infos[session].work_dirs;
+        if(!QDir(cwd).exists())
+            cwd = main_window.work_dir();
+        if(!QDir(cwd).exists())
+            cwd = QApplication::applicationDirPath();
+        process->setWorkingDirectory(cwd);
+    }
+
 
     if(!session.isEmpty())
         ai_infos[session].set_process(process);
