@@ -11,9 +11,9 @@ open window.
 
 | Window type | Use it for | Important opening command |
 |---|---|---|
-| **main** | Recent files, Fiber Data Hub, main file routing, CLI fallback | `open_image` opens paths through the main-window file router. It also opens `.fz`/`*fib.gz` as tracking data despite the command name. |
-| **image** | General image viewing and image-window operations | Created when ordinary image formats are opened. |
-| **tracking** | FIB/FZ slices, regions, tracts, tracking, devices, settings | `open_fib` opens another FIB from an existing tracking window; it cannot create the first tracking window. |
+| **main** | Recent files, Fiber Data Hub, opening the first FIB/FZ, reconstruction, templates, and main tools | Use parameterless `open_fib` to open the FIB picker and create a tracking window. |
+| **image** | General image viewing and image-window operations | Created when ordinary image formats are opened with `open_image`. |
+| **tracking** | FIB/FZ slices, regions, tracts, tracking, devices, settings | Use `open_fib` with an explicit path to open an additional FIB/FZ from an existing tracking window. |
 
 A `CMD` must use the quoted numeric `window` returned by `LIST`. Never target a
 window using its type, title, filename, or a guessed ID.
@@ -159,22 +159,14 @@ Invoke-Dsi @{
 }
 ```
 
-## Opening files
+## Opening FIB/FZ files
 
-### One existing local file: raw path
+Do not send a raw filesystem path as the recommended file-opening workflow. Use
+the appropriate `open_fib` command.
 
-Send one absolute path directly as raw pipe text:
+### Open the first FIB/FZ
 
-```powershell
-Invoke-Dsi 'C:\data\subject.fz'
-```
-
-DSI Studio routes by extension. This is the simplest way to open one existing
-local file.
-
-### JSON route: main-window `open_image`
-
-First obtain the main-window ID with `LIST`, then:
+Obtain the **main** window ID with `LIST`, then send parameterless `open_fib`:
 
 ```powershell
 Invoke-Dsi @{
@@ -182,16 +174,19 @@ Invoke-Dsi @{
     session=$DsiSession
     request='CMD'
     window='1'
-    command=@('open_image','C:/data/subject.fz')
-    chat='Opening the FZ file through the main-window file router.'
+    command=@('open_fib')
+    chat='Opening the FIB file picker.'
 }
 ```
 
-`open_image` is the main-window routing command. It can open `.fz` and
-`*fib.gz` into a tracking window as well as ordinary images into an image
-window. Its name does not restrict it to ordinary image files.
+This opens the local FIB picker and creates a tracking window for the selected
+`.fz`, `*fib.gz`, or `.dz` file. A local user must select the file in the dialog.
+Afterward, call `LIST` and use the new tracking-window ID.
 
-### Existing tracking window: `open_fib`
+### Open an additional FIB/FZ
+
+When a tracking window already exists, target that tracking-window ID and supply
+the explicit path:
 
 ```powershell
 Invoke-Dsi @{
@@ -200,11 +195,12 @@ Invoke-Dsi @{
     request='CMD'
     window='2'
     command=@('open_fib','C:/data/second_subject.fz')
-    chat='Opening a second FIB from the existing tracking window.'
+    chat='Opening an additional FIB file.'
 }
 ```
 
-Do not use `open_fib` to create the first tracking window.
+Do not use `open_image` to open FIB/FZ files. Use `open_image` for ordinary image
+files and image-window workflows.
 
 ## Slice and tract status that commonly cause confusion
 
