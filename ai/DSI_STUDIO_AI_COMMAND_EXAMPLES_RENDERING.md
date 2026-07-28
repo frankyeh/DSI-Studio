@@ -2,33 +2,44 @@
 
 Use these with the standard top-level `CMD` request. Every command name and parameter must remain a quoted JSON string.
 
-This file contains the complete rendering, camera, surface, and display inventory preserved from the previous manual. Blank example cells mean that the previous manual did not provide source-verified argument syntax; inspect the current rendering command source before use.
+This file contains rendering, camera, surface, and display commands confirmed in the current source. Earlier generic rows with no handler were removed only after checking the full tracking-window dispatch chain.
 
 | Command | Common example | Important behavior |
 |---|---|---|
 | `rotate` | `["rotate","15 1 0 0"]` | Rotate the 3D view by degrees around axis `x y z`. |
-| `save_hd_screen` | `["save_hd_screen","C:/output/tracts.png","1920 1080"]` | Save a high-resolution rendering at the supplied size. |
-| `set_view` |  | Set a predefined or explicit camera view. |
-| `set_zoom` |  | Set camera zoom. |
-| `set_camera` |  | Set camera parameters. |
-| `get_camera` |  | Return current camera parameters. |
-| `open_camera` |  | Load camera settings from a file. |
-| `save_camera` |  | Save camera settings to a file. |
-| `store_camera` |  | Store the current camera in the default slot. |
-| `store_camera1` |  | Store camera in slot 1. |
-| `store_camera2` |  | Store camera in slot 2. |
-| `restore_camera` |  | Restore the default stored camera. |
-| `restore_camera1` |  | Restore camera slot 1. |
-| `restore_camera2` |  | Restore camera slot 2. |
-| `save_screen` |  | Save the current 3D screen. |
-| `add_surface` |  | Add/create a surface object; some variants are prefix-dispatched. |
-| `delete_surface` |  | Delete a surface object. |
-| `load_surface` |  | Load a surface file. |
-| `save_surface` |  | Save a surface file. |
-| `set_surface_color` |  | Set surface color. |
-| `set_surface_alpha` |  | Set surface opacity. |
-| `set_surface_visible` |  | Set surface visibility. |
-| `set_device_color` |  | Set device color. |
+| `set_view` | `["set_view","0"]` | Reset to numeric view `0`, `1`, or `2`; repeated calls toggle the corresponding 180-degree flipped view. |
+| `set_zoom` | `["set_zoom","1.5"]` | Set the absolute camera zoom derived from the transformation-matrix determinant; zero is rejected. |
+| `set_camera` | `["set_camera","1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"]` | Replace the camera transformation with the first 16 supplied floats. |
+| `open_camera` | `["open_camera","C:/work/camera.txt"]` | Load at least 16 camera-matrix floats from a text file. |
+| `save_camera` | `["save_camera","C:/work/camera.txt"]` | Save the current 16-float transformation matrix. |
+| `store_camera` | `["store_camera"]` | Store the current camera in the default `cameraa` settings slot; the current implementation shows a modal notice and records the command as canceled. |
+| `store_camera1` | `["store_camera1"]` | Store the current camera in slot 1; shows a modal notice. |
+| `store_camera2` | `["store_camera2"]` | Store the current camera in slot 2; shows a modal notice. |
+| `restore_camera` | `["restore_camera"]` | Restore the default `cameraa` settings slot. |
+| `restore_camera1` | `["restore_camera1"]` | Restore camera slot 1. |
+| `restore_camera2` | `["restore_camera2"]` | Restore camera slot 2. |
+| `set_stereoscopic` | `["set_stereoscopic"]` | Switch the OpenGL widget to stereoscopic view mode. |
+| `save_screen` | `["save_screen","C:/output/tracts.png"]` | Save the current 3D rendering. |
+| `save_hd_screen` | `["save_hd_screen","C:/output/tracts_hd.png","1920 1080"]` | Temporarily resize the GL widget, save at the supplied width and height, then restore its original size. |
+| `save_3view_screen` | `["save_3view_screen","C:/output/tracts_3view.png"]` | Save a 2×2 composite containing three 3D views and the current slice scene. |
+| `save_h3view_screen` | `["save_h3view_screen","C:/output/tracts_h3view.png"]` | Save four cropped directional views in a horizontal image. |
+| `save_v3view_screen` | `["save_v3view_screen","C:/output/tracts_v3view.png"]` | Save four directional views in a vertical image. |
+| `save_rotation_video` | `["save_rotation_video","C:/output/rotation.avi"]` | Currently broken: the handler returns immediately after validating the filename, so the AVI-writing block is unreachable. |
+| `add_surface` | `["add_surface","7","0.6"]` | Create a surface from slice index 7 using threshold `0.6`; omission of the threshold opens a dialog. |
+| `add_surface_left` | `["add_surface_left","7","0.6"]` | Create a surface after retaining the source portion on the left side of the current X slice position. |
+| `add_surface_right` | `["add_surface_right","7","0.6"]` | Create a surface after retaining the source portion on the right side of the current X slice position. |
+| `add_surface_upper` | `["add_surface_upper","7","0.6"]` | Create a surface after retaining the source portion above the current Z slice position. |
+| `add_surface_lower` | `["add_surface_lower","7","0.6"]` | Create a surface after retaining the source portion below the current Z slice position. |
+| `add_surface_posterior` | `["add_surface_posterior","7","0.6"]` | Create a surface after retaining the posterior portion relative to the current Y slice position. |
+| `add_surface_anterior` | `["add_surface_anterior","7","0.6"]` | Create a surface after retaining the anterior portion relative to the current Y slice position. |
+
+## Source-confirmed cautions
+
+- `set_camera` and camera files require at least 16 floats; additional values are ignored.
+- `store_camera`, `store_camera1`, and `store_camera2` display modal messages and return the command-history canceled state even though the setting is stored.
+- `save_rotation_video` has an early-return bug and should not be used until the unreachable encoding block is fixed.
+- Surface appearance and visibility are controlled through `set_param` using `surface_*` and `show_surface`; there are no `load_surface`, `save_surface`, `delete_surface`, `set_surface_color`, `set_surface_alpha`, or `set_surface_visible` command handlers.
+- `get_camera` and `set_device_color` also have no command handlers. Use `save_camera` for retrieval and the device table UI for device color.
 
 ## Rendering parameter reference
 
