@@ -273,17 +273,12 @@ AIAgent::AIAgent(MainWindow* parent):
         if(!item)
             return;
         auto session = item->data(Qt::UserRole).toString();
-        if(ai_infos[session].processes)
+        if(auto* process = ai_infos[session].processes)
         {
-            QMessageBox::information(
-                this,"Remove Project","Wait for the AI agent to finish first.");
-            return;
+            process->disconnect(); process->terminate(); process->deleteLater();
+            active_ai_processes = std::max(0,active_ai_processes-1);
+            set_ai_status();
         }
-        if(QMessageBox::question(
-               this,"Remove Project",
-               "Remove this project and its saved history?") != QMessageBox::Yes)
-            return;
-
         QFile::remove(ai_project_dir+"/"+QString::fromLatin1(
                           QUrl::toPercentEncoding(session))+".jsonl");
         settings.remove("ai/title/"+session);
