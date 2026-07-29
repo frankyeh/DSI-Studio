@@ -1449,14 +1449,6 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
         add_ai_history(launch.session,"activity","Cannot start AI agent: missing session ID.");
         return;
     }
-    launch.prompt +=
-        "\n\nTo execute a DSI Studio command, output one compact JSON object as the "
-        "complete assistant message:\n\n"
-        "{\"request\":\"TITLE\",\"title\":\"Fiber tracking analysis\"}\n\n"
-        "Do not use Markdown code fences and do not add text outside the JSON object. "
-        "After DSI Studio returns a command result, inspect it before deciding the next "
-        "command.";
-
     if(launch.model_provider == ai_model_provider::Ollama)
     {
         auto env = QProcessEnvironment::systemEnvironment();
@@ -1502,17 +1494,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
                     if(text.isEmpty())
                         continue;
 
-                    auto doc = QJsonDocument::fromJson(text.toUtf8());
-                    auto request = doc.isObject() ? doc.toJson(QJsonDocument::Compact) :
-                        QJsonDocument(QJsonObject{{"request","CHAT"},{"chat",text}}).
-                        toJson(QJsonDocument::Compact);
-                    auto* info = find_ai_info(process->objectName());
-                    if(!info)
-                        continue;
-                    QByteArray reply;
-                    ai_command(*info,request,reply);
-                    refresh_ai_info(*info);
-                    process->write(claude_input(QString::fromUtf8(reply)));
+                    add_ai_history(process->objectName(),"assistant",text);
                 }
                 process->setProperty("stdout_buffer",buffer);
             });
