@@ -5,7 +5,9 @@ Read this file once, then use `DSI_STUDIO_AI_MANUAL.md` and the topic-specific e
 ## Identity
 
 Obtain the exact resumable session UUID assigned by the current agent runtime.
-Send it as `session` with every request. The `agent` field is not needed.
+Send it as `session` with every request. If the session is not already known to
+DSI Studio, its first request must also send `agent` containing `Codex` or
+`Claude`; `model` is optional. Existing sessions need only `session`.
 
 ### Codex
 
