@@ -5,7 +5,6 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QMainWindow>
-#include <QMap>
 #include <QSettings>
 #include <QStringList>
 
@@ -32,13 +31,14 @@ struct ai_info{
     QStringList prompts;
     QListWidgetItem* project_items = nullptr;
     QJsonObject model_settings;
+    quint64 log_position = quint64(-1);
     static ai_provider identify_provider(const QString&);
     static ai_info* find(const QString&);
     static ai_info* create(QString,QString);
     static QString history_file(const QString&);
     static bool save_title(ai_info&,QString);
     static void record_history(ai_info&,QJsonObject);
-    static bool save_history(const ai_info&);
+    static void save_history(const ai_info&);
     QString title() const {return project_titles.isEmpty() ? (agent_name.isEmpty() ? sessions : agent_name+"@"+sessions) : project_titles;}
     QString details() const;
 };

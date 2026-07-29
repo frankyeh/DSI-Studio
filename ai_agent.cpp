@@ -49,7 +49,6 @@
 #include "console.h"
 
 std::unordered_map<QString,ai_info> ai_infos;
-QMap<QString,quint64> ai_log_positions;
 QString ai_project_dir;
 QString ai_info::history_file(const QString& session)
 {
@@ -318,7 +317,6 @@ AIAgent::AIAgent(MainWindow* parent):
         QFile::remove(ai_info::history_file(session));
         settings.remove("ai/title/"+session);
         ai_infos.erase(session);
-        ai_log_positions.remove(session);
         ui->ai_project_list->setCurrentItem(nullptr);
         delete item;
 
@@ -445,24 +443,20 @@ void ai_info::record_history(ai_info& info,QJsonObject entry)
         tipl::warning() << "cannot write ai history : "
                         << file.errorString().toStdString();
 }
-bool ai_info::save_history(const ai_info& info)
+void ai_info::save_history(const ai_info& info)
 {
-    QSettings settings;
-    if(!settings.value("ai/keep_history",true).toBool())
-        return true;
+    if(!QSettings().value("ai/keep_history",true).toBool())
+        return;
+
     QFile file(history_file(info.sessions));
-    auto fail = [&]
-    {
-        tipl::warning() << "cannot write ai history : " << file.errorString().toStdString();
-        return false;
-    };
-    if(!file.open(QIODevice::WriteOnly|QIODevice::Truncate))
-        return fail();
+    bool okay = file.open(QIODevice::WriteOnly|QIODevice::Truncate);
     for(const auto& entry : info.projects)
-        if(file.write(QJsonDocument(entry.toObject()).toJson(
-                          QJsonDocument::Compact)+'\n') < 0)
-            return fail();
-    return true;
+        okay = okay && file.write(QJsonDocument(entry.toObject()).toJson(
+                                      QJsonDocument::Compact)+'\n') >= 0;
+
+    if(!okay)
+        tipl::warning() << "cannot write ai history : "
+                        << file.errorString().toStdString();
 }
 
 void AIAgent::showEvent(QShowEvent* event)
@@ -529,13 +523,8 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
     };
     auto reply_results = [&](QJsonArray results)
     {
-        bool success = std::all_of(results.begin(),results.end(),
-            [](const auto& result)
-            {
-                return result.toObject()["status"] == "success";
-            });
         reply_object(QJsonObject{
-            {"status",success ? "success" : "error"},{"result",results}});
+            {"status",results.last().toObject()["status"]},{"result",results}});
     };
 
     // Parse request
@@ -549,10 +538,10 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
 
     // Initialize log position
     {
-        if(!ai_log_positions.contains(session))
+        if(info.log_position == quint64(-1))
         {
             std::lock_guard<std::mutex> lock(console.edit_buf);
-            ai_log_positions[session] = console.total_size;
+            info.log_position = console.total_size;
         }
     }
 
@@ -775,7 +764,7 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
             std::lock_guard<std::mutex> lock(console.edit_buf);
             auto end = console.total_size;
             auto first = end-quint64(console.history.size());
-            auto begin = std::max(ai_log_positions.value(session),first);
+            auto begin = std::max(info.log_position,first);
             bool capped = end-begin > 16*1024;
             if(capped)
                 begin = end-16*1024;
@@ -788,7 +777,7 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
                 if(!line.contains("[AI AGENT]"))
                     lines << line;
             output = lines.join('\n').right(4*1024).toUtf8();
-            ai_log_positions[session] = end;
+            info.log_position = end;
         }
         return reply_object(QJsonObject{
             {"status","success"},{"output",QString::fromUtf8(output)}});
