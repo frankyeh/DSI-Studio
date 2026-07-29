@@ -1267,10 +1267,14 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
         }
     }
 
-    auto set_ai_enabled = [this](bool enabled)
+    auto restore_new_chat = [=](const QString& message,bool show_history)
     {
         for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
-            button->setEnabled(enabled);
+            button->setEnabled(true);
+        ui->ai_chat_input->setPlainText(text);
+        if(show_history)
+            ui->ai_chat_history->setPlainText(message);
+        QMessageBox::warning(this,"AI Agent",message);
     };
     auto* process = new QProcess(this);
     launch.process = process;
@@ -1284,7 +1288,8 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
     if(!session.isEmpty())
         ai_infos[session].processes = process;
     else
-        set_ai_enabled(false);
+        for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
+            button->setEnabled(false);
 
     if(input == ai_input::User)
     {
@@ -1326,13 +1331,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
         set_ai_status(message,true);
 
         if(session.isEmpty())
-        {
-            set_ai_enabled(true);
-            ui->ai_chat_input->setPlainText(text);
-
-            ui->ai_chat_history->setPlainText(message);
-            QMessageBox::warning(this,"AI Agent",message);
-        }
+            restore_new_chat(message,true);
         else
         {
             auto& info = ai_infos[session];
@@ -1361,12 +1360,9 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
 
         if(session.isEmpty())
         {
-            set_ai_enabled(true);
-            ui->ai_chat_input->setPlainText(text);
             auto message = failed ? error_message :
                            "AI agent ended before creating a new chat.";
-            ui->ai_chat_history->setPlainText(message);
-            QMessageBox::warning(this,"AI Agent",message);
+            restore_new_chat(message,false);
         }
         else
         {
@@ -1502,7 +1498,6 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
         "--output-format","stream-json",
         "--verbose",
         "--add-dir",launch.project_dir,
-        "--disallowedTools","Bash",
         "--allowedTools","PowerShell(./dsi_agent.ps1 -Agent Claude *)",
         session.isEmpty() ? "--session-id" : "--resume",session_id};
     if(!launch.model.isEmpty())
