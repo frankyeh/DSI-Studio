@@ -1424,6 +1424,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
                         add_ai_reply(*info,chat,reasoning);
                 }
             });
+    // Prepend a system prompt to the initial text here if needed.
     connect(process,&QProcess::started,process,
             [process,text,claude_input]
             {process->write(claude_input(text));});
