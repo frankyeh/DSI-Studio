@@ -605,6 +605,7 @@ bool MainWindow::loadFib(QString filename)
     std::shared_ptr<fib_data> new_handle(new fib_data);
     if (!new_handle->load_from_file(tipl::qt::to_path(filename)))
     {
+        error_msg = new_handle->error_msg;
         if(!new_handle->error_msg.empty())
             QMessageBox::critical(this,"ERROR",new_handle->error_msg.c_str());
         return false;
@@ -687,18 +688,6 @@ void MainWindow::loadSrc(QStringList filenames)
             QMessageBox::critical(this,"ERROR",error.what());
     }
 
-}
-
-
-void MainWindow::openRecentFibFile(void)
-{
-    QAction *action = qobject_cast<QAction *>(sender());
-    loadFib(action->data().toString());
-}
-void MainWindow::openRecentSrcFile(void)
-{
-    QAction *action = qobject_cast<QAction *>(sender());
-    loadSrc(QStringList() << action->data().toString());
 }
 
 void MainWindow::open_DWI(QStringList filenames)
@@ -1180,12 +1169,16 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         }
         add_work_dir(QFileInfo(files[0]).absolutePath());
         tipl::progress prog("Rename DICOM Files");
+        bool result = true;
         for(int index = 0;prog(index,files.size());++index)
         {
             auto file = tipl::qt::to_path(files[index]);
-            rename_dicom(file,file.parent_path());
+            if(rename_dicom(file,file.parent_path()).empty())
+                result = false;
         }
-        return true;
+        if(tipl::prog_aborted)
+            return true;
+        return result || fail("one or more DICOM files could not be renamed");
     }
 
     if(cmd[0] == "rename_dicom_dir")

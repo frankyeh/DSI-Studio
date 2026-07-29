@@ -1,14 +1,13 @@
+#include <cctype>
 #include "TIPL/tipl.hpp"
-
 
 void check_name(std::string& name)
 {
-    for(unsigned int index = 0;index < name.size();++index)
-        if((name[index] < '0' || name[index] > '9') &&
-            (name[index] < 'a' || name[index] > 'z') &&
-            (name[index] < 'A' || name[index] > 'Z') &&
-            name[index] != '.')
-            name[index] = '_';
+    for(auto& ch : name)
+        if(!std::isalnum(static_cast<unsigned char>(ch)) && ch != '.')
+            ch = '_';
+    if(name.empty() || name == "." || name == "..")
+        name = "unknown";
 }
 
 std::filesystem::path rename_dicom(const std::filesystem::path& file_name,
@@ -35,16 +34,25 @@ std::filesystem::path rename_dicom(const std::filesystem::path& file_name,
     if(file_name != output)
     {
         tipl::out() << file_name << "->" << output;
+        auto parent = output.parent_path();
         std::error_code ec;
-        if (!std::filesystem::exists(output.parent_path()) && !std::filesystem::create_directories(output.parent_path()))
+        std::filesystem::create_directories(parent,ec);
+        if(ec)
         {
-            if(!std::filesystem::exists(output.parent_path()))
-                tipl::error() << "cannot create dir " << output;
+            tipl::error() << "cannot create directory " << parent
+                          << ": " << ec.message();
+            return {};
+        }
+        if(file_name != output && std::filesystem::exists(output))
+        {
+            tipl::error() << "destination already exists: " << output;
+            return {};
         }
         std::filesystem::rename(file_name,output,ec);
         if(ec)
         {
-            tipl::error() << "cannot rename " << file_name << " to " << output << ": " << ec.message();
+            tipl::error() << "cannot rename " << file_name
+                          << " to " << output << ": " << ec.message();
             return {};
         }
     }
