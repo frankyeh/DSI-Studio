@@ -933,7 +933,7 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
                 mat_reader.error_msg = "unspported image type in saving mat matrices: " + std::to_string(mat_reader[index].type);
                 return false;
             }
-            for(auto each : mat_reader[index].sub_data)
+            for(const auto& each : mat_reader[index].sub_data)
                 matfile.write(*each.get());
             continue;
         }
