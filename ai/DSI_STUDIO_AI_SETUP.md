@@ -4,7 +4,7 @@ Read this file once, then use `DSI_STUDIO_AI_MANUAL.md` and the topic-specific e
 
 ## Identity
 
-Choose one exact nonempty `agent` name. Reuse unchanged for the conversation.
+Choose one exact nonempty `agent` name. Reuse it unchanged for the conversation.
 
 Native agents:
 
@@ -13,30 +13,8 @@ Codex
 Claude
 ```
 
-Obtain the resumable session UUID assigned by the current agent runtime. The
-discovery method differs by agent:
-
-### Codex
-
-Use the exact UUID of the current Codex task/thread exposed by its injected
-runtime context or task-specific runtime path. When DSI Studio launches Codex
-with JSON output, this is the same `thread_id` reported by `thread.started` and
-captured by DSI Studio for later resume. Codex Desktop may expose it as the UUID
-component of an injected task path such as
-`...\visualizations\YYYY\MM\DD\<uuid>`. Use only an ID explicitly associated
-with the current task; do not scan for, guess, or generate one.
-
-### Claude Code
-
-Read the current Claude process's file:
-
-```text
-~/.claude/sessions/<pid>.json
-```
-
-Use its `sessionId` value, not its friendly `name` or the process ID.
-
-Reuse the exact agent and session values in every request.
+DSI Studio determines the current agent session automatically. Do not discover,
+guess, generate, or send a `session` field.
 
 ## Direct named-pipe connection
 
@@ -82,8 +60,6 @@ function Invoke-Dsi($request)
 }
 
 $DsiAgent = '<agent-name>'
-# Obtain this using the matching Codex or Claude instructions above.
-$DsiSession = '<resumable-session-uuid>'
 ```
 
 Use the wrapper or executable fallback only when direct pipe access cannot run
@@ -100,7 +76,6 @@ the first `LIST` or `CMD`:
 ```powershell
 Invoke-Dsi @{
     agent=$DsiAgent
-    session=$DsiSession
     request='TITLE'
     title='Corticospinal tract analysis'
 }
@@ -108,9 +83,8 @@ Invoke-Dsi @{
 
 Use the required `title` field only with `TITLE`, not with `CMD`, `CHAT`, `LIST`,
 or `LOG`, and do not put the title in `chat` or `text`. Keep the same exact
-`agent` and `session`; `TITLE` changes only the displayed chat name. Send another
-`TITLE` later only when the user permits renaming.
-
+`agent`; `TITLE` changes only the displayed chat name. Send another `TITLE` later
+only when the user permits renaming.
 
 ## Window and command routing — read this first
 
@@ -140,14 +114,11 @@ and use these exact commands:
 Use `list_recent_fib` for recent FIB/FZ files and `list_recent_src` for recent
 SRC/SZ files. Do not substitute guessed names such as `recent_list`.
 
-
-
 ### Discover windows
 
 ```powershell
 Invoke-Dsi @{
     agent=$DsiAgent
-    session=$DsiSession
     request='LIST'
 }
 ```
@@ -200,7 +171,6 @@ array format such as `["hub_tags","data-hcp/lifespan"]`.
 ```powershell
 Invoke-Dsi @{
     agent=$DsiAgent
-    session=$DsiSession
     request='CMD'
     window='tracking7ff6ab123410'
     command=@{cmd='list_region'}
@@ -229,7 +199,7 @@ A successful command with no captured text returns:
 An executed command that fails includes `error`:
 
 ```json
-[{"cmd":"set_slice","output":"completed","error":"<reason>"}]
+[{"cmd":"set_slice","error":"<reason>"}]
 ```
 
 A request rejected before execution may return only an `error` field. The
@@ -244,7 +214,6 @@ expected window, object, or file.
 ```powershell
 Invoke-Dsi @{
     agent=$DsiAgent
-    session=$DsiSession
     request='CHAT'
     chat='The requested operation completed and the output was verified.'
 }
@@ -262,7 +231,6 @@ Target `main`, then send `open_fib` with the known path:
 ```powershell
 Invoke-Dsi @{
     agent=$DsiAgent
-    session=$DsiSession
     request='CMD'
     window='main'
     command=@{cmd='open_fib';param='C:/data/subject.fz'}
@@ -282,7 +250,6 @@ the explicit path as the command parameter:
 ```powershell
 Invoke-Dsi @{
     agent=$DsiAgent
-    session=$DsiSession
     request='CMD'
     window='tracking7ff6ab123410'
     command=@{cmd='open_fib';param='C:/data/second_subject.fz'}
@@ -381,7 +348,6 @@ Attach a useful top-level `chat` message to meaningful commands:
 ```powershell
 Invoke-Dsi @{
     agent=$DsiAgent
-    session=$DsiSession
     request='CMD'
     window='tracking7ff6ab123410'
     command=@{cmd='run_tracking';param='CST'}
