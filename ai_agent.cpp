@@ -1268,6 +1268,12 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
     launch.process = process;
     process->setObjectName(session);
     process->setWorkingDirectory(QApplication::applicationDirPath()+"/ai");
+    auto env = QProcessEnvironment::systemEnvironment();
+    env.insert("DSI_STUDIO_AGENT",
+               provider == ai_provider::Codex ? "Codex" : "Claude");
+    if(provider == ai_provider::Claude)
+        env.insert("CODEX_THREAD_ID",session);
+    process->setProcessEnvironment(env);
 
     if(!session.isEmpty())
         ai_infos[session].processes = process;
@@ -1479,7 +1485,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
         "--output-format","stream-json",
         "--verbose",
         "--add-dir",launch.project_dir,
-        "--allowedTools","PowerShell(./dsi_agent.ps1 -Agent Claude *)",
+        "--allowedTools","PowerShell(./dsi *)",
         session.isEmpty() ? "--session-id" : "--resume",session_id};
     if(!launch.model.isEmpty())
         args << "--model" << launch.model;
