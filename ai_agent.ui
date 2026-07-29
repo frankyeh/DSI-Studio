@@ -315,6 +315,19 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
                </property>
               </widget>
              </item>
+             <item>
+              <widget class="QCheckBox" name="ai_show_reasoning">
+               <property name="toolTip">
+                <string>Show AI reasoning messages in chat history</string>
+               </property>
+               <property name="text">
+                <string>Show reasoning</string>
+               </property>
+               <property name="checked">
+                <bool>false</bool>
+               </property>
+              </widget>
+             </item>
             </layout>
            </item>
            <item>
