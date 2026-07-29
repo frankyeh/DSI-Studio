@@ -1118,7 +1118,11 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         if(cmd.size() != 1)
             return fail("list_recent_fib takes no arguments");
         for(const auto& file : settings.value("recentFibFileList").toStringList())
-            tipl::out() << QDir::fromNativeSeparators(file).toStdString();
+        {
+            auto path = QDir::fromNativeSeparators(file);
+            if(QFileInfo::exists(path))
+                tipl::out() << path.toStdString();
+        }
         return true;
     }
 
@@ -1127,7 +1131,11 @@ bool MainWindow::command(const std::vector<std::string>& cmd)
         if(cmd.size() != 1)
             return fail("list_recent_src takes no arguments");
         for(const auto& file : settings.value("recentSrcFileList").toStringList())
-            tipl::out() << QDir::fromNativeSeparators(file).toStdString();
+        {
+            auto path = QDir::fromNativeSeparators(file);
+            if(QFileInfo::exists(path))
+                tipl::out() << path.toStdString();
+        }
         return true;
     }
 
