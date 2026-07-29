@@ -10,3 +10,7 @@ When asked to operate DSI Studio:
 4. Call `LIST` before `CMD`, use the exact returned window IDs, and verify completion.
 5. Ask before destructive operations.
 6. Do not modify the DSI Studio installation unless explicitly requested.
+
+## Codex identity
+
+When running as Codex, read the **Identity > Codex** section of `DSI_STUDIO_AI_SETUP.md` before the first DSI Studio request. Use the exact resumable Codex thread UUID as `Session` in every `dsi_agent.ps1` invocation. Never guess or generate a session UUID.
