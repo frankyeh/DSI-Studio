@@ -417,7 +417,7 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         if(!chat.isEmpty())
             add_ai_history(session,"assistant",chat);
         auto written = socket->write(reply);
-        ai_log(QString("DSI Studio replied %1@%2: %3 ...")
+        ai_log(QString("replied %1@%2 with %3 ...")
                    .arg(info.agent_name,session,QString::fromUtf8(reply).left(32)));
         set_ai_status(written == reply.size() ?activity : "Response could not be sent.",true);
         if(written == reply.size())
@@ -522,132 +522,124 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
 
     if(type == "CMD")
     {
-        auto msg = QString("[AI REQUEST] ")+type+" from "+
-                   agent_name+"@"+session;
-        tipl::progress p(msg.remove('\r').replace('\n',' ').toStdString());
-
-        auto commands = request["command"].toArray();
-        if(!commands.isEmpty() && commands[0].isString())
-            commands = QJsonArray{commands};
-
-        auto id = request["window"].toString();
-        auto windows = QApplication::allWidgets();
-        QWidget* target = nullptr;
-        QString target_type,target_title;
-
-        for(auto* window : windows)
-            if(window_id(window) == id)
-            {
-                target = window;
-                target_type =
-                    qobject_cast<MainWindow*>(window) ? "main" :
-                        qobject_cast<tracking_window*>(window) ? "tracking" : "image";
-                if(target_type != "main")
-                    target_title = QFileInfo(window->windowTitle()).fileName();
-                break;
-            }
-
-        QStringList names;
-        for(const auto& value : commands)
-        {
-            auto command = value.toArray();
-            if(!command.isEmpty())
-                names << command[0].toString();
-        }
-
-        auto compact = names.join(", ");
-        auto destination = target ? target_type+" window" : "window "+id;
-        add_ai_history(session,QJsonObject{
-                {"type","request"},
-                {"text",(compact.isEmpty() ? "unknown" : compact)+" \u2192 "+
-                    destination+(target_title.isEmpty() ? "" : " "+target_title)},
-                {"compact",compact},
-                {"window",id}});
-
         auto fail = [&](const QString& error)
         {
             reply_results(session,QJsonArray{QJsonObject{{"error",error}}});
         };
 
-        if(id.isEmpty() || commands.isEmpty())
-            return fail("empty id or command");
-        if(!target)
-            return fail("window not found");
+        std::vector<std::vector<std::string>> cmds;
+        std::vector<std::string> cmd0_list;
+        {
+            auto value = request["command"];
+            for(const auto& value : (value.isArray() ? value.toArray() : QJsonArray{value}))
+            {
+                auto object = value.toObject();
+                auto& cmd = cmds.emplace_back();
+                auto add = [&](const QJsonValue& value){cmd.push_back(value.toVariant().toString().toUtf8().toStdString());};
+                add(object["cmd"]);
+                if(cmd[0].empty())
+                    return fail("invalid cmd text");
+                cmd0_list.push_back(cmd[0]);
+                auto param = object["param"];
+                if(param.isArray())
+                    for(const auto& value : param.toArray())
+                        add(value);
+                else if(!param.isUndefined())
+                    add(param);
+            }
+        }
+        if(cmds.empty())
+            return fail("missing command");
 
-        for(auto* window : windows)
-            if(window->property("busy").toBool())
-                return fail("another CMD is running; check opened windows");
+
+        QWidget* target = nullptr;
+        {
+            QString target_type,target_title;
+            auto windows = QApplication::allWidgets();
+            auto id = request["window"].toString();
+            if(id.isEmpty())
+                return fail("missing window field");
+
+            for(auto* window : windows)
+            {
+                if(window->property("busy").toBool())
+                    return fail("another CMD is running; check opened windows");
+                if(window_id(window) == id)
+                {
+                    target = window;
+                    target_type =
+                        qobject_cast<MainWindow*>(window) ? "main" :
+                            qobject_cast<tracking_window*>(window) ? "tracking" : "image";
+                    if(target_type != "main")
+                        target_title = QFileInfo(window->windowTitle()).fileName();
+                    break;
+                }
+            }
+            if(!target)
+                return fail("window not found");
+            auto compact = QString::fromUtf8(tipl::merge(cmd0_list,','));
+            add_ai_history(session,QJsonObject{
+                    {"type","request"},
+                    {"text",compact + " \u2192 "+ target_type + " window "+target_title},
+                    {"compact",compact},
+                    {"window",id}});
+        }
+
 
         bool updates_enabled = target->updatesEnabled();
         target->setUpdatesEnabled(false);
         target->setProperty("busy",true);
 
         QJsonArray results;
-        for(int index = 0;index < commands.size();++index)
+        for(const auto& cmd : cmds)
         {
-            QJsonObject result{{"index",index}};
-            QString output,error,command_name;
-            std::vector<std::string> cmd;
-            for(const auto& value : (commands[index].isArray() ?
-                    commands[index].toArray() : QJsonArray{commands[index]}))
-                cmd.push_back(value.toVariant().toString().toUtf8().toStdString());
-            if(cmd.empty() || cmd[0].empty())
-                error = "empty command";
-            if(error.isEmpty())
+            QString output,error,command_name = QString::fromUtf8(cmd[0]);
+            QJsonObject result{{"cmd",command_name}};
+            set_ai_status("Running command: "+command_name);
             {
-                command_name = QString::fromStdString(cmd[0]);
-                target->setProperty("command",command_name);
-                set_ai_status("Running command: "+command_name);
+                std::lock_guard<std::mutex> lock(console.edit_buf);
+                console.capture = &output;
+            }
+            try
+            {
+                auto execute = [&](auto* window)
                 {
-                    std::lock_guard<std::mutex> lock(console.edit_buf);
-                    console.capture = &output;
-                }
-                try
-                {
-                    auto execute = [&](auto* window)
+                    if(!window->command(cmd))
                     {
-                        if(!window->command(cmd))
-                        {
-                            error = QString::fromUtf8(window->error_msg);
-                            error = (error.isEmpty() ? "command failed" : error)+
-                                    ". Read ai/DSI_STUDIO_AI_MANUAL.md and retry.";
-                        }
-                    };
+                        error = QString::fromUtf8(window->error_msg);
+                        error = (error.isEmpty() ? "command failed" : error)+
+                                ". Read ai/DSI_STUDIO_AI_MANUAL.md and retry.";
+                    }
+                };
+                if(auto* window = qobject_cast<MainWindow*>(target))
+                    execute(window);
+                else if(auto* window = qobject_cast<tracking_window*>(target))
+                    execute(window);
+                else if(auto* window = qobject_cast<view_image*>(target))
+                    execute(window);
+            }
+            catch(const std::exception& e){error = e.what();}
+            catch(...){error = "unknown error";}
 
-                    if(auto* window = qobject_cast<MainWindow*>(target))
-                        execute(window);
-                    else if(auto* window = qobject_cast<tracking_window*>(target))
-                        execute(window);
-                    else if(auto* window = qobject_cast<view_image*>(target))
-                        execute(window);
-                }
-                catch(const std::exception& e){error = e.what();}
-                catch(...){error = "unknown error";}
-
-                {
-                    std::lock_guard<std::mutex> lock(console.edit_buf);
-                    console.capture = nullptr;
-                }
+            {
+                std::lock_guard<std::mutex> lock(console.edit_buf);
+                console.capture = nullptr;
             }
 
-            target->setProperty("command",QVariant());
             output.remove(ansi_escape);
             error.remove(ansi_escape);
 
-            result["output"] = output.isEmpty() ? "command completed" : output;
+            result["output"] = output.isEmpty() ? "completed" : output;
             if(!error.isEmpty())
                 result["error"] = error;
             results.append(result);
-
-            activity = command_name+
-                       (error.isEmpty() ? " completed" : ":"+error);
+            activity = command_name + (error.isEmpty() ? " completed" : " failed:"+error);
             if(!error.isEmpty())
                 break;
         }
 
         target->setProperty("busy",false);
         target->setUpdatesEnabled(updates_enabled);
-
         if(auto* window = qobject_cast<tracking_window*>(target))
         {
             window->slice_need_update = true;
