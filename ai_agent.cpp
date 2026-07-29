@@ -678,77 +678,68 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
 
     if(type == "LIST")
     {
-        static quint64 next_id = 0;
-        int level = std::max(0,int(tipl::status_list.size())-1);
-        bool global_busy = level != 0;
-        bool has_tracking = false;
-        QString status;
-        if(level)
+        static quint64 next_tracking = 0,next_image = 0;
+        auto status = [](bool waiting,bool busy)
         {
-            auto first_line = [](const std::string& text)
-            {
-                return QString::fromStdString(text).section('\n',0,0).replace('\t',' ');
-            };
-            const auto& prog = tipl::status_list.back();
-            status = first_line(prog.status);
-            if(!prog.at.empty())
-                status += " "+first_line(prog.at);
-        }
+            return waiting ? "waiting" : busy ? "busy" : "idle";
+        };
 
-        QStringList result;
+        auto* modal = QApplication::activeModalWidget();
+        bool application_busy = tipl::status_list.size() > 1;
+        QJsonObject windows;
+
         for(auto* window : QApplication::allWidgets())
         {
+            QString prefix;
+            quint64* next = nullptr;
             bool busy = window->property("busy").toBool();
-            int jobs = 0;
-            QString window_type;
+
             if(qobject_cast<MainWindow*>(window))
-                window_type = "main";
-            else if(auto* w = qobject_cast<tracking_window*>(window))
+                prefix = "main";
+            else if(auto* tracking = qobject_cast<tracking_window*>(window))
             {
-                window_type = "tracking";
-                if(w->tractWidget)
-                    jobs = int(std::count_if(
-                        w->tractWidget->thread_data.begin(),
-                        w->tractWidget->thread_data.end(),
-                        [](const auto& thread){return bool(thread);}));
-                busy |= jobs || w->history.running_commands ||
-                        std::any_of(w->slices.begin(),w->slices.end(),
+                prefix = "tracking";
+                next = &next_tracking;
+                busy |= tracking->history.running_commands ||
+                        (tracking->tractWidget &&
+                         std::any_of(tracking->tractWidget->thread_data.begin(),
+                                     tracking->tractWidget->thread_data.end(),
+                                     [](const auto& thread){return bool(thread);})) ||
+                        std::any_of(tracking->slices.begin(),tracking->slices.end(),
                                     [](const auto& slice)
                                     {
                                         auto custom = std::dynamic_pointer_cast<
-                                                          CustomSliceModel>(slice);
+                                            CustomSliceModel>(slice);
                                         return custom && custom->running;
                                     });
             }
             else if(qobject_cast<view_image*>(window))
-                window_type = "image";
-            if(window_type.isEmpty())
+            {
+                prefix = "image";
+                next = &next_image;
+            }
+            else
                 continue;
+
             if(!window->property("remote_id").isValid())
-                window->setProperty("remote_id",++next_id);
+                window->setProperty("remote_id",
+                                    next ? prefix+QString::number(++*next) : prefix);
 
-            auto command = window->property("command").toString();
-            if(level == 1 && status.startsWith("[AI REQUEST]") &&
-               !command.isEmpty())
-                status = command;
-
-            auto title = QDir::fromNativeSeparators(window->windowTitle());
-            title.replace('\t',' ').replace('\n',' ');
-            result << QString("%1\t%2\t%3\t%4\t%5").arg(window_type).
-                      arg(window->property("remote_id").toULongLong()).
-                      arg(int(busy)).arg(jobs).arg(title);
-            global_busy |= busy;
-            has_tracking |= jobs != 0;
+            auto id = window->property("remote_id").toString();
+            bool waiting = modal &&
+                           (modal == window || window->isAncestorOf(modal));
+            windows[id] = QJsonObject{
+                {"status",status(waiting,busy)},
+                {"title",QDir::fromNativeSeparators(window->windowTitle())}
+            };
+            application_busy |= busy;
         }
 
-        if(!level && global_busy)
-        {
-            level = 1;
-            status = has_tracking ? "fiber tracking" : "working";
-        }
-        result.prepend(QString("OKAY\t%1\t%2\t%3").arg(
-                           int(global_busy)).arg(level).arg(status));
-        return reply_text(session,result.join('\n').toUtf8());
+        return reply_text(session,QJsonDocument(QJsonObject{
+                {"application",QJsonObject{
+                {"status",status(modal,application_busy)}}},
+                {"windows",windows}
+                }).toJson(QJsonDocument::Compact));
     }
 
     if(type == "LOG")
