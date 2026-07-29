@@ -115,7 +115,6 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     setAcceptDrops(true);
     ui->setupUi(this);
-    ai_agent = new AIAgent(this);
 
     ui->styles->addItems(QStringList("default") << QStyleFactory::keys());
     ui->styles->setCurrentText(settings.value("styles","Fusion").toString());
@@ -147,6 +146,7 @@ MainWindow::MainWindow(QWidget *parent) :
         }
     if(!ui->workDir->count())
         ui->workDir->addItem(QDir::currentPath());
+    ai_agent = new AIAgent(this);
 
     for(auto& each : fib_template_list)
     {
