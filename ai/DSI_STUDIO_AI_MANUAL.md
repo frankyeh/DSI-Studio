@@ -78,7 +78,7 @@ restored.
 Target an existing tracking window using its exact current `LIST` key:
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"open_fib","param":"C:/data/second_subject.fz"}}
+{"agent":"Codex","request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"open_fib","param":"C:/data/second_subject.fz"}}
 ```
 
 Both main and tracking windows accept `open_fib` with a path, but they are
@@ -92,7 +92,7 @@ window.
 Target **main**:
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"main","command":{"cmd":"open_image","param":"C:/data/T1w.nii.gz"}}
+{"agent":"Codex","request":"CMD","window":"main","command":{"cmd":"open_image","param":"C:/data/T1w.nii.gz"}}
 ```
 
 With one or more paths, `open_image` passes the files to a `view_image` window
@@ -115,13 +115,15 @@ image editing or batch processing.
 
 ## Request formats
 
-An optional `chat` may accompany any request. Attach an update directly to
-`CMD` when it describes that command; use standalone `CHAT` otherwise.
+DSI Studio determines the current agent session automatically. Do not include a
+`session` field in requests. An optional `chat` may accompany any request.
+Attach an update directly to `CMD` when it describes that command; use standalone
+`CHAT` otherwise.
 
 ### LIST
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"LIST"}
+{"agent":"Codex","request":"LIST"}
 ```
 
 Example reply:
@@ -146,7 +148,7 @@ address in lowercase hexadecimal without `0x`. Copy the key from the latest
 ### CMD
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"list_region"}}
+{"agent":"Codex","request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"list_region"}}
 ```
 
 The `command` field accepts one command object or an array of command objects.
@@ -180,7 +182,7 @@ after the first error:
 A meaningful command should normally include a useful progress update:
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"segment_brain","param":["human_synthseg",7]},"chat":"I verified that the T1w slice is ready. I am starting SynthSeg now."}
+{"agent":"Codex","request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"segment_brain","param":["human_synthseg",7]},"chat":"I verified that the T1w slice is ready. I am starting SynthSeg now."}
 ```
 
 The top-level `chat` field is shown to the user and does not change the command.
@@ -204,7 +206,7 @@ A successful command with no captured text returns:
 An executed command that fails includes `error`:
 
 ```json
-[{"cmd":"set_slice","output":"completed","error":"<reason>"}]
+[{"cmd":"set_slice","error":"<reason>"}]
 ```
 
 A request rejected before execution may return only an `error` field. Interpret
@@ -226,7 +228,7 @@ For `list_*` commands, actual rows appear in `output`. If the response is
 ### CHAT
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"CHAT","chat":"Tracking completed and the output file was verified."}
+{"agent":"Codex","request":"CHAT","chat":"Tracking completed and the output file was verified."}
 ```
 
 Use standalone `CHAT` when no other request is needed.
@@ -234,19 +236,18 @@ Use standalone `CHAT` when no other request is needed.
 ### TITLE
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"TITLE","title":"Corticospinal tract analysis"}
+{"agent":"Codex","request":"TITLE","title":"Corticospinal tract analysis"}
 ```
 
 Send one concise title after understanding the initial task and before the
 first `LIST` or `CMD`. The `title` field is required; do not put the title in
 `chat` or `text`, or include it in `CMD`, `CHAT`, `LIST`, or `LOG`. Reuse the
-exact agent and session identity, and rename later only with the user's
-permission.
+exact agent identity, and rename later only with the user's permission.
 
 ### LOG
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"LOG"}
+{"agent":"Codex","request":"LOG"}
 ```
 
 Use `LOG` only when `LIST`, the direct `CMD` response, and targeted discovery
@@ -518,7 +519,7 @@ completion. `status=done` is the definitive completion signal.
 ## Operational rules
 
 - Each named-pipe connection sends one request, reads the complete reply, and closes.
-- Reuse the exact nonempty `agent` and `session` values for the conversation.
+- Reuse the exact nonempty `agent` value for the conversation. DSI Studio determines the session automatically; do not send `session`.
 - Native identities are `Codex` and `Claude`.
 - Ollama-backed identities include the host, for example `Codex/Ollama(192.168.1.14)`.
 - Inspect `LIST` before substantial loading, registration, segmentation, reconstruction, or tracking.
