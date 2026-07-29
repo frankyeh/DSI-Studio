@@ -4,16 +4,8 @@ Read this file once, then use `DSI_STUDIO_AI_MANUAL.md` and the topic-specific e
 
 ## Identity
 
-Choose one exact nonempty `agent` name. Reuse it unchanged for the conversation.
-
-Native agents:
-
-```text
-Codex
-Claude
-```
-
-Send the `agent` field with each request. DSI Studio associates requests with the current agent automatically.
+Use the exact nonempty resumable session UUID supplied by DSI Studio. Send it
+as `session` with every request. The `agent` field is not needed.
 
 ## Direct named-pipe connection
 
@@ -58,7 +50,7 @@ function Invoke-Dsi($request)
     }
 }
 
-$DsiAgent = '<agent-name>'
+$DsiSession = '<session-uuid>'
 ```
 
 Use the wrapper or executable fallback only when direct pipe access cannot run
@@ -74,7 +66,7 @@ the first `LIST` or `CMD`:
 
 ```powershell
 Invoke-Dsi @{
-    agent=$DsiAgent
+    session=$DsiSession
     request='TITLE'
     title='Corticospinal tract analysis'
 }
@@ -82,7 +74,7 @@ Invoke-Dsi @{
 
 Use the required `title` field only with `TITLE`, not with `CMD`, `CHAT`, `LIST`,
 or `LOG`, and do not put the title in `chat` or `text`. Keep the same exact
-`agent`; `TITLE` changes only the displayed chat name. Send another `TITLE` later
+`session`; `TITLE` changes only the displayed chat name. Send another `TITLE` later
 only when the user permits renaming.
 
 ## Window and command routing — read this first
@@ -117,7 +109,7 @@ SRC/SZ files. Do not substitute guessed names such as `recent_list`.
 
 ```powershell
 Invoke-Dsi @{
-    agent=$DsiAgent
+    session=$DsiSession
     request='LIST'
 }
 ```
@@ -170,7 +162,7 @@ array format such as `["hub_tags","data-hcp/lifespan"]`.
 
 ```powershell
 Invoke-Dsi @{
-    agent=$DsiAgent
+    session=$DsiSession
     request='CMD'
     window='tracking7ff6ab123410'
     command=@{cmd='list_region'}
@@ -212,7 +204,7 @@ error; asynchronous or GUI-backed work may still require verification with
 
 ```powershell
 Invoke-Dsi @{
-    agent=$DsiAgent
+    session=$DsiSession
     request='CHAT'
     chat='The requested operation completed and the output was verified.'
 }
@@ -229,7 +221,7 @@ Target `main`, then send `open_fib` with the known path:
 
 ```powershell
 Invoke-Dsi @{
-    agent=$DsiAgent
+    session=$DsiSession
     request='CMD'
     window='main'
     command=@{cmd='open_fib';param='C:/data/subject.fz'}
@@ -248,7 +240,7 @@ the explicit path as the command parameter:
 
 ```powershell
 Invoke-Dsi @{
-    agent=$DsiAgent
+    session=$DsiSession
     request='CMD'
     window='tracking7ff6ab123410'
     command=@{cmd='open_fib';param='C:/data/second_subject.fz'}
@@ -346,7 +338,7 @@ Attach a useful top-level `chat` message to meaningful commands:
 
 ```powershell
 Invoke-Dsi @{
-    agent=$DsiAgent
+    session=$DsiSession
     request='CMD'
     window='tracking7ff6ab123410'
     command=@{cmd='run_tracking';param='CST'}
