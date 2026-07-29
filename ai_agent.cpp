@@ -1299,7 +1299,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
     auto* process = new QProcess(this);
     launch.process = process;
     process->setObjectName(session);
-    process->setWorkingDirectory(ui->ai_work_dir->text().trimmed());
+    process->setWorkingDirectory(QApplication::applicationDirPath()+"/ai");
     auto env = QProcessEnvironment::systemEnvironment();
     env.insert("DSI_STUDIO_AI_DIR",QApplication::applicationDirPath()+"/ai");
     process->setProcessEnvironment(env);
@@ -1379,8 +1379,10 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
         auto error = (process->property("stderr").toByteArray()+
                       process->readAllStandardError()).trimmed();
         bool failed = exit_code || exit_status == QProcess::CrashExit;
+        auto error_message = ("error code:"+QString::number(exit_code)+" "+
+                              QString::fromUtf8(error)).trimmed();
         if(failed)
-            ai_log("error code:"+QString::number(exit_code)+" "+QString::fromUtf8(error));
+            ai_log(error_message);
 
         if(session.isEmpty())
         {
@@ -1407,7 +1409,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
             auto history_size = process->property("history_size");
             bool no_reply = history_size.isValid() && info.projects.size() == history_size.toInt();
             if(failed)
-                add_ai_history(info,"activity","AI agent failed.");
+                add_ai_history(info,"activity",error_message);
             else if(no_reply)
                 add_ai_history(info,"activity","No reply from AI agent.");
             else
