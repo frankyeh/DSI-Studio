@@ -69,8 +69,7 @@ Actions to edit or operate these instructions.
 
 ### Name the chat
 
-After understanding the user's initial prompt, send one concise `TITLE` before
-the first `LIST` or `CMD`:
+After understanding the task, send one concise `TITLE` as the first request:
 
 ```powershell
 Invoke-Dsi @{
@@ -80,15 +79,15 @@ Invoke-Dsi @{
 }
 ```
 
+Send another `TITLE` whenever the active task changes substantially. Repeated
+`TITLE` requests update the displayed chat name and keep the same session.
 Use the required `title` field only with `TITLE`, not with `CMD`, `CHAT`, `LIST`,
-or `LOG`, and do not put the title in `chat` or `text`. Keep the same exact
-`session`; `TITLE` changes only the displayed chat name. Send another `TITLE` later
-only when the user permits renaming.
+or `LOG`, and do not put the title in `chat` or `text`.
 
 ## Window and command routing — read this first
 
-Call top-level `LIST` before any `CMD`. It returns the application status and the
-current ID for each open window.
+Use `main` directly for main-window commands. Call top-level `LIST` only when a
+tracking or image window ID is needed.
 
 | Window ID | Use it for | Important opening command |
 |---|---|---|
@@ -97,10 +96,10 @@ current ID for each open window.
 | `tracking<hex-address>` | FIB/FZ slices, regions, tracts, tracking, devices, settings | Use `open_fib` with an explicit path to open an additional FIB/FZ from an existing tracking window. |
 
 `main` is fixed. Tracking and image IDs append the window pointer address in
-lowercase hexadecimal without `0x`. Do not construct or guess an ID. A `CMD`
-must use the exact quoted `window` key from the latest `LIST`. The ID is valid
-only while that window remains open; reopening a window or restarting DSI Studio
-may produce a different ID.
+lowercase hexadecimal without `0x`. Do not construct or guess these IDs. A `CMD`
+targeting a tracking or image window must use the exact quoted key from the
+latest `LIST`. The ID is valid only while that window remains open; reopening a
+window or restarting DSI Studio may produce a different ID.
 
 Do not invent command names. To discover recent files, target the **main** window
 and use these exact commands:
@@ -113,7 +112,9 @@ and use these exact commands:
 Use `list_recent_fib` for recent FIB/FZ files and `list_recent_src` for recent
 SRC/SZ files. Do not substitute guessed names such as `recent_list`.
 
-### Discover windows
+### Discover tracking and image windows
+
+Call `LIST` only when a tracking or image window ID is needed:
 
 ```powershell
 Invoke-Dsi @{
@@ -136,8 +137,8 @@ Example reply:
 }
 ```
 
-`status` is `idle`, `busy`, or `waiting`. Use the exact window key returned by
-`LIST`, such as `main` or `tracking7ff6ab123410`, as the `CMD` target.
+Use the exact tracking or image key returned by `LIST`, such as
+`tracking7ff6ab123410`, as the `CMD` target.
 
 ### Command field format
 
@@ -205,8 +206,8 @@ An executed command that fails includes `error`:
 A request rejected before execution returns `status:"error"` with an `error`
 field. Status is `success`, `error`, or `busy`. A command batch stops after the
 first error. `success` means the command handler returned without an immediate
-error; asynchronous or GUI-backed work may still require verification with
-`LIST`, the relevant discovery command, or the expected window, object, or file.
+error; asynchronous or GUI-backed work may still require verification with the
+relevant discovery command or the expected window, object, or file.
 
 ### Send a final or standalone message
 
@@ -238,8 +239,8 @@ Invoke-Dsi @{
 ```
 
 This opens the supplied `.fz`, `*fib.gz`, or `.dz` file and creates a tracking
-window. Omit `param` to open the local FIB picker instead. Afterward, call
-`LIST` and use the new tracking-window ID.
+window. Omit `param` to open the local FIB picker instead. Call `LIST` afterward
+only when the new tracking-window ID is needed.
 
 ### Open an additional FIB/FZ
 
@@ -257,9 +258,9 @@ Invoke-Dsi @{
 ```
 
 Both main- and tracking-window `open_fib` accept a path, but they are separate
-command implementations. Always target the exact window ID returned by `LIST`.
-Do not use `open_image` to open FIB/FZ files; use it for ordinary image files
-and image-window workflows.
+command implementations. Always target the exact tracking-window ID returned by
+`LIST`. Do not use `open_image` to open FIB/FZ files; use it for ordinary image
+files and image-window workflows.
 
 ## Slice and tract status that commonly cause confusion
 
@@ -334,12 +335,12 @@ form uses current tracking parameters and checked regions.
 
 ## Polling and progress
 
-Use top-level `LIST` for routine application status. Use targeted commands for
-definitive state:
+Use targeted commands for definitive state:
 
 - Poll `list_slice` until the selected slice reports `status=ready`.
 - Poll `list_tract status` until it reports `status=done`.
 
+Call `LIST` only if a tracking or image window ID must be obtained or refreshed.
 Do not repeatedly resend a long-running command after a client timeout.
 
 Attach a useful top-level `chat` message to meaningful commands:
