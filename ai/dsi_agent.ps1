@@ -2,7 +2,7 @@ param(
     [Parameter(Mandatory,Position=0)]
     [string]$Agent = 'Claude',
 
-    [Parameter(Mandatory,Position=1)]
+    [Parameter(Position=1)]
     [string]$Session,
 
     [Parameter(Mandatory,Position=2)]
@@ -13,6 +13,15 @@ param(
 
     [string]$Chat
 )
+
+if(!$Session -and $Agent -ieq 'Codex')
+{
+    $Session = $env:CODEX_THREAD_ID
+}
+if(!$Session)
+{
+    throw 'Missing Session. Codex must use CODEX_THREAD_ID.'
+}
 
 function Convert-DsiValue([string]$Text)
 {
