@@ -291,8 +291,12 @@ AIAgent::AIAgent(MainWindow* parent):
         if(!item)
             return;
         auto session = item->data(Qt::UserRole).toString();
-        QMessageBox::information(
-            this,"Chat Details",ai_infos[session].details(session));
+        QMessageBox details(
+            QMessageBox::Information,"Chat Details",
+            ai_infos[session].details(session),QMessageBox::Ok,this);
+        details.setTextInteractionFlags(
+            Qt::TextSelectableByMouse|Qt::TextSelectableByKeyboard);
+        details.exec();
     });
     ai_project_menu->addSeparator();
     connect(ai_project_menu->addAction("Remove"),&QAction::triggered,this,[this]
