@@ -17,7 +17,6 @@ class group_connectometry_analysis;
 class AIAgent;
 class QByteArray;
 class FiberDataHub;
-class QLocalSocket;
 
 class MainWindow : public QMainWindow
 {
@@ -42,7 +41,7 @@ public:
     void openFile(QStringList file_name);
     std::string error_msg;
     bool command(const std::vector<std::string>& cmd);
-    void ai_command(QLocalSocket*,const QByteArray&);
+    void ai_command(QString,const QByteArray&,QByteArray&);
 public:
     void open_DWI(QStringList files);
     bool loadFib(QString Filename);

@@ -577,7 +577,13 @@ int main(int ac, char *av[])
                     clientSocket->waitForReadyRead(500);
                     auto request = clientSocket->readAll();
                     if(request.trimmed().startsWith('{'))
-                        w.ai_command(clientSocket,request);
+                    {
+                        QByteArray reply;
+                        auto session = QJsonDocument::fromJson(request).
+                                       object()["session"].toString();
+                        w.ai_command(session,request,reply);
+                        clientSocket->write(reply);
+                    }
                     else
                     {
                         auto file_name = QString::fromUtf8(request).trimmed();

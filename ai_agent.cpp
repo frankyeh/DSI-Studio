@@ -14,7 +14,6 @@
 #include <QJsonDocument>
 #include <QLabel>
 #include <QLineEdit>
-#include <QLocalSocket>
 #include <QMessageBox>
 #include <QMenu>
 #include <QNetworkAccessManager>
@@ -404,41 +403,42 @@ void AIAgent::set_ai_status(QString status,bool temporary)
     }
 }
 
-void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
+void AIAgent::command(QString session,const QByteArray& data,QByteArray& reply)
 {
+    session = session.trimmed();
+    reply.clear();
     set_ai_status("Received agent request.");
     ai_log("received: "+QString::fromUtf8(data));
     static const QRegularExpression ansi_escape(
         QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
     QString chat,activity = "Agent request handled";
-    auto write_reply = [&](const QString& session,QByteArray reply)
+    auto set_reply = [&](QByteArray result)
     {
         auto& info = ai_infos[session];
         if(!chat.isEmpty())
             add_ai_history(session,"assistant",chat);
-        auto written = socket->write(reply);
-        ai_log(QString("replied %1@%2 with %3 ...")
+        reply = std::move(result);
+        ai_log(QString("reply for %1@%2: %3 ...")
                    .arg(info.agent_name,session,QString::fromUtf8(reply).left(32)));
-        set_ai_status(written == reply.size() ?activity : "Response could not be sent.",true);
-        if(written == reply.size())
-            info.prompts = {};
+        set_ai_status(activity,true);
+        info.prompts = {};
     };
-    auto reply_text = [&](const QString& session,QByteArray reply)
+    auto reply_text = [&](QByteArray result)
     {
         const auto& prompts = ai_infos[session].prompts;
         if(!prompts.isEmpty())
         {
             auto payload = "PROMPT\t" +
                            QJsonDocument(prompts).toJson(QJsonDocument::Compact) + '\n';
-            auto pos = reply.indexOf('\n');
+            auto pos = result.indexOf('\n');
             if(pos < 0)
-                reply.append('\n').append(payload);
+                result.append('\n').append(payload);
             else
-                reply.insert(pos+1,payload);
+                result.insert(pos+1,payload);
         }
-        write_reply(session,reply);
+        set_reply(result);
     };
-    auto reply_results = [&](const QString& session,QJsonArray results)
+    auto reply_results = [&](QJsonArray results)
     {
         const auto& prompts = ai_infos[session].prompts;
         if(!prompts.isEmpty())
@@ -447,20 +447,19 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
             result["prompt"] = prompts;
             results.replace(results.size()-1,result);
         }
-        write_reply(session,QJsonDocument(results).toJson(QJsonDocument::Compact));
+        set_reply(QJsonDocument(results).toJson(QJsonDocument::Compact));
     };
 
     // Parse request
     QJsonParseError error;
     auto doc = QJsonDocument::fromJson(data,&error);
     if(!doc.isObject())
-        return reply_text({},("ERROR\tinvalid JSON: " +
-                              error.errorString()).toUtf8());
+        return reply_text(("ERROR\tinvalid JSON: " +
+                           error.errorString()).toUtf8());
 
     auto request = doc.object();
     auto agent_name = request["agent"].toString().trimmed();
     auto type = request["request"].toString().toUpper();
-    auto session = request["session"].toString().trimmed();
     if(!type.isEmpty())
     {
         activity = type+" request completed";
@@ -469,15 +468,15 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
 
     // Validate request
     if(agent_name.isEmpty())
-        return reply_text({},"ERROR\tmissing agent: provide a provider-tagged agent name and reuse it for the entire conversation");
+        return reply_text("ERROR\tmissing agent: provide a provider-tagged agent name and reuse it for the entire conversation");
     auto provider = ai_info::identify_provider(agent_name);
     if(provider == ai_provider::Unknown)
-        return reply_text({},"ERROR\tinvalid agent: include Codex or Claude in the agent name");
+        return reply_text("ERROR\tinvalid agent: include Codex or Claude in the agent name");
     if(session.isEmpty())
-        return reply_text({},"ERROR\tmissing session: provide the initiating-chat session ID and reuse it for the entire conversation");
+        return reply_text("ERROR\tmissing session: provide the initiating-chat session ID and reuse it for the entire conversation");
     if(QUuid(session).toString(QUuid::WithoutBraces).compare(
             session,Qt::CaseInsensitive))
-        return reply_text({},"ERROR\tinvalid session: read DSI_STUDIO_AI_SETUP.md and obtain the correct resumable provider thread ID");
+        return reply_text("ERROR\tinvalid session: read DSI_STUDIO_AI_SETUP.md and obtain the correct resumable provider thread ID");
 
     // Update agent
     {
@@ -513,18 +512,18 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
     {
         auto title = request["title"].toString().simplified();
         if(title.isEmpty())
-            return reply_text(session,"ERROR\tmissing title");
-        return reply_text(session,set_ai_title(session,title) ?
+            return reply_text("ERROR\tmissing title");
+        return reply_text(set_ai_title(session,title) ?
                               "OKAY" : "ERROR\tcannot save title");
     }
     if(request.contains("title"))
-        return reply_text(session,"ERROR\ttitle is valid only for TITLE");
+        return reply_text("ERROR\ttitle is valid only for TITLE");
 
     if(type == "CMD")
     {
         auto fail = [&](const QString& error)
         {
-            reply_results(session,QJsonArray{QJsonObject{{"error",error}}});
+            reply_results(QJsonArray{QJsonObject{{"error",error}}});
         };
         auto window = request["window"].toString();
         auto command = request["command"];
@@ -650,11 +649,11 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         else
             target->update();
 
-        return reply_results(session,results);
+        return reply_results(results);
     }
 
     if(type == "CHAT")
-        return reply_text(session,chat.isEmpty() ?
+        return reply_text(chat.isEmpty() ?
                               "ERROR\tmissing chat" : "OKAY");
 
     if(type == "LIST")
@@ -698,7 +697,7 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
             application_busy |= busy;
         }
 
-        return reply_text(session,QJsonDocument(QJsonObject{
+        return reply_text(QJsonDocument(QJsonObject{
                 {"application",QJsonObject{
                 {"status",status(bool(modal),application_busy)}}},
                 {"windows",windows}
@@ -727,10 +726,10 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
             output = lines.join('\n').right(4*1024).toUtf8();
             ai_log_positions[session] = end;
         }
-        return reply_text(session,"OKAY\n"+output);
+        return reply_text("OKAY\n"+output);
     }
 
-    reply_text(session,"ERROR\tunknown request");
+    reply_text("ERROR\tunknown request");
 }
 
 void AIAgent::show_ai_project(const QString& session)
@@ -1478,6 +1477,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
             {
                 auto output = process->property("stdout").toByteArray()+
                               process->readAllStandardOutput();
+                tipl::out() << "stdout:" << output.toStdString();
                 process->setProperty("stdout",output.right(64*1024));
             });
 
@@ -1497,6 +1497,7 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
     {
         auto buffer = process->property("stdout_buffer").toByteArray()+
                       process->readAllStandardOutput();
+        tipl::out() << "stdout:" << buffer.toStdString();
         for(int pos;(pos = buffer.indexOf('\n')) >= 0;)
         {
             auto event = QJsonDocument::fromJson(buffer.left(pos)).object();
@@ -1520,6 +1521,7 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
                     button->setEnabled(true);
             }
         }
+
         process->setProperty("stdout_buffer",buffer);
     });
 

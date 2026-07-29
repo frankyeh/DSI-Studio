@@ -11,7 +11,6 @@
 
 class MainWindow;
 class QListWidgetItem;
-class QLocalSocket;
 class QMenu;
 class QProcess;
 class QShowEvent;
@@ -75,7 +74,7 @@ class AIAgent : public QMainWindow
 public:
     explicit AIAgent(MainWindow*);
     ~AIAgent();
-    void command(QLocalSocket*,const QByteArray&);
+    void command(QString,const QByteArray&,QByteArray&);
 
 protected:
     void showEvent(QShowEvent*) override;
