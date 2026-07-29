@@ -149,8 +149,8 @@ address in lowercase hexadecimal without `0x`. Copy the key from the latest
 {"agent":"Codex","session":"<uuid>","request":"CMD","window":"tracking7ff6ab123410","command":["list_region"]}
 ```
 
-Every command name and parameter must be a JSON string. Use `"7"`, not numeric
-`7`.
+Command names and text or path parameters are strings. Send numeric parameters
+as JSON numbers, for example `7`, not `"7"`.
 
 For main-window commands that accept multiple files, pass each path as a
 separate JSON string element:
@@ -166,7 +166,7 @@ Do not combine multiple paths into one `&`-separated string.
 A meaningful command should normally include a useful progress update:
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"tracking7ff6ab123410","command":["segment_brain","human_synthseg","7"],"chat":"I verified that the T1w slice is ready. I am starting SynthSeg now."}
+{"agent":"Codex","session":"<uuid>","request":"CMD","window":"tracking7ff6ab123410","command":["segment_brain","human_synthseg",7],"chat":"I verified that the T1w slice is ready. I am starting SynthSeg now."}
 ```
 
 The top-level `chat` field is shown to the user and does not change the command.
@@ -320,10 +320,10 @@ Use this robust sequence on the tracking-window ID:
 
 ```json
 ["list_slice"]
-["set_slice","<T1w-slice-index>"]
+["set_slice",7]
 ["list_slice"]
 ["list_unet"]
-["segment_brain","<model-ID>","<T1w-slice-index>"]
+["segment_brain","<model-ID>",7]
 ```
 
 `set_slice` may start slice loading or registration asynchronously and return
@@ -340,8 +340,8 @@ The second `segment_brain` element must be the internal ID from the **`model`**
 column, such as `human_synthseg`, not the display text from the **`name`** column,
 such as `SynthSeg V2`. Use only a row with `available=1`.
 
-The optional third element selects the slice by its exact name or quoted numeric
-index from `list_slice`. Supplying it causes `segment_brain` to select that slice;
+The optional third element selects the slice by its exact name or numeric index
+from `list_slice`. Supplying it causes `segment_brain` to select that slice;
 prechecking `status=ready` still avoids waiting or failure during segmentation.
 
 Segmentation inference may outlast the named-pipe client's wait time. A client
@@ -364,8 +364,8 @@ and may use their full documented argument lists. Use this discovery sequence:
 ```json
 ["hub_repo"]
 ["hub_tags","<repo>"]
-["hub_files","<repo>","<tag>",".fz","0","20"]
-["hub_open","<repo>","<tag>","<exact-FIB-filename-or-returned-index>"]
+["hub_files","<repo>","<tag>",".fz",0,20]
+["hub_open","<repo>","<tag>",12]
 ```
 
 `hub_repo` lists an index and the exact `owner/repository` identifier. Pass that
@@ -376,19 +376,20 @@ after the metadata finishes loading.
 `hub_files` syntax is:
 
 ```json
-["hub_files","<repo>","<tag>","<optional-text>","<offset>","<limit>"]
+["hub_files","<repo>","<tag>","<optional-text>",0,20]
 ```
 
 The text filter is a case-insensitive substring match. Filtering occurs before
 offset and limit are applied. The first output column remains the actual row
 index in the full file table, not the ordinal position within the filtered
 results. Use that returned index or the exact filename for `hub_open` and
-`hub_download`.
+`hub_download`. Send numeric offsets, limits, and returned indices as JSON
+numbers.
 
 To persist a file without opening it:
 
 ```json
-["hub_download","<repo>","<tag>","<exact-filename-or-returned-index>","C:/data"]
+["hub_download","<repo>","<tag>",12,"C:/data"]
 ```
 
 `hub_download` requires exactly five elements. It creates the destination
