@@ -342,7 +342,7 @@ editing or batch processing, rather than work on an already-open FIB.
 
 ### Fiber Data Hub uses separate `hub_*` commands
 
-All Hub commands target the **main** window. `['open_hub']` only opens the Hub
+All Hub commands target the **main** window. `["open_hub"]` only opens the Hub
 window. The former subcommand form such as `["hub","files",...]` is no longer
 accepted. Hub commands are routed before regular main-window command handling
 and may use their full documented argument lists. Use this discovery sequence:
