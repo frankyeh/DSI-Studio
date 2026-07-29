@@ -150,6 +150,11 @@ AIAgent::AIAgent(MainWindow* parent):
         if(!path.isEmpty())
             ui->ai_work_dir->setText(QDir::toNativeSeparators(path));
     });
+    connect(ui->ai_show_reasoning,&QCheckBox::toggled,this,[this]
+    {
+        if(auto* item = ui->ai_project_list->currentItem())
+            show_ai_project(ai_infos[item->data(Qt::UserRole).toString()]);
+    });
     ai_status_timer = new QTimer(this);
     ai_status_timer->setInterval(500);
     connect(ai_status_timer,&QTimer::timeout,this,[this]
@@ -894,7 +899,8 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         auto type = entry["type"].toString();
         bool user = type == "user",request = type == "request";
         auto content = entry["text"].toString();
-        auto reasoning = entry["reasoning"].toString().trimmed();
+        auto reasoning = ui->ai_show_reasoning->isChecked() ?
+                         entry["reasoning"].toString().trimmed() : QString();
         if(content.trimmed().isEmpty() && reasoning.isEmpty())
             return;
 
