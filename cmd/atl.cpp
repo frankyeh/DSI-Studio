@@ -62,7 +62,7 @@ int db(tipl::program_option<tipl::out>& po)
         }
 
         if(!fib.save_to_file(po.get("output","sub-all.dz")))
-            return tipl::error() << "cannot save db file " << fib.error_msg,1;
+            return tipl::error() << "cannot save db file:" << fib.error_msg,1;
 
         float outlier_threshold = tipl::outlier_range(fib.db.R2.begin(),fib.db.R2.end()).first;
         for(size_t i = 0;i < fib.db.subject_names.size();++i)
