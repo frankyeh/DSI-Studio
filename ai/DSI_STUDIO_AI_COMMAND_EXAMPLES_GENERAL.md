@@ -1,8 +1,8 @@
 # DSI Studio AI General Command Examples and Inventory
 
-Use these commands with the standard top-level `CMD` request and the numeric
-**main** window ID returned by `LIST`. Every command name and parameter must be a
-quoted JSON string.
+Use these commands with the standard top-level `CMD` request and the **main**
+window ID returned by `LIST`. Command names and text or path parameters are
+strings. Send standalone numeric parameters as JSON numbers.
 
 Do not send a filesystem path by itself as a named-pipe request. Supply paths
 only as parameters of the documented commands below.
@@ -48,9 +48,9 @@ only as parameters of the documented commands below.
 | `open_hub` | `["open_hub"]` | Show, raise, and activate the Fiber Data Hub without running a query. Takes no arguments. |
 | `hub_repo` | `["hub_repo"]` | Show the Fiber Data Hub and list available repositories. |
 | `hub_tags` | `["hub_tags","<repo>"]` | List release tags for the exact repository returned by `hub_repo`. |
-| `hub_files` | `["hub_files","<repo>","<tag>",".fz","0","20"]` | List files using the Hub router's filter, offset, and limit parameters. |
-| `hub_open` | `["hub_open","<repo>","<tag>","<filename-or-index>"]` | Download to temporary cache when needed and open the selected Hub file. |
-| `hub_download` | `["hub_download","<repo>","<tag>","<filename-or-index>","C:/data"]` | Download the selected Hub file to the supplied persistent directory. |
+| `hub_files` | `["hub_files","<repo>","<tag>",".fz",0,20]` | List files using the Hub router's filter, offset, and limit parameters. |
+| `hub_open` | `["hub_open","<repo>","<tag>",12]` | Download to temporary cache when needed and open the selected Hub file by returned row index. An exact filename may be used instead. |
+| `hub_download` | `["hub_download","<repo>","<tag>",12,"C:/data"]` | Download the selected Hub file by returned row index to the supplied persistent directory. An exact filename may be used instead. |
 
 ## Multiple-file parameter format
 
@@ -73,8 +73,8 @@ may use their full documented argument lists:
 ```json
 ["hub_repo"]
 ["hub_tags","<repo>"]
-["hub_files","<repo>","<tag>",".fz","0","20"]
-["hub_open","<repo>","<tag>","<exact-filename-or-returned-index>"]
+["hub_files","<repo>","<tag>",".fz",0,20]
+["hub_open","<repo>","<tag>",12]
 ```
 
 - Use the exact `owner/repository` string returned by `hub_repo`.
@@ -82,12 +82,13 @@ may use their full documented argument lists:
 - `hub_files` filters before applying offset and limit. Its first column remains
   the actual file-table row index.
 - `hub_open` and `hub_download` accept the exact filename or returned row index.
+- Send offset, limit, and returned row indices as JSON numbers.
 - `hub_download` requires its documented destination-directory parameter.
 - Verify the created window or destination file after GUI-backed network work.
 
 ## Important routing and response notes
 
-- Call top-level `LIST` and target its quoted numeric main-window ID.
+- Call top-level `LIST` and target `main`.
 - Do not invent aliases. Use `list_recent_fib` and `list_recent_src` exactly.
 - Supplying paths as documented command parameters is supported. Never send a
   path alone as the complete named-pipe request.
