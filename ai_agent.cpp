@@ -56,18 +56,6 @@ QString ai_info::history_file(const QString& session)
     return ai_project_dir+"/"+QString::fromLatin1(
                QUrl::toPercentEncoding(session))+".jsonl";
 }
-QJsonArray ai_info::load_history(const QString& file_name)
-{
-    QJsonArray history;
-    QFile file(file_name);
-    if(!file.open(QIODevice::ReadOnly))
-        return history;
-    while(!file.atEnd())
-        if(auto doc = QJsonDocument::fromJson(file.readLine());doc.isObject())
-            history.append(doc.object());
-    return history;
-}
-
 struct ai_launch{
     QString name,executable,model;
     QUrl model_url;
@@ -374,7 +362,13 @@ AIAgent::AIAgent(MainWindow* parent):
     {
         auto session = QUrl::fromPercentEncoding(
                            info.completeBaseName().toLatin1());
-        auto history = ai_info::load_history(info.filePath());
+        QJsonArray history;
+        QFile file(info.filePath());
+        if(!file.open(QIODevice::ReadOnly))
+            continue;
+        while(!file.atEnd())
+            if(auto doc = QJsonDocument::fromJson(file.readLine());doc.isObject())
+                history.append(doc.object());
         if(history.isEmpty() || session.isEmpty())
             continue;
         auto first = history.first().toObject();
@@ -1529,7 +1523,6 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
             [process,prompt,claude_input]
             {process->write(claude_input(prompt));});
 
-    auto ai_dir = process->processEnvironment().value("DSI_STUDIO_AI_DIR");
     auto agent_script = QDir::toNativeSeparators(QDir(process->workingDirectory()).filePath("dsi_agent.ps1"));
     QStringList args{
         "-p",

@@ -36,7 +36,6 @@ struct ai_info{
     static ai_info* find(const QString&);
     static ai_info* create(QString,QString);
     static QString history_file(const QString&);
-    static QJsonArray load_history(const QString&);
     static bool save_title(ai_info&,QString);
     static void record_history(ai_info&,QJsonObject);
     static bool save_history(const ai_info&);
