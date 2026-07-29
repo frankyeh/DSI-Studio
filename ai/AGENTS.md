@@ -1,6 +1,6 @@
 # DSI Studio
 
-Use one `dsi_agent.ps1` invocation per request. Start by doing this:
+Use one `dsi_agent.ps1` invocation per request. Before reading any other file, start by doing this:
 
 ```powershell
 $session = $env:CODEX_THREAD_ID
