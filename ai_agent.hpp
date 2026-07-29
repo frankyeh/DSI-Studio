@@ -7,6 +7,7 @@
 #include <QMainWindow>
 #include <QMap>
 #include <QSettings>
+#include <QStringList>
 
 class MainWindow;
 class QListWidgetItem;
@@ -27,7 +28,8 @@ struct ai_info{
     QString sessions,agent_name,project_titles;
     ai_provider provider = ai_provider::Unknown;
     QProcess* processes = nullptr;
-    QJsonArray projects,prompts;
+    QJsonArray projects;
+    QStringList prompts;
     QListWidgetItem* project_items = nullptr;
     QJsonObject model_settings;
     static ai_provider identify_provider(const QString&);

@@ -490,12 +490,12 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
             record_ai_history(info,entry);
         }
         if(!info.prompts.isEmpty())
-            result["prompt"] = info.prompts;
+            result["prompt"] = QJsonArray::fromStringList(info.prompts);
         reply = QJsonDocument(result).toJson(QJsonDocument::Compact);
         ai_log(QString("reply for %1@%2: %3 ...")
                    .arg(info.agent_name,session,
                         QString::fromUtf8(reply).left(32)));
-        info.prompts = {};
+        info.prompts.clear();
     };
     auto reply_error = [&](const QString& error)
     {
@@ -1331,14 +1331,8 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
             auto& info = ai_infos[session];
             info.processes = nullptr;
 
-            QString pending;
-            for(int index = 0;index < info.prompts.size();++index)
-            {
-                if(index)
-                    pending += "\n\n";
-                pending += info.prompts[index].toString();
-            }
-            info.prompts = {};
+            auto pending = info.prompts.join("\n\n");
+            info.prompts.clear();
             if(!pending.isEmpty())
             {
                 process->deleteLater();
