@@ -1216,7 +1216,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
         if(path.isEmpty())
             path = main_window.work_dir();
         ui->ai_work_dir->setText(path);
-        auto name = provider == ai_provider::Codex ? "AGENTS.md" : "CLAUDE.md";
+        QString name = provider == ai_provider::Codex ? "AGENTS.md" : "CLAUDE.md";
         auto source = QApplication::applicationDirPath()+"/ai/"+name;
         QDir work(path);
         auto target = work.filePath(name);
