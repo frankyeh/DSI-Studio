@@ -11,7 +11,7 @@ open window.
 
 | Window type | Use it for | Important opening command |
 |---|---|---|
-| **main** | Recent files, Fiber Data Hub, opening the first FIB/FZ, reconstruction, templates, and main tools | Use parameterless `open_fib` to open the FIB picker and create a tracking window. |
+| **main** | Recent files, Fiber Data Hub, opening the first FIB/FZ, reconstruction, templates, and main tools | Use `open_fib` with a path to open a known FIB/FZ, or without a path to open the FIB picker. |
 | **image** | General image viewing and image-window operations | Created when ordinary image formats are opened with `open_image`. |
 | **tracking** | FIB/FZ slices, regions, tracts, tracking, devices, settings | Use `open_fib` with an explicit path to open an additional FIB/FZ from an existing tracking window. |
 
@@ -236,7 +236,8 @@ itself as the file-opening request.
 
 ### Open the first FIB/FZ
 
-Obtain the **main** window ID with `LIST`, then send parameterless `open_fib`:
+Obtain the **main** window ID with `LIST`, then send `open_fib` with the known
+path:
 
 ```powershell
 Invoke-Dsi @{
@@ -244,14 +245,14 @@ Invoke-Dsi @{
     session=$DsiSession
     request='CMD'
     window='1'
-    command=@('open_fib')
-    chat='Opening the FIB file picker.'
+    command=@('open_fib','C:/data/subject.fz')
+    chat='Opening the FIB file.'
 }
 ```
 
-This opens the local FIB picker and creates a tracking window for the selected
-`.fz`, `*fib.gz`, or `.dz` file. A local user must select the file in the dialog.
-Afterward, call `LIST` and use the new tracking-window ID.
+This opens the supplied `.fz`, `*fib.gz`, or `.dz` file and creates a tracking
+window. Omit the path to open the local FIB picker instead. Afterward, call
+`LIST` and use the new tracking-window ID.
 
 ### Open an additional FIB/FZ
 
@@ -269,9 +270,10 @@ Invoke-Dsi @{
 }
 ```
 
-Do not send `open_fib` with a path to the main window. Do not use `open_image` to
-open FIB/FZ files. Use `open_image` for ordinary image files and image-window
-workflows.
+Both main- and tracking-window `open_fib` accept a path, but they are separate
+command implementations. Always target the intended numeric window ID. Do not
+use `open_image` to open FIB/FZ files; use it for ordinary image files and
+image-window workflows.
 
 ## Slice and tract status that commonly cause confusion
 
