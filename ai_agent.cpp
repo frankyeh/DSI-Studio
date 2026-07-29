@@ -155,8 +155,7 @@ AIAgent::AIAgent(MainWindow* parent):
     QMainWindow(parent),main_window(*parent),ui(new Ui::AIAgent)
 {
     ui->setupUi(this);
-    ui->ai_work_dir->setText(settings.value(
-        "ai/work_dir",QApplication::applicationDirPath()+"/ai").toString());
+    ui->ai_work_dir->setText(main_window.work_dir());
     connect(ui->ai_browse_work_dir,&QPushButton::clicked,this,[this]
     {
         auto path = QFileDialog::getExistingDirectory(
@@ -1152,7 +1151,6 @@ void AIAgent::on_ai_quick_settings_clicked()
     dialog.setWindowTitle("AI Settings");
     QFormLayout layout(&dialog);
     QLineEdit host(settings.value("ai/ollama_host","localhost").toString());
-    QLineEdit work_dir(ui->ai_work_dir->text());
     QSpinBox port;
     port.setRange(1,65535);
     port.setValue(settings.value("ai/ollama_port",11434).toInt());
@@ -1169,7 +1167,6 @@ void AIAgent::on_ai_quick_settings_clicked()
     model.setCurrentText(ui->ai_model_selector->currentText());
     QCheckBox history("Keep AI chat history");
     history.setChecked(settings.value("ai/keep_history",true).toBool());
-    layout.addRow("Default work directory:",&work_dir);
     layout.addRow("Ollama host/IP:",&host);
     layout.addRow("Ollama port:",&port);
     layout.addRow("Default agent:",&agent);
@@ -1191,13 +1188,11 @@ void AIAgent::on_ai_quick_settings_clicked()
     settings.setValue("ai/keep_history",history.isChecked());
     settings.setValue("ai/default_agent",agent.currentData().toInt());
     settings.setValue("ai/default_model",model.currentText());
-    settings.setValue("ai/work_dir",work_dir.text().trimmed());
     if(!ui->ai_project_list->currentItem())
     {
         ui->ai_agent_selector->setCurrentIndex(agent.currentData().toInt());
         ui->ai_model_selector->setCurrentText(model.currentText());
     }
-    ui->ai_work_dir->setText(work_dir.text().trimmed());
 
     refresh_ollama_models();
 }
@@ -1229,36 +1224,27 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
     {
         auto path = ui->ai_work_dir->text().trimmed();
         if(path.isEmpty())
-            path = QApplication::applicationDirPath()+"/ai";
+            path = main_window.work_dir();
         ui->ai_work_dir->setText(path);
-        QDir source(QApplication::applicationDirPath()+"/ai"),work(path);
-        auto files = source.entryInfoList(QDir::Files);
-        if(files.isEmpty())
+        auto name = provider == ai_provider::Codex ? "AGENTS.md" : "CLAUDE.md";
+        auto source = QApplication::applicationDirPath()+"/ai/"+name;
+        QDir work(path);
+        auto target = work.filePath(name);
+        if(!QFileInfo::exists(source))
             return QMessageBox::warning(
-                this,"AI Work Directory","The application AI files are missing."),launch;
-        auto missing = [&](const QFileInfo& file)
-        {
-            return !QFileInfo::exists(work.filePath(file.fileName()));
-        };
-        if(std::any_of(files.begin(),files.end(),missing))
+                this,"AI Work Directory","The application "+name+" is missing."),launch;
+        if(!QFileInfo::exists(target))
         {
             if(QMessageBox::question(
                 this,"AI Work Directory",
-                "The selected work directory is missing DSI Studio AI files "
-                "(.ps1/.md). The agent may not work correctly without them. "
-                "Copy them now?",QMessageBox::Yes|QMessageBox::Cancel,
+                "The selected work directory is missing "+name+
+                ". The agent may not work correctly without it. "
+                "Copy it now?",QMessageBox::Yes|QMessageBox::Cancel,
                 QMessageBox::Yes) != QMessageBox::Yes)
                 return launch;
-            bool failed = !work.mkpath(".") ||
-                std::any_of(files.begin(),files.end(),
-                [&](const QFileInfo& file)
-                {
-                    return missing(file) && !QFile::copy(
-                               file.filePath(),work.filePath(file.fileName()));
-                });
-            if(failed)
+            if(!work.mkpath(".") || !QFile::copy(source,target))
                 return QMessageBox::warning(
-                    this,"AI Work Directory","Unable to copy the required AI files."),launch;
+                    this,"AI Work Directory","Unable to copy "+name+"."),launch;
         }
     }
 
@@ -1331,6 +1317,9 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
     launch.process = process;
     process->setObjectName(session);
     process->setWorkingDirectory(ui->ai_work_dir->text().trimmed());
+    auto env = QProcessEnvironment::systemEnvironment();
+    env.insert("DSI_STUDIO_AI_DIR",QApplication::applicationDirPath()+"/ai");
+    process->setProcessEnvironment(env);
 
     if(!session.isEmpty())
         ai_infos[session].processes = process;
@@ -1485,7 +1474,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
     launch.prompt.prepend("[DSI Studio] Session ID: "+launch.session+"\n\n");
     if(launch.model_provider == ai_model_provider::Ollama)
     {
-        auto env = QProcessEnvironment::systemEnvironment();
+        auto env = process->processEnvironment();
         env.insert("ANTHROPIC_BASE_URL",launch.model_url.toString());
         env.insert("ANTHROPIC_AUTH_TOKEN","ollama");
         env.insert("ANTHROPIC_API_KEY","");
@@ -1552,6 +1541,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
         "--input-format","stream-json",
         "--output-format","stream-json",
         "--verbose",
+        "--add-dir",process->processEnvironment().value("DSI_STUDIO_AI_DIR"),
         "--disallowedTools","Bash",
         "--allowedTools","PowerShell(./dsi_agent.ps1 -Agent Claude -Session " + launch.session + " -Target *)",
         launch.new_session ? "--session-id" : "--resume",launch.session};
@@ -1615,13 +1605,14 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
         process->setProperty("stdout_buffer",buffer);
     });
 
-    QStringList args{"exec"};
+    QStringList args{"exec","--add-dir",
+                     process->processEnvironment().value("DSI_STUDIO_AI_DIR")};
     if(launch.model_provider == ai_model_provider::Ollama)
     {
         auto url = launch.model_url;
         url.setPath("/v1");
 
-        auto env = QProcessEnvironment::systemEnvironment();
+        auto env = launch.process->processEnvironment();
         env.insert("CODEX_OSS_BASE_URL",url.toString());
         launch.process->setProcessEnvironment(env);
 
