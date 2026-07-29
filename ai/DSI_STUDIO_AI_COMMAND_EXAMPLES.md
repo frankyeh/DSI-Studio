@@ -21,7 +21,7 @@ Rows with a common example have a recommended or source-verified example. Inspec
 For a meaningful command, include a useful top-level `chat` update that tells the user what was verified and what the command is about to do.
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"segment_brain","param":["human_synthseg",7]},"chat":"I verified that the T1w slice is loaded and ready. I’m starting SynthSeg now; it may take a while to finish."}
+{"agent":"Codex","request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"segment_brain","param":["human_synthseg",7]},"chat":"I verified that the T1w slice is loaded and ready. I’m starting SynthSeg now; it may take a while to finish."}
 ```
 
 The `chat` field is shown to the user and does not alter command execution. Routine polling and trivial discovery commands may omit it to avoid repetitive updates.
