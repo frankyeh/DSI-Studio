@@ -57,7 +57,7 @@ QString ai_info::history_file(const QString& session)
                QUrl::toPercentEncoding(session))+".jsonl";
 }
 struct ai_launch{
-    QString name,executable,model;
+    QString name,executable,model,project_dir;
     QUrl model_url;
     QJsonObject model_setting;
     QProcess* process = nullptr;
@@ -1204,38 +1204,10 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
 
     // Resolve work directory
     {
-        auto path = ui->ai_work_dir->text().trimmed();
-        if(path.isEmpty())
-            path = main_window.work_dir();
-        ui->ai_work_dir->setText(path);
-        QString name = provider == ai_provider::Codex ? "AGENTS.md" : "CLAUDE.md";
-        QDir source(QApplication::applicationDirPath()+"/ai"),work(path);
-        if(!source.exists(name))
-            return QMessageBox::warning(
-                this,"AI Work Directory","The application "+name+" is missing."),launch;
-        auto files = source.entryList({"*.ps1"},QDir::Files);
-        files.prepend(name);
-        QStringList missing;
-        for(const auto& file : files)
-            if(!work.exists(file))
-                missing << file;
-        if(!missing.isEmpty())
-        {
-            if(QMessageBox::question(
-                this,"AI Work Directory",
-                "The selected work directory is missing "+missing.join(", ")+
-                ". The agent may not work correctly without them. "
-                "Copy them now?",QMessageBox::Yes|QMessageBox::Cancel,
-                QMessageBox::Yes) != QMessageBox::Yes)
-                return launch;
-            if(!work.mkpath("."))
-                return QMessageBox::warning(
-                    this,"AI Work Directory","Unable to create the working directory."),launch;
-            for(const auto& file : missing)
-                if(!QFile::copy(source.filePath(file),work.filePath(file)))
-                    return QMessageBox::warning(
-                        this,"AI Work Directory","Unable to copy "+file+"."),launch;
-        }
+        launch.project_dir = ui->ai_work_dir->text().trimmed();
+        if(launch.project_dir.isEmpty())
+            launch.project_dir = main_window.work_dir();
+        ui->ai_work_dir->setText(launch.project_dir);
     }
 
     // Resolve session
@@ -1303,9 +1275,10 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
     auto* process = new QProcess(this);
     launch.process = process;
     process->setObjectName(session);
-    process->setWorkingDirectory(QApplication::applicationDirPath()+"/ai");
+    auto ai_dir = QApplication::applicationDirPath()+"/ai";
+    process->setWorkingDirectory(ai_dir);
     auto env = QProcessEnvironment::systemEnvironment();
-    env.insert("DSI_STUDIO_AI_DIR",QApplication::applicationDirPath()+"/ai");
+    env.insert("DSI_STUDIO_AI_DIR",ai_dir);
     process->setProcessEnvironment(env);
 
     if(!session.isEmpty())
@@ -1528,7 +1501,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
         "--input-format","stream-json",
         "--output-format","stream-json",
         "--verbose",
-        "--add-dir",process->processEnvironment().value("DSI_STUDIO_AI_DIR"),
+        "--add-dir",launch.project_dir,
         "--disallowedTools","Bash",
         "--allowedTools","PowerShell(./dsi_agent.ps1 -Agent Claude *)",
         session.isEmpty() ? "--session-id" : "--resume",session_id};
@@ -1592,7 +1565,7 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
         process->setProperty("stdout_buffer",buffer);
     });
 
-    QStringList args{"exec","--add-dir",process->processEnvironment().value("DSI_STUDIO_AI_DIR")};
+    QStringList args{"exec","--add-dir",launch.project_dir};
     if(launch.model_provider == ai_model_provider::Ollama)
     {
         auto url = launch.model_url;
