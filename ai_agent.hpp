@@ -7,7 +7,6 @@
 #include <QMainWindow>
 #include <QMap>
 #include <QSettings>
-#include <unordered_map>
 
 class MainWindow;
 class QListWidgetItem;
@@ -25,7 +24,7 @@ enum class ai_model_provider {Native,Ollama};
 enum class ai_input {User,Pending};
 
 struct ai_info{
-    QString agent_name,work_dirs,project_titles;
+    QString sessions,agent_name,work_dirs,project_titles;
     ai_provider provider = ai_provider::Unknown;
     QProcess* processes = nullptr;
     QJsonArray projects,prompts;
@@ -38,6 +37,9 @@ struct ai_info{
     void set_provider(ai_provider,const QString&);
     void set_process(QProcess*);
 };
+ai_info* find_ai_info(const QString&);
+ai_info* create_ai_info(QString,QString);
+void ai_command(ai_info&,const QByteArray&,QByteArray&);
 
 struct ai_launch;
 class AIAgent : public QMainWindow
@@ -46,17 +48,13 @@ class AIAgent : public QMainWindow
     MainWindow& main_window;
     Ui::AIAgent* ui;
     QSettings settings;
-    QString ai_project_dir;
     QString ai_status_activity,ai_status_waiting;
     QMenu* ai_project_menu = nullptr;
     QTimer* ai_status_timer = nullptr;
     int active_ai_processes = 0,ai_status_delay = 0,ai_status_dots = 0;
-    std::unordered_map<QString,ai_info> ai_infos;
-    QMap<QString,quint64> ai_log_positions;
 
     void add_ai_history(const QString&,QJsonObject);
     void add_ai_history(const QString&,const QString&,const QString&);
-    bool save_ai_entry(const QString&,const QJsonObject&);
     bool set_ai_title(const QString&,QString);
     void set_ai_status(QString = {},bool = false);
     void show_ai_project(const QString&);
@@ -74,7 +72,7 @@ class AIAgent : public QMainWindow
 public:
     explicit AIAgent(MainWindow*);
     ~AIAgent();
-    void command(QString,const QByteArray&,QByteArray&);
+    void refresh_ai_info(ai_info&);
 
 protected:
     void showEvent(QShowEvent*) override;

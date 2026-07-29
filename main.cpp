@@ -14,6 +14,8 @@
 #include <QImageReader>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QUuid>
+#include "ai_agent.hpp"
 #include "mapping/atlas.hpp"
 #include "mainwindow.h"
 #include "console.h"
@@ -579,9 +581,31 @@ int main(int ac, char *av[])
                     if(request.trimmed().startsWith('{'))
                     {
                         QByteArray reply;
-                        auto session = QJsonDocument::fromJson(request).
-                                       object()["session"].toString();
-                        w.ai_command(session,request,reply);
+                        QJsonParseError error;
+                        auto doc = QJsonDocument::fromJson(request,&error);
+                        auto object = doc.object();
+                        auto session = object["session"].toString().trimmed();
+                        if(!doc.isObject())
+                            reply = ("ERROR\tinvalid JSON: "+error.errorString()).toUtf8();
+                        else if(session.isEmpty())
+                            reply = "ERROR\tmissing session: provide the initiating-chat session ID and reuse it for the entire conversation";
+                        else if(QUuid(session).toString(QUuid::WithoutBraces).compare(
+                                    session,Qt::CaseInsensitive))
+                            reply = "ERROR\tinvalid session: read DSI_STUDIO_AI_SETUP.md and obtain the correct resumable provider thread ID";
+                        else
+                        {
+                            auto* info = find_ai_info(session);
+                            if(!info)
+                            {
+                                auto agent = object["agent"].toString().trimmed();
+                                if(agent.isEmpty())
+                                    reply = "ERROR\tmissing agent for new session";
+                                else if(!(info = create_ai_info(session,agent)))
+                                    reply = "ERROR\tinvalid agent: include Codex or Claude in the agent name";
+                            }
+                            if(info)
+                                w.ai_command(*info,request,reply);
+                        }
                         clientSocket->write(reply);
                     }
                     else

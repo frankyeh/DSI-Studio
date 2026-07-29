@@ -15,6 +15,7 @@ namespace Ui {
 }
 class group_connectometry_analysis;
 class AIAgent;
+struct ai_info;
 class QByteArray;
 class FiberDataHub;
 
@@ -41,7 +42,7 @@ public:
     void openFile(QStringList file_name);
     std::string error_msg;
     bool command(const std::vector<std::string>& cmd);
-    void ai_command(QString,const QByteArray&,QByteArray&);
+    void ai_command(ai_info&,const QByteArray&,QByteArray&);
 public:
     void open_DWI(QStringList files);
     bool loadFib(QString Filename);

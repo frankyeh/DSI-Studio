@@ -1074,9 +1074,10 @@ QSharedPointer<QNetworkReply> MainWindow::get(QUrl url)
                                          });
 }
 
-void MainWindow::ai_command(QString session,const QByteArray& request,QByteArray& reply)
+void MainWindow::ai_command(ai_info& info,const QByteArray& request,QByteArray& reply)
 {
-    ai_agent->command(session,request,reply);
+    ::ai_command(info,request,reply);
+    ai_agent->refresh_ai_info(info);
 }
 
 int run_action_with_wildcard(tipl::program_option<tipl::out>&);
