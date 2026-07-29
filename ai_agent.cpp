@@ -735,10 +735,9 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
 
         return reply_object(QJsonObject{
             {"status","success"},
-            {"result",QJsonObject{
             {"application",QJsonObject{
                 {"status",status(bool(modal),application_busy)}}},
-            {"windows",windows}}}});
+            {"windows",windows}});
     }
 
     if(type == "LOG")
@@ -1526,6 +1525,8 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
         "--input-format","stream-json",
         "--output-format","stream-json",
         "--verbose",
+        "--add-dir",QApplication::applicationDirPath()+"/ai",
+        "--allowedTools","PowerShell(powershell.exe -NoProfile -File dsi_agent.ps1 *)",
         launch.new_session ? "--session-id" : "--resume",launch.session};
     if(!launch.model.isEmpty())
         args << "--model" << launch.model;
