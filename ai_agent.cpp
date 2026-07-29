@@ -81,12 +81,11 @@ QString ai_info::details(const QString& session) const
                    "yyyy-MM-dd HH:mm:ss");};
     return QString("<b>%1</b><br><br>Agent: %2<br>Session: %3<br>Status: %4<br>"
         "Messages: %5 (%6 you, %7 AI)<br>Activities: %8<br>"
-        "Created: %9<br>Updated: %10<br>Working folder: %11")
+        "Created: %9<br>Updated: %10")
         .arg(title(session).toHtmlEscaped(),agent_name.toHtmlEscaped(),session.toHtmlEscaped(),processes ? "Working" : "Idle")
         .arg(user+assistant).arg(user).arg(assistant).arg(activity)
         .arg(time(projects.first().toObject()["time"]),
-             time(projects.last().toObject()["time"]),
-             (work_dirs.isEmpty() ? QString("Not available") : work_dirs).toHtmlEscaped());
+             time(projects.last().toObject()["time"]));
 }
 void ai_info::set_agent_name(const QString& name)
 {
@@ -99,7 +98,6 @@ void ai_info::set_provider(ai_provider value,const QString& name)
 void ai_info::set_process(QProcess* process)
 {
     processes = process;
-    if(process) work_dirs = process->workingDirectory();
 }
 void ai_log(QString text)
 {
@@ -418,7 +416,6 @@ void record_ai_history(ai_info& info,QJsonObject entry)
     if(info.projects.isEmpty())
     {
         entry["agent"] = info.agent_name;
-        entry["work_dir"] = info.work_dirs;
         entry["model_settings"] = info.model_settings;
     }
     entry["time"] = QDateTime::currentDateTime().toString(Qt::ISODate);
@@ -1263,17 +1260,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
     auto* process = new QProcess(this);
     launch.process = process;
     process->setObjectName(session);
-    {
-        QString cwd;
-        if(!session.isEmpty())
-            cwd = ai_infos[session].work_dirs;
-        if(!QDir(cwd).exists())
-            cwd = main_window.work_dir();
-        if(!QDir(cwd).exists())
-            cwd = QApplication::applicationDirPath();
-        process->setWorkingDirectory(cwd);
-    }
-
+    process->setWorkingDirectory(QApplication::applicationDirPath());
 
     if(!session.isEmpty())
         ai_infos[session].set_process(process);
