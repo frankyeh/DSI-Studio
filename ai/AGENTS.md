@@ -13,4 +13,4 @@ When asked to operate DSI Studio:
 
 ## Codex identity
 
-When running as Codex, read the **Identity > Codex** section of `DSI_STUDIO_AI_SETUP.md` before the first DSI Studio request. Use the exact resumable Codex thread UUID as `Session` in every `dsi_agent.ps1` invocation. Never guess or generate a session UUID.
+When running as Codex, use the exact UUID of the current Codex task/thread exposed by its injected runtime context or task-specific runtime path. When DSI Studio launches Codex with JSON output, this is the same `thread_id` reported by `thread.started`. Codex Desktop may expose it as the UUID component of an injected task path such as `...\visualizations\YYYY\MM\DD\<uuid>`. Use only an ID explicitly associated with the current task; do not scan for, guess, or generate one. Send it as `Session` in every `dsi_agent.ps1` invocation.
