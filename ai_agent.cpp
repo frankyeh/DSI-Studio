@@ -114,7 +114,21 @@ void set_model_selector(QComboBox& model,const QComboBox& agents,int index,
         selected_index = model.findText(fallback);
     model.setCurrentIndex(std::max(0,selected_index));
 }
-
+bool save_ai_title(ai_info& info,QString title)
+{
+    title = title.simplified();
+    if(title.isEmpty())
+        return false;
+    if(title == info.project_titles)
+        return true;
+    QSettings settings;
+    settings.setValue("ai/title/"+info.sessions,title);
+    settings.sync();
+    if(settings.status() != QSettings::NoError)
+        return false;
+    info.project_titles = title;
+    return true;
+}
 AIAgent::AIAgent(MainWindow* parent):
     QMainWindow(parent),main_window(*parent),ui(new Ui::AIAgent)
 {
@@ -391,21 +405,7 @@ ai_info* create_ai_info(QString session,QString agent)
     info.provider = provider; info.agent_name = agent;
     return &info;
 }
-bool save_ai_title(ai_info& info,QString title)
-{
-    title = title.simplified();
-    if(title.isEmpty())
-        return false;
-    if(title == info.project_titles)
-        return true;
-    QSettings settings;
-    settings.setValue("ai/title/"+info.sessions,title);
-    settings.sync();
-    if(settings.status() != QSettings::NoError)
-        return false;
-    info.project_titles = title;
-    return true;
-}
+
 void record_ai_history(ai_info& info,QJsonObject entry)
 {
     if(info.projects.isEmpty())
