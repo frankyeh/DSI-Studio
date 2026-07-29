@@ -4,90 +4,38 @@ Read this file once, then use `DSI_STUDIO_AI_MANUAL.md` and the topic-specific e
 
 ## Identity
 
-Obtain the exact resumable session UUID assigned by the current agent runtime.
-Send it as `session` with every request. If the session is not already known to
-DSI Studio, its first request must also send `agent` containing `Codex` or
-`Claude`; `model` is optional. Existing sessions need only `session`.
+Reuse the exact session UUID assigned to the current agent task.
 
-### Claude Code
+- Codex uses `$env:CODEX_THREAD_ID`; never search for, guess, or generate it.
+- Claude uses the exact session supplied by DSI Studio.
 
-Read the current Claude process's `~/.claude/sessions/<pid>.json` file and use
-its `sessionId`, not its friendly `name` or process ID.
+Send the same session with every request.
 
-## Direct named-pipe connection
+## Agent wrapper
 
-Use the local named pipe:
-
-```text
-\\.\pipe\dsi-studio
-```
-
-Each connection sends one complete request, reads until DSI Studio closes the
-server side, then closes. Do not launch another DSI Studio instance.
-
-PowerShell direct client:
+Use one `dsi_agent.ps1` invocation per request:
 
 ```powershell
-function Invoke-Dsi($request)
-{
-    $pipe = $writer = $reader = $null
-    try
-    {
-        $pipe = [IO.Pipes.NamedPipeClientStream]::new('.','dsi-studio')
-        $pipe.Connect(5000)
-        $utf8 = [Text.UTF8Encoding]::new($false)
-        $writer = [IO.StreamWriter]::new($pipe,$utf8,1024,$true)
-        $writer.AutoFlush = $true
-        $data = if($request -is [string]) {
-            $request
-        } else {
-            $request | ConvertTo-Json -Compress -Depth 6
-        }
-        $writer.Write($data)
-        $reader = [IO.StreamReader]::new($pipe,$utf8,$false,1024,$true)
-        $reader.ReadToEnd()
-    }
-    finally
-    {
-        foreach($stream in @($reader,$writer,$pipe))
-        {
-            try { if($stream) { $stream.Dispose() } }
-            catch [IO.IOException] {}
-        }
-    }
-}
-
-# Obtain this using the matching agent-specific instructions.
-$DsiSession = '<resumable-session-uuid>'
+./dsi_agent.ps1 -Agent <Codex|Claude> -Session <SESSION> -Target <TITLE|LIST|LOG|CHAT|window-id> [command/values...]
 ```
 
-Use the wrapper or executable fallback only when direct pipe access cannot run
-or connect and the user approves the fallback. Do not create or modify GitHub
-Actions to edit or operate these instructions.
+The wrapper creates a new named-pipe connection, sends one request, reads the complete reply, and closes it. Do not access or reuse the pipe directly, inspect the wrapper, launch another DSI Studio instance, or modify GitHub Actions to operate these instructions.
 
 ## Basic requests
 
 ### Name the chat
 
-After understanding the task, send one concise `TITLE` as the first request:
+After understanding the task, send one concise `TITLE` derived from it:
 
 ```powershell
-Invoke-Dsi @{
-    session=$DsiSession
-    request='TITLE'
-    title='Corticospinal tract analysis'
-}
+./dsi_agent.ps1 -Agent <AGENT> -Session <SESSION> -Target TITLE "Corticospinal tract analysis"
 ```
 
-Send another `TITLE` whenever the active task changes substantially. Repeated
-`TITLE` requests update the displayed chat name and keep the same session.
-Use the required `title` field only with `TITLE`, not with `CMD`, `CHAT`, `LIST`,
-or `LOG`, and do not put the title in `chat` or `text`.
+Send another `TITLE` whenever the active task changes substantially. Repeated `TITLE` requests update the displayed chat name while keeping the same session.
 
-## Window and command routing — read this first
+### Window and command routing
 
-Use `main` directly for main-window commands. Call top-level `LIST` only when a
-tracking or image window ID is needed.
+Use `main` directly for main-window commands. Call top-level `LIST` only when a tracking or image window ID is needed.
 
 | Window ID | Use it for | Important opening command |
 |---|---|---|
@@ -95,32 +43,23 @@ tracking or image window ID is needed.
 | `image<hex-address>` | General image viewing and image-window operations | Created when ordinary image formats are opened with `open_image`. |
 | `tracking<hex-address>` | FIB/FZ slices, regions, tracts, tracking, devices, settings | Use `open_fib` with an explicit path to open an additional FIB/FZ from an existing tracking window. |
 
-`main` is fixed. Tracking and image IDs append the window pointer address in
-lowercase hexadecimal without `0x`. Do not construct or guess these IDs. A `CMD`
-targeting a tracking or image window must use the exact quoted key from the
-latest `LIST`. The ID is valid only while that window remains open; reopening a
-window or restarting DSI Studio may produce a different ID.
+`main` is fixed. Tracking and image IDs append the window pointer address in lowercase hexadecimal without `0x`. Do not construct or guess these IDs. A `CMD` targeting a tracking or image window must use the exact key from the latest `LIST`. The ID is valid only while that window remains open.
 
-Do not invent command names. To discover recent files, target the **main** window
-and use these exact commands:
+To discover recent files, target `main` and use these exact commands:
 
-```json
-{"cmd":"list_recent_fib"}
-{"cmd":"list_recent_src"}
+```powershell
+./dsi_agent.ps1 -Agent <AGENT> -Session <SESSION> -Target main list_recent_fib
+./dsi_agent.ps1 -Agent <AGENT> -Session <SESSION> -Target main list_recent_src
 ```
 
-Use `list_recent_fib` for recent FIB/FZ files and `list_recent_src` for recent
-SRC/SZ files. Do not substitute guessed names such as `recent_list`.
+Use `list_recent_fib` for recent FIB/FZ files and `list_recent_src` for recent SRC/SZ files. Do not invent alternatives such as `recent_list`.
 
 ### Discover tracking and image windows
 
 Call `LIST` only when a tracking or image window ID is needed:
 
 ```powershell
-Invoke-Dsi @{
-    session=$DsiSession
-    request='LIST'
-}
+./dsi_agent.ps1 -Agent <AGENT> -Session <SESSION> -Target LIST
 ```
 
 Example reply:
@@ -137,53 +76,27 @@ Example reply:
 }
 ```
 
-Use the exact tracking or image key returned by `LIST`, such as
-`tracking7ff6ab123410`, as the `CMD` target.
+Use the exact tracking or image key returned by `LIST`, such as `tracking7ff6ab123410`, as the command target.
 
 ### Command field format
 
-The `command` field accepts one command object or an array of command objects.
-Each command object requires `cmd`. Omit `param` when the command has no
-parameter. Use a scalar `param` for one parameter and an array for multiple
-parameters, preserving their command order.
+The wrapper treats the first value after `Target` as the command name and later values as parameters. It converts standalone numbers to JSON numbers and preserves text or path parameters as strings.
 
-```json
-{"cmd":"hub_repo"}
-{"cmd":"hub_tags","param":"data-hcp/lifespan"}
-{"cmd":"hub_files","param":["data-hcp/lifespan","tag",0,20]}
+```powershell
+./dsi_agent.ps1 -Agent <AGENT> -Session <SESSION> -Target main hub_repo
+./dsi_agent.ps1 -Agent <AGENT> -Session <SESSION> -Target main hub_tags data-hcp/lifespan
+./dsi_agent.ps1 -Agent <AGENT> -Session <SESSION> -Target main hub_files data-hcp/lifespan tag 0 20
 ```
-
-Multiple commands execute sequentially in the same targeted window and stop
-after the first error:
-
-```json
-[
-  {"cmd":"hub_repo"},
-  {"cmd":"hub_tags","param":"data-hcp/lifespan"}
-]
-```
-
-Command names and text, path, or composite parameters are strings. Send
-standalone numeric parameters as JSON numbers. Do not use the former positional
-array format such as `["hub_tags","data-hcp/lifespan"]`.
 
 ### Send a command
 
 ```powershell
-Invoke-Dsi @{
-    session=$DsiSession
-    request='CMD'
-    window='tracking7ff6ab123410'
-    command=@{cmd='list_region'}
-    chat='Checking the available regions before making changes.'
-}
+./dsi_agent.ps1 -Agent <AGENT> -Session <SESSION> -Target tracking7ff6ab123410 list_region -Chat "Checking the available regions before making changes."
 ```
 
-An optional `chat` may accompany any request. Keep it on `CMD` when reporting
-the command already being sent instead of making a separate `CHAT` request.
+A useful `-Chat` message may accompany a meaningful command. Silent polling may omit it.
 
-Every reply has `status`; `CMD` puts one result per executed command in
-`result`. Each result has its own `status`, and `cmd` identifies the command.
+Every reply has `status`; `CMD` puts one result per executed command in `result`. Each result has its own `status`, and `cmd` identifies the command.
 
 A command that produces text returns:
 
@@ -203,71 +116,44 @@ An executed command that fails includes `error`:
 {"status":"error","result":[{"cmd":"set_slice","status":"error","error":"<reason>"}]}
 ```
 
-A request rejected before execution returns `status:"error"` with an `error`
-field. Status is `success`, `error`, or `busy`. A command batch stops after the
-first error. `success` means the command handler returned without an immediate
-error; asynchronous or GUI-backed work may still require verification with the
-relevant discovery command or the expected window, object, or file.
+A request rejected before execution returns `status:"error"` with an `error` field. Status is `success`, `error`, or `busy`. `success` means the handler returned without an immediate error; asynchronous or GUI-backed work still requires verification with the relevant discovery command or expected window, object, or file.
 
-### Send a final or standalone message
+### Send a standalone message
 
 ```powershell
-Invoke-Dsi @{
-    session=$DsiSession
-    request='CHAT'
-    chat='The requested operation completed and the output was verified.'
-}
+./dsi_agent.ps1 -Agent <AGENT> -Session <SESSION> -Target CHAT "The requested operation completed and the output was verified."
 ```
 
 ## Opening FIB/FZ files
 
-Use the documented `open_fib` command workflow. Do not send a filesystem path by
-itself as the file-opening request.
+Use `open_fib`; do not send a filesystem path by itself.
 
 ### Open the first FIB/FZ
 
-Target `main`, then send `open_fib` with the known path:
+Target `main`:
 
 ```powershell
-Invoke-Dsi @{
-    session=$DsiSession
-    request='CMD'
-    window='main'
-    command=@{cmd='open_fib';param='C:/data/subject.fz'}
-    chat='Opening the FIB file.'
-}
+./dsi_agent.ps1 -Agent <AGENT> -Session <SESSION> -Target main open_fib C:/data/subject.fz -Chat "Opening the FIB file."
 ```
 
-This opens the supplied `.fz`, `*fib.gz`, or `.dz` file and creates a tracking
-window. Omit `param` to open the local FIB picker instead. Call `LIST` afterward
-only when the new tracking-window ID is needed.
+This opens the supplied `.fz`, `*fib.gz`, or `.dz` file and creates a tracking window. Omit the path to open the local FIB picker. Call `LIST` afterward only when the new tracking-window ID is needed.
 
 ### Open an additional FIB/FZ
 
-When a tracking window already exists, target its exact current ID and supply
-the explicit path as the command parameter:
+Target an existing tracking window using its exact current ID:
 
 ```powershell
-Invoke-Dsi @{
-    session=$DsiSession
-    request='CMD'
-    window='tracking7ff6ab123410'
-    command=@{cmd='open_fib';param='C:/data/second_subject.fz'}
-    chat='Opening an additional FIB file.'
-}
+./dsi_agent.ps1 -Agent <AGENT> -Session <SESSION> -Target tracking7ff6ab123410 open_fib C:/data/second_subject.fz -Chat "Opening an additional FIB file."
 ```
 
-Both main- and tracking-window `open_fib` accept a path, but they are separate
-command implementations. Always target the exact tracking-window ID returned by
-`LIST`. Do not use `open_image` to open FIB/FZ files; use it for ordinary image
-files and image-window workflows.
+Do not use `open_image` for FIB/FZ files; reserve it for ordinary image files and image-window workflows.
 
-## Slice and tract status that commonly cause confusion
+## Slice and tract status
 
 ### `list_slice`
 
 ```powershell
-command=@{cmd='list_slice'}
+./dsi_agent.ps1 -Agent <AGENT> -Session <SESSION> -Target tracking7ff6ab123410 list_slice
 ```
 
 The reply columns are:
@@ -276,62 +162,43 @@ The reply columns are:
 index    current    name    status
 ```
 
-Use the `status` word directly:
+Use `status` directly:
 
-- `available` — the URL-backed slice is listed but has not yet been loaded locally.
-- `registering` — registration is still running; poll again.
-- `ready` — the slice is ready for a dependent operation.
+- `available` — listed but not loaded locally.
+- `registering` — registration is running.
+- `ready` — ready for a dependent operation.
 
-The `current` column is only a `1`/`0` selected-state flag. After `set_slice`,
-poll until the selected row reports `ready`.
+The `current` column is only a `1`/`0` selected-state flag. After `set_slice`, poll until the selected row reports `ready`.
 
 ### `list_tract`
 
-Full details require no parameter:
-
 ```powershell
-command=@{cmd='list_tract'}
+./dsi_agent.ps1 -Agent <AGENT> -Session <SESSION> -Target tracking7ff6ab123410 list_tract
 ```
 
-The full reply uses these columns:
+The full reply columns are:
 
 ```text
 index    status    shown    name    tracts    deleted    seeds
 ```
 
-Each bundle's `status` is `running` or `done`. The `shown` field is a separate
-`1`/`0` visibility flag.
-
-Compact status uses the literal string `status`:
+Each bundle's `status` is `running` or `done`. Compact status uses:
 
 ```powershell
-command=@{cmd='list_tract';param='status'}
+./dsi_agent.ps1 -Agent <AGENT> -Session <SESSION> -Target tracking7ff6ab123410 list_tract status
 ```
 
-The compact reply uses:
-
-```text
-status    bundles
-```
-
-`status=running` means at least one tracking thread is active. `status=done`
-means tracking is complete. `bundles` is the total number of tract rows, not the
-number of running jobs.
-
-A numeric tract index is not required. If `{"cmd":"list_tract"}` produces
-`need-param1`, the command was likely sent through a malformed or incompatible
-wrapper rather than the standard JSON `CMD` interface.
+`status=done` means tracking is complete. `bundles` is the total number of tract rows, not the number of running jobs.
 
 ### `run_tracking`
 
 A new bundle name is mandatory:
 
 ```powershell
-command=@{cmd='run_tracking';param='CST'}
+./dsi_agent.ps1 -Agent <AGENT> -Session <SESSION> -Target tracking7ff6ab123410 run_tracking CST
 ```
 
-The `param` value becomes the new bundle name. An empty name fails. This simple
-form uses current tracking parameters and checked regions.
+The name becomes the new tract-bundle name. An empty name fails. This form uses the current tracking parameters and checked regions.
 
 ## Polling and progress
 
@@ -340,30 +207,13 @@ Use targeted commands for definitive state:
 - Poll `list_slice` until the selected slice reports `status=ready`.
 - Poll `list_tract status` until it reports `status=done`.
 
-Call `LIST` only if a tracking or image window ID must be obtained or refreshed.
-Do not repeatedly resend a long-running command after a client timeout.
-
-Attach a useful top-level `chat` message to meaningful commands:
-
-```powershell
-Invoke-Dsi @{
-    session=$DsiSession
-    request='CMD'
-    window='tracking7ff6ab123410'
-    command=@{cmd='run_tracking';param='CST'}
-    chat='The seed and tracking parameters are ready. I am starting the CST bundle now.'
-}
-```
-
-Silent repetitive polling may omit `chat`.
+Call `LIST` only when a tracking or image window ID must be obtained or refreshed. Do not repeatedly resend a long-running command after a client timeout.
 
 ## Where to find commands
 
-The concise protocol and critical syntax are in:
+The concise protocol and critical syntax are in `DSI_STUDIO_AI_MANUAL.md`.
 
-- `DSI_STUDIO_AI_MANUAL.md`
-
-Source-verified command examples are separated to avoid truncation:
+Source-verified command examples are separated by topic:
 
 - `DSI_STUDIO_AI_COMMAND_EXAMPLES_GENERAL.md`
 - `DSI_STUDIO_AI_COMMAND_EXAMPLES_SLICE.md`
@@ -371,5 +221,4 @@ Source-verified command examples are separated to avoid truncation:
 - `DSI_STUDIO_AI_COMMAND_EXAMPLES_TRACT.md`
 - `DSI_STUDIO_AI_COMMAND_EXAMPLES_DEVICE.md`
 
-Read only the topic needed for the current task. Do not print or retrieve the
-entire command inventory at once.
+Read only the topic needed for the current task. Do not retrieve the entire command inventory at once.
