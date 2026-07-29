@@ -13,8 +13,7 @@ Codex
 Claude
 ```
 
-DSI Studio determines the current agent session automatically. Do not discover,
-guess, generate, or send a `session` field.
+Send the `agent` field with each request. DSI Studio associates requests with the current agent automatically.
 
 ## Direct named-pipe connection
 
