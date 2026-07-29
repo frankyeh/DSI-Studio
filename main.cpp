@@ -490,10 +490,8 @@ int main(int ac, char *av[])
             std::cout << reply.constData() << std::endl;
             socket.disconnectFromServer();
             auto doc = QJsonDocument::fromJson(reply);
-            auto result = doc.array();
-            return (reply.startsWith("OKAY") ||
-                    (doc.isArray() && std::all_of(result.begin(),result.end(),
-                                                  [](const auto& value){return value.toObject()["okay"].toBool();}))) ? 0 : 1;
+            return doc.isObject() &&
+                   doc.object()["status"] == "success" ? 0 : 1;
 
         }
         if(QByteArray(av[1]).trimmed().startsWith('{'))
@@ -578,6 +576,13 @@ int main(int ac, char *av[])
                 {
                     clientSocket->waitForReadyRead(500);
                     auto request = clientSocket->readAll();
+                    auto status_reply = [](QString status,QString error = {})
+                    {
+                        QJsonObject reply{{"status",status}};
+                        if(!error.isEmpty())
+                            reply["error"] = error;
+                        return QJsonDocument(reply).toJson(QJsonDocument::Compact);
+                    };
                     if(request.trimmed().startsWith('{'))
                     {
                         QByteArray reply;
@@ -586,12 +591,12 @@ int main(int ac, char *av[])
                         auto object = doc.object();
                         auto session = object["session"].toString().trimmed();
                         if(!doc.isObject())
-                            reply = ("ERROR\tinvalid JSON: "+error.errorString()).toUtf8();
+                            reply = status_reply("error","invalid JSON: "+error.errorString());
                         else if(session.isEmpty())
-                            reply = "ERROR\tmissing session: provide resumable provider thread ID";
+                            reply = status_reply("error","missing session: provide resumable provider thread ID");
                         else if(QUuid(session).toString(QUuid::WithoutBraces).compare(
                                     session,Qt::CaseInsensitive))
-                            reply = "ERROR\tinvalid session: provide resumable provider thread ID";
+                            reply = status_reply("error","invalid session: provide resumable provider thread ID");
                         else
                         {
                             auto* info = find_ai_info(session);
@@ -599,9 +604,9 @@ int main(int ac, char *av[])
                             {
                                 auto agent = object["agent"].toString().trimmed();
                                 if(agent.isEmpty())
-                                    reply = "ERROR\tmissing agent for new session";
+                                    reply = status_reply("error","missing agent for new session");
                                 else if(!(info = create_ai_info(session,agent)))
-                                    reply = "ERROR\tinvalid agent: include Codex or Claude in the agent name";
+                                    reply = status_reply("error","invalid agent: include Codex or Claude in the agent name");
                                 else if(auto model = object["model"].toString().trimmed();
                                         !model.isEmpty())
                                     info->model_settings["model"] = model;
@@ -630,10 +635,11 @@ int main(int ac, char *av[])
                             w.activateWindow();
                         }
                         clientSocket->write(
-                            busy ? "BUSY" :
-                                exists ? "OKAY" :
-                                "ERROR\tinvalid request: direct text is only accepted as an existing "
-                                "file path. Read ai/DSI_STUDIO_AI_MANUAL.md and resend the request as JSON.");
+                            busy ? status_reply("busy") :
+                            exists ? status_reply("success") :
+                            status_reply("error",
+                                "invalid request: direct text is only accepted as an existing "
+                                "file path. Read ai/DSI_STUDIO_AI_MANUAL.md and resend the request as JSON."));
                     }
                     clientSocket->flush();
                     clientSocket->waitForBytesWritten(500);
