@@ -1,13 +1,9 @@
-@AGENTS.md
+# DSI Studio
 
-# Claude Code
-
-Use the PowerShell tool to communicate with DSI Studio through:
+Use only the allowed PowerShell wrapper; it handles the named pipe:
 
 ```powershell
-./dsi_agent.ps1 -Agent Claude -Session <SESSION> -Target <TARGET> <VALUES...>
+./dsi_agent.ps1 -Agent Claude -Session <SESSION> -Target <LIST|LOG|TITLE|CHAT|window-id> [command/values...]
 ```
 
-Invoke `./dsi_agent.ps1` directly. Never wrap it in `powershell.exe` or `pwsh.exe`.
-
-`Agent`, `Session`, and `Target` are mandatory. Use the exact Claude session UUID supplied by the current DSI Studio process. Use the wrapper instead of constructing a separate named-pipe client.
+For a command, `Target` is the exact window ID and the first value is the command. Never access the pipe directly, launch `powershell.exe`/`pwsh.exe`, or inspect the wrapper. Read `DSI_STUDIO_AI_MANUAL.md` and relevant examples only as needed. Call `LIST` before commands, send `TITLE` only after the task is known, verify completion, and ask before destructive actions.
