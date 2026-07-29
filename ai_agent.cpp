@@ -1168,7 +1168,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
 {
     ai_launch launch;
 
-    // Resolve agent and session
+    // Resolve agent
     {
         launch.session = session;
         launch.new_session = session.isEmpty();
@@ -1184,15 +1184,53 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
                 this,"AI Agent","AI agent is not installed or cannot be located.");
             return launch;
         }
+    }
 
+    // Resolve work directory
+    {
+        auto path = ui->ai_work_dir->text().trimmed();
+        if(path.isEmpty())
+            path = QApplication::applicationDirPath()+"/ai";
+        ui->ai_work_dir->setText(path);
+        QDir source(QApplication::applicationDirPath()+"/ai"),work(path);
+        auto files = source.entryInfoList(QDir::Files);
+        if(files.isEmpty())
+            return QMessageBox::warning(
+                this,"AI Work Directory","The application AI files are missing."),launch;
+        auto missing = [&](const QFileInfo& file)
+        {
+            return !QFileInfo::exists(work.filePath(file.fileName()));
+        };
+        if(std::any_of(files.begin(),files.end(),missing))
+        {
+            if(QMessageBox::question(
+                this,"AI Work Directory",
+                "The selected work directory is missing DSI Studio AI files "
+                "(.ps1/.md). The agent may not work correctly without them. "
+                "Copy them now?",QMessageBox::Yes|QMessageBox::Cancel,
+                QMessageBox::Yes) != QMessageBox::Yes)
+                return launch;
+            bool failed = !work.mkpath(".") ||
+                std::any_of(files.begin(),files.end(),
+                [&](const QFileInfo& file)
+                {
+                    return missing(file) && !QFile::copy(
+                               file.filePath(),work.filePath(file.fileName()));
+                });
+            if(failed)
+                return QMessageBox::warning(
+                    this,"AI Work Directory","Unable to copy the required AI files."),launch;
+        }
+    }
+
+    // Resolve session
+    {
         if(session.isEmpty() && provider == ai_provider::Claude)
         {
             session = QUuid::createUuid().toString(QUuid::WithoutBraces);
             create_ai_info(session,launch.name);
             launch.session = session;
         }
-
-
     }
 
     // Resolve model
