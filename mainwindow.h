@@ -24,6 +24,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
     enum { MaxRecentFiles = 50 };
     void updateRecentList(void);
+    void addRecent(QString,const char*);
     QSettings settings;
 
 public:
