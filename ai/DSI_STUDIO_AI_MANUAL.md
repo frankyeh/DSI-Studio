@@ -78,7 +78,7 @@ restored.
 Target an existing tracking window using its exact current `LIST` key:
 
 ```json
-{"agent":"Codex","request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"open_fib","param":"C:/data/second_subject.fz"}}
+{"session":"<session-uuid>","request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"open_fib","param":"C:/data/second_subject.fz"}}
 ```
 
 Both main and tracking windows accept `open_fib` with a path, but they are
@@ -92,7 +92,7 @@ window.
 Target **main**:
 
 ```json
-{"agent":"Codex","request":"CMD","window":"main","command":{"cmd":"open_image","param":"C:/data/T1w.nii.gz"}}
+{"session":"<session-uuid>","request":"CMD","window":"main","command":{"cmd":"open_image","param":"C:/data/T1w.nii.gz"}}
 ```
 
 With one or more paths, `open_image` passes the files to a `view_image` window
@@ -115,15 +115,15 @@ image editing or batch processing.
 
 ## Request formats
 
-Send the `agent` field with each request. DSI Studio associates requests with the
-current agent automatically. An optional `chat` may accompany any request.
+Send the exact resumable `session` UUID with each request. The `agent` field is
+not needed. An optional `chat` may accompany any request.
 Attach an update directly to `CMD` when it describes that command; use standalone
 `CHAT` otherwise.
 
 ### LIST
 
 ```json
-{"agent":"Codex","request":"LIST"}
+{"session":"<session-uuid>","request":"LIST"}
 ```
 
 Example reply:
@@ -149,7 +149,7 @@ address in lowercase hexadecimal without `0x`. Copy the key from the latest
 ### CMD
 
 ```json
-{"agent":"Codex","request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"list_region"}}
+{"session":"<session-uuid>","request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"list_region"}}
 ```
 
 The `command` field accepts one command object or an array of command objects.
@@ -183,7 +183,7 @@ after the first error:
 A meaningful command should normally include a useful progress update:
 
 ```json
-{"agent":"Codex","request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"segment_brain","param":["human_synthseg",7]},"chat":"I verified that the T1w slice is ready. I am starting SynthSeg now."}
+{"session":"<session-uuid>","request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"segment_brain","param":["human_synthseg",7]},"chat":"I verified that the T1w slice is ready. I am starting SynthSeg now."}
 ```
 
 The top-level `chat` field is shown to the user and does not change the command.
@@ -230,7 +230,7 @@ For `list_*` commands, actual rows appear in `output`. If the response is
 ### CHAT
 
 ```json
-{"agent":"Codex","request":"CHAT","chat":"Tracking completed and the output file was verified."}
+{"session":"<session-uuid>","request":"CHAT","chat":"Tracking completed and the output file was verified."}
 ```
 
 Use standalone `CHAT` when no other request is needed.
@@ -238,18 +238,18 @@ Use standalone `CHAT` when no other request is needed.
 ### TITLE
 
 ```json
-{"agent":"Codex","request":"TITLE","title":"Corticospinal tract analysis"}
+{"session":"<session-uuid>","request":"TITLE","title":"Corticospinal tract analysis"}
 ```
 
 Send one concise title after understanding the initial task and before the
 first `LIST` or `CMD`. The `title` field is required; do not put the title in
 `chat` or `text`, or include it in `CMD`, `CHAT`, `LIST`, or `LOG`. Reuse the
-exact agent identity, and rename later only with the user's permission.
+exact session UUID, and rename later only with the user's permission.
 
 ### LOG
 
 ```json
-{"agent":"Codex","request":"LOG"}
+{"session":"<session-uuid>","request":"LOG"}
 ```
 
 Use `LOG` only when `LIST`, the direct `CMD` response, and targeted discovery
@@ -521,9 +521,7 @@ completion. `status=done` is the definitive completion signal.
 ## Operational rules
 
 - Each named-pipe connection sends one request, reads the complete reply, and closes.
-- Reuse the exact nonempty `agent` value for the conversation.
-- Native identities are `Codex` and `Claude`.
-- Ollama-backed identities include the host, for example `Codex/Ollama(192.168.1.14)`.
+- Reuse the exact nonempty `session` UUID for the conversation.
 - Inspect `LIST` before substantial loading, registration, segmentation, reconstruction, or tracking.
 - Copy exact command names, current window IDs, indices, internal model IDs, and parameter IDs rather than guessing.
 - For `run_auto_track`, call `list_auto_tract` first and use an exact internal atlas label such as `ProjectionBrainstem_CorticospinalTractL`.
