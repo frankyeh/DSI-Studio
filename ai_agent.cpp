@@ -7,6 +7,7 @@
 #include <QDialogButtonBox>
 #include <QDir>
 #include <QFile>
+#include <QFileDialog>
 #include <QFileInfo>
 #include <QFormLayout>
 #include <QHBoxLayout>
@@ -133,6 +134,15 @@ AIAgent::AIAgent(MainWindow* parent):
     QMainWindow(parent),main_window(*parent),ui(new Ui::AIAgent)
 {
     ui->setupUi(this);
+    ui->ai_work_dir->setText(settings.value(
+        "ai/work_dir",QApplication::applicationDirPath()+"/ai").toString());
+    connect(ui->ai_browse_work_dir,&QPushButton::clicked,this,[this]
+    {
+        auto path = QFileDialog::getExistingDirectory(
+            this,"Select AI Work Directory",ui->ai_work_dir->text());
+        if(!path.isEmpty())
+            ui->ai_work_dir->setText(QDir::toNativeSeparators(path));
+    });
     ai_status_timer = new QTimer(this);
     ai_status_timer->setInterval(500);
     connect(ai_status_timer,&QTimer::timeout,this,[this]
@@ -1106,6 +1116,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     dialog.setWindowTitle("AI Settings");
     QFormLayout layout(&dialog);
     QLineEdit host(settings.value("ai/ollama_host","localhost").toString());
+    QLineEdit work_dir(ui->ai_work_dir->text());
     QSpinBox port;
     port.setRange(1,65535);
     port.setValue(settings.value("ai/ollama_port",11434).toInt());
@@ -1122,6 +1133,7 @@ void AIAgent::on_ai_quick_settings_clicked()
     model.setCurrentText(ui->ai_model_selector->currentText());
     QCheckBox history("Keep AI chat history");
     history.setChecked(settings.value("ai/keep_history",true).toBool());
+    layout.addRow("Default work directory:",&work_dir);
     layout.addRow("Ollama host/IP:",&host);
     layout.addRow("Ollama port:",&port);
     layout.addRow("Default agent:",&agent);
@@ -1143,8 +1155,10 @@ void AIAgent::on_ai_quick_settings_clicked()
     settings.setValue("ai/keep_history",history.isChecked());
     settings.setValue("ai/default_agent",agent.currentData().toInt());
     settings.setValue("ai/default_model",model.currentText());
+    settings.setValue("ai/work_dir",work_dir.text().trimmed());
     ui->ai_agent_selector->setCurrentIndex(agent.currentData().toInt());
     ui->ai_model_selector->setCurrentText(model.currentText());
+    ui->ai_work_dir->setText(work_dir.text().trimmed());
 
     refresh_ollama_models();
 }
@@ -1224,7 +1238,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
     auto* process = new QProcess(this);
     launch.process = process;
     process->setObjectName(session);
-    process->setWorkingDirectory(QApplication::applicationDirPath()+"/ai");
+    process->setWorkingDirectory(ui->ai_work_dir->text().trimmed());
 
     if(!session.isEmpty())
         ai_infos[session].processes = process;

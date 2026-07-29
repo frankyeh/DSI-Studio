@@ -290,6 +290,34 @@ QTextBrowser#ai_chat_history QScrollBar::sub-page:vertical {
             <number>2</number>
            </property>
            <item>
+            <layout class="QHBoxLayout" name="ai_work_dir_layout">
+             <property name="spacing">
+              <number>6</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="ai_work_dir_label">
+               <property name="text">
+                <string>Work directory:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="ai_work_dir">
+               <property name="placeholderText">
+                <string>AI agent working directory</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="ai_browse_work_dir">
+               <property name="text">
+                <string>Browse...</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
             <widget class="QTextBrowser" name="ai_chat_history">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
