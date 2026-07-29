@@ -15,25 +15,9 @@ Claude
 
 Send the `agent` field with each request. DSI Studio associates requests with the current agent automatically.
 
-## Claude stdin/stdout — preferred
-
-For Claude, use stdin/stdout before the named pipe.
-
-To execute a DSI Studio command, output one compact JSON object as the complete
-assistant message:
-
-```json
-{"request":"CMD","chat":"optional user-facing message","window":"window-id","command":{"cmd":"command-name","param":"optional parameter"}}
-```
-
-Do not use Markdown code fences and do not add text outside the JSON object.
-After DSI Studio returns a command result, inspect it before deciding the next
-command.
-
 ## Direct named-pipe connection
 
-Use the local named pipe when Claude stdin/stdout is unavailable, or for an
-agent that cannot return commands through stdout:
+Use the local named pipe:
 
 ```text
 \\.\pipe\dsi-studio
