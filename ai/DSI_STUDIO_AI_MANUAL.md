@@ -7,18 +7,20 @@ linked near the end.
 
 ## Command routing reference — read this first
 
-A `CMD` must target a named window ID returned by top-level `LIST`. Commands are
+A `CMD` must target a window ID returned by top-level `LIST`. Commands are
 accepted only by the window type that implements them.
 
 | Window ID | What it represents | Common valid commands | File-opening role |
 |---|---|---|---|
-| **main** | Main DSI Studio window | `list_recent_fib`, `list_recent_src`, `reset_settings`, `set_work_dir`, `rename_dicom`, `rename_dicom_dir`, `convert_dicom_dir`, `bids_to_src`, `nifti_dir_to_src`, `collect_network_measures`, `open_src`, `open_dwi_nifti`, `open_dwi_dicom`, `open_dwi_2dseq`, `open_src_dir`, `open_fib`, `open_structural_tracking`, `open_template`, `create_db`, `create_average`, `open_db`, `open_connectometry`, `open_auto_track`, `open_nonlinear_registration`, `open_xnat`, `open_console`, `clear_recent_src`, `clear_recent_fib`, `qc_nii`, `qc_src`, `qc_fib`, `run_cli`, `open_image`, `open_ai`, `open_hub`, `hub_*` | Main-window opening commands may accept paths as command parameters. Without parameters, many open a local picker. Never send a filesystem path as the complete named-pipe request. |
-| **image1**, **image2**, ... | General image viewer | Image inspection, editing, and `segmentation` commands | Used mainly for standalone NIfTI editing and batch image processing, not as the default T1w-segmentation route when a related FIB is already open. |
-| **tracking1**, **tracking2**, ... | A loaded FIB/FZ tracking window | `list_slice`, `set_slice`, `list_unet`, `segment_brain`, `list_region`, `list_tract`, `run_tracking`, `open_fib`, tract/region/slice/device/rendering commands | Tracking-window `open_fib` requires an explicit `.fz` or `*fib.gz` path and creates another tracking window. |
+| `main` | Main DSI Studio window | `list_recent_fib`, `list_recent_src`, `reset_settings`, `set_work_dir`, `rename_dicom`, `rename_dicom_dir`, `convert_dicom_dir`, `bids_to_src`, `nifti_dir_to_src`, `collect_network_measures`, `open_src`, `open_dwi_nifti`, `open_dwi_dicom`, `open_dwi_2dseq`, `open_src_dir`, `open_fib`, `open_structural_tracking`, `open_template`, `create_db`, `create_average`, `open_db`, `open_connectometry`, `open_auto_track`, `open_nonlinear_registration`, `open_xnat`, `open_console`, `clear_recent_src`, `clear_recent_fib`, `qc_nii`, `qc_src`, `qc_fib`, `run_cli`, `open_image`, `open_ai`, `open_hub`, `hub_*` | Main-window opening commands may accept paths as command parameters. Without parameters, many open a local picker. Never send a filesystem path as the complete named-pipe request. |
+| `image<hex-address>` | General image viewer | Image inspection, editing, and `segmentation` commands | Used mainly for standalone NIfTI editing and batch image processing, not as the default T1w-segmentation route when a related FIB is already open. |
+| `tracking<hex-address>` | A loaded FIB/FZ tracking window | `list_slice`, `set_slice`, `list_unet`, `segment_brain`, `list_region`, `list_tract`, `run_tracking`, `open_fib`, tract/region/slice/device/rendering commands | Tracking-window `open_fib` requires an explicit `.fz` or `*fib.gz` path and creates another tracking window. |
 
-Always call top-level `LIST` first and use the exact returned window ID. Never
-use a window title, filename, guessed ID, or an ID from an earlier process as
-`window`.
+`main` is fixed. Tracking and image IDs append the window pointer address in
+lowercase hexadecimal without `0x`. Always call top-level `LIST` first and copy
+the exact current window key. Do not construct an ID or use a window title,
+filename, guessed ID, or stale ID. A tracking or image ID is valid only while
+that window remains open; reopening it or restarting DSI Studio may change it.
 
 Do not invent command names. To discover recent files, target **main** and use
 these exact commands:
@@ -73,14 +75,14 @@ restored.
 
 ### 2. Tracking-window `open_fib` — explicit additional FIB
 
-Target an existing tracking window:
+Target an existing tracking window using its exact current `LIST` key:
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"tracking1","command":["open_fib","C:/data/second_subject.fz"]}
+{"agent":"Codex","session":"<uuid>","request":"CMD","window":"tracking7ff6ab123410","command":["open_fib","C:/data/second_subject.fz"]}
 ```
 
 Both main and tracking windows accept `open_fib` with a path, but they are
-different command implementations. Always use the intended named window ID.
+different command implementations. Always use the exact current window ID.
 Main-window `open_fib` opens the supplied FIB as a primary tracking window;
 tracking-window `open_fib` opens an additional FIB from an existing tracking
 window.
@@ -106,7 +108,7 @@ image editing or batch processing.
 
 1. Send one concise `TITLE` after understanding the task.
 2. Send top-level `LIST`.
-3. Choose the named ID for the correct window.
+3. Copy the exact current ID for the correct window.
 4. Run discovery commands before mutation.
 5. Use `LIST` for routine polling and targeted `list_*` commands for detail.
 6. Verify output files or created objects before reporting completion.
@@ -129,21 +131,22 @@ Example reply:
   "application":{"status":"busy"},
   "windows":{
     "main":{"status":"idle","title":"DSI Studio"},
-    "tracking1":{"status":"busy","title":"subject.fz"},
-    "image1":{"status":"idle","title":"T1w.nii.gz"}
+    "tracking7ff6ab123410":{"status":"busy","title":"subject.fz"},
+    "image7ff6ab456780":{"status":"idle","title":"T1w.nii.gz"}
   }
 }
 ```
 
 `application.status` and each window `status` are `idle`, `busy`, or `waiting`.
-The `windows` keys are the exact quoted values required by `CMD`: `main`, then
-`tracking1`, `tracking2`, ... and `image1`, `image2`, .... IDs remain assigned
-for the lifetime of the window and are not renumbered when another window closes.
+The `windows` keys are the exact quoted values required by `CMD`. `main` is
+fixed; other keys are `tracking` or `image` followed by the window pointer
+address in lowercase hexadecimal without `0x`. Copy the key from the latest
+`LIST`; it is valid only while that window remains open.
 
 ### CMD
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"tracking1","command":["list_region"]}
+{"agent":"Codex","session":"<uuid>","request":"CMD","window":"tracking7ff6ab123410","command":["list_region"]}
 ```
 
 Every command name and parameter must be a JSON string. Use `"7"`, not numeric
@@ -163,7 +166,7 @@ Do not combine multiple paths into one `&`-separated string.
 A meaningful command should normally include a useful progress update:
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"tracking1","command":["segment_brain","human_synthseg","7"],"chat":"I verified that the T1w slice is ready. I am starting SynthSeg now."}
+{"agent":"Codex","session":"<uuid>","request":"CMD","window":"tracking7ff6ab123410","command":["segment_brain","human_synthseg","7"],"chat":"I verified that the T1w slice is ready. I am starting SynthSeg now."}
 ```
 
 The top-level `chat` field is shown to the user and does not change the command.
@@ -503,7 +506,7 @@ completion. `status=done` is the definitive completion signal.
 - Native identities are `Codex` and `Claude`.
 - Ollama-backed identities include the host, for example `Codex/Ollama(192.168.1.14)`.
 - Inspect `LIST` before substantial loading, registration, segmentation, reconstruction, or tracking.
-- Discover exact command names, window IDs, indices, internal model IDs, and parameter IDs rather than guessing.
+- Copy exact command names, current window IDs, indices, internal model IDs, and parameter IDs rather than guessing.
 - For `run_auto_track`, call `list_auto_tract` first and use an exact internal atlas label such as `ProjectionBrainstem_CorticospinalTractL`.
 - Main-window GUI picker commands require local user interaction; do not claim completion from the response alone.
 - Confirm `clear_recent_src` and `clear_recent_fib` because they erase saved history immediately without another prompt.
@@ -513,7 +516,7 @@ completion. `status=done` is the definitive completion signal.
 - A client timeout does not prove failure; verify application state before retrying a long command.
 - For a selected slice, `list_slice` with `status=ready` is the readiness signal.
 - For fiber tracking, `list_tract status` with `status=done` is the completion signal.
-- A disappeared window or `window not found` means the user likely closed it. Do not reopen it automatically.
+- A disappeared window or `window not found` means the user likely closed it. Call `LIST` again; do not reopen it automatically.
 - Do not expose private chain-of-thought. Report conclusions, actions, progress, and blockers.
 
 ## Footnotes
