@@ -1297,7 +1297,8 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
     connect(process,&QProcess::started,this,[=]
     {
         ++active_ai_processes;
-        process->closeWriteChannel();
+        if(provider != ai_provider::Claude)
+            process->closeWriteChannel();
         auto session = process->objectName();
         ai_log("connecting to "+ launch.name + "@" +
             (session.isEmpty() ? QString("new") : session)+
@@ -1429,11 +1430,19 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
     auto launch = prepare_ai(ai_provider::Claude,session,text,input);
     if(!launch.process)
         return;
+    auto* process = launch.process;
     if(launch.session.isEmpty())
     {
         add_ai_history(launch.session,"activity","Cannot start AI agent: missing session ID.");
         return;
     }
+    launch.prompt +=
+        "\n\nTo execute a DSI Studio command, output one compact JSON object as the "
+        "complete assistant message:\n\n"
+        "{\"request\":\"TITLE\",\"title\":\"Fiber tracking analysis\"}\n\n"
+        "Do not use Markdown code fences and do not add text outside the JSON object. "
+        "After DSI Studio returns a command result, inspect it before deciding the next "
+        "command.";
 
     if(launch.model_provider == ai_model_provider::Ollama)
     {
@@ -1449,20 +1458,62 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
                               "CLAUDE_CODE_SUBAGENT_MODEL"})
                 env.insert(name,launch.model);
 
-        launch.process->setProcessEnvironment(env);
+        process->setProcessEnvironment(env);
     }
 
-    launch.process->setProperty(
-        "history_size",ai_infos[launch.session].projects.size());
+    process->setProperty("history_size",ai_infos[launch.session].projects.size());
 
-    connect(launch.process,&QProcess::readyReadStandardOutput,
-            launch.process,[process = launch.process]
+    auto claude_input = [](const QString& text)
+    {
+        return QJsonDocument(QJsonObject{
+            {"type","user"},{"message",QJsonObject{
+                {"role","user"},{"content",QJsonArray{QJsonObject{
+                    {"type","text"},{"text",text}}}}}}}).
+            toJson(QJsonDocument::Compact)+'\n';
+    };
+    connect(process,&QProcess::readyReadStandardOutput,this,[=]
             {
-                auto output = process->property("stdout").toByteArray()+
-                              process->readAllStandardOutput();
+                auto output = process->readAllStandardOutput();
                 tipl::out() << "stdout:" << output.toStdString();
-                process->setProperty("stdout",output.right(64*1024));
+                process->setProperty("stdout",
+                    (process->property("stdout").toByteArray()+output).right(64*1024));
+
+                auto buffer = process->property("stdout_buffer").toByteArray()+output;
+                for(int pos;(pos = buffer.indexOf('\n')) >= 0;)
+                {
+                    auto event = QJsonDocument::fromJson(buffer.left(pos)).object();
+                    buffer.remove(0,pos+1);
+                    if(event["type"] != "assistant")
+                        continue;
+
+                    QStringList texts;
+                    for(const auto& value : event["message"].toObject()["content"].toArray())
+                    {
+                        auto content = value.toObject();
+                        if(content["type"] == "text")
+                            texts << content["text"].toString();
+                    }
+                    auto text = texts.join('\n').trimmed();
+                    if(text.isEmpty())
+                        continue;
+
+                    auto doc = QJsonDocument::fromJson(text.toUtf8());
+                    auto request = doc.isObject() ? doc.toJson(QJsonDocument::Compact) :
+                        QJsonDocument(QJsonObject{{"request","CHAT"},{"chat",text}}).
+                        toJson(QJsonDocument::Compact);
+                    auto* info = find_ai_info(process->objectName());
+                    if(!info)
+                        continue;
+                    QByteArray reply;
+                    ai_command(*info,request,reply);
+                    refresh_ai_info(*info);
+                    process->write(claude_input(QString::fromUtf8(reply)));
+                }
+                process->setProperty("stdout_buffer",buffer);
             });
+    connect(process,&QProcess::started,process,
+            [process,prompt = launch.prompt,claude_input]
+            {process->write(claude_input(prompt));});
 
     QStringList args{
         "-p",
@@ -1472,7 +1523,6 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
         launch.new_session ? "--session-id" : "--resume",launch.session};
     if(!launch.model.isEmpty())
         args << "--model" << launch.model;
-    args << launch.prompt;
     run_ai(launch,args);
 }
 void AIAgent::start_codex(QString session,const QString& text,ai_input input)
