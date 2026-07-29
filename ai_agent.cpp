@@ -1419,6 +1419,28 @@ void AIAgent::run_ai(const ai_launch& launch,QStringList args)
 }
 void AIAgent::start_claude(QString session,const QString& text,ai_input input)
 {
+    auto claude_input = [](const QString& text)
+    {
+        return QJsonDocument(QJsonObject{
+            {"type","user"},{"message",QJsonObject{
+                {"role","user"},{"content",QJsonArray{QJsonObject{
+                    {"type","text"},{"text",text}}}}}}}).
+            toJson(QJsonDocument::Compact)+'\n';
+    };
+    if(auto* info = find_ai_info(session);
+       info && info->processes &&
+       info->processes->state() == QProcess::Running)
+    {
+        if(input == ai_input::User)
+        {
+            add_ai_history(session,"user",text);
+            ui->ai_chat_input->clear();
+        }
+        info->processes->write(claude_input(text));
+        set_ai_status("Message sent to Claude.");
+        return;
+    }
+
     auto launch = prepare_ai(ai_provider::Claude,session,text,input);
     if(!launch.process)
         return;
@@ -1455,14 +1477,6 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
 
     process->setProperty("history_size",ai_infos[launch.session].projects.size());
 
-    auto claude_input = [](const QString& text)
-    {
-        return QJsonDocument(QJsonObject{
-            {"type","user"},{"message",QJsonObject{
-                {"role","user"},{"content",QJsonArray{QJsonObject{
-                    {"type","text"},{"text",text}}}}}}}).
-            toJson(QJsonDocument::Compact)+'\n';
-    };
     connect(process,&QProcess::readyReadStandardOutput,this,[=]
             {
                 auto output = process->readAllStandardOutput();
@@ -1628,7 +1642,10 @@ void AIAgent::on_ai_send_message_clicked()
     if(!session.isEmpty())
     {
         auto& info = ai_infos[session];
-        if(info.processes || info.provider == ai_provider::Unknown)
+        if((info.processes &&
+            (info.provider != ai_provider::Claude ||
+             info.processes->state() != QProcess::Running)) ||
+           info.provider == ai_provider::Unknown)
         {
             info.prompts.append(text);
             add_ai_history(session,"user",text);
