@@ -566,9 +566,7 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
 
         auto fail = [&](const QString& error)
         {
-            reply_results(session,QJsonArray{QJsonObject{
-                                       {"index",0},{"error",error}
-                                   }});
+            reply_results(session,QJsonArray{QJsonObject{{"error",error}}});
         };
 
         if(id.isEmpty() || commands.isEmpty())
