@@ -24,7 +24,7 @@ enum class ai_model_provider {Native,Ollama};
 enum class ai_input {User,Pending};
 
 struct ai_info{
-    QString sessions,agent_name,work_dirs,project_titles;
+    QString sessions,agent_name,project_titles;
     ai_provider provider = ai_provider::Unknown;
     QProcess* processes = nullptr;
     QJsonArray projects,prompts;
