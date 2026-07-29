@@ -572,7 +572,7 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         };
 
         if(id.isEmpty() || commands.isEmpty())
-            return fail("invalid CMD. Read ai/DSI_STUDIO_AI_MANUAL.md before retry.");
+            return fail("empty id or command");
         if(!target)
             return fail("window not found");
 
@@ -592,7 +592,9 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
             std::vector<std::string> cmd;
             for(const auto& value : (commands[index].isArray() ?
                     commands[index].toArray() : QJsonArray{commands[index]}))
-                cmd.push_back(value.toVariant().toString().toStdString());
+                cmd.push_back(value.toVariant().toString().toUtf8().toStdString());
+            if(cmd.empty() || cmd[0].empty())
+                error = "empty command";
             if(error.isEmpty())
             {
                 command_name = QString::fromStdString(cmd[0]);
