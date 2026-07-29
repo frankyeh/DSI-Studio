@@ -705,11 +705,10 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
                          std::any_of(tracking->tractWidget->thread_data.begin(),
                                      tracking->tractWidget->thread_data.end(),
                                      [](const auto& thread){return bool(thread);})) ||
-                        std::any_of(tracking->slices.begin(),tracking->slices.end(),
+                         std::any_of(tracking->slices.begin(),tracking->slices.end(),
                                     [](const auto& slice)
                                     {
-                                        auto custom = std::dynamic_pointer_cast<
-                                            CustomSliceModel>(slice);
+                                        auto custom = std::dynamic_pointer_cast<CustomSliceModel>(slice);
                                         return custom && custom->running;
                                     });
             }
