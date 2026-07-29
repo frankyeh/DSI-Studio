@@ -196,33 +196,32 @@ Invoke-Dsi @{
 An optional `chat` may accompany any request. Keep it on `CMD` when reporting
 the command already being sent instead of making a separate `CHAT` request.
 
-Every `CMD` returns a JSON array with one result object per executed command.
-The `cmd` field identifies the command.
+Every reply has `status`; `CMD` puts one result per executed command in
+`result`. Each result has its own `status`, and `cmd` identifies the command.
 
 A command that produces text returns:
 
 ```json
-[{"cmd":"list_region","output":"<command output>"}]
+{"status":"success","result":[{"cmd":"list_region","status":"success","output":"<command output>"}]}
 ```
 
 A successful command with no captured text returns:
 
 ```json
-[{"cmd":"set_slice","output":"completed"}]
+{"status":"success","result":[{"cmd":"set_slice","status":"success","output":"completed"}]}
 ```
 
 An executed command that fails includes `error`:
 
 ```json
-[{"cmd":"set_slice","error":"<reason>"}]
+{"status":"error","result":[{"cmd":"set_slice","status":"error","error":"<reason>"}]}
 ```
 
-A request rejected before execution may return only an `error` field. The
-presence of `error` means failure regardless of `output`. A command batch stops
-after the first error. A result without `error` means the command handler
-returned without an immediate error; asynchronous or GUI-backed work may still
-require verification with `LIST`, the relevant discovery command, or the
-expected window, object, or file.
+A request rejected before execution returns `status:"error"` with an `error`
+field. Status is `success`, `error`, or `busy`. A command batch stops after the
+first error. `success` means the command handler returned without an immediate
+error; asynchronous or GUI-backed work may still require verification with
+`LIST`, the relevant discovery command, or the expected window, object, or file.
 
 ### Send a final or standalone message
 
