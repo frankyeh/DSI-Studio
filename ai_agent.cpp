@@ -216,27 +216,25 @@ AIAgent::AIAgent(MainWindow* parent):
         ui->ai_agent_selector->setCurrentIndex(int(ai_provider::Claude));
     ui->ai_agent_selector->setEnabled(
         !codex_path.isEmpty() || !claude_path.isEmpty());
+    connect(ui->ai_model_selector,&QComboBox::currentTextChanged,
+            this,[this]
+    {
+        auto index = ui->ai_agent_selector->currentIndex();
+        QString name = index == int(ai_provider::Codex) ? "Codex" : "Claude";
+        if(ui->ai_model_selector->currentData().toJsonObject()[
+                "provider"].toInt() == int(ai_model_provider::Ollama))
+            name += "/Ollama("+ai_ollama_url(settings).first.host()+")";
+        ui->ai_agent_selector->setItemText(index,name);
+    });
     connect(ui->ai_agent_selector,
             QOverload<int>::of(&QComboBox::currentIndexChanged),this,
-            [this](int index){set_model_selector(
-                *ui->ai_model_selector,*ui->ai_agent_selector,index);});
+            [this](int index)
+    {
+        set_model_selector(
+            *ui->ai_model_selector,*ui->ai_agent_selector,index);
+    });
     set_model_selector(*ui->ai_model_selector,*ui->ai_agent_selector,
                        ui->ai_agent_selector->currentIndex());
-
-    {
-        auto update_agent_name = [this]
-        {
-            auto index = ui->ai_agent_selector->currentIndex();
-            QString name = index == int(ai_provider::Codex) ? "Codex" : "Claude";
-            if(ui->ai_model_selector->currentData().toJsonObject()[
-                    "provider"].toInt() == int(ai_model_provider::Ollama))
-                name += "/Ollama("+ai_ollama_url(settings).first.host()+")";
-            ui->ai_agent_selector->setItemText(index,name);
-        };
-        connect(ui->ai_model_selector,&QComboBox::currentTextChanged,
-                this,[update_agent_name]{update_agent_name();});
-        update_agent_name();
-    }
 
     auto default_agent = settings.value(
         "ai/default_agent",ui->ai_agent_selector->currentIndex());
@@ -589,32 +587,26 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
             return fail("missing command field");
 
         QWidget* target = nullptr;
+        for(auto* each : QApplication::allWidgets())
         {
-            QString target_type,target_title;
-            auto windows = QApplication::allWidgets();
-            for(auto* each : windows)
-            {
-                if(each->property("busy").toBool())
-                    return fail("another CMD is running; check opened windows");
-                if(get_window_id(each) == window)
-                {
-                    target = each;
-                    target_type =
-                        qobject_cast<MainWindow*>(each) ? "main" :
-                            qobject_cast<tracking_window*>(each) ? "tracking" : "image";
-                    if(target_type != "main")
-                        target_title = QFileInfo(each->windowTitle()).fileName();
-                }
-            }
-            if(!target)
-                return fail("target window not found, terminated by user?");
-            auto compact = QString::fromUtf8(tipl::merge(cmd0_list,','));
-            ai_info::record_history(info,QJsonObject{
-                    {"type","request"},
-                    {"text",compact + " \u2192 "+ target_type + " window "+target_title},
-                    {"compact",compact},
-                    {"window",window}});
+            if(each->property("busy").toBool())
+                return fail("another CMD is running; check opened windows");
+            if(get_window_id(each) == window)
+                target = each;
         }
+        if(!target)
+            return fail("target window not found, terminated by user?");
+
+        auto target_type = window == "main" ? QString("main") :
+                           window.startsWith("tracking") ? "tracking" : "image";
+        auto target_title = target_type == "main" ? QString() :
+                            QFileInfo(target->windowTitle()).fileName();
+        auto compact = QString::fromUtf8(tipl::merge(cmd0_list,','));
+        ai_info::record_history(info,QJsonObject{
+            {"type","request"},
+            {"text",compact+" \u2192 "+target_type+" window "+target_title},
+            {"compact",compact},
+            {"window",window}});
 
 
         bool updates_enabled = target->updatesEnabled();
@@ -1009,11 +1001,7 @@ void AIAgent::refresh_codex_models(const QString& path)
     });
 
     process->start(path,{"debug","models"});
-    QTimer::singleShot(5000,process,[process]
-    {
-        if(process->state() != QProcess::NotRunning)
-            process->kill();
-    });
+    QTimer::singleShot(5000,process,&QProcess::kill);
 }
 void AIAgent::refresh_ollama_models()
 {
@@ -1334,17 +1322,12 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
             auto pending = info.prompts.join("\n\n");
             info.prompts.clear();
             if(!pending.isEmpty())
-            {
-                process->deleteLater();
                 start_ai(session,pending,ai_input::Pending);
-                return;
-            }
-
-            auto history_size = process->property("history_size");
-            bool no_reply = history_size.isValid() && info.projects.size() == history_size.toInt();
-            if(failed)
+            else if(failed)
                 add_ai_history(info,"activity",error_message);
-            else if(no_reply)
+            else if(auto history_size = process->property("history_size");
+                    history_size.isValid() &&
+                    info.projects.size() == history_size.toInt())
                 add_ai_history(info,"activity","No reply from AI agent.");
             else
                 show_ai_project(info);
