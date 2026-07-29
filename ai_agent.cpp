@@ -1504,9 +1504,6 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
 
     QStringList args{
         "-p",
-        "--input-format","stream-json",
-        "--output-format","stream-json",
-        "--add-dir",QApplication::applicationDirPath()+"/ai",
         "--allowedTools","PowerShell(powershell.exe -NoProfile -File dsi_agent.ps1 *)",
         launch.new_session ? "--session-id" : "--resume",launch.session};
     if(!launch.model.isEmpty())
