@@ -1367,7 +1367,6 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
         return;
     auto* process = launch.process;
     auto session_id = process->objectName();
-    auto prompt = "[DSI Studio] Session ID: "+session_id+"\n\n"+text;
     if(!launch.model_url.isEmpty())
     {
         auto env = process->processEnvironment();
@@ -1426,15 +1425,15 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
                 }
             });
     connect(process,&QProcess::started,process,
-            [process,prompt,claude_input]
-            {process->write(claude_input(prompt));});
+            [process,text,claude_input]
+            {process->write(claude_input(text));});
     QStringList args{
         "-p",
         "--input-format","stream-json",
         "--output-format","stream-json",
         "--verbose",
         "--add-dir",ui->ai_work_dir->text(),
-        "--allowedTools","PowerShell(./dsi *)",
+        "--allowedTools","./dsi *",
         session.isEmpty() ? "--session-id" : "--resume",session_id};
     if(!launch.model.isEmpty())
         args << "--model" << launch.model;
