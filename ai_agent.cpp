@@ -1417,11 +1417,6 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
                 "\", read the operating rules and common syntax, then search the "
                 "command inventory only for commands relevant to this request. ";
         }
-        else if(provider == ai_provider::Codex)
-            prompt +=
-                "\n\n[DSI Studio] Before using the named pipe, read the Identity "
-                "section of ai/DSI_STUDIO_AI_SETUP.md. Include your current "
-                "resumable Codex thread UUID as session in every request.";
         launch.prompt = prompt;
     }
     return launch;
