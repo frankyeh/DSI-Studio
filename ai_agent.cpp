@@ -528,6 +528,8 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         };
         auto window = request["window"].toString();
         auto command = request["command"];
+        if(command.isUndefined() || command.isNull())
+            return fail("missing command field");
         if(window.isEmpty())
             return fail("missing target window field");
         std::vector<std::vector<std::string>> cmds;
@@ -625,9 +627,13 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
             output.remove(ansi_escape);
             error.remove(ansi_escape);
 
-            result["output"] = output.isEmpty() ? "completed" : output;
+            if(!output.isEmpty())
+                result["output"] = output;
+            else if(error.isEmpty())
+                result["output"] = "completed";
             if(!error.isEmpty())
                 result["error"] = error;
+
             results.append(result);
             activity = command_name + (error.isEmpty() ? " completed" : " failed:"+error);
             if(!error.isEmpty())
