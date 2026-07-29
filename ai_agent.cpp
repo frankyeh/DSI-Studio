@@ -216,15 +216,12 @@ AIAgent::AIAgent(MainWindow* parent):
         ui->ai_agent_selector->setCurrentIndex(int(ai_provider::Claude));
     ui->ai_agent_selector->setEnabled(
         !codex_path.isEmpty() || !claude_path.isEmpty());
-    auto update_models = [this]
-    {
-        auto index = ui->ai_agent_selector->currentIndex();
-        set_model_selector(*ui->ai_model_selector,*ui->ai_agent_selector,index);
-    };
     connect(ui->ai_agent_selector,
-            QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this,[update_models]{update_models();});
-    update_models();
+            QOverload<int>::of(&QComboBox::currentIndexChanged),this,
+            [this](int index){set_model_selector(
+                *ui->ai_model_selector,*ui->ai_agent_selector,index);});
+    set_model_selector(*ui->ai_model_selector,*ui->ai_agent_selector,
+                       ui->ai_agent_selector->currentIndex());
 
     {
         auto update_agent_name = [this]
@@ -423,6 +420,20 @@ ai_info* ai_info::create(QString session,QString agent)
     return &info;
 }
 
+void write_history(const ai_info& info,QIODevice::OpenMode mode,
+                   const QJsonArray& entries)
+{
+    if(!QSettings().value("ai/keep_history",true).toBool())
+        return;
+    QFile file(ai_info::history_file(info.sessions));
+    bool okay = file.open(QIODevice::WriteOnly|mode);
+    for(const auto& entry : entries)
+        okay = okay && file.write(QJsonDocument(entry.toObject()).toJson(
+                                      QJsonDocument::Compact)+'\n') >= 0;
+    if(!okay)
+        tipl::warning() << "cannot write ai history : "
+                        << file.errorString().toStdString();
+}
 void ai_info::record_history(ai_info& info,QJsonObject entry)
 {
     if(info.projects.isEmpty())
@@ -432,31 +443,11 @@ void ai_info::record_history(ai_info& info,QJsonObject entry)
     }
     entry["time"] = QDateTime::currentDateTime().toString(Qt::ISODate);
     info.projects.append(entry);
-
-    QSettings settings;
-    if(!settings.value("ai/keep_history",true).toBool())
-        return;
-    QFile file(history_file(info.sessions));
-    if(!file.open(QIODevice::WriteOnly|QIODevice::Append) ||
-       file.write(QJsonDocument(entry).toJson(
-                      QJsonDocument::Compact)+'\n') < 0)
-        tipl::warning() << "cannot write ai history : "
-                        << file.errorString().toStdString();
+    write_history(info,QIODevice::Append,QJsonArray{entry});
 }
 void ai_info::save_history(const ai_info& info)
 {
-    if(!QSettings().value("ai/keep_history",true).toBool())
-        return;
-
-    QFile file(history_file(info.sessions));
-    bool okay = file.open(QIODevice::WriteOnly|QIODevice::Truncate);
-    for(const auto& entry : info.projects)
-        okay = okay && file.write(QJsonDocument(entry.toObject()).toJson(
-                                      QJsonDocument::Compact)+'\n') >= 0;
-
-    if(!okay)
-        tipl::warning() << "cannot write ai history : "
-                        << file.errorString().toStdString();
+    write_history(info,QIODevice::Truncate,info.projects);
 }
 
 void AIAgent::showEvent(QShowEvent* event)
@@ -1128,14 +1119,9 @@ void AIAgent::on_ai_quick_settings_clicked()
     port.setValue(settings.value("ai/ollama_port",11434).toInt());
     QComboBox agent,model;
     for(int index = 0;index < ui->ai_agent_selector->count();++index)
-        agent.addItem(ui->ai_agent_selector->itemText(index),index);
-    agent.setCurrentIndex(agent.findData(ui->ai_agent_selector->currentIndex()));
-    auto update_models = [&]
-    {
-        set_model_selector(model,*ui->ai_agent_selector,
-                           agent.currentData().toInt());
-    };
-    update_models();
+        agent.addItem(ui->ai_agent_selector->itemText(index));
+    agent.setCurrentIndex(ui->ai_agent_selector->currentIndex());
+    set_model_selector(model,*ui->ai_agent_selector,agent.currentIndex());
     model.setCurrentText(ui->ai_model_selector->currentText());
     QCheckBox history("Keep AI chat history");
     history.setChecked(settings.value("ai/keep_history",true).toBool());
@@ -1146,9 +1132,10 @@ void AIAgent::on_ai_quick_settings_clicked()
     layout.addRow(&history);
     QDialogButtonBox buttons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
     layout.addRow(&buttons);
-    connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),&dialog,[&](int)
+    connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),
+            &dialog,[&](int index)
     {
-        update_models();
+        set_model_selector(model,*ui->ai_agent_selector,index);
     });
     connect(&buttons,&QDialogButtonBox::accepted,&dialog,&QDialog::accept);
     connect(&buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
@@ -1158,11 +1145,11 @@ void AIAgent::on_ai_quick_settings_clicked()
     settings.setValue("ai/ollama_host",host.text().trimmed());
     settings.setValue("ai/ollama_port",port.value());
     settings.setValue("ai/keep_history",history.isChecked());
-    settings.setValue("ai/default_agent",agent.currentData().toInt());
+    settings.setValue("ai/default_agent",agent.currentIndex());
     settings.setValue("ai/default_model",model.currentText());
     if(!ui->ai_project_list->currentItem())
     {
-        ui->ai_agent_selector->setCurrentIndex(agent.currentData().toInt());
+        ui->ai_agent_selector->setCurrentIndex(agent.currentIndex());
         ui->ai_model_selector->setCurrentText(model.currentText());
     }
 
@@ -1586,20 +1573,18 @@ void AIAgent::on_ai_send_message_clicked()
         return;
     auto* item = ui->ai_project_list->currentItem();
     auto session = item ? item->data(Qt::UserRole).toString() : QString();
-    if(!session.isEmpty())
-    {
-        auto& info = ai_infos[session];
-        if((info.processes &&
-            (info.provider != ai_provider::Claude ||
-             info.processes->state() != QProcess::Running)) ||
-           info.provider == ai_provider::Unknown)
-        {
-            info.prompts.append(text);
-            add_ai_history(info,"user",text);
-            ui->ai_chat_input->clear();
-            set_ai_status("Message queued for the AI agent.",true);
-            return;
-        }
-    }
-    start_ai(session,text,ai_input::User);
+    if(session.isEmpty())
+        return start_ai(session,text,ai_input::User);
+
+    auto& info = ai_infos[session];
+    if(info.provider != ai_provider::Unknown &&
+       (!info.processes ||
+        (info.provider == ai_provider::Claude &&
+         info.processes->state() == QProcess::Running)))
+        return start_ai(session,text,ai_input::User);
+
+    info.prompts.append(text);
+    add_ai_history(info,"user",text);
+    ui->ai_chat_input->clear();
+    set_ai_status("Message queued for the AI agent.",true);
 }
