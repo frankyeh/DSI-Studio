@@ -254,7 +254,9 @@ AIAgent::AIAgent(MainWindow* parent):
         auto title = QInputDialog::getText(
             this,"Rename Chat","Chat name:",QLineEdit::Normal,
             ai_infos[session].title(session),&okay);
-        if(okay && !set_ai_title(session,title))
+        if(okay && save_ai_title(ai_infos[session],title))
+            show_ai_project(session);
+        else if(okay)
             QMessageBox::warning(
                 this,"Rename Chat","The chat name could not be saved.");
     });
@@ -1082,15 +1084,6 @@ void AIAgent::refresh_ollama_models()
                 network->deleteLater();
             });
 }
-bool AIAgent::set_ai_title(const QString& session,QString title)
-{
-    auto* info = find_ai_info(session);
-    if(!info || !save_ai_title(*info,title))
-        return false;
-    show_ai_project(session);
-    return true;
-}
-
 void AIAgent::add_ai_history(const QString& session,const QString& type,const QString& text)
 {
     add_ai_history(session,QJsonObject{{"type",type},{"text",text}});

@@ -53,7 +53,6 @@ class AIAgent : public QMainWindow
     void add_ai_history(const QString&,QJsonObject);
     void add_ai_history(const QString&,const QString&,const QString&);
     void add_ai_reply(ai_info&,const QString&,const QString&);
-    bool set_ai_title(const QString&,QString);
     void set_ai_status(QString = {},bool = false);
     void show_ai_project(const QString&);
     void show_ai_project(const QString&,QJsonObject);
