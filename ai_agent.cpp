@@ -1530,7 +1530,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
             {process->write(claude_input(prompt));});
 
     auto ai_dir = process->processEnvironment().value("DSI_STUDIO_AI_DIR");
-    auto agent_script = QDir::toNativeSeparators(QDir(ai_dir).filePath("dsi_agent.ps1"));
+    auto agent_script = QDir::toNativeSeparators(QDir(process->workingDirectory()).filePath("dsi_agent.ps1"));
     QStringList args{
         "-p",
         "--input-format","stream-json",
