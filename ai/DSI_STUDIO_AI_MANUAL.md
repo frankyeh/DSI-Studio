@@ -5,6 +5,19 @@ agent can read it without losing the end of the file to output truncation. The
 complete command inventory and source-verified examples are divided by topic and
 linked near the end.
 
+## Transport selection
+
+Use the transport assigned to the agent:
+
+- **Codex:** use the direct named pipe `\\.\pipe\dsi-studio`. Include
+  `"agent":"Codex"` in each request.
+- **Claude Code:** use the existing DSI Studio chat channel through stdin/stdout.
+  Do not use the named pipe. Output one compact JSON request object as the
+  complete assistant message, without Markdown fences or surrounding text.
+  Inspect each DSI Studio result before deciding the next request. DSI Studio
+  already associates the request with the active Claude process, so omit
+  `agent`.
+
 ## Command routing reference — read this first
 
 A `CMD` must target a window ID returned by top-level `LIST`. Commands are
@@ -12,7 +25,7 @@ accepted only by the window type that implements them.
 
 | Window ID | What it represents | Common valid commands | File-opening role |
 |---|---|---|---|
-| `main` | Main DSI Studio window | `list_recent_fib`, `list_recent_src`, `reset_settings`, `set_work_dir`, `rename_dicom`, `rename_dicom_dir`, `convert_dicom_dir`, `bids_to_src`, `nifti_dir_to_src`, `collect_network_measures`, `open_src`, `open_dwi_nifti`, `open_dwi_dicom`, `open_dwi_2dseq`, `open_src_dir`, `open_fib`, `open_structural_tracking`, `open_template`, `create_db`, `create_average`, `open_db`, `open_connectometry`, `open_auto_track`, `open_nonlinear_registration`, `open_xnat`, `open_console`, `clear_recent_src`, `clear_recent_fib`, `qc_nii`, `qc_src`, `qc_fib`, `run_cli`, `open_image`, `open_ai`, `open_hub`, `hub_*` | Main-window opening commands may accept paths as command parameters. Without parameters, many open a local picker. Never send a filesystem path as the complete named-pipe request. |
+| `main` | Main DSI Studio window | `list_recent_fib`, `list_recent_src`, `reset_settings`, `set_work_dir`, `rename_dicom`, `rename_dicom_dir`, `convert_dicom_dir`, `bids_to_src`, `nifti_dir_to_src`, `collect_network_measures`, `open_src`, `open_dwi_nifti`, `open_dwi_dicom`, `open_dwi_2dseq`, `open_src_dir`, `open_fib`, `open_structural_tracking`, `open_template`, `create_db`, `create_average`, `open_db`, `open_connectometry`, `open_auto_track`, `open_nonlinear_registration`, `open_xnat`, `open_console`, `clear_recent_src`, `clear_recent_fib`, `qc_nii`, `qc_src`, `qc_fib`, `run_cli`, `open_image`, `open_ai`, `open_hub`, `hub_*` | Main-window opening commands may accept paths as command parameters. Without parameters, many open a local picker. Never send a filesystem path as the complete request object. |
 | `image<hex-address>` | General image viewer | Image inspection, editing, and `segmentation` commands | Used mainly for standalone NIfTI editing and batch image processing, not as the default T1w-segmentation route when a related FIB is already open. |
 | `tracking<hex-address>` | A loaded FIB/FZ tracking window | `list_slice`, `set_slice`, `list_unet`, `segment_brain`, `list_region`, `list_tract`, `run_tracking`, `open_fib`, tract/region/slice/device/rendering commands | Tracking-window `open_fib` requires an explicit `.fz` or `*fib.gz` path and creates another tracking window. |
 
@@ -36,7 +49,7 @@ SRC/SZ files. Do not substitute guessed names such as `recent_list`.
 ## Opening files: documented command routes
 
 Use the documented command interface for file opening. Do not send a filesystem
-path by itself as a named-pipe request.
+path by itself as the complete request object.
 
 ### 1. Main-window open commands
 
@@ -115,10 +128,11 @@ image editing or batch processing.
 
 ## Request formats
 
-Send the `agent` field with each request. DSI Studio associates requests with the
-current agent automatically. An optional `chat` may accompany any request.
-Attach an update directly to `CMD` when it describes that command; use standalone
-`CHAT` otherwise.
+The complete examples below show the Codex named-pipe form and therefore include
+`"agent":"Codex"`. Claude Code outputs the same request objects through stdout
+without `agent`. An optional `chat` may accompany any request. Attach an update
+directly to `CMD` when it describes that command; use standalone `CHAT`
+otherwise.
 
 ### LIST
 
@@ -149,6 +163,12 @@ address in lowercase hexadecimal without `0x`. Copy the key from the latest
 
 ```json
 {"agent":"Codex","request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"list_region"}}
+```
+
+For Claude Code, the equivalent complete assistant message is:
+
+```json
+{"request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"list_region"}}
 ```
 
 The `command` field accepts one command object or an array of command objects.
@@ -519,8 +539,9 @@ completion. `status=done` is the definitive completion signal.
 
 ## Operational rules
 
-- Each named-pipe connection sends one request, reads the complete reply, and closes.
-- Reuse the exact nonempty `agent` value for the conversation.
+- Codex uses one named-pipe connection per request, reads the complete reply, and closes.
+- Claude Code uses the existing stdin/stdout chat channel and does not use the named pipe.
+- Codex requests include the exact nonempty `agent` value; Claude stdout requests omit `agent`.
 - Native identities are `Codex` and `Claude`.
 - Ollama-backed identities include the host, for example `Codex/Ollama(192.168.1.14)`.
 - Inspect `LIST` before substantial loading, registration, segmentation, reconstruction, or tracking.
