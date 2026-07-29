@@ -114,16 +114,20 @@ or `LOG`, and do not put the title in `chat` or `text`. Keep the same exact
 
 ## Window and command routing — read this first
 
-Call top-level `LIST` before any `CMD`. It returns a numeric ID and type for each open window.
+Call top-level `LIST` before any `CMD`. It returns the application status and the
+current ID for each open window.
 
-| Window type | Use it for | Important opening command |
+| Window ID | Use it for | Important opening command |
 |---|---|---|
-| **main** | Recent files, Fiber Data Hub, opening the first FIB/FZ, reconstruction, templates, and main tools | Use `open_fib` with a path to open a known FIB/FZ, or without a path to open the FIB picker. |
-| **image** | General image viewing and image-window operations | Created when ordinary image formats are opened with `open_image`. |
-| **tracking** | FIB/FZ slices, regions, tracts, tracking, devices, settings | Use `open_fib` with an explicit path to open an additional FIB/FZ from an existing tracking window. |
+| `main` | Recent files, Fiber Data Hub, opening the first FIB/FZ, reconstruction, templates, and main tools | Use `open_fib` with a path to open a known FIB/FZ, or without a path to open the FIB picker. |
+| `image<hex-address>` | General image viewing and image-window operations | Created when ordinary image formats are opened with `open_image`. |
+| `tracking<hex-address>` | FIB/FZ slices, regions, tracts, tracking, devices, settings | Use `open_fib` with an explicit path to open an additional FIB/FZ from an existing tracking window. |
 
-A `CMD` must use the quoted numeric `window` returned by `LIST`. Never target a
-window using its type, title, filename, or a guessed ID.
+`main` is fixed. Tracking and image IDs append the window pointer address in
+lowercase hexadecimal without `0x`. Do not construct or guess an ID. A `CMD`
+must use the exact quoted `window` key from the latest `LIST`. The ID is valid
+only while that window remains open; reopening a window or restarting DSI Studio
+may produce a different ID.
 
 Do not invent command names. To discover recent files, target the **main** window
 and use these exact commands:
@@ -148,14 +152,21 @@ Invoke-Dsi @{
 }
 ```
 
-Example reply shape:
+Example reply:
 
-```text
-OKAY    busy    level    status
-main    1       0       0    DSI Studio
-tracking 2      0       0    C:/data/subject.fz
-image   3       0       0    C:/data/T1w.nii.gz
+```json
+{
+  "application":{"status":"busy"},
+  "windows":{
+    "main":{"status":"idle","title":"DSI Studio"},
+    "tracking7ff6ab123410":{"status":"busy","title":"subject.fz"},
+    "image7ff6ab456780":{"status":"idle","title":"T1w.nii.gz"}
+  }
+}
 ```
+
+`status` is `idle`, `busy`, or `waiting`. Use the exact window key returned by
+`LIST`, such as `main` or `tracking7ff6ab123410`, as the `CMD` target.
 
 ### Send a command
 
@@ -164,7 +175,7 @@ Invoke-Dsi @{
     agent=$DsiAgent
     session=$DsiSession
     request='CMD'
-    window='2'
+    window='tracking7ff6ab123410'
     command=@('list_region')
     chat='Checking the available regions before making changes.'
 }
@@ -218,15 +229,14 @@ itself as the file-opening request.
 
 ### Open the first FIB/FZ
 
-Obtain the **main** window ID with `LIST`, then send `open_fib` with the known
-path:
+Target `main`, then send `open_fib` with the known path:
 
 ```powershell
 Invoke-Dsi @{
     agent=$DsiAgent
     session=$DsiSession
     request='CMD'
-    window='1'
+    window='main'
     command=@('open_fib','C:/data/subject.fz')
     chat='Opening the FIB file.'
 }
@@ -238,7 +248,7 @@ window. Omit the path to open the local FIB picker instead. Afterward, call
 
 ### Open an additional FIB/FZ
 
-When a tracking window already exists, target that tracking-window ID and supply
+When a tracking window already exists, target its exact current ID and supply
 the explicit path as the command parameter:
 
 ```powershell
@@ -246,16 +256,16 @@ Invoke-Dsi @{
     agent=$DsiAgent
     session=$DsiSession
     request='CMD'
-    window='2'
+    window='tracking7ff6ab123410'
     command=@('open_fib','C:/data/second_subject.fz')
     chat='Opening an additional FIB file.'
 }
 ```
 
 Both main- and tracking-window `open_fib` accept a path, but they are separate
-command implementations. Always target the intended numeric window ID. Do not
-use `open_image` to open FIB/FZ files; use it for ordinary image files and
-image-window workflows.
+command implementations. Always target the exact window ID returned by `LIST`.
+Do not use `open_image` to open FIB/FZ files; use it for ordinary image files
+and image-window workflows.
 
 ## Slice and tract status that commonly cause confusion
 
@@ -345,7 +355,7 @@ Invoke-Dsi @{
     agent=$DsiAgent
     session=$DsiSession
     request='CMD'
-    window='2'
+    window='tracking7ff6ab123410'
     command=@('run_tracking','CST')
     chat='The seed and tracking parameters are ready. I am starting the CST bundle now.'
 }
