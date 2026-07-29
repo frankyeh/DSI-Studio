@@ -1524,7 +1524,6 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
             {process->write(claude_input(prompt));});
 
     auto ai_dir = process->processEnvironment().value("DSI_STUDIO_AI_DIR");
-    auto agent_script = QDir::toNativeSeparators(QDir(process->workingDirectory()).filePath("dsi_agent.ps1"));
     QStringList args{
         "-p",
         "--input-format","stream-json",
@@ -1532,7 +1531,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
         "--verbose",
         "--add-dir",ai_dir,
         "--disallowedTools","Bash",
-        "--allowedTools","PowerShell(\""+agent_script+"\" -Agent Claude -Session "+session_id+" -Target *)",
+        "--allowedTools","PowerShell(./dsi_agent.ps1 -Agent Claude *)",
         session.isEmpty() ? "--session-id" : "--resume",session_id};
     if(!launch.model.isEmpty())
         args << "--model" << launch.model;
