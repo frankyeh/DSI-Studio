@@ -1,38 +1,10 @@
 # DSI Studio AI Setup
 
-This setup is intentionally concise so an agent can read it without losing the
-end of the file to output truncation. Read this file once, then use
-`DSI_STUDIO_AI_MANUAL.md` and the topic-specific example files only as needed.
-
-## Window and command routing — read this first
-
-Call top-level `LIST` before any `CMD`. It returns a numeric ID and type for each
-open window.
-
-| Window type | Use it for | Important opening command |
-|---|---|---|
-| **main** | Recent files, Fiber Data Hub, opening the first FIB/FZ, reconstruction, templates, and main tools | Use `open_fib` with a path to open a known FIB/FZ, or without a path to open the FIB picker. |
-| **image** | General image viewing and image-window operations | Created when ordinary image formats are opened with `open_image`. |
-| **tracking** | FIB/FZ slices, regions, tracts, tracking, devices, settings | Use `open_fib` with an explicit path to open an additional FIB/FZ from an existing tracking window. |
-
-A `CMD` must use the quoted numeric `window` returned by `LIST`. Never target a
-window using its type, title, filename, or a guessed ID.
-
-Do not invent command names. To discover recent files, target the **main** window
-and use these exact commands:
-
-```json
-["list_recent_fib"]
-["list_recent_src"]
-```
-
-Use `list_recent_fib` for recent FIB/FZ files and `list_recent_src` for recent
-SRC/SZ files. Do not substitute guessed names such as `recent_list`.
+Read this file once, then use `DSI_STUDIO_AI_MANUAL.md` and the topic-specific example files only as needed.
 
 ## Identity
 
-Choose one exact nonempty `agent` name and one exact resumable `session` ID.
-Reuse both unchanged for the conversation.
+Choose one exact nonempty `agent` name. Reuse unchanged for the conversation.
 
 Native agents:
 
@@ -41,16 +13,7 @@ Codex
 Claude
 ```
 
-Ollama-backed examples:
-
-```text
-Codex/Ollama(192.168.1.14)
-Claude/Ollama(192.168.1.14)
-```
-
-The parenthesized host is part of the agent name. Do not shorten it.
-
-Use the resumable session UUID assigned by the current agent runtime. The
+Obtain the resumable session UUID assigned by the current agent runtime. The
 discovery method differs by agent:
 
 ### Codex
@@ -74,14 +37,6 @@ Read the current Claude process's file:
 Use its `sessionId` value, not its friendly `name` or the process ID.
 
 Reuse the exact agent and session values in every request.
-
-The optional wrapper identity is:
-
-```text
-<agent>@<session>
-```
-
-Because the Ollama host uses parentheses, the agent name contains no `@`.
 
 ## Direct named-pipe connection
 
@@ -155,6 +110,33 @@ Use the required `title` field only with `TITLE`, not with `CMD`, `CHAT`, `LIST`
 or `LOG`, and do not put the title in `chat` or `text`. Keep the same exact
 `agent` and `session`; `TITLE` changes only the displayed chat name. Send another
 `TITLE` later only when the user permits renaming.
+
+
+## Window and command routing — read this first
+
+Call top-level `LIST` before any `CMD`. It returns a numeric ID and type for each open window.
+
+| Window type | Use it for | Important opening command |
+|---|---|---|
+| **main** | Recent files, Fiber Data Hub, opening the first FIB/FZ, reconstruction, templates, and main tools | Use `open_fib` with a path to open a known FIB/FZ, or without a path to open the FIB picker. |
+| **image** | General image viewing and image-window operations | Created when ordinary image formats are opened with `open_image`. |
+| **tracking** | FIB/FZ slices, regions, tracts, tracking, devices, settings | Use `open_fib` with an explicit path to open an additional FIB/FZ from an existing tracking window. |
+
+A `CMD` must use the quoted numeric `window` returned by `LIST`. Never target a
+window using its type, title, filename, or a guessed ID.
+
+Do not invent command names. To discover recent files, target the **main** window
+and use these exact commands:
+
+```json
+["list_recent_fib"]
+["list_recent_src"]
+```
+
+Use `list_recent_fib` for recent FIB/FZ files and `list_recent_src` for recent
+SRC/SZ files. Do not substitute guessed names such as `recent_list`.
+
+
 
 ### Discover windows
 
