@@ -454,7 +454,7 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
     static const QRegularExpression ansi_escape(
         QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
     QString chat,reasoning;
-    auto set_reply = [&](QByteArray result)
+    auto reply_object = [&](QJsonObject result)
     {
         if(!chat.isEmpty() || !reasoning.isEmpty())
         {
@@ -463,21 +463,13 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
                 entry["reasoning"] = reasoning;
             record_ai_history(info,entry);
         }
-        reply = std::move(result);
+        if(!info.prompts.isEmpty())
+            result["prompt"] = info.prompts;
+        reply = QJsonDocument(result).toJson(QJsonDocument::Compact);
         ai_log(QString("reply for %1@%2: %3 ...")
                    .arg(info.agent_name,session,
                         QString::fromUtf8(reply).left(32)));
         info.prompts = {};
-    };
-    auto add_prompts = [&](QJsonObject result)
-    {
-        if(!info.prompts.isEmpty())
-            result["prompt"] = info.prompts;
-        return result;
-    };
-    auto reply_object = [&](QJsonObject result)
-    {
-        set_reply(QJsonDocument(add_prompts(result)).toJson(QJsonDocument::Compact));
     };
     auto reply_error = [&](const QString& error)
     {
