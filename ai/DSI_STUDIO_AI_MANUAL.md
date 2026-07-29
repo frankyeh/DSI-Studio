@@ -115,8 +115,9 @@ image editing or batch processing.
 
 ## Request formats
 
-Send the exact resumable `session` UUID with each request. The `agent` field is
-not needed. An optional `chat` may accompany any request.
+Send the exact resumable `session` UUID with each request. A session not already
+known to DSI Studio must include `agent` in its first request; existing sessions
+do not need it. An optional `chat` may accompany any request.
 Attach an update directly to `CMD` when it describes that command; use standalone
 `CHAT` otherwise.
 
