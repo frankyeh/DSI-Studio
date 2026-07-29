@@ -4,8 +4,22 @@ Read this file once, then use `DSI_STUDIO_AI_MANUAL.md` and the topic-specific e
 
 ## Identity
 
-Use the exact nonempty resumable session UUID supplied by DSI Studio. Send it
-as `session` with every request. The `agent` field is not needed.
+Obtain the exact resumable session UUID assigned by the current agent runtime.
+Send it as `session` with every request. The `agent` field is not needed.
+
+### Codex
+
+Use the exact UUID of the current Codex task/thread exposed by its injected
+runtime context or task-specific runtime path. When DSI Studio launches Codex
+with JSON output, this is the same `thread_id` reported by `thread.started`.
+Codex Desktop may expose it as the UUID component of an injected task path such
+as `...\visualizations\YYYY\MM\DD\<uuid>`. Use only an ID explicitly associated
+with the current task; do not scan for, guess, or generate one.
+
+### Claude Code
+
+Read the current Claude process's `~/.claude/sessions/<pid>.json` file and use
+its `sessionId`, not its friendly `name` or process ID.
 
 ## Direct named-pipe connection
 
@@ -50,7 +64,8 @@ function Invoke-Dsi($request)
     }
 }
 
-$DsiSession = '<session-uuid>'
+# Obtain this using the matching Codex or Claude instructions above.
+$DsiSession = '<resumable-session-uuid>'
 ```
 
 Use the wrapper or executable fallback only when direct pipe access cannot run
