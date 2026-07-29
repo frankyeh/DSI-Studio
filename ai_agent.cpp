@@ -558,13 +558,11 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         auto compact = names.join(", ");
         auto destination = target ? target_type+" window" : "window "+id;
         add_ai_history(session,QJsonObject{
-                                    {"type","request"},
-                                    {"text",(compact.isEmpty() ? "unknown" : compact)+" \u2192 "+
-                                                 destination+
-                                                 (target_title.isEmpty() ? "" : " "+target_title)},
-                                    {"compact",compact},
-                                    {"window",id}
-                                });
+                {"type","request"},
+                {"text",(compact.isEmpty() ? "unknown" : compact)+" \u2192 "+
+                    destination+(target_title.isEmpty() ? "" : " "+target_title)},
+                {"compact",compact},
+                {"window",id}});
 
         auto fail = [&](const QString& error)
         {
@@ -591,22 +589,10 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         {
             QJsonObject result{{"index",index}};
             QString output,error,command_name;
-            auto args = commands[index].toArray();
             std::vector<std::string> cmd;
-
-            if(!commands[index].isArray() ||
-                !std::all_of(args.begin(),args.end(),
-                             [](const auto& value){return value.isString();}))
-                error = "command and parameters must be strings in an array";
-            else
-            {
-                cmd.reserve(size_t(args.size()));
-                for(const auto& value : args)
-                    cmd.push_back(value.toString().toUtf8().toStdString());
-                if(cmd.empty() || cmd[0].empty())
-                    error = "empty command";
-            }
-
+            for(const auto& value : (commands[index].isArray() ?
+                    commands[index].toArray() : QJsonArray{commands[index]}))
+                cmd.push_back(value.toVariant().toString().toStdString());
             if(error.isEmpty())
             {
                 command_name = QString::fromStdString(cmd[0]);
@@ -706,8 +692,7 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
                             tracking->slices.begin(),tracking->slices.end(),
                             [](const auto& slice)
                             {
-                                auto custom =
-                                    std::dynamic_pointer_cast<CustomSliceModel>(slice);
+                                auto custom = std::dynamic_pointer_cast<CustomSliceModel>(slice);
                                 return custom && custom->running;
                             });
 
