@@ -317,32 +317,20 @@ AIAgent::AIAgent(MainWindow* parent):
         if(!file.open(QIODevice::ReadOnly))
             continue;
 
-        QJsonArray loaded_history;
-        QString agent_name;
-        QJsonObject model_settings;
+        QJsonArray history;
         while(!file.atEnd())
-        {
-            auto doc = QJsonDocument::fromJson(file.readLine());
-            if(!doc.isObject())
-                continue;
-            auto entry = doc.object();
-            if(loaded_history.isEmpty())
-            {
-                agent_name = entry["agent"].toString();
-                model_settings = entry["model_settings"].toObject();
-            }
-            loaded_history.append(entry);
-        }
+            if(auto doc = QJsonDocument::fromJson(file.readLine());doc.isObject())
+                history.append(doc.object());
 
-        if(loaded_history.isEmpty() || session.isEmpty())
+        if(history.isEmpty() || session.isEmpty())
             continue;
-        auto* ai = create_ai_info(session,agent_name);
+        auto first = history.first().toObject();
+        auto* ai = create_ai_info(session,first["agent"].toString());
         if(!ai)
             continue;
-        ai->model_settings = model_settings;
+        ai->model_settings = first["model_settings"].toObject();
         ai->project_titles = settings.value("ai/title/"+session).toString();
-        for(const auto& entry : loaded_history)
-            ai->projects.append(entry);
+        ai->projects = std::move(history);
         show_ai_project(session);
     }
     if(ui->ai_project_list->count())
