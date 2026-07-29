@@ -3,9 +3,9 @@
 When asked to operate DSI Studio:
 
 1. Read `DSI_STUDIO_AI_SETUP.md`, then the manual and relevant examples only as needed.
-2. Send `TITLE` first after understanding the task.
-3. Call `LIST` only when current status or a tracking/image window ID is needed; `main` is fixed.
-4. Use exact IDs returned by `LIST`, verify completion, and ask before destructive actions.
+2. Send `TITLE` first after understanding the task; update it if the task changes substantially.
+3. Call `LIST` only when a tracking or image window ID is needed; `main` is fixed.
+4. Verify completion and ask before destructive actions.
 5. Do not launch another DSI Studio instance or modify the installation unless requested.
 
 ## Codex identity
