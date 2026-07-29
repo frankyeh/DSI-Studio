@@ -188,36 +188,37 @@ A meaningful command should normally include a useful progress update:
 The top-level `chat` field is shown to the user and does not change the command.
 Silent polling may omit it.
 
-Every `CMD` returns a JSON array with one result object per executed command.
-The `cmd` field identifies the command.
+Every reply has `status`; `CMD` puts one result per executed command in
+`result`. Each result has its own `status`, and `cmd` identifies the command.
 
 A command that produces text returns:
 
 ```json
-[{"cmd":"list_region","output":"<command output>"}]
+{"status":"success","result":[{"cmd":"list_region","status":"success","output":"<command output>"}]}
 ```
 
 A successful command with no captured text returns:
 
 ```json
-[{"cmd":"set_slice","output":"completed"}]
+{"status":"success","result":[{"cmd":"set_slice","status":"success","output":"completed"}]}
 ```
 
 An executed command that fails includes `error`:
 
 ```json
-[{"cmd":"set_slice","error":"<reason>"}]
+{"status":"error","result":[{"cmd":"set_slice","status":"error","error":"<reason>"}]}
 ```
 
-A request rejected before execution may return only an `error` field. Interpret
-the fields as follows:
+A request rejected before execution returns `status:"error"` with an `error`
+field. Interpret the fields as follows:
 
+- `status` is `success`, `error`, or `busy`.
 - `cmd` identifies the executed command.
 - `output` contains captured text or `completed` when no text was captured.
-- The presence of `error` means failure regardless of `output`.
+- `error` explains a failed request or command.
 - A command batch stops after the first error.
 
-A response without `error` does not prove that asynchronous work has finished or
+A `success` response does not prove that asynchronous work has finished or
 that a GUI-backed operation created the expected object. Verify the resulting
 window, file, region, tract, slice status, or other documented state before
 reporting completion.
