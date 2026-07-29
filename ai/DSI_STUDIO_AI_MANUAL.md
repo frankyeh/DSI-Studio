@@ -130,6 +130,7 @@ Example reply:
 
 ```json
 {
+  "status":"success",
   "application":{"status":"busy"},
   "windows":{
     "main":{"status":"idle","title":"DSI Studio"},
