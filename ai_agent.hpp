@@ -2,8 +2,8 @@
 #define AI_AGENT_HPP
 
 #include <QByteArray>
-#include <QJsonArray>
 #include <QJsonObject>
+#include <QList>
 #include <QMainWindow>
 #include <QSettings>
 #include <QStringList>
@@ -27,7 +27,7 @@ struct ai_info{
     QString sessions,agent_name,project_titles;
     ai_provider provider = ai_provider::Unknown;
     QProcess* processes = nullptr;
-    QJsonArray projects;
+    QList<QJsonObject> projects;
     QStringList prompts;
     QListWidgetItem* project_items = nullptr;
     QJsonObject model_settings;
@@ -60,6 +60,7 @@ class AIAgent : public QMainWindow
     void set_ai_status(QString = {},bool = false);
     void show_ai_project(ai_info&,QJsonObject = {});
     void stop_ai_blink();
+    void update_agent_models(int,QStringList,QJsonObject);
     void refresh_ollama_models();
     void refresh_codex_models(const QString&);
     void start_ai(QString,const QString&,ai_input);

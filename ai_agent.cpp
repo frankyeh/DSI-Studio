@@ -12,6 +12,7 @@
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QInputDialog>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QLabel>
 #include <QLineEdit>
@@ -73,7 +74,7 @@ QString ai_info::details() const
     int user = 0,assistant = 0,activity = 0;
     for(const auto& value : projects)
     {
-        auto type = value.toObject()["type"].toString();
+        auto type = value["type"].toString();
         user += type == "user";
         assistant += type == "assistant";
         activity += type == "request" || type == "activity";
@@ -86,8 +87,7 @@ QString ai_info::details() const
         "Created: %9<br>Updated: %10")
         .arg(title().toHtmlEscaped(),agent_name.toHtmlEscaped(),sessions.toHtmlEscaped(),processes ? "Working" : "Idle")
         .arg(user+assistant).arg(user).arg(assistant).arg(activity)
-        .arg(time(projects.first().toObject()["time"]),
-             time(projects.last().toObject()["time"]));
+        .arg(time(projects.first()["time"]),time(projects.last()["time"]));
 }
 void ai_log(QString text)
 {
@@ -351,7 +351,7 @@ AIAgent::AIAgent(MainWindow* parent):
     {
         auto session = QUrl::fromPercentEncoding(
                            info.completeBaseName().toLatin1());
-        QJsonArray history;
+        QList<QJsonObject> history;
         QFile file(info.filePath());
         if(!file.open(QIODevice::ReadOnly))
             continue;
@@ -360,7 +360,7 @@ AIAgent::AIAgent(MainWindow* parent):
                 history.append(doc.object());
         if(history.isEmpty() || session.isEmpty())
             continue;
-        auto first = history.first().toObject();
+        auto first = history.first();
         auto* ai = ai_info::create(session,first["agent"].toString());
         if(!ai)
             continue;
@@ -413,14 +413,14 @@ ai_info* ai_info::create(QString session,QString agent)
 }
 
 void write_history(const ai_info& info,QIODevice::OpenMode mode,
-                   const QJsonArray& entries)
+                   const QList<QJsonObject>& entries)
 {
     if(!QSettings().value("ai/keep_history",true).toBool())
         return;
     QFile file(ai_info::history_file(info.sessions));
     bool okay = file.open(QIODevice::WriteOnly|mode);
     for(const auto& entry : entries)
-        okay = okay && file.write(QJsonDocument(entry.toObject()).toJson(
+        okay = okay && file.write(QJsonDocument(entry).toJson(
                                       QJsonDocument::Compact)+'\n') >= 0;
     if(!okay)
         tipl::warning() << "cannot write ai history : "
@@ -435,7 +435,7 @@ void ai_info::record_history(ai_info& info,QJsonObject entry)
     }
     entry["time"] = QDateTime::currentDateTime().toString(Qt::ISODate);
     info.projects.append(entry);
-    write_history(info,QIODevice::Append,QJsonArray{entry});
+    write_history(info,QIODevice::Append,QList<QJsonObject>{entry});
 }
 void AIAgent::showEvent(QShowEvent* event)
 {
@@ -898,20 +898,20 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     };
 
     const bool paired = added_type == "assistant" && history.size() > 1 &&
-            history[history.size()-2].toObject()["type"] == "request";
+            history[history.size()-2]["type"] == "request";
     const bool rebuild = added_type.isEmpty() || added_type == "request" || paired;
 
     if(rebuild)
     {
         auto standalone_request = [&](int index)
         {
-            return history[index].toObject()["type"] == "request" &&
-                   (index+1 == history.size() || history[index+1].toObject()["type"] != "assistant");
+            return history[index]["type"] == "request" &&
+                   (index+1 == history.size() || history[index+1]["type"] != "assistant");
         };
         ui->ai_chat_history->clear();
         for(int index = 0;index < history.size();++index)
         {
-            auto entry = history[index].toObject();
+            auto entry = history[index];
             auto type = entry["type"].toString();
             if(type == "request")
             {
@@ -924,8 +924,8 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
                 auto end = index;
                 while(!window.isEmpty() && end+1 < history.size() &&
                       standalone_request(end+1) &&
-                      history[end+1].toObject()["window"].toVariant().toString() == window)
-                    activities << request_compact(history[++end].toObject());
+                      history[end+1]["window"].toVariant().toString() == window)
+                    activities << request_compact(history[++end]);
                 if(end != index)
                 {
                     auto target = full;
@@ -933,13 +933,13 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
                     combined["text"] = activities.join(", ")+" \u2192 "+target;
                 }
                 append(combined,{},end == index ? QString() :
-                       history[end].toObject()["time"].toString());
+                       history[end]["time"].toString());
                 index = end;
                 continue;
             }
             auto activity = type == "assistant" && index &&
-                            history[index-1].toObject()["type"] == "request" ?
-                            history[index-1].toObject()["text"].toString() :
+                            history[index-1]["type"] == "request" ?
+                            history[index-1]["text"].toString() :
                             QString();
             append(entry,activity);
         }
@@ -964,6 +964,21 @@ void AIAgent::stop_ai_blink()
     row->findChild<QTimer*>("ai_chat_blink")->stop();
     row->setStyleSheet({});
 }
+void AIAgent::update_agent_models(
+    int index,QStringList models,QJsonObject profiles)
+{
+    models.removeDuplicates();
+    models.sort(Qt::CaseInsensitive);
+    ui->ai_agent_selector->setItemData(index,models);
+    ui->ai_agent_selector->setItemData(
+        index,QVariant::fromValue(profiles),Qt::UserRole+2);
+
+    if(ui->ai_agent_selector->currentIndex() == index)
+        set_model_selector(
+            *ui->ai_model_selector,*ui->ai_agent_selector,index,
+            ui->ai_model_selector->currentText(),
+            settings.value("ai/default_model").toString());
+}
 void AIAgent::refresh_codex_models(const QString& path)
 {
     if(path.isEmpty())
@@ -986,15 +1001,11 @@ void AIAgent::refresh_codex_models(const QString& path)
             if(!model.isEmpty()) models << model;
         }
 
-        models.removeDuplicates();
-        models.sort(Qt::CaseInsensitive);
         auto index = int(ai_provider::Codex);
-        ui->ai_agent_selector->setItemData(index,models);
-        if(ui->ai_agent_selector->currentIndex() == index)
-            set_model_selector(
-                *ui->ai_model_selector,*ui->ai_agent_selector,index,
-                ui->ai_model_selector->currentText(),
-                settings.value("ai/default_model").toString());
+        update_agent_models(
+            index,std::move(models),
+            ui->ai_agent_selector->itemData(
+                index,Qt::UserRole+2).toJsonObject());
         refresh_ollama_models();
         process->deleteLater();
     });
@@ -1027,17 +1038,7 @@ void AIAgent::refresh_ollama_models()
                     QJsonObject{{"provider",int(ai_model_provider::Ollama)}};
             }
 
-            models.removeDuplicates();
-            models.sort(Qt::CaseInsensitive);
-            ui->ai_agent_selector->setItemData(index,models);
-            ui->ai_agent_selector->setItemData(
-                index,QVariant::fromValue(profiles),Qt::UserRole+2);
-
-            if(ui->ai_agent_selector->currentIndex() == index)
-                set_model_selector(
-                    *ui->ai_model_selector,*ui->ai_agent_selector,index,
-                    ui->ai_model_selector->currentText(),
-                    settings.value("ai/default_model").toString());
+            update_agent_models(index,std::move(models),std::move(profiles));
         }
     };
 
@@ -1201,9 +1202,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
             info->model_settings = launch.model_setting;
             if(!info->projects.isEmpty())
             {
-                auto first = info->projects.first().toObject();
-                first["model_settings"] = info->model_settings;
-                info->projects[0] = first;
+                info->projects[0]["model_settings"] = info->model_settings;
                 write_history(*info,QIODevice::Truncate,info->projects);
             }
         }
@@ -1394,13 +1393,10 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
                     tipl::out() << "stdout:" << line.toStdString();
                     auto event = QJsonDocument::fromJson(line).object();
                     auto event_type = event["type"].toString();
-                    if(event_type == "system")
-                    {
-                        if(event["subtype"] == "thinking_tokens" &&
-                           ai_status_activity != "Thinking")
-                            set_ai_status("Thinking");
-                        continue;
-                    }
+                    if(event_type == "system" &&
+                       event["subtype"] == "thinking_tokens" &&
+                       ai_status_activity != "Thinking")
+                        set_ai_status("Thinking");
                     if(event_type != "assistant")
                         continue;
 
@@ -1418,10 +1414,9 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
                             reasonings << (text.isEmpty() ? content["text"].toString() : text);
                         }
                     }
-                    auto chat = chats.join('\n').trimmed();
-                    auto reasoning = reasonings.join('\n').trimmed();
                     if(auto* info = ai_info::find(process->objectName()))
-                        add_ai_reply(*info,chat,reasoning);
+                        add_ai_reply(*info,chats.join('\n').trimmed(),
+                                     reasonings.join('\n').trimmed());
                 }
             });
     // Prepend a system prompt to the initial text here if needed.
