@@ -496,6 +496,18 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         ai_infos[session].set_agent_name(agent_name);
     }
 
+    auto window_id = [](QWidget* window)
+    {
+        if(qobject_cast<MainWindow*>(window))
+            return QString("main");
+        auto address = QString::number(reinterpret_cast<quintptr>(window),16);
+        if(qobject_cast<tracking_window*>(window))
+            return "tracking"+address;
+        if(qobject_cast<view_image*>(window))
+            return "image"+address;
+        return QString();
+    };
+
     chat = request["chat"].toString().trimmed();
     if(type == "TITLE")
     {
@@ -512,30 +524,25 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
     {
         auto msg = QString("[AI REQUEST] ")+type+" from "+
                    agent_name+"@"+session;
-        tipl::progress p(
-            msg.remove('\r').replace('\n',' ').toStdString());
+        tipl::progress p(msg.remove('\r').replace('\n',' ').toStdString());
 
         auto commands = request["command"].toArray();
         if(!commands.isEmpty() && commands[0].isString())
-        {
-            QJsonArray batch;
-            batch.append(commands);
-            commands = batch;
-        }
+            commands = QJsonArray{commands};
 
-        auto id = request["window"].toVariant().toString();
+        auto id = request["window"].toString();
         auto windows = QApplication::allWidgets();
         QWidget* target = nullptr;
         QString target_type,target_title;
+
         for(auto* window : windows)
-            if(window->property("remote_id").toString() == id)
+            if(window_id(window) == id)
             {
                 target = window;
                 target_type =
                     qobject_cast<MainWindow*>(window) ? "main" :
-                        qobject_cast<tracking_window*>(window) ? "tracking" :
-                        qobject_cast<view_image*>(window) ? "image" : "unknown";
-                if(target_type != QString("main"))
+                        qobject_cast<tracking_window*>(window) ? "tracking" : "image";
+                if(target_type != "main")
                     target_title = QFileInfo(window->windowTitle()).fileName();
                 break;
             }
@@ -544,41 +551,41 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         for(const auto& value : commands)
         {
             auto command = value.toArray();
-            if(command.isEmpty())
-                continue;
-            auto name = command[0].toString();
-            if(name == "hub" && command.size() > 1)
-                name += " "+command[1].toString();
-            names << name;
+            if(!command.isEmpty())
+                names << command[0].toString();
         }
+
         auto compact = names.join(", ");
-        auto destination = target_type.isEmpty() ?
-            "window "+id : target_type+" window";
-        auto summary =
-            (compact.isEmpty() ? "unknown" : compact)+" \u2192 "+
-            destination+(target_title.isEmpty() ? "" : " "+target_title);
+        auto destination = target ? target_type+" window" : "window "+id;
         add_ai_history(session,QJsonObject{
-            {"type","request"},{"text",summary},
-            {"compact",compact},{"window",id}});
+                                    {"type","request"},
+                                    {"text",(compact.isEmpty() ? "unknown" : compact)+" \u2192 "+
+                                                 destination+
+                                                 (target_title.isEmpty() ? "" : " "+target_title)},
+                                    {"compact",compact},
+                                    {"window",id}
+                                });
 
         auto fail = [&](const QString& error)
         {
-            QJsonArray results{QJsonObject{
-                {"index",0},{"okay",false},{"output",""},{"error",error}}};
-            reply_results(session,results);
+            reply_results(session,QJsonArray{QJsonObject{
+                                       {"index",0},{"error",error}
+                                   }});
         };
-        if(id.isEmpty() || commands.isEmpty())
-            return fail("invalid "+type+". Read ai/DSI_STUDIO_AI_MANUAL.md before retry.");
 
+        if(id.isEmpty() || commands.isEmpty())
+            return fail("invalid CMD. Read ai/DSI_STUDIO_AI_MANUAL.md before retry.");
         if(!target)
             return fail("window not found");
+
         for(auto* window : windows)
             if(window->property("busy").toBool())
-                return fail("another "+type+" is running; check opened windows");
+                return fail("another CMD is running; check opened windows");
 
         bool updates_enabled = target->updatesEnabled();
         target->setUpdatesEnabled(false);
         target->setProperty("busy",true);
+
         QJsonArray results;
         for(int index = 0;index < commands.size();++index)
         {
@@ -586,9 +593,6 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
             QString output,error,command_name;
             auto args = commands[index].toArray();
             std::vector<std::string> cmd;
-            cmd.reserve(size_t(args.size()));
-            for(const auto& value : args)
-                cmd.push_back(value.toString().toUtf8().toStdString());
 
             if(!commands[index].isArray() ||
                 !std::all_of(args.begin(),args.end(),
@@ -603,8 +607,6 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
                     error = "empty command";
             }
 
-
-            bool okay = false;
             if(error.isEmpty())
             {
                 command_name = QString::fromStdString(cmd[0]);
@@ -621,47 +623,45 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
                         if(!window->command(cmd))
                         {
                             error = QString::fromUtf8(window->error_msg);
-                            error = (error.isEmpty() ? "command failed" : error) +
+                            error = (error.isEmpty() ? "command failed" : error)+
                                     ". Read ai/DSI_STUDIO_AI_MANUAL.md and retry.";
                         }
                     };
+
                     if(auto* window = qobject_cast<MainWindow*>(target))
                         execute(window);
                     else if(auto* window = qobject_cast<tracking_window*>(target))
                         execute(window);
                     else if(auto* window = qobject_cast<view_image*>(target))
                         execute(window);
-                    else
-                        error = "unsupported window";
-
                 }
                 catch(const std::exception& e){error = e.what();}
                 catch(...){error = "unknown error";}
+
                 {
                     std::lock_guard<std::mutex> lock(console.edit_buf);
                     console.capture = nullptr;
                 }
             }
-            target->setProperty("command",QVariant());
 
+            target->setProperty("command",QVariant());
             output.remove(ansi_escape);
             error.remove(ansi_escape);
 
-            if(output.isEmpty())
-                result["output"] = "command completed";
-            else
-                result["output"] = output;
+            result["output"] = output.isEmpty() ? "command completed" : output;
             if(!error.isEmpty())
                 result["error"] = error;
             results.append(result);
 
-            activity = command_name + (!error.isEmpty() ? QString(":" + error) : QString(" completed"));
+            activity = command_name+
+                       (error.isEmpty() ? " completed" : ":"+error);
             if(!error.isEmpty())
                 break;
         }
 
         target->setProperty("busy",false);
         target->setUpdatesEnabled(updates_enabled);
+
         if(auto* window = qobject_cast<tracking_window*>(target))
         {
             window->slice_need_update = true;
@@ -669,6 +669,7 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         }
         else
             target->update();
+
         return reply_results(session,results);
     }
 
@@ -678,7 +679,6 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
 
     if(type == "LIST")
     {
-        static quint64 next_tracking = 0,next_image = 0;
         auto status = [](bool waiting,bool busy)
         {
             return waiting ? "waiting" : busy ? "busy" : "idle";
@@ -690,43 +690,28 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
 
         for(auto* window : QApplication::allWidgets())
         {
-            QString prefix;
-            quint64* next = nullptr;
-            bool busy = window->property("busy").toBool();
-
-            if(qobject_cast<MainWindow*>(window))
-                prefix = "main";
-            else if(auto* tracking = qobject_cast<tracking_window*>(window))
-            {
-                prefix = "tracking";
-                next = &next_tracking;
-                busy |= tracking->history.running_commands ||
-                        (tracking->tractWidget &&
-                         std::any_of(tracking->tractWidget->thread_data.begin(),
-                                     tracking->tractWidget->thread_data.end(),
-                                     [](const auto& thread){return bool(thread);})) ||
-                         std::any_of(tracking->slices.begin(),tracking->slices.end(),
-                                    [](const auto& slice)
-                                    {
-                                        auto custom = std::dynamic_pointer_cast<CustomSliceModel>(slice);
-                                        return custom && custom->running;
-                                    });
-            }
-            else if(qobject_cast<view_image*>(window))
-            {
-                prefix = "image";
-                next = &next_image;
-            }
-            else
+            auto id = window_id(window);
+            if(id.isEmpty())
                 continue;
 
-            if(!window->property("remote_id").isValid())
-                window->setProperty("remote_id",
-                                    next ? prefix+QString::number(++*next) : prefix);
+            bool busy = window->property("busy").toBool();
+            if(auto* tracking = qobject_cast<tracking_window*>(window))
+                busy |= tracking->history.running_commands ||
+                        (tracking->tractWidget &&
+                         std::any_of(
+                             tracking->tractWidget->thread_data.begin(),
+                             tracking->tractWidget->thread_data.end(),
+                             [](const auto& thread){return bool(thread);})) ||
+                        std::any_of(
+                            tracking->slices.begin(),tracking->slices.end(),
+                            [](const auto& slice)
+                            {
+                                auto custom =
+                                    std::dynamic_pointer_cast<CustomSliceModel>(slice);
+                                return custom && custom->running;
+                            });
 
-            auto id = window->property("remote_id").toString();
-            bool waiting = modal &&
-                           (modal == window || window->isAncestorOf(modal));
+            bool waiting = modal && (modal == window || window->isAncestorOf(modal));
             windows[id] = QJsonObject{
                 {"status",status(waiting,busy)},
                 {"title",QDir::fromNativeSeparators(window->windowTitle())}
@@ -736,7 +721,7 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
 
         return reply_text(session,QJsonDocument(QJsonObject{
                 {"application",QJsonObject{
-                {"status",status(modal,application_busy)}}},
+                {"status",status(bool(modal),application_busy)}}},
                 {"windows",windows}
                 }).toJson(QJsonDocument::Compact));
     }
