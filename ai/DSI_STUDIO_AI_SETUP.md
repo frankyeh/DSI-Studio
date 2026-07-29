@@ -114,16 +114,17 @@ or `LOG`, and do not put the title in `chat` or `text`. Keep the same exact
 
 ## Window and command routing — read this first
 
-Call top-level `LIST` before any `CMD`. It returns a numeric ID and type for each open window.
+Call top-level `LIST` before any `CMD`. It returns the application status and a
+named ID for each open window.
 
-| Window type | Use it for | Important opening command |
+| Window ID | Use it for | Important opening command |
 |---|---|---|
 | **main** | Recent files, Fiber Data Hub, opening the first FIB/FZ, reconstruction, templates, and main tools | Use `open_fib` with a path to open a known FIB/FZ, or without a path to open the FIB picker. |
-| **image** | General image viewing and image-window operations | Created when ordinary image formats are opened with `open_image`. |
-| **tracking** | FIB/FZ slices, regions, tracts, tracking, devices, settings | Use `open_fib` with an explicit path to open an additional FIB/FZ from an existing tracking window. |
+| **image1**, **image2**, ... | General image viewing and image-window operations | Created when ordinary image formats are opened with `open_image`. |
+| **tracking1**, **tracking2**, ... | FIB/FZ slices, regions, tracts, tracking, devices, settings | Use `open_fib` with an explicit path to open an additional FIB/FZ from an existing tracking window. |
 
-A `CMD` must use the quoted numeric `window` returned by `LIST`. Never target a
-window using its type, title, filename, or a guessed ID.
+A `CMD` must use the exact quoted `window` ID returned by `LIST`. Never target a
+window using its title, filename, guessed ID, or an ID from an earlier process.
 
 Do not invent command names. To discover recent files, target the **main** window
 and use these exact commands:
@@ -148,14 +149,22 @@ Invoke-Dsi @{
 }
 ```
 
-Example reply shape:
+Example reply:
 
-```text
-OKAY    busy    level    status
-main    1       0       0    DSI Studio
-tracking 2      0       0    C:/data/subject.fz
-image   3       0       0    C:/data/T1w.nii.gz
+```json
+{
+  "application":{"status":"busy"},
+  "windows":{
+    "main":{"status":"idle","title":"DSI Studio"},
+    "tracking1":{"status":"busy","title":"subject.fz"},
+    "image1":{"status":"idle","title":"T1w.nii.gz"}
+  }
+}
 ```
+
+`status` is `idle`, `busy`, or `waiting`. Use the exact window key, such as
+`main`, `tracking1`, or `image1`, as the `CMD` target. IDs remain assigned for
+the lifetime of the window and are not renumbered when another window closes.
 
 ### Send a command
 
@@ -164,7 +173,7 @@ Invoke-Dsi @{
     agent=$DsiAgent
     session=$DsiSession
     request='CMD'
-    window='2'
+    window='tracking1'
     command=@('list_region')
     chat='Checking the available regions before making changes.'
 }
@@ -218,15 +227,14 @@ itself as the file-opening request.
 
 ### Open the first FIB/FZ
 
-Obtain the **main** window ID with `LIST`, then send `open_fib` with the known
-path:
+Target `main`, then send `open_fib` with the known path:
 
 ```powershell
 Invoke-Dsi @{
     agent=$DsiAgent
     session=$DsiSession
     request='CMD'
-    window='1'
+    window='main'
     command=@('open_fib','C:/data/subject.fz')
     chat='Opening the FIB file.'
 }
@@ -246,15 +254,15 @@ Invoke-Dsi @{
     agent=$DsiAgent
     session=$DsiSession
     request='CMD'
-    window='2'
+    window='tracking1'
     command=@('open_fib','C:/data/second_subject.fz')
     chat='Opening an additional FIB file.'
 }
 ```
 
 Both main- and tracking-window `open_fib` accept a path, but they are separate
-command implementations. Always target the intended numeric window ID. Do not
-use `open_image` to open FIB/FZ files; use it for ordinary image files and
+command implementations. Always target the intended named window ID. Do not use
+`open_image` to open FIB/FZ files; use it for ordinary image files and
 image-window workflows.
 
 ## Slice and tract status that commonly cause confusion
@@ -345,7 +353,7 @@ Invoke-Dsi @{
     agent=$DsiAgent
     session=$DsiSession
     request='CMD'
-    window='2'
+    window='tracking1'
     command=@('run_tracking','CST')
     chat='The seed and tracking parameters are ready. I am starting the CST bundle now.'
 }
