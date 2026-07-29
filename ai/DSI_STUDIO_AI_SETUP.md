@@ -133,8 +133,8 @@ Do not invent command names. To discover recent files, target the **main** windo
 and use these exact commands:
 
 ```json
-["list_recent_fib"]
-["list_recent_src"]
+{"cmd":"list_recent_fib"}
+{"cmd":"list_recent_src"}
 ```
 
 Use `list_recent_fib` for recent FIB/FZ files and `list_recent_src` for recent
@@ -168,6 +168,33 @@ Example reply:
 `status` is `idle`, `busy`, or `waiting`. Use the exact window key returned by
 `LIST`, such as `main` or `tracking7ff6ab123410`, as the `CMD` target.
 
+### Command field format
+
+The `command` field accepts one command object or an array of command objects.
+Each command object requires `cmd`. Omit `param` when the command has no
+parameter. Use a scalar `param` for one parameter and an array for multiple
+parameters, preserving their command order.
+
+```json
+{"cmd":"hub_repo"}
+{"cmd":"hub_tags","param":"data-hcp/lifespan"}
+{"cmd":"hub_files","param":["data-hcp/lifespan","tag",0,20]}
+```
+
+Multiple commands execute sequentially in the same targeted window and stop
+after the first error:
+
+```json
+[
+  {"cmd":"hub_repo"},
+  {"cmd":"hub_tags","param":"data-hcp/lifespan"}
+]
+```
+
+Command names and text, path, or composite parameters are strings. Send
+standalone numeric parameters as JSON numbers. Do not use the former positional
+array format such as `["hub_tags","data-hcp/lifespan"]`.
+
 ### Send a command
 
 ```powershell
@@ -176,41 +203,41 @@ Invoke-Dsi @{
     session=$DsiSession
     request='CMD'
     window='tracking7ff6ab123410'
-    command=@('list_region')
+    command=@{cmd='list_region'}
     chat='Checking the available regions before making changes.'
 }
 ```
 
-Command names and text or path parameters are strings. Send numeric parameters
-as numbers, for example `7`, not `'7'`.
 An optional `chat` may accompany any request. Keep it on `CMD` when reporting
 the command already being sent instead of making a separate `CHAT` request.
 
-Every `CMD` returns a JSON array with one result object per command.
+Every `CMD` returns a JSON array with one result object per executed command.
+The `cmd` field identifies the command.
 
 A command that produces text returns:
 
 ```json
-[{"index":0,"output":"<command output>"}]
+[{"cmd":"list_region","output":"<command output>"}]
 ```
 
 A successful command with no captured text returns:
 
 ```json
-[{"index":0,"output":"command completed"}]
+[{"cmd":"set_slice","output":"completed"}]
 ```
 
-A failed command returns an `error` field:
+An executed command that fails includes `error`:
 
 ```json
-[{"index":0,"error":"<reason>"}]
+[{"cmd":"set_slice","output":"completed","error":"<reason>"}]
 ```
 
-The presence of `error` means that command failed. A batch stops after the first
-error. `command completed` means the command handler returned without an
-immediate error; asynchronous or GUI-backed work may still require verification
-with `LIST`, the relevant `list_*` command, or the expected window, object, or
-file.
+A request rejected before execution may return only an `error` field. The
+presence of `error` means failure regardless of `output`. A command batch stops
+after the first error. A result without `error` means the command handler
+returned without an immediate error; asynchronous or GUI-backed work may still
+require verification with `LIST`, the relevant discovery command, or the
+expected window, object, or file.
 
 ### Send a final or standalone message
 
@@ -238,13 +265,13 @@ Invoke-Dsi @{
     session=$DsiSession
     request='CMD'
     window='main'
-    command=@('open_fib','C:/data/subject.fz')
+    command=@{cmd='open_fib';param='C:/data/subject.fz'}
     chat='Opening the FIB file.'
 }
 ```
 
 This opens the supplied `.fz`, `*fib.gz`, or `.dz` file and creates a tracking
-window. Omit the path to open the local FIB picker instead. Afterward, call
+window. Omit `param` to open the local FIB picker instead. Afterward, call
 `LIST` and use the new tracking-window ID.
 
 ### Open an additional FIB/FZ
@@ -258,7 +285,7 @@ Invoke-Dsi @{
     session=$DsiSession
     request='CMD'
     window='tracking7ff6ab123410'
-    command=@('open_fib','C:/data/second_subject.fz')
+    command=@{cmd='open_fib';param='C:/data/second_subject.fz'}
     chat='Opening an additional FIB file.'
 }
 ```
@@ -273,7 +300,7 @@ and image-window workflows.
 ### `list_slice`
 
 ```powershell
-command=@('list_slice')
+command=@{cmd='list_slice'}
 ```
 
 The reply columns are:
@@ -296,7 +323,7 @@ poll until the selected row reports `ready`.
 Full details require no parameter:
 
 ```powershell
-command=@('list_tract')
+command=@{cmd='list_tract'}
 ```
 
 The full reply uses these columns:
@@ -311,7 +338,7 @@ Each bundle's `status` is `running` or `done`. The `shown` field is a separate
 Compact status uses the literal string `status`:
 
 ```powershell
-command=@('list_tract','status')
+command=@{cmd='list_tract';param='status'}
 ```
 
 The compact reply uses:
@@ -324,7 +351,7 @@ status    bundles
 means tracking is complete. `bundles` is the total number of tract rows, not the
 number of running jobs.
 
-A numeric tract index is not required. If `["list_tract"]` produces
+A numeric tract index is not required. If `{"cmd":"list_tract"}` produces
 `need-param1`, the command was likely sent through a malformed or incompatible
 wrapper rather than the standard JSON `CMD` interface.
 
@@ -333,10 +360,10 @@ wrapper rather than the standard JSON `CMD` interface.
 A new bundle name is mandatory:
 
 ```powershell
-command=@('run_tracking','CST')
+command=@{cmd='run_tracking';param='CST'}
 ```
 
-The second element becomes the new bundle name. An empty name fails. The simple
+The `param` value becomes the new bundle name. An empty name fails. This simple
 form uses current tracking parameters and checked regions.
 
 ## Polling and progress
@@ -357,7 +384,7 @@ Invoke-Dsi @{
     session=$DsiSession
     request='CMD'
     window='tracking7ff6ab123410'
-    command=@('run_tracking','CST')
+    command=@{cmd='run_tracking';param='CST'}
     chat='The seed and tracking parameters are ready. I am starting the CST bundle now.'
 }
 ```
