@@ -1439,13 +1439,11 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
 
     connect(process,&QProcess::readyReadStandardOutput,this,[=]
             {
-                auto output = process->readAllStandardOutput();
-                tipl::out() << "stdout:" << output.toStdString();
-                auto buffer = process->property("stdout_buffer").toByteArray()+output;
-                for(int pos;(pos = buffer.indexOf('\n')) >= 0;)
+                while(process->canReadLine())
                 {
-                    auto event = QJsonDocument::fromJson(buffer.left(pos)).object();
-                    buffer.remove(0,pos+1);
+                    auto line = process->readLine();
+                    tipl::out() << "stdout:" << line.toStdString();
+                    auto event = QJsonDocument::fromJson(line).object();
                     auto event_type = event["type"].toString();
                     if(event_type == "system")
                     {
@@ -1476,7 +1474,6 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
                     if(auto* info = ai_info::find(process->objectName()))
                         add_ai_reply(*info,chat,reasoning);
                 }
-                process->setProperty("stdout_buffer",buffer);
             });
     connect(process,&QProcess::started,process,
             [process,prompt,claude_input]
@@ -1501,13 +1498,11 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
     auto* process = launch.process;
     connect(process,&QProcess::readyReadStandardOutput,this,[=]
     {
-        auto buffer = process->property("stdout_buffer").toByteArray()+
-                      process->readAllStandardOutput();
-        tipl::out() << "stdout:" << buffer.toStdString();
-        for(int pos;(pos = buffer.indexOf('\n')) >= 0;)
+        while(process->canReadLine())
         {
-            auto event = QJsonDocument::fromJson(buffer.left(pos)).object();
-            buffer.remove(0,pos+1);
+            auto line = process->readLine();
+            tipl::out() << "stdout:" << line.toStdString();
+            auto event = QJsonDocument::fromJson(line).object();
             if(event["type"] == "thread.started")
             {
                 auto session = event["thread_id"].toString();
@@ -1545,8 +1540,6 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
                 }
             }
         }
-
-        process->setProperty("stdout_buffer",buffer);
     });
 
     QStringList args{"exec","--add-dir",launch.project_dir};
