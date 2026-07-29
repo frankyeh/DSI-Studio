@@ -33,9 +33,6 @@ struct ai_info{
     static ai_provider identify_provider(const QString&);
     QString title(const QString& session) const {return project_titles.isEmpty() ? (agent_name.isEmpty() ? session : agent_name+"@"+session) : project_titles;}
     QString details(const QString&) const;
-    void set_agent_name(const QString&);
-    void set_provider(ai_provider,const QString&);
-    void set_process(QProcess*);
 };
 ai_info* find_ai_info(const QString&);
 ai_info* create_ai_info(QString,QString);

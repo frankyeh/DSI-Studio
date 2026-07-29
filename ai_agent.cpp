@@ -87,18 +87,6 @@ QString ai_info::details(const QString& session) const
         .arg(time(projects.first().toObject()["time"]),
              time(projects.last().toObject()["time"]));
 }
-void ai_info::set_agent_name(const QString& name)
-{
-    if(!name.isEmpty()) set_provider(identify_provider(name),name);
-}
-void ai_info::set_provider(ai_provider value,const QString& name)
-{
-    provider = value; agent_name = name;
-}
-void ai_info::set_process(QProcess* process)
-{
-    processes = process;
-}
 void ai_log(QString text)
 {
     tipl::out() << ("[AI AGENT] "+text.remove('\r').replace('\n',"\n[AI AGENT] ")).toStdString();
@@ -396,7 +384,7 @@ ai_info* create_ai_info(QString session,QString agent)
         return nullptr;
     auto& info = ai_infos[session];
     info.sessions = std::move(session);
-    info.set_provider(provider,agent);
+    info.provider = provider; info.agent_name = agent;
     return &info;
 }
 bool save_ai_title(ai_info& info,QString title)
@@ -1279,7 +1267,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
     process->setWorkingDirectory(QApplication::applicationDirPath()+"/ai");
 
     if(!session.isEmpty())
-        ai_infos[session].set_process(process);
+        ai_infos[session].processes = process;
     else
         set_ai_enabled(false);
 
@@ -1332,7 +1320,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
         }
         else
         {
-            ai_infos[session].set_process(nullptr);
+            ai_infos[session].processes = nullptr;
             ai_infos[session].prompts.append(text);
             add_ai_history(session,"activity",
                            "Cannot start AI agent: "+
@@ -1366,7 +1354,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
         else
         {
             auto& info = ai_infos[session];
-            info.set_process(nullptr);
+            info.processes = nullptr;
 
             QString pending;
             for(int index = 0;index < info.prompts.size();++index)
@@ -1561,7 +1549,7 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
                 if(started_new_session)
                 {
                     process->setObjectName(session);
-                    info->set_process(process);
+                    info->processes = process;
                     add_ai_history(session,"user",text);
                     set_ai_status("Agent session ready.",true);
                     for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
