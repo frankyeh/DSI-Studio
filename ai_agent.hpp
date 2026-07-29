@@ -33,11 +33,16 @@ struct ai_info{
     QListWidgetItem* project_items = nullptr;
     QJsonObject model_settings;
     static ai_provider identify_provider(const QString&);
+    static ai_info* find(const QString&);
+    static ai_info* create(QString,QString);
+    static QString history_file(const QString&);
+    static QJsonArray load_history(const QString&);
+    static bool save_title(ai_info&,QString);
+    static void record_history(ai_info&,QJsonObject);
+    static bool save_history(const ai_info&);
     QString title(const QString& session) const {return project_titles.isEmpty() ? (agent_name.isEmpty() ? session : agent_name+"@"+session) : project_titles;}
     QString details(const QString&) const;
 };
-ai_info* find_ai_info(const QString&);
-ai_info* create_ai_info(QString,QString);
 void ai_command(ai_info&,const QByteArray&,QByteArray&);
 
 struct ai_launch;

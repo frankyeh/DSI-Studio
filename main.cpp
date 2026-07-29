@@ -599,13 +599,13 @@ int main(int ac, char *av[])
                             reply = status_reply("error","invalid session: provide resumable provider thread ID");
                         else
                         {
-                            auto* info = find_ai_info(session);
+                            auto* info = ai_info::find(session);
                             if(!info)
                             {
                                 auto agent = object["agent"].toString().trimmed();
                                 if(agent.isEmpty())
                                     reply = status_reply("error","missing agent for new session");
-                                else if(!(info = create_ai_info(session,agent)))
+                                else if(!(info = ai_info::create(session,agent)))
                                     reply = status_reply("error","invalid agent: include Codex or Claude in the agent name");
                                 else if(auto model = object["model"].toString().trimmed();
                                         !model.isEmpty())

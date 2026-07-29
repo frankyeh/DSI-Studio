@@ -51,6 +51,22 @@
 std::unordered_map<QString,ai_info> ai_infos;
 QMap<QString,quint64> ai_log_positions;
 QString ai_project_dir;
+QString ai_info::history_file(const QString& session)
+{
+    return ai_project_dir+"/"+QString::fromLatin1(
+               QUrl::toPercentEncoding(session))+".jsonl";
+}
+QJsonArray ai_info::load_history(const QString& file_name)
+{
+    QJsonArray history;
+    QFile file(file_name);
+    if(!file.open(QIODevice::ReadOnly))
+        return history;
+    while(!file.atEnd())
+        if(auto doc = QJsonDocument::fromJson(file.readLine());doc.isObject())
+            history.append(doc.object());
+    return history;
+}
 
 struct ai_launch{
     QString session,name,executable,model,profile,prompt;
@@ -111,11 +127,16 @@ void set_model_selector(QComboBox& model,const QComboBox& agents,int index,
     for(const auto& name : agents.itemData(index).toStringList())
         model.addItem(name,profiles[name].toObject());
     auto selected_index = model.findText(selected);
+    if(selected_index < 0 && !selected.isEmpty())
+    {
+        model.addItem(selected);
+        selected_index = model.count()-1;
+    }
     if(selected_index < 0)
         selected_index = model.findText(fallback);
     model.setCurrentIndex(std::max(0,selected_index));
 }
-bool save_ai_title(ai_info& info,QString title)
+bool ai_info::save_title(ai_info& info,QString title)
 {
     title = title.simplified();
     if(title.isEmpty())
@@ -278,7 +299,7 @@ AIAgent::AIAgent(MainWindow* parent):
         auto title = QInputDialog::getText(
             this,"Rename Chat","Chat name:",QLineEdit::Normal,
             ai_infos[session].title(session),&okay);
-        if(okay && save_ai_title(ai_infos[session],title))
+        if(okay && ai_info::save_title(ai_infos[session],title))
             show_ai_project(session);
         else if(okay)
             QMessageBox::warning(
@@ -311,8 +332,7 @@ AIAgent::AIAgent(MainWindow* parent):
             active_ai_processes = std::max(0,active_ai_processes-1);
             set_ai_status();
         }
-        QFile::remove(ai_project_dir+"/"+QString::fromLatin1(
-                          QUrl::toPercentEncoding(session))+".jsonl");
+        QFile::remove(ai_info::history_file(session));
         settings.remove("ai/title/"+session);
         ai_infos.erase(session);
         ai_log_positions.remove(session);
@@ -334,6 +354,7 @@ AIAgent::AIAgent(MainWindow* parent):
                     findChild<QPushButton*>("ai_project_title")->
                     setStyleSheet(i == item ?
                         "color:#202124;background:#dce9f9;" : "");
+        ui->ai_agent_selector->setEnabled(!item);
         if(item)
         {
             stop_ai_blink();
@@ -343,8 +364,11 @@ AIAgent::AIAgent(MainWindow* parent):
             if(index >= 0)
                 ui->ai_agent_selector->setCurrentIndex(index);
             auto model = info.model_settings.value("model").toString();
-            if(model.isEmpty() || ui->ai_model_selector->findText(model) < 0)
+            if(model.isEmpty())
                 model = "default";
+            else if(ui->ai_model_selector->findText(model) < 0)
+                ui->ai_model_selector->addItem(
+                    model,info.model_settings["info"].toObject());
             ui->ai_model_selector->setCurrentText(model);
             show_ai_project(session);
         }
@@ -357,19 +381,11 @@ AIAgent::AIAgent(MainWindow* parent):
     {
         auto session = QUrl::fromPercentEncoding(
                            info.completeBaseName().toLatin1());
-        QFile file(info.filePath());
-        if(!file.open(QIODevice::ReadOnly))
-            continue;
-
-        QJsonArray history;
-        while(!file.atEnd())
-            if(auto doc = QJsonDocument::fromJson(file.readLine());doc.isObject())
-                history.append(doc.object());
-
+        auto history = ai_info::load_history(info.filePath());
         if(history.isEmpty() || session.isEmpty())
             continue;
         auto first = history.first().toObject();
-        auto* ai = create_ai_info(session,first["agent"].toString());
+        auto* ai = ai_info::create(session,first["agent"].toString());
         if(!ai)
             continue;
         ai->model_settings = first["model_settings"].toObject();
@@ -400,16 +416,16 @@ void AIAgent::add_ai_reply(ai_info& info,const QString& chat,const QString& reas
     refresh_ai_info(info);
 }
 
-ai_info* find_ai_info(const QString& session)
+ai_info* ai_info::find(const QString& session)
 {
     auto found = ai_infos.find(session);
     return found == ai_infos.end() ? nullptr : &found->second;
 }
-ai_info* create_ai_info(QString session,QString agent)
+ai_info* ai_info::create(QString session,QString agent)
 {
     if(session.isEmpty())
         return nullptr;
-    if(auto* info = find_ai_info(session))
+    if(auto* info = find(session))
         return info;
     auto provider = ai_info::identify_provider(agent);
     if(provider == ai_provider::Unknown)
@@ -420,7 +436,7 @@ ai_info* create_ai_info(QString session,QString agent)
     return &info;
 }
 
-void record_ai_history(ai_info& info,QJsonObject entry)
+void ai_info::record_history(ai_info& info,QJsonObject entry)
 {
     if(info.projects.isEmpty())
     {
@@ -433,13 +449,26 @@ void record_ai_history(ai_info& info,QJsonObject entry)
     QSettings settings;
     if(!settings.value("ai/keep_history",true).toBool())
         return;
-    QFile file(ai_project_dir+"/"+QString::fromLatin1(
-                   QUrl::toPercentEncoding(info.sessions))+".jsonl");
+    QFile file(history_file(info.sessions));
     if(!file.open(QIODevice::WriteOnly|QIODevice::Append) ||
        file.write(QJsonDocument(entry).toJson(
                       QJsonDocument::Compact)+'\n') < 0)
         tipl::warning() << "cannot write ai history to "
                         << ai_project_dir.toStdString();
+}
+bool ai_info::save_history(const ai_info& info)
+{
+    QSettings settings;
+    if(!settings.value("ai/keep_history",true).toBool())
+        return true;
+    QFile file(history_file(info.sessions));
+    if(!file.open(QIODevice::WriteOnly|QIODevice::Truncate))
+        return false;
+    for(const auto& entry : info.projects)
+        if(file.write(QJsonDocument(entry.toObject()).toJson(
+                          QJsonDocument::Compact)+'\n') < 0)
+            return false;
+    return true;
 }
 
 void AIAgent::showEvent(QShowEvent* event)
@@ -491,7 +520,7 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
             QJsonObject entry{{"type","assistant"},{"text",chat}};
             if(!reasoning.isEmpty())
                 entry["reasoning"] = reasoning;
-            record_ai_history(info,entry);
+            ai_info::record_history(info,entry);
         }
         if(!info.prompts.isEmpty())
             result["prompt"] = QJsonArray::fromStringList(info.prompts);
@@ -553,7 +582,7 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
         auto title = request["title"].toString().simplified();
         if(title.isEmpty())
             return reply_error("missing title");
-        if(!save_ai_title(info,title))
+        if(!ai_info::save_title(info,title))
             return reply_error("cannot save title");
         return reply_object(QJsonObject{{"status","success"}});
     }
@@ -617,7 +646,7 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
             if(!target)
                 return fail("target window not found, terminated by user?");
             auto compact = QString::fromUtf8(tipl::merge(cmd0_list,','));
-            record_ai_history(info,QJsonObject{
+            ai_info::record_history(info,QJsonObject{
                     {"type","request"},
                     {"text",compact + " \u2192 "+ target_type + " window "+target_title},
                     {"compact",compact},
@@ -1019,7 +1048,10 @@ void AIAgent::refresh_codex_models(const QString& path)
         auto index = int(ai_provider::Codex);
         ui->ai_agent_selector->setItemData(index,models);
         if(ui->ai_agent_selector->currentIndex() == index)
-            set_model_selector(*ui->ai_model_selector,*ui->ai_agent_selector,index);
+            set_model_selector(
+                *ui->ai_model_selector,*ui->ai_agent_selector,index,
+                ui->ai_model_selector->currentText(),
+                settings.value("ai/default_model").toString());
         refresh_ollama_models();
         process->deleteLater();
     });
@@ -1101,7 +1133,7 @@ void AIAgent::refresh_ollama_models()
 void AIAgent::add_ai_history(ai_info& info,const QString& type,const QString& text)
 {
     QJsonObject entry{{"type",type},{"text",text}};
-    record_ai_history(info,entry);
+    ai_info::record_history(info,entry);
     show_ai_project(info.sessions,entry);
 }
 
@@ -1160,8 +1192,11 @@ void AIAgent::on_ai_quick_settings_clicked()
     settings.setValue("ai/default_agent",agent.currentData().toInt());
     settings.setValue("ai/default_model",model.currentText());
     settings.setValue("ai/work_dir",work_dir.text().trimmed());
-    ui->ai_agent_selector->setCurrentIndex(agent.currentData().toInt());
-    ui->ai_model_selector->setCurrentText(model.currentText());
+    if(!ui->ai_project_list->currentItem())
+    {
+        ui->ai_agent_selector->setCurrentIndex(agent.currentData().toInt());
+        ui->ai_model_selector->setCurrentText(model.currentText());
+    }
     ui->ai_work_dir->setText(work_dir.text().trimmed());
 
     refresh_ollama_models();
@@ -1232,21 +1267,22 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
         if(session.isEmpty() && provider == ai_provider::Claude)
         {
             session = QUuid::createUuid().toString(QUuid::WithoutBraces);
-            create_ai_info(session,launch.name);
+            ai_info::create(session,launch.name);
             launch.session = session;
         }
     }
 
     // Resolve model
     {
-        if(!session.isEmpty())
+        QJsonObject selected{
+            {"model",ui->ai_model_selector->currentText()},
+            {"info",ui->ai_model_selector->currentData().toJsonObject()}};
+        if(!session.isEmpty() &&
+           selected["model"].toString() ==
+               ai_infos[session].model_settings["model"].toString())
             launch.model_setting = ai_infos[session].model_settings;
-        if(launch.model_setting.isEmpty())
-        {
-            launch.model_setting["model"] = ui->ai_model_selector->currentText();
-            launch.model_setting["info"] =
-                ui->ai_model_selector->currentData().toJsonObject();
-        }
+        else
+            launch.model_setting = selected;
 
         launch.model = launch.model_setting["model"].toString().trimmed();
         auto model_info = launch.model_setting["info"].toObject();
@@ -1269,7 +1305,21 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
         if(launch.model.startsWith("default",Qt::CaseInsensitive))
             launch.model.clear();
         if(!session.isEmpty())
-            ai_infos[session].model_settings = launch.model_setting;
+        {
+            auto& info = ai_infos[session];
+            if(info.model_settings != launch.model_setting)
+            {
+                info.model_settings = launch.model_setting;
+                if(!info.projects.isEmpty())
+                {
+                    auto first = info.projects.first().toObject();
+                    first["model_settings"] = info.model_settings;
+                    info.projects[0] = first;
+                    if(!ai_info::save_history(info))
+                        tipl::warning() << "cannot update ai history";
+                }
+            }
+        }
     }
 
     auto set_ai_enabled = [this](bool enabled)
@@ -1414,7 +1464,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
                     {"type","text"},{"text",text}}}}}}}).
             toJson(QJsonDocument::Compact)+'\n';
     };
-    if(auto* info = find_ai_info(session);
+    if(auto* info = ai_info::find(session);
        info && info->processes &&
        info->processes->state() == QProcess::Running)
     {
@@ -1488,7 +1538,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
                     }
                     auto chat = chats.join('\n').trimmed();
                     auto reasoning = reasonings.join('\n').trimmed();
-                    if(auto* info = find_ai_info(process->objectName()))
+                    if(auto* info = ai_info::find(process->objectName()))
                         add_ai_reply(*info,chat,reasoning);
                 }
                 process->setProperty("stdout_buffer",buffer);
@@ -1530,7 +1580,7 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
                 if(session.isEmpty())
                     continue;
                 bool started_new_session = process->objectName().isEmpty();
-                auto* info = create_ai_info(session,launch.name);
+                auto* info = ai_info::create(session,launch.name);
                 if(!info)
                     continue;
                 info->model_settings = launch.model_setting;
@@ -1553,7 +1603,7 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
                 auto text = item["text"].toString().trimmed();
                 if(text.isEmpty())
                     continue;
-                if(auto* info = find_ai_info(process->objectName()))
+                if(auto* info = ai_info::find(process->objectName()))
                 {
                     bool reasoning = type == "reasoning";
                     add_ai_reply(*info,reasoning ? QString() : text,
