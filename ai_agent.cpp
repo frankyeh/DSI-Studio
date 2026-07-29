@@ -873,12 +873,10 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     if(current != item)
         return;
 
-    struct request_text{QString full,compact;};
-    auto request_content = [](const QJsonObject& entry)
+    auto request_compact = [](const QJsonObject& entry)
     {
-        auto full = entry["text"].toString();
         auto compact = entry["compact"].toString();
-        return request_text{full,compact.isEmpty() ? full : compact};
+        return compact.isEmpty() ? entry["text"].toString() : compact;
     };
     auto to_html = [](QString text)
     {
@@ -895,7 +893,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
     {
         auto type = entry["type"].toString();
         bool user = type == "user",request = type == "request";
-        auto content = request ? request_content(entry).full : entry["text"].toString();
+        auto content = entry["text"].toString();
         auto reasoning = entry["reasoning"].toString().trimmed();
         if(content.trimmed().isEmpty() && reasoning.isEmpty())
             return;
@@ -943,11 +941,6 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
             return history[index].toObject()["type"] == "request" &&
                    (index+1 == history.size() || history[index+1].toObject()["type"] != "assistant");
         };
-        auto request_window = [&](const QJsonObject& entry)
-        {
-            return entry["window"].toVariant().toString();
-        };
-
         ui->ai_chat_history->clear();
         for(int index = 0;index < history.size();++index)
         {
@@ -958,17 +951,17 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
                 if(!standalone_request(index))
                     continue;
                 auto combined = entry;
-                auto content = request_content(entry);
-                QStringList activities{content.compact};
-                auto window = request_window(entry);
+                auto full = entry["text"].toString();
+                QStringList activities{request_compact(entry)};
+                auto window = entry["window"].toVariant().toString();
                 auto end = index;
                 while(!window.isEmpty() && end+1 < history.size() &&
                       standalone_request(end+1) &&
-                      request_window(history[end+1].toObject()) == window)
-                    activities << request_content(history[++end].toObject()).compact;
+                      history[end+1].toObject()["window"].toVariant().toString() == window)
+                    activities << request_compact(history[++end].toObject());
                 if(end != index)
                 {
-                    auto target = content.full;
+                    auto target = full;
                     target = target.mid(target.lastIndexOf(" \u2192 ")+3);
                     combined["text"] = activities.join(", ")+" \u2192 "+target;
                 }
@@ -979,7 +972,7 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
             }
             auto activity = type == "assistant" && index &&
                             history[index-1].toObject()["type"] == "request" ?
-                            request_content(history[index-1].toObject()).full :
+                            history[index-1].toObject()["text"].toString() :
                             QString();
             append(entry,activity);
         }
@@ -1279,11 +1272,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
     auto* process = new QProcess(this);
     launch.process = process;
     process->setObjectName(session);
-    auto ai_dir = QApplication::applicationDirPath()+"/ai";
-    process->setWorkingDirectory(ai_dir);
-    auto env = QProcessEnvironment::systemEnvironment();
-    env.insert("DSI_STUDIO_AI_DIR",ai_dir);
-    process->setProcessEnvironment(env);
+    process->setWorkingDirectory(QApplication::applicationDirPath()+"/ai");
 
     if(!session.isEmpty())
         ai_infos[session].processes = process;
