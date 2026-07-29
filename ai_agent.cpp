@@ -663,8 +663,6 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
 
             if(!output.isEmpty())
                 result["output"] = output;
-            else if(error.isEmpty())
-                result["output"] = "completed";
             if(!error.isEmpty())
                 result["error"] = error;
             result["status"] = error.isEmpty() ? "success" : "error";
