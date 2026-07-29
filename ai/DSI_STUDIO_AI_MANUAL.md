@@ -115,8 +115,8 @@ image editing or batch processing.
 
 ## Request formats
 
-DSI Studio determines the current agent session automatically. Do not include a
-`session` field in requests. An optional `chat` may accompany any request.
+Send the `agent` field with each request. DSI Studio associates requests with the
+current agent automatically. An optional `chat` may accompany any request.
 Attach an update directly to `CMD` when it describes that command; use standalone
 `CHAT` otherwise.
 
@@ -519,7 +519,7 @@ completion. `status=done` is the definitive completion signal.
 ## Operational rules
 
 - Each named-pipe connection sends one request, reads the complete reply, and closes.
-- Reuse the exact nonempty `agent` value for the conversation. DSI Studio determines the session automatically; do not send `session`.
+- Reuse the exact nonempty `agent` value for the conversation.
 - Native identities are `Codex` and `Claude`.
 - Ollama-backed identities include the host, for example `Codex/Ollama(192.168.1.14)`.
 - Inspect `LIST` before substantial loading, registration, segmentation, reconstruction, or tracking.
