@@ -417,8 +417,8 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         if(!chat.isEmpty())
             add_ai_history(session,"assistant",chat);
         auto written = socket->write(reply);
-        ai_log(QString("DSI Studio replied %1@%2 payload: %3")
-                   .arg(info.agent_name,session,QString::fromUtf8(reply)));
+        ai_log(QString("DSI Studio replied %1@%2: %3 ...")
+                   .arg(info.agent_name,session,QString::fromUtf8(reply).left(32)));
         set_ai_status(written == reply.size() ?activity : "Response could not be sent.",true);
         if(written == reply.size())
             info.prompts = {};
