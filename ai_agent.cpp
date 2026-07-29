@@ -181,8 +181,7 @@ AIAgent::AIAgent(MainWindow* parent):
 
     auto* agents = qobject_cast<QStandardItemModel*>(
                        ui->ai_agent_selector->model());
-    auto set_agent = [&](ai_provider provider,const QString& path,
-                         const QStringList& models,QJsonObject profiles = {})
+    auto set_agent = [&](ai_provider provider,const QString& path)
     {
         auto index = int(provider);
         auto agent = ui->ai_agent_selector->itemText(index);
@@ -190,13 +189,9 @@ AIAgent::AIAgent(MainWindow* parent):
         item->setText(agent+(path.isEmpty() ? " (not found)" : ""));
         item->setEnabled(!path.isEmpty());
         ui->ai_agent_selector->setItemData(index,path,Qt::UserRole+1);
-        ui->ai_agent_selector->setItemData(index,models);
-        ui->ai_agent_selector->setItemData(
-            index,QVariant::fromValue(profiles),Qt::UserRole+2);
         ai_log(path.isEmpty() ? agent+" not found" : agent+": "+path);
         if(!path.isEmpty())
-            ai_log(agent+" models: "+
-                   (models.isEmpty() ? "none detected" : models.join(", ")));
+            ai_log(agent+" models: none detected");
     };
     QString codex_path,claude_path;
     {
@@ -213,7 +208,7 @@ AIAgent::AIAgent(MainWindow* parent):
         }
         if(!QFileInfo::exists(codex_path))
             codex_path.clear();
-        set_agent(ai_provider::Codex,codex_path,{});
+        set_agent(ai_provider::Codex,codex_path);
         refresh_codex_models(codex_path);
     }
     {
@@ -225,7 +220,7 @@ AIAgent::AIAgent(MainWindow* parent):
 #endif
         if(!QFileInfo::exists(claude_path))
             claude_path.clear();
-        set_agent(ai_provider::Claude,claude_path,{});
+        set_agent(ai_provider::Claude,claude_path);
         refresh_ollama_models();
     }
 
