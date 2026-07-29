@@ -352,7 +352,8 @@ int src(tipl::program_option<tipl::out>& po)
         }
 
         tipl::out() << "cannot find NIFTI files...try looking for DICOM files in directory " << source.c_str() << std::endl;
-        return dicom2src_and_nii(source,po.get("overwrite",0)) ? 0 : 1;
+        dicom2src_and_nii(source,po.get("overwrite",0));
+        return 0;
     }
     else
         file_list = po.get_files("source");
@@ -448,5 +449,4 @@ int src(tipl::program_option<tipl::out>& po)
         return tipl::error() << src.error_msg,1;
 
     return 0;
-
 }
