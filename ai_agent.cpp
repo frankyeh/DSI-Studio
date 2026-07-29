@@ -496,7 +496,7 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         ai_infos[session].set_agent_name(agent_name);
     }
 
-    auto window_id = [](QWidget* window)
+    auto get_window_id = [](QWidget* window)
     {
         if(qobject_cast<MainWindow*>(window))
             return QString("main");
@@ -526,12 +526,14 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
         {
             reply_results(session,QJsonArray{QJsonObject{{"error",error}}});
         };
-
+        auto window = request["window"].toString();
+        auto command = request["command"];
+        if(window.isEmpty())
+            return fail("missing target window field");
         std::vector<std::vector<std::string>> cmds;
         std::vector<std::string> cmd0_list;
         {
-            auto value = request["command"];
-            for(const auto& value : (value.isArray() ? value.toArray() : QJsonArray{value}))
+            for(const auto& value : (command.isArray() ? command.toArray() : QJsonArray{command}))
             {
                 auto object = value.toObject();
                 auto& cmd = cmds.emplace_back();
@@ -544,45 +546,39 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
                 if(param.isArray())
                     for(const auto& value : param.toArray())
                         add(value);
-                else if(!param.isUndefined())
+                else if(!param.isUndefined() && !param.isNull())
                     add(param);
             }
         }
         if(cmds.empty())
-            return fail("missing command");
-
+            return fail("missing command field");
 
         QWidget* target = nullptr;
         {
             QString target_type,target_title;
             auto windows = QApplication::allWidgets();
-            auto id = request["window"].toString();
-            if(id.isEmpty())
-                return fail("missing window field");
-
-            for(auto* window : windows)
+            for(auto* each : windows)
             {
-                if(window->property("busy").toBool())
+                if(each->property("busy").toBool())
                     return fail("another CMD is running; check opened windows");
-                if(window_id(window) == id)
+                if(get_window_id(each) == window)
                 {
-                    target = window;
+                    target = each;
                     target_type =
-                        qobject_cast<MainWindow*>(window) ? "main" :
-                            qobject_cast<tracking_window*>(window) ? "tracking" : "image";
+                        qobject_cast<MainWindow*>(each) ? "main" :
+                            qobject_cast<tracking_window*>(each) ? "tracking" : "image";
                     if(target_type != "main")
-                        target_title = QFileInfo(window->windowTitle()).fileName();
-                    break;
+                        target_title = QFileInfo(each->windowTitle()).fileName();
                 }
             }
             if(!target)
-                return fail("window not found");
+                return fail("target window not found, terminated by user?");
             auto compact = QString::fromUtf8(tipl::merge(cmd0_list,','));
             add_ai_history(session,QJsonObject{
                     {"type","request"},
                     {"text",compact + " \u2192 "+ target_type + " window "+target_title},
                     {"compact",compact},
-                    {"window",id}});
+                    {"window",window}});
         }
 
 
@@ -668,7 +664,7 @@ void AIAgent::command(QLocalSocket* socket,const QByteArray& data)
 
         for(auto* window : QApplication::allWidgets())
         {
-            auto id = window_id(window);
+            auto id = get_window_id(window);
             if(id.isEmpty())
                 continue;
 
