@@ -437,8 +437,7 @@ void ai_info::record_history(ai_info& info,QJsonObject entry)
     if(!file.open(QIODevice::WriteOnly|QIODevice::Append) ||
        file.write(QJsonDocument(entry).toJson(
                       QJsonDocument::Compact)+'\n') < 0)
-        tipl::warning() << "cannot write ai history "
-                        << file.fileName().toStdString() << ": "
+        tipl::warning() << "cannot write ai history : "
                         << file.errorString().toStdString();
 }
 bool ai_info::save_history(const ai_info& info)
@@ -449,9 +448,7 @@ bool ai_info::save_history(const ai_info& info)
     QFile file(history_file(info.sessions));
     auto fail = [&]
     {
-        tipl::warning() << "cannot write ai history "
-                        << file.fileName().toStdString() << ": "
-                        << file.errorString().toStdString();
+        tipl::warning() << "cannot write ai history : " << file.errorString().toStdString();
         return false;
     };
     if(!file.open(QIODevice::WriteOnly|QIODevice::Truncate))
