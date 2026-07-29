@@ -83,7 +83,7 @@ ai_provider ai_info::identify_provider(const QString& name)
            name.contains("claude",Qt::CaseInsensitive) ? ai_provider::Claude :
            ai_provider::Unknown;
 }
-QString ai_info::details(const QString& session) const
+QString ai_info::details() const
 {
     int user = 0,assistant = 0,activity = 0;
     for(const auto& value : projects)
@@ -99,7 +99,7 @@ QString ai_info::details(const QString& session) const
     return QString("<b>%1</b><br><br>Agent: %2<br>Session: %3<br>Status: %4<br>"
         "Messages: %5 (%6 you, %7 AI)<br>Activities: %8<br>"
         "Created: %9<br>Updated: %10")
-        .arg(title(session).toHtmlEscaped(),agent_name.toHtmlEscaped(),session.toHtmlEscaped(),processes ? "Working" : "Idle")
+        .arg(title().toHtmlEscaped(),agent_name.toHtmlEscaped(),sessions.toHtmlEscaped(),processes ? "Working" : "Idle")
         .arg(user+assistant).arg(user).arg(assistant).arg(activity)
         .arg(time(projects.first().toObject()["time"]),
              time(projects.last().toObject()["time"]));
@@ -288,13 +288,13 @@ AIAgent::AIAgent(MainWindow* parent):
         auto* item = ui->ai_project_list->currentItem();
         if(!item)
             return;
-        auto session = item->data(Qt::UserRole).toString();
+        auto& info = ai_infos[item->data(Qt::UserRole).toString()];
         bool okay;
         auto title = QInputDialog::getText(
             this,"Rename Chat","Chat name:",QLineEdit::Normal,
-            ai_infos[session].title(session),&okay);
-        if(okay && ai_info::save_title(ai_infos[session],title))
-            show_ai_project(session);
+            info.title(),&okay);
+        if(okay && ai_info::save_title(info,title))
+            show_ai_project(info);
         else if(okay)
             QMessageBox::warning(
                 this,"Rename Chat","The chat name could not be saved.");
@@ -308,7 +308,7 @@ AIAgent::AIAgent(MainWindow* parent):
         auto session = item->data(Qt::UserRole).toString();
         QMessageBox details(
             QMessageBox::Information,"Chat Details",
-            ai_infos[session].details(session),QMessageBox::Ok,this);
+            ai_infos[session].details(),QMessageBox::Ok,this);
         details.setTextInteractionFlags(
             Qt::TextSelectableByMouse|Qt::TextSelectableByKeyboard);
         details.exec();
@@ -353,7 +353,7 @@ AIAgent::AIAgent(MainWindow* parent):
         {
             stop_ai_blink();
             auto session = item->data(Qt::UserRole).toString();
-            const auto& info = ai_infos[session];
+            auto& info = ai_infos[session];
             auto index = int(info.provider);
             if(index >= 0)
                 ui->ai_agent_selector->setCurrentIndex(index);
@@ -364,7 +364,7 @@ AIAgent::AIAgent(MainWindow* parent):
                 ui->ai_model_selector->addItem(
                     model,info.model_settings["info"].toObject());
             ui->ai_model_selector->setCurrentText(model);
-            show_ai_project(session);
+            show_ai_project(info);
         }
         else
             ui->ai_chat_history->clear();
@@ -385,7 +385,7 @@ AIAgent::AIAgent(MainWindow* parent):
         ai->model_settings = first["model_settings"].toObject();
         ai->project_titles = settings.value("ai/title/"+session).toString();
         ai->projects = std::move(history);
-        show_ai_project(session);
+        show_ai_project(*ai);
     }
     if(ui->ai_project_list->count())
         ui->ai_project_list->setCurrentRow(0);
@@ -398,7 +398,7 @@ AIAgent::~AIAgent()
 
 void AIAgent::refresh_ai_info(ai_info& info)
 {
-    show_ai_project(info.sessions);
+    show_ai_project(info);
     set_ai_status("Agent request completed.",true);
 }
 void AIAgent::add_ai_reply(ai_info& info,const QString& chat,const QString& reasoning)
@@ -798,24 +798,19 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
     reply_error("unknown request");
 }
 
-void AIAgent::show_ai_project(const QString& session)
+void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
 {
-    show_ai_project(session,{});
-}
-void AIAgent::show_ai_project(const QString& session,QJsonObject added_entry)
-{
-    auto& info = ai_infos[session];
     const auto& history = info.projects;
     if(history.isEmpty())
         return;
 
     auto agent_name = info.agent_name;
-    auto project_title = info.title(session);
+    auto project_title = info.title();
     auto* item = info.project_items;
     if(!item)
     {
         item = new QListWidgetItem;
-        item->setData(Qt::UserRole,session);
+        item->setData(Qt::UserRole,info.sessions);
         ui->ai_project_list->insertItem(0,item);
         info.project_items = item;
 
@@ -1128,7 +1123,7 @@ void AIAgent::add_ai_history(ai_info& info,const QString& type,const QString& te
 {
     QJsonObject entry{{"type",type},{"text",text}};
     ai_info::record_history(info,entry);
-    show_ai_project(info.sessions,entry);
+    show_ai_project(info,entry);
 }
 
 void AIAgent::on_ai_new_chat_clicked()
@@ -1345,8 +1340,8 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
             (session.isEmpty() ? QString("new") : session)+
             " pid:"+QString::number(process->processId()));
         set_ai_status();
-        if(!session.isEmpty())
-            show_ai_project(session);
+        if(auto* info = ai_info::find(session))
+            show_ai_project(*info);
     });
 
     connect(process,&QProcess::errorOccurred,this,
@@ -1423,7 +1418,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
             else if(no_reply)
                 add_ai_history(info,"activity","No reply from AI agent.");
             else
-                show_ai_project(session);
+                show_ai_project(info);
         }
         process->deleteLater();
     });
