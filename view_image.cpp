@@ -744,7 +744,7 @@ bool view_image::open(QStringList file_names_)
         {
             tipl::progress prog("open",file_name.u8string());
             if(!mat.load_from_file(file_name))
-                return error_msg = "invalid format",false;
+                return error_msg = mat.error_msg,false;
             if(!read_mat())
                 return false;
         }
