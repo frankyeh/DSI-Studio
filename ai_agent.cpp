@@ -62,6 +62,14 @@ struct ai_launch{
     QJsonObject model_setting;
     QProcess* process = nullptr;
 };
+QByteArray claude_input(const QString& text)
+{
+    return QJsonDocument(QJsonObject{
+        {"type","user"},{"message",QJsonObject{
+            {"role","user"},{"content",QJsonArray{QJsonObject{
+                {"type","text"},{"text",text}}}}}}}).
+        toJson(QJsonDocument::Compact)+'\n';
+}
 
 ai_provider ai_info::identify_provider(const QString& name)
 {
@@ -112,14 +120,12 @@ void set_model_selector(QComboBox& model,const QComboBox& agents,int index,
     model.addItem("default");
     for(const auto& name : agents.itemData(index).toStringList())
         model.addItem(name,profiles[name].toObject());
-    auto selected_index = model.findText(selected);
+    auto selected_index = model.findText(selected.isEmpty() ? fallback : selected);
     if(selected_index < 0 && !selected.isEmpty())
     {
         model.addItem(selected,selected_info);
         selected_index = model.count()-1;
     }
-    if(selected_index < 0)
-        selected_index = model.findText(fallback);
     model.setCurrentIndex(std::max(0,selected_index));
 }
 bool ai_info::save_title(ai_info& info,QString title)
@@ -220,8 +226,8 @@ AIAgent::AIAgent(MainWindow* parent):
     {
         auto index = ui->ai_agent_selector->currentIndex();
         QString name = index == int(ai_provider::Codex) ? "Codex" : "Claude";
-        if(ui->ai_model_selector->currentData().toJsonObject()[
-                "provider"].toInt() == int(ai_model_provider::Ollama))
+        if(ui->ai_model_selector->currentData().
+                toJsonObject().contains("provider"))
             name += "/Ollama("+ai_ollama_url(settings).first.host()+")";
         ui->ai_agent_selector->setItemText(index,name);
     });
@@ -268,8 +274,6 @@ AIAgent::AIAgent(MainWindow* parent):
     connect(ai_project_menu->addAction("Rename"),&QAction::triggered,this,[this]
     {
         auto* item = ui->ai_project_list->currentItem();
-        if(!item)
-            return;
         auto& info = ai_infos[item->data(Qt::UserRole).toString()];
         bool okay;
         auto title = QInputDialog::getText(
@@ -285,12 +289,10 @@ AIAgent::AIAgent(MainWindow* parent):
             &QAction::triggered,this,[this]
     {
         auto* item = ui->ai_project_list->currentItem();
-        if(!item)
-            return;
-        auto session = item->data(Qt::UserRole).toString();
         QMessageBox details(
             QMessageBox::Information,"Chat Details",
-            ai_infos[session].details(),QMessageBox::Ok,this);
+            ai_infos[item->data(Qt::UserRole).toString()].details(),
+            QMessageBox::Ok,this);
         details.setTextInteractionFlags(
             Qt::TextSelectableByMouse|Qt::TextSelectableByKeyboard);
         details.exec();
@@ -299,8 +301,6 @@ AIAgent::AIAgent(MainWindow* parent):
     connect(ai_project_menu->addAction("Remove"),&QAction::triggered,this,[this]
     {
         auto* item = ui->ai_project_list->currentItem();
-        if(!item)
-            return;
         auto session = item->data(Qt::UserRole).toString();
         if(auto* process = ai_infos[session].processes)
         {
@@ -527,12 +527,10 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
     {
         if(qobject_cast<MainWindow*>(window))
             return QString("main");
-        auto address = QString::number(reinterpret_cast<quintptr>(window),16);
-        if(qobject_cast<tracking_window*>(window))
-            return "tracking"+address;
-        if(qobject_cast<view_image*>(window))
-            return "image"+address;
-        return QString();
+        QString type = qobject_cast<tracking_window*>(window) ? "tracking" :
+                       qobject_cast<view_image*>(window) ? "image" : "";
+        return type.isEmpty() ? type :
+               type+QString::number(reinterpret_cast<quintptr>(window),16);
     };
 
     chat = request["chat"].toString().trimmed();
@@ -683,11 +681,6 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
 
     if(type == "LIST")
     {
-        auto status = [](bool waiting,bool busy)
-        {
-            return waiting ? "waiting" : busy ? "busy" : "idle";
-        };
-
         auto* modal = QApplication::activeModalWidget();
         bool application_busy = tipl::status_list.size() > 1;
         QJsonObject windows;
@@ -716,7 +709,7 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
 
             bool waiting = modal && (modal == window || window->isAncestorOf(modal));
             windows[id] = QJsonObject{
-                {"status",status(waiting,busy)},
+                {"status",waiting ? "waiting" : busy ? "busy" : "idle"},
                 {"title",QDir::fromNativeSeparators(window->windowTitle())}
             };
             application_busy |= busy;
@@ -725,7 +718,8 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
         return reply_object(QJsonObject{
             {"status","success"},
             {"application",QJsonObject{
-                {"status",status(bool(modal),application_busy)}}},
+                {"status",modal ? "waiting" :
+                          application_busy ? "busy" : "idle"}}},
             {"windows",windows}});
     }
 
@@ -1027,16 +1021,12 @@ void AIAgent::refresh_ollama_models()
                                                      index,Qt::UserRole+2).toJsonObject();
 
             for(auto i = models.size();i--;)
-                if(profiles[models[i]].toObject()["provider"].toInt() ==
-                    int(ai_model_provider::Ollama))
+                if(profiles[models[i]].toObject().contains("provider"))
                     profiles.remove(models.takeAt(i));
 
+            models += ollama_models;
             for(const auto& model : ollama_models)
-            {
-                models << model;
-                profiles[model] =
-                    QJsonObject{{"provider",int(ai_model_provider::Ollama)}};
-            }
+                profiles[model] = QJsonObject{{"provider",true}};
 
             update_agent_models(index,std::move(models),std::move(profiles));
         }
@@ -1181,8 +1171,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
             info->model_settings : selected;
 
         launch.model = launch.model_setting["model"].toString().trimmed();
-        if(launch.model_setting["info"].toObject()["provider"].toInt() ==
-           int(ai_model_provider::Ollama))
+        if(launch.model_setting["info"].toObject().contains("provider"))
         {
             auto [url,configured] = ai_ollama_url(settings);
             launch.model_url = url;
@@ -1331,36 +1320,8 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
     return launch;
 }
 
-void AIAgent::run_ai(const ai_launch& launch,QStringList args)
-{
-    ai_log("start " + launch.executable + " args: " + args.join(" ").remove("\n"));
-    set_ai_status("Starting "+launch.name+"...");
-    launch.process->start(launch.executable,args);
-}
 void AIAgent::start_claude(QString session,const QString& text,ai_input input)
 {
-    auto claude_input = [](const QString& text)
-    {
-        return QJsonDocument(QJsonObject{
-            {"type","user"},{"message",QJsonObject{
-                {"role","user"},{"content",QJsonArray{QJsonObject{
-                    {"type","text"},{"text",text}}}}}}}).
-            toJson(QJsonDocument::Compact)+'\n';
-    };
-    if(auto* info = ai_info::find(session);
-       info && info->processes &&
-       info->processes->state() == QProcess::Running)
-    {
-        if(input == ai_input::User)
-        {
-            add_ai_history(*info,"user",text);
-            ui->ai_chat_input->clear();
-        }
-        info->processes->write(claude_input(text));
-        set_ai_status("Message sent to Claude.");
-        return;
-    }
-
     auto launch = prepare_ai(ai_provider::Claude,session,text,input);
     if(!launch.process)
         return;
@@ -1421,7 +1382,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
             });
     // Prepend a system prompt to the initial text here if needed.
     connect(process,&QProcess::started,process,
-            [process,text,claude_input]
+            [process,text]
             {process->write(claude_input(text));});
     QStringList args{
         "-p",
@@ -1429,11 +1390,13 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
         "--output-format","stream-json",
         "--verbose",
         "--add-dir",ui->ai_work_dir->text(),
-        "--allowedTools","PowerShell(./dsi_claude.ps1 *)",
+        "--allowedTools","Bash(bash ./dsi.sh:*)",
         session.isEmpty() ? "--session-id" : "--resume",session_id};
     if(!launch.model.isEmpty())
         args << "--model" << launch.model;
-    run_ai(launch,args);
+    ai_log("start " + launch.executable + " args: " + args.join(" ").remove("\n"));
+    set_ai_status("Starting "+launch.name+"...");
+    process->start(launch.executable,args);
 }
 void AIAgent::start_codex(QString session,const QString& text,ai_input input)
 {
@@ -1504,13 +1467,37 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
         args << "resume" << session;
     args << "--json" << "--skip-git-repo-check";
     args << text;
-    run_ai(launch,args);
+    ai_log("start " + launch.executable + " args: " + args.join(" ").remove("\n"));
+    set_ai_status("Starting "+launch.name+"...");
+    process->start(launch.executable,args);
 }
 void AIAgent::start_ai(QString session,const QString& text,ai_input input)
 {
-    auto provider = session.isEmpty() ?
-        ai_provider(ui->ai_agent_selector->currentIndex()) :
-        ai_infos[session].provider;
+    auto* info = ai_info::find(session);
+    if(info && info->processes)
+    {
+        if(input == ai_input::User)
+        {
+            add_ai_history(*info,"user",text);
+            ui->ai_chat_input->clear();
+        }
+
+        if(info->provider == ai_provider::Claude &&
+           info->processes->state() == QProcess::Running)
+        {
+            info->processes->write(claude_input(text));
+            set_ai_status("Message sent to Claude.");
+        }
+        else
+        {
+            info->prompts.append(text);
+            set_ai_status("Message queued for the AI agent.",true);
+        }
+        return;
+    }
+
+    auto provider = info ? info->provider :
+        ai_provider(ui->ai_agent_selector->currentIndex());
     if(provider == ai_provider::Codex)
         return start_codex(session,text,input);
     if(provider == ai_provider::Claude)
@@ -1525,20 +1512,8 @@ void AIAgent::on_ai_send_message_clicked()
     auto text = ui->ai_chat_input->toPlainText().trimmed();
     if(text.isEmpty())
         return;
+
     auto* item = ui->ai_project_list->currentItem();
-    auto session = item ? item->data(Qt::UserRole).toString() : QString();
-    if(session.isEmpty())
-        return start_ai(session,text,ai_input::User);
-
-    auto& info = ai_infos[session];
-    if(info.provider != ai_provider::Unknown &&
-       (!info.processes ||
-        (info.provider == ai_provider::Claude &&
-         info.processes->state() == QProcess::Running)))
-        return start_ai(session,text,ai_input::User);
-
-    info.prompts.append(text);
-    add_ai_history(info,"user",text);
-    ui->ai_chat_input->clear();
-    set_ai_status("Message queued for the AI agent.",true);
+    start_ai(item ? item->data(Qt::UserRole).toString() : QString(),
+             text,ai_input::User);
 }

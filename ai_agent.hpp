@@ -20,7 +20,6 @@ class AIAgent;
 }
 
 enum class ai_provider {Unknown = -1,Codex = 0,Claude = 1};
-enum class ai_model_provider {Native,Ollama};
 enum class ai_input {User,Pending};
 
 struct ai_info{
@@ -67,7 +66,6 @@ class AIAgent : public QMainWindow
     void start_codex(QString,const QString&,ai_input);
     void start_claude(QString,const QString&,ai_input);
     ai_launch prepare_ai(ai_provider,QString,const QString&,ai_input);
-    void run_ai(const ai_launch&,QStringList);
 
 public:
     explicit AIAgent(MainWindow*);
