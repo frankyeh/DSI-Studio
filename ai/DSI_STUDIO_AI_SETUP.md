@@ -2,19 +2,22 @@
 
 Read this file once, then use `DSI_STUDIO_AI_MANUAL.md` and the topic-specific example files only as needed.
 
-## Agent and transport
+## Identity
 
-Native agents are `Codex` and `Claude`.
+Choose one exact nonempty `agent` name. Reuse it unchanged for the conversation.
 
-- Codex uses the direct named pipe and includes `agent:"Codex"` in each request.
-- Claude Code uses the existing DSI Studio chat channel through stdin/stdout and
-  does not include `agent`.
+Native agents:
 
-## Claude Code chat channel — stdin/stdout
+```text
+Codex
+Claude
+```
 
-For Claude Code, use the existing DSI Studio chat channel. Do not use the named
-pipe. DSI Studio sends prompts and command results to Claude through stdin and
-reads Claude's complete assistant messages from stdout.
+Send the `agent` field with each request. DSI Studio associates requests with the current agent automatically.
+
+## Claude stdin/stdout — preferred
+
+For Claude, use stdin/stdout before the named pipe.
 
 To execute a DSI Studio command, output one compact JSON object as the complete
 assistant message:
@@ -25,11 +28,12 @@ assistant message:
 
 Do not use Markdown code fences and do not add text outside the JSON object.
 After DSI Studio returns a command result, inspect it before deciding the next
-command. Use the same compact-object rule for `TITLE`, `LIST`, `CHAT`, and `LOG`.
+command.
 
-## Codex direct named-pipe connection — preferred
+## Direct named-pipe connection
 
-For Codex, use the local named pipe directly:
+Use the local named pipe when Claude stdin/stdout is unavailable, or for an
+agent that cannot return commands through stdout:
 
 ```text
 \\.\pipe\dsi-studio
@@ -70,16 +74,12 @@ function Invoke-Dsi($request)
     }
 }
 
-$DsiAgent = 'Codex'
+$DsiAgent = '<agent-name>'
 ```
 
 Use the wrapper or executable fallback only when direct pipe access cannot run
 or connect and the user approves the fallback. Do not create or modify GitHub
 Actions to edit or operate these instructions.
-
-The PowerShell examples below are for Codex named-pipe requests. Claude Code
-returns the equivalent compact JSON object through stdout without the `agent`
-field.
 
 ## Basic requests
 
