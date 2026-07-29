@@ -1084,17 +1084,11 @@ void AIAgent::refresh_ollama_models()
                 network->deleteLater();
             });
 }
-void AIAgent::add_ai_history(const QString& session,const QString& type,const QString& text)
+void AIAgent::add_ai_history(ai_info& info,const QString& type,const QString& text)
 {
-    add_ai_history(session,QJsonObject{{"type",type},{"text",text}});
-}
-void AIAgent::add_ai_history(const QString& session,QJsonObject entry)
-{
-    auto* info = find_ai_info(session);
-    if(!info)
-        return;
-    record_ai_history(*info,entry);
-    show_ai_project(session,entry);
+    QJsonObject entry{{"type",type},{"text",text}};
+    record_ai_history(info,entry);
+    show_ai_project(info.sessions,entry);
 }
 
 void AIAgent::on_ai_new_chat_clicked()
@@ -1240,7 +1234,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
     if(input == ai_input::User)
     {
         if(!session.isEmpty())
-            add_ai_history(session,"user",text);
+            add_ai_history(ai_infos[session],"user",text);
         ui->ai_chat_input->clear();
     }
 
@@ -1286,9 +1280,10 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
         }
         else
         {
-            ai_infos[session].processes = nullptr;
-            ai_infos[session].prompts.append(text);
-            add_ai_history(session,"activity",
+            auto& info = ai_infos[session];
+            info.processes = nullptr;
+            info.prompts.append(text);
+            add_ai_history(info,"activity",
                            "Cannot start AI agent: "+
                            process->errorString());
         }
@@ -1340,9 +1335,9 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
             auto history_size = process->property("history_size");
             bool no_reply = history_size.isValid() && info.projects.size() == history_size.toInt();
             if(failed)
-                add_ai_history(session,"activity","AI agent failed.");
+                add_ai_history(info,"activity","AI agent failed.");
             else if(no_reply)
-                add_ai_history(session,"activity","No reply from AI agent.");
+                add_ai_history(info,"activity","No reply from AI agent.");
             else
                 show_ai_project(session);
         }
@@ -1375,7 +1370,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
     {
         if(input == ai_input::User)
         {
-            add_ai_history(session,"user",text);
+            add_ai_history(*info,"user",text);
             ui->ai_chat_input->clear();
         }
         info->processes->write(claude_input(text));
@@ -1387,11 +1382,6 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
     if(!launch.process)
         return;
     auto* process = launch.process;
-    if(launch.session.isEmpty())
-    {
-        add_ai_history(launch.session,"activity","Cannot start AI agent: missing session ID.");
-        return;
-    }
     launch.prompt.prepend("[DSI Studio] Session ID: "+launch.session+"\n\n");
     if(launch.model_provider == ai_model_provider::Ollama)
     {
@@ -1498,7 +1488,7 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
                 {
                     process->setObjectName(session);
                     info->processes = process;
-                    add_ai_history(session,"user",text);
+                    add_ai_history(*info,"user",text);
                     set_ai_status("Agent session ready.",true);
                     for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
                         button->setEnabled(true);
@@ -1584,7 +1574,7 @@ void AIAgent::on_ai_send_message_clicked()
            info.provider == ai_provider::Unknown)
         {
             info.prompts.append(text);
-            add_ai_history(session,"user",text);
+            add_ai_history(info,"user",text);
             ui->ai_chat_input->clear();
             set_ai_status("Message queued for the AI agent.",true);
             return;

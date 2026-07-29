@@ -50,8 +50,7 @@ class AIAgent : public QMainWindow
     QTimer* ai_status_timer = nullptr;
     int active_ai_processes = 0,ai_status_delay = 0,ai_status_dots = 0;
 
-    void add_ai_history(const QString&,QJsonObject);
-    void add_ai_history(const QString&,const QString&,const QString&);
+    void add_ai_history(ai_info&,const QString&,const QString&);
     void add_ai_reply(ai_info&,const QString&,const QString&);
     void set_ai_status(QString = {},bool = false);
     void show_ai_project(const QString&);
