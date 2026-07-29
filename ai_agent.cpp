@@ -1429,7 +1429,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
         "--output-format","stream-json",
         "--verbose",
         "--add-dir",ui->ai_work_dir->text(),
-        "--allowedTools","./dsi *",
+        "--allowedTools","PowerShell(./dsi_claude.ps1 *)",
         session.isEmpty() ? "--session-id" : "--resume",session_id};
     if(!launch.model.isEmpty())
         args << "--model" << launch.model;
