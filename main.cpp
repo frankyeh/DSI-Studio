@@ -598,14 +598,12 @@ int main(int ac, char *av[])
                             if(!info)
                             {
                                 auto agent = object["agent"].toString().trimmed();
-                                auto model = object["model"].toString().trimmed();
                                 if(agent.isEmpty())
                                     reply = "ERROR\tmissing agent for new session";
-                                else if(!object["model"].isString() || model.isEmpty())
-                                    reply = "ERROR\tmissing model for new session";
                                 else if(!(info = create_ai_info(session,agent)))
                                     reply = "ERROR\tinvalid agent: include Codex or Claude in the agent name";
-                                else
+                                else if(auto model = object["model"].toString().trimmed();
+                                        !model.isEmpty())
                                     info->model_settings["model"] = model;
                             }
                             if(info)
