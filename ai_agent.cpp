@@ -1461,6 +1461,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
         add_ai_history(launch.session,"activity","Cannot start AI agent: missing session ID.");
         return;
     }
+    launch.prompt.prepend("[DSI Studio] Session ID: "+launch.session+"\n\n");
     if(launch.model_provider == ai_model_provider::Ollama)
     {
         auto env = QProcessEnvironment::systemEnvironment();
