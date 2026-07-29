@@ -1,13 +1,11 @@
-# DSI Studio AI control
+# DSI Studio
 
-When asked to operate DSI Studio:
+Use one `dsi_agent.ps1` invocation per request. Start by doing this:
 
-1. Read `DSI_STUDIO_AI_SETUP.md`, then the manual and relevant examples only as needed.
-2. Send `TITLE` first after understanding the task; update it if the task changes substantially.
-3. Call `LIST` only when a tracking or image window ID is needed; `main` is fixed.
-4. Verify completion and ask before destructive actions.
-5. Do not launch another DSI Studio instance or modify the installation unless requested.
+```powershell
+$session = $env:CODEX_THREAD_ID
+./dsi_agent.ps1 -Agent Codex -Session $session -Target TITLE "Open recent FIB"
+./dsi_agent.ps1 -Agent Codex -Session $session -Target main list_recent_fib
+```
 
-## Codex identity
-
-When running as Codex, use only the exact current task/thread UUID exposed by the runtime or reported as `thread_id` by `thread.started`. Never scan for, guess, or generate it. Send it as `Session` in every `dsi_agent.ps1` invocation.
+Adapt the title and command to the task. Never search for the session, access or reuse the named pipe directly, inspect the wrapper, or launch another shell. For Codex, ignore direct-pipe examples in the setup file. `main` is fixed; call `LIST` only for a tracking/image window ID. Read the manual and relevant examples only as needed, update `TITLE` when the task changes substantially, verify completion, and ask before destructive actions.
