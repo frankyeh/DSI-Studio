@@ -155,7 +155,6 @@ AIAgent::AIAgent(MainWindow* parent):
             show_ai_project(ai_infos[item->data(Qt::UserRole).toString()]);
     });
     ai_status_timer = new QTimer(this);
-    ai_status_timer->setInterval(500);
     connect(ai_status_timer,&QTimer::timeout,this,[this]
     {
         if(ai_status_timer->isSingleShot())
@@ -169,21 +168,9 @@ AIAgent::AIAgent(MainWindow* parent):
 
     auto* agents = qobject_cast<QStandardItemModel*>(
                        ui->ai_agent_selector->model());
-    auto set_agent = [&](ai_provider provider,const QString& path)
-    {
-        auto index = int(provider);
-        auto agent = ui->ai_agent_selector->itemText(index);
-        auto* item = agents->item(index);
-        item->setText(agent+(path.isEmpty() ? " (not found)" : ""));
-        item->setEnabled(!path.isEmpty());
-        ui->ai_agent_selector->setItemData(index,path,Qt::UserRole+1);
-        ai_log(path.isEmpty() ? agent+" not found" : agent+": "+path);
-        if(!path.isEmpty())
-            ai_log(agent+" models: none detected");
-    };
     QString codex_path,claude_path;
     {
-        // Find Codex executable and models
+        // Find Codex executable
         codex_path = QStandardPaths::findExecutable("codex");
         if(codex_path.isEmpty())
         {
@@ -196,11 +183,9 @@ AIAgent::AIAgent(MainWindow* parent):
         }
         if(!QFileInfo::exists(codex_path))
             codex_path.clear();
-        set_agent(ai_provider::Codex,codex_path);
-        refresh_codex_models(codex_path);
     }
     {
-        // Find Claude executable and models
+        // Find Claude executable
         claude_path = QStandardPaths::findExecutable("claude");
 #ifdef Q_OS_WIN
         if(claude_path.isEmpty())
@@ -208,9 +193,23 @@ AIAgent::AIAgent(MainWindow* parent):
 #endif
         if(!QFileInfo::exists(claude_path))
             claude_path.clear();
-        set_agent(ai_provider::Claude,claude_path);
-        refresh_ollama_models();
     }
+    for(auto provider : {ai_provider::Codex,ai_provider::Claude})
+    {
+        auto index = int(provider);
+        const auto& path =
+            provider == ai_provider::Codex ? codex_path : claude_path;
+        auto agent = ui->ai_agent_selector->itemText(index);
+        auto* item = agents->item(index);
+        item->setText(agent+(path.isEmpty() ? " (not found)" : ""));
+        item->setEnabled(!path.isEmpty());
+        ui->ai_agent_selector->setItemData(index,path,Qt::UserRole+1);
+        ai_log(path.isEmpty() ? agent+" not found" : agent+": "+path);
+        if(!path.isEmpty())
+            ai_log(agent+" models: none detected");
+    }
+    refresh_codex_models(codex_path);
+    refresh_ollama_models();
 
     if(codex_path.isEmpty() && !claude_path.isEmpty())
         ui->ai_agent_selector->setCurrentIndex(int(ai_provider::Claude));
@@ -456,7 +455,7 @@ void AIAgent::set_ai_status(QString status,bool temporary)
             status.chop(1);
         status += ", waiting for agent.";
         ai_status_timer->setSingleShot(false);
-        ai_status_timer->start();
+        ai_status_timer->start(500);
     }
     else if(status.isEmpty())
         status = "Current task complete.";
@@ -1168,18 +1167,17 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
             ai_info::create(session,launch.name);
         }
     }
+    auto* info = session.isEmpty() ? nullptr : &ai_infos[session];
 
     // Resolve model
     {
         QJsonObject selected{
             {"model",ui->ai_model_selector->currentText()},
             {"info",ui->ai_model_selector->currentData().toJsonObject()}};
-        if(!session.isEmpty() &&
-           selected["model"].toString() ==
-               ai_infos[session].model_settings["model"].toString())
-            launch.model_setting = ai_infos[session].model_settings;
-        else
-            launch.model_setting = selected;
+        launch.model_setting =
+            info && selected["model"].toString() ==
+                    info->model_settings["model"].toString() ?
+            info->model_settings : selected;
 
         launch.model = launch.model_setting["model"].toString().trimmed();
         if(launch.model_setting["info"].toObject()["provider"].toInt() ==
@@ -1198,19 +1196,15 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
         }
         if(launch.model.startsWith("default",Qt::CaseInsensitive))
             launch.model.clear();
-        if(!session.isEmpty())
+        if(info && info->model_settings != launch.model_setting)
         {
-            auto& info = ai_infos[session];
-            if(info.model_settings != launch.model_setting)
+            info->model_settings = launch.model_setting;
+            if(!info->projects.isEmpty())
             {
-                info.model_settings = launch.model_setting;
-                if(!info.projects.isEmpty())
-                {
-                    auto first = info.projects.first().toObject();
-                    first["model_settings"] = info.model_settings;
-                    info.projects[0] = first;
-                    write_history(info,QIODevice::Truncate,info.projects);
-                }
+                auto first = info->projects.first().toObject();
+                first["model_settings"] = info->model_settings;
+                info->projects[0] = first;
+                write_history(*info,QIODevice::Truncate,info->projects);
             }
         }
     }
@@ -1461,19 +1455,18 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
             auto event = QJsonDocument::fromJson(line).object();
             if(event["type"] == "thread.started")
             {
-                if(auto* info = ai_info::create(
-                       event["thread_id"].toString(),launch.name))
-                {
+                auto* info = ai_info::create(
+                    event["thread_id"].toString(),launch.name);
+                if(info)
                     info->model_settings = launch.model_setting;
-                    if(process->objectName().isEmpty())
-                    {
-                        process->setObjectName(info->sessions);
-                        info->processes = process;
-                        add_ai_history(*info,"user",text);
-                        set_ai_status("Agent session ready.",true);
-                        for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
-                            button->setEnabled(true);
-                    }
+                if(info && process->objectName().isEmpty())
+                {
+                    process->setObjectName(info->sessions);
+                    info->processes = process;
+                    add_ai_history(*info,"user",text);
+                    set_ai_status("Agent session ready.",true);
+                    for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
+                        button->setEnabled(true);
                 }
                 continue;
             }
@@ -1512,11 +1505,9 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
            !profile.isEmpty())
             args << "--profile" << profile;
     }
-    if(session.isEmpty())
-        args << "--json" << "--skip-git-repo-check";
-    else
-        args << "resume" << session << "--json"
-             << "--skip-git-repo-check";
+    if(!session.isEmpty())
+        args << "resume" << session;
+    args << "--json" << "--skip-git-repo-check";
     args << text;
     run_ai(launch,args);
 }
