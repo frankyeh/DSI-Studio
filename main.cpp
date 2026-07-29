@@ -588,20 +588,25 @@ int main(int ac, char *av[])
                         if(!doc.isObject())
                             reply = ("ERROR\tinvalid JSON: "+error.errorString()).toUtf8();
                         else if(session.isEmpty())
-                            reply = "ERROR\tmissing session: provide the initiating-chat session ID and reuse it for the entire conversation";
+                            reply = "ERROR\tmissing session: provide resumable provider thread ID";
                         else if(QUuid(session).toString(QUuid::WithoutBraces).compare(
                                     session,Qt::CaseInsensitive))
-                            reply = "ERROR\tinvalid session: read DSI_STUDIO_AI_SETUP.md and obtain the correct resumable provider thread ID";
+                            reply = "ERROR\tinvalid session: provide resumable provider thread ID";
                         else
                         {
                             auto* info = find_ai_info(session);
                             if(!info)
                             {
                                 auto agent = object["agent"].toString().trimmed();
+                                auto model = object["model"].toString().trimmed();
                                 if(agent.isEmpty())
                                     reply = "ERROR\tmissing agent for new session";
+                                else if(!object["model"].isString() || model.isEmpty())
+                                    reply = "ERROR\tmissing model for new session";
                                 else if(!(info = create_ai_info(session,agent)))
                                     reply = "ERROR\tinvalid agent: include Codex or Claude in the agent name";
+                                else
+                                    info->model_settings["model"] = model;
                             }
                             if(info)
                                 w.ai_command(*info,request,reply);
