@@ -1605,8 +1605,7 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
         process->setProperty("stdout_buffer",buffer);
     });
 
-    QStringList args{"exec","--add-dir",
-                     process->processEnvironment().value("DSI_STUDIO_AI_DIR")};
+    QStringList args{"exec","--add-dir",process->processEnvironment().value("DSI_STUDIO_AI_DIR")};
     if(launch.model_provider == ai_model_provider::Ollama)
     {
         auto url = launch.model_url;
