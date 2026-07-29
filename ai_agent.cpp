@@ -82,9 +82,7 @@ QString ai_info::details(const QString& session) const
     return QString("<b>%1</b><br><br>Agent: %2<br>Session: %3<br>Status: %4<br>"
         "Messages: %5 (%6 you, %7 AI)<br>Activities: %8<br>"
         "Created: %9<br>Updated: %10<br>Working folder: %11")
-        .arg(title(session).toHtmlEscaped(),
-             (agent_name.isEmpty() ? QString("Not available") : agent_name).toHtmlEscaped(),
-             session.toHtmlEscaped(),processes ? "Working" : "Idle")
+        .arg(title(session).toHtmlEscaped(),agent_name.toHtmlEscaped(),session.toHtmlEscaped(),processes ? "Working" : "Idle")
         .arg(user+assistant).arg(user).arg(assistant).arg(activity)
         .arg(time(projects.first().toObject()["time"]),
              time(projects.last().toObject()["time"]),
@@ -900,10 +898,7 @@ void AIAgent::show_ai_project(const QString& session,QJsonObject added_entry)
         auto cell = QString(
                         "<td bgcolor=\"%1\"><b style=\"background-color:%1\">%2</b>"
                         "<font color=\"#80868b\">%3</font><br>%4</td>")
-                        .arg(color,
-                             (user ? QString("You") : agent_name).toHtmlEscaped()+" &middot; ",
-                             time,
-                             content);
+                        .arg(color,(user ? QString("You") : agent_name).toHtmlEscaped()+" &middot; ",time,content);
 
         auto cursor = ui->ai_chat_history->document()->
                       rootFrame()->lastCursorPosition();
@@ -1403,10 +1398,9 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
 
     // Build agent prompt
     {
-        bool initial_task = !session.isEmpty() && input == ai_input::Pending &&
-                            ai_infos[session].projects.size() == 1;
         QString prompt = text;
-        if(launch.new_session || initial_task)
+        if(launch.new_session || (input == ai_input::Pending &&
+                                   ai_infos[session].projects.size() == 1))
         {
             QDir app(QApplication::applicationDirPath());
             prompt +=
@@ -1417,24 +1411,8 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
                 QDir::toNativeSeparators(
                     app.filePath("ai/DSI_STUDIO_AI_MANUAL.md"))+
                 "\", read the operating rules and common syntax, then search the "
-                "command inventory only for commands relevant to this request. "
-                "Use the local server and keep the generated identity. Use GUI "
-                "control by default and run_cli only when explicitly requested. "
-                "Attach only new user-facing chat and send the final answer once "
-                "through the named pipe. Process every returned PROMPT.";
+                "command inventory only for commands relevant to this request. ";
         }
-        if(!session.isEmpty())
-            prompt +=
-                "\n\n[DSI Studio] Continue through agent "+
-                ai_infos[session].agent_name+" using session "+
-                session+". Use this exact value as session in every local-server "
-                "request. Send new user-facing text and the final reply through "
-                "the named pipe.";
-        else if(launch.new_session)
-            prompt +=
-                "\n\n[DSI Studio] Use \""+launch.name+
-                "\" as agent and the current resumable agent session UUID as "
-                "session in every local-server request.";
         launch.prompt = prompt;
     }
     return launch;
@@ -1486,7 +1464,12 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
                 process->setProperty("stdout",output.right(64*1024));
             });
 
-    QStringList args{"-p",launch.new_session ? "--session-id" : "--resume",launch.session};
+    QStringList args{
+        "-p",
+        "--input-format","stream-json",
+        "--output-format","stream-json",
+        "--verbose",
+        launch.new_session ? "--session-id" : "--resume",launch.session};
     if(!launch.model.isEmpty())
         args << "--model" << launch.model;
     args << launch.prompt;
@@ -1507,24 +1490,43 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
         {
             auto event = QJsonDocument::fromJson(buffer.left(pos)).object();
             buffer.remove(0,pos+1);
-            if(event["type"] != "thread.started")
-                continue;
-            auto session = event["thread_id"].toString();
-            if(session.isEmpty())
-                continue;
-            bool started_new_session = process->objectName().isEmpty();
-            auto* info = create_ai_info(session,launch.name);
-            if(!info)
-                continue;
-            info->model_settings = launch.model_setting;
-            if(started_new_session)
+            if(event["type"] == "thread.started")
             {
-                process->setObjectName(session);
-                info->set_process(process);
-                add_ai_history(session,"user",text);
-                set_ai_status("Agent session ready.",true);
-                for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
-                    button->setEnabled(true);
+                auto session = event["thread_id"].toString();
+                if(session.isEmpty())
+                    continue;
+                bool started_new_session = process->objectName().isEmpty();
+                auto* info = create_ai_info(session,launch.name);
+                if(!info)
+                    continue;
+                info->model_settings = launch.model_setting;
+                if(started_new_session)
+                {
+                    process->setObjectName(session);
+                    info->set_process(process);
+                    add_ai_history(session,"user",text);
+                    set_ai_status("Agent session ready.",true);
+                    for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
+                        button->setEnabled(true);
+                }
+                continue;
+            }
+
+            auto item = event["item"].toObject();
+            auto type = item["type"].toString();
+            if(type == "agent_message" || type == "reasoning")
+            {
+                auto* info = find_ai_info(process->objectName());
+                if(!info)
+                    continue;
+                auto chat = item["text"].toString();
+                if(type == "reasoning")
+                    chat.prepend("Reasoning: ");
+                QByteArray reply;
+                ai_command(*info,QJsonDocument(QJsonObject{
+                    {"request","CHAT"},{"chat",chat}}).
+                    toJson(QJsonDocument::Compact),reply);
+                refresh_ai_info(*info);
             }
         }
 
