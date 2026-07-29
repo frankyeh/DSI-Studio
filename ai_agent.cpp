@@ -101,6 +101,19 @@ QPair<QUrl,bool> ai_ollama_url(const QSettings& settings)
     url.setPort(settings.value("ai/ollama_port",11434).toInt());
     return {url,configured};
 }
+void set_model_selector(QComboBox& model,const QComboBox& agents,int index,
+                        QString selected = {},QString fallback = {})
+{
+    auto profiles = agents.itemData(index,Qt::UserRole+2).toJsonObject();
+    model.clear();
+    model.addItem("default");
+    for(const auto& name : agents.itemData(index).toStringList())
+        model.addItem(name,profiles[name].toObject());
+    auto selected_index = model.findText(selected);
+    if(selected_index < 0)
+        selected_index = model.findText(fallback);
+    model.setCurrentIndex(std::max(0,selected_index));
+}
 
 AIAgent::AIAgent(MainWindow* parent):
     QMainWindow(parent),main_window(*parent),ui(new Ui::AIAgent)
@@ -178,7 +191,8 @@ AIAgent::AIAgent(MainWindow* parent):
         !codex_path.isEmpty() || !claude_path.isEmpty());
     auto update_models = [this]
     {
-        update_model_selector(ui->ai_agent_selector->currentIndex());
+        auto index = ui->ai_agent_selector->currentIndex();
+        set_model_selector(*ui->ai_model_selector,*ui->ai_agent_selector,index);
     };
     connect(ui->ai_agent_selector,
             QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -962,24 +976,6 @@ void AIAgent::stop_ai_blink()
     row->findChild<QTimer*>("ai_chat_blink")->stop();
     row->setStyleSheet({});
 }
-void AIAgent::update_model_selector(int index,QString selected)
-{
-    auto profiles = ui->ai_agent_selector->itemData(
-                        index,Qt::UserRole+2).toJsonObject();
-    ui->ai_model_selector->clear();
-    ui->ai_model_selector->addItem("default");
-    for(const auto& model :
-        ui->ai_agent_selector->itemData(index).toStringList())
-        ui->ai_model_selector->addItem(
-            model,QVariant::fromValue(profiles[model].toObject()));
-    if(selected.isEmpty())
-        return;
-    auto selected_index = ui->ai_model_selector->findText(selected);
-    if(selected_index < 0)
-        selected_index = ui->ai_model_selector->findText(
-            settings.value("ai/default_model").toString());
-    ui->ai_model_selector->setCurrentIndex(std::max(0,selected_index));
-}
 void AIAgent::refresh_codex_models(const QString& path)
 {
     if(path.isEmpty())
@@ -1007,7 +1003,7 @@ void AIAgent::refresh_codex_models(const QString& path)
         auto index = int(ai_provider::Codex);
         ui->ai_agent_selector->setItemData(index,models);
         if(ui->ai_agent_selector->currentIndex() == index)
-            update_model_selector(index);
+            set_model_selector(*ui->ai_model_selector,*ui->ai_agent_selector,index);
         refresh_ollama_models();
         process->deleteLater();
     });
@@ -1051,8 +1047,10 @@ void AIAgent::refresh_ollama_models()
                 index,QVariant::fromValue(profiles),Qt::UserRole+2);
 
             if(ui->ai_agent_selector->currentIndex() == index)
-                update_model_selector(
-                    index,ui->ai_model_selector->currentText());
+                set_model_selector(
+                    *ui->ai_model_selector,*ui->ai_agent_selector,index,
+                    ui->ai_model_selector->currentText(),
+                    settings.value("ai/default_model").toString());
         }
     };
 
@@ -1130,13 +1128,8 @@ void AIAgent::on_ai_quick_settings_clicked()
     agent.setCurrentIndex(agent.findData(ui->ai_agent_selector->currentIndex()));
     auto update_models = [&]
     {
-        auto index = agent.currentData().toInt();
-        auto profiles = ui->ai_agent_selector->itemData(index,Qt::UserRole+2).
-                        toJsonObject();
-        model.clear();
-        model.addItem("default");
-        for(const auto& name : ui->ai_agent_selector->itemData(index).toStringList())
-            model.addItem(name,profiles[name].toObject());
+        set_model_selector(model,*ui->ai_agent_selector,
+                           agent.currentData().toInt());
     };
     update_models();
     model.setCurrentText(ui->ai_model_selector->currentText());

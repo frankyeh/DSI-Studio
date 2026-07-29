@@ -58,7 +58,6 @@ class AIAgent : public QMainWindow
     void show_ai_project(const QString&);
     void show_ai_project(const QString&,QJsonObject);
     void stop_ai_blink();
-    void update_model_selector(int,QString = {});
     void refresh_ollama_models();
     void refresh_codex_models(const QString&);
     void start_ai(QString,const QString&,ai_input);
