@@ -5,22 +5,57 @@ agent can read it without losing the end of the file to output truncation. The
 complete command inventory and source-verified examples are divided by topic and
 linked near the end.
 
-## Command routing reference — read this first
+## Start with `TITLE`
 
-A `CMD` must target a window ID returned by top-level `LIST`. Commands are
-accepted only by the window type that implements them.
+After understanding the task, send one concise `TITLE` as the first request:
+
+```json
+{"session":"<session-uuid>","request":"TITLE","title":"Corticospinal tract analysis"}
+```
+
+Send another `TITLE` whenever the active task changes substantially. Repeated
+`TITLE` requests update the displayed chat name while keeping the same session.
+The `title` field is required; do not put it in `chat` or `text`, or include it
+in `CMD`, `CHAT`, `LIST`, or `LOG`.
+
+## Tracking and image window IDs: `LIST`
+
+`main` is fixed and can be targeted directly. Call top-level `LIST` only when a
+tracking or image window ID is needed:
+
+```json
+{"session":"<session-uuid>","request":"LIST"}
+```
+
+Example reply:
+
+```json
+{
+  "status":"success",
+  "application":{"status":"busy"},
+  "windows":{
+    "main":{"status":"idle","title":"DSI Studio"},
+    "tracking7ff6ab123410":{"status":"busy","title":"subject.fz"},
+    "image7ff6ab456780":{"status":"idle","title":"T1w.nii.gz"}
+  }
+}
+```
+
+Tracking and image keys append the window pointer address in lowercase
+hexadecimal without `0x`. Copy the exact current key; do not construct an ID or
+use a window title, filename, guessed ID, or stale ID. The ID is valid only while
+that window remains open.
+
+## Command routing reference
+
+A `CMD` targets either the fixed `main` ID or an exact tracking/image ID returned
+by `LIST`. Commands are accepted only by the window type that implements them.
 
 | Window ID | What it represents | Common valid commands | File-opening role |
 |---|---|---|---|
 | `main` | Main DSI Studio window | `list_recent_fib`, `list_recent_src`, `reset_settings`, `set_work_dir`, `rename_dicom`, `rename_dicom_dir`, `convert_dicom_dir`, `bids_to_src`, `nifti_dir_to_src`, `collect_network_measures`, `open_src`, `open_dwi_nifti`, `open_dwi_dicom`, `open_dwi_2dseq`, `open_src_dir`, `open_fib`, `open_structural_tracking`, `open_template`, `create_db`, `create_average`, `open_db`, `open_connectometry`, `open_auto_track`, `open_nonlinear_registration`, `open_xnat`, `open_console`, `clear_recent_src`, `clear_recent_fib`, `qc_nii`, `qc_src`, `qc_fib`, `run_cli`, `open_image`, `open_ai`, `open_hub`, `hub_*` | Main-window opening commands may accept paths as command parameters. Without parameters, many open a local picker. Never send a filesystem path as the complete named-pipe request. |
 | `image<hex-address>` | General image viewer | Image inspection, editing, and `segmentation` commands | Used mainly for standalone NIfTI editing and batch image processing, not as the default T1w-segmentation route when a related FIB is already open. |
 | `tracking<hex-address>` | A loaded FIB/FZ tracking window | `list_slice`, `set_slice`, `list_unet`, `segment_brain`, `list_region`, `list_tract`, `run_tracking`, `open_fib`, tract/region/slice/device/rendering commands | Tracking-window `open_fib` requires an explicit `.fz` or `*fib.gz` path and creates another tracking window. |
-
-`main` is fixed. Tracking and image IDs append the window pointer address in
-lowercase hexadecimal without `0x`. Always call top-level `LIST` first and copy
-the exact current window key. Do not construct an ID or use a window title,
-filename, guessed ID, or stale ID. A tracking or image ID is valid only while
-that window remains open; reopening it or restarting DSI Studio may change it.
 
 Do not invent command names. To discover recent files, target **main** and use
 these exact commands:
@@ -75,7 +110,7 @@ restored.
 
 ### 2. Tracking-window `open_fib` — explicit additional FIB
 
-Target an existing tracking window using its exact current `LIST` key:
+Call `LIST` to obtain the tracking-window ID, then target that exact ID:
 
 ```json
 {"session":"<session-uuid>","request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"open_fib","param":"C:/data/second_subject.fz"}}
@@ -89,7 +124,7 @@ window.
 
 ### 3. Main-window `open_image` — explicit image paths
 
-Target **main**:
+Target **main** directly:
 
 ```json
 {"session":"<session-uuid>","request":"CMD","window":"main","command":{"cmd":"open_image","param":"C:/data/T1w.nii.gz"}}
@@ -107,11 +142,10 @@ image editing or batch processing.
 ## Recommended request sequence
 
 1. Send one concise `TITLE` after understanding the task.
-2. Send top-level `LIST`.
-3. Copy the exact current ID for the correct window.
-4. Run discovery commands before mutation.
-5. Use `LIST` for routine polling and targeted `list_*` commands for detail.
-6. Verify output files or created objects before reporting completion.
+2. Target `main` directly, or call `LIST` only when a tracking/image ID is needed.
+3. Run relevant discovery commands before mutation.
+4. Verify output files or created objects before reporting completion.
+5. Send another `TITLE` if the active task changes substantially.
 
 ## Request formats
 
@@ -120,32 +154,6 @@ known to DSI Studio must include `agent` in its first request; existing sessions
 do not need it. An optional `chat` may accompany any request.
 Attach an update directly to `CMD` when it describes that command; use standalone
 `CHAT` otherwise.
-
-### LIST
-
-```json
-{"session":"<session-uuid>","request":"LIST"}
-```
-
-Example reply:
-
-```json
-{
-  "status":"success",
-  "application":{"status":"busy"},
-  "windows":{
-    "main":{"status":"idle","title":"DSI Studio"},
-    "tracking7ff6ab123410":{"status":"busy","title":"subject.fz"},
-    "image7ff6ab456780":{"status":"idle","title":"T1w.nii.gz"}
-  }
-}
-```
-
-`application.status` and each window `status` are `idle`, `busy`, or `waiting`.
-The `windows` keys are the exact quoted values required by `CMD`. `main` is
-fixed; other keys are `tracking` or `image` followed by the window pointer
-address in lowercase hexadecimal without `0x`. Copy the key from the latest
-`LIST`; it is valid only while that window remains open.
 
 ### CMD
 
@@ -236,25 +244,14 @@ For `list_*` commands, actual rows appear in `output`. If the response is
 
 Use standalone `CHAT` when no other request is needed.
 
-### TITLE
-
-```json
-{"session":"<session-uuid>","request":"TITLE","title":"Corticospinal tract analysis"}
-```
-
-Send one concise title after understanding the initial task and before the
-first `LIST` or `CMD`. The `title` field is required; do not put the title in
-`chat` or `text`, or include it in `CMD`, `CHAT`, `LIST`, or `LOG`. Reuse the
-exact session UUID, and rename later only with the user's permission.
-
 ### LOG
 
 ```json
 {"session":"<session-uuid>","request":"LOG"}
 ```
 
-Use `LOG` only when `LIST`, the direct `CMD` response, and targeted discovery
-cannot explain a failure.
+Use `LOG` only when the direct `CMD` response and targeted discovery cannot
+explain a failure.
 
 ## Main-window command reference
 
@@ -365,8 +362,9 @@ prechecking `status=ready` still avoids waiting or failure during segmentation.
 
 Segmentation inference may outlast the named-pipe client's wait time. A client
 timeout does not prove that `segment_brain` failed. Do not immediately resend the
-command. Poll top-level `LIST`, then use `list_slice` and `list_region` to verify
-that processing finished and segmentation regions were created.
+command. Use `list_slice` and `list_region` to verify that processing finished
+and segmentation regions were created. Call `LIST` only if the tracking-window
+ID must be obtained again.
 
 Use the image-window `segmentation` command mainly when processing a standalone
 NIfTI image or applying an image-processing workflow to multiple files. Open a
@@ -416,9 +414,9 @@ directory when needed, disables overwrite, and skips an existing destination
 file.
 
 When opening FIB data, verify that the selected file is `.fz` or `*fib.gz`. After
-`hub_open`, call top-level `LIST` and verify that a new tracking window appeared.
-Hub open/download routines are GUI-backed; verify the created window or output
-file rather than treating a response without an error as proof of completion.
+`hub_open`, call `LIST` to obtain the new tracking-window ID when needed. Hub
+open/download routines are GUI-backed; verify the created window or output file
+rather than treating a response without an error as proof of completion.
 
 ### `list_tract` uses `running` or `done`
 
@@ -490,14 +488,14 @@ FIB because the initial region list is normally empty. Change tracking
 parameters only for a documented reason.
 
 Do not resend `run_tracking` merely because a client timeout occurred. Poll
-`LIST` for general application status and `["list_tract","status"]` for tract
-completion. `status=done` is the definitive completion signal.
+`["list_tract","status"]` for completion. `status=done` is the definitive
+completion signal.
 
 ## Discovery quick reference
 
 | Need | Command | Window |
 |---|---|---|
-| Open windows and application status | top-level `LIST` | none |
+| Tracking or image window IDs | top-level `LIST` | none |
 | Recent FIB/FZ paths | `["list_recent_fib"]` | main |
 | Recent SRC/SZ paths | `["list_recent_src"]` | main |
 | Interactive FIB picker | `["open_fib"]` | main |
@@ -523,7 +521,8 @@ completion. `status=done` is the definitive completion signal.
 
 - Each named-pipe connection sends one request, reads the complete reply, and closes.
 - Reuse the exact nonempty `session` UUID for the conversation.
-- Inspect `LIST` before substantial loading, registration, segmentation, reconstruction, or tracking.
+- Send `TITLE` first and update it when the active task changes substantially.
+- Call `LIST` only when a tracking or image window ID is needed; `main` is fixed.
 - Copy exact command names, current window IDs, indices, internal model IDs, and parameter IDs rather than guessing.
 - For `run_auto_track`, call `list_auto_tract` first and use an exact internal atlas label such as `ProjectionBrainstem_CorticospinalTractL`.
 - Main-window GUI picker commands require local user interaction; do not claim completion from the response alone.
@@ -534,12 +533,12 @@ completion. `status=done` is the definitive completion signal.
 - A client timeout does not prove failure; verify application state before retrying a long command.
 - For a selected slice, `list_slice` with `status=ready` is the readiness signal.
 - For fiber tracking, `list_tract status` with `status=done` is the completion signal.
-- A disappeared window or `window not found` means the user likely closed it. Call `LIST` again; do not reopen it automatically.
+- A disappeared window or `window not found` means the user likely closed it. Call `LIST` again to obtain a current tracking/image ID; do not reopen it automatically.
 - Do not expose private chain-of-thought. Report conclusions, actions, progress, and blockers.
 
 ## Footnotes
 
-1. `set_work_dir`, `open_src`, main-window `open_fib`, `open_structural_tracking`, `open_db`, `open_connectometry`, and parameterless `open_image` use local GUI dialogs. The current command branches may report completion when the user cancels. Verify the resulting directory or window with the GUI or top-level `LIST`. Database-loading failures from `open_db` and `open_connectometry` are returned through the `CMD` error field.
+1. `set_work_dir`, `open_src`, main-window `open_fib`, `open_structural_tracking`, `open_db`, `open_connectometry`, and parameterless `open_image` use local GUI dialogs. The current command branches may report completion when the user cancels. Verify the resulting directory or window with the GUI or, when a tracking/image ID is needed, top-level `LIST`. Database-loading failures from `open_db` and `open_connectometry` are returned through the `CMD` error field.
 2. `open_template` now returns failure when the supplied name does not match a built-in template or when `loadFib()` fails.
 3. `open_image` now returns the image-window error through the `CMD` response if the supplied files cannot be opened.
 
