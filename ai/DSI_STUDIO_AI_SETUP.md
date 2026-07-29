@@ -9,15 +9,6 @@ Send it as `session` with every request. If the session is not already known to
 DSI Studio, its first request must also send `agent` containing `Codex` or
 `Claude`; `model` is optional. Existing sessions need only `session`.
 
-### Codex
-
-Use the exact UUID of the current Codex task/thread exposed by its injected
-runtime context or task-specific runtime path. When DSI Studio launches Codex
-with JSON output, this is the same `thread_id` reported by `thread.started`.
-Codex Desktop may expose it as the UUID component of an injected task path such
-as `...\visualizations\YYYY\MM\DD\<uuid>`. Use only an ID explicitly associated
-with the current task; do not scan for, guess, or generate one.
-
 ### Claude Code
 
 Read the current Claude process's `~/.claude/sessions/<pid>.json` file and use
@@ -66,7 +57,7 @@ function Invoke-Dsi($request)
     }
 }
 
-# Obtain this using the matching Codex or Claude instructions above.
+# Obtain this using the matching agent-specific instructions.
 $DsiSession = '<resumable-session-uuid>'
 ```
 
