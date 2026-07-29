@@ -78,7 +78,7 @@ restored.
 Target an existing tracking window using its exact current `LIST` key:
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"tracking7ff6ab123410","command":["open_fib","C:/data/second_subject.fz"]}
+{"agent":"Codex","session":"<uuid>","request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"open_fib","param":"C:/data/second_subject.fz"}}
 ```
 
 Both main and tracking windows accept `open_fib` with a path, but they are
@@ -92,7 +92,7 @@ window.
 Target **main**:
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"main","command":["open_image","C:/data/T1w.nii.gz"]}
+{"agent":"Codex","session":"<uuid>","request":"CMD","window":"main","command":{"cmd":"open_image","param":"C:/data/T1w.nii.gz"}}
 ```
 
 With one or more paths, `open_image` passes the files to a `view_image` window
@@ -146,58 +146,73 @@ address in lowercase hexadecimal without `0x`. Copy the key from the latest
 ### CMD
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"tracking7ff6ab123410","command":["list_region"]}
+{"agent":"Codex","session":"<uuid>","request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"list_region"}}
 ```
 
-Command names and text or path parameters are strings. Send numeric parameters
-as JSON numbers, for example `7`, not `"7"`.
+The `command` field accepts one command object or an array of command objects.
+Each command object requires `cmd`. Omit `param` when the command has no
+parameter. Use a scalar `param` for one parameter and an array for multiple
+parameters in command order. Command names and text or path parameters are
+strings. Send standalone numeric parameters as JSON numbers, for example `7`,
+not `"7"`.
 
 For main-window commands that accept multiple files, pass each path as a
-separate JSON string element:
+separate element in the `param` array:
 
 ```json
-["open_src","C:/data/a.sz","C:/data/b.sz"]
-["open_image","C:/data/T1w.nii.gz","C:/data/T2w.nii.gz"]
-["qc_fib","C:/data/a.fz","C:/data/b.fz"]
+{"cmd":"open_src","param":["C:/data/a.sz","C:/data/b.sz"]}
+{"cmd":"open_image","param":["C:/data/T1w.nii.gz","C:/data/T2w.nii.gz"]}
+{"cmd":"qc_fib","param":["C:/data/a.fz","C:/data/b.fz"]}
 ```
 
 Do not combine multiple paths into one `&`-separated string.
 
+Multiple commands execute sequentially in the same targeted window and stop
+after the first error:
+
+```json
+[
+  {"cmd":"list_slice"},
+  {"cmd":"set_slice","param":7}
+]
+```
+
 A meaningful command should normally include a useful progress update:
 
 ```json
-{"agent":"Codex","session":"<uuid>","request":"CMD","window":"tracking7ff6ab123410","command":["segment_brain","human_synthseg",7],"chat":"I verified that the T1w slice is ready. I am starting SynthSeg now."}
+{"agent":"Codex","session":"<uuid>","request":"CMD","window":"tracking7ff6ab123410","command":{"cmd":"segment_brain","param":["human_synthseg",7]},"chat":"I verified that the T1w slice is ready. I am starting SynthSeg now."}
 ```
 
 The top-level `chat` field is shown to the user and does not change the command.
 Silent polling may omit it.
 
-Every `CMD` returns a JSON array with one result object per command.
+Every `CMD` returns a JSON array with one result object per executed command.
+The `cmd` field identifies the command.
 
 A command that produces text returns:
 
 ```json
-[{"index":0,"output":"<command output>"}]
+[{"cmd":"list_region","output":"<command output>"}]
 ```
 
 A successful command with no captured text returns:
 
 ```json
-[{"index":0,"output":"command completed"}]
+[{"cmd":"set_slice","output":"completed"}]
 ```
 
-A failed command returns an `error` field:
+An executed command that fails includes `error`:
 
 ```json
-[{"index":0,"error":"<reason>"}]
+[{"cmd":"set_slice","output":"completed","error":"<reason>"}]
 ```
 
-Interpret the fields as follows:
+A request rejected before execution may return only an `error` field. Interpret
+the fields as follows:
 
-- `index` identifies the command within the submitted batch.
-- `output` contains the command's captured text.
-- `command completed` means the command handler returned without an immediate error and produced no captured text.
-- The presence of `error` means that command failed.
+- `cmd` identifies the executed command.
+- `output` contains captured text or `completed` when no text was captured.
+- The presence of `error` means failure regardless of `output`.
 - A command batch stops after the first error.
 
 A response without `error` does not prove that asynchronous work has finished or
@@ -206,7 +221,7 @@ window, file, region, tract, slice status, or other documented state before
 reporting completion.
 
 For `list_*` commands, actual rows appear in `output`. If the response is
-`command completed`, the command produced no rows or no textual output.
+`completed`, the command produced no rows or no textual output.
 
 ### CHAT
 
@@ -438,8 +453,8 @@ the total number of tract rows, not a running-job count. Poll until
 
 `list_tract` does not require a numeric tract index. If `["list_tract"]` reports
 `need-param1`, the request was likely sent through an incompatible wrapper or a
-malformed command interface. Send the standard JSON `CMD` array directly to a
-tracking window.
+malformed command interface. Send `{"cmd":"list_tract"}` as the `command` field
+to a tracking window.
 
 ### `run_tracking` requires a new bundle name
 
@@ -449,8 +464,8 @@ Minimum form:
 ["run_tracking","CST"]
 ```
 
-The second command element is mandatory and becomes the new tract-bundle name.
-An empty name fails with `missing tract-bundle name`. With the two-element form,
+The command requires `param:"CST"`, which becomes the new tract-bundle name. An
+empty name fails with `missing tract-bundle name`. Without additional parameters,
 DSI Studio uses the current tracking parameters and checked region settings.
 Follow the [fiber-tracking skill](DSI_STUDIO_AI_SKILL_FIBER_TRACKING.md) when
 choosing tracking strategy, parameters, region roles, and quality control.
