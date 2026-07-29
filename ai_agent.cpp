@@ -1349,25 +1349,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
         process->deleteLater();
     });
 
-    // Build agent prompt
-    {
-        QString prompt = text;
-        if(launch.new_session || (input == ai_input::Pending &&
-                                   ai_infos[session].projects.size() == 1))
-        {
-            QDir app(QApplication::applicationDirPath());
-            prompt +=
-                "\n\n[DSI Studio] Read \""+
-                QDir::toNativeSeparators(
-                    app.filePath("ai/DSI_STUDIO_AI_SETUP.md"))+
-                "\" completely. In \""+
-                QDir::toNativeSeparators(
-                    app.filePath("ai/DSI_STUDIO_AI_MANUAL.md"))+
-                "\", read the operating rules and common syntax, then search the "
-                "command inventory only for commands relevant to this request. ";
-        }
-        launch.prompt = prompt;
-    }
+    launch.prompt = text;
     return launch;
 }
 
