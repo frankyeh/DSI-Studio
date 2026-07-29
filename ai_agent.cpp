@@ -376,6 +376,14 @@ void AIAgent::refresh_ai_info(ai_info& info)
     show_ai_project(info.sessions);
     set_ai_status("Agent request completed.",true);
 }
+void AIAgent::add_ai_reply(ai_info& info,const QString& chat,const QString& reasoning)
+{
+    QByteArray reply;
+    ai_command(info,QJsonDocument(QJsonObject{
+        {"request","CHAT"},{"reasoning",reasoning},{"chat",chat}}).
+        toJson(QJsonDocument::Compact),reply);
+    refresh_ai_info(info);
+}
 
 ai_info* find_ai_info(const QString& session)
 {
@@ -474,12 +482,16 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
     ai_log("received: "+QString::fromUtf8(data));
     static const QRegularExpression ansi_escape(
         QStringLiteral("\x1B\\[[0-?]*[ -/]*[@-~]"));
-    QString chat;
+    QString chat,reasoning;
     auto set_reply = [&](QByteArray result)
     {
-        if(!chat.isEmpty())
-            record_ai_history(info,QJsonObject{
-                                  {"type","assistant"},{"text",chat}});
+        if(!chat.isEmpty() || !reasoning.isEmpty())
+        {
+            QJsonObject entry{{"type","assistant"},{"text",chat}};
+            if(!reasoning.isEmpty())
+                entry["reasoning"] = reasoning;
+            record_ai_history(info,entry);
+        }
         reply = std::move(result);
         ai_log(QString("reply for %1@%2: %3 ...")
                    .arg(info.agent_name,session,
@@ -542,6 +554,7 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
     };
 
     chat = request["chat"].toString().trimmed();
+    reasoning = request["reasoning"].toString().trimmed();
     if(type == "TITLE")
     {
         auto title = request["title"].toString().simplified();
@@ -687,8 +700,8 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
 
     if(type == "CHAT")
     {
-        if(chat.isEmpty())
-            return reply_error("missing chat");
+        if(chat.isEmpty() && reasoning.isEmpty())
+            return reply_error("missing chat or reasoning");
         return reply_object(QJsonObject{{"status","success"}});
     }
 
@@ -878,10 +891,14 @@ void AIAgent::show_ai_project(const QString& session,QJsonObject added_entry)
         auto type = entry["type"].toString();
         bool user = type == "user",request = type == "request";
         auto content = request ? request_content(entry).full : entry["text"].toString();
-        if(content.trimmed().isEmpty())
+        auto reasoning = entry["reasoning"].toString().trimmed();
+        if(content.trimmed().isEmpty() && reasoning.isEmpty())
             return;
 
         content = to_html(content);
+        if(!reasoning.isEmpty())
+            content = "<span style=\"color:#5f6368;\">"+to_html(reasoning)+"</span>"+
+                      (content.isEmpty() ? "" : "<br>"+content);
 
         if(!activity.isEmpty())
             content +=
@@ -1264,7 +1281,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
     auto* process = new QProcess(this);
     launch.process = process;
     process->setObjectName(session);
-    process->setWorkingDirectory(QApplication::applicationDirPath());
+    process->setWorkingDirectory(QApplication::applicationDirPath()+"/ai");
 
     if(!session.isEmpty())
         ai_infos[session].set_process(process);
@@ -1339,8 +1356,6 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
         ai_log(launch.name + " finished session ");
         auto error = (process->property("stderr").toByteArray()+
                       process->readAllStandardError()).trimmed();
-        auto output = (process->property("stdout").toByteArray()+
-                       process->readAllStandardOutput()).trimmed();
         bool failed = exit_code || exit_status == QProcess::CrashExit;
         if(failed)
             ai_log("error code:"+QString::number(exit_code)+" "+QString::fromUtf8(error));
@@ -1375,12 +1390,9 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
 
             auto history_size = process->property("history_size");
             bool no_reply = history_size.isValid() && info.projects.size() == history_size.toInt();
-            if(no_reply && !output.isEmpty())
-                add_ai_history(session,"assistant",QString::fromUtf8(output));
-
             if(failed)
                 add_ai_history(session,"activity","AI agent failed.");
-            else if(no_reply && output.isEmpty())
+            else if(no_reply)
                 add_ai_history(session,"activity","No reply from AI agent.");
             else
                 show_ai_project(session);
@@ -1405,6 +1417,11 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
                 "\", read the operating rules and common syntax, then search the "
                 "command inventory only for commands relevant to this request. ";
         }
+        else if(provider == ai_provider::Codex)
+            prompt +=
+                "\n\n[DSI Studio] Before using the named pipe, read the Identity "
+                "section of ai/DSI_STUDIO_AI_SETUP.md. Include your current "
+                "resumable Codex thread UUID as session in every request.";
         launch.prompt = prompt;
     }
     return launch;
@@ -1455,7 +1472,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
         env.insert("ANTHROPIC_BASE_URL",launch.model_url.toString());
         env.insert("ANTHROPIC_AUTH_TOKEN","ollama");
         env.insert("ANTHROPIC_API_KEY","");
-
+        env.insert("CLAUDE_CODE_USE_POWERSHELL_TOOL","1");
         if(!launch.model.isEmpty())
             for(auto name : {"ANTHROPIC_DEFAULT_HAIKU_MODEL",
                               "ANTHROPIC_DEFAULT_SONNET_MODEL",
@@ -1472,29 +1489,40 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
             {
                 auto output = process->readAllStandardOutput();
                 tipl::out() << "stdout:" << output.toStdString();
-                process->setProperty("stdout",
-                    (process->property("stdout").toByteArray()+output).right(64*1024));
-
                 auto buffer = process->property("stdout_buffer").toByteArray()+output;
                 for(int pos;(pos = buffer.indexOf('\n')) >= 0;)
                 {
                     auto event = QJsonDocument::fromJson(buffer.left(pos)).object();
                     buffer.remove(0,pos+1);
-                    if(event["type"] != "assistant")
+                    auto event_type = event["type"].toString();
+                    if(event_type == "system")
+                    {
+                        if(event["subtype"] == "thinking_tokens" &&
+                           ai_status_activity != "Thinking")
+                            set_ai_status("Thinking");
+                        continue;
+                    }
+                    if(event_type != "assistant")
                         continue;
 
-                    QStringList texts;
-                    for(const auto& value : event["message"].toObject()["content"].toArray())
+                    auto message = event["message"].toObject();
+                    QStringList chats,reasonings;
+                    for(const auto& value : message["content"].toArray())
                     {
                         auto content = value.toObject();
-                        if(content["type"] == "text")
-                            texts << content["text"].toString();
+                        auto type = content["type"].toString();
+                        if(type == "text")
+                            chats << content["text"].toString();
+                        else if(type == "thinking" || type == "reasoning")
+                        {
+                            auto text = content[type].toString();
+                            reasonings << (text.isEmpty() ? content["text"].toString() : text);
+                        }
                     }
-                    auto text = texts.join('\n').trimmed();
-                    if(text.isEmpty())
-                        continue;
-
-                    add_ai_history(process->objectName(),"assistant",text);
+                    auto chat = chats.join('\n').trimmed();
+                    auto reasoning = reasonings.join('\n').trimmed();
+                    if(auto* info = find_ai_info(process->objectName()))
+                        add_ai_reply(*info,chat,reasoning);
                 }
                 process->setProperty("stdout_buffer",buffer);
             });
@@ -1504,7 +1532,11 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
 
     QStringList args{
         "-p",
-        "--allowedTools","PowerShell(powershell.exe -NoProfile -File dsi_agent.ps1 *)",
+        "--input-format","stream-json",
+        "--output-format","stream-json",
+        "--verbose",
+        "--disallowedTools","Bash",
+        "--allowedTools","PowerShell(./dsi_agent.ps1 -Agent Claude -Session " + launch.session + " -Target *)",
         launch.new_session ? "--session-id" : "--resume",launch.session};
     if(!launch.model.isEmpty())
         args << "--model" << launch.model;
@@ -1551,17 +1583,15 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
             auto type = item["type"].toString();
             if(type == "agent_message" || type == "reasoning")
             {
-                auto* info = find_ai_info(process->objectName());
-                if(!info)
+                auto text = item["text"].toString().trimmed();
+                if(text.isEmpty())
                     continue;
-                auto chat = item["text"].toString();
-                if(type == "reasoning")
-                    chat.prepend("Reasoning: ");
-                QByteArray reply;
-                ai_command(*info,QJsonDocument(QJsonObject{
-                    {"request","CHAT"},{"chat",chat}}).
-                    toJson(QJsonDocument::Compact),reply);
-                refresh_ai_info(*info);
+                if(auto* info = find_ai_info(process->objectName()))
+                {
+                    bool reasoning = type == "reasoning";
+                    add_ai_reply(*info,reasoning ? QString() : text,
+                                 reasoning ? text : QString());
+                }
             }
         }
 
