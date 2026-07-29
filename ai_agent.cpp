@@ -69,12 +69,11 @@ QJsonArray ai_info::load_history(const QString& file_name)
 }
 
 struct ai_launch{
-    QString session,name,executable,model,profile,prompt;
+    QString name,executable,model;
     QUrl model_url;
     QJsonObject model_setting;
     QProcess* process = nullptr;
     ai_model_provider model_provider = ai_model_provider::Native;
-    bool new_session = false;
 };
 
 ai_provider ai_info::identify_provider(const QString& name)
@@ -1194,8 +1193,6 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
 
     // Resolve agent
     {
-        launch.session = session;
-        launch.new_session = session.isEmpty();
         launch.name = provider == ai_provider::Codex ? "Codex" : "Claude";
         launch.executable = ui->ai_agent_selector->itemData(
                                 int(provider),Qt::UserRole+1).toString();
@@ -1252,7 +1249,6 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
         {
             session = QUuid::createUuid().toString(QUuid::WithoutBraces);
             ai_info::create(session,launch.name);
-            launch.session = session;
         }
     }
 
@@ -1270,7 +1266,6 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
 
         launch.model = launch.model_setting["model"].toString().trimmed();
         auto model_info = launch.model_setting["info"].toObject();
-        launch.profile = model_info["profile"].toString();
         launch.model_provider =
             ai_model_provider(model_info["provider"].toInt());
         if(launch.model_provider == ai_model_provider::Ollama)
@@ -1431,7 +1426,6 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
         process->deleteLater();
     });
 
-    launch.prompt = text;
     return launch;
 }
 
@@ -1469,7 +1463,8 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
     if(!launch.process)
         return;
     auto* process = launch.process;
-    launch.prompt.prepend("[DSI Studio] Session ID: "+launch.session+"\n\n");
+    auto session_id = process->objectName();
+    auto prompt = "[DSI Studio] Session ID: "+session_id+"\n\n"+text;
     if(launch.model_provider == ai_model_provider::Ollama)
     {
         auto env = process->processEnvironment();
@@ -1487,7 +1482,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
         process->setProcessEnvironment(env);
     }
 
-    process->setProperty("history_size",ai_infos[launch.session].projects.size());
+    process->setProperty("history_size",ai_infos[session_id].projects.size());
 
     connect(process,&QProcess::readyReadStandardOutput,this,[=]
             {
@@ -1531,7 +1526,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
                 process->setProperty("stdout_buffer",buffer);
             });
     connect(process,&QProcess::started,process,
-            [process,prompt = launch.prompt,claude_input]
+            [process,prompt,claude_input]
             {process->write(claude_input(prompt));});
 
     auto ai_dir = process->processEnvironment().value("DSI_STUDIO_AI_DIR");
@@ -1543,8 +1538,8 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
         "--verbose",
         "--add-dir",ai_dir,
         "--disallowedTools","Bash",
-        "--allowedTools","PowerShell(\""+agent_script+"\" -Agent Claude -Session "+launch.session+" -Target *)",
-        launch.new_session ? "--session-id" : "--resume",launch.session};
+        "--allowedTools","PowerShell(\""+agent_script+"\" -Agent Claude -Session "+session_id+" -Target *)",
+        session.isEmpty() ? "--session-id" : "--resume",session_id};
     if(!launch.model.isEmpty())
         args << "--model" << launch.model;
     run_ai(launch,args);
@@ -1620,15 +1615,16 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
     if(!launch.model.isEmpty())
     {
         args << "--model" << launch.model;
-        if(!launch.profile.isEmpty())
-            args << "--profile" << launch.profile;
+        if(auto profile = launch.model_setting["info"].toObject()["profile"].toString();
+           !profile.isEmpty())
+            args << "--profile" << profile;
     }
-    if(launch.session.isEmpty())
+    if(session.isEmpty())
         args << "--json" << "--skip-git-repo-check";
     else
-        args << "resume" << launch.session << "--json"
+        args << "resume" << session << "--json"
              << "--skip-git-repo-check";
-    args << launch.prompt;
+    args << text;
     run_ai(launch,args);
 }
 void AIAgent::start_ai(QString session,const QString& text,ai_input input)
