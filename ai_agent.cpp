@@ -486,37 +486,36 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
                         QString::fromUtf8(reply).left(32)));
         info.prompts = {};
     };
-    auto reply_text = [&](QByteArray result)
+    auto add_prompts = [&](QJsonObject result)
     {
         if(!info.prompts.isEmpty())
-        {
-            auto payload = "PROMPT\t" +
-                           QJsonDocument(info.prompts).toJson(QJsonDocument::Compact) + '\n';
-            auto pos = result.indexOf('\n');
-            if(pos < 0)
-                result.append('\n').append(payload);
-            else
-                result.insert(pos+1,payload);
-        }
-        set_reply(result);
+            result["prompt"] = info.prompts;
+        return result;
+    };
+    auto reply_object = [&](QJsonObject result)
+    {
+        set_reply(QJsonDocument(add_prompts(result)).toJson(QJsonDocument::Compact));
+    };
+    auto reply_error = [&](const QString& error)
+    {
+        reply_object(QJsonObject{{"status","error"},{"error",error}});
     };
     auto reply_results = [&](QJsonArray results)
     {
-        if(!info.prompts.isEmpty())
-        {
-            auto result = results.last().toObject();
-            result["prompt"] = info.prompts;
-            results.replace(results.size()-1,result);
-        }
-        set_reply(QJsonDocument(results).toJson(QJsonDocument::Compact));
+        bool success = std::all_of(results.begin(),results.end(),
+            [](const auto& result)
+            {
+                return result.toObject()["status"] == "success";
+            });
+        reply_object(QJsonObject{
+            {"status",success ? "success" : "error"},{"result",results}});
     };
 
     // Parse request
     QJsonParseError error;
     auto doc = QJsonDocument::fromJson(data,&error);
     if(!doc.isObject())
-        return reply_text(("ERROR\tinvalid JSON: " +
-                           error.errorString()).toUtf8());
+        return reply_error("invalid JSON: "+error.errorString());
 
     auto request = doc.object();
     auto type = request["request"].toString().toUpper();
@@ -547,18 +546,20 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
     {
         auto title = request["title"].toString().simplified();
         if(title.isEmpty())
-            return reply_text("ERROR\tmissing title");
-        return reply_text(save_ai_title(info,title) ?
-                              "OKAY" : "ERROR\tcannot save title");
+            return reply_error("missing title");
+        if(!save_ai_title(info,title))
+            return reply_error("cannot save title");
+        return reply_object(QJsonObject{{"status","success"}});
     }
     if(request.contains("title"))
-        return reply_text("ERROR\ttitle is valid only for TITLE");
+        return reply_error("title is valid only for TITLE");
 
     if(type == "CMD")
     {
         auto fail = [&](const QString& error)
         {
-            reply_results(QJsonArray{QJsonObject{{"error",error}}});
+            reply_results(QJsonArray{QJsonObject{
+                {"status","error"},{"error",error}}});
         };
         auto window = request["window"].toString();
         auto command = request["command"];
@@ -666,6 +667,7 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
                 result["output"] = "completed";
             if(!error.isEmpty())
                 result["error"] = error;
+            result["status"] = error.isEmpty() ? "success" : "error";
 
             results.append(result);
             if(!error.isEmpty())
@@ -686,8 +688,11 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
     }
 
     if(type == "CHAT")
-        return reply_text(chat.isEmpty() ?
-                              "ERROR\tmissing chat" : "OKAY");
+    {
+        if(chat.isEmpty())
+            return reply_error("missing chat");
+        return reply_object(QJsonObject{{"status","success"}});
+    }
 
     if(type == "LIST")
     {
@@ -730,11 +735,12 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
             application_busy |= busy;
         }
 
-        return reply_text(QJsonDocument(QJsonObject{
-                {"application",QJsonObject{
+        return reply_object(QJsonObject{
+            {"status","success"},
+            {"result",QJsonObject{
+            {"application",QJsonObject{
                 {"status",status(bool(modal),application_busy)}}},
-                {"windows",windows}
-                }).toJson(QJsonDocument::Compact));
+            {"windows",windows}}}});
     }
 
     if(type == "LOG")
@@ -759,10 +765,11 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
             output = lines.join('\n').right(4*1024).toUtf8();
             ai_log_positions[session] = end;
         }
-        return reply_text("OKAY\n"+output);
+        return reply_object(QJsonObject{
+            {"status","success"},{"output",QString::fromUtf8(output)}});
     }
 
-    reply_text("ERROR\tunknown request");
+    reply_error("unknown request");
 }
 
 void AIAgent::show_ai_project(const QString& session)
