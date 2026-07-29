@@ -437,8 +437,9 @@ void ai_info::record_history(ai_info& info,QJsonObject entry)
     if(!file.open(QIODevice::WriteOnly|QIODevice::Append) ||
        file.write(QJsonDocument(entry).toJson(
                       QJsonDocument::Compact)+'\n') < 0)
-        tipl::warning() << "cannot write ai history to "
-                        << ai_project_dir.toStdString();
+        tipl::warning() << "cannot write ai history "
+                        << file.fileName().toStdString() << ": "
+                        << file.errorString().toStdString();
 }
 bool ai_info::save_history(const ai_info& info)
 {
@@ -446,12 +447,19 @@ bool ai_info::save_history(const ai_info& info)
     if(!settings.value("ai/keep_history",true).toBool())
         return true;
     QFile file(history_file(info.sessions));
-    if(!file.open(QIODevice::WriteOnly|QIODevice::Truncate))
+    auto fail = [&]
+    {
+        tipl::warning() << "cannot write ai history "
+                        << file.fileName().toStdString() << ": "
+                        << file.errorString().toStdString();
         return false;
+    };
+    if(!file.open(QIODevice::WriteOnly|QIODevice::Truncate))
+        return fail();
     for(const auto& entry : info.projects)
         if(file.write(QJsonDocument(entry.toObject()).toJson(
                           QJsonDocument::Compact)+'\n') < 0)
-            return false;
+            return fail();
     return true;
 }
 
@@ -1190,9 +1198,9 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
         {
             if(input == ai_input::Pending && !session.isEmpty())
                 ai_infos[session].prompts.append(text);
-            set_ai_status("AI agent is unavailable.",true);
-            QMessageBox::warning(
-                this,"AI Agent","AI agent is not installed or cannot be located.");
+            auto message = launch.name+" executable was not found.";
+            set_ai_status(message,true);
+            QMessageBox::warning(this,"AI Agent",message);
             return launch;
         }
     }
@@ -1284,8 +1292,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
                     auto first = info.projects.first().toObject();
                     first["model_settings"] = info.model_settings;
                     info.projects[0] = first;
-                    if(!ai_info::save_history(info))
-                        tipl::warning() << "cannot update ai history";
+                    ai_info::save_history(info);
                 }
             }
         }
@@ -1344,15 +1351,15 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
             return;
 
         auto session = process->objectName();
-        ai_log(launch.name + " error:"+process->errorString());
-        set_ai_status("Could not start "+launch.name+".",true);
+        auto message = "Cannot start "+launch.name+": "+process->errorString();
+        ai_log(message);
+        set_ai_status(message,true);
 
         if(session.isEmpty())
         {
             set_ai_enabled(true);
             ui->ai_chat_input->setPlainText(text);
 
-            auto message = "Cannot start AI agent: "+process->errorString();
             ui->ai_chat_history->setPlainText(message);
             QMessageBox::warning(this,"AI Agent",message);
         }
@@ -1361,9 +1368,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
             auto& info = ai_infos[session];
             info.processes = nullptr;
             info.prompts.append(text);
-            add_ai_history(info,"activity",
-                           "Cannot start AI agent: "+
-                           process->errorString());
+            add_ai_history(info,"activity",message);
         }
         process->deleteLater();
     });
@@ -1388,9 +1393,10 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
         {
             set_ai_enabled(true);
             ui->ai_chat_input->setPlainText(text);
-            QMessageBox::warning(
-                this,"AI Agent",
-                "AI agent ended before creating a new chat. Check the console.");
+            auto message = failed ? error_message :
+                           "AI agent ended before creating a new chat.";
+            ui->ai_chat_history->setPlainText(message);
+            QMessageBox::warning(this,"AI Agent",message);
         }
         else
         {
