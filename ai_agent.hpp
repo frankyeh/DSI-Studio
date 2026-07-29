@@ -51,10 +51,10 @@ class AIAgent : public QMainWindow
     MainWindow& main_window;
     Ui::AIAgent* ui;
     QSettings settings;
-    QString ai_status_activity,ai_status_waiting;
+    QString ai_status_activity;
     QMenu* ai_project_menu = nullptr;
     QTimer* ai_status_timer = nullptr;
-    int active_ai_processes = 0,ai_status_delay = 0,ai_status_dots = 0;
+    int active_ai_processes = 0;
 
     void add_ai_history(ai_info&,const QString&,const QString&);
     void add_ai_reply(ai_info&,const QString&,const QString&);

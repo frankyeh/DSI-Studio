@@ -154,14 +154,11 @@ AIAgent::AIAgent(MainWindow* parent):
     ai_status_timer->setInterval(500);
     connect(ai_status_timer,&QTimer::timeout,this,[this]
     {
-        if(ai_status_delay)
-        {
-            if(!--ai_status_delay)
-                set_ai_status();
-            return;
-        }
-        ai_status_dots = ai_status_dots%3+1;
-        ui->ai_status->setText(ai_status_waiting+QString(ai_status_dots,'.'));
+        if(ai_status_timer->isSingleShot())
+            return set_ai_status();
+        auto status = ui->ai_status->text();
+        ui->ai_status->setText(
+            status.endsWith("...") ? status.chopped(2) : status+".");
         ui->ai_status->repaint();
     });
     set_ai_status();
@@ -467,28 +464,27 @@ void AIAgent::showEvent(QShowEvent* event)
 void AIAgent::set_ai_status(QString status,bool temporary)
 {
     ai_status_timer->stop();
-    ai_status_delay = 0;
     if(!status.isEmpty())
         ai_status_activity = status;
     if(active_ai_processes && (status.isEmpty() || temporary))
     {
-        ai_status_waiting = ai_status_activity;
-        if(ai_status_waiting.endsWith('.'))
-            ai_status_waiting.chop(1);
-        ai_status_waiting += ", waiting for agent";
-        ai_status_dots = 1;
-        status = ai_status_waiting+".";
+        status = ai_status_activity;
+        if(status.endsWith('.'))
+            status.chop(1);
+        status += ", waiting for agent.";
+        ai_status_timer->setSingleShot(false);
         ai_status_timer->start();
     }
-    else
-    if(status.isEmpty())
+    else if(status.isEmpty())
         status = "Current task complete.";
+
     ui->ai_status->setText(status);
     ui->ai_status->repaint();
+
     if(temporary && !active_ai_processes)
     {
-        ai_status_delay = 4;
-        ai_status_timer->start();
+        ai_status_timer->setSingleShot(true);
+        ai_status_timer->start(2000);
     }
 }
 
@@ -1522,14 +1518,12 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
     connect(process,&QProcess::started,process,
             [process,prompt,claude_input]
             {process->write(claude_input(prompt));});
-
-    auto ai_dir = process->processEnvironment().value("DSI_STUDIO_AI_DIR");
     QStringList args{
         "-p",
         "--input-format","stream-json",
         "--output-format","stream-json",
         "--verbose",
-        "--add-dir",ai_dir,
+        "--add-dir",process->processEnvironment().value("DSI_STUDIO_AI_DIR"),
         "--disallowedTools","Bash",
         "--allowedTools","PowerShell(./dsi_agent.ps1 -Agent Claude *)",
         session.isEmpty() ? "--session-id" : "--resume",session_id};
