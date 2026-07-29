@@ -1217,24 +1217,32 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
             path = main_window.work_dir();
         ui->ai_work_dir->setText(path);
         QString name = provider == ai_provider::Codex ? "AGENTS.md" : "CLAUDE.md";
-        auto source = QApplication::applicationDirPath()+"/ai/"+name;
-        QDir work(path);
-        auto target = work.filePath(name);
-        if(!QFileInfo::exists(source))
+        QDir source(QApplication::applicationDirPath()+"/ai"),work(path);
+        if(!source.exists(name))
             return QMessageBox::warning(
                 this,"AI Work Directory","The application "+name+" is missing."),launch;
-        if(!QFileInfo::exists(target))
+        auto files = source.entryList({"*.ps1"},QDir::Files);
+        files.prepend(name);
+        QStringList missing;
+        for(const auto& file : files)
+            if(!work.exists(file))
+                missing << file;
+        if(!missing.isEmpty())
         {
             if(QMessageBox::question(
                 this,"AI Work Directory",
-                "The selected work directory is missing "+name+
-                ". The agent may not work correctly without it. "
-                "Copy it now?",QMessageBox::Yes|QMessageBox::Cancel,
+                "The selected work directory is missing "+missing.join(", ")+
+                ". The agent may not work correctly without them. "
+                "Copy them now?",QMessageBox::Yes|QMessageBox::Cancel,
                 QMessageBox::Yes) != QMessageBox::Yes)
                 return launch;
-            if(!work.mkpath(".") || !QFile::copy(source,target))
+            if(!work.mkpath("."))
                 return QMessageBox::warning(
-                    this,"AI Work Directory","Unable to copy "+name+"."),launch;
+                    this,"AI Work Directory","Unable to create the working directory."),launch;
+            for(const auto& file : missing)
+                if(!QFile::copy(source.filePath(file),work.filePath(file)))
+                    return QMessageBox::warning(
+                        this,"AI Work Directory","Unable to copy "+file+"."),launch;
         }
     }
 
