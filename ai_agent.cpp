@@ -330,20 +330,17 @@ AIAgent::AIAgent(MainWindow* parent):
                     setStyleSheet(i == item ?
                         "color:#202124;background:#dce9f9;" : "");
         ui->ai_agent_selector->setEnabled(!item);
-        if(item)
-        {
-            stop_ai_blink();
-            auto session = item->data(Qt::UserRole).toString();
-            auto& info = ai_infos[session];
-            ui->ai_agent_selector->setCurrentIndex(int(info.provider));
-            set_model_selector(
-                *ui->ai_model_selector,*ui->ai_agent_selector,int(info.provider),
-                info.model_settings["model"].toString(),{},
-                info.model_settings["info"].toObject());
-            show_ai_project(info);
-        }
-        else
-            ui->ai_chat_history->clear();
+        if(!item)
+            return ui->ai_chat_history->clear();
+
+        stop_ai_blink();
+        auto& info = ai_infos[item->data(Qt::UserRole).toString()];
+        ui->ai_agent_selector->setCurrentIndex(int(info.provider));
+        set_model_selector(
+            *ui->ai_model_selector,*ui->ai_agent_selector,int(info.provider),
+            info.model_settings["model"].toString(),{},
+            info.model_settings["info"].toObject());
+        show_ai_project(info);
     });
 
     for(const auto& info : dir.entryInfoList(
@@ -378,11 +375,6 @@ AIAgent::~AIAgent()
     delete ui;
 }
 
-void AIAgent::refresh_ai_info(ai_info& info)
-{
-    show_ai_project(info);
-    set_ai_status("Agent request completed.",true);
-}
 void AIAgent::add_ai_reply(ai_info& info,const QString& chat,const QString& reasoning)
 {
     QByteArray reply;
@@ -499,12 +491,6 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
     {
         reply_object(QJsonObject{{"status","error"},{"error",error}});
     };
-    auto reply_results = [&](QJsonArray results)
-    {
-        reply_object(QJsonObject{
-            {"status",results.last().toObject()["status"]},{"result",results}});
-    };
-
     // Parse request
     QJsonParseError error;
     auto doc = QJsonDocument::fromJson(data,&error);
@@ -551,8 +537,8 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
     {
         auto fail = [&](const QString& error)
         {
-            reply_results(QJsonArray{QJsonObject{
-                {"status","error"},{"error",error}}});
+            reply_object(QJsonObject{{"status","error"},{"result",QJsonArray{
+                QJsonObject{{"status","error"},{"error",error}}}}});
         };
         auto window = request["window"].toString();
         auto command = request["command"];
@@ -562,23 +548,22 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
             return fail("missing target window field");
         std::vector<std::vector<std::string>> cmds;
         std::vector<std::string> cmd0_list;
+        for(const auto& value :
+            (command.isArray() ? command.toArray() : QJsonArray{command}))
         {
-            for(const auto& value : (command.isArray() ? command.toArray() : QJsonArray{command}))
-            {
-                auto object = value.toObject();
-                auto& cmd = cmds.emplace_back();
-                auto add = [&](const QJsonValue& value){cmd.push_back(value.toVariant().toString().toUtf8().toStdString());};
-                add(object["cmd"]);
-                if(cmd[0].empty())
-                    return fail("invalid cmd text");
-                cmd0_list.push_back(cmd[0]);
-                auto param = object["param"];
-                if(param.isArray())
-                    for(const auto& value : param.toArray())
-                        add(value);
-                else if(!param.isUndefined() && !param.isNull())
-                    add(param);
-            }
+            auto object = value.toObject();
+            auto& cmd = cmds.emplace_back();
+            auto add = [&](const QJsonValue& value){cmd.push_back(value.toVariant().toString().toUtf8().toStdString());};
+            add(object["cmd"]);
+            if(cmd[0].empty())
+                return fail("invalid cmd text");
+            cmd0_list.push_back(cmd[0]);
+            auto param = object["param"];
+            if(param.isArray())
+                for(const auto& value : param.toArray())
+                    add(value);
+            else if(!param.isUndefined() && !param.isNull())
+                add(param);
         }
         if(cmds.empty())
             return fail("missing command field");
@@ -669,7 +654,8 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
         else
             target->update();
 
-        return reply_results(results);
+        return reply_object(QJsonObject{
+            {"status",results.last().toObject()["status"]},{"result",results}});
     }
 
     if(type == "CHAT")

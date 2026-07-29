@@ -70,7 +70,8 @@ class AIAgent : public QMainWindow
 public:
     explicit AIAgent(MainWindow*);
     ~AIAgent();
-    void refresh_ai_info(ai_info&);
+    void refresh_ai_info(ai_info& info)
+    {show_ai_project(info);set_ai_status("Agent request completed.",true);}
 
 protected:
     void showEvent(QShowEvent*) override;
