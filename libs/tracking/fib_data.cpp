@@ -926,7 +926,7 @@ bool save_fz(tipl::io::gz_mat_read& mat_reader,
                                                 matfile.mask_rows,matfile.mask_cols);
             else
             {
-                mat_reader.error_msg = "unspported image type in saving mat matrices";
+                mat_reader.error_msg = "unspported image type in saving mat matrices: " + std::to_string(mat_reader[index].type);
                 return false;
             }
             for(auto each : mat_reader[index].sub_data)
@@ -1136,7 +1136,7 @@ bool fib_data::load_template_fib(size_t id,float reso)
 }
 bool fib_data::save_to_file(const std::filesystem::path& file_name)
 {
-    tipl::progress prog("save",file_name.u8string());
+    tipl::progress prog("save ",file_name.u8string());
     fib_file_name = file_name;
     tipl::io::gz_mat_write matfile(file_name);
     if(!matfile)
@@ -1146,13 +1146,13 @@ bool fib_data::save_to_file(const std::filesystem::path& file_name)
                                         "report","intro","R2","template","index_name","demo","steps"});
     skip_list.insert(skip_list.end(),db.index_list.begin(),db.index_list.end());
     if(!save_fz(mat_reader,matfile,skip_list,{"subject"}))
-        return false;
+        return error_msg = mat_reader.error_msg,false;
 
     for(unsigned int index = 0;prog(index,db.index_list.size());++index)
         matfile.write<tipl::io::sloped>(db.index_list[index],mat_reader[db.index_list[index]].get_data<float>(),db.subject_names.size(),db.mask_size);
 
     if(prog.aborted())
-        return false;
+        return error_msg = "aborted",false;
 
     if(db.has_db())
     {
