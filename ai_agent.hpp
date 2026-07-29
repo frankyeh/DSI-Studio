@@ -38,7 +38,6 @@ struct ai_info{
     static QString history_file(const QString&);
     static bool save_title(ai_info&,QString);
     static void record_history(ai_info&,QJsonObject);
-    static void save_history(const ai_info&);
     QString title() const {return project_titles.isEmpty() ? (agent_name.isEmpty() ? sessions : agent_name+"@"+sessions) : project_titles;}
     QString details() const;
 };

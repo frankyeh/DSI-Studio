@@ -56,11 +56,10 @@ QString ai_info::history_file(const QString& session)
                QUrl::toPercentEncoding(session))+".jsonl";
 }
 struct ai_launch{
-    QString name,executable,model,project_dir;
+    QString name,executable,model;
     QUrl model_url;
     QJsonObject model_setting;
     QProcess* process = nullptr;
-    ai_model_provider model_provider = ai_model_provider::Native;
 };
 
 ai_provider ai_info::identify_provider(const QString& name)
@@ -105,7 +104,8 @@ QPair<QUrl,bool> ai_ollama_url(const QSettings& settings)
     return {url,configured};
 }
 void set_model_selector(QComboBox& model,const QComboBox& agents,int index,
-                        QString selected = {},QString fallback = {})
+                        QString selected = {},QString fallback = {},
+                        QJsonObject selected_info = {})
 {
     auto profiles = agents.itemData(index,Qt::UserRole+2).toJsonObject();
     model.clear();
@@ -115,7 +115,7 @@ void set_model_selector(QComboBox& model,const QComboBox& agents,int index,
     auto selected_index = model.findText(selected);
     if(selected_index < 0 && !selected.isEmpty())
     {
-        model.addItem(selected);
+        model.addItem(selected,selected_info);
         selected_index = model.count()-1;
     }
     if(selected_index < 0)
@@ -338,16 +338,11 @@ AIAgent::AIAgent(MainWindow* parent):
             stop_ai_blink();
             auto session = item->data(Qt::UserRole).toString();
             auto& info = ai_infos[session];
-            auto index = int(info.provider);
-            if(index >= 0)
-                ui->ai_agent_selector->setCurrentIndex(index);
-            auto model = info.model_settings.value("model").toString();
-            if(model.isEmpty())
-                model = "default";
-            else if(ui->ai_model_selector->findText(model) < 0)
-                ui->ai_model_selector->addItem(
-                    model,info.model_settings["info"].toObject());
-            ui->ai_model_selector->setCurrentText(model);
+            ui->ai_agent_selector->setCurrentIndex(int(info.provider));
+            set_model_selector(
+                *ui->ai_model_selector,*ui->ai_agent_selector,int(info.provider),
+                info.model_settings["model"].toString(),{},
+                info.model_settings["info"].toObject());
             show_ai_project(info);
         }
         else
@@ -445,11 +440,6 @@ void ai_info::record_history(ai_info& info,QJsonObject entry)
     info.projects.append(entry);
     write_history(info,QIODevice::Append,QJsonArray{entry});
 }
-void ai_info::save_history(const ai_info& info)
-{
-    write_history(info,QIODevice::Truncate,info.projects);
-}
-
 void AIAgent::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
@@ -1178,12 +1168,9 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
     }
 
     // Resolve work directory
-    {
-        launch.project_dir = ui->ai_work_dir->text().trimmed();
-        if(launch.project_dir.isEmpty())
-            launch.project_dir = main_window.work_dir();
-        ui->ai_work_dir->setText(launch.project_dir);
-    }
+    auto project_dir = ui->ai_work_dir->text().trimmed();
+    ui->ai_work_dir->setText(
+        project_dir.isEmpty() ? main_window.work_dir() : project_dir);
 
     // Resolve session
     {
@@ -1207,10 +1194,8 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
             launch.model_setting = selected;
 
         launch.model = launch.model_setting["model"].toString().trimmed();
-        auto model_info = launch.model_setting["info"].toObject();
-        launch.model_provider =
-            ai_model_provider(model_info["provider"].toInt());
-        if(launch.model_provider == ai_model_provider::Ollama)
+        if(launch.model_setting["info"].toObject()["provider"].toInt() ==
+           int(ai_model_provider::Ollama))
         {
             auto [url,configured] = ai_ollama_url(settings);
             launch.model_url = url;
@@ -1236,7 +1221,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString session,
                     auto first = info.projects.first().toObject();
                     first["model_settings"] = info.model_settings;
                     info.projects[0] = first;
-                    ai_info::save_history(info);
+                    write_history(info,QIODevice::Truncate,info.projects);
                 }
             }
         }
@@ -1406,7 +1391,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
     auto* process = launch.process;
     auto session_id = process->objectName();
     auto prompt = "[DSI Studio] Session ID: "+session_id+"\n\n"+text;
-    if(launch.model_provider == ai_model_provider::Ollama)
+    if(!launch.model_url.isEmpty())
     {
         auto env = process->processEnvironment();
         env.insert("ANTHROPIC_BASE_URL",launch.model_url.toString());
@@ -1471,7 +1456,7 @@ void AIAgent::start_claude(QString session,const QString& text,ai_input input)
         "--input-format","stream-json",
         "--output-format","stream-json",
         "--verbose",
-        "--add-dir",launch.project_dir,
+        "--add-dir",ui->ai_work_dir->text(),
         "--allowedTools","PowerShell(./dsi *)",
         session.isEmpty() ? "--session-id" : "--resume",session_id};
     if(!launch.model.isEmpty())
@@ -1525,8 +1510,8 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
         }
     });
 
-    QStringList args{"exec","--add-dir",launch.project_dir};
-    if(launch.model_provider == ai_model_provider::Ollama)
+    QStringList args{"exec","--add-dir",ui->ai_work_dir->text()};
+    if(!launch.model_url.isEmpty())
     {
         auto url = launch.model_url;
         url.setPath("/v1");
