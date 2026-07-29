@@ -181,7 +181,8 @@ Invoke-Dsi @{
 }
 ```
 
-Every command element must be a string. Use `'7'`, not numeric `7`.
+Command names and text or path parameters are strings. Send numeric parameters
+as numbers, for example `7`, not `'7'`.
 An optional `chat` may accompany any request. Keep it on `CMD` when reporting
 the command already being sent instead of making a separate `CHAT` request.
 
