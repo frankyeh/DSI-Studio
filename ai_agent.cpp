@@ -1500,40 +1500,35 @@ void AIAgent::start_codex(QString session,const QString& text,ai_input input)
             auto event = QJsonDocument::fromJson(line).object();
             if(event["type"] == "thread.started")
             {
-                auto session = event["thread_id"].toString();
-                if(session.isEmpty())
-                    continue;
-                bool started_new_session = process->objectName().isEmpty();
-                auto* info = ai_info::create(session,launch.name);
-                if(!info)
-                    continue;
-                info->model_settings = launch.model_setting;
-                if(started_new_session)
+                if(auto* info = ai_info::create(
+                       event["thread_id"].toString(),launch.name))
                 {
-                    process->setObjectName(session);
-                    info->processes = process;
-                    add_ai_history(*info,"user",text);
-                    set_ai_status("Agent session ready.",true);
-                    for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
-                        button->setEnabled(true);
+                    info->model_settings = launch.model_setting;
+                    if(process->objectName().isEmpty())
+                    {
+                        process->setObjectName(info->sessions);
+                        info->processes = process;
+                        add_ai_history(*info,"user",text);
+                        set_ai_status("Agent session ready.",true);
+                        for(auto* button : {ui->ai_new_chat,ui->ai_send_message})
+                            button->setEnabled(true);
+                    }
                 }
                 continue;
             }
 
             auto item = event["item"].toObject();
             auto type = item["type"].toString();
-            if(type == "agent_message" || type == "reasoning")
-            {
-                auto text = item["text"].toString().trimmed();
-                if(text.isEmpty())
-                    continue;
-                if(auto* info = ai_info::find(process->objectName()))
-                {
-                    bool reasoning = type == "reasoning";
-                    add_ai_reply(*info,reasoning ? QString() : text,
-                                 reasoning ? text : QString());
-                }
-            }
+            bool reasoning = type == "reasoning";
+            if(type != "agent_message" && !reasoning)
+                continue;
+
+            auto text = item["text"].toString().trimmed();
+            if(text.isEmpty())
+                continue;
+            if(auto* info = ai_info::find(process->objectName()))
+                add_ai_reply(*info,reasoning ? QString() : text,
+                             reasoning ? text : QString());
         }
     });
 
@@ -1569,16 +1564,13 @@ void AIAgent::start_ai(QString session,const QString& text,ai_input input)
     auto provider = session.isEmpty() ?
         ai_provider(ui->ai_agent_selector->currentIndex()) :
         ai_infos[session].provider;
-    switch(provider)
-    {
-    case ai_provider::Codex:
+    if(provider == ai_provider::Codex)
         return start_codex(session,text,input);
-    case ai_provider::Claude:
+    if(provider == ai_provider::Claude)
         return start_claude(session,text,input);
-    default:
-        set_ai_status("Unsupported AI provider.",true);
-        QMessageBox::warning(this,"AI Agent","Unsupported AI provider.");
-    }
+
+    set_ai_status("Unsupported AI provider.",true);
+    QMessageBox::warning(this,"AI Agent","Unsupported AI provider.");
 }
 
 void AIAgent::on_ai_send_message_clicked()
