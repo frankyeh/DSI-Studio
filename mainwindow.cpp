@@ -575,28 +575,26 @@ void MainWindow::updateRecentList()
 }
 
 
-void MainWindow::addFib(QString filename)
+void MainWindow::addRecent(QString filename,const char* key)
 {
-    // update recent file list
-    QStringList files = settings.value("recentFibFileList").toStringList();
-    files.removeAll(filename);
-    files.prepend(filename);
+    auto files = settings.value(key).toStringList();
+    QFileInfo info(filename);
+    for(int index = files.size()-1;index >= 0;--index)
+        if(QFileInfo(files[index]) == info)
+            files.removeAt(index);
+    files.prepend(QDir::toNativeSeparators(info.absoluteFilePath()));
     while (files.size() > MaxRecentFiles)
         files.removeLast();
-    settings.setValue("recentFibFileList", files);
+    settings.setValue(key,files);
     updateRecentList();
 }
-
+void MainWindow::addFib(QString filename)
+{
+    addRecent(filename,"recentFibFileList");
+}
 void MainWindow::addSrc(QString filename)
 {
-    // update recent file list
-    QStringList files = settings.value("recentSrcFileList").toStringList();
-    files.removeAll(filename);
-    files.prepend(filename);
-    while (files.size() > MaxRecentFiles)
-        files.removeLast();
-    settings.setValue("recentSrcFileList", files);
-    updateRecentList();
+    addRecent(filename,"recentSrcFileList");
 }
 void shift_track_for_tck(std::vector<std::vector<float> >& loaded_tract_data,tipl::shape<3>& geo);
 extern QByteArray default_geo,default_state;
