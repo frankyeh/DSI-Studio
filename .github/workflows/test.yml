@@ -287,8 +287,8 @@ jobs:
               dsi_studio --source=100206.gqi.fz --action=trk --track_id=ArcuateFasciculusL --tip_iteration=0 --output=100206.AF_L.tt.gz
               ls AF_L.tt.gz 100206.AF_L.tt.gz
 
-              dsi_studio --source=human.fz --action=trk --seed_count=1000000 --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=LR.tt.gz
-              dsi_studio --source=100206.gqi.fz --action=trk --seed_count=1000000 --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=100206.LR.tt.gz
+              dsi_studio --source=human.fz --action=trk --seed_count=1000000 --roi=FreeSurferDKT_Cortical:left_precentral,dilation,dilation,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilation,dilation,smoothing --output=LR.tt.gz
+              dsi_studio --source=100206.gqi.fz --action=trk --seed_count=1000000 --roi=FreeSurferDKT_Cortical:left_precentral,dilation,dilation,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilation,dilation,smoothing --output=100206.LR.tt.gz
               ls LR.tt.gz 100206.LR.tt.gz
 
               dsi_studio --source=human.fz --action=trk --tract_count=1000000 --output=no_file --connectivity=FreeSurferDKT_Cortical
@@ -339,7 +339,7 @@ jobs:
               dsi_studio --source=gqi.fz --action=trk --track_id=ArcuateFasciculusL --tip_iteration=0 --output=AF_L.tt.gz
               ls AF_L.tt.gz
 
-              dsi_studio --source=gqi.fz --action=trk --seed_count=1000000 --roi=FreeSurferDKT_Cortical:left_precentral,dilate,dilate,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilate,dilate,smoothing --output=LR.tt.gz
+              dsi_studio --source=gqi.fz --action=trk --seed_count=1000000 --roi=FreeSurferDKT_Cortical:left_precentral,dilation,dilation,smoothing --roi2=FreeSurferDKT_Cortical:right_precentral,dilation,dilation,smoothing --output=LR.tt.gz
               ls LR.tt.gz
 
               dsi_studio --source=gqi.fz --action=trk --output=no_file --connectivity=FreeSurferDKT_Cortical
