@@ -18,6 +18,7 @@ class AIAgent;
 struct ai_info;
 class QByteArray;
 class FiberDataHub;
+enum class command_source;
 
 class MainWindow : public QMainWindow
 {
@@ -42,7 +43,8 @@ public:
     void dropEvent(QDropEvent *event) override;
     void openFile(QStringList file_name);
     std::string error_msg;
-    bool command(const std::vector<std::string>& cmd);
+    bool command(const std::vector<std::string>&);
+    bool command(const std::vector<std::string>&,command_source);
     void ai_command(ai_info&,const QByteArray&,QByteArray&);
 public:
     void open_DWI(QStringList files);

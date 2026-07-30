@@ -85,21 +85,43 @@ void command_history::add_record(const std::string& output)
             default_stem = default_stem2;
     }
 }
-std::string command_history::command_json(
-    const std::vector<std::string>& cmd,command_source source) const
+std::string command_json(QWidget* window,const char* type,
+                         const std::vector<std::string>& cmd,
+                         command_source source)
 {
     static const char* sources[]{"user","ai","internal"};
     QJsonArray param;
-    for(size_t index = 1;index < cmd.size();++index)
+    auto size = cmd.size();
+    while(size > 1 && cmd[size-1].empty())
+        --size;
+    for(size_t index = 1;index < size;++index)
         param.append(QString::fromUtf8(cmd[index]));
     return QJsonDocument(QJsonObject{
         {"request","CMD"},
-        {"window","tracking"+QString::number(
-                      reinterpret_cast<quintptr>(window),16)},
+        {"window",QString(type)+(type[0] == 'm' ? QString() :
+                  QString::number(reinterpret_cast<quintptr>(window),16))},
         {"source",sources[int(source)]},
         {"command",QJsonObject{{"cmd",QString::fromUtf8(cmd[0])},
                                {"param",param}}}}).
         toJson(QJsonDocument::Compact).toStdString();
+}
+thread_local int command_depth = 0;
+command_source command_origin(command_source source)
+{
+    return command_depth ? command_source::Internal : source;
+}
+command_report::command_report(
+    QWidget* window,const char* type,const std::vector<std::string>& cmd,
+    command_source source):
+    window(window),type(type),cmd(cmd),
+    source(command_origin(source))
+{
+    ++command_depth;
+}
+command_report::~command_report()
+{
+    --command_depth;
+    tipl::out() << command_json(window,type,cmd,source);
 }
 std::string command_history::file_stem(bool extended) const
 {

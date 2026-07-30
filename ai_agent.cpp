@@ -624,11 +624,11 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
                     }
                 };
                 if(auto* window = qobject_cast<MainWindow*>(target))
-                    execute(window,window->command(cmd));
+                    execute(window,window->command(cmd,command_source::AI));
                 else if(auto* window = qobject_cast<tracking_window*>(target))
                     execute(window,window->command(cmd,command_source::AI));
                 else if(auto* window = qobject_cast<view_image*>(target))
-                    execute(window,window->command(cmd));
+                    execute(window,window->command(cmd,command_source::AI));
             }
             catch(const std::exception& e){error = e.what();}
             catch(...){error = "unknown error";}

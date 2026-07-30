@@ -1,6 +1,7 @@
 #include <map>
 #include <QTextStream>
 #include <QInputDialog>
+#include <utility>
 #include "view_image.h"
 #include "ui_view_image.h"
 #include <QPlainTextEdit>
@@ -74,18 +75,23 @@ void view_image::set_4d_buf(const std::vector<unsigned char>& buf)
 bool modify_fib(tipl::io::gz_mat_read& mat_reader,
                 const std::string& cmd,
                 const std::string& param);
-bool view_image::command(std::vector<std::string> cmds)
+bool view_image::command(std::vector<std::string> cmd)
+{
+    return command(std::move(cmd),command_source::User);
+}
+bool view_image::command(std::vector<std::string> cmds,
+                         command_source source)
 {
     if(cmds.empty())
         return error_msg = "empty command",false;
     if(cmds.size() > 2)
         return error_msg = "too many parameters",false;
+    command_report report(this,"image",cmds,source);
     cmds.resize(2);
     std::string cmd = cmds[0];
     std::string param1 = cmds[1];
     if(cur_image->empty())
         return true;
-    tipl::out() << std::string(param1.empty() ? cmd : cmd+":"+param1);
     error_msg.clear();
     bool result = true;
 

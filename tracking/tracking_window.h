@@ -20,11 +20,22 @@ namespace Ui {
 }
 std::string show_info_dialog(const std::string& title,const std::string& result,const std::string& file_name_hint = "report.txt");
 enum class command_source{User,AI,Internal};
+std::string command_json(QWidget*,const char*,
+                         const std::vector<std::string>&,command_source);
+command_source command_origin(command_source);
+struct command_report{
+    QWidget* window;
+    const char* type;
+    const std::vector<std::string>& cmd;
+    command_source source;
+    command_report(QWidget*,const char*,const std::vector<std::string>&,
+                   command_source);
+    ~command_report();
+};
 struct command_history{
 private:
     static bool is_loading(const std::string& cmd);
     static bool is_saving(const std::string& cmd);
-    std::string command_json(const std::vector<std::string>&,command_source) const;
 public:
     command_history(QWidget* window):window(window){}
     QWidget* window;
@@ -45,7 +56,7 @@ public:
                   std::string& error_msg_) :
             owner(owner),cmd(cmd_),error_msg(error_msg_),
             source(owner.current_recording_instance || owner.running_commands ?
-                   command_source::Internal : owner.source)
+                   command_source::Internal : command_origin(owner.source))
         {
             ++owner.current_recording_instance;
         }
@@ -103,7 +114,8 @@ public:
                 cmd.pop_back();
             std::string output(tipl::merge(cmd,','));
             if(!output.empty())
-                tipl::out() << owner.command_json(cmd,source);
+                tipl::out() << command_json(
+                    owner.window,"tracking",cmd,source);
             if(!error_msg.empty())
             {
                 tipl::error() << error_msg;

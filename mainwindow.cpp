@@ -1081,10 +1081,16 @@ void MainWindow::ai_command(ai_info& info,const QByteArray& request,QByteArray& 
 int run_action_with_wildcard(tipl::program_option<tipl::out>&);
 bool MainWindow::command(const std::vector<std::string>& cmd)
 {
+    return command(cmd,command_source::User);
+}
+bool MainWindow::command(const std::vector<std::string>& cmd,
+                         command_source source)
+{
     error_msg.clear();
     auto fail = [&](const std::string& msg){error_msg = msg;return false;};
     if(cmd.empty())
         return fail("empty command");
+    command_report report(this,"main",cmd,source);
 
     if(cmd[0] == "open_hub" || tipl::begins_with(cmd[0],"hub_"))
     {
