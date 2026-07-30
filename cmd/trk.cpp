@@ -90,8 +90,8 @@ bool get_tract_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data
                     return tipl::error() << "invalid TDI resolution ratio",false;
             }
 
-            bool output_color = tipl::contains(cmd,"color");
-            bool output_end = tipl::contains(cmd,"end");
+            bool output_color = tipl::contains(cmd,"color"),
+                 output_end = tipl::contains(cmd,"end");
             file_name_stat += ".nii.gz";
             tipl::matrix<4,4> to_t1t2,trans_to_mni;
             tipl::shape<3> dim;
@@ -126,15 +126,9 @@ bool get_tract_info(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data
                         trans_to_mni[i] /= ratio;
                 }
             }
-            std::vector<std::shared_ptr<TractModel> > tract;
-            tract.push_back(tract_model);
-            if(output_color)
-                tipl::out() << " in RGB color";
-            if(output_end)
-                tipl::out() << " end point only";
-            tipl::out() << "tdi dim: " << dim << " vs: " << vs << " srow: " << trans_to_mni;
             tipl::out() << "saving " << file_name_stat;
-            if(!TractModel::export_tdi(file_name_stat,tract,dim,vs,trans_to_mni,to_t1t2,output_color,output_end))
+            if(!TractModel::export_tdi(file_name_stat,{tract_model},dim,vs,trans_to_mni,
+                                       to_t1t2,output_color,output_end))
                 return tipl::error() << "failed to save file. Please check write permission.",false;
             continue;
         }
@@ -312,23 +306,15 @@ int trk_post(tipl::program_option<tipl::out>& po,
              std::filesystem::path tract_file_name,bool output_track)
 {
     tipl::progress prog("post-tracking analysis");
-    if(tract_model->get_visible_track_count() == 0)
+    if(!tract_model->get_visible_track_count())
         return tipl::out() << "no tract for post-track analysis",0;
-
-    if (po.has("delete_repeat") || po.get("action") == "atk" || po.has("track_id"))
-    {
-        float distance = po.get("delete_repeat",float(0.5f));
-        tipl::out() << "repeated tracks with distance smaller than " << distance <<" voxel distance are deleted";
-        tract_model->delete_repeated(distance);
-        tipl::out() << "tract count after removing repeated tracts: " << tract_model->get_visible_track_count();
-    }
-    if (po.has("delete_by_length"))
-    {
-        tipl::out() << "deleting short tracks..." << std::endl;
-        float length = po.get("delete_by_length",float(1));
-        tract_model->delete_by_length(length);
-        tipl::out() << "tracks with voxel distance shorter than " << length << " are deleted";
-    }
+    if(po.has("delete_repeat") || po.get("action") == "atk" ||
+       po.has("track_id"))
+        tract_model->delete_repeated(
+            po.get("delete_repeat",float(0.5f)));
+    if(po.has("delete_by_length"))
+        tract_model->delete_by_length(
+            po.get("delete_by_length",float(1)));
     if(!tract_model->get_visible_track_count())
         return tipl::out() << "no tract remains for further actions",0;
 
@@ -455,26 +441,19 @@ int trk_post(tipl::program_option<tipl::out>& po,
                 std::filesystem::path(tract_file_name) += ".end2.txt" : std::filesystem::path(po.get("end_point2"))))
             return tipl::error() << "failed to save --end_point2",1;
     }
-    if(prog.aborted())
-        return 1;
+    if(prog.aborted()) return 1;
     if(po.has("connectivity") || po.has("export"))
-    {
-        tipl::out() << "reading image metrics";
         for(size_t i = 0;prog(i,handle->slices.size());++i)
-        {
             if(!handle->slices[i]->optional())
                 handle->slices[i]->get_image();
-        }
-    }
-    if(prog.aborted())
-        return 1;
-    if(po.has("connectivity") && !get_connectivity_matrix(po,handle,tract_file_name,tract_model))
-        return 1;
-    if(po.has("export") && !get_tract_info(po,handle,tract_file_name,tract_model))
-        return 1;
-    if(po.has("profile") && !get_tract_profile(po,handle,tract_file_name,tract_model))
-        return 1;
-    return 0;
+
+    return prog.aborted() ||
+           (po.has("connectivity") &&
+            !get_connectivity_matrix(po,handle,tract_file_name,tract_model)) ||
+           (po.has("export") &&
+            !get_tract_info(po,handle,tract_file_name,tract_model)) ||
+           (po.has("profile") &&
+            !get_tract_profile(po,handle,tract_file_name,tract_model));
 }
 bool load_region(tipl::program_option<tipl::out>& po,std::shared_ptr<fib_data> handle,
                  ROIRegion& roi,const std::string& region_text);
