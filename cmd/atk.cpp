@@ -23,11 +23,10 @@ int atk(tipl::program_option<tipl::out>& po)
     std::string error = run_auto_track(po,file_list,progress);
     if(error.empty())
     {
-        if(po.has("report"))
-        {
-            std::ofstream out(po.get("report"));
-            out << auto_track_report;
-        }
+        if(po.has("report") &&
+           !tipl::write_text_file(
+               po.get("report"),auto_track_report,tipl::error()))
+            return 1;
         return 0;
     }
     tipl::error() << error << std::endl;
