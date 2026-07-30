@@ -403,7 +403,7 @@ std::string run_auto_track(tipl::program_option<tipl::out>& po,const std::vector
             {
                 std::ifstream in(stat_files[t][0]);
                 std::string line;
-                for(size_t m = 0;std::getline(in,line);++m)
+                while(std::getline(in,line))
                     metrics_names.push_back(line.substr(0,line.find('\t')));
 
                 all_out2_text.resize(scan_names.size()*metrics_names.size());
