@@ -162,8 +162,7 @@ void connectivity_matrix_dialog::on_save_network_property_clicked()
         return;
     std::string report;
     data.network_property(report);
-    std::ofstream out(tipl::qt::to_path(filename));
-    out << report;
+    tipl::write_text_file(tipl::qt::to_path(filename),report,tipl::error());
 }
 
 void connectivity_matrix_dialog::on_save_connectogram_clicked()
