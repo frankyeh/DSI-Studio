@@ -260,12 +260,8 @@ AIAgent::AIAgent(MainWindow* parent):
     set_model_selector(*ui->ai_model_selector,*ui->ai_agent_selector,
                        ui->ai_agent_selector->currentIndex());
 
-    auto default_agent = settings.value(
-        "ai/default_agent",ui->ai_agent_selector->currentIndex());
-    bool okay;
-    auto default_index = default_agent.toInt(&okay);
-    if(!okay)
-        default_index = int(ai_info::identify_provider(default_agent.toString()));
+    auto default_index = settings.value(
+        "ai/default_agent",ui->ai_agent_selector->currentIndex()).toInt();
     if(default_index >= 0 && default_index < ui->ai_agent_selector->count())
         ui->ai_agent_selector->setCurrentIndex(default_index);
     ui->ai_model_selector->setCurrentText(
@@ -335,8 +331,6 @@ AIAgent::AIAgent(MainWindow* parent):
 
         if(ui->ai_project_list->count())
             ui->ai_project_list->setCurrentRow(0);
-        else
-            ui->ai_chat_history->clear();
     });
 
     connect(ui->ai_project_list,&QListWidget::currentItemChanged,this,
@@ -937,11 +931,9 @@ void AIAgent::show_ai_project(ai_info& info,QJsonObject added_entry)
         append(added_entry,{});
 
     ui->ai_chat_history->ensureCursorVisible();
-    QTimer::singleShot(0,ui->ai_chat_history,[this]
-    {
-        auto* bar = ui->ai_chat_history->verticalScrollBar();
-        bar->setValue(bar->maximum());
-    });
+    auto* bar = ui->ai_chat_history->verticalScrollBar();
+    QTimer::singleShot(
+        0,bar,[bar]{bar->setValue(bar->maximum());});
 }
 
 void AIAgent::update_agent_models(
@@ -1046,7 +1038,6 @@ void AIAgent::add_ai_history(ai_info& info,const QString& type,const QString& te
 void AIAgent::on_ai_new_chat_clicked()
 {
     ui->ai_project_list->setCurrentItem(nullptr);
-    ui->ai_chat_history->clear();
     ui->ai_chat_input->clear();
     ui->ai_chat_input->setFocus();
     set_ai_status();
@@ -1454,11 +1445,8 @@ void AIAgent::start_ai(QString session,const QString& text,ai_input input)
     auto* info = ai_info::find(session);
     if(info && info->processes)
     {
-        if(input == ai_input::User)
-        {
-            add_ai_history(*info,"user",text);
-            ui->ai_chat_input->clear();
-        }
+        add_ai_history(*info,"user",text);
+        ui->ai_chat_input->clear();
 
         bool send = info->provider == ai_provider::Claude &&
                     info->processes->state() == QProcess::Running;
