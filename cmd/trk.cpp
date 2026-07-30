@@ -312,13 +312,6 @@ int trk_post(tipl::program_option<tipl::out>& po,
     if(!tract_model->get_visible_track_count())
         return tipl::out() << "no tract remains for further actions",0;
 
-    auto write_labels = [](const auto& file_name,const auto& labels)
-    {
-        auto result = tipl::merge(labels,' ');
-        if(!result.empty())
-            result += ' ';
-        return tipl::write_text_file(file_name,result,tipl::error());
-    };
     if(po.has("cluster"))
     {
         std::string cmd = po.get("cluster");
@@ -340,7 +333,8 @@ int trk_post(tipl::program_option<tipl::out>& po,
         if(output.empty())
             (output = tract_file_name) += "_cluster.txt";
         tipl::out() << "saving " << output << std::endl;
-        if(!write_labels(output,tract_model->tract_cluster))
+        if(!tipl::write_text_file(
+               output,tipl::merge(tract_model->tract_cluster,' '),tipl::error()))
             return 1;
     }
     if(po.has("recognize"))
@@ -349,7 +343,8 @@ int trk_post(tipl::program_option<tipl::out>& po,
         std::vector<std::string> names;
         handle->recognize(tract_model,labels,names);
         auto output = po.get("recognize");
-        if(!write_labels(output+".label.txt",labels) ||
+        if(!tipl::write_text_file(
+               output+".label.txt",tipl::merge(labels,' '),tipl::error()) ||
            !tipl::write_text_file(
                output+".name.txt",names,tipl::error()))
             return 1;
