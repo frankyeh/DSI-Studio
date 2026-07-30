@@ -1367,13 +1367,10 @@ bool TractModel::save_end_points(const std::filesystem::path& file_name) const
         buffer.push_back(tract_data[index][length-1]);
     }
 
-    if (file_name.filename().u8string().find(".txt") != std::string::npos)
-    {
-        std::ofstream out(file_name,std::ios::out);
-        if (!out)
-            return false;
-        std::copy(buffer.begin(),buffer.end(),std::ostream_iterator<float>(out," "));
-    }
+    if(file_name.filename().u8string().find(".txt") != std::string::npos &&
+       !tipl::write_text_file(file_name,buffer.empty() ?
+            std::string() : tipl::merge(buffer,' ')+" ",tipl::error()))
+        return false;
     if (file_name.filename().u8string().find(".mat") != std::string::npos)
     {
         tipl::io::mat_write out(file_name);
@@ -3373,8 +3370,7 @@ void ConnectivityMatrix::save_network_property(const std::filesystem::path& file
     std::string report;
     network_property(report);
     tipl::out() << "saving " << file_name;
-    std::ofstream out(file_name);
-    out << report;
+    tipl::write_text_file(file_name,report,tipl::error());
 }
 
 void ConnectivityMatrix::set_metrics(size_t m_index)
