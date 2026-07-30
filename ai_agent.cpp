@@ -51,6 +51,12 @@
 
 std::unordered_map<QString,ai_info> ai_infos;
 QString ai_project_dir;
+constexpr auto ai_debug_tag = "[DEUBG]";
+bool& ai_debug_enabled()
+{
+    static bool enabled = QSettings().value("ai/debug").toBool();
+    return enabled;
+}
 QString ai_info::history_file(const QString& session)
 {
     return ai_project_dir+"/"+QString::fromLatin1(
@@ -106,7 +112,12 @@ QString ai_info::details() const
 }
 void ai_log(QString text)
 {
-    tipl::out() << ("[AI AGENT] "+text.remove('\r').replace('\n',"\n[AI AGENT] ")).toStdString();
+    if(ai_debug_enabled())
+    {
+        auto prefix = QString(ai_debug_tag)+" ";
+        tipl::out() << (prefix+text.remove('\r').
+                        replace('\n',"\n"+prefix)).toStdString();
+    }
 }
 QPair<QUrl,bool> ai_ollama_url(const QSettings& settings)
 {
@@ -735,7 +746,7 @@ void ai_command(ai_info& info,const QByteArray& data,QByteArray& reply)
             text.remove(ansi_escape);
             QStringList lines;
             for(const auto& line : text.split('\n'))
-                if(!line.contains("[AI AGENT]"))
+                if(!line.contains(ai_debug_tag))
                     lines << line;
             output = lines.join('\n').right(4*1024).toUtf8();
             info.log_position = end;
@@ -1057,11 +1068,14 @@ void AIAgent::on_ai_quick_settings_clicked()
     model.setCurrentText(ui->ai_model_selector->currentText());
     QCheckBox history("Keep AI chat history");
     history.setChecked(settings.value("ai/keep_history",true).toBool());
+    QCheckBox debug("Enable debug mode");
+    debug.setChecked(settings.value("ai/debug").toBool());
     layout.addRow("Ollama host/IP:",&host);
     layout.addRow("Ollama port:",&port);
     layout.addRow("Default agent:",&agent);
     layout.addRow("Default model:",&model);
     layout.addRow(&history);
+    layout.addRow(&debug);
     QDialogButtonBox buttons(QDialogButtonBox::Cancel|QDialogButtonBox::Save);
     layout.addRow(&buttons);
     connect(&agent,QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -1077,6 +1091,8 @@ void AIAgent::on_ai_quick_settings_clicked()
     settings.setValue("ai/ollama_host",host.text().trimmed());
     settings.setValue("ai/ollama_port",port.value());
     settings.setValue("ai/keep_history",history.isChecked());
+    settings.setValue("ai/debug",debug.isChecked());
+    ai_debug_enabled() = debug.isChecked();
     settings.setValue("ai/default_agent",agent.currentIndex());
     settings.setValue("ai/default_model",model.currentText());
     if(!ui->ai_project_list->currentItem())
@@ -1180,7 +1196,7 @@ ai_launch AIAgent::prepare_ai(ai_provider provider,QString& session,
                             qEnvironmentVariable("LOCALAPPDATA") + "/Programs/Git/bin"})
         if(QFile::exists(path + "/bash.exe"))
         {
-            tipl::out() << "bash found:" << (path + "/bash.exe").toStdString();
+            ai_log("bash found: "+path+"/bash.exe");
             env.insert("PATH",path + ";" + env.value("PATH"));
             break;
         }
@@ -1318,7 +1334,7 @@ QStringList AIAgent::configure_claude(
                 while(process->canReadLine())
                 {
                     auto line = process->readLine();
-                    tipl::out() << "stdout:" << line.toStdString();
+                    ai_log("stdout:"+QString::fromUtf8(line).trimmed());
                     auto event = QJsonDocument::fromJson(line).object();
                     auto event_type = event["type"].toString();
                     if(event_type == "system" &&
@@ -1372,7 +1388,7 @@ QStringList AIAgent::configure_codex(
         while(process->canReadLine())
         {
             auto line = process->readLine();
-            tipl::out() << "stdout:" << line.toStdString();
+            ai_log("stdout:"+QString::fromUtf8(line).trimmed());
             auto event = QJsonDocument::fromJson(line).object();
             if(event["type"] == "thread.started")
             {
