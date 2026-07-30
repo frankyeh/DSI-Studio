@@ -23,7 +23,10 @@ struct command_history{
 private:
     static bool is_loading(const std::string& cmd);
     static bool is_saving(const std::string& cmd);
+    std::string command_json(const std::vector<std::string>&) const;
 public:
+    command_history(QWidget* window):window(window){}
+    QWidget* window;
     int current_recording_instance = 0;
     bool has_other_thread = false,running_commands = false;
     std::string default_parent_path,default_stem,default_stem2,current_cmd;
@@ -93,6 +96,9 @@ public:
             while(!cmd.empty() && cmd.back().empty())
                 cmd.pop_back();
             std::string output(tipl::merge(cmd,','));
+            if(!owner.current_recording_instance && !output.empty() &&
+               !owner.running_commands)
+                tipl::out() << owner.command_json(cmd);
             if(!error_msg.empty())
             {
                 tipl::error() << error_msg;
