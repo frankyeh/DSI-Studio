@@ -9,10 +9,7 @@ int cnt(tipl::program_option<tipl::out>& po)
 {
     auto vbc = std::make_shared<group_connectometry_analysis>();
     if(!vbc->load_database(po.get("source").c_str()))
-    {
-        tipl::error() << vbc->error_msg << std::endl;
-        return 1;
-    }
+        return tipl::error() << vbc->error_msg,1;
 
     auto& db = vbc->handle->db;
     if(db.demo.empty() || po.has("demo"))
@@ -21,18 +18,13 @@ int cnt(tipl::program_option<tipl::out>& po)
         if(!po.check("demo"))
             return 1;
         if(!db.parse_demo(po.get("demo")))
-        {
-            tipl::error() << vbc->handle->error_msg << std::endl;
-            return 1;
-        }
+            return tipl::error() << vbc->handle->error_msg,1;
     }
 
     tipl::out() << "available index name: " << tipl::merge(db.index_list,',');
     if(!db.set_current_index(po.get("index_name",db.index_list.front())))
-    {
-        tipl::error() << "cannot find " << po.get("index_name") << " in the database";
-        return 1;
-    }
+        return tipl::error() << "cannot find " << po.get("index_name")
+                             << " in the database",1;
 
     {
         std::string sout("selectable variables include ");
@@ -55,35 +47,23 @@ int cnt(tipl::program_option<tipl::out>& po)
         std::istringstream var_in(var_text);
         variable_list.assign((std::istream_iterator<int>(var_in)),(std::istream_iterator<int>()));
         if(variable_list.empty())
-        {
-            tipl::error() << "empty variable list" << std::endl;
-            return 1;
-        }
+            return tipl::error() << "empty variable list",1;
         for(auto v : variable_list)
             if(v >= db.feature.size())
-            {
-                tipl::error() << "invalid variable value: " << v << std::endl;
-                return 1;
-            }
+                return tipl::error() << "invalid variable value: " << v,1;
 
 
         if(po.get("voi") == "Intercept" || po.get("voi") == "longitudinal")
         {
             if(!db.is_longitudinal)
-            {
-                tipl::error() << "The longitudinal change can only be studied in a longitudinal database." << std::endl;
-                return 1;
-            }
+                return tipl::error() << "The longitudinal change can only be studied in a longitudinal database.",1;
             foi_str = "longitudinal change";
         }
         else
         {
             unsigned int voi_index = po.get("voi",variable_list.front());
             if(voi_index >= db.feature.size())
-            {
-                tipl::error() << "invalid variable of interest: " << voi_index << std::endl;
-                return 1;
-            }
+                return tipl::error() << "invalid variable of interest: " << voi_index,1;
             // the variable to study needs to be included in the model
             variable_list.push_back(voi_index);
             foi_str = db.feature[voi_index].title;
@@ -120,10 +100,7 @@ int cnt(tipl::program_option<tipl::out>& po)
         vbc->model = std::make_shared<stat_model>();
         vbc->model->read_demo(db);
         if(!vbc->model->select_cohort(db,po.get("select")) || !vbc->model->select_feature(db,vbc->foi_str))
-        {
-            tipl::error() << vbc->model->error_msg.c_str() << std::endl;
-            return 1;
-        }
+            return tipl::error() << vbc->model->error_msg,1;
         size_t n = std::count(vbc->model->remove_list.begin(),
                               vbc->model->remove_list.end(),false);
         tipl::out() << "sample size:" << n;
