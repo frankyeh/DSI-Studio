@@ -155,6 +155,7 @@ bool tracking_window::command(std::vector<std::string> cmd)
         if(!new_handle->load_from_file(cmd[1]))
             return run->failed(new_handle->error_msg);
         tracking_windows.push_back(new tracking_window(parentWidget(),new_handle));
+        report_window_created(tracking_windows.back(),"tracking");
         tracking_windows.back()->setAttribute(Qt::WA_DeleteOnClose);
         tracking_windows.back()->setWindowTitle(cmd[1].c_str());
         tracking_windows.back()->showNormal();
