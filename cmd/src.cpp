@@ -340,15 +340,15 @@ int src(tipl::program_option<tipl::out>& po)
                 else
                     tipl::out() << "no --output specified. write src files to the same directory of the nifti images";
                 std::sort(dwi_nii_files.begin(),dwi_nii_files.end());
-                if(nii2src(dwi_nii_files,output_dir,is_bids,po.get("overwrite",0),po.get("topup_eddy",0)))
-                    return 0;
-                return 1;
+                return nii2src(dwi_nii_files,output_dir,is_bids,
+                               po.get("overwrite",0),
+                               po.get("topup_eddy",0)) ? 0 : 1;
             }
         }
 
         tipl::out() << "cannot find NIFTI files...try looking for DICOM files in directory " << source.c_str() << std::endl;
-        dicom2src_and_nii(source,po.get("overwrite",0));
-        return 0;
+        return dicom2src_and_nii(
+            source,po.get("overwrite",0)) ? 0 : 1;
     }
     else
         file_list = po.get_files("source");
