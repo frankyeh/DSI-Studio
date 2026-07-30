@@ -2100,15 +2100,9 @@ bool src_data::generate_topup_b0_acq_files(std::vector<tipl::image<3> >& b0,
 
     {
         tipl::out() << "create acq params at " << acqparam_file() << std::endl;
-        std::ofstream out(acqparam_file());
-        if(!out)
-        {
-            tipl::out() << "cannot write to acq param file " << acqparam_file() << std::endl;
+        if(!tipl::write_text_file(acqparam_file(),acqstr,tipl::error()))
             return false;
-        }
         tipl::out() << acqstr << std::flush;
-        out << acqstr << std::flush;
-        out.close();
     }
 
 
@@ -2139,7 +2133,8 @@ bool src_data::load_topup_eddy_result(void)
     if(!std::filesystem::exists(corrected_file()))
         return error_msg = "cannot find corrected output " + corrected_file().u8string(),false;
     if(!topup_eddy_report.empty())
-        std::ofstream(corrected_file()+=".report.txt") << topup_eddy_report;
+        tipl::write_text_file(
+            corrected_file()+=".report.txt",topup_eddy_report,tipl::error());
 
     auto bval_file = std::filesystem::path(file_name)+=".bval";
     auto bvec_file = std::filesystem::path(file_name)+=".corrected.eddy_rotated_bvecs";
@@ -2314,8 +2309,8 @@ bool src_data::run_eddy(std::string exec)
         tipl::out() << "cannot find topup result: " << topup_result();
         tipl::out() << "run eddy without topup";
         setup_topup_eddy_volume();
-        std::ofstream out(acqparam_file());
-        out << "0 -1 0 0.05" << std::endl;
+        tipl::write_text_file(
+            acqparam_file(),std::string("0 -1 0 0.05\n"),tipl::error());
     }
     {
         std::string cause;
