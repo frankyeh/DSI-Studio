@@ -20,6 +20,8 @@ namespace Ui {
 }
 std::string show_info_dialog(const std::string& title,const std::string& result,const std::string& file_name_hint = "report.txt");
 enum class command_source{User,AI,Internal};
+QString command_window_id(QWidget*,const char*);
+void report_window_created(QWidget*,const char*);
 std::string command_record(QWidget*,const char*,
                            const std::vector<std::string>&,command_source);
 command_source command_origin(command_source);
