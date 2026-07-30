@@ -557,7 +557,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
             tract_models[index]->cut_by_slice(dim,slice_pos,!other_side,
                 (cur_tracking_window.current_slice->is_diffusion_space ? nullptr:&cur_tracking_window.current_slice->to_slice));
             return true;
-        });
+        },cmd[1]);
         return true;
     }
 
@@ -910,7 +910,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         for_each_bundle([&](unsigned int index)
         {
             return tract_models[index]->filter_by_roi(roi_mgr);
-        });
+        },cmd[1]);
         return true;
     }
     if(cmd[0] == "copy_tract")
@@ -1201,6 +1201,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     if(cmd[0] == "delete_repeated_tract")
     {
         // cmd[1] : distance
+        // cmd[2] : (optional) tract index
         float distance = 1.0;
         if(cmd[1].empty())
         {
@@ -1216,15 +1217,15 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         for_each_bundle([&](unsigned int index)
         {
             return tract_models[index]->delete_repeated(distance);
-        });
+        },cmd[2]);
         emit show_tracts();
         return true;
     }
 
     if(cmd[0] == "resample_tract")
     {
-
         // cmd[1] : new_step
+        // cmd[2] : (optional) tract index
         float new_step = 0.5;
         if(cmd[1].empty())
         {
@@ -1241,7 +1242,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         {
             tract_models[index]->resample(new_step);
             return true;
-        });
+        },cmd[2]);
         emit show_tracts();
         return true;
     }
@@ -1249,6 +1250,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
     if(cmd[0] == "delete_tract_by_length")
     {
         // cmd[1] : new_step
+        // cmd[2] : (optional) tract index
         float threshold = 0.5;
         if(cmd[1].empty())
         {
@@ -1264,7 +1266,7 @@ bool TractTableWidget::command(std::vector<std::string> cmd)
         for_each_bundle([&](unsigned int index)
         {
             return tract_models[index]->delete_by_length(threshold);
-        });
+        },cmd[2]);
         emit show_tracts();
         return true;
     }
