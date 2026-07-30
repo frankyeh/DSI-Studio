@@ -607,6 +607,7 @@ bool MainWindow::loadFib(QString filename)
         return false;
     }
     tracking_windows.push_back(new tracking_window(this,new_handle));
+    report_window_created(tracking_windows.back(),"tracking");
     tracking_windows.back()->setAttribute(Qt::WA_DeleteOnClose);
     tracking_windows.back()->setWindowTitle(filename);
     if(filename.contains("/presentation/"))
@@ -656,6 +657,7 @@ void MainWindow::loadNii(QStringList file_names)
         delete dialog;
         return;
     }
+    report_window_created(dialog,"image");
     dialog->show();
 }
 
@@ -1646,6 +1648,7 @@ bool MainWindow::command(const std::vector<std::string>& cmd,
             delete window;
             return fail(message);
         }
+        report_window_created(window,"image");
         window->show();
         return true;
     }
