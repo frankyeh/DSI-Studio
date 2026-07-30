@@ -349,7 +349,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     // setup GUI
     {
         {
-            tipl::out() << "create GUI objects" << std::endl;
+            //tipl::out() << "create GUI objects"
             scene.statusbar = ui->statusbar;
             ui->regionDockWidget->setMinimumWidth(0);
             ui->ROIdockWidget->setMinimumWidth(0);
@@ -389,12 +389,12 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
             }            
         }
         {
-            tipl::out() << "prepare template and atlases" << std::endl;
+            //tipl::out() << "prepare template and atlases";
             populate_templates(ui->template_box,handle->template_id);
         }
 
         {
-            tipl::out() << "initialize slices" << std::endl;
+            //tipl::out() << "initialize slices";
 
             for (auto each : handle->slices)
                 addSlices(std::make_shared<SliceModel>(handle,each));
@@ -486,7 +486,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
 
     }
 
-    tipl::out() << "connect signal and slots " << std::endl;
+    //tipl::out() << "connect signal and slots "0;
     // opengl
     {
         connect(ui->zoom_3d,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this](double zoom){command({"set_zoom",std::to_string(zoom)});});
@@ -744,7 +744,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
     }
     qApp->installEventFilter(this);
     // now begin visualization
-    tipl::out() << "begin visualization" << std::endl;
+    //tipl::out() << "begin visualization";
     {
         ui->SliceModality->blockSignals(false);
         glWidget->no_update = false;
@@ -755,7 +755,7 @@ tracking_window::tracking_window(QWidget *parent,std::shared_ptr<fib_data> new_h
         if((*this)["orientation_convention"].toInt() == 1)
             glWidget->set_view(2);
     }
-    tipl::out() << "GUI initialization complete" << std::endl;
+    //tipl::out() << "GUI initialization complete";
 
 
     history.commands.clear();
