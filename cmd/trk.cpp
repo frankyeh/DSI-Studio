@@ -312,6 +312,13 @@ int trk_post(tipl::program_option<tipl::out>& po,
     if(!tract_model->get_visible_track_count())
         return tipl::out() << "no tract remains for further actions",0;
 
+    auto write_labels = [](const auto& file_name,const auto& labels)
+    {
+        auto result = tipl::merge(labels,' ');
+        if(!result.empty())
+            result += ' ';
+        return tipl::write_text_file(file_name,result,tipl::error());
+    };
     if(po.has("cluster"))
     {
         std::string cmd = po.get("cluster");
@@ -333,28 +340,20 @@ int trk_post(tipl::program_option<tipl::out>& po,
         if(output.empty())
             (output = tract_file_name) += "_cluster.txt";
         tipl::out() << "saving " << output << std::endl;
-        std::ofstream out(output);
-        if(!out)
-            return tipl::error() << "cannot write to " << output,1;
-        std::copy(tract_model->tract_cluster.begin(),tract_model->tract_cluster.end(),std::ostream_iterator<int>(out," "));
+        if(!write_labels(output,tract_model->tract_cluster))
+            return 1;
     }
     if(po.has("recognize"))
     {
         std::vector<unsigned int> labels;
         std::vector<std::string> names;
         handle->recognize(tract_model,labels,names);
-        auto label_file_name = po.get("recognize") + ".label.txt";
-        tipl::out() << "saving " << label_file_name;
-        std::ofstream out1(label_file_name);
-        if(!out1)
-            return tipl::error() << "cannot write to " << label_file_name,1;
-        std::copy(labels.begin(),labels.end(),std::ostream_iterator<int>(out1," "));
-
-        auto name_file_name = po.get("recognize") + ".name.txt";
-        tipl::out() << "saving " << name_file_name;
-        if(!tipl::write_text_file(name_file_name,names,tipl::error()))
+        auto output = po.get("recognize");
+        if(!write_labels(output+".label.txt",labels) ||
+           !tipl::write_text_file(
+               output+".name.txt",names,tipl::error()))
             return 1;
-        tract_model->tract_cluster = labels;
+        tract_model->tract_cluster = std::move(labels);
     }
 
     if (po.has("output"))
