@@ -62,8 +62,7 @@ std::string show_info_dialog(const std::string& title,
                         "Text files (*.txt);;All files (*)");
         if (!fn.isEmpty()){
             tipl::out() << "save " << fn.toStdString();
-            std::ofstream out(fn.toStdString());
-            out << result;
+            tipl::write_text_file(fn.toStdString(),result,tipl::error());
             saved_file = fn.toStdString();
             QMessageBox::information(dlg,QApplication::applicationName(),"file saved");
         }
